@@ -1,0 +1,49 @@
+﻿using System;
+
+namespace InventorySystem.Hotkeys
+{
+	public enum HotkeysTranslation
+	{
+		SettingsHeader,
+		CreateNewLabel,
+		SettingsHeaderHint,
+		KeycardPredefinedName,
+		PrimaryWeaponPredefinedName,
+		SecondaryWeaponPredefinedName,
+		MedicalPredefinedName,
+		GrenadePredefinedName,
+		NameLabel,
+		KeyLabel,
+		ApperanceLabel,
+		SortLabel,
+		OverrideLabel,
+		OverrideHint,
+		ApperanceHidden,
+		ApperanceNormal,
+		ApperanceSmall,
+		SortItemQueue,
+		SortItemQueueHint,
+		SortInventoryOrder,
+		SortInventoryOrderHint,
+		OverrideNone,
+		OverrideBestMedical,
+		OverrideBestMedicalHint,
+		OverrideRememberPrev,
+		OverrideRememberPrevHint,
+		OverrideNearbyDoor,
+		OverrideNearbyDoorHint,
+		OverrideSkipEmpty,
+		OverrideSkipEmptyHint,
+		PoolItemsLabel,
+		PoolOrderLabel,
+		PoolOrderHint,
+		RestoreDefaultLabel,
+		RestoreDefaultButton,
+		TitlePrefix,
+		NewHotkeyNamePlaceholder,
+		GroupFirearms,
+		GroupKeycards,
+		GroupThrowable,
+		GroupScpItems
+	}
+}

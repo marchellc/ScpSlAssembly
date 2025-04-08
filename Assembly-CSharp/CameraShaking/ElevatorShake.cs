@@ -1,0 +1,72 @@
+﻿using System;
+using System.Diagnostics;
+using Interactables.Interobjects;
+using UnityEngine;
+
+namespace CameraShaking
+{
+	public class ElevatorShake : IShakeEffect
+	{
+		[RuntimeInitializeOnLoadMethod]
+		private static void Init()
+		{
+			ReferenceHub.OnPlayerAdded = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerAdded, new Action<ReferenceHub>(ElevatorShake.OnPlayerAdded));
+			ElevatorChamber.OnElevatorMoved += ElevatorShake.OnElevatorMoved;
+		}
+
+		private static void OnPlayerAdded(ReferenceHub hub)
+		{
+			if (!hub.isLocalPlayer)
+			{
+				return;
+			}
+			CameraShakeController.AddEffect(new ElevatorShake());
+		}
+
+		private static void OnElevatorMoved(Bounds elevatorBounds, ElevatorChamber chamber, Vector3 deltaPos, Quaternion deltaRot)
+		{
+			if (!elevatorBounds.Contains(MainCameraController.CurrentCamera.position))
+			{
+				return;
+			}
+			ElevatorShake.LastMovement.Restart();
+		}
+
+		public bool GetEffect(ReferenceHub ply, out ShakeEffectValues shakeValues)
+		{
+			float num = (ElevatorShake.LastMovement.IsRunning ? ElevatorShake.FadeCurve.Evaluate((float)ElevatorShake.LastMovement.Elapsed.TotalSeconds) : 0f);
+			if (Mathf.Approximately(num, 0f))
+			{
+				ElevatorShake.RealTime.Restart();
+				shakeValues = ShakeEffectValues.None;
+			}
+			else
+			{
+				float num2 = (float)ElevatorShake.RealTime.Elapsed.TotalSeconds;
+				float num3 = Mathf.Sin(num2 * 9f);
+				float num4 = Mathf.Sin(num2 * 3f);
+				float num5 = Mathf.Sin(num2 * 75f) * 0.12f;
+				shakeValues = new ShakeEffectValues(new Quaternion?(Quaternion.Euler(num3 * num4 * num * num5 * Vector3.up)), null, null, 1f, 0f, 0f);
+			}
+			return true;
+		}
+
+		private const float ShakeSpeed = 75f;
+
+		private const float ShakeAngle = 0.12f;
+
+		private const float PulsePrimarySpeed = 9f;
+
+		private const float PulseSecondarySpeed = 3f;
+
+		private static readonly Stopwatch RealTime = Stopwatch.StartNew();
+
+		private static readonly Stopwatch LastMovement = new Stopwatch();
+
+		private static readonly AnimationCurve FadeCurve = new AnimationCurve(new Keyframe[]
+		{
+			new Keyframe(0f, 1f, -0.1f, -0.1f, 0f, 0.5f),
+			new Keyframe(0.5f, 0f, 0f, 0f, 0.2f, 0f)
+		});
+	}
+}

@@ -1,0 +1,43 @@
+﻿using System;
+using Mirror;
+using UnityEngine;
+
+namespace MapGeneration.Distributors
+{
+	[CreateAssetMenu(fileName = "New Spawner Settings Preset", menuName = "ScriptableObject/Map Generation/Spawnable Elements Settings")]
+	public class SpawnablesDistributorSettings : ScriptableObject
+	{
+		[RuntimeInitializeOnLoadMethod]
+		private static void Init()
+		{
+			SpawnablesDistributorSettings._allSettings = Resources.LoadAll<SpawnablesDistributorSettings>(string.Empty);
+			CustomNetworkManager.OnClientStarted += SpawnablesDistributorSettings.RegisterSpawnables;
+		}
+
+		private static void RegisterSpawnables()
+		{
+			SpawnablesDistributorSettings[] allSettings = SpawnablesDistributorSettings._allSettings;
+			for (int i = 0; i < allSettings.Length; i++)
+			{
+				SpawnableStructure[] spawnableStructures = allSettings[i].SpawnableStructures;
+				for (int j = 0; j < spawnableStructures.Length; j++)
+				{
+					NetworkIdentity netIdentity = spawnableStructures[j].netIdentity;
+					NetworkClient.prefabs[netIdentity.assetId] = netIdentity.gameObject;
+				}
+			}
+		}
+
+		private static SpawnablesDistributorSettings[] _allSettings;
+
+		[Range(0.05f, 5f)]
+		public float SpawnerDelay;
+
+		[Range(0.05f, 5f)]
+		public float UnfreezeDelay;
+
+		public SpawnableItem[] SpawnableItems;
+
+		public SpawnableStructure[] SpawnableStructures;
+	}
+}

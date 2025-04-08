@@ -1,0 +1,52 @@
+﻿using System;
+using System.Net;
+using System.Net.Sockets;
+
+namespace LiteNetLib
+{
+	internal sealed class NetEvent
+	{
+		public NetEvent(NetManager manager)
+		{
+			this.DataReader = new NetPacketReader(manager, this);
+		}
+
+		public NetEvent Next;
+
+		public NetEvent.EType Type;
+
+		public NetPeer Peer;
+
+		public IPEndPoint RemoteEndPoint;
+
+		public object UserData;
+
+		public int Latency;
+
+		public SocketError ErrorCode;
+
+		public DisconnectReason DisconnectReason;
+
+		public ConnectionRequest ConnectionRequest;
+
+		public DeliveryMethod DeliveryMethod;
+
+		public byte ChannelNumber;
+
+		public readonly NetPacketReader DataReader;
+
+		public enum EType
+		{
+			Connect,
+			Disconnect,
+			Receive,
+			ReceiveUnconnected,
+			Error,
+			ConnectionLatencyUpdated,
+			Broadcast,
+			ConnectionRequest,
+			MessageDelivered,
+			PeerAddressChanged
+		}
+	}
+}

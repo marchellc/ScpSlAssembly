@@ -1,0 +1,45 @@
+﻿using System;
+using System.Collections.Generic;
+using MapGeneration.Spawnables;
+using UnityEngine;
+
+namespace PlayerRoles.PlayableScps.Scp939.Ripples
+{
+	public class AudioLogRippleTrigger : RippleTriggerBase
+	{
+		public override void ResetObject()
+		{
+			base.ResetObject();
+			this._cooldowns.Clear();
+		}
+
+		private void Update()
+		{
+			if (!base.IsLocalOrSpectated)
+			{
+				return;
+			}
+			foreach (AudioLog audioLog in AudioLog.Instances)
+			{
+				if (this.CanTriggerRipple(audioLog))
+				{
+					float num = audioLog.MaxHearingRange * this.RangeMultiplier;
+					base.PlayInRange(audioLog.PlayingLocation, num, Color.red);
+					this._cooldowns[audioLog] = Time.time + this.CooldownPerLog;
+				}
+			}
+		}
+
+		private bool CanTriggerRipple(AudioLog audioLog)
+		{
+			float num;
+			return audioLog.IsPlaying && (!this._cooldowns.TryGetValue(audioLog, out num) || num <= Time.time);
+		}
+
+		private readonly Dictionary<AudioLog, float> _cooldowns = new Dictionary<AudioLog, float>();
+
+		public float CooldownPerLog = 1.5f;
+
+		public float RangeMultiplier = 1.35f;
+	}
+}
