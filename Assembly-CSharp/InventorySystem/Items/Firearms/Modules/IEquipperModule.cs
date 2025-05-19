@@ -1,18 +1,16 @@
-﻿using System;
 using InventorySystem.Items.Firearms.Attachments;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+[UniqueModule]
+public interface IEquipperModule
 {
-	[UniqueModule]
-	public interface IEquipperModule
+	float DisplayBaseEquipTime { get; }
+
+	bool IsEquipped { get; }
+
+	float GetDisplayEffectiveEquipTime(Firearm fa)
 	{
-		float DisplayBaseEquipTime { get; }
-
-		bool IsEquipped { get; }
-
-		float GetDisplayEffectiveEquipTime(Firearm fa)
-		{
-			return (this.DisplayBaseEquipTime + fa.AttachmentsValue(AttachmentParam.DrawTimeModifier)) / fa.AttachmentsValue(AttachmentParam.DrawSpeedMultiplier);
-		}
+		return (DisplayBaseEquipTime + fa.AttachmentsValue(AttachmentParam.DrawTimeModifier)) / fa.AttachmentsValue(AttachmentParam.DrawSpeedMultiplier);
 	}
 }

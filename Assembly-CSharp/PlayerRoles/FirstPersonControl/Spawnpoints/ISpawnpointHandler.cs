@@ -1,10 +1,8 @@
-﻿using System;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Spawnpoints
+namespace PlayerRoles.FirstPersonControl.Spawnpoints;
+
+public interface ISpawnpointHandler
 {
-	public interface ISpawnpointHandler
-	{
-		bool TryGetSpawnpoint(out Vector3 position, out float horizontalRot);
-	}
+	bool TryGetSpawnpoint(out Vector3 position, out float horizontalRot);
 }

@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.FlamingoTapePlayer
+namespace InventorySystem.Items.FlamingoTapePlayer;
+
+public class TapeAnims : MonoBehaviour
 {
-	public class TapeAnims : MonoBehaviour
-	{
-	}
 }

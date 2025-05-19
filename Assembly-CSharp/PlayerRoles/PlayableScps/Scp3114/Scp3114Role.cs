@@ -1,4 +1,3 @@
-﻿using System;
 using System.Text;
 using InventorySystem;
 using Mirror;
@@ -9,88 +8,87 @@ using PlayerRoles.Subroutines;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp3114
+namespace PlayerRoles.PlayableScps.Scp3114;
+
+public class Scp3114Role : FpcStandardScp, IHumeShieldedRole, IInventoryRole, ISubroutinedRole, IHudScp, ICustomNicknameDisplayRole, IDamageHandlerProcessingRole, IHitmarkerPreventer
 {
-	public class Scp3114Role : FpcStandardScp, IHumeShieldedRole, IInventoryRole, ISubroutinedRole, IHudScp, ICustomNicknameDisplayRole, IDamageHandlerProcessingRole, IHitmarkerPreventer
+	private Scp3114Identity _identity;
+
+	private Scp3114DamageProcessor _damageProcessor;
+
+	[field: SerializeField]
+	public HumeShieldModuleBase HumeShieldModule { get; private set; }
+
+	[field: SerializeField]
+	public SubroutineManagerModule SubroutineModule { get; private set; }
+
+	[field: SerializeField]
+	public ScpHudBase HudPrefab { get; private set; }
+
+	public Scp3114Identity.StolenIdentity CurIdentity => _identity.CurIdentity;
+
+	public bool Disguised
 	{
-		public HumeShieldModuleBase HumeShieldModule { get; private set; }
-
-		public SubroutineManagerModule SubroutineModule { get; private set; }
-
-		public ScpHudBase HudPrefab { get; private set; }
-
-		public Scp3114Identity.StolenIdentity CurIdentity
+		get
 		{
-			get
+			return CurIdentity.Status == Scp3114Identity.DisguiseStatus.Active;
+		}
+		set
+		{
+			if (value != Disguised && NetworkServer.active)
 			{
-				return this._identity.CurIdentity;
+				CurIdentity.Status = (value ? Scp3114Identity.DisguiseStatus.Active : Scp3114Identity.DisguiseStatus.None);
+				_identity.ServerResendIdentity();
 			}
 		}
+	}
 
-		public bool Disguised
+	public bool SkeletonIdle => CurIdentity.Status == Scp3114Identity.DisguiseStatus.None;
+
+	public Color NicknameColor => _identity.NicknameColor;
+
+	private void Awake()
+	{
+		SubroutineModule.TryGetSubroutine<Scp3114Identity>(out _identity);
+		SubroutineModule.TryGetSubroutine<Scp3114DamageProcessor>(out _damageProcessor);
+	}
+
+	public void WriteNickname(StringBuilder sb)
+	{
+		_identity.WriteNickname(sb);
+	}
+
+	public DamageHandlerBase ProcessDamageHandler(DamageHandlerBase dhb)
+	{
+		return _damageProcessor.ProcessDamageHandler(dhb);
+	}
+
+	public bool TryPreventHitmarker(AttackerDamageHandler adh)
+	{
+		if (!Disguised)
 		{
-			get
-			{
-				return this.CurIdentity.Status == Scp3114Identity.DisguiseStatus.Active;
-			}
-			set
-			{
-				if (value == this.Disguised || !NetworkServer.active)
-				{
-					return;
-				}
-				this.CurIdentity.Status = (value ? Scp3114Identity.DisguiseStatus.Active : Scp3114Identity.DisguiseStatus.None);
-				this._identity.ServerResendIdentity();
-			}
+			return false;
 		}
+		RoleTypeId role = adh.Attacker.Role;
+		RoleTypeId stolenRole = CurIdentity.StolenRole;
+		return !HitboxIdentity.IsDamageable(role, stolenRole);
+	}
 
-		public bool SkeletonIdle
+	public bool AllowDisarming(ReferenceHub detainer)
+	{
+		if (CurIdentity.Status != Scp3114Identity.DisguiseStatus.Active)
 		{
-			get
-			{
-				return this.CurIdentity.Status == Scp3114Identity.DisguiseStatus.None;
-			}
+			return false;
 		}
-
-		private void Awake()
+		if (CurIdentity.StolenRole.GetFaction() == detainer.GetFaction())
 		{
-			this.SubroutineModule.TryGetSubroutine<Scp3114Identity>(out this._identity);
-			this.SubroutineModule.TryGetSubroutine<Scp3114DamageProcessor>(out this._damageProcessor);
+			return false;
 		}
+		return true;
+	}
 
-		public void WriteNickname(ReferenceHub owner, StringBuilder sb, out Color texColor)
-		{
-			this._identity.WriteNickname(owner, sb, out texColor);
-		}
-
-		public DamageHandlerBase ProcessDamageHandler(DamageHandlerBase dhb)
-		{
-			return this._damageProcessor.ProcessDamageHandler(dhb);
-		}
-
-		public bool TryPreventHitmarker(AttackerDamageHandler adh)
-		{
-			if (!this.Disguised)
-			{
-				return false;
-			}
-			RoleTypeId role = adh.Attacker.Role;
-			RoleTypeId stolenRole = this.CurIdentity.StolenRole;
-			return !HitboxIdentity.IsDamageable(role, stolenRole);
-		}
-
-		public bool AllowDisarming(ReferenceHub detainer)
-		{
-			return this.CurIdentity.Status == Scp3114Identity.DisguiseStatus.Active && this.CurIdentity.StolenRole.GetFaction() != detainer.GetFaction();
-		}
-
-		public bool AllowUndisarming(ReferenceHub releaser)
-		{
-			return releaser.IsHuman();
-		}
-
-		private Scp3114Identity _identity;
-
-		private Scp3114DamageProcessor _damageProcessor;
+	public bool AllowUndisarming(ReferenceHub releaser)
+	{
+		return releaser.IsHuman();
 	}
 }

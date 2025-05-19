@@ -1,13 +1,10 @@
-﻿using System;
+namespace InventorySystem.Items.Thirdperson;
 
-namespace InventorySystem.Items.Thirdperson
+public enum AnimItemLayer3p
 {
-	public enum AnimItemLayer3p
-	{
-		Left,
-		Right,
-		Middle,
-		Additive,
-		PreMovement
-	}
+	Left,
+	Right,
+	Middle,
+	Additive,
+	PreMovement
 }

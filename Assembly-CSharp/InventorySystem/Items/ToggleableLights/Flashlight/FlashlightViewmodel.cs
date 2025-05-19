@@ -1,60 +1,50 @@
-﻿using System;
 using AudioPooling;
 using UnityEngine;
 
-namespace InventorySystem.Items.ToggleableLights.Flashlight
+namespace InventorySystem.Items.ToggleableLights.Flashlight;
+
+public class FlashlightViewmodel : StandardAnimatedViemodel
 {
-	public class FlashlightViewmodel : StandardAnimatedViemodel
+	private static readonly int ToggleHash = Animator.StringToHash("Toggle");
+
+	private Light _light;
+
+	public void PlayAnimation()
 	{
-		public void PlayAnimation()
+		AnimatorSetTrigger(ToggleHash);
+	}
+
+	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
+	{
+		base.InitSpectator(ply, id, wasEquipped);
+		_light = GetComponentInChildren<Light>(includeInactive: true);
+		FlashlightNetworkHandler.OnStatusReceived += OnStatusReceived;
+		if (FlashlightNetworkHandler.ReceivedStatuses.TryGetValue(base.ItemId.SerialNumber, out var value))
 		{
-			this.AnimatorSetTrigger(FlashlightViewmodel.ToggleHash);
+			_light.enabled = value;
 		}
-
-		public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
+		if (wasEquipped)
 		{
-			base.InitSpectator(ply, id, wasEquipped);
-			this._light = base.GetComponentInChildren<Light>(true);
-			FlashlightNetworkHandler.OnStatusReceived += this.OnStatusReceived;
-			bool flag;
-			if (FlashlightNetworkHandler.ReceivedStatuses.TryGetValue(base.ItemId.SerialNumber, out flag))
-			{
-				this._light.enabled = flag;
-			}
-			if (!wasEquipped)
-			{
-				return;
-			}
-			this.AnimatorForceUpdate(base.SkipEquipTime, true);
-			base.GetComponent<AudioSource>().mute = true;
+			AnimatorForceUpdate(base.SkipEquipTime);
+			GetComponent<AudioSource>().mute = true;
 		}
+	}
 
-		private void OnStatusReceived(FlashlightNetworkHandler.FlashlightMessage msg)
+	private void OnStatusReceived(FlashlightNetworkHandler.FlashlightMessage msg)
+	{
+		if (msg.Serial == base.ItemId.SerialNumber && _light.enabled != msg.NewState)
 		{
-			if (msg.Serial != base.ItemId.SerialNumber)
-			{
-				return;
-			}
-			if (this._light.enabled == msg.NewState)
-			{
-				return;
-			}
-			this.PlayAnimation();
-			this._light.enabled = msg.NewState;
-			AudioSourcePoolManager.Play2D(msg.NewState ? FlashlightItem.Template.OnClip : FlashlightItem.Template.OffClip, 1f, MixerChannel.DefaultSfx, 1f);
+			PlayAnimation();
+			_light.enabled = msg.NewState;
+			AudioSourcePoolManager.Play2D(msg.NewState ? FlashlightItem.Template.OnClip : FlashlightItem.Template.OffClip);
 		}
+	}
 
-		private void OnDestroy()
+	private void OnDestroy()
+	{
+		if (base.IsSpectator)
 		{
-			if (!base.IsSpectator)
-			{
-				return;
-			}
-			FlashlightNetworkHandler.OnStatusReceived -= this.OnStatusReceived;
+			FlashlightNetworkHandler.OnStatusReceived -= OnStatusReceived;
 		}
-
-		private static readonly int ToggleHash = Animator.StringToHash("Toggle");
-
-		private Light _light;
 	}
 }

@@ -1,79 +1,64 @@
-﻿using System;
 using Mirror;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp106
+namespace PlayerRoles.PlayableScps.Scp106;
+
+public class VigorStat : SyncedStatBase
 {
-	public class VigorStat : SyncedStatBase
+	private const float StartAmount = 0f;
+
+	private float _maxValue;
+
+	public override SyncMode Mode => SyncMode.PrivateAndSpectators;
+
+	public override float MinValue => 0f;
+
+	public override float MaxValue
 	{
-		public override SyncedStatBase.SyncMode Mode
+		get
 		{
-			get
-			{
-				return SyncedStatBase.SyncMode.PrivateAndSpectators;
-			}
+			return _maxValue;
 		}
-
-		public override float MinValue
+		set
 		{
-			get
-			{
-				return 0f;
-			}
+			_maxValue = value;
 		}
+	}
 
-		public override float MaxValue
+	public override bool CheckDirty(float prevValue, float newValue)
+	{
+		return ToByte(prevValue) != ToByte(newValue);
+	}
+
+	public override float ReadValue(SyncedStatMessages.StatMessageType type, NetworkReader reader)
+	{
+		return ToFloat(reader.ReadByte());
+	}
+
+	public override void WriteValue(SyncedStatMessages.StatMessageType type, NetworkWriter writer)
+	{
+		byte value = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? ToByte(CurValue) : ToByte(MaxValue));
+		writer.WriteByte(value);
+	}
+
+	internal override void ClassChanged()
+	{
+		base.ClassChanged();
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return this._maxValue;
-			}
-			set
-			{
-				this._maxValue = value;
-			}
+			_maxValue = 1f;
+			CurValue = 0f;
 		}
+	}
 
-		public override bool CheckDirty(float prevValue, float newValue)
-		{
-			return this.ToByte(prevValue) != this.ToByte(newValue);
-		}
+	private byte ToByte(float val)
+	{
+		return (byte)Mathf.CeilToInt(val * 255f);
+	}
 
-		public override float ReadValue(NetworkReader reader)
-		{
-			return this.ToFloat(reader.ReadByte());
-		}
-
-		public override void WriteValue(SyncedStatMessages.StatMessageType type, NetworkWriter writer)
-		{
-			byte b = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? this.ToByte(this.CurValue) : this.ToByte(this.MaxValue));
-			writer.WriteByte(b);
-		}
-
-		internal override void ClassChanged()
-		{
-			base.ClassChanged();
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this._maxValue = 1f;
-			this.CurValue = 0f;
-		}
-
-		private byte ToByte(float val)
-		{
-			return (byte)Mathf.CeilToInt(val * 255f);
-		}
-
-		private float ToFloat(byte val)
-		{
-			return (float)val / 255f;
-		}
-
-		private const float StartAmount = 0f;
-
-		private float _maxValue;
+	private float ToFloat(byte val)
+	{
+		return (float)(int)val / 255f;
 	}
 }

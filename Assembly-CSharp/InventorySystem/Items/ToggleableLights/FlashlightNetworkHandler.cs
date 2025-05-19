@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
@@ -6,130 +6,104 @@ using Mirror;
 using UnityEngine;
 using Utils.Networking;
 
-namespace InventorySystem.Items.ToggleableLights
+namespace InventorySystem.Items.ToggleableLights;
+
+public static class FlashlightNetworkHandler
 {
-	public static class FlashlightNetworkHandler
+	public readonly struct FlashlightMessage : NetworkMessage
 	{
-		public static event Action<FlashlightNetworkHandler.FlashlightMessage> OnStatusReceived;
+		public readonly ushort Serial;
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		public readonly bool NewState;
+
+		public FlashlightMessage(ushort flashlightSerial, bool newState)
 		{
-			CustomNetworkManager.OnClientReady += FlashlightNetworkHandler.RegisterHandlers;
-			Inventory.OnLocalClientStarted += delegate
-			{
-				NetworkClient.Send<FlashlightNetworkHandler.FlashlightMessage>(new FlashlightNetworkHandler.FlashlightMessage(0, false), 0);
-			};
+			Serial = flashlightSerial;
+			NewState = newState;
 		}
+	}
 
-		private static void RegisterHandlers()
-		{
-			FlashlightNetworkHandler.AlreadyRequestedFirstimeSync.Clear();
-			FlashlightNetworkHandler.ReceivedStatuses.Clear();
-			NetworkClient.ReplaceHandler<FlashlightNetworkHandler.FlashlightMessage>(new Action<FlashlightNetworkHandler.FlashlightMessage>(FlashlightNetworkHandler.ClientProcessMessage), true);
-			NetworkServer.ReplaceHandler<FlashlightNetworkHandler.FlashlightMessage>(new Action<NetworkConnectionToClient, FlashlightNetworkHandler.FlashlightMessage>(FlashlightNetworkHandler.ServerProcessMessage), true);
-		}
+	private static readonly HashSet<uint> AlreadyRequestedFirstimeSync = new HashSet<uint>();
 
-		private static void ClientProcessMessage(FlashlightNetworkHandler.FlashlightMessage msg)
+	public static readonly Dictionary<ushort, bool> ReceivedStatuses = new Dictionary<ushort, bool>();
+
+	public static event Action<FlashlightMessage> OnStatusReceived;
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += RegisterHandlers;
+		Inventory.OnLocalClientStarted += delegate
 		{
-			FlashlightNetworkHandler.ReceivedStatuses[msg.Serial] = msg.NewState;
-			Action<FlashlightNetworkHandler.FlashlightMessage> onStatusReceived = FlashlightNetworkHandler.OnStatusReceived;
-			if (onStatusReceived != null)
-			{
-				onStatusReceived(msg);
-			}
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetLocalHub(out referenceHub))
-			{
-				return;
-			}
-			ItemBase itemBase;
-			if (!referenceHub.inventory.UserInventory.Items.TryGetValue(msg.Serial, out itemBase))
-			{
-				return;
-			}
-			ToggleableLightItemBase toggleableLightItemBase = itemBase as ToggleableLightItemBase;
-			if (toggleableLightItemBase == null)
-			{
-				return;
-			}
+			NetworkClient.Send(new FlashlightMessage(0, newState: false));
+		};
+	}
+
+	private static void RegisterHandlers()
+	{
+		AlreadyRequestedFirstimeSync.Clear();
+		ReceivedStatuses.Clear();
+		NetworkClient.ReplaceHandler<FlashlightMessage>(ClientProcessMessage);
+		NetworkServer.ReplaceHandler<FlashlightMessage>(ServerProcessMessage);
+	}
+
+	private static void ClientProcessMessage(FlashlightMessage msg)
+	{
+		ReceivedStatuses[msg.Serial] = msg.NewState;
+		FlashlightNetworkHandler.OnStatusReceived?.Invoke(msg);
+		if (ReferenceHub.TryGetLocalHub(out var hub) && hub.inventory.UserInventory.Items.TryGetValue(msg.Serial, out var value) && value is ToggleableLightItemBase toggleableLightItemBase)
+		{
 			toggleableLightItemBase.IsEmittingLight = msg.NewState;
 		}
+	}
 
-		private static void ServerProcessMessage(NetworkConnection conn, FlashlightNetworkHandler.FlashlightMessage msg)
+	private static void ServerProcessMessage(NetworkConnection conn, FlashlightMessage msg)
+	{
+		if (!ReferenceHub.TryGetHubNetID(conn.identity.netId, out var hub))
 		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(conn.identity.netId, out referenceHub))
+			return;
+		}
+		if (msg.Serial == 0)
+		{
+			ServerProcessFirstTimeRequest(conn);
+		}
+		if (hub.inventory.CurItem.SerialNumber == msg.Serial && hub.inventory.CurInstance is ToggleableLightItemBase toggleableLightItemBase)
+		{
+			bool newState = msg.NewState;
+			PlayerTogglingFlashlightEventArgs playerTogglingFlashlightEventArgs = new PlayerTogglingFlashlightEventArgs(hub, toggleableLightItemBase, newState);
+			PlayerEvents.OnTogglingFlashlight(playerTogglingFlashlightEventArgs);
+			if (playerTogglingFlashlightEventArgs.IsAllowed)
 			{
-				return;
-			}
-			if (msg.Serial == 0)
-			{
-				FlashlightNetworkHandler.ServerProcessFirstTimeRequest(conn);
-			}
-			if (referenceHub.inventory.CurItem.SerialNumber == msg.Serial)
-			{
-				ToggleableLightItemBase toggleableLightItemBase = referenceHub.inventory.CurInstance as ToggleableLightItemBase;
-				if (toggleableLightItemBase != null)
-				{
-					bool flag = msg.NewState;
-					PlayerTogglingFlashlightEventArgs playerTogglingFlashlightEventArgs = new PlayerTogglingFlashlightEventArgs(referenceHub, toggleableLightItemBase, flag);
-					PlayerEvents.OnTogglingFlashlight(playerTogglingFlashlightEventArgs);
-					if (!playerTogglingFlashlightEventArgs.IsAllowed)
-					{
-						return;
-					}
-					flag = playerTogglingFlashlightEventArgs.NewState;
-					toggleableLightItemBase.IsEmittingLight = flag;
-					new FlashlightNetworkHandler.FlashlightMessage(msg.Serial, flag).SendToAuthenticated(0);
-					PlayerEvents.OnToggledFlashlight(new PlayerToggledFlashlightEventArgs(referenceHub, toggleableLightItemBase, flag));
-					return;
-				}
+				newState = (toggleableLightItemBase.IsEmittingLight = playerTogglingFlashlightEventArgs.NewState);
+				new FlashlightMessage(msg.Serial, newState).SendToAuthenticated();
+				PlayerEvents.OnToggledFlashlight(new PlayerToggledFlashlightEventArgs(hub, toggleableLightItemBase, newState));
 			}
 		}
+	}
 
-		private static void ServerProcessFirstTimeRequest(NetworkConnection conn)
+	private static void ServerProcessFirstTimeRequest(NetworkConnection conn)
+	{
+		if (!AlreadyRequestedFirstimeSync.Add(conn.identity.netId))
 		{
-			if (!FlashlightNetworkHandler.AlreadyRequestedFirstimeSync.Add(conn.identity.netId))
+			return;
+		}
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (allHub.inventory.CurInstance is ToggleableLightItemBase toggleableLightItemBase && !(toggleableLightItemBase == null) && !toggleableLightItemBase.IsEmittingLight)
 			{
-				return;
-			}
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				ToggleableLightItemBase toggleableLightItemBase = referenceHub.inventory.CurInstance as ToggleableLightItemBase;
-				if (toggleableLightItemBase != null && !(toggleableLightItemBase == null) && !toggleableLightItemBase.IsEmittingLight)
-				{
-					conn.Send<FlashlightNetworkHandler.FlashlightMessage>(new FlashlightNetworkHandler.FlashlightMessage(referenceHub.inventory.CurItem.SerialNumber, false), 0);
-				}
+				conn.Send(new FlashlightMessage(allHub.inventory.CurItem.SerialNumber, newState: false));
 			}
 		}
+	}
 
-		public static void Serialize(this NetworkWriter writer, FlashlightNetworkHandler.FlashlightMessage value)
-		{
-			writer.WriteUShort(value.Serial);
-			writer.WriteBool(value.NewState);
-		}
+	public static void Serialize(this NetworkWriter writer, FlashlightMessage value)
+	{
+		writer.WriteUShort(value.Serial);
+		writer.WriteBool(value.NewState);
+	}
 
-		public static FlashlightNetworkHandler.FlashlightMessage Deserialize(this NetworkReader reader)
-		{
-			return new FlashlightNetworkHandler.FlashlightMessage(reader.ReadUShort(), reader.ReadBool());
-		}
-
-		private static readonly HashSet<uint> AlreadyRequestedFirstimeSync = new HashSet<uint>();
-
-		public static readonly Dictionary<ushort, bool> ReceivedStatuses = new Dictionary<ushort, bool>();
-
-		public readonly struct FlashlightMessage : NetworkMessage
-		{
-			public FlashlightMessage(ushort flashlightSerial, bool newState)
-			{
-				this.Serial = flashlightSerial;
-				this.NewState = newState;
-			}
-
-			public readonly ushort Serial;
-
-			public readonly bool NewState;
-		}
+	public static FlashlightMessage Deserialize(this NetworkReader reader)
+	{
+		return new FlashlightMessage(reader.ReadUShort(), reader.ReadBool());
 	}
 }

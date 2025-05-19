@@ -1,12 +1,10 @@
-﻿using System;
 using PlayerStatsSystem;
 
-namespace CustomPlayerEffects
-{
-	public interface IDamageModifierEffect
-	{
-		float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType);
+namespace CustomPlayerEffects;
 
-		bool DamageModifierActive { get; }
-	}
+public interface IDamageModifierEffect
+{
+	bool DamageModifierActive { get; }
+
+	float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType);
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using InventorySystem.GUI;
 using InventorySystem.Items.Pickups;
 using LabApi.Events.Arguments.PlayerEvents;
@@ -8,271 +7,239 @@ using Scp914;
 using UnityEngine;
 using VoiceChat.Playbacks;
 
-namespace InventorySystem.Items.Radio
+namespace InventorySystem.Items.Radio;
+
+public class RadioItem : ItemBase, IAcquisitionConfirmationTrigger, IItemDescription, IItemNametag, IUpgradeTrigger, IUniqueItem
 {
-	public class RadioItem : ItemBase, IAcquisitionConfirmationTrigger, IItemDescription, IItemNametag, IUpgradeTrigger, IUniqueItem
+	private const float DrainMultiplier = 0.5f;
+
+	public RadioRangeMode[] Ranges;
+
+	public AnimationCurve VoiceVolumeCurve;
+
+	public AnimationCurve NoiseLevelCurve;
+
+	private bool _enabled;
+
+	private float _battery;
+
+	private byte _lastSentBatteryLevel;
+
+	private byte _rangeId;
+
+	private static KeyCode _circleModeKey;
+
+	private static KeyCode _toggleKey;
+
+	public bool AcquisitionAlreadyReceived { get; set; }
+
+	public override float Weight => 1.7f;
+
+	public bool IsUsable
 	{
-		public bool AcquisitionAlreadyReceived { get; set; }
-
-		public override float Weight
+		get
 		{
-			get
+			if (_enabled)
 			{
-				return 1.7f;
+				return _battery > 0f;
+			}
+			return false;
+		}
+	}
+
+	public string Description => ItemTypeId.GetDescription();
+
+	public string Name => ItemTypeId.GetName();
+
+	public byte BatteryPercent
+	{
+		get
+		{
+			return (byte)Mathf.RoundToInt(_battery * 100f);
+		}
+		set
+		{
+			_battery = (float)(int)value / 100f;
+		}
+	}
+
+	public RadioMessages.RadioRangeLevel RangeLevel => (RadioMessages.RadioRangeLevel)(_enabled ? _rangeId : (-1));
+
+	public void ServerConfirmAcqusition()
+	{
+		SendStatusMessage();
+	}
+
+	public bool CompareIdentical(ItemBase other)
+	{
+		if (other is RadioItem radioItem && RangeLevel == radioItem.RangeLevel)
+		{
+			return BatteryPercent == radioItem.BatteryPercent;
+		}
+		return false;
+	}
+
+	public void ServerOnUpgraded(Scp914KnobSetting setting)
+	{
+		BatteryPercent = 100;
+		SendStatusMessage();
+	}
+
+	public override void OnAdded(ItemPickupBase ipb)
+	{
+		if (IsLocalPlayer)
+		{
+			_circleModeKey = NewInput.GetKey(ActionName.Shoot);
+			_toggleKey = NewInput.GetKey(ActionName.Zoom);
+		}
+		if (NetworkServer.active)
+		{
+			if (ipb is RadioPickup radioPickup)
+			{
+				_enabled = radioPickup.SavedEnabled;
+				_rangeId = radioPickup.SavedRange;
+				_battery = radioPickup.SavedBattery;
+			}
+			else
+			{
+				_enabled = true;
+				_battery = 1f;
+				_rangeId = 1;
 			}
 		}
+	}
 
-		public bool IsUsable
+	public override void OnRemoved(ItemPickupBase pickup)
+	{
+		if (NetworkServer.active && pickup is RadioPickup radioPickup)
 		{
-			get
+			radioPickup.NetworkSavedEnabled = _enabled;
+			radioPickup.NetworkSavedRange = _rangeId;
+			radioPickup.SavedBattery = _battery;
+		}
+	}
+
+	public override void OnEquipped()
+	{
+		if (NetworkServer.active)
+		{
+			SendStatusMessage();
+		}
+	}
+
+	public override void EquipUpdate()
+	{
+		if (IsLocalPlayer && InventoryGuiController.ItemsSafeForInteraction && !Cursor.visible)
+		{
+			if (Input.GetKeyDown(_circleModeKey) && _enabled)
 			{
-				return this._enabled && this._battery > 0f;
+				NetworkClient.Send(new ClientRadioCommandMessage(RadioMessages.RadioCommand.ChangeRange));
+			}
+			if (Input.GetKeyDown(_toggleKey))
+			{
+				NetworkClient.Send(new ClientRadioCommandMessage(_enabled ? RadioMessages.RadioCommand.Disable : RadioMessages.RadioCommand.Enable));
 			}
 		}
+	}
 
-		public string Description
+	public void ServerProcessCmd(RadioMessages.RadioCommand command)
+	{
+		if (base.Owner.HasBlock(BlockedInteraction.ItemUsage))
 		{
-			get
-			{
-				return this.ItemTypeId.GetDescription();
-			}
+			return;
 		}
-
-		public string Name
+		switch (command)
 		{
-			get
-			{
-				return this.ItemTypeId.GetName();
-			}
-		}
-
-		public byte BatteryPercent
+		case RadioMessages.RadioCommand.Enable:
 		{
-			get
-			{
-				return (byte)Mathf.RoundToInt(this._battery * 100f);
-			}
-			set
-			{
-				this._battery = (float)value / 100f;
-			}
-		}
-
-		public RadioMessages.RadioRangeLevel RangeLevel
-		{
-			get
-			{
-				return (RadioMessages.RadioRangeLevel)(this._enabled ? this._rangeId : ((byte)(-1)));
-			}
-		}
-
-		public void ServerConfirmAcqusition()
-		{
-			this.SendStatusMessage();
-		}
-
-		public bool CompareIdentical(ItemBase other)
-		{
-			RadioItem radioItem = other as RadioItem;
-			return radioItem != null && this.RangeLevel == radioItem.RangeLevel && this.BatteryPercent == radioItem.BatteryPercent;
-		}
-
-		public void ServerOnUpgraded(Scp914KnobSetting setting)
-		{
-			this.BatteryPercent = 100;
-			this.SendStatusMessage();
-		}
-
-		public override void OnAdded(ItemPickupBase ipb)
-		{
-			if (this.IsLocalPlayer)
-			{
-				RadioItem._circleModeKey = NewInput.GetKey(ActionName.Shoot, KeyCode.None);
-				RadioItem._toggleKey = NewInput.GetKey(ActionName.Zoom, KeyCode.None);
-			}
-			if (!NetworkServer.active)
+			if (_enabled || _battery <= 0f)
 			{
 				return;
 			}
-			RadioPickup radioPickup = ipb as RadioPickup;
-			if (radioPickup != null)
+			PlayerTogglingRadioEventArgs playerTogglingRadioEventArgs2 = new PlayerTogglingRadioEventArgs(base.Owner, this, newState: true);
+			PlayerEvents.OnTogglingRadio(playerTogglingRadioEventArgs2);
+			if (!playerTogglingRadioEventArgs2.IsAllowed)
 			{
-				this._enabled = radioPickup.SavedEnabled;
-				this._rangeId = radioPickup.SavedRange;
-				this._battery = radioPickup.SavedBattery;
 				return;
 			}
-			this._enabled = true;
-			this._battery = 1f;
-			this._rangeId = 1;
+			_enabled = true;
+			PlayerEvents.OnToggledRadio(new PlayerToggledRadioEventArgs(base.Owner, this, newState: true));
+			break;
 		}
-
-		public override void OnRemoved(ItemPickupBase pickup)
+		case RadioMessages.RadioCommand.Disable:
 		{
-			if (NetworkServer.active)
+			if (!_enabled)
 			{
-				RadioPickup radioPickup = pickup as RadioPickup;
-				if (radioPickup != null)
-				{
-					radioPickup.NetworkSavedEnabled = this._enabled;
-					radioPickup.NetworkSavedRange = this._rangeId;
-					radioPickup.SavedBattery = this._battery;
-				}
+				return;
 			}
+			PlayerTogglingRadioEventArgs playerTogglingRadioEventArgs = new PlayerTogglingRadioEventArgs(base.Owner, this, newState: false);
+			PlayerEvents.OnTogglingRadio(playerTogglingRadioEventArgs);
+			if (!playerTogglingRadioEventArgs.IsAllowed)
+			{
+				return;
+			}
+			_enabled = false;
+			PlayerEvents.OnToggledRadio(new PlayerToggledRadioEventArgs(base.Owner, this, newState: false));
+			break;
 		}
-
-		public override void OnEquipped()
+		case RadioMessages.RadioCommand.ChangeRange:
 		{
-			if (!NetworkServer.active)
+			byte b = (byte)(_rangeId + 1);
+			if (b >= Ranges.Length)
+			{
+				b = 0;
+			}
+			PlayerChangingRadioRangeEventArgs playerChangingRadioRangeEventArgs = new PlayerChangingRadioRangeEventArgs(base.Owner, this, (RadioMessages.RadioRangeLevel)b);
+			PlayerEvents.OnChangingRadioRange(playerChangingRadioRangeEventArgs);
+			if (!playerChangingRadioRangeEventArgs.IsAllowed)
 			{
 				return;
 			}
-			this.SendStatusMessage();
+			PlayerEvents.OnChangedRadioRange(new PlayerChangedRadioRangeEventArgs(range: (RadioMessages.RadioRangeLevel)(_rangeId = (byte)playerChangingRadioRangeEventArgs.Range), player: base.Owner, radio: this));
+			break;
 		}
+		}
+		SendStatusMessage();
+	}
 
-		public override void EquipUpdate()
+	public void UserReceiveInfo(RadioStatusMessage info)
+	{
+		if (IsLocalPlayer)
 		{
-			if (!this.IsLocalPlayer || !InventoryGuiController.ItemsSafeForInteraction || Cursor.visible)
-			{
-				return;
-			}
-			if (Input.GetKeyDown(RadioItem._circleModeKey) && this._enabled)
-			{
-				NetworkClient.Send<ClientRadioCommandMessage>(new ClientRadioCommandMessage(RadioMessages.RadioCommand.ChangeRange), 0);
-			}
-			if (Input.GetKeyDown(RadioItem._toggleKey))
-			{
-				NetworkClient.Send<ClientRadioCommandMessage>(new ClientRadioCommandMessage(this._enabled ? RadioMessages.RadioCommand.Disable : RadioMessages.RadioCommand.Enable), 0);
-			}
+			_enabled = info.Range != RadioMessages.RadioRangeLevel.RadioDisabled;
+			BatteryPercent = info.Battery;
 		}
+	}
 
-		public void ServerProcessCmd(RadioMessages.RadioCommand command)
+	private void Update()
+	{
+		if (!NetworkServer.active || !IsUsable)
 		{
-			if (base.Owner.HasBlock(BlockedInteraction.ItemUsage))
-			{
-				return;
-			}
-			switch (command)
-			{
-			case RadioMessages.RadioCommand.Enable:
-			{
-				if (this._enabled || this._battery <= 0f)
-				{
-					return;
-				}
-				PlayerTogglingRadioEventArgs playerTogglingRadioEventArgs = new PlayerTogglingRadioEventArgs(base.Owner, this, true);
-				PlayerEvents.OnTogglingRadio(playerTogglingRadioEventArgs);
-				if (!playerTogglingRadioEventArgs.IsAllowed)
-				{
-					return;
-				}
-				this._enabled = true;
-				PlayerEvents.OnToggledRadio(new PlayerToggledRadioEventArgs(base.Owner, this, true));
-				break;
-			}
-			case RadioMessages.RadioCommand.Disable:
-			{
-				if (!this._enabled)
-				{
-					return;
-				}
-				PlayerTogglingRadioEventArgs playerTogglingRadioEventArgs2 = new PlayerTogglingRadioEventArgs(base.Owner, this, false);
-				PlayerEvents.OnTogglingRadio(playerTogglingRadioEventArgs2);
-				if (!playerTogglingRadioEventArgs2.IsAllowed)
-				{
-					return;
-				}
-				this._enabled = false;
-				PlayerEvents.OnToggledRadio(new PlayerToggledRadioEventArgs(base.Owner, this, false));
-				break;
-			}
-			case RadioMessages.RadioCommand.ChangeRange:
-			{
-				byte b = this._rangeId + 1;
-				if ((int)b >= this.Ranges.Length)
-				{
-					b = 0;
-				}
-				PlayerChangingRadioRangeEventArgs playerChangingRadioRangeEventArgs = new PlayerChangingRadioRangeEventArgs(base.Owner, this, (RadioMessages.RadioRangeLevel)b);
-				PlayerEvents.OnChangingRadioRange(playerChangingRadioRangeEventArgs);
-				if (!playerChangingRadioRangeEventArgs.IsAllowed)
-				{
-					return;
-				}
-				b = (byte)playerChangingRadioRangeEventArgs.Range;
-				this._rangeId = b;
-				PlayerEvents.OnChangedRadioRange(new PlayerChangedRadioRangeEventArgs(base.Owner, this, (RadioMessages.RadioRangeLevel)b));
-				break;
-			}
-			}
-			this.SendStatusMessage();
+			return;
 		}
-
-		public void UserReceiveInfo(RadioStatusMessage info)
+		float num = (PersonalRadioPlayback.IsTransmitting(base.Owner) ? ((float)Ranges[_rangeId].MinuteCostWhenTalking) : Ranges[_rangeId].MinuteCostWhenIdle);
+		float drain = Time.deltaTime * 0.5f * (num / 60f / 100f);
+		PlayerUsingRadioEventArgs playerUsingRadioEventArgs = new PlayerUsingRadioEventArgs(base.Owner, this, drain);
+		PlayerEvents.OnUsingRadio(playerUsingRadioEventArgs);
+		if (playerUsingRadioEventArgs.IsAllowed)
 		{
-			if (!this.IsLocalPlayer)
+			drain = playerUsingRadioEventArgs.Drain;
+			_battery = Mathf.Clamp01(_battery - drain);
+			if (_battery == 0f)
 			{
-				return;
+				_enabled = false;
 			}
-			this._enabled = info.Range != RadioMessages.RadioRangeLevel.RadioDisabled;
-			this.BatteryPercent = info.Battery;
+			if (Mathf.Abs(_lastSentBatteryLevel - BatteryPercent) >= 1 && base.OwnerInventory.CurItem.TypeId == ItemType.Radio)
+			{
+				SendStatusMessage();
+			}
+			PlayerEvents.OnUsedRadio(new PlayerUsedRadioEventArgs(base.Owner, this, drain));
 		}
+	}
 
-		private void Update()
-		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			if (!this.IsUsable)
-			{
-				return;
-			}
-			float num = (PersonalRadioPlayback.IsTransmitting(base.Owner) ? ((float)this.Ranges[(int)this._rangeId].MinuteCostWhenTalking) : this.Ranges[(int)this._rangeId].MinuteCostWhenIdle);
-			float num2 = Time.deltaTime * 0.5f * (num / 60f / 100f);
-			PlayerUsingRadioEventArgs playerUsingRadioEventArgs = new PlayerUsingRadioEventArgs(base.Owner, this, num2);
-			PlayerEvents.OnUsingRadio(playerUsingRadioEventArgs);
-			if (!playerUsingRadioEventArgs.IsAllowed)
-			{
-				return;
-			}
-			num2 = playerUsingRadioEventArgs.Drain;
-			this._battery = Mathf.Clamp01(this._battery - num2);
-			if (this._battery == 0f)
-			{
-				this._enabled = false;
-			}
-			if (Mathf.Abs((int)(this._lastSentBatteryLevel - this.BatteryPercent)) >= 1 && base.OwnerInventory.CurItem.TypeId == ItemType.Radio)
-			{
-				this.SendStatusMessage();
-			}
-			PlayerEvents.OnUsedRadio(new PlayerUsedRadioEventArgs(base.Owner, this, num2));
-		}
-
-		private void SendStatusMessage()
-		{
-			this._lastSentBatteryLevel = this.BatteryPercent;
-			NetworkServer.SendToReady<RadioStatusMessage>(new RadioStatusMessage(this), 0);
-		}
-
-		private const float DrainMultiplier = 0.5f;
-
-		public RadioRangeMode[] Ranges;
-
-		public AnimationCurve VoiceVolumeCurve;
-
-		public AnimationCurve NoiseLevelCurve;
-
-		private bool _enabled;
-
-		private float _battery;
-
-		private byte _lastSentBatteryLevel;
-
-		private byte _rangeId;
-
-		private static KeyCode _circleModeKey;
-
-		private static KeyCode _toggleKey;
+	private void SendStatusMessage()
+	{
+		_lastSentBatteryLevel = BatteryPercent;
+		NetworkServer.SendToReady(new RadioStatusMessage(this));
 	}
 }

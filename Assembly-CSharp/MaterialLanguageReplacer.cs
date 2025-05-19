@@ -1,17 +1,16 @@
-﻿using System;
 using UnityEngine;
 
 public class MaterialLanguageReplacer : MonoBehaviour
 {
+	public Material englishVersion;
+
 	private void Start()
 	{
-		base.GetComponent<Renderer>().material = this.englishVersion;
+		GetComponent<Renderer>().material = englishVersion;
 	}
 
 	private void OnDestroy()
 	{
-		global::UnityEngine.Object.Destroy(base.GetComponent<Renderer>().material);
+		Object.Destroy(GetComponent<Renderer>().material);
 	}
-
-	public Material englishVersion;
 }

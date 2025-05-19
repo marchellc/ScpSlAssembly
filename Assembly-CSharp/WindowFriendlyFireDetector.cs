@@ -1,8 +1,11 @@
-﻿using System;
 using UnityEngine;
 
 internal class WindowFriendlyFireDetector : FriendlyFireDetector
 {
+	private const string Detector = "Window";
+
+	private float _lastReset = Time.unscaledTime;
+
 	internal WindowFriendlyFireDetector(ReferenceHub hub)
 		: base(hub)
 	{
@@ -10,19 +13,19 @@ internal class WindowFriendlyFireDetector : FriendlyFireDetector
 
 	public override bool RegisterDamage(float damage)
 	{
-		if (!FriendlyFireConfig.WindowEnabled || this._triggered)
+		if (!FriendlyFireConfig.WindowEnabled || _triggered)
 		{
 			return false;
 		}
-		if (Time.unscaledTime > this._lastReset + FriendlyFireConfig.Window)
+		if (Time.unscaledTime > _lastReset + (float)FriendlyFireConfig.Window)
 		{
-			this.Reset();
-			this._lastReset = Time.unscaledTime;
+			Reset();
+			_lastReset = Time.unscaledTime;
 		}
 		base.RegisterDamage(damage);
-		if (FriendlyFireConfig.WindowDamageThreshold > 0U && base.Damage >= FriendlyFireConfig.WindowDamageThreshold)
+		if (FriendlyFireConfig.WindowDamageThreshold != 0 && base.Damage >= (float)FriendlyFireConfig.WindowDamageThreshold)
 		{
-			base.TakeAction(ref FriendlyFireConfig.WindowAction, "Window", ref FriendlyFireConfig.WindowBanTime, ref FriendlyFireConfig.WindowBanReason, ref FriendlyFireConfig.WindowKillReason, ref FriendlyFireConfig.WindowAdminMessage, ref FriendlyFireConfig.WindowBroadcastMessage, ref FriendlyFireConfig.WindowWebhook);
+			TakeAction(ref FriendlyFireConfig.WindowAction, "Window", ref FriendlyFireConfig.WindowBanTime, ref FriendlyFireConfig.WindowBanReason, ref FriendlyFireConfig.WindowKillReason, ref FriendlyFireConfig.WindowAdminMessage, ref FriendlyFireConfig.WindowBroadcastMessage, ref FriendlyFireConfig.WindowWebhook);
 			return true;
 		}
 		return false;
@@ -30,25 +33,21 @@ internal class WindowFriendlyFireDetector : FriendlyFireDetector
 
 	public override bool RegisterKill()
 	{
-		if (!FriendlyFireConfig.WindowEnabled || this._triggered)
+		if (!FriendlyFireConfig.WindowEnabled || _triggered)
 		{
 			return false;
 		}
-		if (Time.unscaledTime > this._lastReset + FriendlyFireConfig.Window)
+		if (Time.unscaledTime > _lastReset + (float)FriendlyFireConfig.Window)
 		{
-			this.Reset();
-			this._lastReset = Time.unscaledTime;
+			Reset();
+			_lastReset = Time.unscaledTime;
 		}
 		base.RegisterKill();
-		if (FriendlyFireConfig.WindowKillThreshold > 0U && base.Kills >= FriendlyFireConfig.WindowKillThreshold)
+		if (FriendlyFireConfig.WindowKillThreshold != 0 && base.Kills >= FriendlyFireConfig.WindowKillThreshold)
 		{
-			base.TakeAction(ref FriendlyFireConfig.WindowAction, "Window", ref FriendlyFireConfig.WindowBanTime, ref FriendlyFireConfig.WindowBanReason, ref FriendlyFireConfig.WindowKillReason, ref FriendlyFireConfig.WindowAdminMessage, ref FriendlyFireConfig.WindowBroadcastMessage, ref FriendlyFireConfig.WindowWebhook);
+			TakeAction(ref FriendlyFireConfig.WindowAction, "Window", ref FriendlyFireConfig.WindowBanTime, ref FriendlyFireConfig.WindowBanReason, ref FriendlyFireConfig.WindowKillReason, ref FriendlyFireConfig.WindowAdminMessage, ref FriendlyFireConfig.WindowBroadcastMessage, ref FriendlyFireConfig.WindowWebhook);
 			return true;
 		}
 		return false;
 	}
-
-	private const string Detector = "Window";
-
-	private float _lastReset = Time.unscaledTime;
 }

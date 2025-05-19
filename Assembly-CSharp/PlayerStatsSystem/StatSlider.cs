@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+using System;
 using PlayerRoles;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,147 +6,120 @@ using UserSettings;
 using UserSettings.GUIElements;
 using UserSettings.UserInterfaceSettings;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public class StatSlider : MonoBehaviour
 {
-	public class StatSlider : MonoBehaviour
+	private enum DisplayExactMode
 	{
-		public string CustomSuffix
-		{
-			get
-			{
-				return this._suffix;
-			}
-			set
-			{
-				this._suffix = (string.IsNullOrEmpty(value) ? this._originalSuffix : value);
-			}
-		}
+		PreferenceBased,
+		AlwaysExact,
+		AlwaysPercent,
+		ValueHidden
+	}
 
-		public void ForceUpdate()
-		{
-			StatBase statBase;
-			if (this.TryGetModule(out statBase))
-			{
-				this._currentValue = statBase.CurValue;
-			}
-			this._targetSlider.value = this._currentValue;
-		}
+	[SerializeField]
+	private string _statTypeName;
 
-		public bool TryGetModule(out StatBase sb)
-		{
-			sb = null;
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetLocalHub(out referenceHub))
-			{
-				return false;
-			}
-			IHealthbarRole healthbarRole = referenceHub.roleManager.CurrentRole as IHealthbarRole;
-			if (healthbarRole == null)
-			{
-				return false;
-			}
-			if (healthbarRole.TargetStats == null)
-			{
-				return false;
-			}
-			int num;
-			if (!this.TryGetTypeId(out num))
-			{
-				return false;
-			}
-			sb = healthbarRole.TargetStats.StatModules[num];
-			return true;
-		}
+	[SerializeField]
+	private float _lerpSpeed;
 
-		public bool TryGetTypeId(out int val)
+	[SerializeField]
+	private float _snapValueSkip;
+
+	[SerializeField]
+	private DisplayExactMode _displayExactMode;
+
+	[SerializeField]
+	private LinkableEnum _preferenceKey;
+
+	[SerializeField]
+	private string _suffix;
+
+	[SerializeField]
+	private Text _targetText;
+
+	[SerializeField]
+	private Slider _targetSlider;
+
+	[SerializeField]
+	private int _roundingAccuracy;
+
+	private float _currentValue;
+
+	private int _lastDisplayedValue = -1;
+
+	private string _originalSuffix;
+
+	private int? _cachedTypeId;
+
+	private const float AbsoluteMoveRatio = 0.04f;
+
+	public string CustomSuffix
+	{
+		get
 		{
-			if (this._cachedTypeId != null)
-			{
-				val = this._cachedTypeId.Value;
-				return true;
-			}
-			val = -1;
-			Type[] definedModules = PlayerStats.DefinedModules;
-			for (int i = 0; i < definedModules.Length; i++)
-			{
-				if (!(definedModules[i].Name != this._statTypeName))
-				{
-					val = i;
-					this._cachedTypeId = new int?(i);
-					return true;
-				}
-			}
-			StatSlider.<TryGetTypeId>g__WarnOnMissingModule|19_0(this._statTypeName, definedModules);
+			return _suffix;
+		}
+		set
+		{
+			_suffix = (string.IsNullOrEmpty(value) ? _originalSuffix : value);
+		}
+	}
+
+	public void ForceUpdate()
+	{
+		if (TryGetModule(out var sb))
+		{
+			_currentValue = sb.CurValue;
+		}
+		_targetSlider.value = _currentValue;
+	}
+
+	public bool TryGetModule(out StatBase sb)
+	{
+		sb = null;
+		if (!ReferenceHub.TryGetLocalHub(out var hub))
+		{
 			return false;
 		}
-
-		private void Awake()
+		if (!(hub.roleManager.CurrentRole is IHealthbarRole healthbarRole))
 		{
-			this._originalSuffix = this._suffix;
-			if (this._displayExactMode != StatSlider.DisplayExactMode.PreferenceBased)
-			{
-				return;
-			}
-			this.UpdateDisplayMode(UserSetting<bool>.Get<UISetting>(UISetting.HealthbarMode));
-			UserSetting<bool>.AddListener<UISetting>(UISetting.HealthbarMode, new Action<bool>(this.UpdateDisplayMode));
+			return false;
 		}
-
-		private void OnDestroy()
+		if (healthbarRole.TargetStats == null)
 		{
-			UserSetting<bool>.RemoveListener<UISetting>(UISetting.HealthbarMode, new Action<bool>(this.UpdateDisplayMode));
+			return false;
 		}
-
-		private void UpdateDisplayMode(bool isPercent)
+		if (!TryGetTypeId(out var val))
 		{
-			this._displayExactMode = (isPercent ? StatSlider.DisplayExactMode.AlwaysPercent : StatSlider.DisplayExactMode.AlwaysExact);
+			return false;
 		}
+		sb = healthbarRole.TargetStats.StatModules[val];
+		return true;
+	}
 
-		private void Update()
+	public bool TryGetTypeId(out int val)
+	{
+		if (_cachedTypeId.HasValue)
 		{
-			StatBase statBase;
-			if (!this.TryGetModule(out statBase))
-			{
-				return;
-			}
-			this.UpdateSlider(statBase);
-			this.UpdateText(statBase);
+			val = _cachedTypeId.Value;
+			return true;
 		}
-
-		private void UpdateSlider(StatBase stat)
+		val = -1;
+		Type[] definedModules = PlayerStats.DefinedModules;
+		for (int i = 0; i < definedModules.Length; i++)
 		{
-			this._targetSlider.minValue = stat.MinValue;
-			this._targetSlider.maxValue = stat.MaxValue;
-			float num = Mathf.Abs(stat.CurValue - this._currentValue);
-			if (num > this._snapValueSkip)
+			if (!(definedModules[i].Name != _statTypeName))
 			{
-				this._currentValue = stat.CurValue;
+				val = i;
+				_cachedTypeId = i;
+				return true;
 			}
-			else
-			{
-				float num2 = Mathf.Max(this._lerpSpeed * num, (stat.MaxValue - stat.MinValue) * 0.04f);
-				this._currentValue = Mathf.MoveTowards(this._currentValue, stat.CurValue, num2 * Time.deltaTime);
-			}
-			this._targetSlider.value = this._currentValue;
 		}
-
-		private void UpdateText(StatBase stat)
-		{
-			if (this._displayExactMode == StatSlider.DisplayExactMode.ValueHidden)
-			{
-				return;
-			}
-			bool flag = this._displayExactMode == StatSlider.DisplayExactMode.AlwaysExact;
-			int num = Mathf.CeilToInt((flag ? stat.CurValue : ((float)Mathf.CeilToInt(stat.NormalizedValue * 100f))) * (float)this._roundingAccuracy) / this._roundingAccuracy;
-			if (num == this._lastDisplayedValue)
-			{
-				return;
-			}
-			this._targetText.text = num.ToString() + (flag ? this._suffix : "%");
-			this._lastDisplayedValue = num;
-		}
-
-		[CompilerGenerated]
-		internal static void <TryGetTypeId>g__WarnOnMissingModule|19_0(string typeName, Type[] types)
+		WarnOnMissingModule(_statTypeName, definedModules);
+		return false;
+		static void WarnOnMissingModule(string typeName, Type[] types)
 		{
 			string text = "Type \"" + typeName + "\" is not defined as a stat module. Available Modules:\n";
 			foreach (Type type in types)
@@ -157,50 +129,71 @@ namespace PlayerStatsSystem
 			text += "\nYou can add new modules at PlayerStats.StatModules.";
 			Debug.LogError(text);
 		}
+	}
 
-		[SerializeField]
-		private string _statTypeName;
-
-		[SerializeField]
-		private float _lerpSpeed;
-
-		[SerializeField]
-		private float _snapValueSkip;
-
-		[SerializeField]
-		private StatSlider.DisplayExactMode _displayExactMode;
-
-		[SerializeField]
-		private LinkableEnum _preferenceKey;
-
-		[SerializeField]
-		private string _suffix;
-
-		[SerializeField]
-		private Text _targetText;
-
-		[SerializeField]
-		private Slider _targetSlider;
-
-		[SerializeField]
-		private int _roundingAccuracy;
-
-		private float _currentValue;
-
-		private int _lastDisplayedValue = -1;
-
-		private string _originalSuffix;
-
-		private int? _cachedTypeId;
-
-		private const float AbsoluteMoveRatio = 0.04f;
-
-		private enum DisplayExactMode
+	private void Awake()
+	{
+		_originalSuffix = _suffix;
+		if (_displayExactMode == DisplayExactMode.PreferenceBased)
 		{
-			PreferenceBased,
-			AlwaysExact,
-			AlwaysPercent,
-			ValueHidden
+			UpdateDisplayMode(UserSetting<bool>.Get(UISetting.HealthbarMode));
+			UserSetting<bool>.AddListener(UISetting.HealthbarMode, UpdateDisplayMode);
+		}
+	}
+
+	private void OnDestroy()
+	{
+		UserSetting<bool>.RemoveListener(UISetting.HealthbarMode, UpdateDisplayMode);
+	}
+
+	private void UpdateDisplayMode(bool isPercent)
+	{
+		_displayExactMode = ((!isPercent) ? DisplayExactMode.AlwaysExact : DisplayExactMode.AlwaysPercent);
+	}
+
+	private void Update()
+	{
+		if (TryGetModule(out var sb))
+		{
+			UpdateSlider(sb);
+			UpdateText(sb);
+		}
+	}
+
+	private void UpdateSlider(StatBase stat)
+	{
+		float curValue = stat.CurValue;
+		float minValue = stat.MinValue;
+		float maxValue = stat.MaxValue;
+		if (maxValue > minValue)
+		{
+			_targetSlider.minValue = stat.MinValue;
+			_targetSlider.maxValue = stat.MaxValue;
+		}
+		float num = Mathf.Abs(curValue - _currentValue);
+		if (num > _snapValueSkip)
+		{
+			_currentValue = curValue;
+		}
+		else
+		{
+			float num2 = Mathf.Max(_lerpSpeed * num, (maxValue - minValue) * 0.04f);
+			_currentValue = Mathf.MoveTowards(_currentValue, curValue, num2 * Time.deltaTime);
+		}
+		_targetSlider.value = _currentValue;
+	}
+
+	private void UpdateText(StatBase stat)
+	{
+		if (_displayExactMode != DisplayExactMode.ValueHidden)
+		{
+			bool flag = _displayExactMode == DisplayExactMode.AlwaysExact;
+			int num = Mathf.CeilToInt((flag ? stat.CurValue : ((float)Mathf.CeilToInt(stat.NormalizedValue * 100f))) * (float)_roundingAccuracy) / _roundingAccuracy;
+			if (num != _lastDisplayedValue)
+			{
+				_targetText.text = num + (flag ? _suffix : "%");
+				_lastDisplayedValue = num;
+			}
 		}
 	}
 }

@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace Subtitles
+namespace Subtitles;
+
+public class SubtitleController : MonoBehaviour
 {
-	public class SubtitleController : MonoBehaviour
-	{
-	}
 }

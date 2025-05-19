@@ -1,25 +1,34 @@
-﻿using System;
+using System;
+using System.Globalization;
 using Mirror;
 
-namespace Hints
+namespace Hints;
+
+public class FloatHintParameter : FormattablePrimitiveHintParameter<float>
 {
-	public class FloatHintParameter : FormattablePrimitiveHintParameter<float>
+	public static FloatHintParameter FromNetwork(NetworkReader reader)
 	{
-		public static FloatHintParameter FromNetwork(NetworkReader reader)
-		{
-			FloatHintParameter floatHintParameter = new FloatHintParameter();
-			floatHintParameter.Deserialize(reader);
-			return floatHintParameter;
-		}
+		FloatHintParameter floatHintParameter = new FloatHintParameter();
+		floatHintParameter.Deserialize(reader);
+		return floatHintParameter;
+	}
 
-		protected FloatHintParameter()
-			: base(new Func<NetworkReader, float>(NetworkReaderExtensions.ReadFloat), new Action<NetworkWriter, float>(NetworkWriterExtensions.WriteFloat))
+	private static string FormatFloat(float value, string format)
+	{
+		if (format != null)
 		{
+			return value.ToString(format, CultureInfo.CurrentCulture);
 		}
+		return value.ToString(CultureInfo.CurrentCulture);
+	}
 
-		public FloatHintParameter(float value, string format)
-			: base(value, format, new Func<NetworkReader, float>(NetworkReaderExtensions.ReadFloat), new Action<NetworkWriter, float>(NetworkWriterExtensions.WriteFloat))
-		{
-		}
+	protected FloatHintParameter()
+		: base((Func<float, string, string>)FormatFloat, (Func<NetworkReader, float>)NetworkReaderExtensions.ReadFloat, (Action<NetworkWriter, float>)NetworkWriterExtensions.WriteFloat)
+	{
+	}
+
+	public FloatHintParameter(float value, string format)
+		: base(value, format, (Func<float, string, string>)FormatFloat, (Func<NetworkReader, float>)NetworkReaderExtensions.ReadFloat, (Action<NetworkWriter, float>)NetworkWriterExtensions.WriteFloat)
+	{
 	}
 }

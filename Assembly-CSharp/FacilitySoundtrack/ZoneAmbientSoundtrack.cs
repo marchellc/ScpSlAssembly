@@ -1,70 +1,57 @@
-﻿using System;
+using System;
 using MapGeneration;
 using UnityEngine;
 
-namespace FacilitySoundtrack
+namespace FacilitySoundtrack;
+
+public class ZoneAmbientSoundtrack : SoundtrackLayerBase
 {
-	public class ZoneAmbientSoundtrack : SoundtrackLayerBase
+	[Serializable]
+	private class ZoneSoundtrack
 	{
-		public override bool Additive
+		public FacilityZone TargetZone;
+
+		public AudioSource Source;
+
+		public float VolumeScale;
+
+		public float CrossfadeVolume { get; set; }
+	}
+
+	[SerializeField]
+	private float _fadeInSpeed;
+
+	[SerializeField]
+	private float _fadeOutSpeed;
+
+	[SerializeField]
+	private float _crossfadeSpeed;
+
+	[SerializeField]
+	private ZoneSoundtrack[] _zoneSoundtracks;
+
+	private float _weight;
+
+	private FacilityZone _lastZone;
+
+	public override bool Additive => true;
+
+	public override float Weight => _weight;
+
+	public override void UpdateVolume(float masterScale)
+	{
+		if (MainCameraController.LastPosition.TryGetRoom(out var room))
 		{
-			get
-			{
-				return true;
-			}
+			_lastZone = room.Zone;
 		}
-
-		public override float Weight
+		float num = (base.IsPovMuted ? (0f - _fadeOutSpeed) : _fadeInSpeed);
+		_weight = Mathf.Clamp01(_weight + num * Time.deltaTime);
+		ZoneSoundtrack[] zoneSoundtracks = _zoneSoundtracks;
+		foreach (ZoneSoundtrack zoneSoundtrack in zoneSoundtracks)
 		{
-			get
-			{
-				return this._weight;
-			}
-		}
-
-		public override void UpdateVolume(float masterScale)
-		{
-			RoomIdentifier roomIdentifier = RoomUtils.RoomAtPosition(MainCameraController.CurrentCamera.position);
-			if (roomIdentifier != null)
-			{
-				this._lastZone = roomIdentifier.Zone;
-			}
-			float num = (base.IsPovMuted ? (-this._fadeOutSpeed) : this._fadeInSpeed);
-			this._weight = Mathf.Clamp01(this._weight + num * Time.deltaTime);
-			foreach (ZoneAmbientSoundtrack.ZoneSoundtrack zoneSoundtrack in this._zoneSoundtracks)
-			{
-				float num2 = (float)((zoneSoundtrack.TargetZone == this._lastZone) ? 1 : 0);
-				zoneSoundtrack.CrossfadeVolume = Mathf.MoveTowards(zoneSoundtrack.CrossfadeVolume, num2, this._crossfadeSpeed * Time.deltaTime);
-				zoneSoundtrack.Source.volume = zoneSoundtrack.CrossfadeVolume * zoneSoundtrack.VolumeScale * masterScale;
-			}
-		}
-
-		[SerializeField]
-		private float _fadeInSpeed;
-
-		[SerializeField]
-		private float _fadeOutSpeed;
-
-		[SerializeField]
-		private float _crossfadeSpeed;
-
-		[SerializeField]
-		private ZoneAmbientSoundtrack.ZoneSoundtrack[] _zoneSoundtracks;
-
-		private float _weight;
-
-		private FacilityZone _lastZone;
-
-		[Serializable]
-		private class ZoneSoundtrack
-		{
-			public float CrossfadeVolume { get; set; }
-
-			public FacilityZone TargetZone;
-
-			public AudioSource Source;
-
-			public float VolumeScale;
+			float target = ((zoneSoundtrack.TargetZone == _lastZone) ? 1 : 0);
+			zoneSoundtrack.CrossfadeVolume = Mathf.MoveTowards(zoneSoundtrack.CrossfadeVolume, target, _crossfadeSpeed * Time.deltaTime);
+			zoneSoundtrack.Source.volume = zoneSoundtrack.CrossfadeVolume * zoneSoundtrack.VolumeScale * masterScale;
 		}
 	}
 }

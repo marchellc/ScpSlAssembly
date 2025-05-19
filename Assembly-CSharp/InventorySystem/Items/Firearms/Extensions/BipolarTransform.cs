@@ -1,38 +1,36 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+[Serializable]
+public class BipolarTransform
 {
-	[Serializable]
-	public class BipolarTransform
+	public Transform TargetTransform;
+
+	[Space(15f)]
+	public Offset TruePole;
+
+	public Offset FalsePole;
+
+	private bool _polarity;
+
+	public bool Polarity
 	{
-		public bool Polarity
+		get
 		{
-			get
+			return _polarity;
+		}
+		set
+		{
+			if (_polarity != value)
 			{
-				return this._polarity;
-			}
-			set
-			{
-				if (this._polarity == value)
-				{
-					return;
-				}
-				this._polarity = value;
-				Offset offset = (value ? this.TruePole : this.FalsePole);
-				Quaternion quaternion = Quaternion.Euler(offset.rotation);
-				this.TargetTransform.localScale = offset.scale;
-				this.TargetTransform.SetLocalPositionAndRotation(offset.position, quaternion);
+				_polarity = value;
+				Offset offset = (value ? TruePole : FalsePole);
+				Quaternion localRotation = Quaternion.Euler(offset.rotation);
+				TargetTransform.localScale = offset.scale;
+				TargetTransform.SetLocalPositionAndRotation(offset.position, localRotation);
 			}
 		}
-
-		public Transform TargetTransform;
-
-		[Space(15f)]
-		public Offset TruePole;
-
-		public Offset FalsePole;
-
-		private bool _polarity;
 	}
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Interactables.Verification;
 using InventorySystem.Items;
@@ -8,190 +8,157 @@ using PlayerRoles;
 using UnityEngine;
 using Utils.NonAllocLINQ;
 
-namespace Interactables
+namespace Interactables;
+
+public class InteractionCoordinator : NetworkBehaviour
 {
-	public class InteractionCoordinator : NetworkBehaviour
+	public static KeyCode InteractKey;
+
+	public static RaycastHit LastRaycastHit;
+
+	public static LayerMask InteractRaycastMask;
+
+	private readonly HashSet<IInteractionBlocker> _blockers = new HashSet<IInteractionBlocker>();
+
+	private ReferenceHub _hub;
+
+	public static event Action<InteractableCollider> OnClientInteracted;
+
+	public void AddBlocker(IInteractionBlocker blocker)
 	{
-		public static event Action<InteractableCollider> OnClientInteracted;
+		_blockers.Add(blocker);
+	}
 
-		public void AddBlocker(IInteractionBlocker blocker)
+	public bool RemoveBlocker(IInteractionBlocker blocker)
+	{
+		return _blockers.Remove(blocker);
+	}
+
+	public bool AnyBlocker(BlockedInteraction interactions)
+	{
+		return AnyBlocker((IInteractionBlocker x) => x.BlockedInteractions.HasFlagFast(interactions));
+	}
+
+	public bool AnyBlocker(Func<IInteractionBlocker, bool> func)
+	{
+		_blockers.RemoveWhere((IInteractionBlocker x) => (x is UnityEngine.Object @object && @object == null) || (x?.CanBeCleared ?? true));
+		return _blockers.Any(func);
+	}
+
+	private void Start()
+	{
+		if (base.isLocalPlayer || NetworkServer.active)
 		{
-			this._blockers.Add(blocker);
+			_hub = ReferenceHub.GetHub(base.gameObject);
 		}
-
-		public bool AnyBlocker(BlockedInteraction interactions)
+		if (base.isLocalPlayer)
 		{
-			return this.AnyBlocker((IInteractionBlocker x) => x.BlockedInteractions.HasFlagFast(interactions));
+			CenterScreenRaycast.OnCenterRaycastHit += OnCenterScreenRaycast;
+			InteractKey = NewInput.GetKey(ActionName.Interact);
+			NewInput.OnKeyModified += OnKeyModified;
+			InteractRaycastMask = LayerMask.GetMask("Default", "Player", "InteractableNoPlayerCollision", "Hitbox", "Glass", "Door", "Fence");
 		}
+	}
 
-		public bool AnyBlocker(Func<IInteractionBlocker, bool> func)
+	private void OnDestroy()
+	{
+		NewInput.OnKeyModified -= OnKeyModified;
+		CenterScreenRaycast.OnCenterRaycastHit -= OnCenterScreenRaycast;
+	}
+
+	private void OnKeyModified(ActionName actionName, KeyCode keyCode)
+	{
+		if (actionName == ActionName.Interact)
 		{
-			this._blockers.RemoveWhere(delegate(IInteractionBlocker x)
-			{
-				global::UnityEngine.Object @object = x as global::UnityEngine.Object;
-				return (@object != null && @object == null) || x == null || x.CanBeCleared;
-			});
-			return this._blockers.Any(func);
+			InteractKey = keyCode;
 		}
+	}
 
-		private void Start()
+	private void ClientInteract()
+	{
+		if (!_hub.IsAlive() || !NetworkClient.ready)
 		{
-			if (base.isLocalPlayer || NetworkServer.active)
-			{
-				this._hub = ReferenceHub.GetHub(base.gameObject);
-			}
-			if (!base.isLocalPlayer)
+			return;
+		}
+		if (!LastRaycastHit.collider.TryGetComponent<InteractableCollider>(out var component))
+		{
+			Transform parent = LastRaycastHit.collider.transform.parent;
+			if (parent == null || !parent.TryGetComponent<InteractableCollider>(out component))
 			{
 				return;
 			}
-			CenterScreenRaycast.OnCenterRaycastHit += this.OnCenterScreenRaycast;
-			InteractionCoordinator.InteractKey = NewInput.GetKey(ActionName.Interact, KeyCode.None);
-			NewInput.OnKeyModified += this.OnKeyModified;
-			InteractionCoordinator.InteractRaycastMask = LayerMask.GetMask(new string[] { "Default", "Player", "InteractableNoPlayerCollision", "Hitbox", "Glass", "Door" });
 		}
-
-		private void OnDestroy()
+		if (component.Target is IInteractable interactable && !(component.Target == null) && GetSafeRule(interactable).ClientCanInteract(component, LastRaycastHit))
 		{
-			NewInput.OnKeyModified -= this.OnKeyModified;
-			CenterScreenRaycast.OnCenterRaycastHit -= this.OnCenterScreenRaycast;
+			if (interactable is IClientInteractable clientInteractable)
+			{
+				clientInteractable.ClientInteract(component);
+			}
+			InteractionCoordinator.OnClientInteracted?.Invoke(component);
+			if (component.Target is NetworkBehaviour networkBehaviour)
+			{
+				CmdServerInteract(networkBehaviour.netIdentity, component.ColliderId);
+			}
 		}
+	}
 
-		private void OnKeyModified(ActionName actionName, KeyCode keyCode)
+	private static IVerificationRule GetSafeRule(IInteractable inter)
+	{
+		return inter.VerificationRule ?? StandardDistanceVerification.Default;
+	}
+
+	[Command(channel = 4)]
+	private void CmdServerInteract(NetworkIdentity targetInteractable, byte colId)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteNetworkIdentity(targetInteractable);
+		NetworkWriterExtensions.WriteByte(writer, colId);
+		SendCommandInternal("System.Void Interactables.InteractionCoordinator::CmdServerInteract(Mirror.NetworkIdentity,System.Byte)", -1093998769, writer, 4);
+		NetworkWriterPool.Return(writer);
+	}
+
+	private void OnCenterScreenRaycast(RaycastHit hit)
+	{
+		if (base.isLocalPlayer)
 		{
-			if (actionName != ActionName.Interact)
+			LastRaycastHit = hit;
+			if (Input.GetKeyDown(InteractKey))
 			{
-				return;
+				ClientInteract();
 			}
-			InteractionCoordinator.InteractKey = keyCode;
 		}
+	}
 
-		private void ClientInteract()
+	static InteractionCoordinator()
+	{
+		InteractionCoordinator.OnClientInteracted = delegate
 		{
-			if (!this._hub.IsAlive() || !NetworkClient.ready)
-			{
-				return;
-			}
-			InteractableCollider interactableCollider;
-			if (!InteractionCoordinator.LastRaycastHit.collider.TryGetComponent<InteractableCollider>(out interactableCollider))
-			{
-				Transform parent = InteractionCoordinator.LastRaycastHit.collider.transform.parent;
-				if (parent == null || !parent.TryGetComponent<InteractableCollider>(out interactableCollider))
-				{
-					return;
-				}
-			}
-			IInteractable interactable = interactableCollider.Target as IInteractable;
-			if (interactable == null || interactableCollider.Target == null)
-			{
-				return;
-			}
-			if (!InteractionCoordinator.GetSafeRule(interactable).ClientCanInteract(interactableCollider, InteractionCoordinator.LastRaycastHit))
-			{
-				return;
-			}
-			IClientInteractable clientInteractable = interactable as IClientInteractable;
-			if (clientInteractable != null)
-			{
-				clientInteractable.ClientInteract(interactableCollider);
-			}
-			Action<InteractableCollider> onClientInteracted = InteractionCoordinator.OnClientInteracted;
-			if (onClientInteracted != null)
-			{
-				onClientInteracted(interactableCollider);
-			}
-			NetworkBehaviour networkBehaviour = interactableCollider.Target as NetworkBehaviour;
-			if (networkBehaviour != null)
-			{
-				this.CmdServerInteract(networkBehaviour.netIdentity, interactableCollider.ColliderId);
-			}
-		}
+		};
+		RemoteProcedureCalls.RegisterCommand(typeof(InteractionCoordinator), "System.Void Interactables.InteractionCoordinator::CmdServerInteract(Mirror.NetworkIdentity,System.Byte)", InvokeUserCode_CmdServerInteract__NetworkIdentity__Byte, requiresAuthority: true);
+	}
 
-		private static IVerificationRule GetSafeRule(IInteractable inter)
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	protected void UserCode_CmdServerInteract__NetworkIdentity__Byte(NetworkIdentity targetInteractable, byte colId)
+	{
+		if (!(targetInteractable == null) && !(_hub == null) && _hub.IsAlive() && targetInteractable.TryGetComponent<IServerInteractable>(out var component) && InteractableCollider.TryGetCollider(component, colId, out var res) && GetSafeRule(component).ServerCanInteract(_hub, res))
 		{
-			return inter.VerificationRule ?? StandardDistanceVerification.Default;
+			component.ServerInteract(_hub, colId);
 		}
+	}
 
-		[Command(channel = 4)]
-		private void CmdServerInteract(NetworkIdentity targetInteractable, byte colId)
+	protected static void InvokeUserCode_CmdServerInteract__NetworkIdentity__Byte(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkServer.active)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteNetworkIdentity(targetInteractable);
-			networkWriterPooled.WriteByte(colId);
-			base.SendCommandInternal("System.Void Interactables.InteractionCoordinator::CmdServerInteract(Mirror.NetworkIdentity,System.Byte)", -1093998769, networkWriterPooled, 4, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			Debug.LogError("Command CmdServerInteract called on client.");
 		}
-
-		private void OnCenterScreenRaycast(RaycastHit hit)
+		else
 		{
-			if (!base.isLocalPlayer)
-			{
-				return;
-			}
-			InteractionCoordinator.LastRaycastHit = hit;
-			if (Input.GetKeyDown(InteractionCoordinator.InteractKey))
-			{
-				this.ClientInteract();
-			}
+			((InteractionCoordinator)obj).UserCode_CmdServerInteract__NetworkIdentity__Byte(reader.ReadNetworkIdentity(), NetworkReaderExtensions.ReadByte(reader));
 		}
-
-		static InteractionCoordinator()
-		{
-			InteractionCoordinator.OnClientInteracted = delegate(InteractableCollider interCollider)
-			{
-			};
-			RemoteProcedureCalls.RegisterCommand(typeof(InteractionCoordinator), "System.Void Interactables.InteractionCoordinator::CmdServerInteract(Mirror.NetworkIdentity,System.Byte)", new RemoteCallDelegate(InteractionCoordinator.InvokeUserCode_CmdServerInteract__NetworkIdentity__Byte), true);
-		}
-
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		protected void UserCode_CmdServerInteract__NetworkIdentity__Byte(NetworkIdentity targetInteractable, byte colId)
-		{
-			if (targetInteractable == null || this._hub == null)
-			{
-				return;
-			}
-			if (!this._hub.IsAlive())
-			{
-				return;
-			}
-			IServerInteractable serverInteractable;
-			if (!targetInteractable.TryGetComponent<IServerInteractable>(out serverInteractable))
-			{
-				return;
-			}
-			InteractableCollider interactableCollider;
-			if (!InteractableCollider.TryGetCollider(serverInteractable, colId, out interactableCollider))
-			{
-				return;
-			}
-			if (!InteractionCoordinator.GetSafeRule(serverInteractable).ServerCanInteract(this._hub, interactableCollider))
-			{
-				return;
-			}
-			serverInteractable.ServerInteract(this._hub, colId);
-		}
-
-		protected static void InvokeUserCode_CmdServerInteract__NetworkIdentity__Byte(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
-		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogError("Command CmdServerInteract called on client.");
-				return;
-			}
-			((InteractionCoordinator)obj).UserCode_CmdServerInteract__NetworkIdentity__Byte(reader.ReadNetworkIdentity(), reader.ReadByte());
-		}
-
-		public static KeyCode InteractKey;
-
-		public static RaycastHit LastRaycastHit;
-
-		public static LayerMask InteractRaycastMask;
-
-		private readonly HashSet<IInteractionBlocker> _blockers = new HashSet<IInteractionBlocker>();
-
-		private ReferenceHub _hub;
 	}
 }

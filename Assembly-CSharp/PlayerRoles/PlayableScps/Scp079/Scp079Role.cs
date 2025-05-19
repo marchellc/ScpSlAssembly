@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using GameObjectPools;
+using Interactables.Interobjects.DoorUtils;
 using MapGeneration;
 using PlayerRoles.PlayableScps.HUDs;
 using PlayerRoles.PlayableScps.Scp079.Cameras;
@@ -9,207 +10,181 @@ using PlayerRoles.Subroutines;
 using PlayerRoles.Voice;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public class Scp079Role : PlayerRoleBase, ISubroutinedRole, ISpectatableRole, ISpawnableScp, ITeslaControllerRole, IAdvancedCameraController, ICameraController, IPoolResettable, IPoolSpawnable, IVoiceRole, IAvatarRole, IHudScp, IAmbientLightRole, IAFKRole, IDoorPermissionProvider
 {
-	public class Scp079Role : PlayerRoleBase, ISubroutinedRole, ISpectatableRole, ISpawnableScp, ITeslaControllerRole, IAdvancedCameraController, ICameraController, IPoolResettable, IPoolSpawnable, IVoiceRole, IAvatarRole, IHudScp, IAmbientLightRole, IAFKRole
+	public static readonly HashSet<Scp079Role> ActiveInstances = new HashSet<Scp079Role>();
+
+	private Scp079CurrentCameraSync _curCamSync;
+
+	private Vector3 _lastAFKCamPos;
+
+	public static Scp079Role LocalInstance { get; private set; }
+
+	public static bool LocalInstanceActive { get; private set; }
+
+	[field: SerializeField]
+	public ScpHudBase HudPrefab { get; private set; }
+
+	[field: SerializeField]
+	public SubroutineManagerModule SubroutineModule { get; private set; }
+
+	[field: SerializeField]
+	public VoiceModuleBase VoiceModule { get; private set; }
+
+	[field: SerializeField]
+	public Texture RoleAvatar { get; private set; }
+
+	[field: SerializeField]
+	public SpectatableModuleBase SpectatorModule { get; private set; }
+
+	public override RoleTypeId RoleTypeId => RoleTypeId.Scp079;
+
+	public override Team Team => Team.SCPs;
+
+	public override Color RoleColor => Color.red;
+
+	public Vector3 CameraPosition { get; private set; }
+
+	public float VerticalRotation { get; private set; }
+
+	public float HorizontalRotation { get; private set; }
+
+	public float RollRotation { get; private set; }
+
+	public Scp079Camera CurrentCamera => _curCamSync.CurrentCamera;
+
+	public bool IsSpectated
 	{
-		public static Scp079Role LocalInstance { get; private set; }
-
-		public static bool LocalInstanceActive { get; private set; }
-
-		public ScpHudBase HudPrefab { get; private set; }
-
-		public SubroutineManagerModule SubroutineModule { get; private set; }
-
-		public VoiceModuleBase VoiceModule { get; private set; }
-
-		public Texture RoleAvatar { get; private set; }
-
-		public SpectatableModuleBase SpectatorModule { get; private set; }
-
-		public override RoleTypeId RoleTypeId
+		get
 		{
-			get
+			if (SpectatorTargetTracker.TryGetTrackedPlayer(out var hub))
 			{
-				return RoleTypeId.Scp079;
+				return hub.roleManager.CurrentRole == this;
 			}
+			return false;
 		}
+	}
 
-		public override Team Team
-		{
-			get
-			{
-				return Team.SCPs;
-			}
-		}
+	public float AmbientBoost => 0f;
 
-		public override Color RoleColor
-		{
-			get
-			{
-				return Color.red;
-			}
-		}
+	public bool ForceBlackAmbient => false;
 
-		public Vector3 CameraPosition
-		{
-			get
-			{
-				return this.CurrentCamera.CameraPosition;
-			}
-		}
+	public bool InsufficientLight => false;
 
-		public float VerticalRotation
-		{
-			get
-			{
-				return this.CurrentCamera.VerticalRotation;
-			}
-		}
+	public PermissionUsed PermissionsUsedCallback => null;
 
-		public float HorizontalRotation
+	public bool IsAFK
+	{
+		get
 		{
-			get
-			{
-				return this.CurrentCamera.HorizontalRotation;
-			}
-		}
-
-		public float RollRotation
-		{
-			get
-			{
-				return this.CurrentCamera.RollRotation;
-			}
-		}
-
-		public Scp079Camera CurrentCamera
-		{
-			get
-			{
-				return this._curCamSync.CurrentCamera;
-			}
-		}
-
-		public bool IsSpectated
-		{
-			get
-			{
-				ReferenceHub referenceHub;
-				return SpectatorTargetTracker.TryGetTrackedPlayer(out referenceHub) && referenceHub.roleManager.CurrentRole == this;
-			}
-		}
-
-		public float AmbientBoost
-		{
-			get
-			{
-				return 0f;
-			}
-		}
-
-		public bool ForceBlackAmbient
-		{
-			get
+			if (!_curCamSync.TryGetCurrentCamera(out var cam))
 			{
 				return false;
 			}
-		}
-
-		public bool InsufficientLight
-		{
-			get
+			if (_lastAFKCamPos == Vector3.zero)
 			{
-				return false;
+				_lastAFKCamPos = cam.CameraPosition;
 			}
-		}
-
-		public bool IsAFK
-		{
-			get
+			Vector3 cameraPosition = cam.CameraPosition;
+			if (cameraPosition == _lastAFKCamPos)
 			{
-				if (this._lastCamPos == Vector3.zero)
-				{
-					this._lastCamPos = this.CurrentCamera.CameraPosition;
-				}
-				Vector3 cameraPosition = this.CurrentCamera.CameraPosition;
-				if (cameraPosition == this._lastCamPos)
-				{
-					return true;
-				}
-				this._lastCamPos = cameraPosition;
-				return false;
+				return true;
 			}
+			_lastAFKCamPos = cameraPosition;
+			return false;
 		}
+	}
 
-		public bool CanActivateShock { get; }
+	public bool CanActivateShock { get; }
 
-		public float GetSpawnChance(List<RoleTypeId> alreadySpawned)
+	public DoorPermissionFlags GetPermissions(IDoorPermissionRequester requester)
+	{
+		if (!(requester is DoorVariant))
 		{
-			int count = alreadySpawned.Count;
-			return (float)((count == 0 || alreadySpawned.Contains(RoleTypeId.Scp096)) ? 0 : count);
+			return DoorPermissionFlags.None;
 		}
+		return DoorPermissionFlags.All;
+	}
 
-		public bool IsInIdleRange(TeslaGate teslaGate)
+	public float GetSpawnChance(List<RoleTypeId> alreadySpawned)
+	{
+		int count = alreadySpawned.Count;
+		return (count != 0 && !alreadySpawned.Contains(RoleTypeId.Scp096)) ? count : 0;
+	}
+
+	public bool IsInIdleRange(TeslaGate teslaGate)
+	{
+		if (!SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out var subroutine))
 		{
-			Scp079CurrentCameraSync scp079CurrentCameraSync;
-			Scp079Camera scp079Camera;
-			return this.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out scp079CurrentCameraSync) && scp079CurrentCameraSync.TryGetCurrentCamera(out scp079Camera) && RoomUtils.IsTheSameRoom(scp079Camera.Position, teslaGate.Position);
+			return false;
 		}
-
-		public void ResetObject()
+		if (!subroutine.TryGetCurrentCamera(out var cam))
 		{
-			Scp079Role.ActiveInstances.Remove(this);
-			this._lastCamPos = Vector3.zero;
+			return false;
 		}
+		return cam.Position.CompareCoords(teslaGate.Position);
+	}
 
-		public void SpawnObject()
+	public void ResetObject()
+	{
+		ActiveInstances.Remove(this);
+		_lastAFKCamPos = Vector3.zero;
+	}
+
+	public void SpawnObject()
+	{
+		ActiveInstances.Add(this);
+		if (!TryGetOwner(out var hub))
 		{
-			Scp079Role.ActiveInstances.Add(this);
-			ReferenceHub referenceHub;
-			if (!base.TryGetOwner(out referenceHub))
+			throw new InvalidOperationException("SCP-079 role failed to spawn - owner is null");
+		}
+		float num = 6000f;
+		hub.transform.position = Vector3.up * num;
+		_lastAFKCamPos = Vector3.zero;
+	}
+
+	private void Awake()
+	{
+		SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out _curCamSync);
+		MainCameraController.OnBeforeUpdated += SetCameraPoseData;
+	}
+
+	private void OnDestroy()
+	{
+		ActiveInstances.Remove(this);
+		MainCameraController.OnBeforeUpdated -= SetCameraPoseData;
+	}
+
+	private void SetCameraPoseData()
+	{
+		if (!base.Pooled && _curCamSync.TryGetCurrentCamera(out var cam))
+		{
+			CameraPosition = cam.CameraPosition;
+			VerticalRotation = cam.VerticalRotation;
+			HorizontalRotation = cam.HorizontalRotation;
+			RollRotation = cam.RollRotation;
+		}
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub x, PlayerRoleBase y, PlayerRoleBase z)
+		{
+			if (x.isLocalPlayer)
 			{
-				throw new InvalidOperationException("SCP-079 role failed to spawn - owner is null");
+				if (z is Scp079Role localInstance)
+				{
+					LocalInstance = localInstance;
+					LocalInstanceActive = true;
+				}
+				else
+				{
+					LocalInstanceActive = false;
+				}
 			}
-			float num = 6000f;
-			referenceHub.transform.position = Vector3.up * num;
-			this._lastCamPos = Vector3.zero;
-		}
-
-		private void Awake()
-		{
-			this.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out this._curCamSync);
-		}
-
-		private void OnDestroy()
-		{
-			Scp079Role.ActiveInstances.Remove(this);
-		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub x, PlayerRoleBase y, PlayerRoleBase z)
-			{
-				if (!x.isLocalPlayer)
-				{
-					return;
-				}
-				Scp079Role scp079Role = z as Scp079Role;
-				if (scp079Role != null)
-				{
-					Scp079Role.LocalInstance = scp079Role;
-					Scp079Role.LocalInstanceActive = true;
-					return;
-				}
-				Scp079Role.LocalInstanceActive = false;
-			};
-		}
-
-		public static readonly HashSet<Scp079Role> ActiveInstances = new HashSet<Scp079Role>();
-
-		private Scp079CurrentCameraSync _curCamSync;
-
-		private Vector3 _lastCamPos;
+		};
 	}
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Interactables;
@@ -11,114 +10,6 @@ using UnityEngine;
 
 public class Coffee : NetworkBehaviour, IClientInteractable, IInteractable, IServerInteractable
 {
-	private void Awake()
-	{
-		if (!this.IsConsumed)
-		{
-			return;
-		}
-		this._animator.enabled = true;
-		this._particles.Stop();
-	}
-
-	private void Start()
-	{
-		this._meshRenderer.material.color = this._drinkColor;
-	}
-
-	public IVerificationRule VerificationRule { get; } = StandardDistanceVerification.Default;
-
-	public void ServerInteract(ReferenceHub ply, byte colliderId)
-	{
-		if (!Coffee.BlacklistedPlayers.Add(ply))
-		{
-			return;
-		}
-		UsableItemsController.GetHandler(ply).ActiveRegenerations.Add(new RegenerationProcess(this._healProgress, 0.06666667f, 50f));
-		this.NetworkIsConsumed = true;
-	}
-
-	public void ClientInteract(InteractableCollider collider)
-	{
-	}
-
-	private void SyncCoffeeState(bool wasConsumed, bool isConsumed)
-	{
-		this._animator.enabled = isConsumed;
-		if (isConsumed)
-		{
-			this._particles.Stop();
-			this._audioSource.Play();
-			return;
-		}
-		this._particles.Play();
-	}
-
-	[RuntimeInitializeOnLoadMethod]
-	private static void Init()
-	{
-		PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub hub, PlayerRoleBase _, PlayerRoleBase _)
-		{
-			Coffee.BlacklistedPlayers.Remove(hub);
-		};
-		ReferenceHub.OnPlayerRemoved = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerRemoved, new Action<ReferenceHub>(delegate(ReferenceHub hub)
-		{
-			Coffee.BlacklistedPlayers.Remove(hub);
-		}));
-		SeedSynchronizer.OnGenerationFinished += delegate
-		{
-			Coffee.BlacklistedPlayers.Clear();
-		};
-	}
-
-	public override bool Weaved()
-	{
-		return true;
-	}
-
-	public bool NetworkIsConsumed
-	{
-		get
-		{
-			return this.IsConsumed;
-		}
-		[param: In]
-		set
-		{
-			base.GeneratedSyncVarSetter<bool>(value, ref this.IsConsumed, 1UL, new Action<bool, bool>(this.SyncCoffeeState));
-		}
-	}
-
-	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
-	{
-		base.SerializeSyncVars(writer, forceAll);
-		if (forceAll)
-		{
-			writer.WriteBool(this.IsConsumed);
-			return;
-		}
-		writer.WriteULong(base.syncVarDirtyBits);
-		if ((base.syncVarDirtyBits & 1UL) != 0UL)
-		{
-			writer.WriteBool(this.IsConsumed);
-		}
-	}
-
-	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
-	{
-		base.DeserializeSyncVars(reader, initialState);
-		if (initialState)
-		{
-			base.GeneratedSyncVarDeserialize<bool>(ref this.IsConsumed, new Action<bool, bool>(this.SyncCoffeeState), reader.ReadBool());
-			return;
-		}
-		long num = (long)reader.ReadULong();
-		if ((num & 1L) != 0L)
-		{
-			base.GeneratedSyncVarDeserialize<bool>(ref this.IsConsumed, new Action<bool, bool>(this.SyncCoffeeState), reader.ReadBool());
-		}
-	}
-
 	private const float DurationPerCharacter = 0.035f;
 
 	private const float MaxDuration = 7f;
@@ -157,4 +48,112 @@ public class Coffee : NetworkBehaviour, IClientInteractable, IInteractable, ISer
 
 	[SerializeField]
 	private AudioSource _audioSource;
+
+	public IVerificationRule VerificationRule { get; } = StandardDistanceVerification.Default;
+
+	public bool NetworkIsConsumed
+	{
+		get
+		{
+			return IsConsumed;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref IsConsumed, 1uL, SyncCoffeeState);
+		}
+	}
+
+	private void Awake()
+	{
+		if (IsConsumed)
+		{
+			_animator.enabled = true;
+			_particles.Stop();
+		}
+	}
+
+	private void Start()
+	{
+		_meshRenderer.material.color = _drinkColor;
+	}
+
+	public void ServerInteract(ReferenceHub ply, byte colliderId)
+	{
+		if (BlacklistedPlayers.Add(ply))
+		{
+			UsableItemsController.GetHandler(ply).ActiveRegenerations.Add(new RegenerationProcess(_healProgress, 1f / 15f, 50f));
+			NetworkIsConsumed = true;
+		}
+	}
+
+	public void ClientInteract(InteractableCollider collider)
+	{
+	}
+
+	private void SyncCoffeeState(bool wasConsumed, bool isConsumed)
+	{
+		_animator.enabled = isConsumed;
+		if (isConsumed)
+		{
+			_particles.Stop();
+			_audioSource.Play();
+		}
+		else
+		{
+			_particles.Play();
+		}
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub hub, PlayerRoleBase _, PlayerRoleBase _)
+		{
+			BlacklistedPlayers.Remove(hub);
+		};
+		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub hub)
+		{
+			BlacklistedPlayers.Remove(hub);
+		};
+		SeedSynchronizer.OnGenerationFinished += delegate
+		{
+			BlacklistedPlayers.Clear();
+		};
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
+		{
+			writer.WriteBool(IsConsumed);
+			return;
+		}
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 1L) != 0L)
+		{
+			writer.WriteBool(IsConsumed);
+		}
+	}
+
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref IsConsumed, SyncCoffeeState, reader.ReadBool());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 1L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref IsConsumed, SyncCoffeeState, reader.ReadBool());
+		}
+	}
 }

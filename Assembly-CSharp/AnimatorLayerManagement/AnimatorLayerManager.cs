@@ -1,128 +1,123 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-namespace AnimatorLayerManagement
+namespace AnimatorLayerManagement;
+
+public class AnimatorLayerManager : MonoBehaviour
 {
-	public class AnimatorLayerManager : MonoBehaviour
+	public const string LayerFormat = "{0} - (RefId={1})";
+
+	public const string RegexPattern = "^(.+)\\s-\\s\\(RefId=(\\d+)\\)$";
+
+	private static readonly Regex RegexUnpacker = new Regex("^(.+)\\s-\\s\\(RefId=(\\d+)\\)$");
+
+	[SerializeField]
+	private bool _rebuildOnAwake;
+
+	[SerializeField]
+	private List<RefIdIndexPair> _pairs;
+
+	private readonly Dictionary<int, int> _lookupCache = new Dictionary<int, int>();
+
+	private Animator _animCache;
+
+	private bool _animFound;
+
+	private Animator Anim
 	{
-		private Animator Anim
+		get
 		{
-			get
+			if (_animFound)
 			{
-				if (this._animFound)
-				{
-					return this._animCache;
-				}
-				this._animCache = base.GetComponent<Animator>();
-				this._animFound = true;
-				return this._animCache;
+				return _animCache;
+			}
+			_animCache = GetComponent<Animator>();
+			_animFound = true;
+			return _animCache;
+		}
+	}
+
+	private void Awake()
+	{
+		if (_rebuildOnAwake)
+		{
+			RebuildPairCache();
+		}
+	}
+
+	public void RebuildPairCache()
+	{
+		_lookupCache.Clear();
+		int layerCount = Anim.layerCount;
+		if (_pairs == null)
+		{
+			_pairs = new List<RefIdIndexPair>(layerCount);
+		}
+		else
+		{
+			_pairs.Clear();
+			_pairs.EnsureCapacity(layerCount);
+		}
+		for (int i = 0; i < layerCount; i++)
+		{
+			if (TryUnpackFormat(Anim.GetLayerName(i), out var _, out var refId))
+			{
+				_pairs.Add(new RefIdIndexPair(refId, i));
 			}
 		}
+	}
 
-		private void Awake()
+	public int GetLayerIndex(LayerRefId refId)
+	{
+		if (_lookupCache.TryGetValue(refId.Value, out var value))
 		{
-			if (this._rebuildOnAwake)
+			return value;
+		}
+		for (int i = 0; i < _pairs.Count; i++)
+		{
+			RefIdIndexPair refIdIndexPair = _pairs[i];
+			if (refIdIndexPair.RefId.Value == refId.Value)
 			{
-				this.RebuildPairCache();
+				_lookupCache[refId.Value] = refIdIndexPair.LayerIndex;
+				return refIdIndexPair.LayerIndex;
 			}
 		}
+		throw new InvalidOperationException(string.Format("{0} with value {1} not detected on the animator controller.", "LayerRefId", refId.Value));
+	}
 
-		public void RebuildPairCache()
-		{
-			this._lookupCache.Clear();
-			int layerCount = this.Anim.layerCount;
-			if (this._pairs == null)
-			{
-				this._pairs = new List<RefIdIndexPair>(layerCount);
-			}
-			else
-			{
-				this._pairs.Clear();
-				this._pairs.EnsureCapacity(layerCount);
-			}
-			for (int i = 0; i < layerCount; i++)
-			{
-				string text;
-				LayerRefId layerRefId;
-				if (AnimatorLayerManager.TryUnpackFormat(this.Anim.GetLayerName(i), out text, out layerRefId))
-				{
-					this._pairs.Add(new RefIdIndexPair(layerRefId, i));
-				}
-			}
-		}
+	public float GetLayerWeight(LayerRefId refId)
+	{
+		return Anim.GetLayerWeight(GetLayerIndex(refId));
+	}
 
-		public int GetLayerIndex(LayerRefId refId)
-		{
-			int num;
-			if (this._lookupCache.TryGetValue(refId.Value, out num))
-			{
-				return num;
-			}
-			for (int i = 0; i < this._pairs.Count; i++)
-			{
-				RefIdIndexPair refIdIndexPair = this._pairs[i];
-				if (refIdIndexPair.RefId.Value == refId.Value)
-				{
-					this._lookupCache[refId.Value] = refIdIndexPair.LayerIndex;
-					return refIdIndexPair.LayerIndex;
-				}
-			}
-			throw new InvalidOperationException(string.Format("{0} with value {1} not detected on the animator controller.", "LayerRefId", refId.Value));
-		}
+	public void SetLayerWeight(LayerRefId refId, float weight)
+	{
+		Anim.SetLayerWeight(GetLayerIndex(refId), weight);
+	}
 
-		public float GetLayerWeight(LayerRefId refId)
+	public static bool TryUnpackFormat(string layerName, out string originalName, out LayerRefId refId)
+	{
+		Match match = RegexUnpacker.Match(layerName);
+		if (!match.Success)
 		{
-			return this.Anim.GetLayerWeight(this.GetLayerIndex(refId));
-		}
-
-		public void SetLayerWeight(LayerRefId refId, float weight)
-		{
-			this.Anim.SetLayerWeight(this.GetLayerIndex(refId), weight);
-		}
-
-		public static bool TryUnpackFormat(string layerName, out string originalName, out LayerRefId refId)
-		{
-			Match match = AnimatorLayerManager.RegexUnpacker.Match(layerName);
-			if (!match.Success)
-			{
-				originalName = null;
-				refId = default(LayerRefId);
-				return false;
-			}
-			originalName = match.Groups[1].Value;
-			int num;
-			if (int.TryParse(match.Groups[2].Value, out num))
-			{
-				refId = new LayerRefId(num);
-				return true;
-			}
+			originalName = null;
 			refId = default(LayerRefId);
 			return false;
 		}
-
-		public static string PackFormat(string originalName, LayerRefId refId)
+		originalName = match.Groups[1].Value;
+		if (int.TryParse(match.Groups[2].Value, out var result))
 		{
-			return string.Format("{0} - (RefId={1})", originalName, refId.Value);
+			refId = new LayerRefId(result);
+			return true;
 		}
+		refId = default(LayerRefId);
+		return false;
+	}
 
-		public const string LayerFormat = "{0} - (RefId={1})";
-
-		public const string RegexPattern = "^(.+)\\s-\\s\\(RefId=(\\d+)\\)$";
-
-		private static readonly Regex RegexUnpacker = new Regex("^(.+)\\s-\\s\\(RefId=(\\d+)\\)$");
-
-		[SerializeField]
-		private bool _rebuildOnAwake;
-
-		[SerializeField]
-		private List<RefIdIndexPair> _pairs;
-
-		private readonly Dictionary<int, int> _lookupCache = new Dictionary<int, int>();
-
-		private Animator _animCache;
-
-		private bool _animFound;
+	public static string PackFormat(string originalName, LayerRefId refId)
+	{
+		return $"{originalName} - (RefId={refId.Value})";
 	}
 }

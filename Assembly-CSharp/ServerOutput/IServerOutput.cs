@@ -1,15 +1,14 @@
-﻿using System;
+using System;
 
-namespace ServerOutput
+namespace ServerOutput;
+
+public interface IServerOutput : IDisposable
 {
-	public interface IServerOutput : IDisposable
-	{
-		void Start();
+	void Start();
 
-		void AddLog(string text, ConsoleColor color);
+	void AddLog(string text, ConsoleColor color);
 
-		void AddLog(string text);
+	void AddLog(string text);
 
-		void AddOutput(IOutputEntry entry);
-	}
+	void AddOutput(IOutputEntry entry);
 }

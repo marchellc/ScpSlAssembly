@@ -1,129 +1,114 @@
-﻿using System;
 using GameObjectPools;
 using PlayerRoles.FirstPersonControl.Thirdperson;
 using PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
 using UnityEngine;
 
-namespace InventorySystem.Items.Thirdperson
+namespace InventorySystem.Items.Thirdperson;
+
+public abstract class ThirdpersonItemBase : PoolObject, IPoolResettable, IIdentifierProvider
 {
-	public abstract class ThirdpersonItemBase : PoolObject, IPoolResettable, IIdentifierProvider
+	private static readonly int HashOverrideBlend = Animator.StringToHash("ItemOverrideBlend");
+
+	private static readonly int HashTriggerOverrideInstant = Animator.StringToHash("ItemOverrideTriggerInstant");
+
+	private static readonly int HashTriggerOverrideSoft = Animator.StringToHash("ItemOverrideTriggerSoft");
+
+	private static readonly int HashAdditiveBlend = Animator.StringToHash("ItemAdditiveBlend");
+
+	private static readonly int HashTriggerAdditiveInstant = Animator.StringToHash("ItemAdditiveTriggerInstant");
+
+	private static readonly int HashTriggerAdditiveSoft = Animator.StringToHash("ItemAdditiveTriggerSoft");
+
+	private Transform _tr;
+
+	protected float OverrideBlend
 	{
-		protected float OverrideBlend
+		get
 		{
-			get
-			{
-				return this.Animator.GetFloat(ThirdpersonItemBase.HashOverrideBlend);
-			}
-			set
-			{
-				this.Animator.SetFloat(ThirdpersonItemBase.HashOverrideBlend, value);
-			}
+			return Animator.GetFloat(HashOverrideBlend);
 		}
-
-		protected float AdditiveBlend
+		set
 		{
-			get
-			{
-				return this.Animator.GetFloat(ThirdpersonItemBase.HashAdditiveBlend);
-			}
-			set
-			{
-				this.Animator.SetFloat(ThirdpersonItemBase.HashAdditiveBlend, value);
-			}
+			Animator.SetFloat(HashOverrideBlend, value);
 		}
+	}
 
-		public ItemIdentifier ItemId { get; private set; }
-
-		public AnimatedCharacterModel TargetModel { get; private set; }
-
-		public InventorySubcontroller TargetSubcontroller { get; private set; }
-
-		public Animator Animator
+	protected float AdditiveBlend
+	{
+		get
 		{
-			get
-			{
-				return this.TargetModel.Animator;
-			}
+			return Animator.GetFloat(HashAdditiveBlend);
 		}
-
-		public ReferenceHub OwnerHub
+		set
 		{
-			get
-			{
-				return this.TargetModel.OwnerHub;
-			}
+			Animator.SetFloat(HashAdditiveBlend, value);
 		}
+	}
 
-		public virtual void ResetObject()
-		{
-		}
+	public ItemIdentifier ItemId { get; private set; }
 
-		public virtual float GetTransitionTime(ItemIdentifier iid)
-		{
-			return 0.5f;
-		}
+	public AnimatedCharacterModel TargetModel { get; private set; }
 
-		public abstract ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer);
+	public InventorySubcontroller TargetSubcontroller { get; private set; }
 
-		internal virtual void OnFadeChanged(float newFade)
-		{
-			this._tr.localScale = Vector3.one * newFade;
-		}
+	public Animator Animator => TargetModel.Animator;
 
-		internal virtual void OnAnimIK(int layerIndex, float ikScale)
-		{
-		}
+	public ReferenceHub OwnerHub => TargetModel.OwnerHub;
 
-		internal virtual void Initialize(InventorySubcontroller subcontroller, ItemIdentifier id)
-		{
-			this.ItemId = id;
-			this.TargetModel = subcontroller.Model;
-			this.TargetSubcontroller = subcontroller;
-			this._tr = base.transform;
-			this._tr.parent = subcontroller.ItemSpawnpoint;
-			this._tr.localScale = Vector3.one;
-			this._tr.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-			this.OverrideBlend = 0f;
-			this.AdditiveBlend = 0f;
-			this.OnFadeChanged(subcontroller.Model.Fade);
-		}
+	public virtual void ResetObject()
+	{
+	}
 
-		protected void SetAnim(AnimState3p anim, AnimationClip clip)
-		{
-			ThirdpersonItemAnimationManager.SetAnimation(this.TargetModel, anim, clip);
-		}
+	public virtual float GetTransitionTime(ItemIdentifier iid)
+	{
+		return 0.5f;
+	}
 
-		protected void SetAnim(AnimOverrideState3pPair pair)
-		{
-			ThirdpersonItemAnimationManager.SetAnimation(this.TargetModel, pair);
-		}
+	public abstract ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer);
 
-		protected void ReplayOverrideBlend(bool soft)
-		{
-			this.Animator.SetTrigger(soft ? ThirdpersonItemBase.HashTriggerOverrideSoft : ThirdpersonItemBase.HashTriggerOverrideInstant);
-		}
+	internal virtual void OnFadeChanged(float newFade)
+	{
+		_tr.localScale = Vector3.one * newFade;
+	}
 
-		protected void ReplayAdditiveBlend(bool soft)
-		{
-			this.Animator.SetTrigger(soft ? ThirdpersonItemBase.HashTriggerAdditiveSoft : ThirdpersonItemBase.HashTriggerAdditiveInstant);
-		}
+	internal virtual void OnAnimIK(int layerIndex, float ikScale)
+	{
+	}
 
-		protected virtual void Update()
-		{
-		}
+	internal virtual void Initialize(InventorySubcontroller subcontroller, ItemIdentifier id)
+	{
+		ItemId = id;
+		TargetModel = subcontroller.Model;
+		TargetSubcontroller = subcontroller;
+		_tr = base.transform;
+		_tr.parent = subcontroller.ItemSpawnpoint;
+		_tr.ResetTransform();
+		OverrideBlend = 0f;
+		AdditiveBlend = 0f;
+		OnFadeChanged(subcontroller.Model.Fade);
+	}
 
-		private static readonly int HashOverrideBlend = Animator.StringToHash("ItemOverrideBlend");
+	protected void SetAnim(AnimState3p anim, AnimationClip clip)
+	{
+		ThirdpersonItemAnimationManager.SetAnimation(TargetModel, anim, clip);
+	}
 
-		private static readonly int HashTriggerOverrideInstant = Animator.StringToHash("ItemOverrideTriggerInstant");
+	protected void SetAnim(AnimOverrideState3pPair pair)
+	{
+		ThirdpersonItemAnimationManager.SetAnimation(TargetModel, pair);
+	}
 
-		private static readonly int HashTriggerOverrideSoft = Animator.StringToHash("ItemOverrideTriggerSoft");
+	protected void ReplayOverrideBlend(bool soft)
+	{
+		Animator.SetTrigger(soft ? HashTriggerOverrideSoft : HashTriggerOverrideInstant);
+	}
 
-		private static readonly int HashAdditiveBlend = Animator.StringToHash("ItemAdditiveBlend");
+	protected void ReplayAdditiveBlend(bool soft)
+	{
+		Animator.SetTrigger(soft ? HashTriggerAdditiveSoft : HashTriggerAdditiveInstant);
+	}
 
-		private static readonly int HashTriggerAdditiveInstant = Animator.StringToHash("ItemAdditiveTriggerInstant");
-
-		private static readonly int HashTriggerAdditiveSoft = Animator.StringToHash("ItemAdditiveTriggerSoft");
-
-		private Transform _tr;
+	protected virtual void Update()
+	{
 	}
 }

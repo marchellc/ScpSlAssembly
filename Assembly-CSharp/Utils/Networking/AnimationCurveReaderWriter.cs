@@ -1,162 +1,151 @@
-﻿using System;
+using System;
 using Mirror;
 using UnityEngine;
 
-namespace Utils.Networking
+namespace Utils.Networking;
+
+public static class AnimationCurveReaderWriter
 {
-	public static class AnimationCurveReaderWriter
+	private struct NetworkKeyframe
 	{
-		public static AnimationCurve ReadAnimationCurve(this NetworkReader reader)
+		public Keyframe Keyframe { get; private set; }
+
+		public bool Tangental { get; private set; }
+
+		public bool Weighted { get; private set; }
+
+		private static void GetFlagsFromOffset(ref byte bitOffset, out byte tangentalFlag, out byte weightedFlag)
 		{
-			AnimationCurveReaderWriter.NetworkKeyframe[] array = new AnimationCurveReaderWriter.NetworkKeyframe[(int)(reader.ReadByte() + 2)];
-			int i = 0;
-			while (i < array.Length)
-			{
-				byte b = reader.ReadByte();
-				byte b2 = 0;
-				do
-				{
-					array[i].ReadMetaTable(in b, ref b2);
-					i++;
-				}
-				while (b2 < 8 && i < array.Length);
-			}
-			for (int j = 0; j < array.Length; j++)
-			{
-				array[j].ReadData(reader);
-			}
-			return new AnimationCurve(Array.ConvertAll<AnimationCurveReaderWriter.NetworkKeyframe, Keyframe>(array, (AnimationCurveReaderWriter.NetworkKeyframe input) => input.Keyframe))
-			{
-				postWrapMode = WrapMode.Loop
-			};
+			tangentalFlag = (byte)(1 << (int)bitOffset++);
+			weightedFlag = (byte)(1 << (int)bitOffset++);
 		}
 
-		public static void WriteAnimationCurve(this NetworkWriter writer, AnimationCurve animationCurve)
+		public NetworkKeyframe(Keyframe keyframe)
 		{
-			if (animationCurve.length > 257)
+			Keyframe = keyframe;
+			Tangental = Mathf.Abs(keyframe.inTangent) > float.Epsilon || Mathf.Abs(keyframe.inTangent) > float.Epsilon;
+			Weighted = Mathf.Abs(keyframe.inWeight) > float.Epsilon || Mathf.Abs(keyframe.outWeight) > float.Epsilon;
+		}
+
+		public void ReadMetaTable(in byte flag, ref byte bitOffset)
+		{
+			GetFlagsFromOffset(ref bitOffset, out var tangentalFlag, out var weightedFlag);
+			Tangental = (flag & tangentalFlag) == tangentalFlag;
+			Weighted = (flag & weightedFlag) == weightedFlag;
+		}
+
+		public void WriteMetaTable(ref byte flag, ref byte bitOffset)
+		{
+			GetFlagsFromOffset(ref bitOffset, out var tangentalFlag, out var weightedFlag);
+			if (Tangental)
 			{
-				throw new ArgumentException("Curve cannot have more than " + 257.ToString() + " keys.", "animationCurve");
+				flag |= tangentalFlag;
 			}
-			AnimationCurveReaderWriter.NetworkKeyframe[] array = Array.ConvertAll<Keyframe, AnimationCurveReaderWriter.NetworkKeyframe>(animationCurve.keys, (Keyframe input) => new AnimationCurveReaderWriter.NetworkKeyframe(input));
-			writer.WriteByte((byte)(array.Length - 2));
-			int i = 0;
-			while (i < array.Length)
+			if (Weighted)
 			{
-				byte b = 0;
-				byte b2 = 0;
-				do
-				{
-					array[i].WriteMetaTable(ref b, ref b2);
-					i++;
-				}
-				while (b2 < 8 && i < array.Length);
-				writer.WriteByte(b);
-			}
-			for (int j = 0; j < array.Length; j++)
-			{
-				array[j].WriteData(writer);
+				flag |= weightedFlag;
 			}
 		}
 
-		public const byte KeyCountOffset = 2;
-
-		private struct NetworkKeyframe
+		public void ReadData(NetworkReader reader)
 		{
-			private static void GetFlagsFromOffset(ref byte bitOffset, out byte tangentalFlag, out byte weightedFlag)
+			float time = reader.ReadFloat();
+			float value = reader.ReadFloat();
+			float inTangent;
+			float outTangent;
+			if (Tangental)
 			{
-				int num = 1;
-				byte b = bitOffset;
-				bitOffset = b + 1;
-				tangentalFlag = num << (int)(b & 31);
-				int num2 = 1;
-				b = bitOffset;
-				bitOffset = b + 1;
-				weightedFlag = num2 << (int)(b & 31);
+				inTangent = reader.ReadFloat();
+				outTangent = reader.ReadFloat();
 			}
-
-			public Keyframe Keyframe { readonly get; private set; }
-
-			public bool Tangental { readonly get; private set; }
-
-			public bool Weighted { readonly get; private set; }
-
-			public NetworkKeyframe(Keyframe keyframe)
+			else
 			{
-				this.Keyframe = keyframe;
-				this.Tangental = Mathf.Abs(keyframe.inTangent) > float.Epsilon || Mathf.Abs(keyframe.inTangent) > float.Epsilon;
-				this.Weighted = Mathf.Abs(keyframe.inWeight) > float.Epsilon || Mathf.Abs(keyframe.outWeight) > float.Epsilon;
+				inTangent = 0f;
+				outTangent = 0f;
 			}
-
-			public void ReadMetaTable(in byte flag, ref byte bitOffset)
+			float inWeight;
+			float outWeight;
+			if (Weighted)
 			{
-				byte b;
-				byte b2;
-				AnimationCurveReaderWriter.NetworkKeyframe.GetFlagsFromOffset(ref bitOffset, out b, out b2);
-				this.Tangental = (flag & b) == b;
-				this.Weighted = (flag & b2) == b2;
+				inWeight = reader.ReadFloat();
+				outWeight = reader.ReadFloat();
 			}
-
-			public void WriteMetaTable(ref byte flag, ref byte bitOffset)
+			else
 			{
-				byte b;
-				byte b2;
-				AnimationCurveReaderWriter.NetworkKeyframe.GetFlagsFromOffset(ref bitOffset, out b, out b2);
-				if (this.Tangental)
-				{
-					flag |= b;
-				}
-				if (this.Weighted)
-				{
-					flag |= b2;
-				}
+				inWeight = 0f;
+				outWeight = 0f;
 			}
+			Keyframe = new Keyframe(time, value, inTangent, outTangent, inWeight, outWeight);
+		}
 
-			public void ReadData(NetworkReader reader)
+		public void WriteData(NetworkWriter writer)
+		{
+			writer.WriteFloat(Keyframe.time);
+			writer.WriteFloat(Keyframe.value);
+			if (Tangental)
 			{
-				float num = reader.ReadFloat();
-				float num2 = reader.ReadFloat();
-				float num3;
-				float num4;
-				if (this.Tangental)
-				{
-					num3 = reader.ReadFloat();
-					num4 = reader.ReadFloat();
-				}
-				else
-				{
-					num3 = 0f;
-					num4 = 0f;
-				}
-				float num5;
-				float num6;
-				if (this.Weighted)
-				{
-					num5 = reader.ReadFloat();
-					num6 = reader.ReadFloat();
-				}
-				else
-				{
-					num5 = 0f;
-					num6 = 0f;
-				}
-				this.Keyframe = new Keyframe(num, num2, num3, num4, num5, num6);
+				writer.WriteFloat(Keyframe.inTangent);
+				writer.WriteFloat(Keyframe.outTangent);
 			}
+			if (Weighted)
+			{
+				writer.WriteFloat(Keyframe.inWeight);
+				writer.WriteFloat(Keyframe.outWeight);
+			}
+		}
+	}
 
-			public void WriteData(NetworkWriter writer)
+	public const byte KeyCountOffset = 2;
+
+	public static AnimationCurve ReadAnimationCurve(this NetworkReader reader)
+	{
+		NetworkKeyframe[] array = new NetworkKeyframe[reader.ReadByte() + 2];
+		int num = 0;
+		while (num < array.Length)
+		{
+			byte flag = reader.ReadByte();
+			byte bitOffset = 0;
+			do
 			{
-				writer.WriteFloat(this.Keyframe.time);
-				writer.WriteFloat(this.Keyframe.value);
-				if (this.Tangental)
-				{
-					writer.WriteFloat(this.Keyframe.inTangent);
-					writer.WriteFloat(this.Keyframe.outTangent);
-				}
-				if (this.Weighted)
-				{
-					writer.WriteFloat(this.Keyframe.inWeight);
-					writer.WriteFloat(this.Keyframe.outWeight);
-				}
+				array[num].ReadMetaTable(in flag, ref bitOffset);
+				num++;
 			}
+			while (bitOffset < 8 && num < array.Length);
+		}
+		for (int i = 0; i < array.Length; i++)
+		{
+			array[i].ReadData(reader);
+		}
+		return new AnimationCurve(Array.ConvertAll(array, (NetworkKeyframe input) => input.Keyframe))
+		{
+			postWrapMode = WrapMode.Loop
+		};
+	}
+
+	public static void WriteAnimationCurve(this NetworkWriter writer, AnimationCurve animationCurve)
+	{
+		if (animationCurve.length > 257)
+		{
+			throw new ArgumentException("Curve cannot have more than " + 257 + " keys.", "animationCurve");
+		}
+		NetworkKeyframe[] array = Array.ConvertAll(animationCurve.keys, (Keyframe input) => new NetworkKeyframe(input));
+		writer.WriteByte((byte)(array.Length - 2));
+		int num = 0;
+		while (num < array.Length)
+		{
+			byte flag = 0;
+			byte bitOffset = 0;
+			do
+			{
+				array[num].WriteMetaTable(ref flag, ref bitOffset);
+				num++;
+			}
+			while (bitOffset < 8 && num < array.Length);
+			writer.WriteByte(flag);
+		}
+		for (int i = 0; i < array.Length; i++)
+		{
+			array[i].WriteData(writer);
 		}
 	}
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using Mirror;
 
 public static class AmmoLimitSerializer
@@ -11,10 +10,9 @@ public static class AmmoLimitSerializer
 
 	public static ServerConfigSynchronizer.AmmoLimit ReadAmmoLimit(this NetworkReader reader)
 	{
-		return new ServerConfigSynchronizer.AmmoLimit
-		{
-			AmmoType = (ItemType)reader.ReadByte(),
-			Limit = reader.ReadUShort()
-		};
+		ServerConfigSynchronizer.AmmoLimit result = default(ServerConfigSynchronizer.AmmoLimit);
+		result.AmmoType = (ItemType)reader.ReadByte();
+		result.Limit = reader.ReadUShort();
+		return result;
 	}
 }

@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 
-namespace LiteNetLib.Utils
+namespace LiteNetLib.Utils;
+
+public class InvalidTypeException : ArgumentException
 {
-	public class InvalidTypeException : ArgumentException
+	public InvalidTypeException(string message)
+		: base(message)
 	{
-		public InvalidTypeException(string message)
-			: base(message)
-		{
-		}
 	}
 }

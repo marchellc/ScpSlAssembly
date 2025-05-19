@@ -1,195 +1,176 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GameCore;
 
-namespace PlayerRoles.RoleAssign
+namespace PlayerRoles.RoleAssign;
+
+public class ScpTicketsLoader : IDisposable
 {
-	public class ScpTicketsLoader : IDisposable
+	private class TicketEntry
 	{
-		private static string FilePath
+		public string UserId;
+
+		public int Tickets;
+
+		public long LastUpdate;
+	}
+
+	private static readonly List<TicketEntry> AllEntries = new List<TicketEntry>(65535);
+
+	private static readonly Dictionary<ReferenceHub, TicketEntry> EntriesByUser = new Dictionary<ReferenceHub, TicketEntry>();
+
+	private static readonly Dictionary<int, List<ReferenceHub>> PlayersByIdHash = new Dictionary<int, List<ReferenceHub>>();
+
+	private static bool _isBusy;
+
+	private const string Filename = "ScpTickets.txt";
+
+	private const int ExpectedCapacity = 65535;
+
+	private const int ExpirationTime = 1296000;
+
+	private const char Separator = ';';
+
+	private static string FilePath => ConfigSharing.Paths[6] + "ScpTickets.txt";
+
+	private static long UnixTimeNow => DateTimeOffset.Now.ToUnixTimeSeconds();
+
+	public ScpTicketsLoader()
+	{
+		if (_isBusy)
 		{
-			get
+			throw new InvalidOperationException("Unable to load SCP ticket entries. Another ScpTicketsLoader is active or undisposed.");
+		}
+		_isBusy = true;
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			string userId = allHub.authManager.UserId;
+			if (!string.IsNullOrEmpty(userId))
 			{
-				return ConfigSharing.Paths[6] + "ScpTickets.txt";
+				PlayersByIdHash.GetOrAdd(userId.GetHashCode(), () => new List<ReferenceHub>()).Add(allHub);
 			}
 		}
+		LoadEntries();
+	}
 
-		private static long UnixTimeNow
+	public int GetTickets(ReferenceHub hub, int defaultNumber, bool ignoreOptOut = false)
+	{
+		if (!ignoreOptOut && ScpPlayerPicker.IsOptedOutOfScp(hub))
 		{
-			get
+			return 0;
+		}
+		if (!EntriesByUser.TryGetValue(hub, out var value))
+		{
+			return defaultNumber;
+		}
+		return value.Tickets;
+	}
+
+	public void ModifyTickets(ReferenceHub hub, int newNumber)
+	{
+		if (EntriesByUser.TryGetValue(hub, out var value))
+		{
+			value.LastUpdate = UnixTimeNow;
+			value.Tickets = newNumber;
+			return;
+		}
+		TicketEntry ticketEntry = new TicketEntry
+		{
+			UserId = hub.authManager.UserId,
+			LastUpdate = UnixTimeNow,
+			Tickets = newNumber
+		};
+		AllEntries.Add(ticketEntry);
+		EntriesByUser.Add(hub, ticketEntry);
+	}
+
+	public void Dispose()
+	{
+		SaveEntries();
+		AllEntries.Clear();
+		EntriesByUser.Clear();
+		PlayersByIdHash.Clear();
+		_isBusy = false;
+	}
+
+	private static void SaveEntries()
+	{
+		FileManager.WriteToFile(AllEntries.Select(SerializeEntry), FilePath);
+	}
+
+	private static void LoadEntries()
+	{
+		if (!File.Exists(FilePath))
+		{
+			return;
+		}
+		long unixTimeNow = UnixTimeNow;
+		using FileStream stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+		using StreamReader streamReader = new StreamReader(stream);
+		while (true)
+		{
+			string text = streamReader.ReadLine();
+			if (text == null)
 			{
-				return DateTimeOffset.Now.ToUnixTimeSeconds();
+				break;
+			}
+			if (TryDeserialize(text, out var entry) && entry.LastUpdate + 1296000 >= unixTimeNow)
+			{
+				AddEntry(entry);
 			}
 		}
+	}
 
-		public ScpTicketsLoader()
+	private static void AddEntry(TicketEntry entry)
+	{
+		AllEntries.Add(entry);
+		int hashCode = entry.UserId.GetHashCode();
+		if (!PlayersByIdHash.TryGetValue(hashCode, out var value))
 		{
-			if (ScpTicketsLoader._isBusy)
-			{
-				throw new InvalidOperationException("Unable to load SCP ticket entries. Another ScpTicketsLoader is active or undisposed.");
-			}
-			ScpTicketsLoader._isBusy = true;
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				string userId = referenceHub.authManager.UserId;
-				if (!string.IsNullOrEmpty(userId))
-				{
-					ScpTicketsLoader.PlayersByIdHash.GetOrAdd(userId.GetHashCode(), () => new List<ReferenceHub>()).Add(referenceHub);
-				}
-			}
-			ScpTicketsLoader.LoadEntries();
+			return;
 		}
-
-		public int GetTickets(ReferenceHub hub, int defaultNumber)
+		foreach (ReferenceHub item in value)
 		{
-			ScpTicketsLoader.TicketEntry ticketEntry;
-			if (!ScpTicketsLoader.EntriesByUser.TryGetValue(hub, out ticketEntry))
+			if (!(item.authManager.UserId != entry.UserId))
 			{
-				return defaultNumber;
-			}
-			return ticketEntry.Tickets;
-		}
-
-		public void ModifyTickets(ReferenceHub hub, int newNumber)
-		{
-			ScpTicketsLoader.TicketEntry ticketEntry;
-			if (ScpTicketsLoader.EntriesByUser.TryGetValue(hub, out ticketEntry))
-			{
-				ticketEntry.LastUpdate = ScpTicketsLoader.UnixTimeNow;
-				ticketEntry.Tickets = newNumber;
-				return;
-			}
-			ScpTicketsLoader.TicketEntry ticketEntry2 = new ScpTicketsLoader.TicketEntry
-			{
-				UserId = hub.authManager.UserId,
-				LastUpdate = ScpTicketsLoader.UnixTimeNow,
-				Tickets = newNumber
-			};
-			ScpTicketsLoader.AllEntries.Add(ticketEntry2);
-			ScpTicketsLoader.EntriesByUser.Add(hub, ticketEntry2);
-		}
-
-		public void Dispose()
-		{
-			ScpTicketsLoader.SaveEntries();
-			ScpTicketsLoader.AllEntries.Clear();
-			ScpTicketsLoader.EntriesByUser.Clear();
-			ScpTicketsLoader.PlayersByIdHash.Clear();
-			ScpTicketsLoader._isBusy = false;
-		}
-
-		private static void SaveEntries()
-		{
-			FileManager.WriteToFile(ScpTicketsLoader.AllEntries.Select(new Func<ScpTicketsLoader.TicketEntry, string>(ScpTicketsLoader.SerializeEntry)), ScpTicketsLoader.FilePath, false);
-		}
-
-		private static void LoadEntries()
-		{
-			if (!File.Exists(ScpTicketsLoader.FilePath))
-			{
-				return;
-			}
-			long unixTimeNow = ScpTicketsLoader.UnixTimeNow;
-			using (FileStream fileStream = new FileStream(ScpTicketsLoader.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-			{
-				using (StreamReader streamReader = new StreamReader(fileStream))
-				{
-					for (;;)
-					{
-						string text = streamReader.ReadLine();
-						if (text == null)
-						{
-							break;
-						}
-						ScpTicketsLoader.TicketEntry ticketEntry;
-						if (ScpTicketsLoader.TryDeserialize(text, out ticketEntry) && ticketEntry.LastUpdate + 1296000L >= unixTimeNow)
-						{
-							ScpTicketsLoader.AddEntry(ticketEntry);
-						}
-					}
-				}
+				EntriesByUser[item] = entry;
 			}
 		}
+	}
 
-		private static void AddEntry(ScpTicketsLoader.TicketEntry entry)
+	private static string SerializeEntry(TicketEntry entry)
+	{
+		return entry.UserId + ';' + entry.Tickets + ';' + entry.LastUpdate;
+	}
+
+	private static bool TryDeserialize(string text, out TicketEntry entry)
+	{
+		entry = null;
+		if (string.IsNullOrEmpty(text))
 		{
-			ScpTicketsLoader.AllEntries.Add(entry);
-			int hashCode = entry.UserId.GetHashCode();
-			List<ReferenceHub> list;
-			if (!ScpTicketsLoader.PlayersByIdHash.TryGetValue(hashCode, out list))
-			{
-				return;
-			}
-			foreach (ReferenceHub referenceHub in list)
-			{
-				if (!(referenceHub.authManager.UserId != entry.UserId))
-				{
-					ScpTicketsLoader.EntriesByUser[referenceHub] = entry;
-				}
-			}
+			return false;
 		}
-
-		private static string SerializeEntry(ScpTicketsLoader.TicketEntry entry)
+		string[] array = text.Split(';');
+		if (array.Length != 3)
 		{
-			return string.Concat(new object[] { entry.UserId, ';', entry.Tickets, ';', entry.LastUpdate });
+			return false;
 		}
-
-		private static bool TryDeserialize(string text, out ScpTicketsLoader.TicketEntry entry)
+		if (!int.TryParse(array[1], out var result))
 		{
-			entry = null;
-			if (string.IsNullOrEmpty(text))
-			{
-				return false;
-			}
-			string[] array = text.Split(';', StringSplitOptions.None);
-			if (array.Length != 3)
-			{
-				return false;
-			}
-			int num;
-			if (!int.TryParse(array[1], out num))
-			{
-				return false;
-			}
-			long num2;
-			if (!long.TryParse(array[2], out num2))
-			{
-				return false;
-			}
-			entry = new ScpTicketsLoader.TicketEntry
-			{
-				UserId = array[0],
-				Tickets = num,
-				LastUpdate = num2
-			};
-			return true;
+			return false;
 		}
-
-		private static readonly List<ScpTicketsLoader.TicketEntry> AllEntries = new List<ScpTicketsLoader.TicketEntry>(65535);
-
-		private static readonly Dictionary<ReferenceHub, ScpTicketsLoader.TicketEntry> EntriesByUser = new Dictionary<ReferenceHub, ScpTicketsLoader.TicketEntry>();
-
-		private static readonly Dictionary<int, List<ReferenceHub>> PlayersByIdHash = new Dictionary<int, List<ReferenceHub>>();
-
-		private static bool _isBusy;
-
-		private const string Filename = "ScpTickets.txt";
-
-		private const int ExpectedCapacity = 65535;
-
-		private const int ExpirationTime = 1296000;
-
-		private const char Separator = ';';
-
-		private class TicketEntry
+		if (!long.TryParse(array[2], out var result2))
 		{
-			public string UserId;
-
-			public int Tickets;
-
-			public long LastUpdate;
+			return false;
 		}
+		entry = new TicketEntry
+		{
+			UserId = array[0],
+			Tickets = result,
+			LastUpdate = result2
+		};
+		return true;
 	}
 }

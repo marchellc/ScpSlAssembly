@@ -1,30 +1,21 @@
-﻿using System;
 using Mirror;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class SeveredEyes : TickingEffectBase
 {
-	public class SeveredEyes : TickingEffectBase
+	[SerializeField]
+	private float _damagePerTick;
+
+	public override bool AllowEnabling => true;
+
+	protected override void OnTick()
 	{
-		public override bool AllowEnabling
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return true;
-			}
+			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(_damagePerTick, DeathTranslations.Scp1344));
 		}
-
-		protected override void OnTick()
-		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(this._damagePerTick, DeathTranslations.Scp1344, null));
-		}
-
-		[SerializeField]
-		private float _damagePerTick;
 	}
 }

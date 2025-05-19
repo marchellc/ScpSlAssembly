@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Attachments.Components;
@@ -6,120 +6,116 @@ using InventorySystem.Items.Firearms.Modules.Misc;
 using PlayerRoles;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class AnimatorStateSetterModule : ModuleBase
 {
-	public class AnimatorStateSetterModule : ModuleBase
+	private static readonly Dictionary<AttachmentSlot, int> SlotHash = new Dictionary<AttachmentSlot, int>();
+
+	private static readonly Dictionary<AttachmentParam, int> ParamHash = new Dictionary<AttachmentParam, int>();
+
+	[SerializeField]
+	private AttachmentSlot[] _exposedSlots;
+
+	[SerializeField]
+	private AttachmentParam[] _exposedParams;
+
+	[SerializeField]
+	private bool _setRoleId;
+
+	private readonly HashSet<Attachment> _activeFlags = new HashSet<Attachment>();
+
+	[ExposedFirearmEvent]
+	public void SkipFrames(int frames)
 	{
-		[ExposedFirearmEvent]
-		public void SkipFrames(int frames)
+		FirearmEvent currentlyInvokedEvent = FirearmEvent.CurrentlyInvokedEvent;
+		if (currentlyInvokedEvent != null)
 		{
-			FirearmEvent currentlyInvokedEvent = FirearmEvent.CurrentlyInvokedEvent;
-			if (currentlyInvokedEvent == null)
-			{
-				return;
-			}
 			float totalSpeedMultiplier = currentlyInvokedEvent.LastInvocation.TotalSpeedMultiplier;
-			if (totalSpeedMultiplier <= 0f)
+			if (!(totalSpeedMultiplier <= 0f))
 			{
-				return;
-			}
-			float num = 1f / (currentlyInvokedEvent.Clip.frameRate * totalSpeedMultiplier);
-			base.Firearm.AnimForceUpdate(num * (float)frames);
-		}
-
-		[ExposedFirearmEvent]
-		public void SetAttachmentReady(Attachment attachment)
-		{
-			this._activeFlags.Add(attachment);
-		}
-
-		public bool GetReadyFlag(Attachment attachment)
-		{
-			return this._activeFlags.Contains(attachment);
-		}
-
-		internal override void EquipUpdate()
-		{
-			base.EquipUpdate();
-			this.ExposeParameters();
-			this.ExposeAttachments();
-			if (!this._setRoleId)
-			{
-				return;
-			}
-			base.Firearm.AnimSetInt(FirearmAnimatorHashes.RoleId, (int)base.Firearm.Owner.GetRoleId(), false);
-		}
-
-		internal override void OnHolstered()
-		{
-			base.OnHolstered();
-			this._activeFlags.Clear();
-		}
-
-		private void ExposeParameters()
-		{
-			foreach (AttachmentParam attachmentParam in this._exposedParams)
-			{
-				int num = AnimatorStateSetterModule.EnumToHash<AttachmentParam>(attachmentParam, AnimatorStateSetterModule.ParamHash, new Func<string, int>(Animator.StringToHash));
-				base.Firearm.AnimSetFloat(num, base.Firearm.AttachmentsValue(attachmentParam), false);
+				float num = 1f / (currentlyInvokedEvent.Clip.frameRate * totalSpeedMultiplier);
+				base.Firearm.AnimForceUpdate(num * (float)frames);
 			}
 		}
+	}
 
-		private void ExposeAttachments()
+	[ExposedFirearmEvent]
+	public void SetAttachmentReady(Attachment attachment)
+	{
+		_activeFlags.Add(attachment);
+	}
+
+	public bool GetReadyFlag(Attachment attachment)
+	{
+		return _activeFlags.Contains(attachment);
+	}
+
+	internal override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		ExposeParameters();
+		ExposeAttachments();
+		if (_setRoleId)
 		{
-			Attachment[] attachments = base.Firearm.Attachments;
-			foreach (AttachmentSlot attachmentSlot in this._exposedSlots)
+			base.Firearm.AnimSetInt(FirearmAnimatorHashes.RoleId, (int)base.Firearm.Owner.GetRoleId());
+		}
+	}
+
+	internal override void OnHolstered()
+	{
+		base.OnHolstered();
+		_activeFlags.Clear();
+	}
+
+	private void ExposeParameters()
+	{
+		AttachmentParam[] exposedParams = _exposedParams;
+		foreach (AttachmentParam attachmentParam in exposedParams)
+		{
+			int hash = EnumToHash(attachmentParam, ParamHash, Animator.StringToHash);
+			base.Firearm.AnimSetFloat(hash, base.Firearm.AttachmentsValue(attachmentParam));
+		}
+	}
+
+	private void ExposeAttachments()
+	{
+		Attachment[] attachments = base.Firearm.Attachments;
+		AttachmentSlot[] exposedSlots = _exposedSlots;
+		foreach (AttachmentSlot attachmentSlot in exposedSlots)
+		{
+			int num = -1;
+			for (int j = 0; j < attachments.Length; j++)
 			{
-				int num = -1;
-				for (int j = 0; j < attachments.Length; j++)
+				if (attachments[j].Slot == attachmentSlot)
 				{
-					if (attachments[j].Slot == attachmentSlot)
+					num++;
+					if (attachments[j].IsEnabled)
 					{
-						num++;
-						if (attachments[j].IsEnabled)
-						{
-							break;
-						}
+						break;
 					}
 				}
-				if (num >= 0)
-				{
-					int num2 = AnimatorStateSetterModule.EnumToHash<AttachmentSlot>(attachmentSlot, AnimatorStateSetterModule.SlotHash, new Func<string, int>(AnimatorStateSetterModule.GenerateAttachmentIdHash));
-					base.Firearm.AnimSetInt(num2, num, false);
-				}
 			}
-		}
-
-		private static int GenerateAttachmentIdHash(string enumName)
-		{
-			return Animator.StringToHash(enumName + "Id");
-		}
-
-		private static int EnumToHash<T>(T enumValue, Dictionary<T, int> cache, Func<string, int> hashFunc) where T : struct, Enum, IConvertible
-		{
-			int num;
-			if (!cache.TryGetValue(enumValue, out num))
+			if (num >= 0)
 			{
-				int num2 = enumValue.ToInt32(null);
-				num = hashFunc(EnumUtils<T>.Names[num2]);
-				cache[enumValue] = num;
+				int hash = EnumToHash(attachmentSlot, SlotHash, GenerateAttachmentIdHash);
+				base.Firearm.AnimSetInt(hash, num);
 			}
-			return num;
 		}
+	}
 
-		private static readonly Dictionary<AttachmentSlot, int> SlotHash = new Dictionary<AttachmentSlot, int>();
+	private static int GenerateAttachmentIdHash(string enumName)
+	{
+		return Animator.StringToHash(enumName + "Id");
+	}
 
-		private static readonly Dictionary<AttachmentParam, int> ParamHash = new Dictionary<AttachmentParam, int>();
-
-		[SerializeField]
-		private AttachmentSlot[] _exposedSlots;
-
-		[SerializeField]
-		private AttachmentParam[] _exposedParams;
-
-		[SerializeField]
-		private bool _setRoleId;
-
-		private readonly HashSet<Attachment> _activeFlags = new HashSet<Attachment>();
+	private static int EnumToHash<T>(T enumValue, Dictionary<T, int> cache, Func<string, int> hashFunc) where T : struct, Enum, IConvertible
+	{
+		if (!cache.TryGetValue(enumValue, out var value))
+		{
+			int num = enumValue.ToInt32(null);
+			value = (cache[enumValue] = hashFunc(EnumUtils<T>.Names[num]));
+		}
+		return value;
 	}
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using CameraShaking;
 using InventorySystem;
 using InventorySystem.Items;
@@ -6,116 +5,102 @@ using PlayerRoles.FirstPersonControl.Thirdperson;
 using PlayerRoles.Spectating;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl
+namespace PlayerRoles.FirstPersonControl;
+
+public class FpcSpectatableModule : SpectatableModuleBase, IViewmodelRole
 {
-	public class FpcSpectatableModule : SpectatableModuleBase, IViewmodelRole
+	private FirstPersonMovementModule FpcModule => (base.MainRole as IFpcRole).FpcModule;
+
+	public ItemViewmodelBase SpawnedViewmodel { get; private set; }
+
+	public override Vector3 CameraPosition
 	{
-		private FirstPersonMovementModule FpcModule
+		get
 		{
-			get
+			if (!(base.MainRole is ICameraController cameraController))
 			{
-				return (base.MainRole as IFpcRole).FpcModule;
+				return base.TargetHub.PlayerCameraReference.position;
+			}
+			return cameraController.CameraPosition;
+		}
+	}
+
+	public override Vector3 CameraRotation
+	{
+		get
+		{
+			if (base.MainRole is ICameraController cameraController)
+			{
+				float z = ((cameraController is IAdvancedCameraController advancedCameraController) ? advancedCameraController.RollRotation : 0f);
+				return new Vector3(cameraController.VerticalRotation, cameraController.HorizontalRotation, z);
+			}
+			return base.TargetHub.PlayerCameraReference.rotation.eulerAngles;
+		}
+	}
+
+	internal override void OnBeganSpectating()
+	{
+		FpcModule.CharacterModelInstance.SetVisibility(newState: false);
+		Inventory.OnCurrentItemChanged += OnCurrentItemChanged;
+		ItemIdentifier curItem = base.TargetHub.inventory.CurItem;
+		OnCurrentItemChanged(base.TargetHub, curItem, curItem);
+		SharedHandsController.SetRoleGloves(base.TargetHub.GetRoleId());
+		if (FpcModule.CharacterModelInstance is AnimatedCharacterModel model)
+		{
+			CameraShakeController.AddEffect(new HeadbobShake(model));
+		}
+	}
+
+	internal override void OnStoppedSpectating()
+	{
+		CharacterModel characterModelInstance = FpcModule.CharacterModelInstance;
+		ReferenceHub ownerHub = characterModelInstance.OwnerHub;
+		if (!(ownerHub != null) || !ownerHub.isLocalPlayer)
+		{
+			characterModelInstance.SetVisibility(newState: true);
+		}
+		Inventory.OnCurrentItemChanged -= OnCurrentItemChanged;
+		if (SpawnedViewmodel != null)
+		{
+			Object.Destroy(SpawnedViewmodel.gameObject);
+		}
+		SharedHandsController.UpdateInstance(null);
+	}
+
+	private void OnCurrentItemChanged(ReferenceHub hub, ItemIdentifier oldItem, ItemIdentifier newItem)
+	{
+		if (base.MainRole.TryGetOwner(out var hub2) && !(hub != hub2))
+		{
+			if (SpawnedViewmodel != null)
+			{
+				Object.Destroy(SpawnedViewmodel.gameObject);
+			}
+			if (InventoryItemLoader.TryGetItem<ItemBase>(newItem.TypeId, out var result) && result.ViewModel != null)
+			{
+				SpawnedViewmodel = Object.Instantiate(result.ViewModel, SharedHandsController.Singleton.transform);
+				SharedHandsController.UpdateInstance(SpawnedViewmodel);
+				SpawnedViewmodel.InitSpectator(hub, newItem, oldItem == newItem);
+			}
+			else
+			{
+				SpawnedViewmodel = null;
+				SharedHandsController.UpdateInstance(null);
 			}
 		}
+	}
 
-		public ItemViewmodelBase SpawnedViewmodel { get; private set; }
-
-		public override Vector3 CameraPosition
+	public bool TryGetViewmodelFov(out float fov)
+	{
+		if (SpawnedViewmodel != null)
 		{
-			get
-			{
-				ICameraController cameraController = base.MainRole as ICameraController;
-				if (cameraController == null)
-				{
-					return base.TargetHub.PlayerCameraReference.position;
-				}
-				return cameraController.CameraPosition;
-			}
+			fov = SpawnedViewmodel.ViewmodelCameraFOV;
+			return true;
 		}
-
-		public override Vector3 CameraRotation
+		if (base.MainRole is IViewmodelRole viewmodelRole)
 		{
-			get
-			{
-				ICameraController cameraController = base.MainRole as ICameraController;
-				if (cameraController != null)
-				{
-					IAdvancedCameraController advancedCameraController = cameraController as IAdvancedCameraController;
-					float num = ((advancedCameraController != null) ? advancedCameraController.RollRotation : 0f);
-					return new Vector3(cameraController.VerticalRotation, cameraController.HorizontalRotation, num);
-				}
-				return base.TargetHub.PlayerCameraReference.rotation.eulerAngles;
-			}
+			return viewmodelRole.TryGetViewmodelFov(out fov);
 		}
-
-		internal override void OnBeganSpectating()
-		{
-			this.FpcModule.CharacterModelInstance.SetVisibility(false);
-			Inventory.OnCurrentItemChanged += this.OnCurrentItemChanged;
-			ItemIdentifier curItem = base.TargetHub.inventory.CurItem;
-			this.OnCurrentItemChanged(base.TargetHub, curItem, curItem);
-			SharedHandsController.SetRoleGloves(base.TargetHub.GetRoleId());
-			AnimatedCharacterModel animatedCharacterModel = this.FpcModule.CharacterModelInstance as AnimatedCharacterModel;
-			if (animatedCharacterModel == null)
-			{
-				return;
-			}
-			CameraShakeController.AddEffect(new HeadbobShake(animatedCharacterModel));
-		}
-
-		internal override void OnStoppedSpectating()
-		{
-			CharacterModel characterModelInstance = this.FpcModule.CharacterModelInstance;
-			ReferenceHub ownerHub = characterModelInstance.OwnerHub;
-			if (!(ownerHub != null) || !ownerHub.isLocalPlayer)
-			{
-				characterModelInstance.SetVisibility(true);
-			}
-			Inventory.OnCurrentItemChanged -= this.OnCurrentItemChanged;
-			if (this.SpawnedViewmodel != null)
-			{
-				global::UnityEngine.Object.Destroy(this.SpawnedViewmodel.gameObject);
-			}
-			SharedHandsController.UpdateInstance(null);
-		}
-
-		private void OnCurrentItemChanged(ReferenceHub hub, ItemIdentifier oldItem, ItemIdentifier newItem)
-		{
-			ReferenceHub referenceHub;
-			if (!base.MainRole.TryGetOwner(out referenceHub) || hub != referenceHub)
-			{
-				return;
-			}
-			if (this.SpawnedViewmodel != null)
-			{
-				global::UnityEngine.Object.Destroy(this.SpawnedViewmodel.gameObject);
-			}
-			ItemBase itemBase;
-			if (InventoryItemLoader.TryGetItem<ItemBase>(newItem.TypeId, out itemBase) && itemBase.ViewModel != null)
-			{
-				this.SpawnedViewmodel = global::UnityEngine.Object.Instantiate<ItemViewmodelBase>(itemBase.ViewModel, SharedHandsController.Singleton.transform);
-				SharedHandsController.UpdateInstance(this.SpawnedViewmodel);
-				this.SpawnedViewmodel.InitSpectator(hub, newItem, oldItem == newItem);
-				return;
-			}
-			this.SpawnedViewmodel = null;
-			SharedHandsController.UpdateInstance(null);
-		}
-
-		public bool TryGetViewmodelFov(out float fov)
-		{
-			if (this.SpawnedViewmodel != null)
-			{
-				fov = this.SpawnedViewmodel.ViewmodelCameraFOV;
-				return true;
-			}
-			IViewmodelRole viewmodelRole = base.MainRole as IViewmodelRole;
-			if (viewmodelRole != null)
-			{
-				return viewmodelRole.TryGetViewmodelFov(out fov);
-			}
-			fov = 0f;
-			return false;
-		}
+		fov = 0f;
+		return false;
 	}
 }

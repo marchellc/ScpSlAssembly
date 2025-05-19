@@ -1,28 +1,26 @@
-﻿using System;
 using InventorySystem.Items.Firearms.Extensions;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules.Misc
+namespace InventorySystem.Items.Firearms.Modules.Misc;
+
+public class ViewmodelConditionalLayerExtension : MonoBehaviour, IViewmodelExtension
 {
-	public class ViewmodelConditionalLayerExtension : MonoBehaviour, IViewmodelExtension
+	private Firearm _firearm;
+
+	[SerializeField]
+	private ConditionalEvaluator _condition;
+
+	[SerializeField]
+	private AnimatorConditionalOverride _layer;
+
+	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
-		{
-			this._firearm = viewmodel.ParentFirearm;
-			this._condition.InitInstance(this._firearm);
-		}
+		_firearm = viewmodel.ParentFirearm;
+		_condition.InitInstance(_firearm);
+	}
 
-		private void LateUpdate()
-		{
-			this._layer.Update(this._firearm, this._condition.Evaluate());
-		}
-
-		private Firearm _firearm;
-
-		[SerializeField]
-		private ConditionalEvaluator _condition;
-
-		[SerializeField]
-		private AnimatorConditionalOverride _layer;
+	private void LateUpdate()
+	{
+		_layer.Update(_firearm, _condition.Evaluate());
 	}
 }

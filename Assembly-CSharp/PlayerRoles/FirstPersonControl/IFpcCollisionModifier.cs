@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl
-{
-	public interface IFpcCollisionModifier
-	{
-		LayerMask DetectionMask { get; }
+namespace PlayerRoles.FirstPersonControl;
 
-		void ProcessColliders(ArraySegment<Collider> detections);
-	}
+public interface IFpcCollisionModifier
+{
+	LayerMask DetectionMask { get; }
+
+	void ProcessColliders(ArraySegment<Collider> detections);
 }

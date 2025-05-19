@@ -1,279 +1,230 @@
-﻿using System;
+using System;
 
-namespace LiteNetLib.Utils
+namespace LiteNetLib.Utils;
+
+public class NtpPacket
 {
-	public class NtpPacket
+	private static readonly DateTime Epoch = new DateTime(1900, 1, 1);
+
+	public byte[] Bytes { get; }
+
+	public NtpLeapIndicator LeapIndicator => (NtpLeapIndicator)((Bytes[0] & 0xC0) >> 6);
+
+	public int VersionNumber
 	{
-		public byte[] Bytes { get; }
-
-		public NtpLeapIndicator LeapIndicator
+		get
 		{
-			get
-			{
-				return (NtpLeapIndicator)((this.Bytes[0] & 192) >> 6);
-			}
+			return (Bytes[0] & 0x38) >> 3;
 		}
-
-		public int VersionNumber
+		private set
 		{
-			get
-			{
-				return (this.Bytes[0] & 56) >> 3;
-			}
-			private set
-			{
-				this.Bytes[0] = (byte)(((int)this.Bytes[0] & -57) | (value << 3));
-			}
+			Bytes[0] = (byte)((Bytes[0] & -57) | (value << 3));
 		}
+	}
 
-		public NtpMode Mode
+	public NtpMode Mode
+	{
+		get
 		{
-			get
-			{
-				return (NtpMode)(this.Bytes[0] & 7);
-			}
-			private set
-			{
-				this.Bytes[0] = (byte)(((NtpMode)this.Bytes[0] & (NtpMode)(-8)) | value);
-			}
+			return (NtpMode)(Bytes[0] & 7);
 		}
-
-		public int Stratum
+		private set
 		{
-			get
-			{
-				return (int)this.Bytes[1];
-			}
+			Bytes[0] = (byte)((uint)(Bytes[0] & -8) | (uint)value);
 		}
+	}
 
-		public int Poll
+	public int Stratum => Bytes[1];
+
+	public int Poll => Bytes[2];
+
+	public int Precision => (sbyte)Bytes[3];
+
+	public TimeSpan RootDelay => GetTimeSpan32(4);
+
+	public TimeSpan RootDispersion => GetTimeSpan32(8);
+
+	public uint ReferenceId => GetUInt32BE(12);
+
+	public DateTime? ReferenceTimestamp => GetDateTime64(16);
+
+	public DateTime? OriginTimestamp => GetDateTime64(24);
+
+	public DateTime? ReceiveTimestamp => GetDateTime64(32);
+
+	public DateTime? TransmitTimestamp
+	{
+		get
 		{
-			get
-			{
-				return (int)this.Bytes[2];
-			}
+			return GetDateTime64(40);
 		}
-
-		public int Precision
+		private set
 		{
-			get
-			{
-				return (int)((sbyte)this.Bytes[3]);
-			}
+			SetDateTime64(40, value);
 		}
+	}
 
-		public TimeSpan RootDelay
+	public DateTime? DestinationTimestamp { get; private set; }
+
+	public TimeSpan RoundTripTime
+	{
+		get
 		{
-			get
-			{
-				return this.GetTimeSpan32(4);
-			}
+			CheckTimestamps();
+			return ReceiveTimestamp.Value - OriginTimestamp.Value + (DestinationTimestamp.Value - TransmitTimestamp.Value);
 		}
+	}
 
-		public TimeSpan RootDispersion
+	public TimeSpan CorrectionOffset
+	{
+		get
 		{
-			get
-			{
-				return this.GetTimeSpan32(8);
-			}
+			CheckTimestamps();
+			return TimeSpan.FromTicks((ReceiveTimestamp.Value - OriginTimestamp.Value - (DestinationTimestamp.Value - TransmitTimestamp.Value)).Ticks / 2);
 		}
+	}
 
-		public uint ReferenceId
+	public NtpPacket()
+		: this(new byte[48])
+	{
+		Mode = NtpMode.Client;
+		VersionNumber = 4;
+		TransmitTimestamp = DateTime.UtcNow;
+	}
+
+	internal NtpPacket(byte[] bytes)
+	{
+		if (bytes.Length < 48)
 		{
-			get
-			{
-				return this.GetUInt32BE(12);
-			}
+			throw new ArgumentException("SNTP reply packet must be at least 48 bytes long.", "bytes");
 		}
+		Bytes = bytes;
+	}
 
-		public DateTime? ReferenceTimestamp
+	public static NtpPacket FromServerResponse(byte[] bytes, DateTime destinationTimestamp)
+	{
+		return new NtpPacket(bytes)
 		{
-			get
-			{
-				return this.GetDateTime64(16);
-			}
-		}
+			DestinationTimestamp = destinationTimestamp
+		};
+	}
 
-		public DateTime? OriginTimestamp
+	internal void ValidateRequest()
+	{
+		if (Mode != NtpMode.Client)
 		{
-			get
-			{
-				return this.GetDateTime64(24);
-			}
+			throw new InvalidOperationException("This is not a request SNTP packet.");
 		}
-
-		public DateTime? ReceiveTimestamp
+		if (VersionNumber == 0)
 		{
-			get
-			{
-				return this.GetDateTime64(32);
-			}
+			throw new InvalidOperationException("Protocol version of the request is not specified.");
 		}
-
-		public DateTime? TransmitTimestamp
+		if (!TransmitTimestamp.HasValue)
 		{
-			get
-			{
-				return this.GetDateTime64(40);
-			}
-			private set
-			{
-				this.SetDateTime64(40, value);
-			}
+			throw new InvalidOperationException("TransmitTimestamp must be set in request packet.");
 		}
+	}
 
-		public DateTime? DestinationTimestamp { get; private set; }
-
-		public TimeSpan RoundTripTime
+	internal void ValidateReply()
+	{
+		if (Mode != NtpMode.Server)
 		{
-			get
-			{
-				this.CheckTimestamps();
-				return this.ReceiveTimestamp.Value - this.OriginTimestamp.Value + (this.DestinationTimestamp.Value - this.TransmitTimestamp.Value);
-			}
+			throw new InvalidOperationException("This is not a reply SNTP packet.");
 		}
-
-		public TimeSpan CorrectionOffset
+		if (VersionNumber == 0)
 		{
-			get
-			{
-				this.CheckTimestamps();
-				return TimeSpan.FromTicks((this.ReceiveTimestamp.Value - this.OriginTimestamp.Value - (this.DestinationTimestamp.Value - this.TransmitTimestamp.Value)).Ticks / 2L);
-			}
+			throw new InvalidOperationException("Protocol version of the reply is not specified.");
 		}
-
-		public NtpPacket()
-			: this(new byte[48])
+		if (Stratum == 0)
 		{
-			this.Mode = NtpMode.Client;
-			this.VersionNumber = 4;
-			this.TransmitTimestamp = new DateTime?(DateTime.UtcNow);
+			throw new InvalidOperationException($"Received Kiss-o'-Death SNTP packet with code 0x{ReferenceId:x}.");
 		}
-
-		internal NtpPacket(byte[] bytes)
+		if (LeapIndicator == NtpLeapIndicator.AlarmCondition)
 		{
-			if (bytes.Length < 48)
-			{
-				throw new ArgumentException("SNTP reply packet must be at least 48 bytes long.", "bytes");
-			}
-			this.Bytes = bytes;
+			throw new InvalidOperationException("SNTP server has unsynchronized clock.");
 		}
+		CheckTimestamps();
+	}
 
-		public static NtpPacket FromServerResponse(byte[] bytes, DateTime destinationTimestamp)
+	private void CheckTimestamps()
+	{
+		if (!OriginTimestamp.HasValue)
 		{
-			return new NtpPacket(bytes)
-			{
-				DestinationTimestamp = new DateTime?(destinationTimestamp)
-			};
+			throw new InvalidOperationException("Origin timestamp is missing.");
 		}
-
-		internal void ValidateRequest()
+		if (!ReceiveTimestamp.HasValue)
 		{
-			if (this.Mode != NtpMode.Client)
-			{
-				throw new InvalidOperationException("This is not a request SNTP packet.");
-			}
-			if (this.VersionNumber == 0)
-			{
-				throw new InvalidOperationException("Protocol version of the request is not specified.");
-			}
-			if (this.TransmitTimestamp == null)
-			{
-				throw new InvalidOperationException("TransmitTimestamp must be set in request packet.");
-			}
+			throw new InvalidOperationException("Receive timestamp is missing.");
 		}
-
-		internal void ValidateReply()
+		if (!TransmitTimestamp.HasValue)
 		{
-			if (this.Mode != NtpMode.Server)
-			{
-				throw new InvalidOperationException("This is not a reply SNTP packet.");
-			}
-			if (this.VersionNumber == 0)
-			{
-				throw new InvalidOperationException("Protocol version of the reply is not specified.");
-			}
-			if (this.Stratum == 0)
-			{
-				throw new InvalidOperationException(string.Format("Received Kiss-o'-Death SNTP packet with code 0x{0:x}.", this.ReferenceId));
-			}
-			if (this.LeapIndicator == NtpLeapIndicator.AlarmCondition)
-			{
-				throw new InvalidOperationException("SNTP server has unsynchronized clock.");
-			}
-			this.CheckTimestamps();
+			throw new InvalidOperationException("Transmit timestamp is missing.");
 		}
-
-		private void CheckTimestamps()
+		if (!DestinationTimestamp.HasValue)
 		{
-			if (this.OriginTimestamp == null)
-			{
-				throw new InvalidOperationException("Origin timestamp is missing.");
-			}
-			if (this.ReceiveTimestamp == null)
-			{
-				throw new InvalidOperationException("Receive timestamp is missing.");
-			}
-			if (this.TransmitTimestamp == null)
-			{
-				throw new InvalidOperationException("Transmit timestamp is missing.");
-			}
-			if (this.DestinationTimestamp == null)
-			{
-				throw new InvalidOperationException("Destination timestamp is missing.");
-			}
+			throw new InvalidOperationException("Destination timestamp is missing.");
 		}
+	}
 
-		private DateTime? GetDateTime64(int offset)
+	private DateTime? GetDateTime64(int offset)
+	{
+		ulong uInt64BE = GetUInt64BE(offset);
+		if (uInt64BE == 0L)
 		{
-			ulong uint64BE = this.GetUInt64BE(offset);
-			if (uint64BE == 0UL)
-			{
-				return null;
-			}
-			return new DateTime?(new DateTime(NtpPacket.Epoch.Ticks + Convert.ToInt64(uint64BE * 0.0023283064365386963)));
+			return null;
 		}
+		DateTime epoch = Epoch;
+		return new DateTime(epoch.Ticks + Convert.ToInt64((double)uInt64BE * 0.0023283064365386963));
+	}
 
-		private void SetDateTime64(int offset, DateTime? value)
+	private void SetDateTime64(int offset, DateTime? value)
+	{
+		long value2;
+		if (value.HasValue)
 		{
-			this.SetUInt64BE(offset, (value == null) ? 0UL : Convert.ToUInt64((double)(value.Value.Ticks - NtpPacket.Epoch.Ticks) * 429.4967296));
+			long ticks = value.Value.Ticks;
+			DateTime epoch = Epoch;
+			value2 = (long)Convert.ToUInt64((double)(ticks - epoch.Ticks) * 429.4967296);
 		}
-
-		private TimeSpan GetTimeSpan32(int offset)
+		else
 		{
-			return TimeSpan.FromSeconds((double)this.GetInt32BE(offset) / 65536.0);
+			value2 = 0L;
 		}
+		SetUInt64BE(offset, (ulong)value2);
+	}
 
-		private ulong GetUInt64BE(int offset)
-		{
-			return NtpPacket.SwapEndianness(BitConverter.ToUInt64(this.Bytes, offset));
-		}
+	private TimeSpan GetTimeSpan32(int offset)
+	{
+		return TimeSpan.FromSeconds((double)GetInt32BE(offset) / 65536.0);
+	}
 
-		private void SetUInt64BE(int offset, ulong value)
-		{
-			FastBitConverter.GetBytes(this.Bytes, offset, NtpPacket.SwapEndianness(value));
-		}
+	private ulong GetUInt64BE(int offset)
+	{
+		return SwapEndianness(BitConverter.ToUInt64(Bytes, offset));
+	}
 
-		private int GetInt32BE(int offset)
-		{
-			return (int)this.GetUInt32BE(offset);
-		}
+	private void SetUInt64BE(int offset, ulong value)
+	{
+		FastBitConverter.GetBytes(Bytes, offset, SwapEndianness(value));
+	}
 
-		private uint GetUInt32BE(int offset)
-		{
-			return NtpPacket.SwapEndianness(BitConverter.ToUInt32(this.Bytes, offset));
-		}
+	private int GetInt32BE(int offset)
+	{
+		return (int)GetUInt32BE(offset);
+	}
 
-		private static uint SwapEndianness(uint x)
-		{
-			return ((x & 255U) << 24) | ((x & 65280U) << 8) | ((x & 16711680U) >> 8) | ((x & 4278190080U) >> 24);
-		}
+	private uint GetUInt32BE(int offset)
+	{
+		return SwapEndianness(BitConverter.ToUInt32(Bytes, offset));
+	}
 
-		private static ulong SwapEndianness(ulong x)
-		{
-			return ((ulong)NtpPacket.SwapEndianness((uint)x) << 32) | (ulong)NtpPacket.SwapEndianness((uint)(x >> 32));
-		}
+	private static uint SwapEndianness(uint x)
+	{
+		return ((x & 0xFF) << 24) | ((x & 0xFF00) << 8) | ((x & 0xFF0000) >> 8) | ((x & 0xFF000000u) >> 24);
+	}
 
-		private static readonly DateTime Epoch = new DateTime(1900, 1, 1);
+	private static ulong SwapEndianness(ulong x)
+	{
+		return ((ulong)SwapEndianness((uint)x) << 32) | SwapEndianness((uint)(x >> 32));
 	}
 }

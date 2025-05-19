@@ -1,12 +1,10 @@
-﻿using System;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl
-{
-	public interface IMovementInputOverride
-	{
-		bool MovementOverrideActive { get; }
+namespace PlayerRoles.FirstPersonControl;
 
-		Vector3 MovementOverrideDirection { get; }
-	}
+public interface IMovementInputOverride
+{
+	bool MovementOverrideActive { get; }
+
+	Vector3 MovementOverrideDirection { get; }
 }

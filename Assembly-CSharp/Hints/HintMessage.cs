@@ -1,15 +1,13 @@
-﻿using System;
 using Mirror;
 
-namespace Hints
-{
-	public readonly struct HintMessage : NetworkMessage
-	{
-		public HintMessage(Hint content)
-		{
-			this.Content = content;
-		}
+namespace Hints;
 
-		public readonly Hint Content;
+public readonly struct HintMessage : NetworkMessage
+{
+	public readonly Hint Content;
+
+	public HintMessage(Hint content)
+	{
+		Content = content;
 	}
 }

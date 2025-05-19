@@ -1,38 +1,35 @@
-﻿using System;
 using UnityEngine;
 
-namespace Elevators
+namespace Elevators;
+
+public class RigidBodyElevatorFollower : ElevatorFollowerBase
 {
-	public class RigidBodyElevatorFollower : ElevatorFollowerBase
+	public Rigidbody Rigidbody;
+
+	private bool _unlinked;
+
+	protected override void Awake()
 	{
-		protected override void Awake()
+		base.Awake();
+		LastPosition = Rigidbody.position;
+	}
+
+	protected override void LateUpdate()
+	{
+		base.LateUpdate();
+		if (!_unlinked && !Rigidbody.IsSleeping())
 		{
-			base.Awake();
-			this.LastPosition = this.Rigidbody.position;
+			LastPosition = Rigidbody.position;
 		}
+	}
 
-		protected override void LateUpdate()
-		{
-			base.LateUpdate();
-			if (this._unlinked || this.Rigidbody.IsSleeping())
-			{
-				return;
-			}
-			this.LastPosition = this.Rigidbody.position;
-		}
+	private void Reset()
+	{
+		Rigidbody = GetComponent<Rigidbody>();
+	}
 
-		private void Reset()
-		{
-			this.Rigidbody = base.GetComponent<Rigidbody>();
-		}
-
-		public void Unlink()
-		{
-			this._unlinked = true;
-		}
-
-		public Rigidbody Rigidbody;
-
-		private bool _unlinked;
+	public void Unlink()
+	{
+		_unlinked = true;
 	}
 }

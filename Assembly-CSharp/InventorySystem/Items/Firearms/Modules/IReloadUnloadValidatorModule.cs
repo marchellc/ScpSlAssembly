@@ -1,54 +1,56 @@
-﻿using System;
+using System;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public interface IReloadUnloadValidatorModule
 {
-	public interface IReloadUnloadValidatorModule
+	public enum Authorization
 	{
-		IReloadUnloadValidatorModule.Authorization ReloadAuthorization { get; }
+		Idle,
+		Allowed,
+		Vetoed
+	}
 
-		IReloadUnloadValidatorModule.Authorization UnloadAuthorization { get; }
+	Authorization ReloadAuthorization { get; }
 
-		public static bool ValidateReload(Firearm firearm)
+	Authorization UnloadAuthorization { get; }
+
+	static bool ValidateReload(Firearm firearm)
+	{
+		if (ValidateAny(firearm, (IReloadUnloadValidatorModule x) => x.ReloadAuthorization))
 		{
-			return IReloadUnloadValidatorModule.ValidateAny(firearm, (IReloadUnloadValidatorModule x) => x.ReloadAuthorization) && !firearm.PrimaryActionBlocked;
+			return !firearm.PrimaryActionBlocked;
 		}
+		return false;
+	}
 
-		public static bool ValidateUnload(Firearm firearm)
+	static bool ValidateUnload(Firearm firearm)
+	{
+		if (ValidateAny(firearm, (IReloadUnloadValidatorModule x) => x.UnloadAuthorization))
 		{
-			return IReloadUnloadValidatorModule.ValidateAny(firearm, (IReloadUnloadValidatorModule x) => x.UnloadAuthorization) && !firearm.PrimaryActionBlocked;
+			return !firearm.PrimaryActionBlocked;
 		}
+		return false;
+	}
 
-		private static bool ValidateAny(Firearm firearm, Func<IReloadUnloadValidatorModule, IReloadUnloadValidatorModule.Authorization> authorizationFetcher)
+	private static bool ValidateAny(Firearm firearm, Func<IReloadUnloadValidatorModule, Authorization> authorizationFetcher)
+	{
+		bool result = false;
+		ModuleBase[] modules = firearm.Modules;
+		for (int i = 0; i < modules.Length; i++)
 		{
-			bool flag = false;
-			ModuleBase[] modules = firearm.Modules;
-			for (int i = 0; i < modules.Length; i++)
+			if (modules[i] is IReloadUnloadValidatorModule arg)
 			{
-				IReloadUnloadValidatorModule reloadUnloadValidatorModule = modules[i] as IReloadUnloadValidatorModule;
-				if (reloadUnloadValidatorModule != null)
+				switch (authorizationFetcher(arg))
 				{
-					IReloadUnloadValidatorModule.Authorization authorization = authorizationFetcher(reloadUnloadValidatorModule);
-					if (authorization != IReloadUnloadValidatorModule.Authorization.Allowed)
-					{
-						if (authorization == IReloadUnloadValidatorModule.Authorization.Vetoed)
-						{
-							return false;
-						}
-					}
-					else
-					{
-						flag = true;
-					}
+				case Authorization.Allowed:
+					result = true;
+					break;
+				case Authorization.Vetoed:
+					return false;
 				}
 			}
-			return flag;
 		}
-
-		public enum Authorization
-		{
-			Idle,
-			Allowed,
-			Vetoed
-		}
+		return result;
 	}
 }

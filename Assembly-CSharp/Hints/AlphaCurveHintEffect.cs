@@ -1,26 +1,23 @@
-﻿using System;
 using Mirror;
 using UnityEngine;
 
-namespace Hints
+namespace Hints;
+
+public class AlphaCurveHintEffect : CurveHintEffect
 {
-	public class AlphaCurveHintEffect : CurveHintEffect
+	public static AlphaCurveHintEffect FromNetwork(NetworkReader reader)
 	{
-		public static AlphaCurveHintEffect FromNetwork(NetworkReader reader)
-		{
-			AlphaCurveHintEffect alphaCurveHintEffect = new AlphaCurveHintEffect();
-			alphaCurveHintEffect.Deserialize(reader);
-			return alphaCurveHintEffect;
-		}
+		AlphaCurveHintEffect alphaCurveHintEffect = new AlphaCurveHintEffect();
+		alphaCurveHintEffect.Deserialize(reader);
+		return alphaCurveHintEffect;
+	}
 
-		private AlphaCurveHintEffect()
-			: base(0f, 1f)
-		{
-		}
+	private AlphaCurveHintEffect()
+	{
+	}
 
-		public AlphaCurveHintEffect(AnimationCurve curve, float startScalar = 0f, float durationScalar = 1f)
-			: base(curve, startScalar, durationScalar)
-		{
-		}
+	public AlphaCurveHintEffect(AnimationCurve curve, float startScalar = 0f, float durationScalar = 1f)
+		: base(curve, startScalar, durationScalar)
+	{
 	}
 }

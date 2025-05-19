@@ -1,58 +1,55 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CentralAuth;
 using Mirror;
 
-namespace Utils.Networking
+namespace Utils.Networking;
+
+public static class NetworkUtils
 {
-	public static class NetworkUtils
+	private static ArraySegment<byte> _segmentNonAlloc;
+
+	public static Dictionary<uint, NetworkIdentity> SpawnedNetIds
 	{
-		public static void SendToAuthenticated<T>(this T message, int channelId = 0) where T : struct, NetworkMessage
+		get
 		{
-			message.SendToHubsConditionally((ReferenceHub x) => x.Mode > ClientInstanceMode.Unverified, channelId);
-		}
-
-		public static void SendToHubsConditionally<T>(this T msg, Func<ReferenceHub, bool> predicate, int channelId = 0) where T : struct, NetworkMessage
-		{
-			if (!NetworkServer.active)
+			if (NetworkServer.active)
 			{
-				throw new InvalidOperationException("Can not use SendToHubsConditionally because NetworkServer is not active!");
+				return NetworkServer.spawned;
 			}
-			using (NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get())
+			if (NetworkClient.active)
 			{
-				bool flag = false;
-				foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-				{
-					if (predicate(referenceHub))
-					{
-						if (!flag)
-						{
-							NetworkMessages.Pack<T>(msg, networkWriterPooled);
-							NetworkUtils._segmentNonAlloc = networkWriterPooled.ToArraySegment();
-							flag = true;
-						}
-						referenceHub.connectionToClient.Send(NetworkUtils._segmentNonAlloc, channelId);
-					}
-				}
+				return NetworkClient.spawned;
 			}
+			throw new Exception("SpawnedNetIds was accessed before NetworkServer/NetworkClient were active.");
 		}
+	}
 
-		public static Dictionary<uint, NetworkIdentity> SpawnedNetIds
+	public static void SendToAuthenticated<T>(this T message, int channelId = 0) where T : struct, NetworkMessage
+	{
+		message.SendToHubsConditionally((ReferenceHub x) => x.Mode != ClientInstanceMode.Unverified, channelId);
+	}
+
+	public static void SendToHubsConditionally<T>(this T msg, Func<ReferenceHub, bool> predicate, int channelId = 0) where T : struct, NetworkMessage
+	{
+		if (!NetworkServer.active)
 		{
-			get
+			throw new InvalidOperationException("Can not use SendToHubsConditionally because NetworkServer is not active!");
+		}
+		using NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
+		bool flag = false;
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (predicate(allHub))
 			{
-				if (NetworkServer.active)
+				if (!flag)
 				{
-					return NetworkServer.spawned;
+					NetworkMessages.Pack(msg, networkWriterPooled);
+					_segmentNonAlloc = networkWriterPooled.ToArraySegment();
+					flag = true;
 				}
-				if (NetworkClient.active)
-				{
-					return NetworkClient.spawned;
-				}
-				throw new Exception("SpawnedNetIds was accessed before NetworkServer/NetworkClient were active.");
+				allHub.connectionToClient.Send(_segmentNonAlloc, channelId);
 			}
 		}
-
-		private static ArraySegment<byte> _segmentNonAlloc;
 	}
 }

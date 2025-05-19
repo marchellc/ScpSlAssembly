@@ -1,153 +1,144 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ProgressiveCulling
+namespace ProgressiveCulling;
+
+public class CullableArea : CullableBehaviour, IAutoCullerOverrideComponent, IBoundsCullable, ICullable
 {
-	public class CullableArea : CullableBehaviour, IAutoCullerOverrideComponent, IBoundsCullable, ICullable
+	private readonly AutoCuller _autoCuller = new AutoCuller();
+
+	private readonly List<CullableArea> _childAreas = new List<CullableArea>();
+
+	private Bounds[] _worldspaceActivationBounds;
+
+	private Bounds _worldspacePropsBounds;
+
+	[field: SerializeField]
+	public Bounds[] ActivationBounds { get; private set; }
+
+	[field: SerializeField]
+	public Bounds PropsBounds { get; private set; }
+
+	public bool AllowAutoCulling { get; private set; }
+
+	public Bounds WorldspaceBounds => _worldspacePropsBounds;
+
+	public override bool ShouldBeVisible
 	{
-		public Bounds[] ActivationBounds { get; private set; }
-
-		public Bounds PropsBounds { get; private set; }
-
-		public bool AllowAutoCulling { get; private set; }
-
-		public Bounds WorldspaceBounds
+		get
 		{
-			get
+			if (!CullingCamera.CheckBoundsVisibility(_worldspacePropsBounds))
 			{
-				return this._worldspacePropsBounds;
+				return false;
 			}
-		}
-
-		public override bool ShouldBeVisible
-		{
-			get
+			if (_worldspaceActivationBounds == null)
 			{
-				if (!CullingCamera.CheckBoundsVisibility(this._worldspacePropsBounds))
-				{
-					return false;
-				}
-				if (this._worldspaceActivationBounds == null)
+				return true;
+			}
+			Vector3 lastCamPosition = CullingCamera.LastCamPosition;
+			Bounds[] worldspaceActivationBounds = _worldspaceActivationBounds;
+			foreach (Bounds bounds in worldspaceActivationBounds)
+			{
+				if (bounds.Contains(lastCamPosition))
 				{
 					return true;
 				}
-				Vector3 lastPosition = MainCameraController.LastPosition;
-				foreach (Bounds bounds in this._worldspaceActivationBounds)
-				{
-					if (bounds.Contains(lastPosition))
-					{
-						return true;
-					}
-				}
-				return false;
+			}
+			return false;
+		}
+	}
+
+	[ContextMenu("Auto-setup bounds")]
+	private void AutoSetupBounds()
+	{
+		Bounds bounds = new Bounds(base.transform.position, Vector3.zero);
+		Renderer[] componentsInChildren = GetComponentsInChildren<Renderer>();
+		foreach (Renderer renderer in componentsInChildren)
+		{
+			bounds.Encapsulate(renderer.bounds);
+		}
+		PropsBounds = new Bounds(base.transform.InverseTransformPoint(bounds.center), (Quaternion.Inverse(base.transform.rotation) * bounds.size).Abs());
+	}
+
+	private Bounds TransformBounds(Bounds bounds)
+	{
+		Transform obj = base.transform;
+		Vector3 center = obj.TransformPoint(bounds.center);
+		Vector3 size = (obj.rotation * bounds.size).Abs();
+		return new Bounds(center, size);
+	}
+
+	private void Start()
+	{
+		if (base.transform.parent.TryGetComponentInParent<CullableArea>(out var comp))
+		{
+			comp._childAreas.Add(this);
+		}
+		else
+		{
+			CullableRoom componentInParent = GetComponentInParent<CullableRoom>();
+			_worldspacePropsBounds = new Bounds(componentInParent.transform.position, Vector3.one);
+			componentInParent.AddChildCullable(this);
+		}
+		_worldspacePropsBounds = TransformBounds(PropsBounds);
+		if (ActivationBounds == null || ActivationBounds.Length == 0)
+		{
+			_worldspaceActivationBounds = null;
+		}
+		else
+		{
+			int num = ActivationBounds.Length;
+			_worldspaceActivationBounds = new Bounds[num];
+			for (int i = 0; i < num; i++)
+			{
+				_worldspaceActivationBounds[i] = TransformBounds(ActivationBounds[i]);
 			}
 		}
+		GenerateAutoCuller();
+		_autoCuller.SetVisibility(ShouldBeVisible);
+	}
 
-		[ContextMenu("Auto-setup bounds")]
-		private void AutoSetupBounds()
+	private void GenerateAutoCuller()
+	{
+		AllowAutoCulling = true;
+		_autoCuller.Generate(base.gameObject, (GameObject x) => !x.TryGetComponent<CullableArea>(out var component) || component == this, CullingMath.GetSafeForDeactivation);
+		AllowAutoCulling = false;
+	}
+
+	protected override void OnDrawGizmosSelected()
+	{
+		if (base.EditorShowGizmos)
 		{
-			Bounds bounds = new Bounds(base.transform.position, Vector3.zero);
-			foreach (Renderer renderer in base.GetComponentsInChildren<Renderer>())
-			{
-				bounds.Encapsulate(renderer.bounds);
-			}
-			this.PropsBounds = new Bounds(base.transform.InverseTransformPoint(bounds.center), (Quaternion.Inverse(base.transform.rotation) * bounds.size).Abs());
+			_worldspacePropsBounds = TransformBounds(PropsBounds);
 		}
-
-		private Bounds TransformBounds(Bounds bounds)
+		base.OnDrawGizmosSelected();
+		if (base.EditorShowGizmos && ActivationBounds != null)
 		{
-			Transform transform = base.transform;
-			Vector3 vector = transform.TransformPoint(bounds.center);
-			Vector3 vector2 = (transform.rotation * bounds.size).Abs();
-			return new Bounds(vector, vector2);
-		}
-
-		private void Start()
-		{
-			CullableArea cullableArea;
-			if (base.transform.parent.TryGetComponentInParent(out cullableArea))
-			{
-				cullableArea._childAreas.Add(this);
-			}
-			else
-			{
-				CullableRoom componentInParent = base.GetComponentInParent<CullableRoom>();
-				this._worldspacePropsBounds = new Bounds(componentInParent.transform.position, Vector3.one);
-				componentInParent.AddChildCullable(this);
-			}
-			this._worldspacePropsBounds = this.TransformBounds(this.PropsBounds);
-			if (this.ActivationBounds == null || this.ActivationBounds.Length == 0)
-			{
-				this._worldspaceActivationBounds = null;
-			}
-			else
-			{
-				int num = this.ActivationBounds.Length;
-				this._worldspaceActivationBounds = new Bounds[num];
-				for (int i = 0; i < num; i++)
-				{
-					this._worldspaceActivationBounds[i] = this.TransformBounds(this.ActivationBounds[i]);
-				}
-			}
-			this.GenerateAutoCuller();
-			this._autoCuller.SetVisibility(this.ShouldBeVisible);
-		}
-
-		private void GenerateAutoCuller()
-		{
-			this.AllowAutoCulling = true;
-			this._autoCuller.Generate(base.gameObject, delegate(GameObject x)
-			{
-				CullableArea cullableArea;
-				return !x.TryGetComponent<CullableArea>(out cullableArea) || cullableArea == this;
-			}, new Predicate<GameObject>(CullingMath.GetSafeForDeactivation), false);
-			this.AllowAutoCulling = false;
-		}
-
-		protected override void OnDrawGizmosSelected()
-		{
-			if (base.EditorShowGizmos)
-			{
-				this._worldspacePropsBounds = this.TransformBounds(this.PropsBounds);
-			}
-			base.OnDrawGizmosSelected();
-			if (!base.EditorShowGizmos || this.ActivationBounds == null)
-			{
-				return;
-			}
 			Gizmos.color = Color.blue;
-			foreach (Bounds bounds in this.ActivationBounds)
+			Bounds[] activationBounds = ActivationBounds;
+			foreach (Bounds bounds in activationBounds)
 			{
-				Bounds bounds2 = this.TransformBounds(bounds);
+				Bounds bounds2 = TransformBounds(bounds);
 				Gizmos.DrawWireCube(bounds2.center, bounds2.size);
 			}
 		}
+	}
 
-		protected override void OnVisibilityChanged(bool isVisible)
+	protected override void OnVisibilityChanged(bool isVisible)
+	{
+		_autoCuller.SetVisibility(isVisible);
+		foreach (CullableArea childArea in _childAreas)
 		{
-			this._autoCuller.SetVisibility(isVisible);
-			foreach (CullableArea cullableArea in this._childAreas)
-			{
-				cullableArea.SetVisibility(isVisible && cullableArea.ShouldBeVisible);
-			}
+			childArea.SetVisibility(isVisible && childArea.ShouldBeVisible);
 		}
+	}
 
-		protected override void UpdateVisible()
+	protected override void UpdateVisible()
+	{
+		base.UpdateVisible();
+		foreach (CullableArea childArea in _childAreas)
 		{
-			base.UpdateVisible();
-			foreach (CullableArea cullableArea in this._childAreas)
-			{
-				cullableArea.SetVisibility(cullableArea.ShouldBeVisible);
-			}
+			childArea.SetVisibility(childArea.ShouldBeVisible);
 		}
-
-		private readonly AutoCuller _autoCuller = new AutoCuller();
-
-		private readonly List<CullableArea> _childAreas = new List<CullableArea>();
-
-		private Bounds[] _worldspaceActivationBounds;
-
-		private Bounds _worldspacePropsBounds;
 	}
 }

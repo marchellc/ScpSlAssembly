@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles;
 
-namespace PlayerRoles
+public interface IAdvancedCameraController : ICameraController
 {
-	public interface IAdvancedCameraController : ICameraController
-	{
-		float RollRotation { get; }
-	}
+	float RollRotation { get; }
 }

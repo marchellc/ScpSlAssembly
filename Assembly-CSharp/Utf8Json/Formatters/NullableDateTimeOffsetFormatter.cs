@@ -1,38 +1,39 @@
-﻿using System;
+using System;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class NullableDateTimeOffsetFormatter : IJsonFormatter<DateTimeOffset?>, IJsonFormatter
 {
-	public sealed class NullableDateTimeOffsetFormatter : IJsonFormatter<DateTimeOffset?>, IJsonFormatter
+	private readonly DateTimeOffsetFormatter innerFormatter;
+
+	public NullableDateTimeOffsetFormatter()
 	{
-		public NullableDateTimeOffsetFormatter()
-		{
-			this.innerFormatter = new DateTimeOffsetFormatter();
-		}
+		innerFormatter = new DateTimeOffsetFormatter();
+	}
 
-		public NullableDateTimeOffsetFormatter(string formatString)
-		{
-			this.innerFormatter = new DateTimeOffsetFormatter(formatString);
-		}
+	public NullableDateTimeOffsetFormatter(string formatString)
+	{
+		innerFormatter = new DateTimeOffsetFormatter(formatString);
+	}
 
-		public void Serialize(ref JsonWriter writer, DateTimeOffset? value, IJsonFormatterResolver formatterResolver)
+	public void Serialize(ref JsonWriter writer, DateTimeOffset? value, IJsonFormatterResolver formatterResolver)
+	{
+		if (!value.HasValue)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
-			this.innerFormatter.Serialize(ref writer, value.Value, formatterResolver);
+			writer.WriteNull();
 		}
-
-		public DateTimeOffset? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+		else
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			return new DateTimeOffset?(this.innerFormatter.Deserialize(ref reader, formatterResolver));
+			innerFormatter.Serialize(ref writer, value.Value, formatterResolver);
 		}
+	}
 
-		private readonly DateTimeOffsetFormatter innerFormatter;
+	public DateTimeOffset? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
+		{
+			return null;
+		}
+		return innerFormatter.Deserialize(ref reader, formatterResolver);
 	}
 }

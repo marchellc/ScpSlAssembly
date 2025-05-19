@@ -1,161 +1,159 @@
-﻿using System;
+using System;
 using InventorySystem.Items;
 using InventorySystem.Items.Firearms.Ammo;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace InventorySystem.GUI
+namespace InventorySystem.GUI;
+
+[Serializable]
+public class AmmoElement : MonoBehaviour
 {
-	[Serializable]
-	public class AmmoElement : MonoBehaviour
+	[SerializeField]
+	private RawImage _iconImg;
+
+	[SerializeField]
+	private TextMeshProUGUI _nameTxt;
+
+	[SerializeField]
+	private RectTransform _myTransform;
+
+	[SerializeField]
+	private float _minX;
+
+	[SerializeField]
+	private float _maxX;
+
+	[SerializeField]
+	private float _minY;
+
+	[SerializeField]
+	private float _maxY;
+
+	[SerializeField]
+	private Graphic[] _paintableParts;
+
+	[SerializeField]
+	private TextMeshProUGUI _amountIndicator;
+
+	[SerializeField]
+	private TextMeshProUGUI _lowText;
+
+	[SerializeField]
+	private TextMeshProUGUI _medText;
+
+	[SerializeField]
+	private TextMeshProUGUI _highText;
+
+	[SerializeField]
+	private CanvasGroup _dropCanvas;
+
+	private const float DropInvalidAlpha = 0.1f;
+
+	private int _lowAmount;
+
+	private int _medAmount;
+
+	private int _highAmount;
+
+	private bool _allowDropping;
+
+	private ItemBase _targetItem;
+
+	public void UseButton(int type)
 	{
-		public void UseButton(int type)
+		if (_allowDropping)
 		{
-			if (!this._allowDropping)
+			int num = type switch
 			{
-				return;
-			}
-			int num = ((type == 0) ? this._lowAmount : ((type == 1) ? this._medAmount : this._highAmount));
-			ReferenceHub.LocalHub.inventory.CmdDropAmmo((byte)this._targetItem.ItemTypeId, (ushort)num);
+				1 => _medAmount, 
+				0 => _lowAmount, 
+				_ => _highAmount, 
+			};
+			ReferenceHub.LocalHub.inventory.CmdDropAmmo((byte)_targetItem.ItemTypeId, (ushort)num);
 		}
+	}
 
-		public void Setup(ItemType type, Color classColor)
+	public void Setup(ItemType type, Color classColor)
+	{
+		if (!InventoryItemLoader.AvailableItems.TryGetValue(type, out _targetItem))
 		{
-			if (!InventoryItemLoader.AvailableItems.TryGetValue(type, out this._targetItem))
-			{
-				throw new InvalidOperationException("Item " + type.ToString() + " is not defined. Cannot create an ammo element for it.");
-			}
-			this._iconImg.texture = this._targetItem.Icon;
-			TMP_Text nameTxt = this._nameTxt;
-			IItemNametag itemNametag = this._targetItem as IItemNametag;
-			nameTxt.text = ((itemNametag != null) ? itemNametag.Name : type.ToString());
-			Graphic[] paintableParts = this._paintableParts;
-			for (int i = 0; i < paintableParts.Length; i++)
-			{
-				paintableParts[i].color = classColor;
-			}
+			throw new InvalidOperationException("Item " + type.ToString() + " is not defined. Cannot create an ammo element for it.");
 		}
-
-		public void UpdateAmount(int amount)
+		_iconImg.texture = _targetItem.Icon;
+		_nameTxt.text = ((_targetItem is IItemNametag itemNametag) ? itemNametag.Name : type.ToString());
+		Graphic[] paintableParts = _paintableParts;
+		for (int i = 0; i < paintableParts.Length; i++)
 		{
-			if (amount == 0)
-			{
-				base.gameObject.SetActive(false);
-				return;
-			}
-			base.gameObject.SetActive(true);
-			this._amountIndicator.text = amount.ToString();
-			AmmoItem ammoItem = this._targetItem as AmmoItem;
-			if (ammoItem != null)
-			{
-				AmmoPickup ammoPickup = ammoItem.PickupDropModel as AmmoPickup;
-				if (ammoPickup != null)
-				{
-					this._medAmount = (int)ammoPickup.SavedAmmo;
-					this._highAmount = this._medAmount * 2;
-					this._lowAmount = (((float)this._medAmount % 2f == 0f) ? (this._medAmount / 2) : (this._medAmount * 2 / 3));
-					goto IL_00C3;
-				}
-			}
-			this._highAmount = amount;
-			this._medAmount = Mathf.FloorToInt((float)amount / 2f);
-			this._lowAmount = ((this._medAmount == 1) ? 0 : 1);
-			IL_00C3:
-			if (amount < this._medAmount)
-			{
-				if (amount > this._lowAmount)
-				{
-					this._medAmount = amount;
-				}
-				else
-				{
-					this._lowAmount = amount;
-					this._medAmount = 0;
-				}
-				this._highAmount = 0;
-			}
-			else if (amount < this._highAmount)
-			{
-				this._highAmount = ((amount == this._medAmount) ? 0 : amount);
-			}
-			this.PrepButton(this._lowText, this._lowAmount);
-			this.PrepButton(this._medText, this._medAmount);
-			this.PrepButton(this._highText, this._highAmount);
+			paintableParts[i].color = classColor;
 		}
+	}
 
-		public bool IsHovering()
+	public void UpdateAmount(int amount)
+	{
+		if (amount == 0)
 		{
-			Vector2 vector;
-			return RectTransformUtility.ScreenPointToLocalPointInRectangle(this._myTransform, Input.mousePosition, null, out vector) && vector.x > this._minX && vector.x < this._maxX && vector.y > this._minY && vector.y < this._maxY;
+			base.gameObject.SetActive(value: false);
+			return;
 		}
-
-		private void PrepButton(TextMeshProUGUI t, int amount)
+		base.gameObject.SetActive(value: true);
+		_amountIndicator.text = amount.ToString();
+		if (_targetItem is AmmoItem { PickupDropModel: AmmoPickup pickupDropModel })
 		{
-			t.transform.parent.gameObject.SetActive(amount > 0);
-			if (amount <= 0)
+			_medAmount = pickupDropModel.SavedAmmo;
+			_highAmount = _medAmount * 2;
+			_lowAmount = (((float)_medAmount % 2f == 0f) ? (_medAmount / 2) : (_medAmount * 2 / 3));
+		}
+		else
+		{
+			_highAmount = amount;
+			_medAmount = Mathf.FloorToInt((float)amount / 2f);
+			_lowAmount = ((_medAmount != 1) ? 1 : 0);
+		}
+		if (amount < _medAmount)
+		{
+			if (amount > _lowAmount)
 			{
-				return;
+				_medAmount = amount;
 			}
-			t.text = amount.ToString() + "x";
+			else
+			{
+				_lowAmount = amount;
+				_medAmount = 0;
+			}
+			_highAmount = 0;
 		}
-
-		private void Update()
+		else if (amount < _highAmount)
 		{
-			ReferenceHub referenceHub;
-			this._allowDropping = ReferenceHub.TryGetLocalHub(out referenceHub) && IAmmoDropPreventer.CanDropAmmo(referenceHub, this._targetItem.ItemTypeId);
-			this._dropCanvas.alpha = (this._allowDropping ? 1f : 0.1f);
+			_highAmount = ((amount != _medAmount) ? amount : 0);
 		}
+		PrepButton(_lowText, _lowAmount);
+		PrepButton(_medText, _medAmount);
+		PrepButton(_highText, _highAmount);
+	}
 
-		[SerializeField]
-		private RawImage _iconImg;
+	public bool IsHovering()
+	{
+		if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_myTransform, Input.mousePosition, null, out var localPoint) && localPoint.x > _minX && localPoint.x < _maxX && localPoint.y > _minY)
+		{
+			return localPoint.y < _maxY;
+		}
+		return false;
+	}
 
-		[SerializeField]
-		private TextMeshProUGUI _nameTxt;
+	private void PrepButton(TextMeshProUGUI t, int amount)
+	{
+		t.transform.parent.gameObject.SetActive(amount > 0);
+		if (amount > 0)
+		{
+			t.text = amount + "x";
+		}
+	}
 
-		[SerializeField]
-		private RectTransform _myTransform;
-
-		[SerializeField]
-		private float _minX;
-
-		[SerializeField]
-		private float _maxX;
-
-		[SerializeField]
-		private float _minY;
-
-		[SerializeField]
-		private float _maxY;
-
-		[SerializeField]
-		private Graphic[] _paintableParts;
-
-		[SerializeField]
-		private TextMeshProUGUI _amountIndicator;
-
-		[SerializeField]
-		private TextMeshProUGUI _lowText;
-
-		[SerializeField]
-		private TextMeshProUGUI _medText;
-
-		[SerializeField]
-		private TextMeshProUGUI _highText;
-
-		[SerializeField]
-		private CanvasGroup _dropCanvas;
-
-		private const float DropInvalidAlpha = 0.1f;
-
-		private int _lowAmount;
-
-		private int _medAmount;
-
-		private int _highAmount;
-
-		private bool _allowDropping;
-
-		private ItemBase _targetItem;
+	private void Update()
+	{
+		_allowDropping = ReferenceHub.TryGetLocalHub(out var hub) && IAmmoDropPreventer.CanDropAmmo(hub, _targetItem.ItemTypeId);
+		_dropCanvas.alpha = (_allowDropping ? 1f : 0.1f);
 	}
 }

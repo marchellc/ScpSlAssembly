@@ -1,6 +1,6 @@
 is_global = true
 build_property.RootNamespace = Assembly-CSharp
-build_property.ProjectDir = C:\Users\mcx\Documents\Development\AssemblyDecomp\Assembly-CSharp\
+build_property.ProjectDir = C:\Users\mcx\Documents\Development\ScpSlAssembly\Assembly-CSharp\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.CsWinRTUseWindowsUIXamlProjections = false

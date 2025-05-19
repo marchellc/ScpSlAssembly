@@ -1,11 +1,8 @@
-﻿using System;
+namespace ProgressiveCulling;
 
-namespace ProgressiveCulling
+public interface IRootCullable : ICullable
 {
-	public interface IRootCullable : ICullable
-	{
-		void SetupCache();
+	RootCullablePriority Priority { get; }
 
-		RootCullablePriority Priority { get; }
-	}
+	void SetupCache();
 }

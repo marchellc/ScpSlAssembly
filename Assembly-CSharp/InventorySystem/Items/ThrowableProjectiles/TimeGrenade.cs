@@ -1,116 +1,109 @@
-﻿using System;
 using System.Runtime.InteropServices;
 using Footprinting;
 using LabApi.Events.Arguments.ServerEvents;
 using LabApi.Events.Handlers;
-using LabApi.Features.Wrappers;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.ThrowableProjectiles
+namespace InventorySystem.Items.ThrowableProjectiles;
+
+public abstract class TimeGrenade : ThrownProjectile
 {
-	public abstract class TimeGrenade : ThrownProjectile
+	[SerializeField]
+	private float _fuseTime;
+
+	[SyncVar]
+	private double _syncTargetTime;
+
+	private bool _alreadyDetonated;
+
+	public double TargetTime
 	{
-		public double TargetTime
+		get
 		{
-			get
-			{
-				return this._syncTargetTime;
-			}
-			set
-			{
-				this.Network_syncTargetTime = value;
-			}
+			return _syncTargetTime;
 		}
-
-		public virtual bool ServerFuseEnd()
+		set
 		{
-			ProjectileExplodingEventArgs projectileExplodingEventArgs = new ProjectileExplodingEventArgs(this, this.PreviousOwner.Hub, base.transform.position);
-			ServerEvents.OnProjectileExploding(projectileExplodingEventArgs);
-			if (!projectileExplodingEventArgs.IsAllowed)
-			{
-				return false;
-			}
-			ReferenceHub hub = this.PreviousOwner.Hub;
-			Player player = projectileExplodingEventArgs.Player;
-			if (hub != ((player != null) ? player.ReferenceHub : null))
-			{
-				Player player2 = projectileExplodingEventArgs.Player;
-				this.PreviousOwner = new Footprint((player2 != null) ? player2.ReferenceHub : null);
-			}
-			base.transform.position = projectileExplodingEventArgs.Position;
-			return true;
+			Network_syncTargetTime = value;
 		}
+	}
 
-		public override void ServerActivate()
+	public double Network_syncTargetTime
+	{
+		get
 		{
-			this.Network_syncTargetTime = NetworkTime.time + (double)this._fuseTime;
+			return _syncTargetTime;
 		}
-
-		protected virtual void Update()
+		[param: In]
+		set
 		{
-			if (!NetworkServer.active || this._alreadyDetonated || this.TargetTime == 0.0 || NetworkTime.time < this.TargetTime)
-			{
-				return;
-			}
-			this.ServerFuseEnd();
-			this._alreadyDetonated = true;
+			GeneratedSyncVarSetter(value, ref _syncTargetTime, 2uL, null);
 		}
+	}
 
-		public override bool Weaved()
+	public virtual bool ServerFuseEnd()
+	{
+		ProjectileExplodingEventArgs projectileExplodingEventArgs = new ProjectileExplodingEventArgs(this, PreviousOwner.Hub, base.transform.position);
+		ServerEvents.OnProjectileExploding(projectileExplodingEventArgs);
+		if (!projectileExplodingEventArgs.IsAllowed)
 		{
-			return true;
+			return false;
 		}
-
-		public double Network_syncTargetTime
+		if (PreviousOwner.Hub != projectileExplodingEventArgs.Player?.ReferenceHub)
 		{
-			get
-			{
-				return this._syncTargetTime;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<double>(value, ref this._syncTargetTime, 2UL, null);
-			}
+			PreviousOwner = new Footprint(projectileExplodingEventArgs.Player?.ReferenceHub);
 		}
+		base.transform.position = projectileExplodingEventArgs.Position;
+		return true;
+	}
 
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	public override void ServerActivate()
+	{
+		Network_syncTargetTime = NetworkTime.time + (double)_fuseTime;
+	}
+
+	protected virtual void Update()
+	{
+		if (NetworkServer.active && !_alreadyDetonated && TargetTime != 0.0 && !(NetworkTime.time < TargetTime))
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteDouble(this._syncTargetTime);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 2UL) != 0UL)
-			{
-				writer.WriteDouble(this._syncTargetTime);
-			}
+			ServerFuseEnd();
+			_alreadyDetonated = true;
 		}
+	}
 
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<double>(ref this._syncTargetTime, null, reader.ReadDouble());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 2L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<double>(ref this._syncTargetTime, null, reader.ReadDouble());
-			}
+			writer.WriteDouble(_syncTargetTime);
+			return;
 		}
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 2L) != 0L)
+		{
+			writer.WriteDouble(_syncTargetTime);
+		}
+	}
 
-		[SerializeField]
-		private float _fuseTime;
-
-		[SyncVar]
-		private double _syncTargetTime;
-
-		private bool _alreadyDetonated;
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref _syncTargetTime, null, reader.ReadDouble());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 2L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _syncTargetTime, null, reader.ReadDouble());
+		}
 	}
 }

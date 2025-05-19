@@ -1,13 +1,11 @@
-﻿using System;
 using System.Collections.Generic;
 
-namespace LiteNetLib4Mirror.Open.Nat
+namespace LiteNetLib4Mirror.Open.Nat;
+
+internal class GetExternalIPAddressRequestMessage : RequestMessageBase
 {
-	internal class GetExternalIPAddressRequestMessage : RequestMessageBase
+	public override IDictionary<string, object> ToXml()
 	{
-		public override IDictionary<string, object> ToXml()
-		{
-			return new Dictionary<string, object>();
-		}
+		return new Dictionary<string, object>();
 	}
 }

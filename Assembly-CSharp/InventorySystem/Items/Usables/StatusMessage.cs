@@ -1,30 +1,28 @@
-﻿using System;
 using Mirror;
 
-namespace InventorySystem.Items.Usables
+namespace InventorySystem.Items.Usables;
+
+public struct StatusMessage : NetworkMessage
 {
-	public struct StatusMessage : NetworkMessage
+	public enum StatusType : byte
 	{
-		public StatusMessage(StatusMessage.StatusType status, ushort serial)
-		{
-			this.Status = status;
-			this.ItemSerial = serial;
-		}
+		Start,
+		Cancel
+	}
 
-		public void Serialize(NetworkWriter writer)
-		{
-			writer.WriteByte((byte)this.Status);
-			writer.WriteUShort(this.ItemSerial);
-		}
+	public StatusType Status;
 
-		public StatusMessage.StatusType Status;
+	public ushort ItemSerial;
 
-		public ushort ItemSerial;
+	public StatusMessage(StatusType status, ushort serial)
+	{
+		Status = status;
+		ItemSerial = serial;
+	}
 
-		public enum StatusType : byte
-		{
-			Start,
-			Cancel
-		}
+	public void Serialize(NetworkWriter writer)
+	{
+		writer.WriteByte((byte)Status);
+		writer.WriteUShort(ItemSerial);
 	}
 }

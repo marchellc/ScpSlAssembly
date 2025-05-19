@@ -1,101 +1,55 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace LiteNetLib
+namespace LiteNetLib;
+
+internal static class NativeSocket
 {
-	internal static class NativeSocket
+	private static class WinSock
 	{
-		static NativeSocket()
-		{
-			if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-			{
-				NativeSocket.IsSupported = true;
-				NativeSocket.UnixMode = true;
-				return;
-			}
-			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-			{
-				NativeSocket.IsSupported = true;
-			}
-		}
+		private const string LibName = "ws2_32.dll";
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static int RecvFrom(IntPtr socketHandle, byte[] pinnedBuffer, int len, byte[] socketAddress, ref int socketAddressSize)
-		{
-			if (!NativeSocket.UnixMode)
-			{
-				return NativeSocket.WinSock.recvfrom(socketHandle, pinnedBuffer, len, SocketFlags.None, socketAddress, ref socketAddressSize);
-			}
-			return NativeSocket.UnixSock.recvfrom(socketHandle, pinnedBuffer, len, SocketFlags.None, socketAddress, ref socketAddressSize);
-		}
+		[DllImport("ws2_32.dll", SetLastError = true)]
+		public static extern int recvfrom(IntPtr socketHandle, [In][Out] byte[] pinnedBuffer, [In] int len, [In] SocketFlags socketFlags, [Out] byte[] socketAddress, [In][Out] ref int socketAddressSize);
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static int SendTo(IntPtr socketHandle, byte[] pinnedBuffer, int len, byte[] socketAddress, int socketAddressSize)
-		{
-			if (!NativeSocket.UnixMode)
-			{
-				return NativeSocket.WinSock.sendto(socketHandle, pinnedBuffer, len, SocketFlags.None, socketAddress, socketAddressSize);
-			}
-			return NativeSocket.UnixSock.sendto(socketHandle, pinnedBuffer, len, SocketFlags.None, socketAddress, socketAddressSize);
-		}
+		[DllImport("ws2_32.dll", SetLastError = true)]
+		internal static extern int sendto(IntPtr socketHandle, [In] byte[] pinnedBuffer, [In] int len, [In] SocketFlags socketFlags, [In] byte[] socketAddress, [In] int socketAddressSize);
+	}
 
-		public static SocketError GetSocketError()
-		{
-			int lastWin32Error = Marshal.GetLastWin32Error();
-			if (!NativeSocket.UnixMode)
-			{
-				return (SocketError)lastWin32Error;
-			}
-			SocketError socketError;
-			if (!NativeSocket.NativeErrorToSocketError.TryGetValue(lastWin32Error, out socketError))
-			{
-				return SocketError.SocketError;
-			}
-			return socketError;
-		}
+	private static class UnixSock
+	{
+		private const string LibName = "libc";
 
-		public static SocketException GetSocketException()
-		{
-			int lastWin32Error = Marshal.GetLastWin32Error();
-			if (!NativeSocket.UnixMode)
-			{
-				return new SocketException(lastWin32Error);
-			}
-			SocketError socketError;
-			if (!NativeSocket.NativeErrorToSocketError.TryGetValue(lastWin32Error, out socketError))
-			{
-				return new SocketException(-1);
-			}
-			return new SocketException((int)socketError);
-		}
+		[DllImport("libc", SetLastError = true)]
+		public static extern int recvfrom(IntPtr socketHandle, [In][Out] byte[] pinnedBuffer, [In] int len, [In] SocketFlags socketFlags, [Out] byte[] socketAddress, [In][Out] ref int socketAddressSize);
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static short GetNativeAddressFamily(IPEndPoint remoteEndPoint)
-		{
-			if (!NativeSocket.UnixMode)
-			{
-				return (short)remoteEndPoint.AddressFamily;
-			}
-			return (remoteEndPoint.AddressFamily == AddressFamily.InterNetwork) ? 2 : 10;
-		}
+		[DllImport("libc", SetLastError = true)]
+		internal static extern int sendto(IntPtr socketHandle, [In] byte[] pinnedBuffer, [In] int len, [In] SocketFlags socketFlags, [In] byte[] socketAddress, [In] int socketAddressSize);
+	}
 
-		public static readonly bool IsSupported = false;
+	public static readonly bool IsSupported;
 
-		public static readonly bool UnixMode = false;
+	public static readonly bool UnixMode;
 
-		public const int IPv4AddrSize = 16;
+	public const int IPv4AddrSize = 16;
 
-		public const int IPv6AddrSize = 28;
+	public const int IPv6AddrSize = 28;
 
-		public const int AF_INET = 2;
+	public const int AF_INET = 2;
 
-		public const int AF_INET6 = 10;
+	public const int AF_INET6 = 10;
 
-		private static readonly Dictionary<int, SocketError> NativeErrorToSocketError = new Dictionary<int, SocketError>
+	private static readonly Dictionary<int, SocketError> NativeErrorToSocketError;
+
+	static NativeSocket()
+	{
+		IsSupported = false;
+		UnixMode = false;
+		NativeErrorToSocketError = new Dictionary<int, SocketError>
 		{
 			{
 				13,
@@ -266,27 +220,72 @@ namespace LiteNetLib
 				SocketError.Success
 			}
 		};
-
-		private static class WinSock
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 		{
-			[DllImport("ws2_32.dll", SetLastError = true)]
-			public static extern int recvfrom(IntPtr socketHandle, [In] [Out] byte[] pinnedBuffer, [In] int len, [In] SocketFlags socketFlags, [Out] byte[] socketAddress, [In] [Out] ref int socketAddressSize);
-
-			[DllImport("ws2_32.dll", SetLastError = true)]
-			internal static extern int sendto(IntPtr socketHandle, [In] byte[] pinnedBuffer, [In] int len, [In] SocketFlags socketFlags, [In] byte[] socketAddress, [In] int socketAddressSize);
-
-			private const string LibName = "ws2_32.dll";
+			IsSupported = true;
+			UnixMode = true;
 		}
-
-		private static class UnixSock
+		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
-			[DllImport("libc", SetLastError = true)]
-			public static extern int recvfrom(IntPtr socketHandle, [In] [Out] byte[] pinnedBuffer, [In] int len, [In] SocketFlags socketFlags, [Out] byte[] socketAddress, [In] [Out] ref int socketAddressSize);
-
-			[DllImport("libc", SetLastError = true)]
-			internal static extern int sendto(IntPtr socketHandle, [In] byte[] pinnedBuffer, [In] int len, [In] SocketFlags socketFlags, [In] byte[] socketAddress, [In] int socketAddressSize);
-
-			private const string LibName = "libc";
+			IsSupported = true;
 		}
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static int RecvFrom(IntPtr socketHandle, byte[] pinnedBuffer, int len, byte[] socketAddress, ref int socketAddressSize)
+	{
+		if (!UnixMode)
+		{
+			return WinSock.recvfrom(socketHandle, pinnedBuffer, len, SocketFlags.None, socketAddress, ref socketAddressSize);
+		}
+		return UnixSock.recvfrom(socketHandle, pinnedBuffer, len, SocketFlags.None, socketAddress, ref socketAddressSize);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static int SendTo(IntPtr socketHandle, byte[] pinnedBuffer, int len, byte[] socketAddress, int socketAddressSize)
+	{
+		if (!UnixMode)
+		{
+			return WinSock.sendto(socketHandle, pinnedBuffer, len, SocketFlags.None, socketAddress, socketAddressSize);
+		}
+		return UnixSock.sendto(socketHandle, pinnedBuffer, len, SocketFlags.None, socketAddress, socketAddressSize);
+	}
+
+	public static SocketError GetSocketError()
+	{
+		int lastWin32Error = Marshal.GetLastWin32Error();
+		if (UnixMode)
+		{
+			if (!NativeErrorToSocketError.TryGetValue(lastWin32Error, out var value))
+			{
+				return SocketError.SocketError;
+			}
+			return value;
+		}
+		return (SocketError)lastWin32Error;
+	}
+
+	public static SocketException GetSocketException()
+	{
+		int lastWin32Error = Marshal.GetLastWin32Error();
+		if (UnixMode)
+		{
+			if (!NativeErrorToSocketError.TryGetValue(lastWin32Error, out var value))
+			{
+				return new SocketException(-1);
+			}
+			return new SocketException((int)value);
+		}
+		return new SocketException(lastWin32Error);
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static short GetNativeAddressFamily(IPEndPoint remoteEndPoint)
+	{
+		if (!UnixMode)
+		{
+			return (short)remoteEndPoint.AddressFamily;
+		}
+		return (short)((remoteEndPoint.AddressFamily == AddressFamily.InterNetwork) ? 2 : 10);
 	}
 }

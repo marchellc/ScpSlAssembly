@@ -1,5 +1,3 @@
-﻿using System;
-
 [HeadlessCallbacks]
 public static class ExampleRuntime
 {

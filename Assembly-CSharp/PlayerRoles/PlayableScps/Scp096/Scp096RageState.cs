@@ -1,12 +1,9 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.Scp096;
 
-namespace PlayerRoles.PlayableScps.Scp096
+public enum Scp096RageState : byte
 {
-	public enum Scp096RageState : byte
-	{
-		Docile,
-		Distressed,
-		Enraged,
-		Calming
-	}
+	Docile,
+	Distressed,
+	Enraged,
+	Calming
 }

@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.ShotEvents;
 
-namespace InventorySystem.Items.Firearms.ShotEvents
+public interface IMultiBarreledShot
 {
-	public interface IMultiBarreledShot
-	{
-		int BarrelId { get; }
-	}
+	int BarrelId { get; }
 }

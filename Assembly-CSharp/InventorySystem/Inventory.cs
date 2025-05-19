@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -10,924 +10,937 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 using Mirror;
 using Mirror.RemoteCalls;
+using NetworkManagerUtils.Dummies;
 using NorthwoodLib.Pools;
 using PlayerRoles.FirstPersonControl;
+using RoundRestarting;
 using UnityEngine;
 
-namespace InventorySystem
+namespace InventorySystem;
+
+public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModifier, IRootDummyActionProvider
 {
-	public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModifier
+	public const int MaxSlots = 8;
+
+	public InventoryInfo UserInventory = new InventoryInfo();
+
+	[SyncVar(hook = "OnItemUpdated")]
+	public ItemIdentifier CurItem = ItemIdentifier.None;
+
+	public bool SendItemsNextFrame;
+
+	public bool SendAmmoNextFrame;
+
+	private ItemIdentifier _prevCurItem;
+
+	internal ReferenceHub _hub;
+
+	private ItemBase _curInstance;
+
+	private float _staminaModifier;
+
+	private float _movementLimiter;
+
+	private float _movementMultiplier;
+
+	private bool _sprintingDisabled;
+
+	private readonly Stopwatch _lastEquipSw = Stopwatch.StartNew();
+
+	[SyncVar]
+	private float _syncStaminaModifier;
+
+	[SyncVar]
+	private float _syncMovementLimiter;
+
+	[SyncVar]
+	private float _syncMovementMultiplier;
+
+	[HideInInspector]
+	public ItemBase CurInstance
 	{
-		public static event Action<ReferenceHub> OnItemsModified;
-
-		public static event Action<ReferenceHub> OnAmmoModified;
-
-		public static event Action OnServerStarted;
-
-		public static event Action OnLocalClientStarted;
-
-		public static event Action<ReferenceHub, ItemIdentifier, ItemIdentifier> OnCurrentItemChanged;
-
-		[HideInInspector]
-		public ItemBase CurInstance
+		get
 		{
-			get
-			{
-				return this._curInstance;
-			}
-			set
-			{
-				if (value == this._curInstance)
-				{
-					return;
-				}
-				ItemBase curInstance = this._curInstance;
-				this._curInstance = value;
-				bool flag = this._curInstance == null;
-				if (curInstance != null)
-				{
-					curInstance.OnHolstered();
-					curInstance.IsEquipped = false;
-					if (base.isLocalPlayer)
-					{
-						curInstance.ViewModel.gameObject.SetActive(false);
-						if (flag)
-						{
-							SharedHandsController.UpdateInstance(null);
-						}
-					}
-				}
-				if (this._curInstance != null)
-				{
-					if (base.isLocalPlayer)
-					{
-						this._curInstance.ViewModel.gameObject.SetActive(true);
-						SharedHandsController.UpdateInstance(this._curInstance.ViewModel);
-						this._curInstance.ViewModel.OnEquipped();
-					}
-					this._curInstance.OnEquipped();
-					this._curInstance.IsEquipped = true;
-				}
-			}
+			return _curInstance;
 		}
-
-		public float LastItemSwitch
+		set
 		{
-			get
-			{
-				return (float)this._lastEquipSw.Elapsed.TotalSeconds;
-			}
-		}
-
-		private Transform ItemWorkspace
-		{
-			get
-			{
-				return SharedHandsController.Singleton.transform;
-			}
-		}
-
-		public bool StaminaModifierActive
-		{
-			get
-			{
-				return true;
-			}
-		}
-
-		public bool MovementModifierActive
-		{
-			get
-			{
-				return true;
-			}
-		}
-
-		public float StaminaUsageMultiplier
-		{
-			get
-			{
-				if (!this.IsObserver)
-				{
-					return this._staminaModifier;
-				}
-				return this._syncStaminaModifier;
-			}
-		}
-
-		public float StaminaRegenMultiplier
-		{
-			get
-			{
-				return 1f;
-			}
-		}
-
-		public bool SprintingDisabled
-		{
-			get
-			{
-				return !this.IsObserver && this._sprintingDisabled;
-			}
-		}
-
-		public float MovementSpeedMultiplier
-		{
-			get
-			{
-				if (!this.IsObserver)
-				{
-					return this._movementMultiplier;
-				}
-				return this._syncMovementMultiplier;
-			}
-		}
-
-		public float MovementSpeedLimit
-		{
-			get
-			{
-				if (!this.IsObserver)
-				{
-					return this._movementLimiter;
-				}
-				return this._syncMovementLimiter;
-			}
-		}
-
-		private bool IsObserver
-		{
-			get
-			{
-				return !NetworkServer.active && !base.isLocalPlayer;
-			}
-		}
-
-		private bool HasViewmodel
-		{
-			get
-			{
-				return base.isLocalPlayer && this.CurInstance != null && this.CurInstance.ViewModel != null;
-			}
-		}
-
-		private void OnItemUpdated(ItemIdentifier prev, ItemIdentifier cur)
-		{
-			if (prev != cur)
-			{
-				this._lastEquipSw.Restart();
-			}
-		}
-
-		private void Awake()
-		{
-			this._hub = ReferenceHub.GetHub(base.gameObject);
-		}
-
-		public override void OnStopClient()
-		{
-			base.OnStopClient();
-			if (!NetworkServer.active)
+			if (value == _curInstance)
 			{
 				return;
 			}
-			HashSet<ushort> hashSet = HashSetPool<ushort>.Shared.Rent();
-			foreach (KeyValuePair<ushort, ItemBase> keyValuePair in this.UserInventory.Items)
+			ItemBase curInstance = _curInstance;
+			_curInstance = value;
+			bool flag = _curInstance == null;
+			if (curInstance != null)
 			{
-				hashSet.Add(keyValuePair.Key);
-			}
-			foreach (ushort num in hashSet)
-			{
-				this.ServerRemoveItem(num, null);
-			}
-			HashSetPool<ushort>.Shared.Return(hashSet);
-		}
-
-		private void Start()
-		{
-			if (!base.isLocalPlayer && !NetworkServer.active)
-			{
-				return;
-			}
-			if (base.isLocalPlayer)
-			{
-				if (NetworkServer.active)
+				curInstance.OnHolstered();
+				curInstance.IsEquipped = false;
+				if (base.isLocalPlayer)
 				{
-					Inventory.OnServerStarted();
-					CustomNetworkManager.InvokeOnClientReady();
-				}
-				Action onLocalClientStarted = Inventory.OnLocalClientStarted;
-				if (onLocalClientStarted == null)
-				{
-					return;
-				}
-				onLocalClientStarted();
-			}
-		}
-
-		private void Update()
-		{
-			if (NetworkServer.active)
-			{
-				if (this.SendItemsNextFrame)
-				{
-					this.SendItemsNextFrame = false;
-					Action<ReferenceHub> onItemsModified = Inventory.OnItemsModified;
-					if (onItemsModified != null)
+					curInstance.ViewModel.gameObject.SetActive(value: false);
+					if (flag)
 					{
-						onItemsModified(this._hub);
+						SharedHandsController.UpdateInstance(null);
 					}
-					this.ServerSendItems();
-				}
-				if (this.SendAmmoNextFrame)
-				{
-					this.SendAmmoNextFrame = false;
-					Action<ReferenceHub> onAmmoModified = Inventory.OnAmmoModified;
-					if (onAmmoModified != null)
-					{
-						onAmmoModified(this._hub);
-					}
-					this.ServerSendAmmo();
 				}
 			}
-			if (this._prevCurItem != this.CurItem)
+			if (_curInstance != null)
 			{
 				if (base.isLocalPlayer)
 				{
-					ItemBase itemBase;
-					if (this.UserInventory.Items.TryGetValue(this._prevCurItem.SerialNumber, out itemBase))
-					{
-						this.CurInstance = null;
-					}
-					ItemBase itemBase2;
-					if (this.UserInventory.Items.TryGetValue(this.CurItem.SerialNumber, out itemBase2))
-					{
-						this.CurInstance = itemBase2;
-					}
+					_curInstance.ViewModel.gameObject.SetActive(value: true);
+					SharedHandsController.UpdateInstance(_curInstance.ViewModel);
+					_curInstance.ViewModel.OnEquipped();
 				}
-				Action<ReferenceHub, ItemIdentifier, ItemIdentifier> onCurrentItemChanged = Inventory.OnCurrentItemChanged;
-				if (onCurrentItemChanged != null)
-				{
-					onCurrentItemChanged(this._hub, this._prevCurItem, this.CurItem);
-				}
-				this._prevCurItem = new ItemIdentifier(this.CurItem.TypeId, this.CurItem.SerialNumber);
+				_curInstance.OnEquipped();
+				_curInstance.IsEquipped = true;
 			}
-			if (this.IsObserver)
-			{
-				return;
-			}
-			if (this.CurInstance != null && this.CurInstance.enabled)
-			{
-				this.CurInstance.EquipUpdate();
-			}
-			foreach (ItemBase itemBase3 in this.UserInventory.Items.Values)
-			{
-				if (itemBase3.enabled)
-				{
-					itemBase3.AlwaysUpdate();
-				}
-			}
-			this.RefreshModifiers();
-			if (!this.HasViewmodel || !Input.GetKeyDown(NewInput.GetKey(ActionName.ThrowItem, KeyCode.None)))
-			{
-				return;
-			}
-			if (!this.CurInstance.AllowDropping || !InventoryGuiController.ItemsSafeForInteraction)
-			{
-				return;
-			}
-			this.CmdDropItem(this.CurItem.SerialNumber, true);
 		}
+	}
 
-		private void RefreshModifiers()
+	public float LastItemSwitch => (float)_lastEquipSw.Elapsed.TotalSeconds;
+
+	private Transform ItemWorkspace => SharedHandsController.Singleton.transform;
+
+	public bool StaminaModifierActive => true;
+
+	public bool MovementModifierActive => true;
+
+	public float StaminaUsageMultiplier
+	{
+		get
 		{
-			this._staminaModifier = 1f;
-			this._movementLimiter = float.MaxValue;
-			this._movementMultiplier = 1f;
-			this._sprintingDisabled = false;
-			foreach (KeyValuePair<ushort, ItemBase> keyValuePair in this.UserInventory.Items)
+			if (!IsObserver)
 			{
-				object mobilityController = keyValuePair.Value.GetMobilityController();
-				IStaminaModifier staminaModifier = mobilityController as IStaminaModifier;
-				if (staminaModifier != null && staminaModifier.StaminaModifierActive)
-				{
-					this._staminaModifier *= staminaModifier.StaminaUsageMultiplier;
-					this._sprintingDisabled |= staminaModifier.SprintingDisabled;
-				}
-				IMovementSpeedModifier movementSpeedModifier = mobilityController as IMovementSpeedModifier;
-				if (movementSpeedModifier != null && movementSpeedModifier.MovementModifierActive)
-				{
-					this._movementLimiter = Mathf.Min(this._movementLimiter, movementSpeedModifier.MovementSpeedLimit);
-					this._movementMultiplier *= movementSpeedModifier.MovementSpeedMultiplier;
-				}
+				return _staminaModifier;
 			}
-			if (NetworkServer.active)
-			{
-				this.Network_syncStaminaModifier = this._staminaModifier;
-				this.Network_syncMovementMultiplier = this._movementMultiplier;
-				this.Network_syncMovementLimiter = this._movementLimiter;
-			}
+			return _syncStaminaModifier;
 		}
+	}
 
-		[Server]
-		public void ServerSelectItem(ushort itemSerial)
+	public float StaminaRegenMultiplier => 1f;
+
+	public bool SprintingDisabled
+	{
+		get
+		{
+			if (!IsObserver)
+			{
+				return _sprintingDisabled;
+			}
+			return false;
+		}
+	}
+
+	public float MovementSpeedMultiplier
+	{
+		get
+		{
+			if (!IsObserver)
+			{
+				return _movementMultiplier;
+			}
+			return _syncMovementMultiplier;
+		}
+	}
+
+	public float MovementSpeedLimit
+	{
+		get
+		{
+			if (!IsObserver)
+			{
+				return _movementLimiter;
+			}
+			return _syncMovementLimiter;
+		}
+	}
+
+	private bool IsObserver
+	{
+		get
 		{
 			if (!NetworkServer.active)
 			{
-				global::UnityEngine.Debug.LogWarning("[Server] function 'System.Void InventorySystem.Inventory::ServerSelectItem(System.UInt16)' called when server was not active");
-				return;
+				return !base.isLocalPlayer;
 			}
-			if (itemSerial == this.CurItem.SerialNumber)
+			return false;
+		}
+	}
+
+	private bool HasViewmodel
+	{
+		get
+		{
+			if (base.isLocalPlayer && CurInstance != null)
 			{
-				return;
+				return CurInstance.ViewModel != null;
 			}
-			ItemBase itemBase = null;
-			ItemBase itemBase2 = null;
-			bool flag = this.CurItem.SerialNumber == 0 || (this.UserInventory.Items.TryGetValue(this.CurItem.SerialNumber, out itemBase) && this.CurInstance != null);
-			if (itemSerial != 0 && !this.UserInventory.Items.TryGetValue(itemSerial, out itemBase2))
+			return false;
+		}
+	}
+
+	public bool DummyActionsDirty { get; set; }
+
+	public ItemIdentifier NetworkCurItem
+	{
+		get
+		{
+			return CurItem;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref CurItem, 1uL, OnItemUpdated);
+		}
+	}
+
+	public float Network_syncStaminaModifier
+	{
+		get
+		{
+			return _syncStaminaModifier;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref _syncStaminaModifier, 2uL, null);
+		}
+	}
+
+	public float Network_syncMovementLimiter
+	{
+		get
+		{
+			return _syncMovementLimiter;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref _syncMovementLimiter, 4uL, null);
+		}
+	}
+
+	public float Network_syncMovementMultiplier
+	{
+		get
+		{
+			return _syncMovementMultiplier;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref _syncMovementMultiplier, 8uL, null);
+		}
+	}
+
+	public static event Action<ReferenceHub> OnItemsModified;
+
+	public static event Action<ReferenceHub> OnAmmoModified;
+
+	public static event Action OnServerStarted;
+
+	public static event Action OnLocalClientStarted;
+
+	public static event Action<ReferenceHub, ItemIdentifier, ItemIdentifier> OnCurrentItemChanged;
+
+	private void OnItemUpdated(ItemIdentifier prev, ItemIdentifier cur)
+	{
+		if (prev != cur)
+		{
+			_lastEquipSw.Restart();
+		}
+	}
+
+	private void Awake()
+	{
+		_hub = ReferenceHub.GetHub(base.gameObject);
+	}
+
+	public override void OnStopClient()
+	{
+		base.OnStopClient();
+		if (!NetworkServer.active || RoundRestart.IsRoundRestarting)
+		{
+			return;
+		}
+		HashSet<ushort> hashSet = HashSetPool<ushort>.Shared.Rent();
+		foreach (KeyValuePair<ushort, ItemBase> item in UserInventory.Items)
+		{
+			hashSet.Add(item.Key);
+		}
+		foreach (ushort item2 in hashSet)
+		{
+			this.ServerRemoveItem(item2, null);
+		}
+		HashSetPool<ushort>.Shared.Return(hashSet);
+	}
+
+	private void Start()
+	{
+		if ((base.isLocalPlayer || NetworkServer.active) && base.isLocalPlayer)
+		{
+			if (NetworkServer.active)
 			{
-				if (!flag)
+				Inventory.OnServerStarted();
+				CustomNetworkManager.InvokeOnClientReady();
+			}
+			Inventory.OnLocalClientStarted?.Invoke();
+		}
+	}
+
+	private void Update()
+	{
+		if (NetworkServer.active)
+		{
+			if (SendItemsNextFrame)
+			{
+				DummyActionsDirty = true;
+				SendItemsNextFrame = false;
+				Inventory.OnItemsModified?.Invoke(_hub);
+				ServerSendItems();
+			}
+			if (SendAmmoNextFrame)
+			{
+				DummyActionsDirty = true;
+				SendAmmoNextFrame = false;
+				Inventory.OnAmmoModified?.Invoke(_hub);
+				ServerSendAmmo();
+			}
+		}
+		UpdateCurItem();
+		if (!IsObserver)
+		{
+			UpdateObserverItems();
+			RefreshModifiers();
+			if (HasViewmodel && Input.GetKeyDown(NewInput.GetKey(ActionName.ThrowItem)) && CurInstance.AllowDropping && InventoryGuiController.ItemsSafeForInteraction)
+			{
+				CmdDropItem(CurItem.SerialNumber, tryThrow: true);
+			}
+		}
+	}
+
+	private void UpdateCurItem()
+	{
+		if (_prevCurItem == CurItem)
+		{
+			return;
+		}
+		DummyActionsDirty = true;
+		if (base.isLocalPlayer)
+		{
+			if (CurItem.TypeId != ItemType.None)
+			{
+				if (!UserInventory.Items.TryGetValue(CurItem.SerialNumber, out var value))
 				{
-					this.NetworkCurItem = ItemIdentifier.None;
-					if (!base.isLocalPlayer)
-					{
-						this.CurInstance = null;
-					}
+					return;
 				}
-				return;
-			}
-			if (this.CurItem.SerialNumber > 0 && flag && !itemBase.AllowHolster)
-			{
-				return;
-			}
-			if (itemSerial != 0 && !itemBase2.AllowEquip)
-			{
-				return;
-			}
-			PlayerChangingItemEventArgs playerChangingItemEventArgs = new PlayerChangingItemEventArgs(this._hub, itemBase, itemBase2);
-			PlayerEvents.OnChangingItem(playerChangingItemEventArgs);
-			if (!playerChangingItemEventArgs.IsAllowed)
-			{
-				return;
-			}
-			if (itemSerial == 0)
-			{
-				this.NetworkCurItem = ItemIdentifier.None;
-				if (!base.isLocalPlayer)
-				{
-					this.CurInstance = null;
-				}
+				CurInstance = value;
 			}
 			else
 			{
-				this.NetworkCurItem = new ItemIdentifier(itemBase2.ItemTypeId, itemSerial);
-				if (!base.isLocalPlayer)
+				CurInstance = null;
+			}
+		}
+		Inventory.OnCurrentItemChanged?.Invoke(_hub, _prevCurItem, CurItem);
+		_prevCurItem = new ItemIdentifier(CurItem.TypeId, CurItem.SerialNumber);
+	}
+
+	private void UpdateObserverItems()
+	{
+		List<ushort> list = ListPool<ushort>.Shared.Rent();
+		foreach (KeyValuePair<ushort, ItemBase> item in UserInventory.Items)
+		{
+			list.Add(item.Key);
+		}
+		foreach (ushort item2 in list)
+		{
+			if (UserInventory.Items.TryGetValue(item2, out var value) && value.enabled)
+			{
+				if (value.IsEquipped)
 				{
-					this.CurInstance = itemBase2;
+					value.EquipUpdate();
 				}
+				value.AlwaysUpdate();
 			}
-			PlayerEvents.OnChangedItem(new PlayerChangedItemEventArgs(this._hub, itemBase, itemBase2));
 		}
+		ListPool<ushort>.Shared.Return(list);
+	}
 
-		public void ClientSelectItem(ushort itemSerial)
+	private void RefreshModifiers()
+	{
+		_staminaModifier = 1f;
+		_movementLimiter = float.MaxValue;
+		_movementMultiplier = 1f;
+		_sprintingDisabled = false;
+		foreach (KeyValuePair<ushort, ItemBase> item in UserInventory.Items)
 		{
-			if (this.CurInstance != null && this.CurInstance.ItemSerial != itemSerial)
+			object mobilityController = item.Value.GetMobilityController();
+			if (mobilityController is IStaminaModifier { StaminaModifierActive: not false } staminaModifier)
 			{
-				this.CurInstance.OnHolsterRequestSent();
+				_staminaModifier *= staminaModifier.StaminaUsageMultiplier;
+				_sprintingDisabled |= staminaModifier.SprintingDisabled;
 			}
-			this.CmdSelectItem(itemSerial);
-		}
-
-		public void ClientDropItem(ushort itemSerial, bool tryThrow)
-		{
-			if (this.CurInstance != null && this.CurInstance.ItemSerial == itemSerial)
+			if (mobilityController is IMovementSpeedModifier { MovementModifierActive: not false } movementSpeedModifier)
 			{
-				this.CurInstance.OnHolsterRequestSent();
+				_movementLimiter = Mathf.Min(_movementLimiter, movementSpeedModifier.MovementSpeedLimit);
+				_movementMultiplier *= movementSpeedModifier.MovementSpeedMultiplier;
 			}
-			this.CmdDropItem(itemSerial, tryThrow);
 		}
-
-		[Server]
-		private void ServerSendItems()
+		if (NetworkServer.active)
 		{
-			if (!NetworkServer.active)
+			Network_syncStaminaModifier = _staminaModifier;
+			Network_syncMovementMultiplier = _movementMultiplier;
+			Network_syncMovementLimiter = _movementLimiter;
+		}
+	}
+
+	[Server]
+	public void ServerSelectItem(ushort itemSerial)
+	{
+		if (!NetworkServer.active)
+		{
+			UnityEngine.Debug.LogWarning("[Server] function 'System.Void InventorySystem.Inventory::ServerSelectItem(System.UInt16)' called when server was not active");
+		}
+		else
+		{
+			if (itemSerial == CurItem.SerialNumber)
 			{
-				global::UnityEngine.Debug.LogWarning("[Server] function 'System.Void InventorySystem.Inventory::ServerSendItems()' called when server was not active");
 				return;
 			}
+			ItemBase value = null;
+			ItemBase value2 = null;
+			bool flag = CurItem.SerialNumber == 0 || (UserInventory.Items.TryGetValue(CurItem.SerialNumber, out value) && CurInstance != null);
+			if (itemSerial == 0 || UserInventory.Items.TryGetValue(itemSerial, out value2))
+			{
+				if ((CurItem.SerialNumber != 0 && flag && !value.AllowHolster) || (itemSerial != 0 && !value2.AllowEquip))
+				{
+					return;
+				}
+				PlayerChangingItemEventArgs playerChangingItemEventArgs = new PlayerChangingItemEventArgs(_hub, value, value2);
+				PlayerEvents.OnChangingItem(playerChangingItemEventArgs);
+				if (!playerChangingItemEventArgs.IsAllowed)
+				{
+					return;
+				}
+				if (itemSerial == 0)
+				{
+					NetworkCurItem = ItemIdentifier.None;
+					if (!base.isLocalPlayer)
+					{
+						CurInstance = null;
+					}
+				}
+				else
+				{
+					NetworkCurItem = new ItemIdentifier(value2.ItemTypeId, itemSerial);
+					if (!base.isLocalPlayer)
+					{
+						CurInstance = value2;
+					}
+				}
+				PlayerEvents.OnChangedItem(new PlayerChangedItemEventArgs(_hub, value, value2));
+			}
+			else if (!flag)
+			{
+				NetworkCurItem = ItemIdentifier.None;
+				if (!base.isLocalPlayer)
+				{
+					CurInstance = null;
+				}
+			}
+		}
+	}
+
+	public void ClientSelectItem(ushort itemSerial)
+	{
+		if (CurInstance != null && CurInstance.ItemSerial != itemSerial)
+		{
+			CurInstance.OnHolsterRequestSent();
+		}
+		CmdSelectItem(itemSerial);
+	}
+
+	public void ClientDropItem(ushort itemSerial, bool tryThrow)
+	{
+		if (CurInstance != null && CurInstance.ItemSerial == itemSerial)
+		{
+			CurInstance.OnHolsterRequestSent();
+		}
+		CmdDropItem(itemSerial, tryThrow);
+	}
+
+	[Server]
+	private void ServerSendItems()
+	{
+		if (!NetworkServer.active)
+		{
+			UnityEngine.Debug.LogWarning("[Server] function 'System.Void InventorySystem.Inventory::ServerSendItems()' called when server was not active");
+		}
+		else
+		{
 			if (base.isLocalPlayer)
 			{
 				return;
 			}
 			HashSet<ItemIdentifier> hashSet = HashSetPool<ItemIdentifier>.Shared.Rent();
-			foreach (KeyValuePair<ushort, ItemBase> keyValuePair in this.UserInventory.Items)
+			foreach (KeyValuePair<ushort, ItemBase> item in UserInventory.Items)
 			{
-				hashSet.Add(new ItemIdentifier(keyValuePair.Value.ItemTypeId, keyValuePair.Key));
+				hashSet.Add(new ItemIdentifier(item.Value.ItemTypeId, item.Key));
 			}
-			this.TargetRefreshItems(hashSet.ToArray<ItemIdentifier>());
+			TargetRefreshItems(hashSet.ToArray());
 			HashSetPool<ItemIdentifier>.Shared.Return(hashSet);
 		}
+	}
 
-		[Server]
-		private void ServerSendAmmo()
+	[Server]
+	private void ServerSendAmmo()
+	{
+		if (!NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				global::UnityEngine.Debug.LogWarning("[Server] function 'System.Void InventorySystem.Inventory::ServerSendAmmo()' called when server was not active");
-				return;
-			}
+			UnityEngine.Debug.LogWarning("[Server] function 'System.Void InventorySystem.Inventory::ServerSendAmmo()' called when server was not active");
+		}
+		else
+		{
 			if (base.isLocalPlayer)
 			{
 				return;
 			}
 			List<byte> list = ListPool<byte>.Shared.Rent();
 			List<ushort> list2 = ListPool<ushort>.Shared.Rent();
-			foreach (KeyValuePair<ItemType, ushort> keyValuePair in this.UserInventory.ReserveAmmo)
+			foreach (KeyValuePair<ItemType, ushort> item in UserInventory.ReserveAmmo)
 			{
-				list.Add((byte)keyValuePair.Key);
-				list2.Add(keyValuePair.Value);
+				list.Add((byte)item.Key);
+				list2.Add(item.Value);
 			}
-			this.TargetRefreshAmmo(list.ToArray(), list2.ToArray());
+			TargetRefreshAmmo(list.ToArray(), list2.ToArray());
 			ListPool<byte>.Shared.Return(list);
 			ListPool<ushort>.Shared.Return(list2);
 		}
+	}
 
-		[TargetRpc]
-		private void TargetRefreshItems(ItemIdentifier[] ids)
+	[TargetRpc]
+	private void TargetRefreshItems(ItemIdentifier[] ids)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		GeneratedNetworkCode._Write_InventorySystem_002EItems_002EItemIdentifier_005B_005D(writer, ids);
+		SendTargetRPCInternal(null, "System.Void InventorySystem.Inventory::TargetRefreshItems(InventorySystem.Items.ItemIdentifier[])", 924996253, writer, 0);
+		NetworkWriterPool.Return(writer);
+	}
+
+	[TargetRpc]
+	private void TargetRefreshAmmo(byte[] keys, ushort[] values)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteBytesAndSize(keys);
+		GeneratedNetworkCode._Write_System_002EUInt16_005B_005D(writer, values);
+		SendTargetRPCInternal(null, "System.Void InventorySystem.Inventory::TargetRefreshAmmo(System.Byte[],System.UInt16[])", 1974569553, writer, 0);
+		NetworkWriterPool.Return(writer);
+	}
+
+	[Command]
+	private void CmdSelectItem(ushort itemSerial)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteUShort(itemSerial);
+		SendCommandInternal("System.Void InventorySystem.Inventory::CmdSelectItem(System.UInt16)", 599991551, writer, 0);
+		NetworkWriterPool.Return(writer);
+	}
+
+	[Command(channel = 4)]
+	private void CmdConfirmAcquisition(ushort[] itemSerials)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		GeneratedNetworkCode._Write_System_002EUInt16_005B_005D(writer, itemSerials);
+		SendCommandInternal("System.Void InventorySystem.Inventory::CmdConfirmAcquisition(System.UInt16[])", 1903294111, writer, 4);
+		NetworkWriterPool.Return(writer);
+	}
+
+	[Command(channel = 4)]
+	private void CmdDropItem(ushort itemSerial, bool tryThrow)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteUShort(itemSerial);
+		writer.WriteBool(tryThrow);
+		SendCommandInternal("System.Void InventorySystem.Inventory::CmdDropItem(System.UInt16,System.Boolean)", -146885871, writer, 4);
+		NetworkWriterPool.Return(writer);
+	}
+
+	[Command(channel = 4)]
+	public void CmdDropAmmo(byte ammoType, ushort amount)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		NetworkWriterExtensions.WriteByte(writer, ammoType);
+		writer.WriteUShort(amount);
+		SendCommandInternal("System.Void InventorySystem.Inventory::CmdDropAmmo(System.Byte,System.UInt16)", 1230737334, writer, 4);
+		NetworkWriterPool.Return(writer);
+	}
+
+	public ItemBase CreateItemInstance(ItemIdentifier identifier, bool updateViewmodel)
+	{
+		if (!InventoryItemLoader.AvailableItems.TryGetValue(identifier.TypeId, out var value))
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			global::Mirror.GeneratedNetworkCode._Write_InventorySystem.Items.ItemIdentifier[](networkWriterPooled, ids);
-			this.SendTargetRPCInternal(null, "System.Void InventorySystem.Inventory::TargetRefreshItems(InventorySystem.Items.ItemIdentifier[])", 924996253, networkWriterPooled, 0);
-			NetworkWriterPool.Return(networkWriterPooled);
+			return null;
 		}
-
-		[TargetRpc]
-		private void TargetRefreshAmmo(byte[] keys, ushort[] values)
+		ItemBase itemBase = UnityEngine.Object.Instantiate(value, ItemWorkspace);
+		itemBase.transform.localPosition = Vector3.zero;
+		itemBase.transform.localRotation = Quaternion.identity;
+		itemBase.Owner = _hub;
+		itemBase.ItemSerial = identifier.SerialNumber;
+		if (updateViewmodel && itemBase.ViewModel != null)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteBytesAndSize(keys);
-			global::Mirror.GeneratedNetworkCode._Write_System.UInt16[](networkWriterPooled, values);
-			this.SendTargetRPCInternal(null, "System.Void InventorySystem.Inventory::TargetRefreshAmmo(System.Byte[],System.UInt16[])", 1974569553, networkWriterPooled, 0);
-			NetworkWriterPool.Return(networkWriterPooled);
+			ItemViewmodelBase itemViewmodelBase = UnityEngine.Object.Instantiate(itemBase.ViewModel, itemBase.transform);
+			itemViewmodelBase.transform.localPosition = Vector3.zero;
+			itemViewmodelBase.transform.localRotation = Quaternion.identity;
+			itemViewmodelBase.InitLocal(itemBase);
+			itemViewmodelBase.gameObject.SetActive(value: false);
+			itemBase.ViewModel = itemViewmodelBase;
 		}
+		return itemBase;
+	}
 
-		[Command]
-		private void CmdSelectItem(ushort itemSerial)
+	public bool DestroyItemInstance(ushort targetInstance, ItemPickupBase pickup, out ItemBase foundItem)
+	{
+		if (!UserInventory.Items.TryGetValue(targetInstance, out foundItem))
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteUShort(itemSerial);
-			base.SendCommandInternal("System.Void InventorySystem.Inventory::CmdSelectItem(System.UInt16)", 599991551, networkWriterPooled, 0, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			return false;
 		}
-
-		[Command(channel = 4)]
-		private void CmdConfirmAcquisition(ushort[] itemSerials)
+		foundItem.OnRemoved(pickup);
+		if (CurInstance == foundItem)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			global::Mirror.GeneratedNetworkCode._Write_System.UInt16[](networkWriterPooled, itemSerials);
-			base.SendCommandInternal("System.Void InventorySystem.Inventory::CmdConfirmAcquisition(System.UInt16[])", 1903294111, networkWriterPooled, 4, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			CurInstance = null;
 		}
+		UnityEngine.Object.Destroy(foundItem.gameObject);
+		return true;
+	}
 
-		[Command(channel = 4)]
-		private void CmdDropItem(ushort itemSerial, bool tryThrow)
+	public void PopulateDummyActions(Action<DummyAction> actionAdder, Action<string> categoryAdder)
+	{
+		DummyActionsDirty = false;
+		foreach (KeyValuePair<ushort, ItemBase> item in UserInventory.Items)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteUShort(itemSerial);
-			networkWriterPooled.WriteBool(tryThrow);
-			base.SendCommandInternal("System.Void InventorySystem.Inventory::CmdDropItem(System.UInt16,System.Boolean)", -146885871, networkWriterPooled, 4, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			ItemBase value = item.Value;
+			IDummyActionProvider[] componentsInChildren = value.GetComponentsInChildren<IDummyActionProvider>();
+			categoryAdder($"{value.ItemTypeId} (#{value.ItemSerial})");
+			PopulateDummnyAction(value, componentsInChildren, actionAdder);
+			categoryAdder($"{value.ItemTypeId} (ANY)");
+			PopulateDummnyAction(value, componentsInChildren, actionAdder);
 		}
+	}
 
-		[Command(channel = 4)]
-		public void CmdDropAmmo(byte ammoType, ushort amount)
+	private void PopulateDummnyAction(ItemBase ib, IDummyActionProvider[] providers, Action<DummyAction> actionAdder)
+	{
+		if (ib.AllowEquip && !ib.IsEquipped)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteByte(ammoType);
-			networkWriterPooled.WriteUShort(amount);
-			base.SendCommandInternal("System.Void InventorySystem.Inventory::CmdDropAmmo(System.Byte,System.UInt16)", 1230737334, networkWriterPooled, 4, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			actionAdder(new DummyAction("Equip", delegate
+			{
+				ServerSelectItem(ib.ItemSerial);
+			}));
 		}
-
-		public ItemBase CreateItemInstance(ItemIdentifier identifier, bool updateViewmodel)
+		if (ib.AllowHolster && ib.IsEquipped)
 		{
-			ItemBase itemBase;
-			if (!InventoryItemLoader.AvailableItems.TryGetValue(identifier.TypeId, out itemBase))
+			actionAdder(new DummyAction("Holster", delegate
 			{
-				return null;
-			}
-			ItemBase itemBase2 = global::UnityEngine.Object.Instantiate<ItemBase>(itemBase, this.ItemWorkspace);
-			itemBase2.transform.localPosition = Vector3.zero;
-			itemBase2.transform.localRotation = Quaternion.identity;
-			itemBase2.Owner = this._hub;
-			itemBase2.ItemSerial = identifier.SerialNumber;
-			if (updateViewmodel && itemBase2.ViewModel != null)
-			{
-				ItemViewmodelBase itemViewmodelBase = global::UnityEngine.Object.Instantiate<ItemViewmodelBase>(itemBase2.ViewModel, itemBase2.transform);
-				itemViewmodelBase.transform.localPosition = Vector3.zero;
-				itemViewmodelBase.transform.localRotation = Quaternion.identity;
-				itemViewmodelBase.InitLocal(itemBase2);
-				itemViewmodelBase.gameObject.SetActive(false);
-				itemBase2.ViewModel = itemViewmodelBase;
-			}
-			return itemBase2;
+				ServerSelectItem(0);
+			}));
 		}
-
-		public bool DestroyItemInstance(ushort targetInstance, ItemPickupBase pickup, out ItemBase foundItem)
+		if (ib.AllowDropping)
 		{
-			if (!this.UserInventory.Items.TryGetValue(targetInstance, out foundItem))
+			actionAdder(new DummyAction("Drop", delegate
 			{
-				return false;
-			}
-			foundItem.OnRemoved(pickup);
-			if (this.CurInstance == foundItem)
-			{
-				this.CurInstance = null;
-			}
-			global::UnityEngine.Object.Destroy(foundItem.gameObject);
-			return true;
+				ib.ServerDropItem(spawn: true);
+			}));
 		}
-
-		static Inventory()
+		for (int i = 0; i < providers.Length; i++)
 		{
-			Inventory.OnItemsModified = delegate(ReferenceHub userHub)
-			{
-			};
-			Inventory.OnAmmoModified = delegate(ReferenceHub userHub)
-			{
-			};
-			Inventory.OnCurrentItemChanged = delegate(ReferenceHub userHub, ItemIdentifier prevItem, ItemIdentifier newItem)
-			{
-			};
-			RemoteProcedureCalls.RegisterCommand(typeof(Inventory), "System.Void InventorySystem.Inventory::CmdSelectItem(System.UInt16)", new RemoteCallDelegate(Inventory.InvokeUserCode_CmdSelectItem__UInt16), true);
-			RemoteProcedureCalls.RegisterCommand(typeof(Inventory), "System.Void InventorySystem.Inventory::CmdConfirmAcquisition(System.UInt16[])", new RemoteCallDelegate(Inventory.InvokeUserCode_CmdConfirmAcquisition__UInt16[]), true);
-			RemoteProcedureCalls.RegisterCommand(typeof(Inventory), "System.Void InventorySystem.Inventory::CmdDropItem(System.UInt16,System.Boolean)", new RemoteCallDelegate(Inventory.InvokeUserCode_CmdDropItem__UInt16__Boolean), true);
-			RemoteProcedureCalls.RegisterCommand(typeof(Inventory), "System.Void InventorySystem.Inventory::CmdDropAmmo(System.Byte,System.UInt16)", new RemoteCallDelegate(Inventory.InvokeUserCode_CmdDropAmmo__Byte__UInt16), true);
-			RemoteProcedureCalls.RegisterRpc(typeof(Inventory), "System.Void InventorySystem.Inventory::TargetRefreshItems(InventorySystem.Items.ItemIdentifier[])", new RemoteCallDelegate(Inventory.InvokeUserCode_TargetRefreshItems__ItemIdentifier[]));
-			RemoteProcedureCalls.RegisterRpc(typeof(Inventory), "System.Void InventorySystem.Inventory::TargetRefreshAmmo(System.Byte[],System.UInt16[])", new RemoteCallDelegate(Inventory.InvokeUserCode_TargetRefreshAmmo__Byte[]__UInt16[]));
+			providers[i].PopulateDummyActions(actionAdder);
 		}
+	}
 
-		public override bool Weaved()
+	static Inventory()
+	{
+		Inventory.OnItemsModified = delegate
 		{
-			return true;
-		}
+		};
+		Inventory.OnAmmoModified = delegate
+		{
+		};
+		Inventory.OnCurrentItemChanged = delegate
+		{
+		};
+		RemoteProcedureCalls.RegisterCommand(typeof(Inventory), "System.Void InventorySystem.Inventory::CmdSelectItem(System.UInt16)", InvokeUserCode_CmdSelectItem__UInt16, requiresAuthority: true);
+		RemoteProcedureCalls.RegisterCommand(typeof(Inventory), "System.Void InventorySystem.Inventory::CmdConfirmAcquisition(System.UInt16[])", InvokeUserCode_CmdConfirmAcquisition__UInt16_005B_005D, requiresAuthority: true);
+		RemoteProcedureCalls.RegisterCommand(typeof(Inventory), "System.Void InventorySystem.Inventory::CmdDropItem(System.UInt16,System.Boolean)", InvokeUserCode_CmdDropItem__UInt16__Boolean, requiresAuthority: true);
+		RemoteProcedureCalls.RegisterCommand(typeof(Inventory), "System.Void InventorySystem.Inventory::CmdDropAmmo(System.Byte,System.UInt16)", InvokeUserCode_CmdDropAmmo__Byte__UInt16, requiresAuthority: true);
+		RemoteProcedureCalls.RegisterRpc(typeof(Inventory), "System.Void InventorySystem.Inventory::TargetRefreshItems(InventorySystem.Items.ItemIdentifier[])", InvokeUserCode_TargetRefreshItems__ItemIdentifier_005B_005D);
+		RemoteProcedureCalls.RegisterRpc(typeof(Inventory), "System.Void InventorySystem.Inventory::TargetRefreshAmmo(System.Byte[],System.UInt16[])", InvokeUserCode_TargetRefreshAmmo__Byte_005B_005D__UInt16_005B_005D);
+	}
 
-		public ItemIdentifier NetworkCurItem
-		{
-			get
-			{
-				return this.CurItem;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<ItemIdentifier>(value, ref this.CurItem, 1UL, new Action<ItemIdentifier, ItemIdentifier>(this.OnItemUpdated));
-			}
-		}
+	public override bool Weaved()
+	{
+		return true;
+	}
 
-		public float Network_syncStaminaModifier
+	protected void UserCode_TargetRefreshItems__ItemIdentifier_005B_005D(ItemIdentifier[] ids)
+	{
+		Queue<ItemIdentifier> queue = new Queue<ItemIdentifier>();
+		List<ushort> list = UserInventory.Items.Keys.ToList();
+		int num = 0;
+		for (int i = 0; i < ids.Length; i++)
 		{
-			get
+			ItemIdentifier item = ids[i];
+			if (!UserInventory.Items.Keys.Contains(item.SerialNumber))
 			{
-				return this._syncStaminaModifier;
+				queue.Enqueue(item);
 			}
-			[param: In]
-			set
+			if (list.Contains(item.SerialNumber))
 			{
-				base.GeneratedSyncVarSetter<float>(value, ref this._syncStaminaModifier, 2UL, null);
-			}
-		}
-
-		public float Network_syncMovementLimiter
-		{
-			get
-			{
-				return this._syncMovementLimiter;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<float>(value, ref this._syncMovementLimiter, 4UL, null);
-			}
-		}
-
-		public float Network_syncMovementMultiplier
-		{
-			get
-			{
-				return this._syncMovementMultiplier;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<float>(value, ref this._syncMovementMultiplier, 8UL, null);
-			}
-		}
-
-		protected void UserCode_TargetRefreshItems__ItemIdentifier[](ItemIdentifier[] ids)
-		{
-			Queue<ItemIdentifier> queue = new Queue<ItemIdentifier>();
-			List<ushort> list = this.UserInventory.Items.Keys.ToList<ushort>();
-			int num = 0;
-			foreach (ItemIdentifier itemIdentifier in ids)
-			{
-				if (!this.UserInventory.Items.Keys.Contains(itemIdentifier.SerialNumber))
-				{
-					queue.Enqueue(itemIdentifier);
-				}
-				if (list.Contains(itemIdentifier.SerialNumber))
-				{
-					list.Remove(itemIdentifier.SerialNumber);
-				}
-			}
-			while (list.Count > 0)
-			{
-				ItemBase itemBase;
-				this.DestroyItemInstance(list[0], null, out itemBase);
-				this.UserInventory.Items.Remove(list[0]);
-				list.RemoveAt(0);
-				num++;
-			}
-			List<ushort> list2 = ListPool<ushort>.Shared.Rent();
-			while (queue.Count > 0)
-			{
-				ItemIdentifier itemIdentifier2 = queue.Dequeue();
-				ItemBase itemBase2 = this.CreateItemInstance(itemIdentifier2, true);
-				this.UserInventory.Items[itemIdentifier2.SerialNumber] = itemBase2;
-				itemBase2.OnAdded(null);
-				if (itemBase2 is IAcquisitionConfirmationTrigger)
-				{
-					list2.Add(itemIdentifier2.SerialNumber);
-				}
-				if (itemIdentifier2 == this.CurItem)
-				{
-					this.CurInstance = itemBase2;
-				}
-				num++;
-			}
-			if (list2.Count > 0)
-			{
-				this.CmdConfirmAcquisition(list2.ToArray());
-			}
-			ListPool<ushort>.Shared.Return(list2);
-			if (num > 0 && base.isLocalPlayer)
-			{
-				Action<ReferenceHub> onItemsModified = Inventory.OnItemsModified;
-				if (onItemsModified == null)
-				{
-					return;
-				}
-				onItemsModified(this._hub);
+				list.Remove(item.SerialNumber);
 			}
 		}
-
-		protected static void InvokeUserCode_TargetRefreshItems__ItemIdentifier[](NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+		while (list.Count > 0)
 		{
-			if (!NetworkClient.active)
-			{
-				global::UnityEngine.Debug.LogError("TargetRPC TargetRefreshItems called on server.");
-				return;
-			}
-			((Inventory)obj).UserCode_TargetRefreshItems__ItemIdentifier[](global::Mirror.GeneratedNetworkCode._Read_InventorySystem.Items.ItemIdentifier[](reader));
+			DestroyItemInstance(list[0], null, out var _);
+			UserInventory.Items.Remove(list[0]);
+			list.RemoveAt(0);
+			num++;
 		}
-
-		protected void UserCode_TargetRefreshAmmo__Byte[]__UInt16[](byte[] keys, ushort[] values)
+		List<ushort> list2 = ListPool<ushort>.Shared.Rent();
+		while (queue.Count > 0)
 		{
-			if (keys.Length != values.Length)
+			ItemIdentifier itemIdentifier = queue.Dequeue();
+			ItemBase itemBase = CreateItemInstance(itemIdentifier, updateViewmodel: true);
+			UserInventory.Items[itemIdentifier.SerialNumber] = itemBase;
+			itemBase.OnAdded(null);
+			if (itemBase is IAcquisitionConfirmationTrigger)
 			{
-				return;
+				list2.Add(itemIdentifier.SerialNumber);
 			}
-			this.UserInventory.ReserveAmmo.Clear();
+			if (itemIdentifier == CurItem)
+			{
+				CurInstance = itemBase;
+			}
+			num++;
+		}
+		if (list2.Count > 0)
+		{
+			CmdConfirmAcquisition(list2.ToArray());
+		}
+		ListPool<ushort>.Shared.Return(list2);
+		if (num > 0 && base.isLocalPlayer)
+		{
+			Inventory.OnItemsModified?.Invoke(_hub);
+		}
+	}
+
+	protected static void InvokeUserCode_TargetRefreshItems__ItemIdentifier_005B_005D(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
+		{
+			UnityEngine.Debug.LogError("TargetRPC TargetRefreshItems called on server.");
+		}
+		else
+		{
+			((Inventory)obj).UserCode_TargetRefreshItems__ItemIdentifier_005B_005D(GeneratedNetworkCode._Read_InventorySystem_002EItems_002EItemIdentifier_005B_005D(reader));
+		}
+	}
+
+	protected void UserCode_TargetRefreshAmmo__Byte_005B_005D__UInt16_005B_005D(byte[] keys, ushort[] values)
+	{
+		if (keys.Length == values.Length)
+		{
+			UserInventory.ReserveAmmo.Clear();
 			for (int i = 0; i < keys.Length; i++)
 			{
-				this.UserInventory.ReserveAmmo[(ItemType)keys[i]] = values[i];
+				UserInventory.ReserveAmmo[(ItemType)keys[i]] = values[i];
 			}
-			Action<ReferenceHub> onAmmoModified = Inventory.OnAmmoModified;
-			if (onAmmoModified == null)
-			{
-				return;
-			}
-			onAmmoModified(this._hub);
+			Inventory.OnAmmoModified?.Invoke(_hub);
 		}
+	}
 
-		protected static void InvokeUserCode_TargetRefreshAmmo__Byte[]__UInt16[](NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	protected static void InvokeUserCode_TargetRefreshAmmo__Byte_005B_005D__UInt16_005B_005D(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
 		{
-			if (!NetworkClient.active)
-			{
-				global::UnityEngine.Debug.LogError("TargetRPC TargetRefreshAmmo called on server.");
-				return;
-			}
-			((Inventory)obj).UserCode_TargetRefreshAmmo__Byte[]__UInt16[](reader.ReadBytesAndSize(), global::Mirror.GeneratedNetworkCode._Read_System.UInt16[](reader));
+			UnityEngine.Debug.LogError("TargetRPC TargetRefreshAmmo called on server.");
 		}
-
-		protected void UserCode_CmdSelectItem__UInt16(ushort itemSerial)
+		else
 		{
-			if (this._hub.interCoordinator.AnyBlocker(BlockedInteraction.OpenInventory))
-			{
-				return;
-			}
-			this.ServerSelectItem(itemSerial);
+			((Inventory)obj).UserCode_TargetRefreshAmmo__Byte_005B_005D__UInt16_005B_005D(reader.ReadBytesAndSize(), GeneratedNetworkCode._Read_System_002EUInt16_005B_005D(reader));
 		}
+	}
 
-		protected static void InvokeUserCode_CmdSelectItem__UInt16(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	protected void UserCode_CmdSelectItem__UInt16(ushort itemSerial)
+	{
+		if (!_hub.interCoordinator.AnyBlocker(BlockedInteraction.OpenInventory))
 		{
-			if (!NetworkServer.active)
-			{
-				global::UnityEngine.Debug.LogError("Command CmdSelectItem called on client.");
-				return;
-			}
+			ServerSelectItem(itemSerial);
+		}
+	}
+
+	protected static void InvokeUserCode_CmdSelectItem__UInt16(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkServer.active)
+		{
+			UnityEngine.Debug.LogError("Command CmdSelectItem called on client.");
+		}
+		else
+		{
 			((Inventory)obj).UserCode_CmdSelectItem__UInt16(reader.ReadUShort());
 		}
+	}
 
-		protected void UserCode_CmdConfirmAcquisition__UInt16[](ushort[] itemSerials)
+	protected void UserCode_CmdConfirmAcquisition__UInt16_005B_005D(ushort[] itemSerials)
+	{
+		foreach (ushort key in itemSerials)
 		{
-			foreach (ushort num in itemSerials)
+			if (UserInventory.Items.TryGetValue(key, out var value) && value is IAcquisitionConfirmationTrigger { AcquisitionAlreadyReceived: false } acquisitionConfirmationTrigger)
 			{
-				ItemBase itemBase;
-				if (this.UserInventory.Items.TryGetValue(num, out itemBase))
-				{
-					IAcquisitionConfirmationTrigger acquisitionConfirmationTrigger = itemBase as IAcquisitionConfirmationTrigger;
-					if (acquisitionConfirmationTrigger != null && !acquisitionConfirmationTrigger.AcquisitionAlreadyReceived)
-					{
-						acquisitionConfirmationTrigger.ServerConfirmAcqusition();
-						acquisitionConfirmationTrigger.AcquisitionAlreadyReceived = true;
-					}
-				}
+				acquisitionConfirmationTrigger.ServerConfirmAcqusition();
+				acquisitionConfirmationTrigger.AcquisitionAlreadyReceived = true;
 			}
 		}
+	}
 
-		protected static void InvokeUserCode_CmdConfirmAcquisition__UInt16[](NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	protected static void InvokeUserCode_CmdConfirmAcquisition__UInt16_005B_005D(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				global::UnityEngine.Debug.LogError("Command CmdConfirmAcquisition called on client.");
-				return;
-			}
-			((Inventory)obj).UserCode_CmdConfirmAcquisition__UInt16[](global::Mirror.GeneratedNetworkCode._Read_System.UInt16[](reader));
+			UnityEngine.Debug.LogError("Command CmdConfirmAcquisition called on client.");
 		}
-
-		protected void UserCode_CmdDropItem__UInt16__Boolean(ushort itemSerial, bool tryThrow)
+		else
 		{
-			ItemBase itemBase;
-			if (!this.UserInventory.Items.TryGetValue(itemSerial, out itemBase) || !itemBase.AllowDropping)
-			{
-				return;
-			}
-			PlayerDroppingItemEventArgs playerDroppingItemEventArgs = new PlayerDroppingItemEventArgs(this._hub, itemBase);
-			PlayerEvents.OnDroppingItem(playerDroppingItemEventArgs);
-			if (!playerDroppingItemEventArgs.IsAllowed)
-			{
-				return;
-			}
-			ItemPickupBase itemPickupBase = this.ServerDropItem(itemSerial);
-			PlayerEvents.OnDroppedItem(new PlayerDroppedItemEventArgs(this._hub, itemPickupBase));
-			this.SendItemsNextFrame = true;
-			Rigidbody rigidbody;
-			if (!tryThrow || itemPickupBase == null || !itemPickupBase.TryGetComponent<Rigidbody>(out rigidbody))
-			{
-				return;
-			}
-			PlayerThrowingItemEventArgs playerThrowingItemEventArgs = new PlayerThrowingItemEventArgs(this._hub, itemPickupBase, rigidbody);
-			PlayerEvents.OnThrowingItem(playerThrowingItemEventArgs);
-			if (!playerThrowingItemEventArgs.IsAllowed)
-			{
-				return;
-			}
-			Vector3 velocity = this._hub.GetVelocity();
-			Vector3 vector = velocity / 3f + this._hub.PlayerCameraReference.forward * 6f * (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, rigidbody.mass)) + 0.3f);
-			vector.x = Mathf.Max(Mathf.Abs(velocity.x), Mathf.Abs(vector.x)) * (float)((vector.x < 0f) ? (-1) : 1);
-			vector.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(vector.y)) * (float)((vector.y < 0f) ? (-1) : 1);
-			vector.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(vector.z)) * (float)((vector.z < 0f) ? (-1) : 1);
-			rigidbody.position = this._hub.PlayerCameraReference.position;
-			rigidbody.velocity = vector;
-			rigidbody.angularVelocity = Vector3.Lerp(itemBase.ThrowSettings.RandomTorqueA, itemBase.ThrowSettings.RandomTorqueB, global::UnityEngine.Random.value);
-			float magnitude = rigidbody.angularVelocity.magnitude;
-			if (magnitude > rigidbody.maxAngularVelocity)
-			{
-				rigidbody.maxAngularVelocity = magnitude;
-			}
-			PlayerEvents.OnThrewItem(new PlayerThrewItemEventArgs(this._hub, itemPickupBase, rigidbody));
+			((Inventory)obj).UserCode_CmdConfirmAcquisition__UInt16_005B_005D(GeneratedNetworkCode._Read_System_002EUInt16_005B_005D(reader));
 		}
+	}
 
-		protected static void InvokeUserCode_CmdDropItem__UInt16__Boolean(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	protected void UserCode_CmdDropItem__UInt16__Boolean(ushort itemSerial, bool tryThrow)
+	{
+		if (!UserInventory.Items.TryGetValue(itemSerial, out var value) || !value.AllowDropping)
 		{
-			if (!NetworkServer.active)
+			return;
+		}
+		PlayerDroppingItemEventArgs playerDroppingItemEventArgs = new PlayerDroppingItemEventArgs(_hub, value);
+		PlayerEvents.OnDroppingItem(playerDroppingItemEventArgs);
+		if (!playerDroppingItemEventArgs.IsAllowed)
+		{
+			return;
+		}
+		ItemPickupBase itemPickupBase = this.ServerDropItem(itemSerial);
+		PlayerEvents.OnDroppedItem(new PlayerDroppedItemEventArgs(_hub, itemPickupBase));
+		SendItemsNextFrame = true;
+		if (!tryThrow || itemPickupBase == null || !itemPickupBase.TryGetComponent<Rigidbody>(out var component))
+		{
+			return;
+		}
+		PlayerThrowingItemEventArgs playerThrowingItemEventArgs = new PlayerThrowingItemEventArgs(_hub, itemPickupBase, component);
+		PlayerEvents.OnThrowingItem(playerThrowingItemEventArgs);
+		if (playerThrowingItemEventArgs.IsAllowed)
+		{
+			Vector3 velocity = _hub.GetVelocity();
+			Vector3 linearVelocity = velocity / 3f + _hub.PlayerCameraReference.forward * 6f * (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, component.mass)) + 0.3f);
+			linearVelocity.x = Mathf.Max(Mathf.Abs(velocity.x), Mathf.Abs(linearVelocity.x)) * (float)((!(linearVelocity.x < 0f)) ? 1 : (-1));
+			linearVelocity.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(linearVelocity.y)) * (float)((!(linearVelocity.y < 0f)) ? 1 : (-1));
+			linearVelocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(linearVelocity.z)) * (float)((!(linearVelocity.z < 0f)) ? 1 : (-1));
+			component.position = _hub.PlayerCameraReference.position;
+			component.linearVelocity = linearVelocity;
+			component.angularVelocity = Vector3.Lerp(value.ThrowSettings.RandomTorqueA, value.ThrowSettings.RandomTorqueB, UnityEngine.Random.value);
+			float magnitude = component.angularVelocity.magnitude;
+			if (magnitude > component.maxAngularVelocity)
 			{
-				global::UnityEngine.Debug.LogError("Command CmdDropItem called on client.");
-				return;
+				component.maxAngularVelocity = magnitude;
 			}
+			PlayerEvents.OnThrewItem(new PlayerThrewItemEventArgs(_hub, itemPickupBase, component));
+		}
+	}
+
+	protected static void InvokeUserCode_CmdDropItem__UInt16__Boolean(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkServer.active)
+		{
+			UnityEngine.Debug.LogError("Command CmdDropItem called on client.");
+		}
+		else
+		{
 			((Inventory)obj).UserCode_CmdDropItem__UInt16__Boolean(reader.ReadUShort(), reader.ReadBool());
 		}
+	}
 
-		protected void UserCode_CmdDropAmmo__Byte__UInt16(byte ammoType, ushort amount)
+	protected void UserCode_CmdDropAmmo__Byte__UInt16(byte ammoType, ushort amount)
+	{
+		this.ServerDropAmmo((ItemType)ammoType, amount, checkMinimals: true);
+	}
+
+	protected static void InvokeUserCode_CmdDropAmmo__Byte__UInt16(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkServer.active)
 		{
-			this.ServerDropAmmo((ItemType)ammoType, amount, true);
+			UnityEngine.Debug.LogError("Command CmdDropAmmo called on client.");
 		}
-
-		protected static void InvokeUserCode_CmdDropAmmo__Byte__UInt16(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+		else
 		{
-			if (!NetworkServer.active)
-			{
-				global::UnityEngine.Debug.LogError("Command CmdDropAmmo called on client.");
-				return;
-			}
-			((Inventory)obj).UserCode_CmdDropAmmo__Byte__UInt16(reader.ReadByte(), reader.ReadUShort());
+			((Inventory)obj).UserCode_CmdDropAmmo__Byte__UInt16(NetworkReaderExtensions.ReadByte(reader), reader.ReadUShort());
 		}
+	}
 
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				global::Mirror.GeneratedNetworkCode._Write_InventorySystem.Items.ItemIdentifier(writer, this.CurItem);
-				writer.WriteFloat(this._syncStaminaModifier);
-				writer.WriteFloat(this._syncMovementLimiter);
-				writer.WriteFloat(this._syncMovementMultiplier);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 1UL) != 0UL)
-			{
-				global::Mirror.GeneratedNetworkCode._Write_InventorySystem.Items.ItemIdentifier(writer, this.CurItem);
-			}
-			if ((base.syncVarDirtyBits & 2UL) != 0UL)
-			{
-				writer.WriteFloat(this._syncStaminaModifier);
-			}
-			if ((base.syncVarDirtyBits & 4UL) != 0UL)
-			{
-				writer.WriteFloat(this._syncMovementLimiter);
-			}
-			if ((base.syncVarDirtyBits & 8UL) != 0UL)
-			{
-				writer.WriteFloat(this._syncMovementMultiplier);
-			}
+			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EItemIdentifier(writer, CurItem);
+			writer.WriteFloat(_syncStaminaModifier);
+			writer.WriteFloat(_syncMovementLimiter);
+			writer.WriteFloat(_syncMovementMultiplier);
+			return;
 		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<ItemIdentifier>(ref this.CurItem, new Action<ItemIdentifier, ItemIdentifier>(this.OnItemUpdated), global::Mirror.GeneratedNetworkCode._Read_InventorySystem.Items.ItemIdentifier(reader));
-				base.GeneratedSyncVarDeserialize<float>(ref this._syncStaminaModifier, null, reader.ReadFloat());
-				base.GeneratedSyncVarDeserialize<float>(ref this._syncMovementLimiter, null, reader.ReadFloat());
-				base.GeneratedSyncVarDeserialize<float>(ref this._syncMovementMultiplier, null, reader.ReadFloat());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 1L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<ItemIdentifier>(ref this.CurItem, new Action<ItemIdentifier, ItemIdentifier>(this.OnItemUpdated), global::Mirror.GeneratedNetworkCode._Read_InventorySystem.Items.ItemIdentifier(reader));
-			}
-			if ((num & 2L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this._syncStaminaModifier, null, reader.ReadFloat());
-			}
-			if ((num & 4L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this._syncMovementLimiter, null, reader.ReadFloat());
-			}
-			if ((num & 8L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this._syncMovementMultiplier, null, reader.ReadFloat());
-			}
+			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EItemIdentifier(writer, CurItem);
 		}
+		if ((base.syncVarDirtyBits & 2L) != 0L)
+		{
+			writer.WriteFloat(_syncStaminaModifier);
+		}
+		if ((base.syncVarDirtyBits & 4L) != 0L)
+		{
+			writer.WriteFloat(_syncMovementLimiter);
+		}
+		if ((base.syncVarDirtyBits & 8L) != 0L)
+		{
+			writer.WriteFloat(_syncMovementMultiplier);
+		}
+	}
 
-		public const int MaxSlots = 8;
-
-		public InventoryInfo UserInventory = new InventoryInfo();
-
-		[SyncVar(hook = "OnItemUpdated")]
-		public ItemIdentifier CurItem = ItemIdentifier.None;
-
-		public bool SendItemsNextFrame;
-
-		public bool SendAmmoNextFrame;
-
-		private ItemIdentifier _prevCurItem;
-
-		internal ReferenceHub _hub;
-
-		private ItemBase _curInstance;
-
-		private float _staminaModifier;
-
-		private float _movementLimiter;
-
-		private float _movementMultiplier;
-
-		private bool _sprintingDisabled;
-
-		private readonly Stopwatch _lastEquipSw = Stopwatch.StartNew();
-
-		[SyncVar]
-		private float _syncStaminaModifier;
-
-		[SyncVar]
-		private float _syncMovementLimiter;
-
-		[SyncVar]
-		private float _syncMovementMultiplier;
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref CurItem, OnItemUpdated, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EItemIdentifier(reader));
+			GeneratedSyncVarDeserialize(ref _syncStaminaModifier, null, reader.ReadFloat());
+			GeneratedSyncVarDeserialize(ref _syncMovementLimiter, null, reader.ReadFloat());
+			GeneratedSyncVarDeserialize(ref _syncMovementMultiplier, null, reader.ReadFloat());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 1L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref CurItem, OnItemUpdated, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EItemIdentifier(reader));
+		}
+		if ((num & 2L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _syncStaminaModifier, null, reader.ReadFloat());
+		}
+		if ((num & 4L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _syncMovementLimiter, null, reader.ReadFloat());
+		}
+		if ((num & 8L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _syncMovementMultiplier, null, reader.ReadFloat());
+		}
 	}
 }

@@ -1,10 +1,7 @@
-﻿using System;
+namespace Steam;
 
-namespace Steam
+public enum ServerOperativeSystem : byte
 {
-	public enum ServerOperativeSystem : byte
-	{
-		Linux = 108,
-		Windows = 119
-	}
+	Linux = 108,
+	Windows = 119
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using GameCore;
@@ -8,6 +7,8 @@ using UnityEngine;
 
 public class PlatformInfo : MonoBehaviour
 {
+	public static PlatformInfo singleton;
+
 	public bool IsHeadless { get; } = true;
 
 	public bool IsIl2Cpp { get; }
@@ -24,44 +25,36 @@ public class PlatformInfo : MonoBehaviour
 
 	public int MainThreadId { get; private set; }
 
-	public bool IsMainThread
-	{
-		get
-		{
-			return Thread.CurrentThread.ManagedThreadId == this.MainThreadId;
-		}
-	}
+	public bool IsMainThread => Thread.CurrentThread.ManagedThreadId == MainThreadId;
 
 	private void Awake()
 	{
-		this.MainThreadId = Thread.CurrentThread.ManagedThreadId;
-		this.BuildGuid = Application.buildGUID;
-		PlatformInfo.singleton = this;
-		global::GameCore.Console.AddLog("Loaded NorthwoodLib " + PlatformSettings.Version, Color.green, false, global::GameCore.Console.ConsoleLogType.Log);
-		PlatformSettings.Logged += PlatformInfo.OnLogged;
+		MainThreadId = Thread.CurrentThread.ManagedThreadId;
+		BuildGuid = Application.buildGUID;
+		singleton = this;
+		Console.AddLog("Loaded NorthwoodLib " + PlatformSettings.Version, Color.green);
+		PlatformSettings.Logged += OnLogged;
 	}
 
-	private static void OnLogged(string text, global::NorthwoodLib.Logging.LogType type)
+	private static void OnLogged(string text, NorthwoodLib.Logging.LogType type)
 	{
 		switch (type)
 		{
-		case global::NorthwoodLib.Logging.LogType.Debug:
+		case NorthwoodLib.Logging.LogType.Debug:
 			Debug.Log(text);
-			return;
-		case global::NorthwoodLib.Logging.LogType.Info:
-			global::GameCore.Console.AddLog(text, Color.blue, false, global::GameCore.Console.ConsoleLogType.Log);
-			return;
-		case global::NorthwoodLib.Logging.LogType.Warning:
-			global::GameCore.Console.AddLog(text, Color.yellow, false, global::GameCore.Console.ConsoleLogType.Log);
-			return;
-		case global::NorthwoodLib.Logging.LogType.Error:
-			global::GameCore.Console.AddLog(text, Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-			return;
+			break;
+		case NorthwoodLib.Logging.LogType.Info:
+			Console.AddLog(text, Color.blue);
+			break;
+		case NorthwoodLib.Logging.LogType.Warning:
+			Console.AddLog(text, Color.yellow);
+			break;
+		case NorthwoodLib.Logging.LogType.Error:
+			Console.AddLog(text, Color.red);
+			break;
 		default:
 			Debug.Log(text);
-			return;
+			break;
 		}
 	}
-
-	public static PlatformInfo singleton;
 }

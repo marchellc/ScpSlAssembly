@@ -1,25 +1,24 @@
-﻿using System;
+using System;
 using Mirror;
 
-namespace Hints
+namespace Hints;
+
+public class StringHintParameter : PrimitiveHintParameter<string>
 {
-	public class StringHintParameter : PrimitiveHintParameter<string>
+	public static StringHintParameter FromNetwork(NetworkReader reader)
 	{
-		public static StringHintParameter FromNetwork(NetworkReader reader)
-		{
-			StringHintParameter stringHintParameter = new StringHintParameter();
-			stringHintParameter.Deserialize(reader);
-			return stringHintParameter;
-		}
+		StringHintParameter stringHintParameter = new StringHintParameter();
+		stringHintParameter.Deserialize(reader);
+		return stringHintParameter;
+	}
 
-		protected StringHintParameter()
-			: base(new Func<NetworkReader, string>(NetworkReaderExtensions.ReadString), new Action<NetworkWriter, string>(NetworkWriterExtensions.WriteString))
-		{
-		}
+	protected StringHintParameter()
+		: base((Func<NetworkReader, string>)NetworkReaderExtensions.ReadString, (Action<NetworkWriter, string>)NetworkWriterExtensions.WriteString)
+	{
+	}
 
-		public StringHintParameter(string value)
-			: base(value, new Func<NetworkReader, string>(NetworkReaderExtensions.ReadString), new Action<NetworkWriter, string>(NetworkWriterExtensions.WriteString))
-		{
-		}
+	public StringHintParameter(string value)
+		: base(value, (Func<NetworkReader, string>)NetworkReaderExtensions.ReadString, (Action<NetworkWriter, string>)NetworkWriterExtensions.WriteString)
+	{
 	}
 }

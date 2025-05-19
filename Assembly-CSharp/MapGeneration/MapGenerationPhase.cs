@@ -1,14 +1,13 @@
-﻿using System;
+namespace MapGeneration;
 
-namespace MapGeneration
+public enum MapGenerationPhase
 {
-	public enum MapGenerationPhase
-	{
-		ParentRoomRegistration,
-		RelativePositioningWaypoints,
-		ComplexDecorationsAndClutter,
-		SimpleDecorations,
-		CullingCaching,
-		SpawnableStructures
-	}
+	RoomCoordsRegistrations,
+	ParentRoomRegistration,
+	RelativePositioningWaypoints,
+	ComplexDecorationsAndClutter,
+	SimpleDecorations,
+	CullingCaching,
+	SpawnableStructures,
+	StaticBatching
 }

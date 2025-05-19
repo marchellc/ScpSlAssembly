@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles;
 
-namespace PlayerRoles
+public interface IHiddenRole
 {
-	public interface IHiddenRole
-	{
-		bool IsHidden { get; }
-	}
+	bool IsHidden { get; }
 }

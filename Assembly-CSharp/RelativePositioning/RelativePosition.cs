@@ -1,141 +1,134 @@
-﻿using System;
+using System;
 using Mirror;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace RelativePositioning
+namespace RelativePositioning;
+
+public struct RelativePosition : NetworkMessage, IEquatable<RelativePosition>
 {
-	public struct RelativePosition : NetworkMessage, IEquatable<RelativePosition>
+	private static readonly float InverseAccuracy = 0.00390625f;
+
+	public const float Accuracy = 256f;
+
+	public readonly short PositionX;
+
+	public readonly short PositionY;
+
+	public readonly short PositionZ;
+
+	public readonly byte WaypointId;
+
+	public bool OutOfRange;
+
+	public Vector3 Position => WaypointBase.GetWorldPosition(WaypointId, Relative);
+
+	internal Vector3 Relative => new Vector3((float)PositionX * InverseAccuracy, (float)PositionY * InverseAccuracy, (float)PositionZ * InverseAccuracy);
+
+	public RelativePosition(Vector3 targetPos)
 	{
-		public Vector3 Position
+		WaypointBase.GetRelativePosition(targetPos, out WaypointId, out var rel);
+		bool flag = TryCompressPosition(rel.x, out PositionX);
+		bool flag2 = TryCompressPosition(rel.y, out PositionY);
+		bool flag3 = TryCompressPosition(rel.z, out PositionZ);
+		OutOfRange = !flag || !flag2 || !flag3;
+	}
+
+	public RelativePosition(IFpcRole fpc)
+		: this(fpc.FpcModule.Position)
+	{
+	}
+
+	public RelativePosition(ReferenceHub hub)
+		: this((hub.roleManager.CurrentRole is IFpcRole fpcRole) ? fpcRole.FpcModule.Position : hub.transform.position)
+	{
+	}
+
+	public RelativePosition(NetworkReader reader)
+	{
+		WaypointId = reader.ReadByte();
+		if (WaypointId > 0)
 		{
-			get
-			{
-				return WaypointBase.GetWorldPosition(this.WaypointId, this.Relative);
-			}
+			PositionX = reader.ReadShort();
+			PositionY = reader.ReadShort();
+			PositionZ = reader.ReadShort();
 		}
-
-		internal Vector3 Relative
+		else
 		{
-			get
-			{
-				return new Vector3((float)this.PositionX * RelativePosition.InverseAccuracy, (float)this.PositionY * RelativePosition.InverseAccuracy, (float)this.PositionZ * RelativePosition.InverseAccuracy);
-			}
+			PositionX = 0;
+			PositionY = 0;
+			PositionZ = 0;
 		}
+		OutOfRange = false;
+	}
 
-		public RelativePosition(Vector3 targetPos)
+	public RelativePosition(byte waypoint, short x, short y, short z, bool outOfRange)
+	{
+		WaypointId = waypoint;
+		PositionX = x;
+		PositionY = y;
+		PositionZ = z;
+		OutOfRange = outOfRange;
+	}
+
+	public void Write(NetworkWriter writer)
+	{
+		writer.WriteByte(WaypointId);
+		if (WaypointId > 0)
 		{
-			Vector3 vector;
-			WaypointBase.GetRelativePosition(targetPos, out this.WaypointId, out vector);
-			bool flag = RelativePosition.TryCompressPosition(vector.x, out this.PositionX);
-			bool flag2 = RelativePosition.TryCompressPosition(vector.y, out this.PositionY);
-			bool flag3 = RelativePosition.TryCompressPosition(vector.z, out this.PositionZ);
-			this.OutOfRange = !flag || !flag2 || !flag3;
+			writer.WriteShort(PositionX);
+			writer.WriteShort(PositionY);
+			writer.WriteShort(PositionZ);
 		}
+	}
 
-		public RelativePosition(IFpcRole fpc)
+	private static bool TryCompressPosition(float pos, out short compressed)
+	{
+		float num = pos * 256f;
+		if (num < -32768f)
 		{
-			this = new RelativePosition(fpc.FpcModule.Position);
+			compressed = short.MinValue;
+			return false;
 		}
-
-		public RelativePosition(ReferenceHub hub)
+		if (num > 32767f)
 		{
-			IFpcRole fpcRole = hub.roleManager.CurrentRole as IFpcRole;
-			this = new RelativePosition((fpcRole != null) ? fpcRole.FpcModule.Position : hub.transform.position);
+			compressed = short.MaxValue;
+			return false;
 		}
+		compressed = (short)num;
+		return true;
+	}
 
-		public RelativePosition(NetworkReader reader)
+	public bool Equals(RelativePosition other)
+	{
+		if (PositionX == other.PositionX && PositionY == other.PositionY && PositionZ == other.PositionZ)
 		{
-			this.WaypointId = reader.ReadByte();
-			if (this.WaypointId > 0)
-			{
-				this.PositionX = reader.ReadShort();
-				this.PositionY = reader.ReadShort();
-				this.PositionZ = reader.ReadShort();
-			}
-			else
-			{
-				this.PositionX = 0;
-				this.PositionY = 0;
-				this.PositionZ = 0;
-			}
-			this.OutOfRange = false;
+			return WaypointId == other.WaypointId;
 		}
+		return false;
+	}
 
-		public RelativePosition(byte waypoint, short x, short y, short z, bool outOfRange)
+	public override bool Equals(object obj)
+	{
+		if (obj is RelativePosition relativePosition)
 		{
-			this.WaypointId = waypoint;
-			this.PositionX = x;
-			this.PositionY = y;
-			this.PositionZ = z;
-			this.OutOfRange = outOfRange;
+			return relativePosition.Equals(this);
 		}
+		return false;
+	}
 
-		public void Write(NetworkWriter writer)
-		{
-			writer.WriteByte(this.WaypointId);
-			if (this.WaypointId > 0)
-			{
-				writer.WriteShort(this.PositionX);
-				writer.WriteShort(this.PositionY);
-				writer.WriteShort(this.PositionZ);
-			}
-		}
+	public static bool operator ==(RelativePosition left, RelativePosition right)
+	{
+		return left.Equals(right);
+	}
 
-		private static bool TryCompressPosition(float pos, out short compressed)
-		{
-			float num = pos * 256f;
-			if (num < -32768f)
-			{
-				compressed = short.MinValue;
-				return false;
-			}
-			if (num > 32767f)
-			{
-				compressed = short.MaxValue;
-				return false;
-			}
-			compressed = (short)num;
-			return true;
-		}
+	public static bool operator !=(RelativePosition left, RelativePosition right)
+	{
+		return !left.Equals(right);
+	}
 
-		public bool Equals(RelativePosition other)
-		{
-			return this.PositionX == other.PositionX && this.PositionY == other.PositionY && this.PositionZ == other.PositionZ && this.WaypointId == other.WaypointId;
-		}
-
-		public override bool Equals(object obj)
-		{
-			return obj is RelativePosition && ((RelativePosition)obj).Equals(this);
-		}
-
-		public static bool operator ==(RelativePosition left, RelativePosition right)
-		{
-			return left.Equals(right);
-		}
-
-		public static bool operator !=(RelativePosition left, RelativePosition right)
-		{
-			return !left.Equals(right);
-		}
-
-		public override int GetHashCode()
-		{
-			return (int)(((((((short)this.WaypointId * 397) ^ this.PositionX) * 397) ^ this.PositionZ) * 397) ^ this.PositionY);
-		}
-
-		private static readonly float InverseAccuracy = 0.00390625f;
-
-		public const float Accuracy = 256f;
-
-		public readonly short PositionX;
-
-		public readonly short PositionY;
-
-		public readonly short PositionZ;
-
-		public readonly byte WaypointId;
-
-		public bool OutOfRange;
+	public override int GetHashCode()
+	{
+		return (((((WaypointId * 397) ^ PositionX) * 397) ^ PositionZ) * 397) ^ PositionY;
 	}
 }

@@ -1,85 +1,79 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
+using Utils.NonAllocLINQ;
 
-namespace MapGeneration.Distributors
+namespace MapGeneration.Distributors;
+
+[RequireComponent(typeof(StructurePositionSync))]
+public class SpawnableStructure : NetworkBehaviour
 {
-	[RequireComponent(typeof(StructurePositionSync))]
-	public class SpawnableStructure : NetworkBehaviour
+	public static readonly HashSet<SpawnableStructure> AllInstances = new HashSet<SpawnableStructure>();
+
+	public StructureType StructureType;
+
+	[Tooltip("Defines the number of minimum and maximum amounts of instances of this structure. The generator chooses a random horizontal point between 0 to 1, and reads its vertical value.")]
+	public AnimationCurve MinMaxProbability = AnimationCurve.Constant(0f, 0f, 0f);
+
+	public RoomIdentifier ParentRoom { get; private set; }
+
+	public int MinAmount => Mathf.FloorToInt(MinMaxProbability.Evaluate(0f));
+
+	public int MaxAmount => Mathf.FloorToInt(MinMaxProbability.Evaluate(1f));
+
+	public static event Action<SpawnableStructure> OnAdded;
+
+	public static event Action<SpawnableStructure> OnRemoved;
+
+	protected virtual void Start()
 	{
-		public static event Action<SpawnableStructure> OnAdded;
-
-		public static event Action<SpawnableStructure> OnRemoved;
-
-		public int MinAmount
+		if (SeedSynchronizer.MapGenerated)
 		{
-			get
-			{
-				return Mathf.FloorToInt(this.MinMaxProbability.Evaluate(0f));
-			}
+			RegisterRoom();
 		}
+		AllInstances.Add(this);
+		SpawnableStructure.OnAdded?.Invoke(this);
+	}
 
-		public int MaxAmount
+	protected virtual void OnDestroy()
+	{
+		AllInstances.Remove(this);
+		SpawnableStructure.OnRemoved?.Invoke(this);
+	}
+
+	protected virtual void RegisterRoom()
+	{
+		bool activeSelf = base.gameObject.activeSelf;
+		base.gameObject.SetActive(value: false);
+		if (base.transform.position.TryGetRoom(out var room))
 		{
-			get
-			{
-				return Mathf.FloorToInt(this.MinMaxProbability.Evaluate(1f));
-			}
+			ParentRoom = room;
 		}
-
-		public RoomIdentifier ParentRoom
+		else
 		{
-			get
+			Debug.LogError("This structure (" + base.transform.GetHierarchyPath() + ") spawned outside of a room.", base.gameObject);
+		}
+		base.gameObject.SetActive(activeSelf);
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		SeedSynchronizer.OnGenerationStage += delegate(MapGenerationPhase phase)
+		{
+			if (phase == MapGenerationPhase.ParentRoomRegistration)
 			{
-				if (this._parentRoom != null)
+				AllInstances.ForEach(delegate(SpawnableStructure x)
 				{
-					return this._parentRoom;
-				}
-				RoomIdentifier roomIdentifier;
-				if (!RoomUtils.TryGetRoom(base.transform.position, out roomIdentifier))
-				{
-					return null;
-				}
-				this._parentRoom = roomIdentifier;
-				return this._parentRoom;
+					x.RegisterRoom();
+				});
 			}
-		}
+		};
+	}
 
-		protected virtual void Start()
-		{
-			SpawnableStructure.AllInstances.Add(this);
-			Action<SpawnableStructure> onAdded = SpawnableStructure.OnAdded;
-			if (onAdded == null)
-			{
-				return;
-			}
-			onAdded(this);
-		}
-
-		protected virtual void OnDestroy()
-		{
-			SpawnableStructure.AllInstances.Remove(this);
-			Action<SpawnableStructure> onRemoved = SpawnableStructure.OnRemoved;
-			if (onRemoved == null)
-			{
-				return;
-			}
-			onRemoved(this);
-		}
-
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		public static readonly HashSet<SpawnableStructure> AllInstances = new HashSet<SpawnableStructure>();
-
-		public StructureType StructureType;
-
-		private RoomIdentifier _parentRoom;
-
-		[Tooltip("Defines the number of minimum and maximum amounts of instances of this structure. The generator chooses a random horizontal point between 0 to 1, and reads its vertical value.")]
-		public AnimationCurve MinMaxProbability = AnimationCurve.Constant(0f, 0f, 0f);
+	public override bool Weaved()
+	{
+		return true;
 	}
 }

@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 
-namespace LiteNetLib
+namespace LiteNetLib;
+
+[Flags]
+public enum LocalAddrType
 {
-	[Flags]
-	public enum LocalAddrType
-	{
-		IPv4 = 1,
-		IPv6 = 2,
-		All = 3
-	}
+	IPv4 = 1,
+	IPv6 = 2,
+	All = 3
 }

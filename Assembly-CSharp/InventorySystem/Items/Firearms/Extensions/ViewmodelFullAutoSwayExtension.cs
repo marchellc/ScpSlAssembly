@@ -1,106 +1,104 @@
-﻿using System;
 using InventorySystem.Items.Firearms.Modules;
 using InventorySystem.Items.Firearms.Modules.Misc;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+public class ViewmodelFullAutoSwayExtension : MonoBehaviour, IViewmodelExtension
 {
-	public class ViewmodelFullAutoSwayExtension : MonoBehaviour, IViewmodelExtension
+	private const float TriggerIncreaseWeightSpeed = 10f;
+
+	private const float TriggerDecreaseWeightSpeed = 5f;
+
+	private const float RecentlyFiredIncreaseWeightSpeed = 10f;
+
+	private const float RecentlyFiredDecreaseWeightSpeed = 1.5f;
+
+	private const float LoadedIncreaseWeightSpeed = 1.5f;
+
+	private const float LoadedDecreaseWeightSpeed = 5f;
+
+	private const float DefaultAdsMuliplier = 0.1f;
+
+	private const float DefaultHipMuliplier = 1f;
+
+	private SubsequentShotsCounter _shotsCounter;
+
+	private AnimatedFirearmViewmodel _viewmodel;
+
+	private Firearm _firearm;
+
+	[SerializeField]
+	private AnimatorLayerMask _recoilLayers;
+
+	[SerializeField]
+	private float _adsMultiplier = 0.1f;
+
+	[SerializeField]
+	private float _hipMultiplier = 1f;
+
+	private AnimatorStateInfo[] _statesByLayer;
+
+	private float _elapsed;
+
+	private float _weightTrigger;
+
+	private float _weightRecentlyFired;
+
+	private float _weightLoaded;
+
+	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
+		_firearm = viewmodel.ParentFirearm;
+		_viewmodel = viewmodel;
+		_statesByLayer = new AnimatorStateInfo[_recoilLayers.Layers.Length];
+		_shotsCounter = new SubsequentShotsCounter(_firearm);
+		for (int i = 0; i < _statesByLayer.Length; i++)
 		{
-			this._firearm = viewmodel.ParentFirearm;
-			this._viewmodel = viewmodel;
-			this._statesByLayer = new AnimatorStateInfo[this._recoilLayers.Layers.Length];
-			this._shotsCounter = new SubsequentShotsCounter(this._firearm, 1f, 0.1f, 0.4f);
-			for (int i = 0; i < this._statesByLayer.Length; i++)
-			{
-				int num = this._recoilLayers.Layers[i];
-				this._statesByLayer[i] = viewmodel.AnimatorStateInfo(num);
-			}
+			int layer = _recoilLayers.Layers[i];
+			_statesByLayer[i] = viewmodel.AnimatorStateInfo(layer);
 		}
+	}
 
-		private void LateUpdate()
+	private void LateUpdate()
+	{
+		_shotsCounter.Update();
+		ITriggerControllerModule module;
+		bool targetIncrease = _firearm.TryGetModule<ITriggerControllerModule>(out module) && module.TriggerHeld;
+		UpdateWeight(ref _weightTrigger, targetIncrease, 10f, 5f);
+		bool targetIncrease2 = _shotsCounter.SubsequentShots > 0;
+		UpdateWeight(ref _weightRecentlyFired, targetIncrease2, 10f, 1.5f);
+		bool targetIncrease3 = IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(_firearm).Total > 0;
+		UpdateWeight(ref _weightLoaded, targetIncrease3, 1.5f, 5f);
+		float num = _weightTrigger * _weightLoaded * _weightRecentlyFired;
+		if (num > 0f)
 		{
-			this._shotsCounter.Update();
-			ITriggerControllerModule triggerControllerModule;
-			bool flag = this._firearm.TryGetModule(out triggerControllerModule, true) && triggerControllerModule.TriggerHeld;
-			this.UpdateWeight(ref this._weightTrigger, flag, 10f, 5f);
-			bool flag2 = this._shotsCounter.SubsequentShots > 0;
-			this.UpdateWeight(ref this._weightRecentlyFired, flag2, 10f, 1.5f);
-			bool flag3 = IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(this._firearm).Total > 0;
-			this.UpdateWeight(ref this._weightLoaded, flag3, 1.5f, 5f);
-			float num = this._weightTrigger * this._weightLoaded * this._weightRecentlyFired;
-			if (num > 0f)
-			{
-				this._elapsed += num * Time.deltaTime;
-			}
-			else
-			{
-				this._elapsed = 0f;
-			}
-			IAdsModule adsModule;
-			float num2 = (this._firearm.TryGetModule(out adsModule, true) ? adsModule.AdsAmount : 0f);
-			float num3 = num * Mathf.Lerp(1f, this._adsMultiplier, num2);
-			for (int i = 0; i < this._statesByLayer.Length; i++)
-			{
-				this.UpdateLayer(this._recoilLayers.Layers[i], this._statesByLayer[i], num3);
-			}
+			_elapsed += num * Time.deltaTime;
 		}
-
-		private void UpdateWeight(ref float weight, bool targetIncrease, float increaseSpeed, float decreaseSpeed)
+		else
 		{
-			float num = (float)(targetIncrease ? 1 : 0);
-			float num2 = (targetIncrease ? increaseSpeed : decreaseSpeed);
-			weight = Mathf.MoveTowards(weight, num, num2 * Time.deltaTime);
+			_elapsed = 0f;
 		}
-
-		private void UpdateLayer(int layerId, AnimatorStateInfo state, float weight)
+		IAdsModule module2;
+		float t = (_firearm.TryGetModule<IAdsModule>(out module2) ? module2.AdsAmount : 0f);
+		float weight = num * Mathf.Lerp(1f, _adsMultiplier, t);
+		for (int i = 0; i < _statesByLayer.Length; i++)
 		{
-			float num = this._elapsed / state.length;
-			this._viewmodel.AnimatorPlay(state.shortNameHash, layerId, num);
-			this._viewmodel.AnimatorSetLayerWeight(layerId, weight);
+			UpdateLayer(_recoilLayers.Layers[i], _statesByLayer[i], weight);
 		}
+	}
 
-		private const float TriggerIncreaseWeightSpeed = 10f;
+	private void UpdateWeight(ref float weight, bool targetIncrease, float increaseSpeed, float decreaseSpeed)
+	{
+		float target = (targetIncrease ? 1 : 0);
+		float num = (targetIncrease ? increaseSpeed : decreaseSpeed);
+		weight = Mathf.MoveTowards(weight, target, num * Time.deltaTime);
+	}
 
-		private const float TriggerDecreaseWeightSpeed = 5f;
-
-		private const float RecentlyFiredIncreaseWeightSpeed = 10f;
-
-		private const float RecentlyFiredDecreaseWeightSpeed = 1.5f;
-
-		private const float LoadedIncreaseWeightSpeed = 1.5f;
-
-		private const float LoadedDecreaseWeightSpeed = 5f;
-
-		private const float DefaultAdsMuliplier = 0.1f;
-
-		private const float DefaultHipMuliplier = 1f;
-
-		private SubsequentShotsCounter _shotsCounter;
-
-		private AnimatedFirearmViewmodel _viewmodel;
-
-		private Firearm _firearm;
-
-		[SerializeField]
-		private AnimatorLayerMask _recoilLayers;
-
-		[SerializeField]
-		private float _adsMultiplier = 0.1f;
-
-		[SerializeField]
-		private float _hipMultiplier = 1f;
-
-		private AnimatorStateInfo[] _statesByLayer;
-
-		private float _elapsed;
-
-		private float _weightTrigger;
-
-		private float _weightRecentlyFired;
-
-		private float _weightLoaded;
+	private void UpdateLayer(int layerId, AnimatorStateInfo state, float weight)
+	{
+		float time = _elapsed / state.length;
+		_viewmodel.AnimatorPlay(state.shortNameHash, layerId, time);
+		_viewmodel.AnimatorSetLayerWeight(layerId, weight);
 	}
 }

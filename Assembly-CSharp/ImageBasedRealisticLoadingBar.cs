@@ -1,20 +1,8 @@
-﻿using System;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class ImageBasedRealisticLoadingBar : MonoBehaviour
 {
-	private void OnEnable()
-	{
-		this._targetImage.fillAmount = 0f;
-		this._bar = new RealisticLoadingBar(this._targetTime, global::UnityEngine.Random.Range(this._minNumOfSteps, this._maxNumOfSteps + 1), this._stepVar, this._tickVar);
-	}
-
-	private void Update()
-	{
-		this._targetImage.fillAmount = Mathf.Lerp(this._targetImage.fillAmount, this._bar.Progress, Time.deltaTime * this._smoothing);
-	}
-
 	private RealisticLoadingBar _bar;
 
 	[SerializeField]
@@ -37,4 +25,15 @@ public class ImageBasedRealisticLoadingBar : MonoBehaviour
 
 	[SerializeField]
 	private float _smoothing;
+
+	private void OnEnable()
+	{
+		_targetImage.fillAmount = 0f;
+		_bar = new RealisticLoadingBar(_targetTime, Random.Range(_minNumOfSteps, _maxNumOfSteps + 1), _stepVar, _tickVar);
+	}
+
+	private void Update()
+	{
+		_targetImage.fillAmount = Mathf.Lerp(_targetImage.fillAmount, _bar.Progress, Time.deltaTime * _smoothing);
+	}
 }

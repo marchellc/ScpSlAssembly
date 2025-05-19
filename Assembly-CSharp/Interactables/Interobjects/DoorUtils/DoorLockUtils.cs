@@ -1,47 +1,44 @@
-﻿using System;
+namespace Interactables.Interobjects.DoorUtils;
 
-namespace Interactables.Interobjects.DoorUtils
+public static class DoorLockUtils
 {
-	public static class DoorLockUtils
+	public static DoorLockMode GetMode(DoorLockReason reason)
 	{
-		public static DoorLockMode GetMode(DoorLockReason reason)
+		if (reason == DoorLockReason.None)
 		{
-			if (reason == DoorLockReason.None)
-			{
-				return DoorLockMode.CanOpen | DoorLockMode.CanClose;
-			}
-			if ((reason & (DoorLockReason.AdminCommand | DoorLockReason.DecontLockdown | DoorLockReason.SpecialDoorFeature | DoorLockReason.NoPower | DoorLockReason.Lockdown2176)) > DoorLockReason.None)
-			{
-				return DoorLockMode.FullLock;
-			}
-			if ((reason & (DoorLockReason.Regular079 | DoorLockReason.Lockdown079)) > DoorLockReason.None)
-			{
-				return DoorLockMode.ScpOverride;
-			}
-			if ((reason & (DoorLockReason.Warhead | DoorLockReason.DecontEvacuate)) > DoorLockReason.None)
-			{
-				return DoorLockMode.CanOpen;
-			}
-			if ((reason & DoorLockReason.Isolation) > DoorLockReason.None)
-			{
-				return DoorLockMode.CanClose;
-			}
 			return DoorLockMode.CanOpen | DoorLockMode.CanClose;
 		}
-
-		public static DoorLockMode GetMode(DoorVariant door)
+		if ((int)(reason & (DoorLockReason.AdminCommand | DoorLockReason.DecontLockdown | DoorLockReason.SpecialDoorFeature | DoorLockReason.NoPower | DoorLockReason.Lockdown2176)) > 0)
 		{
-			return DoorLockUtils.GetMode((DoorLockReason)door.ActiveLocks);
+			return DoorLockMode.FullLock;
 		}
-
-		public static bool HasFlagFast(this DoorLockMode mode, DoorLockMode flag)
+		if ((int)(reason & (DoorLockReason.Regular079 | DoorLockReason.Lockdown079)) > 0)
 		{
-			return (mode & flag) == flag;
+			return DoorLockMode.ScpOverride;
 		}
-
-		public static bool HasFlagFast(this DoorLockReason res, DoorLockReason flag)
+		if ((int)(reason & (DoorLockReason.Warhead | DoorLockReason.DecontEvacuate)) > 0)
 		{
-			return (res & flag) == flag;
+			return DoorLockMode.CanOpen;
 		}
+		if ((int)(reason & DoorLockReason.Isolation) > 0)
+		{
+			return DoorLockMode.CanClose;
+		}
+		return DoorLockMode.CanOpen | DoorLockMode.CanClose;
+	}
+
+	public static DoorLockMode GetMode(DoorVariant door)
+	{
+		return GetMode((DoorLockReason)door.ActiveLocks);
+	}
+
+	public static bool HasFlagFast(this DoorLockMode mode, DoorLockMode flag)
+	{
+		return (mode & flag) == flag;
+	}
+
+	public static bool HasFlagFast(this DoorLockReason res, DoorLockReason flag)
+	{
+		return (res & flag) == flag;
 	}
 }

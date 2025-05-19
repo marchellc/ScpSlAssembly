@@ -1,152 +1,151 @@
-﻿using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using AudioPooling;
 using CustomPlayerEffects;
 using Mirror;
 using PlayerRoles.PlayableScps.HumeShield;
 using UnityEngine;
 
-namespace InventorySystem.Items.Usables.Scp244.Hypothermia
+namespace InventorySystem.Items.Usables.Scp244.Hypothermia;
+
+public class HumeShieldSubEffect : HypothermiaSubEffectBase, IHumeShieldBlocker
 {
-	public class HumeShieldSubEffect : HypothermiaSubEffectBase, IHumeShieldBlocker
+	[StructLayout(LayoutKind.Sequential, Size = 1)]
+	public struct HumeBlockMsg : NetworkMessage
 	{
-		public override bool IsActive
-		{
-			get
-			{
-				return this.HumeShieldBlocked || (this._sustainSw.IsRunning && this._sustainSw.Elapsed.TotalSeconds < (double)this._hsSustainTime);
-			}
-		}
+	}
 
-		public bool HumeShieldBlocked { get; private set; }
+	[SerializeField]
+	private AudioClip[] _freezeSounds;
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Register()
-		{
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				NetworkClient.ReplaceHandler<HumeShieldSubEffect.HumeBlockMsg>(new Action<HumeShieldSubEffect.HumeBlockMsg>(HumeShieldSubEffect.OnMessageReceived), true);
-			};
-		}
+	[SerializeField]
+	private float _hsSustainTime;
 
-		private static void OnMessageReceived(HumeShieldSubEffect.HumeBlockMsg msg)
-		{
-			if (HumeShieldSubEffect._localEffect == null)
-			{
-				return;
-			}
-			HumeShieldSubEffect._localEffect.ReceiveHumeBlockMessage();
-		}
+	[SerializeField]
+	private float _hsDecreaseStartTime;
 
-		internal override void Init(StatusEffectBase mainEffect)
-		{
-			base.Init(mainEffect);
-			if (mainEffect.IsLocalPlayer)
-			{
-				HumeShieldSubEffect._localEffect = this;
-			}
-		}
+	[SerializeField]
+	private float _hsDecreaseAbsolute;
 
-		internal override void UpdateEffect(float curExposure)
+	[SerializeField]
+	private float _hsDecreasePerExposure;
+
+	private float _decreaseTimer;
+
+	private static HumeShieldSubEffect _localEffect;
+
+	private readonly Stopwatch _cooldownSw = Stopwatch.StartNew();
+
+	private readonly Stopwatch _sustainSw = new Stopwatch();
+
+	public override bool IsActive
+	{
+		get
 		{
-			if (!NetworkServer.active)
+			if (!HumeShieldBlocked)
 			{
-				if (this.HumeShieldBlocked && curExposure <= 0f)
+				if (_sustainSw.IsRunning)
 				{
-					this.HumeShieldBlocked = false;
+					return _sustainSw.Elapsed.TotalSeconds < (double)_hsSustainTime;
 				}
-				return;
-			}
-			bool humeShieldBlocked = this.HumeShieldBlocked;
-			this.HumeShieldBlocked = this.UpdateHumeShield(curExposure);
-			if (!this.HumeShieldBlocked)
-			{
-				this._decreaseTimer = 0f;
-				return;
-			}
-			if (humeShieldBlocked)
-			{
-				return;
-			}
-			base.Hub.networkIdentity.connectionToClient.Send<HumeShieldSubEffect.HumeBlockMsg>(default(HumeShieldSubEffect.HumeBlockMsg), 0);
-		}
-
-		private bool UpdateHumeShield(float expo)
-		{
-			DynamicHumeShieldController dynamicHumeShieldController;
-			if (expo == 0f || !this.TryGetController(out dynamicHumeShieldController) || base.Hub.characterClassManager.GodMode)
-			{
 				return false;
 			}
-			dynamicHumeShieldController.AddBlocker(this);
-			this._sustainSw.Restart();
-			this._decreaseTimer += expo * Time.deltaTime;
-			if (this._decreaseTimer < this._hsDecreaseStartTime)
-			{
-				return true;
-			}
-			dynamicHumeShieldController.HsCurrent -= (expo * this._hsDecreasePerExposure + this._hsDecreaseAbsolute) * Time.deltaTime;
 			return true;
 		}
+	}
 
-		private void ReceiveHumeBlockMessage()
+	public bool HumeShieldBlocked { get; private set; }
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Register()
+	{
+		CustomNetworkManager.OnClientReady += delegate
 		{
-			DynamicHumeShieldController dynamicHumeShieldController;
-			if (!this.TryGetController(out dynamicHumeShieldController))
-			{
-				return;
-			}
-			this.HumeShieldBlocked = true;
-			dynamicHumeShieldController.AddBlocker(this);
-			if (this._cooldownSw.Elapsed.TotalSeconds < (double)this._hsSustainTime)
-			{
-				return;
-			}
-			AudioSourcePoolManager.Play2D(this._freezeSounds.RandomItem<AudioClip>(), 1f, MixerChannel.DefaultSfx, 1f);
-			this._cooldownSw.Restart();
+			NetworkClient.ReplaceHandler<HumeBlockMsg>(OnMessageReceived);
+		};
+	}
+
+	private static void OnMessageReceived(HumeBlockMsg msg)
+	{
+		if (!(_localEffect == null))
+		{
+			_localEffect.ReceiveHumeBlockMessage();
 		}
+	}
 
-		private bool TryGetController(out DynamicHumeShieldController ctrl)
+	internal override void Init(StatusEffectBase mainEffect)
+	{
+		base.Init(mainEffect);
+		if (mainEffect.IsLocalPlayer)
 		{
-			IHumeShieldedRole humeShieldedRole = base.Hub.roleManager.CurrentRole as IHumeShieldedRole;
-			if (humeShieldedRole != null)
+			_localEffect = this;
+		}
+	}
+
+	internal override void UpdateEffect(float curExposure)
+	{
+		if (!NetworkServer.active)
+		{
+			if (HumeShieldBlocked && curExposure <= 0f)
 			{
-				DynamicHumeShieldController dynamicHumeShieldController = humeShieldedRole.HumeShieldModule as DynamicHumeShieldController;
-				if (dynamicHumeShieldController != null)
-				{
-					ctrl = dynamicHumeShieldController;
-					return true;
-				}
+				HumeShieldBlocked = false;
 			}
+			return;
+		}
+		bool humeShieldBlocked = HumeShieldBlocked;
+		HumeShieldBlocked = UpdateHumeShield(curExposure);
+		if (HumeShieldBlocked)
+		{
+			if (!humeShieldBlocked)
+			{
+				base.Hub.networkIdentity.connectionToClient.Send(default(HumeBlockMsg));
+			}
+		}
+		else
+		{
+			_decreaseTimer = 0f;
+		}
+	}
+
+	private bool UpdateHumeShield(float expo)
+	{
+		if (expo == 0f || !TryGetController(out var ctrl) || base.Hub.characterClassManager.GodMode)
+		{
+			return false;
+		}
+		ctrl.AddBlocker(this);
+		_sustainSw.Restart();
+		_decreaseTimer += expo * Time.deltaTime;
+		if (_decreaseTimer < _hsDecreaseStartTime)
+		{
+			return true;
+		}
+		ctrl.HsCurrent -= (expo * _hsDecreasePerExposure + _hsDecreaseAbsolute) * Time.deltaTime;
+		return true;
+	}
+
+	private void ReceiveHumeBlockMessage()
+	{
+		if (TryGetController(out var ctrl))
+		{
+			HumeShieldBlocked = true;
+			ctrl.AddBlocker(this);
+			if (!(_cooldownSw.Elapsed.TotalSeconds < (double)_hsSustainTime))
+			{
+				AudioSourcePoolManager.Play2D(_freezeSounds.RandomItem());
+				_cooldownSw.Restart();
+			}
+		}
+	}
+
+	private bool TryGetController(out DynamicHumeShieldController ctrl)
+	{
+		if (!(base.Hub.roleManager.CurrentRole is IHumeShieldedRole { HumeShieldModule: DynamicHumeShieldController humeShieldModule }))
+		{
 			ctrl = null;
 			return false;
 		}
-
-		[SerializeField]
-		private AudioClip[] _freezeSounds;
-
-		[SerializeField]
-		private float _hsSustainTime;
-
-		[SerializeField]
-		private float _hsDecreaseStartTime;
-
-		[SerializeField]
-		private float _hsDecreaseAbsolute;
-
-		[SerializeField]
-		private float _hsDecreasePerExposure;
-
-		private float _decreaseTimer;
-
-		private static HumeShieldSubEffect _localEffect;
-
-		private readonly Stopwatch _cooldownSw = Stopwatch.StartNew();
-
-		private readonly Stopwatch _sustainSw = new Stopwatch();
-
-		public struct HumeBlockMsg : NetworkMessage
-		{
-		}
+		ctrl = humeShieldModule;
+		return true;
 	}
 }

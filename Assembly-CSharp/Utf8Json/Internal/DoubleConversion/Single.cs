@@ -1,147 +1,148 @@
-﻿using System;
+namespace Utf8Json.Internal.DoubleConversion;
 
-namespace Utf8Json.Internal.DoubleConversion
+internal struct Single
 {
-	internal struct Single
+	private const int kExponentBias = 150;
+
+	private const int kDenormalExponent = -149;
+
+	private const int kMaxExponent = 105;
+
+	private const uint kInfinity = 2139095040u;
+
+	private const uint kNaN = 2143289344u;
+
+	public const uint kSignMask = 2147483648u;
+
+	public const uint kExponentMask = 2139095040u;
+
+	public const uint kSignificandMask = 8388607u;
+
+	public const uint kHiddenBit = 8388608u;
+
+	public const int kPhysicalSignificandSize = 23;
+
+	public const int kSignificandSize = 24;
+
+	private uint d32_;
+
+	public Single(float f)
 	{
-		public Single(float f)
+		UnionFloatUInt unionFloatUInt = new UnionFloatUInt
 		{
-			this.d32_ = new UnionFloatUInt
-			{
-				f = f
-			}.u32;
-		}
+			f = f
+		};
+		d32_ = unionFloatUInt.u32;
+	}
 
-		public DiyFp AsDiyFp()
+	public DiyFp AsDiyFp()
+	{
+		return new DiyFp(Significand(), Exponent());
+	}
+
+	public uint AsUint32()
+	{
+		return d32_;
+	}
+
+	public int Exponent()
+	{
+		if (IsDenormal())
 		{
-			return new DiyFp((ulong)this.Significand(), this.Exponent());
+			return -149;
 		}
+		return (int)(((AsUint32() & 0x7F800000) >> 23) - 150);
+	}
 
-		public uint AsUint32()
+	public uint Significand()
+	{
+		uint num = AsUint32() & 0x7FFFFF;
+		if (!IsDenormal())
 		{
-			return this.d32_;
+			return num + 8388608;
 		}
+		return num;
+	}
 
-		public int Exponent()
+	public bool IsDenormal()
+	{
+		return (AsUint32() & 0x7F800000) == 0;
+	}
+
+	public bool IsSpecial()
+	{
+		return (AsUint32() & 0x7F800000) == 2139095040;
+	}
+
+	public bool IsNan()
+	{
+		uint num = AsUint32();
+		if ((num & 0x7F800000) == 2139095040)
 		{
-			if (this.IsDenormal())
-			{
-				return -149;
-			}
-			return (int)(((this.AsUint32() & 2139095040U) >> 23) - 150U);
+			return (num & 0x7FFFFF) != 0;
 		}
+		return false;
+	}
 
-		public uint Significand()
+	public bool IsInfinite()
+	{
+		uint num = AsUint32();
+		if ((num & 0x7F800000) == 2139095040)
 		{
-			uint num = this.AsUint32() & 8388607U;
-			if (!this.IsDenormal())
-			{
-				return num + 8388608U;
-			}
-			return num;
+			return (num & 0x7FFFFF) == 0;
 		}
+		return false;
+	}
 
-		public bool IsDenormal()
+	public int Sign()
+	{
+		if ((AsUint32() & 0x80000000u) != 0)
 		{
-			return (this.AsUint32() & 2139095040U) == 0U;
+			return -1;
 		}
+		return 1;
+	}
 
-		public bool IsSpecial()
+	public void NormalizedBoundaries(out DiyFp out_m_minus, out DiyFp out_m_plus)
+	{
+		DiyFp diyFp = AsDiyFp();
+		DiyFp a = new DiyFp((diyFp.f << 1) + 1, diyFp.e - 1);
+		DiyFp diyFp2 = DiyFp.Normalize(ref a);
+		DiyFp diyFp3 = ((!LowerBoundaryIsCloser()) ? new DiyFp((diyFp.f << 1) - 1, diyFp.e - 1) : new DiyFp((diyFp.f << 2) - 1, diyFp.e - 2));
+		diyFp3.f <<= diyFp3.e - diyFp2.e;
+		diyFp3.e = diyFp2.e;
+		out_m_plus = diyFp2;
+		out_m_minus = diyFp3;
+	}
+
+	public DiyFp UpperBoundary()
+	{
+		return new DiyFp(Significand() * 2 + 1, Exponent() - 1);
+	}
+
+	public bool LowerBoundaryIsCloser()
+	{
+		if ((AsUint32() & 0x7FFFFF) == 0)
 		{
-			return (this.AsUint32() & 2139095040U) == 2139095040U;
+			return Exponent() != -149;
 		}
+		return false;
+	}
 
-		public bool IsNan()
-		{
-			uint num = this.AsUint32();
-			return (num & 2139095040U) == 2139095040U && (num & 8388607U) > 0U;
-		}
+	public float value()
+	{
+		UnionFloatUInt unionFloatUInt = default(UnionFloatUInt);
+		unionFloatUInt.u32 = d32_;
+		return unionFloatUInt.f;
+	}
 
-		public bool IsInfinite()
-		{
-			uint num = this.AsUint32();
-			return (num & 2139095040U) == 2139095040U && (num & 8388607U) == 0U;
-		}
+	public static float Infinity()
+	{
+		return new Single(2.139095E+09f).value();
+	}
 
-		public int Sign()
-		{
-			if ((this.AsUint32() & 2147483648U) != 0U)
-			{
-				return -1;
-			}
-			return 1;
-		}
-
-		public void NormalizedBoundaries(out DiyFp out_m_minus, out DiyFp out_m_plus)
-		{
-			DiyFp diyFp = this.AsDiyFp();
-			DiyFp diyFp2 = new DiyFp((diyFp.f << 1) + 1UL, diyFp.e - 1);
-			DiyFp diyFp3 = DiyFp.Normalize(ref diyFp2);
-			DiyFp diyFp4;
-			if (this.LowerBoundaryIsCloser())
-			{
-				diyFp4 = new DiyFp((diyFp.f << 2) - 1UL, diyFp.e - 2);
-			}
-			else
-			{
-				diyFp4 = new DiyFp((diyFp.f << 1) - 1UL, diyFp.e - 1);
-			}
-			diyFp4.f <<= diyFp4.e - diyFp3.e;
-			diyFp4.e = diyFp3.e;
-			out_m_plus = diyFp3;
-			out_m_minus = diyFp4;
-		}
-
-		public DiyFp UpperBoundary()
-		{
-			return new DiyFp((ulong)(this.Significand() * 2U + 1U), this.Exponent() - 1);
-		}
-
-		public bool LowerBoundaryIsCloser()
-		{
-			return (this.AsUint32() & 8388607U) == 0U && this.Exponent() != -149;
-		}
-
-		public float value()
-		{
-			return new UnionFloatUInt
-			{
-				u32 = this.d32_
-			}.f;
-		}
-
-		public static float Infinity()
-		{
-			return new Single(2.139095E+09f).value();
-		}
-
-		public static float NaN()
-		{
-			return new Single(2.1432893E+09f).value();
-		}
-
-		private const int kExponentBias = 150;
-
-		private const int kDenormalExponent = -149;
-
-		private const int kMaxExponent = 105;
-
-		private const uint kInfinity = 2139095040U;
-
-		private const uint kNaN = 2143289344U;
-
-		public const uint kSignMask = 2147483648U;
-
-		public const uint kExponentMask = 2139095040U;
-
-		public const uint kSignificandMask = 8388607U;
-
-		public const uint kHiddenBit = 8388608U;
-
-		public const int kPhysicalSignificandSize = 23;
-
-		public const int kSignificandSize = 24;
-
-		private uint d32_;
+	public static float NaN()
+	{
+		return new Single(2.1432893E+09f).value();
 	}
 }

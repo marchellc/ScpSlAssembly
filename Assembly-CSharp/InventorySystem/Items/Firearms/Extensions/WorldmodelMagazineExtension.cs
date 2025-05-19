@@ -1,136 +1,122 @@
-﻿using System;
+using System;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Modules;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+public class WorldmodelMagazineExtension : MonoBehaviour, IWorldmodelExtension
 {
-	public class WorldmodelMagazineExtension : MonoBehaviour, IWorldmodelExtension
+	[Serializable]
+	private class Magazine
 	{
-		public void SetupWorldmodel(FirearmWorldmodel worldmodel)
-		{
-			this._lastId = worldmodel.Identifier;
-			this._lastAttCode = worldmodel.AttachmentCode;
-			this._forceInserted = worldmodel.WorldmodelType == FirearmWorldmodelType.Presentation;
-			this.UpdateAllMags();
-		}
+		private uint? _filter;
 
-		private void UpdateAllMags()
+		private bool? _lastIsActive;
+
+		public GameObject Target;
+
+		public AttachmentLink[] Attachments;
+
+		public void UpdateState(WorldmodelMagazineExtension extRef, bool magInserted)
 		{
-			bool flag = this._forceInserted || MagazineModule.GetMagazineInserted(this._lastId.SerialNumber);
-			WorldmodelMagazineExtension.Magazine[] magazines = this._magazines;
-			for (int i = 0; i < magazines.Length; i++)
+			if (magInserted)
 			{
-				magazines[i].UpdateState(this, flag);
+				if (!_filter.HasValue)
+				{
+					SetFilter(extRef._lastId);
+				}
+				uint num = extRef._lastAttCode & _filter.Value;
+				SetVisibility(extRef._removalMode, num != 0);
+			}
+			else
+			{
+				SetVisibility(extRef._removalMode, isActive: false);
 			}
 		}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		private void SetVisibility(RemovalMode removalMode, bool isActive)
 		{
-			MagazineModule.OnDataReceived += delegate(ushort serial)
+			if (!_lastIsActive.HasValue || _lastIsActive != isActive)
 			{
-				FirearmWorldmodel firearmWorldmodel;
-				if (!FirearmWorldmodel.Instances.TryGetValue(serial, out firearmWorldmodel))
+				switch (removalMode)
 				{
-					return;
+				case RemovalMode.SetScaleZero:
+					Target.transform.localScale = (isActive ? Vector3.one : Vector3.zero);
+					break;
+				case RemovalMode.DeactivateObject:
+					Target.SetActive(isActive);
+					break;
 				}
-				WorldmodelMagazineExtension worldmodelMagazineExtension;
-				if (!firearmWorldmodel.TryGetExtension<WorldmodelMagazineExtension>(out worldmodelMagazineExtension))
-				{
-					return;
-				}
-				worldmodelMagazineExtension.UpdateAllMags();
-			};
+				_lastIsActive = isActive;
+			}
 		}
 
-		private ItemIdentifier _lastId;
-
-		private uint _lastAttCode;
-
-		private bool _forceInserted;
-
-		[SerializeField]
-		private WorldmodelMagazineExtension.Magazine[] _magazines;
-
-		[SerializeField]
-		private WorldmodelMagazineExtension.RemovalMode _removalMode;
-
-		[Serializable]
-		private class Magazine
+		private void SetFilter(ItemIdentifier id)
 		{
-			public void UpdateState(WorldmodelMagazineExtension extRef, bool magInserted)
+			if (Attachments == null || Attachments.Length == 0)
 			{
-				if (magInserted)
-				{
-					if (this._filter == null)
-					{
-						this.SetFilter(extRef._lastId);
-					}
-					uint num = extRef._lastAttCode & this._filter.Value;
-					this.SetVisibility(extRef._removalMode, num > 0U);
-					return;
-				}
-				this.SetVisibility(extRef._removalMode, false);
+				_filter = uint.MaxValue;
+				return;
 			}
-
-			private void SetVisibility(WorldmodelMagazineExtension.RemovalMode removalMode, bool isActive)
+			uint num = 0u;
+			AttachmentLink[] attachments = Attachments;
+			for (int i = 0; i < attachments.Length; i++)
 			{
-				if (this._lastIsActive != null)
+				if (attachments[i].TryGetFilter(id.TypeId, out var filter))
 				{
-					bool? lastIsActive = this._lastIsActive;
-					if ((lastIsActive.GetValueOrDefault() == isActive) & (lastIsActive != null))
-					{
-						return;
-					}
+					num |= filter;
 				}
-				if (removalMode != WorldmodelMagazineExtension.RemovalMode.DeactivateObject)
-				{
-					if (removalMode == WorldmodelMagazineExtension.RemovalMode.SetScaleZero)
-					{
-						this.Target.transform.localScale = (isActive ? Vector3.one : Vector3.zero);
-					}
-				}
-				else
-				{
-					this.Target.SetActive(isActive);
-				}
-				this._lastIsActive = new bool?(isActive);
 			}
-
-			private void SetFilter(ItemIdentifier id)
-			{
-				if (this.Attachments == null || this.Attachments.Length == 0)
-				{
-					this._filter = new uint?(uint.MaxValue);
-					return;
-				}
-				uint num = 0U;
-				AttachmentLink[] attachments = this.Attachments;
-				for (int i = 0; i < attachments.Length; i++)
-				{
-					uint num2;
-					if (attachments[i].TryGetFilter(id.TypeId, out num2))
-					{
-						num |= num2;
-					}
-				}
-				this._filter = new uint?(num);
-			}
-
-			private uint? _filter;
-
-			private bool? _lastIsActive;
-
-			public GameObject Target;
-
-			public AttachmentLink[] Attachments;
+			_filter = num;
 		}
+	}
 
-		private enum RemovalMode
+	private enum RemovalMode
+	{
+		DeactivateObject,
+		SetScaleZero
+	}
+
+	private ItemIdentifier _lastId;
+
+	private uint _lastAttCode;
+
+	private bool _forceInserted;
+
+	[SerializeField]
+	private Magazine[] _magazines;
+
+	[SerializeField]
+	private RemovalMode _removalMode;
+
+	public void SetupWorldmodel(FirearmWorldmodel worldmodel)
+	{
+		_lastId = worldmodel.Identifier;
+		_lastAttCode = worldmodel.AttachmentCode;
+		_forceInserted = worldmodel.WorldmodelType == FirearmWorldmodelType.Presentation;
+		UpdateAllMags();
+	}
+
+	private void UpdateAllMags()
+	{
+		bool magInserted = _forceInserted || MagazineModule.GetMagazineInserted(_lastId.SerialNumber);
+		Magazine[] magazines = _magazines;
+		for (int i = 0; i < magazines.Length; i++)
 		{
-			DeactivateObject,
-			SetScaleZero
+			magazines[i].UpdateState(this, magInserted);
 		}
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		MagazineModule.OnDataReceived += delegate(ushort serial)
+		{
+			if (FirearmWorldmodel.Instances.TryGetValue(serial, out var value) && value.TryGetExtension<WorldmodelMagazineExtension>(out var extension))
+			{
+				extension.UpdateAllMags();
+			}
+		};
 	}
 }

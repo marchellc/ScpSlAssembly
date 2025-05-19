@@ -1,19 +1,17 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public interface IHeavyItemPenaltyImmunity
 {
-	public interface IHeavyItemPenaltyImmunity
+	static bool IsImmune(ReferenceHub hub)
 	{
-		public static bool IsImmune(ReferenceHub hub)
+		StatusEffectBase[] allEffects = hub.playerEffectsController.AllEffects;
+		foreach (StatusEffectBase statusEffectBase in allEffects)
 		{
-			foreach (StatusEffectBase statusEffectBase in hub.playerEffectsController.AllEffects)
+			if (statusEffectBase is IHeavyItemPenaltyImmunity && statusEffectBase.IsEnabled)
 			{
-				if (statusEffectBase is IHeavyItemPenaltyImmunity && statusEffectBase.IsEnabled)
-				{
-					return true;
-				}
+				return true;
 			}
-			return false;
 		}
+		return false;
 	}
 }

@@ -1,44 +1,45 @@
-﻿using System;
+using System;
 using MapGeneration.Holidays;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class HolidayBackgroundReplacer : MonoBehaviour
 {
-	private void Awake()
-	{
-		foreach (HolidayBackgroundReplacer.BackgroundInfo backgroundInfo in this._backgrounds)
-		{
-			this.RefreshBackground(backgroundInfo);
-		}
-	}
-
-	private void RefreshBackground(HolidayBackgroundReplacer.BackgroundInfo info)
-	{
-		Sprite sprite;
-		if (!info.Variants.TryGetResult(out sprite))
-		{
-			return;
-		}
-		info.Target.sprite = sprite;
-	}
-
-	[SerializeField]
-	private HolidayBackgroundReplacer.BackgroundInfo[] _backgrounds;
-
 	[Serializable]
 	private struct BackgroundInfo
 	{
 		public Image Target;
 
-		public HolidayBackgroundReplacer.HolidayInfo[] Variants;
+		public HolidayInfo[] Variants;
 	}
 
 	[Serializable]
 	private struct HolidayInfo : IHolidayFetchableData<Sprite>
 	{
-		public HolidayType Holiday { readonly get; private set; }
+		[field: SerializeField]
+		public HolidayType Holiday { get; private set; }
 
-		public Sprite Result { readonly get; private set; }
+		[field: SerializeField]
+		public Sprite Result { get; private set; }
+	}
+
+	[SerializeField]
+	private BackgroundInfo[] _backgrounds;
+
+	private void Awake()
+	{
+		BackgroundInfo[] backgrounds = _backgrounds;
+		foreach (BackgroundInfo info in backgrounds)
+		{
+			RefreshBackground(info);
+		}
+	}
+
+	private void RefreshBackground(BackgroundInfo info)
+	{
+		if (info.Variants.TryGetResult<HolidayInfo, Sprite>(out var result))
+		{
+			info.Target.sprite = result;
+		}
 	}
 }

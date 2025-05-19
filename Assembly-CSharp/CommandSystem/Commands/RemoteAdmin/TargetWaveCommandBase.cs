@@ -1,47 +1,37 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Respawning.Waves;
 
-namespace CommandSystem.Commands.RemoteAdmin
+namespace CommandSystem.Commands.RemoteAdmin;
+
+[CommandHandler(typeof(WaveCommand))]
+public abstract class TargetWaveCommandBase : ICommand
 {
-	[CommandHandler(typeof(WaveCommand))]
-	public abstract class TargetWaveCommandBase : ICommand
+	private static readonly Dictionary<Type, string[]> WaveAliases = new Dictionary<Type, string[]>
 	{
-		public abstract string Command { get; }
+		[typeof(NtfSpawnWave)] = new string[4] { "NTF", "MTF", "MobileTaskForces", "NineTailedFox" },
+		[typeof(ChaosSpawnWave)] = new string[3] { "CI", "Chaos", "ChaosInsurgency" },
+		[typeof(NtfMiniWave)] = new string[4] { "NTFMini", "MTFMini", "MiniMTF", "MiniNTF" },
+		[typeof(ChaosMiniWave)] = new string[4] { "ChaosMini", "CIMini", "MiniCI", "MiniChaos" }
+	};
 
-		public abstract string[] Aliases { get; }
+	public abstract string Command { get; }
 
-		public abstract string Description { get; }
+	public abstract string[] Aliases { get; }
 
-		public abstract bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response);
+	public abstract string Description { get; }
 
-		protected static string TranslateWaveName(string input)
+	public abstract bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response);
+
+	protected static string TranslateWaveName(string input)
+	{
+		foreach (KeyValuePair<Type, string[]> waveAlias in WaveAliases)
 		{
-			foreach (KeyValuePair<Type, string[]> keyValuePair in TargetWaveCommandBase.WaveAliases)
+			if (waveAlias.Value.Contains(input, StringComparison.OrdinalIgnoreCase))
 			{
-				if (keyValuePair.Value.Contains(input, StringComparison.OrdinalIgnoreCase))
-				{
-					return keyValuePair.Key.Name;
-				}
+				return waveAlias.Key.Name;
 			}
-			return input;
 		}
-
-		// Note: this type is marked as 'beforefieldinit'.
-		static TargetWaveCommandBase()
-		{
-			Dictionary<Type, string[]> dictionary = new Dictionary<Type, string[]>();
-			Type typeFromHandle = typeof(NtfSpawnWave);
-			dictionary[typeFromHandle] = new string[] { "NTF", "MTF", "MobileTaskForces", "NineTailedFox" };
-			Type typeFromHandle2 = typeof(ChaosSpawnWave);
-			dictionary[typeFromHandle2] = new string[] { "CI", "Chaos", "ChaosInsurgency" };
-			Type typeFromHandle3 = typeof(NtfMiniWave);
-			dictionary[typeFromHandle3] = new string[] { "NTFMini", "MTFMini", "MiniMTF", "MiniNTF" };
-			Type typeFromHandle4 = typeof(ChaosMiniWave);
-			dictionary[typeFromHandle4] = new string[] { "ChaosMini", "CIMini", "MiniCI", "MiniChaos" };
-			TargetWaveCommandBase.WaveAliases = dictionary;
-		}
-
-		private static readonly Dictionary<Type, string[]> WaveAliases;
+		return input;
 	}
 }

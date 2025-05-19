@@ -1,22 +1,21 @@
-﻿using System;
+using System;
 
-namespace Subtitles
+namespace Subtitles;
+
+[Serializable]
+public class Subtitle
 {
-	[Serializable]
-	public class Subtitle
-	{
-		public SubtitleType SubtitleTypeValue = SubtitleType.None;
+	public SubtitleType SubtitleTypeValue = SubtitleType.None;
 
-		public CassieAnnouncementType SubtitleCategory = CassieAnnouncementType.Normal;
+	public CassieAnnouncementType SubtitleCategory = CassieAnnouncementType.Normal;
 
-		public string DefaultValue;
+	public string DefaultValue;
 
-		public float Duration;
+	public float Duration;
 
-		public bool RequestSpace = true;
+	public bool RequestSpace = true;
 
-		public float Delay = 2.5f;
+	public float Delay = 2.5f;
 
-		public bool ConvertNumbers;
-	}
+	public bool ConvertNumbers;
 }

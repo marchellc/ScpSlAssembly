@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using CustomPlayerEffects;
 using Interactables;
@@ -10,221 +9,201 @@ using PlayerRoles.Subroutines;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp096
+namespace PlayerRoles.PlayableScps.Scp096;
+
+public class Scp096ChargeAbility : KeySubroutine<Scp096Role>
 {
-	public class Scp096ChargeAbility : KeySubroutine<Scp096Role>
+	private static readonly Collider[] DoorDetections = new Collider[8];
+
+	private static readonly CachedLayerMask ClientsideDoorDetectorMask = new CachedLayerMask("Door");
+
+	private static readonly HashSet<Collider> DisabledColliders = new HashSet<Collider>();
+
+	public const float DefaultChargeCooldown = 5f;
+
+	private const float DefaultChargeDuration = 1f;
+
+	private const float DamageObjects = 750f;
+
+	private const float DamageTarget = 90f;
+
+	private const float DamageNonTarget = 35f;
+
+	private const float ConcussionDurationTargets = 10f;
+
+	private const float ConcussionDurationNonTargets = 4f;
+
+	private Scp096HitHandler _hitHandler;
+
+	private Scp096TargetsTracker _targetsTracker;
+
+	private Scp096AudioPlayer _audioPlayer;
+
+	private Transform _tr;
+
+	[SerializeField]
+	private Vector3 _detectionOffset;
+
+	[SerializeField]
+	private Vector3 _detectionExtents;
+
+	[SerializeField]
+	private AudioClip[] _soundsLethal;
+
+	[SerializeField]
+	private AudioClip[] _soundsNonLethal;
+
+	[SerializeField]
+	private float _soundDistance;
+
+	public readonly AbilityCooldown Cooldown = new AbilityCooldown();
+
+	public readonly AbilityCooldown Duration = new AbilityCooldown();
+
+	public bool CanCharge
 	{
-		public bool CanCharge
+		get
 		{
-			get
+			if (base.CastRole.IsRageState(Scp096RageState.Enraged) && base.CastRole.IsAbilityState(Scp096AbilityState.None))
 			{
-				return base.CastRole.IsRageState(Scp096RageState.Enraged) && base.CastRole.IsAbilityState(Scp096AbilityState.None) && this.Cooldown.IsReady;
+				return Cooldown.IsReady;
 			}
+			return false;
 		}
+	}
 
-		protected override ActionName TargetKey
-		{
-			get
-			{
-				return ActionName.Zoom;
-			}
-		}
+	protected override ActionName TargetKey => ActionName.Zoom;
 
-		public override void ClientProcessRpc(NetworkReader reader)
-		{
-			base.ClientProcessRpc(reader);
-			this.Cooldown.ReadCooldown(reader);
-			this.Duration.ReadCooldown(reader);
-		}
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		Cooldown.ReadCooldown(reader);
+		Duration.ReadCooldown(reader);
+	}
 
-		public override void ServerWriteRpc(NetworkWriter writer)
-		{
-			base.ServerWriteRpc(writer);
-			this.Cooldown.WriteCooldown(writer);
-			this.Duration.WriteCooldown(writer);
-		}
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		Cooldown.WriteCooldown(writer);
+		Duration.WriteCooldown(writer);
+	}
 
-		public override void ServerProcessCmd(NetworkReader reader)
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (CanCharge)
 		{
-			base.ServerProcessCmd(reader);
-			if (!this.CanCharge)
-			{
-				return;
-			}
 			Scp096ChargingEventArgs scp096ChargingEventArgs = new Scp096ChargingEventArgs(base.Owner);
 			Scp096Events.OnCharging(scp096ChargingEventArgs);
-			if (!scp096ChargingEventArgs.IsAllowed)
+			if (scp096ChargingEventArgs.IsAllowed)
 			{
-				return;
+				_hitHandler.Clear();
+				Duration.Trigger(1.0);
+				base.CastRole.StateController.SetAbilityState(Scp096AbilityState.Charging);
+				ServerSendRpc(toAll: true);
+				Scp096Events.OnCharged(new Scp096ChargedEventArgs(base.Owner));
 			}
-			this._hitHandler.Clear();
-			this.Duration.Trigger(1.0);
-			base.CastRole.StateController.SetAbilityState(Scp096AbilityState.Charging);
-			base.ServerSendRpc(true);
-			Scp096Events.OnCharged(new Scp096ChargedEventArgs(base.Owner));
 		}
+	}
 
-		public override void SpawnObject()
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		_hitHandler = new Scp096HitHandler(base.CastRole, Scp096DamageHandler.AttackType.Charge, 750f, 750f, 90f, 35f);
+		_hitHandler.OnPlayerHit += delegate(ReferenceHub ply)
 		{
-			base.SpawnObject();
-			this._hitHandler = new Scp096HitHandler(base.CastRole, Scp096DamageHandler.AttackType.Charge, 750f, 750f, 90f, 35f);
-			this._hitHandler.OnPlayerHit += delegate(ReferenceHub ply)
+			ply.playerEffectsController.EnableEffect<Concussed>(_targetsTracker.HasTarget(ply) ? 10f : 4f);
+		};
+	}
+
+	protected override void OnKeyDown()
+	{
+		base.OnKeyDown();
+		ClientSendCmd();
+	}
+
+	protected override void Awake()
+	{
+		base.Awake();
+		_tr = base.transform;
+		GetSubroutine<Scp096AudioPlayer>(out _audioPlayer);
+		GetSubroutine<Scp096TargetsTracker>(out _targetsTracker);
+		base.CastRole.StateController.OnAbilityUpdate += delegate
+		{
+			foreach (Collider disabledCollider in DisabledColliders)
 			{
-				ply.playerEffectsController.EnableEffect<Concussed>(this._targetsTracker.HasTarget(ply) ? 10f : 4f, false);
-			};
-		}
-
-		protected override void OnKeyDown()
-		{
-			base.OnKeyDown();
-			base.ClientSendCmd();
-		}
-
-		protected override void Awake()
-		{
-			base.Awake();
-			this._tr = base.transform;
-			base.GetSubroutine<Scp096AudioPlayer>(out this._audioPlayer);
-			base.GetSubroutine<Scp096TargetsTracker>(out this._targetsTracker);
-			base.CastRole.StateController.OnAbilityUpdate += delegate(Scp096AbilityState _)
-			{
-				foreach (Collider collider in Scp096ChargeAbility.DisabledColliders)
+				if (!(disabledCollider == null))
 				{
-					if (!(collider == null))
-					{
-						collider.enabled = true;
-					}
+					disabledCollider.enabled = true;
 				}
-				Scp096ChargeAbility.DisabledColliders.Clear();
-			};
-		}
-
-		protected override void Update()
-		{
-			base.Update();
-			if (!base.CastRole.IsAbilityState(Scp096AbilityState.Charging))
-			{
-				return;
 			}
+			DisabledColliders.Clear();
+		};
+	}
+
+	protected override void Update()
+	{
+		base.Update();
+		if (base.CastRole.IsAbilityState(Scp096AbilityState.Charging))
+		{
 			if (NetworkServer.active)
 			{
-				this.UpdateServer();
+				UpdateServer();
 			}
 			if (base.Role.IsLocalPlayer)
 			{
-				this.UpdateLocalClient();
+				UpdateLocalClient();
 			}
 		}
+	}
 
-		private void UpdateServer()
+	private void UpdateServer()
+	{
+		if (Duration.IsReady || !base.CastRole.IsRageState(Scp096RageState.Enraged))
 		{
-			if (this.Duration.IsReady || !base.CastRole.IsRageState(Scp096RageState.Enraged))
-			{
-				base.CastRole.ResetAbilityState();
-				this.Cooldown.Trigger(5.0);
-				base.ServerSendRpc(true);
-				return;
-			}
-			Scp096HitResult scp096HitResult = this._hitHandler.DamageBox(this._tr.TransformPoint(this._detectionOffset), this._detectionExtents, this._tr.rotation);
-			if (scp096HitResult == Scp096HitResult.None)
-			{
-				return;
-			}
-			Hitmarker.SendHitmarkerDirectly(base.Owner, 1f, true);
-			this._audioPlayer.ServerPlayAttack(scp096HitResult);
+			base.CastRole.ResetAbilityState();
+			Cooldown.Trigger(5.0);
+			ServerSendRpc(toAll: true);
+			return;
 		}
-
-		private void UpdateLocalClient()
+		Scp096HitResult scp096HitResult = _hitHandler.DamageBox(_tr.TransformPoint(_detectionOffset), _detectionExtents, _tr.rotation);
+		if (scp096HitResult != 0)
 		{
-			int num = Physics.OverlapBoxNonAlloc(this._tr.TransformPoint(this._detectionOffset), this._detectionExtents, Scp096ChargeAbility.DoorDetections, this._tr.rotation, Scp096ChargeAbility.ClientsideDoorDetectorMask);
-			for (int i = 0; i < num; i++)
-			{
-				InteractableCollider interactableCollider;
-				if (Scp096ChargeAbility.DoorDetections[i].TryGetComponent<InteractableCollider>(out interactableCollider))
-				{
-					this.CheckDoor(interactableCollider.Target as IInteractable);
-				}
-			}
+			Hitmarker.SendHitmarkerDirectly(base.Owner, 1f);
+			_audioPlayer.ServerPlayAttack(scp096HitResult);
 		}
+	}
 
-		private void CheckDoor(IInteractable inter)
+	private void UpdateLocalClient()
+	{
+		int num = Physics.OverlapBoxNonAlloc(_tr.TransformPoint(_detectionOffset), _detectionExtents, DoorDetections, _tr.rotation, ClientsideDoorDetectorMask);
+		for (int i = 0; i < num; i++)
 		{
-			BreakableDoor breakableDoor = inter as BreakableDoor;
-			PryableDoor pryableDoor;
-			if (breakableDoor == null)
+			if (DoorDetections[i].TryGetComponent<InteractableCollider>(out var component))
 			{
-				pryableDoor = inter as PryableDoor;
-				if (pryableDoor == null)
-				{
-					return;
-				}
+				CheckDoor(component.Target as IInteractable);
 			}
-			else
-			{
-				using (List<Collider>.Enumerator enumerator = breakableDoor.Scp106Colliders.GetEnumerator())
-				{
-					while (enumerator.MoveNext())
-					{
-						Collider collider = enumerator.Current;
-						if (collider.enabled)
-						{
-							collider.enabled = false;
-							Scp096ChargeAbility.DisabledColliders.Add(collider);
-						}
-					}
-					return;
-				}
-			}
-			Scp096PrygateAbility scp096PrygateAbility;
-			base.GetSubroutine<Scp096PrygateAbility>(out scp096PrygateAbility);
-			scp096PrygateAbility.ClientTryPry(pryableDoor);
 		}
+	}
 
-		private static readonly Collider[] DoorDetections = new Collider[8];
-
-		private static readonly CachedLayerMask ClientsideDoorDetectorMask = new CachedLayerMask(new string[] { "Door" });
-
-		private static readonly HashSet<Collider> DisabledColliders = new HashSet<Collider>();
-
-		public const float DefaultChargeCooldown = 5f;
-
-		private const float DefaultChargeDuration = 1f;
-
-		private const float DamageObjects = 750f;
-
-		private const float DamageTarget = 90f;
-
-		private const float DamageNonTarget = 35f;
-
-		private const float ConcussionDurationTargets = 10f;
-
-		private const float ConcussionDurationNonTargets = 4f;
-
-		private Scp096HitHandler _hitHandler;
-
-		private Scp096TargetsTracker _targetsTracker;
-
-		private Scp096AudioPlayer _audioPlayer;
-
-		private Transform _tr;
-
-		[SerializeField]
-		private Vector3 _detectionOffset;
-
-		[SerializeField]
-		private Vector3 _detectionExtents;
-
-		[SerializeField]
-		private AudioClip[] _soundsLethal;
-
-		[SerializeField]
-		private AudioClip[] _soundsNonLethal;
-
-		[SerializeField]
-		private float _soundDistance;
-
-		public readonly AbilityCooldown Cooldown = new AbilityCooldown();
-
-		public readonly AbilityCooldown Duration = new AbilityCooldown();
+	private void CheckDoor(IInteractable inter)
+	{
+		if (!(inter is BreakableDoor { AllColliders: var allColliders }))
+		{
+			if (inter is PryableDoor door)
+			{
+				GetSubroutine<Scp096PrygateAbility>(out var sr);
+				sr.ClientTryPry(door);
+			}
+			return;
+		}
+		foreach (Collider collider in allColliders)
+		{
+			if (collider.enabled)
+			{
+				collider.enabled = false;
+				DisabledColliders.Add(collider);
+			}
+		}
 	}
 }

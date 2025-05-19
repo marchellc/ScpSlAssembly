@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem.Items.MicroHID.Modules;
 
-namespace InventorySystem.Items.MicroHID.Modules
+public enum MicroHidFiringMode
 {
-	public enum MicroHidFiringMode
-	{
-		PrimaryFire,
-		ChargeFire,
-		BrokenFire
-	}
+	PrimaryFire,
+	ChargeFire,
+	BrokenFire
 }

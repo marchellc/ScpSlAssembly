@@ -1,44 +1,36 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules.Misc
+namespace InventorySystem.Items.Firearms.Modules.Misc;
+
+public readonly struct EventInvocationDetails
 {
-	public readonly struct EventInvocationDetails
+	public readonly bool EverInvoked;
+
+	public readonly float StateSpeed;
+
+	public readonly float ParamSpeed;
+
+	public readonly int Layer;
+
+	public readonly Animator RawAnimator;
+
+	public float TotalSpeedMultiplier => StateSpeed * ParamSpeed;
+
+	public EventInvocationDetails(AnimatorStateInfo stateInfo, Animator sourceAnimator, int callerLayer)
 	{
-		public float TotalSpeedMultiplier
-		{
-			get
-			{
-				return this.StateSpeed * this.ParamSpeed;
-			}
-		}
+		EverInvoked = true;
+		StateSpeed = stateInfo.speed;
+		ParamSpeed = stateInfo.speedMultiplier;
+		Layer = callerLayer;
+		RawAnimator = sourceAnimator;
+	}
 
-		public EventInvocationDetails(AnimatorStateInfo stateInfo, Animator sourceAnimator, int callerLayer)
-		{
-			this.EverInvoked = true;
-			this.StateSpeed = stateInfo.speed;
-			this.ParamSpeed = stateInfo.speedMultiplier;
-			this.Layer = callerLayer;
-			this.RawAnimator = sourceAnimator;
-		}
-
-		public EventInvocationDetails(bool everInvoked, float stateSpeed, float paramSpeed, int layer, Animator rawAnimator)
-		{
-			this.EverInvoked = everInvoked;
-			this.StateSpeed = stateSpeed;
-			this.ParamSpeed = paramSpeed;
-			this.Layer = layer;
-			this.RawAnimator = rawAnimator;
-		}
-
-		public readonly bool EverInvoked;
-
-		public readonly float StateSpeed;
-
-		public readonly float ParamSpeed;
-
-		public readonly int Layer;
-
-		public readonly Animator RawAnimator;
+	public EventInvocationDetails(bool everInvoked, float stateSpeed, float paramSpeed, int layer, Animator rawAnimator)
+	{
+		EverInvoked = everInvoked;
+		StateSpeed = stateSpeed;
+		ParamSpeed = paramSpeed;
+		Layer = layer;
+		RawAnimator = rawAnimator;
 	}
 }

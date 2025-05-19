@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 using Mirror;
@@ -6,308 +6,296 @@ using PlayerRoles;
 using PlayerRoles.Spectating;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectBase>
 {
-	public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectBase>
+	public enum EffectClassification
 	{
-		public byte Intensity
+		Technical,
+		Negative,
+		Mixed,
+		Positive
+	}
+
+	private byte _intensity;
+
+	private float _duration;
+
+	private float _timeLeft;
+
+	public byte Intensity
+	{
+		get
 		{
-			get
+			return _intensity;
+		}
+		set
+		{
+			if (value <= _intensity || AllowEnabling)
 			{
-				return this._intensity;
-			}
-			set
-			{
-				if (value > this._intensity && !this.AllowEnabling)
-				{
-					return;
-				}
-				this.ForceIntensity(value);
+				ForceIntensity(value);
 			}
 		}
+	}
 
-		public virtual byte MaxIntensity { get; } = byte.MaxValue;
+	public virtual byte MaxIntensity { get; } = byte.MaxValue;
 
-		public bool IsEnabled
+	public bool IsEnabled
+	{
+		get
 		{
-			get
+			return Intensity > 0;
+		}
+		set
+		{
+			if (value != IsEnabled)
 			{
-				return this.Intensity > 0;
-			}
-			set
-			{
-				if (value == this.IsEnabled)
-				{
-					return;
-				}
-				this.Intensity = (value ? 1 : 0);
+				Intensity = (byte)(value ? 1 : 0);
 			}
 		}
+	}
 
-		public virtual bool AllowEnabling
+	public virtual bool AllowEnabling
+	{
+		get
 		{
-			get
+			if (Classification != EffectClassification.Negative)
 			{
-				return this.Classification != StatusEffectBase.EffectClassification.Negative || (!SpawnProtected.CheckPlayer(this.Hub) && !Vitality.CheckPlayer(this.Hub));
+				return true;
+			}
+			if (!SpawnProtected.CheckPlayer(Hub))
+			{
+				return !Vitality.CheckPlayer(Hub);
+			}
+			return false;
+		}
+	}
+
+	public virtual EffectClassification Classification => EffectClassification.Negative;
+
+	public bool IsLocalPlayer => Hub.isLocalPlayer;
+
+	public bool IsSpectated => Hub.IsLocallySpectated();
+
+	public bool IsPOV => Hub.IsPOV;
+
+	public float Duration
+	{
+		get
+		{
+			return _duration;
+		}
+		private set
+		{
+			_duration = Mathf.Max(0f, value);
+		}
+	}
+
+	public float TimeLeft
+	{
+		get
+		{
+			return _timeLeft;
+		}
+		set
+		{
+			_timeLeft = Mathf.Max(0f, value);
+			if (_timeLeft == 0f && Duration != 0f)
+			{
+				DisableEffect();
 			}
 		}
+	}
 
-		public virtual StatusEffectBase.EffectClassification Classification
+	public ReferenceHub Hub { get; private set; }
+
+	public static event Action<StatusEffectBase> OnEnabled;
+
+	public static event Action<StatusEffectBase> OnDisabled;
+
+	public static event Action<StatusEffectBase, byte, byte> OnIntensityChanged;
+
+	[Server]
+	public void ServerSetState(byte intensity, float duration = 0f, bool addDuration = false)
+	{
+		if (!NetworkServer.active)
 		{
-			get
-			{
-				return StatusEffectBase.EffectClassification.Negative;
-			}
+			Debug.LogWarning("[Server] function 'System.Void CustomPlayerEffects.StatusEffectBase::ServerSetState(System.Byte,System.Single,System.Boolean)' called when server was not active");
+			return;
 		}
+		Intensity = intensity;
+		ServerChangeDuration(duration, addDuration);
+	}
 
-		public bool IsLocalPlayer
+	[Server]
+	public void ServerDisable()
+	{
+		if (!NetworkServer.active)
 		{
-			get
-			{
-				return this.Hub.isLocalPlayer;
-			}
+			Debug.LogWarning("[Server] function 'System.Void CustomPlayerEffects.StatusEffectBase::ServerDisable()' called when server was not active");
 		}
-
-		public bool IsSpectated
+		else
 		{
-			get
-			{
-				return this.Hub.IsLocallySpectated();
-			}
+			DisableEffect();
 		}
+	}
 
-		public float Duration
+	[Server]
+	public void ServerChangeDuration(float duration, bool addDuration = false)
+	{
+		if (!NetworkServer.active)
 		{
-			get
-			{
-				return this._duration;
-			}
-			private set
-			{
-				this._duration = Mathf.Max(0f, value);
-			}
+			Debug.LogWarning("[Server] function 'System.Void CustomPlayerEffects.StatusEffectBase::ServerChangeDuration(System.Single,System.Boolean)' called when server was not active");
 		}
-
-		public float TimeLeft
+		else if (addDuration && duration > 0f)
 		{
-			get
-			{
-				return this._timeLeft;
-			}
-			set
-			{
-				this._timeLeft = Mathf.Max(0f, value);
-				if (this._timeLeft == 0f && this.Duration != 0f)
-				{
-					this.DisableEffect();
-				}
-			}
+			Duration += duration;
+			TimeLeft += duration;
 		}
-
-		public ReferenceHub Hub { get; private set; }
-
-		[Server]
-		public void ServerSetState(byte intensity, float duration = 0f, bool addDuration = false)
+		else
 		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void CustomPlayerEffects.StatusEffectBase::ServerSetState(System.Byte,System.Single,System.Boolean)' called when server was not active");
-				return;
-			}
-			this.Intensity = intensity;
-			this.ServerChangeDuration(duration, addDuration);
+			Duration = duration;
+			TimeLeft = Duration;
 		}
+	}
 
-		[Server]
-		public void ServerDisable()
+	public void ForceIntensity(byte value)
+	{
+		if (_intensity == value)
 		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void CustomPlayerEffects.StatusEffectBase::ServerDisable()' called when server was not active");
-				return;
-			}
-			this.DisableEffect();
+			return;
 		}
-
-		[Server]
-		public void ServerChangeDuration(float duration, bool addDuration = false)
+		byte intensity = _intensity;
+		bool active = NetworkServer.active;
+		bool flag = intensity == 0 && value > 0;
+		if (active)
 		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void CustomPlayerEffects.StatusEffectBase::ServerChangeDuration(System.Single,System.Boolean)' called when server was not active");
-				return;
-			}
-			if (addDuration && duration > 0f)
-			{
-				this.Duration += duration;
-				this.TimeLeft += duration;
-				return;
-			}
-			this.Duration = duration;
-			this.TimeLeft = this.Duration;
-		}
-
-		public void ForceIntensity(byte value)
-		{
-			if (this._intensity == value)
-			{
-				return;
-			}
-			byte intensity = this._intensity;
-			bool active = NetworkServer.active;
-			bool flag = intensity == 0 && value > 0;
-			if (active)
-			{
-				PlayerEffectUpdatingEventArgs playerEffectUpdatingEventArgs = new PlayerEffectUpdatingEventArgs(this.Hub, this, value, this.Duration);
-				PlayerEvents.OnUpdatingEffect(playerEffectUpdatingEventArgs);
-				if (!playerEffectUpdatingEventArgs.IsAllowed)
-				{
-					return;
-				}
-				value = playerEffectUpdatingEventArgs.Intensity;
-				this.Duration = playerEffectUpdatingEventArgs.Duration;
-			}
-			this._intensity = (byte)Mathf.Min((int)value, (int)this.MaxIntensity);
-			if (active)
-			{
-				this.Hub.playerEffectsController.ServerSyncEffect(this);
-				PlayerEvents.OnUpdatedEffect(new PlayerEffectUpdatedEventArgs(this.Hub, this, value, this.Duration));
-			}
-			if (flag)
-			{
-				this.Enabled();
-				Action<StatusEffectBase> onEnabled = StatusEffectBase.OnEnabled;
-				if (onEnabled != null)
-				{
-					onEnabled(this);
-				}
-			}
-			else if (intensity > 0 && value == 0)
-			{
-				this.Disabled();
-				Action<StatusEffectBase> onDisabled = StatusEffectBase.OnDisabled;
-				if (onDisabled != null)
-				{
-					onDisabled(this);
-				}
-			}
-			this.IntensityChanged(intensity, value);
-			Action<StatusEffectBase, byte, byte> onIntensityChanged = StatusEffectBase.OnIntensityChanged;
-			if (onIntensityChanged == null)
+			PlayerEffectUpdatingEventArgs playerEffectUpdatingEventArgs = new PlayerEffectUpdatingEventArgs(Hub, this, value, Duration);
+			PlayerEvents.OnUpdatingEffect(playerEffectUpdatingEventArgs);
+			if (!playerEffectUpdatingEventArgs.IsAllowed)
 			{
 				return;
 			}
-			onIntensityChanged(this, intensity, value);
+			value = playerEffectUpdatingEventArgs.Intensity;
+			Duration = playerEffectUpdatingEventArgs.Duration;
 		}
-
-		private void Awake()
+		_intensity = (byte)Mathf.Min(value, MaxIntensity);
+		if (active)
 		{
-			this.Hub = ReferenceHub.GetHub(base.transform.root.gameObject);
-			this.OnAwake();
+			Hub.playerEffectsController.ServerSyncEffect(this);
+			PlayerEvents.OnUpdatedEffect(new PlayerEffectUpdatedEventArgs(Hub, this, value, Duration));
 		}
-
-		protected virtual void Start()
+		if (flag)
 		{
+			Enabled();
+			StatusEffectBase.OnEnabled?.Invoke(this);
 		}
-
-		protected virtual void Update()
+		else if (intensity > 0 && value == 0)
 		{
-			if (!this.IsEnabled)
-			{
-				return;
-			}
-			this.RefreshTime();
-			this.OnEffectUpdate();
+			Disabled();
+			StatusEffectBase.OnDisabled?.Invoke(this);
 		}
+		IntensityChanged(intensity, value);
+		StatusEffectBase.OnIntensityChanged?.Invoke(this, intensity, value);
+	}
 
-		private void RefreshTime()
+	protected virtual void Awake()
+	{
+		Hub = ReferenceHub.GetHub(base.transform.root.gameObject);
+	}
+
+	protected virtual void Start()
+	{
+	}
+
+	protected virtual void Update()
+	{
+		if (IsEnabled)
 		{
-			if (this.Duration == 0f)
-			{
-				return;
-			}
-			this.TimeLeft -= Time.deltaTime;
+			RefreshTime();
+			OnEffectUpdate();
 		}
+	}
 
-		protected virtual void Enabled()
+	private void RefreshTime()
+	{
+		if (Duration != 0f)
 		{
+			TimeLeft -= Time.deltaTime;
 		}
+	}
 
-		protected virtual void Disabled()
+	protected virtual void Enabled()
+	{
+	}
+
+	protected virtual void Disabled()
+	{
+	}
+
+	protected virtual void OnEffectUpdate()
+	{
+	}
+
+	protected virtual void IntensityChanged(byte prevState, byte newState)
+	{
+	}
+
+	public virtual void OnBeginSpectating()
+	{
+	}
+
+	public virtual void OnStopSpectating()
+	{
+	}
+
+	internal virtual void OnRoleChanged(PlayerRoleBase previousRole, PlayerRoleBase newRole)
+	{
+		DisableEffect();
+	}
+
+	internal virtual void OnDeath(PlayerRoleBase previousRole)
+	{
+		DisableEffect();
+	}
+
+	protected virtual void DisableEffect()
+	{
+		if (NetworkServer.active)
 		{
+			Intensity = 0;
 		}
+	}
 
-		protected virtual void OnAwake()
+	public bool Equals(StatusEffectBase other)
+	{
+		if (other != null)
 		{
+			return other.gameObject == base.gameObject;
 		}
+		return false;
+	}
 
-		protected virtual void OnEffectUpdate()
+	public override bool Equals(object obj)
+	{
+		if (obj == null)
 		{
+			return false;
 		}
-
-		protected virtual void IntensityChanged(byte prevState, byte newState)
+		if (this == obj)
 		{
+			return true;
 		}
-
-		public virtual void OnBeginSpectating()
+		if (obj.GetType() != GetType())
 		{
+			return false;
 		}
+		return Equals((StatusEffectBase)obj);
+	}
 
-		public virtual void OnStopSpectating()
-		{
-		}
-
-		internal virtual void OnRoleChanged(PlayerRoleBase previousRole, PlayerRoleBase newRole)
-		{
-			this.DisableEffect();
-		}
-
-		internal virtual void OnDeath(PlayerRoleBase previousRole)
-		{
-			this.DisableEffect();
-		}
-
-		protected virtual void DisableEffect()
-		{
-			if (NetworkServer.active)
-			{
-				this.Intensity = 0;
-			}
-		}
-
-		public static event Action<StatusEffectBase> OnEnabled;
-
-		public static event Action<StatusEffectBase> OnDisabled;
-
-		public static event Action<StatusEffectBase, byte, byte> OnIntensityChanged;
-
-		public bool Equals(StatusEffectBase other)
-		{
-			return other != null && other.gameObject == base.gameObject;
-		}
-
-		public override bool Equals(object obj)
-		{
-			return obj != null && (this == obj || (!(obj.GetType() != base.GetType()) && this.Equals((StatusEffectBase)obj)));
-		}
-
-		public override int GetHashCode()
-		{
-			return base.gameObject.GetHashCode();
-		}
-
-		private byte _intensity;
-
-		private float _duration;
-
-		private float _timeLeft;
-
-		public enum EffectClassification
-		{
-			Technical,
-			Negative,
-			Mixed,
-			Positive
-		}
+	public override int GetHashCode()
+	{
+		return base.gameObject.GetHashCode();
 	}
 }

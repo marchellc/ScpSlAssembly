@@ -1,34 +1,26 @@
-﻿using System;
 using Mirror;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class Flashed : StatusEffectBase
 {
-	public class Flashed : StatusEffectBase
+	public override bool AllowEnabling => !SpawnProtected.CheckPlayer(base.Hub);
+
+	protected override void IntensityChanged(byte prevState, byte newState)
 	{
-		public override bool AllowEnabling
+		float timeLeft = (float)(int)newState * 0.1f;
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return !SpawnProtected.CheckPlayer(base.Hub);
-			}
+			base.TimeLeft = timeLeft;
 		}
+	}
 
-		protected override void IntensityChanged(byte prevState, byte newState)
+	protected override void Update()
+	{
+		base.Update();
+		if (NetworkServer.active && base.Duration == 0f)
 		{
-			float num = (float)newState * 0.1f;
-			if (NetworkServer.active)
-			{
-				base.TimeLeft = num;
-			}
-		}
-
-		protected override void Update()
-		{
-			base.Update();
-			if (NetworkServer.active && base.Duration == 0f)
-			{
-				base.TimeLeft = 1f;
-			}
+			base.TimeLeft = 1f;
 		}
 	}
 }

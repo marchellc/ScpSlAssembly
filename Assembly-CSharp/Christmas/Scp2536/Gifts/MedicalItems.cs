@@ -1,43 +1,36 @@
-﻿using System;
 using InventorySystem;
 using InventorySystem.Items;
 using PlayerStatsSystem;
 
-namespace Christmas.Scp2536.Gifts
+namespace Christmas.Scp2536.Gifts;
+
+public class MedicalItems : Scp2536ItemGift
 {
-	public class MedicalItems : Scp2536ItemGift
+	public override UrgencyLevel Urgency => UrgencyLevel.Two;
+
+	protected override Scp2536Reward[] Rewards => new Scp2536Reward[3]
 	{
-		public override UrgencyLevel Urgency
-		{
-			get
-			{
-				return UrgencyLevel.Two;
-			}
-		}
+		new Scp2536Reward(ItemType.Medkit, 50f),
+		new Scp2536Reward(ItemType.Painkillers, 40f),
+		new Scp2536Reward(ItemType.AntiSCP207, 10f)
+	};
 
-		protected override Scp2536Reward[] Rewards
+	public override bool CanBeGranted(ReferenceHub hub)
+	{
+		if (!base.CanBeGranted(hub))
 		{
-			get
-			{
-				return new Scp2536Reward[]
-				{
-					new Scp2536Reward(ItemType.Medkit, 50f),
-					new Scp2536Reward(ItemType.Painkillers, 40f),
-					new Scp2536Reward(ItemType.AntiSCP207, 10f)
-				};
-			}
+			return false;
 		}
+		if (!hub.playerStats.TryGetModule<HealthStat>(out var module))
+		{
+			return false;
+		}
+		return module.CurValue <= module.MaxValue * 0.5f;
+	}
 
-		public override bool CanBeGranted(ReferenceHub hub)
-		{
-			HealthStat healthStat;
-			return base.CanBeGranted(hub) && hub.playerStats.TryGetModule<HealthStat>(out healthStat) && healthStat.CurValue <= healthStat.MaxValue * 0.5f;
-		}
-
-		public override void ServerGrant(ReferenceHub hub)
-		{
-			ItemType itemType = base.GenerateRandomReward();
-			hub.inventory.ServerAddItem(itemType, ItemAddReason.Scp2536, 0, null).GrantAmmoReward();
-		}
+	public override void ServerGrant(ReferenceHub hub)
+	{
+		ItemType type = GenerateRandomReward();
+		hub.inventory.ServerAddItem(type, ItemAddReason.Scp2536, 0).GrantAmmoReward();
 	}
 }

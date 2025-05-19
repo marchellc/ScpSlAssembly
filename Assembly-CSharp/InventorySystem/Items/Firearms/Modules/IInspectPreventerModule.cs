@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+public interface IInspectPreventerModule
 {
-	public interface IInspectPreventerModule
-	{
-		bool InspectionAllowed { get; }
-	}
+	bool InspectionAllowed { get; }
 }

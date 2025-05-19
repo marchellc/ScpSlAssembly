@@ -1,256 +1,228 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using PlayerRoles;
 using PlayerRoles.PlayableScps.Scp173;
 using UnityEngine;
 
-namespace FacilitySoundtrack
+namespace FacilitySoundtrack;
+
+public class Scp173InsanitySoundtrack : SoundtrackLayerBase
 {
-	public class Scp173InsanitySoundtrack : SoundtrackLayerBase
+	public delegate void PlayerEscapeScp173(ReferenceHub hub);
+
+	[Serializable]
+	private class EncounterTrack
 	{
-		public static event Scp173InsanitySoundtrack.PlayerEscapeScp173 OnPlayerEscapeScp173;
+		private float _nextUse;
 
-		private float CurTime
-		{
-			get
-			{
-				return Time.timeSinceLevelLoad;
-			}
-		}
+		public AudioClip Clip;
 
-		private bool IsObserved
-		{
-			get
-			{
-				return this._observed173sCount > 0;
-			}
-		}
+		public float Cooldown;
 
-		public override float Weight
+		public bool TryUse(float currentTime)
 		{
-			get
-			{
-				return this._weight;
-			}
-		}
-
-		public override bool Additive
-		{
-			get
+			if (currentTime < _nextUse)
 			{
 				return false;
 			}
+			_nextUse = currentTime + Cooldown;
+			return true;
 		}
 
-		private void Awake()
+		public void ResetCooldown()
 		{
-			PlayerRoleManager.OnRoleChanged += this.OnRoleChanged;
-			Scp173CharacterModel.OnFrozen += this.OnFrozen;
-			this._shouldRemove = (Scp173Role x) => !this.IsObservedBy(x, this._localHub);
-			this._ambientsCount = this._distanceAmbients.Length;
-			this._volumeCurves = new AnimationCurve[this._ambientsCount];
-			for (int i = 0; i < this._ambientsCount; i++)
+			_nextUse = 0f;
+		}
+	}
+
+	public const float PanLimit = 0.65f;
+
+	[SerializeField]
+	private float _fadeInLerp;
+
+	[SerializeField]
+	private float _fadeOutLerp;
+
+	[SerializeField]
+	private float _sustainTime;
+
+	[SerializeField]
+	private AudioSource[] _distanceAmbients;
+
+	[SerializeField]
+	private AudioSource _encounterSource;
+
+	[SerializeField]
+	private AudioClip _goneClip;
+
+	[SerializeField]
+	private EncounterTrack _closeEncounter;
+
+	[SerializeField]
+	private EncounterTrack _farEncounter;
+
+	[SerializeField]
+	private float _closeEncounterDistanceThreshold;
+
+	[SerializeField]
+	private float _distanceLerp;
+
+	[SerializeField]
+	private float _distanceCap;
+
+	private ReferenceHub _localHub;
+
+	private Predicate<Scp173Role> _shouldRemove;
+
+	private readonly HashSet<Scp173Role> _observed173s = new HashSet<Scp173Role>();
+
+	private AnimationCurve[] _volumeCurves;
+
+	private int _observed173sCount;
+
+	private int _ambientsCount;
+
+	private bool _isActive;
+
+	private bool _prevPlay;
+
+	private float _stopAmbientTime;
+
+	private float _weight;
+
+	private float _lastDistance;
+
+	private bool _cameraSet;
+
+	private Camera _camera;
+
+	private float _lastScreenPosition;
+
+	private float CurTime => Time.timeSinceLevelLoad;
+
+	private bool IsObserved => _observed173sCount > 0;
+
+	public override float Weight => _weight;
+
+	public override bool Additive => false;
+
+	public static event PlayerEscapeScp173 OnPlayerEscapeScp173;
+
+	private void Awake()
+	{
+		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
+		Scp173CharacterModel.OnFrozen += OnFrozen;
+		_shouldRemove = (Scp173Role x) => !IsObservedBy(x, _localHub);
+		_ambientsCount = _distanceAmbients.Length;
+		_volumeCurves = new AnimationCurve[_ambientsCount];
+		for (int i = 0; i < _ambientsCount; i++)
+		{
+			_volumeCurves[i] = _distanceAmbients[i].GetCustomCurve(AudioSourceCurveType.CustomRolloff);
+		}
+	}
+
+	private void OnDestroy()
+	{
+		PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
+		Scp173CharacterModel.OnFrozen -= OnFrozen;
+	}
+
+	private void Update()
+	{
+		if (!_isActive || !ReferenceHub.TryGetLocalHub(out var hub))
+		{
+			return;
+		}
+		if (_observed173sCount > 0)
+		{
+			_localHub = hub;
+			_observed173sCount -= _observed173s.RemoveWhere(_shouldRemove);
+			if (!IsObserved)
 			{
-				this._volumeCurves[i] = this._distanceAmbients[i].GetCustomCurve(AudioSourceCurveType.CustomRolloff);
+				_stopAmbientTime = CurTime + _sustainTime;
 			}
 		}
-
-		private void OnDestroy()
+		bool flag = IsObserved || _stopAmbientTime > CurTime;
+		bool num = flag != _prevPlay;
+		_weight = Mathf.Lerp(_weight, flag ? 1 : 0, (flag ? _fadeInLerp : _fadeOutLerp) * Time.deltaTime);
+		_prevPlay = flag;
+		if (num && !flag)
 		{
-			PlayerRoleManager.OnRoleChanged -= this.OnRoleChanged;
-			Scp173CharacterModel.OnFrozen -= this.OnFrozen;
+			_encounterSource.PlayOneShot(_goneClip);
+			_closeEncounter.ResetCooldown();
+			_farEncounter.ResetCooldown();
+			Scp173InsanitySoundtrack.OnPlayerEscapeScp173?.Invoke(hub);
 		}
-
-		private void Update()
+		if (!flag)
 		{
-			ReferenceHub referenceHub;
-			if (!this._isActive || !ReferenceHub.TryGetLocalHub(out referenceHub))
+			return;
+		}
+		float num2 = _distanceCap;
+		foreach (Scp173Role observed in _observed173s)
+		{
+			float num3 = DistanceTo(observed);
+			if (num3 < num2)
 			{
-				return;
-			}
-			if (this._observed173sCount > 0)
-			{
-				this._localHub = referenceHub;
-				this._observed173sCount -= this._observed173s.RemoveWhere(this._shouldRemove);
-				if (!this.IsObserved)
-				{
-					this._stopAmbientTime = this.CurTime + this._sustainTime;
-				}
-			}
-			bool flag = this.IsObserved || this._stopAmbientTime > this.CurTime;
-			bool flag2 = flag != this._prevPlay;
-			this._weight = Mathf.Lerp(this._weight, (float)(flag ? 1 : 0), (flag ? this._fadeInLerp : this._fadeOutLerp) * Time.deltaTime);
-			this._prevPlay = flag;
-			if (flag2 && !flag)
-			{
-				this._encounterSource.PlayOneShot(this._goneClip);
-				this._closeEncounter.ResetCooldown();
-				this._farEncounter.ResetCooldown();
-				Scp173InsanitySoundtrack.PlayerEscapeScp173 onPlayerEscapeScp = Scp173InsanitySoundtrack.OnPlayerEscapeScp173;
-				if (onPlayerEscapeScp != null)
-				{
-					onPlayerEscapeScp(referenceHub);
-				}
-			}
-			if (flag)
-			{
-				float num = this._distanceCap;
-				foreach (Scp173Role scp173Role in this._observed173s)
-				{
-					float num2 = this.DistanceTo(scp173Role);
-					if (num2 < num)
-					{
-						num = num2;
-					}
-				}
-				this._lastDistance = Mathf.Lerp(this._lastDistance, num, Time.deltaTime * this._distanceLerp);
+				num2 = num3;
 			}
 		}
+		_lastDistance = Mathf.Lerp(_lastDistance, num2, Time.deltaTime * _distanceLerp);
+	}
 
-		private void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+	private void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+	{
+		if (userHub.isLocalPlayer)
 		{
-			if (!userHub.isLocalPlayer)
-			{
-				return;
-			}
-			this._isActive = userHub.IsHuman();
-			this._prevPlay = false;
-			this._weight = 0f;
-			this._observed173sCount = 0;
-			this._stopAmbientTime = 0f;
+			_isActive = userHub.IsHuman();
+			_prevPlay = false;
+			_weight = 0f;
+			_observed173sCount = 0;
+			_stopAmbientTime = 0f;
 		}
+	}
 
-		private void OnFrozen(Scp173Role target)
+	private void OnFrozen(Scp173Role target)
+	{
+		if (_observed173s.Add(target))
 		{
-			if (this._observed173s.Add(target))
-			{
-				this._observed173sCount++;
-			}
-			if (this.DistanceTo(target) < this._closeEncounterDistanceThreshold && this._closeEncounter.TryUse(this.CurTime))
-			{
-				this._encounterSource.PlayOneShot(this._closeEncounter.Clip);
-				return;
-			}
-			if (this._farEncounter.TryUse(this.CurTime))
-			{
-				this._encounterSource.PlayOneShot(this._farEncounter.Clip);
-			}
+			_observed173sCount++;
 		}
-
-		private float DistanceTo(Scp173Role role)
+		if (DistanceTo(target) < _closeEncounterDistanceThreshold && _closeEncounter.TryUse(CurTime))
 		{
-			return Vector3.Distance(role.FpcModule.Position, MainCameraController.CurrentCamera.position);
+			_encounterSource.PlayOneShot(_closeEncounter.Clip);
 		}
-
-		private bool IsObservedBy(Scp173Role scp173, ReferenceHub lhub)
+		else if (_farEncounter.TryUse(CurTime))
 		{
-			Scp173ObserversTracker scp173ObserversTracker;
-			return scp173.SubroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out scp173ObserversTracker) && scp173ObserversTracker.IsObservedBy(lhub, 1f);
+			_encounterSource.PlayOneShot(_farEncounter.Clip);
 		}
+	}
 
-		public override void UpdateVolume(float volumeScale)
+	private float DistanceTo(Scp173Role role)
+	{
+		return Vector3.Distance(role.FpcModule.Position, MainCameraController.CurrentCamera.position);
+	}
+
+	private bool IsObservedBy(Scp173Role scp173, ReferenceHub lhub)
+	{
+		if (scp173.SubroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out var subroutine))
 		{
-			for (int i = 0; i < this._ambientsCount; i++)
-			{
-				float num = volumeScale;
-				if (num > 0f)
-				{
-					float num2 = this._lastDistance / this._distanceAmbients[i].maxDistance;
-					num *= this._volumeCurves[i].Evaluate(num2);
-				}
-				this._distanceAmbients[i].volume = num;
-				this._distanceAmbients[i].panStereo = this._lastScreenPosition;
-			}
+			return subroutine.IsObservedBy(lhub);
 		}
+		return false;
+	}
 
-		public const float PanLimit = 0.65f;
-
-		[SerializeField]
-		private float _fadeInLerp;
-
-		[SerializeField]
-		private float _fadeOutLerp;
-
-		[SerializeField]
-		private float _sustainTime;
-
-		[SerializeField]
-		private AudioSource[] _distanceAmbients;
-
-		[SerializeField]
-		private AudioSource _encounterSource;
-
-		[SerializeField]
-		private AudioClip _goneClip;
-
-		[SerializeField]
-		private Scp173InsanitySoundtrack.EncounterTrack _closeEncounter;
-
-		[SerializeField]
-		private Scp173InsanitySoundtrack.EncounterTrack _farEncounter;
-
-		[SerializeField]
-		private float _closeEncounterDistanceThreshold;
-
-		[SerializeField]
-		private float _distanceLerp;
-
-		[SerializeField]
-		private float _distanceCap;
-
-		private ReferenceHub _localHub;
-
-		private Predicate<Scp173Role> _shouldRemove;
-
-		private readonly HashSet<Scp173Role> _observed173s = new HashSet<Scp173Role>();
-
-		private AnimationCurve[] _volumeCurves;
-
-		private int _observed173sCount;
-
-		private int _ambientsCount;
-
-		private bool _isActive;
-
-		private bool _prevPlay;
-
-		private float _stopAmbientTime;
-
-		private float _weight;
-
-		private float _lastDistance;
-
-		private bool _cameraSet;
-
-		private Camera _camera;
-
-		private float _lastScreenPosition;
-
-		public delegate void PlayerEscapeScp173(ReferenceHub hub);
-
-		[Serializable]
-		private class EncounterTrack
+	public override void UpdateVolume(float volumeScale)
+	{
+		for (int i = 0; i < _ambientsCount; i++)
 		{
-			public bool TryUse(float currentTime)
+			float num = volumeScale;
+			if (num > 0f)
 			{
-				if (currentTime < this._nextUse)
-				{
-					return false;
-				}
-				this._nextUse = currentTime + this.Cooldown;
-				return true;
+				float time = _lastDistance / _distanceAmbients[i].maxDistance;
+				num *= _volumeCurves[i].Evaluate(time);
 			}
-
-			public void ResetCooldown()
-			{
-				this._nextUse = 0f;
-			}
-
-			private float _nextUse;
-
-			public AudioClip Clip;
-
-			public float Cooldown;
+			_distanceAmbients[i].volume = num;
+			_distanceAmbients[i].panStereo = _lastScreenPosition;
 		}
 	}
 }

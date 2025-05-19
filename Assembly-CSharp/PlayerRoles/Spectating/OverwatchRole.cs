@@ -1,52 +1,31 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 
-namespace PlayerRoles.Spectating
+namespace PlayerRoles.Spectating;
+
+public class OverwatchRole : SpectatorRole, IObfuscatedRole
 {
-	public class OverwatchRole : SpectatorRole, IObfuscatedRole
+	[SerializeField]
+	private TextMeshProUGUI _hudTemplate;
+
+	public override RoleTypeId RoleTypeId => RoleTypeId.Overwatch;
+
+	public override Color RoleColor => Color.cyan;
+
+	public override bool ReadyToRespawn => false;
+
+	public RoleTypeId GetRoleForUser(ReferenceHub receiver)
 	{
-		public override RoleTypeId RoleTypeId
+		TryGetOwner(out var hub);
+		if (!(hub == receiver) && !PermissionsHandler.IsPermitted(receiver.serverRoles.Permissions, PlayerPermissions.GameplayData))
 		{
-			get
-			{
-				return RoleTypeId.Overwatch;
-			}
+			return base.RoleTypeId;
 		}
+		return RoleTypeId;
+	}
 
-		public override Color RoleColor
-		{
-			get
-			{
-				return Color.cyan;
-			}
-		}
-
-		public override bool ReadyToRespawn
-		{
-			get
-			{
-				return false;
-			}
-		}
-
-		public RoleTypeId GetRoleForUser(ReferenceHub receiver)
-		{
-			ReferenceHub referenceHub;
-			base.TryGetOwner(out referenceHub);
-			if (!(referenceHub == receiver) && !PermissionsHandler.IsPermitted(receiver.serverRoles.Permissions, PlayerPermissions.GameplayData))
-			{
-				return base.RoleTypeId;
-			}
-			return this.RoleTypeId;
-		}
-
-		public override void DisableRole(RoleTypeId newRole)
-		{
-			base.DisableRole(newRole);
-		}
-
-		[SerializeField]
-		private TextMeshProUGUI _hudTemplate;
+	public override void DisableRole(RoleTypeId newRole)
+	{
+		base.DisableRole(newRole);
 	}
 }

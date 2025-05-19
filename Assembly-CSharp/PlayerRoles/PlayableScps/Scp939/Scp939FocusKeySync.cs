@@ -1,71 +1,70 @@
-﻿using System;
 using Mirror;
 using PlayerRoles.Subroutines;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp939
+namespace PlayerRoles.PlayableScps.Scp939;
+
+public class Scp939FocusKeySync : KeySubroutine<Scp939Role>
 {
-	public class Scp939FocusKeySync : KeySubroutine<Scp939Role>
+	private Scp939FocusAbility _focus;
+
+	protected override ActionName TargetKey => ActionName.Sneak;
+
+	protected override bool IsKeyHeld
 	{
-		protected override ActionName TargetKey
+		get
 		{
-			get
-			{
-				return ActionName.Sneak;
-			}
+			return base.IsKeyHeld;
 		}
-
-		protected override bool IsKeyHeld
+		set
 		{
-			get
+			if (IsKeyHeld != value)
 			{
-				return base.IsKeyHeld;
-			}
-			set
-			{
-				if (this.IsKeyHeld == value)
-				{
-					return;
-				}
 				base.IsKeyHeld = value;
-				base.ClientSendCmd();
+				ClientSendCmd();
 			}
 		}
+	}
 
-		protected override bool KeyPressable
+	protected override bool KeyPressable
+	{
+		get
 		{
-			get
+			if (base.Role.IsControllable)
 			{
-				return base.Owner.isLocalPlayer && (!Cursor.visible || this._focus.TargetState);
+				if (Cursor.visible && !_focus.TargetState)
+				{
+					return base.Role.IsEmulatedDummy;
+				}
+				return true;
 			}
+			return false;
 		}
+	}
 
-		public bool FocusKeyHeld { get; private set; }
+	public bool FocusKeyHeld { get; private set; }
 
-		public override void ClientWriteCmd(NetworkWriter writer)
-		{
-			base.ClientWriteCmd(writer);
-			writer.WriteBool(this.IsKeyHeld);
-		}
+	public override void ClientWriteCmd(NetworkWriter writer)
+	{
+		base.ClientWriteCmd(writer);
+		writer.WriteBool(IsKeyHeld);
+	}
 
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			this.FocusKeyHeld = reader.ReadBool();
-		}
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		FocusKeyHeld = reader.ReadBool();
+	}
 
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			this.FocusKeyHeld = false;
-		}
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		FocusKeyHeld = false;
+	}
 
-		protected override void Awake()
-		{
-			base.Awake();
-			base.GetSubroutine<Scp939FocusAbility>(out this._focus);
-		}
-
-		private Scp939FocusAbility _focus;
+	protected override void Awake()
+	{
+		base.Awake();
+		GetSubroutine<Scp939FocusAbility>(out _focus);
 	}
 }

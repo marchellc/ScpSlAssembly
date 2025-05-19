@@ -1,74 +1,70 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using PlayerRoles.FirstPersonControl.Thirdperson;
 using UnityEngine;
 
-namespace InventorySystem.Items.Thirdperson
+namespace InventorySystem.Items.Thirdperson;
+
+public static class ThirdpersonItemAnimationManager
 {
-	public static class ThirdpersonItemAnimationManager
+	private static readonly List<KeyValuePair<AnimationClip, AnimationClip>> OverridesPuller = new List<KeyValuePair<AnimationClip, AnimationClip>>();
+
+	private static readonly Dictionary<AnimState3p, AnimationClip> CachedClips = new Dictionary<AnimState3p, AnimationClip>();
+
+	public static bool TryGetDefaultAnimation(AnimatedCharacterModel target, AnimState3p name, out AnimationClip clip)
 	{
-		public static bool TryGetDefaultAnimation(AnimatedCharacterModel target, AnimState3p name, out AnimationClip clip)
+		if (CachedClips.TryGetValue(name, out clip))
 		{
-			if (ThirdpersonItemAnimationManager.CachedClips.TryGetValue(name, out clip))
+			return true;
+		}
+		clip = null;
+		OverridesPuller.Clear();
+		target.AnimatorOverride.GetOverrides(OverridesPuller);
+		foreach (KeyValuePair<AnimationClip, AnimationClip> item in OverridesPuller)
+		{
+			if (Enum.TryParse<AnimState3p>(item.Key.name, out var result))
 			{
-				return true;
-			}
-			clip = null;
-			ThirdpersonItemAnimationManager.OverridesPuller.Clear();
-			target.AnimatorOverride.GetOverrides(ThirdpersonItemAnimationManager.OverridesPuller);
-			foreach (KeyValuePair<AnimationClip, AnimationClip> keyValuePair in ThirdpersonItemAnimationManager.OverridesPuller)
-			{
-				AnimState3p animState3p;
-				if (Enum.TryParse<AnimState3p>(keyValuePair.Key.name, out animState3p))
+				if (result == name)
 				{
-					if (animState3p == name)
-					{
-						clip = keyValuePair.Key;
-					}
-					ThirdpersonItemAnimationManager.CachedClips[animState3p] = keyValuePair.Key;
+					clip = item.Key;
 				}
+				CachedClips[result] = item.Key;
 			}
-			return clip != null;
 		}
+		return clip != null;
+	}
 
-		public static void ResetOverrides(AnimatedCharacterModel target, Dictionary<AnimationClip, AnimationClip> defaultOverrides)
+	public static void ResetOverrides(AnimatedCharacterModel target, Dictionary<AnimationClip, AnimationClip> defaultOverrides)
+	{
+		OverridesPuller.Clear();
+		target.AnimatorOverride.GetOverrides(OverridesPuller);
+		for (int i = 0; i < OverridesPuller.Count; i++)
 		{
-			ThirdpersonItemAnimationManager.OverridesPuller.Clear();
-			target.AnimatorOverride.GetOverrides(ThirdpersonItemAnimationManager.OverridesPuller);
-			for (int i = 0; i < ThirdpersonItemAnimationManager.OverridesPuller.Count; i++)
+			AnimationClip key = OverridesPuller[i].Key;
+			AnimationClip value;
+			if (defaultOverrides != null)
 			{
-				AnimationClip key = ThirdpersonItemAnimationManager.OverridesPuller[i].Key;
-				AnimationClip animationClip;
-				if (defaultOverrides != null)
-				{
-					defaultOverrides.TryGetValue(key, out animationClip);
-				}
-				else
-				{
-					animationClip = null;
-				}
-				ThirdpersonItemAnimationManager.OverridesPuller[i] = new KeyValuePair<AnimationClip, AnimationClip>(key, animationClip);
+				defaultOverrides.TryGetValue(key, out value);
 			}
-			target.AnimatorOverride.ApplyOverrides(ThirdpersonItemAnimationManager.OverridesPuller);
-		}
-
-		public static void SetAnimation(AnimatedCharacterModel target, AnimState3p name, AnimationClip clip)
-		{
-			AnimationClip animationClip;
-			if (!ThirdpersonItemAnimationManager.TryGetDefaultAnimation(target, name, out animationClip))
+			else
 			{
-				return;
+				value = null;
 			}
-			target.AnimatorOverride[animationClip] = clip;
+			OverridesPuller[i] = new KeyValuePair<AnimationClip, AnimationClip>(key, value);
 		}
+		target.AnimatorOverride.ApplyOverrides(OverridesPuller);
+	}
 
-		public static void SetAnimation(AnimatedCharacterModel target, AnimOverrideState3pPair pair)
+	public static void SetAnimation(AnimatedCharacterModel target, AnimState3p name, AnimationClip clip)
+	{
+		if (TryGetDefaultAnimation(target, name, out var clip2))
 		{
-			ThirdpersonItemAnimationManager.SetAnimation(target, pair.State, pair.Override);
+			target.AnimatorOverride[clip2] = clip;
 		}
+	}
 
-		private static readonly List<KeyValuePair<AnimationClip, AnimationClip>> OverridesPuller = new List<KeyValuePair<AnimationClip, AnimationClip>>();
-
-		private static readonly Dictionary<AnimState3p, AnimationClip> CachedClips = new Dictionary<AnimState3p, AnimationClip>();
+	public static void SetAnimation(AnimatedCharacterModel target, AnimOverrideState3pPair pair)
+	{
+		SetAnimation(target, pair.State, pair.Override);
 	}
 }

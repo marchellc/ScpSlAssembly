@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public enum WearableSlot
 {
-	public enum WearableSlot
-	{
-		Body,
-		Eyes,
-		Hat
-	}
+	Body,
+	Eyes,
+	Hat
 }

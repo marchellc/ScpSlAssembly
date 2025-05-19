@@ -1,72 +1,72 @@
-﻿using System;
 using System.Linq;
 using Utf8Json.Formatters;
 
-namespace Utf8Json.Resolvers.Internal
+namespace Utf8Json.Resolvers.Internal;
+
+internal sealed class AllowPrivateExcludeNullSnakeCaseStandardResolver : IJsonFormatterResolver
 {
-	internal sealed class AllowPrivateExcludeNullSnakeCaseStandardResolver : IJsonFormatterResolver
+	private static class FormatterCache<T>
 	{
-		private AllowPrivateExcludeNullSnakeCaseStandardResolver()
+		public static readonly IJsonFormatter<T> formatter;
+
+		static FormatterCache()
+		{
+			if (typeof(T) == typeof(object))
+			{
+				formatter = (IJsonFormatter<T>)fallbackFormatter;
+			}
+			else
+			{
+				formatter = InnerResolver.Instance.GetFormatter<T>();
+			}
+		}
+	}
+
+	private sealed class InnerResolver : IJsonFormatterResolver
+	{
+		private static class FormatterCache<T>
+		{
+			public static readonly IJsonFormatter<T> formatter;
+
+			static FormatterCache()
+			{
+				IJsonFormatterResolver[] resolvers = InnerResolver.resolvers;
+				for (int i = 0; i < resolvers.Length; i++)
+				{
+					IJsonFormatter<T> jsonFormatter = resolvers[i].GetFormatter<T>();
+					if (jsonFormatter != null)
+					{
+						formatter = jsonFormatter;
+						break;
+					}
+				}
+			}
+		}
+
+		public static readonly IJsonFormatterResolver Instance = new InnerResolver();
+
+		private static readonly IJsonFormatterResolver[] resolvers = StandardResolverHelper.CompositeResolverBase.Concat(new IJsonFormatterResolver[1] { DynamicObjectResolver.AllowPrivateExcludeNullSnakeCase }).ToArray();
+
+		private InnerResolver()
 		{
 		}
 
 		public IJsonFormatter<T> GetFormatter<T>()
 		{
-			return AllowPrivateExcludeNullSnakeCaseStandardResolver.FormatterCache<T>.formatter;
+			return FormatterCache<T>.formatter;
 		}
+	}
 
-		public static readonly IJsonFormatterResolver Instance = new AllowPrivateExcludeNullSnakeCaseStandardResolver();
+	public static readonly IJsonFormatterResolver Instance = new AllowPrivateExcludeNullSnakeCaseStandardResolver();
 
-		private static readonly IJsonFormatter<object> fallbackFormatter = new DynamicObjectTypeFallbackFormatter(new IJsonFormatterResolver[] { AllowPrivateExcludeNullSnakeCaseStandardResolver.InnerResolver.Instance });
+	private static readonly IJsonFormatter<object> fallbackFormatter = new DynamicObjectTypeFallbackFormatter(InnerResolver.Instance);
 
-		private static class FormatterCache<T>
-		{
-			static FormatterCache()
-			{
-				if (typeof(T) == typeof(object))
-				{
-					AllowPrivateExcludeNullSnakeCaseStandardResolver.FormatterCache<T>.formatter = (IJsonFormatter<T>)AllowPrivateExcludeNullSnakeCaseStandardResolver.fallbackFormatter;
-					return;
-				}
-				AllowPrivateExcludeNullSnakeCaseStandardResolver.FormatterCache<T>.formatter = AllowPrivateExcludeNullSnakeCaseStandardResolver.InnerResolver.Instance.GetFormatter<T>();
-			}
+	private AllowPrivateExcludeNullSnakeCaseStandardResolver()
+	{
+	}
 
-			public static readonly IJsonFormatter<T> formatter;
-		}
-
-		private sealed class InnerResolver : IJsonFormatterResolver
-		{
-			private InnerResolver()
-			{
-			}
-
-			public IJsonFormatter<T> GetFormatter<T>()
-			{
-				return AllowPrivateExcludeNullSnakeCaseStandardResolver.InnerResolver.FormatterCache<T>.formatter;
-			}
-
-			public static readonly IJsonFormatterResolver Instance = new AllowPrivateExcludeNullSnakeCaseStandardResolver.InnerResolver();
-
-			private static readonly IJsonFormatterResolver[] resolvers = StandardResolverHelper.CompositeResolverBase.Concat(new IJsonFormatterResolver[] { DynamicObjectResolver.AllowPrivateExcludeNullSnakeCase }).ToArray<IJsonFormatterResolver>();
-
-			private static class FormatterCache<T>
-			{
-				static FormatterCache()
-				{
-					IJsonFormatterResolver[] resolvers = AllowPrivateExcludeNullSnakeCaseStandardResolver.InnerResolver.resolvers;
-					for (int i = 0; i < resolvers.Length; i++)
-					{
-						IJsonFormatter<T> jsonFormatter = resolvers[i].GetFormatter<T>();
-						if (jsonFormatter != null)
-						{
-							AllowPrivateExcludeNullSnakeCaseStandardResolver.InnerResolver.FormatterCache<T>.formatter = jsonFormatter;
-							return;
-						}
-					}
-				}
-
-				public static readonly IJsonFormatter<T> formatter;
-			}
-		}
+	public IJsonFormatter<T> GetFormatter<T>()
+	{
+		return FormatterCache<T>.formatter;
 	}
 }

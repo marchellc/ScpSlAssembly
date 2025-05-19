@@ -1,19 +1,18 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace MapGeneration
+namespace MapGeneration;
+
+[Serializable]
+public struct GlyphShapePair
 {
-	[Serializable]
-	public struct GlyphShapePair
-	{
-		public Color32 GlyphColor;
+	public Color32 GlyphColor;
 
-		public Vector2Int GlyphCenterOffset;
+	public Vector2Int GlyphCenterOffset;
 
-		public RoomShape RoomShape;
+	public RoomShape RoomShape;
 
-		public RoomName[] SpecificRooms;
+	public RoomName[] SpecificRooms;
 
-		public float[] RoomRotations;
-	}
+	public float[] RoomRotations;
 }

@@ -1,11 +1,8 @@
-﻿using System;
+namespace LiteNetLib;
 
-namespace LiteNetLib
+internal enum DisconnectResult
 {
-	internal enum DisconnectResult
-	{
-		None,
-		Reject,
-		Disconnect
-	}
+	None,
+	Reject,
+	Disconnect
 }

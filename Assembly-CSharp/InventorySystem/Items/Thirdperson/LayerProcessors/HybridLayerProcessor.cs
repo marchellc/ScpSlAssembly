@@ -1,40 +1,38 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Thirdperson.LayerProcessors
+namespace InventorySystem.Items.Thirdperson.LayerProcessors;
+
+public class HybridLayerProcessor : LayerProcessorBase
 {
-	public class HybridLayerProcessor : LayerProcessorBase
+	private float _blend;
+
+	public void SetDualHandBlend(float blendAmount)
 	{
-		public void SetDualHandBlend(float blendAmount)
-		{
-			this._blend = Mathf.Clamp01(blendAmount);
-		}
+		_blend = Mathf.Clamp01(blendAmount);
+	}
 
-		protected override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
+	protected override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
+	{
+		if (_blend <= 0f)
 		{
-			if (this._blend <= 0f)
-			{
-				return this.ZeroBlendWeight(layer);
-			}
-			if (this._blend >= 1f)
-			{
-				return this.FullBlendWeight(layer);
-			}
-			ThirdpersonLayerWeight thirdpersonLayerWeight = this.ZeroBlendWeight(layer);
-			ThirdpersonLayerWeight thirdpersonLayerWeight2 = this.FullBlendWeight(layer);
-			return ThirdpersonLayerWeight.Lerp(thirdpersonLayerWeight, thirdpersonLayerWeight2, this._blend);
+			return ZeroBlendWeight(layer);
 		}
-
-		private ThirdpersonLayerWeight ZeroBlendWeight(AnimItemLayer3p layer)
+		if (_blend >= 1f)
 		{
-			return new ThirdpersonLayerWeight(RightHandedLayerProcessor.CalculateWeight(base.TargetModel, layer), layer != AnimItemLayer3p.Right);
+			return FullBlendWeight(layer);
 		}
+		ThirdpersonLayerWeight lhs = ZeroBlendWeight(layer);
+		ThirdpersonLayerWeight rhs = FullBlendWeight(layer);
+		return ThirdpersonLayerWeight.Lerp(lhs, rhs, _blend);
+	}
 
-		private ThirdpersonLayerWeight FullBlendWeight(AnimItemLayer3p layer)
-		{
-			return new ThirdpersonLayerWeight(DualHandedLayerProcessor.CalculateWeight(base.TargetModel, layer), false);
-		}
+	private ThirdpersonLayerWeight ZeroBlendWeight(AnimItemLayer3p layer)
+	{
+		return new ThirdpersonLayerWeight(RightHandedLayerProcessor.CalculateWeight(base.TargetModel, layer), layer != AnimItemLayer3p.Right);
+	}
 
-		private float _blend;
+	private ThirdpersonLayerWeight FullBlendWeight(AnimItemLayer3p layer)
+	{
+		return new ThirdpersonLayerWeight(DualHandedLayerProcessor.CalculateWeight(base.TargetModel, layer), allowOther: false);
 	}
 }

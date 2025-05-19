@@ -1,77 +1,81 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace AudioPooling
+namespace AudioPooling;
+
+public readonly struct AudioPoolSession : IEquatable<AudioPoolSession>
 {
-	public readonly struct AudioPoolSession : IEquatable<AudioPoolSession>
+	private readonly ulong _sessionId;
+
+	public readonly PooledAudioSource HandledInstance;
+
+	public bool SameSession
 	{
-		public bool SameSession
+		get
 		{
-			get
+			if (HandledInstance != null && !HandledInstance.Pooled)
 			{
-				return this.HandledInstance != null && !this.HandledInstance.Pooled && this.HandledInstance.TotalRecycles == this._sessionId;
-			}
-		}
-
-		public bool IsPlaying
-		{
-			get
-			{
-				return this.SameSession && this.Source.isPlaying;
-			}
-		}
-
-		public AudioSource Source
-		{
-			get
-			{
-				return this.HandledInstance.Source;
-			}
-		}
-
-		public AudioPoolSession(PooledAudioSource subject)
-		{
-			this.HandledInstance = subject;
-			this._sessionId = subject.TotalRecycles;
-		}
-
-		public bool Equals(AudioPoolSession other)
-		{
-			return this.HandledInstance == other.HandledInstance && this._sessionId == other._sessionId;
-		}
-
-		public override int GetHashCode()
-		{
-			return HashCode.Combine<ulong, int>(this._sessionId, (this.HandledInstance == null) ? 0 : this.HandledInstance.GetHashCode());
-		}
-
-		public override bool Equals(object obj)
-		{
-			if (obj is AudioPoolSession)
-			{
-				AudioPoolSession audioPoolSession = (AudioPoolSession)obj;
-				return this.Equals(audioPoolSession);
+				return HandledInstance.TotalRecycles == _sessionId;
 			}
 			return false;
 		}
+	}
 
-		public override string ToString()
+	public bool IsPlaying
+	{
+		get
 		{
-			return base.ToString();
+			if (SameSession)
+			{
+				return Source.isPlaying;
+			}
+			return false;
 		}
+	}
 
-		public static bool operator ==(AudioPoolSession left, AudioPoolSession right)
+	public AudioSource Source => HandledInstance.Source;
+
+	public AudioPoolSession(PooledAudioSource subject)
+	{
+		HandledInstance = subject;
+		_sessionId = subject.TotalRecycles;
+	}
+
+	public bool Equals(AudioPoolSession other)
+	{
+		if (HandledInstance == other.HandledInstance)
 		{
-			return left.Equals(right);
+			return _sessionId == other._sessionId;
 		}
+		return false;
+	}
 
-		public static bool operator !=(AudioPoolSession left, AudioPoolSession right)
+	public override int GetHashCode()
+	{
+		return HashCode.Combine(_sessionId, (!(HandledInstance == null)) ? HandledInstance.GetHashCode() : 0);
+	}
+
+	public override bool Equals(object obj)
+	{
+		if (obj is AudioPoolSession other)
 		{
-			return !left.Equals(right);
+			return Equals(other);
 		}
+		return false;
+	}
 
-		private readonly ulong _sessionId;
+	public override string ToString()
+	{
+		return base.ToString();
+	}
 
-		public readonly PooledAudioSource HandledInstance;
+	public static bool operator ==(AudioPoolSession left, AudioPoolSession right)
+	{
+		return left.Equals(right);
+	}
+
+	public static bool operator !=(AudioPoolSession left, AudioPoolSession right)
+	{
+		return !left.Equals(right);
 	}
 }

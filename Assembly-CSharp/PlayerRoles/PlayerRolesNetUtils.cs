@@ -1,70 +1,67 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
-namespace PlayerRoles
+namespace PlayerRoles;
+
+public static class PlayerRolesNetUtils
 {
-	public static class PlayerRolesNetUtils
+	public static readonly Dictionary<uint, NetworkReader> QueuedRoles = new Dictionary<uint, NetworkReader>();
+
+	public static bool InfoPackAlreadyReceived;
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		CustomNetworkManager.OnClientReady += delegate
 		{
-			CustomNetworkManager.OnClientReady += delegate
+			QueuedRoles.Clear();
+			InfoPackAlreadyReceived = NetworkServer.active;
+			NetworkClient.ReplaceHandler((Action<RoleSyncInfo>)delegate
 			{
-				PlayerRolesNetUtils.QueuedRoles.Clear();
-				PlayerRolesNetUtils.InfoPackAlreadyReceived = NetworkServer.active;
-				NetworkClient.ReplaceHandler<RoleSyncInfo>(delegate(RoleSyncInfo rsi)
-				{
-				}, true);
-				NetworkClient.ReplaceHandler<RoleSyncInfoPack>(delegate(RoleSyncInfoPack rsip)
-				{
-					PlayerRolesNetUtils.InfoPackAlreadyReceived = true;
-				}, true);
-			};
-			ReferenceHub.OnPlayerAdded = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerAdded, new Action<ReferenceHub>(PlayerRolesNetUtils.HandleSpawnedPlayer));
-		}
+			}, requireAuthentication: true);
+			NetworkClient.ReplaceHandler((Action<RoleSyncInfoPack>)delegate
+			{
+				InfoPackAlreadyReceived = true;
+			}, requireAuthentication: true);
+		};
+		ReferenceHub.OnPlayerAdded += HandleSpawnedPlayer;
+	}
 
-		private static void HandleSpawnedPlayer(ReferenceHub hub)
+	private static void HandleSpawnedPlayer(ReferenceHub hub)
+	{
+		NetworkReader value;
+		if (NetworkServer.active)
 		{
-			if (NetworkServer.active)
+			if (!hub.isLocalPlayer)
 			{
-				if (!hub.isLocalPlayer)
-				{
-					hub.connectionToClient.Send<RoleSyncInfoPack>(new RoleSyncInfoPack(hub), 0);
-				}
-				return;
+				hub.connectionToClient.Send(new RoleSyncInfoPack(hub));
 			}
-			NetworkReader networkReader;
-			if (!PlayerRolesNetUtils.QueuedRoles.TryGetValue(hub.netId, out networkReader))
-			{
-				return;
-			}
-			hub.roleManager.InitializeNewRole(networkReader.ReadRoleType(), RoleChangeReason.None, RoleSpawnFlags.All, networkReader);
 		}
-
-		public static void WriteRoleSyncInfo(this NetworkWriter writer, RoleSyncInfo info)
+		else if (QueuedRoles.TryGetValue(hub.netId, out value))
 		{
-			info.Write(writer);
+			hub.roleManager.InitializeNewRole(value.ReadRoleType(), RoleChangeReason.None, RoleSpawnFlags.All, value);
 		}
+	}
 
-		public static RoleSyncInfo ReadRoleSyncInfo(this NetworkReader reader)
-		{
-			return new RoleSyncInfo(reader);
-		}
+	public static void WriteRoleSyncInfo(this NetworkWriter writer, RoleSyncInfo info)
+	{
+		info.Write(writer);
+	}
 
-		public static void WriteRoleSyncInfoPack(this NetworkWriter writer, RoleSyncInfoPack info)
-		{
-			info.WritePlayers(writer);
-		}
+	public static RoleSyncInfo ReadRoleSyncInfo(this NetworkReader reader)
+	{
+		return new RoleSyncInfo(reader);
+	}
 
-		public static RoleSyncInfoPack ReadRoleSyncInfoPack(this NetworkReader reader)
-		{
-			return new RoleSyncInfoPack(reader);
-		}
+	public static void WriteRoleSyncInfoPack(this NetworkWriter writer, RoleSyncInfoPack info)
+	{
+		info.WritePlayers(writer);
+	}
 
-		public static readonly Dictionary<uint, NetworkReader> QueuedRoles = new Dictionary<uint, NetworkReader>();
-
-		public static bool InfoPackAlreadyReceived;
+	public static RoleSyncInfoPack ReadRoleSyncInfoPack(this NetworkReader reader)
+	{
+		return new RoleSyncInfoPack(reader);
 	}
 }

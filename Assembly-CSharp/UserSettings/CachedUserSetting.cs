@@ -1,61 +1,60 @@
-﻿using System;
+using System;
 
-namespace UserSettings
+namespace UserSettings;
+
+public class CachedUserSetting<TCachedValue>
 {
-	public class CachedUserSetting<TCachedValue>
+	private TCachedValue _cachedValue;
+
+	private ushort _enumType;
+
+	private ushort _enumKey;
+
+	private bool _wasEverSet;
+
+	public TCachedValue Value
 	{
-		public TCachedValue Value
+		get
 		{
-			get
+			if (!_wasEverSet)
 			{
-				if (!this._wasEverSet)
-				{
-					this.UpdateValue(UserSetting<TCachedValue>.Get(this._enumType, this._enumKey));
-				}
-				return this._cachedValue;
+				UpdateValue(UserSetting<TCachedValue>.Get(_enumType, _enumKey));
 			}
-			set
-			{
-				UserSetting<TCachedValue>.Set(this._enumType, this._enumKey, value);
-			}
+			return _cachedValue;
 		}
-
-		public CachedUserSetting(Enum trackedEnum)
+		set
 		{
-			ushort stableTypeHash = SettingsKeyGenerator.GetStableTypeHash(trackedEnum.GetType(), false);
-			ushort num = ((IConvertible)trackedEnum).ToUInt16(null);
-			this.Setup(stableTypeHash, num);
+			UserSetting<TCachedValue>.Set(_enumType, _enumKey, value);
 		}
+	}
 
-		public CachedUserSetting(ushort trackedEnumType, ushort trackedEnumKey)
-		{
-			this.Setup(trackedEnumType, trackedEnumKey);
-		}
+	public CachedUserSetting(Enum trackedEnum)
+	{
+		ushort stableTypeHash = SettingsKeyGenerator.GetStableTypeHash(trackedEnum.GetType());
+		ushort trackedEnumKey = ((IConvertible)trackedEnum).ToUInt16((IFormatProvider)null);
+		Setup(stableTypeHash, trackedEnumKey);
+	}
 
-		private void Setup(ushort trackedEnumType, ushort trackedEnumKey)
-		{
-			this._enumType = trackedEnumType;
-			this._enumKey = trackedEnumKey;
-			UserSetting<TCachedValue>.AddListener(trackedEnumType, trackedEnumKey, new Action<TCachedValue>(this.UpdateValue));
-		}
+	public CachedUserSetting(ushort trackedEnumType, ushort trackedEnumKey)
+	{
+		Setup(trackedEnumType, trackedEnumKey);
+	}
 
-		public void Destroy()
-		{
-			UserSetting<TCachedValue>.RemoveListener(new Action<TCachedValue>(this.UpdateValue));
-		}
+	private void Setup(ushort trackedEnumType, ushort trackedEnumKey)
+	{
+		_enumType = trackedEnumType;
+		_enumKey = trackedEnumKey;
+		UserSetting<TCachedValue>.AddListener(trackedEnumType, trackedEnumKey, UpdateValue);
+	}
 
-		private void UpdateValue(TCachedValue val)
-		{
-			this._cachedValue = val;
-			this._wasEverSet = true;
-		}
+	public void Destroy()
+	{
+		UserSetting<TCachedValue>.RemoveListener(UpdateValue);
+	}
 
-		private TCachedValue _cachedValue;
-
-		private ushort _enumType;
-
-		private ushort _enumKey;
-
-		private bool _wasEverSet;
+	private void UpdateValue(TCachedValue val)
+	{
+		_cachedValue = val;
+		_wasEverSet = true;
 	}
 }

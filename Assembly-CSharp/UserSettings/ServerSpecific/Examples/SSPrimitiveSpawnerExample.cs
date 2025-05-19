@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -9,288 +9,258 @@ using TMPro;
 using UnityEngine;
 using Utils.Networking;
 
-namespace UserSettings.ServerSpecific.Examples
+namespace UserSettings.ServerSpecific.Examples;
+
+public class SSPrimitiveSpawnerExample : SSExampleImplementationBase
 {
-	public class SSPrimitiveSpawnerExample : SSExampleImplementationBase
+	private enum ExampleId
 	{
-		public override string Name
-		{
-			get
-			{
-				return "Primitive Spawner";
-			}
-		}
+		ConfirmButton,
+		DestroyAllButton,
+		TypeDropdown,
+		ColorPresetDropdown,
+		ColorField,
+		ColorAlphaSlider,
+		CollisionsToggle,
+		RendererToggle,
+		ColorInfo,
+		ScaleSliderX,
+		ScaleSliderY,
+		ScaleSliderZ
+	}
 
-		public override void Activate()
-		{
-			SSPrimitiveSpawnerExample._anySpawned = false;
-			if (SSPrimitiveSpawnerExample._colorPresets == null)
-			{
-				SSPrimitiveSpawnerExample._colorPresets = new SSPrimitiveSpawnerExample.ColorPreset[]
-				{
-					new SSPrimitiveSpawnerExample.ColorPreset("White", Color.white),
-					new SSPrimitiveSpawnerExample.ColorPreset("Black", Color.black),
-					new SSPrimitiveSpawnerExample.ColorPreset("Gray", Color.gray),
-					new SSPrimitiveSpawnerExample.ColorPreset("Red", Color.red),
-					new SSPrimitiveSpawnerExample.ColorPreset("Green", Color.green),
-					new SSPrimitiveSpawnerExample.ColorPreset("Blue", Color.blue),
-					new SSPrimitiveSpawnerExample.ColorPreset("Yellow", Color.yellow),
-					new SSPrimitiveSpawnerExample.ColorPreset("Cyan", Color.cyan),
-					new SSPrimitiveSpawnerExample.ColorPreset("Magenta", Color.magenta)
-				};
-			}
-			if (SSPrimitiveSpawnerExample._primitiveTypes == null)
-			{
-				SSPrimitiveSpawnerExample._primitiveTypes = EnumUtils<PrimitiveType>.Values;
-			}
-			this.GenerateNewSettings();
-			this.ResendSettings();
-			ServerSpecificSettingsSync.SendOnJoinFilter = (ReferenceHub _) => false;
-			ServerSpecificSettingsSync.ServerOnSettingValueReceived += this.ProcessUserInput;
-		}
+	private readonly struct ColorPreset
+	{
+		public readonly string Name;
 
-		public override void Deactivate()
-		{
-			ServerSpecificSettingsSync.SendOnJoinFilter = null;
-			ServerSpecificSettingsSync.ServerOnSettingValueReceived -= this.ProcessUserInput;
-		}
+		public readonly Color Color;
 
-		private void GenerateNewSettings()
+		public ColorPreset(string name, Color color)
 		{
-			List<ServerSpecificSettingBase> list = new List<ServerSpecificSettingBase>();
-			list.Add(new SSGroupHeader("Primitive Spawner", false, null));
-			list.Add(new SSDropdownSetting(new int?(2), "Type", SSPrimitiveSpawnerExample._primitiveTypes.Select((PrimitiveType x) => x.ToString()).ToArray<string>(), 0, SSDropdownSetting.DropdownEntryType.Regular, null));
-			list.Add(new SSDropdownSetting(new int?(3), "Color (preset)", SSPrimitiveSpawnerExample._colorPresets.Select((SSPrimitiveSpawnerExample.ColorPreset x) => x.Name).ToArray<string>(), 0, SSDropdownSetting.DropdownEntryType.Regular, null));
-			list.Add(new SSSliderSetting(new int?(5), "Opacity", 0f, 100f, 100f, true, "0.##", "{0}%", null));
-			list.Add(new SSPlaintextSetting(new int?(4), "Custom Color (R G B)", "...", 10, TMP_InputField.ContentType.Standard, "Leave empty to use a preset."));
-			list.Add(SSPrimitiveSpawnerExample._selectedColorTextArea = new SSTextArea(new int?(8), "Selected color: None", SSTextArea.FoldoutMode.NotCollapsable, null, TextAlignmentOptions.TopLeft));
-			list.Add(new SSTwoButtonsSetting(new int?(6), "Collisions", "Disabled", "Enabled", true, null));
-			list.Add(new SSTwoButtonsSetting(new int?(7), "Renderer", "Invisible", "Visible", true, "Invisible primitives can still receive collisions."));
-			list.Add(new SSSliderSetting(new int?(9), "Scale (X)", 0f, 25f, 1f, false, "0.00", "x{0}", null));
-			list.Add(new SSSliderSetting(new int?(10), "Scale (Y)", 0f, 25f, 1f, false, "0.00", "x{0}", null));
-			list.Add(new SSSliderSetting(new int?(11), "Scale (Z)", 0f, 25f, 1f, false, "0.00", "x{0}", null));
-			list.Add(new SSButton(new int?(0), "Confirm Spawning", "Spawn", null, null));
-			SSPrimitiveSpawnerExample._allSettings = list;
+			Name = name;
+			Color = color;
 		}
+	}
 
-		private bool ValidateUser(ReferenceHub user)
+	private static PrimitiveType[] _primitiveTypes;
+
+	private static ColorPreset[] _colorPresets;
+
+	private static List<ServerSpecificSettingBase> _allSettings;
+
+	private static bool _anySpawned;
+
+	private static SSTextArea _selectedColorTextArea;
+
+	private const PlayerPermissions RequiredPermission = PlayerPermissions.FacilityManagement;
+
+	public override string Name => "Primitive Spawner";
+
+	public override void Activate()
+	{
+		_anySpawned = false;
+		if (_colorPresets == null)
 		{
-			return PermissionsHandler.IsPermitted(user.serverRoles.Permissions, PlayerPermissions.FacilityManagement);
+			_colorPresets = new ColorPreset[9]
+			{
+				new ColorPreset("White", Color.white),
+				new ColorPreset("Black", Color.black),
+				new ColorPreset("Gray", Color.gray),
+				new ColorPreset("Red", Color.red),
+				new ColorPreset("Green", Color.green),
+				new ColorPreset("Blue", Color.blue),
+				new ColorPreset("Yellow", Color.yellow),
+				new ColorPreset("Cyan", Color.cyan),
+				new ColorPreset("Magenta", Color.magenta)
+			};
 		}
-
-		private void ProcessUserInput(ReferenceHub sender, ServerSpecificSettingBase setting)
+		if (_primitiveTypes == null)
 		{
-			if (!this.ValidateUser(sender))
+			_primitiveTypes = EnumUtils<PrimitiveType>.Values;
+		}
+		GenerateNewSettings();
+		ResendSettings();
+		ServerSpecificSettingsSync.SendOnJoinFilter = (ReferenceHub _) => false;
+		ServerSpecificSettingsSync.ServerOnSettingValueReceived += ProcessUserInput;
+	}
+
+	public override void Deactivate()
+	{
+		ServerSpecificSettingsSync.SendOnJoinFilter = null;
+		ServerSpecificSettingsSync.ServerOnSettingValueReceived -= ProcessUserInput;
+	}
+
+	private void GenerateNewSettings()
+	{
+		_allSettings = new List<ServerSpecificSettingBase>
+		{
+			new SSGroupHeader("Primitive Spawner"),
+			new SSDropdownSetting(2, "Type", _primitiveTypes.Select((PrimitiveType x) => x.ToString()).ToArray()),
+			new SSDropdownSetting(3, "Color (preset)", _colorPresets.Select((ColorPreset x) => x.Name).ToArray()),
+			new SSSliderSetting(5, "Opacity", 0f, 100f, 100f, integer: true, "0.##", "{0}%"),
+			new SSPlaintextSetting(4, "Custom Color (R G B)", "...", 10, TMP_InputField.ContentType.Standard, "Leave empty to use a preset."),
+			_selectedColorTextArea = new SSTextArea(8, "Selected color: None"),
+			new SSTwoButtonsSetting(6, "Collisions", "Disabled", "Enabled", defaultIsB: true),
+			new SSTwoButtonsSetting(7, "Renderer", "Invisible", "Visible", defaultIsB: true, "Invisible primitives can still receive collisions."),
+			new SSSliderSetting(9, "Scale (X)", 0f, 25f, 1f, integer: false, "0.00", "x{0}"),
+			new SSSliderSetting(10, "Scale (Y)", 0f, 25f, 1f, integer: false, "0.00", "x{0}"),
+			new SSSliderSetting(11, "Scale (Z)", 0f, 25f, 1f, integer: false, "0.00", "x{0}"),
+			new SSButton(0, "Confirm Spawning", "Spawn", null)
+		};
+	}
+
+	private bool ValidateUser(ReferenceHub user)
+	{
+		return PermissionsHandler.IsPermitted(user.serverRoles.Permissions, PlayerPermissions.FacilityManagement);
+	}
+
+	private void ProcessUserInput(ReferenceHub sender, ServerSpecificSettingBase setting)
+	{
+		if (ValidateUser(sender) && (!(setting is SSButton sSButton) || !TryDestroy(sSButton.SettingId)))
+		{
+			switch ((ExampleId)setting.SettingId)
 			{
-				return;
-			}
-			SSButton ssbutton = setting as SSButton;
-			if (ssbutton != null && this.TryDestroy(ssbutton.SettingId))
-			{
-				return;
-			}
-			switch (setting.SettingId)
-			{
-			case 0:
-				this.SpawnPrimitive(sender);
+			case ExampleId.ColorPresetDropdown:
+			case ExampleId.ColorField:
+			case ExampleId.ColorAlphaSlider:
+				_selectedColorTextArea.SendTextUpdate(GetColorInfoForUser(sender));
 				break;
-			case 1:
-				this.DestroyAll();
-				return;
-			case 2:
+			case ExampleId.DestroyAllButton:
+				DestroyAll();
 				break;
-			case 3:
-			case 4:
-			case 5:
-				SSPrimitiveSpawnerExample._selectedColorTextArea.SendTextUpdate(this.GetColorInfoForUser(sender), true, null);
-				return;
-			default:
-				return;
+			case ExampleId.ConfirmButton:
+				SpawnPrimitive(sender);
+				break;
+			case ExampleId.TypeDropdown:
+				break;
 			}
 		}
+	}
 
-		private void SpawnPrimitive(ReferenceHub sender)
+	private void SpawnPrimitive(ReferenceHub sender)
+	{
+		PrimitiveObjectToy primitiveObjectToy = null;
+		foreach (GameObject value in NetworkClient.prefabs.Values)
 		{
-			PrimitiveObjectToy primitiveObjectToy = null;
-			using (Dictionary<uint, GameObject>.ValueCollection.Enumerator enumerator = NetworkClient.prefabs.Values.GetEnumerator())
+			if (value.TryGetComponent<PrimitiveObjectToy>(out var component))
 			{
-				while (enumerator.MoveNext())
-				{
-					PrimitiveObjectToy primitiveObjectToy2;
-					if (enumerator.Current.TryGetComponent<PrimitiveObjectToy>(out primitiveObjectToy2))
-					{
-						primitiveObjectToy = global::UnityEngine.Object.Instantiate<PrimitiveObjectToy>(primitiveObjectToy2);
-						primitiveObjectToy.OnSpawned(sender, new ArraySegment<string>(new string[0]));
-						break;
-					}
-				}
+				primitiveObjectToy = UnityEngine.Object.Instantiate(component);
+				primitiveObjectToy.OnSpawned(sender, new ArraySegment<string>(new string[0]));
+				break;
 			}
-			if (primitiveObjectToy == null)
-			{
-				return;
-			}
-			int syncSelectionIndexValidated = this.GetSettingOfUser<SSDropdownSetting>(sender, SSPrimitiveSpawnerExample.ExampleId.TypeDropdown).SyncSelectionIndexValidated;
+		}
+		if (!(primitiveObjectToy == null))
+		{
+			int syncSelectionIndexValidated = GetSettingOfUser<SSDropdownSetting>(sender, ExampleId.TypeDropdown).SyncSelectionIndexValidated;
 			primitiveObjectToy.NetworkPrimitiveType = (PrimitiveType)syncSelectionIndexValidated;
-			Color colorForUser = this.GetColorForUser(sender);
-			primitiveObjectToy.NetworkMaterialColor = colorForUser;
-			float syncFloatValue = this.GetSettingOfUser<SSSliderSetting>(sender, SSPrimitiveSpawnerExample.ExampleId.ScaleSliderX).SyncFloatValue;
-			float syncFloatValue2 = this.GetSettingOfUser<SSSliderSetting>(sender, SSPrimitiveSpawnerExample.ExampleId.ScaleSliderY).SyncFloatValue;
-			float syncFloatValue3 = this.GetSettingOfUser<SSSliderSetting>(sender, SSPrimitiveSpawnerExample.ExampleId.ScaleSliderZ).SyncFloatValue;
+			Color color = (primitiveObjectToy.NetworkMaterialColor = GetColorForUser(sender));
+			float syncFloatValue = GetSettingOfUser<SSSliderSetting>(sender, ExampleId.ScaleSliderX).SyncFloatValue;
+			float syncFloatValue2 = GetSettingOfUser<SSSliderSetting>(sender, ExampleId.ScaleSliderY).SyncFloatValue;
+			float syncFloatValue3 = GetSettingOfUser<SSSliderSetting>(sender, ExampleId.ScaleSliderZ).SyncFloatValue;
 			Vector3 vector = new Vector3(syncFloatValue, syncFloatValue2, syncFloatValue3);
 			primitiveObjectToy.transform.localScale = vector;
 			primitiveObjectToy.NetworkScale = vector;
-			PrimitiveFlags primitiveFlags = (this.GetSettingOfUser<SSTwoButtonsSetting>(sender, SSPrimitiveSpawnerExample.ExampleId.CollisionsToggle).SyncIsB ? PrimitiveFlags.Collidable : PrimitiveFlags.None);
-			PrimitiveFlags primitiveFlags2 = (this.GetSettingOfUser<SSTwoButtonsSetting>(sender, SSPrimitiveSpawnerExample.ExampleId.RendererToggle).SyncIsB ? PrimitiveFlags.Visible : PrimitiveFlags.None);
+			PrimitiveFlags primitiveFlags = (GetSettingOfUser<SSTwoButtonsSetting>(sender, ExampleId.CollisionsToggle).SyncIsB ? PrimitiveFlags.Collidable : PrimitiveFlags.None);
+			PrimitiveFlags primitiveFlags2 = (GetSettingOfUser<SSTwoButtonsSetting>(sender, ExampleId.RendererToggle).SyncIsB ? PrimitiveFlags.Visible : PrimitiveFlags.None);
 			primitiveObjectToy.NetworkPrimitiveFlags = primitiveFlags | primitiveFlags2;
-			if (!SSPrimitiveSpawnerExample._anySpawned)
+			if (!_anySpawned)
 			{
-				SSPrimitiveSpawnerExample._allSettings.Add(new SSGroupHeader("Destroy Spawned Primitives", false, null));
-				SSPrimitiveSpawnerExample._allSettings.Add(new SSButton(new int?(1), "All Primitives", "Destroy All (HOLD)", new float?(2f), null));
-				SSPrimitiveSpawnerExample._anySpawned = true;
+				_allSettings.Add(new SSGroupHeader("Destroy Spawned Primitives"));
+				_allSettings.Add(new SSButton(1, "All Primitives", "Destroy All (HOLD)", 2f));
+				_anySpawned = true;
 			}
-			string text = string.Format("{0} Color: {1} Size: {2} SpawnPosition: {3}", new object[]
-			{
-				primitiveObjectToy.PrimitiveType,
-				colorForUser,
-				vector,
-				primitiveObjectToy.transform.position
-			});
+			string text = $"{primitiveObjectToy.PrimitiveType} Color: {color} Size: {vector} SpawnPosition: {primitiveObjectToy.transform.position}";
 			string text2 = "Spawned by " + sender.LoggedNameFromRefHub() + " at round time " + RoundStart.RoundLength.ToString("hh\\:mm\\:ss\\.fff", CultureInfo.InvariantCulture);
-			string text3 = text + "\n" + text2;
-			SSPrimitiveSpawnerExample._allSettings.Add(new SSButton(new int?((int)primitiveObjectToy.netId), string.Format("Primitive NetID#{0}", primitiveObjectToy.netId), "Destroy (HOLD)", new float?(0.4f), text3));
-			this.ResendSettings();
+			string hint = text + "\n" + text2;
+			_allSettings.Add(new SSButton((int)primitiveObjectToy.netId, $"Primitive NetID#{primitiveObjectToy.netId}", "Destroy (HOLD)", 0.4f, hint));
+			ResendSettings();
 		}
+	}
 
-		private void ResendSettings()
+	private void ResendSettings()
+	{
+		ServerSpecificSettingsSync.DefinedSettings = _allSettings.ToArray();
+		ServerSpecificSettingsSync.SendToPlayersConditionally(ValidateUser);
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			ServerSpecificSettingsSync.DefinedSettings = SSPrimitiveSpawnerExample._allSettings.ToArray();
-			ServerSpecificSettingsSync.SendToPlayersConditionally(new Func<ReferenceHub, bool>(this.ValidateUser));
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
+			if (ValidateUser(allHub))
 			{
-				if (this.ValidateUser(referenceHub))
-				{
-					SSPrimitiveSpawnerExample._selectedColorTextArea.SendTextUpdate(this.GetColorInfoForUser(referenceHub), true, null);
-				}
+				_selectedColorTextArea.SendTextUpdate(GetColorInfoForUser(allHub));
 			}
 		}
+	}
 
-		private void DestroyAll()
+	private void DestroyAll()
+	{
+		if (_anySpawned)
 		{
-			if (!SSPrimitiveSpawnerExample._anySpawned)
+			int num = _allSettings.Count - 1;
+			ServerSpecificSettingBase element;
+			while (num > 0 && _allSettings.TryGet(num, out element) && element is SSButton)
 			{
-				return;
-			}
-			int num = SSPrimitiveSpawnerExample._allSettings.Count - 1;
-			ServerSpecificSettingBase serverSpecificSettingBase;
-			while (num > 0 && SSPrimitiveSpawnerExample._allSettings.TryGet(num, out serverSpecificSettingBase) && serverSpecificSettingBase is SSButton)
-			{
-				this.TryDestroy(serverSpecificSettingBase.SettingId);
+				TryDestroy(element.SettingId);
 				num--;
 			}
 		}
+	}
 
-		private bool TryDestroy(int buttonId)
+	private bool TryDestroy(int buttonId)
+	{
+		if (!NetworkUtils.SpawnedNetIds.TryGetValue((uint)buttonId, out var value))
 		{
-			NetworkIdentity networkIdentity;
-			if (!NetworkUtils.SpawnedNetIds.TryGetValue((uint)buttonId, out networkIdentity))
+			return false;
+		}
+		if (!value.TryGetComponent<PrimitiveObjectToy>(out var component))
+		{
+			return false;
+		}
+		for (int i = 0; i < _allSettings.Count; i++)
+		{
+			ServerSpecificSettingBase serverSpecificSettingBase = _allSettings[i];
+			if (serverSpecificSettingBase is SSButton && serverSpecificSettingBase.SettingId == buttonId)
 			{
-				return false;
+				_allSettings.RemoveAt(i);
+				break;
 			}
-			PrimitiveObjectToy primitiveObjectToy;
-			if (!networkIdentity.TryGetComponent<PrimitiveObjectToy>(out primitiveObjectToy))
-			{
-				return false;
-			}
-			for (int i = 0; i < SSPrimitiveSpawnerExample._allSettings.Count; i++)
-			{
-				ServerSpecificSettingBase serverSpecificSettingBase = SSPrimitiveSpawnerExample._allSettings[i];
-				if (serverSpecificSettingBase is SSButton && serverSpecificSettingBase.SettingId == buttonId)
-				{
-					SSPrimitiveSpawnerExample._allSettings.RemoveAt(i);
-					break;
-				}
-			}
-			List<ServerSpecificSettingBase> allSettings = SSPrimitiveSpawnerExample._allSettings;
-			int num = allSettings.Count - 1;
-			ServerSpecificSettingBase serverSpecificSettingBase2 = allSettings[num];
-			if (serverSpecificSettingBase2 is SSButton && serverSpecificSettingBase2.SettingId == 1)
-			{
-				SSPrimitiveSpawnerExample._anySpawned = false;
-				this.GenerateNewSettings();
-			}
-			NetworkServer.Destroy(primitiveObjectToy.gameObject);
-			this.ResendSettings();
-			return true;
 		}
-
-		private T GetSettingOfUser<T>(ReferenceHub user, SSPrimitiveSpawnerExample.ExampleId id) where T : ServerSpecificSettingBase
+		List<ServerSpecificSettingBase> allSettings = _allSettings;
+		ServerSpecificSettingBase serverSpecificSettingBase2 = allSettings[allSettings.Count - 1];
+		if (serverSpecificSettingBase2 is SSButton && serverSpecificSettingBase2.SettingId == 1)
 		{
-			return ServerSpecificSettingsSync.GetSettingOfUser<T>(user, (int)id);
+			_anySpawned = false;
+			GenerateNewSettings();
 		}
+		NetworkServer.Destroy(component.gameObject);
+		ResendSettings();
+		return true;
+	}
 
-		private string GetColorInfoForUser(ReferenceHub hub)
-		{
-			Color colorForUser = this.GetColorForUser(hub);
-			return "Selected color: <color=" + colorForUser.ToHex() + ">███████████</color>";
-		}
+	private T GetSettingOfUser<T>(ReferenceHub user, ExampleId id) where T : ServerSpecificSettingBase
+	{
+		return ServerSpecificSettingsSync.GetSettingOfUser<T>(user, (int)id);
+	}
 
-		private Color GetColorForUser(ReferenceHub user)
-		{
-			string[] array = this.GetSettingOfUser<SSPlaintextSetting>(user, SSPrimitiveSpawnerExample.ExampleId.ColorField).SyncInputText.Split(' ', StringSplitOptions.None);
-			int syncSelectionIndexValidated = this.GetSettingOfUser<SSDropdownSetting>(user, SSPrimitiveSpawnerExample.ExampleId.ColorPresetDropdown).SyncSelectionIndexValidated;
-			Color color = SSPrimitiveSpawnerExample._colorPresets[syncSelectionIndexValidated].Color;
-			string text;
-			float num2;
-			float num = ((array.TryGet(0, out text) && float.TryParse(text, out num2)) ? (num2 / 255f) : color.r);
-			string text2;
-			float num4;
-			float num3 = ((array.TryGet(1, out text2) && float.TryParse(text2, out num4)) ? (num4 / 255f) : color.g);
-			string text3;
-			float num6;
-			float num5 = ((array.TryGet(2, out text3) && float.TryParse(text3, out num6)) ? (num6 / 255f) : color.b);
-			float num7 = this.GetSettingOfUser<SSSliderSetting>(user, SSPrimitiveSpawnerExample.ExampleId.ColorAlphaSlider).SyncFloatValue / 100f;
-			return new Color(num, num3, num5, num7);
-		}
+	private string GetColorInfoForUser(ReferenceHub hub)
+	{
+		Color colorForUser = GetColorForUser(hub);
+		return "Selected color: <color=" + colorForUser.ToHex() + ">███████████</color>";
+	}
 
-		private static PrimitiveType[] _primitiveTypes;
-
-		private static SSPrimitiveSpawnerExample.ColorPreset[] _colorPresets;
-
-		private static List<ServerSpecificSettingBase> _allSettings;
-
-		private static bool _anySpawned;
-
-		private static SSTextArea _selectedColorTextArea;
-
-		private const PlayerPermissions RequiredPermission = PlayerPermissions.FacilityManagement;
-
-		private enum ExampleId
-		{
-			ConfirmButton,
-			DestroyAllButton,
-			TypeDropdown,
-			ColorPresetDropdown,
-			ColorField,
-			ColorAlphaSlider,
-			CollisionsToggle,
-			RendererToggle,
-			ColorInfo,
-			ScaleSliderX,
-			ScaleSliderY,
-			ScaleSliderZ
-		}
-
-		private readonly struct ColorPreset
-		{
-			public ColorPreset(string name, Color color)
-			{
-				this.Name = name;
-				this.Color = color;
-			}
-
-			public readonly string Name;
-
-			public readonly Color Color;
-		}
+	private Color GetColorForUser(ReferenceHub user)
+	{
+		string[] array = GetSettingOfUser<SSPlaintextSetting>(user, ExampleId.ColorField).SyncInputText.Split(' ');
+		int syncSelectionIndexValidated = GetSettingOfUser<SSDropdownSetting>(user, ExampleId.ColorPresetDropdown).SyncSelectionIndexValidated;
+		Color color = _colorPresets[syncSelectionIndexValidated].Color;
+		string element;
+		float result;
+		float r = ((array.TryGet(0, out element) && float.TryParse(element, out result)) ? (result / 255f) : color.r);
+		string element2;
+		float result2;
+		float g = ((array.TryGet(1, out element2) && float.TryParse(element2, out result2)) ? (result2 / 255f) : color.g);
+		string element3;
+		float result3;
+		float b = ((array.TryGet(2, out element3) && float.TryParse(element3, out result3)) ? (result3 / 255f) : color.b);
+		float a = GetSettingOfUser<SSSliderSetting>(user, ExampleId.ColorAlphaSlider).SyncFloatValue / 100f;
+		return new Color(r, g, b, a);
 	}
 }

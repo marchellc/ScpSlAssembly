@@ -1,47 +1,42 @@
-﻿using System;
+using System;
 using GameObjectPools;
 using UnityEngine;
 
-namespace PlayerRoles.Visibility
+namespace PlayerRoles.Visibility;
+
+public class VisibilityController : MonoBehaviour, IPoolSpawnable
 {
-	public class VisibilityController : MonoBehaviour, IPoolSpawnable
+	public virtual InvisibilityFlags IgnoredFlags => InvisibilityFlags.None;
+
+	protected ReferenceHub Owner { get; private set; }
+
+	protected PlayerRoleBase Role { get; private set; }
+
+	public virtual InvisibilityFlags GetActiveFlags(ReferenceHub observer)
 	{
-		public virtual InvisibilityFlags IgnoredFlags
+		return InvisibilityFlags.None;
+	}
+
+	public virtual bool ValidateVisibility(ReferenceHub hub)
+	{
+		if (!(hub.roleManager.CurrentRole is ICustomVisibilityRole customVisibilityRole))
 		{
-			get
-			{
-				return InvisibilityFlags.None;
-			}
+			return true;
 		}
+		return (customVisibilityRole.VisibilityController.GetActiveFlags(Owner) & ~IgnoredFlags) == 0;
+	}
 
-		private protected ReferenceHub Owner { protected get; private set; }
-
-		private protected PlayerRoleBase Role { protected get; private set; }
-
-		public virtual InvisibilityFlags GetActiveFlags(ReferenceHub observer)
+	public virtual void SpawnObject()
+	{
+		Role = GetComponentInParent<PlayerRoleBase>();
+		if (Role == null)
 		{
-			return InvisibilityFlags.None;
+			throw new InvalidOperationException("VisibilityController " + base.name + " does not have a parent role set!");
 		}
-
-		public virtual bool ValidateVisibility(ReferenceHub hub)
+		if (!Role.TryGetOwner(out var hub))
 		{
-			ICustomVisibilityRole customVisibilityRole = hub.roleManager.CurrentRole as ICustomVisibilityRole;
-			return customVisibilityRole == null || (customVisibilityRole.VisibilityController.GetActiveFlags(this.Owner) & ~this.IgnoredFlags) == InvisibilityFlags.None;
+			throw new InvalidOperationException("VisibilityController " + base.name + " does not have an owner assigned!");
 		}
-
-		public virtual void SpawnObject()
-		{
-			this.Role = base.GetComponentInParent<PlayerRoleBase>();
-			if (this.Role == null)
-			{
-				throw new InvalidOperationException("VisibilityController " + base.name + " does not have a parent role set!");
-			}
-			ReferenceHub referenceHub;
-			if (!this.Role.TryGetOwner(out referenceHub))
-			{
-				throw new InvalidOperationException("VisibilityController " + base.name + " does not have an owner assigned!");
-			}
-			this.Owner = referenceHub;
-		}
+		Owner = hub;
 	}
 }

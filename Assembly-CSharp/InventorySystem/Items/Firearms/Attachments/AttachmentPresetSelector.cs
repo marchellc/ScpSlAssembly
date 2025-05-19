@@ -1,98 +1,93 @@
-﻿using System;
 using Interactables;
 using Interactables.Verification;
 using TMPro;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Attachments
+namespace InventorySystem.Items.Firearms.Attachments;
+
+public class AttachmentPresetSelector : MonoBehaviour, IClientInteractable, IInteractable
 {
-	public class AttachmentPresetSelector : MonoBehaviour, IClientInteractable, IInteractable
+	[SerializeField]
+	private AttachmentSelectorBase _selectorRef;
+
+	[SerializeField]
+	private GameObject _rootObject;
+
+	[SerializeField]
+	private TextMeshProUGUI[] _saveButtons;
+
+	[SerializeField]
+	private TextMeshProUGUI[] _currentPresetIndicators;
+
+	[SerializeField]
+	private Color _normalColor;
+
+	[SerializeField]
+	private Color _currentColor;
+
+	private const byte SaveOffset = 100;
+
+	private const byte ResetAttachmentsCode = 254;
+
+	private const byte SummaryToggleCode = 253;
+
+	public IVerificationRule VerificationRule => StandardDistanceVerification.Default;
+
+	private void Start()
 	{
-		public IVerificationRule VerificationRule
+		for (int i = 0; i < _currentPresetIndicators.Length; i++)
 		{
-			get
-			{
-				return StandardDistanceVerification.Default;
-			}
+			_currentPresetIndicators[i].text = ((i == 0) ? Translations.Get(AttachmentEditorsTranslation.Custom) : string.Format(Translations.Get(AttachmentEditorsTranslation.PresetId), i));
 		}
-
-		private void Start()
+		string text = "[ " + Translations.Get(AttachmentEditorsTranslation.SaveAttachments) + " ]";
+		TextMeshProUGUI[] saveButtons = _saveButtons;
+		for (int j = 0; j < saveButtons.Length; j++)
 		{
-			for (int i = 0; i < this._currentPresetIndicators.Length; i++)
-			{
-				this._currentPresetIndicators[i].text = ((i == 0) ? Translations.Get<AttachmentEditorsTranslation>(AttachmentEditorsTranslation.Custom) : string.Format(Translations.Get<AttachmentEditorsTranslation>(AttachmentEditorsTranslation.PresetId), i));
-			}
-			string text = "[ " + Translations.Get<AttachmentEditorsTranslation>(AttachmentEditorsTranslation.SaveAttachments) + " ]";
-			TextMeshProUGUI[] saveButtons = this._saveButtons;
-			for (int j = 0; j < saveButtons.Length; j++)
-			{
-				saveButtons[j].text = text;
-			}
+			saveButtons[j].text = text;
 		}
+	}
 
-		public void ProcessButton(int id)
+	public void ProcessButton(int id)
+	{
+		if (id != 253)
 		{
-			if (id == 253)
-			{
-				this._selectorRef.ToggleSummaryScreen();
-				return;
-			}
 			if (id == 254)
 			{
-				this._selectorRef.ResetAttachments();
-				return;
+				_selectorRef.ResetAttachments();
 			}
-			if (id > 100)
+			else if (id > 100)
 			{
-				this._selectorRef.SaveAsPreset(id - 100);
-				return;
+				_selectorRef.SaveAsPreset(id - 100);
 			}
-			this._selectorRef.LoadPreset(id);
+			else
+			{
+				_selectorRef.LoadPreset(id);
+			}
 		}
-
-		private void LateUpdate()
+		else
 		{
-			if (this._selectorRef.SelectedFirearm == null)
-			{
-				this._rootObject.SetActive(false);
-				return;
-			}
-			int preset = AttachmentPreferences.GetPreset(this._selectorRef.SelectedFirearm.ItemTypeId);
-			for (int i = 0; i < Mathf.Min(this._currentPresetIndicators.Length, this._saveButtons.Length); i++)
-			{
-				this._saveButtons[i].gameObject.SetActive(this._selectorRef.CanSaveAsPreference(i));
-				this._currentPresetIndicators[i].color = ((preset == i) ? this._currentColor : this._normalColor);
-			}
-			this._rootObject.SetActive(true);
+			_selectorRef.ToggleSummaryScreen();
 		}
+	}
 
-		public void ClientInteract(InteractableCollider collider)
+	private void LateUpdate()
+	{
+		if (_selectorRef.SelectedFirearm == null)
 		{
-			this.ProcessButton((int)collider.ColliderId);
+			_rootObject.SetActive(value: false);
+			return;
 		}
+		int preset = AttachmentPreferences.GetPreset(_selectorRef.SelectedFirearm.ItemTypeId);
+		for (int i = 0; i < Mathf.Min(_currentPresetIndicators.Length, _saveButtons.Length); i++)
+		{
+			_saveButtons[i].gameObject.SetActive(_selectorRef.CanSaveAsPreference(i));
+			_currentPresetIndicators[i].color = ((preset == i) ? _currentColor : _normalColor);
+		}
+		_rootObject.SetActive(value: true);
+	}
 
-		[SerializeField]
-		private AttachmentSelectorBase _selectorRef;
-
-		[SerializeField]
-		private GameObject _rootObject;
-
-		[SerializeField]
-		private TextMeshProUGUI[] _saveButtons;
-
-		[SerializeField]
-		private TextMeshProUGUI[] _currentPresetIndicators;
-
-		[SerializeField]
-		private Color _normalColor;
-
-		[SerializeField]
-		private Color _currentColor;
-
-		private const byte SaveOffset = 100;
-
-		private const byte ResetAttachmentsCode = 254;
-
-		private const byte SummaryToggleCode = 253;
+	public void ClientInteract(InteractableCollider collider)
+	{
+		ProcessButton(collider.ColliderId);
 	}
 }

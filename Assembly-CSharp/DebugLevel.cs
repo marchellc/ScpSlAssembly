@@ -1,5 +1,3 @@
-﻿using System;
-
 public enum DebugLevel : byte
 {
 	Muted,

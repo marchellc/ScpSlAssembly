@@ -1,31 +1,8 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 public class LiquidWobble : MonoBehaviour
 {
-	private void Start()
-	{
-		this._renderer = base.GetComponent<Renderer>();
-	}
-
-	private void Update()
-	{
-		this._time += Time.deltaTime;
-		this._wobbleAmountToAddX = Mathf.Lerp(this._wobbleAmountToAddX, 0f, Time.deltaTime * this._recovery);
-		this._wobbleAmountToAddZ = Mathf.Lerp(this._wobbleAmountToAddZ, 0f, Time.deltaTime * this._recovery);
-		this._pulse = 6.2831855f * this._wobbleSpeed;
-		this._wobbleAmountX = this._wobbleAmountToAddX * Mathf.Sin(this._pulse * this._time);
-		this._wobbleAmountZ = this._wobbleAmountToAddZ * Mathf.Sin(this._pulse * this._time);
-		this._renderer.material.SetFloat("_WobbleZ", this._wobbleAmountX);
-		this._renderer.material.SetFloat("_WobbleX", this._wobbleAmountZ);
-		this._velocity = (this._lastPosition - base.transform.position) / Time.deltaTime;
-		this._angularVelocity = base.transform.rotation.eulerAngles - this._lastRotation;
-		this._wobbleAmountToAddX += Mathf.Clamp((this._velocity.x + this._angularVelocity.z * 0.2f) * this._maxWobble, -this._maxWobble, this._maxWobble);
-		this._wobbleAmountToAddZ += Mathf.Clamp((this._velocity.z + this._angularVelocity.x * 0.2f) * this._maxWobble, -this._maxWobble, this._maxWobble);
-		this._lastPosition = base.transform.position;
-		this._lastRotation = base.transform.rotation.eulerAngles;
-	}
-
 	[SerializeField]
 	private float _maxWobble = 0.03f;
 
@@ -56,4 +33,27 @@ public class LiquidWobble : MonoBehaviour
 	private float _pulse;
 
 	private float _time = 0.5f;
+
+	private void Start()
+	{
+		_renderer = GetComponent<Renderer>();
+	}
+
+	private void Update()
+	{
+		_time += Time.deltaTime;
+		_wobbleAmountToAddX = Mathf.Lerp(_wobbleAmountToAddX, 0f, Time.deltaTime * _recovery);
+		_wobbleAmountToAddZ = Mathf.Lerp(_wobbleAmountToAddZ, 0f, Time.deltaTime * _recovery);
+		_pulse = MathF.PI * 2f * _wobbleSpeed;
+		_wobbleAmountX = _wobbleAmountToAddX * Mathf.Sin(_pulse * _time);
+		_wobbleAmountZ = _wobbleAmountToAddZ * Mathf.Sin(_pulse * _time);
+		_renderer.material.SetFloat("_WobbleZ", _wobbleAmountX);
+		_renderer.material.SetFloat("_WobbleX", _wobbleAmountZ);
+		_velocity = (_lastPosition - base.transform.position) / Time.deltaTime;
+		_angularVelocity = base.transform.rotation.eulerAngles - _lastRotation;
+		_wobbleAmountToAddX += Mathf.Clamp((_velocity.x + _angularVelocity.z * 0.2f) * _maxWobble, 0f - _maxWobble, _maxWobble);
+		_wobbleAmountToAddZ += Mathf.Clamp((_velocity.z + _angularVelocity.x * 0.2f) * _maxWobble, 0f - _maxWobble, _maxWobble);
+		_lastPosition = base.transform.position;
+		_lastRotation = base.transform.rotation.eulerAngles;
+	}
 }

@@ -1,43 +1,34 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MapGeneration.RoomConnectors.Spawners
+namespace MapGeneration.RoomConnectors.Spawners;
+
+public class SimpleRoomConnectorSpawnpoint : RoomConnectorSpawnpointBase
 {
-	public class SimpleRoomConnectorSpawnpoint : RoomConnectorSpawnpointBase
+	public List<SpawnableRoomConnectorType> RoomConnectorTypes;
+
+	[SerializeField]
+	private SpawnableRoomConnectorType _fallbackType;
+
+	public override SpawnableRoomConnectorType FallbackType => _fallbackType;
+
+	public override float GetSpawnChanceWeight(SpawnableRoomConnectorType type)
 	{
-		public override SpawnableRoomConnectorType FallbackType
+		return RoomConnectorTypes.Contains(type) ? 1 : 0;
+	}
+
+	protected override void MergeWith(RoomConnectorSpawnpointBase retired)
+	{
+		for (int num = RoomConnectorTypes.Count - 1; num >= 0; num--)
 		{
-			get
+			if (!(retired.GetSpawnChanceWeight(RoomConnectorTypes[num]) > 0f))
 			{
-				return this._fallbackType;
+				RoomConnectorTypes.RemoveAt(num);
 			}
 		}
-
-		public override float GetSpawnChanceWeight(SpawnableRoomConnectorType type)
+		if (RoomConnectorTypes.Count == 0)
 		{
-			return (float)(this.RoomConnectorTypes.Contains(type) ? 1 : 0);
+			RoomConnectorTypes.Add(_fallbackType);
 		}
-
-		protected override void MergeWith(RoomConnectorSpawnpointBase retired)
-		{
-			for (int i = this.RoomConnectorTypes.Count - 1; i >= 0; i--)
-			{
-				if (retired.GetSpawnChanceWeight(this.RoomConnectorTypes[i]) <= 0f)
-				{
-					this.RoomConnectorTypes.RemoveAt(i);
-				}
-			}
-			if (this.RoomConnectorTypes.Count != 0)
-			{
-				return;
-			}
-			this.RoomConnectorTypes.Add(this._fallbackType);
-		}
-
-		public List<SpawnableRoomConnectorType> RoomConnectorTypes;
-
-		[SerializeField]
-		private SpawnableRoomConnectorType _fallbackType;
 	}
 }

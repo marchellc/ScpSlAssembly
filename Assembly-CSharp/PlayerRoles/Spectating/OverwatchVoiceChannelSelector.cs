@@ -1,90 +1,74 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mirror;
 using UnityEngine;
 using VoiceChat;
 
-namespace PlayerRoles.Spectating
+namespace PlayerRoles.Spectating;
+
+public class OverwatchVoiceChannelSelector : MonoBehaviour
 {
-	public class OverwatchVoiceChannelSelector : MonoBehaviour
+	private struct ChannelMuteFlagsMessage : NetworkMessage
 	{
-		private static uint SerializeChannels()
+		public bool SpatialAudio;
+
+		public uint EnabledChannels;
+	}
+
+	public static readonly CachedValue<VoiceChatChannel[]> AllChannels = new CachedValue<VoiceChatChannel[]>(() => Enum.GetValues(typeof(VoiceChatChannel)) as VoiceChatChannel[]);
+
+	private static readonly HashSet<VoiceChatChannel> ActiveMutes = new HashSet<VoiceChatChannel>();
+
+	private static uint SerializeChannels()
+	{
+		uint num = 0u;
+		foreach (VoiceChatChannel activeMute in ActiveMutes)
 		{
-			uint num = 0U;
-			foreach (VoiceChatChannel voiceChatChannel in OverwatchVoiceChannelSelector.ActiveMutes)
+			uint num2 = 1u;
+			for (int i = 0; i < (int)activeMute; i++)
 			{
-				uint num2 = 1U;
-				for (int i = 0; i < (int)voiceChatChannel; i++)
-				{
-					num2 *= 2U;
-				}
-				num += num2;
+				num2 *= 2;
 			}
-			return num;
+			num += num2;
 		}
+		return num;
+	}
 
-		private static void DeserializeChannels(uint channels)
+	private static void DeserializeChannels(uint channels)
+	{
+		ActiveMutes.Clear();
+		VoiceChatChannel[] value = AllChannels.Value;
+		foreach (VoiceChatChannel voiceChatChannel in value)
 		{
-			OverwatchVoiceChannelSelector.ActiveMutes.Clear();
-			foreach (VoiceChatChannel voiceChatChannel in OverwatchVoiceChannelSelector.AllChannels.Value)
+			uint num = 1u;
+			for (int j = 0; j < (int)voiceChatChannel; j++)
 			{
-				uint num = 1U;
-				for (int j = 0; j < (int)voiceChatChannel; j++)
-				{
-					num *= 2U;
-				}
-				if ((channels & num) != 0U)
-				{
-					OverwatchVoiceChannelSelector.ActiveMutes.Add(voiceChatChannel);
-				}
+				num *= 2;
+			}
+			if ((channels & num) != 0)
+			{
+				ActiveMutes.Add(voiceChatChannel);
 			}
 		}
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
 		{
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				NetworkServer.ReplaceHandler<OverwatchVoiceChannelSelector.ChannelMuteFlagsMessage>(new Action<NetworkConnectionToClient, OverwatchVoiceChannelSelector.ChannelMuteFlagsMessage>(OverwatchVoiceChannelSelector.ProcessMessage), true);
-			};
-		}
+			NetworkServer.ReplaceHandler<ChannelMuteFlagsMessage>(ProcessMessage);
+		};
+	}
 
-		private static void ProcessMessage(NetworkConnection conn, OverwatchVoiceChannelSelector.ChannelMuteFlagsMessage msg)
+	private static void ProcessMessage(NetworkConnection conn, ChannelMuteFlagsMessage msg)
+	{
+		if (!(conn.identity == null) && ReferenceHub.TryGetHubNetID(conn.identity.netId, out var hub) && hub.roleManager.CurrentRole is OverwatchRole { VoiceModule: OverwatchVoiceModule voiceModule })
 		{
-			if (conn.identity == null)
-			{
-				return;
-			}
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(conn.identity.netId, out referenceHub))
-			{
-				return;
-			}
-			OverwatchRole overwatchRole = referenceHub.roleManager.CurrentRole as OverwatchRole;
-			if (overwatchRole == null)
-			{
-				return;
-			}
-			OverwatchVoiceModule overwatchVoiceModule = overwatchRole.VoiceModule as OverwatchVoiceModule;
-			if (overwatchVoiceModule == null)
-			{
-				return;
-			}
-			OverwatchVoiceChannelSelector.DeserializeChannels(msg.EnabledChannels);
-			overwatchVoiceModule.DisabledChannels = OverwatchVoiceChannelSelector.ActiveMutes.ToArray<VoiceChatChannel>();
-			overwatchVoiceModule.UseSpatialAudio = msg.SpatialAudio;
-		}
-
-		public static readonly CachedValue<VoiceChatChannel[]> AllChannels = new CachedValue<VoiceChatChannel[]>(() => Enum.GetValues(typeof(VoiceChatChannel)) as VoiceChatChannel[]);
-
-		private static readonly HashSet<VoiceChatChannel> ActiveMutes = new HashSet<VoiceChatChannel>();
-
-		private struct ChannelMuteFlagsMessage : NetworkMessage
-		{
-			public bool SpatialAudio;
-
-			public uint EnabledChannels;
+			DeserializeChannels(msg.EnabledChannels);
+			voiceModule.DisabledChannels = ActiveMutes.ToArray();
+			voiceModule.UseSpatialAudio = msg.SpatialAudio;
 		}
 	}
 }

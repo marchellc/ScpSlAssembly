@@ -1,121 +1,96 @@
-﻿using System;
+using System;
 using InventorySystem.Items.Firearms.Modules.Misc;
 using Mirror;
 using PlayerRoles.Subroutines;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class DisruptorModeSelector : ModuleBase, IRecoilScalingModule
 {
-	public class DisruptorModeSelector : ModuleBase, IRecoilScalingModule
+	private const float SwitchCooldown = 0.4f;
+
+	private readonly TolerantAbilityCooldown _switchCooldown = new TolerantAbilityCooldown();
+
+	private AudioModule _audioModule;
+
+	[SerializeField]
+	private AudioClip _singleClip;
+
+	[SerializeField]
+	private AudioClip _rapidClip;
+
+	[SerializeField]
+	private float _singleRecoilScale;
+
+	public bool SingleShotSelected { get; private set; }
+
+	public float RecoilMultiplier
 	{
-		public event Action OnAnimationRequested;
-
-		public bool SingleShotSelected { get; private set; }
-
-		public float RecoilMultiplier
+		get
 		{
-			get
+			if (!SingleShotSelected)
 			{
-				if (!this.SingleShotSelected)
-				{
-					return 1f;
-				}
-				return this._singleRecoilScale;
+				return 1f;
 			}
+			return _singleRecoilScale;
 		}
+	}
 
-		[ExposedFirearmEvent]
-		public void RequestAnimation()
+	public event Action OnAnimationRequested;
+
+	[ExposedFirearmEvent]
+	public void RequestAnimation()
+	{
+		this.OnAnimationRequested?.Invoke();
+		if (SingleShotSelected)
 		{
-			Action onAnimationRequested = this.OnAnimationRequested;
-			if (onAnimationRequested != null)
-			{
-				onAnimationRequested();
-			}
-			if (this.SingleShotSelected)
-			{
-				this._audioModule.PlayClientside(this._singleClip);
-				return;
-			}
-			this._audioModule.PlayClientside(this._rapidClip);
+			_audioModule.PlayClientside(_singleClip);
 		}
-
-		protected override void OnInit()
+		else
 		{
-			base.OnInit();
-			base.Firearm.TryGetModule(out this._audioModule, true);
+			_audioModule.PlayClientside(_rapidClip);
 		}
+	}
 
-		internal override void EquipUpdate()
+	protected override void OnInit()
+	{
+		base.OnInit();
+		base.Firearm.TryGetModule<AudioModule>(out _audioModule);
+	}
+
+	internal override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		if (base.IsControllable && GetActionDown(ActionName.WeaponAlt) && !base.ItemUsageBlocked && _switchCooldown.IsReady && !base.Firearm.AnyModuleBusy())
 		{
-			base.EquipUpdate();
-			if (!base.IsLocalPlayer)
+			SingleShotSelected = !SingleShotSelected;
+			_switchCooldown.Trigger(0.4000000059604645);
+			RequestAnimation();
+			SendCmd(delegate(NetworkWriter x)
 			{
-				return;
-			}
-			if (!base.GetActionDown(ActionName.WeaponAlt))
-			{
-				return;
-			}
-			if (base.ItemUsageBlocked)
-			{
-				return;
-			}
-			if (!this._switchCooldown.IsReady)
-			{
-				return;
-			}
-			if (base.Firearm.AnyModuleBusy(null))
-			{
-				return;
-			}
-			this.SingleShotSelected = !this.SingleShotSelected;
-			this._switchCooldown.Trigger(0.4000000059604645);
-			this.RequestAnimation();
-			this.SendCmd(delegate(NetworkWriter x)
-			{
-				x.WriteBool(this.SingleShotSelected);
+				x.WriteBool(SingleShotSelected);
 			});
 		}
+	}
 
-		public override void ServerProcessCmd(NetworkReader reader)
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		SendRpc(delegate(NetworkWriter x)
 		{
-			base.ServerProcessCmd(reader);
-			this.SendRpc(delegate(NetworkWriter x)
-			{
-				x.WriteBool(reader.ReadBool());
-			}, true);
-		}
+			x.WriteBool(reader.ReadBool());
+		});
+	}
 
-		public override void ClientProcessRpcInstance(NetworkReader reader)
+	public override void ClientProcessRpcInstance(NetworkReader reader)
+	{
+		base.ClientProcessRpcInstance(reader);
+		if (!base.IsLocalPlayer && _switchCooldown.TolerantIsReady)
 		{
-			base.ClientProcessRpcInstance(reader);
-			if (base.IsLocalPlayer)
-			{
-				return;
-			}
-			if (!this._switchCooldown.TolerantIsReady)
-			{
-				return;
-			}
-			this.SingleShotSelected = reader.ReadBool();
-			this._switchCooldown.Trigger(0.4000000059604645);
-			this.RequestAnimation();
+			SingleShotSelected = reader.ReadBool();
+			_switchCooldown.Trigger(0.4000000059604645);
+			RequestAnimation();
 		}
-
-		private const float SwitchCooldown = 0.4f;
-
-		private readonly TolerantAbilityCooldown _switchCooldown = new TolerantAbilityCooldown(0.2f);
-
-		private AudioModule _audioModule;
-
-		[SerializeField]
-		private AudioClip _singleClip;
-
-		[SerializeField]
-		private AudioClip _rapidClip;
-
-		[SerializeField]
-		private float _singleRecoilScale;
 	}
 }

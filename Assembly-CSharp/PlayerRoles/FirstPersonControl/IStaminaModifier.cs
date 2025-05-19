@@ -1,33 +1,12 @@
-﻿using System;
+namespace PlayerRoles.FirstPersonControl;
 
-namespace PlayerRoles.FirstPersonControl
+public interface IStaminaModifier
 {
-	public interface IStaminaModifier
-	{
-		bool StaminaModifierActive { get; }
+	bool StaminaModifierActive { get; }
 
-		float StaminaUsageMultiplier
-		{
-			get
-			{
-				return 1f;
-			}
-		}
+	float StaminaUsageMultiplier => 1f;
 
-		float StaminaRegenMultiplier
-		{
-			get
-			{
-				return 1f;
-			}
-		}
+	float StaminaRegenMultiplier => 1f;
 
-		bool SprintingDisabled
-		{
-			get
-			{
-				return false;
-			}
-		}
-	}
+	bool SprintingDisabled => false;
 }

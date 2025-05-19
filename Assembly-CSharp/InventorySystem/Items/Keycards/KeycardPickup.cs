@@ -1,67 +1,51 @@
-﻿using System;
+using Interactables.Interobjects.DoorButtons;
 using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items.Pickups;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.Keycards
+namespace InventorySystem.Items.Keycards;
+
+public class KeycardPickup : CollisionDetectionPickup
 {
-	public class KeycardPickup : CollisionDetectionPickup
+	[SerializeField]
+	private Transform _gfxSpawnPoint;
+
+	private bool _openDoorsOnCollision;
+
+	protected override void Start()
 	{
-		public Material GetMaterialFromKeycardId(ItemType itemId)
+		base.Start();
+		if (Info.ItemId.TryGetTemplate<KeycardItem>(out var item))
 		{
-			return this._keycardTextures[Mathf.Min(this._keycardTextures.Length - 1, (int)itemId)];
+			Object.Instantiate(item.KeycardGfx, _gfxSpawnPoint);
+			if (NetworkServer.active)
+			{
+				_openDoorsOnCollision = item.OpenDoorsOnThrow;
+				KeycardDetailSynchronizer.ServerProcessPickup(this);
+			}
 		}
+	}
 
-		protected override void Start()
+	protected override void ProcessCollision(Collision collision)
+	{
+		base.ProcessCollision(collision);
+		if (NetworkServer.active && _openDoorsOnCollision && collision.collider.TryGetComponent<KeycardButton>(out var component) && component.Target is DoorVariant { ActiveLocks: 0 } doorVariant && doorVariant.AllowInteracting(null, component.ColliderId) && Info.ItemId.TryGetTemplate<KeycardItem>(out var item))
 		{
-			base.Start();
-			this.UpdateMaterial();
-			base.OnInfoChanged += this.UpdateMaterial;
-		}
-
-		private void UpdateMaterial()
-		{
-			this._targetRenderer.sharedMaterial = this.GetMaterialFromKeycardId(this.Info.ItemId);
-		}
-
-		protected override void ProcessCollision(Collision collision)
-		{
-			base.ProcessCollision(collision);
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			RegularDoorButton regularDoorButton;
-			if (!collision.collider.TryGetComponent<RegularDoorButton>(out regularDoorButton))
-			{
-				return;
-			}
-			DoorVariant doorVariant = regularDoorButton.Target as DoorVariant;
-			if (doorVariant == null || doorVariant.ActiveLocks != 0 || doorVariant.RequiredPermissions.RequiredPermissions == KeycardPermissions.None)
-			{
-				return;
-			}
-			ItemBase itemBase;
-			if (!InventoryItemLoader.AvailableItems.TryGetValue(this.Info.ItemId, out itemBase) || !doorVariant.RequiredPermissions.CheckPermissions(itemBase, null))
-			{
-				return;
-			}
-			if (doorVariant.AllowInteracting(null, regularDoorButton.ColliderId))
+			if (doorVariant.CheckPermissions(item, out var callback))
 			{
 				doorVariant.NetworkTargetState = !doorVariant.TargetState;
+				callback?.Invoke(doorVariant, success: true);
+			}
+			else
+			{
+				callback?.Invoke(doorVariant, success: false);
 			}
 		}
+	}
 
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		[SerializeField]
-		private Material[] _keycardTextures;
-
-		[SerializeField]
-		private MeshRenderer _targetRenderer;
+	public override bool Weaved()
+	{
+		return true;
 	}
 }

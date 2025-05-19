@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using GameObjectPools;
 using PlayerRoles.PlayableScps.HUDs;
@@ -7,92 +6,103 @@ using PlayerRoles.Subroutines;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp106
+namespace PlayerRoles.PlayableScps.Scp106;
+
+public class Scp106Role : FpcStandardScp, ISubroutinedRole, IHudScp, IPoolResettable, IHumeShieldedRole, IDamageHandlerProcessingRole, ITeslaControllerRole, ISpawnableScp
 {
-	public class Scp106Role : FpcStandardScp, ISubroutinedRole, IHudScp, IPoolResettable, IHumeShieldedRole, IDamageHandlerProcessingRole, ITeslaControllerRole, ISpawnableScp
+	public static readonly HashSet<Scp106Role> AllInstances = new HashSet<Scp106Role>();
+
+	private Scp106SinkholeController _sinkholeCtrl;
+
+	private bool _sinkholeSet;
+
+	[field: SerializeField]
+	public HumeShieldModuleBase HumeShieldModule { get; private set; }
+
+	[field: SerializeField]
+	public SubroutineManagerModule SubroutineModule { get; private set; }
+
+	[field: SerializeField]
+	public ScpHudBase HudPrefab { get; private set; }
+
+	[field: SerializeField]
+	public AudioClip ItemSpawnSound { get; private set; }
+
+	public Scp106SinkholeController Sinkhole
 	{
-		public HumeShieldModuleBase HumeShieldModule { get; private set; }
-
-		public SubroutineManagerModule SubroutineModule { get; private set; }
-
-		public ScpHudBase HudPrefab { get; private set; }
-
-		public AudioClip ItemSpawnSound { get; private set; }
-
-		public Scp106SinkholeController Sinkhole
+		get
 		{
-			get
+			if (!_sinkholeSet)
 			{
-				if (!this._sinkholeSet)
-				{
-					this.SubroutineModule.TryGetSubroutine<Scp106SinkholeController>(out this._sinkholeCtrl);
-					this._sinkholeSet = true;
-				}
-				return this._sinkholeCtrl;
+				SubroutineModule.TryGetSubroutine<Scp106SinkholeController>(out _sinkholeCtrl);
+				_sinkholeSet = true;
 			}
+			return _sinkholeCtrl;
 		}
+	}
 
-		public bool CanActivateShock
+	public bool CanActivateShock => !Sinkhole.TargetSubmerged;
+
+	public bool IsStalking
+	{
+		get
 		{
-			get
+			if (SubroutineModule.TryGetSubroutine<Scp106StalkAbility>(out var subroutine))
 			{
-				return !this.Sinkhole.TargetSubmerged;
+				return subroutine.StalkActive;
 			}
+			return false;
 		}
+	}
 
-		public bool IsStalking
-		{
-			get
-			{
-				Scp106StalkAbility scp106StalkAbility;
-				return this.SubroutineModule.TryGetSubroutine<Scp106StalkAbility>(out scp106StalkAbility) && scp106StalkAbility.StalkActive;
-			}
-		}
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		AllInstances.Add(this);
+	}
 
-		public override void SpawnObject()
-		{
-			base.SpawnObject();
-			Scp106Role.AllInstances.Add(this);
-		}
+	public void ResetObject()
+	{
+		AllInstances.Remove(this);
+	}
 
-		public void ResetObject()
+	public DamageHandlerBase ProcessDamageHandler(DamageHandlerBase dhb)
+	{
+		if (!_sinkholeCtrl.IsHidden)
 		{
-			Scp106Role.AllInstances.Remove(this);
-		}
-
-		public DamageHandlerBase ProcessDamageHandler(DamageHandlerBase dhb)
-		{
-			if (!this._sinkholeCtrl.IsHidden)
-			{
-				return dhb;
-			}
-			if (!this.ValidateDamageHandler(dhb))
-			{
-				dhb = new UniversalDamageHandler();
-			}
 			return dhb;
 		}
-
-		public float GetSpawnChance(List<RoleTypeId> alreadySpawned)
+		if (!ValidateDamageHandler(dhb))
 		{
-			return 1f;
+			dhb = new UniversalDamageHandler();
 		}
+		return dhb;
+	}
 
-		public bool IsInIdleRange(TeslaGate teslaGate)
+	public float GetSpawnChance(List<RoleTypeId> alreadySpawned)
+	{
+		return 1f;
+	}
+
+	public bool IsInIdleRange(TeslaGate teslaGate)
+	{
+		if (!IsStalking)
 		{
-			return !this.IsStalking && teslaGate.IsInIdleRange(base.FpcModule.Position);
+			return teslaGate.IsInIdleRange(base.FpcModule.Position);
 		}
+		return false;
+	}
 
-		private bool ValidateDamageHandler(DamageHandlerBase dhb)
+	private bool ValidateDamageHandler(DamageHandlerBase dhb)
+	{
+		if (dhb is UniversalDamageHandler universalDamageHandler && universalDamageHandler.TranslationId == DeathTranslations.Tesla.Id)
 		{
-			UniversalDamageHandler universalDamageHandler = dhb as UniversalDamageHandler;
-			return (universalDamageHandler == null || universalDamageHandler.TranslationId != DeathTranslations.Tesla.Id) && !(dhb is ExplosionDamageHandler) && !(dhb is MicroHidDamageHandler) && !(dhb is FirearmDamageHandler) && (!(dhb is Scp018DamageHandler) || !this.IsStalking);
+			return false;
 		}
-
-		public static readonly HashSet<Scp106Role> AllInstances = new HashSet<Scp106Role>();
-
-		private Scp106SinkholeController _sinkholeCtrl;
-
-		private bool _sinkholeSet;
+		if (dhb is ExplosionDamageHandler || dhb is MicroHidDamageHandler || dhb is FirearmDamageHandler || (dhb is Scp018DamageHandler && IsStalking))
+		{
+			return false;
+		}
+		return true;
 	}
 }

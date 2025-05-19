@@ -1,4 +1,3 @@
-﻿using System;
 using CursorManagement;
 using PlayerRoles.PlayableScps.Scp079.Cameras;
 using PlayerRoles.PlayableScps.Scp079.Map;
@@ -6,74 +5,61 @@ using UnityEngine;
 using UserSettings;
 using UserSettings.ControlsSettings;
 
-namespace PlayerRoles.PlayableScps.Scp079.GUI
+namespace PlayerRoles.PlayableScps.Scp079.GUI;
+
+public class Scp079CursorManager : Scp079GuiElementBase, ICursorOverride
 {
-	public class Scp079CursorManager : Scp079GuiElementBase, ICursorOverride
+	[SerializeField]
+	private GameObject _freeLookCursor;
+
+	private Scp079CurrentCameraSync _curCamSync;
+
+	private Scp079LostSignalHandler _lostSignalHandler;
+
+	private static readonly ToggleOrHoldInput FreeLookMode = new ToggleOrHoldInput(ActionName.Scp079FreeLook, new CachedUserSetting<bool>(MiscControlsSetting.Scp079MouseLookToggle));
+
+	public static CursorOverrideMode CurrentMode { get; private set; }
+
+	public static bool LockCameras { get; private set; }
+
+	public CursorOverrideMode CursorOverride => CurrentMode;
+
+	public bool LockMovement => LockCameras;
+
+	private void Update()
 	{
-		public static CursorOverrideMode CurrentMode { get; private set; }
-
-		public static bool LockCameras { get; private set; }
-
-		public CursorOverrideMode CursorOverride
+		if (_lostSignalHandler.Lost || Scp079IntroCutscene.IsPlaying)
 		{
-			get
-			{
-				return Scp079CursorManager.CurrentMode;
-			}
+			LockCameras = true;
+			CurrentMode = CursorOverrideMode.Free;
+			return;
 		}
-
-		public bool LockMovement
+		CurrentMode = (FreeLookMode.IsActive ? CursorOverrideMode.Centered : CursorOverrideMode.Confined);
+		LockCameras = false;
+		if (_curCamSync.CurClientSwitchState != 0 || Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen)
 		{
-			get
-			{
-				return Scp079CursorManager.LockCameras;
-			}
+			LockCameras = true;
+			CurrentMode = ((!Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>.IsOpen) ? CursorOverrideMode.Centered : CursorOverrideMode.Free);
 		}
-
-		private void Update()
+		if (Cursor.lockState == CursorLockMode.None || !Application.isFocused)
 		{
-			if (this._lostSignalHandler.Lost || Scp079IntroCutscene.IsPlaying)
-			{
-				Scp079CursorManager.LockCameras = true;
-				Scp079CursorManager.CurrentMode = CursorOverrideMode.Free;
-				return;
-			}
-			Scp079CursorManager.CurrentMode = (Scp079CursorManager.FreeLookMode.IsActive ? CursorOverrideMode.Centered : CursorOverrideMode.Confined);
-			Scp079CursorManager.LockCameras = false;
-			if (this._curCamSync.CurClientSwitchState != Scp079CurrentCameraSync.ClientSwitchState.None || Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen)
-			{
-				Scp079CursorManager.LockCameras = true;
-				Scp079CursorManager.CurrentMode = (Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>.IsOpen ? CursorOverrideMode.Free : CursorOverrideMode.Centered);
-			}
-			if (Cursor.lockState == CursorLockMode.None || !Application.isFocused)
-			{
-				Scp079CursorManager.LockCameras = true;
-			}
+			LockCameras = true;
 		}
+	}
 
-		internal override void Init(Scp079Role role, ReferenceHub owner)
+	internal override void Init(Scp079Role role, ReferenceHub owner)
+	{
+		base.Init(role, owner);
+		if (owner.isLocalPlayer)
 		{
-			base.Init(role, owner);
-			if (owner.isLocalPlayer)
-			{
-				CursorManager.Register(this);
-			}
-			role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out this._curCamSync);
-			role.SubroutineModule.TryGetSubroutine<Scp079LostSignalHandler>(out this._lostSignalHandler);
+			CursorManager.Register(this);
 		}
+		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out _curCamSync);
+		role.SubroutineModule.TryGetSubroutine<Scp079LostSignalHandler>(out _lostSignalHandler);
+	}
 
-		private void OnDestroy()
-		{
-			CursorManager.Unregister(this);
-		}
-
-		[SerializeField]
-		private GameObject _freeLookCursor;
-
-		private Scp079CurrentCameraSync _curCamSync;
-
-		private Scp079LostSignalHandler _lostSignalHandler;
-
-		private static readonly ToggleOrHoldInput FreeLookMode = new ToggleOrHoldInput(ActionName.Scp079FreeLook, new CachedUserSetting<bool>(MiscControlsSetting.Scp079MouseLookToggle), ToggleOrHoldInput.InputActivationMode.Toggle);
+	private void OnDestroy()
+	{
+		CursorManager.Unregister(this);
 	}
 }

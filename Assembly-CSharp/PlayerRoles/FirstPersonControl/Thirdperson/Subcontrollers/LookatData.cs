@@ -1,36 +1,34 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
+
+[Serializable]
+public struct LookatData
 {
-	[Serializable]
-	public struct LookatData
+	public Vector3 LookDir;
+
+	public float GlobalWeight;
+
+	public float BodyWeight;
+
+	public float HeadWeight;
+
+	public LookatData LerpTo(LookatData target, float weight)
 	{
-		public LookatData LerpTo(LookatData target, float weight)
+		if (weight <= 0f)
 		{
-			if (weight <= 0f)
-			{
-				return this;
-			}
-			if (weight >= 1f)
-			{
-				return target;
-			}
-			return new LookatData
-			{
-				LookDir = Vector3.Slerp(this.LookDir, target.LookDir, weight),
-				GlobalWeight = Mathf.Lerp(this.GlobalWeight, target.GlobalWeight, weight),
-				BodyWeight = Mathf.Lerp(this.BodyWeight, target.BodyWeight, weight),
-				HeadWeight = Mathf.Lerp(this.HeadWeight, target.HeadWeight, weight)
-			};
+			return this;
 		}
-
-		public Vector3 LookDir;
-
-		public float GlobalWeight;
-
-		public float BodyWeight;
-
-		public float HeadWeight;
+		if (weight >= 1f)
+		{
+			return target;
+		}
+		LookatData result = default(LookatData);
+		result.LookDir = Vector3.Slerp(LookDir, target.LookDir, weight);
+		result.GlobalWeight = Mathf.Lerp(GlobalWeight, target.GlobalWeight, weight);
+		result.BodyWeight = Mathf.Lerp(BodyWeight, target.BodyWeight, weight);
+		result.HeadWeight = Mathf.Lerp(HeadWeight, target.HeadWeight, weight);
+		return result;
 	}
 }

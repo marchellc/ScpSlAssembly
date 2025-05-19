@@ -1,51 +1,39 @@
-﻿using System;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class Scanned : StatusEffectBase, ISoundtrackMutingEffect
 {
-	public class Scanned : StatusEffectBase, ISoundtrackMutingEffect
+	[SerializeField]
+	private AudioSource _soundSource;
+
+	public bool MuteSoundtrack => base.IsEnabled;
+
+	public override bool AllowEnabling => !SpawnProtected.CheckPlayer(base.Hub);
+
+	public override EffectClassification Classification => EffectClassification.Technical;
+
+	protected override void Enabled()
 	{
-		public bool MuteSoundtrack
-		{
-			get
-			{
-				return base.IsEnabled;
-			}
-		}
+		base.Enabled();
+		UpdateSourceMute();
+		_soundSource.Play();
+	}
 
-		public override bool AllowEnabling
-		{
-			get
-			{
-				return !SpawnProtected.CheckPlayer(base.Hub);
-			}
-		}
+	protected override void Disabled()
+	{
+		base.Disabled();
+		_soundSource.mute = true;
+	}
 
-		protected override void Enabled()
-		{
-			base.Enabled();
-			this.UpdateSourceMute();
-			this._soundSource.Play();
-		}
+	protected override void OnEffectUpdate()
+	{
+		base.OnEffectUpdate();
+		UpdateSourceMute();
+	}
 
-		protected override void Disabled()
-		{
-			base.Disabled();
-			this._soundSource.mute = true;
-		}
-
-		protected override void OnEffectUpdate()
-		{
-			base.OnEffectUpdate();
-			this.UpdateSourceMute();
-		}
-
-		private void UpdateSourceMute()
-		{
-			this._soundSource.mute = !base.IsLocalPlayer && !base.IsSpectated;
-		}
-
-		[SerializeField]
-		private AudioSource _soundSource;
+	private void UpdateSourceMute()
+	{
+		_soundSource.mute = !base.IsLocalPlayer && !base.IsSpectated;
 	}
 }

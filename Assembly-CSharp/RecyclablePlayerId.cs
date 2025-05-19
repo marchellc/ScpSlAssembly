@@ -1,46 +1,58 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 public struct RecyclablePlayerId : IEquatable<RecyclablePlayerId>
 {
+	private const int MinQueue = 16;
+
+	private static readonly Queue<int> FreeIds = new Queue<int>();
+
+	private static int _autoIncrement;
+
+	public readonly int Value;
+
 	public RecyclablePlayerId(int newId)
 	{
-		this.Value = newId;
+		Value = newId;
+	}
+
+	public RecyclablePlayerId(ReferenceHub hub)
+	{
+		Value = hub.PlayerId;
 	}
 
 	public RecyclablePlayerId(bool useMinQueue)
 	{
 		int num = (useMinQueue ? 16 : 0);
-		int num2 = ((RecyclablePlayerId.FreeIds.Count < num) ? (++RecyclablePlayerId._autoIncrement) : RecyclablePlayerId.FreeIds.Dequeue());
-		this.Value = num2;
+		int value = ((FreeIds.Count >= num) ? FreeIds.Dequeue() : (++_autoIncrement));
+		Value = value;
 	}
 
 	public void Destroy()
 	{
-		if (this.Value != 0)
+		if (Value != 0)
 		{
-			RecyclablePlayerId.FreeIds.Enqueue(this.Value);
+			FreeIds.Enqueue(Value);
 		}
 	}
 
 	public bool Equals(RecyclablePlayerId other)
 	{
-		return this.Value == other.Value;
+		return Value == other.Value;
 	}
 
 	public override bool Equals(object obj)
 	{
-		if (obj is RecyclablePlayerId)
+		if (obj is RecyclablePlayerId other)
 		{
-			RecyclablePlayerId recyclablePlayerId = (RecyclablePlayerId)obj;
-			return this.Equals(recyclablePlayerId);
+			return Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return this.Value;
+		return Value;
 	}
 
 	public static bool operator ==(RecyclablePlayerId left, RecyclablePlayerId right)
@@ -52,12 +64,4 @@ public struct RecyclablePlayerId : IEquatable<RecyclablePlayerId>
 	{
 		return !left.Equals(right);
 	}
-
-	private const int MinQueue = 16;
-
-	private static readonly Queue<int> FreeIds = new Queue<int>();
-
-	private static int _autoIncrement;
-
-	public readonly int Value;
 }

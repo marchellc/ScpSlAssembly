@@ -1,91 +1,77 @@
-﻿using System;
 using Mirror;
 using PlayerRoles;
 using UnityEngine;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public class StaminaStat : SyncedStatBase
 {
-	public class StaminaStat : SyncedStatBase
+	private const SyncMode DefaultSyncMode = SyncMode.PrivateAndSpectators;
+
+	private SyncMode _syncMode = SyncMode.PrivateAndSpectators;
+
+	private RoleTypeId _overrideRole = RoleTypeId.None;
+
+	private float _maxValue;
+
+	public override SyncMode Mode => _syncMode;
+
+	public override float MinValue => 0f;
+
+	public override float MaxValue
 	{
-		public override SyncedStatBase.SyncMode Mode
+		get
 		{
-			get
-			{
-				return this._syncMode;
-			}
+			return _maxValue;
 		}
-
-		public override float MinValue
+		set
 		{
-			get
-			{
-				return 0f;
-			}
+			_maxValue = value;
+			MaxValueDirty = true;
 		}
+	}
 
-		public override float MaxValue
+	public void ModifyAmount(float f)
+	{
+		CurValue = Mathf.Clamp01(CurValue + f);
+	}
+
+	public void ChangeSyncMode(SyncMode newMode)
+	{
+		_syncMode = newMode;
+		_overrideRole = base.Hub.GetRoleId();
+	}
+
+	private byte ToByte(float val)
+	{
+		return (byte)Mathf.RoundToInt(Mathf.Clamp01(val) * 255f);
+	}
+
+	public override float ReadValue(SyncedStatMessages.StatMessageType type, NetworkReader reader)
+	{
+		return (float)(int)reader.ReadByte() / 255f;
+	}
+
+	public override void WriteValue(SyncedStatMessages.StatMessageType type, NetworkWriter writer)
+	{
+		byte value = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? ToByte(CurValue) : ToByte(MaxValue));
+		writer.WriteByte(value);
+	}
+
+	public override bool CheckDirty(float prevValue, float newValue)
+	{
+		return ToByte(prevValue) != ToByte(newValue);
+	}
+
+	internal override void ClassChanged()
+	{
+		_maxValue = 1f;
+		CurValue = MaxValue;
+		if (_overrideRole != RoleTypeId.None && base.Hub.GetRoleId() != _overrideRole)
 		{
-			get
-			{
-				return this._maxValue;
-			}
-			set
-			{
-				this._maxValue = value;
-				this.MaxValueDirty = true;
-			}
+			_syncMode = SyncMode.PrivateAndSpectators;
+			_overrideRole = RoleTypeId.None;
 		}
-
-		public void ModifyAmount(float f)
-		{
-			this.CurValue = Mathf.Clamp01(this.CurValue + f);
-		}
-
-		public void ChangeSyncMode(SyncedStatBase.SyncMode newMode)
-		{
-			this._syncMode = newMode;
-			this._overrideRole = base.Hub.GetRoleId();
-		}
-
-		private byte ToByte(float val)
-		{
-			return (byte)Mathf.RoundToInt(Mathf.Clamp01(val) * 255f);
-		}
-
-		public override float ReadValue(NetworkReader reader)
-		{
-			return (float)reader.ReadByte() / 255f;
-		}
-
-		public override void WriteValue(SyncedStatMessages.StatMessageType type, NetworkWriter writer)
-		{
-			byte b = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? this.ToByte(this.CurValue) : this.ToByte(this.MaxValue));
-			writer.WriteByte(b);
-		}
-
-		public override bool CheckDirty(float prevValue, float newValue)
-		{
-			return this.ToByte(prevValue) != this.ToByte(newValue);
-		}
-
-		internal override void ClassChanged()
-		{
-			this._maxValue = 1f;
-			this.CurValue = this.MaxValue;
-			if (this._overrideRole != RoleTypeId.None && base.Hub.GetRoleId() != this._overrideRole)
-			{
-				this._syncMode = SyncedStatBase.SyncMode.PrivateAndSpectators;
-				this._overrideRole = RoleTypeId.None;
-			}
-			base.ClassChanged();
-		}
-
-		private const SyncedStatBase.SyncMode DefaultSyncMode = SyncedStatBase.SyncMode.PrivateAndSpectators;
-
-		private SyncedStatBase.SyncMode _syncMode = SyncedStatBase.SyncMode.PrivateAndSpectators;
-
-		private RoleTypeId _overrideRole = RoleTypeId.None;
-
-		private float _maxValue;
+		base.ClassChanged();
 	}
 }

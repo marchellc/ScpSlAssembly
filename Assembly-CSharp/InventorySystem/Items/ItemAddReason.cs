@@ -1,15 +1,12 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public enum ItemAddReason
 {
-	public enum ItemAddReason
-	{
-		Undefined,
-		PickedUp,
-		AdminCommand,
-		StartingItem,
-		Scp914Upgrade,
-		StatusEffect,
-		Scp2536
-	}
+	Undefined,
+	PickedUp,
+	AdminCommand,
+	StartingItem,
+	Scp914Upgrade,
+	StatusEffect,
+	Scp2536
 }

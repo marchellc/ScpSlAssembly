@@ -1,20 +1,19 @@
-﻿using System;
 using UnityEngine;
 
 public class PlaySoundOnEnable : MonoBehaviour
 {
+	private AudioSource audio;
+
 	private void Awake()
 	{
-		this.audio = base.GetComponent<AudioSource>();
+		audio = GetComponent<AudioSource>();
 	}
 
 	private void OnEnable()
 	{
-		if (this.audio != null && !this.audio.isPlaying)
+		if (audio != null && !audio.isPlaying)
 		{
-			this.audio.Play();
+			audio.Play();
 		}
 	}
-
-	private AudioSource audio;
 }

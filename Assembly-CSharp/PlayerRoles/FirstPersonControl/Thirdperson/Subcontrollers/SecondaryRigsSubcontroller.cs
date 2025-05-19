@@ -1,50 +1,50 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
+
+public class SecondaryRigsSubcontroller : SubcontrollerBehaviour
 {
-	public class SecondaryRigsSubcontroller : SubcontrollerBehaviour
+	[Serializable]
+	public struct SecondaryBone
 	{
-		private void LateUpdate()
+		public Transform Original;
+
+		public Transform Target;
+
+		public readonly void Match()
 		{
-			if (base.HasCuller)
-			{
-				return;
-			}
-			this.MatchAll();
+			Original.GetPositionAndRotation(out var position, out var rotation);
+			Target.SetPositionAndRotation(position, rotation);
 		}
+	}
 
-		private void MatchAll()
+	[SerializeField]
+	private SecondaryBone[] _secondaryBones;
+
+	private void LateUpdate()
+	{
+		if (!base.HasCuller)
 		{
-			foreach (SecondaryRigsSubcontroller.SecondaryBone secondaryBone in this._secondaryBones)
-			{
-				secondaryBone.Match();
-			}
+			MatchAll();
 		}
+	}
 
-		public override void Init(AnimatedCharacterModel model, int index)
+	public void MatchAll()
+	{
+		SecondaryBone[] secondaryBones = _secondaryBones;
+		foreach (SecondaryBone secondaryBone in secondaryBones)
 		{
-			base.Init(model, index);
-			if (base.HasCuller)
-			{
-				base.Culler.OnAnimatorUpdated += this.MatchAll;
-			}
+			secondaryBone.Match();
 		}
+	}
 
-		[SerializeField]
-		private SecondaryRigsSubcontroller.SecondaryBone[] _secondaryBones;
-
-		[Serializable]
-		public struct SecondaryBone
+	public override void Init(AnimatedCharacterModel model, int index)
+	{
+		base.Init(model, index);
+		if (base.HasCuller)
 		{
-			public readonly void Match()
-			{
-				this.Target.SetPositionAndRotation(this.Original.position, this.Original.rotation);
-			}
-
-			public Transform Original;
-
-			public Transform Target;
+			base.Culler.OnAnimatorUpdated += MatchAll;
 		}
 	}
 }

@@ -1,9 +1,6 @@
-﻿using System;
+namespace Interactables.Interobjects.DoorUtils;
 
-namespace Interactables.Interobjects.DoorUtils
+public interface IScp106PassableDoor
 {
-	public interface IScp106PassableDoor
-	{
-		bool IsScp106Passable { get; set; }
-	}
+	bool IsScp106Passable { get; set; }
 }

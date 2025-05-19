@@ -1,11 +1,8 @@
-﻿using System;
+namespace UserSettings.VideoSettings;
 
-namespace UserSettings.VideoSettings
+public enum LightingVideoSetting
 {
-	public enum LightingVideoSetting
-	{
-		RenderShadows,
-		ShadowResolution,
-		RenderLights
-	}
+	RenderShadows,
+	ShadowResolution,
+	RenderLights
 }

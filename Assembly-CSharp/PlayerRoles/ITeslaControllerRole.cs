@@ -1,11 +1,8 @@
-﻿using System;
+namespace PlayerRoles;
 
-namespace PlayerRoles
+public interface ITeslaControllerRole
 {
-	public interface ITeslaControllerRole
-	{
-		bool CanActivateShock { get; }
+	bool CanActivateShock { get; }
 
-		bool IsInIdleRange(TeslaGate teslaGate);
-	}
+	bool IsInIdleRange(TeslaGate teslaGate);
 }

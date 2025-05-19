@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+public interface IRecommendableModule
 {
-	public interface IRecommendableModule
-	{
-		bool TryGetProgrammersRecommendation(Firearm targetFirearm, out string message);
-	}
+	bool TryGetProgrammersRecommendation(Firearm targetFirearm, out string message);
 }

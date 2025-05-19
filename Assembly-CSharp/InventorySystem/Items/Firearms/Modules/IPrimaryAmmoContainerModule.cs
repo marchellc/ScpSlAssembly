@@ -1,12 +1,9 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+[UniqueModule]
+public interface IPrimaryAmmoContainerModule : IAmmoContainerModule
 {
-	[UniqueModule]
-	public interface IPrimaryAmmoContainerModule : IAmmoContainerModule
-	{
-		ItemType AmmoType { get; }
+	ItemType AmmoType { get; }
 
-		void ServerModifyAmmo(int amount);
-	}
+	void ServerModifyAmmo(int amount);
 }

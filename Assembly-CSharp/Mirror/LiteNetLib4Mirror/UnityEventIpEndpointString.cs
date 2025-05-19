@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using System.Net;
 using UnityEngine.Events;
 
-namespace Mirror.LiteNetLib4Mirror
+namespace Mirror.LiteNetLib4Mirror;
+
+[Serializable]
+public class UnityEventIpEndpointString : UnityEvent<IPEndPoint, string>
 {
-	[Serializable]
-	public class UnityEventIpEndpointString : UnityEvent<IPEndPoint, string>
-	{
-	}
 }

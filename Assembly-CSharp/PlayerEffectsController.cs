@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CustomPlayerEffects;
 using InventorySystem.Items;
@@ -13,13 +13,26 @@ using Utils.NonAllocLINQ;
 
 public class PlayerEffectsController : NetworkBehaviour
 {
+	public AudioMixer mixer;
+
+	public GameObject effectsGameObject;
+
+	private readonly Dictionary<Type, StatusEffectBase> _effectsByType = new Dictionary<Type, StatusEffectBase>();
+
+	private readonly SyncList<byte> _syncEffectsIntensity = new SyncList<byte>();
+
+	private bool _wasSpectated;
+
+	private ReferenceHub _hub;
+
 	public StatusEffectBase[] AllEffects { get; private set; }
 
 	public int EffectsLength { get; private set; }
 
 	public bool TryGetEffect(string effectName, out StatusEffectBase playerEffect)
 	{
-		foreach (StatusEffectBase statusEffectBase in this.AllEffects)
+		StatusEffectBase[] allEffects = AllEffects;
+		foreach (StatusEffectBase statusEffectBase in allEffects)
 		{
 			if (statusEffectBase.ToString().StartsWith(effectName, StringComparison.InvariantCultureIgnoreCase))
 			{
@@ -33,17 +46,12 @@ public class PlayerEffectsController : NetworkBehaviour
 
 	public bool TryGetEffect<T>(out T playerEffect) where T : StatusEffectBase
 	{
-		StatusEffectBase statusEffectBase;
-		if (this._effectsByType.TryGetValue(typeof(T), out statusEffectBase))
+		if (_effectsByType.TryGetValue(typeof(T), out var value) && value is T val)
 		{
-			T t = statusEffectBase as T;
-			if (t != null)
-			{
-				playerEffect = t;
-				return true;
-			}
+			playerEffect = val;
+			return true;
 		}
-		playerEffect = default(T);
+		playerEffect = null;
 		return false;
 	}
 
@@ -55,22 +63,18 @@ public class PlayerEffectsController : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void PlayerEffectsController::UseMedicalItem(InventorySystem.Items.ItemBase)' called when server was not active");
 			return;
 		}
-		foreach (StatusEffectBase statusEffectBase in this.AllEffects)
+		StatusEffectBase[] allEffects = AllEffects;
+		foreach (StatusEffectBase statusEffectBase in allEffects)
 		{
-			if (statusEffectBase.IsEnabled)
+			if (statusEffectBase.IsEnabled && statusEffectBase is IHealableEffect healableEffect && healableEffect.IsHealable(item.ItemTypeId))
 			{
-				IHealableEffect healableEffect = statusEffectBase as IHealableEffect;
-				if (healableEffect != null && healableEffect.IsHealable(item.ItemTypeId))
+				if (statusEffectBase is ICustomHealableEffect customHealableEffect)
 				{
-					ICustomHealableEffect customHealableEffect = statusEffectBase as ICustomHealableEffect;
-					if (customHealableEffect != null)
-					{
-						customHealableEffect.OnHeal(item.ItemTypeId);
-					}
-					else
-					{
-						statusEffectBase.IsEnabled = false;
-					}
+					customHealableEffect.OnHeal(item.ItemTypeId);
+				}
+				else
+				{
+					statusEffectBase.IsEnabled = false;
 				}
 			}
 		}
@@ -84,12 +88,11 @@ public class PlayerEffectsController : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'CustomPlayerEffects.StatusEffectBase PlayerEffectsController::ChangeState(System.String,System.Byte,System.Single,System.Boolean)' called when server was not active");
 			return null;
 		}
-		StatusEffectBase statusEffectBase;
-		if (this.TryGetEffect(effectName, out statusEffectBase))
+		if (TryGetEffect(effectName, out var playerEffect))
 		{
-			statusEffectBase.ServerSetState(intensity, duration, addDuration);
+			playerEffect.ServerSetState(intensity, duration, addDuration);
 		}
-		return statusEffectBase;
+		return playerEffect;
 	}
 
 	[Server]
@@ -98,14 +101,13 @@ public class PlayerEffectsController : NetworkBehaviour
 		if (!NetworkServer.active)
 		{
 			Debug.LogWarning("[Server] function 'T PlayerEffectsController::ChangeState(System.Byte,System.Single,System.Boolean)' called when server was not active");
-			return default(T);
+			return null;
 		}
-		T t;
-		if (this.TryGetEffect<T>(out t))
+		if (TryGetEffect<T>(out var playerEffect))
 		{
-			t.ServerSetState(intensity, duration, addDuration);
+			playerEffect.ServerSetState(intensity, duration, addDuration);
 		}
-		return t;
+		return playerEffect;
 	}
 
 	[Server]
@@ -114,9 +116,9 @@ public class PlayerEffectsController : NetworkBehaviour
 		if (!NetworkServer.active)
 		{
 			Debug.LogWarning("[Server] function 'T PlayerEffectsController::EnableEffect(System.Single,System.Boolean)' called when server was not active");
-			return default(T);
+			return null;
 		}
-		return this.ChangeState<T>(1, duration, addDuration);
+		return ChangeState<T>(1, duration, addDuration);
 	}
 
 	[Server]
@@ -125,14 +127,14 @@ public class PlayerEffectsController : NetworkBehaviour
 		if (!NetworkServer.active)
 		{
 			Debug.LogWarning("[Server] function 'T PlayerEffectsController::DisableEffect()' called when server was not active");
-			return default(T);
+			return null;
 		}
-		return this.ChangeState<T>(0, 0f, false);
+		return ChangeState<T>(0);
 	}
 
 	public void DisableAllEffects()
 	{
-		StatusEffectBase[] allEffects = this.AllEffects;
+		StatusEffectBase[] allEffects = AllEffects;
 		for (int i = 0; i < allEffects.Length; i++)
 		{
 			allEffects[i].ServerDisable();
@@ -141,12 +143,11 @@ public class PlayerEffectsController : NetworkBehaviour
 
 	public T GetEffect<T>() where T : StatusEffectBase
 	{
-		T t;
-		if (!this.TryGetEffect<T>(out t))
+		if (!TryGetEffect<T>(out var playerEffect))
 		{
-			return default(T);
+			return null;
 		}
-		return t;
+		return playerEffect;
 	}
 
 	[Server]
@@ -157,30 +158,30 @@ public class PlayerEffectsController : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void PlayerEffectsController::ServerSyncEffect(CustomPlayerEffects.StatusEffectBase)' called when server was not active");
 			return;
 		}
-		for (int i = 0; i < this.EffectsLength; i++)
+		for (int i = 0; i < EffectsLength; i++)
 		{
-			StatusEffectBase statusEffectBase = this.AllEffects[i];
+			StatusEffectBase statusEffectBase = AllEffects[i];
 			if (statusEffectBase == effect)
 			{
-				this._syncEffectsIntensity[i] = statusEffectBase.Intensity;
-				return;
+				_syncEffectsIntensity[i] = statusEffectBase.Intensity;
+				break;
 			}
 		}
 	}
 
 	public void ServerSendPulse<T>() where T : IPulseEffect
 	{
-		for (int i = 0; i < this.EffectsLength; i++)
+		for (int i = 0; i < EffectsLength; i++)
 		{
-			if (this.AllEffects[i] is T)
+			if (AllEffects[i] is T)
 			{
 				byte index = (byte)Mathf.Min(i, 255);
-				this.TargetRpcReceivePulse(this._hub.connectionToClient, index);
-				SpectatorNetworking.ForeachSpectatorOf(this._hub, delegate(ReferenceHub x)
+				TargetRpcReceivePulse(_hub.connectionToClient, index);
+				SpectatorNetworking.ForeachSpectatorOf(_hub, delegate(ReferenceHub x)
 				{
-					this.TargetRpcReceivePulse(x.connectionToClient, index);
+					TargetRpcReceivePulse(x.connectionToClient, index);
 				});
-				return;
+				break;
 			}
 		}
 	}
@@ -188,35 +189,36 @@ public class PlayerEffectsController : NetworkBehaviour
 	[TargetRpc]
 	private void TargetRpcReceivePulse(NetworkConnection _, byte effectIndex)
 	{
-		NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-		networkWriterPooled.WriteByte(effectIndex);
-		this.SendTargetRPCInternal(_, "System.Void PlayerEffectsController::TargetRpcReceivePulse(Mirror.NetworkConnection,System.Byte)", 483637978, networkWriterPooled, 0);
-		NetworkWriterPool.Return(networkWriterPooled);
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		NetworkWriterExtensions.WriteByte(writer, effectIndex);
+		SendTargetRPCInternal(_, "System.Void PlayerEffectsController::TargetRpcReceivePulse(Mirror.NetworkConnection,System.Byte)", 483637978, writer, 0);
+		NetworkWriterPool.Return(writer);
 	}
 
 	private void Awake()
 	{
-		this._hub = ReferenceHub.GetHub(base.gameObject);
+		_hub = ReferenceHub.GetHub(base.gameObject);
 		List<StatusEffectBase> list = ListPool<StatusEffectBase>.Shared.Rent();
-		foreach (StatusEffectBase statusEffectBase in this.effectsGameObject.GetComponentsInChildren<StatusEffectBase>())
+		StatusEffectBase[] componentsInChildren = effectsGameObject.GetComponentsInChildren<StatusEffectBase>();
+		foreach (StatusEffectBase statusEffectBase in componentsInChildren)
 		{
-			IHolidayEffect holidayEffect = statusEffectBase as IHolidayEffect;
-			if (holidayEffect != null && !holidayEffect.IsAvailable)
+			if (statusEffectBase is IHolidayEffect { IsAvailable: false })
 			{
-				statusEffectBase.gameObject.SetActive(false);
+				statusEffectBase.gameObject.SetActive(value: false);
 			}
 			else
 			{
 				list.Add(statusEffectBase);
 			}
 		}
-		this.AllEffects = list.ToArray();
-		this.EffectsLength = this.AllEffects.Length;
+		AllEffects = list.ToArray();
+		EffectsLength = AllEffects.Length;
 		ListPool<StatusEffectBase>.Shared.Return(list);
-		foreach (StatusEffectBase statusEffectBase2 in this.AllEffects)
+		componentsInChildren = AllEffects;
+		foreach (StatusEffectBase statusEffectBase2 in componentsInChildren)
 		{
-			this._effectsByType.Add(statusEffectBase2.GetType(), statusEffectBase2);
-			this._syncEffectsIntensity.Add(0);
+			_effectsByType.Add(statusEffectBase2.GetType(), statusEffectBase2);
+			_syncEffectsIntensity.Add(0);
 		}
 	}
 
@@ -226,27 +228,28 @@ public class PlayerEffectsController : NetworkBehaviour
 
 	private void Start()
 	{
-		this.effectsGameObject.SetActive(true);
+		effectsGameObject.SetActive(value: true);
 	}
 
 	private void OnEnable()
 	{
-		PlayerRoleManager.OnRoleChanged += this.OnRoleChanged;
+		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
 	}
 
 	private void OnDisable()
 	{
-		PlayerRoleManager.OnRoleChanged -= this.OnRoleChanged;
+		PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
 	}
 
 	private void OnRoleChanged(ReferenceHub targetHub, PlayerRoleBase oldRole, PlayerRoleBase newRole)
 	{
-		if (targetHub != this._hub)
+		if (targetHub != _hub)
 		{
 			return;
 		}
 		bool flag = oldRole.Team != Team.Dead && newRole.Team == Team.Dead;
-		foreach (StatusEffectBase statusEffectBase in this.AllEffects)
+		StatusEffectBase[] allEffects = AllEffects;
+		foreach (StatusEffectBase statusEffectBase in allEffects)
 		{
 			if (flag)
 			{
@@ -264,35 +267,31 @@ public class PlayerEffectsController : NetworkBehaviour
 	{
 		SpectatorTargetTracker.OnTargetChanged += delegate
 		{
-			ReferenceHub referenceHub;
-			StatusEffectBase[] array;
-			if (ReferenceHub.AllHubs.TryGetFirst((ReferenceHub x) => x.playerEffectsController._wasSpectated, out referenceHub))
+			if (ReferenceHub.AllHubs.TryGetFirst((ReferenceHub x) => x.playerEffectsController._wasSpectated, out var first))
 			{
-				array = referenceHub.playerEffectsController.AllEffects;
-				for (int i = 0; i < array.Length; i++)
+				StatusEffectBase[] allEffects = first.playerEffectsController.AllEffects;
+				for (int i = 0; i < allEffects.Length; i++)
 				{
-					array[i].OnStopSpectating();
+					allEffects[i].OnStopSpectating();
 				}
-				referenceHub.playerEffectsController._wasSpectated = false;
+				first.playerEffectsController._wasSpectated = false;
 			}
-			ReferenceHub referenceHub2;
-			if (!SpectatorTargetTracker.TryGetTrackedPlayer(out referenceHub2))
+			if (SpectatorTargetTracker.TryGetTrackedPlayer(out var hub))
 			{
-				return;
+				PlayerEffectsController playerEffectsController = hub.playerEffectsController;
+				StatusEffectBase[] allEffects = playerEffectsController.AllEffects;
+				for (int i = 0; i < allEffects.Length; i++)
+				{
+					allEffects[i].OnBeginSpectating();
+				}
+				playerEffectsController._wasSpectated = true;
 			}
-			PlayerEffectsController playerEffectsController = referenceHub2.playerEffectsController;
-			array = playerEffectsController.AllEffects;
-			for (int i = 0; i < array.Length; i++)
-			{
-				array[i].OnBeginSpectating();
-			}
-			playerEffectsController._wasSpectated = true;
 		};
 	}
 
 	public PlayerEffectsController()
 	{
-		base.InitSyncObject(this._syncEffectsIntensity);
+		InitSyncObject(_syncEffectsIntensity);
 	}
 
 	public override bool Weaved()
@@ -302,9 +301,8 @@ public class PlayerEffectsController : NetworkBehaviour
 
 	protected void UserCode_TargetRpcReceivePulse__NetworkConnection__Byte(NetworkConnection _, byte effectIndex)
 	{
-		int num = Mathf.Min((int)effectIndex, this.EffectsLength - 1);
-		IPulseEffect pulseEffect = this.AllEffects[num] as IPulseEffect;
-		if (pulseEffect != null)
+		int num = Mathf.Min(effectIndex, EffectsLength - 1);
+		if (AllEffects[num] is IPulseEffect pulseEffect)
 		{
 			pulseEffect.ExecutePulse();
 		}
@@ -315,25 +313,15 @@ public class PlayerEffectsController : NetworkBehaviour
 		if (!NetworkClient.active)
 		{
 			Debug.LogError("TargetRPC TargetRpcReceivePulse called on server.");
-			return;
 		}
-		((PlayerEffectsController)obj).UserCode_TargetRpcReceivePulse__NetworkConnection__Byte(null, reader.ReadByte());
+		else
+		{
+			((PlayerEffectsController)obj).UserCode_TargetRpcReceivePulse__NetworkConnection__Byte(null, NetworkReaderExtensions.ReadByte(reader));
+		}
 	}
 
 	static PlayerEffectsController()
 	{
-		RemoteProcedureCalls.RegisterRpc(typeof(PlayerEffectsController), "System.Void PlayerEffectsController::TargetRpcReceivePulse(Mirror.NetworkConnection,System.Byte)", new RemoteCallDelegate(PlayerEffectsController.InvokeUserCode_TargetRpcReceivePulse__NetworkConnection__Byte));
+		RemoteProcedureCalls.RegisterRpc(typeof(PlayerEffectsController), "System.Void PlayerEffectsController::TargetRpcReceivePulse(Mirror.NetworkConnection,System.Byte)", InvokeUserCode_TargetRpcReceivePulse__NetworkConnection__Byte);
 	}
-
-	public AudioMixer mixer;
-
-	public GameObject effectsGameObject;
-
-	private readonly Dictionary<Type, StatusEffectBase> _effectsByType = new Dictionary<Type, StatusEffectBase>();
-
-	private readonly SyncList<byte> _syncEffectsIntensity = new SyncList<byte>();
-
-	private bool _wasSpectated;
-
-	private ReferenceHub _hub;
 }

@@ -1,55 +1,50 @@
-﻿using System;
 using AudioPooling;
 using Mirror;
 using PlayerRoles.Subroutines;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp1507
+namespace PlayerRoles.PlayableScps.Scp1507;
+
+public class Scp1507PeckAudio : StandardSubroutine<Scp1507Role>
 {
-	public class Scp1507PeckAudio : StandardSubroutine<Scp1507Role>
+	[SerializeField]
+	private AudioClip _missClip;
+
+	[SerializeField]
+	private AudioClip _doorHitClip;
+
+	[SerializeField]
+	private float _audioPitchOffsetRandomization;
+
+	private const float SoundRange = 13f;
+
+	private const float BasePitch = 1f;
+
+	private bool _attackedDoor;
+
+	protected override void Awake()
 	{
-		protected override void Awake()
+		base.Awake();
+		GetSubroutine<Scp1507AttackAbility>(out var sr);
+		sr.ServerOnDoorAttacked += delegate
 		{
-			base.Awake();
-			Scp1507AttackAbility scp1507AttackAbility;
-			base.GetSubroutine<Scp1507AttackAbility>(out scp1507AttackAbility);
-			scp1507AttackAbility.ServerOnDoorAttacked += delegate
-			{
-				this._attackedDoor = true;
-				base.ServerSendRpc(true);
-			};
-			scp1507AttackAbility.ServerOnMissed += delegate
-			{
-				this._attackedDoor = false;
-				base.ServerSendRpc(true);
-			};
-		}
-
-		public override void ServerWriteRpc(NetworkWriter writer)
+			_attackedDoor = true;
+			ServerSendRpc(toAll: true);
+		};
+		sr.ServerOnMissed += delegate
 		{
-			writer.WriteBool(this._attackedDoor);
-		}
+			_attackedDoor = false;
+			ServerSendRpc(toAll: true);
+		};
+	}
 
-		public override void ClientProcessRpc(NetworkReader reader)
-		{
-			AudioClip audioClip = (reader.ReadBool() ? this._doorHitClip : this._missClip);
-			float num = 1f + global::UnityEngine.Random.Range(-this._audioPitchOffsetRandomization, this._audioPitchOffsetRandomization);
-			AudioSourcePoolManager.PlayOnTransform(audioClip, base.transform, 13f, 1f, FalloffType.Exponential, MixerChannel.DefaultSfx, num);
-		}
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		writer.WriteBool(_attackedDoor);
+	}
 
-		[SerializeField]
-		private AudioClip _missClip;
-
-		[SerializeField]
-		private AudioClip _doorHitClip;
-
-		[SerializeField]
-		private float _audioPitchOffsetRandomization;
-
-		private const float SoundRange = 13f;
-
-		private const float BasePitch = 1f;
-
-		private bool _attackedDoor;
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		AudioSourcePoolManager.PlayOnTransform(reader.ReadBool() ? _doorHitClip : _missClip, pitchScale: 1f + Random.Range(0f - _audioPitchOffsetRandomization, _audioPitchOffsetRandomization), trackedTransform: base.transform, maxDistance: 13f);
 	}
 }

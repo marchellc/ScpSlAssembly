@@ -1,35 +1,33 @@
-﻿using System;
 using Mirror;
 
-namespace Utils.Networking
+namespace Utils.Networking;
+
+public static class NullableBoolReaderWriter
 {
-	public static class NullableBoolReaderWriter
+	private enum NullableBoolValue : byte
 	{
-		public static void WriteNullableBool(this NetworkWriter writer, bool? val)
-		{
-			NullableBoolReaderWriter.NullableBoolValue nullableBoolValue = NullableBoolReaderWriter.NullableBoolValue.Null;
-			if (val != null)
-			{
-				nullableBoolValue = (val.Value ? NullableBoolReaderWriter.NullableBoolValue.True : NullableBoolReaderWriter.NullableBoolValue.False);
-			}
-			writer.WriteByte((byte)nullableBoolValue);
-		}
+		Null,
+		True,
+		False
+	}
 
-		public static bool? ReadNullableBool(this NetworkReader reader)
+	public static void WriteNullableBool(this NetworkWriter writer, bool? val)
+	{
+		NullableBoolValue value = NullableBoolValue.Null;
+		if (val.HasValue)
 		{
-			NullableBoolReaderWriter.NullableBoolValue nullableBoolValue = (NullableBoolReaderWriter.NullableBoolValue)reader.ReadByte();
-			if (nullableBoolValue != NullableBoolReaderWriter.NullableBoolValue.Null)
-			{
-				return new bool?(nullableBoolValue == NullableBoolReaderWriter.NullableBoolValue.True);
-			}
-			return null;
+			value = (val.Value ? NullableBoolValue.True : NullableBoolValue.False);
 		}
+		writer.WriteByte((byte)value);
+	}
 
-		private enum NullableBoolValue : byte
+	public static bool? ReadNullableBool(this NetworkReader reader)
+	{
+		NullableBoolValue nullableBoolValue = (NullableBoolValue)reader.ReadByte();
+		if (nullableBoolValue != 0)
 		{
-			Null,
-			True,
-			False
+			return nullableBoolValue == NullableBoolValue.True;
 		}
+		return null;
 	}
 }

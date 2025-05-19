@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles.Spectating;
 
-namespace PlayerRoles.Spectating
+public interface ISpectatableRole
 {
-	public interface ISpectatableRole
-	{
-		SpectatableModuleBase SpectatorModule { get; }
-	}
+	SpectatableModuleBase SpectatorModule { get; }
 }

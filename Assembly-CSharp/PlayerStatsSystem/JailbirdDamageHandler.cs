@@ -1,73 +1,63 @@
-﻿using System;
 using Footprinting;
 using PlayerRoles;
 using UnityEngine;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public class JailbirdDamageHandler : AttackerDamageHandler
 {
-	public class JailbirdDamageHandler : AttackerDamageHandler
+	private readonly Vector3 _moveDirection;
+
+	private const float ZombieDamageMultiplier = 4f;
+
+	private const float UpwardsForce = 0.02f;
+
+	private const float HorizontalForce = 0.1f;
+
+	public override float Damage { get; internal set; }
+
+	public override Footprint Attacker { get; protected set; }
+
+	public override bool AllowSelfDamage => false;
+
+	public override string ServerLogsText => "Jailbirded by " + Attacker.Nickname;
+
+	public override string RagdollInspectText => "Blunt force trauma.";
+
+	public override string DeathScreenText => string.Empty;
+
+	public JailbirdDamageHandler()
 	{
-		public override float Damage { get; internal set; }
+		Attacker = default(Footprint);
+		Damage = 0f;
+		_moveDirection = Vector3.zero;
+	}
 
-		public override Footprint Attacker { get; protected set; }
+	public JailbirdDamageHandler(ReferenceHub attacker, float damage, Vector3 moveDirection)
+	{
+		Attacker = new Footprint(attacker);
+		Damage = damage;
+		_moveDirection = moveDirection;
+	}
 
-		public override bool AllowSelfDamage
+	public override HandlerOutput ApplyDamage(ReferenceHub ply)
+	{
+		HealthStat module = ply.playerStats.GetModule<HealthStat>();
+		ProcessDamage(ply);
+		if (Damage <= 0f)
 		{
-			get
-			{
-				return false;
-			}
+			return HandlerOutput.Nothing;
 		}
-
-		public override string ServerLogsText
+		if (ply.GetRoleId() == RoleTypeId.Scp0492)
 		{
-			get
-			{
-				return "Jailbirded by " + this.Attacker.Nickname;
-			}
+			Damage *= 4f;
 		}
-
-		public JailbirdDamageHandler()
+		module.CurValue -= Damage;
+		StartVelocity += (_moveDirection.NormalizeIgnoreY() * 0.1f + Vector3.up * 0.02f) * Damage;
+		if (!(module.CurValue <= 0f))
 		{
-			this.Attacker = default(Footprint);
-			this.Damage = 0f;
-			this._moveDirection = Vector3.zero;
+			return HandlerOutput.Damaged;
 		}
-
-		public JailbirdDamageHandler(ReferenceHub attacker, float damage, Vector3 moveDirection)
-		{
-			this.Attacker = new Footprint(attacker);
-			this.Damage = damage;
-			this._moveDirection = moveDirection;
-		}
-
-		public override DamageHandlerBase.HandlerOutput ApplyDamage(ReferenceHub ply)
-		{
-			HealthStat module = ply.playerStats.GetModule<HealthStat>();
-			this.ProcessDamage(ply);
-			if (this.Damage <= 0f)
-			{
-				return DamageHandlerBase.HandlerOutput.Nothing;
-			}
-			if (ply.GetRoleId() == RoleTypeId.Scp0492)
-			{
-				this.Damage *= 4f;
-			}
-			module.CurValue -= this.Damage;
-			this.StartVelocity += (this._moveDirection.NormalizeIgnoreY() * 0.1f + Vector3.up * 0.02f) * this.Damage;
-			if (module.CurValue > 0f)
-			{
-				return DamageHandlerBase.HandlerOutput.Damaged;
-			}
-			return DamageHandlerBase.HandlerOutput.Death;
-		}
-
-		private readonly Vector3 _moveDirection;
-
-		private const float ZombieDamageMultiplier = 4f;
-
-		private const float UpwardsForce = 0.02f;
-
-		private const float HorizontalForce = 0.1f;
+		return HandlerOutput.Death;
 	}
 }

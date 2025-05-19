@@ -1,15 +1,12 @@
-﻿using System;
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers
+public interface IRotationRetainer
 {
-	public interface IRotationRetainer
-	{
-		float AngleDelta { get; }
+	float AngleDelta { get; }
 
-		float AngleAbsDiff { get; }
+	float AngleAbsDiff { get; }
 
-		float RetentionWeight { get; }
+	float RetentionWeight { get; }
 
-		bool IsTurning { get; }
-	}
+	bool IsTurning { get; }
 }

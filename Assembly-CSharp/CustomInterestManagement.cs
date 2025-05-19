@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using Mirror;
 
@@ -15,11 +14,11 @@ public class CustomInterestManagement : InterestManagement
 		{
 			return;
 		}
-		foreach (NetworkConnectionToClient networkConnectionToClient in NetworkServer.connections.Values)
+		foreach (NetworkConnectionToClient value in NetworkServer.connections.Values)
 		{
-			if (networkConnectionToClient.isReady)
+			if (value.isReady)
 			{
-				newObservers.Add(networkConnectionToClient);
+				newObservers.Add(value);
 			}
 		}
 		if (NetworkServer.localConnection != null && NetworkServer.localConnection.isReady)

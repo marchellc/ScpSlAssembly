@@ -1,16 +1,16 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public interface IAmmoDropPreventer
 {
-	public interface IAmmoDropPreventer
-	{
-		bool ValidateAmmoDrop(ItemType id);
+	bool ValidateAmmoDrop(ItemType id);
 
-		public static bool CanDropAmmo(ReferenceHub hub, ItemType id)
+	static bool CanDropAmmo(ReferenceHub hub, ItemType id)
+	{
+		ItemBase curInstance = hub.inventory.CurInstance;
+		if (curInstance is IAmmoDropPreventer ammoDropPreventer && !(curInstance == null))
 		{
-			ItemBase curInstance = hub.inventory.CurInstance;
-			IAmmoDropPreventer ammoDropPreventer = curInstance as IAmmoDropPreventer;
-			return ammoDropPreventer == null || curInstance == null || ammoDropPreventer.ValidateAmmoDrop(id);
+			return ammoDropPreventer.ValidateAmmoDrop(id);
 		}
+		return true;
 	}
 }

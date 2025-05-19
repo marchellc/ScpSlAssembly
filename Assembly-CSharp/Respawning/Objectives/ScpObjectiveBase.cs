@@ -1,13 +1,11 @@
-﻿using System;
 using PlayerRoles;
 
-namespace Respawning.Objectives
+namespace Respawning.Objectives;
+
+public abstract class ScpObjectiveBase : FactionObjectiveBase
 {
-	public abstract class ScpObjectiveBase : FactionObjectiveBase
+	protected override bool IsValidFaction(Faction faction)
 	{
-		protected override bool IsValidFaction(Faction faction)
-		{
-			return faction == Faction.SCP;
-		}
+		return faction == Faction.SCP;
 	}
 }

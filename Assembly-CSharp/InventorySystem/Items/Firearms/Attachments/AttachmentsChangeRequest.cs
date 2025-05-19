@@ -1,24 +1,22 @@
-﻿using System;
 using Mirror;
 
-namespace InventorySystem.Items.Firearms.Attachments
+namespace InventorySystem.Items.Firearms.Attachments;
+
+public struct AttachmentsChangeRequest : NetworkMessage
 {
-	public struct AttachmentsChangeRequest : NetworkMessage
+	public ushort WeaponSerial;
+
+	public uint AttachmentsCode;
+
+	public AttachmentsChangeRequest(NetworkReader reader)
 	{
-		public AttachmentsChangeRequest(NetworkReader reader)
-		{
-			this.WeaponSerial = reader.ReadUShort();
-			this.AttachmentsCode = reader.ReadUInt();
-		}
+		WeaponSerial = reader.ReadUShort();
+		AttachmentsCode = reader.ReadUInt();
+	}
 
-		public readonly void Serialize(NetworkWriter writer)
-		{
-			writer.WriteUShort(this.WeaponSerial);
-			writer.WriteUInt(this.AttachmentsCode);
-		}
-
-		public ushort WeaponSerial;
-
-		public uint AttachmentsCode;
+	public readonly void Serialize(NetworkWriter writer)
+	{
+		writer.WriteUShort(WeaponSerial);
+		writer.WriteUInt(AttachmentsCode);
 	}
 }

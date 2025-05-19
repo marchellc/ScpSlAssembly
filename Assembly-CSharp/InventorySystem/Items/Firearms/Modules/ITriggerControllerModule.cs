@@ -1,14 +1,11 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+[UniqueModule]
+public interface ITriggerControllerModule
 {
-	[UniqueModule]
-	public interface ITriggerControllerModule
-	{
-		bool TriggerHeld { get; }
+	bool TriggerHeld { get; }
 
-		double LastTriggerPress { get; }
+	double LastTriggerPress { get; }
 
-		double LastTriggerRelease { get; }
-	}
+	double LastTriggerRelease { get; }
 }

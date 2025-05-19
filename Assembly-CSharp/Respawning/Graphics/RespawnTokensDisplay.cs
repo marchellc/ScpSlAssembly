@@ -1,31 +1,22 @@
-﻿using System;
 using Respawning.Waves.Generic;
 using TMPro;
 using UnityEngine;
 
-namespace Respawning.Graphics
+namespace Respawning.Graphics;
+
+public class RespawnTokensDisplay : SerializedWaveInterface
 {
-	public class RespawnTokensDisplay : SerializedWaveInterface
+	[SerializeField]
+	private TextMeshProUGUI _respawnTokens;
+
+	private int _lastTokens = 1;
+
+	private void Update()
 	{
-		private void Update()
+		if (base.Wave is ILimitedWave { RespawnTokens: var respawnTokens } && respawnTokens != _lastTokens)
 		{
-			ILimitedWave limitedWave = base.Wave as ILimitedWave;
-			if (limitedWave == null)
-			{
-				return;
-			}
-			int respawnTokens = limitedWave.RespawnTokens;
-			if (respawnTokens == this._lastTokens)
-			{
-				return;
-			}
-			this._lastTokens = respawnTokens;
-			this._respawnTokens.text = respawnTokens.ToString();
+			_lastTokens = respawnTokens;
+			_respawnTokens.text = respawnTokens.ToString();
 		}
-
-		[SerializeField]
-		private TextMeshProUGUI _respawnTokens;
-
-		private int _lastTokens = 1;
 	}
 }

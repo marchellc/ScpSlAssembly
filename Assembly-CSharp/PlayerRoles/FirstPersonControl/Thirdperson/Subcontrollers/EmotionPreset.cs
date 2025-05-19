@@ -1,42 +1,45 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
+
+[Serializable]
+public struct EmotionPreset
 {
 	[Serializable]
-	public struct EmotionPreset
+	public struct BlendshapeWeightPair
 	{
-		public readonly float GetWeight(EmotionBlendshape blendshape)
+		public EmotionBlendshape Blendshape;
+
+		[Range(0f, 1f)]
+		public float Weight;
+	}
+
+	public EmotionPresetType PresetType;
+
+	public BlendshapeWeightPair[] Pairs;
+
+	public readonly float GetWeight(EmotionBlendshape blendshape)
+	{
+		BlendshapeWeightPair[] pairs = Pairs;
+		for (int i = 0; i < pairs.Length; i++)
 		{
-			foreach (EmotionPreset.BlendshapeWeightPair blendshapeWeightPair in this.Pairs)
+			BlendshapeWeightPair blendshapeWeightPair = pairs[i];
+			if (blendshapeWeightPair.Blendshape == blendshape)
 			{
-				if (blendshapeWeightPair.Blendshape == blendshape)
-				{
-					return blendshapeWeightPair.Weight;
-				}
-			}
-			return 0f;
-		}
-
-		public readonly void SetWeights(Action<EmotionBlendshape, float> setter)
-		{
-			foreach (EmotionPreset.BlendshapeWeightPair blendshapeWeightPair in this.Pairs)
-			{
-				setter(blendshapeWeightPair.Blendshape, blendshapeWeightPair.Weight);
+				return blendshapeWeightPair.Weight;
 			}
 		}
+		return 0f;
+	}
 
-		public EmotionPresetType PresetType;
-
-		public EmotionPreset.BlendshapeWeightPair[] Pairs;
-
-		[Serializable]
-		public struct BlendshapeWeightPair
+	public readonly void SetWeights(Action<EmotionBlendshape, float> setter)
+	{
+		BlendshapeWeightPair[] pairs = Pairs;
+		for (int i = 0; i < pairs.Length; i++)
 		{
-			public EmotionBlendshape Blendshape;
-
-			[Range(0f, 1f)]
-			public float Weight;
+			BlendshapeWeightPair blendshapeWeightPair = pairs[i];
+			setter(blendshapeWeightPair.Blendshape, blendshapeWeightPair.Weight);
 		}
 	}
 }

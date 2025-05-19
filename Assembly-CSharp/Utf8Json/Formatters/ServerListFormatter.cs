@@ -1,58 +1,56 @@
-﻿using System;
+using System;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class ServerListFormatter : IJsonFormatter<ServerList>, IJsonFormatter
 {
-	public sealed class ServerListFormatter : IJsonFormatter<ServerList>, IJsonFormatter
+	private readonly AutomataDictionary ____keyMapping;
+
+	private readonly byte[][] ____stringByteKeys;
+
+	public ServerListFormatter()
 	{
-		public ServerListFormatter()
+		____keyMapping = new AutomataDictionary { 
 		{
-			this.____keyMapping = new AutomataDictionary { 
-			{
-				JsonWriter.GetEncodedPropertyNameWithoutQuotation("servers"),
-				0
-			} };
-			this.____stringByteKeys = new byte[][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("servers") };
-		}
+			JsonWriter.GetEncodedPropertyNameWithoutQuotation("servers"),
+			0
+		} };
+		____stringByteKeys = new byte[1][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("servers") };
+	}
 
-		public void Serialize(ref JsonWriter writer, ServerList value, IJsonFormatterResolver formatterResolver)
-		{
-			writer.WriteRaw(this.____stringByteKeys[0]);
-			formatterResolver.GetFormatterWithVerify<ServerListItem[]>().Serialize(ref writer, value.servers, formatterResolver);
-			writer.WriteEndObject();
-		}
+	public void Serialize(ref JsonWriter writer, ServerList value, IJsonFormatterResolver formatterResolver)
+	{
+		writer.WriteRaw(____stringByteKeys[0]);
+		formatterResolver.GetFormatterWithVerify<ServerListItem[]>().Serialize(ref writer, value.servers, formatterResolver);
+		writer.WriteEndObject();
+	}
 
-		public ServerList Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public ServerList Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
+			throw new InvalidOperationException("typecode is null, struct not supported");
+		}
+		ServerListItem[] servers = null;
+		int count = 0;
+		reader.ReadIsBeginObjectWithVerify();
+		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
+		{
+			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
+			if (!____keyMapping.TryGetValueSafe(key, out var value))
 			{
-				throw new InvalidOperationException("typecode is null, struct not supported");
+				reader.ReadNextBlock();
 			}
-			ServerListItem[] array = null;
-			int num = 0;
-			reader.ReadIsBeginObjectWithVerify();
-			while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref num))
+			else if (value == 0)
 			{
-				ArraySegment<byte> arraySegment = reader.ReadPropertyNameSegmentRaw();
-				int num2;
-				if (!this.____keyMapping.TryGetValueSafe(arraySegment, out num2))
-				{
-					reader.ReadNextBlock();
-				}
-				else if (num2 == 0)
-				{
-					array = formatterResolver.GetFormatterWithVerify<ServerListItem[]>().Deserialize(ref reader, formatterResolver);
-				}
-				else
-				{
-					reader.ReadNextBlock();
-				}
+				servers = formatterResolver.GetFormatterWithVerify<ServerListItem[]>().Deserialize(ref reader, formatterResolver);
 			}
-			return new ServerList(array);
+			else
+			{
+				reader.ReadNextBlock();
+			}
 		}
-
-		private readonly AutomataDictionary ____keyMapping;
-
-		private readonly byte[][] ____stringByteKeys;
+		return new ServerList(servers);
 	}
 }

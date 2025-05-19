@@ -1,12 +1,10 @@
-﻿using System;
 using System.Net;
 
-namespace LiteNetLib
-{
-	public interface INatPunchListener
-	{
-		void OnNatIntroductionRequest(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, string token);
+namespace LiteNetLib;
 
-		void OnNatIntroductionSuccess(IPEndPoint targetEndPoint, NatAddressType type, string token);
-	}
+public interface INatPunchListener
+{
+	void OnNatIntroductionRequest(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, string token);
+
+	void OnNatIntroductionSuccess(IPEndPoint targetEndPoint, NatAddressType type, string token);
 }

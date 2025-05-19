@@ -1,27 +1,22 @@
-﻿using System;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp939.Mimicry
-{
-	public abstract class MimicryMenuBase : MonoBehaviour
-	{
-		protected virtual void Awake()
-		{
-			ReferenceHub referenceHub;
-			if (ReferenceHub.TryGetLocalHub(out referenceHub))
-			{
-				Scp939Role scp939Role = referenceHub.roleManager.CurrentRole as Scp939Role;
-				if (scp939Role != null)
-				{
-					this.Setup(scp939Role);
-					return;
-				}
-			}
-			base.gameObject.SetActive(false);
-		}
+namespace PlayerRoles.PlayableScps.Scp939.Mimicry;
 
-		protected virtual void Setup(Scp939Role role)
+public abstract class MimicryMenuBase : MonoBehaviour
+{
+	protected virtual void Awake()
+	{
+		if (ReferenceHub.TryGetLocalHub(out var hub) && hub.roleManager.CurrentRole is Scp939Role role)
 		{
+			Setup(role);
 		}
+		else
+		{
+			base.gameObject.SetActive(value: false);
+		}
+	}
+
+	protected virtual void Setup(Scp939Role role)
+	{
 	}
 }

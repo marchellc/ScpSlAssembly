@@ -1,28 +1,27 @@
-﻿using System;
+namespace Utf8Json.Formatters;
 
-namespace Utf8Json.Formatters
+public sealed class NullableCharFormatter : IJsonFormatter<char?>, IJsonFormatter
 {
-	public sealed class NullableCharFormatter : IJsonFormatter<char?>, IJsonFormatter
+	public static readonly NullableCharFormatter Default = new NullableCharFormatter();
+
+	public void Serialize(ref JsonWriter writer, char? value, IJsonFormatterResolver formatterResolver)
 	{
-		public void Serialize(ref JsonWriter writer, char? value, IJsonFormatterResolver formatterResolver)
+		if (!value.HasValue)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
+			writer.WriteNull();
+		}
+		else
+		{
 			CharFormatter.Default.Serialize(ref writer, value.Value, formatterResolver);
 		}
+	}
 
-		public char? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public char? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			return new char?(CharFormatter.Default.Deserialize(ref reader, formatterResolver));
+			return null;
 		}
-
-		public static readonly NullableCharFormatter Default = new NullableCharFormatter();
+		return CharFormatter.Default.Deserialize(ref reader, formatterResolver);
 	}
 }

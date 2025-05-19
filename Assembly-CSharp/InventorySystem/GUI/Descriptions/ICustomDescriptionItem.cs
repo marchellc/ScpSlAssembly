@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem.GUI.Descriptions;
 
-namespace InventorySystem.GUI.Descriptions
+public interface ICustomDescriptionItem
 {
-	public interface ICustomDescriptionItem
-	{
-		CustomDescriptionGui CustomGuiPrefab { get; }
+	CustomDescriptionGui CustomGuiPrefab { get; }
 
-		string[] CustomDescriptionContent { get; }
-	}
+	string[] CustomDescriptionContent { get; }
 }

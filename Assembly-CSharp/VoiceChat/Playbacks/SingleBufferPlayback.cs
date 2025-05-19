@@ -1,61 +1,57 @@
-﻿using System;
 using VoiceChat.Networking;
 
-namespace VoiceChat.Playbacks
+namespace VoiceChat.Playbacks;
+
+public class SingleBufferPlayback : VoiceChatPlaybackBase
 {
-	public class SingleBufferPlayback : VoiceChatPlaybackBase
+	private PlaybackBuffer _buffer;
+
+	private bool _bufferSet;
+
+	public PlaybackBuffer Buffer
 	{
-		public PlaybackBuffer Buffer
+		get
 		{
-			get
+			if (!_bufferSet)
 			{
-				if (!this._bufferSet)
-				{
-					this._buffer = new PlaybackBuffer(24000, false);
-					this._bufferSet = true;
-				}
-				return this._buffer;
+				_buffer = new PlaybackBuffer();
+				_bufferSet = true;
 			}
+			return _buffer;
 		}
+	}
 
-		public override int MaxSamples
+	public override int MaxSamples
+	{
+		get
 		{
-			get
+			if (!_bufferSet)
 			{
-				if (!this._bufferSet)
-				{
-					return 0;
-				}
-				return this.Buffer.Length;
+				return 0;
 			}
+			return Buffer.Length;
 		}
+	}
 
-		private void OnDestroy()
+	private void OnDestroy()
+	{
+		if (_bufferSet)
 		{
-			if (!this._bufferSet)
-			{
-				return;
-			}
-			this.Buffer.Dispose();
+			Buffer.Dispose();
 		}
+	}
 
-		protected override void OnDisable()
+	protected override void OnDisable()
+	{
+		base.OnDisable();
+		if (_bufferSet)
 		{
-			base.OnDisable();
-			if (!this._bufferSet)
-			{
-				return;
-			}
-			this.Buffer.Clear();
+			Buffer.Clear();
 		}
+	}
 
-		protected override float ReadSample()
-		{
-			return this.Buffer.Read();
-		}
-
-		private PlaybackBuffer _buffer;
-
-		private bool _bufferSet;
+	protected override float ReadSample()
+	{
+		return Buffer.Read();
 	}
 }

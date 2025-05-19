@@ -1,40 +1,14 @@
-﻿using System;
 using UnityEngine;
 
-namespace PlayerRoles
+namespace PlayerRoles;
+
+public class DestroyedRole : PlayerRoleBase, IHiddenRole
 {
-	public class DestroyedRole : PlayerRoleBase, IHiddenRole
-	{
-		public override RoleTypeId RoleTypeId
-		{
-			get
-			{
-				return RoleTypeId.Destroyed;
-			}
-		}
+	public override RoleTypeId RoleTypeId => RoleTypeId.Destroyed;
 
-		public override Color RoleColor
-		{
-			get
-			{
-				return Color.white;
-			}
-		}
+	public override Color RoleColor => Color.white;
 
-		public override Team Team
-		{
-			get
-			{
-				return Team.Dead;
-			}
-		}
+	public override Team Team => Team.Dead;
 
-		public bool IsHidden
-		{
-			get
-			{
-				return true;
-			}
-		}
-	}
+	public bool IsHidden => true;
 }

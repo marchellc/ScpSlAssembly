@@ -1,59 +1,36 @@
-﻿using System;
 using System.Text;
 using NorthwoodLib.Pools;
 using UnityEngine;
 
-namespace Respawning.Announcements
+namespace Respawning.Announcements;
+
+public abstract class WaveAnnouncementBase
 {
-	public abstract class WaveAnnouncementBase
+	private const float PostDetonationGlitchMultiplier = 2.5f;
+
+	private const int DefaultGlitchMultiplier = 1;
+
+	protected virtual float MinGlitch => 0.08f;
+
+	protected virtual float MaxGlitch => 0.1f;
+
+	protected virtual float MinJam => 0.07f;
+
+	protected virtual float MaxJam => 0.09f;
+
+	public abstract void CreateAnnouncementString(StringBuilder builder);
+
+	public abstract void SendSubtitles();
+
+	public virtual void PlayAnnouncement()
 	{
-		protected virtual float MinGlitch
-		{
-			get
-			{
-				return 0.08f;
-			}
-		}
-
-		protected virtual float MaxGlitch
-		{
-			get
-			{
-				return 0.1f;
-			}
-		}
-
-		protected virtual float MinJam
-		{
-			get
-			{
-				return 0.07f;
-			}
-		}
-
-		protected virtual float MaxJam
-		{
-			get
-			{
-				return 0.09f;
-			}
-		}
-
-		public abstract void CreateAnnouncementString(StringBuilder builder);
-
-		public virtual void PlayAnnouncement()
-		{
-			float num = (AlphaWarheadController.Detonated ? 2.5f : 1f);
-			float num2 = global::UnityEngine.Random.Range(this.MinGlitch, this.MaxGlitch) * num;
-			float num3 = global::UnityEngine.Random.Range(this.MinJam, this.MaxJam) * num;
-			StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-			this.CreateAnnouncementString(stringBuilder);
-			string text = StringBuilderPool.Shared.ToStringReturn(stringBuilder);
-			NineTailedFoxAnnouncer.singleton.ServerOnlyAddGlitchyPhrase(text, num2, num3);
-		}
-
-		private const float PostDetonationGlitchMultiplier = 2.5f;
-
-		private const int DefaultGlitchMultiplier = 1;
+		float num = (AlphaWarheadController.Detonated ? 2.5f : 1f);
+		float glitchChance = Random.Range(MinGlitch, MaxGlitch) * num;
+		float jamChance = Random.Range(MinJam, MaxJam) * num;
+		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
+		CreateAnnouncementString(stringBuilder);
+		SendSubtitles();
+		string tts = StringBuilderPool.Shared.ToStringReturn(stringBuilder);
+		NineTailedFoxAnnouncer.singleton.ServerOnlyAddGlitchyPhrase(tts, glitchChance, jamChance);
 	}
 }

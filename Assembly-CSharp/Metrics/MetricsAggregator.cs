@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using GameCore;
@@ -8,112 +8,103 @@ using UnityEngine;
 using Utf8Json;
 using Utils.NonAllocLINQ;
 
-namespace Metrics
+namespace Metrics;
+
+public static class MetricsAggregator
 {
-	public static class MetricsAggregator
+	public static readonly HashSet<MetricsCollectorBase> Collectors = new HashSet<MetricsCollectorBase>
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			MetricsAggregator.Collectors.ForEach(delegate(MetricsCollectorBase x)
-			{
-				x.Init();
-			});
-			RoundSummary.OnRoundEnded += MetricsAggregator.OnRoundEnded;
-			CharacterClassManager.ServerOnRoundStartTriggered += MetricsAggregator.OnRoundStarted;
-			MetricsAggregator.ReloadConfig();
-			ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(MetricsAggregator.ReloadConfig));
-		}
+		new DeathsCollector(),
+		new RoleChangeCollector(),
+		new RoundSummaryCollector(),
+		new ScpPreferencesCollector()
+	};
 
-		private static void ReloadConfig()
-		{
-			MetricsAggregator._metricsSavingEnabled = ConfigFile.ServerConfig.GetBool("save_metrics", true);
-		}
+	private const string SaveConfigKey = "save_metrics";
 
-		private static void OnRoundStarted()
+	private const bool SaveConfigDefault = true;
+
+	private static bool _roundActive;
+
+	private static bool _metricsSavingEnabled;
+
+	private static readonly List<CollectedMetric> CollectedMetrics = new List<CollectedMetric>();
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		Collectors.ForEach(delegate(MetricsCollectorBase x)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			MetricsAggregator._roundActive = true;
-			MetricsAggregator.Collectors.ForEach(delegate(MetricsCollectorBase x)
+			x.Init();
+		});
+		RoundSummary.OnRoundEnded += OnRoundEnded;
+		CharacterClassManager.ServerOnRoundStartTriggered += OnRoundStarted;
+		ReloadConfig();
+		ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(ReloadConfig));
+	}
+
+	private static void ReloadConfig()
+	{
+		_metricsSavingEnabled = ConfigFile.ServerConfig.GetBool("save_metrics", def: true);
+	}
+
+	private static void OnRoundStarted()
+	{
+		if (NetworkServer.active)
+		{
+			_roundActive = true;
+			Collectors.ForEach(delegate(MetricsCollectorBase x)
 			{
 				x.OnRoundStarted();
 			});
 		}
+	}
 
-		private static void OnRoundEnded(RoundSummary.LeadingTeam winner, RoundSummary.SumInfo_ClassList sumInfo)
+	private static void OnRoundEnded(RoundSummary.LeadingTeam winner, RoundSummary.SumInfo_ClassList sumInfo)
+	{
+		if (!NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			MetricsAggregator._roundActive = false;
-			foreach (MetricsCollectorBase metricsCollectorBase in MetricsAggregator.Collectors)
-			{
-				metricsCollectorBase.OnRoundEnded(winner);
-			}
-			if (!MetricsAggregator._metricsSavingEnabled)
-			{
-				return;
-			}
+			return;
+		}
+		_roundActive = false;
+		foreach (MetricsCollectorBase collector in Collectors)
+		{
+			collector.OnRoundEnded(winner);
+		}
+		if (_metricsSavingEnabled)
+		{
 			try
 			{
 				ushort port = LiteNetLib4MirrorTransport.Singleton.port;
-				string text = string.Format("{0}Metrics/{1}", FileManager.GetAppFolder(true, false, ""), port);
+				string text = $"{FileManager.GetAppFolder()}Metrics/{port}";
 				Directory.CreateDirectory(text);
 				string text2 = TimeBehaviour.FormatTime("yyyy-MM-dd HH.mm.ss");
-				using (StreamWriter streamWriter = new StreamWriter(text + "/Round " + text2 + ".json"))
-				{
-					RoundMetricsCollection roundMetricsCollection = new RoundMetricsCollection(MetricsAggregator.CollectedMetrics);
-					streamWriter.Write(JsonSerializer.ToJsonString<RoundMetricsCollection>(roundMetricsCollection));
-				}
+				using StreamWriter streamWriter = new StreamWriter(text + "/Round " + text2 + ".json");
+				RoundMetricsCollection value = new RoundMetricsCollection(CollectedMetrics);
+				streamWriter.Write(JsonSerializer.ToJsonString(value));
 			}
-			catch (Exception ex)
+			catch (Exception exception)
 			{
-				Debug.LogException(ex);
+				Debug.LogException(exception);
 			}
 		}
+		CollectedMetrics.Clear();
+	}
 
-		public static void RecordData<T>(T data, bool checkIfRoundActive) where T : MetricsCollectorBase
+	public static void RecordData<T>(T data, bool checkIfRoundActive) where T : MetricsCollectorBase
+	{
+		if (NetworkServer.active && (!checkIfRoundActive || _roundActive))
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			if (checkIfRoundActive && !MetricsAggregator._roundActive)
-			{
-				return;
-			}
 			if (data == null)
 			{
 				throw new ArgumentNullException("data", "Attempting to record a null metric.");
 			}
-			if (MetricsAggregator.Collectors.Contains(data))
+			if (Collectors.Contains(data))
 			{
 				throw new ArgumentException("Cannot record the static collector definition. Create a new instance to record data.");
 			}
-			string text = JsonSerializer.ToJsonString<T>(data);
-			MetricsAggregator.CollectedMetrics.Add(new CollectedMetric(typeof(T), text));
+			string jsonData = JsonSerializer.ToJsonString(data);
+			CollectedMetrics.Add(new CollectedMetric(typeof(T), jsonData));
 		}
-
-		private static readonly HashSet<MetricsCollectorBase> Collectors = new HashSet<MetricsCollectorBase>
-		{
-			new DeathsCollector(),
-			new RoleChangeCollector(),
-			new RoundSummaryCollector(),
-			new ScpPreferencesCollector()
-		};
-
-		private const string SaveConfigKey = "save_metrics";
-
-		private const bool SaveConfigDefault = true;
-
-		private static bool _roundActive;
-
-		private static bool _metricsSavingEnabled;
-
-		private static readonly List<CollectedMetric> CollectedMetrics = new List<CollectedMetric>();
 	}
 }

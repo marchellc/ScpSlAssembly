@@ -1,11 +1,8 @@
-﻿using System;
+namespace LiteNetLib;
 
-namespace LiteNetLib
+internal enum ShutdownResult
 {
-	internal enum ShutdownResult
-	{
-		None,
-		Success,
-		WasConnected
-	}
+	None,
+	Success,
+	WasConnected
 }

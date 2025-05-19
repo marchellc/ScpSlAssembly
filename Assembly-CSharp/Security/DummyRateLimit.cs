@@ -1,12 +1,9 @@
-﻿using System;
+namespace Security;
 
-namespace Security
+public class DummyRateLimit : RateLimit
 {
-	public class DummyRateLimit : RateLimit
+	public DummyRateLimit()
+		: base(0, 0f)
 	{
-		public DummyRateLimit()
-			: base(0, 0f, null)
-		{
-		}
 	}
 }

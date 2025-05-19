@@ -1,131 +1,98 @@
-﻿using System;
-using System.Collections.Generic;
 using Interactables.Interobjects.DoorUtils;
 using InventorySystem;
-using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 using LabApi.Events.Arguments.ServerEvents;
 using LabApi.Events.Handlers;
+using MapGeneration.Scenarios;
 using Mirror;
-using NorthwoodLib.Pools;
 using UnityEngine;
 
-namespace MapGeneration.Distributors
+namespace MapGeneration.Distributors;
+
+public class ItemDistributor : SpawnablesDistributorBase
 {
-	public class ItemDistributor : SpawnablesDistributorBase
+	protected override void PlaceSpawnables()
 	{
-		protected override void PlaceSpawnables()
+		while (ItemSpawnpointBase.Instances.Remove(null))
 		{
-			while (ItemSpawnpoint.RandomInstances.Remove(null))
-			{
-			}
-			while (ItemSpawnpoint.AutospawnInstances.Remove(null))
-			{
-			}
-			foreach (SpawnableItem spawnableItem in this.Settings.SpawnableItems)
-			{
-				this.PlaceItem(spawnableItem);
-			}
-			foreach (ItemSpawnpoint itemSpawnpoint in ItemSpawnpoint.AutospawnInstances)
-			{
-				Transform transform = itemSpawnpoint.Occupy();
-				this.CreatePickup(itemSpawnpoint.AutospawnItem, transform, itemSpawnpoint.TriggerDoorName);
-			}
 		}
-
-		private void PlaceItem(SpawnableItem item)
+		foreach (DistributorScenario instance in DistributorScenario.Instances)
 		{
-			float num = global::UnityEngine.Random.Range(item.MinimalAmount, item.MaxAmount);
-			List<ItemSpawnpoint> list = ListPool<ItemSpawnpoint>.Shared.Rent();
-			foreach (ItemSpawnpoint itemSpawnpoint in ItemSpawnpoint.RandomInstances)
+			instance.SelectProcessors();
+		}
+		foreach (ItemSpawnpointBase instance2 in ItemSpawnpointBase.Instances)
+		{
+			if (instance2.SpawnEmptyChance < Random.Range(1, 101))
 			{
-				if (item.RoomNames.Contains(itemSpawnpoint.RoomName) && itemSpawnpoint.CanSpawn(item.PossibleSpawns))
+				ItemPickupBase pickup;
+				if (instance2 is IDistributorGenerationResolver distributorGenerationResolver)
 				{
-					list.Add(itemSpawnpoint);
+					distributorGenerationResolver.Generate(this);
+				}
+				else if (instance2.TryGeneratePickup(out pickup))
+				{
+					ServerRegisterPickup(pickup, instance2.TriggerDoorName);
 				}
 			}
-			if (item.MultiplyBySpawnpointsNumber)
-			{
-				num *= (float)list.Count;
-			}
-			int num2 = 0;
-			while ((float)num2 < num && list.Count != 0)
-			{
-				ItemType itemType = item.PossibleSpawns[global::UnityEngine.Random.Range(0, item.PossibleSpawns.Length)];
-				if (itemType != ItemType.None)
-				{
-					int num3 = global::UnityEngine.Random.Range(0, list.Count);
-					Transform transform = list[num3].Occupy();
-					this.CreatePickup(itemType, transform, list[num3].TriggerDoorName);
-					if (!list[num3].CanSpawn(itemType))
-					{
-						list.RemoveAt(num3);
-					}
-				}
-				num2++;
-			}
-			ListPool<ItemSpawnpoint>.Shared.Return(list);
 		}
+	}
 
-		private void CreatePickup(ItemType id, Transform t, string triggerDoor)
+	public static ItemPickupBase ServerCreatePickup(ItemType id, Transform parentRoom)
+	{
+		if (!InventoryItemLoader.AvailableItems.TryGetValue(id, out var value))
 		{
-			ItemSpawningEventArgs itemSpawningEventArgs = new ItemSpawningEventArgs(id);
-			ServerEvents.OnItemSpawning(itemSpawningEventArgs);
-			if (!itemSpawningEventArgs.IsAllowed)
-			{
-				return;
-			}
-			ItemBase itemBase;
-			if (!InventoryItemLoader.AvailableItems.TryGetValue(id, out itemBase))
-			{
-				return;
-			}
-			if (itemBase.PickupDropModel == null)
-			{
-				return;
-			}
-			ItemPickupBase itemPickupBase = global::UnityEngine.Object.Instantiate<ItemPickupBase>(itemBase.PickupDropModel, t.position, t.rotation);
-			itemPickupBase.NetworkInfo = new PickupSyncInfo(id, itemBase.Weight, 0, false);
-			itemPickupBase.transform.SetParent(t);
-			IPickupDistributorTrigger pickupDistributorTrigger = itemPickupBase as IPickupDistributorTrigger;
-			if (pickupDistributorTrigger != null)
+			return null;
+		}
+		if (value.PickupDropModel == null)
+		{
+			return null;
+		}
+		ItemPickupBase itemPickupBase = Object.Instantiate(value.PickupDropModel, parentRoom.position, parentRoom.rotation);
+		itemPickupBase.NetworkInfo = new PickupSyncInfo(id, value.Weight, 0);
+		itemPickupBase.transform.SetParent(parentRoom);
+		return itemPickupBase;
+	}
+
+	public void ServerRegisterPickup(ItemPickupBase pickup, string triggerDoor = null)
+	{
+		ItemSpawningEventArgs itemSpawningEventArgs = new ItemSpawningEventArgs(pickup.ItemId.TypeId);
+		ServerEvents.OnItemSpawning(itemSpawningEventArgs);
+		if (itemSpawningEventArgs.IsAllowed)
+		{
+			if (pickup is IPickupDistributorTrigger pickupDistributorTrigger)
 			{
 				pickupDistributorTrigger.OnDistributed();
 			}
-			DoorNametagExtension doorNametagExtension;
-			if (string.IsNullOrEmpty(triggerDoor) || !DoorNametagExtension.NamedDoors.TryGetValue(triggerDoor, out doorNametagExtension))
+			if (string.IsNullOrEmpty(triggerDoor) || !DoorNametagExtension.NamedDoors.TryGetValue(triggerDoor, out var value))
 			{
-				ItemDistributor.SpawnPickup(itemPickupBase);
+				SpawnPickup(pickup);
 			}
 			else
 			{
-				base.RegisterUnspawnedObject(doorNametagExtension.TargetDoor, itemPickupBase.gameObject);
+				RegisterUnspawnedObject(value.TargetDoor, pickup.gameObject);
 			}
-			ServerEvents.OnItemSpawned(new ItemSpawnedEventArgs(itemPickupBase));
+			ServerEvents.OnItemSpawned(new ItemSpawnedEventArgs(pickup));
 		}
+	}
 
-		public static void SpawnPickup(ItemPickupBase ipb)
+	public static void SpawnPickup(ItemPickupBase ipb)
+	{
+		if (!(ipb == null))
 		{
-			if (ipb == null)
-			{
-				return;
-			}
-			NetworkServer.Spawn(ipb.gameObject, null);
-			PickupSyncInfo pickupSyncInfo = new PickupSyncInfo(ipb.Info.ItemId, ipb.Info.WeightKg, 0, false)
-			{
-				Locked = ipb.Info.Locked
-			};
-			InitiallySpawnedItems.Singleton.AddInitial(pickupSyncInfo.Serial);
-			ipb.NetworkInfo = pickupSyncInfo;
+			NetworkServer.Spawn(ipb.gameObject);
+			PickupSyncInfo pickupSyncInfo = new PickupSyncInfo(ipb.Info.ItemId, ipb.Info.WeightKg, 0);
+			pickupSyncInfo.Locked = ipb.Info.Locked;
+			PickupSyncInfo networkInfo = pickupSyncInfo;
+			InitiallySpawnedItems.Singleton.AddInitial(networkInfo.Serial);
+			ipb.NetworkInfo = networkInfo;
 		}
+	}
 
-		protected override void SpawnObject(GameObject objectToSpawn)
+	protected override void SpawnObject(GameObject objectToSpawn)
+	{
+		if (objectToSpawn != null && objectToSpawn.TryGetComponent<ItemPickupBase>(out var component))
 		{
-			ItemPickupBase itemPickupBase;
-			if (objectToSpawn != null && objectToSpawn.TryGetComponent<ItemPickupBase>(out itemPickupBase))
-			{
-				ItemDistributor.SpawnPickup(itemPickupBase);
-			}
+			SpawnPickup(component);
 		}
 	}
 }

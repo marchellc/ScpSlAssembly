@@ -1,8 +1,5 @@
-﻿using System;
+namespace PlayerRoles.Spectating;
 
-namespace PlayerRoles.Spectating
+public class CompactSpectatableListElement : SpectatableListElementBase
 {
-	public class CompactSpectatableListElement : SpectatableListElementBase
-	{
-	}
 }

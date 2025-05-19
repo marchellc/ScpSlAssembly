@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -12,325 +12,79 @@ using UnityEngine;
 
 public class EncryptedChannelManager : NetworkBehaviour
 {
-	internal AsymmetricCipherKeyPair EcdhKeys { get; private set; }
+	public delegate void EncryptedMessageClientHandler(EncryptedMessage message, SecurityLevel level);
 
-	internal void PrepareExchange()
+	public delegate void EncryptedMessageServerHandler(ReferenceHub hub, EncryptedMessage message, SecurityLevel level);
+
+	public enum EncryptedChannel : byte
 	{
-		if (this._exchange != null)
-		{
-			return;
-		}
-		this.EcdhKeys = ECDH.GenerateKeys(384);
-		this._exchange = ECDH.Init(this.EcdhKeys);
+		RemoteAdmin,
+		GameConsole,
+		AdminChat
 	}
 
-	internal void ServerProcessExchange(string publicKey)
+	public enum SecurityLevel : byte
 	{
-		if (this.EncryptionKey != null)
-		{
-			return;
-		}
-		if (EncryptedChannelManager.CryptographyDebug)
-		{
-			ReferenceHub referenceHub;
-			ServerConsole.AddLog("Received ECDH parameters from " + (ReferenceHub.TryGetHub(base.gameObject, out referenceHub) ? referenceHub.LoggedNameFromRefHub() : "(unknown)") + ".", ConsoleColor.Gray, false);
-		}
-		this.EncryptionKey = ECDH.DeriveKey(this._exchange, ECDSA.PublicKeyFromString(publicKey));
+		Unsecured,
+		EncryptedAndAuthenticated
 	}
 
-	public static void ReplaceServerHandler(EncryptedChannelManager.EncryptedChannel channel, EncryptedChannelManager.EncryptedMessageServerHandler handler)
+	public readonly struct EncryptedMessage
 	{
-		EncryptedChannelManager.ServerChannelHandlers[channel] = handler;
-	}
+		public readonly EncryptedChannel Channel;
 
-	public static void ReplaceClientHandler(EncryptedChannelManager.EncryptedChannel channel, EncryptedChannelManager.EncryptedMessageClientHandler clientHandler)
-	{
-		EncryptedChannelManager.ClientChannelHandlers[channel] = clientHandler;
-	}
+		public readonly byte[] Content;
 
-	private void Start()
-	{
-		if (!base.isLocalPlayer)
-		{
-			return;
-		}
-		if (NetworkServer.active)
-		{
-			if (string.IsNullOrEmpty(this.ServerRandom))
-			{
-				this.NetworkServerRandom = RandomGenerator.GetStringSecure(32);
-				ServerConsole.AddLog("Generated random salt: " + this.ServerRandom, ConsoleColor.Gray, false);
-			}
-			NetworkServer.ReplaceHandler<EncryptedChannelManager.EncryptedMessageOutside>(new Action<NetworkConnectionToClient, EncryptedChannelManager.EncryptedMessageOutside>(EncryptedChannelManager.ServerReceivePackedMessage), true);
-		}
-		NetworkClient.ReplaceHandler<EncryptedChannelManager.EncryptedMessageOutside>(new Action<EncryptedChannelManager.EncryptedMessageOutside>(EncryptedChannelManager.ClientReceivePackedMessage), true);
-	}
+		internal readonly uint Counter;
 
-	private void ReceivedSaltHook(string p, string n)
-	{
-		if (!NetworkServer.active && n != null)
-		{
-			global::GameCore.Console.AddLog("Received random salt from game server: " + n, Color.gray, false, global::GameCore.Console.ConsoleLogType.Log);
-		}
-	}
+		private const int HeaderSize = 5;
 
-	private static void ServerReceivePackedMessage(NetworkConnection conn, EncryptedChannelManager.EncryptedMessageOutside packed)
-	{
-		ReferenceHub referenceHub;
-		if (!NetworkServer.active || !ReferenceHub.TryGetHub(conn, out referenceHub))
+		public int GetLength => Content.Length + 5;
+
+		public EncryptedMessage(EncryptedChannel channel, string content, uint counter)
 		{
-			return;
+			Channel = channel;
+			Content = Utf8.GetBytes(content);
+			Counter = counter;
 		}
-		EncryptedChannelManager.EncryptedMessage encryptedMessage;
-		EncryptedChannelManager.SecurityLevel securityLevel;
-		if (!referenceHub.encryptedChannelManager.TryUnpack(packed, out encryptedMessage, out securityLevel, NetworkServer.active && conn.identity.isLocalPlayer))
+
+		public EncryptedMessage(EncryptedChannel channel, byte[] content, uint counter)
 		{
-			return;
+			Channel = channel;
+			Content = content;
+			Counter = counter;
 		}
-		EncryptedChannelManager.EncryptedMessageServerHandler encryptedMessageServerHandler;
-		if (!EncryptedChannelManager.ServerChannelHandlers.TryGetValue(encryptedMessage.Channel, out encryptedMessageServerHandler))
+
+		public override string ToString()
 		{
-			global::GameCore.Console.AddLog(string.Format("No handler is registered for encrypted channel {0} (server).", encryptedMessage.Channel), Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-			return;
+			return Utf8.GetString(Content);
 		}
-		try
+
+		internal void Serialize(byte[] array)
 		{
-			encryptedMessageServerHandler(referenceHub, encryptedMessage, securityLevel);
+			array[0] = (byte)Channel;
+			BinaryPrimitives.WriteUInt32BigEndian(new Span<byte>(array, 1, 4), Counter);
+			Array.Copy(Content, 0, array, 5, Content.Length);
 		}
-		catch (Exception ex)
+
+		internal static EncryptedMessage Deserialize(byte[] array)
 		{
-			global::GameCore.Console.AddLog(string.Format("Exception while handling encrypted message on channel {0} (server, running a handler). Exception: {1}", encryptedMessage.Channel, ex.Message), Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-			global::GameCore.Console.AddLog(ex.StackTrace, Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
+			byte[] array2 = new byte[array.Length - 5];
+			Array.Copy(array, 5, array2, 0, array.Length - 5);
+			return new EncryptedMessage((EncryptedChannel)array[0], array2, BinaryPrimitives.ReadUInt32BigEndian(new ReadOnlySpan<byte>(array, 1, 4)));
 		}
 	}
 
-	private static void ClientReceivePackedMessage(EncryptedChannelManager.EncryptedMessageOutside packed)
+	internal readonly struct EncryptedMessageOutside : NetworkMessage
 	{
-		ReferenceHub referenceHub;
-		EncryptedChannelManager.EncryptedMessage encryptedMessage;
-		EncryptedChannelManager.SecurityLevel securityLevel;
-		if (!ReferenceHub.TryGetLocalHub(out referenceHub) || !referenceHub.encryptedChannelManager.TryUnpack(packed, out encryptedMessage, out securityLevel, NetworkServer.active))
-		{
-			return;
-		}
-		EncryptedChannelManager.EncryptedMessageClientHandler encryptedMessageClientHandler;
-		if (!EncryptedChannelManager.ClientChannelHandlers.TryGetValue(encryptedMessage.Channel, out encryptedMessageClientHandler))
-		{
-			global::GameCore.Console.AddLog(string.Format("No handler is registered for encrypted channel {0} (client).", encryptedMessage.Channel), Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-			return;
-		}
-		try
-		{
-			encryptedMessageClientHandler(encryptedMessage, securityLevel);
-		}
-		catch (Exception ex)
-		{
-			global::GameCore.Console.AddLog(string.Format("Exception while handling encrypted message on channel {0} (client, running a handler). Exception: {1}", encryptedMessage.Channel, ex.Message), Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-			global::GameCore.Console.AddLog(ex.StackTrace, Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-		}
-	}
+		internal readonly SecurityLevel Level;
 
-	public bool TrySendMessageToServer(string content, EncryptedChannelManager.EncryptedChannel channel)
-	{
-		if (this._txCounter == 4294967295U)
-		{
-			this._txCounter = 0U;
-		}
-		uint num = this._txCounter + 1U;
-		this._txCounter = num;
-		EncryptedChannelManager.EncryptedMessageOutside encryptedMessageOutside;
-		if (!this.TryPack(new EncryptedChannelManager.EncryptedMessage(channel, content, num), out encryptedMessageOutside, NetworkServer.active))
-		{
-			return false;
-		}
-		NetworkClient.Send<EncryptedChannelManager.EncryptedMessageOutside>(encryptedMessageOutside, 0);
-		return true;
-	}
+		internal readonly byte[] Data;
 
-	public bool TrySendMessageToServer(byte[] content, EncryptedChannelManager.EncryptedChannel channel)
-	{
-		if (this._txCounter == 4294967295U)
+		internal EncryptedMessageOutside(SecurityLevel level, byte[] data)
 		{
-			this._txCounter = 0U;
-		}
-		uint num = this._txCounter + 1U;
-		this._txCounter = num;
-		EncryptedChannelManager.EncryptedMessageOutside encryptedMessageOutside;
-		if (!this.TryPack(new EncryptedChannelManager.EncryptedMessage(channel, content, num), out encryptedMessageOutside, NetworkServer.active))
-		{
-			return false;
-		}
-		NetworkClient.Send<EncryptedChannelManager.EncryptedMessageOutside>(encryptedMessageOutside, 0);
-		return true;
-	}
-
-	public static bool TrySendMessageToClient(ReferenceHub hub, string content, EncryptedChannelManager.EncryptedChannel channel)
-	{
-		return hub.encryptedChannelManager.TrySendMessageToClient(content, channel);
-	}
-
-	public static bool TrySendMessageToClient(ReferenceHub hub, byte[] content, EncryptedChannelManager.EncryptedChannel channel)
-	{
-		return hub.encryptedChannelManager.TrySendMessageToClient(content, channel);
-	}
-
-	[Server]
-	public bool TrySendMessageToClient(string content, EncryptedChannelManager.EncryptedChannel channel)
-	{
-		if (!NetworkServer.active)
-		{
-			Debug.LogWarning("[Server] function 'System.Boolean EncryptedChannelManager::TrySendMessageToClient(System.String,EncryptedChannelManager/EncryptedChannel)' called when server was not active");
-			return default(bool);
-		}
-		if (this._txCounter == 4294967295U)
-		{
-			this._txCounter = 0U;
-		}
-		uint num = this._txCounter + 1U;
-		this._txCounter = num;
-		EncryptedChannelManager.EncryptedMessageOutside encryptedMessageOutside;
-		if (!this.TryPack(new EncryptedChannelManager.EncryptedMessage(channel, content, num), out encryptedMessageOutside, base.isLocalPlayer))
-		{
-			return false;
-		}
-		base.connectionToClient.Send<EncryptedChannelManager.EncryptedMessageOutside>(encryptedMessageOutside, 0);
-		return true;
-	}
-
-	[Server]
-	public bool TrySendMessageToClient(byte[] content, EncryptedChannelManager.EncryptedChannel channel)
-	{
-		if (!NetworkServer.active)
-		{
-			Debug.LogWarning("[Server] function 'System.Boolean EncryptedChannelManager::TrySendMessageToClient(System.Byte[],EncryptedChannelManager/EncryptedChannel)' called when server was not active");
-			return default(bool);
-		}
-		if (this._txCounter == 4294967295U)
-		{
-			this._txCounter = 0U;
-		}
-		uint num = this._txCounter + 1U;
-		this._txCounter = num;
-		EncryptedChannelManager.EncryptedMessageOutside encryptedMessageOutside;
-		if (!this.TryPack(new EncryptedChannelManager.EncryptedMessage(channel, content, num), out encryptedMessageOutside, base.isLocalPlayer))
-		{
-			return false;
-		}
-		base.connectionToClient.Send<EncryptedChannelManager.EncryptedMessageOutside>(encryptedMessageOutside, 0);
-		return true;
-	}
-
-	private bool TryPack(EncryptedChannelManager.EncryptedMessage msg, out EncryptedChannelManager.EncryptedMessageOutside packed, bool localClient = false)
-	{
-		bool flag = this.EncryptionKey != null && !localClient;
-		if (!localClient && EncryptedChannelManager.RequiredSecurityLevels[msg.Channel] == EncryptedChannelManager.SecurityLevel.EncryptedAndAuthenticated && !flag)
-		{
-			global::GameCore.Console.AddLog(string.Format("Failed to send encrypted message to {0} channel. Encryption key is not available.", msg.Channel), Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-			packed = default(EncryptedChannelManager.EncryptedMessageOutside);
-			return false;
-		}
-		byte[] array = new byte[msg.GetLength];
-		msg.Serialize(array);
-		if (!flag)
-		{
-			packed = new EncryptedChannelManager.EncryptedMessageOutside(EncryptedChannelManager.SecurityLevel.Unsecured, array);
-			return true;
-		}
-		packed = new EncryptedChannelManager.EncryptedMessageOutside(EncryptedChannelManager.SecurityLevel.EncryptedAndAuthenticated, AES.AesGcmEncrypt(array, this.EncryptionKey, EncryptedChannelManager.SecureRandom, 0, 0));
-		return true;
-	}
-
-	private bool TryUnpack(EncryptedChannelManager.EncryptedMessageOutside packed, out EncryptedChannelManager.EncryptedMessage msg, out EncryptedChannelManager.SecurityLevel level, bool localClient)
-	{
-		level = packed.Level;
-		bool flag = packed.Level == EncryptedChannelManager.SecurityLevel.EncryptedAndAuthenticated;
-		if (flag && this.EncryptionKey == null)
-		{
-			global::GameCore.Console.AddLog("Failed to decrypt received message. Encryption key is not available.", Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-			msg = default(EncryptedChannelManager.EncryptedMessage);
-			return false;
-		}
-		if (flag)
-		{
-			try
-			{
-				msg = EncryptedChannelManager.EncryptedMessage.Deserialize(AES.AesGcmDecrypt(packed.Data, this.EncryptionKey, 0, 0));
-			}
-			catch (Exception ex)
-			{
-				global::GameCore.Console.AddLog("Failed to decrypt received message. Exception: " + ex.Message, Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-				global::GameCore.Console.AddLog(ex.StackTrace, Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-				msg = default(EncryptedChannelManager.EncryptedMessage);
-				return false;
-			}
-			if (this._rxCounter == 4294967295U)
-			{
-				this._rxCounter = 0U;
-			}
-			if (msg.Counter <= this._rxCounter)
-			{
-				global::GameCore.Console.AddLog(string.Format("Received message with counter {0}, which is lower or equal to last received message counter {1}. Discarding message!", msg.Counter, this._rxCounter), Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-				msg = default(EncryptedChannelManager.EncryptedMessage);
-				return false;
-			}
-			this._rxCounter = msg.Counter;
-			return true;
-		}
-		msg = EncryptedChannelManager.EncryptedMessage.Deserialize(packed.Data);
-		if (!localClient && EncryptedChannelManager.RequiredSecurityLevels[msg.Channel] == EncryptedChannelManager.SecurityLevel.EncryptedAndAuthenticated)
-		{
-			global::GameCore.Console.AddLog(string.Format("Message on channel {0} was sent without encryption. Discarding message!", msg.Channel), Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-			msg = default(EncryptedChannelManager.EncryptedMessage);
-			return false;
-		}
-		return true;
-	}
-
-	public override bool Weaved()
-	{
-		return true;
-	}
-
-	public string NetworkServerRandom
-	{
-		get
-		{
-			return this.ServerRandom;
-		}
-		[param: In]
-		set
-		{
-			base.GeneratedSyncVarSetter<string>(value, ref this.ServerRandom, 1UL, new Action<string, string>(this.ReceivedSaltHook));
-		}
-	}
-
-	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
-	{
-		base.SerializeSyncVars(writer, forceAll);
-		if (forceAll)
-		{
-			writer.WriteString(this.ServerRandom);
-			return;
-		}
-		writer.WriteULong(base.syncVarDirtyBits);
-		if ((base.syncVarDirtyBits & 1UL) != 0UL)
-		{
-			writer.WriteString(this.ServerRandom);
-		}
-	}
-
-	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
-	{
-		base.DeserializeSyncVars(reader, initialState);
-		if (initialState)
-		{
-			base.GeneratedSyncVarDeserialize<string>(ref this.ServerRandom, new Action<string, string>(this.ReceivedSaltHook), reader.ReadString());
-			return;
-		}
-		long num = (long)reader.ReadULong();
-		if ((num & 1L) != 0L)
-		{
-			base.GeneratedSyncVarDeserialize<string>(ref this.ServerRandom, new Action<string, string>(this.ReceivedSaltHook), reader.ReadString());
+			Level = level;
+			Data = data;
 		}
 	}
 
@@ -351,105 +105,318 @@ public class EncryptedChannelManager : NetworkBehaviour
 
 	private static readonly SecureRandom SecureRandom = new SecureRandom();
 
-	private static readonly Dictionary<EncryptedChannelManager.EncryptedChannel, EncryptedChannelManager.EncryptedMessageClientHandler> ClientChannelHandlers = new Dictionary<EncryptedChannelManager.EncryptedChannel, EncryptedChannelManager.EncryptedMessageClientHandler>();
+	private static readonly Dictionary<EncryptedChannel, EncryptedMessageClientHandler> ClientChannelHandlers = new Dictionary<EncryptedChannel, EncryptedMessageClientHandler>();
 
-	private static readonly Dictionary<EncryptedChannelManager.EncryptedChannel, EncryptedChannelManager.EncryptedMessageServerHandler> ServerChannelHandlers = new Dictionary<EncryptedChannelManager.EncryptedChannel, EncryptedChannelManager.EncryptedMessageServerHandler>();
+	private static readonly Dictionary<EncryptedChannel, EncryptedMessageServerHandler> ServerChannelHandlers = new Dictionary<EncryptedChannel, EncryptedMessageServerHandler>();
 
-	private static readonly Dictionary<EncryptedChannelManager.EncryptedChannel, EncryptedChannelManager.SecurityLevel> RequiredSecurityLevels = new Dictionary<EncryptedChannelManager.EncryptedChannel, EncryptedChannelManager.SecurityLevel>
+	private static readonly Dictionary<EncryptedChannel, SecurityLevel> RequiredSecurityLevels = new Dictionary<EncryptedChannel, SecurityLevel>
 	{
 		{
-			EncryptedChannelManager.EncryptedChannel.RemoteAdmin,
-			EncryptedChannelManager.SecurityLevel.EncryptedAndAuthenticated
+			EncryptedChannel.RemoteAdmin,
+			SecurityLevel.EncryptedAndAuthenticated
 		},
 		{
-			EncryptedChannelManager.EncryptedChannel.GameConsole,
-			EncryptedChannelManager.SecurityLevel.Unsecured
+			EncryptedChannel.GameConsole,
+			SecurityLevel.Unsecured
 		},
 		{
-			EncryptedChannelManager.EncryptedChannel.AdminChat,
-			EncryptedChannelManager.SecurityLevel.EncryptedAndAuthenticated
+			EncryptedChannel.AdminChat,
+			SecurityLevel.EncryptedAndAuthenticated
 		}
 	};
 
-	public delegate void EncryptedMessageClientHandler(EncryptedChannelManager.EncryptedMessage message, EncryptedChannelManager.SecurityLevel level);
+	internal AsymmetricCipherKeyPair EcdhKeys { get; private set; }
 
-	public delegate void EncryptedMessageServerHandler(ReferenceHub hub, EncryptedChannelManager.EncryptedMessage message, EncryptedChannelManager.SecurityLevel level);
-
-	public enum EncryptedChannel : byte
+	public string NetworkServerRandom
 	{
-		RemoteAdmin,
-		GameConsole,
-		AdminChat
+		get
+		{
+			return ServerRandom;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref ServerRandom, 1uL, ReceivedSaltHook);
+		}
 	}
 
-	public enum SecurityLevel : byte
+	internal void PrepareExchange()
 	{
-		Unsecured,
-		EncryptedAndAuthenticated
+		if (_exchange == null)
+		{
+			EcdhKeys = ECDH.GenerateKeys();
+			_exchange = ECDH.Init(EcdhKeys);
+		}
 	}
 
-	public readonly struct EncryptedMessage
+	internal void ServerProcessExchange(string publicKey)
 	{
-		public EncryptedMessage(EncryptedChannelManager.EncryptedChannel channel, string content, uint counter)
+		if (EncryptionKey == null)
 		{
-			this.Channel = channel;
-			this.Content = Utf8.GetBytes(content);
-			this.Counter = counter;
-		}
-
-		public EncryptedMessage(EncryptedChannelManager.EncryptedChannel channel, byte[] content, uint counter)
-		{
-			this.Channel = channel;
-			this.Content = content;
-			this.Counter = counter;
-		}
-
-		public int GetLength
-		{
-			get
+			if (CryptographyDebug)
 			{
-				return this.Content.Length + 5;
+				ServerConsole.AddLog("Received ECDH parameters from " + (ReferenceHub.TryGetHub(base.gameObject, out var hub) ? hub.LoggedNameFromRefHub() : "(unknown)") + ".");
 			}
+			EncryptionKey = ECDH.DeriveKey(_exchange, ECDSA.PublicKeyFromString(publicKey));
 		}
-
-		public override string ToString()
-		{
-			return Utf8.GetString(this.Content);
-		}
-
-		internal void Serialize(byte[] array)
-		{
-			array[0] = (byte)this.Channel;
-			BinaryPrimitives.WriteUInt32BigEndian(new Span<byte>(array, 1, 4), this.Counter);
-			Array.Copy(this.Content, 0, array, 5, this.Content.Length);
-		}
-
-		internal static EncryptedChannelManager.EncryptedMessage Deserialize(byte[] array)
-		{
-			byte[] array2 = new byte[array.Length - 5];
-			Array.Copy(array, 5, array2, 0, array.Length - 5);
-			return new EncryptedChannelManager.EncryptedMessage((EncryptedChannelManager.EncryptedChannel)array[0], array2, BinaryPrimitives.ReadUInt32BigEndian(new ReadOnlySpan<byte>(array, 1, 4)));
-		}
-
-		public readonly EncryptedChannelManager.EncryptedChannel Channel;
-
-		public readonly byte[] Content;
-
-		internal readonly uint Counter;
-
-		private const int HeaderSize = 5;
 	}
 
-	internal readonly struct EncryptedMessageOutside : NetworkMessage
+	public static void ReplaceServerHandler(EncryptedChannel channel, EncryptedMessageServerHandler handler)
 	{
-		internal EncryptedMessageOutside(EncryptedChannelManager.SecurityLevel level, byte[] data)
+		ServerChannelHandlers[channel] = handler;
+	}
+
+	public static void ReplaceClientHandler(EncryptedChannel channel, EncryptedMessageClientHandler clientHandler)
+	{
+		ClientChannelHandlers[channel] = clientHandler;
+	}
+
+	private void Start()
+	{
+		if (!base.isLocalPlayer)
 		{
-			this.Level = level;
-			this.Data = data;
+			return;
 		}
+		if (NetworkServer.active)
+		{
+			if (string.IsNullOrEmpty(ServerRandom))
+			{
+				NetworkServerRandom = RandomGenerator.GetStringSecure(32);
+				ServerConsole.AddLog("Generated random salt: " + ServerRandom);
+			}
+			NetworkServer.ReplaceHandler<EncryptedMessageOutside>(ServerReceivePackedMessage);
+		}
+		NetworkClient.ReplaceHandler<EncryptedMessageOutside>(ClientReceivePackedMessage);
+	}
 
-		internal readonly EncryptedChannelManager.SecurityLevel Level;
+	private void ReceivedSaltHook(string p, string n)
+	{
+		if (!NetworkServer.active && n != null)
+		{
+			GameCore.Console.AddLog("Received random salt from game server: " + n, Color.gray);
+		}
+	}
 
-		internal readonly byte[] Data;
+	private static void ServerReceivePackedMessage(NetworkConnection conn, EncryptedMessageOutside packed)
+	{
+		if (!NetworkServer.active || !ReferenceHub.TryGetHub(conn, out var hub) || !hub.encryptedChannelManager.TryUnpack(packed, out var msg, out var level, NetworkServer.active && conn.identity.isLocalPlayer))
+		{
+			return;
+		}
+		if (!ServerChannelHandlers.TryGetValue(msg.Channel, out var value))
+		{
+			GameCore.Console.AddLog($"No handler is registered for encrypted channel {msg.Channel} (server).", Color.red);
+			return;
+		}
+		try
+		{
+			value(hub, msg, level);
+		}
+		catch (Exception ex)
+		{
+			GameCore.Console.AddLog($"Exception while handling encrypted message on channel {msg.Channel} (server, running a handler). Exception: {ex.Message}", Color.red);
+			GameCore.Console.AddLog(ex.StackTrace, Color.red);
+		}
+	}
+
+	private static void ClientReceivePackedMessage(EncryptedMessageOutside packed)
+	{
+		if (!ReferenceHub.TryGetLocalHub(out var hub) || !hub.encryptedChannelManager.TryUnpack(packed, out var msg, out var level, NetworkServer.active))
+		{
+			return;
+		}
+		if (!ClientChannelHandlers.TryGetValue(msg.Channel, out var value))
+		{
+			GameCore.Console.AddLog($"No handler is registered for encrypted channel {msg.Channel} (client).", Color.red);
+			return;
+		}
+		try
+		{
+			value(msg, level);
+		}
+		catch (Exception ex)
+		{
+			GameCore.Console.AddLog($"Exception while handling encrypted message on channel {msg.Channel} (client, running a handler). Exception: {ex.Message}", Color.red);
+			GameCore.Console.AddLog(ex.StackTrace, Color.red);
+		}
+	}
+
+	public bool TrySendMessageToServer(string content, EncryptedChannel channel)
+	{
+		if (_txCounter == uint.MaxValue)
+		{
+			_txCounter = 0u;
+		}
+		if (!TryPack(new EncryptedMessage(channel, content, ++_txCounter), out var packed, NetworkServer.active))
+		{
+			return false;
+		}
+		NetworkClient.Send(packed);
+		return true;
+	}
+
+	public bool TrySendMessageToServer(byte[] content, EncryptedChannel channel)
+	{
+		if (_txCounter == uint.MaxValue)
+		{
+			_txCounter = 0u;
+		}
+		if (!TryPack(new EncryptedMessage(channel, content, ++_txCounter), out var packed, NetworkServer.active))
+		{
+			return false;
+		}
+		NetworkClient.Send(packed);
+		return true;
+	}
+
+	public static bool TrySendMessageToClient(ReferenceHub hub, string content, EncryptedChannel channel)
+	{
+		return hub.encryptedChannelManager.TrySendMessageToClient(content, channel);
+	}
+
+	public static bool TrySendMessageToClient(ReferenceHub hub, byte[] content, EncryptedChannel channel)
+	{
+		return hub.encryptedChannelManager.TrySendMessageToClient(content, channel);
+	}
+
+	[Server]
+	public bool TrySendMessageToClient(string content, EncryptedChannel channel)
+	{
+		if (!NetworkServer.active)
+		{
+			Debug.LogWarning("[Server] function 'System.Boolean EncryptedChannelManager::TrySendMessageToClient(System.String,EncryptedChannelManager/EncryptedChannel)' called when server was not active");
+			return default(bool);
+		}
+		if (_txCounter == uint.MaxValue)
+		{
+			_txCounter = 0u;
+		}
+		if (!TryPack(new EncryptedMessage(channel, content, ++_txCounter), out var packed, base.isLocalPlayer))
+		{
+			return false;
+		}
+		base.connectionToClient.Send(packed);
+		return true;
+	}
+
+	[Server]
+	public bool TrySendMessageToClient(byte[] content, EncryptedChannel channel)
+	{
+		if (!NetworkServer.active)
+		{
+			Debug.LogWarning("[Server] function 'System.Boolean EncryptedChannelManager::TrySendMessageToClient(System.Byte[],EncryptedChannelManager/EncryptedChannel)' called when server was not active");
+			return default(bool);
+		}
+		if (_txCounter == uint.MaxValue)
+		{
+			_txCounter = 0u;
+		}
+		if (!TryPack(new EncryptedMessage(channel, content, ++_txCounter), out var packed, base.isLocalPlayer))
+		{
+			return false;
+		}
+		base.connectionToClient.Send(packed);
+		return true;
+	}
+
+	private bool TryPack(EncryptedMessage msg, out EncryptedMessageOutside packed, bool localClient = false)
+	{
+		bool flag = EncryptionKey != null && !localClient;
+		if (!localClient && RequiredSecurityLevels[msg.Channel] == SecurityLevel.EncryptedAndAuthenticated && !flag)
+		{
+			GameCore.Console.AddLog($"Failed to send encrypted message to {msg.Channel} channel. Encryption key is not available.", Color.red);
+			packed = default(EncryptedMessageOutside);
+			return false;
+		}
+		byte[] array = new byte[msg.GetLength];
+		msg.Serialize(array);
+		if (!flag)
+		{
+			packed = new EncryptedMessageOutside(SecurityLevel.Unsecured, array);
+			return true;
+		}
+		packed = new EncryptedMessageOutside(SecurityLevel.EncryptedAndAuthenticated, AES.AesGcmEncrypt(array, EncryptionKey, SecureRandom));
+		return true;
+	}
+
+	private bool TryUnpack(EncryptedMessageOutside packed, out EncryptedMessage msg, out SecurityLevel level, bool localClient)
+	{
+		level = packed.Level;
+		bool flag = packed.Level == SecurityLevel.EncryptedAndAuthenticated;
+		if (flag && EncryptionKey == null)
+		{
+			GameCore.Console.AddLog("Failed to decrypt received message. Encryption key is not available.", Color.red);
+			msg = default(EncryptedMessage);
+			return false;
+		}
+		if (!flag)
+		{
+			msg = EncryptedMessage.Deserialize(packed.Data);
+			if (!localClient && RequiredSecurityLevels[msg.Channel] == SecurityLevel.EncryptedAndAuthenticated)
+			{
+				GameCore.Console.AddLog($"Message on channel {msg.Channel} was sent without encryption. Discarding message!", Color.red);
+				msg = default(EncryptedMessage);
+				return false;
+			}
+			return true;
+		}
+		try
+		{
+			msg = EncryptedMessage.Deserialize(AES.AesGcmDecrypt(packed.Data, EncryptionKey));
+		}
+		catch (Exception ex)
+		{
+			GameCore.Console.AddLog("Failed to decrypt received message. Exception: " + ex.Message, Color.red);
+			GameCore.Console.AddLog(ex.StackTrace, Color.red);
+			msg = default(EncryptedMessage);
+			return false;
+		}
+		if (_rxCounter == uint.MaxValue)
+		{
+			_rxCounter = 0u;
+		}
+		if (msg.Counter <= _rxCounter)
+		{
+			GameCore.Console.AddLog($"Received message with counter {msg.Counter}, which is lower or equal to last received message counter {_rxCounter}. Discarding message!", Color.red);
+			msg = default(EncryptedMessage);
+			return false;
+		}
+		_rxCounter = msg.Counter;
+		return true;
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
+		{
+			writer.WriteString(ServerRandom);
+			return;
+		}
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 1L) != 0L)
+		{
+			writer.WriteString(ServerRandom);
+		}
+	}
+
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref ServerRandom, ReceivedSaltHook, reader.ReadString());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 1L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref ServerRandom, ReceivedSaltHook, reader.ReadString());
+		}
 	}
 }

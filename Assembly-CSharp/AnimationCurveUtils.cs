@@ -1,11 +1,10 @@
-﻿using System;
 using UnityEngine;
 
 public static class AnimationCurveUtils
 {
 	public static AnimationCurve MakeLinearCurve(Keyframe[] keyframes, WrapMode preWrapMode = WrapMode.Once, WrapMode postWrapMode = WrapMode.Once)
 	{
-		return new AnimationCurve(AnimationCurveUtils.MakeLinearKeyframes(keyframes))
+		return new AnimationCurve(MakeLinearKeyframes(keyframes))
 		{
 			preWrapMode = preWrapMode,
 			postWrapMode = postWrapMode
@@ -16,7 +15,7 @@ public static class AnimationCurveUtils
 	{
 		for (int i = 0; i < keyframes.Length; i++)
 		{
-			keyframes[i] = AnimationCurveUtils.MakeLinearKeyframe(keyframes[i]);
+			keyframes[i] = MakeLinearKeyframe(keyframes[i]);
 		}
 		return keyframes;
 	}
@@ -28,6 +27,6 @@ public static class AnimationCurveUtils
 
 	public static Keyframe MakeLinearKeyframe(Keyframe keyframe)
 	{
-		return AnimationCurveUtils.MakeLinearKeyframe(keyframe.time, keyframe.value);
+		return MakeLinearKeyframe(keyframe.time, keyframe.value);
 	}
 }

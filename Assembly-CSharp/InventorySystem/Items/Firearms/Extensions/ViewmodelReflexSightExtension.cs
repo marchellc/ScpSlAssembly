@@ -1,129 +1,118 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+using System;
 using InventorySystem.Items.Firearms.Attachments.Components;
 using InventorySystem.Items.Firearms.Modules;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+[PresetPrefabExtension("Holo Sight Renderer", false)]
+public class ViewmodelReflexSightExtension : MonoBehaviour, IViewmodelExtension
 {
-	[PresetPrefabExtension("Holo Sight Renderer", false)]
-	public class ViewmodelReflexSightExtension : MonoBehaviour, IViewmodelExtension
+	private static readonly int HashTexture = Shader.PropertyToID("_CrosshairTex");
+
+	private static readonly int HashColor = Shader.PropertyToID("_CrosshairColor");
+
+	private static readonly int HashSize = Shader.PropertyToID("_SizeMultiplier");
+
+	private static readonly GameObject[] RelativesNonAlloc = new GameObject[4];
+
+	private static Material _materialInstance;
+
+	private Firearm _firearm;
+
+	private ReflexSightAttachment _sightAtt;
+
+	private Color _targetColor;
+
+	private float? _prevAds;
+
+	private bool _initialized;
+
+	[SerializeField]
+	private Renderer _targetRenderer;
+
+	private void LateUpdate()
 	{
-		private void LateUpdate()
+		if (_firearm.TryGetModule<IAdsModule>(out var module))
 		{
-			IAdsModule adsModule;
-			if (!this._firearm.TryGetModule(out adsModule, true))
+			float adsAmount = module.AdsAmount;
+			if (!_prevAds.HasValue || _prevAds.Value != adsAmount)
 			{
-				return;
-			}
-			float adsAmount = adsModule.AdsAmount;
-			if (this._prevAds != null && this._prevAds.Value == adsAmount)
-			{
-				return;
-			}
-			ViewmodelReflexSightExtension._materialInstance.SetColor(ViewmodelReflexSightExtension.HashColor, this._targetColor * adsAmount);
-			this._prevAds = new float?(adsAmount);
-		}
-
-		private void OnEnable()
-		{
-			if (this._initialized)
-			{
-				this.UpdateValues();
+				_materialInstance.SetColor(HashColor, _targetColor * adsAmount);
+				_prevAds = adsAmount;
 			}
 		}
+	}
 
-		private void UpdateValues()
+	private void OnEnable()
+	{
+		if (_initialized)
 		{
-			this.SetMaterial(this._sightAtt.TextureOptions[this._sightAtt.CurTextureIndex], ReflexSightAttachment.Sizes[this._sightAtt.CurSizeIndex], ReflexSightAttachment.Colors[this._sightAtt.CurColorIndex], ReflexSightAttachment.BrightnessLevels[this._sightAtt.CurBrightnessIndex]);
+			UpdateValues();
 		}
+	}
 
-		private void SetMaterial(Texture texture, float size, Color color, float brigthness)
+	private void UpdateValues()
+	{
+		SetMaterial(_sightAtt.TextureOptions[_sightAtt.CurTextureIndex], ReflexSightAttachment.Sizes[_sightAtt.CurSizeIndex], ReflexSightAttachment.Colors[_sightAtt.CurColorIndex], ReflexSightAttachment.BrightnessLevels[_sightAtt.CurBrightnessIndex]);
+	}
+
+	private void SetMaterial(Texture texture, float size, Color color, float brigthness)
+	{
+		_materialInstance.SetTexture(HashTexture, texture);
+		_materialInstance.SetFloat(HashSize, size);
+		_targetColor = Color.Lerp(color, Color.white, brigthness);
+		_prevAds = null;
+	}
+
+	private void FindSightAttachment(AnimatedFirearmViewmodel viewmodel)
+	{
+		int relativesCount = 0;
+		GameObject gameObject = base.gameObject;
+		do
 		{
-			ViewmodelReflexSightExtension._materialInstance.SetTexture(ViewmodelReflexSightExtension.HashTexture, texture);
-			ViewmodelReflexSightExtension._materialInstance.SetFloat(ViewmodelReflexSightExtension.HashSize, size);
-			this._targetColor = Color.Lerp(color, Color.white, brigthness);
-			this._prevAds = null;
+			RelativesNonAlloc[relativesCount++] = gameObject;
+			gameObject = gameObject.transform.parent.gameObject;
 		}
-
-		private void FindSightAttachment(AnimatedFirearmViewmodel viewmodel)
+		while (!(gameObject == null) && relativesCount != RelativesNonAlloc.Length);
+		for (int i = 0; i < viewmodel.Attachments.Length; i++)
 		{
-			ViewmodelReflexSightExtension.<>c__DisplayClass15_0 CS$<>8__locals1;
-			CS$<>8__locals1.relativesCount = 0;
-			GameObject gameObject = base.gameObject;
-			do
+			GameObject[] group = viewmodel.Attachments[i].Group;
+			for (int j = 0; j < group.Length; j++)
 			{
-				GameObject[] relativesNonAlloc = ViewmodelReflexSightExtension.RelativesNonAlloc;
-				int i = CS$<>8__locals1.relativesCount;
-				CS$<>8__locals1.relativesCount = i + 1;
-				relativesNonAlloc[i] = gameObject;
-				gameObject = gameObject.transform.parent.gameObject;
-			}
-			while (!(gameObject == null) && CS$<>8__locals1.relativesCount != ViewmodelReflexSightExtension.RelativesNonAlloc.Length);
-			for (int j = 0; j < viewmodel.Attachments.Length; j++)
-			{
-				GameObject[] group = viewmodel.Attachments[j].Group;
-				for (int i = 0; i < group.Length; i++)
+				if (IsRelated(group[j]))
 				{
-					if (ViewmodelReflexSightExtension.<FindSightAttachment>g__IsRelated|15_0(group[i], ref CS$<>8__locals1))
-					{
-						this._sightAtt = this._firearm.Attachments[j] as ReflexSightAttachment;
-						return;
-					}
+					_sightAtt = _firearm.Attachments[i] as ReflexSightAttachment;
+					return;
 				}
 			}
-			Debug.LogError("No reflex sight attachment found for '" + base.name + "'!");
 		}
-
-		public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
+		Debug.LogError("No reflex sight attachment found for '" + base.name + "'!");
+		bool IsRelated(GameObject other)
 		{
-			this._firearm = viewmodel.ParentFirearm;
-			if (ViewmodelReflexSightExtension._materialInstance == null)
+			for (int k = 0; k < relativesCount; k++)
 			{
-				ViewmodelReflexSightExtension._materialInstance = new Material(this._targetRenderer.material);
-			}
-			this._targetRenderer.sharedMaterial = ViewmodelReflexSightExtension._materialInstance;
-			this.FindSightAttachment(viewmodel);
-			this.UpdateValues();
-			ReflexSightAttachment sightAtt = this._sightAtt;
-			sightAtt.OnValuesChanged = (Action)Delegate.Combine(sightAtt.OnValuesChanged, new Action(this.UpdateValues));
-			this._initialized = true;
-		}
-
-		[CompilerGenerated]
-		internal static bool <FindSightAttachment>g__IsRelated|15_0(GameObject other, ref ViewmodelReflexSightExtension.<>c__DisplayClass15_0 A_1)
-		{
-			for (int i = 0; i < A_1.relativesCount; i++)
-			{
-				if (other == ViewmodelReflexSightExtension.RelativesNonAlloc[i])
+				if (other == RelativesNonAlloc[k])
 				{
 					return true;
 				}
 			}
 			return false;
 		}
+	}
 
-		private static readonly int HashTexture = Shader.PropertyToID("_CrosshairTex");
-
-		private static readonly int HashColor = Shader.PropertyToID("_CrosshairColor");
-
-		private static readonly int HashSize = Shader.PropertyToID("_SizeMultiplier");
-
-		private static readonly GameObject[] RelativesNonAlloc = new GameObject[4];
-
-		private static Material _materialInstance;
-
-		private Firearm _firearm;
-
-		private ReflexSightAttachment _sightAtt;
-
-		private Color _targetColor;
-
-		private float? _prevAds;
-
-		private bool _initialized;
-
-		[SerializeField]
-		private Renderer _targetRenderer;
+	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
+	{
+		_firearm = viewmodel.ParentFirearm;
+		if (_materialInstance == null)
+		{
+			_materialInstance = new Material(_targetRenderer.material);
+		}
+		_targetRenderer.sharedMaterial = _materialInstance;
+		FindSightAttachment(viewmodel);
+		UpdateValues();
+		ReflexSightAttachment sightAtt = _sightAtt;
+		sightAtt.OnValuesChanged = (Action)Delegate.Combine(sightAtt.OnValuesChanged, new Action(UpdateValues));
+		_initialized = true;
 	}
 }

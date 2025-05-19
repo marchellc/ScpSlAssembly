@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+public interface IInaccuracyProviderModule
 {
-	public interface IInaccuracyProviderModule
-	{
-		float Inaccuracy { get; }
-	}
+	float Inaccuracy { get; }
 }

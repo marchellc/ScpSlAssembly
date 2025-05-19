@@ -1,16 +1,14 @@
-﻿using System;
 using UnityEngine;
 
-namespace UserSettings.OtherSettings
+namespace UserSettings.OtherSettings;
+
+public static class MiscPrivacySettings
 {
-	public static class MiscPrivacySettings
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			UserSetting<bool>.SetDefaultValue<MiscPrivacySetting>(MiscPrivacySetting.SteamLobbyPrivacy, true);
-			UserSetting<bool>.SetDefaultValue<MiscPrivacySetting>(MiscPrivacySetting.RichPresence, true);
-			UserSetting<int>.SetDefaultValue<MiscPrivacySetting>(MiscPrivacySetting.SteamLobbyPrivacy, 1);
-		}
+		UserSetting<bool>.SetDefaultValue(MiscPrivacySetting.SteamLobbyPrivacy, defaultValue: true);
+		UserSetting<bool>.SetDefaultValue(MiscPrivacySetting.RichPresence, defaultValue: true);
+		UserSetting<int>.SetDefaultValue(MiscPrivacySetting.SteamLobbyPrivacy, 1);
 	}
 }

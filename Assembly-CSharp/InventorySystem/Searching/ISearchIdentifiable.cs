@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Searching;
 
-namespace InventorySystem.Searching
+public interface ISearchIdentifiable
 {
-	public interface ISearchIdentifiable
-	{
-		byte Id { get; }
-	}
+	byte Id { get; }
 }

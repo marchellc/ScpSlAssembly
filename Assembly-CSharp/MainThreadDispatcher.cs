@@ -1,40 +1,14 @@
-﻿using System;
+using System;
 using NorthwoodLib;
 using UnityEngine;
 
 public class MainThreadDispatcher : MonoBehaviour
 {
-	public static void Dispatch(Action action, MainThreadDispatcher.DispatchTime dispatchTime = MainThreadDispatcher.DispatchTime.Update)
+	public enum DispatchTime
 	{
-		switch (dispatchTime)
-		{
-		case MainThreadDispatcher.DispatchTime.Update:
-			MainThreadDispatcher.UpdateDispatcher.Dispatch(action);
-			return;
-		case MainThreadDispatcher.DispatchTime.LateUpdate:
-			MainThreadDispatcher.LateUpdateDispatcher.Dispatch(action);
-			return;
-		case MainThreadDispatcher.DispatchTime.FixedUpdate:
-			MainThreadDispatcher.FixedUpdateDispatcher.Dispatch(action);
-			return;
-		default:
-			return;
-		}
-	}
-
-	private void Update()
-	{
-		MainThreadDispatcher.UpdateDispatcher.Invoke();
-	}
-
-	private void LateUpdate()
-	{
-		MainThreadDispatcher.LateUpdateDispatcher.Invoke();
-	}
-
-	private void FixedUpdate()
-	{
-		MainThreadDispatcher.FixedUpdateDispatcher.Invoke();
+		Update,
+		LateUpdate,
+		FixedUpdate
 	}
 
 	private static readonly ActionDispatcher UpdateDispatcher = new ActionDispatcher();
@@ -43,10 +17,34 @@ public class MainThreadDispatcher : MonoBehaviour
 
 	private static readonly ActionDispatcher FixedUpdateDispatcher = new ActionDispatcher();
 
-	public enum DispatchTime
+	public static void Dispatch(Action action, DispatchTime dispatchTime = DispatchTime.Update)
 	{
-		Update,
-		LateUpdate,
-		FixedUpdate
+		switch (dispatchTime)
+		{
+		case DispatchTime.Update:
+			UpdateDispatcher.Dispatch(action);
+			break;
+		case DispatchTime.LateUpdate:
+			LateUpdateDispatcher.Dispatch(action);
+			break;
+		case DispatchTime.FixedUpdate:
+			FixedUpdateDispatcher.Dispatch(action);
+			break;
+		}
+	}
+
+	private void Update()
+	{
+		UpdateDispatcher.Invoke();
+	}
+
+	private void LateUpdate()
+	{
+		LateUpdateDispatcher.Invoke();
+	}
+
+	private void FixedUpdate()
+	{
+		FixedUpdateDispatcher.Invoke();
 	}
 }

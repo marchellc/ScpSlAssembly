@@ -1,13 +1,10 @@
-﻿using System;
+namespace CentralAuth;
 
-namespace CentralAuth
+public enum ClientInstanceMode : byte
 {
-	public enum ClientInstanceMode : byte
-	{
-		Unverified,
-		ReadyClient,
-		Host,
-		DedicatedServer,
-		Dummy
-	}
+	Unverified,
+	ReadyClient,
+	Host,
+	DedicatedServer,
+	Dummy
 }

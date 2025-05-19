@@ -1,288 +1,292 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using Footprinting;
 using Interactables.Interobjects.DoorUtils;
 using Mirror;
 using UnityEngine;
 
-namespace Interactables.Interobjects
+namespace Interactables.Interobjects;
+
+public class BreakableDoor : BasicDoor, IDamageableDoor, INonInteractableDoor, IScp106PassableDoor
 {
-	public class BreakableDoor : BasicDoor, IDamageableDoor, INonInteractableDoor, IScp106PassableDoor
+	[SyncVar]
+	private bool _destroyed;
+
+	private bool _prevDestroyed;
+
+	[Header("Breakable Door Settings")]
+	[SerializeField]
+	private float _maxHealth = 80f;
+
+	[SerializeField]
+	private BrokenDoor _brokenPrefab;
+
+	[SerializeField]
+	private DoorDamageType _ignoredDamageSources;
+
+	[SerializeField]
+	private GameObject _objectToReplace;
+
+	[SerializeField]
+	private bool _nonInteractable;
+
+	[SerializeField]
+	[SyncVar]
+	private bool _restrict106WhileLocked;
+
+	public float RemainingHealth { get; set; }
+
+	public float MaxHealth
 	{
-		public float RemainingHealth { get; set; }
-
-		public float MaxHealth
+		get
 		{
-			get
-			{
-				return this._maxHealth;
-			}
-			set
-			{
-				this._maxHealth = value;
-			}
+			return _maxHealth;
 		}
-
-		public DoorDamageType IgnoredDamageSources
+		set
 		{
-			get
-			{
-				return this._ignoredDamageSources;
-			}
-			set
-			{
-				this._ignoredDamageSources = value;
-			}
+			_maxHealth = value;
 		}
+	}
 
-		public bool IsDestroyed
+	public DoorDamageType IgnoredDamageSources
+	{
+		get
 		{
-			get
-			{
-				return this._destroyed;
-			}
-			set
+			return _ignoredDamageSources;
+		}
+		set
+		{
+			_ignoredDamageSources = value;
+		}
+	}
+
+	public bool IsDestroyed
+	{
+		get
+		{
+			return _destroyed;
+		}
+		set
+		{
+			if (value != _destroyed)
 			{
 				if (value)
 				{
-					this.ServerDamage(this._maxHealth, DoorDamageType.ServerCommand, default(Footprint));
-					return;
+					ServerDamage(_maxHealth, DoorDamageType.ServerCommand);
 				}
-				this.ServerRepair();
-			}
-		}
-
-		public bool IgnoreLockdowns
-		{
-			get
-			{
-				return this._nonInteractable;
-			}
-		}
-
-		public bool IgnoreRemoteAdmin
-		{
-			get
-			{
-				return this._nonInteractable;
-			}
-		}
-
-		public bool IsScp106Passable
-		{
-			get
-			{
-				return !this._restrict106WhileLocked || this.ActiveLocks == 0 || this.TargetState;
-			}
-			set
-			{
-				this.Network_restrict106WhileLocked = !value;
-			}
-		}
-
-		[Server]
-		public bool ServerDamage(float hp, DoorDamageType type, Footprint attacker = default(Footprint))
-		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Boolean Interactables.Interobjects.BreakableDoor::ServerDamage(System.Single,Interactables.Interobjects.DoorUtils.DoorDamageType,Footprinting.Footprint)' called when server was not active");
-				return default(bool);
-			}
-			if (this._destroyed)
-			{
-				return false;
-			}
-			if (this._ignoredDamageSources.HasFlagFast(type))
-			{
-				return false;
-			}
-			if (this._brokenPrefab == null || this._objectToReplace == null)
-			{
-				return false;
-			}
-			this.RemainingHealth -= hp;
-			if (this.RemainingHealth <= 0f)
-			{
-				this.Network_destroyed = true;
-				DoorEvents.TriggerAction(this, DoorAction.Destroyed, null);
-				if (!attacker.IsSet)
+				else
 				{
-					return true;
+					ServerRepair();
 				}
-				ServerLogs.AddLog(ServerLogs.Modules.Door, string.Format("{0} destroyed {1} door using {2}.", attacker.LoggedNameFromFootprint(), this.DoorName ?? "unnamed", type), ServerLogs.ServerLogType.GameEvent, false);
+			}
+		}
+	}
+
+	public bool IgnoreLockdowns => _nonInteractable;
+
+	public bool IgnoreRemoteAdmin => _nonInteractable;
+
+	public bool IsScp106Passable
+	{
+		get
+		{
+			if (_restrict106WhileLocked && ActiveLocks != 0)
+			{
+				return TargetState;
 			}
 			return true;
 		}
-
-		[Server]
-		public bool ServerRepair()
+		set
 		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Boolean Interactables.Interobjects.BreakableDoor::ServerRepair()' called when server was not active");
-				return default(bool);
-			}
-			if (!this._destroyed)
-			{
-				return false;
-			}
-			this.Network_destroyed = false;
-			this.RemainingHealth = this._maxHealth;
-			return true;
+			Network_restrict106WhileLocked = !value;
 		}
+	}
 
-		public override float GetExactState()
+	public bool Network_destroyed
+	{
+		get
 		{
-			if (!this._destroyed)
-			{
-				return base.GetExactState();
-			}
-			return 1f;
+			return _destroyed;
 		}
-
-		public override bool AllowInteracting(ReferenceHub ply, byte colliderId)
+		[param: In]
+		set
 		{
-			return !this._destroyed && base.AllowInteracting(ply, colliderId);
+			GeneratedSyncVarSetter(value, ref _destroyed, 8uL, null);
 		}
+	}
 
-		internal override void TargetStateChanged()
+	public bool Network_restrict106WhileLocked
+	{
+		get
 		{
-			if (!this._destroyed)
-			{
-				base.TargetStateChanged();
-			}
+			return _restrict106WhileLocked;
 		}
-
-		protected override void Update()
+		[param: In]
+		set
 		{
-			base.Update();
-			if (!this._prevDestroyed && this._destroyed)
-			{
-				this._prevDestroyed = true;
-				this.ClientDestroyEffects();
-			}
-			if (this._prevDestroyed && !this._destroyed)
-			{
-				this._prevDestroyed = false;
-				this.ClientRepairEffects();
-			}
+			GeneratedSyncVarSetter(value, ref _restrict106WhileLocked, 16uL, null);
 		}
+	}
 
-		protected override void Awake()
+	public event Action OnDestroyedChanged;
+
+	[Server]
+	public bool ServerDamage(float hp, DoorDamageType type, Footprint attacker = default(Footprint))
+	{
+		if (!NetworkServer.active)
 		{
-			base.Awake();
-			this.RemainingHealth = this._maxHealth;
+			Debug.LogWarning("[Server] function 'System.Boolean Interactables.Interobjects.BreakableDoor::ServerDamage(System.Single,Interactables.Interobjects.DoorUtils.DoorDamageType,Footprinting.Footprint)' called when server was not active");
+			return default(bool);
 		}
-
-		public void ClientDestroyEffects()
+		if (_destroyed)
 		{
-			this._objectToReplace.SetActive(false);
+			return false;
 		}
-
-		public void ClientRepairEffects()
+		if (_ignoredDamageSources.HasFlagFast(type))
 		{
-			this._objectToReplace.SetActive(true);
+			return false;
 		}
-
-		public float GetHealthPercent()
+		if (_brokenPrefab == null || _objectToReplace == null)
 		{
-			return Mathf.Clamp01(this.RemainingHealth / this._maxHealth);
+			return false;
 		}
-
-		public override bool Weaved()
+		RemainingHealth -= hp;
+		if (RemainingHealth <= 0f)
 		{
-			return true;
+			Network_destroyed = true;
+			DoorEvents.TriggerAction(this, DoorAction.Destroyed, null);
+			if (!attacker.IsSet)
+			{
+				return true;
+			}
+			ServerLogs.AddLog(ServerLogs.Modules.Door, string.Format("{0} destroyed {1} door using {2}.", attacker.LoggedNameFromFootprint(), DoorName ?? "unnamed", type), ServerLogs.ServerLogType.GameEvent);
 		}
+		return true;
+	}
 
-		public bool Network_destroyed
+	[Server]
+	public bool ServerRepair()
+	{
+		if (!NetworkServer.active)
 		{
-			get
-			{
-				return this._destroyed;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<bool>(value, ref this._destroyed, 8UL, null);
-			}
+			Debug.LogWarning("[Server] function 'System.Boolean Interactables.Interobjects.BreakableDoor::ServerRepair()' called when server was not active");
+			return default(bool);
 		}
-
-		public bool Network_restrict106WhileLocked
+		if (!_destroyed)
 		{
-			get
-			{
-				return this._restrict106WhileLocked;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<bool>(value, ref this._restrict106WhileLocked, 16UL, null);
-			}
+			return false;
 		}
+		Network_destroyed = false;
+		RemainingHealth = _maxHealth;
+		return true;
+	}
 
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	public override float GetExactState()
+	{
+		if (!_destroyed)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteBool(this._destroyed);
-				writer.WriteBool(this._restrict106WhileLocked);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 8UL) != 0UL)
-			{
-				writer.WriteBool(this._destroyed);
-			}
-			if ((base.syncVarDirtyBits & 16UL) != 0UL)
-			{
-				writer.WriteBool(this._restrict106WhileLocked);
-			}
+			return base.GetExactState();
 		}
+		return 1f;
+	}
 
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	public override bool AllowInteracting(ReferenceHub ply, byte colliderId)
+	{
+		if (!_destroyed)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<bool>(ref this._destroyed, null, reader.ReadBool());
-				base.GeneratedSyncVarDeserialize<bool>(ref this._restrict106WhileLocked, null, reader.ReadBool());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 8L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<bool>(ref this._destroyed, null, reader.ReadBool());
-			}
-			if ((num & 16L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<bool>(ref this._restrict106WhileLocked, null, reader.ReadBool());
-			}
+			return base.AllowInteracting(ply, colliderId);
 		}
+		return false;
+	}
 
-		[SyncVar]
-		private bool _destroyed;
+	internal override void TargetStateChanged()
+	{
+		if (!_destroyed)
+		{
+			base.TargetStateChanged();
+		}
+	}
 
-		private bool _prevDestroyed;
+	protected override void Update()
+	{
+		base.Update();
+		if (!_prevDestroyed && _destroyed)
+		{
+			_prevDestroyed = true;
+			ClientDestroyEffects();
+			this.OnDestroyedChanged?.Invoke();
+		}
+		if (_prevDestroyed && !_destroyed)
+		{
+			_prevDestroyed = false;
+			ClientRepairEffects();
+			this.OnDestroyedChanged?.Invoke();
+		}
+	}
 
-		[Header("Breakable Door Settings")]
-		[SerializeField]
-		private float _maxHealth = 80f;
+	protected override void Awake()
+	{
+		base.Awake();
+		RemainingHealth = _maxHealth;
+	}
 
-		[SerializeField]
-		private BrokenDoor _brokenPrefab;
+	public void ClientDestroyEffects()
+	{
+		_objectToReplace.SetActive(value: false);
+	}
 
-		[SerializeField]
-		private DoorDamageType _ignoredDamageSources;
+	public void ClientRepairEffects()
+	{
+		_objectToReplace.SetActive(value: true);
+	}
 
-		[SerializeField]
-		private GameObject _objectToReplace;
+	public float GetHealthPercent()
+	{
+		return Mathf.Clamp01(RemainingHealth / _maxHealth);
+	}
 
-		[SerializeField]
-		private bool _nonInteractable;
+	public override bool Weaved()
+	{
+		return true;
+	}
 
-		[SerializeField]
-		[SyncVar]
-		private bool _restrict106WhileLocked;
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
+		{
+			writer.WriteBool(_destroyed);
+			writer.WriteBool(_restrict106WhileLocked);
+			return;
+		}
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 8L) != 0L)
+		{
+			writer.WriteBool(_destroyed);
+		}
+		if ((base.syncVarDirtyBits & 0x10L) != 0L)
+		{
+			writer.WriteBool(_restrict106WhileLocked);
+		}
+	}
+
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref _destroyed, null, reader.ReadBool());
+			GeneratedSyncVarDeserialize(ref _restrict106WhileLocked, null, reader.ReadBool());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 8L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _destroyed, null, reader.ReadBool());
+		}
+		if ((num & 0x10L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _restrict106WhileLocked, null, reader.ReadBool());
+		}
 	}
 }

@@ -1,34 +1,14 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class Disabled : StatusEffectBase, IMovementSpeedModifier
 {
-	public class Disabled : StatusEffectBase, IMovementSpeedModifier
-	{
-		public bool MovementModifierActive
-		{
-			get
-			{
-				return base.IsEnabled;
-			}
-		}
+	public float SpeedMultiplier = 0.8f;
 
-		public float MovementSpeedMultiplier
-		{
-			get
-			{
-				return (this.SpeedMultiplier - 1f) * RainbowTaste.CurrentMultiplier(base.Hub) + 1f;
-			}
-		}
+	public bool MovementModifierActive => base.IsEnabled;
 
-		public float MovementSpeedLimit
-		{
-			get
-			{
-				return float.MaxValue;
-			}
-		}
+	public float MovementSpeedMultiplier => (SpeedMultiplier - 1f) * RainbowTaste.CurrentMultiplier(base.Hub) + 1f;
 
-		public float SpeedMultiplier = 0.8f;
-	}
+	public float MovementSpeedLimit => float.MaxValue;
 }

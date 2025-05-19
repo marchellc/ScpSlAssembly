@@ -1,10 +1,7 @@
-﻿using System;
+namespace Scp914;
 
-namespace Scp914
+public enum Scp914Sound : byte
 {
-	public enum Scp914Sound : byte
-	{
-		KnobChange,
-		Upgrading
-	}
+	KnobChange,
+	Upgrading
 }

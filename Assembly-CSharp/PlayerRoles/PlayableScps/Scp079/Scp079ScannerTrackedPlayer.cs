@@ -1,79 +1,73 @@
-﻿using System;
+using System;
 using MapGeneration;
 using Mirror;
 using RelativePositioning;
 using UnityEngine;
 using Utils.NonAllocLINQ;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public class Scp079ScannerTrackedPlayer
 {
-	public class Scp079ScannerTrackedPlayer
+	public readonly int PlayerHash;
+
+	public readonly ReferenceHub Hub;
+
+	private readonly HumanRole _role;
+
+	private double _resetTime;
+
+	private RelativePosition _centerPos;
+
+	private const float EnemyProxSqr = 22500f;
+
+	public bool IsCamping { get; private set; }
+
+	public FacilityZone LastZone { get; private set; }
+
+	public Vector3 PlyPos => _role.FpcModule.Position;
+
+	public Scp079ScannerTrackedPlayer(ReferenceHub hub)
 	{
-		public bool IsCamping { get; private set; }
-
-		public FacilityZone LastZone { get; private set; }
-
-		public Vector3 PlyPos
+		Hub = hub;
+		PlayerHash = hub.GetHashCode();
+		if (!(hub.roleManager.CurrentRole is HumanRole role))
 		{
-			get
-			{
-				return this._role.FpcModule.Position;
-			}
+			throw new ArgumentOutOfRangeException("Cannot track non-human roles!");
 		}
+		_role = role;
+		ResetPosition();
+	}
 
-		public Scp079ScannerTrackedPlayer(ReferenceHub hub)
+	public void Update(float baselineRadius, float additiveRadius, float maxCampingTime)
+	{
+		float sqrMagnitude = (PlyPos - _centerPos.Position).sqrMagnitude;
+		if (PlyPos.TryGetRoom(out var room))
 		{
-			this.Hub = hub;
-			this.PlayerHash = hub.GetHashCode();
-			HumanRole humanRole = hub.roleManager.CurrentRole as HumanRole;
-			if (humanRole == null)
-			{
-				throw new ArgumentOutOfRangeException("Cannot track non-human roles!");
-			}
-			this._role = humanRole;
-			this.ResetPosition();
+			LastZone = room.Zone;
 		}
-
-		public void Update(float baselineRadius, float additiveRadius, float maxCampingTime)
+		int a = ReferenceHub.AllHubs.Count(CheckEnemy);
+		float num = baselineRadius + additiveRadius / (float)Mathf.Max(a, 1);
+		if (sqrMagnitude > num * num)
 		{
-			float sqrMagnitude = (this.PlyPos - this._centerPos.Position).sqrMagnitude;
-			RoomIdentifier roomIdentifier = RoomUtils.RoomAtPosition(this.PlyPos);
-			if (roomIdentifier != null)
-			{
-				this.LastZone = roomIdentifier.Zone;
-			}
-			int num = ReferenceHub.AllHubs.Count(new Func<ReferenceHub, bool>(this.CheckEnemy));
-			float num2 = baselineRadius + additiveRadius / (float)Mathf.Max(num, 1);
-			if (sqrMagnitude > num2 * num2)
-			{
-				this.ResetPosition();
-			}
-			this.IsCamping = NetworkTime.time - this._resetTime > (double)maxCampingTime;
+			ResetPosition();
 		}
+		IsCamping = NetworkTime.time - _resetTime > (double)maxCampingTime;
+	}
 
-		private bool CheckEnemy(ReferenceHub hub)
+	private bool CheckEnemy(ReferenceHub hub)
+	{
+		if (hub.roleManager.CurrentRole is HumanRole humanRole && humanRole.Team.GetFaction() != _role.Team.GetFaction())
 		{
-			HumanRole humanRole = hub.roleManager.CurrentRole as HumanRole;
-			return humanRole != null && humanRole.Team.GetFaction() != this._role.Team.GetFaction() && (humanRole.FpcModule.Position - this.PlyPos).sqrMagnitude < 22500f;
+			return (humanRole.FpcModule.Position - PlyPos).sqrMagnitude < 22500f;
 		}
+		return false;
+	}
 
-		private void ResetPosition()
-		{
-			this.IsCamping = false;
-			this._resetTime = NetworkTime.time;
-			this._centerPos = new RelativePosition(this.PlyPos);
-		}
-
-		public readonly int PlayerHash;
-
-		public readonly ReferenceHub Hub;
-
-		private readonly HumanRole _role;
-
-		private double _resetTime;
-
-		private RelativePosition _centerPos;
-
-		private const float EnemyProxSqr = 22500f;
+	private void ResetPosition()
+	{
+		IsCamping = false;
+		_resetTime = NetworkTime.time;
+		_centerPos = new RelativePosition(PlyPos);
 	}
 }

@@ -1,122 +1,112 @@
-﻿using System;
+using System;
 using Mirror;
 using TMPro;
 using Utils.Networking;
 
-namespace UserSettings.ServerSpecific
+namespace UserSettings.ServerSpecific;
+
+public class SSPlaintextSetting : ServerSpecificSettingBase, ISSUpdatable
 {
-	public class SSPlaintextSetting : ServerSpecificSettingBase, ISSUpdatable
+	private int? _characterLimitOriginalCache;
+
+	public string SyncInputText { get; internal set; }
+
+	public string Placeholder { get; private set; }
+
+	public TMP_InputField.ContentType ContentType { get; private set; }
+
+	public int CharacterLimit { get; private set; }
+
+	public override string DebugValue => SyncInputText;
+
+	private int CharacterLimitOriginal
 	{
-		internal event Action OnClearRequested;
-
-		public string SyncInputText { get; internal set; }
-
-		public string Placeholder { get; private set; }
-
-		public TMP_InputField.ContentType ContentType { get; private set; }
-
-		public int CharacterLimit { get; private set; }
-
-		public override string DebugValue
+		get
 		{
-			get
+			int valueOrDefault = _characterLimitOriginalCache.GetValueOrDefault();
+			if (!_characterLimitOriginalCache.HasValue)
 			{
-				return this.SyncInputText;
+				valueOrDefault = (base.OriginalDefinition as SSPlaintextSetting).CharacterLimit;
+				_characterLimitOriginalCache = valueOrDefault;
 			}
+			return _characterLimitOriginalCache.Value;
 		}
+	}
 
-		private int CharacterLimitOriginal
+	internal event Action OnClearRequested;
+
+	public SSPlaintextSetting(int? id, string label, string placeholder = "...", int characterLimit = 64, TMP_InputField.ContentType contentType = TMP_InputField.ContentType.Standard, string hint = null)
+	{
+		SetId(id, label);
+		base.Label = label;
+		base.HintDescription = hint;
+		Placeholder = placeholder;
+		CharacterLimit = characterLimit;
+		ContentType = contentType;
+	}
+
+	public void SendClearRequest(Func<ReferenceHub, bool> receiveFilter = null)
+	{
+		SSSUpdateMessage sSSUpdateMessage = new SSSUpdateMessage(this, null);
+		if (receiveFilter == null)
 		{
-			get
-			{
-				int num = this._characterLimitOriginalCache.GetValueOrDefault();
-				if (this._characterLimitOriginalCache == null)
-				{
-					num = (base.OriginalDefinition as SSPlaintextSetting).CharacterLimit;
-					this._characterLimitOriginalCache = new int?(num);
-				}
-				return this._characterLimitOriginalCache.Value;
-			}
+			sSSUpdateMessage.SendToAuthenticated();
 		}
-
-		public SSPlaintextSetting(int? id, string label, string placeholder = "...", int characterLimit = 64, TMP_InputField.ContentType contentType = TMP_InputField.ContentType.Standard, string hint = null)
+		else
 		{
-			base.SetId(id, label);
-			base.Label = label;
-			base.HintDescription = hint;
-			this.Placeholder = placeholder;
-			this.CharacterLimit = characterLimit;
-			this.ContentType = contentType;
+			sSSUpdateMessage.SendToHubsConditionally(receiveFilter);
 		}
+	}
 
-		public void SendClearRequest(Func<ReferenceHub, bool> receiveFilter = null)
+	public override void ApplyDefaultValues()
+	{
+		SyncInputText = string.Empty;
+	}
+
+	public override void SerializeEntry(NetworkWriter writer)
+	{
+		base.SerializeEntry(writer);
+		writer.WriteString(Placeholder);
+		writer.WriteUShort((ushort)CharacterLimit);
+		writer.WriteByte((byte)ContentType);
+	}
+
+	public override void DeserializeEntry(NetworkReader reader)
+	{
+		base.DeserializeEntry(reader);
+		Placeholder = reader.ReadString();
+		CharacterLimit = reader.ReadUShort();
+		ContentType = (TMP_InputField.ContentType)reader.ReadByte();
+	}
+
+	public override void SerializeValue(NetworkWriter writer)
+	{
+		base.SerializeValue(writer);
+		writer.WriteString(SyncInputText);
+	}
+
+	public override void DeserializeValue(NetworkReader reader)
+	{
+		base.DeserializeValue(reader);
+		SyncInputText = ValidateInputText(reader.ReadString());
+	}
+
+	public void DeserializeUpdate(NetworkReader reader)
+	{
+		this.OnClearRequested?.Invoke();
+	}
+
+	private string ValidateInputText(string text)
+	{
+		if (text == null)
 		{
-			SSSUpdateMessage sssupdateMessage = new SSSUpdateMessage(this, null);
-			if (receiveFilter == null)
-			{
-				sssupdateMessage.SendToAuthenticated(0);
-				return;
-			}
-			sssupdateMessage.SendToHubsConditionally(receiveFilter, 0);
+			return string.Empty;
 		}
-
-		public override void ApplyDefaultValues()
+		int characterLimitOriginal = CharacterLimitOriginal;
+		if (text.Length > characterLimitOriginal)
 		{
-			this.SyncInputText = string.Empty;
+			text = text.Remove(characterLimitOriginal);
 		}
-
-		public override void SerializeEntry(NetworkWriter writer)
-		{
-			base.SerializeEntry(writer);
-			writer.WriteString(this.Placeholder);
-			writer.WriteUShort((ushort)this.CharacterLimit);
-			writer.WriteByte((byte)this.ContentType);
-		}
-
-		public override void DeserializeEntry(NetworkReader reader)
-		{
-			base.DeserializeEntry(reader);
-			this.Placeholder = reader.ReadString();
-			this.CharacterLimit = (int)reader.ReadUShort();
-			this.ContentType = (TMP_InputField.ContentType)reader.ReadByte();
-		}
-
-		public override void SerializeValue(NetworkWriter writer)
-		{
-			base.SerializeValue(writer);
-			writer.WriteString(this.SyncInputText);
-		}
-
-		public override void DeserializeValue(NetworkReader reader)
-		{
-			base.DeserializeValue(reader);
-			this.SyncInputText = this.ValidateInputText(reader.ReadString());
-		}
-
-		public void DeserializeUpdate(NetworkReader reader)
-		{
-			Action onClearRequested = this.OnClearRequested;
-			if (onClearRequested == null)
-			{
-				return;
-			}
-			onClearRequested();
-		}
-
-		private string ValidateInputText(string text)
-		{
-			if (text == null)
-			{
-				return string.Empty;
-			}
-			int characterLimitOriginal = this.CharacterLimitOriginal;
-			if (text.Length > characterLimitOriginal)
-			{
-				text = text.Remove(characterLimitOriginal);
-			}
-			return text;
-		}
-
-		private int? _characterLimitOriginalCache;
+		return text;
 	}
 }

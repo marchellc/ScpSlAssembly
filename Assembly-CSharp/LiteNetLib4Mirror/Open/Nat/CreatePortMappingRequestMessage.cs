@@ -1,50 +1,33 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Net;
 
-namespace LiteNetLib4Mirror.Open.Nat
+namespace LiteNetLib4Mirror.Open.Nat;
+
+internal class CreatePortMappingRequestMessage : RequestMessageBase
 {
-	internal class CreatePortMappingRequestMessage : RequestMessageBase
+	private readonly Mapping _mapping;
+
+	public CreatePortMappingRequestMessage(Mapping mapping)
 	{
-		public CreatePortMappingRequestMessage(Mapping mapping)
-		{
-			this._mapping = mapping;
-		}
+		_mapping = mapping;
+	}
 
-		public override IDictionary<string, object> ToXml()
+	public override IDictionary<string, object> ToXml()
+	{
+		string value = (_mapping.PublicIP.Equals(IPAddress.None) ? string.Empty : _mapping.PublicIP.ToString());
+		return new Dictionary<string, object>
 		{
-			string text = (this._mapping.PublicIP.Equals(IPAddress.None) ? string.Empty : this._mapping.PublicIP.ToString());
-			return new Dictionary<string, object>
+			{ "NewRemoteHost", value },
+			{ "NewExternalPort", _mapping.PublicPort },
 			{
-				{ "NewRemoteHost", text },
-				{
-					"NewExternalPort",
-					this._mapping.PublicPort
-				},
-				{
-					"NewProtocol",
-					(this._mapping.NetworkProtocolType == NetworkProtocolType.Tcp) ? "TCP" : "UDP"
-				},
-				{
-					"NewInternalPort",
-					this._mapping.PrivatePort
-				},
-				{
-					"NewInternalClient",
-					this._mapping.PrivateIP
-				},
-				{ "NewEnabled", 1 },
-				{
-					"NewPortMappingDescription",
-					this._mapping.Description
-				},
-				{
-					"NewLeaseDuration",
-					this._mapping.Lifetime
-				}
-			};
-		}
-
-		private readonly Mapping _mapping;
+				"NewProtocol",
+				(_mapping.NetworkProtocolType == NetworkProtocolType.Tcp) ? "TCP" : "UDP"
+			},
+			{ "NewInternalPort", _mapping.PrivatePort },
+			{ "NewInternalClient", _mapping.PrivateIP },
+			{ "NewEnabled", 1 },
+			{ "NewPortMappingDescription", _mapping.Description },
+			{ "NewLeaseDuration", _mapping.Lifetime }
+		};
 	}
 }

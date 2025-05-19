@@ -1,85 +1,88 @@
-﻿using System;
 using UnityEngine;
 using VoiceChat;
 using VoiceChat.Codec;
 using VoiceChat.Playbacks;
 
-namespace PlayerRoles.PlayableScps.Scp939
+namespace PlayerRoles.PlayableScps.Scp939;
+
+public class Scp939VoiceModule : StandardScpVoiceModule
 {
-	public class Scp939VoiceModule : StandardScpVoiceModule
+	[SerializeField]
+	private SingleBufferPlayback[] _mimicrySources;
+
+	private OpusDecoder _mimicryDecoder;
+
+	private bool _mimicryDecoderSet;
+
+	public const VoiceChatChannel MimicryChannel = VoiceChatChannel.Mimicry;
+
+	protected override OpusDecoder Decoder
 	{
-		protected override OpusDecoder Decoder
+		get
 		{
-			get
+			if (base.CurrentChannel != VoiceChatChannel.Mimicry)
 			{
-				if (base.CurrentChannel != VoiceChatChannel.Mimicry)
-				{
-					return base.Decoder;
-				}
-				if (!this._mimicryDecoderSet)
-				{
-					this._mimicryDecoder = new OpusDecoder();
-					this._mimicryDecoderSet = true;
-				}
-				return this._mimicryDecoder;
+				return base.Decoder;
+			}
+			if (!_mimicryDecoderSet)
+			{
+				_mimicryDecoder = new OpusDecoder();
+				_mimicryDecoderSet = true;
+			}
+			return _mimicryDecoder;
+		}
+	}
+
+	protected override void ProcessSamples(float[] data, int len)
+	{
+		if (base.CurrentChannel == VoiceChatChannel.Mimicry)
+		{
+			SingleBufferPlayback[] mimicrySources = _mimicrySources;
+			for (int i = 0; i < mimicrySources.Length; i++)
+			{
+				mimicrySources[i].Buffer.Write(data, len);
 			}
 		}
-
-		protected override void ProcessSamples(float[] data, int len)
+		else
 		{
-			if (base.CurrentChannel == VoiceChatChannel.Mimicry)
-			{
-				this._proximityChat.Buffer.Write(data, len);
-				return;
-			}
 			base.ProcessSamples(data, len);
 		}
+	}
 
-		public override VoiceChatChannel ValidateReceive(ReferenceHub speaker, VoiceChatChannel channel)
+	public override VoiceChatChannel ValidateReceive(ReferenceHub speaker, VoiceChatChannel channel)
+	{
+		if (channel != VoiceChatChannel.Mimicry)
 		{
-			if (channel != VoiceChatChannel.Mimicry)
-			{
-				return base.ValidateReceive(speaker, channel);
-			}
-			return channel;
+			return base.ValidateReceive(speaker, channel);
 		}
+		return channel;
+	}
 
-		public override VoiceChatChannel ValidateSend(VoiceChatChannel channel)
+	public override VoiceChatChannel ValidateSend(VoiceChatChannel channel)
+	{
+		if (channel != VoiceChatChannel.Mimicry)
 		{
-			if (channel != VoiceChatChannel.Mimicry)
-			{
-				return base.ValidateSend(channel);
-			}
-			return channel;
+			return base.ValidateSend(channel);
 		}
+		return channel;
+	}
 
-		public void ClearMimicryPlayback()
+	public void ClearMimicryPlayback()
+	{
+		SingleBufferPlayback[] mimicrySources = _mimicrySources;
+		for (int i = 0; i < mimicrySources.Length; i++)
 		{
-			this._proximityChat.Buffer.Clear();
+			mimicrySources[i].Buffer.Clear();
 		}
+	}
 
-		public override void ResetObject()
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		if (_mimicryDecoderSet)
 		{
-			base.ResetObject();
-			if (!this._mimicryDecoderSet)
-			{
-				return;
-			}
-			OpusDecoder mimicryDecoder = this._mimicryDecoder;
-			if (mimicryDecoder != null)
-			{
-				mimicryDecoder.Dispose();
-			}
-			this._mimicryDecoderSet = false;
+			_mimicryDecoder?.Dispose();
+			_mimicryDecoderSet = false;
 		}
-
-		[SerializeField]
-		private SingleBufferPlayback _proximityChat;
-
-		private OpusDecoder _mimicryDecoder;
-
-		private bool _mimicryDecoderSet;
-
-		public const VoiceChatChannel MimicryChannel = VoiceChatChannel.Mimicry;
 	}
 }

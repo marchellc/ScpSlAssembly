@@ -1,11 +1,8 @@
-﻿using System;
+namespace UserSettings.ControlsSettings;
 
-namespace UserSettings.ControlsSettings
+public enum SensitivitySetting
 {
-	public enum SensitivitySetting
-	{
-		SensMultiplier,
-		AdsReductionMultiplier,
-		Invert
-	}
+	SensMultiplier,
+	AdsReductionMultiplier,
+	Invert
 }

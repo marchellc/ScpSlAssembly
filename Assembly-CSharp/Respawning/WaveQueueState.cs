@@ -1,12 +1,9 @@
-﻿using System;
+namespace Respawning;
 
-namespace Respawning
+public enum WaveQueueState
 {
-	public enum WaveQueueState
-	{
-		Idle,
-		WaveSelected,
-		WaveSpawning,
-		WaveSpawned
-	}
+	Idle,
+	WaveSelected,
+	WaveSpawning,
+	WaveSpawned
 }

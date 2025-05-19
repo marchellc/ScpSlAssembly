@@ -1,9 +1,6 @@
-﻿using System;
+namespace Respawning.Objectives;
 
-namespace Respawning.Objectives
+public interface IFootprintObjective
 {
-	public interface IFootprintObjective
-	{
-		ObjectiveFootprintBase ObjectiveFootprint { get; set; }
-	}
+	ObjectiveFootprintBase ObjectiveFootprint { get; set; }
 }

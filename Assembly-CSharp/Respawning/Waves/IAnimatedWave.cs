@@ -1,11 +1,8 @@
-﻿using System;
+namespace Respawning.Waves;
 
-namespace Respawning.Waves
+public interface IAnimatedWave
 {
-	public interface IAnimatedWave
-	{
-		float AnimationDuration { get; }
+	float AnimationDuration { get; }
 
-		bool IsAnimationPlaying { get; set; }
-	}
+	bool IsAnimationPlaying { get; set; }
 }

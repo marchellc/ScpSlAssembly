@@ -1,52 +1,54 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace GameCore
+namespace GameCore;
+
+[Serializable]
+public struct Log : IEquatable<Log>
 {
-	[Serializable]
-	public struct Log : IEquatable<Log>
+	public string text;
+
+	public Color color;
+
+	public bool nospace;
+
+	public Log(string t, Color c, bool b)
 	{
-		public Log(string t, Color c, bool b)
+		text = t;
+		color = c;
+		nospace = b;
+	}
+
+	public bool Equals(Log other)
+	{
+		if (text == other.text && color == other.color)
 		{
-			this.text = t;
-			this.color = c;
-			this.nospace = b;
+			return nospace == other.nospace;
 		}
+		return false;
+	}
 
-		public bool Equals(Log other)
+	public override bool Equals(object obj)
+	{
+		if (obj is Log other)
 		{
-			return this.text == other.text && this.color == other.color && this.nospace == other.nospace;
+			return Equals(other);
 		}
+		return false;
+	}
 
-		public override bool Equals(object obj)
-		{
-			if (obj is Log)
-			{
-				Log log = (Log)obj;
-				return this.Equals(log);
-			}
-			return false;
-		}
+	public override int GetHashCode()
+	{
+		return (((((text != null) ? text.GetHashCode() : 0) * 397) ^ color.GetHashCode()) * 397) ^ nospace.GetHashCode();
+	}
 
-		public override int GetHashCode()
-		{
-			return (((((this.text != null) ? this.text.GetHashCode() : 0) * 397) ^ this.color.GetHashCode()) * 397) ^ this.nospace.GetHashCode();
-		}
+	public static bool operator ==(Log left, Log right)
+	{
+		return left.Equals(right);
+	}
 
-		public static bool operator ==(Log left, Log right)
-		{
-			return left.Equals(right);
-		}
-
-		public static bool operator !=(Log left, Log right)
-		{
-			return !left.Equals(right);
-		}
-
-		public string text;
-
-		public Color color;
-
-		public bool nospace;
+	public static bool operator !=(Log left, Log right)
+	{
+		return !left.Equals(right);
 	}
 }

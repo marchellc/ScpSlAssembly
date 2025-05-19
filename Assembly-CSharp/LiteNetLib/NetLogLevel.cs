@@ -1,12 +1,9 @@
-﻿using System;
+namespace LiteNetLib;
 
-namespace LiteNetLib
+public enum NetLogLevel
 {
-	public enum NetLogLevel
-	{
-		Warning,
-		Error,
-		Trace,
-		Info
-	}
+	Warning,
+	Error,
+	Trace,
+	Info
 }

@@ -1,177 +1,166 @@
-﻿using System;
+using System;
 using CentralAuth;
 using GameCore;
 using GameObjectPools;
 using InventorySystem;
 using LabApi.Events.Handlers;
 using Mirror;
+using NetworkManagerUtils.Dummies;
 using ServerOutput;
 using UnityEngine;
 
-namespace RoundRestarting
+namespace RoundRestarting;
+
+public static class RoundRestart
 {
-	public static class RoundRestart
+	private const string RoundrestartTimeKey = "LastRoundrestartTime";
+
+	private static DateTime _lastRestartTime;
+
+	public static bool IsRoundRestarting { get; private set; }
+
+	public static int UptimeRounds { get; private set; }
+
+	private static int LastRestartTime => PlayerPrefsSl.Get("LastRoundrestartTime", 5000);
+
+	public static event Action OnRestartTriggered;
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		public static bool IsRoundRestarting { get; private set; }
+		Inventory.OnServerStarted += OnServerStarted;
+		Inventory.OnLocalClientStarted += OnClientStarted;
+	}
 
-		public static int UptimeRounds { get; private set; }
+	private static void OnMessageReceived(RoundRestartMessage msg)
+	{
+	}
 
-		public static event Action OnRestartTriggered;
+	private static void OnClientStarted()
+	{
+		IsRoundRestarting = false;
+		NetworkClient.ReplaceHandler<RoundRestartMessage>(OnMessageReceived);
+	}
 
-		private static int LastRestartTime
+	private static void OnServerStarted()
+	{
+		TimeSpan timeSpan = DateTime.Now - _lastRestartTime;
+		if (!(timeSpan.TotalSeconds > 20.0))
 		{
-			get
-			{
-				return PlayerPrefsSl.Get("LastRoundrestartTime", 5000);
-			}
+			PlayerPrefsSl.Set("LastRoundrestartTime", (LastRestartTime + (int)timeSpan.TotalMilliseconds) / 2);
 		}
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+	public static void InitiateRoundRestart()
+	{
+		if (!NetworkServer.active)
 		{
-			Inventory.OnServerStarted += RoundRestart.OnServerStarted;
-			Inventory.OnLocalClientStarted += RoundRestart.OnClientStarted;
+			throw new InvalidOperationException("Round restart can only be triggerred by the server!");
 		}
-
-		private static void OnMessageReceived(RoundRestartMessage msg)
+		ServerEvents.OnRoundRestarted();
+		PoolManager.Singleton.ReturnAllPoolObjects();
+		if (IsRoundRestarting)
 		{
+			return;
 		}
-
-		private static void OnClientStarted()
+		IsRoundRestarting = true;
+		CustomLiteNetLib4MirrorTransport.DelayConnections = true;
+		CustomLiteNetLib4MirrorTransport.UserIdFastReload.Clear();
+		IdleMode.PauseIdleMode = true;
+		if (ServerStatic.StopNextRound == ServerStatic.NextRoundAction.DoNothing)
 		{
-			RoundRestart.IsRoundRestarting = false;
-			NetworkClient.ReplaceHandler<RoundRestartMessage>(new Action<RoundRestartMessage>(RoundRestart.OnMessageReceived), true);
-		}
-
-		private static void OnServerStarted()
-		{
-			TimeSpan timeSpan = DateTime.Now - RoundRestart._lastRestartTime;
-			if (timeSpan.TotalSeconds > 20.0)
+			if (CustomNetworkManager.EnableFastRestart)
 			{
-				return;
-			}
-			PlayerPrefsSl.Set("LastRoundrestartTime", (RoundRestart.LastRestartTime + (int)timeSpan.TotalMilliseconds) / 2);
-		}
-
-		public static void InitiateRoundRestart()
-		{
-			if (!NetworkServer.active)
-			{
-				throw new InvalidOperationException("Round restart can only be triggerred by the server!");
-			}
-			ServerEvents.OnRoundRestarted();
-			PoolManager.Singleton.ReturnAllPoolObjects();
-			if (RoundRestart.IsRoundRestarting)
-			{
-				return;
-			}
-			RoundRestart.IsRoundRestarting = true;
-			CustomLiteNetLib4MirrorTransport.DelayConnections = true;
-			CustomLiteNetLib4MirrorTransport.UserIdFastReload.Clear();
-			IdleMode.PauseIdleMode = true;
-			if (ServerStatic.StopNextRound == ServerStatic.NextRoundAction.DoNothing)
-			{
-				if (CustomNetworkManager.EnableFastRestart)
+				foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 				{
-					foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
+					ClientInstanceMode mode = allHub.Mode;
+					if (mode != ClientInstanceMode.DedicatedServer && mode != ClientInstanceMode.Dummy)
 					{
-						ClientInstanceMode mode = referenceHub.Mode;
-						if (mode != ClientInstanceMode.DedicatedServer && mode != ClientInstanceMode.Dummy)
+						try
 						{
-							try
-							{
-								CustomLiteNetLib4MirrorTransport.UserIdFastReload.Add(referenceHub.authManager.UserId);
-							}
-							catch (Exception ex)
-							{
-								ServerConsole.AddLog("Exception occured during processing online player list for Fast Restart: " + ex.Message, ConsoleColor.Yellow, false);
-							}
+							CustomLiteNetLib4MirrorTransport.UserIdFastReload.Add(allHub.authManager.UserId);
+						}
+						catch (Exception ex)
+						{
+							ServerConsole.AddLog("Exception occured during processing online player list for Fast Restart: " + ex.Message, ConsoleColor.Yellow);
 						}
 					}
-					NetworkServer.SendToAll<RoundRestartMessage>(new RoundRestartMessage(RoundRestartType.FastRestart, 0f, 0, true, true), 0, false);
-					RoundRestart.ChangeLevel(false);
-					return;
 				}
-				float num = (float)RoundRestart.LastRestartTime / 1000f;
-				NetworkServer.SendToAll<RoundRestartMessage>(new RoundRestartMessage(RoundRestartType.FullRestart, num, 0, true, true), 0, false);
+				NetworkServer.SendToAll(new RoundRestartMessage(RoundRestartType.FastRestart, 0f, 0, reconnect: true, extendedReconnectionPeriod: true));
+				ChangeLevel(noShutdownMessage: false);
+				return;
 			}
-			RoundRestart.ChangeLevel(false);
+			float offset = (float)LastRestartTime / 1000f;
+			NetworkServer.SendToAll(new RoundRestartMessage(RoundRestartType.FullRestart, offset, 0, reconnect: true, extendedReconnectionPeriod: true));
 		}
+		ChangeLevel(noShutdownMessage: false);
+	}
 
-		internal static void ChangeLevel(bool noShutdownMessage)
+	internal static void ChangeLevel(bool noShutdownMessage)
+	{
+		if (!NetworkServer.active)
 		{
-			if (!NetworkServer.active)
+			NetworkManager.singleton.StopClient();
+			return;
+		}
+		IdleMode.PauseIdleMode = true;
+		bool flag = false;
+		RoundRestart.OnRestartTriggered?.Invoke();
+		try
+		{
+			int @int = ConfigFile.ServerConfig.GetInt("restart_after_rounds");
+			flag = @int > 0 && UptimeRounds >= @int;
+		}
+		catch (Exception ex)
+		{
+			ServerConsole.AddLog("Failed to check the restart_after_rounds config value: " + ex.Message, ConsoleColor.Red);
+		}
+		switch (ServerStatic.StopNextRound)
+		{
+		case ServerStatic.NextRoundAction.DoNothing:
+			if (!flag)
 			{
-				NetworkManager.singleton.StopClient();
-				return;
-			}
-			IdleMode.PauseIdleMode = true;
-			bool flag = false;
-			Action onRestartTriggered = RoundRestart.OnRestartTriggered;
-			if (onRestartTriggered != null)
-			{
-				onRestartTriggered();
-			}
-			try
-			{
-				int @int = ConfigFile.ServerConfig.GetInt("restart_after_rounds", 0);
-				flag = @int > 0 && RoundRestart.UptimeRounds >= @int;
-			}
-			catch (Exception ex)
-			{
-				ServerConsole.AddLog("Failed to check the restart_after_rounds config value: " + ex.Message, ConsoleColor.Red, false);
-			}
-			switch (ServerStatic.StopNextRound)
-			{
-			case ServerStatic.NextRoundAction.DoNothing:
-				if (!flag)
-				{
-					goto IL_0161;
-				}
 				break;
-			case ServerStatic.NextRoundAction.Restart:
-				break;
-			case ServerStatic.NextRoundAction.Shutdown:
-				ServerConsole.AddOutputEntry(default(ExitActionShutdownEntry));
-				if (!noShutdownMessage)
-				{
-					ServerConsole.AddLog("Shutting down the server (StopNextRound command was used)...", ConsoleColor.Gray, false);
-				}
-				if (ServerStatic.ShutdownRedirectPort != 0)
-				{
-					if (!noShutdownMessage)
-					{
-						ServerConsole.AddLog(string.Format("Redirecting players to port {0}...", ServerStatic.ShutdownRedirectPort), ConsoleColor.Gray, false);
-					}
-					NetworkServer.SendToAll<RoundRestartMessage>(new RoundRestartMessage(RoundRestartType.RedirectRestart, 0.1f, ServerStatic.ShutdownRedirectPort, true, false), 4, true);
-					Shutdown.Quit(true, true);
-					return;
-				}
-				Shutdown.Quit(true, false);
-				return;
-			default:
-				goto IL_0161;
 			}
+			goto case ServerStatic.NextRoundAction.Restart;
+		case ServerStatic.NextRoundAction.Restart:
+		{
 			ServerShutdown.ShutdownState = ServerShutdown.ServerShutdownState.Complete;
 			ServerConsole.AddOutputEntry(default(ExitActionRestartEntry));
 			if (!noShutdownMessage)
 			{
-				ServerConsole.AddLog(flag ? "Restarting the server (rounds limit set in the server config exceeded)..." : "Restarting the server (RestartNextRound command was used)...", ConsoleColor.Gray, false);
+				ServerConsole.AddLog(flag ? "Restarting the server (rounds limit set in the server config exceeded)..." : "Restarting the server (RestartNextRound command was used)...");
 			}
-			float num = (float)ConfigFile.ServerConfig.GetInt("full_restart_rejoin_time", 25);
-			NetworkServer.SendToAll<RoundRestartMessage>(new RoundRestartMessage(RoundRestartType.FullRestart, num, 0, true, true), 4, true);
-			Shutdown.Quit(true, true);
+			float offset = ConfigFile.ServerConfig.GetInt("full_restart_rejoin_time", 25);
+			NetworkServer.SendToAll(new RoundRestartMessage(RoundRestartType.FullRestart, offset, 0, reconnect: true, extendedReconnectionPeriod: true), 4, sendToReadyOnly: true);
+			Shutdown.Quit(quit: true, suppressShutdownBroadcast: true);
 			return;
-			IL_0161:
-			DummyUtils.DestroyAllDummies();
-			GC.Collect();
-			RoundRestart._lastRestartTime = DateTime.Now;
-			RoundRestart.UptimeRounds++;
-			NetworkManager.singleton.ServerChangeScene(NetworkManager.singleton.onlineScene);
 		}
-
-		private const string RoundrestartTimeKey = "LastRoundrestartTime";
-
-		private static DateTime _lastRestartTime;
+		case ServerStatic.NextRoundAction.Shutdown:
+			ServerConsole.AddOutputEntry(default(ExitActionShutdownEntry));
+			if (!noShutdownMessage)
+			{
+				ServerConsole.AddLog("Shutting down the server (StopNextRound command was used)...");
+			}
+			if (ServerStatic.ShutdownRedirectPort != 0)
+			{
+				if (!noShutdownMessage)
+				{
+					ServerConsole.AddLog($"Redirecting players to port {ServerStatic.ShutdownRedirectPort}...");
+				}
+				NetworkServer.SendToAll(new RoundRestartMessage(RoundRestartType.RedirectRestart, 0.1f, ServerStatic.ShutdownRedirectPort, reconnect: true, extendedReconnectionPeriod: false), 4, sendToReadyOnly: true);
+				Shutdown.Quit(quit: true, suppressShutdownBroadcast: true);
+			}
+			else
+			{
+				Shutdown.Quit();
+			}
+			return;
+		}
+		DummyUtils.DestroyAllDummies();
+		GC.Collect();
+		_lastRestartTime = DateTime.Now;
+		UptimeRounds++;
+		NetworkManager.singleton.ServerChangeScene(NetworkManager.singleton.onlineScene);
 	}
 }

@@ -1,8 +1,18 @@
-﻿using System;
+using System;
 using Utf8Json;
 
 public readonly struct ServerListSigned : IEquatable<ServerListSigned>, IJsonSerializable
 {
+	public readonly string payload;
+
+	public readonly long timestamp;
+
+	public readonly string signature;
+
+	public readonly string nonce;
+
+	public readonly string error;
+
 	[SerializationConstructor]
 	public ServerListSigned(string payload, long timestamp, string signature, string nonce, string error)
 	{
@@ -15,22 +25,27 @@ public readonly struct ServerListSigned : IEquatable<ServerListSigned>, IJsonSer
 
 	public bool Equals(ServerListSigned other)
 	{
-		return this.payload == other.payload && this.timestamp == other.timestamp && this.signature == other.signature && this.nonce == other.nonce && this.error == other.error;
+		if (payload == other.payload && timestamp == other.timestamp && signature == other.signature && nonce == other.nonce)
+		{
+			return error == other.error;
+		}
+		return false;
 	}
 
 	public override bool Equals(object obj)
 	{
-		if (obj is ServerListSigned)
+		if (obj is ServerListSigned other)
 		{
-			ServerListSigned serverListSigned = (ServerListSigned)obj;
-			return this.Equals(serverListSigned);
+			return Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((((((((this.payload != null) ? this.payload.GetHashCode() : 0) * 397) ^ this.timestamp.GetHashCode()) * 397) ^ ((this.signature != null) ? this.signature.GetHashCode() : 0)) * 397) ^ ((this.nonce != null) ? this.nonce.GetHashCode() : 0)) * 397) ^ ((this.error != null) ? this.error.GetHashCode() : 0);
+		int num = ((payload != null) ? payload.GetHashCode() : 0) * 397;
+		long num2 = timestamp;
+		return ((((((num ^ num2.GetHashCode()) * 397) ^ ((signature != null) ? signature.GetHashCode() : 0)) * 397) ^ ((nonce != null) ? nonce.GetHashCode() : 0)) * 397) ^ ((error != null) ? error.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(ServerListSigned left, ServerListSigned right)
@@ -42,14 +57,4 @@ public readonly struct ServerListSigned : IEquatable<ServerListSigned>, IJsonSer
 	{
 		return !left.Equals(right);
 	}
-
-	public readonly string payload;
-
-	public readonly long timestamp;
-
-	public readonly string signature;
-
-	public readonly string nonce;
-
-	public readonly string error;
 }

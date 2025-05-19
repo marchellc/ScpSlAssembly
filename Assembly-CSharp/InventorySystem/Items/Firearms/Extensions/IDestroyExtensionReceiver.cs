@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Extensions;
 
-namespace InventorySystem.Items.Firearms.Extensions
+public interface IDestroyExtensionReceiver
 {
-	public interface IDestroyExtensionReceiver
-	{
-		void OnDestroyExtension();
-	}
+	void OnDestroyExtension();
 }

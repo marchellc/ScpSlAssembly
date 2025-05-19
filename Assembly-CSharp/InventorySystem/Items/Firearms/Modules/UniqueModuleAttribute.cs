@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+[AttributeUsage(AttributeTargets.Interface)]
+public class UniqueModuleAttribute : Attribute
 {
-	[AttributeUsage(AttributeTargets.Interface)]
-	public class UniqueModuleAttribute : Attribute
-	{
-	}
 }

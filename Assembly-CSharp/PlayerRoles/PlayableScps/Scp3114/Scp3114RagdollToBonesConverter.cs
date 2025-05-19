@@ -1,133 +1,137 @@
-﻿using System;
 using System.Collections.Generic;
 using Mirror;
 using PlayerRoles.Ragdolls;
 using PlayerRoles.Subroutines;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp3114
+namespace PlayerRoles.PlayableScps.Scp3114;
+
+public class Scp3114RagdollToBonesConverter : SubroutineBase
 {
-	public class Scp3114RagdollToBonesConverter : SubroutineBase
+	[SerializeField]
+	private GameObject[] _boneParts;
+
+	private DynamicRagdoll _syncRagdoll;
+
+	private static bool _cacheSet;
+
+	private static string[] _cachedNames;
+
+	private static GameObject[] _cachedTemplates;
+
+	private static readonly List<Transform> ReplacementTransforms = new List<Transform>();
+
+	private static readonly List<Rigidbody> ReplacementRbs = new List<Rigidbody>();
+
+	public static void ConvertExisting(DynamicRagdoll ragdoll)
 	{
-		public static void ConvertExisting(DynamicRagdoll ragdoll)
+		if (!_cacheSet)
 		{
-			if (!Scp3114RagdollToBonesConverter._cacheSet)
-			{
-				if (!Scp3114RagdollToBonesConverter.TryPrepCache())
-				{
-					return;
-				}
-				Scp3114RagdollToBonesConverter._cacheSet = true;
-			}
-			Transform transform = ragdoll.transform;
-			int childCount = transform.childCount;
-			for (int i = 0; i < childCount; i++)
-			{
-				global::UnityEngine.Object.Destroy(transform.GetChild(i).gameObject);
-			}
-			Scp3114RagdollToBonesConverter.ReplacementRbs.Clear();
-			Scp3114RagdollToBonesConverter.ReplacementTransforms.Clear();
-			Transform[] linkedRigidbodiesTransforms = ragdoll.LinkedRigidbodiesTransforms;
-			int num = linkedRigidbodiesTransforms.Length;
-			for (int j = 0; j < num; j++)
-			{
-				string text = linkedRigidbodiesTransforms[j].name.ToLowerInvariant();
-				for (int k = 0; k < Scp3114RagdollToBonesConverter._cachedNames.Length; k++)
-				{
-					if (text.Contains(Scp3114RagdollToBonesConverter._cachedNames[k]))
-					{
-						Scp3114RagdollToBonesConverter.ProcessNameMatch(ragdoll, linkedRigidbodiesTransforms[j], Scp3114RagdollToBonesConverter._cachedTemplates[k]);
-						break;
-					}
-				}
-			}
-			ragdoll.Hitboxes = new HitboxData[0];
-			ragdoll.LinkedRigidbodies = Scp3114RagdollToBonesConverter.ReplacementRbs.ToArray();
-			ragdoll.LinkedRigidbodiesTransforms = Scp3114RagdollToBonesConverter.ReplacementTransforms.ToArray();
-		}
-
-		public static void ServerConvertNew(Scp3114Role scp, DynamicRagdoll ragdoll)
-		{
-			Scp3114RagdollToBonesConverter scp3114RagdollToBonesConverter;
-			if (!scp.SubroutineModule.TryGetSubroutine<Scp3114RagdollToBonesConverter>(out scp3114RagdollToBonesConverter))
+			if (!TryPrepCache())
 			{
 				return;
 			}
+			_cacheSet = true;
+		}
+		Transform transform = ragdoll.transform;
+		int childCount = transform.childCount;
+		for (int i = 0; i < childCount; i++)
+		{
+			Object.Destroy(transform.GetChild(i).gameObject);
+		}
+		ReplacementRbs.Clear();
+		ReplacementTransforms.Clear();
+		Transform[] linkedRigidbodiesTransforms = ragdoll.LinkedRigidbodiesTransforms;
+		int num = linkedRigidbodiesTransforms.Length;
+		for (int j = 0; j < num; j++)
+		{
+			string text = linkedRigidbodiesTransforms[j].name.ToLowerInvariant();
+			for (int k = 0; k < _cachedNames.Length; k++)
+			{
+				if (text.Contains(_cachedNames[k]))
+				{
+					ProcessNameMatch(ragdoll, linkedRigidbodiesTransforms[j], _cachedTemplates[k]);
+					break;
+				}
+			}
+		}
+		ragdoll.Hitboxes = new HitboxData[0];
+		ragdoll.LinkedRigidbodies = ReplacementRbs.ToArray();
+		ragdoll.LinkedRigidbodiesTransforms = ReplacementTransforms.ToArray();
+		if (ragdoll is AutoHumanRagdoll autoHumanRagdoll)
+		{
+			autoHumanRagdoll.PauseBoneMatching = true;
+		}
+		if (ragdoll.TryGetComponent<Collider>(out var component))
+		{
+			component.enabled = false;
+		}
+		if (ragdoll.TryGetComponent<Rigidbody>(out var component2))
+		{
+			component2.isKinematic = true;
+		}
+	}
+
+	public static void ServerConvertNew(Scp3114Role scp, DynamicRagdoll ragdoll)
+	{
+		if (scp.SubroutineModule.TryGetSubroutine<Scp3114RagdollToBonesConverter>(out var subroutine))
+		{
 			RagdollData info = ragdoll.Info;
-			ragdoll.NetworkInfo = new RagdollData(info.OwnerHub, new Scp3114DamageHandler(ragdoll, false), info.RoleType, info.StartPosition, info.StartRotation, info.Nickname, info.CreationTime, 0);
-			scp3114RagdollToBonesConverter._syncRagdoll = ragdoll;
-			scp3114RagdollToBonesConverter.ServerSendRpc(true);
+			ragdoll.NetworkInfo = new RagdollData(info.OwnerHub, new Scp3114DamageHandler(ragdoll, isStarting: false), info.RoleType, info.StartPosition, info.StartRotation, info.Nickname, info.CreationTime, 0);
+			subroutine._syncRagdoll = ragdoll;
+			subroutine.ServerSendRpc(toAll: true);
 		}
+	}
 
-		private static bool TryPrepCache()
+	private static bool TryPrepCache()
+	{
+		if (!PlayerRoleLoader.TryGetRoleTemplate<Scp3114Role>(RoleTypeId.Scp3114, out var result))
 		{
-			Scp3114Role scp3114Role;
-			if (!PlayerRoleLoader.TryGetRoleTemplate<Scp3114Role>(RoleTypeId.Scp3114, out scp3114Role))
-			{
-				return false;
-			}
-			Scp3114RagdollToBonesConverter scp3114RagdollToBonesConverter;
-			if (!scp3114Role.SubroutineModule.TryGetSubroutine<Scp3114RagdollToBonesConverter>(out scp3114RagdollToBonesConverter))
-			{
-				return false;
-			}
-			Scp3114RagdollToBonesConverter._cachedTemplates = scp3114RagdollToBonesConverter._boneParts;
-			Scp3114RagdollToBonesConverter._cachedNames = new string[Scp3114RagdollToBonesConverter._cachedTemplates.Length];
-			for (int i = 0; i < Scp3114RagdollToBonesConverter._cachedTemplates.Length; i++)
-			{
-				Scp3114RagdollToBonesConverter._cachedNames[i] = Scp3114RagdollToBonesConverter._cachedTemplates[i].name.ToLowerInvariant();
-			}
-			return true;
+			return false;
 		}
-
-		private static void ProcessNameMatch(DynamicRagdoll ragdoll, Transform ragdollPart, GameObject matchedBone)
+		if (!result.SubroutineModule.TryGetSubroutine<Scp3114RagdollToBonesConverter>(out var subroutine))
 		{
-			Transform transform = matchedBone.transform;
-			GameObject gameObject = global::UnityEngine.Object.Instantiate<GameObject>(matchedBone, ragdoll.transform);
-			gameObject.SetActive(true);
-			Rigidbody component = gameObject.GetComponent<Rigidbody>();
-			Transform transform2 = gameObject.transform;
-			Scp3114RagdollToBonesConverter.ReplacementRbs.Add(component);
-			Scp3114RagdollToBonesConverter.ReplacementTransforms.Add(transform2);
-			transform2.SetPositionAndRotation(ragdollPart.TransformPoint(transform.localPosition), ragdollPart.rotation * transform.localRotation);
-			Rigidbody rigidbody;
-			if (ragdollPart.TryGetComponent<Rigidbody>(out rigidbody))
-			{
-				component.velocity = rigidbody.velocity;
-				component.angularVelocity = rigidbody.angularVelocity;
-			}
+			return false;
 		}
-
-		public override void ServerWriteRpc(NetworkWriter writer)
+		_cachedTemplates = subroutine._boneParts;
+		_cachedNames = new string[_cachedTemplates.Length];
+		for (int i = 0; i < _cachedTemplates.Length; i++)
 		{
-			base.ServerWriteRpc(writer);
-			writer.WriteNetworkBehaviour(this._syncRagdoll);
+			_cachedNames[i] = _cachedTemplates[i].name.ToLowerInvariant();
 		}
+		return true;
+	}
 
-		public override void ClientProcessRpc(NetworkReader reader)
+	private static void ProcessNameMatch(DynamicRagdoll ragdoll, Transform ragdollPart, GameObject matchedBone)
+	{
+		Transform transform = matchedBone.transform;
+		GameObject obj = Object.Instantiate(matchedBone, ragdoll.transform);
+		obj.SetActive(value: true);
+		Rigidbody component = obj.GetComponent<Rigidbody>();
+		Transform transform2 = obj.transform;
+		ReplacementRbs.Add(component);
+		ReplacementTransforms.Add(transform2);
+		transform2.SetPositionAndRotation(ragdollPart.TransformPoint(transform.localPosition), ragdollPart.rotation * transform.localRotation);
+		if (ragdollPart.TryGetComponent<Rigidbody>(out var component2))
 		{
-			base.ClientProcessRpc(reader);
-			this._syncRagdoll = reader.ReadNetworkBehaviour<DynamicRagdoll>();
-			if (this._syncRagdoll == null)
-			{
-				return;
-			}
-			Scp3114RagdollToBonesConverter.ConvertExisting(this._syncRagdoll);
+			component.linearVelocity = component2.linearVelocity;
+			component.angularVelocity = component2.angularVelocity;
 		}
+	}
 
-		[SerializeField]
-		private GameObject[] _boneParts;
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteNetworkBehaviour(_syncRagdoll);
+	}
 
-		private DynamicRagdoll _syncRagdoll;
-
-		private static bool _cacheSet;
-
-		private static string[] _cachedNames;
-
-		private static GameObject[] _cachedTemplates;
-
-		private static readonly List<Transform> ReplacementTransforms = new List<Transform>();
-
-		private static readonly List<Rigidbody> ReplacementRbs = new List<Rigidbody>();
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		_syncRagdoll = reader.ReadNetworkBehaviour<DynamicRagdoll>();
+		if (!(_syncRagdoll == null))
+		{
+			ConvertExisting(_syncRagdoll);
+		}
 	}
 }

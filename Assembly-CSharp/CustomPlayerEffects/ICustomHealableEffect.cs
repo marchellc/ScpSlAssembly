@@ -1,9 +1,6 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public interface ICustomHealableEffect : IHealableEffect
 {
-	public interface ICustomHealableEffect : IHealableEffect
-	{
-		void OnHeal(ItemType item);
-	}
+	void OnHeal(ItemType item);
 }

@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 
-namespace Utf8Json
+namespace Utf8Json;
+
+[AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false, Inherited = true)]
+public class SerializationConstructorAttribute : Attribute
 {
-	[AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false, Inherited = true)]
-	public class SerializationConstructorAttribute : Attribute
-	{
-	}
 }

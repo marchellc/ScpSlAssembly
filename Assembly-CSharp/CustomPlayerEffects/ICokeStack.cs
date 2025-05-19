@@ -1,11 +1,8 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public interface ICokeStack
 {
-	public interface ICokeStack
-	{
-		float PostProcessIntensity { get; set; }
+	float PostProcessIntensity { get; set; }
 
-		float SpeedMultiplier { get; set; }
-	}
+	float SpeedMultiplier { get; set; }
 }

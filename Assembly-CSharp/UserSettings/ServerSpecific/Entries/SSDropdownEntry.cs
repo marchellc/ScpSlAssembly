@@ -1,47 +1,49 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 using UserSettings.GUIElements;
 
-namespace UserSettings.ServerSpecific.Entries
+namespace UserSettings.ServerSpecific.Entries;
+
+public class SSDropdownEntry : UserSettingsDropdown, ISSEntry
 {
-	public class SSDropdownEntry : UserSettingsDropdown, ISSEntry
+	private SSDropdownSetting _setting;
+
+	[SerializeField]
+	private SSEntryLabel _label;
+
+	protected override void SaveValue(int val)
 	{
-		protected override void SaveValue(int val)
+		PlayerPrefsSl.Set(_setting.PlayerPrefsKey, val);
+		_setting.SyncSelectionIndexRaw = val;
+		_setting.ClientSendValue();
+	}
+
+	protected override int ReadSavedValue()
+	{
+		_setting.SyncSelectionIndexRaw = PlayerPrefsSl.Get(_setting.PlayerPrefsKey, _setting.DefaultOptionIndex);
+		return _setting.SyncSelectionIndexRaw;
+	}
+
+	public virtual bool CheckCompatibility(ServerSpecificSettingBase setting)
+	{
+		if (setting is SSDropdownSetting sSDropdownSetting)
 		{
-			PlayerPrefsSl.Set(this._setting.PlayerPrefsKey, val);
-			this._setting.SyncSelectionIndexRaw = val;
-			this._setting.ClientSendValue();
+			return sSDropdownSetting.EntryType == SSDropdownSetting.DropdownEntryType.Regular;
 		}
+		return false;
+	}
 
-		protected override int ReadSavedValue()
+	public virtual void Init(ServerSpecificSettingBase setting)
+	{
+		_setting = setting as SSDropdownSetting;
+		_label.Set(_setting);
+		base.TargetUI.options.Clear();
+		string[] options = _setting.Options;
+		foreach (string text in options)
 		{
-			this._setting.SyncSelectionIndexRaw = PlayerPrefsSl.Get(this._setting.PlayerPrefsKey, this._setting.DefaultOptionIndex);
-			return this._setting.SyncSelectionIndexRaw;
+			base.TargetUI.options.Add(new TMP_Dropdown.OptionData(text));
 		}
-
-		public virtual bool CheckCompatibility(ServerSpecificSettingBase setting)
-		{
-			SSDropdownSetting ssdropdownSetting = setting as SSDropdownSetting;
-			return ssdropdownSetting != null && ssdropdownSetting.EntryType == SSDropdownSetting.DropdownEntryType.Regular;
-		}
-
-		public virtual void Init(ServerSpecificSettingBase setting)
-		{
-			this._setting = setting as SSDropdownSetting;
-			this._label.Set(this._setting);
-			base.TargetUI.options.Clear();
-			foreach (string text in this._setting.Options)
-			{
-				base.TargetUI.options.Add(new TMP_Dropdown.OptionData(text));
-			}
-			base.TargetUI.RefreshShownValue();
-			base.Setup();
-		}
-
-		private SSDropdownSetting _setting;
-
-		[SerializeField]
-		private SSEntryLabel _label;
+		base.TargetUI.RefreshShownValue();
+		Setup();
 	}
 }

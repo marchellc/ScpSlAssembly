@@ -1,79 +1,66 @@
-﻿using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Firearms.Modules.Misc;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class SubsequentShotsInaccuracyModule : ModuleBase, IInaccuracyProviderModule
 {
-	public class SubsequentShotsInaccuracyModule : ModuleBase, IInaccuracyProviderModule
+	private class InaccuracySettings
 	{
-		public float Inaccuracy { get; private set; }
+		public float TargetDeviation;
 
-		private void Update()
+		public int ShotsToReach;
+
+		public int Offset;
+
+		public InaccuracySettings(float targetDeviation, int shotsToReach, int offset)
 		{
-			if (this._shotsCounter == null)
-			{
-				return;
-			}
-			this.Inaccuracy = this._optionalModifier.Process(this._inaccuracyNextFrame);
-			this._shotsCounter.Update();
-			SubsequentShotsInaccuracyModule.InaccuracySettings orAdd = SubsequentShotsInaccuracyModule.SettingsByCategory.GetOrAdd(base.Firearm.FirearmCategory, () => SubsequentShotsInaccuracyModule.DefaultSettings);
-			this._inaccuracyNextFrame = Mathf.InverseLerp((float)orAdd.Offset, (float)orAdd.ShotsToReach, (float)this._shotsCounter.SubsequentShots) * orAdd.TargetDeviation;
+			TargetDeviation = targetDeviation;
+			ShotsToReach = shotsToReach;
+			Offset = offset;
 		}
+	}
 
-		private void OnDestroy()
+	private static readonly InaccuracySettings DefaultSettings = new InaccuracySettings(1f, 10, 1);
+
+	private static readonly Dictionary<FirearmCategory, InaccuracySettings> SettingsByCategory = new Dictionary<FirearmCategory, InaccuracySettings>
+	{
+		[FirearmCategory.Pistol] = new InaccuracySettings(0.9f, 3, 0),
+		[FirearmCategory.Revolver] = new InaccuracySettings(0.9f, 1, 0),
+		[FirearmCategory.SubmachineGun] = new InaccuracySettings(0.56f, 15, 5),
+		[FirearmCategory.LightMachineGun] = new InaccuracySettings(0.56f, 12, 3),
+		[FirearmCategory.Rifle] = new InaccuracySettings(0.68f, 8, 2)
+	};
+
+	private SubsequentShotsCounter _shotsCounter;
+
+	private float _inaccuracyNextFrame;
+
+	[SerializeField]
+	private StatModifier _optionalModifier;
+
+	public float Inaccuracy { get; private set; }
+
+	private void Update()
+	{
+		if (_shotsCounter != null)
 		{
-			SubsequentShotsCounter shotsCounter = this._shotsCounter;
-			if (shotsCounter == null)
-			{
-				return;
-			}
-			shotsCounter.Destruct();
+			Inaccuracy = _optionalModifier.Process(_inaccuracyNextFrame);
+			_shotsCounter.Update();
+			InaccuracySettings orAdd = SettingsByCategory.GetOrAdd(base.Firearm.FirearmCategory, () => DefaultSettings);
+			_inaccuracyNextFrame = Mathf.InverseLerp(orAdd.Offset, orAdd.ShotsToReach, _shotsCounter.SubsequentShots) * orAdd.TargetDeviation;
 		}
+	}
 
-		internal override void OnAdded()
-		{
-			base.OnAdded();
-			this._shotsCounter = new SubsequentShotsCounter(base.Firearm, 1f, 0.1f, 0.4f);
-		}
+	private void OnDestroy()
+	{
+		_shotsCounter?.Destruct();
+	}
 
-		// Note: this type is marked as 'beforefieldinit'.
-		static SubsequentShotsInaccuracyModule()
-		{
-			Dictionary<FirearmCategory, SubsequentShotsInaccuracyModule.InaccuracySettings> dictionary = new Dictionary<FirearmCategory, SubsequentShotsInaccuracyModule.InaccuracySettings>();
-			dictionary[FirearmCategory.Pistol] = new SubsequentShotsInaccuracyModule.InaccuracySettings(0.9f, 3, 0);
-			dictionary[FirearmCategory.Revolver] = new SubsequentShotsInaccuracyModule.InaccuracySettings(0.9f, 1, 0);
-			dictionary[FirearmCategory.SubmachineGun] = new SubsequentShotsInaccuracyModule.InaccuracySettings(0.56f, 15, 5);
-			dictionary[FirearmCategory.LightMachineGun] = new SubsequentShotsInaccuracyModule.InaccuracySettings(0.56f, 12, 3);
-			dictionary[FirearmCategory.Rifle] = new SubsequentShotsInaccuracyModule.InaccuracySettings(0.68f, 8, 2);
-			SubsequentShotsInaccuracyModule.SettingsByCategory = dictionary;
-		}
-
-		private static readonly SubsequentShotsInaccuracyModule.InaccuracySettings DefaultSettings = new SubsequentShotsInaccuracyModule.InaccuracySettings(1f, 10, 1);
-
-		private static readonly Dictionary<FirearmCategory, SubsequentShotsInaccuracyModule.InaccuracySettings> SettingsByCategory;
-
-		private SubsequentShotsCounter _shotsCounter;
-
-		private float _inaccuracyNextFrame;
-
-		[SerializeField]
-		private StatModifier _optionalModifier;
-
-		private class InaccuracySettings
-		{
-			public InaccuracySettings(float targetDeviation, int shotsToReach, int offset)
-			{
-				this.TargetDeviation = targetDeviation;
-				this.ShotsToReach = shotsToReach;
-				this.Offset = offset;
-			}
-
-			public float TargetDeviation;
-
-			public int ShotsToReach;
-
-			public int Offset;
-		}
+	internal override void OnAdded()
+	{
+		base.OnAdded();
+		_shotsCounter = new SubsequentShotsCounter(base.Firearm);
 	}
 }

@@ -1,25 +1,16 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+public readonly struct DisplayAmmoValues
 {
-	public readonly struct DisplayAmmoValues
+	public readonly int Magazines;
+
+	public readonly int Chambered;
+
+	public int Total => Magazines + Chambered;
+
+	public DisplayAmmoValues(int magazines = 0, int chambered = 0)
 	{
-		public int Total
-		{
-			get
-			{
-				return this.Magazines + this.Chambered;
-			}
-		}
-
-		public DisplayAmmoValues(int magazines = 0, int chambered = 0)
-		{
-			this.Magazines = magazines;
-			this.Chambered = chambered;
-		}
-
-		public readonly int Magazines;
-
-		public readonly int Chambered;
+		Magazines = magazines;
+		Chambered = chambered;
 	}
 }

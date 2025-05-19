@@ -1,48 +1,47 @@
-﻿using System;
+using System;
 using System.Reflection;
 
-namespace Utf8Json.Resolvers
+namespace Utf8Json.Resolvers;
+
+public sealed class AttributeFormatterResolver : IJsonFormatterResolver
 {
-	public sealed class AttributeFormatterResolver : IJsonFormatterResolver
+	private static class FormatterCache<T>
 	{
-		private AttributeFormatterResolver()
-		{
-		}
+		public static readonly IJsonFormatter<T> formatter;
 
-		public IJsonFormatter<T> GetFormatter<T>()
+		static FormatterCache()
 		{
-			return AttributeFormatterResolver.FormatterCache<T>.formatter;
-		}
-
-		public static IJsonFormatterResolver Instance = new AttributeFormatterResolver();
-
-		private static class FormatterCache<T>
-		{
-			static FormatterCache()
+			JsonFormatterAttribute customAttribute = typeof(T).GetTypeInfo().GetCustomAttribute<JsonFormatterAttribute>();
+			if (customAttribute == null)
 			{
-				JsonFormatterAttribute customAttribute = typeof(T).GetTypeInfo().GetCustomAttribute<JsonFormatterAttribute>();
-				if (customAttribute == null)
+				return;
+			}
+			try
+			{
+				if (customAttribute.FormatterType.IsGenericType && !customAttribute.FormatterType.GetTypeInfo().IsConstructedGenericType())
 				{
-					return;
+					formatter = (IJsonFormatter<T>)Activator.CreateInstance(customAttribute.FormatterType.MakeGenericType(typeof(T)), customAttribute.Arguments);
 				}
-				try
+				else
 				{
-					if (customAttribute.FormatterType.IsGenericType && !customAttribute.FormatterType.GetTypeInfo().IsConstructedGenericType())
-					{
-						AttributeFormatterResolver.FormatterCache<T>.formatter = (IJsonFormatter<T>)Activator.CreateInstance(customAttribute.FormatterType.MakeGenericType(new Type[] { typeof(T) }), customAttribute.Arguments);
-					}
-					else
-					{
-						AttributeFormatterResolver.FormatterCache<T>.formatter = (IJsonFormatter<T>)Activator.CreateInstance(customAttribute.FormatterType, customAttribute.Arguments);
-					}
-				}
-				catch (Exception ex)
-				{
-					throw new InvalidOperationException("Can not create formatter from JsonFormatterAttribute, check the target formatter is public and has constructor with right argument. FormatterType:" + customAttribute.FormatterType.Name, ex);
+					formatter = (IJsonFormatter<T>)Activator.CreateInstance(customAttribute.FormatterType, customAttribute.Arguments);
 				}
 			}
-
-			public static readonly IJsonFormatter<T> formatter;
+			catch (Exception innerException)
+			{
+				throw new InvalidOperationException("Can not create formatter from JsonFormatterAttribute, check the target formatter is public and has constructor with right argument. FormatterType:" + customAttribute.FormatterType.Name, innerException);
+			}
 		}
+	}
+
+	public static IJsonFormatterResolver Instance = new AttributeFormatterResolver();
+
+	private AttributeFormatterResolver()
+	{
+	}
+
+	public IJsonFormatter<T> GetFormatter<T>()
+	{
+		return FormatterCache<T>.formatter;
 	}
 }

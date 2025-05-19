@@ -1,15 +1,15 @@
-﻿using System;
+using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.HUDs
+namespace PlayerRoles.PlayableScps.HUDs;
+
+public abstract class ViewmodelScpHud : ScpHudBase, IViewmodelRole
 {
-	public abstract class ViewmodelScpHud : ScpHudBase, IViewmodelRole
-	{
-		public ScpViewmodelBase Viewmodel { get; protected set; }
+	[field: SerializeField]
+	public ScpViewmodelBase Viewmodel { get; protected set; }
 
-		public bool TryGetViewmodelFov(out float fov)
-		{
-			fov = this.Viewmodel.CamFOV;
-			return true;
-		}
+	public bool TryGetViewmodelFov(out float fov)
+	{
+		fov = Viewmodel.CamFOV;
+		return true;
 	}
 }

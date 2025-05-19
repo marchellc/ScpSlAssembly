@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public abstract class PostProcessEffectWave : MonoBehaviour
 {
-	public abstract class PostProcessEffectWave : MonoBehaviour
-	{
-	}
 }

@@ -1,51 +1,41 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace InventorySystem.Items.Usables.Scp244.Hypothermia
+namespace InventorySystem.Items.Usables.Scp244.Hypothermia;
+
+public class AttackCooldownSubEffect : HypothermiaSubEffectBase
 {
-	public class AttackCooldownSubEffect : HypothermiaSubEffectBase
+	private float _prevExpo;
+
+	private static readonly Dictionary<uint, float> MultipliersOfPlayers = new Dictionary<uint, float>();
+
+	[SerializeField]
+	private float _cooldownMultiplierPerExposure;
+
+	public override bool IsActive => _prevExpo > 0f;
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		public override bool IsActive
+		CustomNetworkManager.OnClientReady += MultipliersOfPlayers.Clear;
+	}
+
+	public static float CurrentAttackCooldownMultiplier(ReferenceHub hub)
+	{
+		if (!MultipliersOfPlayers.TryGetValue(hub.networkIdentity.netId, out var value))
 		{
-			get
-			{
-				return this._prevExpo > 0f;
-			}
+			return 1f;
 		}
+		return value;
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+	internal override void UpdateEffect(float curExposure)
+	{
+		if (curExposure != _prevExpo)
 		{
-			CustomNetworkManager.OnClientReady += AttackCooldownSubEffect.MultipliersOfPlayers.Clear;
+			float value = Mathf.LerpUnclamped(1f, _cooldownMultiplierPerExposure, curExposure);
+			MultipliersOfPlayers[base.Hub.networkIdentity.netId] = value;
+			_prevExpo = curExposure;
 		}
-
-		public static float CurrentAttackCooldownMultiplier(ReferenceHub hub)
-		{
-			float num;
-			if (!AttackCooldownSubEffect.MultipliersOfPlayers.TryGetValue(hub.networkIdentity.netId, out num))
-			{
-				return 1f;
-			}
-			return num;
-		}
-
-		internal override void UpdateEffect(float curExposure)
-		{
-			if (curExposure == this._prevExpo)
-			{
-				return;
-			}
-			float num = Mathf.LerpUnclamped(1f, this._cooldownMultiplierPerExposure, curExposure);
-			AttackCooldownSubEffect.MultipliersOfPlayers[base.Hub.networkIdentity.netId] = num;
-			this._prevExpo = curExposure;
-		}
-
-		private float _prevExpo;
-
-		private static readonly Dictionary<uint, float> MultipliersOfPlayers = new Dictionary<uint, float>();
-
-		[SerializeField]
-		private float _cooldownMultiplierPerExposure;
 	}
 }

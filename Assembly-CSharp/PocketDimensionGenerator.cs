@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using GameCore;
 using Mirror;
@@ -12,25 +12,27 @@ public static class PocketDimensionGenerator
 		{
 			return;
 		}
-		global::System.Random random = Misc.CreateRandom();
-		PocketDimensionTeleport[] array = PocketDimensionGenerator.PrepTeleports();
+		System.Random random = Misc.CreateRandom();
+		PocketDimensionTeleport[] array = PrepTeleports();
 		int @int = ConfigFile.ServerConfig.GetInt("pd_exit_count", 2);
-		int num = 0;
-		while (num < @int && PocketDimensionGenerator.ContainsKiller(array))
+		for (int i = 0; i < @int; i++)
 		{
-			int num2 = -1;
-			while ((num2 < 0 || array[num2].GetTeleportType() == PocketDimensionTeleport.PDTeleportType.Exit) && PocketDimensionGenerator.ContainsKiller(array))
+			if (!ContainsKiller(array))
 			{
-				num2 = random.Next(0, array.Length);
+				break;
 			}
-			array[Mathf.Clamp(num2, 0, array.Length - 1)].SetType(PocketDimensionTeleport.PDTeleportType.Exit);
-			num++;
+			int num = -1;
+			while ((num < 0 || array[num].GetTeleportType() == PocketDimensionTeleport.PDTeleportType.Exit) && ContainsKiller(array))
+			{
+				num = random.Next(0, array.Length);
+			}
+			array[Mathf.Clamp(num, 0, array.Length - 1)].SetType(PocketDimensionTeleport.PDTeleportType.Exit);
 		}
 	}
 
 	private static PocketDimensionTeleport[] PrepTeleports()
 	{
-		PocketDimensionTeleport[] array = PocketDimensionTeleport.AllInstances.ToArray<PocketDimensionTeleport>();
+		PocketDimensionTeleport[] array = PocketDimensionTeleport.AllInstances.ToArray();
 		for (int i = 0; i < array.Length; i++)
 		{
 			array[i].SetType(PocketDimensionTeleport.PDTeleportType.Killer);
@@ -53,6 +55,6 @@ public static class PocketDimensionGenerator
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		PocketDimensionTeleport.OnInstancesUpdated += PocketDimensionGenerator.RandomizeTeleports;
+		PocketDimensionTeleport.OnInstancesUpdated += RandomizeTeleports;
 	}
 }

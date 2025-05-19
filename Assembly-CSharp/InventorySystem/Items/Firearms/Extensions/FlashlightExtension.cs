@@ -1,94 +1,89 @@
-﻿using System;
 using InventorySystem.Items.Firearms.Attachments;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+[PresetPrefabExtension("Flashlight Worldmodel", true)]
+[PresetPrefabExtension("Flashlight Viewmodel", false)]
+public class FlashlightExtension : MixedExtension, IDestroyExtensionReceiver
 {
-	[PresetPrefabExtension("Flashlight Worldmodel", true)]
-	[PresetPrefabExtension("Flashlight Viewmodel", false)]
-	public class FlashlightExtension : MixedExtension, IDestroyExtensionReceiver
+	private const float ThirdpersonRange = 22f;
+
+	private const float PickupRange = 3.5f;
+
+	[SerializeField]
+	private Light _lightSource;
+
+	[SerializeField]
+	private Renderer[] _renderers;
+
+	[SerializeField]
+	private Material _enabledMaterial;
+
+	[SerializeField]
+	private Material _disabledMaterial;
+
+	private bool _updateEveryFrame;
+
+	private bool _eventAssigned;
+
+	private bool? _prevState;
+
+	public override void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		public override void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
-		{
-			base.InitViewmodel(viewmodel);
-			this._updateEveryFrame = true;
-		}
+		base.InitViewmodel(viewmodel);
+		_updateEveryFrame = true;
+	}
 
-		public override void SetupWorldmodel(FirearmWorldmodel worldmodel)
+	public override void SetupWorldmodel(FirearmWorldmodel worldmodel)
+	{
+		base.SetupWorldmodel(worldmodel);
+		UpdateState();
+		switch (worldmodel.WorldmodelType)
 		{
-			base.SetupWorldmodel(worldmodel);
-			this.UpdateState();
-			switch (worldmodel.WorldmodelType)
-			{
-			case FirearmWorldmodelType.Pickup:
-			case FirearmWorldmodelType.Presentation:
-				this._lightSource.range = 3.5f;
-				break;
-			case FirearmWorldmodelType.Thirdperson:
-				this._lightSource.range = 22f;
-				break;
-			}
-			if (!this._eventAssigned)
-			{
-				FlashlightAttachment.OnAnyStatusChanged += this.UpdateState;
-				this._eventAssigned = true;
-			}
+		case FirearmWorldmodelType.Thirdperson:
+			_lightSource.range = 22f;
+			break;
+		case FirearmWorldmodelType.Pickup:
+		case FirearmWorldmodelType.Presentation:
+			_lightSource.range = 3.5f;
+			break;
 		}
-
-		public void OnDestroyExtension()
+		if (!_eventAssigned)
 		{
-			if (!this._eventAssigned)
-			{
-				return;
-			}
-			FlashlightAttachment.OnAnyStatusChanged -= this.UpdateState;
+			FlashlightAttachment.OnAnyStatusChanged += UpdateState;
+			_eventAssigned = true;
 		}
+	}
 
-		private void UpdateState()
+	public void OnDestroyExtension()
+	{
+		if (_eventAssigned)
 		{
-			bool enabled = FlashlightAttachment.GetEnabled(base.Identifier.SerialNumber);
-			if (this._prevState != null && this._prevState.Value == enabled)
-			{
-				return;
-			}
-			this._prevState = new bool?(enabled);
-			this._lightSource.enabled = enabled;
-			Renderer[] renderers = this._renderers;
+			FlashlightAttachment.OnAnyStatusChanged -= UpdateState;
+		}
+	}
+
+	private void UpdateState()
+	{
+		bool flag = FlashlightAttachment.GetEnabled(base.Identifier.SerialNumber);
+		if (!_prevState.HasValue || _prevState.Value != flag)
+		{
+			_prevState = flag;
+			_lightSource.enabled = flag;
+			Renderer[] renderers = _renderers;
 			for (int i = 0; i < renderers.Length; i++)
 			{
-				renderers[i].sharedMaterial = (enabled ? this._enabledMaterial : this._disabledMaterial);
+				renderers[i].sharedMaterial = (flag ? _enabledMaterial : _disabledMaterial);
 			}
 		}
+	}
 
-		private void Update()
+	private void Update()
+	{
+		if (_updateEveryFrame)
 		{
-			if (!this._updateEveryFrame)
-			{
-				return;
-			}
-			this.UpdateState();
+			UpdateState();
 		}
-
-		private const float ThirdpersonRange = 22f;
-
-		private const float PickupRange = 3.5f;
-
-		[SerializeField]
-		private Light _lightSource;
-
-		[SerializeField]
-		private Renderer[] _renderers;
-
-		[SerializeField]
-		private Material _enabledMaterial;
-
-		[SerializeField]
-		private Material _disabledMaterial;
-
-		private bool _updateEveryFrame;
-
-		private bool _eventAssigned;
-
-		private bool? _prevState;
 	}
 }

@@ -1,21 +1,18 @@
-﻿using System;
 using Mirror;
 using UnityEngine;
 
-namespace Interactables.Interobjects.DoorUtils
-{
-	public class DoorRandomInitialStateExtension : DoorVariantExtension
-	{
-		private void Start()
-		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this.TargetDoor.NetworkTargetState = global::UnityEngine.Random.value < this.OpenChance;
-		}
+namespace Interactables.Interobjects.DoorUtils;
 
-		[Range(0f, 1f)]
-		public float OpenChance = 0.5f;
+public class DoorRandomInitialStateExtension : DoorVariantExtension
+{
+	[Range(0f, 1f)]
+	public float OpenChance = 0.5f;
+
+	private void Start()
+	{
+		if (NetworkServer.active)
+		{
+			TargetDoor.NetworkTargetState = Random.value < OpenChance;
+		}
 	}
 }

@@ -1,114 +1,113 @@
-﻿using System;
+using System;
 using System.Buffers.Binary;
 
-namespace Query
+namespace Query;
+
+public readonly struct QueryHandshake
 {
-	public readonly struct QueryHandshake
+	[Flags]
+	public enum ClientFlags : byte
 	{
-		public int SizeToServer
+		None = 0,
+		SuppressRaResponses = 1,
+		SubscribeServerConsole = 2,
+		SubscribeServerLogs = 4,
+		RemoteAdminMetadata = 8,
+		RestrictPermissions = 0x10,
+		SpecifyLogUsername = 0x20
+	}
+
+	public readonly ushort MaxPacketSize;
+
+	public readonly long Timestamp;
+
+	public readonly byte[] AuthChallenge;
+
+	public readonly ushort ServerTimeoutThreshold;
+
+	public readonly ClientFlags Flags;
+
+	public readonly ulong Permissions;
+
+	public readonly byte KickPower;
+
+	public readonly string Username;
+
+	public const int ChallengeLength = 24;
+
+	private const int CommonSize = 34;
+
+	public const int SizeToClient = 36;
+
+	public int SizeToServer
+	{
+		get
 		{
-			get
-			{
-				int num = (this.Flags.HasFlagFast(QueryHandshake.ClientFlags.RestrictPermissions) ? 9 : 0);
-				int num2 = (this.Flags.HasFlagFast(QueryHandshake.ClientFlags.SpecifyLogUsername) ? Utf8.GetLength(this.Username) : 0);
-				return 35 + num + num2;
-			}
+			int num = (Flags.HasFlagFast(ClientFlags.RestrictPermissions) ? 9 : 0);
+			int num2 = (Flags.HasFlagFast(ClientFlags.SpecifyLogUsername) ? Utf8.GetLength(Username) : 0);
+			return 35 + num + num2;
 		}
+	}
 
-		public QueryHandshake(ushort maxPacketSize, long timestamp, byte[] authChallenge, QueryHandshake.ClientFlags flags = QueryHandshake.ClientFlags.None, ulong permissions = 18446744073709551615UL, byte kickPower = 255, string username = null, ushort serverTimeoutThreshold = 0)
+	public QueryHandshake(ushort maxPacketSize, long timestamp, byte[] authChallenge, ClientFlags flags = ClientFlags.None, ulong permissions = ulong.MaxValue, byte kickPower = byte.MaxValue, string username = null, ushort serverTimeoutThreshold = 0)
+	{
+		if (authChallenge.Length != 24)
 		{
-			if (authChallenge.Length != 24)
-			{
-				throw new ArgumentException(string.Format("Auth challenge must be {0} bytes long.", 24), "authChallenge");
-			}
-			if (flags.HasFlagFast(QueryHandshake.ClientFlags.SpecifyLogUsername) && string.IsNullOrWhiteSpace(username))
-			{
-				throw new ArgumentException("Username must be specified (and not be empty or whitespace) when ClientFlags.SpecifyLogUsername is set.", "username");
-			}
-			this.MaxPacketSize = maxPacketSize;
-			this.Timestamp = timestamp;
-			this.AuthChallenge = authChallenge;
-			this.ServerTimeoutThreshold = serverTimeoutThreshold;
-			this.Flags = flags;
-			this.Permissions = permissions;
-			this.KickPower = kickPower;
-			this.Username = username;
+			throw new ArgumentException($"Auth challenge must be {24} bytes long.", "authChallenge");
 		}
-
-		public QueryHandshake(ushort maxPacketSize, byte[] authChallenge, QueryHandshake.ClientFlags flags = QueryHandshake.ClientFlags.None, ulong permissions = 18446744073709551615UL, byte kickPower = 255, string username = null, ushort serverTimeoutThreshold = 0)
+		if (flags.HasFlagFast(ClientFlags.SpecifyLogUsername) && string.IsNullOrWhiteSpace(username))
 		{
-			this = new QueryHandshake(maxPacketSize, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), authChallenge, flags, permissions, kickPower, username, serverTimeoutThreshold);
+			throw new ArgumentException("Username must be specified (and not be empty or whitespace) when ClientFlags.SpecifyLogUsername is set.", "username");
 		}
+		MaxPacketSize = maxPacketSize;
+		Timestamp = timestamp;
+		AuthChallenge = authChallenge;
+		ServerTimeoutThreshold = serverTimeoutThreshold;
+		Flags = flags;
+		Permissions = permissions;
+		KickPower = kickPower;
+		Username = username;
+	}
 
-		public bool Validate(int timeTolerance = 120)
+	public QueryHandshake(ushort maxPacketSize, byte[] authChallenge, ClientFlags flags = ClientFlags.None, ulong permissions = ulong.MaxValue, byte kickPower = byte.MaxValue, string username = null, ushort serverTimeoutThreshold = 0)
+		: this(maxPacketSize, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), authChallenge, flags, permissions, kickPower, username, serverTimeoutThreshold)
+	{
+	}
+
+	public bool Validate(int timeTolerance = 120)
+	{
+		return Math.Abs(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - Timestamp) <= timeTolerance;
+	}
+
+	public int Serialize(Span<byte> buffer, bool toServer)
+	{
+		BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(0, 2), MaxPacketSize);
+		BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(2, 8), Timestamp);
+		AuthChallenge.CopyTo(buffer.Slice(10, 24));
+		BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(34, 2), ServerTimeoutThreshold);
+		return 36;
+	}
+
+	public static QueryHandshake Deserialize(ReadOnlySpan<byte> buffer, bool toServer)
+	{
+		ushort maxPacketSize = BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(0, 2));
+		long timestamp = BinaryPrimitives.ReadInt64BigEndian(buffer.Slice(2, 8));
+		byte[] authChallenge = buffer.Slice(10, 24).ToArray();
+		ClientFlags clientFlags = (ClientFlags)buffer[34];
+		ulong permissions = ulong.MaxValue;
+		byte kickPower = byte.MaxValue;
+		string username = null;
+		int num = 35;
+		if (clientFlags.HasFlagFast(ClientFlags.RestrictPermissions))
 		{
-			return Math.Abs(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - this.Timestamp) <= (long)timeTolerance;
+			permissions = BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(num, 8));
+			num += 8;
+			kickPower = buffer[num++];
 		}
-
-		public int Serialize(Span<byte> buffer, bool toServer)
+		if (clientFlags.HasFlagFast(ClientFlags.SpecifyLogUsername))
 		{
-			BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(0, 2), this.MaxPacketSize);
-			BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(2, 8), this.Timestamp);
-			this.AuthChallenge.CopyTo(buffer.Slice(10, 24));
-			BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(34, 2), this.ServerTimeoutThreshold);
-			return 36;
+			username = Utf8.GetString(buffer, num, buffer.Length - num);
 		}
-
-		public unsafe static QueryHandshake Deserialize(ReadOnlySpan<byte> buffer, bool toServer)
-		{
-			ushort num = BinaryPrimitives.ReadUInt16BigEndian(buffer.Slice(0, 2));
-			long num2 = BinaryPrimitives.ReadInt64BigEndian(buffer.Slice(2, 8));
-			byte[] array = buffer.Slice(10, 24).ToArray();
-			QueryHandshake.ClientFlags clientFlags = (QueryHandshake.ClientFlags)(*buffer[34]);
-			ulong num3 = ulong.MaxValue;
-			byte b = byte.MaxValue;
-			string text = null;
-			int num4 = 35;
-			if (clientFlags.HasFlagFast(QueryHandshake.ClientFlags.RestrictPermissions))
-			{
-				num3 = BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(num4, 8));
-				num4 += 8;
-				b = *buffer[num4++];
-			}
-			if (clientFlags.HasFlagFast(QueryHandshake.ClientFlags.SpecifyLogUsername))
-			{
-				text = Utf8.GetString(buffer, num4, buffer.Length - num4);
-			}
-			return new QueryHandshake(num, num2, array, clientFlags, num3, b, text, 0);
-		}
-
-		public readonly ushort MaxPacketSize;
-
-		public readonly long Timestamp;
-
-		public readonly byte[] AuthChallenge;
-
-		public readonly ushort ServerTimeoutThreshold;
-
-		public readonly QueryHandshake.ClientFlags Flags;
-
-		public readonly ulong Permissions;
-
-		public readonly byte KickPower;
-
-		public readonly string Username;
-
-		public const int ChallengeLength = 24;
-
-		private const int CommonSize = 34;
-
-		public const int SizeToClient = 36;
-
-		[Flags]
-		public enum ClientFlags : byte
-		{
-			None = 0,
-			SuppressRaResponses = 1,
-			SubscribeServerConsole = 2,
-			SubscribeServerLogs = 4,
-			RemoteAdminMetadata = 8,
-			RestrictPermissions = 16,
-			SpecifyLogUsername = 32
-		}
+		return new QueryHandshake(maxPacketSize, timestamp, authChallenge, clientFlags, permissions, kickPower, username, 0);
 	}
 }

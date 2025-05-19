@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace LightContainmentZoneDecontamination
+namespace LightContainmentZoneDecontamination;
+
+public class DecontaminationElevatorScreen : MonoBehaviour
 {
-	public class DecontaminationElevatorScreen : MonoBehaviour
-	{
-	}
 }

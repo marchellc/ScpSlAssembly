@@ -1,229 +1,209 @@
-﻿using System;
-using InventorySystem.Items.Autosync;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+public static class ModulesUtils
 {
-	public static class ModulesUtils
+	public static bool AnyModuleBusy(this Firearm firearm, ModuleBase ignoredModule = null)
 	{
-		public static bool AnyModuleBusy(this Firearm firearm, ModuleBase ignoredModule = null)
+		ModuleBase[] modules = firearm.Modules;
+		foreach (ModuleBase moduleBase in modules)
 		{
-			foreach (ModuleBase moduleBase in firearm.Modules)
+			if (moduleBase is IBusyIndicatorModule { IsBusy: not false } && !(ignoredModule == moduleBase))
 			{
-				IBusyIndicatorModule busyIndicatorModule = moduleBase as IBusyIndicatorModule;
-				if (busyIndicatorModule != null && busyIndicatorModule.IsBusy && !(ignoredModule == moduleBase))
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-
-		public static int GetTotalStoredAmmo(ItemIdentifier id)
-		{
-			Firearm firearm;
-			if (!InventoryItemLoader.TryGetItem<Firearm>(id.TypeId, out firearm))
-			{
-				return 0;
-			}
-			int num = 0;
-			ModuleBase[] modules = firearm.Modules;
-			for (int i = 0; i < modules.Length; i++)
-			{
-				IAmmoContainerModule ammoContainerModule = modules[i] as IAmmoContainerModule;
-				if (ammoContainerModule != null)
-				{
-					num += ammoContainerModule.GetAmmoStoredForSerial(id.SerialNumber);
-				}
-			}
-			return num;
-		}
-
-		public static int GetTotalStoredAmmo(this Firearm firearm)
-		{
-			int num;
-			int num2;
-			firearm.GetAmmoContainerData(out num, out num2);
-			return num;
-		}
-
-		public static int GetTotalMaxAmmo(this Firearm firearm)
-		{
-			int num;
-			int num2;
-			firearm.GetAmmoContainerData(out num, out num2);
-			return num2;
-		}
-
-		public static void GetAmmoContainerData(this Firearm firearm, out int totalStored, out int totalMax)
-		{
-			totalStored = 0;
-			totalMax = 0;
-			ModuleBase[] modules = firearm.Modules;
-			for (int i = 0; i < modules.Length; i++)
-			{
-				IAmmoContainerModule ammoContainerModule = modules[i] as IAmmoContainerModule;
-				if (ammoContainerModule != null)
-				{
-					totalStored += ammoContainerModule.AmmoStored;
-					totalMax += ammoContainerModule.AmmoMax;
-				}
-			}
-		}
-
-		public static bool TryGetModuleWithId<T>(this Firearm firearm, int id, out T module)
-		{
-			SubcomponentBase subcomponentBase;
-			if (firearm.TryGetSubcomponentFromId(id, out subcomponentBase) && subcomponentBase is T)
-			{
-				T t = subcomponentBase as T;
-				module = t;
 				return true;
 			}
+		}
+		return false;
+	}
+
+	public static int GetTotalStoredAmmo(ItemIdentifier id)
+	{
+		if (!InventoryItemLoader.TryGetItem<Firearm>(id.TypeId, out var result))
+		{
+			return 0;
+		}
+		int num = 0;
+		ModuleBase[] modules = result.Modules;
+		for (int i = 0; i < modules.Length; i++)
+		{
+			if (modules[i] is IAmmoContainerModule ammoContainerModule)
+			{
+				num += ammoContainerModule.GetAmmoStoredForSerial(id.SerialNumber);
+			}
+		}
+		return num;
+	}
+
+	public static int GetTotalStoredAmmo(this Firearm firearm)
+	{
+		firearm.GetAmmoContainerData(out var totalStored, out var _);
+		return totalStored;
+	}
+
+	public static int GetTotalMaxAmmo(this Firearm firearm)
+	{
+		firearm.GetAmmoContainerData(out var _, out var totalMax);
+		return totalMax;
+	}
+
+	public static void GetAmmoContainerData(this Firearm firearm, out int totalStored, out int totalMax)
+	{
+		totalStored = 0;
+		totalMax = 0;
+		ModuleBase[] modules = firearm.Modules;
+		for (int i = 0; i < modules.Length; i++)
+		{
+			if (modules[i] is IAmmoContainerModule ammoContainerModule)
+			{
+				totalStored += ammoContainerModule.AmmoStored;
+				totalMax += ammoContainerModule.AmmoMax;
+			}
+		}
+	}
+
+	public static bool TryGetModuleWithId<T>(this Firearm firearm, int id, out T module)
+	{
+		if (!firearm.TryGetSubcomponentFromId(id, out var subcomponent) || !(subcomponent is T val))
+		{
 			module = default(T);
 			return false;
 		}
+		module = val;
+		return true;
+	}
 
-		public static bool TryGetModule<T>(this Firearm firearm, out T module, bool ignoreSubmodules = true)
+	public static bool TryGetModule<T>(this Firearm firearm, out T module, bool ignoreSubmodules = true)
+	{
+		ModuleBase[] modules = firearm.Modules;
+		foreach (ModuleBase moduleBase in modules)
 		{
-			foreach (ModuleBase moduleBase in firearm.Modules)
+			if ((!ignoreSubmodules || !moduleBase.IsSubmodule) && moduleBase is T val)
 			{
-				if ((!ignoreSubmodules || !moduleBase.IsSubmodule) && moduleBase is T)
+				module = val;
+				return true;
+			}
+		}
+		module = default(T);
+		return false;
+	}
+
+	public static bool TryGetModules<T1, T2>(this Firearm firearm, out T1 m1, out T2 m2)
+	{
+		m1 = default(T1);
+		m2 = default(T2);
+		bool flag = false;
+		bool flag2 = false;
+		ModuleBase[] modules = firearm.Modules;
+		foreach (ModuleBase moduleBase in modules)
+		{
+			if (!moduleBase.IsSubmodule)
+			{
+				if (!flag && moduleBase is T1 val)
 				{
-					T t = moduleBase as T;
-					module = t;
+					m1 = val;
+					flag = true;
+				}
+				if (!flag2 && moduleBase is T2 val2)
+				{
+					m2 = val2;
+					flag2 = true;
+				}
+				if (flag && flag2)
+				{
 					return true;
 				}
 			}
-			module = default(T);
-			return false;
 		}
+		return false;
+	}
 
-		public static bool TryGetModules<T1, T2>(this Firearm firearm, out T1 m1, out T2 m2)
+	public static bool TryGetModules<T1, T2, T3>(this Firearm firearm, out T1 m1, out T2 m2, out T3 m3)
+	{
+		m1 = default(T1);
+		m2 = default(T2);
+		m3 = default(T3);
+		bool flag = false;
+		bool flag2 = false;
+		bool flag3 = false;
+		ModuleBase[] modules = firearm.Modules;
+		foreach (ModuleBase moduleBase in modules)
 		{
-			m1 = default(T1);
-			m2 = default(T2);
-			bool flag = false;
-			bool flag2 = false;
-			foreach (ModuleBase moduleBase in firearm.Modules)
+			if (!moduleBase.IsSubmodule)
 			{
-				if (!moduleBase.IsSubmodule)
+				if (!flag && moduleBase is T1 val)
 				{
-					if (!flag && moduleBase is T1)
-					{
-						T1 t = moduleBase as T1;
-						m1 = t;
-						flag = true;
-					}
-					if (!flag2 && moduleBase is T2)
-					{
-						T2 t2 = moduleBase as T2;
-						m2 = t2;
-						flag2 = true;
-					}
-					if (flag && flag2)
-					{
-						return true;
-					}
+					m1 = val;
+					flag = true;
+				}
+				if (!flag2 && moduleBase is T2 val2)
+				{
+					m2 = val2;
+					flag2 = true;
+				}
+				if (!flag3 && moduleBase is T3 val3)
+				{
+					m3 = val3;
+					flag3 = true;
+				}
+				if (flag && flag2 && flag3)
+				{
+					return true;
 				}
 			}
-			return false;
 		}
+		return false;
+	}
 
-		public static bool TryGetModules<T1, T2, T3>(this Firearm firearm, out T1 m1, out T2 m2, out T3 m3)
+	public static bool TryGetModules<T1, T2, T3, T4>(this Firearm firearm, out T1 m1, out T2 m2, out T3 m3, out T4 m4)
+	{
+		m1 = default(T1);
+		m2 = default(T2);
+		m3 = default(T3);
+		m4 = default(T4);
+		bool flag = false;
+		bool flag2 = false;
+		bool flag3 = false;
+		bool flag4 = false;
+		ModuleBase[] modules = firearm.Modules;
+		foreach (ModuleBase moduleBase in modules)
 		{
-			m1 = default(T1);
-			m2 = default(T2);
-			m3 = default(T3);
-			bool flag = false;
-			bool flag2 = false;
-			bool flag3 = false;
-			foreach (ModuleBase moduleBase in firearm.Modules)
+			if (!moduleBase.IsSubmodule)
 			{
-				if (!moduleBase.IsSubmodule)
+				if (!flag && moduleBase is T1 val)
 				{
-					if (!flag && moduleBase is T1)
-					{
-						T1 t = moduleBase as T1;
-						m1 = t;
-						flag = true;
-					}
-					if (!flag2 && moduleBase is T2)
-					{
-						T2 t2 = moduleBase as T2;
-						m2 = t2;
-						flag2 = true;
-					}
-					if (!flag3 && moduleBase is T3)
-					{
-						T3 t3 = moduleBase as T3;
-						m3 = t3;
-						flag3 = true;
-					}
-					if (flag && flag2 && flag3)
-					{
-						return true;
-					}
+					m1 = val;
+					flag = true;
+				}
+				if (!flag2 && moduleBase is T2 val2)
+				{
+					m2 = val2;
+					flag2 = true;
+				}
+				if (!flag3 && moduleBase is T3 val3)
+				{
+					m3 = val3;
+					flag3 = true;
+				}
+				if (!flag4 && moduleBase is T4 val4)
+				{
+					m4 = val4;
+					flag4 = true;
+				}
+				if (flag && flag2 && flag3 && flag4)
+				{
+					return true;
 				}
 			}
-			return false;
 		}
+		return false;
+	}
 
-		public static bool TryGetModules<T1, T2, T3, T4>(this Firearm firearm, out T1 m1, out T2 m2, out T3 m3, out T4 m4)
+	public static bool TryGetModuleTemplate<T>(ItemType itemType, out T module)
+	{
+		if (InventoryItemLoader.TryGetItem<Firearm>(itemType, out var result))
 		{
-			m1 = default(T1);
-			m2 = default(T2);
-			m3 = default(T3);
-			m4 = default(T4);
-			bool flag = false;
-			bool flag2 = false;
-			bool flag3 = false;
-			bool flag4 = false;
-			foreach (ModuleBase moduleBase in firearm.Modules)
-			{
-				if (!moduleBase.IsSubmodule)
-				{
-					if (!flag && moduleBase is T1)
-					{
-						T1 t = moduleBase as T1;
-						m1 = t;
-						flag = true;
-					}
-					if (!flag2 && moduleBase is T2)
-					{
-						T2 t2 = moduleBase as T2;
-						m2 = t2;
-						flag2 = true;
-					}
-					if (!flag3 && moduleBase is T3)
-					{
-						T3 t3 = moduleBase as T3;
-						m3 = t3;
-						flag3 = true;
-					}
-					if (!flag4 && moduleBase is T4)
-					{
-						T4 t4 = moduleBase as T4;
-						m4 = t4;
-						flag4 = true;
-					}
-					if (flag && flag2 && flag3 && flag4)
-					{
-						return true;
-					}
-				}
-			}
-			return false;
+			return result.TryGetModule<T>(out module);
 		}
-
-		public static bool TryGetModuleTemplate<T>(ItemType itemType, out T module)
-		{
-			Firearm firearm;
-			if (InventoryItemLoader.TryGetItem<Firearm>(itemType, out firearm))
-			{
-				return firearm.TryGetModule(out module, true);
-			}
-			module = default(T);
-			return false;
-		}
+		module = default(T);
+		return false;
 	}
 }

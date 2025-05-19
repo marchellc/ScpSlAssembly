@@ -1,9 +1,6 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public interface ISoundtrackMutingEffect
 {
-	public interface ISoundtrackMutingEffect
-	{
-		bool MuteSoundtrack { get; }
-	}
+	bool MuteSoundtrack { get; }
 }

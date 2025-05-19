@@ -1,24 +1,22 @@
-﻿using System;
+namespace PlayerRoles.Ragdolls;
 
-namespace PlayerRoles.Ragdolls
+public static class RagdollSerialGenerator
 {
-	public static class RagdollSerialGenerator
+	private static ushort _lastGenerated = 0;
+
+	private static readonly object Lock = new object();
+
+	public static ushort GenerateNext()
 	{
-		public static ushort GenerateNext()
+		lock (Lock)
 		{
-			object @lock = RagdollSerialGenerator.Lock;
-			ushort num;
-			lock (@lock)
+			int num = _lastGenerated + 1;
+			if (num > 65535)
 			{
-				ushort nextSerial = RagdollSerialGenerator._nextSerial;
-				RagdollSerialGenerator._nextSerial = nextSerial + 1;
-				num = nextSerial;
+				num = 1;
 			}
-			return num;
+			_lastGenerated = (ushort)num;
+			return _lastGenerated;
 		}
-
-		private static ushort _nextSerial;
-
-		private static readonly object Lock = new object();
 	}
 }

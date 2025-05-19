@@ -1,269 +1,257 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Interactables;
 using Interactables.Interobjects.DoorUtils;
 using Interactables.Verification;
-using InventorySystem.Items.Keycards;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
+using MapGeneration.StaticHelpers;
 using Mirror;
 using Mirror.RemoteCalls;
 using NorthwoodLib.Pools;
 using UnityEngine;
 
-namespace MapGeneration.Distributors
+namespace MapGeneration.Distributors;
+
+public class Locker : SpawnableStructure, IServerInteractable, IInteractable, IBlockStaticBatching
 {
-	public class Locker : SpawnableStructure, IServerInteractable, IInteractable
+	public LockerLoot[] Loot;
+
+	public LockerChamber[] Chambers;
+
+	[SyncVar]
+	public ushort OpenedChambers;
+
+	[SerializeField]
+	private AudioClip _grantedBeep;
+
+	[SerializeField]
+	private AudioClip _deniedBeep;
+
+	[Header("Leave 0 to fill all chambers")]
+	public int MinChambersToFill;
+
+	public int MaxChambersToFill;
+
+	private ushort? _prevOpened;
+
+	private bool _serverChambersFilled;
+
+	private float _deniedCooldown;
+
+	private const float DeniedCooldownDuration = 1f;
+
+	public IVerificationRule VerificationRule => StandardDistanceVerification.Default;
+
+	public ushort NetworkOpenedChambers
 	{
-		public IVerificationRule VerificationRule
+		get
 		{
-			get
+			return OpenedChambers;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref OpenedChambers, 1uL, null);
+		}
+	}
+
+	public void ServerInteract(ReferenceHub ply, byte colliderId)
+	{
+		if (!Chambers.TryGet(colliderId, out var element) || !element.CanInteract)
+		{
+			return;
+		}
+		bool flag = !CheckTogglePerms(colliderId, ply, out var callback);
+		PlayerInteractingLockerEventArgs playerInteractingLockerEventArgs = new PlayerInteractingLockerEventArgs(ply, this, Chambers[colliderId], !flag);
+		PlayerEvents.OnInteractingLocker(playerInteractingLockerEventArgs);
+		if (!playerInteractingLockerEventArgs.IsAllowed)
+		{
+			return;
+		}
+		flag = !playerInteractingLockerEventArgs.CanOpen;
+		if (flag)
+		{
+			if (_deniedCooldown <= 0f)
 			{
-				return StandardDistanceVerification.Default;
+				RpcPlayDenied(colliderId, ply.GetCombinedPermissions(element));
+				callback?.Invoke(element, success: false);
+				_deniedCooldown = 1f;
+			}
+			PlayerEvents.OnInteractedLocker(new PlayerInteractedLockerEventArgs(ply, this, Chambers[colliderId], !flag));
+		}
+		else
+		{
+			element.SetDoor(!element.IsOpen, _grantedBeep);
+			RefreshOpenedSyncvar();
+			callback?.Invoke(element, success: true);
+			PlayerEvents.OnInteractedLocker(new PlayerInteractedLockerEventArgs(ply, this, Chambers[colliderId], !flag));
+		}
+	}
+
+	public void RefreshOpenedSyncvar()
+	{
+		int num = 1;
+		int num2 = 0;
+		LockerChamber[] chambers = Chambers;
+		for (int i = 0; i < chambers.Length; i++)
+		{
+			if (chambers[i].IsOpen)
+			{
+				num2 += num;
+			}
+			num *= 2;
+		}
+		if (num2 != OpenedChambers)
+		{
+			NetworkOpenedChambers = (ushort)num2;
+		}
+	}
+
+	public virtual void FillChamber(LockerChamber ch)
+	{
+		List<int> list = ListPool<int>.Shared.Rent();
+		for (int i = 0; i < Loot.Length; i++)
+		{
+			LockerLoot lockerLoot = Loot[i];
+			if (lockerLoot.RemainingUses > 0 && (ch.AcceptableItems.Length == 0 || ch.AcceptableItems.Contains(lockerLoot.TargetItem)))
+			{
+				for (int j = 0; j <= lockerLoot.ProbabilityPoints; j++)
+				{
+					list.Add(i);
+				}
 			}
 		}
-
-		public void ServerInteract(ReferenceHub ply, byte colliderId)
+		if (list.Count > 0)
 		{
-			LockerChamber lockerChamber;
-			if (!this.Chambers.TryGet((int)colliderId, out lockerChamber))
-			{
-				return;
-			}
-			if (!lockerChamber.CanInteract)
-			{
-				return;
-			}
-			bool flag = !this.CheckTogglePerms((int)colliderId, ply) && !ply.serverRoles.BypassMode;
-			PlayerInteractingLockerEventArgs playerInteractingLockerEventArgs = new PlayerInteractingLockerEventArgs(ply, this, this.Chambers[(int)colliderId], !flag);
-			PlayerEvents.OnInteractingLocker(playerInteractingLockerEventArgs);
-			if (!playerInteractingLockerEventArgs.IsAllowed)
-			{
-				return;
-			}
-			flag = !playerInteractingLockerEventArgs.CanOpen;
-			if (flag)
-			{
-				this.RpcPlayDenied(colliderId);
-				PlayerEvents.OnInteractedLocker(new PlayerInteractedLockerEventArgs(ply, this, this.Chambers[(int)colliderId], !flag));
-				return;
-			}
-			lockerChamber.SetDoor(!lockerChamber.IsOpen, this._grantedBeep);
-			this.RefreshOpenedSyncvar();
-			PlayerEvents.OnInteractedLocker(new PlayerInteractedLockerEventArgs(ply, this, this.Chambers[(int)colliderId], !flag));
+			int num = list[Random.Range(0, list.Count)];
+			LockerLoot lockerLoot2 = Loot[num];
+			ch.SpawnItem(lockerLoot2.TargetItem, Random.Range(lockerLoot2.MinPerChamber, lockerLoot2.MaxPerChamber + 1));
+			lockerLoot2.RemainingUses--;
 		}
+		ListPool<int>.Shared.Return(list);
+	}
 
-		public void RefreshOpenedSyncvar()
+	[ClientRpc]
+	public void RpcPlayDenied(byte chamberId, DoorPermissionFlags perms)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		NetworkWriterExtensions.WriteByte(writer, chamberId);
+		GeneratedNetworkCode._Write_Interactables_002EInterobjects_002EDoorUtils_002EDoorPermissionFlags(writer, perms);
+		SendRPCInternal("System.Void MapGeneration.Distributors.Locker::RpcPlayDenied(System.Byte,Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", 1380298176, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
+	}
+
+	protected virtual void Update()
+	{
+		if (!NetworkClient.ready)
+		{
+			return;
+		}
+		if (NetworkServer.active)
+		{
+			if (_deniedCooldown > 0f)
+			{
+				_deniedCooldown -= Time.deltaTime;
+			}
+			if (!_serverChambersFilled)
+			{
+				ServerFillChambers();
+				_serverChambersFilled = true;
+			}
+		}
+		if (_prevOpened != OpenedChambers)
 		{
 			int num = 1;
-			int num2 = 0;
-			LockerChamber[] chambers = this.Chambers;
-			for (int i = 0; i < chambers.Length; i++)
+			LockerChamber[] chambers = Chambers;
+			foreach (LockerChamber lockerChamber in chambers)
 			{
-				if (chambers[i].IsOpen)
-				{
-					num2 += num;
-				}
+				lockerChamber.SetDoor((OpenedChambers & num) == num || !lockerChamber.AnimatorSet, _grantedBeep);
 				num *= 2;
 			}
-			if (num2 != (int)this.OpenedChambers)
-			{
-				this.NetworkOpenedChambers = (ushort)num2;
-			}
+			_prevOpened = OpenedChambers;
 		}
+	}
 
-		public virtual void FillChamber(LockerChamber ch)
+	protected virtual void ServerFillChambers()
+	{
+		List<LockerChamber> list = new List<LockerChamber>(Chambers);
+		if (MinChambersToFill != 0 && MaxChambersToFill >= MinChambersToFill)
 		{
-			List<int> list = ListPool<int>.Shared.Rent();
-			for (int i = 0; i < this.Loot.Length; i++)
+			int num = Chambers.Length - Random.Range(MinChambersToFill, MaxChambersToFill + 1);
+			for (int i = 0; i < num; i++)
 			{
-				LockerLoot lockerLoot = this.Loot[i];
-				if (lockerLoot.RemainingUses > 0 && (ch.AcceptableItems.Length == 0 || ch.AcceptableItems.Contains(lockerLoot.TargetItem)))
-				{
-					for (int j = 0; j <= lockerLoot.ProbabilityPoints; j++)
-					{
-						list.Add(i);
-					}
-				}
+				list.RemoveAt(Random.Range(0, list.Count));
 			}
-			if (list.Count > 0)
-			{
-				int num = list[global::UnityEngine.Random.Range(0, list.Count)];
-				LockerLoot lockerLoot2 = this.Loot[num];
-				ch.SpawnItem(lockerLoot2.TargetItem, global::UnityEngine.Random.Range(lockerLoot2.MinPerChamber, lockerLoot2.MaxPerChamber + 1));
-				lockerLoot2.RemainingUses--;
-			}
-			ListPool<int>.Shared.Return(list);
 		}
-
-		[ClientRpc]
-		public void RpcPlayDenied(byte chamberId)
+		foreach (LockerChamber item in list)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteByte(chamberId);
-			this.SendRPCInternal("System.Void MapGeneration.Distributors.Locker::RpcPlayDenied(System.Byte)", 1695236274, networkWriterPooled, 0, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			FillChamber(item);
 		}
+	}
 
-		protected virtual void Update()
+	protected virtual bool CheckTogglePerms(int chamberId, ReferenceHub ply, out PermissionUsed callback)
+	{
+		return Chambers[chamberId].CheckPermissions(ply, out callback);
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	protected void UserCode_RpcPlayDenied__Byte__DoorPermissionFlags(byte chamberId, DoorPermissionFlags perms)
+	{
+		if (chamberId <= Chambers.Length)
 		{
-			if (!NetworkClient.ready)
-			{
-				return;
-			}
-			if (NetworkServer.active && !this._serverChambersFilled)
-			{
-				this.ServerFillChambers();
-				this._serverChambersFilled = true;
-			}
-			ushort? prevOpened = this._prevOpened;
-			int? num = ((prevOpened != null) ? new int?((int)prevOpened.GetValueOrDefault()) : null);
-			int i = (int)this.OpenedChambers;
-			if ((num.GetValueOrDefault() == i) & (num != null))
-			{
-				return;
-			}
-			int num2 = 1;
-			foreach (LockerChamber lockerChamber in this.Chambers)
-			{
-				lockerChamber.SetDoor(((int)this.OpenedChambers & num2) == num2 || !lockerChamber.AnimatorSet, this._grantedBeep);
-				num2 *= 2;
-			}
-			this._prevOpened = new ushort?(this.OpenedChambers);
+			Chambers[chamberId].PlayDenied(_deniedBeep, perms, 1f);
 		}
+	}
 
-		protected virtual void ServerFillChambers()
+	protected static void InvokeUserCode_RpcPlayDenied__Byte__DoorPermissionFlags(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
 		{
-			List<LockerChamber> list = new List<LockerChamber>(this.Chambers);
-			if (this.MinChambersToFill != 0 && this.MaxChambersToFill >= this.MinChambersToFill)
-			{
-				int num = this.Chambers.Length - global::UnityEngine.Random.Range(this.MinChambersToFill, this.MaxChambersToFill + 1);
-				for (int i = 0; i < num; i++)
-				{
-					list.RemoveAt(global::UnityEngine.Random.Range(0, list.Count));
-				}
-			}
-			foreach (LockerChamber lockerChamber in list)
-			{
-				this.FillChamber(lockerChamber);
-			}
+			Debug.LogError("RPC RpcPlayDenied called on server.");
 		}
-
-		protected virtual bool CheckTogglePerms(int chamberId, ReferenceHub ply)
+		else
 		{
-			KeycardPermissions requiredPermissions = this.Chambers[chamberId].RequiredPermissions;
-			if (requiredPermissions > KeycardPermissions.None)
-			{
-				if (ply.inventory.CurInstance == null)
-				{
-					return false;
-				}
-				KeycardItem keycardItem = ply.inventory.CurInstance as KeycardItem;
-				if (keycardItem == null)
-				{
-					return false;
-				}
-				if (!keycardItem.Permissions.HasFlagFast(requiredPermissions))
-				{
-					return false;
-				}
-			}
-			return true;
+			((Locker)obj).UserCode_RpcPlayDenied__Byte__DoorPermissionFlags(NetworkReaderExtensions.ReadByte(reader), GeneratedNetworkCode._Read_Interactables_002EInterobjects_002EDoorUtils_002EDoorPermissionFlags(reader));
 		}
+	}
 
-		public override bool Weaved()
+	static Locker()
+	{
+		RemoteProcedureCalls.RegisterRpc(typeof(Locker), "System.Void MapGeneration.Distributors.Locker::RpcPlayDenied(System.Byte,Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", InvokeUserCode_RpcPlayDenied__Byte__DoorPermissionFlags);
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			return true;
+			writer.WriteUShort(OpenedChambers);
+			return;
 		}
-
-		public ushort NetworkOpenedChambers
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			get
-			{
-				return this.OpenedChambers;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<ushort>(value, ref this.OpenedChambers, 1UL, null);
-			}
+			writer.WriteUShort(OpenedChambers);
 		}
+	}
 
-		protected void UserCode_RpcPlayDenied__Byte(byte chamberId)
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
 		{
-			if ((int)chamberId > this.Chambers.Length)
-			{
-				return;
-			}
-			this.Chambers[(int)chamberId].PlayDenied(this._deniedBeep);
+			GeneratedSyncVarDeserialize(ref OpenedChambers, null, reader.ReadUShort());
+			return;
 		}
-
-		protected static void InvokeUserCode_RpcPlayDenied__Byte(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+		long num = (long)reader.ReadULong();
+		if ((num & 1L) != 0L)
 		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogError("RPC RpcPlayDenied called on server.");
-				return;
-			}
-			((Locker)obj).UserCode_RpcPlayDenied__Byte(reader.ReadByte());
+			GeneratedSyncVarDeserialize(ref OpenedChambers, null, reader.ReadUShort());
 		}
-
-		static Locker()
-		{
-			RemoteProcedureCalls.RegisterRpc(typeof(Locker), "System.Void MapGeneration.Distributors.Locker::RpcPlayDenied(System.Byte)", new RemoteCallDelegate(Locker.InvokeUserCode_RpcPlayDenied__Byte));
-		}
-
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
-		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteUShort(this.OpenedChambers);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 1UL) != 0UL)
-			{
-				writer.WriteUShort(this.OpenedChambers);
-			}
-		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
-		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<ushort>(ref this.OpenedChambers, null, reader.ReadUShort());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 1L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<ushort>(ref this.OpenedChambers, null, reader.ReadUShort());
-			}
-		}
-
-		public LockerLoot[] Loot;
-
-		public LockerChamber[] Chambers;
-
-		[SyncVar]
-		public ushort OpenedChambers;
-
-		[SerializeField]
-		private AudioClip _grantedBeep;
-
-		[SerializeField]
-		private AudioClip _deniedBeep;
-
-		[Header("Leave 0 to fill all chambers")]
-		public int MinChambersToFill;
-
-		public int MaxChambersToFill;
-
-		private ushort? _prevOpened;
-
-		private bool _serverChambersFilled;
 	}
 }

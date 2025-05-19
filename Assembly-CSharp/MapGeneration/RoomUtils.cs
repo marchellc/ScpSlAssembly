@@ -1,144 +1,132 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MapGeneration
+namespace MapGeneration;
+
+public static class RoomUtils
 {
-	public static class RoomUtils
+	private static readonly CachedLayerMask RoomDetectionMask = new CachedLayerMask("Default", "InvisibleCollider", "Fence");
+
+	private static readonly List<RoomIdentifier> RoomsNonAlloc = new List<RoomIdentifier>();
+
+	public static Vector3Int PositionToCoords(Vector3 position)
 	{
-		public static Vector3Int PositionToCoords(Vector3 position)
-		{
-			Vector3Int zero = Vector3Int.zero;
-			for (int i = 0; i < 3; i++)
-			{
-				zero[i] = Mathf.RoundToInt(position[i] / RoomIdentifier.GridScale[i]);
-			}
-			return zero;
-		}
+		return new Vector3Int(Mathf.RoundToInt(position.x / RoomIdentifier.GridScale.x), Mathf.RoundToInt(position.y / RoomIdentifier.GridScale.y), Mathf.RoundToInt(position.z / RoomIdentifier.GridScale.z));
+	}
 
-		public static Vector3 CoordsToCenterPos(Vector3Int position)
+	public static Vector3 CoordsToCenterPos(Vector3Int position)
+	{
+		Vector3 zero = Vector3.zero;
+		for (int i = 0; i < 3; i++)
 		{
-			Vector3 zero = Vector3.zero;
-			for (int i = 0; i < 3; i++)
-			{
-				zero[i] = (float)position[i] * RoomIdentifier.GridScale[i];
-			}
-			return zero;
+			zero[i] = (float)position[i] * RoomIdentifier.GridScale[i];
 		}
+		return zero;
+	}
 
-		public static bool TryFindRoom(RoomName name, FacilityZone zone, RoomShape shape, out RoomIdentifier foundRoom)
+	public static bool TryFindRoom(RoomName? name, FacilityZone? zone, RoomShape? shape, out RoomIdentifier foundRoom)
+	{
+		foreach (RoomIdentifier allRoomIdentifier in RoomIdentifier.AllRoomIdentifiers)
 		{
-			foreach (RoomIdentifier roomIdentifier in RoomIdentifier.AllRoomIdentifiers)
+			if ((!name.HasValue || name == allRoomIdentifier.Name) && (!zone.HasValue || zone == allRoomIdentifier.Zone) && (!shape.HasValue || shape == allRoomIdentifier.Shape))
 			{
-				if ((name == RoomName.Unnamed || name == roomIdentifier.Name) && (zone == FacilityZone.None || zone == roomIdentifier.Zone) && (shape == RoomShape.Undefined || shape == roomIdentifier.Shape))
-				{
-					foundRoom = roomIdentifier;
-					return true;
-				}
+				foundRoom = allRoomIdentifier;
+				return true;
 			}
-			foundRoom = null;
-			return false;
 		}
+		foundRoom = null;
+		return false;
+	}
 
-		public static HashSet<RoomIdentifier> FindRooms(RoomName name, FacilityZone zone, RoomShape shape)
+	public static List<RoomIdentifier> FindRooms(RoomName? name, FacilityZone? zone, RoomShape? shape, List<RoomIdentifier> list = null)
+	{
+		if (list == null)
 		{
-			HashSet<RoomIdentifier> hashSet = new HashSet<RoomIdentifier>();
-			foreach (RoomIdentifier roomIdentifier in RoomIdentifier.AllRoomIdentifiers)
-			{
-				if ((name == RoomName.Unnamed || name == roomIdentifier.Name) && (zone == FacilityZone.None || zone == roomIdentifier.Zone) && (shape == RoomShape.Undefined || shape == roomIdentifier.Shape))
-				{
-					hashSet.Add(roomIdentifier);
-				}
-			}
-			return hashSet;
+			RoomsNonAlloc.Clear();
+			list = RoomsNonAlloc;
 		}
+		foreach (RoomIdentifier allRoomIdentifier in RoomIdentifier.AllRoomIdentifiers)
+		{
+			if ((!name.HasValue || name == allRoomIdentifier.Name) && (!zone.HasValue || zone == allRoomIdentifier.Zone) && (!shape.HasValue || shape == allRoomIdentifier.Shape))
+			{
+				list.Add(allRoomIdentifier);
+			}
+		}
+		return list;
+	}
 
-		public static bool IsTheSameRoom(Vector3 pos1, Vector3 pos2)
+	public static bool TryGetRoom(this Vector3 worldPos, out RoomIdentifier room)
+	{
+		Vector3Int key = PositionToCoords(worldPos);
+		if (RoomIdentifier.RoomsByCoords.TryGetValue(key, out room))
 		{
-			return RoomUtils.RoomAtPosition(pos1) == RoomUtils.RoomAtPosition(pos2);
+			return true;
 		}
+		if (TryRaycastRoom(worldPos, Vector3.up, out room))
+		{
+			return true;
+		}
+		if (TryRaycastRoom(worldPos, Vector3.down, out room))
+		{
+			return true;
+		}
+		room = null;
+		return false;
+	}
 
-		public static bool IsWithinRoomBoundaries(RoomIdentifier room, Vector3 pos, float extension = 0f, bool accurateMode = false)
-		{
-			if (accurateMode)
-			{
-				if (RoomUtils.RoomAtPositionRaycasts(pos, true) == room)
-				{
-					return true;
-				}
-				if (extension == 0f)
-				{
-					return false;
-				}
-				pos += (room.transform.position - pos).normalized * extension;
-				if (RoomUtils.RoomAtPositionRaycasts(pos, true) == room)
-				{
-					return true;
-				}
-			}
-			if (extension != 0f)
-			{
-				pos += (room.transform.position - pos).normalized * extension;
-			}
-			return RoomUtils.RoomAtPosition(pos) == room;
-		}
+	public static bool TryGetCurrentRoom(this ReferenceHub hub, out RoomIdentifier room)
+	{
+		return hub.CurrentRoomPlayerCache.TryGetCurrent(out room);
+	}
 
-		public static RoomIdentifier RoomAtPosition(Vector3 position)
-		{
-			RoomIdentifier roomIdentifier;
-			if (RoomIdentifier.RoomsByCoordinates.TryGetValue(RoomUtils.PositionToCoords(position), out roomIdentifier))
-			{
-				return roomIdentifier;
-			}
-			return null;
-		}
+	public static bool TryGetLastKnownRoom(this ReferenceHub hub, out RoomIdentifier room)
+	{
+		return hub.CurrentRoomPlayerCache.TryGetLastValid(out room);
+	}
 
-		public static RoomIdentifier RoomAtPositionRaycasts(Vector3 position, bool prioritizeRaycast = true)
+	public static FacilityZone GetZone(this Vector3 worldPos)
+	{
+		if (!worldPos.TryGetRoom(out var room))
 		{
-			RoomIdentifier roomIdentifier;
-			if (!prioritizeRaycast && RoomIdentifier.RoomsByCoordinates.TryGetValue(RoomUtils.PositionToCoords(position), out roomIdentifier) && roomIdentifier != null)
-			{
-				return roomIdentifier;
-			}
-			if (RoomUtils.TryCastRayToFindRoom(new Ray(position, Vector3.up), 8f, out roomIdentifier) || RoomUtils.TryCastRayToFindRoom(new Ray(position, Vector3.down), 8f, out roomIdentifier))
-			{
-				return roomIdentifier;
-			}
-			if (prioritizeRaycast)
-			{
-				return RoomUtils.RoomAtPosition(position);
-			}
-			return null;
+			return FacilityZone.None;
 		}
+		return room.Zone;
+	}
 
-		public static bool TryGetRoom(Vector3 position, out RoomIdentifier room)
+	public static FacilityZone GetCurrentZone(this ReferenceHub hub)
+	{
+		if (!hub.TryGetCurrentRoom(out var room))
 		{
-			room = RoomUtils.RoomAtPosition(position);
-			if (room == null)
-			{
-				room = RoomUtils.RoomAtPositionRaycasts(position, true);
-			}
-			return room != null;
+			return FacilityZone.None;
 		}
+		return room.Zone;
+	}
 
-		private static bool TryCastRayToFindRoom(Ray ray, float distance, out RoomIdentifier room)
+	public static FacilityZone GetLastKnownZone(this ReferenceHub hub)
+	{
+		if (!hub.TryGetLastKnownRoom(out var room))
 		{
-			room = null;
-			bool flag;
-			try
-			{
-				RaycastHit raycastHit;
-				if (Physics.Raycast(ray, out raycastHit, distance, 1))
-				{
-					room = raycastHit.collider.GetComponentInParent<RoomIdentifier>();
-				}
-				flag = room != null;
-			}
-			catch
-			{
-				flag = false;
-			}
-			return flag;
+			return FacilityZone.None;
 		}
+		return room.Zone;
+	}
+
+	public static bool CompareCoords(this Vector3 lhs, Vector3 rhs)
+	{
+		return PositionToCoords(lhs) == PositionToCoords(rhs);
+	}
+
+	private static bool TryRaycastRoom(Vector3 pos, Vector3 dir, out RoomIdentifier room)
+	{
+		if (Physics.Raycast(new Ray(pos, dir), out var hitInfo, 15f, RoomDetectionMask))
+		{
+			Collider collider = hitInfo.collider;
+			if (collider != null && collider.transform.TryGetComponentInParent<RoomIdentifier>(out room))
+			{
+				return true;
+			}
+		}
+		room = null;
+		return false;
 	}
 }

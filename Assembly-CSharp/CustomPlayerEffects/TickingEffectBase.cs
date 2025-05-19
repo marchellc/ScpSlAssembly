@@ -1,33 +1,30 @@
-﻿using System;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public abstract class TickingEffectBase : StatusEffectBase
 {
-	public abstract class TickingEffectBase : StatusEffectBase
+	[Tooltip("Used to track intervals/timers/etc without every effect needing to redefine a unique float.")]
+	public float TimeBetweenTicks = 1f;
+
+	private float _timeTillTick;
+
+	protected abstract void OnTick();
+
+	protected override void Enabled()
 	{
-		protected abstract void OnTick();
+		base.Enabled();
+		_timeTillTick = TimeBetweenTicks;
+	}
 
-		protected override void Enabled()
+	protected override void OnEffectUpdate()
+	{
+		base.OnEffectUpdate();
+		_timeTillTick -= Time.deltaTime;
+		if (!(_timeTillTick > 0f))
 		{
-			base.Enabled();
-			this._timeTillTick = this.TimeBetweenTicks;
+			_timeTillTick += TimeBetweenTicks;
+			OnTick();
 		}
-
-		protected override void OnEffectUpdate()
-		{
-			base.OnEffectUpdate();
-			this._timeTillTick -= Time.deltaTime;
-			if (this._timeTillTick > 0f)
-			{
-				return;
-			}
-			this._timeTillTick += this.TimeBetweenTicks;
-			this.OnTick();
-		}
-
-		[Tooltip("Used to track intervals/timers/etc without every effect needing to redefine a unique float.")]
-		public float TimeBetweenTicks = 1f;
-
-		private float _timeTillTick;
 	}
 }

@@ -1,9 +1,7 @@
-﻿using System;
 using PlayerRoles.PlayableScps.HUDs;
 
-namespace PlayerRoles.PlayableScps.Scp3114
+namespace PlayerRoles.PlayableScps.Scp3114;
+
+public class Scp3114Hud : ViewmodelScpHud
 {
-	public class Scp3114Hud : ViewmodelScpHud
-	{
-	}
 }

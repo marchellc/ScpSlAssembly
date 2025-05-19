@@ -1,32 +1,30 @@
-﻿using System;
 using Mirror;
 using UnityEngine;
 using VoiceChat.Playbacks;
 
-namespace VoiceChat.Networking
-{
-	public static class AudioTransceiver
-	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				NetworkClient.ReplaceHandler<AudioMessage>(new Action<AudioMessage>(AudioTransceiver.ClientReceiveMessage), true);
-			};
-		}
+namespace VoiceChat.Networking;
 
-		private static void ClientReceiveMessage(AudioMessage message)
+public static class AudioTransceiver
+{
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
 		{
-			foreach (SpeakerToyPlaybackBase speakerToyPlaybackBase in SpeakerToyPlaybackBase.AllInstances)
+			NetworkClient.ReplaceHandler<AudioMessage>(ClientReceiveMessage);
+		};
+	}
+
+	private static void ClientReceiveMessage(AudioMessage message)
+	{
+		foreach (SpeakerToyPlaybackBase allInstance in SpeakerToyPlaybackBase.AllInstances)
+		{
+			if (allInstance.ControllerId == message.ControllerId && !allInstance.Culled)
 			{
-				if (speakerToyPlaybackBase.ControllerId == message.ControllerId && !speakerToyPlaybackBase.Culled)
+				float maxDistance = allInstance.Source.maxDistance;
+				if (!((allInstance.LastPosition - MainCameraController.CurrentCamera.position).sqrMagnitude > maxDistance * maxDistance))
 				{
-					float maxDistance = speakerToyPlaybackBase.Source.maxDistance;
-					if ((speakerToyPlaybackBase.LastPosition - MainCameraController.CurrentCamera.position).sqrMagnitude <= maxDistance * maxDistance)
-					{
-						speakerToyPlaybackBase.DecodeSamples(message);
-					}
+					allInstance.DecodeSamples(message);
 				}
 			}
 		}

@@ -1,30 +1,7 @@
-﻿using System;
 using UnityEngine;
 
 public class RandomAmbienceTrigger : MonoBehaviour
 {
-	private void Start()
-	{
-		this.Rerandomize();
-	}
-
-	private void Update()
-	{
-		this._timeUntilAmbience -= Time.deltaTime;
-		if (this._timeUntilAmbience > 0f)
-		{
-			return;
-		}
-		this._ambientSource.clip = this._ambientClips.RandomItem<AudioClip>();
-		this._ambientSource.Play();
-		this.Rerandomize();
-	}
-
-	private void Rerandomize()
-	{
-		this._timeUntilAmbience = global::UnityEngine.Random.Range(this._minAmbienceTime, this._maxAmbienceTime);
-	}
-
 	[SerializeField]
 	private AudioClip[] _ambientClips;
 
@@ -38,4 +15,25 @@ public class RandomAmbienceTrigger : MonoBehaviour
 
 	[SerializeField]
 	private float _maxAmbienceTime;
+
+	private void Start()
+	{
+		Rerandomize();
+	}
+
+	private void Update()
+	{
+		_timeUntilAmbience -= Time.deltaTime;
+		if (!(_timeUntilAmbience > 0f))
+		{
+			_ambientSource.clip = _ambientClips.RandomItem();
+			_ambientSource.Play();
+			Rerandomize();
+		}
+	}
+
+	private void Rerandomize()
+	{
+		_timeUntilAmbience = Random.Range(_minAmbienceTime, _maxAmbienceTime);
+	}
 }

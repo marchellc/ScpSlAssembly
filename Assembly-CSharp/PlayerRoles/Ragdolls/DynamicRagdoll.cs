@@ -1,45 +1,41 @@
-﻿using System;
 using Elevators;
 using UnityEngine;
 
-namespace PlayerRoles.Ragdolls
+namespace PlayerRoles.Ragdolls;
+
+public class DynamicRagdoll : BasicRagdoll
 {
-	public class DynamicRagdoll : BasicRagdoll
+	public Rigidbody[] LinkedRigidbodies;
+
+	public Transform[] LinkedRigidbodiesTransforms;
+
+	public HitboxData[] Hitboxes;
+
+	private static readonly HitboxData[] EmptyHitboxes = new HitboxData[0];
+
+	private static readonly Rigidbody[] EmptyRigidbodies = new Rigidbody[0];
+
+	public override void FreezeRagdoll()
 	{
-		public override void FreezeRagdoll()
+		base.FreezeRagdoll();
+		LinkedRigidbodies.ForEach(delegate(Rigidbody rg)
 		{
-			base.FreezeRagdoll();
-			this.LinkedRigidbodies.ForEach(delegate(Rigidbody rg)
+			if (rg.TryGetComponent<Joint>(out var component))
 			{
-				Joint joint;
-				if (rg.TryGetComponent<Joint>(out joint))
-				{
-					global::UnityEngine.Object.Destroy(joint);
-				}
-				RigidBodyElevatorFollower rigidBodyElevatorFollower;
-				if (rg.TryGetComponent<RigidBodyElevatorFollower>(out rigidBodyElevatorFollower))
-				{
-					rigidBodyElevatorFollower.Unlink();
-				}
-				global::UnityEngine.Object.Destroy(rg);
-			});
-			this.Hitboxes = DynamicRagdoll.EmptyHitboxes;
-			this.LinkedRigidbodies = DynamicRagdoll.EmptyRigidbodies;
-		}
+				Object.Destroy(component);
+			}
+			if (rg.TryGetComponent<RigidBodyElevatorFollower>(out var component2))
+			{
+				component2.Unlink();
+			}
+			Object.Destroy(rg);
+		});
+		Hitboxes = EmptyHitboxes;
+		LinkedRigidbodies = EmptyRigidbodies;
+	}
 
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		public Rigidbody[] LinkedRigidbodies;
-
-		public Transform[] LinkedRigidbodiesTransforms;
-
-		public HitboxData[] Hitboxes;
-
-		private static readonly HitboxData[] EmptyHitboxes = new HitboxData[0];
-
-		private static readonly Rigidbody[] EmptyRigidbodies = new Rigidbody[0];
+	public override bool Weaved()
+	{
+		return true;
 	}
 }

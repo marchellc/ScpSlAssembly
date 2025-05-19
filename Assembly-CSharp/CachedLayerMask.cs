@@ -1,31 +1,30 @@
-﻿using System;
 using UnityEngine;
 
 public class CachedLayerMask
 {
+	private int _cachedMask;
+
+	private readonly string[] _layers;
+
 	public LayerMask Mask
 	{
 		get
 		{
-			if (this._cachedMask == 0)
+			if (_cachedMask == 0)
 			{
-				this._cachedMask = LayerMask.GetMask(this._layers);
+				_cachedMask = LayerMask.GetMask(_layers);
 			}
-			return this._cachedMask;
+			return _cachedMask;
 		}
 	}
 
 	public CachedLayerMask(params string[] layers)
 	{
-		this._layers = layers;
+		_layers = layers;
 	}
 
 	public static implicit operator int(CachedLayerMask mask)
 	{
 		return mask.Mask;
 	}
-
-	private int _cachedMask;
-
-	private readonly string[] _layers;
 }

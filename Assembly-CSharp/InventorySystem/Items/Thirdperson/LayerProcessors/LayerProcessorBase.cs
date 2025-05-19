@@ -1,54 +1,34 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl.Thirdperson;
 using UnityEngine;
 
-namespace InventorySystem.Items.Thirdperson.LayerProcessors
+namespace InventorySystem.Items.Thirdperson.LayerProcessors;
+
+public abstract class LayerProcessorBase : MonoBehaviour
 {
-	public abstract class LayerProcessorBase : MonoBehaviour
+	private bool _alreadyInit;
+
+	protected ThirdpersonItemBase Source { get; private set; }
+
+	public AnimatedCharacterModel TargetModel => Source.TargetModel;
+
+	protected Animator Animator => TargetModel.Animator;
+
+	protected ReferenceHub OwnerHub => TargetModel.OwnerHub;
+
+	public ThirdpersonLayerWeight GetWeightForLayer(ThirdpersonItemBase source, AnimItemLayer3p layer)
 	{
-		private protected ThirdpersonItemBase Source { protected get; private set; }
-
-		public AnimatedCharacterModel TargetModel
+		if (!_alreadyInit)
 		{
-			get
-			{
-				return this.Source.TargetModel;
-			}
+			Init(source);
+			_alreadyInit = true;
 		}
-
-		protected Animator Animator
-		{
-			get
-			{
-				return this.TargetModel.Animator;
-			}
-		}
-
-		protected ReferenceHub OwnerHub
-		{
-			get
-			{
-				return this.TargetModel.OwnerHub;
-			}
-		}
-
-		public ThirdpersonLayerWeight GetWeightForLayer(ThirdpersonItemBase source, AnimItemLayer3p layer)
-		{
-			if (!this._alreadyInit)
-			{
-				this.Init(source);
-				this._alreadyInit = true;
-			}
-			return this.GetWeightForLayer(layer);
-		}
-
-		protected virtual void Init(ThirdpersonItemBase source)
-		{
-			this.Source = source;
-		}
-
-		protected abstract ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer);
-
-		private bool _alreadyInit;
+		return GetWeightForLayer(layer);
 	}
+
+	protected virtual void Init(ThirdpersonItemBase source)
+	{
+		Source = source;
+	}
+
+	protected abstract ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer);
 }

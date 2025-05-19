@@ -1,52 +1,53 @@
-﻿using System;
+using System;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class NullableUInt32Formatter : IJsonFormatter<uint?>, IJsonFormatter, IObjectPropertyNameFormatter<uint?>
 {
-	public sealed class NullableUInt32Formatter : IJsonFormatter<uint?>, IJsonFormatter, IObjectPropertyNameFormatter<uint?>
+	public static readonly NullableUInt32Formatter Default = new NullableUInt32Formatter();
+
+	public void Serialize(ref JsonWriter writer, uint? value, IJsonFormatterResolver formatterResolver)
 	{
-		public void Serialize(ref JsonWriter writer, uint? value, IJsonFormatterResolver formatterResolver)
+		if (!value.HasValue)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
+			writer.WriteNull();
+		}
+		else
+		{
 			writer.WriteUInt32(value.Value);
 		}
+	}
 
-		public uint? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public uint? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			return new uint?(reader.ReadUInt32());
+			return null;
 		}
+		return reader.ReadUInt32();
+	}
 
-		public void SerializeToPropertyName(ref JsonWriter writer, uint? value, IJsonFormatterResolver formatterResolver)
+	public void SerializeToPropertyName(ref JsonWriter writer, uint? value, IJsonFormatterResolver formatterResolver)
+	{
+		if (!value.HasValue)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
-			writer.WriteQuotation();
-			writer.WriteUInt32(value.Value);
-			writer.WriteQuotation();
+			writer.WriteNull();
+			return;
 		}
+		writer.WriteQuotation();
+		writer.WriteUInt32(value.Value);
+		writer.WriteQuotation();
+	}
 
-		public uint? DeserializeFromPropertyName(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public uint? DeserializeFromPropertyName(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			ArraySegment<byte> arraySegment = reader.ReadStringSegmentRaw();
-			int num;
-			return new uint?(NumberConverter.ReadUInt32(arraySegment.Array, arraySegment.Offset, out num));
+			return null;
 		}
-
-		public static readonly NullableUInt32Formatter Default = new NullableUInt32Formatter();
+		ArraySegment<byte> arraySegment = reader.ReadStringSegmentRaw();
+		int readCount;
+		return NumberConverter.ReadUInt32(arraySegment.Array, arraySegment.Offset, out readCount);
 	}
 }

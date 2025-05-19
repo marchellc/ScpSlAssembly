@@ -1,42 +1,33 @@
-﻿using System;
 using Mirror;
 using RelativePositioning;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.NetworkMessages
+namespace PlayerRoles.FirstPersonControl.NetworkMessages;
+
+public readonly struct FpcPositionOverrideMessage : NetworkMessage
 {
-	public readonly struct FpcPositionOverrideMessage : NetworkMessage
+	public readonly Vector3 Position;
+
+	public FpcPositionOverrideMessage(Vector3 pos)
 	{
-		public FpcPositionOverrideMessage(Vector3 pos)
-		{
-			this.Position = pos;
-		}
+		Position = pos;
+	}
 
-		public FpcPositionOverrideMessage(NetworkReader reader)
-		{
-			this.Position = reader.ReadRelativePosition().Position;
-		}
+	public FpcPositionOverrideMessage(NetworkReader reader)
+	{
+		Position = reader.ReadRelativePosition().Position;
+	}
 
-		public void Write(NetworkWriter writer)
-		{
-			writer.WriteRelativePosition(new RelativePosition(this.Position));
-		}
+	public void Write(NetworkWriter writer)
+	{
+		writer.WriteRelativePosition(new RelativePosition(Position));
+	}
 
-		public void ProcessMessage()
+	public void ProcessMessage()
+	{
+		if (ReferenceHub.TryGetLocalHub(out var hub) && hub.roleManager.CurrentRole is IFpcRole fpcRole && fpcRole.FpcModule.ModuleReady)
 		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetLocalHub(out referenceHub))
-			{
-				return;
-			}
-			IFpcRole fpcRole = referenceHub.roleManager.CurrentRole as IFpcRole;
-			if (fpcRole == null || !fpcRole.FpcModule.ModuleReady)
-			{
-				return;
-			}
-			fpcRole.FpcModule.Position = this.Position;
+			fpcRole.FpcModule.Position = Position;
 		}
-
-		public readonly Vector3 Position;
 	}
 }

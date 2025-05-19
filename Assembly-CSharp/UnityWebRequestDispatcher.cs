@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
@@ -8,91 +7,8 @@ using UnityEngine.Networking;
 
 internal class UnityWebRequestDispatcher : MonoBehaviour
 {
-	public static UnityWebRequestDispatcher.GetRequest Get(string url)
-	{
-		UnityWebRequestDispatcher.GetRequest getRequest = new UnityWebRequestDispatcher.GetRequest(url);
-		UnityWebRequestDispatcher.GetQueue.Enqueue(getRequest);
-		return getRequest;
-	}
-
-	public static UnityWebRequestDispatcher.PostRequest Post(string url, string data)
-	{
-		UnityWebRequestDispatcher.PostRequest postRequest = new UnityWebRequestDispatcher.PostRequest(url, data);
-		UnityWebRequestDispatcher.PostQueue.Enqueue(postRequest);
-		return postRequest;
-	}
-
-	private void Update()
-	{
-		UnityWebRequestDispatcher.GetRequest getRequest;
-		while (UnityWebRequestDispatcher.GetQueue.TryDequeue(out getRequest))
-		{
-			Timing.RunCoroutine(UnityWebRequestDispatcher.ProcessGet(getRequest));
-		}
-		UnityWebRequestDispatcher.PostRequest postRequest;
-		while (UnityWebRequestDispatcher.PostQueue.TryDequeue(out postRequest))
-		{
-			Timing.RunCoroutine(UnityWebRequestDispatcher.ProcessPost(postRequest));
-		}
-	}
-
-	private static IEnumerator<float> ProcessGet(UnityWebRequestDispatcher.GetRequest request)
-	{
-		using (UnityWebRequest uwr = UnityWebRequest.Get(request.Url))
-		{
-			yield return Timing.WaitUntilDone(uwr.SendWebRequest());
-			UnityWebRequest.Result result = uwr.result;
-			if (result - UnityWebRequest.Result.ConnectionError <= 1)
-			{
-				request.Successful = false;
-			}
-			else
-			{
-				request.Successful = true;
-			}
-			request.Code = (HttpStatusCode)uwr.responseCode;
-			request.Text = (string.IsNullOrEmpty(uwr.error) ? uwr.downloadHandler.text : uwr.error);
-			request.Done = true;
-		}
-		UnityWebRequest uwr = null;
-		yield break;
-		yield break;
-	}
-
-	private static IEnumerator<float> ProcessPost(UnityWebRequestDispatcher.PostRequest request)
-	{
-		using (UnityWebRequest uwr = UnityWebRequest.Post(request.Url, HttpQuery.ToUnityForm(request.Data)))
-		{
-			yield return Timing.WaitUntilDone(uwr.SendWebRequest());
-			UnityWebRequest.Result result = uwr.result;
-			if (result - UnityWebRequest.Result.ConnectionError <= 1)
-			{
-				request.Successful = false;
-			}
-			else
-			{
-				request.Successful = true;
-			}
-			request.Code = (HttpStatusCode)uwr.responseCode;
-			request.Text = (string.IsNullOrEmpty(uwr.error) ? uwr.downloadHandler.text : uwr.error);
-			request.Done = true;
-		}
-		UnityWebRequest uwr = null;
-		yield break;
-		yield break;
-	}
-
-	private static readonly ConcurrentQueue<UnityWebRequestDispatcher.GetRequest> GetQueue = new ConcurrentQueue<UnityWebRequestDispatcher.GetRequest>();
-
-	private static readonly ConcurrentQueue<UnityWebRequestDispatcher.PostRequest> PostQueue = new ConcurrentQueue<UnityWebRequestDispatcher.PostRequest>();
-
 	public abstract class Request
 	{
-		protected Request(string url)
-		{
-			this.Url = url;
-		}
-
 		public readonly string Url;
 
 		public bool Successful;
@@ -102,9 +18,14 @@ internal class UnityWebRequestDispatcher : MonoBehaviour
 		public HttpStatusCode Code;
 
 		public volatile bool Done;
+
+		protected Request(string url)
+		{
+			Url = url;
+		}
 	}
 
-	public class GetRequest : UnityWebRequestDispatcher.Request
+	public class GetRequest : Request
 	{
 		public GetRequest(string url)
 			: base(url)
@@ -112,14 +33,82 @@ internal class UnityWebRequestDispatcher : MonoBehaviour
 		}
 	}
 
-	public class PostRequest : UnityWebRequestDispatcher.Request
+	public class PostRequest : Request
 	{
+		public readonly string Data;
+
 		public PostRequest(string url, string data)
 			: base(url)
 		{
-			this.Data = data;
+			Data = data;
 		}
+	}
 
-		public readonly string Data;
+	private static readonly ConcurrentQueue<GetRequest> GetQueue = new ConcurrentQueue<GetRequest>();
+
+	private static readonly ConcurrentQueue<PostRequest> PostQueue = new ConcurrentQueue<PostRequest>();
+
+	public static GetRequest Get(string url)
+	{
+		GetRequest getRequest = new GetRequest(url);
+		GetQueue.Enqueue(getRequest);
+		return getRequest;
+	}
+
+	public static PostRequest Post(string url, string data)
+	{
+		PostRequest postRequest = new PostRequest(url, data);
+		PostQueue.Enqueue(postRequest);
+		return postRequest;
+	}
+
+	private void Update()
+	{
+		GetRequest result;
+		while (GetQueue.TryDequeue(out result))
+		{
+			Timing.RunCoroutine(ProcessGet(result));
+		}
+		PostRequest result2;
+		while (PostQueue.TryDequeue(out result2))
+		{
+			Timing.RunCoroutine(ProcessPost(result2));
+		}
+	}
+
+	private static IEnumerator<float> ProcessGet(GetRequest request)
+	{
+		using UnityWebRequest uwr = UnityWebRequest.Get(request.Url);
+		yield return Timing.WaitUntilDone(uwr.SendWebRequest());
+		UnityWebRequest.Result result = uwr.result;
+		if ((uint)(result - 2) <= 1u)
+		{
+			request.Successful = false;
+		}
+		else
+		{
+			request.Successful = true;
+		}
+		request.Code = (HttpStatusCode)uwr.responseCode;
+		request.Text = (string.IsNullOrEmpty(uwr.error) ? uwr.downloadHandler.text : uwr.error);
+		request.Done = true;
+	}
+
+	private static IEnumerator<float> ProcessPost(PostRequest request)
+	{
+		using UnityWebRequest uwr = UnityWebRequest.Post(request.Url, HttpQuery.ToUnityForm(request.Data));
+		yield return Timing.WaitUntilDone(uwr.SendWebRequest());
+		UnityWebRequest.Result result = uwr.result;
+		if ((uint)(result - 2) <= 1u)
+		{
+			request.Successful = false;
+		}
+		else
+		{
+			request.Successful = true;
+		}
+		request.Code = (HttpStatusCode)uwr.responseCode;
+		request.Text = (string.IsNullOrEmpty(uwr.error) ? uwr.downloadHandler.text : uwr.error);
+		request.Done = true;
 	}
 }

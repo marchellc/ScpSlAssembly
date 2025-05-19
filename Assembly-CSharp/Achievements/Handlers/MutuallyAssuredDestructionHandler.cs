@@ -1,57 +1,42 @@
-﻿using System;
 using Mirror;
 using PlayerRoles;
 using PlayerStatsSystem;
 
-namespace Achievements.Handlers
+namespace Achievements.Handlers;
+
+public class MutuallyAssuredDestructionHandler : AchievementHandlerBase
 {
-	public class MutuallyAssuredDestructionHandler : AchievementHandlerBase
+	internal override void OnInitialize()
 	{
-		internal override void OnInitialize()
-		{
-			PlayerStats.OnAnyPlayerDied += MutuallyAssuredDestructionHandler.OnAnyPlayerDied;
-		}
+		PlayerStats.OnAnyPlayerDied += OnAnyPlayerDied;
+	}
 
-		private static void OnAnyPlayerDied(ReferenceHub victim, DamageHandlerBase handler)
+	private static void OnAnyPlayerDied(ReferenceHub victim, DamageHandlerBase handler)
+	{
+		if (NetworkServer.active && handler is AttackerDamageHandler attackerDamageHandler && ValidDamage(attackerDamageHandler))
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			AttackerDamageHandler attackerDamageHandler = handler as AttackerDamageHandler;
-			if (attackerDamageHandler == null)
-			{
-				return;
-			}
-			if (!MutuallyAssuredDestructionHandler.ValidDamage(attackerDamageHandler))
-			{
-				return;
-			}
 			ReferenceHub hub = attackerDamageHandler.Attacker.Hub;
-			if (hub == null || hub.IsAlive())
+			if (!(hub == null) && !hub.IsAlive() && HitboxIdentity.IsEnemy(attackerDamageHandler.Attacker.Role, victim.GetRoleId()))
 			{
-				return;
+				AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.MutuallyAssuredDestruction);
 			}
-			if (!HitboxIdentity.IsEnemy(attackerDamageHandler.Attacker.Role, victim.GetRoleId()))
-			{
-				return;
-			}
-			AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.MutuallyAssuredDestruction);
 		}
+	}
 
-		private static bool ValidDamage(AttackerDamageHandler attackerHandler)
+	private static bool ValidDamage(AttackerDamageHandler attackerHandler)
+	{
+		if (attackerHandler is Scp018DamageHandler)
 		{
-			if (attackerHandler is Scp018DamageHandler)
-			{
-				return true;
-			}
-			ExplosionDamageHandler explosionDamageHandler = attackerHandler as ExplosionDamageHandler;
-			if (explosionDamageHandler == null)
-			{
-				return false;
-			}
-			ExplosionType explosionType = explosionDamageHandler.ExplosionType;
-			return explosionType == ExplosionType.SCP018 || explosionType == ExplosionType.Grenade;
+			return true;
 		}
+		if (!(attackerHandler is ExplosionDamageHandler { ExplosionType: var explosionType }))
+		{
+			return false;
+		}
+		if (explosionType == ExplosionType.SCP018 || explosionType == ExplosionType.Grenade)
+		{
+			return true;
+		}
+		return false;
 	}
 }

@@ -1,241 +1,241 @@
-﻿using System;
+using System;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters
-{
-	public sealed class ISO8601DateTimeFormatter : IJsonFormatter<DateTime>, IJsonFormatter
-	{
-		public void Serialize(ref JsonWriter writer, DateTime value, IJsonFormatterResolver formatterResolver)
-		{
-			int year = value.Year;
-			int month = value.Month;
-			int day = value.Day;
-			int hour = value.Hour;
-			int minute = value.Minute;
-			int second = value.Second;
-			long num = value.Ticks % 10000000L;
-			switch (value.Kind)
-			{
-			case DateTimeKind.Utc:
-				writer.EnsureCapacity(21 + ((num == 0L) ? 0 : 8) + 1);
-				goto IL_009B;
-			case DateTimeKind.Local:
-				writer.EnsureCapacity(21 + ((num == 0L) ? 0 : 8) + 6);
-				goto IL_009B;
-			}
-			writer.EnsureCapacity(21 + ((num == 0L) ? 0 : 8));
-			IL_009B:
-			writer.WriteRawUnsafe(34);
-			if (year < 10)
-			{
-				writer.WriteRawUnsafe(48);
-				writer.WriteRawUnsafe(48);
-				writer.WriteRawUnsafe(48);
-			}
-			else if (year < 100)
-			{
-				writer.WriteRawUnsafe(48);
-				writer.WriteRawUnsafe(48);
-			}
-			else if (year < 1000)
-			{
-				writer.WriteRawUnsafe(48);
-			}
-			writer.WriteInt32(year);
-			writer.WriteRawUnsafe(45);
-			if (month < 10)
-			{
-				writer.WriteRawUnsafe(48);
-			}
-			writer.WriteInt32(month);
-			writer.WriteRawUnsafe(45);
-			if (day < 10)
-			{
-				writer.WriteRawUnsafe(48);
-			}
-			writer.WriteInt32(day);
-			writer.WriteRawUnsafe(84);
-			if (hour < 10)
-			{
-				writer.WriteRawUnsafe(48);
-			}
-			writer.WriteInt32(hour);
-			writer.WriteRawUnsafe(58);
-			if (minute < 10)
-			{
-				writer.WriteRawUnsafe(48);
-			}
-			writer.WriteInt32(minute);
-			writer.WriteRawUnsafe(58);
-			if (second < 10)
-			{
-				writer.WriteRawUnsafe(48);
-			}
-			writer.WriteInt32(second);
-			if (num != 0L)
-			{
-				writer.WriteRawUnsafe(46);
-				if (num < 10L)
-				{
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-				}
-				else if (num < 100L)
-				{
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-				}
-				else if (num < 1000L)
-				{
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-				}
-				else if (num < 10000L)
-				{
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-				}
-				else if (num < 100000L)
-				{
-					writer.WriteRawUnsafe(48);
-					writer.WriteRawUnsafe(48);
-				}
-				else if (num < 1000000L)
-				{
-					writer.WriteRawUnsafe(48);
-				}
-				writer.WriteInt64(num);
-			}
-			switch (value.Kind)
-			{
-			case DateTimeKind.Utc:
-				writer.WriteRawUnsafe(90);
-				break;
-			case DateTimeKind.Local:
-			{
-				TimeSpan timeSpan = TimeZoneInfo.Local.GetUtcOffset(value);
-				bool flag = timeSpan < TimeSpan.Zero;
-				if (flag)
-				{
-					timeSpan = timeSpan.Negate();
-				}
-				int hours = timeSpan.Hours;
-				int minutes = timeSpan.Minutes;
-				writer.WriteRawUnsafe(flag ? 45 : 43);
-				if (hours < 10)
-				{
-					writer.WriteRawUnsafe(48);
-				}
-				writer.WriteInt32(hours);
-				writer.WriteRawUnsafe(58);
-				if (minutes < 10)
-				{
-					writer.WriteRawUnsafe(48);
-				}
-				writer.WriteInt32(minutes);
-				break;
-			}
-			}
-			writer.WriteRawUnsafe(34);
-		}
+namespace Utf8Json.Formatters;
 
-		public DateTime Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+public sealed class ISO8601DateTimeFormatter : IJsonFormatter<DateTime>, IJsonFormatter
+{
+	public static readonly IJsonFormatter<DateTime> Default = new ISO8601DateTimeFormatter();
+
+	public void Serialize(ref JsonWriter writer, DateTime value, IJsonFormatterResolver formatterResolver)
+	{
+		int year = value.Year;
+		int month = value.Month;
+		int day = value.Day;
+		int hour = value.Hour;
+		int minute = value.Minute;
+		int second = value.Second;
+		long num = value.Ticks % 10000000;
+		switch (value.Kind)
 		{
-			ArraySegment<byte> arraySegment = reader.ReadStringSegmentUnsafe();
-			byte[] array = arraySegment.Array;
-			int num = arraySegment.Offset;
-			int count = arraySegment.Count;
-			int num2 = arraySegment.Offset + arraySegment.Count;
-			if (count == 4)
+		case DateTimeKind.Local:
+			writer.EnsureCapacity(21 + ((num != 0L) ? 8 : 0) + 6);
+			break;
+		case DateTimeKind.Utc:
+			writer.EnsureCapacity(21 + ((num != 0L) ? 8 : 0) + 1);
+			break;
+		default:
+			writer.EnsureCapacity(21 + ((num != 0L) ? 8 : 0));
+			break;
+		}
+		writer.WriteRawUnsafe(34);
+		if (year < 10)
+		{
+			writer.WriteRawUnsafe(48);
+			writer.WriteRawUnsafe(48);
+			writer.WriteRawUnsafe(48);
+		}
+		else if (year < 100)
+		{
+			writer.WriteRawUnsafe(48);
+			writer.WriteRawUnsafe(48);
+		}
+		else if (year < 1000)
+		{
+			writer.WriteRawUnsafe(48);
+		}
+		writer.WriteInt32(year);
+		writer.WriteRawUnsafe(45);
+		if (month < 10)
+		{
+			writer.WriteRawUnsafe(48);
+		}
+		writer.WriteInt32(month);
+		writer.WriteRawUnsafe(45);
+		if (day < 10)
+		{
+			writer.WriteRawUnsafe(48);
+		}
+		writer.WriteInt32(day);
+		writer.WriteRawUnsafe(84);
+		if (hour < 10)
+		{
+			writer.WriteRawUnsafe(48);
+		}
+		writer.WriteInt32(hour);
+		writer.WriteRawUnsafe(58);
+		if (minute < 10)
+		{
+			writer.WriteRawUnsafe(48);
+		}
+		writer.WriteInt32(minute);
+		writer.WriteRawUnsafe(58);
+		if (second < 10)
+		{
+			writer.WriteRawUnsafe(48);
+		}
+		writer.WriteInt32(second);
+		if (num != 0L)
+		{
+			writer.WriteRawUnsafe(46);
+			if (num < 10)
 			{
-				return new DateTime((int)(array[num++] - 48) * 1000 + (int)((array[num++] - 48) * 100) + (int)((array[num++] - 48) * 10) + (int)(array[num++] - 48), 1, 1);
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
 			}
-			if (count == 7)
+			else if (num < 100)
 			{
-				int num3 = (int)(array[num++] - 48) * 1000 + (int)((array[num++] - 48) * 100) + (int)((array[num++] - 48) * 10) + (int)(array[num++] - 48);
-				if (array[num++] == 45)
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+			}
+			else if (num < 1000)
+			{
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+			}
+			else if (num < 10000)
+			{
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+			}
+			else if (num < 100000)
+			{
+				writer.WriteRawUnsafe(48);
+				writer.WriteRawUnsafe(48);
+			}
+			else if (num < 1000000)
+			{
+				writer.WriteRawUnsafe(48);
+			}
+			writer.WriteInt64(num);
+		}
+		switch (value.Kind)
+		{
+		case DateTimeKind.Local:
+		{
+			TimeSpan timeSpan = TimeZoneInfo.Local.GetUtcOffset(value);
+			bool flag = timeSpan < TimeSpan.Zero;
+			if (flag)
+			{
+				timeSpan = timeSpan.Negate();
+			}
+			int hours = timeSpan.Hours;
+			int minutes = timeSpan.Minutes;
+			writer.WriteRawUnsafe((byte)(flag ? 45 : 43));
+			if (hours < 10)
+			{
+				writer.WriteRawUnsafe(48);
+			}
+			writer.WriteInt32(hours);
+			writer.WriteRawUnsafe(58);
+			if (minutes < 10)
+			{
+				writer.WriteRawUnsafe(48);
+			}
+			writer.WriteInt32(minutes);
+			break;
+		}
+		case DateTimeKind.Utc:
+			writer.WriteRawUnsafe(90);
+			break;
+		}
+		writer.WriteRawUnsafe(34);
+	}
+
+	public DateTime Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		ArraySegment<byte> arraySegment = reader.ReadStringSegmentUnsafe();
+		byte[] array = arraySegment.Array;
+		int i = arraySegment.Offset;
+		int count = arraySegment.Count;
+		int num = arraySegment.Offset + arraySegment.Count;
+		if (count == 4)
+		{
+			return new DateTime((array[i++] - 48) * 1000 + (array[i++] - 48) * 100 + (array[i++] - 48) * 10 + (array[i++] - 48), 1, 1);
+		}
+		if (count == 7)
+		{
+			int year = (array[i++] - 48) * 1000 + (array[i++] - 48) * 100 + (array[i++] - 48) * 10 + (array[i++] - 48);
+			if (array[i++] == 45)
+			{
+				int month = (array[i++] - 48) * 10 + (array[i++] - 48);
+				return new DateTime(year, month, 1);
+			}
+		}
+		else if (count == 10)
+		{
+			int year2 = (array[i++] - 48) * 1000 + (array[i++] - 48) * 100 + (array[i++] - 48) * 10 + (array[i++] - 48);
+			if (array[i++] == 45)
+			{
+				int month2 = (array[i++] - 48) * 10 + (array[i++] - 48);
+				if (array[i++] == 45)
 				{
-					int num4 = (int)((array[num++] - 48) * 10 + (array[num++] - 48));
-					return new DateTime(num3, num4, 1);
+					int day = (array[i++] - 48) * 10 + (array[i++] - 48);
+					return new DateTime(year2, month2, day);
 				}
 			}
-			else if (count == 10)
+		}
+		else if (count >= 19)
+		{
+			int year3 = (array[i++] - 48) * 1000 + (array[i++] - 48) * 100 + (array[i++] - 48) * 10 + (array[i++] - 48);
+			if (array[i++] == 45)
 			{
-				int num5 = (int)(array[num++] - 48) * 1000 + (int)((array[num++] - 48) * 100) + (int)((array[num++] - 48) * 10) + (int)(array[num++] - 48);
-				if (array[num++] == 45)
+				int month3 = (array[i++] - 48) * 10 + (array[i++] - 48);
+				if (array[i++] == 45)
 				{
-					int num6 = (int)((array[num++] - 48) * 10 + (array[num++] - 48));
-					if (array[num++] == 45)
+					int day2 = (array[i++] - 48) * 10 + (array[i++] - 48);
+					if (array[i++] == 84)
 					{
-						int num7 = (int)((array[num++] - 48) * 10 + (array[num++] - 48));
-						return new DateTime(num5, num6, num7);
-					}
-				}
-			}
-			else if (count >= 19)
-			{
-				int num8 = (int)(array[num++] - 48) * 1000 + (int)((array[num++] - 48) * 100) + (int)((array[num++] - 48) * 10) + (int)(array[num++] - 48);
-				if (array[num++] == 45)
-				{
-					int num9 = (int)((array[num++] - 48) * 10 + (array[num++] - 48));
-					if (array[num++] == 45)
-					{
-						int num10 = (int)((array[num++] - 48) * 10 + (array[num++] - 48));
-						if (array[num++] == 84)
+						int hour = (array[i++] - 48) * 10 + (array[i++] - 48);
+						if (array[i++] == 58)
 						{
-							int num11 = (int)((array[num++] - 48) * 10 + (array[num++] - 48));
-							if (array[num++] == 58)
+							int minute = (array[i++] - 48) * 10 + (array[i++] - 48);
+							if (array[i++] == 58)
 							{
-								int num12 = (int)((array[num++] - 48) * 10 + (array[num++] - 48));
-								if (array[num++] == 58)
+								int second = (array[i++] - 48) * 10 + (array[i++] - 48);
+								int num2 = 0;
+								if (i < num && array[i] == 46)
 								{
-									int num13 = (int)((array[num++] - 48) * 10 + (array[num++] - 48));
-									int num14 = 0;
-									if (num < num2 && array[num] == 46)
+									i++;
+									if (i < num && NumberConverter.IsNumber(array[i]))
 									{
-										num++;
-										if (num < num2 && NumberConverter.IsNumber(array[num]))
+										num2 += (array[i] - 48) * 1000000;
+										i++;
+										if (i < num && NumberConverter.IsNumber(array[i]))
 										{
-											num14 += (int)(array[num] - 48) * 1000000;
-											num++;
-											if (num < num2 && NumberConverter.IsNumber(array[num]))
+											num2 += (array[i] - 48) * 100000;
+											i++;
+											if (i < num && NumberConverter.IsNumber(array[i]))
 											{
-												num14 += (int)(array[num] - 48) * 100000;
-												num++;
-												if (num < num2 && NumberConverter.IsNumber(array[num]))
+												num2 += (array[i] - 48) * 10000;
+												i++;
+												if (i < num && NumberConverter.IsNumber(array[i]))
 												{
-													num14 += (int)(array[num] - 48) * 10000;
-													num++;
-													if (num < num2 && NumberConverter.IsNumber(array[num]))
+													num2 += (array[i] - 48) * 1000;
+													i++;
+													if (i < num && NumberConverter.IsNumber(array[i]))
 													{
-														num14 += (int)(array[num] - 48) * 1000;
-														num++;
-														if (num < num2 && NumberConverter.IsNumber(array[num]))
+														num2 += (array[i] - 48) * 100;
+														i++;
+														if (i < num && NumberConverter.IsNumber(array[i]))
 														{
-															num14 += (int)((array[num] - 48) * 100);
-															num++;
-															if (num < num2 && NumberConverter.IsNumber(array[num]))
+															num2 += (array[i] - 48) * 10;
+															i++;
+															if (i < num && NumberConverter.IsNumber(array[i]))
 															{
-																num14 += (int)((array[num] - 48) * 10);
-																num++;
-																if (num < num2 && NumberConverter.IsNumber(array[num]))
+																num2 += array[i] - 48;
+																for (i++; i < num && NumberConverter.IsNumber(array[i]); i++)
 																{
-																	num14 += (int)(array[num] - 48);
-																	num++;
-																	while (num < num2 && NumberConverter.IsNumber(array[num]))
-																	{
-																		num++;
-																	}
 																}
 															}
 														}
@@ -244,39 +244,39 @@ namespace Utf8Json.Formatters
 											}
 										}
 									}
-									DateTimeKind dateTimeKind = DateTimeKind.Unspecified;
-									if (num < num2 && array[num] == 90)
-									{
-										dateTimeKind = DateTimeKind.Utc;
-									}
-									else if ((num < num2 && array[num] == 45) || array[num] == 43)
-									{
-										if (num + 5 < num2)
-										{
-											bool flag = array[num++] == 45;
-											int num15 = (int)((array[num++] - 48) * 10 + (array[num++] - 48));
-											num++;
-											int num16 = (int)((array[num++] - 48) * 10 + (array[num++] - 48));
-											TimeSpan timeSpan = new TimeSpan(num15, num16, 0);
-											if (flag)
-											{
-												timeSpan = timeSpan.Negate();
-											}
-											return new DateTime(num8, num9, num10, num11, num12, num13, DateTimeKind.Utc).AddTicks((long)num14).Subtract(timeSpan).ToLocalTime();
-										}
-										goto IL_04A6;
-									}
-									return new DateTime(num8, num9, num10, num11, num12, num13, dateTimeKind).AddTicks((long)num14);
 								}
+								DateTimeKind kind = DateTimeKind.Unspecified;
+								if (i < num && array[i] == 90)
+								{
+									kind = DateTimeKind.Utc;
+								}
+								else if ((i < num && array[i] == 45) || array[i] == 43)
+								{
+									if (i + 5 < num)
+									{
+										kind = DateTimeKind.Local;
+										bool num3 = array[i++] == 45;
+										int hours = (array[i++] - 48) * 10 + (array[i++] - 48);
+										i++;
+										int minutes = (array[i++] - 48) * 10 + (array[i++] - 48);
+										TimeSpan value = new TimeSpan(hours, minutes, 0);
+										if (num3)
+										{
+											value = value.Negate();
+										}
+										return new DateTime(year3, month3, day2, hour, minute, second, DateTimeKind.Utc).AddTicks(num2).Subtract(value).ToLocalTime();
+									}
+									goto IL_04a6;
+								}
+								return new DateTime(year3, month3, day2, hour, minute, second, kind).AddTicks(num2);
 							}
 						}
 					}
 				}
 			}
-			IL_04A6:
-			throw new InvalidOperationException("invalid datetime format. value:" + StringEncoding.UTF8.GetString(arraySegment.Array, arraySegment.Offset, arraySegment.Count));
 		}
-
-		public static readonly IJsonFormatter<DateTime> Default = new ISO8601DateTimeFormatter();
+		goto IL_04a6;
+		IL_04a6:
+		throw new InvalidOperationException("invalid datetime format. value:" + StringEncoding.UTF8.GetString(arraySegment.Array, arraySegment.Offset, arraySegment.Count));
 	}
 }

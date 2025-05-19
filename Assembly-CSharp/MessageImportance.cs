@@ -1,5 +1,3 @@
-﻿using System;
-
 public enum MessageImportance : byte
 {
 	MostImportant = 1,

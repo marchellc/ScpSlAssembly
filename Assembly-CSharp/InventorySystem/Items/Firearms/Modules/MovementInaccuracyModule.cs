@@ -1,148 +1,138 @@
-﻿using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Attachments.Components;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class MovementInaccuracyModule : ModuleBase, IDisplayableInaccuracyProviderModule, IInaccuracyProviderModule
 {
-	public class MovementInaccuracyModule : ModuleBase, IDisplayableInaccuracyProviderModule, IInaccuracyProviderModule
+	public readonly struct MovementInaccuracyDefinition
 	{
-		public float MinPenalty { get; private set; }
+		public readonly Firearm Template;
 
-		public float MaxPenalty { get; private set; }
+		private readonly float _minInaccuracy;
 
-		public DisplayInaccuracyValues DisplayInaccuracy
+		private readonly float _maxInaccuracy;
+
+		private readonly float _lightest;
+
+		private readonly float _shortest;
+
+		private readonly float _heaviest;
+
+		private readonly float _longest;
+
+		public MovementInaccuracyDefinition(Firearm template, float minInaccuracy, float maxInaccuracy)
 		{
-			get
+			Template = template;
+			_minInaccuracy = minInaccuracy;
+			_maxInaccuracy = maxInaccuracy;
+			GetFirearmRamapValues(template, out _lightest, out _shortest, out _heaviest, out _longest);
+		}
+
+		public float Evaluate(Firearm firearm)
+		{
+			float num = firearm.AttachmentsValue(AttachmentParam.RunningInaccuracyMultiplier);
+			float num2 = Mathf.InverseLerp(_shortest, _longest, firearm.Length);
+			float num3 = Mathf.InverseLerp(_lightest, _heaviest, firearm.Weight);
+			float t = (num2 + num3) / 2f;
+			return Mathf.Lerp(_minInaccuracy, _maxInaccuracy, t) * num;
+		}
+
+		private static void GetFirearmRamapValues(Firearm firearm, out float lightest, out float shortest, out float heaviest, out float longest)
+		{
+			lightest = firearm.BaseWeight;
+			shortest = firearm.BaseLength;
+			heaviest = firearm.BaseWeight;
+			longest = firearm.BaseLength;
+			AttachmentSlot[] values = EnumUtils<AttachmentSlot>.Values;
+			foreach (AttachmentSlot slot in values)
 			{
-				return new DisplayInaccuracyValues(0f, 0f, this.TargetRunningInaccuracy, 0f);
+				if (TryGetSlotRamapValues(firearm, slot, out var lightest2, out var shortest2, out var heaviest2, out var longest2))
+				{
+					lightest += lightest2;
+					shortest += shortest2;
+					heaviest += heaviest2;
+					longest += longest2;
+				}
 			}
 		}
 
-		public float Inaccuracy
+		private static bool TryGetSlotRamapValues(Firearm firearm, AttachmentSlot slot, out float lightest, out float shortest, out float heaviest, out float longest)
 		{
-			get
+			lightest = float.MaxValue;
+			shortest = float.MaxValue;
+			heaviest = float.MinValue;
+			longest = float.MinValue;
+			bool result = false;
+			Attachment[] attachments = firearm.Attachments;
+			foreach (Attachment attachment in attachments)
 			{
-				float targetRunningInaccuracy = this.TargetRunningInaccuracy;
-				IFpcRole fpcRole = base.Firearm.Owner.roleManager.CurrentRole as IFpcRole;
-				if (fpcRole == null)
+				if (attachment.Slot == slot)
 				{
-					return 0f;
+					result = true;
+					lightest = Mathf.Min(lightest, attachment.Weight);
+					shortest = Mathf.Min(shortest, attachment.Length);
+					heaviest = Mathf.Max(heaviest, attachment.Weight);
+					longest = Mathf.Max(longest, attachment.Length);
 				}
-				if (!fpcRole.FpcModule.IsGrounded)
-				{
-					return targetRunningInaccuracy + 3f;
-				}
-				float num = fpcRole.FpcModule.Motor.Velocity.MagnitudeIgnoreY();
-				float sprintSpeed = fpcRole.FpcModule.SprintSpeed;
-				float num2 = EaseInUtils.EaseInOutCubic(num / sprintSpeed);
-				return targetRunningInaccuracy * num2;
 			}
+			return result;
 		}
+	}
 
-		private float TargetRunningInaccuracy
+	private static readonly Dictionary<ItemType, MovementInaccuracyDefinition> CachedDefinitions = new Dictionary<ItemType, MovementInaccuracyDefinition>();
+
+	private const float JumpingPenalty = 3f;
+
+	[field: SerializeField]
+	public float MinPenalty { get; private set; }
+
+	[field: SerializeField]
+	public float MaxPenalty { get; private set; }
+
+	public DisplayInaccuracyValues DisplayInaccuracy => new DisplayInaccuracyValues(0f, 0f, TargetRunningInaccuracy);
+
+	public float Inaccuracy
+	{
+		get
 		{
-			get
+			float targetRunningInaccuracy = TargetRunningInaccuracy;
+			if (!(base.Firearm.Owner.roleManager.CurrentRole is IFpcRole fpcRole))
 			{
-				ItemType itemTypeId = base.Firearm.ItemTypeId;
-				MovementInaccuracyModule.MovementInaccuracyDefinition movementInaccuracyDefinition;
-				if (MovementInaccuracyModule.CachedDefinitions.TryGetValue(itemTypeId, out movementInaccuracyDefinition))
-				{
-					return movementInaccuracyDefinition.Evaluate(base.Firearm);
-				}
-				MovementInaccuracyModule.MovementInaccuracyDefinition movementInaccuracyDefinition2 = new MovementInaccuracyModule.MovementInaccuracyDefinition(base.Firearm, this.MinPenalty, this.MaxPenalty);
-				MovementInaccuracyModule.CachedDefinitions.Add(itemTypeId, movementInaccuracyDefinition2);
-				return movementInaccuracyDefinition2.Evaluate(base.Firearm);
+				return 0f;
 			}
+			if (!fpcRole.FpcModule.IsGrounded)
+			{
+				return targetRunningInaccuracy + 3f;
+			}
+			float num = fpcRole.FpcModule.Motor.Velocity.MagnitudeIgnoreY();
+			float sprintSpeed = fpcRole.FpcModule.SprintSpeed;
+			float num2 = EaseInUtils.EaseInOutCubic(num / sprintSpeed);
+			return targetRunningInaccuracy * num2;
 		}
+	}
 
-		[ContextMenu("Clear Cache")]
-		private void ClearCache()
+	private float TargetRunningInaccuracy
+	{
+		get
 		{
-			MovementInaccuracyModule.CachedDefinitions.Clear();
+			ItemType itemTypeId = base.Firearm.ItemTypeId;
+			if (CachedDefinitions.TryGetValue(itemTypeId, out var value))
+			{
+				return value.Evaluate(base.Firearm);
+			}
+			MovementInaccuracyDefinition value2 = new MovementInaccuracyDefinition(base.Firearm, MinPenalty, MaxPenalty);
+			CachedDefinitions.Add(itemTypeId, value2);
+			return value2.Evaluate(base.Firearm);
 		}
+	}
 
-		private static readonly Dictionary<ItemType, MovementInaccuracyModule.MovementInaccuracyDefinition> CachedDefinitions = new Dictionary<ItemType, MovementInaccuracyModule.MovementInaccuracyDefinition>();
-
-		private const float JumpingPenalty = 3f;
-
-		public readonly struct MovementInaccuracyDefinition
-		{
-			public MovementInaccuracyDefinition(Firearm template, float minInaccuracy, float maxInaccuracy)
-			{
-				this.Template = template;
-				this._minInaccuracy = minInaccuracy;
-				this._maxInaccuracy = maxInaccuracy;
-				MovementInaccuracyModule.MovementInaccuracyDefinition.GetFirearmRamapValues(template, out this._lightest, out this._shortest, out this._heaviest, out this._longest);
-			}
-
-			public float Evaluate(Firearm firearm)
-			{
-				float num = firearm.AttachmentsValue(AttachmentParam.RunningInaccuracyMultiplier);
-				float num2 = Mathf.InverseLerp(this._shortest, this._longest, firearm.Length);
-				float num3 = Mathf.InverseLerp(this._lightest, this._heaviest, firearm.Weight);
-				float num4 = (num2 + num3) / 2f;
-				return Mathf.Lerp(this._minInaccuracy, this._maxInaccuracy, num4) * num;
-			}
-
-			private static void GetFirearmRamapValues(Firearm firearm, out float lightest, out float shortest, out float heaviest, out float longest)
-			{
-				lightest = firearm.BaseWeight;
-				shortest = firearm.BaseLength;
-				heaviest = firearm.BaseWeight;
-				longest = firearm.BaseLength;
-				foreach (AttachmentSlot attachmentSlot in EnumUtils<AttachmentSlot>.Values)
-				{
-					float num;
-					float num2;
-					float num3;
-					float num4;
-					if (MovementInaccuracyModule.MovementInaccuracyDefinition.TryGetSlotRamapValues(firearm, attachmentSlot, out num, out num2, out num3, out num4))
-					{
-						lightest += num;
-						shortest += num2;
-						heaviest += num3;
-						longest += num4;
-					}
-				}
-			}
-
-			private static bool TryGetSlotRamapValues(Firearm firearm, AttachmentSlot slot, out float lightest, out float shortest, out float heaviest, out float longest)
-			{
-				lightest = float.MaxValue;
-				shortest = float.MaxValue;
-				heaviest = float.MinValue;
-				longest = float.MinValue;
-				bool flag = false;
-				foreach (Attachment attachment in firearm.Attachments)
-				{
-					if (attachment.Slot == slot)
-					{
-						flag = true;
-						lightest = Mathf.Min(lightest, attachment.Weight);
-						shortest = Mathf.Min(shortest, attachment.Length);
-						heaviest = Mathf.Max(heaviest, attachment.Weight);
-						longest = Mathf.Max(longest, attachment.Length);
-					}
-				}
-				return flag;
-			}
-
-			public readonly Firearm Template;
-
-			private readonly float _minInaccuracy;
-
-			private readonly float _maxInaccuracy;
-
-			private readonly float _lightest;
-
-			private readonly float _shortest;
-
-			private readonly float _heaviest;
-
-			private readonly float _longest;
-		}
+	[ContextMenu("Clear Cache")]
+	private void ClearCache()
+	{
+		CachedDefinitions.Clear();
 	}
 }

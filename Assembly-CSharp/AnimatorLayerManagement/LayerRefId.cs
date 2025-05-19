@@ -1,15 +1,14 @@
-﻿using System;
+using System;
 
-namespace AnimatorLayerManagement
+namespace AnimatorLayerManagement;
+
+[Serializable]
+public struct LayerRefId
 {
-	[Serializable]
-	public struct LayerRefId
-	{
-		public LayerRefId(int refId)
-		{
-			this.Value = refId;
-		}
+	public int Value;
 
-		public int Value;
+	public LayerRefId(int refId)
+	{
+		Value = refId;
 	}
 }

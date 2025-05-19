@@ -1,212 +1,175 @@
-﻿using System;
 using System.Collections.Generic;
 using CustomPlayerEffects;
+using MapGeneration;
 using Mirror;
 using PlayerRoles.FirstPersonControl;
 using RelativePositioning;
 using UnityEngine;
 using Utils.Networking;
 
-namespace PlayerRoles.PlayableScps.Scp939.Ripples
+namespace PlayerRoles.PlayableScps.Scp939.Ripples;
+
+public class SurfaceRippleTrigger : RippleTriggerBase
 {
-	public class SurfaceRippleTrigger : RippleTriggerBase
+	private struct LastRippleInformation
 	{
-		public override void SpawnObject()
+		public bool IsNatural;
+
+		private double _time;
+
+		public static LastRippleInformation Default
 		{
-			base.SpawnObject();
-			this._lastRipples.Clear();
-			if (base.Role.IsLocalPlayer)
+			get
 			{
-				RippleTriggerBase.OnPlayedRippleLocally += this.OnPlayerPlayedRipple;
+				LastRippleInformation result = default(LastRippleInformation);
+				result.IsNatural = true;
+				result._time = NetworkTime.time;
+				return result;
 			}
 		}
 
-		public override void ResetObject()
+		public static LastRippleInformation SurfaceDefault
 		{
-			base.ResetObject();
-			this._lastRipples.Clear();
-			if (!base.Role.IsLocalPlayer)
+			get
 			{
-				RippleTriggerBase.OnPlayedRippleLocally -= this.OnPlayerPlayedRipple;
+				LastRippleInformation result = default(LastRippleInformation);
+				result.IsNatural = false;
+				result._time = NetworkTime.time;
+				return result;
 			}
 		}
 
-		public override void ServerWriteRpc(NetworkWriter writer)
-		{
-			base.ServerWriteRpc(writer);
-			writer.WriteReferenceHub(this._syncPlayer);
-			writer.WriteRelativePosition(this._syncPos);
-		}
+		public float Elapsed => (float)(NetworkTime.time - _time);
+	}
 
-		public override void ClientProcessRpc(NetworkReader reader)
-		{
-			base.ClientProcessRpc(reader);
-			if (!reader.TryReadReferenceHub(out this._syncPlayer))
-			{
-				return;
-			}
-			if (!HitboxIdentity.IsEnemy(base.Owner, this._syncPlayer))
-			{
-				return;
-			}
-			FpcStandardRoleBase fpcStandardRoleBase = this._syncPlayer.roleManager.CurrentRole as FpcStandardRoleBase;
-			if (fpcStandardRoleBase == null)
-			{
-				return;
-			}
-			if (fpcStandardRoleBase.FpcModule.CharacterModelInstance.Fade > 0f)
-			{
-				return;
-			}
-			this._syncPos = reader.ReadRelativePosition();
-			base.Player.Play(this._syncPos.Position, fpcStandardRoleBase.RoleColor);
-		}
+	private const float TimeBetweenSurfaceRipples = 10f;
 
-		public override void ClientWriteCmd(NetworkWriter writer)
-		{
-			base.ClientWriteCmd(writer);
-			writer.WriteReferenceHub(this._syncPlayer);
-		}
+	private const float NaturalRippleCooldown = 20f;
 
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			if (!reader.TryReadReferenceHub(out this._syncPlayer))
-			{
-				return;
-			}
-			this.ProcessRipple(this._syncPlayer);
-		}
+	private readonly Dictionary<uint, LastRippleInformation> _lastRipples = new Dictionary<uint, LastRippleInformation>();
 
-		public void ProcessRipple(ReferenceHub hub)
-		{
-			if (this._lastRipples.ContainsKey(hub.netId))
-			{
-				this._lastRipples[hub.netId] = SurfaceRippleTrigger.LastRippleInformation.Default;
-				return;
-			}
-			this._lastRipples.Add(hub.netId, SurfaceRippleTrigger.LastRippleInformation.Default);
-		}
+	private ReferenceHub _syncPlayer;
 
-		private void LateUpdate()
+	private RelativePosition _syncPos;
+
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		_lastRipples.Clear();
+		if (base.Role.IsLocalPlayer)
 		{
-			if (!NetworkServer.active)
+			RippleTriggerBase.OnPlayedRippleLocally += OnPlayerPlayedRipple;
+		}
+	}
+
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		_lastRipples.Clear();
+		if (!base.Role.IsLocalPlayer)
+		{
+			RippleTriggerBase.OnPlayedRippleLocally -= OnPlayerPlayedRipple;
+		}
+	}
+
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteReferenceHub(_syncPlayer);
+		writer.WriteRelativePosition(_syncPos);
+	}
+
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		if (reader.TryReadReferenceHub(out _syncPlayer) && HitboxIdentity.IsEnemy(base.Owner, _syncPlayer) && _syncPlayer.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase && !(fpcStandardRoleBase.FpcModule.CharacterModelInstance.Fade > 0f))
+		{
+			_syncPos = reader.ReadRelativePosition();
+			base.Player.Play(_syncPos.Position, fpcStandardRoleBase.RoleColor);
+		}
+	}
+
+	public override void ClientWriteCmd(NetworkWriter writer)
+	{
+		base.ClientWriteCmd(writer);
+		writer.WriteReferenceHub(_syncPlayer);
+	}
+
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (reader.TryReadReferenceHub(out _syncPlayer))
+		{
+			ProcessRipple(_syncPlayer);
+		}
+	}
+
+	public void ProcessRipple(ReferenceHub hub)
+	{
+		if (_lastRipples.ContainsKey(hub.netId))
+		{
+			_lastRipples[hub.netId] = LastRippleInformation.Default;
+		}
+		else
+		{
+			_lastRipples.Add(hub.netId, LastRippleInformation.Default);
+		}
+	}
+
+	protected override void LateUpdate()
+	{
+		base.LateUpdate();
+		if (!NetworkServer.active)
+		{
+			return;
+		}
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (!HitboxIdentity.IsEnemy(base.Owner, allHub) || !(allHub.roleManager.CurrentRole is IFpcRole fpcRole) || (allHub.playerEffectsController.TryGetEffect<Invisible>(out var playerEffect) && playerEffect.IsEnabled))
 			{
-				return;
+				continue;
 			}
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
+			Vector3 position = fpcRole.FpcModule.Position;
+			if (position.GetZone() != FacilityZone.Surface)
 			{
-				if (HitboxIdentity.IsEnemy(base.Owner, referenceHub))
+				continue;
+			}
+			if (!_lastRipples.TryGetValue(allHub.netId, out var value))
+			{
+				_lastRipples.Add(allHub.netId, LastRippleInformation.SurfaceDefault);
+				continue;
+			}
+			if (value.IsNatural)
+			{
+				if (value.Elapsed < 20f)
 				{
-					IFpcRole fpcRole = referenceHub.roleManager.CurrentRole as IFpcRole;
-					Invisible invisible;
-					if (fpcRole != null && (!referenceHub.playerEffectsController.TryGetEffect<Invisible>(out invisible) || !invisible.IsEnabled))
-					{
-						Vector3 position = fpcRole.FpcModule.Position;
-						if (SurfaceRippleTrigger.IsOnSurface(fpcRole.FpcModule.Position))
-						{
-							SurfaceRippleTrigger.LastRippleInformation lastRippleInformation;
-							if (this._lastRipples.TryGetValue(referenceHub.netId, out lastRippleInformation))
-							{
-								if (lastRippleInformation.IsNatural)
-								{
-									if (lastRippleInformation.Elapsed >= 20f)
-									{
-										goto IL_00DD;
-									}
-									goto IL_00D8;
-								}
-								else
-								{
-									if (lastRippleInformation.Elapsed < 10f)
-									{
-										goto IL_00D8;
-									}
-									goto IL_00DD;
-								}
-								IL_00E0:
-								bool flag;
-								if (!flag)
-								{
-									this._lastRipples[referenceHub.netId] = SurfaceRippleTrigger.LastRippleInformation.SurfaceDefault;
-									this._syncPos = new RelativePosition(position);
-									this._syncPlayer = referenceHub;
-									base.ServerSendRpcToObservers();
-									continue;
-								}
-								continue;
-								IL_00DD:
-								flag = false;
-								goto IL_00E0;
-								IL_00D8:
-								flag = true;
-								goto IL_00E0;
-							}
-							this._lastRipples.Add(referenceHub.netId, SurfaceRippleTrigger.LastRippleInformation.SurfaceDefault);
-						}
-					}
+					goto IL_00d6;
 				}
 			}
-		}
-
-		private static bool IsOnSurface(Vector3 position)
-		{
-			return position.y >= 900f;
-		}
-
-		private void OnPlayerPlayedRipple(ReferenceHub player)
-		{
-			this._syncPlayer = player;
-			base.ClientSendCmd();
-		}
-
-		private const float TimeBetweenSurfaceRipples = 10f;
-
-		private const float NaturalRippleCooldown = 20f;
-
-		private readonly Dictionary<uint, SurfaceRippleTrigger.LastRippleInformation> _lastRipples = new Dictionary<uint, SurfaceRippleTrigger.LastRippleInformation>();
-
-		private ReferenceHub _syncPlayer;
-
-		private RelativePosition _syncPos;
-
-		private struct LastRippleInformation
-		{
-			public static SurfaceRippleTrigger.LastRippleInformation Default
+			else if (value.Elapsed < 10f)
 			{
-				get
-				{
-					return new SurfaceRippleTrigger.LastRippleInformation
-					{
-						IsNatural = true,
-						_time = NetworkTime.time
-					};
-				}
+				goto IL_00d6;
 			}
-
-			public static SurfaceRippleTrigger.LastRippleInformation SurfaceDefault
+			bool flag = false;
+			goto IL_00de;
+			IL_00de:
+			if (!flag)
 			{
-				get
-				{
-					return new SurfaceRippleTrigger.LastRippleInformation
-					{
-						IsNatural = false,
-						_time = NetworkTime.time
-					};
-				}
+				_lastRipples[allHub.netId] = LastRippleInformation.SurfaceDefault;
+				_syncPos = new RelativePosition(position);
+				_syncPlayer = allHub;
+				ServerSendRpcToObservers();
 			}
-
-			public float Elapsed
-			{
-				get
-				{
-					return (float)(NetworkTime.time - this._time);
-				}
-			}
-
-			public bool IsNatural;
-
-			private double _time;
+			continue;
+			IL_00d6:
+			flag = true;
+			goto IL_00de;
 		}
+	}
+
+	private void OnPlayerPlayedRipple(ReferenceHub player)
+	{
+		_syncPlayer = player;
+		ClientSendCmd();
 	}
 }

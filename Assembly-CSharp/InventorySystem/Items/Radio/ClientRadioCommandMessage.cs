@@ -1,25 +1,23 @@
-﻿using System;
 using Mirror;
 
-namespace InventorySystem.Items.Radio
+namespace InventorySystem.Items.Radio;
+
+public struct ClientRadioCommandMessage : NetworkMessage
 {
-	public struct ClientRadioCommandMessage : NetworkMessage
+	public RadioMessages.RadioCommand Command;
+
+	public ClientRadioCommandMessage(RadioMessages.RadioCommand cmd)
 	{
-		public ClientRadioCommandMessage(RadioMessages.RadioCommand cmd)
-		{
-			this.Command = cmd;
-		}
+		Command = cmd;
+	}
 
-		public void Serialize(NetworkWriter writer)
-		{
-			writer.WriteByte((byte)this.Command);
-		}
+	public void Serialize(NetworkWriter writer)
+	{
+		writer.WriteByte((byte)Command);
+	}
 
-		public ClientRadioCommandMessage(NetworkReader reader)
-		{
-			this.Command = (RadioMessages.RadioCommand)reader.ReadByte();
-		}
-
-		public RadioMessages.RadioCommand Command;
+	public ClientRadioCommandMessage(NetworkReader reader)
+	{
+		Command = (RadioMessages.RadioCommand)reader.ReadByte();
 	}
 }

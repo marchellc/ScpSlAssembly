@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime;
 using System.Threading;
 using UnityEngine;
@@ -9,21 +9,20 @@ public static class MemoryCleaner
 	[RuntimeInitializeOnLoadMethod]
 	private static void OnLoad()
 	{
-		SceneManager.sceneLoaded += MemoryCleaner.CleanupMemory;
+		SceneManager.sceneLoaded += CleanupMemory;
 	}
 
 	private static void CleanupMemory(Scene scene, LoadSceneMode mode)
 	{
 		Resources.UnloadUnusedAssets();
-		new Thread(delegate
+		Thread thread = new Thread((ThreadStart)delegate
 		{
 			GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
 			GC.Collect();
 			GC.WaitForPendingFinalizers();
 			GC.Collect();
-		})
-		{
-			IsBackground = true
-		}.Start();
+		});
+		thread.IsBackground = true;
+		thread.Start();
 	}
 }

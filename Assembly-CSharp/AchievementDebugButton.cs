@@ -1,22 +1,27 @@
-﻿using System;
+using System;
 using Achievements;
 using TMPro;
 using UnityEngine;
 
 public class AchievementDebugButton : MonoBehaviour
 {
+	[SerializeField]
+	private TMP_Text _stateText;
+
+	[SerializeField]
+	private TMP_Text _nameText;
+
 	public AchievementName TargetAchievement { get; set; }
 
 	private Achievement Achievement
 	{
 		get
 		{
-			Achievement achievement;
-			if (!AchievementManager.Achievements.TryGetValue(this.TargetAchievement, out achievement))
+			if (!AchievementManager.Achievements.TryGetValue(TargetAchievement, out var value))
 			{
-				throw new NullReferenceException(string.Format("Could not find achievement by name {0}.", this.TargetAchievement));
+				throw new NullReferenceException($"Could not find achievement by name {TargetAchievement}.");
 			}
-			return achievement;
+			return value;
 		}
 	}
 
@@ -24,47 +29,44 @@ public class AchievementDebugButton : MonoBehaviour
 	{
 		get
 		{
-			Achievement achievement = this.Achievement;
-			return !AchievementDebugMenu.QueuedAchievements.Contains(achievement);
+			Achievement achievement = Achievement;
+			if (AchievementDebugMenu.QueuedAchievements.Contains(achievement))
+			{
+				return false;
+			}
+			return true;
 		}
 	}
 
 	public void AddToQueue()
 	{
-		if (!this.IsUnlocked)
+		if (IsUnlocked)
 		{
-			return;
+			AchievementDebugMenu.QueuedAchievements.Enqueue(Achievement);
+			UpdateState();
 		}
-		AchievementDebugMenu.QueuedAchievements.Enqueue(this.Achievement);
-		this.UpdateState();
 	}
 
 	private void Start()
 	{
-		this._nameText.text = this.TargetAchievement.ToString();
-		this.UpdateState();
+		_nameText.text = TargetAchievement.ToString();
+		UpdateState();
 	}
 
 	private void OnEnable()
 	{
-		this.UpdateState();
+		UpdateState();
 	}
 
 	private void OnDisable()
 	{
-		this.UpdateState();
+		UpdateState();
 	}
 
 	private void UpdateState()
 	{
-		bool isUnlocked = this.IsUnlocked;
-		this._stateText.text = (isUnlocked ? "✔" : "X");
-		this._stateText.color = (isUnlocked ? Color.green : Color.red);
+		bool isUnlocked = IsUnlocked;
+		_stateText.text = (isUnlocked ? "✔" : "X");
+		_stateText.color = (isUnlocked ? Color.green : Color.red);
 	}
-
-	[SerializeField]
-	private TMP_Text _stateText;
-
-	[SerializeField]
-	private TMP_Text _nameText;
 }

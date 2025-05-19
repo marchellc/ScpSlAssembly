@@ -1,11 +1,8 @@
-﻿using System;
+namespace Utf8Json;
 
-namespace Utf8Json
+public interface IObjectPropertyNameFormatter<T>
 {
-	public interface IObjectPropertyNameFormatter<T>
-	{
-		void SerializeToPropertyName(ref JsonWriter writer, T value, IJsonFormatterResolver formatterResolver);
+	void SerializeToPropertyName(ref JsonWriter writer, T value, IJsonFormatterResolver formatterResolver);
 
-		T DeserializeFromPropertyName(ref JsonReader reader, IJsonFormatterResolver formatterResolver);
-	}
+	T DeserializeFromPropertyName(ref JsonReader reader, IJsonFormatterResolver formatterResolver);
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using CommandSystem;
 using Footprinting;
 using GameCore;
@@ -9,20 +8,21 @@ using RemoteAdmin;
 
 public static class BanPlayer
 {
+	private const string _globalBanReason = "You have been Globally Banned.";
+
 	public static void GlobalBanUser(ReferenceHub target, ICommandSender issuer)
 	{
-		if (ConfigFile.ServerConfig.GetBool("gban_ban_ip", false))
+		if (ConfigFile.ServerConfig.GetBool("gban_ban_ip"))
 		{
-			BanPlayer.ApplyIpBan(target, issuer, "You have been Globally Banned.", (long)((ulong)(-1)));
+			ApplyIpBan(target, issuer, "You have been Globally Banned.", 4294967295L);
 		}
 		ServerConsole.Disconnect(target.gameObject, "You have been Globally Banned.");
 	}
 
 	public static bool KickUser(ReferenceHub target, ICommandSender issuer, string reason)
 	{
-		PlayerCommandSender playerCommandSender = issuer as PlayerCommandSender;
-		ReferenceHub referenceHub = ((playerCommandSender != null) ? playerCommandSender.ReferenceHub : ReferenceHub.HostHub);
-		PlayerKickingEventArgs playerKickingEventArgs = new PlayerKickingEventArgs(target, referenceHub, reason);
+		ReferenceHub issuer2 = ((issuer is PlayerCommandSender playerCommandSender) ? playerCommandSender.ReferenceHub : ReferenceHub.HostHub);
+		PlayerKickingEventArgs playerKickingEventArgs = new PlayerKickingEventArgs(target, issuer2, reason);
 		PlayerEvents.OnKicking(playerKickingEventArgs);
 		if (!playerKickingEventArgs.IsAllowed)
 		{
@@ -30,53 +30,52 @@ public static class BanPlayer
 		}
 		reason = playerKickingEventArgs.Reason;
 		ServerConsole.Disconnect(target.gameObject, "You have been kicked. Reason: " + reason);
-		PlayerEvents.OnKicked(new PlayerKickedEventArgs(target, referenceHub, reason));
+		PlayerEvents.OnKicked(new PlayerKickedEventArgs(target, issuer2, reason));
 		return true;
 	}
 
 	public static bool KickUser(ReferenceHub target, ReferenceHub issuer, string reason)
 	{
-		return BanPlayer.KickUser(target, new PlayerCommandSender(issuer), reason);
+		return KickUser(target, new PlayerCommandSender(issuer), reason);
 	}
 
 	public static bool KickUser(ReferenceHub target, string reason)
 	{
-		return BanPlayer.KickUser(target, ServerConsole.Scs, reason);
+		return KickUser(target, ServerConsole.Scs, reason);
 	}
 
 	public static bool BanUser(ReferenceHub target, string reason, long duration)
 	{
-		return BanPlayer.BanUser(target, ServerConsole.Scs, reason, duration);
+		return BanUser(target, ServerConsole.Scs, reason, duration);
 	}
 
 	public static bool BanUser(Footprint target, string reason, long duration)
 	{
-		return BanPlayer.BanUser(target, ServerConsole.Scs, reason, duration);
+		return BanUser(target, ServerConsole.Scs, reason, duration);
 	}
 
 	public static bool BanUser(ReferenceHub target, ReferenceHub issuer, string reason, long duration)
 	{
-		return BanPlayer.BanUser(target, new PlayerCommandSender(issuer), reason, duration);
+		return BanUser(target, new PlayerCommandSender(issuer), reason, duration);
 	}
 
 	public static bool BanUser(ReferenceHub target, ICommandSender issuer, string reason, long duration)
 	{
-		return BanPlayer.BanUser(new Footprint(target), issuer, reason, duration);
+		return BanUser(new Footprint(target), issuer, reason, duration);
 	}
 
 	public static bool BanUser(Footprint target, ICommandSender issuer, string reason, long duration)
 	{
 		if (duration == 0L && target.Hub != null)
 		{
-			return BanPlayer.KickUser(target.Hub, issuer, reason);
+			return KickUser(target.Hub, issuer, reason);
 		}
 		if (target.BypassStaff)
 		{
 			return false;
 		}
-		PlayerCommandSender playerCommandSender = issuer as PlayerCommandSender;
-		ReferenceHub referenceHub = ((playerCommandSender != null) ? playerCommandSender.ReferenceHub : ReferenceHub.HostHub);
-		PlayerBanningEventArgs playerBanningEventArgs = new PlayerBanningEventArgs(target.Hub, target.LogUserID, referenceHub, reason, duration);
+		ReferenceHub issuer2 = ((issuer is PlayerCommandSender playerCommandSender) ? playerCommandSender.ReferenceHub : ReferenceHub.HostHub);
+		PlayerBanningEventArgs playerBanningEventArgs = new PlayerBanningEventArgs(target.Hub, target.LogUserID, issuer2, reason, duration);
 		PlayerEvents.OnBanning(playerBanningEventArgs);
 		if (!playerBanningEventArgs.IsAllowed)
 		{
@@ -84,23 +83,23 @@ public static class BanPlayer
 		}
 		duration = playerBanningEventArgs.Duration;
 		reason = playerBanningEventArgs.Reason;
-		BanPlayer.ApplyIpBan(target, issuer, reason, duration);
-		long num = TimeBehaviour.CurrentTimestamp();
+		ApplyIpBan(target, issuer, reason, duration);
+		long issuanceTime = TimeBehaviour.CurrentTimestamp();
 		long banExpirationTime = TimeBehaviour.GetBanExpirationTime((uint)duration);
-		string text = BanPlayer.ValidateNick(target.Nickname);
+		string originalName = ValidateNick(target.Nickname);
 		if (!string.IsNullOrEmpty(target.LogUserID))
 		{
 			BanHandler.IssueBan(new BanDetails
 			{
-				OriginalName = text,
+				OriginalName = originalName,
 				Id = target.LogUserID,
-				IssuanceTime = num,
+				IssuanceTime = issuanceTime,
 				Expires = banExpirationTime,
 				Reason = reason,
 				Issuer = issuer.LogName
-			}, BanHandler.BanType.UserId, false);
+			}, BanHandler.BanType.UserId);
 		}
-		PlayerEvents.OnBanned(new PlayerBannedEventArgs(target.Hub, target.LogUserID, referenceHub, reason, duration));
+		PlayerEvents.OnBanned(new PlayerBannedEventArgs(target.Hub, target.LogUserID, issuer2, reason, duration));
 		if (target.Hub != null)
 		{
 			ServerConsole.Disconnect(target.Hub.gameObject, "You have been banned. Reason: " + reason);
@@ -110,36 +109,35 @@ public static class BanPlayer
 
 	public static void ApplyIpBan(ReferenceHub target, ICommandSender issuer, string reason, long duration)
 	{
-		BanPlayer.ApplyIpBan(new Footprint(target), issuer, reason, duration);
+		ApplyIpBan(new Footprint(target), issuer, reason, duration);
 	}
 
 	public static void ApplyIpBan(Footprint target, ICommandSender issuer, string reason, long duration)
 	{
-		if (!ConfigFile.ServerConfig.GetBool("ip_banning", false) || string.IsNullOrEmpty(target.IpAddress))
+		if (ConfigFile.ServerConfig.GetBool("ip_banning") && !string.IsNullOrEmpty(target.IpAddress))
 		{
-			return;
+			long issuanceTime = TimeBehaviour.CurrentTimestamp();
+			long banExpirationTime = TimeBehaviour.GetBanExpirationTime((uint)duration);
+			BanHandler.IssueBan(new BanDetails
+			{
+				OriginalName = ValidateNick(target.Nickname),
+				Id = target.IpAddress,
+				IssuanceTime = issuanceTime,
+				Expires = banExpirationTime,
+				Reason = reason,
+				Issuer = issuer.LogName
+			}, BanHandler.BanType.IP);
 		}
-		long num = TimeBehaviour.CurrentTimestamp();
-		long banExpirationTime = TimeBehaviour.GetBanExpirationTime((uint)duration);
-		BanHandler.IssueBan(new BanDetails
-		{
-			OriginalName = BanPlayer.ValidateNick(target.Nickname),
-			Id = target.IpAddress,
-			IssuanceTime = num,
-			Expires = banExpirationTime,
-			Reason = reason,
-			Issuer = issuer.LogName
-		}, BanHandler.BanType.IP, false);
 	}
 
 	public static string ValidateNick(string username)
 	{
 		int @int = ConfigFile.ServerConfig.GetInt("ban_nickname_maxlength", 30);
-		bool @bool = ConfigFile.ServerConfig.GetBool("ban_nickname_trimunicode", true);
+		bool @bool = ConfigFile.ServerConfig.GetBool("ban_nickname_trimunicode", def: true);
 		string text = (string.IsNullOrEmpty(username) ? "(no nick)" : username);
 		if (@bool)
 		{
-			text = StringUtils.StripUnicodeCharacters(text, "");
+			text = StringUtils.StripUnicodeCharacters(text);
 		}
 		if (text.Length > @int)
 		{
@@ -147,6 +145,4 @@ public static class BanPlayer
 		}
 		return text;
 	}
-
-	private const string _globalBanReason = "You have been Globally Banned.";
 }

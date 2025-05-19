@@ -1,4 +1,3 @@
-﻿using System;
 using System.Diagnostics;
 using AudioPooling;
 using CustomPlayerEffects;
@@ -9,344 +8,333 @@ using PlayerRoles.PlayableScps.Subroutines;
 using PlayerRoles.Spectating;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp939
+namespace PlayerRoles.PlayableScps.Scp939;
+
+public class Scp939Model : AnimatedCharacterModel
 {
-	public class Scp939Model : AnimatedCharacterModel
+	[SerializeField]
+	private Animator _animator;
+
+	[SerializeField]
+	private AnimationCurve _focusOverrideAnim;
+
+	[SerializeField]
+	private AnimationCurve _tiltOverTime;
+
+	[SerializeField]
+	private AnimationCurve _focusParamsCorrectionCurve;
+
+	[SerializeField]
+	private AudioClip[] _damagedVariants;
+
+	[SerializeField]
+	private AudioClip _cloudPlaceSound;
+
+	[SerializeField]
+	private float _tiltLerp;
+
+	[SerializeField]
+	private float _fadeSpeed;
+
+	[SerializeField]
+	private Vector2 _footstepPitchRand;
+
+	[SerializeField]
+	private float _amnesiaVisibleRange;
+
+	private Scp939Role _scp939;
+
+	private Scp939ClawAbility _clawAbility;
+
+	private Scp939FocusAbility _focusAbility;
+
+	private Scp939LungeAbility _lungeAbility;
+
+	private Scp939AmnesticCloudAbility _amnesticAbility;
+
+	private Transform _trModel;
+
+	private Transform _trHub;
+
+	private bool _prevFocus;
+
+	private bool _isLunging;
+
+	private float _curTilt;
+
+	private readonly Stopwatch _lungeStopwatch = new Stopwatch();
+
+	private readonly Stopwatch _fadeoutStopwatch = Stopwatch.StartNew();
+
+	private const int FocusOverrideLayer = 4;
+
+	private const int FocusHeadDirLayer = 6;
+
+	private const float FocusHeadFadeTime = 0.4f;
+
+	private const float FocusRotateRate = 3f;
+
+	private const float LungeRotateSpeed = 7.5f;
+
+	private const float DamagedSoundRange = 19f;
+
+	private const float CloudSoundRange = 8f;
+
+	private const float HiddenHeight = -3000f;
+
+	private const float FullVisCooldown = 30f;
+
+	private static readonly int GroundedHash = Animator.StringToHash("IsGrounded");
+
+	private static readonly int ClawHash = Animator.StringToHash("Claw");
+
+	private static readonly int FocusStateHash = Animator.StringToHash("Focus");
+
+	private static readonly int FocusHeadDirHash = Animator.StringToHash("FocusDirection");
+
+	private static readonly int LungeStateHash = Animator.StringToHash("LungeState");
+
+	private static readonly int LungeTriggerHash = Animator.StringToHash("LungeTrigger");
+
+	private static readonly int DamagedVariantHash = Animator.StringToHash("DamagedVariant");
+
+	private static readonly int DamagedTriggerHash = Animator.StringToHash("DamagedTrigger");
+
+	private static readonly int AmnesticChargingHash = Animator.StringToHash("AmnesticCharging");
+
+	private static readonly int AmnesticTriggerHash = Animator.StringToHash("AmnesticCreated");
+
+	private bool Visible
 	{
-		private bool Visible
+		get
 		{
-			get
+			if (!ReferenceHub.TryGetPovHub(out var hub))
 			{
-				ReferenceHub referenceHub;
-				if (!ReferenceHub.TryGetPovHub(out referenceHub))
-				{
-					return true;
-				}
-				if (!HitboxIdentity.IsEnemy(base.OwnerHub, referenceHub))
-				{
-					return true;
-				}
-				IFpcRole fpcRole = referenceHub.roleManager.CurrentRole as IFpcRole;
-				if (fpcRole == null)
-				{
-					return true;
-				}
-				Vector3 position = fpcRole.FpcModule.Position;
-				if (Vector3.Distance(position, this._scp939.FpcModule.Position) < this._amnesiaVisibleRange)
-				{
-					return true;
-				}
-				AmnesiaVision amnesiaVision;
-				if (!referenceHub.playerEffectsController.TryGetEffect<AmnesiaVision>(out amnesiaVision))
-				{
-					return true;
-				}
-				if (amnesiaVision.IsEnabled)
+				return true;
+			}
+			if (!HitboxIdentity.IsEnemy(base.OwnerHub, hub))
+			{
+				return true;
+			}
+			if (!(hub.roleManager.CurrentRole is IFpcRole fpcRole))
+			{
+				return true;
+			}
+			Vector3 position = fpcRole.FpcModule.Position;
+			if (Vector3.Distance(position, _scp939.FpcModule.Position) < _amnesiaVisibleRange)
+			{
+				return true;
+			}
+			if (!hub.playerEffectsController.TryGetEffect<AmnesiaVision>(out var playerEffect))
+			{
+				return true;
+			}
+			if (playerEffect.IsEnabled)
+			{
+				return false;
+			}
+			if (playerEffect.LastActive < 30f)
+			{
+				return true;
+			}
+			foreach (Scp939AmnesticCloudInstance activeInstance in Scp939AmnesticCloudInstance.ActiveInstances)
+			{
+				if (activeInstance.IsInArea(activeInstance.SourcePosition, position))
 				{
 					return false;
 				}
-				if (amnesiaVision.LastActive < 30f)
-				{
-					return true;
-				}
-				foreach (Scp939AmnesticCloudInstance scp939AmnesticCloudInstance in Scp939AmnesticCloudInstance.ActiveInstances)
-				{
-					if (scp939AmnesticCloudInstance.IsInArea(scp939AmnesticCloudInstance.SourcePosition, position))
-					{
-						return false;
-					}
-				}
-				return true;
 			}
+			return true;
 		}
+	}
 
-		public override bool FootstepPlayable
+	public override bool FootstepPlayable
+	{
+		get
 		{
-			get
+			if (base.FootstepPlayable)
 			{
-				return base.FootstepPlayable && base.FpcModule.CurrentMovementState == PlayerMovementState.Sprinting;
+				return base.FpcModule.CurrentMovementState == PlayerMovementState.Sprinting;
 			}
+			return false;
 		}
+	}
 
-		private void PlayClawAttack(AttackResult attackRes)
+	public bool IsInHiddenPosition => base.FpcModule.Position == Vector3.up * -3000f;
+
+	private void PlayClawAttack(AttackResult attackRes)
+	{
+		if (attackRes != 0)
 		{
-			if (attackRes == AttackResult.None)
-			{
-				return;
-			}
-			this._animator.SetTrigger(Scp939Model.ClawHash);
+			_animator.SetTrigger(ClawHash);
 		}
+	}
 
-		private void ProcessLungeState(Scp939LungeState newState)
+	private void ProcessLungeState(Scp939LungeState newState)
+	{
+		switch (newState)
 		{
-			if (newState != Scp939LungeState.None)
-			{
-				if (newState == Scp939LungeState.Triggered)
-				{
-					this._lungeStopwatch.Restart();
-				}
-				this._isLunging = true;
-				this._animator.SetInteger(Scp939Model.LungeStateHash, (int)newState);
-				this._animator.SetTrigger(Scp939Model.LungeTriggerHash);
-				return;
-			}
-			this._isLunging = false;
+		case Scp939LungeState.Triggered:
+			_lungeStopwatch.Restart();
+			break;
+		case Scp939LungeState.None:
+			_isLunging = false;
+			return;
 		}
+		_isLunging = true;
+		_animator.SetInteger(LungeStateHash, (int)newState);
+		_animator.SetTrigger(LungeTriggerHash);
+	}
 
-		private void OnSpectatorTargetChanged()
-		{
-			this.ForceFade(1f);
-		}
+	private void OnSpectatorTargetChanged()
+	{
+		ForceFade(1f);
+	}
 
-		private void UpdateFade()
-		{
-			this.ForceFade(this._fadeSpeed * Time.deltaTime);
-		}
+	private void UpdateFade()
+	{
+		ForceFade(_fadeSpeed * Time.deltaTime);
+	}
 
-		private void ForceFade(float delta)
+	private void ForceFade(float delta)
+	{
+		Fade += (Visible ? delta : (0f - delta));
+		if (!(Fade > 0f) && !base.Role.IsLocalPlayer && !NetworkServer.active)
 		{
-			this.Fade += (this.Visible ? delta : (-delta));
-			if (this.Fade > 0f || base.Role.IsLocalPlayer || NetworkServer.active)
-			{
-				return;
-			}
-			this._fadeoutStopwatch.Restart();
+			_fadeoutStopwatch.Restart();
 			base.FpcModule.Position = Vector3.up * -3000f;
 		}
+	}
 
-		protected override void Awake()
+	protected override void Awake()
+	{
+		base.Awake();
+		_trModel = base.transform;
+	}
+
+	protected override void Update()
+	{
+		base.Update();
+		base.Animator.SetBool(GroundedHash, base.FpcModule.IsGrounded);
+		base.Animator.SetBool(AmnesticChargingHash, _amnesticAbility.TargetState);
+		float state = _focusAbility.State;
+		base.Animator.SetFloat(FocusStateHash, state);
+		base.Animator.SetLayerWeight(6, state);
+		if (_isLunging)
 		{
-			base.Awake();
-			this._trModel = base.transform;
+			base.Animator.SetLayerWeight(4, 1f);
 		}
-
-		protected override void Update()
+		else
 		{
-			base.Update();
-			base.Animator.SetBool(Scp939Model.GroundedHash, base.FpcModule.IsGrounded);
-			base.Animator.SetBool(Scp939Model.AmnesticChargingHash, this._amnesticAbility.TargetState);
-			float state = this._focusAbility.State;
-			base.Animator.SetFloat(Scp939Model.FocusStateHash, state);
-			base.Animator.SetLayerWeight(6, state);
-			if (this._isLunging)
+			base.Animator.SetLayerWeight(4, _focusOverrideAnim.Evaluate(state));
+		}
+	}
+
+	public void PlayDamagedEffect(int rand)
+	{
+		rand %= _damagedVariants.Length;
+		_animator.SetFloat(DamagedVariantHash, rand);
+		_animator.SetTrigger(DamagedTriggerHash);
+		AudioSourcePoolManager.PlayOnTransform(_damagedVariants[rand], base.transform, 19f, 1f, FalloffType.Exponential, MixerChannel.NoDucking);
+	}
+
+	public void PlayCloudRelease()
+	{
+		_animator.SetTrigger(AmnesticTriggerHash);
+		AudioSourcePoolManager.PlayOnTransform(_cloudPlaceSound, base.transform, 8f);
+	}
+
+	public override void UpdateAnimatorParameters(Vector2 movementDirection, float normalizedVelocity, float dampTime)
+	{
+		if (_focusAbility.State > 0f)
+		{
+			float b = _focusParamsCorrectionCurve.Evaluate(_focusAbility.State);
+			float f = Vector3.Dot(movementDirection.normalized, Vector2.up);
+			normalizedVelocity *= Mathf.Lerp(1f, b, Mathf.Abs(f));
+		}
+		base.UpdateAnimatorParameters(movementDirection, normalizedVelocity, dampTime);
+	}
+
+	private void LateUpdate()
+	{
+		float t = Time.deltaTime * _tiltLerp;
+		if (_lungeAbility.State == Scp939LungeState.Triggered)
+		{
+			double totalSeconds = _lungeStopwatch.Elapsed.TotalSeconds;
+			float b = _tiltOverTime.Evaluate((float)totalSeconds);
+			_curTilt = Mathf.Lerp(_curTilt, b, t);
+		}
+		else
+		{
+			_curTilt = Mathf.Lerp(_curTilt, 0f, t);
+		}
+		if (_focusAbility.State == 0f)
+		{
+			if (_prevFocus)
 			{
-				base.Animator.SetLayerWeight(4, 1f);
-				return;
+				_trModel.localRotation = Quaternion.identity;
+				_prevFocus = false;
 			}
-			base.Animator.SetLayerWeight(4, this._focusOverrideAnim.Evaluate(state));
+			return;
 		}
-
-		public void PlayDamagedEffect(int rand)
+		if (!_prevFocus)
 		{
-			rand %= this._damagedVariants.Length;
-			this._animator.SetFloat(Scp939Model.DamagedVariantHash, (float)rand);
-			this._animator.SetTrigger(Scp939Model.DamagedTriggerHash);
-			AudioSourcePoolManager.PlayOnTransform(this._damagedVariants[rand], base.transform, 19f, 1f, FalloffType.Exponential, MixerChannel.NoDucking, 1f);
+			_prevFocus = true;
+			return;
 		}
-
-		public void PlayCloudRelease()
+		float t2;
+		if (_isLunging)
 		{
-			this._animator.SetTrigger(Scp939Model.AmnesticTriggerHash);
-			AudioSourcePoolManager.PlayOnTransform(this._cloudPlaceSound, base.transform, 8f, 1f, FalloffType.Exponential, MixerChannel.DefaultSfx, 1f);
+			double totalSeconds2 = _lungeStopwatch.Elapsed.TotalSeconds;
+			t2 = 1f - (float)totalSeconds2 * 7.5f;
 		}
-
-		public override void UpdateAnimatorParameters(Vector2 movementDirection, float normalizedVelocity, float dampTime)
+		else
 		{
-			if (this._focusAbility.State > 0f)
-			{
-				float num = this._focusParamsCorrectionCurve.Evaluate(this._focusAbility.State);
-				float num2 = Vector3.Dot(movementDirection.normalized, Vector2.up);
-				normalizedVelocity *= Mathf.Lerp(1f, num, Mathf.Abs(num2));
-			}
-			base.UpdateAnimatorParameters(movementDirection, normalizedVelocity, dampTime);
+			t2 = _focusAbility.State * 3f;
 		}
+		Quaternion b2 = Quaternion.Euler(0f, _focusAbility.FrozenRotation, 0f);
+		_trModel.rotation = Quaternion.Slerp(_trHub.rotation, b2, t2);
+		_trModel.Rotate(Vector3.right, _curTilt, Space.Self);
+		float value = Mathf.DeltaAngle(_trHub.eulerAngles.y, _trModel.eulerAngles.y);
+		base.Animator.SetFloat(FocusHeadDirHash, value, 0.4f, Time.deltaTime);
+	}
 
-		private void LateUpdate()
-		{
-			float num = Time.deltaTime * this._tiltLerp;
-			if (this._lungeAbility.State == Scp939LungeState.Triggered)
-			{
-				double totalSeconds = this._lungeStopwatch.Elapsed.TotalSeconds;
-				float num2 = this._tiltOverTime.Evaluate((float)totalSeconds);
-				this._curTilt = Mathf.Lerp(this._curTilt, num2, num);
-			}
-			else
-			{
-				this._curTilt = Mathf.Lerp(this._curTilt, 0f, num);
-			}
-			if (this._focusAbility.State == 0f)
-			{
-				if (!this._prevFocus)
-				{
-					return;
-				}
-				this._trModel.localRotation = Quaternion.identity;
-				this._prevFocus = false;
-				return;
-			}
-			else
-			{
-				if (!this._prevFocus)
-				{
-					this._prevFocus = true;
-					return;
-				}
-				float num3;
-				if (this._isLunging)
-				{
-					double totalSeconds2 = this._lungeStopwatch.Elapsed.TotalSeconds;
-					num3 = 1f - (float)totalSeconds2 * 7.5f;
-				}
-				else
-				{
-					num3 = this._focusAbility.State * 3f;
-				}
-				Quaternion quaternion = Quaternion.Euler(0f, this._focusAbility.FrozenRotation, 0f);
-				this._trModel.rotation = Quaternion.Slerp(this._trHub.rotation, quaternion, num3);
-				this._trModel.Rotate(Vector3.right, this._curTilt, Space.Self);
-				float num4 = Mathf.DeltaAngle(this._trHub.eulerAngles.y, this._trModel.eulerAngles.y);
-				base.Animator.SetFloat(Scp939Model.FocusHeadDirHash, num4, 0.4f, Time.deltaTime);
-				return;
-			}
-		}
+	protected override Animator SetupAnimator()
+	{
+		return _animator;
+	}
 
-		protected override Animator SetupAnimator()
-		{
-			return this._animator;
-		}
+	protected override PooledAudioSource PlayFootstepAudioClip(AudioClip clip, float dis, float vol)
+	{
+		PooledAudioSource pooledAudioSource = base.PlayFootstepAudioClip(clip, dis, vol);
+		pooledAudioSource.Source.pitch = Random.Range(_footstepPitchRand.x, _footstepPitchRand.y);
+		return pooledAudioSource;
+	}
 
-		protected override PooledAudioSource PlayFootstepAudioClip(AudioClip clip, float dis, float vol)
-		{
-			PooledAudioSource pooledAudioSource = base.PlayFootstepAudioClip(clip, dis, vol);
-			pooledAudioSource.Source.pitch = global::UnityEngine.Random.Range(this._footstepPitchRand.x, this._footstepPitchRand.y);
-			return pooledAudioSource;
-		}
+	public override void Setup(ReferenceHub owner, IFpcRole role, Vector3 localPos, Quaternion localRot)
+	{
+		base.Setup(owner, role, localPos, localRot);
+		_trHub = base.OwnerHub.transform;
+		_scp939 = base.OwnerHub.roleManager.CurrentRole as Scp939Role;
+		_scp939.SubroutineModule.TryGetSubroutine<Scp939ClawAbility>(out _clawAbility);
+		_scp939.SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out _focusAbility);
+		_scp939.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out _lungeAbility);
+		_scp939.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out _amnesticAbility);
+		_clawAbility.OnAttacked += PlayClawAttack;
+		_lungeAbility.OnStateChanged += ProcessLungeState;
+		FirstPersonMovementModule.OnPositionUpdated += UpdateFade;
+		SpectatorTargetTracker.OnTargetChanged += OnSpectatorTargetChanged;
+	}
 
-		public override void Setup(ReferenceHub owner, IFpcRole role, Vector3 localPos, Quaternion localRot)
-		{
-			base.Setup(owner, role, localPos, localRot);
-			this._trHub = base.OwnerHub.transform;
-			this._scp939 = base.OwnerHub.roleManager.CurrentRole as Scp939Role;
-			this._scp939.SubroutineModule.TryGetSubroutine<Scp939ClawAbility>(out this._clawAbility);
-			this._scp939.SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out this._focusAbility);
-			this._scp939.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out this._lungeAbility);
-			this._scp939.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out this._amnesticAbility);
-			this._clawAbility.OnAttacked += this.PlayClawAttack;
-			this._lungeAbility.OnStateChanged += this.ProcessLungeState;
-			FirstPersonMovementModule.OnPositionUpdated += this.UpdateFade;
-			SpectatorTargetTracker.OnTargetChanged += this.OnSpectatorTargetChanged;
-		}
-
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			this._clawAbility.OnAttacked -= this.PlayClawAttack;
-			this._lungeAbility.OnStateChanged -= this.ProcessLungeState;
-			this._curTilt = 0f;
-			this._prevFocus = false;
-			this._isLunging = false;
-			FirstPersonMovementModule.OnPositionUpdated -= this.UpdateFade;
-			SpectatorTargetTracker.OnTargetChanged -= this.OnSpectatorTargetChanged;
-		}
-
-		public bool IsInHiddenPosition
-		{
-			get
-			{
-				return base.FpcModule.Position == Vector3.up * -3000f;
-			}
-		}
-
-		[SerializeField]
-		private Animator _animator;
-
-		[SerializeField]
-		private AnimationCurve _focusOverrideAnim;
-
-		[SerializeField]
-		private AnimationCurve _tiltOverTime;
-
-		[SerializeField]
-		private AnimationCurve _focusParamsCorrectionCurve;
-
-		[SerializeField]
-		private AudioClip[] _damagedVariants;
-
-		[SerializeField]
-		private AudioClip _cloudPlaceSound;
-
-		[SerializeField]
-		private float _tiltLerp;
-
-		[SerializeField]
-		private float _fadeSpeed;
-
-		[SerializeField]
-		private Vector2 _footstepPitchRand;
-
-		[SerializeField]
-		private float _amnesiaVisibleRange;
-
-		private Scp939Role _scp939;
-
-		private Scp939ClawAbility _clawAbility;
-
-		private Scp939FocusAbility _focusAbility;
-
-		private Scp939LungeAbility _lungeAbility;
-
-		private Scp939AmnesticCloudAbility _amnesticAbility;
-
-		private Transform _trModel;
-
-		private Transform _trHub;
-
-		private bool _prevFocus;
-
-		private bool _isLunging;
-
-		private float _curTilt;
-
-		private readonly Stopwatch _lungeStopwatch = new Stopwatch();
-
-		private readonly Stopwatch _fadeoutStopwatch = Stopwatch.StartNew();
-
-		private const int FocusOverrideLayer = 4;
-
-		private const int FocusHeadDirLayer = 6;
-
-		private const float FocusHeadFadeTime = 0.4f;
-
-		private const float FocusRotateRate = 3f;
-
-		private const float LungeRotateSpeed = 7.5f;
-
-		private const float DamagedSoundRange = 19f;
-
-		private const float CloudSoundRange = 8f;
-
-		private const float HiddenHeight = -3000f;
-
-		private const float FullVisCooldown = 30f;
-
-		private static readonly int GroundedHash = Animator.StringToHash("IsGrounded");
-
-		private static readonly int ClawHash = Animator.StringToHash("Claw");
-
-		private static readonly int FocusStateHash = Animator.StringToHash("Focus");
-
-		private static readonly int FocusHeadDirHash = Animator.StringToHash("FocusDirection");
-
-		private static readonly int LungeStateHash = Animator.StringToHash("LungeState");
-
-		private static readonly int LungeTriggerHash = Animator.StringToHash("LungeTrigger");
-
-		private static readonly int DamagedVariantHash = Animator.StringToHash("DamagedVariant");
-
-		private static readonly int DamagedTriggerHash = Animator.StringToHash("DamagedTrigger");
-
-		private static readonly int AmnesticChargingHash = Animator.StringToHash("AmnesticCharging");
-
-		private static readonly int AmnesticTriggerHash = Animator.StringToHash("AmnesticCreated");
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		_clawAbility.OnAttacked -= PlayClawAttack;
+		_lungeAbility.OnStateChanged -= ProcessLungeState;
+		_curTilt = 0f;
+		_prevFocus = false;
+		_isLunging = false;
+		FirstPersonMovementModule.OnPositionUpdated -= UpdateFade;
+		SpectatorTargetTracker.OnTargetChanged -= OnSpectatorTargetChanged;
 	}
 }

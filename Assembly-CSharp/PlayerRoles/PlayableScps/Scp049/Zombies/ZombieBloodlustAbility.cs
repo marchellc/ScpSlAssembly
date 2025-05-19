@@ -1,4 +1,3 @@
-﻿using System;
 using System.Diagnostics;
 using CustomPlayerEffects;
 using GameObjectPools;
@@ -7,79 +6,73 @@ using PlayerRoles.FirstPersonControl;
 using PlayerRoles.Subroutines;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp049.Zombies
+namespace PlayerRoles.PlayableScps.Scp049.Zombies;
+
+public class ZombieBloodlustAbility : SubroutineBase, IPoolResettable
 {
-	public class ZombieBloodlustAbility : SubroutineBase, IPoolResettable
+	[SerializeField]
+	private float _maxViewDistance;
+
+	private float _simulatedStareTime;
+
+	private readonly Stopwatch _simulatedStareSw = Stopwatch.StartNew();
+
+	public bool LookingAtTarget { get; private set; }
+
+	public float SimulatedStare
 	{
-		public bool LookingAtTarget { get; private set; }
-
-		public float SimulatedStare
+		get
 		{
-			get
+			return Mathf.Max(0f, _simulatedStareTime - (float)_simulatedStareSw.Elapsed.TotalSeconds);
+		}
+		set
+		{
+			_simulatedStareTime = value;
+			_simulatedStareSw.Restart();
+		}
+	}
+
+	private void Update()
+	{
+		RefreshChaseState();
+	}
+
+	public void RefreshChaseState()
+	{
+		if (NetworkServer.active && base.Role.TryGetOwner(out var hub))
+		{
+			bool flag = SimulatedStare > 0f;
+			LookingAtTarget = flag || AnyTargets(hub, hub.PlayerCameraReference);
+			ServerSendRpc(toAll: true);
+		}
+	}
+
+	private bool AnyTargets(ReferenceHub owner, Transform camera)
+	{
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (allHub.IsHuman() && !allHub.playerEffectsController.GetEffect<Invisible>().IsEnabled && allHub.roleManager.CurrentRole is IFpcRole fpcRole && VisionInformation.GetVisionInformation(owner, camera, fpcRole.FpcModule.Position, fpcRole.FpcModule.CharacterControllerSettings.Radius, _maxViewDistance, checkFog: true, checkLineOfSight: true, 0, checkInDarkness: false).IsLooking)
 			{
-				return Mathf.Max(0f, this._simulatedStareTime - (float)this._simulatedStareSw.Elapsed.TotalSeconds);
-			}
-			set
-			{
-				this._simulatedStareTime = value;
-				this._simulatedStareSw.Restart();
+				return true;
 			}
 		}
+		return false;
+	}
 
-		private void Update()
-		{
-			this.RefreshChaseState();
-		}
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteBool(LookingAtTarget);
+	}
 
-		public void RefreshChaseState()
-		{
-			ReferenceHub referenceHub;
-			if (!NetworkServer.active || !base.Role.TryGetOwner(out referenceHub))
-			{
-				return;
-			}
-			this.LookingAtTarget = this.SimulatedStare > 0f || this.AnyTargets(referenceHub, referenceHub.PlayerCameraReference);
-			base.ServerSendRpc(true);
-		}
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		LookingAtTarget = reader.ReadBool();
+	}
 
-		private bool AnyTargets(ReferenceHub owner, Transform camera)
-		{
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				if (referenceHub.IsHuman() && !referenceHub.playerEffectsController.GetEffect<Invisible>().IsEnabled)
-				{
-					IFpcRole fpcRole = referenceHub.roleManager.CurrentRole as IFpcRole;
-					if (fpcRole != null && VisionInformation.GetVisionInformation(owner, camera, fpcRole.FpcModule.Position, fpcRole.FpcModule.CharacterControllerSettings.Radius, this._maxViewDistance, true, true, 0, false).IsLooking)
-					{
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-
-		public override void ServerWriteRpc(NetworkWriter writer)
-		{
-			base.ServerWriteRpc(writer);
-			writer.WriteBool(this.LookingAtTarget);
-		}
-
-		public override void ClientProcessRpc(NetworkReader reader)
-		{
-			base.ClientProcessRpc(reader);
-			this.LookingAtTarget = reader.ReadBool();
-		}
-
-		public void ResetObject()
-		{
-			this._simulatedStareTime = 0f;
-		}
-
-		[SerializeField]
-		private float _maxViewDistance;
-
-		private float _simulatedStareTime;
-
-		private readonly Stopwatch _simulatedStareSw = Stopwatch.StartNew();
+	public void ResetObject()
+	{
+		_simulatedStareTime = 0f;
 	}
 }

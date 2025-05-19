@@ -1,34 +1,32 @@
-﻿using System;
 using Decals;
 using Mirror;
 using UnityEngine;
 
-namespace CommandSystem.Commands.RemoteAdmin.Cleanup
+namespace CommandSystem.Commands.RemoteAdmin.Cleanup;
+
+public static class DecalCleanupMessageExtensions
 {
-	public static class DecalCleanupMessageExtensions
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		CustomNetworkManager.OnClientReady += delegate
 		{
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				NetworkClient.ReplaceHandler<DecalCleanupMessage>(new Action<DecalCleanupMessage>(DecalCleanupMessageExtensions.ClientMessageReceived), true);
-			};
-		}
+			NetworkClient.ReplaceHandler<DecalCleanupMessage>(ClientMessageReceived);
+		};
+	}
 
-		private static void ClientMessageReceived(DecalCleanupMessage message)
-		{
-			DecalPoolManager.ClientClear(message.DecalPoolType, message.Amount);
-		}
+	private static void ClientMessageReceived(DecalCleanupMessage message)
+	{
+		DecalPoolManager.ClientClear(message.DecalPoolType, message.Amount);
+	}
 
-		public static void WriteDecalCleanupMessage(this NetworkWriter writer, DecalCleanupMessage msg)
-		{
-			msg.Serialize(writer);
-		}
+	public static void WriteDecalCleanupMessage(this NetworkWriter writer, DecalCleanupMessage msg)
+	{
+		msg.Serialize(writer);
+	}
 
-		public static DecalCleanupMessage ReadRadioStatusMessage(this NetworkReader reader)
-		{
-			return new DecalCleanupMessage(reader);
-		}
+	public static DecalCleanupMessage ReadRadioStatusMessage(this NetworkReader reader)
+	{
+		return new DecalCleanupMessage(reader);
 	}
 }

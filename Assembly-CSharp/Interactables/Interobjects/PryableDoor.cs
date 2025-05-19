@@ -1,4 +1,3 @@
-﻿using System;
 using System.Runtime.InteropServices;
 using Interactables.Interobjects.DoorUtils;
 using LabApi.Events.Arguments.Scp096Events;
@@ -8,183 +7,187 @@ using Mirror;
 using Mirror.RemoteCalls;
 using UnityEngine;
 
-namespace Interactables.Interobjects
+namespace Interactables.Interobjects;
+
+public class PryableDoor : BasicDoor, IScp106PassableDoor
 {
-	public class PryableDoor : BasicDoor, IScp106PassableDoor
+	private static readonly int PryAnimHash;
+
+	public Transform[] PryPositions;
+
+	[SerializeField]
+	private AudioClip _prySound;
+
+	[SerializeField]
+	private DoorLockReason _blockPryingMask;
+
+	[SerializeField]
+	private float _pryAnimDuration;
+
+	[SerializeField]
+	[SyncVar]
+	private bool _restrict106WhileLocked;
+
+	private float _remainingPryCooldown;
+
+	private bool _isBeingPried;
+
+	public bool IsBeingPried => _isBeingPried;
+
+	public bool IsScp106Passable
 	{
-		public bool IsBeingPried
+		get
 		{
-			get
+			if (_restrict106WhileLocked && ActiveLocks != 0)
 			{
-				return this._isBeingPried;
+				return TargetState;
 			}
+			return true;
 		}
-
-		public bool IsScp106Passable
+		set
 		{
-			get
-			{
-				return !this._restrict106WhileLocked || this.ActiveLocks == 0 || this.TargetState;
-			}
-			set
-			{
-				this.Network_restrict106WhileLocked = !value;
-			}
+			Network_restrict106WhileLocked = !value;
 		}
+	}
 
-		[Server]
-		public bool TryPryGate(ReferenceHub player)
+	public bool Network_restrict106WhileLocked
+	{
+		get
 		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Boolean Interactables.Interobjects.PryableDoor::TryPryGate(ReferenceHub)' called when server was not active");
-				return default(bool);
-			}
-			if (this._blockPryingMask != DoorLockReason.None && ((DoorLockReason)this.ActiveLocks).HasFlagFast(this._blockPryingMask))
-			{
-				return false;
-			}
-			if (!this.AllowInteracting(null, 0))
-			{
-				return false;
-			}
+			return _restrict106WhileLocked;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref _restrict106WhileLocked, 8uL, null);
+		}
+	}
+
+	[Server]
+	public bool TryPryGate(ReferenceHub player)
+	{
+		if (!NetworkServer.active)
+		{
+			Debug.LogWarning("[Server] function 'System.Boolean Interactables.Interobjects.PryableDoor::TryPryGate(ReferenceHub)' called when server was not active");
+			return default(bool);
+		}
+		if (_blockPryingMask != 0 && ((DoorLockReason)ActiveLocks).HasFlagFast(_blockPryingMask))
+		{
+			return false;
+		}
+		if (AllowInteracting(null, 0))
+		{
 			Scp096PryingGateEventArgs scp096PryingGateEventArgs = new Scp096PryingGateEventArgs(player, this);
 			Scp096Events.OnPryingGate(scp096PryingGateEventArgs);
 			if (!scp096PryingGateEventArgs.IsAllowed)
 			{
 				return false;
 			}
-			if (this.DoorName != null)
+			if (DoorName != null)
 			{
-				ServerLogs.AddLog(ServerLogs.Modules.Door, ((player == null) ? "null" : player.LoggedNameFromRefHub()) + " pried " + this.DoorName + ".", ServerLogs.ServerLogType.GameEvent, false);
+				ServerLogs.AddLog(ServerLogs.Modules.Door, ((player == null) ? "null" : player.LoggedNameFromRefHub()) + " pried " + DoorName + ".", ServerLogs.ServerLogType.GameEvent);
 			}
-			this.RpcPryGate();
-			this._remainingPryCooldown = this._pryAnimDuration;
-			this._isBeingPried = true;
+			RpcPryGate();
+			_remainingPryCooldown = _pryAnimDuration;
+			_isBeingPried = true;
 			Scp096Events.OnPriedGate(new Scp096PriedGateEventArgs(player, this));
 			return true;
 		}
+		return false;
+	}
 
-		[ClientRpc]
-		public void RpcPryGate()
+	[ClientRpc]
+	public void RpcPryGate()
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		SendRPCInternal("System.Void Interactables.Interobjects.PryableDoor::RpcPryGate()", -166089162, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
+	}
+
+	public override bool AllowInteracting(ReferenceHub ply, byte colliderId)
+	{
+		if (_remainingPryCooldown <= 0f)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			this.SendRPCInternal("System.Void Interactables.Interobjects.PryableDoor::RpcPryGate()", -166089162, networkWriterPooled, 0, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			return base.AllowInteracting(ply, colliderId);
 		}
+		return false;
+	}
 
-		public override bool AllowInteracting(ReferenceHub ply, byte colliderId)
+	protected override void Update()
+	{
+		base.Update();
+		if (_remainingPryCooldown > 0f)
 		{
-			return this._remainingPryCooldown <= 0f && base.AllowInteracting(ply, colliderId);
-		}
-
-		protected override void Update()
-		{
-			base.Update();
-			if (this._remainingPryCooldown > 0f)
+			_remainingPryCooldown -= Time.deltaTime;
+			if (_remainingPryCooldown <= 0f)
 			{
-				this._remainingPryCooldown -= Time.deltaTime;
-				if (this._remainingPryCooldown <= 0f)
-				{
-					this.MainAnimator.ResetTrigger(PryableDoor.PryAnimHash);
-					this._isBeingPried = false;
-				}
+				MainAnimator.ResetTrigger(PryAnimHash);
+				_isBeingPried = false;
 			}
 		}
+	}
 
-		static PryableDoor()
+	static PryableDoor()
+	{
+		PryAnimHash = Animator.StringToHash("PryGate");
+		RemoteProcedureCalls.RegisterRpc(typeof(PryableDoor), "System.Void Interactables.Interobjects.PryableDoor::RpcPryGate()", InvokeUserCode_RpcPryGate);
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	protected void UserCode_RpcPryGate()
+	{
+		_isBeingPried = true;
+		MainAnimator.SetTrigger(PryAnimHash);
+		MainSource.PlayOneShot(_prySound);
+		Timing.CallDelayed(_pryAnimDuration, delegate
 		{
-			RemoteProcedureCalls.RegisterRpc(typeof(PryableDoor), "System.Void Interactables.Interobjects.PryableDoor::RpcPryGate()", new RemoteCallDelegate(PryableDoor.InvokeUserCode_RpcPryGate));
+			_isBeingPried = false;
+		}, base.gameObject);
+	}
+
+	protected static void InvokeUserCode_RpcPryGate(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
+		{
+			Debug.LogError("RPC RpcPryGate called on server.");
 		}
-
-		public override bool Weaved()
+		else
 		{
-			return true;
-		}
-
-		public bool Network_restrict106WhileLocked
-		{
-			get
-			{
-				return this._restrict106WhileLocked;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<bool>(value, ref this._restrict106WhileLocked, 8UL, null);
-			}
-		}
-
-		protected void UserCode_RpcPryGate()
-		{
-			this._isBeingPried = true;
-			this.MainAnimator.SetTrigger(PryableDoor.PryAnimHash);
-			this.MainSource.PlayOneShot(this._prySound);
-			Timing.CallDelayed(this._pryAnimDuration, delegate
-			{
-				this._isBeingPried = false;
-			}, base.gameObject);
-		}
-
-		protected static void InvokeUserCode_RpcPryGate(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
-		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogError("RPC RpcPryGate called on server.");
-				return;
-			}
 			((PryableDoor)obj).UserCode_RpcPryGate();
 		}
+	}
 
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteBool(this._restrict106WhileLocked);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 8UL) != 0UL)
-			{
-				writer.WriteBool(this._restrict106WhileLocked);
-			}
+			writer.WriteBool(_restrict106WhileLocked);
+			return;
 		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<bool>(ref this._restrict106WhileLocked, null, reader.ReadBool());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 8L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<bool>(ref this._restrict106WhileLocked, null, reader.ReadBool());
-			}
+			writer.WriteBool(_restrict106WhileLocked);
 		}
+	}
 
-		private static readonly int PryAnimHash = Animator.StringToHash("PryGate");
-
-		public Transform[] PryPositions;
-
-		[SerializeField]
-		private AudioClip _prySound;
-
-		[SerializeField]
-		private DoorLockReason _blockPryingMask;
-
-		[SerializeField]
-		private float _pryAnimDuration;
-
-		[SerializeField]
-		[SyncVar]
-		private bool _restrict106WhileLocked;
-
-		private float _remainingPryCooldown;
-
-		private bool _isBeingPried;
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref _restrict106WhileLocked, null, reader.ReadBool());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 8L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _restrict106WhileLocked, null, reader.ReadBool());
+		}
 	}
 }

@@ -1,14 +1,11 @@
-﻿using System;
+namespace LiteNetLib4Mirror.Open.Nat;
 
-namespace LiteNetLib4Mirror.Open.Nat
+internal sealed class Finalizer
 {
-	internal sealed class Finalizer
+	~Finalizer()
 	{
-		~Finalizer()
-		{
-			NatDiscoverer.TraceSource.LogInfo("Closing ports opened in this session", Array.Empty<object>());
-			NatDiscoverer.RenewTimer.Dispose();
-			NatDiscoverer.ReleaseSessionMappings();
-		}
+		NatDiscoverer.TraceSource.LogInfo("Closing ports opened in this session");
+		NatDiscoverer.RenewTimer.Dispose();
+		NatDiscoverer.ReleaseSessionMappings();
 	}
 }

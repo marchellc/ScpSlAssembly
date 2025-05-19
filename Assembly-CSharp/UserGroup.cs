@@ -1,24 +1,8 @@
-﻿using System;
+using System;
 
 [Serializable]
 public class UserGroup
 {
-	public UserGroup Clone()
-	{
-		return new UserGroup
-		{
-			Name = this.Name,
-			BadgeColor = this.BadgeColor,
-			BadgeText = this.BadgeText,
-			Permissions = this.Permissions,
-			Cover = this.Cover,
-			HiddenByDefault = this.HiddenByDefault,
-			Shared = this.Shared,
-			KickPower = this.KickPower,
-			RequiredKickPower = this.RequiredKickPower
-		};
-	}
-
 	public string Name;
 
 	public string BadgeColor;
@@ -36,4 +20,20 @@ public class UserGroup
 	public byte KickPower;
 
 	public byte RequiredKickPower;
+
+	public UserGroup Clone()
+	{
+		return new UserGroup
+		{
+			Name = Name,
+			BadgeColor = BadgeColor,
+			BadgeText = BadgeText,
+			Permissions = Permissions,
+			Cover = Cover,
+			HiddenByDefault = HiddenByDefault,
+			Shared = Shared,
+			KickPower = KickPower,
+			RequiredKickPower = RequiredKickPower
+		};
+	}
 }

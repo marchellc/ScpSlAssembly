@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using CursorManagement;
 using CustomPlayerEffects;
 using InventorySystem.GUI;
@@ -6,281 +6,268 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace InventorySystem.Items.Usables.Scp330
+namespace InventorySystem.Items.Usables.Scp330;
+
+public class Scp330Viewmodel : UsableItemViewmodel, ICursorOverride
 {
-	public class Scp330Viewmodel : UsableItemViewmodel, ICursorOverride
+	[Serializable]
+	private struct CandyObject
 	{
-		public CursorOverrideMode CursorOverride { get; private set; }
+		public CandyKindID KindID;
 
-		public bool LockMovement
+		public GameObject HandObject;
+
+		public Texture Icon;
+
+		public AudioClip EatingSound;
+	}
+
+	[SerializeField]
+	private RadialInventory _selector;
+
+	[SerializeField]
+	private RawImage[] _selectorSlots;
+
+	[SerializeField]
+	private CanvasGroup _selectorGroup;
+
+	[SerializeField]
+	private CanvasGroup _descriptionGroup;
+
+	[SerializeField]
+	private CandyObject[] _candies;
+
+	[SerializeField]
+	private TextMeshProUGUI _title;
+
+	[SerializeField]
+	private TextMeshProUGUI _description;
+
+	[SerializeField]
+	private TextMeshProUGUI _effects;
+
+	private Scp330Bag _bag;
+
+	private bool _openDelay;
+
+	private bool _cancelled;
+
+	private CandyKindID _displayedCandy;
+
+	public CursorOverrideMode CursorOverride { get; private set; }
+
+	public bool LockMovement => false;
+
+	public override void InitLocal(ItemBase parent)
+	{
+		base.InitLocal(parent);
+		_bag = parent as Scp330Bag;
+	}
+
+	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
+	{
+		Scp330NetworkHandler.OnClientSelectMessageReceived += HandleSelectMessage;
+		base.InitSpectator(ply, id, wasEquipped);
+		OnEquipped();
+	}
+
+	internal override void OnEquipped()
+	{
+		_openDelay = true;
+		_cancelled = false;
+		_descriptionGroup.alpha = 0f;
+		_displayedCandy = CandyKindID.None;
+		if (base.IsLocal)
 		{
-			get
-			{
-				return false;
-			}
+			CursorManager.Register(this);
+			CursorOverride = CursorOverrideMode.NoOverride;
 		}
-
-		public override void InitLocal(ItemBase parent)
+		else
 		{
-			base.InitLocal(parent);
-			this._bag = parent as Scp330Bag;
+			_selectorGroup.gameObject.SetActive(value: false);
 		}
+		base.OnEquipped();
+	}
 
-		public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
+	protected void Update()
+	{
+		if (base.IsLocal)
 		{
-			Scp330NetworkHandler.OnClientSelectMessageReceived += this.HandleSelectMessage;
-			base.InitSpectator(ply, id, wasEquipped);
-			this.OnEquipped();
-		}
-
-		internal override void OnEquipped()
-		{
-			this._openDelay = true;
-			this._cancelled = false;
-			this._descriptionGroup.alpha = 0f;
-			this._displayedCandy = CandyKindID.None;
-			if (base.IsLocal)
-			{
-				CursorManager.Register(this);
-				this.CursorOverride = CursorOverrideMode.NoOverride;
-			}
-			else
-			{
-				this._selectorGroup.gameObject.SetActive(false);
-			}
-			base.OnEquipped();
-		}
-
-		protected void Update()
-		{
-			if (!base.IsLocal)
-			{
-				return;
-			}
-			KeyCode key = NewInput.GetKey(ActionName.Inventory, KeyCode.None);
+			KeyCode key = NewInput.GetKey(ActionName.Inventory);
 			bool flag = !InventoryGuiController.ToggleInventory.Value;
-			if (!Input.GetKeyDown(KeyCode.Escape) && (flag || !Input.GetKeyDown(key)) && (!flag || Input.GetKey(key)))
+			if (Input.GetKeyDown(KeyCode.Escape) || (!flag && Input.GetKeyDown(key)) || (flag && !Input.GetKey(key)))
 			{
-				return;
+				CancelSelector();
 			}
-			this.CancelSelector(false);
 		}
+	}
 
-		protected override void LateUpdate()
+	protected override void LateUpdate()
+	{
+		base.LateUpdate();
+		if (!base.IsLocal)
 		{
-			base.LateUpdate();
-			if (!base.IsLocal)
-			{
-				return;
-			}
-			CandyKindID candyKindID = (this._bag.IsCandySelected ? this._bag.Candies[this._bag.SelectedCandyId] : CandyKindID.None);
-			this.SetCandyModel(candyKindID);
-			this.DisplaySelector(candyKindID);
-			if (candyKindID != CandyKindID.None)
-			{
-				return;
-			}
-			ushort num = 0;
-			while ((int)num < this._selector.OrganizedContent.Length)
-			{
-				this._selector.OrganizedContent[(int)num] = (((int)num < this._bag.Candies.Count) ? (num + 1) : 0);
-				num += 1;
-			}
-			if (this._openDelay)
-			{
-				this._openDelay = false;
-				return;
-			}
-			ushort num2;
-			InventoryGuiAction inventoryGuiAction = this._selector.DisplayAndSelectItems(null, out num2);
-			if (inventoryGuiAction != InventoryGuiAction.Drop)
-			{
-				if (inventoryGuiAction == InventoryGuiAction.Select)
-				{
-					AmnesiaItems amnesiaItems;
-					if (base.Hub.playerEffectsController.TryGetEffect<AmnesiaItems>(out amnesiaItems) && amnesiaItems.IsEnabled)
-					{
-						amnesiaItems.ExecutePulse();
-						this.CancelSelector(false);
-					}
-					else
-					{
-						if (num2 == 0 || base.ParentItem.Owner.HasBlock(BlockedInteraction.ItemPrimaryAction))
-						{
-							this.CancelSelector(false);
-						}
-						Scp330Viewmodel.CandyObject candyObject;
-						if (this.TryGetCandyObject(this._bag.Candies[Mathf.Clamp((int)(num2 - 1), 0, this._bag.Candies.Count)], out candyObject))
-						{
-							this._bag.UsingSfxClip = candyObject.EatingSound;
-						}
-						this._bag.SelectCandy((int)(num2 - 1));
-					}
-				}
-			}
-			else
-			{
-				if (num2 == 0)
-				{
-					return;
-				}
-				this._bag.DropCandy((int)(num2 - 1));
-			}
-			this.DisplayDescriptions((num2 == 0 || this._bag.Candies.Count == 0 || (int)num2 > this._bag.Candies.Count) ? CandyKindID.None : this._bag.Candies[(int)(num2 - 1)]);
+			return;
 		}
-
-		private void HandleSelectMessage(SelectScp330Message msg)
+		CandyKindID candyKindID = (_bag.IsCandySelected ? _bag.Candies[_bag.SelectedCandyId] : CandyKindID.None);
+		SetCandyModel(candyKindID);
+		DisplaySelector(candyKindID);
+		if (candyKindID != 0)
 		{
-			if (msg.Serial != base.ItemId.SerialNumber)
-			{
-				return;
-			}
-			this.SetCandyModel((CandyKindID)msg.CandyID);
-			this.OnUsingStarted();
+			return;
 		}
-
-		private void OnDisable()
+		for (ushort num = 0; num < _selector.OrganizedContent.Length; num++)
 		{
-			if (!base.IsLocal)
+			_selector.OrganizedContent[num] = (ushort)((num < _bag.Candies.Count) ? ((uint)(num + 1)) : 0u);
+		}
+		if (_openDelay)
+		{
+			_openDelay = false;
+			return;
+		}
+		ushort itemSerial;
+		switch (_selector.DisplayAndSelectItems(null, out itemSerial))
+		{
+		case InventoryGuiAction.Select:
+		{
+			if (base.Hub.playerEffectsController.TryGetEffect<AmnesiaItems>(out var playerEffect) && playerEffect.IsEnabled)
 			{
-				Scp330NetworkHandler.OnClientSelectMessageReceived -= this.HandleSelectMessage;
+				playerEffect.ExecutePulse();
+				CancelSelector();
+				break;
+			}
+			if (itemSerial == 0 || base.ParentItem.Owner.HasBlock(BlockedInteraction.ItemPrimaryAction))
+			{
+				CancelSelector();
+			}
+			if (TryGetCandyObject(_bag.Candies[Mathf.Clamp(itemSerial - 1, 0, _bag.Candies.Count)], out var val))
+			{
+				_bag.UsingSfxClip = val.EatingSound;
+			}
+			_bag.SelectCandy(itemSerial - 1);
+			break;
+		}
+		case InventoryGuiAction.Drop:
+			if (itemSerial == 0)
+			{
 				return;
 			}
+			_bag.DropCandy(itemSerial - 1);
+			break;
+		}
+		bool flag = itemSerial == 0 || _bag.Candies.Count == 0 || itemSerial > _bag.Candies.Count;
+		DisplayDescriptions((!flag) ? _bag.Candies[itemSerial - 1] : CandyKindID.None);
+	}
+
+	private void HandleSelectMessage(SelectScp330Message msg)
+	{
+		if (msg.Serial == base.ItemId.SerialNumber)
+		{
+			SetCandyModel((CandyKindID)msg.CandyID);
+			OnUsingStarted();
+		}
+	}
+
+	private void OnDisable()
+	{
+		if (!base.IsLocal)
+		{
+			Scp330NetworkHandler.OnClientSelectMessageReceived -= HandleSelectMessage;
+		}
+		else
+		{
 			CursorManager.Unregister(this);
 		}
+	}
 
-		private void SetCandyModel(CandyKindID id)
+	private void SetCandyModel(CandyKindID id)
+	{
+		CandyObject[] candies = _candies;
+		for (int i = 0; i < candies.Length; i++)
 		{
-			foreach (Scp330Viewmodel.CandyObject candyObject in this._candies)
+			CandyObject candyObject = candies[i];
+			candyObject.HandObject.SetActive(candyObject.KindID == id);
+		}
+	}
+
+	private void DisplaySelector(CandyKindID id)
+	{
+		bool flag = id == CandyKindID.None && !_cancelled;
+		_selectorGroup.alpha = Mathf.Clamp01(_selectorGroup.alpha + (float)(flag ? 10 : (-10)) * Time.deltaTime);
+		_selectorGroup.gameObject.SetActive(_selectorGroup.alpha > 0f);
+		CursorOverride = ((!flag) ? CursorOverrideMode.Centered : CursorOverrideMode.Free);
+		for (int i = 0; i < _selectorSlots.Length; i++)
+		{
+			if (i < _bag.Candies.Count && TryGetCandyObject(_bag.Candies[i], out var val))
 			{
-				candyObject.HandObject.SetActive(candyObject.KindID == id);
+				_selectorSlots[i].texture = val.Icon;
+				_selectorSlots[i].enabled = true;
+			}
+			else
+			{
+				_selectorSlots[i].enabled = false;
 			}
 		}
+	}
 
-		private void DisplaySelector(CandyKindID id)
+	private void DisplayDescriptions(CandyKindID candy)
+	{
+		bool flag = candy == CandyKindID.None;
+		if (_displayedCandy == candy && !flag)
 		{
-			bool flag = id == CandyKindID.None && !this._cancelled;
-			this._selectorGroup.alpha = Mathf.Clamp01(this._selectorGroup.alpha + (float)(flag ? 10 : (-10)) * Time.deltaTime);
-			this._selectorGroup.gameObject.SetActive(this._selectorGroup.alpha > 0f);
-			this.CursorOverride = (flag ? CursorOverrideMode.Free : CursorOverrideMode.Centered);
-			for (int i = 0; i < this._selectorSlots.Length; i++)
+			_descriptionGroup.alpha = Mathf.Clamp01(_descriptionGroup.alpha + 10f * Time.deltaTime);
+			return;
+		}
+		if (_descriptionGroup.alpha > 0f || flag)
+		{
+			_descriptionGroup.alpha = Mathf.Clamp01(_descriptionGroup.alpha - 10f * Time.deltaTime);
+			return;
+		}
+		Scp330Translations.GetCandyTranslation(candy, out var text, out var desc, out var fx);
+		_title.text = text;
+		_description.text = desc;
+		_effects.text = fx;
+		_displayedCandy = candy;
+	}
+
+	private bool TryGetCandyObject(CandyKindID id, out CandyObject val)
+	{
+		CandyObject[] candies = _candies;
+		for (int i = 0; i < candies.Length; i++)
+		{
+			CandyObject candyObject = candies[i];
+			if (candyObject.KindID == id)
 			{
-				Scp330Viewmodel.CandyObject candyObject;
-				if (i < this._bag.Candies.Count && this.TryGetCandyObject(this._bag.Candies[i], out candyObject))
-				{
-					this._selectorSlots[i].texture = candyObject.Icon;
-					this._selectorSlots[i].enabled = true;
-				}
-				else
-				{
-					this._selectorSlots[i].enabled = false;
-				}
+				val = candyObject;
+				return true;
 			}
 		}
+		val = default(CandyObject);
+		return false;
+	}
 
-		private void DisplayDescriptions(CandyKindID candy)
-		{
-			bool flag = candy == CandyKindID.None;
-			if (this._displayedCandy == candy && !flag)
-			{
-				this._descriptionGroup.alpha = Mathf.Clamp01(this._descriptionGroup.alpha + 10f * Time.deltaTime);
-				return;
-			}
-			if (this._descriptionGroup.alpha > 0f || flag)
-			{
-				this._descriptionGroup.alpha = Mathf.Clamp01(this._descriptionGroup.alpha - 10f * Time.deltaTime);
-				return;
-			}
-			string text;
-			string text2;
-			string text3;
-			Scp330Translations.GetCandyTranslation(candy, out text, out text2, out text3);
-			this._title.text = text;
-			this._description.text = text2;
-			this._effects.text = text3;
-			this._displayedCandy = candy;
-		}
+	private void CancelSelector(bool bringBackInventory = false)
+	{
+		_cancelled = true;
+		_bag.OwnerInventory.ClientSelectItem(0);
+		InventoryGuiController.InventoryVisible |= bringBackInventory;
+	}
 
-		private bool TryGetCandyObject(CandyKindID id, out Scp330Viewmodel.CandyObject val)
+	public static AudioClip GetClipForCandy(CandyKindID kind)
+	{
+		if (!InventoryItemLoader.TryGetItem<Scp330Bag>(ItemType.SCP330, out var result))
 		{
-			foreach (Scp330Viewmodel.CandyObject candyObject in this._candies)
-			{
-				if (candyObject.KindID == id)
-				{
-					val = candyObject;
-					return true;
-				}
-			}
-			val = default(Scp330Viewmodel.CandyObject);
-			return false;
-		}
-
-		private void CancelSelector(bool bringBackInventory = false)
-		{
-			this._cancelled = true;
-			this._bag.OwnerInventory.ClientSelectItem(0);
-			InventoryGuiController.InventoryVisible = InventoryGuiController.InventoryVisible || bringBackInventory;
-		}
-
-		public static AudioClip GetClipForCandy(CandyKindID kind)
-		{
-			Scp330Bag scp330Bag;
-			if (!InventoryItemLoader.TryGetItem<Scp330Bag>(ItemType.SCP330, out scp330Bag))
-			{
-				return null;
-			}
-			foreach (Scp330Viewmodel.CandyObject candyObject in (scp330Bag.ViewModel as Scp330Viewmodel)._candies)
-			{
-				if (candyObject.KindID == kind)
-				{
-					return candyObject.EatingSound;
-				}
-			}
 			return null;
 		}
-
-		[SerializeField]
-		private RadialInventory _selector;
-
-		[SerializeField]
-		private RawImage[] _selectorSlots;
-
-		[SerializeField]
-		private CanvasGroup _selectorGroup;
-
-		[SerializeField]
-		private CanvasGroup _descriptionGroup;
-
-		[SerializeField]
-		private Scp330Viewmodel.CandyObject[] _candies;
-
-		[SerializeField]
-		private TextMeshProUGUI _title;
-
-		[SerializeField]
-		private TextMeshProUGUI _description;
-
-		[SerializeField]
-		private TextMeshProUGUI _effects;
-
-		private Scp330Bag _bag;
-
-		private bool _openDelay;
-
-		private bool _cancelled;
-
-		private CandyKindID _displayedCandy;
-
-		[Serializable]
-		private struct CandyObject
+		CandyObject[] candies = (result.ViewModel as Scp330Viewmodel)._candies;
+		for (int i = 0; i < candies.Length; i++)
 		{
-			public CandyKindID KindID;
-
-			public GameObject HandObject;
-
-			public Texture Icon;
-
-			public AudioClip EatingSound;
+			CandyObject candyObject = candies[i];
+			if (candyObject.KindID == kind)
+			{
+				return candyObject.EatingSound;
+			}
 		}
+		return null;
 	}
 }

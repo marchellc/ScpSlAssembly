@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Mirror;
@@ -6,133 +6,117 @@ using NorthwoodLib.Pools;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace AdminToys
+namespace AdminToys;
+
+public class CapybaraToy : AdminToyBase
 {
-	public class CapybaraToy : AdminToyBase
+	[SyncVar(hook = "SetCollisionsEnabled")]
+	private bool _collisionsEnabled;
+
+	private List<Collider> _colliders;
+
+	public override string CommandName => "Capybara";
+
+	public bool CollisionsEnabled
 	{
-		public override string CommandName
+		get
 		{
-			get
-			{
-				return "Capybara";
-			}
+			return _collisionsEnabled;
 		}
-
-		public bool CollisionsEnabled
+		set
 		{
-			get
-			{
-				return this._collisionsEnabled;
-			}
-			set
-			{
-				this.SetCollidersState(value);
-				this.Network_collisionsEnabled = value;
-			}
+			SetCollidersState(value);
+			Network_collisionsEnabled = value;
 		}
+	}
 
-		public override void OnSpawned(ReferenceHub admin, ArraySegment<string> arguments)
+	public bool Network_collisionsEnabled
+	{
+		get
 		{
-			base.OnSpawned(admin, arguments);
-			IFpcRole fpcRole = admin.roleManager.CurrentRole as IFpcRole;
-			Vector3 vector;
-			Quaternion quaternion;
-			if (fpcRole != null)
-			{
-				RaycastHit raycastHit;
-				if (Physics.Raycast(fpcRole.FpcModule.Position, Vector3.down, out raycastHit, 2f))
-				{
-					vector = raycastHit.point;
-				}
-				else
-				{
-					vector = fpcRole.FpcModule.Position;
-				}
-				quaternion = Quaternion.Euler(0f, fpcRole.FpcModule.MouseLook.CurrentHorizontal, 0f);
-			}
-			else
-			{
-				admin.transform.GetPositionAndRotation(out vector, out quaternion);
-			}
-			base.transform.SetPositionAndRotation(vector, Quaternion.Euler(0f, quaternion.eulerAngles.y, 0f));
-			base.transform.localScale = Vector3.one;
+			return _collisionsEnabled;
 		}
-
-		private void SetCollidersState(bool active)
+		[param: In]
+		set
 		{
-			foreach (Collider collider in this._colliders)
-			{
-				collider.enabled = active;
-			}
+			GeneratedSyncVarSetter(value, ref _collisionsEnabled, 32uL, SetCollisionsEnabled);
 		}
+	}
 
-		private void SetCollisionsEnabled(bool oldValue, bool newValue)
+	public override void OnSpawned(ReferenceHub admin, ArraySegment<string> arguments)
+	{
+		base.OnSpawned(admin, arguments);
+		Vector3 position;
+		Quaternion rotation;
+		if (admin.roleManager.CurrentRole is IFpcRole fpcRole)
 		{
-			this.SetCollidersState(newValue);
+			position = ((!Physics.Raycast(fpcRole.FpcModule.Position, Vector3.down, out var hitInfo, 2f)) ? fpcRole.FpcModule.Position : hitInfo.point);
+			rotation = Quaternion.Euler(0f, fpcRole.FpcModule.MouseLook.CurrentHorizontal, 0f);
 		}
-
-		private void Awake()
+		else
 		{
-			this._colliders = ListPool<Collider>.Shared.Rent();
-			base.GetComponentsInChildren<Collider>(true, this._colliders);
+			admin.transform.GetPositionAndRotation(out position, out rotation);
 		}
+		base.transform.SetPositionAndRotation(position, Quaternion.Euler(0f, rotation.eulerAngles.y, 0f));
+		base.transform.localScale = Vector3.one;
+	}
 
-		private void OnDestroy()
+	private void SetCollidersState(bool active)
+	{
+		foreach (Collider collider in _colliders)
 		{
-			ListPool<Collider>.Shared.Return(this._colliders);
+			collider.enabled = active;
 		}
+	}
 
-		public override bool Weaved()
+	private void SetCollisionsEnabled(bool oldValue, bool newValue)
+	{
+		SetCollidersState(newValue);
+	}
+
+	private void Awake()
+	{
+		_colliders = ListPool<Collider>.Shared.Rent();
+		GetComponentsInChildren(includeInactive: true, _colliders);
+	}
+
+	private new void OnDestroy()
+	{
+		ListPool<Collider>.Shared.Return(_colliders);
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			return true;
+			writer.WriteBool(_collisionsEnabled);
+			return;
 		}
-
-		public bool Network_collisionsEnabled
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 0x20L) != 0L)
 		{
-			get
-			{
-				return this._collisionsEnabled;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<bool>(value, ref this._collisionsEnabled, 32UL, new Action<bool, bool>(this.SetCollisionsEnabled));
-			}
+			writer.WriteBool(_collisionsEnabled);
 		}
+	}
 
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteBool(this._collisionsEnabled);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 32UL) != 0UL)
-			{
-				writer.WriteBool(this._collisionsEnabled);
-			}
+			GeneratedSyncVarDeserialize(ref _collisionsEnabled, SetCollisionsEnabled, reader.ReadBool());
+			return;
 		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+		long num = (long)reader.ReadULong();
+		if ((num & 0x20L) != 0L)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<bool>(ref this._collisionsEnabled, new Action<bool, bool>(this.SetCollisionsEnabled), reader.ReadBool());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 32L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<bool>(ref this._collisionsEnabled, new Action<bool, bool>(this.SetCollisionsEnabled), reader.ReadBool());
-			}
+			GeneratedSyncVarDeserialize(ref _collisionsEnabled, SetCollisionsEnabled, reader.ReadBool());
 		}
-
-		[SyncVar(hook = "SetCollisionsEnabled")]
-		private bool _collisionsEnabled;
-
-		private List<Collider> _colliders;
 	}
 }

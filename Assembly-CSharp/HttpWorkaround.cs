@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Runtime.InteropServices;
 using GameCore;
@@ -6,6 +6,22 @@ using UnityEngine;
 
 internal static class HttpWorkaround
 {
+	private class HttpProxyException : Exception
+	{
+		public HttpProxyException(string message)
+			: base(message)
+		{
+		}
+	}
+
+	public static readonly bool Enabled;
+
+	private const string HttpProxy = "HttpProxy";
+
+	private const CallingConvention Convention = CallingConvention.StdCall;
+
+	private const CharSet Encoding = CharSet.Unicode;
+
 	[DllImport("HttpProxy", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
 	private static extern bool Initialize(string ptr, out IntPtr message);
 
@@ -22,70 +38,53 @@ internal static class HttpWorkaround
 	{
 		if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
-			HttpWorkaround.Enabled = false;
+			Enabled = false;
 			return;
 		}
 		try
 		{
-			IntPtr intPtr;
-			HttpWorkaround.Enabled = HttpWorkaround.Initialize(global::GameCore.Version.VersionString, out intPtr);
-			Debug.Log(Marshal.PtrToStringUni(intPtr));
-			HttpWorkaround.Free(intPtr);
+			Enabled = Initialize(GameCore.Version.VersionString, out var message);
+			Debug.Log(Marshal.PtrToStringUni(message));
+			Free(message);
 		}
-		catch (Exception ex)
+		catch (Exception exception)
 		{
-			HttpWorkaround.Enabled = false;
-			Debug.LogException(ex);
+			Enabled = false;
+			Debug.LogException(exception);
 		}
 	}
 
 	internal static string Get(string url, out bool success, out HttpStatusCode code)
 	{
-		int num;
-		IntPtr intPtr2;
-		IntPtr intPtr = HttpWorkaround.Get(url, out success, out num, out intPtr2);
-		if (intPtr2 != IntPtr.Zero)
+		int code2;
+		IntPtr exception;
+		IntPtr ptr = Get(url, out success, out code2, out exception);
+		if (exception != IntPtr.Zero)
 		{
-			string text = Marshal.PtrToStringUni(intPtr2);
-			HttpWorkaround.Free(intPtr2);
-			throw new HttpWorkaround.HttpProxyException(text);
+			string message = Marshal.PtrToStringUni(exception);
+			Free(exception);
+			throw new HttpProxyException(message);
 		}
-		code = (HttpStatusCode)num;
-		string text2 = Marshal.PtrToStringUni(intPtr);
-		HttpWorkaround.Free(intPtr);
-		return text2;
+		code = (HttpStatusCode)code2;
+		string result = Marshal.PtrToStringUni(ptr);
+		Free(ptr);
+		return result;
 	}
 
 	internal static string Post(string url, string data, out bool success, out HttpStatusCode code)
 	{
-		int num;
-		IntPtr intPtr2;
-		IntPtr intPtr = HttpWorkaround.Post(url, data, out success, out num, out intPtr2);
-		if (intPtr2 != IntPtr.Zero)
+		int code2;
+		IntPtr exception;
+		IntPtr ptr = Post(url, data, out success, out code2, out exception);
+		if (exception != IntPtr.Zero)
 		{
-			string text = Marshal.PtrToStringUni(intPtr2);
-			HttpWorkaround.Free(intPtr2);
-			throw new HttpWorkaround.HttpProxyException(text);
+			string message = Marshal.PtrToStringUni(exception);
+			Free(exception);
+			throw new HttpProxyException(message);
 		}
-		code = (HttpStatusCode)num;
-		string text2 = Marshal.PtrToStringUni(intPtr);
-		HttpWorkaround.Free(intPtr);
-		return text2;
-	}
-
-	public static readonly bool Enabled;
-
-	private const string HttpProxy = "HttpProxy";
-
-	private const CallingConvention Convention = CallingConvention.StdCall;
-
-	private const CharSet Encoding = CharSet.Unicode;
-
-	private class HttpProxyException : Exception
-	{
-		public HttpProxyException(string message)
-			: base(message)
-		{
-		}
+		code = (HttpStatusCode)code2;
+		string result = Marshal.PtrToStringUni(ptr);
+		Free(ptr);
+		return result;
 	}
 }

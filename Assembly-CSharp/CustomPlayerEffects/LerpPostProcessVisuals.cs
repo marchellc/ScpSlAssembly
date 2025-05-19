@@ -1,11 +1,9 @@
-﻿using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+[RequireComponent(typeof(Volume))]
+public class LerpPostProcessVisuals : LerpVisualsBase
 {
-	[RequireComponent(typeof(Volume))]
-	public class LerpPostProcessVisuals : LerpVisualsBase
-	{
-	}
 }

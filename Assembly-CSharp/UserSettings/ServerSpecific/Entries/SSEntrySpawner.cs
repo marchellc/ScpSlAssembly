@@ -1,208 +1,198 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
 using UserSettings.GUIElements;
 
-namespace UserSettings.ServerSpecific.Entries
+namespace UserSettings.ServerSpecific.Entries;
+
+public class SSEntrySpawner : MonoBehaviour
 {
-	public class SSEntrySpawner : MonoBehaviour
+	private static SSEntrySpawner _singleton;
+
+	private static int? _clientVersionCache;
+
+	[SerializeField]
+	private GameObject[] _entryTemplates;
+
+	[SerializeField]
+	private Transform _entriesParentTr;
+
+	[SerializeField]
+	private UserSettingsCategories _categoriesController;
+
+	[SerializeField]
+	private GameObject _categoryButton;
+
+	[SerializeField]
+	private GameObject _categoryRoot;
+
+	[SerializeField]
+	private GameObject _spacer;
+
+	[SerializeField]
+	private GameObject[] _newSettingsWarning;
+
+	private ISSEntry[] _cachedComponents;
+
+	private readonly List<GameObject> _spawnedEntries = new List<GameObject>();
+
+	private readonly List<VerticalLayoutGroup> _layoutGroups = new List<VerticalLayoutGroup>();
+
+	private static string PrefsKey => "SrvSp_" + ServerSpecificSettingsSync.CurServerPrefsKey + "_Version";
+
+	private static int ClientVersion
 	{
-		private static string PrefsKey
+		get
 		{
-			get
+			int valueOrDefault = _clientVersionCache.GetValueOrDefault();
+			if (!_clientVersionCache.HasValue)
 			{
-				return "SrvSp_" + ServerSpecificSettingsSync.CurServerPrefsKey + "_Version";
+				valueOrDefault = PlayerPrefs.GetInt(PrefsKey, 0);
+				_clientVersionCache = valueOrDefault;
+			}
+			return _clientVersionCache.Value;
+		}
+		set
+		{
+			if (_clientVersionCache != value)
+			{
+				_clientVersionCache = value;
+				PlayerPrefs.SetInt(PrefsKey, value);
 			}
 		}
+	}
 
-		private static int ClientVersion
+	private void Awake()
+	{
+		_singleton = this;
+		_clientVersionCache = null;
+		SSTabDetector.OnStatusChanged += OnTabChanged;
+	}
+
+	private void Update()
+	{
+		if (!SSTabDetector.IsOpen)
 		{
-			get
-			{
-				int num = SSEntrySpawner._clientVersionCache.GetValueOrDefault();
-				if (SSEntrySpawner._clientVersionCache == null)
-				{
-					num = PlayerPrefs.GetInt(SSEntrySpawner.PrefsKey, 0);
-					SSEntrySpawner._clientVersionCache = new int?(num);
-				}
-				return SSEntrySpawner._clientVersionCache.Value;
-			}
-			set
-			{
-				int? clientVersionCache = SSEntrySpawner._clientVersionCache;
-				if ((clientVersionCache.GetValueOrDefault() == value) & (clientVersionCache != null))
-				{
-					return;
-				}
-				SSEntrySpawner._clientVersionCache = new int?(value);
-				PlayerPrefs.SetInt(SSEntrySpawner.PrefsKey, value);
-			}
+			return;
 		}
-
-		private void Awake()
+		foreach (VerticalLayoutGroup layoutGroup in _layoutGroups)
 		{
-			SSEntrySpawner._singleton = this;
-			SSEntrySpawner._clientVersionCache = null;
-			SSTabDetector.OnStatusChanged += this.OnTabChanged;
+			layoutGroup.enabled = false;
+			layoutGroup.enabled = true;
 		}
+	}
 
-		private void Update()
+	private void OnDestroy()
+	{
+		SSTabDetector.OnStatusChanged -= OnTabChanged;
+	}
+
+	private void OnTabChanged()
+	{
+		if (SSTabDetector.IsOpen)
 		{
-			if (!SSTabDetector.IsOpen)
-			{
-				return;
-			}
-			foreach (VerticalLayoutGroup verticalLayoutGroup in this._layoutGroups)
-			{
-				verticalLayoutGroup.enabled = false;
-				verticalLayoutGroup.enabled = true;
-			}
+			ToggleWarning(state: false);
+			ClientVersion = ServerSpecificSettingsSync.Version;
 		}
+		ClientSendReport();
+	}
 
-		private void OnDestroy()
+	private void ToggleWarning(bool state)
+	{
+		GameObject[] newSettingsWarning = _newSettingsWarning;
+		for (int i = 0; i < newSettingsWarning.Length; i++)
 		{
-			SSTabDetector.OnStatusChanged -= this.OnTabChanged;
+			newSettingsWarning[i].SetActive(state);
 		}
+	}
 
-		private void OnTabChanged()
+	private void DeleteSpawnedEntries()
+	{
+		ToggleWarning(state: false);
+		foreach (GameObject spawnedEntry in _spawnedEntries)
 		{
-			if (SSTabDetector.IsOpen)
+			if (!(spawnedEntry == null))
 			{
-				this.ToggleWarning(false);
-				SSEntrySpawner.ClientVersion = ServerSpecificSettingsSync.Version;
-			}
-			SSEntrySpawner.ClientSendReport();
-		}
-
-		private void ToggleWarning(bool state)
-		{
-			GameObject[] newSettingsWarning = this._newSettingsWarning;
-			for (int i = 0; i < newSettingsWarning.Length; i++)
-			{
-				newSettingsWarning[i].SetActive(state);
+				UnityEngine.Object.Destroy(spawnedEntry);
 			}
 		}
+		_spawnedEntries.Clear();
+	}
 
-		private void DeleteSpawnedEntries()
+	private void SpawnAllEntries(ServerSpecificSettingBase[] settings, bool showWarning)
+	{
+		_spacer.SetActive(!(settings[0] is SSGroupHeader));
+		settings.ForEach(SpawnEntry);
+		_categoryButton.SetActive(value: true);
+		_layoutGroups.Clear();
+		_categoryRoot.GetComponentsInChildren(_layoutGroups);
+		ToggleWarning(showWarning);
+	}
+
+	private void SpawnEntry(ServerSpecificSettingBase setting)
+	{
+		GameObject gameObject = UnityEngine.Object.Instantiate(GetTemplateForSetting(setting), _entriesParentTr);
+		gameObject.SetActive(value: true);
+		gameObject.GetComponentInChildren<ISSEntry>().Init(setting);
+		_spawnedEntries.Add(gameObject);
+	}
+
+	private GameObject GetTemplateForSetting(ServerSpecificSettingBase setting)
+	{
+		int num = _entryTemplates.Length;
+		if (_cachedComponents == null)
 		{
-			this.ToggleWarning(false);
-			foreach (GameObject gameObject in this._spawnedEntries)
+			_cachedComponents = new ISSEntry[num];
+		}
+		for (int i = 0; i < num; i++)
+		{
+			ISSEntry iSSEntry = _cachedComponents[i];
+			if (iSSEntry == null)
 			{
-				if (!(gameObject == null))
-				{
-					global::UnityEngine.Object.Destroy(gameObject);
-				}
+				iSSEntry = FindEntryInTemplate(_entryTemplates[i]);
+				_cachedComponents[i] = iSSEntry;
 			}
-			this._spawnedEntries.Clear();
-		}
-
-		private void SpawnAllEntries(ServerSpecificSettingBase[] settings, bool showWarning)
-		{
-			this._spacer.SetActive(!(settings[0] is SSGroupHeader));
-			settings.ForEach(new Action<ServerSpecificSettingBase>(this.SpawnEntry));
-			this._categoryButton.SetActive(true);
-			this._layoutGroups.Clear();
-			this._categoryRoot.GetComponentsInChildren<VerticalLayoutGroup>(this._layoutGroups);
-			this.ToggleWarning(showWarning);
-		}
-
-		private void SpawnEntry(ServerSpecificSettingBase setting)
-		{
-			GameObject gameObject = global::UnityEngine.Object.Instantiate<GameObject>(this.GetTemplateForSetting(setting), this._entriesParentTr);
-			gameObject.SetActive(true);
-			gameObject.GetComponentInChildren<ISSEntry>().Init(setting);
-			this._spawnedEntries.Add(gameObject);
-		}
-
-		private GameObject GetTemplateForSetting(ServerSpecificSettingBase setting)
-		{
-			int num = this._entryTemplates.Length;
-			if (this._cachedComponents == null)
+			if (iSSEntry.CheckCompatibility(setting))
 			{
-				this._cachedComponents = new ISSEntry[num];
+				return _entryTemplates[i];
 			}
-			for (int i = 0; i < num; i++)
-			{
-				ISSEntry issentry = this._cachedComponents[i];
-				if (issentry == null)
-				{
-					issentry = this.FindEntryInTemplate(this._entryTemplates[i]);
-					this._cachedComponents[i] = issentry;
-				}
-				if (issentry.CheckCompatibility(setting))
-				{
-					return this._entryTemplates[i];
-				}
-			}
-			throw new InvalidOperationException("This setting does not have a compatible entry: " + ((setting != null) ? setting.ToString() : null));
 		}
+		throw new InvalidOperationException("This setting does not have a compatible entry: " + setting);
+	}
 
-		private ISSEntry FindEntryInTemplate(GameObject template)
+	private ISSEntry FindEntryInTemplate(GameObject template)
+	{
+		ISSEntry componentInChildren = template.GetComponentInChildren<ISSEntry>(includeInactive: true);
+		if (componentInChildren as UnityEngine.Object == null)
 		{
-			ISSEntry componentInChildren = template.GetComponentInChildren<ISSEntry>(true);
-			if (componentInChildren as global::UnityEngine.Object == null)
-			{
-				throw new InvalidOperationException("This entry template is not valid: " + template.name);
-			}
-			return componentInChildren;
+			throw new InvalidOperationException("This entry template is not valid: " + template.name);
 		}
+		return componentInChildren;
+	}
 
-		private static void ClientSendReport()
-		{
-			NetworkClient.Send<SSSUserStatusReport>(new SSSUserStatusReport(SSEntrySpawner.ClientVersion, SSTabDetector.IsOpen), 0);
-		}
+	private static void ClientSendReport()
+	{
+		NetworkClient.Send(new SSSUserStatusReport(ClientVersion, SSTabDetector.IsOpen));
+	}
 
-		public static void Refresh()
+	public static void Refresh()
+	{
+		if (!(_singleton == null))
 		{
-			if (SSEntrySpawner._singleton == null)
-			{
-				return;
-			}
-			SSEntrySpawner._singleton.DeleteSpawnedEntries();
+			_singleton.DeleteSpawnedEntries();
 			ServerSpecificSettingBase[] definedSettings = ServerSpecificSettingsSync.DefinedSettings;
 			if (definedSettings == null || definedSettings.Length == 0)
 			{
-				SSEntrySpawner._singleton._categoriesController.ResetSelection();
-				SSEntrySpawner._singleton._categoryButton.SetActive(false);
+				_singleton._categoriesController.ResetSelection();
+				_singleton._categoryButton.SetActive(value: false);
 				return;
 			}
-			int clientVersion = SSEntrySpawner.ClientVersion;
+			int clientVersion = ClientVersion;
 			int version = ServerSpecificSettingsSync.Version;
-			SSEntrySpawner._singleton.SpawnAllEntries(definedSettings, version != 0 && clientVersion != version);
-			SSEntrySpawner.ClientSendReport();
+			_singleton.SpawnAllEntries(definedSettings, version != 0 && clientVersion != version);
+			ClientSendReport();
 		}
-
-		private static SSEntrySpawner _singleton;
-
-		private static int? _clientVersionCache;
-
-		[SerializeField]
-		private GameObject[] _entryTemplates;
-
-		[SerializeField]
-		private Transform _entriesParentTr;
-
-		[SerializeField]
-		private UserSettingsCategories _categoriesController;
-
-		[SerializeField]
-		private GameObject _categoryButton;
-
-		[SerializeField]
-		private GameObject _categoryRoot;
-
-		[SerializeField]
-		private GameObject _spacer;
-
-		[SerializeField]
-		private GameObject[] _newSettingsWarning;
-
-		private ISSEntry[] _cachedComponents;
-
-		private readonly List<GameObject> _spawnedEntries = new List<GameObject>();
-
-		private readonly List<VerticalLayoutGroup> _layoutGroups = new List<VerticalLayoutGroup>();
 	}
 }

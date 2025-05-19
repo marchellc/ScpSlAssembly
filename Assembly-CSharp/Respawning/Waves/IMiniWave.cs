@@ -1,18 +1,16 @@
-﻿using System;
 using PlayerRoles;
 
-namespace Respawning.Waves
+namespace Respawning.Waves;
+
+public interface IMiniWave
 {
-	public interface IMiniWave
-	{
-		float WaveSizeMultiplier { get; set; }
+	float WaveSizeMultiplier { get; set; }
 
-		RoleTypeId DefaultRole { get; set; }
+	RoleTypeId DefaultRole { get; set; }
 
-		RoleTypeId SpecialRole { get; set; }
+	RoleTypeId SpecialRole { get; set; }
 
-		void Unlock(bool ignoreConfig = false);
+	void Unlock(bool ignoreConfig = false);
 
-		void ResetTokens();
-	}
+	void ResetTokens();
 }

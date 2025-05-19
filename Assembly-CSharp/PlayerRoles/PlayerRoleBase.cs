@@ -1,133 +1,161 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using GameObjectPools;
 using Mirror;
 using UnityEngine;
 
-namespace PlayerRoles
+namespace PlayerRoles;
+
+public abstract class PlayerRoleBase : PoolObject
 {
-	public abstract class PlayerRoleBase : PoolObject
+	private ReferenceHub _lastOwner;
+
+	private RoleSpawnFlags _spawnFlags;
+
+	private RoleChangeReason _spawnReason;
+
+	private readonly Stopwatch _activeTime = Stopwatch.StartNew();
+
+	private static int _lastAssignedLifeIdentifier;
+
+	public Action<RoleTypeId> OnRoleDisabled;
+
+	public abstract RoleTypeId RoleTypeId { get; }
+
+	public abstract Team Team { get; }
+
+	public abstract Color RoleColor { get; }
+
+	[field: SerializeField]
+	public virtual GameObject RoleHelpInfo { get; private set; }
+
+	public string RoleName
 	{
-		public abstract RoleTypeId RoleTypeId { get; }
-
-		public abstract Team Team { get; }
-
-		public abstract Color RoleColor { get; }
-
-		public virtual GameObject RoleHelpInfo { get; private set; }
-
-		public string RoleName
+		get
 		{
-			get
+			if (!(this is ICustomNameRole customNameRole))
 			{
-				ICustomNameRole customNameRole = this as ICustomNameRole;
-				if (customNameRole == null)
-				{
-					return RoleTranslations.GetRoleName(this.RoleTypeId);
-				}
-				return customNameRole.CustomRoleName;
+				return RoleTranslations.GetRoleName(RoleTypeId);
 			}
+			return customNameRole.CustomRoleName;
 		}
+	}
 
-		public float ActiveTime
+	public float ActiveTime => (float)_activeTime.Elapsed.TotalSeconds;
+
+	public bool IsLocalPlayer
+	{
+		get
 		{
-			get
+			if (TryGetOwner(out var hub))
 			{
-				return (float)this._activeTime.Elapsed.TotalSeconds;
+				return hub.isLocalPlayer;
 			}
+			return false;
 		}
+	}
 
-		public bool IsLocalPlayer
+	public bool IsPOV
+	{
+		get
 		{
-			get
+			if (TryGetOwner(out var hub))
 			{
-				ReferenceHub referenceHub;
-				return this.TryGetOwner(out referenceHub) && referenceHub.isLocalPlayer;
+				return hub.IsPOV;
 			}
+			return false;
 		}
+	}
 
-		public int UniqueLifeIdentifier { get; private set; }
-
-		public RoleChangeReason ServerSpawnReason
+	public bool IsEmulatedDummy
+	{
+		get
 		{
-			get
+			if (NetworkServer.active && TryGetOwner(out var hub))
 			{
-				if (!NetworkServer.active)
-				{
-					global::UnityEngine.Debug.LogError("Server-only property ServerSpawnReason cannot be called on the client!");
-				}
-				return this._spawnReason;
+				return hub.IsDummy;
 			}
-			private set
-			{
-				this._spawnReason = value;
-			}
+			return false;
 		}
+	}
 
-		public RoleSpawnFlags ServerSpawnFlags
+	public bool IsControllable
+	{
+		get
 		{
-			get
+			if (!IsLocalPlayer)
 			{
-				if (!NetworkServer.active)
-				{
-					global::UnityEngine.Debug.LogError("Server-only property ServerSpawnFlags cannot be called on the client!");
-				}
-				return this._spawnFlags;
+				return IsEmulatedDummy;
 			}
-			set
+			return true;
+		}
+	}
+
+	public int UniqueLifeIdentifier { get; private set; }
+
+	public RoleChangeReason ServerSpawnReason
+	{
+		get
+		{
+			if (!NetworkServer.active)
 			{
-				this._spawnFlags = value;
+				UnityEngine.Debug.LogError("Server-only property ServerSpawnReason cannot be called on the client!");
 			}
+			return _spawnReason;
 		}
-
-		internal virtual void Init(ReferenceHub hub, RoleChangeReason spawnReason, RoleSpawnFlags spawnFlags)
+		private set
 		{
-			this._lastOwner = hub;
-			this._spawnFlags = spawnFlags;
-			this._spawnReason = spawnReason;
-			this._activeTime.Restart();
-			this.UniqueLifeIdentifier = ++PlayerRoleBase._lastAssignedLifeIdentifier;
+			_spawnReason = value;
 		}
+	}
 
-		public bool TryGetOwner(out ReferenceHub hub)
+	public RoleSpawnFlags ServerSpawnFlags
+	{
+		get
 		{
-			hub = this._lastOwner;
-			return !base.Pooled;
-		}
-
-		public virtual void DisableRole(RoleTypeId newRole)
-		{
-			try
+			if (!NetworkServer.active)
 			{
-				Action<RoleTypeId> onRoleDisabled = this.OnRoleDisabled;
-				if (onRoleDisabled != null)
-				{
-					onRoleDisabled(newRole);
-				}
-				base.ReturnToPool(true);
+				UnityEngine.Debug.LogError("Server-only property ServerSpawnFlags cannot be called on the client!");
 			}
-			catch (Exception ex)
-			{
-				global::UnityEngine.Debug.Log(string.Format("Disabling {0} role has thrown an exception while switching to {1}.", this.RoleTypeId, newRole));
-				global::UnityEngine.Debug.LogException(ex);
-			}
+			return _spawnFlags;
 		}
-
-		public override string ToString()
+		set
 		{
-			return string.Format("{0} (RoleTypeId = '{1}', Owner = '{2}', ActiveTime = '{3}')", new object[] { "PlayerRoleBase", this.RoleTypeId, this._lastOwner, this.ActiveTime });
+			_spawnFlags = value;
 		}
+	}
 
-		private ReferenceHub _lastOwner;
+	internal virtual void Init(ReferenceHub hub, RoleChangeReason spawnReason, RoleSpawnFlags spawnFlags)
+	{
+		_lastOwner = hub;
+		_spawnFlags = spawnFlags;
+		_spawnReason = spawnReason;
+		_activeTime.Restart();
+		UniqueLifeIdentifier = ++_lastAssignedLifeIdentifier;
+	}
 
-		private RoleSpawnFlags _spawnFlags;
+	public bool TryGetOwner(out ReferenceHub hub)
+	{
+		hub = _lastOwner;
+		return !base.Pooled;
+	}
 
-		private RoleChangeReason _spawnReason;
+	public virtual void DisableRole(RoleTypeId newRole)
+	{
+		try
+		{
+			OnRoleDisabled?.Invoke(newRole);
+			ReturnToPool();
+		}
+		catch (Exception exception)
+		{
+			UnityEngine.Debug.Log($"Disabling {RoleTypeId} role has thrown an exception while switching to {newRole}.");
+			UnityEngine.Debug.LogException(exception);
+		}
+	}
 
-		private readonly Stopwatch _activeTime = Stopwatch.StartNew();
-
-		private static int _lastAssignedLifeIdentifier;
-
-		public Action<RoleTypeId> OnRoleDisabled;
+	public override string ToString()
+	{
+		return string.Format("{0} (RoleTypeId = '{1}', Owner = '{2}', ActiveTime = '{3}')", "PlayerRoleBase", RoleTypeId, _lastOwner, ActiveTime);
 	}
 }

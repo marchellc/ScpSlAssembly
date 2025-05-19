@@ -1,93 +1,79 @@
-﻿using System;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.UI;
 
-namespace PlayerRoles.PlayableScps.Scp939.Mimicry
+namespace PlayerRoles.PlayableScps.Scp939.Mimicry;
+
+[RequireComponent(typeof(Button))]
+public class EnvMimicryStandardButton : MonoBehaviour
 {
-	[RequireComponent(typeof(Button))]
-	public class EnvMimicryStandardButton : MonoBehaviour
+	[SerializeField]
+	private EnvMimicrySequence[] _randomSequences;
+
+	private bool _prevState;
+
+	private Button _button;
+
+	private GameObject _buttonGameObject;
+
+	private bool _cacheSet;
+
+	private EnvironmentalMimicry _cachedSubroutine;
+
+	protected virtual bool IsAvailable => true;
+
+	protected virtual void Awake()
 	{
-		protected virtual bool IsAvailable
+		_button = GetComponent<Button>();
+		_button.onClick.AddListener(OnButtonPressed);
+		_buttonGameObject = _button.gameObject;
+		_prevState = !IsAvailable;
+		StaticUnityMethods.OnUpdate += AlwaysUpdate;
+	}
+
+	protected virtual void OnDestroy()
+	{
+		StaticUnityMethods.OnUpdate -= AlwaysUpdate;
+	}
+
+	protected virtual void AlwaysUpdate()
+	{
+		if (_prevState != IsAvailable)
 		{
-			get
-			{
-				return true;
-			}
+			bool flag = !_prevState;
+			_buttonGameObject.SetActive(flag);
+			_prevState = flag;
 		}
+	}
 
-		protected virtual void Awake()
+	protected virtual void OnButtonPressed()
+	{
+		if (TryGetLocalSubroutine(out var localSubroutine))
 		{
-			this._button = base.GetComponent<Button>();
-			this._button.onClick.AddListener(new UnityAction(this.OnButtonPressed));
-			this._buttonGameObject = this._button.gameObject;
-			this._prevState = !this.IsAvailable;
-			StaticUnityMethods.OnUpdate += this.AlwaysUpdate;
+			localSubroutine.ClientSelect(_randomSequences.RandomItem());
 		}
+	}
 
-		protected virtual void OnDestroy()
+	private bool TryGetLocalSubroutine(out EnvironmentalMimicry localSubroutine)
+	{
+		localSubroutine = _cachedSubroutine;
+		if (_cacheSet)
 		{
-			StaticUnityMethods.OnUpdate -= this.AlwaysUpdate;
+			return _cachedSubroutine != null;
 		}
-
-		protected virtual void AlwaysUpdate()
+		if (!ReferenceHub.TryGetLocalHub(out var hub))
 		{
-			if (this._prevState == this.IsAvailable)
-			{
-				return;
-			}
-			bool flag = !this._prevState;
-			this._buttonGameObject.SetActive(flag);
-			this._prevState = flag;
+			return false;
 		}
-
-		protected virtual void OnButtonPressed()
+		if (!(hub.roleManager.CurrentRole is Scp939Role scp939Role))
 		{
-			EnvironmentalMimicry environmentalMimicry;
-			if (!this.TryGetLocalSubroutine(out environmentalMimicry))
-			{
-				return;
-			}
-			environmentalMimicry.ClientSelect(this._randomSequences.RandomItem<EnvMimicrySequence>());
+			return false;
 		}
-
-		private bool TryGetLocalSubroutine(out EnvironmentalMimicry localSubroutine)
+		if (!scp939Role.SubroutineModule.TryGetSubroutine<EnvironmentalMimicry>(out localSubroutine))
 		{
-			localSubroutine = this._cachedSubroutine;
-			if (this._cacheSet)
-			{
-				return this._cachedSubroutine != null;
-			}
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetLocalHub(out referenceHub))
-			{
-				return false;
-			}
-			Scp939Role scp939Role = referenceHub.roleManager.CurrentRole as Scp939Role;
-			if (scp939Role == null)
-			{
-				return false;
-			}
-			if (!scp939Role.SubroutineModule.TryGetSubroutine<EnvironmentalMimicry>(out localSubroutine))
-			{
-				return false;
-			}
-			this._cacheSet = true;
-			this._cachedSubroutine = localSubroutine;
-			return true;
+			return false;
 		}
-
-		[SerializeField]
-		private EnvMimicrySequence[] _randomSequences;
-
-		private bool _prevState;
-
-		private Button _button;
-
-		private GameObject _buttonGameObject;
-
-		private bool _cacheSet;
-
-		private EnvironmentalMimicry _cachedSubroutine;
+		_cacheSet = true;
+		_cachedSubroutine = localSubroutine;
+		return true;
 	}
 }

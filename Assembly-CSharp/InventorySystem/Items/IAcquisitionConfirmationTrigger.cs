@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public interface IAcquisitionConfirmationTrigger
 {
-	public interface IAcquisitionConfirmationTrigger
-	{
-		bool AcquisitionAlreadyReceived { get; set; }
+	bool AcquisitionAlreadyReceived { get; set; }
 
-		void ServerConfirmAcqusition();
-	}
+	void ServerConfirmAcqusition();
 }

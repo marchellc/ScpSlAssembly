@@ -1,22 +1,7 @@
-﻿using System;
 using UnityEngine;
 
 public class TextMessage : MonoBehaviour
 {
-	private Vector3 GetPosition()
-	{
-		return new Vector3(this.xOffset, this.spacing * this.position, 0f);
-	}
-
-	private void Start()
-	{
-	}
-
-	private void Update()
-	{
-		this.remainingLife -= Time.deltaTime;
-	}
-
 	public float spacing = 15.5f;
 
 	public float xOffset = 3f;
@@ -26,4 +11,18 @@ public class TextMessage : MonoBehaviour
 	public float position;
 
 	public float remainingLife;
+
+	private Vector3 GetPosition()
+	{
+		return new Vector3(xOffset, spacing * position, 0f);
+	}
+
+	private void Start()
+	{
+	}
+
+	private void Update()
+	{
+		remainingLife -= Time.deltaTime;
+	}
 }

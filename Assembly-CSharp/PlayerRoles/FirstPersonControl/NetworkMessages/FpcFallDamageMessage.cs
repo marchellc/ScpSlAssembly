@@ -1,57 +1,59 @@
-﻿using System;
 using Mirror;
 using RelativePositioning;
 using UnityEngine;
 using Utils.Networking;
 
-namespace PlayerRoles.FirstPersonControl.NetworkMessages
+namespace PlayerRoles.FirstPersonControl.NetworkMessages;
+
+public struct FpcFallDamageMessage : NetworkMessage
 {
-	public struct FpcFallDamageMessage : NetworkMessage
+	private const float SoundDistance = 14f;
+
+	private readonly ReferenceHub _hub;
+
+	private readonly Vector3 _prevPos;
+
+	private readonly RoleTypeId _role;
+
+	public FpcFallDamageMessage(ReferenceHub hub, Vector3 prevPos, RoleTypeId role)
 	{
-		public FpcFallDamageMessage(ReferenceHub hub, Vector3 prevPos, RoleTypeId role)
+		_hub = hub;
+		_prevPos = prevPos;
+		_role = role;
+	}
+
+	public FpcFallDamageMessage(NetworkReader reader)
+	{
+		int value = reader.ReadRecyclablePlayerId().Value;
+		if (value == 0)
 		{
-			this._hub = hub;
-			this._prevPos = prevPos;
-			this._role = role;
+			_hub = null;
+			_prevPos = reader.ReadRelativePosition().Position;
+			_role = reader.ReadRoleType();
 		}
-
-		public FpcFallDamageMessage(NetworkReader reader)
+		else
 		{
-			int value = reader.ReadRecyclablePlayerId().Value;
-			if (value == 0)
-			{
-				this._hub = null;
-				this._prevPos = reader.ReadRelativePosition().Position;
-				this._role = reader.ReadRoleType();
-				return;
-			}
-			this._hub = ReferenceHub.GetHub(value);
-			this._prevPos = Vector3.zero;
-			this._role = ((this._hub != null) ? this._hub.GetRoleId() : RoleTypeId.None);
+			_hub = ReferenceHub.GetHub(value);
+			_prevPos = Vector3.zero;
+			_role = ((_hub != null) ? _hub.GetRoleId() : RoleTypeId.None);
 		}
+	}
 
-		public void Write(NetworkWriter writer)
+	public void Write(NetworkWriter writer)
+	{
+		if (_hub == null || !_hub.IsAlive())
 		{
-			if (this._hub == null || !this._hub.IsAlive())
-			{
-				writer.WriteReferenceHub(null);
-				writer.WriteRelativePosition(new RelativePosition(this._prevPos));
-				writer.WriteRoleType(this._role);
-				return;
-			}
-			writer.WriteReferenceHub(this._hub);
+			writer.WriteReferenceHub(null);
+			writer.WriteRelativePosition(new RelativePosition(_prevPos));
+			writer.WriteRoleType(_role);
 		}
-
-		public void ProcessMessage()
+		else
 		{
+			writer.WriteReferenceHub(_hub);
 		}
+	}
 
-		private const float SoundDistance = 14f;
-
-		private readonly ReferenceHub _hub;
-
-		private readonly Vector3 _prevPos;
-
-		private readonly RoleTypeId _role;
+	public void ProcessMessage()
+	{
 	}
 }

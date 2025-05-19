@@ -1,15 +1,6 @@
-﻿using System;
+namespace Respawning.Objectives;
 
-namespace Respawning.Objectives
+public class DamageObjectiveFootprint : AttackerObjectiveFootprint
 {
-	public class DamageObjectiveFootprint : AttackerObjectiveFootprint
-	{
-		protected override FootprintsTranslation TargetTranslation
-		{
-			get
-			{
-				return FootprintsTranslation.DamageObjective;
-			}
-		}
-	}
+	protected override FootprintsTranslation TargetTranslation => FootprintsTranslation.DamageObjective;
 }

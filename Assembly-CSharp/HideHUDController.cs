@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using GameCore;
 using TMPro;
 using UnityEngine;
@@ -6,30 +6,38 @@ using UnityEngine.UI;
 
 public class HideHUDController : MonoBehaviour
 {
-	public static event Action<bool> ToggleHUD;
+	private static HideHUDController _singleton;
+
+	private bool _showHUDElements = true;
 
 	public static bool IsHUDVisible
 	{
 		get
 		{
-			return HideHUDController._singleton == null || HideHUDController._singleton._showHUDElements;
+			if (!(_singleton == null))
+			{
+				return _singleton._showHUDElements;
+			}
+			return true;
 		}
 	}
 
+	public static event Action<bool> ToggleHUD;
+
 	private void Awake()
 	{
-		HideHUDController._singleton = this;
+		_singleton = this;
 	}
 
 	private void Update()
 	{
-		if (RoundStart.singleton == null || !RoundStart.RoundStarted || !Input.GetKeyDown(NewInput.GetKey(ActionName.HideGUI, KeyCode.None)))
+		if (RoundStart.singleton == null || !RoundStart.RoundStarted || !Input.GetKeyDown(NewInput.GetKey(ActionName.HideGUI)))
 		{
 			return;
 		}
-		if (this._showHUDElements)
+		if (_showHUDElements)
 		{
-			InputField[] array = global::UnityEngine.Object.FindObjectsOfType<InputField>();
+			InputField[] array = UnityEngine.Object.FindObjectsOfType<InputField>();
 			for (int i = 0; i < array.Length; i++)
 			{
 				if (array[i].isFocused)
@@ -37,7 +45,7 @@ public class HideHUDController : MonoBehaviour
 					return;
 				}
 			}
-			TMP_InputField[] array2 = global::UnityEngine.Object.FindObjectsOfType<TMP_InputField>();
+			TMP_InputField[] array2 = UnityEngine.Object.FindObjectsOfType<TMP_InputField>();
 			for (int i = 0; i < array2.Length; i++)
 			{
 				if (array2[i].isFocused)
@@ -46,16 +54,8 @@ public class HideHUDController : MonoBehaviour
 				}
 			}
 		}
-		this._showHUDElements = !this._showHUDElements;
-		Action<bool> toggleHUD = HideHUDController.ToggleHUD;
-		if (toggleHUD != null)
-		{
-			toggleHUD(this._showHUDElements);
-		}
-		GameMenu.singleton.hideHUDText.SetActive(!this._showHUDElements);
+		_showHUDElements = !_showHUDElements;
+		HideHUDController.ToggleHUD?.Invoke(_showHUDElements);
+		GameMenu.singleton.hideHUDText.SetActive(!_showHUDElements);
 	}
-
-	private static HideHUDController _singleton;
-
-	private bool _showHUDElements = true;
 }

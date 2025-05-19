@@ -1,70 +1,48 @@
-﻿using System;
 using System.Text;
 using PlayerRoles.PlayableScps.Scp079.GUI;
 using PlayerRoles.PlayableScps.Scp079.Map;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public class Scp079ScannerMenuToggler : Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>, IScp079LevelUpNotifier
 {
-	public class Scp079ScannerMenuToggler : Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>, IScp079LevelUpNotifier
+	[SerializeField]
+	private int _minimalTierIndex;
+
+	public bool IsUnlocked => base.TierManager.AccessTierIndex >= _minimalTierIndex;
+
+	public override ActionName ActivationKey => ActionName.Scp079BreachScanner;
+
+	public override bool IsVisible
 	{
-		public bool IsUnlocked
+		get
 		{
-			get
+			if (IsUnlocked)
 			{
-				return base.TierManager.AccessTierIndex >= this._minimalTierIndex;
+				return Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen;
 			}
+			return false;
 		}
+	}
 
-		public override ActionName ActivationKey
+	protected override Scp079HudTranslation OpenTranslation => Scp079HudTranslation.OpenBreachScanner;
+
+	protected override Scp079HudTranslation CloseTranslation => Scp079HudTranslation.CloseBreachScanner;
+
+	public bool WriteLevelUpNotification(StringBuilder sb, int newLevel)
+	{
+		if (newLevel != _minimalTierIndex)
 		{
-			get
-			{
-				return ActionName.Scp079BreachScanner;
-			}
+			return false;
 		}
+		sb.Append(Translations.Get(Scp079HudTranslation.BreachScannerAvailable));
+		return true;
+	}
 
-		public override bool IsVisible
-		{
-			get
-			{
-				return this.IsUnlocked && Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen;
-			}
-		}
-
-		protected override Scp079HudTranslation OpenTranslation
-		{
-			get
-			{
-				return Scp079HudTranslation.OpenBreachScanner;
-			}
-		}
-
-		protected override Scp079HudTranslation CloseTranslation
-		{
-			get
-			{
-				return Scp079HudTranslation.CloseBreachScanner;
-			}
-		}
-
-		public bool WriteLevelUpNotification(StringBuilder sb, int newLevel)
-		{
-			if (newLevel != this._minimalTierIndex)
-			{
-				return false;
-			}
-			sb.Append(Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.BreachScannerAvailable));
-			return true;
-		}
-
-		protected override void Update()
-		{
-			base.Update();
-			Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>.IsOpen &= this.IsVisible;
-		}
-
-		[SerializeField]
-		private int _minimalTierIndex;
+	protected override void Update()
+	{
+		base.Update();
+		Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>.IsOpen &= IsVisible;
 	}
 }

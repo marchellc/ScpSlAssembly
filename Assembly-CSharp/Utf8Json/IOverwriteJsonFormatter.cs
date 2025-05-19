@@ -1,9 +1,6 @@
-﻿using System;
+namespace Utf8Json;
 
-namespace Utf8Json
+public interface IOverwriteJsonFormatter<T> : IJsonFormatter<T>, IJsonFormatter
 {
-	public interface IOverwriteJsonFormatter<T> : IJsonFormatter<T>, IJsonFormatter
-	{
-		void DeserializeTo(ref T value, ref JsonReader reader, IJsonFormatterResolver formatterResolver);
-	}
+	void DeserializeTo(ref T value, ref JsonReader reader, IJsonFormatterResolver formatterResolver);
 }

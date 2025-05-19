@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using InventorySystem.Items;
 using Mirror;
@@ -8,204 +7,188 @@ using UnityEngine;
 using Utils.Networking;
 using Utils.NonAllocLINQ;
 
-namespace InventorySystem.Disarming
+namespace InventorySystem.Disarming;
+
+public static class DisarmedPlayers
 {
-	public static class DisarmedPlayers
+	public readonly struct DisarmedEntry
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			StaticUnityMethods.OnUpdate += DisarmedPlayers.Update;
-			PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub hub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
-			{
-				if (!NetworkServer.active)
-				{
-					return;
-				}
-				if (!(prevRole is IInventoryRole))
-				{
-					return;
-				}
-				for (int i = 0; i < DisarmedPlayers.Entries.Count; i++)
-				{
-					if (DisarmedPlayers.Entries[i].DisarmedPlayer == hub.netId)
-					{
-						DisarmedPlayers.Entries.RemoveAt(i);
-						new DisarmedPlayersListMessage(DisarmedPlayers.Entries).SendToAuthenticated(0);
-						return;
-					}
-				}
-			};
-			Inventory.OnItemsModified += delegate(ReferenceHub hub)
-			{
-				if (!NetworkServer.active)
-				{
-					return;
-				}
-				if (hub.inventory.UserInventory.Items.Any(delegate(KeyValuePair<ushort, ItemBase> item)
-				{
-					ItemCategory category = item.Value.Category;
-					return category == ItemCategory.Firearm || category == ItemCategory.SpecialWeapon;
-				}))
-				{
-					return;
-				}
-				for (int j = 0; j < DisarmedPlayers.Entries.Count; j++)
-				{
-					if (DisarmedPlayers.Entries[j].Disarmer == hub.netId)
-					{
-						DisarmedPlayers.Entries.RemoveAt(j);
-						new DisarmedPlayersListMessage(DisarmedPlayers.Entries).SendToAuthenticated(0);
-						return;
-					}
-				}
-			};
-		}
+		public readonly uint DisarmedPlayer;
 
-		private static void Update()
-		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			for (int i = 0; i < DisarmedPlayers.Entries.Count; i++)
-			{
-				if (!DisarmedPlayers.ValidateEntry(DisarmedPlayers.Entries[i]))
-				{
-					DisarmedPlayers.Entries.RemoveAt(i);
-					new DisarmedPlayersListMessage(DisarmedPlayers.Entries).SendToAuthenticated(0);
-					return;
-				}
-			}
-		}
+		public readonly uint Disarmer;
 
-		private static bool ValidateEntry(DisarmedPlayers.DisarmedEntry entry)
+		public DisarmedEntry(uint disarmedPlayer, uint disarmer)
 		{
-			if (entry.Disarmer == 0U)
-			{
-				return true;
-			}
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(entry.DisarmedPlayer, out referenceHub))
-			{
-				return false;
-			}
-			ReferenceHub referenceHub2;
-			if (!ReferenceHub.TryGetHubNetID(entry.Disarmer, out referenceHub2))
-			{
-				return false;
-			}
-			if (!referenceHub2.ValidateDisarmament(referenceHub))
-			{
-				return false;
-			}
-			IFpcRole fpcRole = referenceHub.roleManager.CurrentRole as IFpcRole;
-			if (fpcRole == null)
-			{
-				return false;
-			}
-			IFpcRole fpcRole2 = referenceHub2.roleManager.CurrentRole as IFpcRole;
-			if (fpcRole2 == null)
-			{
-				return false;
-			}
-			Vector3 position = fpcRole.FpcModule.Position;
-			Vector3 position2 = fpcRole2.FpcModule.Position;
-			if ((position - position2).sqrMagnitude > 8100f)
-			{
-				return false;
-			}
-			referenceHub.inventory.ServerDropEverything();
-			return true;
+			DisarmedPlayer = disarmedPlayer;
+			Disarmer = disarmer;
 		}
+	}
 
-		public static bool IsDisarmed(this Inventory inv)
+	public static List<DisarmedEntry> Entries = new List<DisarmedEntry>();
+
+	private const float AutoDisarmDistanceSquared = 8100f;
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		StaticUnityMethods.OnUpdate += Update;
+		PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub hub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
 		{
-			using (List<DisarmedPlayers.DisarmedEntry>.Enumerator enumerator = DisarmedPlayers.Entries.GetEnumerator())
+			if (NetworkServer.active && prevRole is IInventoryRole)
 			{
-				while (enumerator.MoveNext())
+				for (int i = 0; i < Entries.Count; i++)
 				{
-					if (enumerator.Current.DisarmedPlayer == inv.netId)
+					if (Entries[i].DisarmedPlayer == hub.netId)
 					{
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-
-		public static void SetDisarmedStatus(this Inventory inv, Inventory disarmer)
-		{
-			bool flag;
-			do
-			{
-				flag = true;
-				for (int i = 0; i < DisarmedPlayers.Entries.Count; i++)
-				{
-					if (DisarmedPlayers.Entries[i].DisarmedPlayer == inv.netId)
-					{
-						DisarmedPlayers.Entries.RemoveAt(i);
-						flag = false;
+						Entries.RemoveAt(i);
+						new DisarmedPlayersListMessage(Entries).SendToAuthenticated();
 						break;
 					}
 				}
 			}
-			while (!flag);
-			if (disarmer != null)
-			{
-				DisarmedPlayers.Entries.Add(new DisarmedPlayers.DisarmedEntry(inv.netId, disarmer.netId));
-			}
-		}
-
-		public static bool ValidateDisarmament(this ReferenceHub disarmerHub, ReferenceHub targetHub)
+		};
+		Inventory.OnItemsModified += delegate(ReferenceHub hub)
 		{
-			IInventoryRole inventoryRole = targetHub.roleManager.CurrentRole as IInventoryRole;
-			return inventoryRole != null && inventoryRole.AllowDisarming(disarmerHub);
-		}
-
-		public static bool CanStartDisarming(this ReferenceHub disarmerHub, ReferenceHub targetHub)
-		{
-			if (!disarmerHub.ValidateDisarmament(targetHub))
+			if (NetworkServer.active && !hub.inventory.UserInventory.Items.Any(delegate(KeyValuePair<ushort, ItemBase> item)
 			{
-				return false;
-			}
-			ItemBase curInstance = disarmerHub.inventory.CurInstance;
-			if (curInstance != null)
+				ItemCategory category = item.Value.Category;
+				return category == ItemCategory.Firearm || category == ItemCategory.SpecialWeapon;
+			}))
 			{
-				IDisarmingItem disarmingItem = curInstance as IDisarmingItem;
-				if (disarmingItem != null)
+				for (int j = 0; j < Entries.Count; j++)
 				{
-					return disarmingItem.AllowDisarming;
+					if (Entries[j].Disarmer == hub.netId)
+					{
+						Entries.RemoveAt(j);
+						new DisarmedPlayersListMessage(Entries).SendToAuthenticated();
+						break;
+					}
 				}
 			}
+		};
+	}
+
+	private static void Update()
+	{
+		if (!NetworkServer.active)
+		{
+			return;
+		}
+		for (int i = 0; i < Entries.Count; i++)
+		{
+			if (!ValidateEntry(Entries[i]))
+			{
+				Entries.RemoveAt(i);
+				new DisarmedPlayersListMessage(Entries).SendToAuthenticated();
+				break;
+			}
+		}
+	}
+
+	private static bool ValidateEntry(DisarmedEntry entry)
+	{
+		if (entry.Disarmer == 0)
+		{
+			return true;
+		}
+		if (!ReferenceHub.TryGetHubNetID(entry.DisarmedPlayer, out var hub))
+		{
 			return false;
 		}
-
-		public static bool CanUndisarm(this ReferenceHub disarmerHub, ReferenceHub targetHub)
+		if (!ReferenceHub.TryGetHubNetID(entry.Disarmer, out var hub2))
 		{
-			if (!targetHub.inventory.IsDisarmed())
-			{
-				return false;
-			}
-			IInventoryRole inventoryRole = targetHub.roleManager.CurrentRole as IInventoryRole;
-			return inventoryRole == null || inventoryRole.AllowUndisarming(disarmerHub);
+			return false;
 		}
-
-		public static List<DisarmedPlayers.DisarmedEntry> Entries = new List<DisarmedPlayers.DisarmedEntry>();
-
-		private const float AutoDisarmDistanceSquared = 8100f;
-
-		public readonly struct DisarmedEntry
+		if (!hub2.ValidateDisarmament(hub))
 		{
-			public DisarmedEntry(uint disarmedPlayer, uint disarmer)
-			{
-				this.DisarmedPlayer = disarmedPlayer;
-				this.Disarmer = disarmer;
-			}
-
-			public readonly uint DisarmedPlayer;
-
-			public readonly uint Disarmer;
+			return false;
 		}
+		if (!(hub.roleManager.CurrentRole is IFpcRole fpcRole))
+		{
+			return false;
+		}
+		if (!(hub2.roleManager.CurrentRole is IFpcRole fpcRole2))
+		{
+			return false;
+		}
+		Vector3 position = fpcRole.FpcModule.Position;
+		Vector3 position2 = fpcRole2.FpcModule.Position;
+		if ((position - position2).sqrMagnitude > 8100f)
+		{
+			return false;
+		}
+		hub.inventory.ServerDropEverything();
+		return true;
+	}
+
+	public static bool IsDisarmed(this Inventory inv)
+	{
+		foreach (DisarmedEntry entry in Entries)
+		{
+			if (entry.DisarmedPlayer == inv.netId)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static void SetDisarmedStatus(this Inventory inv, Inventory disarmer)
+	{
+		bool flag;
+		do
+		{
+			flag = true;
+			for (int i = 0; i < Entries.Count; i++)
+			{
+				if (Entries[i].DisarmedPlayer == inv.netId)
+				{
+					Entries.RemoveAt(i);
+					flag = false;
+					break;
+				}
+			}
+		}
+		while (!flag);
+		if (disarmer != null)
+		{
+			Entries.Add(new DisarmedEntry(inv.netId, disarmer.netId));
+		}
+	}
+
+	public static bool ValidateDisarmament(this ReferenceHub disarmerHub, ReferenceHub targetHub)
+	{
+		if (targetHub.roleManager.CurrentRole is IInventoryRole inventoryRole)
+		{
+			return inventoryRole.AllowDisarming(disarmerHub);
+		}
+		return false;
+	}
+
+	public static bool CanStartDisarming(this ReferenceHub disarmerHub, ReferenceHub targetHub)
+	{
+		if (!disarmerHub.ValidateDisarmament(targetHub))
+		{
+			return false;
+		}
+		ItemBase curInstance = disarmerHub.inventory.CurInstance;
+		if (curInstance != null && curInstance is IDisarmingItem disarmingItem)
+		{
+			return disarmingItem.AllowDisarming;
+		}
+		return false;
+	}
+
+	public static bool CanUndisarm(this ReferenceHub disarmerHub, ReferenceHub targetHub)
+	{
+		if (!targetHub.inventory.IsDisarmed())
+		{
+			return false;
+		}
+		if (targetHub.roleManager.CurrentRole is IInventoryRole inventoryRole)
+		{
+			return inventoryRole.AllowUndisarming(disarmerHub);
+		}
+		return true;
 	}
 }

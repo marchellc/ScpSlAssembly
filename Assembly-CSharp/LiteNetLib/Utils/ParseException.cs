@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 
-namespace LiteNetLib.Utils
+namespace LiteNetLib.Utils;
+
+public class ParseException : Exception
 {
-	public class ParseException : Exception
+	public ParseException(string message)
+		: base(message)
 	{
-		public ParseException(string message)
-			: base(message)
-		{
-		}
 	}
 }

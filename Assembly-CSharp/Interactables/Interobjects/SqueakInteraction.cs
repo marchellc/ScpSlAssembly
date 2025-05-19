@@ -1,51 +1,37 @@
-﻿using System;
+using MapGeneration.StaticHelpers;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace Interactables.Interobjects
+namespace Interactables.Interobjects;
+
+public class SqueakInteraction : PopupInterobject, IDestructible, IBlockStaticBatching
 {
-	public class SqueakInteraction : PopupInterobject, IDestructible
+	private SqueakSpawner _spawner;
+
+	public uint NetworkId => _spawner.netId;
+
+	public Vector3 CenterOfMass => Vector3.zero;
+
+	public bool Damage(float damage, DamageHandlerBase handler, Vector3 exactHitPos)
 	{
-		public uint NetworkId
+		if (!(handler is AttackerDamageHandler attackerDamageHandler) || attackerDamageHandler.Attacker.Hub == null)
 		{
-			get
-			{
-				return this._spawner.netId;
-			}
+			return false;
 		}
+		_spawner.TargetHitMouse(attackerDamageHandler.Attacker.Hub.networkIdentity.connectionToClient);
+		return true;
+	}
 
-		public Vector3 CenterOfMass
-		{
-			get
-			{
-				return Vector3.zero;
-			}
-		}
+	protected override void OnClientStateChange()
+	{
+	}
 
-		public bool Damage(float damage, DamageHandlerBase handler, Vector3 exactHitPos)
-		{
-			AttackerDamageHandler attackerDamageHandler = handler as AttackerDamageHandler;
-			if (attackerDamageHandler == null || attackerDamageHandler.Attacker.Hub == null)
-			{
-				return false;
-			}
-			this._spawner.TargetHitMouse(attackerDamageHandler.Attacker.Hub.networkIdentity.connectionToClient);
-			return true;
-		}
+	protected override void OnClientUpdate(float enableRatio)
+	{
+	}
 
-		protected override void OnClientStateChange()
-		{
-		}
-
-		protected override void OnClientUpdate(float enableRatio)
-		{
-		}
-
-		private void Awake()
-		{
-			this._spawner = base.GetComponentInParent<SqueakSpawner>();
-		}
-
-		private SqueakSpawner _spawner;
+	private void Awake()
+	{
+		_spawner = GetComponentInParent<SqueakSpawner>();
 	}
 }

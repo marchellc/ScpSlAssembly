@@ -1,9 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Utf8Json;
 
 public readonly struct PlayerListSerialized : IEquatable<PlayerListSerialized>, IJsonSerializable
 {
+	public readonly List<string> objects;
+
 	[SerializationConstructor]
 	public PlayerListSerialized(List<string> objects)
 	{
@@ -12,26 +14,25 @@ public readonly struct PlayerListSerialized : IEquatable<PlayerListSerialized>, 
 
 	public bool Equals(PlayerListSerialized other)
 	{
-		return this.objects == other.objects;
+		return objects == other.objects;
 	}
 
 	public override bool Equals(object obj)
 	{
-		if (obj is PlayerListSerialized)
+		if (obj is PlayerListSerialized other)
 		{
-			PlayerListSerialized playerListSerialized = (PlayerListSerialized)obj;
-			return this.Equals(playerListSerialized);
+			return Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		if (this.objects == null)
+		if (objects == null)
 		{
 			return 0;
 		}
-		return this.objects.GetHashCode();
+		return objects.GetHashCode();
 	}
 
 	public static bool operator ==(PlayerListSerialized left, PlayerListSerialized right)
@@ -43,6 +44,4 @@ public readonly struct PlayerListSerialized : IEquatable<PlayerListSerialized>, 
 	{
 		return !left.Equals(right);
 	}
-
-	public readonly List<string> objects;
 }

@@ -1,10 +1,7 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.Scp079.GUI;
 
-namespace PlayerRoles.PlayableScps.Scp079.GUI
+public enum NotificationSound
 {
-	public enum NotificationSound
-	{
-		None = -1,
-		Standard
-	}
+	None = -1,
+	Standard
 }

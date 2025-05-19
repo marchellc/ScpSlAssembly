@@ -1,11 +1,9 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 
-namespace Respawning.Graphics
+namespace Respawning.Graphics;
+
+public class RaWaveDisplay : MonoBehaviour
 {
-	public class RaWaveDisplay : MonoBehaviour
-	{
-		public TMP_Text Text;
-	}
+	public TMP_Text Text;
 }

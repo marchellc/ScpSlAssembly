@@ -1,36 +1,21 @@
-﻿using System;
+namespace UserSettings.ServerSpecific;
 
-namespace UserSettings.ServerSpecific
+public class SSGroupHeader : ServerSpecificSettingBase
 {
-	public class SSGroupHeader : ServerSpecificSettingBase
+	public override UserResponseMode ResponseMode => UserResponseMode.None;
+
+	public bool ReducedPadding { get; private set; }
+
+	public override string DebugValue => "N/A";
+
+	public SSGroupHeader(string label, bool reducedPadding = false, string hint = null)
 	{
-		public override ServerSpecificSettingBase.UserResponseMode ResponseMode
-		{
-			get
-			{
-				return ServerSpecificSettingBase.UserResponseMode.None;
-			}
-		}
+		base.Label = label;
+		base.HintDescription = hint;
+		ReducedPadding = reducedPadding;
+	}
 
-		public bool ReducedPadding { get; private set; }
-
-		public override string DebugValue
-		{
-			get
-			{
-				return "N/A";
-			}
-		}
-
-		public SSGroupHeader(string label, bool reducedPadding = false, string hint = null)
-		{
-			base.Label = label;
-			base.HintDescription = hint;
-			this.ReducedPadding = reducedPadding;
-		}
-
-		public override void ApplyDefaultValues()
-		{
-		}
+	public override void ApplyDefaultValues()
+	{
 	}
 }

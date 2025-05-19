@@ -1,48 +1,44 @@
-﻿using System;
 using System.Collections.Generic;
 using MapGeneration;
 using Mirror;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Spawnpoints
+namespace PlayerRoles.FirstPersonControl.Spawnpoints;
+
+public class RoundConsistentSpawnpointHandler : StandardSpawnpointHandler
 {
-	public class RoundConsistentSpawnpointHandler : StandardSpawnpointHandler
+	private static readonly Dictionary<RoleTypeId, CachedRoom> CachedRoleSpawnpoints = new Dictionary<RoleTypeId, CachedRoom>();
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			SeedSynchronizer.OnGenerationFinished += RoundConsistentSpawnpointHandler.HandleMapGenerationFinished;
-		}
+		SeedSynchronizer.OnGenerationFinished += HandleMapGenerationFinished;
+	}
 
-		private static void HandleMapGenerationFinished()
+	private static void HandleMapGenerationFinished()
+	{
+		if (NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			RoundConsistentSpawnpointHandler.CachedRoleSpawnpoints.Clear();
+			CachedRoleSpawnpoints.Clear();
 		}
+	}
 
-		public override bool TryGetSpawnpoint(out Vector3 position, out float horizontalRot)
+	public override bool TryGetSpawnpoint(out Vector3 position, out float horizontalRot)
+	{
+		position = default(Vector3);
+		horizontalRot = 0f;
+		RoomRoleSpawnpoint[] validSpawnpoints = GetValidSpawnpoints(Spawnpoints);
+		if (validSpawnpoints.Length == 0)
 		{
-			position = default(Vector3);
-			horizontalRot = 0f;
-			RoomRoleSpawnpoint[] validSpawnpoints = base.GetValidSpawnpoints(this.Spawnpoints);
-			if (validSpawnpoints.Length == 0)
-			{
-				return false;
-			}
-			CachedRoom cachedRoom;
-			if (!RoundConsistentSpawnpointHandler.CachedRoleSpawnpoints.TryGetValue(base.Role.RoleTypeId, out cachedRoom))
-			{
-				RoomRoleSpawnpoint roomRoleSpawnpoint = validSpawnpoints.RandomItem<RoomRoleSpawnpoint>();
-				int num = global::UnityEngine.Random.Range(0, roomRoleSpawnpoint.GetRoomAmount() - 1);
-				cachedRoom = new CachedRoom(roomRoleSpawnpoint, num);
-				RoundConsistentSpawnpointHandler.CachedRoleSpawnpoints.Add(base.Role.RoleTypeId, cachedRoom);
-			}
-			return cachedRoom.RoomType.TryGetSpawnpoint(out position, out horizontalRot, cachedRoom.RoomIndex);
+			return false;
 		}
-
-		private static readonly Dictionary<RoleTypeId, CachedRoom> CachedRoleSpawnpoints = new Dictionary<RoleTypeId, CachedRoom>();
+		if (!CachedRoleSpawnpoints.TryGetValue(base.Role.RoleTypeId, out var value))
+		{
+			RoomRoleSpawnpoint roomRoleSpawnpoint = validSpawnpoints.RandomItem();
+			int roomIndex = Random.Range(0, roomRoleSpawnpoint.GetRoomAmount() - 1);
+			value = new CachedRoom(roomRoleSpawnpoint, roomIndex);
+			CachedRoleSpawnpoints.Add(base.Role.RoleTypeId, value);
+		}
+		return value.RoomType.TryGetSpawnpoint(out position, out horizontalRot, value.RoomIndex);
 	}
 }

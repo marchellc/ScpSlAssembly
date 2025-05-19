@@ -1,63 +1,62 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
 
-namespace Windows
+namespace Windows;
+
+public class HeadlessConsole
 {
-	public class HeadlessConsole
+	private TextWriter oldOutput;
+
+	private const int STD_OUTPUT_HANDLE = -11;
+
+	public void Initialize()
 	{
-		public void Initialize()
+		if (!AttachConsole(uint.MaxValue))
 		{
-			if (!HeadlessConsole.AttachConsole(4294967295U))
-			{
-				HeadlessConsole.AllocConsole();
-			}
-			this.oldOutput = Console.Out;
-			try
-			{
-				Stream stream = new FileStream(HeadlessConsole.GetStdHandle(-11), FileAccess.Write);
-				Encoding ascii = Encoding.ASCII;
-				Console.SetOut(new StreamWriter(stream, ascii)
-				{
-					AutoFlush = true
-				});
-			}
-			catch (Exception ex)
-			{
-				Debug.Log("Couldn't redirect output: " + ex.Message);
-			}
+			AllocConsole();
 		}
-
-		public void Shutdown()
+		oldOutput = Console.Out;
+		try
 		{
-			Console.SetOut(this.oldOutput);
-			HeadlessConsole.FreeConsole();
+			FileStream stream = new FileStream(GetStdHandle(-11), FileAccess.Write);
+			Encoding aSCII = Encoding.ASCII;
+			Console.SetOut(new StreamWriter(stream, aSCII)
+			{
+				AutoFlush = true
+			});
 		}
-
-		public void SetTitle(string strName)
+		catch (Exception ex)
 		{
-			HeadlessConsole.SetConsoleTitle(strName);
+			Debug.Log("Couldn't redirect output: " + ex.Message);
 		}
-
-		[DllImport("kernel32.dll", SetLastError = true)]
-		private static extern bool AttachConsole(uint dwProcessId);
-
-		[DllImport("kernel32.dll", SetLastError = true)]
-		private static extern bool AllocConsole();
-
-		[DllImport("kernel32.dll", SetLastError = true)]
-		private static extern bool FreeConsole();
-
-		[DllImport("kernel32.dll", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Auto, SetLastError = true)]
-		private static extern IntPtr GetStdHandle(int nStdHandle);
-
-		[DllImport("kernel32.dll")]
-		private static extern bool SetConsoleTitle(string lpConsoleTitle);
-
-		private TextWriter oldOutput;
-
-		private const int STD_OUTPUT_HANDLE = -11;
 	}
+
+	public void Shutdown()
+	{
+		Console.SetOut(oldOutput);
+		FreeConsole();
+	}
+
+	public void SetTitle(string strName)
+	{
+		SetConsoleTitle(strName);
+	}
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	private static extern bool AttachConsole(uint dwProcessId);
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	private static extern bool AllocConsole();
+
+	[DllImport("kernel32.dll", SetLastError = true)]
+	private static extern bool FreeConsole();
+
+	[DllImport("kernel32.dll", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Auto, SetLastError = true)]
+	private static extern IntPtr GetStdHandle(int nStdHandle);
+
+	[DllImport("kernel32.dll")]
+	private static extern bool SetConsoleTitle(string lpConsoleTitle);
 }

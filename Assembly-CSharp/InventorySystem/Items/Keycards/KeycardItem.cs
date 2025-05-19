@@ -1,90 +1,325 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using Interactables.Interobjects.DoorUtils;
+using InventorySystem.Items.AutoIcons;
+using InventorySystem.Items.Autosync;
+using InventorySystem.Items.Firearms.Modules.Misc;
+using InventorySystem.Items.Pickups;
 using Mirror;
+using RemoteAdmin.Interfaces;
 using UnityEngine;
-using Utils.Networking;
 
-namespace InventorySystem.Items.Keycards
+namespace InventorySystem.Items.Keycards;
+
+public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPermissionProvider, ICustomRADisplay
 {
-	public class KeycardItem : ItemBase, IItemNametag
+	protected enum MsgType : byte
 	{
-		public static event Action<ushort> OnKeycardUsed;
+		Custom,
+		OnKeycardUsed,
+		Inspect,
+		NewPlayerFullResync
+	}
 
-		public override float Weight
+	public static readonly Dictionary<ushort, double> StartInspectTimes = new Dictionary<ushort, double>();
+
+	[SerializeField]
+	private ItemDescriptionType _descriptionType;
+
+	[SerializeField]
+	private bool _allowInspect;
+
+	private readonly ClientRequestTimer _inspectRequestTimer = new ClientRequestTimer();
+
+	private static readonly ActionName[] CancelInspectButtons = new ActionName[2]
+	{
+		ActionName.Shoot,
+		ActionName.Zoom
+	};
+
+	private bool IsIdle
+	{
+		get
 		{
-			get
+			if (HasViewmodel)
 			{
-				return 0.01f;
+				if (ViewModel is KeycardViewmodel keycardViewmodel)
+				{
+					return keycardViewmodel.IsIdle;
+				}
+				return false;
+			}
+			return false;
+		}
+	}
+
+	[field: SerializeField]
+	public bool OpenDoorsOnThrow { get; private set; }
+
+	[field: SerializeField]
+	public KeycardGfx KeycardGfx { get; private set; }
+
+	[field: SerializeField]
+	public DetailBase[] Details { get; private set; }
+
+	[field: SerializeField]
+	public bool Customizable { get; private set; }
+
+	public override float Weight => 0.01f + KeycardGfx.ExtraWeight;
+
+	public override ItemDescriptionType DescriptionType => _descriptionType;
+
+	public string Name
+	{
+		get
+		{
+			DetailBase[] details = Details;
+			for (int i = 0; i < details.Length; i++)
+			{
+				if (details[i] is IItemNametag itemNametag)
+				{
+					return itemNametag.Name;
+				}
+			}
+			return ItemTypeId.GetName();
+		}
+	}
+
+	public string Description
+	{
+		get
+		{
+			DetailBase[] details = Details;
+			for (int i = 0; i < details.Length; i++)
+			{
+				if (details[i] is IItemDescription itemDescription)
+				{
+					return itemDescription.Description;
+				}
+			}
+			return ItemTypeId.GetDescription();
+		}
+	}
+
+	public string DisplayName => null;
+
+	public bool CanBeDisplayed => !Customizable;
+
+	public PermissionUsed PermissionsUsedCallback { get; private set; }
+
+	public static event Action<ushort, bool> OnKeycardUsed;
+
+	public virtual DoorPermissionFlags GetPermissions(IDoorPermissionRequester requester)
+	{
+		DetailBase[] details = Details;
+		for (int i = 0; i < details.Length; i++)
+		{
+			if (details[i] is IDoorPermissionProvider doorPermissionProvider)
+			{
+				return doorPermissionProvider.GetPermissions(requester);
 			}
 		}
+		return DoorPermissionFlags.None;
+	}
 
-		public override ItemDescriptionType DescriptionType
+	public override void OnAdded(ItemPickupBase pickup)
+	{
+		base.OnAdded(pickup);
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return ItemDescriptionType.Keycard;
-			}
+			PermissionsUsedCallback = OnUsed;
+			KeycardDetailSynchronizer.ServerProcessItem(this);
 		}
+	}
 
-		public string Name
+	public override void OnHolstered()
+	{
+		base.OnHolstered();
+		if (NetworkServer.active)
 		{
-			get
+			ServerSendPublicRpc(delegate(NetworkWriter x)
 			{
-				return this.ItemTypeId.GetName();
-			}
+				WriteInspect(x, state: false);
+			});
 		}
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+	public override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		if (!base.IsControllable || _inspectRequestTimer.Busy)
 		{
-			CustomNetworkManager.OnClientReady += KeycardItem.OnClientReady;
+			return;
 		}
-
-		private static void OnClientReady()
+		if (!StartInspectTimes.ContainsKey(base.ItemSerial))
 		{
-			NetworkServer.ReplaceHandler<KeycardItem.UseMessage>(new Action<NetworkConnectionToClient, KeycardItem.UseMessage>(KeycardItem.ServerProcessMessage), true);
-			NetworkClient.ReplaceHandler<KeycardItem.UseMessage>(new Action<KeycardItem.UseMessage>(KeycardItem.ClientProcessMessage), true);
+			if (GetActionDown(ActionName.InspectItem) && IsIdle)
+			{
+				ClientSendCmd(delegate(NetworkWriter x)
+				{
+					WriteInspect(x, state: true);
+				});
+				_inspectRequestTimer.Trigger();
+			}
+			return;
 		}
-
-		private static void ServerProcessMessage(NetworkConnection conn, KeycardItem.UseMessage msg)
+		bool flag = IsIdle;
+		ActionName[] cancelInspectButtons = CancelInspectButtons;
+		foreach (ActionName action in cancelInspectButtons)
 		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(conn.identity.netId, out referenceHub))
-			{
-				return;
-			}
-			KeycardItem keycardItem = referenceHub.inventory.CurInstance as KeycardItem;
-			if (keycardItem == null || keycardItem == null)
-			{
-				return;
-			}
-			if (msg.ItemSerial != keycardItem.ItemSerial)
-			{
-				return;
-			}
-			msg.SendToAuthenticated(0);
+			flag |= GetActionDown(action);
 		}
-
-		private static void ClientProcessMessage(KeycardItem.UseMessage msg)
+		if (flag)
 		{
-			Action<ushort> onKeycardUsed = KeycardItem.OnKeycardUsed;
-			if (onKeycardUsed == null)
+			ClientSendCmd(delegate(NetworkWriter x)
 			{
-				return;
-			}
-			onKeycardUsed(msg.ItemSerial);
+				WriteInspect(x, state: false);
+			});
+			_inspectRequestTimer.Trigger();
 		}
+	}
 
-		public KeycardPermissions Permissions;
-
-		public struct UseMessage : NetworkMessage
+	internal override void OnTemplateReloaded(bool wasEverLoaded)
+	{
+		base.OnTemplateReloaded(wasEverLoaded);
+		if (TryGetComponent<AutoIconApplier>(out var component))
 		{
-			public UseMessage(ushort serial)
-			{
-				this.ItemSerial = serial;
-			}
-
-			public ushort ItemSerial;
+			component.UpdateIcon();
 		}
+		if (wasEverLoaded)
+		{
+			return;
+		}
+		CustomNetworkManager.OnClientReady += OnStaticDataReset;
+		ReferenceHub.OnPlayerAdded += delegate(ReferenceHub hub)
+		{
+			if (NetworkServer.active)
+			{
+				ServerOnNewPlayerConnected(hub);
+			}
+		};
+	}
+
+	protected virtual void OnUsed(IDoorPermissionRequester requester, bool success)
+	{
+		ServerSendPublicRpc(delegate(NetworkWriter x)
+		{
+			x.WriteSubheader(MsgType.OnKeycardUsed);
+			x.WriteBool(success);
+		});
+	}
+
+	protected virtual void ServerOnNewPlayerConnected(ReferenceHub hub)
+	{
+		if (StartInspectTimes.Count == 0)
+		{
+			return;
+		}
+		ServerSendTargetRpc(hub, delegate(NetworkWriter writer)
+		{
+			writer.WriteSubheader(MsgType.NewPlayerFullResync);
+			foreach (KeyValuePair<ushort, double> startInspectTime in StartInspectTimes)
+			{
+				writer.WriteUShort(startInspectTime.Key);
+				writer.WriteDouble(startInspectTime.Value);
+			}
+		});
+	}
+
+	protected virtual void OnStaticDataReset()
+	{
+		StartInspectTimes.Clear();
+	}
+
+	public sealed override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	{
+		base.ClientProcessRpcTemplate(reader, serial);
+		switch ((MsgType)reader.ReadByte())
+		{
+		case MsgType.Custom:
+			ClientProcessCustomRpcTemplate(reader, serial);
+			break;
+		case MsgType.OnKeycardUsed:
+			KeycardItem.OnKeycardUsed?.Invoke(serial, reader.ReadBool());
+			StartInspectTimes.Remove(serial);
+			break;
+		case MsgType.Inspect:
+			if (reader.ReadBool() && _allowInspect)
+			{
+				StartInspectTimes[serial] = NetworkTime.time;
+			}
+			else
+			{
+				StartInspectTimes.Remove(serial);
+			}
+			break;
+		case MsgType.NewPlayerFullResync:
+			StartInspectTimes.Clear();
+			while (reader.Remaining > 0)
+			{
+				ushort key = reader.ReadUShort();
+				double value = reader.ReadDouble();
+				StartInspectTimes[key] = value;
+			}
+			break;
+		}
+	}
+
+	public sealed override void ClientProcessRpcInstance(NetworkReader reader)
+	{
+		base.ClientProcessRpcInstance(reader);
+		if (reader.ReadByte() == 0)
+		{
+			ClientProcessCustomRpcInstance(reader);
+		}
+	}
+
+	public sealed override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		switch ((MsgType)reader.ReadByte())
+		{
+		case MsgType.Custom:
+			ServerProcessCustomCmd(reader);
+			break;
+		case MsgType.Inspect:
+		{
+			bool num = reader.ReadBool();
+			bool flag = StartInspectTimes.ContainsKey(base.ItemSerial);
+			if (!num)
+			{
+				ServerSendPublicRpc(delegate(NetworkWriter x)
+				{
+					WriteInspect(x, state: false);
+				});
+			}
+			else if (!flag)
+			{
+				ServerSendPublicRpc(delegate(NetworkWriter x)
+				{
+					WriteInspect(x, state: true);
+				});
+			}
+			break;
+		}
+		}
+	}
+
+	protected virtual void ClientProcessCustomRpcTemplate(NetworkReader reader, ushort serial)
+	{
+	}
+
+	protected virtual void ClientProcessCustomRpcInstance(NetworkReader reader)
+	{
+	}
+
+	protected virtual void ServerProcessCustomCmd(NetworkReader reader)
+	{
+	}
+
+	private static void WriteInspect(NetworkWriter writer, bool state)
+	{
+		writer.WriteSubheader(MsgType.Inspect);
+		writer.WriteBool(state);
 	}
 }

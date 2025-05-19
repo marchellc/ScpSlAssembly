@@ -1,199 +1,193 @@
-﻿using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Autosync;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class AnimationToggleableReloaderModule : AnimatorReloaderModuleBase
 {
-	public class AnimationToggleableReloaderModule : AnimatorReloaderModuleBase
+	private enum RpcType
 	{
-		private int ServerLoadableAmmo
+		LoadableAmmoSync,
+		StopAnimations
+	}
+
+	private static readonly ActionName[] CancelActions = new ActionName[2]
+	{
+		ActionName.Shoot,
+		ActionName.Zoom
+	};
+
+	private static readonly Dictionary<ushort, int> SyncLoadableAmmo = new Dictionary<ushort, int>();
+
+	private readonly RateLimiter _postCancelLimiter = new RateLimiter(0.7f);
+
+	private int _prevLoadableAmmo;
+
+	private int ServerLoadableAmmo
+	{
+		get
 		{
-			get
+			if (!base.Firearm.TryGetModule<IPrimaryAmmoContainerModule>(out var module))
 			{
-				IPrimaryAmmoContainerModule primaryAmmoContainerModule;
-				if (!base.Firearm.TryGetModule(out primaryAmmoContainerModule, true))
+				return 0;
+			}
+			int a = module.AmmoMax - module.AmmoStored;
+			int curAmmo = base.Firearm.OwnerInventory.GetCurAmmo(module.AmmoType);
+			return Mathf.Min(a, curAmmo);
+		}
+	}
+
+	internal override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		if (base.IsControllable)
+		{
+			UpdateControls();
+		}
+		if (base.IsServer)
+		{
+			UpdateServer();
+		}
+		base.Firearm.AnimSetInt(FirearmAnimatorHashes.LoadableAmmo, _prevLoadableAmmo);
+	}
+
+	internal override void OnEquipped()
+	{
+		base.OnEquipped();
+		SyncLoadableAmmo.TryGetValue(base.ItemSerial, out _prevLoadableAmmo);
+	}
+
+	protected override MessageInterceptionResult InterceptMessage(NetworkReader reader, ushort serial, ReloaderMessageHeader header, AutosyncMessageType scenario)
+	{
+		if (scenario == AutosyncMessageType.Cmd)
+		{
+			switch (header)
+			{
+			case ReloaderMessageHeader.Reload:
+			case ReloaderMessageHeader.Unload:
+				if (!_postCancelLimiter.InstantReady)
 				{
-					return 0;
-				}
-				int num = primaryAmmoContainerModule.AmmoMax - primaryAmmoContainerModule.AmmoStored;
-				int curAmmo = (int)base.Firearm.OwnerInventory.GetCurAmmo(primaryAmmoContainerModule.AmmoType);
-				return Mathf.Min(num, curAmmo);
-			}
-		}
-
-		internal override void EquipUpdate()
-		{
-			base.EquipUpdate();
-			if (base.IsLocalPlayer)
-			{
-				this.UpdateLocalPlayer();
-			}
-			if (base.IsServer)
-			{
-				this.UpdateServer();
-			}
-			base.Firearm.AnimSetInt(FirearmAnimatorHashes.LoadableAmmo, this._prevLoadableAmmo, false);
-		}
-
-		internal override void OnEquipped()
-		{
-			base.OnEquipped();
-			AnimationToggleableReloaderModule.SyncLoadableAmmo.TryGetValue(base.ItemSerial, out this._prevLoadableAmmo);
-		}
-
-		protected override MessageInterceptionResult InterceptMessage(NetworkReader reader, ushort serial, AnimatorReloaderModuleBase.ReloaderMessageHeader header, AutosyncMessageType scenario)
-		{
-			if (scenario == AutosyncMessageType.Cmd)
-			{
-				if (header > AnimatorReloaderModuleBase.ReloaderMessageHeader.Unload)
-				{
-					if (header != AnimatorReloaderModuleBase.ReloaderMessageHeader.Stop)
-					{
-						return MessageInterceptionResult.Continue;
-					}
-					this.SendRpc(delegate(NetworkWriter x)
-					{
-						x.WriteSubheader(AnimatorReloaderModuleBase.ReloaderMessageHeader.Custom);
-						x.WriteSubheader(AnimationToggleableReloaderModule.RpcType.StopAnimations);
-					}, true);
 					return MessageInterceptionResult.Stop;
 				}
-				else
+				return MessageInterceptionResult.Continue;
+			case ReloaderMessageHeader.Stop:
+				SendRpc(delegate(NetworkWriter x)
 				{
-					if (!this._postCancelLimiter.InstantReady)
-					{
-						return MessageInterceptionResult.Stop;
-					}
-					return MessageInterceptionResult.Continue;
-				}
+					x.WriteSubheader(ReloaderMessageHeader.Custom);
+					x.WriteSubheader(RpcType.StopAnimations);
+				});
+				return MessageInterceptionResult.Stop;
+			default:
+				return MessageInterceptionResult.Continue;
 			}
-			else
+		}
+		if (header == ReloaderMessageHeader.Custom && (scenario == AutosyncMessageType.RpcInstance || scenario == AutosyncMessageType.RpcTemplate))
+		{
+			ProcessCustomRpc(reader, serial, (RpcType)reader.ReadByte(), scenario);
+			return MessageInterceptionResult.Stop;
+		}
+		return base.InterceptMessage(reader, serial, header, scenario);
+	}
+
+	protected override void StartReloading()
+	{
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.Reload, b: true);
+		base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.StartReloadOrUnload);
+		if (base.IsServer)
+		{
+			ServerSendLoadableAmmo();
+		}
+	}
+
+	protected override void StartUnloading()
+	{
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.Unload, b: true);
+		base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.StartReloadOrUnload);
+		if (base.IsServer)
+		{
+			ServerSendLoadableAmmo();
+		}
+	}
+
+	protected override void OnStopReloadingAndUnloading()
+	{
+		StopAnimations();
+		if (_postCancelLimiter.InstantReady)
+		{
+			_postCancelLimiter.RegisterInput();
+		}
+	}
+
+	private void ProcessCustomRpc(NetworkReader reader, ushort serial, RpcType rpc, AutosyncMessageType messageType)
+	{
+		bool flag = messageType == AutosyncMessageType.RpcInstance;
+		switch (rpc)
+		{
+		case RpcType.StopAnimations:
+			if (flag)
 			{
-				if (header == AnimatorReloaderModuleBase.ReloaderMessageHeader.Custom && (scenario == AutosyncMessageType.RpcInstance || scenario == AutosyncMessageType.RpcTemplate))
+				StopAnimations();
+			}
+			break;
+		case RpcType.LoadableAmmoSync:
+		{
+			byte b = reader.ReadByte();
+			SyncLoadableAmmo[serial] = b;
+			if (messageType == AutosyncMessageType.RpcInstance)
+			{
+				_prevLoadableAmmo = b;
+			}
+			break;
+		}
+		}
+	}
+
+	private void StopAnimations()
+	{
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.Reload, b: false);
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.Unload, b: false);
+	}
+
+	private void UpdateControls()
+	{
+		if (!base.IsReloading && !base.IsUnloading)
+		{
+			return;
+		}
+		ActionName[] cancelActions = CancelActions;
+		foreach (ActionName action in cancelActions)
+		{
+			if (GetActionDown(action))
+			{
+				SendCmd(delegate(NetworkWriter writer)
 				{
-					this.ProcessCustomRpc(reader, serial, (AnimationToggleableReloaderModule.RpcType)reader.ReadByte(), scenario);
-					return MessageInterceptionResult.Stop;
-				}
-				return base.InterceptMessage(reader, serial, header, scenario);
+					writer.WriteSubheader(ReloaderMessageHeader.Stop);
+				});
+				break;
 			}
 		}
+	}
 
-		protected override void StartReloading()
+	private void UpdateServer()
+	{
+		int serverLoadableAmmo = ServerLoadableAmmo;
+		if (_prevLoadableAmmo != serverLoadableAmmo)
 		{
-			base.Firearm.AnimSetBool(FirearmAnimatorHashes.Reload, true, false);
-			base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.StartReloadOrUnload, false);
-			if (base.IsServer)
-			{
-				this.ServerSendLoadableAmmo();
-			}
+			_prevLoadableAmmo = serverLoadableAmmo;
+			ServerSendLoadableAmmo();
 		}
+	}
 
-		protected override void StartUnloading()
+	private void ServerSendLoadableAmmo()
+	{
+		int clamped = Mathf.Clamp(_prevLoadableAmmo, 0, 255);
+		SendRpc(delegate(NetworkWriter writer)
 		{
-			base.Firearm.AnimSetBool(FirearmAnimatorHashes.Unload, true, false);
-			base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.StartReloadOrUnload, false);
-			if (base.IsServer)
-			{
-				this.ServerSendLoadableAmmo();
-			}
-		}
-
-		protected override void OnStopReloadingAndUnloading()
-		{
-			this.StopAnimations();
-			if (this._postCancelLimiter.InstantReady)
-			{
-				this._postCancelLimiter.RegisterInput();
-			}
-		}
-
-		private void ProcessCustomRpc(NetworkReader reader, ushort serial, AnimationToggleableReloaderModule.RpcType rpc, AutosyncMessageType messageType)
-		{
-			bool flag = messageType == AutosyncMessageType.RpcInstance;
-			if (rpc != AnimationToggleableReloaderModule.RpcType.LoadableAmmoSync)
-			{
-				if (rpc == AnimationToggleableReloaderModule.RpcType.StopAnimations && flag)
-				{
-					this.StopAnimations();
-					return;
-				}
-			}
-			else
-			{
-				byte b = reader.ReadByte();
-				AnimationToggleableReloaderModule.SyncLoadableAmmo[serial] = (int)b;
-				if (messageType == AutosyncMessageType.RpcInstance)
-				{
-					this._prevLoadableAmmo = (int)b;
-				}
-			}
-		}
-
-		private void StopAnimations()
-		{
-			base.Firearm.AnimSetBool(FirearmAnimatorHashes.Reload, false, false);
-			base.Firearm.AnimSetBool(FirearmAnimatorHashes.Unload, false, false);
-		}
-
-		private void UpdateLocalPlayer()
-		{
-			if (!base.IsReloading && !base.IsUnloading)
-			{
-				return;
-			}
-			foreach (ActionName actionName in AnimationToggleableReloaderModule.CancelActions)
-			{
-				if (base.GetActionDown(actionName))
-				{
-					this.SendCmd(delegate(NetworkWriter writer)
-					{
-						writer.WriteSubheader(AnimatorReloaderModuleBase.ReloaderMessageHeader.Stop);
-					});
-					return;
-				}
-			}
-		}
-
-		private void UpdateServer()
-		{
-			int serverLoadableAmmo = this.ServerLoadableAmmo;
-			if (this._prevLoadableAmmo == serverLoadableAmmo)
-			{
-				return;
-			}
-			this._prevLoadableAmmo = serverLoadableAmmo;
-			this.ServerSendLoadableAmmo();
-		}
-
-		private void ServerSendLoadableAmmo()
-		{
-			int clamped = Mathf.Clamp(this._prevLoadableAmmo, 0, 255);
-			this.SendRpc(delegate(NetworkWriter writer)
-			{
-				writer.WriteSubheader(AnimatorReloaderModuleBase.ReloaderMessageHeader.Custom);
-				writer.WriteSubheader(AnimationToggleableReloaderModule.RpcType.LoadableAmmoSync);
-				writer.WriteByte((byte)clamped);
-			}, true);
-		}
-
-		private static readonly ActionName[] CancelActions = new ActionName[]
-		{
-			ActionName.Shoot,
-			ActionName.Zoom
-		};
-
-		private static readonly Dictionary<ushort, int> SyncLoadableAmmo = new Dictionary<ushort, int>();
-
-		private readonly RateLimiter _postCancelLimiter = new RateLimiter(0.7f);
-
-		private int _prevLoadableAmmo;
-
-		private enum RpcType
-		{
-			LoadableAmmoSync,
-			StopAnimations
-		}
+			writer.WriteSubheader(ReloaderMessageHeader.Custom);
+			writer.WriteSubheader(RpcType.LoadableAmmoSync);
+			writer.WriteByte((byte)clamped);
+		});
 	}
 }

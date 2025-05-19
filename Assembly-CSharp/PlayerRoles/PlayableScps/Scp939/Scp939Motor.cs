@@ -1,255 +1,249 @@
-﻿using System;
 using System.Collections.Generic;
 using Mirror;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp939
+namespace PlayerRoles.PlayableScps.Scp939;
+
+public class Scp939Motor : FpcMotor
 {
-	public class Scp939Motor : FpcMotor
+	private const float MinDot = 0.4f;
+
+	private const float LungeRadius = 0.6f;
+
+	private const float FocusToleranceOffset = 0.13f;
+
+	private const float FocusTimeTolerance = 3.5f;
+
+	private const int MaxDetections = 32;
+
+	private const float MinDistanceSqr = 0.4f;
+
+	private readonly Scp939Role _role;
+
+	private readonly Scp939FocusAbility _focus;
+
+	private readonly Scp939LungeAbility _lunge;
+
+	private readonly Scp939AmnesticCloudAbility _cloud;
+
+	private static readonly Collider[] Detections = new Collider[32];
+
+	private static readonly CachedLayerMask Mask = new CachedLayerMask("Hitbox", "Glass");
+
+	private static readonly HashSet<FpcStandardRoleBase> DetectedTargets = new HashSet<FpcStandardRoleBase>();
+
+	private bool IsLocalPlayer => ViewMode == FpcViewMode.LocalPlayer;
+
+	private bool IsControllable
 	{
-		private bool IsLocalPlayer
+		get
 		{
-			get
+			if (!IsLocalPlayer)
 			{
-				return this.ViewMode == FpcMotor.FpcViewMode.LocalPlayer;
-			}
-		}
-
-		private bool WantsToLunge
-		{
-			get
-			{
-				return this._lunge.IsReady && (this._lunge.LungeRequested || base.WantsToJump);
-			}
-		}
-
-		private bool IsLunging
-		{
-			get
-			{
-				return this._lunge.State == Scp939LungeState.Triggered;
-			}
-		}
-
-		protected override float Speed
-		{
-			get
-			{
-				if (this.IsLunging)
+				if (NetworkServer.active)
 				{
-					return this._lunge.LungeForwardSpeed;
+					return Hub.IsDummy;
 				}
-				if (this.IsLocalPlayer && this._cloud.TargetState)
+				return false;
+			}
+			return true;
+		}
+	}
+
+	private bool WantsToLunge
+	{
+		get
+		{
+			if (_lunge.IsReady)
+			{
+				if (!_lunge.LungeRequested)
 				{
-					return base.Speed * Mathf.Clamp01(1f - this._cloud.HoldDuration);
+					return base.WantsToJump;
 				}
-				float num = this._focus.State;
-				if (NetworkServer.active && !this.IsLocalPlayer && this._focus.TargetState)
+				return true;
+			}
+			return false;
+		}
+	}
+
+	private bool IsLunging => _lunge.State == Scp939LungeState.Triggered;
+
+	protected override float Speed
+	{
+		get
+		{
+			if (IsLunging)
+			{
+				return _lunge.LungeForwardSpeed;
+			}
+			if (IsLocalPlayer && _cloud.TargetState)
+			{
+				return base.Speed * Mathf.Clamp01(1f - _cloud.HoldDuration);
+			}
+			float num = _focus.State;
+			if (NetworkServer.active && !IsLocalPlayer && _focus.TargetState)
+			{
+				if (_focus.FrozenTime > 3.5f)
 				{
-					if (this._focus.FrozenTime > 3.5f)
-					{
-						return 0f;
-					}
-					num -= 0.13f;
+					return 0f;
 				}
-				return base.Speed * Mathf.Clamp01(1f - num);
+				num -= 0.13f;
 			}
+			return base.Speed * Mathf.Clamp01(1f - num);
 		}
+	}
 
-		protected override Vector3 DesiredMove
+	protected override Vector3 DesiredMove
+	{
+		get
 		{
-			get
+			if (!IsLocalPlayer || !IsLunging)
 			{
-				if (!this.IsLocalPlayer || !this.IsLunging)
+				return base.DesiredMove;
+			}
+			return CachedTransform.forward;
+		}
+	}
+
+	public override Vector3 Velocity
+	{
+		get
+		{
+			if (!NetworkServer.active || Hub.isLocalPlayer || !IsLunging)
+			{
+				return base.Velocity;
+			}
+			return CachedTransform.forward * _lunge.LungeForwardSpeed;
+		}
+	}
+
+	public bool MovingForwards
+	{
+		get
+		{
+			if (IsLocalPlayer)
+			{
+				return Vector3.Dot(base.MoveDirection.NormalizeIgnoreY(), CachedTransform.forward) > 0.4f;
+			}
+			return true;
+		}
+	}
+
+	private void ProcessHitboxCollision(HitboxIdentity hid)
+	{
+		if (IsControllable && HitboxIdentity.IsEnemy(Hub, hid.TargetHub) && hid.TargetHub.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase && !((MainModule.Position - fpcStandardRoleBase.FpcModule.Position).SqrMagnitudeIgnoreY() < 0.4f))
+		{
+			DetectedTargets.Add(fpcStandardRoleBase);
+		}
+	}
+
+	private void ProcessWindowCollision(BreakableWindow window)
+	{
+		if (NetworkServer.active)
+		{
+			window.Damage(window.health, new Scp939DamageHandler(_role, 120f, Scp939DamageType.LungeTarget), default(Vector3));
+			return;
+		}
+		Collider[] componentsInChildren = window.GetComponentsInChildren<Collider>();
+		for (int i = 0; i < componentsInChildren.Length; i++)
+		{
+			componentsInChildren[i].enabled = false;
+		}
+	}
+
+	private void OverlapCapsule(Vector3 point1, Vector3 point2)
+	{
+		int num = Physics.OverlapCapsuleNonAlloc(point1, point2, 0.6f, Detections, Mask);
+		for (int i = 0; i < num; i++)
+		{
+			if (Detections[i].TryGetComponent<IDestructible>(out var component))
+			{
+				if (component is HitboxIdentity hid)
 				{
-					return base.DesiredMove;
+					ProcessHitboxCollision(hid);
 				}
-				return this.CachedTransform.forward;
-			}
-		}
-
-		public override Vector3 Velocity
-		{
-			get
-			{
-				if (!NetworkServer.active || this.Hub.isLocalPlayer || !this.IsLunging)
+				else if (component is BreakableWindow window)
 				{
-					return base.Velocity;
-				}
-				return this.CachedTransform.forward * this._lunge.LungeForwardSpeed;
-			}
-		}
-
-		public bool MovingForwards
-		{
-			get
-			{
-				return !this.IsLocalPlayer || Vector3.Dot(base.MoveDirection.NormalizeIgnoreY(), this.CachedTransform.forward) > 0.4f;
-			}
-		}
-
-		private void ProcessHitboxCollision(HitboxIdentity hid)
-		{
-			if (!this.IsLocalPlayer)
-			{
-				return;
-			}
-			if (!HitboxIdentity.IsEnemy(this.Hub, hid.TargetHub))
-			{
-				return;
-			}
-			FpcStandardRoleBase fpcStandardRoleBase = hid.TargetHub.roleManager.CurrentRole as FpcStandardRoleBase;
-			if (fpcStandardRoleBase == null)
-			{
-				return;
-			}
-			if ((this.MainModule.Position - fpcStandardRoleBase.FpcModule.Position).SqrMagnitudeIgnoreY() < 0.4f)
-			{
-				return;
-			}
-			Scp939Motor.DetectedTargets.Add(fpcStandardRoleBase);
-		}
-
-		private void ProcessWindowCollision(BreakableWindow window)
-		{
-			if (NetworkServer.active)
-			{
-				window.Damage(window.health, new Scp939DamageHandler(this._role, 120f, Scp939DamageType.LungeTarget), default(Vector3));
-				return;
-			}
-			Collider[] componentsInChildren = window.GetComponentsInChildren<Collider>();
-			for (int i = 0; i < componentsInChildren.Length; i++)
-			{
-				componentsInChildren[i].enabled = false;
-			}
-		}
-
-		private void OverlapCapsule(Vector3 point1, Vector3 point2)
-		{
-			int num = Physics.OverlapCapsuleNonAlloc(point1, point2, 0.6f, Scp939Motor.Detections, Scp939Motor.Mask);
-			for (int i = 0; i < num; i++)
-			{
-				IDestructible destructible;
-				if (Scp939Motor.Detections[i].TryGetComponent<IDestructible>(out destructible))
-				{
-					HitboxIdentity hitboxIdentity = destructible as HitboxIdentity;
-					if (hitboxIdentity != null)
-					{
-						this.ProcessHitboxCollision(hitboxIdentity);
-					}
-					else
-					{
-						BreakableWindow breakableWindow = destructible as BreakableWindow;
-						if (breakableWindow != null)
-						{
-							this.ProcessWindowCollision(breakableWindow);
-						}
-					}
+					ProcessWindowCollision(window);
 				}
 			}
 		}
+	}
 
-		protected override void UpdateFloating()
+	protected override void UpdateFloating()
+	{
+		if (_focus.State == 1f && _lunge.State != Scp939LungeState.Triggered)
 		{
-			if (this._focus.State == 1f && this._lunge.State != Scp939LungeState.Triggered)
-			{
-				Vector3 moveDirection = base.MoveDirection;
-				moveDirection.y = Mathf.Min(moveDirection.y, -this._lunge.LungeJumpSpeed);
-				base.MoveDirection = moveDirection;
-			}
-			base.UpdateFloating();
+			Vector3 moveDirection = base.MoveDirection;
+			moveDirection.y = Mathf.Min(moveDirection.y, 0f - _lunge.LungeJumpSpeed);
+			base.MoveDirection = moveDirection;
 		}
+		base.UpdateFloating();
+	}
 
-		protected override void UpdateGrounded(ref bool sendJump, float jumpSpeed)
+	protected override void UpdateGrounded(ref bool sendJump, float jumpSpeed)
+	{
+		if (WantsToLunge)
 		{
-			if (this.WantsToLunge)
-			{
-				this._lunge.TriggerLunge();
-				jumpSpeed = this._lunge.LungeJumpSpeed;
-				base.WantsToJump = true;
-			}
-			else if (this._focus.State > 0f || this._cloud.TargetState)
-			{
-				jumpSpeed = 0f;
-			}
-			base.UpdateGrounded(ref sendJump, jumpSpeed);
+			_lunge.TriggerLunge();
+			jumpSpeed = _lunge.LungeJumpSpeed;
+			base.WantsToJump = true;
 		}
-
-		protected override Vector3 GetFrameMove()
+		else if (_focus.State > 0f || _cloud.TargetState)
 		{
-			Vector3 frameMove = base.GetFrameMove();
-			if (!this.IsLunging || (!NetworkServer.active && !this.IsLocalPlayer))
+			jumpSpeed = 0f;
+		}
+		base.UpdateGrounded(ref sendJump, jumpSpeed);
+	}
+
+	protected override Vector3 GetFrameMove()
+	{
+		Vector3 frameMove = base.GetFrameMove();
+		if (!IsLunging || (!NetworkServer.active && !IsLocalPlayer))
+		{
+			return frameMove;
+		}
+		DetectedTargets.Clear();
+		Vector3 position = MainModule.Position;
+		Vector3 vector = position + frameMove;
+		Vector3 vector2 = Vector3.down * 0.6f;
+		OverlapCapsule(position, vector);
+		OverlapCapsule(position + vector2, vector + vector2);
+		if (!IsControllable)
+		{
+			return frameMove;
+		}
+		FpcStandardRoleBase targetRole = null;
+		float num = float.MaxValue;
+		bool flag = false;
+		foreach (FpcStandardRoleBase detectedTarget in DetectedTargets)
+		{
+			float sqrMagnitude = (detectedTarget.FpcModule.Position - vector).sqrMagnitude;
+			if (!(sqrMagnitude >= num))
 			{
-				return frameMove;
-			}
-			Scp939Motor.DetectedTargets.Clear();
-			Vector3 position = this.MainModule.Position;
-			Vector3 vector = position + frameMove;
-			Vector3 vector2 = Vector3.down * 0.6f;
-			this.OverlapCapsule(position, vector);
-			this.OverlapCapsule(position + vector2, vector + vector2);
-			if (!this.IsLocalPlayer)
-			{
-				return frameMove;
-			}
-			FpcStandardRoleBase fpcStandardRoleBase = null;
-			float num = float.MaxValue;
-			bool flag = false;
-			foreach (FpcStandardRoleBase fpcStandardRoleBase2 in Scp939Motor.DetectedTargets)
-			{
-				float sqrMagnitude = (fpcStandardRoleBase2.FpcModule.Position - vector).sqrMagnitude;
-				if (sqrMagnitude < num)
+				num = sqrMagnitude;
+				if (!Physics.Linecast(detectedTarget.FpcModule.Position, vector, PlayerRolesUtils.AttackMask))
 				{
-					num = sqrMagnitude;
-					if (!Physics.Linecast(fpcStandardRoleBase2.FpcModule.Position, vector, PlayerRolesUtils.BlockerMask))
-					{
-						fpcStandardRoleBase = fpcStandardRoleBase2;
-						flag = true;
-					}
+					targetRole = detectedTarget;
+					flag = true;
 				}
 			}
-			if (!flag)
-			{
-				return frameMove;
-			}
-			this._lunge.ClientSendHit(fpcStandardRoleBase);
-			return this._lunge.LungeJumpSpeed * Time.deltaTime * Vector3.down;
 		}
-
-		public Scp939Motor(ReferenceHub hub, Scp939Role role)
-			: base(hub, role.FpcModule, false)
+		if (!flag)
 		{
-			this._role = role;
-			role.SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out this._focus);
-			role.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out this._lunge);
-			role.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out this._cloud);
+			return frameMove;
 		}
+		_lunge.ClientSendHit(targetRole);
+		return _lunge.LungeJumpSpeed * Time.deltaTime * Vector3.down;
+	}
 
-		private const float MinDot = 0.4f;
-
-		private const float LungeRadius = 0.6f;
-
-		private const float FocusToleranceOffset = 0.13f;
-
-		private const float FocusTimeTolerance = 3.5f;
-
-		private const int MaxDetections = 32;
-
-		private const float MinDistanceSqr = 0.4f;
-
-		private readonly Scp939Role _role;
-
-		private readonly Scp939FocusAbility _focus;
-
-		private readonly Scp939LungeAbility _lunge;
-
-		private readonly Scp939AmnesticCloudAbility _cloud;
-
-		private static readonly Collider[] Detections = new Collider[32];
-
-		private static readonly CachedLayerMask Mask = new CachedLayerMask(new string[] { "Hitbox", "Glass" });
-
-		private static readonly HashSet<FpcStandardRoleBase> DetectedTargets = new HashSet<FpcStandardRoleBase>();
+	public Scp939Motor(ReferenceHub hub, Scp939Role role, FallDamageSettings fallDamageSettings)
+		: base(hub, role.FpcModule, fallDamageSettings)
+	{
+		_role = role;
+		role.SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out _focus);
+		role.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out _lunge);
+		role.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out _cloud);
 	}
 }

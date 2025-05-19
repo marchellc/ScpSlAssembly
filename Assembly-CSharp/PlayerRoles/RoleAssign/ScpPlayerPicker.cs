@@ -1,132 +1,135 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using NorthwoodLib.Pools;
 using UnityEngine;
 
-namespace PlayerRoles.RoleAssign
-{
-	public static class ScpPlayerPicker
-	{
-		public static List<ReferenceHub> ChoosePlayers(int targetScps)
-		{
-			using (ScpTicketsLoader scpTicketsLoader = new ScpTicketsLoader())
-			{
-				ScpPlayerPicker.GenerateList(scpTicketsLoader, targetScps);
-				foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-				{
-					if (RoleAssigner.CheckPlayer(referenceHub))
-					{
-						int tickets = scpTicketsLoader.GetTickets(referenceHub, 10);
-						scpTicketsLoader.ModifyTickets(referenceHub, tickets + 2);
-					}
-				}
-				foreach (ReferenceHub referenceHub2 in ScpPlayerPicker.ScpsToSpawn)
-				{
-					scpTicketsLoader.ModifyTickets(referenceHub2, 10);
-				}
-			}
-			if (targetScps != ScpPlayerPicker.ScpsToSpawn.Count)
-			{
-				throw new InvalidOperationException("Failed to meet target number of SCPs.");
-			}
-			return ScpPlayerPicker.ScpsToSpawn;
-		}
+namespace PlayerRoles.RoleAssign;
 
-		private static void GenerateList(ScpTicketsLoader loader, int scpsToAssign)
+public static class ScpPlayerPicker
+{
+	private class PotentialScp
+	{
+		public ReferenceHub Player;
+
+		public long Weight;
+	}
+
+	private const int DefaultTickets = 10;
+
+	private const int HumanTicketBonus = 2;
+
+	public const int ScpOptOutTickets = 0;
+
+	private static readonly List<ReferenceHub> ScpsToSpawn = new List<ReferenceHub>();
+
+	public static List<ReferenceHub> ChoosePlayers(int targetScps)
+	{
+		using (ScpTicketsLoader scpTicketsLoader = new ScpTicketsLoader())
 		{
-			ScpPlayerPicker.ScpsToSpawn.Clear();
-			if (scpsToAssign <= 0)
+			GenerateList(scpTicketsLoader, targetScps);
+			foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 			{
-				return;
-			}
-			int num = 0;
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				if (RoleAssigner.CheckPlayer(referenceHub))
+				if (RoleAssigner.CheckPlayer(allHub) && !IsOptedOutOfScp(allHub))
 				{
-					int tickets = loader.GetTickets(referenceHub, 10);
-					if (tickets >= num)
-					{
-						if (tickets > num)
-						{
-							ScpPlayerPicker.ScpsToSpawn.Clear();
-						}
-						num = tickets;
-						ScpPlayerPicker.ScpsToSpawn.Add(referenceHub);
-					}
+					int tickets = scpTicketsLoader.GetTickets(allHub, 10);
+					scpTicketsLoader.ModifyTickets(allHub, tickets + 2);
 				}
 			}
-			if (ScpPlayerPicker.ScpsToSpawn.Count > 1)
+			foreach (ReferenceHub item in ScpsToSpawn)
 			{
-				ReferenceHub referenceHub2 = ScpPlayerPicker.ScpsToSpawn.RandomItem<ReferenceHub>();
-				ScpPlayerPicker.ScpsToSpawn.Clear();
-				ScpPlayerPicker.ScpsToSpawn.Add(referenceHub2);
+				scpTicketsLoader.ModifyTickets(item, 10);
 			}
-			scpsToAssign -= ScpPlayerPicker.ScpsToSpawn.Count;
-			if (scpsToAssign <= 0)
+		}
+		if (targetScps != ScpsToSpawn.Count)
+		{
+			throw new InvalidOperationException("Failed to meet target number of SCPs.");
+		}
+		return ScpsToSpawn;
+	}
+
+	private static void GenerateList(ScpTicketsLoader loader, int scpsToAssign)
+	{
+		ScpsToSpawn.Clear();
+		if (scpsToAssign <= 0)
+		{
+			return;
+		}
+		int num = 0;
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (!RoleAssigner.CheckPlayer(allHub))
 			{
-				return;
+				continue;
 			}
-			List<ScpPlayerPicker.PotentialScp> list = ListPool<ScpPlayerPicker.PotentialScp>.Shared.Rent();
-			long num2 = 0L;
-			using (HashSet<ReferenceHub>.Enumerator enumerator = ReferenceHub.AllHubs.GetEnumerator())
+			int tickets = loader.GetTickets(allHub, 10);
+			if (tickets >= num)
 			{
-				while (enumerator.MoveNext())
+				if (tickets > num)
 				{
-					ReferenceHub referenceHub3 = enumerator.Current;
-					if (!ScpPlayerPicker.ScpsToSpawn.Contains(referenceHub3) && RoleAssigner.CheckPlayer(referenceHub3))
-					{
-						long num3 = 1L;
-						int tickets2 = loader.GetTickets(referenceHub3, 10);
-						for (int i = 0; i < scpsToAssign; i++)
-						{
-							num3 *= (long)tickets2;
-						}
-						list.Add(new ScpPlayerPicker.PotentialScp
-						{
-							Player = referenceHub3,
-							Weight = num3
-						});
-						num2 += num3;
-					}
+					ScpsToSpawn.Clear();
 				}
-				goto IL_01C4;
+				num = tickets;
+				ScpsToSpawn.Add(allHub);
 			}
-			IL_0156:
-			double num4 = (double)global::UnityEngine.Random.value * (double)num2;
+		}
+		if (ScpsToSpawn.Count > 1)
+		{
+			ReferenceHub item = ScpsToSpawn.RandomItem();
+			ScpsToSpawn.Clear();
+			ScpsToSpawn.Add(item);
+		}
+		scpsToAssign -= ScpsToSpawn.Count;
+		if (scpsToAssign <= 0)
+		{
+			return;
+		}
+		List<PotentialScp> list = ListPool<PotentialScp>.Shared.Rent();
+		long num2 = 0L;
+		foreach (ReferenceHub allHub2 in ReferenceHub.AllHubs)
+		{
+			if (!ScpsToSpawn.Contains(allHub2) && RoleAssigner.CheckPlayer(allHub2))
+			{
+				long num3 = 1L;
+				int tickets2 = loader.GetTickets(allHub2, 10);
+				for (int i = 0; i < scpsToAssign; i++)
+				{
+					num3 *= tickets2;
+				}
+				list.Add(new PotentialScp
+				{
+					Player = allHub2,
+					Weight = num3
+				});
+				num2 += num3;
+			}
+		}
+		while (scpsToAssign > 0)
+		{
+			double num4 = (double)UnityEngine.Random.value * (double)num2;
 			for (int j = 0; j < list.Count; j++)
 			{
-				ScpPlayerPicker.PotentialScp potentialScp = list[j];
+				PotentialScp potentialScp = list[j];
 				num4 -= (double)potentialScp.Weight;
-				if (num4 <= 0.0)
+				if (!(num4 > 0.0))
 				{
 					scpsToAssign--;
-					ScpPlayerPicker.ScpsToSpawn.Add(potentialScp.Player);
+					ScpsToSpawn.Add(potentialScp.Player);
 					list.RemoveAt(j);
 					num2 -= potentialScp.Weight;
 					break;
 				}
 			}
-			IL_01C4:
-			if (scpsToAssign <= 0)
-			{
-				ListPool<ScpPlayerPicker.PotentialScp>.Shared.Return(list);
-				return;
-			}
-			goto IL_0156;
 		}
+		ListPool<PotentialScp>.Shared.Return(list);
+	}
 
-		private const int DefaultTickets = 10;
-
-		private const int HumanTicketBonus = 2;
-
-		private static readonly List<ReferenceHub> ScpsToSpawn = new List<ReferenceHub>();
-
-		private class PotentialScp
+	public static bool IsOptedOutOfScp(ReferenceHub ply)
+	{
+		int connectionId = ply.connectionToClient.connectionId;
+		if (!ScpSpawnPreferences.Preferences.TryGetValue(connectionId, out var value))
 		{
-			public ReferenceHub Player;
-
-			public long Weight;
+			return false;
 		}
+		return value.OptOutOfScp;
 	}
 }

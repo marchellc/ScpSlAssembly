@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using CentralAuth;
 using CustomPlayerEffects;
 using GameObjectPools;
@@ -8,219 +8,218 @@ using PlayerRoles.Voice;
 using PlayerStatsSystem;
 using RelativePositioning;
 using UnityEngine;
+using UserSettings;
+using UserSettings.ControlsSettings;
 
-namespace PlayerRoles.Spectating
+namespace PlayerRoles.Spectating;
+
+public class SpectatorRole : PlayerRoleBase, IPrivateSpawnDataWriter, IHealthbarRole, IVoiceRole, ISpawnDataReader, IAdvancedCameraController, ICameraController, IPoolSpawnable, IPoolResettable, IViewmodelRole, IAmbientLightRole
 {
-	public class SpectatorRole : PlayerRoleBase, IPrivateSpawnDataWriter, IHealthbarRole, ISpawnDataReader, IAdvancedCameraController, ICameraController, IPoolSpawnable, IVoiceRole, IViewmodelRole, IAmbientLightRole
+	public const float SpawnHeight = 6000f;
+
+	private const float AutomaticSpectatorSwitchDelay = 5f;
+
+	public static readonly CachedUserSetting<bool> AutomaticSpectatorSwitch = new CachedUserSetting<bool>(MiscControlsSetting.AutomaticSpectatorSwitch);
+
+	public SpectatorTargetTracker TrackerPrefab;
+
+	private DamageHandlerBase _damageHandler;
+
+	private Transform _transformToRestore;
+
+	private float _timeTillAutomaticSwitch;
+
+	private bool _switchAutomatically;
+
+	private uint? _killerId;
+
+	public override RoleTypeId RoleTypeId => RoleTypeId.Spectator;
+
+	public override Team Team => Team.Dead;
+
+	public override Color RoleColor => Color.white;
+
+	public float VerticalRotation => SpectatorTargetTracker.CurrentOffset.rotation.x;
+
+	public float HorizontalRotation => SpectatorTargetTracker.CurrentOffset.rotation.y;
+
+	public float RollRotation => SpectatorTargetTracker.CurrentOffset.rotation.z;
+
+	public Vector3 CameraPosition => SpectatorTargetTracker.CurrentOffset.position;
+
+	public virtual bool ReadyToRespawn
 	{
-		public override RoleTypeId RoleTypeId
+		get
 		{
-			get
+			if (TryGetOwner(out var hub))
 			{
-				return RoleTypeId.Spectator;
+				return hub.authManager.InstanceMode != ClientInstanceMode.DedicatedServer;
 			}
-		}
-
-		public override Team Team
-		{
-			get
-			{
-				return Team.Dead;
-			}
-		}
-
-		public override Color RoleColor
-		{
-			get
-			{
-				return Color.white;
-			}
-		}
-
-		public float VerticalRotation
-		{
-			get
-			{
-				return SpectatorTargetTracker.CurrentOffset.rotation.x;
-			}
-		}
-
-		public float HorizontalRotation
-		{
-			get
-			{
-				return SpectatorTargetTracker.CurrentOffset.rotation.y;
-			}
-		}
-
-		public float RollRotation
-		{
-			get
-			{
-				return SpectatorTargetTracker.CurrentOffset.rotation.z;
-			}
-		}
-
-		public Vector3 CameraPosition
-		{
-			get
-			{
-				return SpectatorTargetTracker.CurrentOffset.position;
-			}
-		}
-
-		public virtual bool ReadyToRespawn
-		{
-			get
-			{
-				ReferenceHub referenceHub;
-				return base.TryGetOwner(out referenceHub) && referenceHub.authManager.InstanceMode != ClientInstanceMode.DedicatedServer;
-			}
-		}
-
-		public VoiceModuleBase VoiceModule { get; private set; }
-
-		public RelativePosition DeathPosition { get; private set; }
-
-		public uint SyncedSpectatedNetId { get; internal set; }
-
-		public float MaxHealth
-		{
-			get
-			{
-				return 0f;
-			}
-		}
-
-		public PlayerStats TargetStats
-		{
-			get
-			{
-				IHealthbarRole healthbarRole;
-				if (!this.TryGetTrackedRole<IHealthbarRole>(out healthbarRole))
-				{
-					return null;
-				}
-				return healthbarRole.TargetStats;
-			}
-		}
-
-		public float AmbientBoost
-		{
-			get
-			{
-				IAmbientLightRole ambientLightRole;
-				if (!this.TryGetTrackedRole<IAmbientLightRole>(out ambientLightRole))
-				{
-					return InsufficientLighting.DefaultIntensity;
-				}
-				return ambientLightRole.AmbientBoost;
-			}
-		}
-
-		public bool ForceBlackAmbient
-		{
-			get
-			{
-				IAmbientLightRole ambientLightRole;
-				return this.TryGetTrackedRole<IAmbientLightRole>(out ambientLightRole) && ambientLightRole.ForceBlackAmbient;
-			}
-		}
-
-		public bool InsufficientLight
-		{
-			get
-			{
-				return false;
-			}
-		}
-
-		private bool TryGetTrackedRole<T>(out T role)
-		{
-			ReferenceHub referenceHub;
-			if (SpectatorTargetTracker.TryGetTrackedPlayer(out referenceHub))
-			{
-				PlayerRoleBase currentRole = referenceHub.roleManager.CurrentRole;
-				if (currentRole is T)
-				{
-					T t = currentRole as T;
-					role = t;
-					return true;
-				}
-			}
-			role = default(T);
 			return false;
 		}
+	}
 
-		public override void DisableRole(RoleTypeId newRole)
+	[field: SerializeField]
+	public VoiceModuleBase VoiceModule { get; private set; }
+
+	public RelativePosition DeathPosition { get; private set; }
+
+	public uint SyncedSpectatedNetId { get; internal set; }
+
+	public float MaxHealth => 0f;
+
+	public PlayerStats TargetStats
+	{
+		get
 		{
-			base.DisableRole(newRole);
-			this._damageHandler = null;
-			if (this._transformToRestore == null)
+			if (!TryGetTrackedRole<IHealthbarRole>(out var role))
 			{
-				return;
+				return null;
 			}
-			this._transformToRestore.position = this.DeathPosition.Position;
-			this._transformToRestore = null;
+			return role.TargetStats;
 		}
+	}
 
-		public void SpawnObject()
+	public float AmbientBoost
+	{
+		get
 		{
-			ReferenceHub referenceHub;
-			if (!base.TryGetOwner(out referenceHub))
+			if (!TryGetTrackedRole<IAmbientLightRole>(out var role))
 			{
-				throw new InvalidOperationException("Spectator role failed to spawn - owner is null");
+				return InsufficientLighting.DefaultIntensity;
 			}
-			Transform transform = referenceHub.transform;
-			this.DeathPosition = new RelativePosition(transform.position);
-			transform.position = Vector3.up * 6000f;
-			this.SyncedSpectatedNetId = 0U;
-			if (NetworkServer.active || referenceHub.isLocalPlayer)
-			{
-				this._transformToRestore = transform;
-			}
+			return role.AmbientBoost;
 		}
+	}
 
-		public void WritePrivateSpawnData(NetworkWriter writer)
+	public bool ForceBlackAmbient
+	{
+		get
 		{
-			if (this._damageHandler == null)
+			if (TryGetTrackedRole<IAmbientLightRole>(out var role))
 			{
-				writer.WriteSpawnReason(SpectatorSpawnReason.None);
+				return role.ForceBlackAmbient;
 			}
-			else
-			{
-				this._damageHandler.WriteDeathScreen(writer);
-			}
-			this._damageHandler = null;
-		}
-
-		public void ReadSpawnData(NetworkReader reader)
-		{
-			bool isLocalPlayer = base.IsLocalPlayer;
-		}
-
-		public void ServerSetData(DamageHandlerBase dhb)
-		{
-			this._damageHandler = dhb;
-		}
-
-		public bool TryGetViewmodelFov(out float fov)
-		{
-			IViewmodelRole viewmodelRole = SpectatorTargetTracker.CurrentTarget as IViewmodelRole;
-			if (viewmodelRole != null && viewmodelRole != null)
-			{
-				return viewmodelRole.TryGetViewmodelFov(out fov);
-			}
-			fov = 0f;
 			return false;
 		}
+	}
 
-		public SpectatorTargetTracker TrackerPrefab;
+	public bool InsufficientLight => false;
 
-		public const float SpawnHeight = 6000f;
+	public override void DisableRole(RoleTypeId newRole)
+	{
+		base.DisableRole(newRole);
+		_damageHandler = null;
+		if (!(_transformToRestore == null))
+		{
+			_transformToRestore.position = DeathPosition.Position;
+			_transformToRestore = null;
+		}
+	}
 
-		private Transform _transformToRestore;
+	public void SpawnObject()
+	{
+		if (!TryGetOwner(out var hub))
+		{
+			throw new InvalidOperationException("Spectator role failed to spawn - owner is null");
+		}
+		Transform transform = hub.transform;
+		DeathPosition = new RelativePosition(transform.position);
+		transform.position = Vector3.up * 6000f;
+		SyncedSpectatedNetId = 0u;
+		if (NetworkServer.active || hub.isLocalPlayer)
+		{
+			_transformToRestore = transform;
+		}
+		SpectatorTargetTracker.OnTargetChanged += ResetAutomaticSwitch;
+	}
 
-		private DamageHandlerBase _damageHandler;
+	public void ResetObject()
+	{
+		SpectatorTargetTracker.OnTargetChanged -= ResetAutomaticSwitch;
+	}
+
+	public void WritePrivateSpawnData(NetworkWriter writer)
+	{
+		if (_damageHandler == null)
+		{
+			writer.WriteSpawnReason(SpectatorSpawnReason.None);
+		}
+		else
+		{
+			_damageHandler.WriteDeathScreen(writer);
+		}
+		_damageHandler = null;
+	}
+
+	public void ReadSpawnData(NetworkReader reader)
+	{
+		_ = base.IsLocalPlayer;
+	}
+
+	public void ServerSetData(DamageHandlerBase dhb)
+	{
+		_damageHandler = dhb;
+	}
+
+	public bool TryGetViewmodelFov(out float fov)
+	{
+		if (SpectatorTargetTracker.CurrentTarget is IViewmodelRole viewmodelRole && viewmodelRole != null)
+		{
+			return viewmodelRole.TryGetViewmodelFov(out fov);
+		}
+		fov = 0f;
+		return false;
+	}
+
+	protected virtual void ScheduleNextTarget(uint killerId)
+	{
+	}
+
+	protected virtual void Update()
+	{
+	}
+
+	private void ResetAutomaticSwitch()
+	{
+		_timeTillAutomaticSwitch = 0f;
+		_switchAutomatically = false;
+		_killerId = null;
+	}
+
+	private bool TryGetKiller(out ISpectatableRole spectatableRole)
+	{
+		spectatableRole = null;
+		if (!_killerId.HasValue)
+		{
+			return false;
+		}
+		if (!ReferenceHub.TryGetHubNetID(_killerId.Value, out var hub))
+		{
+			return false;
+		}
+		if (!(hub.roleManager.CurrentRole is ISpectatableRole spectatableRole2))
+		{
+			return false;
+		}
+		spectatableRole = spectatableRole2;
+		return true;
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		UserSetting<bool>.SetDefaultValue(MiscControlsSetting.AutomaticSpectatorSwitch, defaultValue: true);
+	}
+
+	private static bool TryGetTrackedRole<T>(out T role)
+	{
+		if (SpectatorTargetTracker.TryGetTrackedPlayer(out var hub) && hub.roleManager.CurrentRole is T val)
+		{
+			role = val;
+			return true;
+		}
+		role = default(T);
+		return false;
 	}
 }

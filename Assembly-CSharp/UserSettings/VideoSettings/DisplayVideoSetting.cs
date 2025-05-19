@@ -1,14 +1,11 @@
-﻿using System;
+namespace UserSettings.VideoSettings;
 
-namespace UserSettings.VideoSettings
+public enum DisplayVideoSetting
 {
-	public enum DisplayVideoSetting
-	{
-		Resolution,
-		AspectRatio,
-		FullscreenMode,
-		VSyncCount,
-		FpsLimiter,
-		GraphicsAPI
-	}
+	Resolution,
+	AspectRatio,
+	FullscreenMode,
+	VSyncCount,
+	FpsLimiter,
+	GraphicsAPI
 }

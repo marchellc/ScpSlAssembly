@@ -1,54 +1,44 @@
-﻿using System;
+using System;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace Utf8Json.Internal.Emit
+namespace Utf8Json.Internal.Emit;
+
+internal class DynamicAssembly
 {
-	internal class DynamicAssembly
+	private readonly AssemblyBuilder assemblyBuilder;
+
+	private readonly ModuleBuilder moduleBuilder;
+
+	private readonly object gate = new object();
+
+	public TypeBuilder DefineType(string name, TypeAttributes attr)
 	{
-		public TypeBuilder DefineType(string name, TypeAttributes attr)
+		lock (gate)
 		{
-			object obj = this.gate;
-			TypeBuilder typeBuilder;
-			lock (obj)
-			{
-				typeBuilder = this.moduleBuilder.DefineType(name, attr);
-			}
-			return typeBuilder;
+			return moduleBuilder.DefineType(name, attr);
 		}
+	}
 
-		public TypeBuilder DefineType(string name, TypeAttributes attr, Type parent)
+	public TypeBuilder DefineType(string name, TypeAttributes attr, Type parent)
+	{
+		lock (gate)
 		{
-			object obj = this.gate;
-			TypeBuilder typeBuilder;
-			lock (obj)
-			{
-				typeBuilder = this.moduleBuilder.DefineType(name, attr, parent);
-			}
-			return typeBuilder;
+			return moduleBuilder.DefineType(name, attr, parent);
 		}
+	}
 
-		public TypeBuilder DefineType(string name, TypeAttributes attr, Type parent, Type[] interfaces)
+	public TypeBuilder DefineType(string name, TypeAttributes attr, Type parent, Type[] interfaces)
+	{
+		lock (gate)
 		{
-			object obj = this.gate;
-			TypeBuilder typeBuilder;
-			lock (obj)
-			{
-				typeBuilder = this.moduleBuilder.DefineType(name, attr, parent, interfaces);
-			}
-			return typeBuilder;
+			return moduleBuilder.DefineType(name, attr, parent, interfaces);
 		}
+	}
 
-		public DynamicAssembly(string moduleName)
-		{
-			this.assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(moduleName), AssemblyBuilderAccess.Run);
-			this.moduleBuilder = this.assemblyBuilder.DefineDynamicModule(moduleName);
-		}
-
-		private readonly AssemblyBuilder assemblyBuilder;
-
-		private readonly ModuleBuilder moduleBuilder;
-
-		private readonly object gate = new object();
+	public DynamicAssembly(string moduleName)
+	{
+		assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(moduleName), AssemblyBuilderAccess.Run);
+		moduleBuilder = assemblyBuilder.DefineDynamicModule(moduleName);
 	}
 }

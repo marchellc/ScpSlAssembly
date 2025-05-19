@@ -1,13 +1,10 @@
-﻿using System;
+namespace ServerOutput;
 
-namespace ServerOutput
+public interface IOutputEntry
 {
-	public interface IOutputEntry
-	{
-		string GetString();
+	string GetString();
 
-		int GetBytesLength();
+	int GetBytesLength();
 
-		void GetBytes(ref byte[] buffer, out int length);
-	}
+	void GetBytes(ref byte[] buffer, out int length);
 }

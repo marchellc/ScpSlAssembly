@@ -1,54 +1,52 @@
-﻿using System;
 using GameCore;
 using Respawning.Waves;
 using Respawning.Waves.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Respawning.Graphics
+namespace Respawning.Graphics;
+
+public abstract class MiniWaveIndicator<TMiniWave> : WaveInterfaceBase<TMiniWave> where TMiniWave : TimeBasedWave, ILimitedWave, IMiniWave
 {
-	public abstract class MiniWaveIndicator<TMiniWave> : WaveInterfaceBase<TMiniWave> where TMiniWave : TimeBasedWave, ILimitedWave, IMiniWave
+	private const float NormalCountdownThreshold = 8f;
+
+	private const float FastCountdownThreshold = 3f;
+
+	public AnimationCurve NormalAnimation;
+
+	public AnimationCurve FastAnimation;
+
+	private Image _miniWaveIndicator;
+
+	protected override void Awake()
 	{
-		protected override void Awake()
+		base.Awake();
+		_miniWaveIndicator = GetComponent<Image>();
+	}
+
+	private void Update()
+	{
+		Color color = _miniWaveIndicator.color;
+		color.a = GetAlphaColor();
+		_miniWaveIndicator.color = color;
+	}
+
+	private float GetAlphaColor()
+	{
+		if (base.Wave.RespawnTokens <= 0 || !base.Wave.IsReadyToSpawn)
 		{
-			base.Awake();
-			this._miniWaveIndicator = base.GetComponent<Image>();
+			return 0f;
 		}
-
-		private void Update()
+		float timeLeft = base.Wave.Timer.TimeLeft;
+		if (timeLeft > 8f)
 		{
-			Color color = this._miniWaveIndicator.color;
-			color.a = this.GetAlphaColor();
-			this._miniWaveIndicator.color = color;
+			return 0f;
 		}
-
-		private float GetAlphaColor()
+		float time = (float)RoundStart.RoundLength.TotalSeconds;
+		if (!(timeLeft <= 3f))
 		{
-			if (base.Wave.RespawnTokens <= 0 || !base.Wave.IsReadyToSpawn)
-			{
-				return 0f;
-			}
-			float timeLeft = base.Wave.Timer.TimeLeft;
-			if (timeLeft > 8f)
-			{
-				return 0f;
-			}
-			float num = (float)RoundStart.RoundLength.TotalSeconds;
-			if (timeLeft > 3f)
-			{
-				return this.NormalAnimation.Evaluate(num);
-			}
-			return this.FastAnimation.Evaluate(num);
+			return NormalAnimation.Evaluate(time);
 		}
-
-		private const float NormalCountdownThreshold = 8f;
-
-		private const float FastCountdownThreshold = 3f;
-
-		public AnimationCurve NormalAnimation;
-
-		public AnimationCurve FastAnimation;
-
-		private Image _miniWaveIndicator;
+		return FastAnimation.Evaluate(time);
 	}
 }

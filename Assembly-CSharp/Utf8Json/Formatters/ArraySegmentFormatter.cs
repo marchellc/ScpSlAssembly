@@ -1,69 +1,65 @@
-﻿using System;
+using System;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public class ArraySegmentFormatter<T> : IJsonFormatter<ArraySegment<T>>, IJsonFormatter
 {
-	public class ArraySegmentFormatter<T> : IJsonFormatter<ArraySegment<T>>, IJsonFormatter
+	private static readonly ArrayPool<T> arrayPool = new ArrayPool<T>(99);
+
+	public void Serialize(ref JsonWriter writer, ArraySegment<T> value, IJsonFormatterResolver formatterResolver)
 	{
-		public void Serialize(ref JsonWriter writer, ArraySegment<T> value, IJsonFormatterResolver formatterResolver)
+		if (value.Array == null)
 		{
-			if (value.Array == null)
-			{
-				writer.WriteNull();
-				return;
-			}
-			T[] array = value.Array;
-			int offset = value.Offset;
-			int count = value.Count;
-			writer.WriteBeginArray();
-			IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
-			if (count != 0)
-			{
-				formatterWithVerify.Serialize(ref writer, value.Array[offset], formatterResolver);
-			}
-			for (int i = 1; i < count; i++)
-			{
-				writer.WriteValueSeparator();
-				formatterWithVerify.Serialize(ref writer, array[offset + i], formatterResolver);
-			}
-			writer.WriteEndArray();
+			writer.WriteNull();
+			return;
 		}
-
-		public ArraySegment<T> Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+		T[] array = value.Array;
+		int offset = value.Offset;
+		int count = value.Count;
+		writer.WriteBeginArray();
+		IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
+		if (count != 0)
 		{
-			ArraySegment<T> arraySegment;
-			if (reader.ReadIsNull())
+			formatterWithVerify.Serialize(ref writer, value.Array[offset], formatterResolver);
+		}
+		for (int i = 1; i < count; i++)
+		{
+			writer.WriteValueSeparator();
+			formatterWithVerify.Serialize(ref writer, array[offset + i], formatterResolver);
+		}
+		writer.WriteEndArray();
+	}
+
+	public ArraySegment<T> Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
+		{
+			return default(ArraySegment<T>);
+		}
+		int count = 0;
+		IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
+		T[] array = arrayPool.Rent();
+		try
+		{
+			T[] array2 = array;
+			reader.ReadIsBeginArrayWithVerify();
+			while (!reader.ReadIsEndArrayWithSkipValueSeparator(ref count))
 			{
-				arraySegment = default(ArraySegment<T>);
-				return arraySegment;
-			}
-			int num = 0;
-			IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
-			T[] array = ArraySegmentFormatter<T>.arrayPool.Rent();
-			try
-			{
-				T[] array2 = array;
-				reader.ReadIsBeginArrayWithVerify();
-				while (!reader.ReadIsEndArrayWithSkipValueSeparator(ref num))
+				if (array2.Length < count)
 				{
-					if (array2.Length < num)
-					{
-						Array.Resize<T>(ref array2, array2.Length * 2);
-					}
-					array2[num - 1] = formatterWithVerify.Deserialize(ref reader, formatterResolver);
+					Array.Resize(ref array2, array2.Length * 2);
 				}
-				T[] array3 = new T[num];
-				Array.Copy(array2, array3, num);
-				Array.Clear(array, 0, Math.Min(num, array.Length));
-				arraySegment = new ArraySegment<T>(array3, 0, array3.Length);
+				array2[count - 1] = formatterWithVerify.Deserialize(ref reader, formatterResolver);
 			}
-			finally
-			{
-				ArraySegmentFormatter<T>.arrayPool.Return(array);
-			}
-			return arraySegment;
+			T[] array3 = new T[count];
+			Array.Copy(array2, array3, count);
+			Array.Clear(array, 0, Math.Min(count, array.Length));
+			return new ArraySegment<T>(array3, 0, array3.Length);
 		}
-
-		private static readonly ArrayPool<T> arrayPool = new ArrayPool<T>(99);
+		finally
+		{
+			arrayPool.Return(array);
+		}
 	}
 }

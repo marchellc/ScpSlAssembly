@@ -1,106 +1,82 @@
-﻿using System;
 using System.Collections.Generic;
 using Mirror;
 using PlayerRoles;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace Respawning.Objectives
+namespace Respawning.Objectives;
+
+public class HumanDamageObjective : HumanObjectiveBase<DamageObjectiveFootprint>
 {
-	public class HumanDamageObjective : HumanObjectiveBase<DamageObjectiveFootprint>
+	private const float TimerReward = -2f;
+
+	private const float InfluenceReward = 1f;
+
+	private const float HealthThresholdPercentage = 10f;
+
+	private const float MaxPercentage = 100f;
+
+	public static Dictionary<ReferenceHub, int> HealthTracker = new Dictionary<ReferenceHub, int>();
+
+	private static readonly int MaxThresholdAmount = Mathf.FloorToInt(10f);
+
+	protected override DamageObjectiveFootprint ClientCreateFootprint()
 	{
-		protected override DamageObjectiveFootprint ClientCreateFootprint()
+		return new DamageObjectiveFootprint();
+	}
+
+	protected override void OnInstanceCreated()
+	{
+		base.OnInstanceCreated();
+		PlayerStats.OnAnyPlayerDamaged += OnPlayerDamaged;
+		PlayerRoleManager.OnServerRoleSet += OnServerRoleSet;
+	}
+
+	protected override void OnInstanceReset()
+	{
+		base.OnInstanceReset();
+		HealthTracker.Clear();
+	}
+
+	private void OnPlayerDamaged(ReferenceHub victim, DamageHandlerBase dhb)
+	{
+		if (!NetworkServer.active || !victim.IsSCP(includeZombies: false) || !(dhb is AttackerDamageHandler attackerDamageHandler))
 		{
-			return new DamageObjectiveFootprint();
+			return;
 		}
-
-		protected override void OnInstanceCreated()
+		Faction faction = attackerDamageHandler.Attacker.Role.GetFaction();
+		if (IsValidFaction(faction) && victim.playerStats.TryGetModule<HealthStat>(out var module))
 		{
-			base.OnInstanceCreated();
-			PlayerStats.OnAnyPlayerDamaged += this.OnPlayerDamaged;
-			PlayerRoleManager.OnServerRoleSet += this.OnServerRoleSet;
+			if (!HealthTracker.TryGetValue(victim, out var value))
+			{
+				value = 0;
+			}
+			int num = Mathf.FloorToInt((1f - module.NormalizedValue) * 100f / 10f);
+			if (num < MaxThresholdAmount && num > value)
+			{
+				HealthTracker[victim] = num;
+				int num2 = num - value;
+				float num3 = -2f * (float)num2;
+				float num4 = 1f * (float)num2;
+				ReduceTimer(faction, num3);
+				GrantInfluence(faction, num4);
+				base.ObjectiveFootprint = new DamageObjectiveFootprint
+				{
+					InfluenceReward = num4,
+					TimeReward = num3,
+					AchievingPlayer = new ObjectiveHubFootprint(attackerDamageHandler.Attacker),
+					VictimFootprint = new ObjectiveHubFootprint(victim)
+				};
+				ServerSendUpdate();
+			}
 		}
+	}
 
-		protected override void OnInstanceReset()
+	private void OnServerRoleSet(ReferenceHub userHub, RoleTypeId newRole, RoleChangeReason reason)
+	{
+		if (NetworkServer.active)
 		{
-			base.OnInstanceReset();
-			HumanDamageObjective.HealthTracker.Clear();
+			HealthTracker.Remove(userHub);
 		}
-
-		private void OnPlayerDamaged(ReferenceHub victim, DamageHandlerBase dhb)
-		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			if (!victim.IsSCP(false))
-			{
-				return;
-			}
-			AttackerDamageHandler attackerDamageHandler = dhb as AttackerDamageHandler;
-			if (attackerDamageHandler == null)
-			{
-				return;
-			}
-			Faction faction = attackerDamageHandler.Attacker.Role.GetFaction();
-			if (!this.IsValidFaction(faction))
-			{
-				return;
-			}
-			HealthStat healthStat;
-			if (!victim.playerStats.TryGetModule<HealthStat>(out healthStat))
-			{
-				return;
-			}
-			int num;
-			if (!HumanDamageObjective.HealthTracker.TryGetValue(victim, out num))
-			{
-				num = 0;
-			}
-			int num2 = Mathf.FloorToInt((1f - healthStat.NormalizedValue) * 100f / 20f);
-			if (num2 >= HumanDamageObjective.MaxThresholdAmount)
-			{
-				return;
-			}
-			if (num2 <= num)
-			{
-				return;
-			}
-			HumanDamageObjective.HealthTracker[victim] = num2;
-			int num3 = num2 - num;
-			float num4 = -4f * (float)num3;
-			float num5 = 4f * (float)num3;
-			base.ReduceTimer(faction, num4);
-			base.GrantInfluence(faction, num5);
-			base.ObjectiveFootprint = new DamageObjectiveFootprint
-			{
-				InfluenceReward = num5,
-				TimeReward = num4,
-				AchievingPlayer = new ObjectiveHubFootprint(attackerDamageHandler.Attacker),
-				VictimFootprint = new ObjectiveHubFootprint(victim, RoleTypeId.None)
-			};
-			base.ServerSendUpdate();
-		}
-
-		private void OnServerRoleSet(ReferenceHub userHub, RoleTypeId newRole, RoleChangeReason reason)
-		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			HumanDamageObjective.HealthTracker.Remove(userHub);
-		}
-
-		private const float TimerReward = -4f;
-
-		private const float InfluenceReward = 4f;
-
-		private const float HealthThresholdPercentage = 20f;
-
-		private const float MaxPercentage = 100f;
-
-		public static Dictionary<ReferenceHub, int> HealthTracker = new Dictionary<ReferenceHub, int>();
-
-		private static readonly int MaxThresholdAmount = Mathf.FloorToInt(5f);
 	}
 }

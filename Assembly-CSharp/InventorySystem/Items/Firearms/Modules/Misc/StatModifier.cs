@@ -1,37 +1,31 @@
-﻿using System;
+using System;
 
-namespace InventorySystem.Items.Firearms.Modules.Misc
+namespace InventorySystem.Items.Firearms.Modules.Misc;
+
+[Serializable]
+public class StatModifier
 {
-	[Serializable]
-	public class StatModifier
+	public enum ModifierMode
 	{
-		public float Process(float baseValue)
+		Inactive,
+		Add,
+		Multiply,
+		Override
+	}
+
+	public ModifierMode Mode;
+
+	public float Modifier;
+
+	public float Process(float baseValue)
+	{
+		return Mode switch
 		{
-			switch (this.Mode)
-			{
-			case StatModifier.ModifierMode.Inactive:
-				return baseValue;
-			case StatModifier.ModifierMode.Add:
-				return baseValue + this.Modifier;
-			case StatModifier.ModifierMode.Multiply:
-				return baseValue * this.Modifier;
-			case StatModifier.ModifierMode.Override:
-				return this.Modifier;
-			default:
-				throw new NotImplementedException("Unhadled stat mixing mode: " + this.Mode.ToString());
-			}
-		}
-
-		public StatModifier.ModifierMode Mode;
-
-		public float Modifier;
-
-		public enum ModifierMode
-		{
-			Inactive,
-			Add,
-			Multiply,
-			Override
-		}
+			ModifierMode.Inactive => baseValue, 
+			ModifierMode.Add => baseValue + Modifier, 
+			ModifierMode.Multiply => baseValue * Modifier, 
+			ModifierMode.Override => Modifier, 
+			_ => throw new NotImplementedException("Unhadled stat mixing mode: " + Mode), 
+		};
 	}
 }

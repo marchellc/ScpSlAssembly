@@ -1,139 +1,135 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl
+namespace PlayerRoles.FirstPersonControl;
+
+public static class FpcCollisionProcessor
 {
-	public static class FpcCollisionProcessor
+	private class RoleModifierPair
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		public readonly IFpcRole Role;
+
+		public readonly IFpcCollisionModifier Modifier;
+
+		private readonly FpcMotor _motor;
+
+		public RoleModifierPair(IFpcRole role, IFpcCollisionModifier modifier)
 		{
-			FirstPersonMovementModule.OnPositionUpdated += FpcCollisionProcessor.RestoreColliders;
-			PlayerRoleManager.OnRoleChanged += FpcCollisionProcessor.OnRoleChanged;
+			Role = role;
+			Modifier = modifier;
+			_motor = Role.FpcModule.Motor;
+			_motor.OnBeforeMove += OnBeforeMove;
 		}
 
-		private static void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+		public void Unlink()
 		{
-			IFpcRole fpcRole = prevRole as IFpcRole;
-			if (fpcRole == null)
+			if (_motor != null)
 			{
-				return;
-			}
-			FpcCollisionProcessor.RemoveAllModifiers(fpcRole);
-		}
-
-		private static void RestoreColliders()
-		{
-			foreach (Collider collider in FpcCollisionProcessor.AffectedColliders)
-			{
-				if (!(collider == null))
-				{
-					collider.enabled = true;
-				}
-			}
-			FpcCollisionProcessor.AffectedColliders.Clear();
-		}
-
-		private static void ProcessPair(FpcCollisionProcessor.RoleModifierPair pair, Vector3 moveDir)
-		{
-			CharacterController charController = pair.Role.FpcModule.CharController;
-			Vector3 position = pair.Role.FpcModule.Position;
-			Vector3 vector = Vector3.up * charController.height / 2f;
-			LayerMask detectionMask = pair.Modifier.DetectionMask;
-			float num = charController.radius + charController.skinWidth;
-			int num2 = Physics.OverlapCapsuleNonAlloc(position + vector, position - vector, num, FpcCollisionProcessor.CollidersNonAlloc, detectionMask);
-			int num3 = num2;
-			float magnitude = moveDir.magnitude;
-			if (magnitude > 0f)
-			{
-				moveDir /= magnitude;
-				int num4 = Physics.CapsuleCastNonAlloc(position + vector, position - vector, num, moveDir, FpcCollisionProcessor.HitsNonAlloc, magnitude, detectionMask);
-				for (int i = 0; i < num4; i++)
-				{
-					FpcCollisionProcessor.CollidersNonAlloc[num2 + i] = FpcCollisionProcessor.HitsNonAlloc[i].collider;
-				}
-				num3 += num4;
-			}
-			pair.Modifier.ProcessColliders(new ArraySegment<Collider>(FpcCollisionProcessor.CollidersNonAlloc, 0, num3));
-			for (int j = 0; j < num3; j++)
-			{
-				Collider collider = FpcCollisionProcessor.CollidersNonAlloc[j];
-				if (!collider.enabled)
-				{
-					FpcCollisionProcessor.AffectedColliders.Add(collider);
-				}
+				_motor.OnBeforeMove -= OnBeforeMove;
 			}
 		}
 
-		public static void RemoveAllModifiers(IFpcRole role)
+		private void OnBeforeMove(Vector3 moveDir)
 		{
-			for (int i = 0; i < FpcCollisionProcessor.ActiveModifiers.Count; i++)
+			ProcessPair(this, moveDir);
+		}
+	}
+
+	private static readonly List<Collider> AffectedColliders = new List<Collider>();
+
+	private static readonly List<RoleModifierPair> ActiveModifiers = new List<RoleModifierPair>();
+
+	private static readonly Collider[] CollidersNonAlloc = new Collider[32];
+
+	private static readonly RaycastHit[] HitsNonAlloc = new RaycastHit[16];
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		FirstPersonMovementModule.OnPositionUpdated += RestoreColliders;
+		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
+	}
+
+	private static void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+	{
+		if (prevRole is IFpcRole role)
+		{
+			RemoveAllModifiers(role);
+		}
+	}
+
+	private static void RestoreColliders()
+	{
+		foreach (Collider affectedCollider in AffectedColliders)
+		{
+			if (!(affectedCollider == null))
 			{
-				FpcCollisionProcessor.RoleModifierPair roleModifierPair = FpcCollisionProcessor.ActiveModifiers[i];
-				if (!(roleModifierPair.Role.FpcModule != role.FpcModule))
-				{
-					roleModifierPair.Unlink();
-					FpcCollisionProcessor.ActiveModifiers.RemoveAt(i--);
-				}
+				affectedCollider.enabled = true;
 			}
 		}
+		AffectedColliders.Clear();
+	}
 
-		public static void RemoveModifier(IFpcCollisionModifier modifier)
+	private static void ProcessPair(RoleModifierPair pair, Vector3 moveDir)
+	{
+		CharacterController charController = pair.Role.FpcModule.CharController;
+		Vector3 position = pair.Role.FpcModule.Position;
+		Vector3 vector = Vector3.up * charController.height / 2f;
+		LayerMask detectionMask = pair.Modifier.DetectionMask;
+		float radius = charController.radius + charController.skinWidth;
+		int num = Physics.OverlapCapsuleNonAlloc(position + vector, position - vector, radius, CollidersNonAlloc, detectionMask);
+		int num2 = num;
+		float magnitude = moveDir.magnitude;
+		if (magnitude > 0f)
 		{
-			for (int i = 0; i < FpcCollisionProcessor.ActiveModifiers.Count; i++)
+			moveDir /= magnitude;
+			int num3 = Physics.CapsuleCastNonAlloc(position + vector, position - vector, radius, moveDir, HitsNonAlloc, magnitude, detectionMask);
+			for (int i = 0; i < num3; i++)
 			{
-				FpcCollisionProcessor.RoleModifierPair roleModifierPair = FpcCollisionProcessor.ActiveModifiers[i];
-				if (FpcCollisionProcessor.ActiveModifiers[i].Modifier == modifier)
-				{
-					roleModifierPair.Unlink();
-					FpcCollisionProcessor.ActiveModifiers.RemoveAt(i--);
-				}
+				CollidersNonAlloc[num + i] = HitsNonAlloc[i].collider;
+			}
+			num2 += num3;
+		}
+		pair.Modifier.ProcessColliders(new ArraySegment<Collider>(CollidersNonAlloc, 0, num2));
+		for (int j = 0; j < num2; j++)
+		{
+			Collider collider = CollidersNonAlloc[j];
+			if (!collider.enabled)
+			{
+				AffectedColliders.Add(collider);
 			}
 		}
+	}
 
-		public static void AddModifier(IFpcCollisionModifier modifier, IFpcRole fpcRole)
+	public static void RemoveAllModifiers(IFpcRole role)
+	{
+		for (int i = 0; i < ActiveModifiers.Count; i++)
 		{
-			FpcCollisionProcessor.ActiveModifiers.Add(new FpcCollisionProcessor.RoleModifierPair(fpcRole, modifier));
+			RoleModifierPair roleModifierPair = ActiveModifiers[i];
+			if (!(roleModifierPair.Role.FpcModule != role.FpcModule))
+			{
+				roleModifierPair.Unlink();
+				ActiveModifiers.RemoveAt(i--);
+			}
 		}
+	}
 
-		private static readonly List<Collider> AffectedColliders = new List<Collider>();
-
-		private static readonly List<FpcCollisionProcessor.RoleModifierPair> ActiveModifiers = new List<FpcCollisionProcessor.RoleModifierPair>();
-
-		private static readonly Collider[] CollidersNonAlloc = new Collider[32];
-
-		private static readonly RaycastHit[] HitsNonAlloc = new RaycastHit[16];
-
-		private class RoleModifierPair
+	public static void RemoveModifier(IFpcCollisionModifier modifier)
+	{
+		for (int i = 0; i < ActiveModifiers.Count; i++)
 		{
-			public RoleModifierPair(IFpcRole role, IFpcCollisionModifier modifier)
+			RoleModifierPair roleModifierPair = ActiveModifiers[i];
+			if (ActiveModifiers[i].Modifier == modifier)
 			{
-				this.Role = role;
-				this.Modifier = modifier;
-				this._motor = this.Role.FpcModule.Motor;
-				this._motor.OnBeforeMove += this.OnBeforeMove;
+				roleModifierPair.Unlink();
+				ActiveModifiers.RemoveAt(i--);
 			}
-
-			public void Unlink()
-			{
-				if (this._motor == null)
-				{
-					return;
-				}
-				this._motor.OnBeforeMove -= this.OnBeforeMove;
-			}
-
-			private void OnBeforeMove(Vector3 moveDir)
-			{
-				FpcCollisionProcessor.ProcessPair(this, moveDir);
-			}
-
-			public readonly IFpcRole Role;
-
-			public readonly IFpcCollisionModifier Modifier;
-
-			private readonly FpcMotor _motor;
 		}
+	}
+
+	public static void AddModifier(IFpcCollisionModifier modifier, IFpcRole fpcRole)
+	{
+		ActiveModifiers.Add(new RoleModifierPair(fpcRole, modifier));
 	}
 }

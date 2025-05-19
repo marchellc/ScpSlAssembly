@@ -1,103 +1,81 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+using System;
 using AudioPooling;
-using InventorySystem.GUI;
 using InventorySystem.Items.Autosync;
 using MapGeneration.Holidays;
 using Mirror;
 using PlayerRoles.PlayableScps.Scp1507;
 using UnityEngine;
 
-namespace InventorySystem.Items.FlamingoTapePlayer
+namespace InventorySystem.Items.FlamingoTapePlayer;
+
+public class TapeItem : AutosyncItem, IItemDescription, IItemNametag, IHolidayItem
 {
-	public class TapeItem : AutosyncItem, IItemDescription, IItemNametag, IHolidayItem
+	private bool _using;
+
+	private double _equipTime;
+
+	private float _remainingDestroy;
+
+	private const float EquipAnimationTime = 0.32f;
+
+	private const float DestroyTime = 7.6f;
+
+	private const float SoundRange = 10f;
+
+	[SerializeField]
+	private AudioClip _successSound;
+
+	[SerializeField]
+	private AudioClip _failSound;
+
+	[SerializeField]
+	private AudioClip[] _useClips;
+
+	public string Description => ItemTypeId.GetDescription();
+
+	public string Name => ItemTypeId.GetName();
+
+	public HolidayType[] TargetHolidays { get; } = new HolidayType[1] { HolidayType.Christmas };
+
+	public override bool AllowHolster => !_using;
+
+	public override float Weight => 0.35f;
+
+	public static event Action<ushort, bool> OnPlayerTriggered;
+
+	public override void OnEquipped()
 	{
-		public static event Action<ushort, bool> OnPlayerTriggered;
+		base.OnEquipped();
+		_equipTime = NetworkTime.time;
+	}
 
-		public string Description
+	public override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		if (NetworkServer.active && _using)
 		{
-			get
+			_remainingDestroy -= Time.deltaTime;
+			if (!(_remainingDestroy > 0f))
 			{
-				return this.ItemTypeId.GetDescription();
-			}
-		}
-
-		public string Name
-		{
-			get
-			{
-				return this.ItemTypeId.GetName();
-			}
-		}
-
-		public HolidayType[] TargetHolidays { get; } = new HolidayType[] { HolidayType.Christmas };
-
-		public override bool AllowHolster
-		{
-			get
-			{
-				return !this._using;
-			}
-		}
-
-		public override float Weight
-		{
-			get
-			{
-				return 0.35f;
-			}
-		}
-
-		public override void OnEquipped()
-		{
-			base.OnEquipped();
-			this._equipTime = NetworkTime.time;
-		}
-
-		public override void EquipUpdate()
-		{
-			base.EquipUpdate();
-			if (NetworkServer.active && this._using)
-			{
-				this._remainingDestroy -= Time.deltaTime;
-				if (this._remainingDestroy > 0f)
-				{
-					return;
-				}
-				this._using = false;
+				_using = false;
 				base.OwnerInventory.ServerRemoveItem(base.ItemSerial, null);
-				return;
-			}
-			else
-			{
-				if (!InventoryGuiController.ItemsSafeForInteraction)
-				{
-					return;
-				}
-				if (NetworkTime.time - this._equipTime < 0.3199999928474426)
-				{
-					return;
-				}
-				if (!Input.GetKeyDown(NewInput.GetKey(ActionName.Shoot, KeyCode.None)))
-				{
-					return;
-				}
-				base.ClientSendCmd(null);
-				return;
 			}
 		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
+		else if (base.IsControllable && !(NetworkTime.time - _equipTime < 0.3199999928474426) && GetActionDown(ActionName.Shoot))
 		{
-			base.ServerProcessCmd(reader);
-			if (!base.IsEquipped || this._using)
-			{
-				return;
-			}
+			ClientSendCmd();
+		}
+	}
+
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (base.IsEquipped && !_using)
+		{
 			bool success = Scp1507Spawner.CurState == Scp1507Spawner.State.Idle;
-			this._using = true;
-			this._remainingDestroy = 7.6f;
-			base.ServerSendPublicRpc(delegate(NetworkWriter x)
+			_using = true;
+			_remainingDestroy = 7.6f;
+			ServerSendPublicRpc(delegate(NetworkWriter x)
 			{
 				x.WriteBool(success);
 			});
@@ -106,57 +84,28 @@ namespace InventorySystem.Items.FlamingoTapePlayer
 				Scp1507Spawner.StartSpawning(base.Owner);
 			}
 		}
+	}
 
-		public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	{
+		base.ClientProcessRpcTemplate(reader, serial);
+		bool flag = reader.ReadBool();
+		TapeItem.OnPlayerTriggered?.Invoke(serial, flag);
+		if (InventoryExtensions.TryGetHubHoldingSerial(serial, out var hub))
 		{
-			base.ClientProcessRpcTemplate(reader, serial);
-			bool flag = reader.ReadBool();
-			Action<ushort, bool> onPlayerTriggered = TapeItem.OnPlayerTriggered;
-			if (onPlayerTriggered != null)
-			{
-				onPlayerTriggered(serial, flag);
-			}
-			ReferenceHub referenceHub;
-			if (!InventoryExtensions.TryGetHubHoldingSerial(serial, out referenceHub))
-			{
-				return;
-			}
-			AudioClip audioClip = (flag ? this._successSound : this._failSound);
-			bool isLocalPlayer = referenceHub.isLocalPlayer;
-			Transform transform = referenceHub.transform;
-			TapeItem.<ClientProcessRpcTemplate>g__PlayClip|26_0(audioClip, transform, isLocalPlayer);
-			AudioClip[] useClips = this._useClips;
+			AudioClip genericClip2 = (flag ? _successSound : _failSound);
+			bool isLocalPlayer = hub.isLocalPlayer;
+			Transform parent2 = hub.transform;
+			PlayClip(genericClip2, parent2, isLocalPlayer);
+			AudioClip[] useClips = _useClips;
 			for (int i = 0; i < useClips.Length; i++)
 			{
-				TapeItem.<ClientProcessRpcTemplate>g__PlayClip|26_0(useClips[i], transform, isLocalPlayer);
+				PlayClip(useClips[i], parent2, isLocalPlayer);
 			}
 		}
-
-		[CompilerGenerated]
-		internal static void <ClientProcessRpcTemplate>g__PlayClip|26_0(AudioClip genericClip, Transform parent, bool useSpatial)
+		static void PlayClip(AudioClip genericClip, Transform parent, bool useSpatial)
 		{
-			AudioSourcePoolManager.PlayOnTransform(genericClip, parent, 10f, 1f, FalloffType.Exponential, MixerChannel.DefaultSfx, 1f);
+			AudioSourcePoolManager.PlayOnTransform(genericClip, parent);
 		}
-
-		private bool _using;
-
-		private double _equipTime;
-
-		private float _remainingDestroy;
-
-		private const float EquipAnimationTime = 0.32f;
-
-		private const float DestroyTime = 7.6f;
-
-		private const float SoundRange = 10f;
-
-		[SerializeField]
-		private AudioClip _successSound;
-
-		[SerializeField]
-		private AudioClip _failSound;
-
-		[SerializeField]
-		private AudioClip[] _useClips;
 	}
 }

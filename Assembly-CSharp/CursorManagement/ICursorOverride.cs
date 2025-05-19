@@ -1,11 +1,8 @@
-﻿using System;
+namespace CursorManagement;
 
-namespace CursorManagement
+public interface ICursorOverride
 {
-	public interface ICursorOverride
-	{
-		CursorOverrideMode CursorOverride { get; }
+	CursorOverrideMode CursorOverride { get; }
 
-		bool LockMovement { get; }
-	}
+	bool LockMovement { get; }
 }

@@ -1,116 +1,118 @@
-﻿using System;
+using System;
 using Mirror;
 
-namespace InventorySystem.Items.Autosync
+namespace InventorySystem.Items.Autosync;
+
+public readonly struct AutosyncMessage : NetworkMessage
 {
-	public readonly struct AutosyncMessage : NetworkMessage
+	private static readonly byte[] Buffer = new byte[65790];
+
+	private static readonly NetworkReader Reader = new NetworkReader(Buffer);
+
+	private readonly int _bytesWritten;
+
+	private readonly ushort _serial;
+
+	private readonly ItemType _itemType;
+
+	public AutosyncMessage(NetworkWriter writer, ItemIdentifier itemId)
 	{
-		public AutosyncMessage(NetworkWriter writer, ItemIdentifier itemId)
+		_serial = itemId.SerialNumber;
+		_itemType = itemId.TypeId;
+		int position = writer.Position;
+		writer.WriteByte((byte)Math.Min(position, 255));
+		if (position >= 255)
 		{
-			this._serial = itemId.SerialNumber;
-			this._itemType = itemId.TypeId;
-			int position = writer.Position;
-			writer.WriteByte((byte)Math.Min(position, 255));
-			if (position >= 255)
-			{
-				writer.WriteUShort((ushort)(position - 255));
-			}
-			this._bytesWritten = position;
-			Array.Copy(writer.buffer, AutosyncMessage.Buffer, this._bytesWritten);
+			writer.WriteUShort((ushort)(position - 255));
 		}
+		_bytesWritten = position;
+		Array.Copy(writer.buffer, Buffer, _bytesWritten);
+	}
 
-		public override string ToString()
+	public override string ToString()
+	{
+		return string.Format("{0} (Item={1} Serial={2} Length={3} Payload={4})", "AutosyncMessage", _itemType, _serial, _bytesWritten, Reader);
+	}
+
+	internal AutosyncMessage(NetworkReader reader)
+	{
+		_serial = reader.ReadUShort();
+		_itemType = (ItemType)reader.ReadByte();
+		_bytesWritten = reader.ReadByte();
+		if (_bytesWritten == 255)
 		{
-			return string.Format("{0} (Item={1} Serial={2} Length={3} Payload={4})", new object[]
-			{
-				"AutosyncMessage",
-				this._itemType,
-				this._serial,
-				this._bytesWritten,
-				AutosyncMessage.Reader
-			});
+			_bytesWritten += reader.ReadUShort();
 		}
+		reader.ReadBytes(Buffer, _bytesWritten);
+	}
 
-		internal AutosyncMessage(NetworkReader reader)
+	internal void Serialize(NetworkWriter writer)
+	{
+		writer.WriteUShort(_serial);
+		writer.WriteByte((byte)_itemType);
+		if (_bytesWritten < 255)
 		{
-			this._serial = reader.ReadUShort();
-			this._itemType = (ItemType)reader.ReadByte();
-			this._bytesWritten = (int)reader.ReadByte();
-			if (this._bytesWritten == 255)
-			{
-				this._bytesWritten += (int)reader.ReadUShort();
-			}
-			reader.ReadBytes(AutosyncMessage.Buffer, this._bytesWritten);
+			writer.WriteByte((byte)_bytesWritten);
 		}
-
-		internal void Serialize(NetworkWriter writer)
+		else
 		{
-			writer.WriteUShort(this._serial);
-			writer.WriteByte((byte)this._itemType);
-			if (this._bytesWritten < 255)
-			{
-				writer.WriteByte((byte)this._bytesWritten);
-			}
-			else
-			{
-				writer.WriteByte(byte.MaxValue);
-				writer.WriteUShort((ushort)(this._bytesWritten - 255));
-			}
-			writer.WriteBytes(AutosyncMessage.Buffer, 0, this._bytesWritten);
+			writer.WriteByte(byte.MaxValue);
+			writer.WriteUShort((ushort)(_bytesWritten - 255));
 		}
+		writer.WriteBytes(Buffer, 0, _bytesWritten);
+	}
 
-		internal void ProcessCmd(ReferenceHub sender)
+	internal void ProcessCmd(ReferenceHub sender)
+	{
+		if (!sender.inventory.UserInventory.Items.TryGetValue(_serial, out var value))
 		{
-			ItemBase itemBase;
-			if (!sender.inventory.UserInventory.Items.TryGetValue(this._serial, out itemBase))
+			if (sender.isLocalPlayer)
 			{
-				return;
-			}
-			AutosyncItem autosyncItem = itemBase as AutosyncItem;
-			if (autosyncItem == null || autosyncItem.ItemTypeId != this._itemType)
-			{
-				return;
-			}
-			this.ResetReader();
-			autosyncItem.ServerProcessCmd(AutosyncMessage.Reader);
-		}
-
-		internal void ProcessRpc()
-		{
-			AutosyncItem autosyncItem;
-			if (InventoryItemLoader.TryGetItem<AutosyncItem>(this._itemType, out autosyncItem))
-			{
-				this.ResetReader();
-				autosyncItem.ClientProcessRpcTemplate(AutosyncMessage.Reader, this._serial);
-			}
-			if (this._serial == 0)
-			{
-				return;
-			}
-			foreach (AutosyncItem autosyncItem2 in AutosyncItem.Instances)
-			{
-				if (autosyncItem2.ItemSerial == this._serial && autosyncItem2.ItemTypeId == this._itemType)
-				{
-					this.ResetReader();
-					autosyncItem2.ClientProcessRpcInstance(AutosyncMessage.Reader);
-				}
+				TryEmulateDummies();
 			}
 		}
-
-		private void ResetReader()
+		else if (value is AutosyncItem autosyncItem && autosyncItem.ItemTypeId == _itemType)
 		{
-			AutosyncMessage.Reader.buffer = new ArraySegment<byte>(AutosyncMessage.Buffer, 0, this._bytesWritten);
-			AutosyncMessage.Reader.Position = 0;
+			ResetReader();
+			autosyncItem.ServerProcessCmd(Reader);
 		}
+	}
 
-		private static readonly byte[] Buffer = new byte[65790];
+	internal void ProcessRpc()
+	{
+		if (InventoryItemLoader.TryGetItem<AutosyncItem>(_itemType, out var result))
+		{
+			ResetReader();
+			result.ClientProcessRpcTemplate(Reader, _serial);
+		}
+		if (_serial == 0)
+		{
+			return;
+		}
+		foreach (AutosyncItem instance in AutosyncItem.Instances)
+		{
+			if (instance.ItemSerial == _serial && instance.ItemTypeId == _itemType)
+			{
+				ResetReader();
+				instance.ClientProcessRpcInstance(Reader);
+			}
+		}
+	}
 
-		private static readonly NetworkReader Reader = new NetworkReader(AutosyncMessage.Buffer);
+	private void ResetReader()
+	{
+		Reader.buffer = new ArraySegment<byte>(Buffer, 0, _bytesWritten);
+		Reader.Position = 0;
+	}
 
-		private readonly int _bytesWritten;
-
-		private readonly ushort _serial;
-
-		private readonly ItemType _itemType;
+	private void TryEmulateDummies()
+	{
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (allHub.IsDummy)
+			{
+				ProcessCmd(allHub);
+			}
+		}
 	}
 }

@@ -1,52 +1,53 @@
-﻿using System;
+using System;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class NullableBooleanFormatter : IJsonFormatter<bool?>, IJsonFormatter, IObjectPropertyNameFormatter<bool?>
 {
-	public sealed class NullableBooleanFormatter : IJsonFormatter<bool?>, IJsonFormatter, IObjectPropertyNameFormatter<bool?>
+	public static readonly NullableBooleanFormatter Default = new NullableBooleanFormatter();
+
+	public void Serialize(ref JsonWriter writer, bool? value, IJsonFormatterResolver formatterResolver)
 	{
-		public void Serialize(ref JsonWriter writer, bool? value, IJsonFormatterResolver formatterResolver)
+		if (!value.HasValue)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
+			writer.WriteNull();
+		}
+		else
+		{
 			writer.WriteBoolean(value.Value);
 		}
+	}
 
-		public bool? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public bool? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			return new bool?(reader.ReadBoolean());
+			return null;
 		}
+		return reader.ReadBoolean();
+	}
 
-		public void SerializeToPropertyName(ref JsonWriter writer, bool? value, IJsonFormatterResolver formatterResolver)
+	public void SerializeToPropertyName(ref JsonWriter writer, bool? value, IJsonFormatterResolver formatterResolver)
+	{
+		if (!value.HasValue)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
-			writer.WriteQuotation();
-			writer.WriteBoolean(value.Value);
-			writer.WriteQuotation();
+			writer.WriteNull();
+			return;
 		}
+		writer.WriteQuotation();
+		writer.WriteBoolean(value.Value);
+		writer.WriteQuotation();
+	}
 
-		public bool? DeserializeFromPropertyName(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public bool? DeserializeFromPropertyName(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			ArraySegment<byte> arraySegment = reader.ReadStringSegmentRaw();
-			int num;
-			return new bool?(NumberConverter.ReadBoolean(arraySegment.Array, arraySegment.Offset, out num));
+			return null;
 		}
-
-		public static readonly NullableBooleanFormatter Default = new NullableBooleanFormatter();
+		ArraySegment<byte> arraySegment = reader.ReadStringSegmentRaw();
+		int readCount;
+		return NumberConverter.ReadBoolean(arraySegment.Array, arraySegment.Offset, out readCount);
 	}
 }

@@ -1,12 +1,9 @@
-﻿using System;
+namespace PlayerRoles.Visibility;
 
-namespace PlayerRoles.Visibility
+public enum InvisibilityFlags : uint
 {
-	public enum InvisibilityFlags : uint
-	{
-		None,
-		OutOfRange,
-		Scp268,
-		Scp106Sinkhole = 4U
-	}
+	None = 0u,
+	OutOfRange = 1u,
+	Scp268 = 2u,
+	Scp106Sinkhole = 4u
 }

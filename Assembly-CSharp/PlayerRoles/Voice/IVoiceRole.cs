@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles.Voice;
 
-namespace PlayerRoles.Voice
+public interface IVoiceRole
 {
-	public interface IVoiceRole
-	{
-		VoiceModuleBase VoiceModule { get; }
-	}
+	VoiceModuleBase VoiceModule { get; }
 }

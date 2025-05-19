@@ -1,185 +1,128 @@
-﻿using System;
+using System;
 using CustomPlayerEffects;
 using InventorySystem.Items.Pickups;
-using InventorySystem.Searching;
 using Mirror;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
+using PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers.Wearables;
 using UnityEngine;
 
-namespace InventorySystem.Items.Armor
+namespace InventorySystem.Items.Armor;
+
+public class BodyArmor : ItemBase, IWearableItem, IItemNametag, IMovementSpeedModifier, IStaminaModifier
 {
-	public class BodyArmor : ItemBase, IWearableItem, IItemNametag, ICustomSearchCompletorItem, IMovementSpeedModifier, IStaminaModifier
+	[Serializable]
+	public struct ArmorAmmoLimit
 	{
-		public override float Weight
+		public ItemType AmmoType;
+
+		public ushort Limit;
+	}
+
+	[Serializable]
+	public struct ArmorCategoryLimitModifier
+	{
+		public ItemCategory Category;
+
+		public byte Limit;
+	}
+
+	[Range(0f, 100f)]
+	public int HelmetEfficacy;
+
+	[Range(0f, 100f)]
+	public int VestEfficacy;
+
+	public float CivilianClassDownsidesMultiplier = 1f;
+
+	public ArmorAmmoLimit[] AmmoLimits;
+
+	public ArmorCategoryLimitModifier[] CategoryLimits;
+
+	[SerializeField]
+	[Range(1f, 2f)]
+	private float _staminaUseMultiplier = 1f;
+
+	[SerializeField]
+	[Range(0f, 1f)]
+	private float _movementSpeedMultiplier = 1f;
+
+	[SerializeField]
+	private float _weight;
+
+	public override float Weight => _weight;
+
+	public bool IsWorn => true;
+
+	public WearableSlot Slot => WearableSlot.Body;
+
+	public override bool AllowEquip => false;
+
+	public bool MovementModifierActive
+	{
+		get
 		{
-			get
+			if (IsWorn)
 			{
-				return this._weight;
+				return !IHeavyItemPenaltyImmunity.IsImmune(base.Owner);
 			}
+			return false;
 		}
+	}
 
-		public bool IsWorn
+	public float MovementSpeedMultiplier => ProcessMultiplier(_movementSpeedMultiplier);
+
+	public float MovementSpeedLimit => float.MaxValue;
+
+	public bool StaminaModifierActive
+	{
+		get
 		{
-			get
+			if (IsWorn)
 			{
-				return true;
+				return !IHeavyItemPenaltyImmunity.IsImmune(base.Owner);
 			}
+			return false;
 		}
+	}
 
-		public WearableSlot Slot
+	public float StaminaUsageMultiplier => ProcessMultiplier(_staminaUseMultiplier);
+
+	public bool SprintingDisabled => false;
+
+	public float StaminaRegenMultiplier => 1f;
+
+	public override ItemDescriptionType DescriptionType => ItemDescriptionType.Armor;
+
+	public string Name => ItemTypeId.GetName();
+
+	private float ProcessMultiplier(float f)
+	{
+		Team team = base.Owner.GetTeam();
+		if (team == Team.ClassD || team == Team.Scientists)
 		{
-			get
-			{
-				return WearableSlot.Body;
-			}
+			f = (f - 1f) * CivilianClassDownsidesMultiplier + 1f;
 		}
+		return f;
+	}
 
-		public override bool AllowEquip
+	public override void OnAdded(ItemPickupBase pickup)
+	{
+		base.OnAdded(pickup);
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return false;
-			}
+			BodyArmorUtils.SetPlayerDirty(base.Owner);
+			base.Owner.EnableWearables(WearableElements.Armor);
 		}
+	}
 
-		public bool MovementModifierActive
+	public override void OnRemoved(ItemPickupBase pickup)
+	{
+		base.OnRemoved(pickup);
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return this.IsWorn && !IHeavyItemPenaltyImmunity.IsImmune(base.Owner);
-			}
-		}
-
-		public float MovementSpeedMultiplier
-		{
-			get
-			{
-				return this.ProcessMultiplier(this._movementSpeedMultiplier);
-			}
-		}
-
-		public float MovementSpeedLimit
-		{
-			get
-			{
-				return float.MaxValue;
-			}
-		}
-
-		public bool StaminaModifierActive
-		{
-			get
-			{
-				return this.IsWorn && !IHeavyItemPenaltyImmunity.IsImmune(base.Owner);
-			}
-		}
-
-		public float StaminaUsageMultiplier
-		{
-			get
-			{
-				return this.ProcessMultiplier(this._staminaUseMultiplier);
-			}
-		}
-
-		public bool SprintingDisabled
-		{
-			get
-			{
-				return false;
-			}
-		}
-
-		public float StaminaRegenMultiplier
-		{
-			get
-			{
-				return 1f;
-			}
-		}
-
-		public override ItemDescriptionType DescriptionType
-		{
-			get
-			{
-				return ItemDescriptionType.Armor;
-			}
-		}
-
-		private float ProcessMultiplier(float f)
-		{
-			Team team = base.Owner.GetTeam();
-			if (team == Team.ClassD || team == Team.Scientists)
-			{
-				f = (f - 1f) * this.CivilianClassDownsidesMultiplier + 1f;
-			}
-			return f;
-		}
-
-		public string Name
-		{
-			get
-			{
-				return this.ItemTypeId.GetName();
-			}
-		}
-
-		public SearchCompletor GetCustomSearchCompletor(ReferenceHub hub, ItemPickupBase ipb, ItemBase ib, double disSqrt)
-		{
-			return new ArmorSearchCompletor(hub, ipb, ib, disSqrt);
-		}
-
-		public override void OnRemoved(ItemPickupBase pickup)
-		{
-			base.OnRemoved(pickup);
-			if (!NetworkServer.active || this.DontRemoveExcessOnDrop)
-			{
-				return;
-			}
-			base.OwnerInventory.RemoveEverythingExceedingLimits(null, true, true);
-		}
-
-		[NonSerialized]
-		public bool DontRemoveExcessOnDrop;
-
-		[Range(0f, 100f)]
-		public int HelmetEfficacy;
-
-		[Range(0f, 100f)]
-		public int VestEfficacy;
-
-		public float CivilianClassDownsidesMultiplier = 1f;
-
-		public BodyArmor.ArmorAmmoLimit[] AmmoLimits;
-
-		public BodyArmor.ArmorCategoryLimitModifier[] CategoryLimits;
-
-		[SerializeField]
-		[Range(1f, 2f)]
-		private float _staminaUseMultiplier = 1f;
-
-		[SerializeField]
-		[Range(0f, 1f)]
-		private float _movementSpeedMultiplier = 1f;
-
-		[SerializeField]
-		private float _weight;
-
-		[Serializable]
-		public struct ArmorAmmoLimit
-		{
-			public ItemType AmmoType;
-
-			public ushort Limit;
-		}
-
-		[Serializable]
-		public struct ArmorCategoryLimitModifier
-		{
-			public ItemCategory Category;
-
-			public byte Limit;
+			BodyArmorUtils.SetPlayerDirty(base.Owner);
+			base.Owner.DisableWearables(WearableElements.Armor);
 		}
 	}
 }

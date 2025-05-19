@@ -1,21 +1,19 @@
-﻿using System;
 using PlayerRoles.PlayableScps.HumeShield;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp3114
+namespace PlayerRoles.PlayableScps.Scp3114;
+
+public class Scp3114HumeShieldController : DynamicHumeShieldController
 {
-	public class Scp3114HumeShieldController : DynamicHumeShieldController
+	public override AudioClip ShieldBreakSound
 	{
-		public override AudioClip ShieldBreakSound
+		get
 		{
-			get
+			if (!(base.Role as Scp3114Role).Disguised)
 			{
-				if (!(base.Role as Scp3114Role).Disguised)
-				{
-					return base.ShieldBreakSound;
-				}
-				return null;
+				return base.ShieldBreakSound;
 			}
+			return null;
 		}
 	}
 }

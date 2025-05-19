@@ -1,147 +1,121 @@
-﻿using System;
+using System;
 using System.Globalization;
 using CustomPlayerEffects;
 using Utils;
 using Utils.CommandInterpolation;
 
-namespace CommandSystem.Commands.RemoteAdmin
+namespace CommandSystem.Commands.RemoteAdmin;
+
+[CommandHandler(typeof(RemoteAdminCommandHandler))]
+public class RAConfigCommand : ICommand, IUsageProvider
 {
-	[CommandHandler(typeof(RemoteAdminCommandHandler))]
-	public class RAConfigCommand : ICommand, IUsageProvider
+	public string Command { get; } = "setconfig";
+
+	public string[] Aliases { get; } = new string[1] { "sc" };
+
+	public string Description { get; } = "Sets the server configuration.";
+
+	public string[] Usage { get; } = new string[2] { "Option", "Value" };
+
+	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
-		public string Command { get; } = "setconfig";
-
-		public string[] Aliases { get; } = new string[] { "sc" };
-
-		public string Description { get; } = "Sets the server configuration.";
-
-		public string[] Usage { get; } = new string[] { "Option", "Value" };
-
-		public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+		if (!sender.CheckPermission(PlayerPermissions.ServerConfigs, out response))
 		{
-			if (!sender.CheckPermission(PlayerPermissions.ServerConfigs, out response))
-			{
-				return false;
-			}
-			if (arguments.Count < 2)
-			{
-				response = "To execute this command provide at least 2 arguments!";
-				return false;
-			}
+			return false;
+		}
+		if (arguments.Count >= 2)
+		{
 			string text = RAUtils.FormatArguments(arguments, 1).Trim();
-			ServerLogs.AddLog(ServerLogs.Modules.Administrative, string.Concat(new string[]
+			ServerLogs.AddLog(ServerLogs.Modules.Administrative, sender.LogName + " changed server configuration: " + arguments.At(0) + ": " + text + ".", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
+			switch (arguments.At(0).ToUpper())
 			{
-				sender.LogName,
-				" changed server configuration: ",
-				arguments.At(0),
-				": ",
-				text,
-				"."
-			}), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging, false);
-			string text2 = arguments.At(0).ToUpper();
-			if (!(text2 == "FRIENDLY_FIRE"))
+			case "FRIENDLY_FIRE":
 			{
-				if (text2 == "PLAYER_LIST_TITLE")
+				if (bool.TryParse(text, out var result4))
 				{
-					string text3 = text ?? string.Empty;
-					PlayerList.Title.Value = text3;
-					try
-					{
-						PlayerList.singleton.RefreshTitle();
-					}
-					catch (Exception ex)
-					{
-						if (!(ex is CommandInputException) && !(ex is InvalidOperationException))
-						{
-							throw;
-						}
-						response = "Could not set player list title [" + text3 + "]:\n" + ex.Message;
-						return false;
-					}
-					response = string.Concat(new string[]
-					{
-						"Done! Config [",
-						arguments.At(0),
-						"] has been set to [",
-						ServerConfigSynchronizer.Singleton.ServerName,
-						"]!"
-					});
-					ServerConfigSynchronizer.RefreshAllConfigs();
-					return true;
-				}
-				if (!(text2 == "PD_REFRESH_EXIT"))
-				{
-					if (!(text2 == "SPAWN_PROTECT_ENABLED"))
-					{
-						if (!(text2 == "SPAWN_PROTECT_TIME"))
-						{
-							response = "Invalid config " + arguments.At(0);
-							return false;
-						}
-						int num;
-						if (int.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out num))
-						{
-							SpawnProtected.SpawnDuration = (float)num;
-							response = string.Format("Done! Config [{0}] has been set to [{1}]!", arguments.At(0), num);
-							ServerConfigSynchronizer.RefreshAllConfigs();
-							return true;
-						}
-						response = arguments.At(0) + " has invalid value, " + text + " is not a valid integer!";
-						return false;
-					}
-					else
-					{
-						bool flag;
-						if (bool.TryParse(text, out flag))
-						{
-							SpawnProtected.IsProtectionEnabled = flag;
-							response = string.Format("Done! Config [{0}] has been set to [{1}]!", arguments.At(0), flag);
-							return true;
-						}
-						if (text.Equals("toggle", StringComparison.OrdinalIgnoreCase))
-						{
-							SpawnProtected.IsProtectionEnabled = !SpawnProtected.IsProtectionEnabled;
-							response = string.Format("Done! Config [{0}] has been set to [{1}]!", arguments.At(0), SpawnProtected.IsProtectionEnabled);
-							return true;
-						}
-						response = arguments.At(0) + " has invalid value, " + text + " is not a valid bool!";
-						return false;
-					}
-				}
-				else
-				{
-					bool flag2;
-					if (bool.TryParse(text, out flag2))
-					{
-						PocketDimensionTeleport.RefreshExit = flag2;
-						response = string.Format("Done! Config [{0}] has been set to [{1}]!", arguments.At(0), flag2);
-						ServerConfigSynchronizer.RefreshAllConfigs();
-						return true;
-					}
-					response = arguments.At(0) + " has invalid value, " + text + " is not a valid bool!";
-					return false;
-				}
-			}
-			else
-			{
-				bool flag3;
-				if (bool.TryParse(text, out flag3))
-				{
-					ServerConsole.FriendlyFire = flag3;
-					response = string.Format("Done! Config [{0}] has been set to [{1}]!", arguments.At(0), flag3);
+					ServerConsole.FriendlyFire = result4;
+					response = $"Done! Config [{arguments.At(0)}] has been set to [{result4}]!";
 					ServerConfigSynchronizer.RefreshAllConfigs();
 					return true;
 				}
 				if (text.Equals("toggle", StringComparison.OrdinalIgnoreCase))
 				{
 					ServerConsole.FriendlyFire = !ServerConsole.FriendlyFire;
-					response = string.Format("Done! Config [{0}] has been set to [{1}]!", arguments.At(0), ServerConsole.FriendlyFire);
+					response = $"Done! Config [{arguments.At(0)}] has been set to [{ServerConsole.FriendlyFire}]!";
 					ServerConfigSynchronizer.RefreshAllConfigs();
 					return true;
 				}
 				response = arguments.At(0) + " has invalid value, " + text + " is not a valid bool!";
 				return false;
 			}
+			case "PLAYER_LIST_TITLE":
+			{
+				string text2 = text ?? string.Empty;
+				PlayerList.Title.Value = text2;
+				try
+				{
+					PlayerList.singleton.RefreshTitle();
+				}
+				catch (Exception ex)
+				{
+					if (!(ex is CommandInputException) && !(ex is InvalidOperationException))
+					{
+						throw;
+					}
+					response = "Could not set player list title [" + text2 + "]:\n" + ex.Message;
+					return false;
+				}
+				response = "Done! Config [" + arguments.At(0) + "] has been set to [" + ServerConfigSynchronizer.Singleton.ServerName + "]!";
+				ServerConfigSynchronizer.RefreshAllConfigs();
+				return true;
+			}
+			case "PD_REFRESH_EXIT":
+			{
+				if (bool.TryParse(text, out var result2))
+				{
+					PocketDimensionTeleport.RefreshExit = result2;
+					response = $"Done! Config [{arguments.At(0)}] has been set to [{result2}]!";
+					ServerConfigSynchronizer.RefreshAllConfigs();
+					return true;
+				}
+				response = arguments.At(0) + " has invalid value, " + text + " is not a valid bool!";
+				return false;
+			}
+			case "SPAWN_PROTECT_ENABLED":
+			{
+				if (bool.TryParse(text, out var result3))
+				{
+					SpawnProtected.IsProtectionEnabled = result3;
+					response = $"Done! Config [{arguments.At(0)}] has been set to [{result3}]!";
+					return true;
+				}
+				if (text.Equals("toggle", StringComparison.OrdinalIgnoreCase))
+				{
+					SpawnProtected.IsProtectionEnabled = !SpawnProtected.IsProtectionEnabled;
+					response = $"Done! Config [{arguments.At(0)}] has been set to [{SpawnProtected.IsProtectionEnabled}]!";
+					return true;
+				}
+				response = arguments.At(0) + " has invalid value, " + text + " is not a valid bool!";
+				return false;
+			}
+			case "SPAWN_PROTECT_TIME":
+			{
+				if (int.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
+				{
+					SpawnProtected.SpawnDuration = result;
+					response = $"Done! Config [{arguments.At(0)}] has been set to [{result}]!";
+					ServerConfigSynchronizer.RefreshAllConfigs();
+					return true;
+				}
+				response = arguments.At(0) + " has invalid value, " + text + " is not a valid integer!";
+				return false;
+			}
+			default:
+				response = "Invalid config " + arguments.At(0);
+				return false;
+			}
 		}
+		response = "To execute this command provide at least 2 arguments!";
+		return false;
 	}
 }

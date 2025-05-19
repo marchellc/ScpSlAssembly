@@ -1,4 +1,3 @@
-﻿using System;
 using InventorySystem.Drawers;
 using InventorySystem.GUI;
 using InventorySystem.GUI.Descriptions;
@@ -6,167 +5,132 @@ using InventorySystem.Items.Autosync;
 using InventorySystem.Items.MicroHID.Modules;
 using UnityEngine;
 
-namespace InventorySystem.Items.MicroHID
+namespace InventorySystem.Items.MicroHID;
+
+public class MicroHIDItem : ModularAutosyncItem, ICustomDescriptionItem, IItemDescription, IItemNametag, IItemAlertDrawer, IItemDrawer, ISoundEmittingItem
 {
-	public class MicroHIDItem : ModularAutosyncItem, ICustomDescriptionItem, IItemDescription, IItemNametag, IItemAlertDrawer, IItemDrawer, ISoundEmittingItem
+	private static readonly string[] ChargeMeterNonAlloc = new string[1];
+
+	private readonly ItemHintAlertHelper _readyHint = new ItemHintAlertHelper(InventoryGuiTranslation.MicroHidReadyToDischarge, ActionName.Shoot, 0.3f, 2f);
+
+	private readonly ItemHintAlertHelper _regularHint = new ItemHintAlertHelper(InventoryGuiTranslation.MicroHidPrimaryHint, ActionName.Shoot, InventoryGuiTranslation.MicroHidSecondaryHint, ActionName.Zoom);
+
+	private readonly ItemHintAlertHelper _brokenHint = new ItemHintAlertHelper(InventoryGuiTranslation.MicroHidDamaged, null, InventoryGuiTranslation.MicroHidPrimaryHint, ActionName.Shoot);
+
+	public override float Weight => 25.1f;
+
+	public override bool AllowDropping => true;
+
+	public override bool AllowHolster
 	{
-		public override float Weight
+		get
 		{
-			get
+			if (base.AllowHolster)
 			{
-				return 25.1f;
+				return CycleController.Phase == MicroHidPhase.Standby;
 			}
+			return false;
 		}
+	}
 
-		public override bool AllowDropping
+	public EnergyManagerModule EnergyManager { get; private set; }
+
+	public BacktrackerModule Backtracker { get; private set; }
+
+	public InputSyncModule InputSync { get; private set; }
+
+	public BrokenSyncModule BrokenSync { get; private set; }
+
+	public CycleController CycleController { get; private set; }
+
+	public override ItemDescriptionType DescriptionType => ItemDescriptionType.Custom;
+
+	[field: SerializeField]
+	public new CustomDescriptionGui CustomGuiPrefab { get; private set; }
+
+	public new string[] CustomDescriptionContent
+	{
+		get
 		{
-			get
+			int num = Mathf.CeilToInt(EnergyManager.Energy * 100f);
+			ChargeMeterNonAlloc[0] = FormatCharge(InventoryGuiTranslation.RemainingCharge, num + "%");
+			return ChargeMeterNonAlloc;
+		}
+	}
+
+	public string Description => ItemTypeId.GetDescription();
+
+	public string Name => ItemTypeId.GetName();
+
+	public new AlertContent Alert => ActiveAlertHelper.Alert;
+
+	private ItemHintAlertHelper ActiveAlertHelper
+	{
+		get
+		{
+			if (CycleController.Phase == MicroHidPhase.WoundUpSustain)
 			{
-				return true;
+				return _readyHint;
 			}
-		}
-
-		public override bool AllowHolster
-		{
-			get
+			_readyHint.Reset();
+			if (!BrokenSync.Broken)
 			{
-				return base.AllowHolster && this.CycleController.Phase == MicroHidPhase.Standby;
+				return _regularHint;
 			}
+			return _brokenHint;
 		}
+	}
 
-		public EnergyManagerModule EnergyManager { get; private set; }
+	public override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		ActiveAlertHelper.Update(base.Owner);
+	}
 
-		public BacktrackerModule Backtracker { get; private set; }
-
-		public InputSyncModule InputSync { get; private set; }
-
-		public BrokenSyncModule BrokenSync { get; private set; }
-
-		public CycleController CycleController { get; private set; }
-
-		public override ItemDescriptionType DescriptionType
+	public override void InitializeSubcomponents()
+	{
+		CycleController = CycleSyncModule.GetCycleController(base.ItemSerial);
+		SubcomponentBase[] allSubcomponents = base.AllSubcomponents;
+		foreach (SubcomponentBase subcomponentBase in allSubcomponents)
 		{
-			get
+			if (!(subcomponentBase is EnergyManagerModule energyManager))
 			{
-				return ItemDescriptionType.Custom;
-			}
-		}
-
-		public CustomDescriptionGui CustomGuiPrefab { get; private set; }
-
-		public string[] CustomDescriptionContent
-		{
-			get
-			{
-				int num = Mathf.CeilToInt(this.EnergyManager.Energy * 100f);
-				MicroHIDItem.ChargeMeterNonAlloc[0] = MicroHIDItem.FormatCharge(InventoryGuiTranslation.RemainingCharge, num.ToString() + "%");
-				return MicroHIDItem.ChargeMeterNonAlloc;
-			}
-		}
-
-		public string Description
-		{
-			get
-			{
-				return this.ItemTypeId.GetDescription();
-			}
-		}
-
-		public string Name
-		{
-			get
-			{
-				return this.ItemTypeId.GetName();
-			}
-		}
-
-		public AlertContent Alert
-		{
-			get
-			{
-				return this.ActiveAlertHelper.Alert;
-			}
-		}
-
-		private ItemHintAlertHelper ActiveAlertHelper
-		{
-			get
-			{
-				if (this.CycleController.Phase == MicroHidPhase.WoundUpSustain)
+				if (!(subcomponentBase is BacktrackerModule backtracker))
 				{
-					return this._readyHint;
-				}
-				this._readyHint.Reset();
-				if (!this.BrokenSync.Broken)
-				{
-					return this._regularHint;
-				}
-				return this._brokenHint;
-			}
-		}
-
-		public override void EquipUpdate()
-		{
-			base.EquipUpdate();
-			this.ActiveAlertHelper.Update();
-		}
-
-		public override void InitializeSubcomponents()
-		{
-			this.CycleController = CycleSyncModule.GetCycleController(base.ItemSerial);
-			foreach (SubcomponentBase subcomponentBase in base.AllSubcomponents)
-			{
-				EnergyManagerModule energyManagerModule = subcomponentBase as EnergyManagerModule;
-				if (energyManagerModule == null)
-				{
-					BacktrackerModule backtrackerModule = subcomponentBase as BacktrackerModule;
-					if (backtrackerModule == null)
+					if (!(subcomponentBase is InputSyncModule inputSync))
 					{
-						InputSyncModule inputSyncModule = subcomponentBase as InputSyncModule;
-						if (inputSyncModule == null)
+						if (subcomponentBase is BrokenSyncModule brokenSync)
 						{
-							BrokenSyncModule brokenSyncModule = subcomponentBase as BrokenSyncModule;
-							if (brokenSyncModule != null)
-							{
-								this.BrokenSync = brokenSyncModule;
-							}
-						}
-						else
-						{
-							this.InputSync = inputSyncModule;
+							BrokenSync = brokenSync;
 						}
 					}
 					else
 					{
-						this.Backtracker = backtrackerModule;
+						InputSync = inputSync;
 					}
 				}
 				else
 				{
-					this.EnergyManager = energyManagerModule;
+					Backtracker = backtracker;
 				}
 			}
-			base.InitializeSubcomponents();
+			else
+			{
+				EnergyManager = energyManager;
+			}
 		}
+		base.InitializeSubcomponents();
+	}
 
-		public bool ServerTryGetSoundEmissionRange(out float range)
-		{
-			return AudioManagerModule.GetController(base.ItemSerial).ServerTryGetSoundEmissionRange(out range);
-		}
+	public bool ServerTryGetSoundEmissionRange(out float range)
+	{
+		return AudioManagerModule.GetController(base.ItemSerial).ServerTryGetSoundEmissionRange(out range);
+	}
 
-		public static string FormatCharge(InventoryGuiTranslation translation, string coloredText)
-		{
-			string text = Translations.Get<InventoryGuiTranslation>(translation, "{0}");
-			string text2 = "</color>" + coloredText + "<color=white>";
-			return "<color=white>" + string.Format(text, text2) + "</color>";
-		}
-
-		private static readonly string[] ChargeMeterNonAlloc = new string[1];
-
-		private readonly ItemHintAlertHelper _readyHint = new ItemHintAlertHelper(InventoryGuiTranslation.MicroHidReadyToDischarge, new ActionName?(ActionName.Shoot), 0.3f, 2f, 6f);
-
-		private readonly ItemHintAlertHelper _regularHint = new ItemHintAlertHelper(InventoryGuiTranslation.MicroHidPrimaryHint, new ActionName?(ActionName.Shoot), InventoryGuiTranslation.MicroHidSecondaryHint, new ActionName?(ActionName.Zoom), 0.3f, 1f, 8f);
-
-		private readonly ItemHintAlertHelper _brokenHint = new ItemHintAlertHelper(InventoryGuiTranslation.MicroHidDamaged, null, InventoryGuiTranslation.MicroHidPrimaryHint, new ActionName?(ActionName.Shoot), 0.3f, 1f, 8f);
+	public static string FormatCharge(InventoryGuiTranslation translation, string coloredText)
+	{
+		string format = Translations.Get(translation, "{0}");
+		string arg = "</color>" + coloredText + "<color=white>";
+		return "<color=white>" + string.Format(format, arg) + "</color>";
 	}
 }

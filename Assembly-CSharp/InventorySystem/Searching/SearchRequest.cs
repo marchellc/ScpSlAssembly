@@ -1,97 +1,86 @@
-﻿using System;
-using InventorySystem.Items.Pickups;
+using System;
 using Mirror;
 
-namespace InventorySystem.Searching
+namespace InventorySystem.Searching;
+
+public struct SearchRequest : ISearchSession, NetworkMessage, IEquatable<SearchRequest>
 {
-	public struct SearchRequest : ISearchSession, NetworkMessage, IEquatable<SearchRequest>
+	private SearchSession _body;
+
+	public byte Id { get; private set; }
+
+	public SearchSession Body => _body;
+
+	public ISearchable Target
 	{
-		public byte Id { readonly get; private set; }
-
-		public SearchSession Body
+		get
 		{
-			get
-			{
-				return this._body;
-			}
+			return _body.Target;
 		}
-
-		public ItemPickupBase Target
+		set
 		{
-			get
-			{
-				return this._body.Target;
-			}
-			set
-			{
-				this._body.Target = value;
-			}
+			_body.Target = value;
 		}
+	}
 
-		public double InitialTime
+	public double InitialTime
+	{
+		get
 		{
-			get
-			{
-				return this._body.InitialTime;
-			}
-			set
-			{
-				this._body.InitialTime = value;
-			}
+			return _body.InitialTime;
 		}
-
-		public double FinishTime
+		set
 		{
-			get
-			{
-				return this._body.FinishTime;
-			}
-			set
-			{
-				this._body.FinishTime = value;
-			}
+			_body.InitialTime = value;
 		}
+	}
 
-		public double Progress
+	public double FinishTime
+	{
+		get
 		{
-			get
-			{
-				return this._body.Progress;
-			}
+			return _body.FinishTime;
 		}
-
-		public void Deserialize(NetworkReader reader)
+		set
 		{
-			this.Id = reader.ReadByte();
-			this._body.Deserialize(reader);
+			_body.FinishTime = value;
 		}
+	}
 
-		public void Serialize(NetworkWriter writer)
+	public double Progress => _body.Progress;
+
+	public void Deserialize(NetworkReader reader)
+	{
+		Id = reader.ReadByte();
+		_body.Deserialize(reader);
+	}
+
+	public void Serialize(NetworkWriter writer)
+	{
+		writer.WriteByte(Id);
+		_body.Serialize(writer);
+	}
+
+	public bool Equals(SearchRequest other)
+	{
+		if (Body.Equals(other.Body))
 		{
-			writer.WriteByte(this.Id);
-			this._body.Serialize(writer);
+			return Id == other.Id;
 		}
+		return false;
+	}
 
-		public bool Equals(SearchRequest other)
+	public override bool Equals(object obj)
+	{
+		if (obj is SearchRequest other)
 		{
-			return this.Body.Equals(other.Body) && this.Id == other.Id;
+			return Equals(other);
 		}
+		return false;
+	}
 
-		public override bool Equals(object obj)
-		{
-			if (obj is SearchRequest)
-			{
-				SearchRequest searchRequest = (SearchRequest)obj;
-				return this.Equals(searchRequest);
-			}
-			return false;
-		}
-
-		public override int GetHashCode()
-		{
-			return (this.Body.GetHashCode() * 397) ^ this.Id.GetHashCode();
-		}
-
-		private SearchSession _body;
+	public override int GetHashCode()
+	{
+		return (Body.GetHashCode() * 397) ^ Id.GetHashCode();
 	}
 }

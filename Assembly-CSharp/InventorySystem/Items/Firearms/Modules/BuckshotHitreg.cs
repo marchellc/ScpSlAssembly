@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using InventorySystem.Crosshairs;
 using InventorySystem.Items.Firearms.Attachments;
@@ -6,104 +6,108 @@ using InventorySystem.Items.Firearms.Attachments.Components;
 using InventorySystem.Items.Firearms.Modules.Misc;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class BuckshotHitreg : HitscanHitregModuleBase
 {
-	public class BuckshotHitreg : HitscanHitregModuleBase
+	private readonly Dictionary<uint, int> _hitCounter = new Dictionary<uint, int>();
+
+	private int _hitmarkerMaxHits;
+
+	private int _hitmarkerMisses;
+
+	[field: SerializeField]
+	public BuckshotSettings BasePattern { get; private set; }
+
+	public override Type CrosshairType => typeof(BuckshotCrosshair);
+
+	public float BuckshotScale => ActivePattern.OverallScale * base.Firearm.AttachmentsValue(AttachmentParam.SpreadMultiplier);
+
+	public override bool UseHitboxMultipliers => false;
+
+	private BuckshotSettings ActivePattern
 	{
-		public BuckshotSettings BasePattern { get; private set; }
-
-		public override Type CrosshairType
+		get
 		{
-			get
+			Attachment[] attachments = base.Firearm.Attachments;
+			foreach (Attachment attachment in attachments)
 			{
-				return typeof(BuckshotCrosshair);
-			}
-		}
-
-		public float BuckshotScale
-		{
-			get
-			{
-				return this.ActivePattern.OverallScale * base.Firearm.AttachmentsValue(AttachmentParam.SpreadMultiplier);
-			}
-		}
-
-		public override bool UseHitboxMultipliers
-		{
-			get
-			{
-				return false;
-			}
-		}
-
-		private BuckshotSettings ActivePattern
-		{
-			get
-			{
-				foreach (Attachment attachment in base.Firearm.Attachments)
+				if (attachment.IsEnabled && attachment is BuckshotPatternAttachment buckshotPatternAttachment)
 				{
-					if (attachment.IsEnabled)
-					{
-						BuckshotPatternAttachment buckshotPatternAttachment = attachment as BuckshotPatternAttachment;
-						if (buckshotPatternAttachment != null)
-						{
-							return buckshotPatternAttachment.Pattern;
-						}
-					}
+					return buckshotPatternAttachment.Pattern;
 				}
-				return this.BasePattern;
 			}
+			return BasePattern;
 		}
+	}
 
-		protected override void Fire()
+	protected override float HitmarkerSizeAtDamage(float damage)
+	{
+		int num = _hitmarkerMaxHits - _hitmarkerMisses;
+		if (num <= 0)
 		{
-			this._hitCounter.Clear();
-			Ray ray = base.RandomizeRay(base.ForwardRay, base.CurrentInaccuracy);
-			BuckshotSettings activePattern = this.ActivePattern;
-			float num = base.Firearm.AttachmentsValue(AttachmentParam.SpreadPredictability);
-			float num2 = 1f - Mathf.Clamp01(1f - activePattern.Randomness) * num;
-			float buckshotScale = this.BuckshotScale;
-			float num3 = 0f;
-			foreach (Vector2 vector in activePattern.PredefinedPellets)
-			{
-				Vector3 pelletDirection = this.GetPelletDirection(vector, buckshotScale, num2, ray.direction);
-				float num4;
-				base.ServerPerformHitscan(new Ray(ray.origin, pelletDirection), out num4);
-				num3 += num4;
-			}
-			foreach (KeyValuePair<IDestructible, int> keyValuePair in this._hitCounter)
-			{
-				this.ServerLastDamagedTargets.Add(keyValuePair.Key);
-			}
-			this.SendHitmarker(num3);
+			return 0f;
 		}
+		float num2 = damage / (float)num;
+		float num3 = DamageAtDistance(0f);
+		float num4 = num2 / num3;
+		float num5 = (float)_hitmarkerMisses / (float)_hitmarkerMaxHits;
+		float num6 = num5 * num5 * num5;
+		float num7 = 1f - num6;
+		return num4 * num7;
+	}
 
-		protected override float DamageAtDistance(float dist)
+	protected override void Fire()
+	{
+		_hitCounter.Clear();
+		Ray ray = RandomizeRay(base.ForwardRay, base.CurrentInaccuracy);
+		BuckshotSettings activePattern = ActivePattern;
+		float num = base.Firearm.AttachmentsValue(AttachmentParam.SpreadPredictability);
+		float randomness = 1f - Mathf.Clamp01(1f - activePattern.Randomness) * num;
+		float buckshotScale = BuckshotScale;
+		HitscanResult resultNonAlloc = base.ResultNonAlloc;
+		resultNonAlloc.Clear();
+		Vector2[] predefinedPellets = activePattern.PredefinedPellets;
+		foreach (Vector2 pelletVector in predefinedPellets)
 		{
-			return base.DamageAtDistance(dist) / (float)this.ActivePattern.MaxHits;
+			Vector3 pelletDirection = GetPelletDirection(pelletVector, buckshotScale, randomness, ray.direction);
+			ServerAppendPrescan(new Ray(ray.origin, pelletDirection), resultNonAlloc);
 		}
+		ServerApplyDamage(resultNonAlloc);
+		_hitmarkerMaxHits += ActivePattern.MaxHits;
+		_hitmarkerMisses += resultNonAlloc.Obstacles.Count;
+	}
 
-		protected override float ServerProcessTargetHit(IDestructible dest, RaycastHit hitInfo)
+	protected override float DamageAtDistance(float dist)
+	{
+		return base.DamageAtDistance(dist) / (float)ActivePattern.MaxHits;
+	}
+
+	protected override void ServerApplyDestructibleDamage(DestructibleHitPair target, HitscanResult result)
+	{
+		uint networkId = target.Destructible.NetworkId;
+		int valueOrDefault = _hitCounter.GetValueOrDefault(networkId);
+		if (valueOrDefault < ActivePattern.MaxHits)
 		{
-			int valueOrDefault = this._hitCounter.GetValueOrDefault(dest);
-			if (valueOrDefault >= this.ActivePattern.MaxHits)
-			{
-				return 0f;
-			}
-			this._hitCounter[dest] = valueOrDefault + 1;
-			return base.ServerProcessTargetHit(dest, hitInfo);
+			_hitCounter[networkId] = valueOrDefault + 1;
+			base.ServerApplyDestructibleDamage(target, result);
 		}
+	}
 
-		private Vector3 GetPelletDirection(Vector2 pelletVector, float scale, float randomness, Vector3 fwdDirection)
-		{
-			Vector2 insideUnitCircle = global::UnityEngine.Random.insideUnitCircle;
-			Vector2 vector = Vector2.Lerp(pelletVector, insideUnitCircle, randomness) * scale;
-			Transform playerCameraReference = base.Firearm.Owner.PlayerCameraReference;
-			fwdDirection = Quaternion.AngleAxis(vector.x, playerCameraReference.up) * fwdDirection;
-			fwdDirection = Quaternion.AngleAxis(vector.y, playerCameraReference.right) * fwdDirection;
-			return fwdDirection;
-		}
+	internal override void AlwaysUpdate()
+	{
+		base.AlwaysUpdate();
+		_hitmarkerMisses = 0;
+		_hitmarkerMaxHits = 0;
+	}
 
-		private readonly Dictionary<IDestructible, int> _hitCounter = new Dictionary<IDestructible, int>();
+	private Vector3 GetPelletDirection(Vector2 pelletVector, float scale, float randomness, Vector3 fwdDirection)
+	{
+		Vector2 insideUnitCircle = UnityEngine.Random.insideUnitCircle;
+		Vector2 vector = Vector2.Lerp(pelletVector, insideUnitCircle, randomness) * scale;
+		Transform playerCameraReference = base.Firearm.Owner.PlayerCameraReference;
+		fwdDirection = Quaternion.AngleAxis(vector.x, playerCameraReference.up) * fwdDirection;
+		fwdDirection = Quaternion.AngleAxis(vector.y, playerCameraReference.right) * fwdDirection;
+		return fwdDirection;
 	}
 }

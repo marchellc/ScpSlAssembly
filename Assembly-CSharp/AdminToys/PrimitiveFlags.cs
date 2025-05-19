@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 
-namespace AdminToys
+namespace AdminToys;
+
+[Flags]
+public enum PrimitiveFlags : byte
 {
-	[Flags]
-	public enum PrimitiveFlags : byte
-	{
-		None = 0,
-		Collidable = 1,
-		Visible = 2
-	}
+	None = 0,
+	Collidable = 1,
+	Visible = 2
 }

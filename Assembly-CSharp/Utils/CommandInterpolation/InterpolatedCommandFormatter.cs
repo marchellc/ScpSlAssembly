@@ -1,230 +1,216 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Utils.CommandInterpolation
+namespace Utils.CommandInterpolation;
+
+public class InterpolatedCommandFormatter
 {
-	public class InterpolatedCommandFormatter
+	private class InterpolatedCommandFormatterContext
 	{
-		public char StartClosure { get; set; }
+		public List<string> Arguments { get; }
 
-		public char EndClosure { get; set; }
+		public StringBuilder Builder { get; }
 
-		public char Escape { get; set; }
-
-		public char ArgumentSplitter { get; set; }
-
-		public Dictionary<string, Func<List<string>, string>> Commands
+		public InterpolatedCommandFormatterContext()
 		{
-			get
-			{
-				return this.commands;
-			}
-			set
-			{
-				if (value == null)
-				{
-					throw new ArgumentNullException("value");
-				}
-				this.commands = value;
-			}
+			Arguments = new List<string>();
+			Builder = new StringBuilder();
 		}
 
-		public InterpolatedCommandFormatter(int initialContexts = 4)
+		public void Clear()
 		{
-			this.availableContexts = new Stack<InterpolatedCommandFormatter.InterpolatedCommandFormatterContext>();
-			for (int i = 0; i < initialContexts; i++)
-			{
-				this.availableContexts.Push(new InterpolatedCommandFormatter.InterpolatedCommandFormatterContext());
-			}
-			this.Commands = new Dictionary<string, Func<List<string>, string>>();
+			Arguments.Clear();
+			Builder.Clear();
 		}
+	}
 
-		private void ProcessInterpolation(string raw, InterpolatedCommandFormatter.InterpolatedCommandFormatterContext context)
+	private readonly Stack<InterpolatedCommandFormatterContext> availableContexts;
+
+	private Dictionary<string, Func<List<string>, string>> commands;
+
+	public char StartClosure { get; set; }
+
+	public char EndClosure { get; set; }
+
+	public char Escape { get; set; }
+
+	public char ArgumentSplitter { get; set; }
+
+	public Dictionary<string, Func<List<string>, string>> Commands
+	{
+		get
 		{
-			bool flag = false;
-			int num = 0;
-			int num2 = 0;
-			for (int i = 0; i < raw.Length; i++)
-			{
-				char c = raw[i];
-				if (c == this.Escape && !flag)
-				{
-					flag = true;
-				}
-				else if (flag)
-				{
-					flag = false;
-					if (c == 'n')
-					{
-						context.Builder.Append('\n');
-					}
-					else if (c == '\\')
-					{
-						context.Builder.Append('\\');
-					}
-					else if (c != this.StartClosure && c != this.EndClosure && c != this.ArgumentSplitter && c != this.Escape)
-					{
-						throw new InvalidOperationException(string.Format("Unrecognized escape character at column {0}.", i));
-					}
-				}
-				else if (c == this.StartClosure)
-				{
-					if (num++ == 0)
-					{
-						num2 = i + 1;
-					}
-				}
-				else if (c == this.EndClosure)
-				{
-					if (num-- == 0)
-					{
-						throw new InvalidOperationException(string.Format("Unmatched closing character at column {0}.", i));
-					}
-					if (num == 0)
-					{
-						string text = raw.Substring(num2, i - num2);
-						if (!this.ProcessInterpolatedCommand(text, context.Arguments, out text))
-						{
-							throw new InvalidOperationException(string.Format("Invalid command at column {0}: {1}", num2, string.Join(", ", context.Arguments.Select((string x) => "\"" + x + "\""))));
-						}
-						context.Arguments.Clear();
-						context.Builder.Append(text);
-					}
-				}
-				else if (num == 0)
-				{
-					context.Builder.Append(c);
-				}
-			}
-			if (flag)
-			{
-				throw new InvalidOperationException("Unable to end string with an escape character.");
-			}
-			if (num > 0)
-			{
-				throw new InvalidOperationException("Unmatched opening character(s).");
-			}
+			return commands;
 		}
-
-		private bool ProcessInterpolatedCommand(string raw, List<string> argumentBuffer, out string processed)
+		set
 		{
-			this.ProcessArguments(raw, argumentBuffer);
-			string text = argumentBuffer[0];
-			Func<List<string>, string> func;
-			if (this.Commands.TryGetValue(text, out func))
-			{
-				processed = func(argumentBuffer);
-				return true;
-			}
-			processed = null;
-			return false;
+			commands = value ?? throw new ArgumentNullException("value");
 		}
+	}
 
-		private void ProcessArguments(string raw, ICollection<string> arguments)
+	public InterpolatedCommandFormatter(int initialContexts = 4)
+	{
+		availableContexts = new Stack<InterpolatedCommandFormatterContext>();
+		for (int i = 0; i < initialContexts; i++)
 		{
-			int num = 0;
-			int num2 = 0;
-			bool flag = false;
-			for (int i = 0; i < raw.Length; i++)
-			{
-				char c = raw[i];
-				if (flag)
-				{
-					flag = false;
-				}
-				else if (c == this.Escape)
-				{
-					flag = true;
-				}
-				else if (c == this.StartClosure)
-				{
-					num2++;
-				}
-				else if (c == this.EndClosure)
-				{
-					num2--;
-				}
-				else if (c == this.ArgumentSplitter && num2 == 0)
-				{
-					arguments.Add(raw.Substring(num, i - num));
-					num = i + 1;
-				}
-			}
-			arguments.Add(raw.Substring(num, raw.Length - num));
+			availableContexts.Push(new InterpolatedCommandFormatterContext());
 		}
+		Commands = new Dictionary<string, Func<List<string>, string>>();
+	}
 
-		private InterpolatedCommandFormatter.InterpolatedCommandFormatterContext SafePopContext()
+	private void ProcessInterpolation(string raw, InterpolatedCommandFormatterContext context)
+	{
+		bool flag = false;
+		int num = 0;
+		int num2 = 0;
+		for (int i = 0; i < raw.Length; i++)
 		{
-			if (this.availableContexts.Count != 0)
+			char c = raw[i];
+			if (c == Escape && !flag)
 			{
-				return this.availableContexts.Pop();
-			}
-			return new InterpolatedCommandFormatter.InterpolatedCommandFormatterContext();
-		}
-
-		public bool TryProcessExpression(string raw, string source, out string result)
-		{
-			bool flag = false;
-			try
-			{
-				result = this.ProcessExpression(raw);
 				flag = true;
 			}
-			catch (InvalidOperationException ex)
+			else if (flag)
 			{
-				result = "Command interpolation (" + source + ") threw an error: " + ex.Message;
-			}
-			catch (CommandInputException ex2)
-			{
-				IEnumerable<object> enumerable = ex2.ArgumentValue as IEnumerable<object>;
-				string text;
-				if (enumerable == null)
+				flag = false;
+				switch (c)
 				{
-					text = ex2.ArgumentValue.ToString();
+				case 'n':
+					context.Builder.Append('\n');
+					continue;
+				case '\\':
+					context.Builder.Append('\\');
+					continue;
 				}
-				else
+				if (c != StartClosure && c != EndClosure && c != ArgumentSplitter && c != Escape)
 				{
-					text = string.Join(", ", enumerable.Select((object x) => string.Format("\"{0}\"", x)));
+					throw new InvalidOperationException($"Unrecognized escape character at column {i}.");
 				}
-				string text2 = text;
-				result = string.Concat(new string[] { "A command errored in ", source, " command interpolation: ", ex2.Message, "\nArgument name: ", ex2.ArgumentName, "\nArgument value: ", text2 });
 			}
-			return flag;
-		}
-
-		public string ProcessExpression(string raw)
-		{
-			InterpolatedCommandFormatter.InterpolatedCommandFormatterContext interpolatedCommandFormatterContext = this.SafePopContext();
-			this.ProcessInterpolation(raw, interpolatedCommandFormatterContext);
-			string text = interpolatedCommandFormatterContext.Builder.ToString();
-			interpolatedCommandFormatterContext.Clear();
-			this.availableContexts.Push(interpolatedCommandFormatterContext);
-			return text;
-		}
-
-		private readonly Stack<InterpolatedCommandFormatter.InterpolatedCommandFormatterContext> availableContexts;
-
-		private Dictionary<string, Func<List<string>, string>> commands;
-
-		private class InterpolatedCommandFormatterContext
-		{
-			public List<string> Arguments { get; }
-
-			public StringBuilder Builder { get; }
-
-			public InterpolatedCommandFormatterContext()
+			else if (c == StartClosure)
 			{
-				this.Arguments = new List<string>();
-				this.Builder = new StringBuilder();
+				if (num++ == 0)
+				{
+					num2 = i + 1;
+				}
 			}
-
-			public void Clear()
+			else if (c == EndClosure)
 			{
-				this.Arguments.Clear();
-				this.Builder.Clear();
+				if (num-- == 0)
+				{
+					throw new InvalidOperationException($"Unmatched closing character at column {i}.");
+				}
+				if (num != 0)
+				{
+					continue;
+				}
+				string processed = raw.Substring(num2, i - num2);
+				if (!ProcessInterpolatedCommand(processed, context.Arguments, out processed))
+				{
+					throw new InvalidOperationException(string.Format("Invalid command at column {0}: {1}", num2, string.Join(", ", context.Arguments.Select((string x) => "\"" + x + "\""))));
+				}
+				context.Arguments.Clear();
+				context.Builder.Append(processed);
+			}
+			else if (num == 0)
+			{
+				context.Builder.Append(c);
 			}
 		}
+		if (flag)
+		{
+			throw new InvalidOperationException("Unable to end string with an escape character.");
+		}
+		if (num > 0)
+		{
+			throw new InvalidOperationException("Unmatched opening character(s).");
+		}
+	}
+
+	private bool ProcessInterpolatedCommand(string raw, List<string> argumentBuffer, out string processed)
+	{
+		ProcessArguments(raw, argumentBuffer);
+		string key = argumentBuffer[0];
+		if (Commands.TryGetValue(key, out var value))
+		{
+			processed = value(argumentBuffer);
+			return true;
+		}
+		processed = null;
+		return false;
+	}
+
+	private void ProcessArguments(string raw, ICollection<string> arguments)
+	{
+		int num = 0;
+		int num2 = 0;
+		bool flag = false;
+		for (int i = 0; i < raw.Length; i++)
+		{
+			char c = raw[i];
+			if (flag)
+			{
+				flag = false;
+			}
+			else if (c == Escape)
+			{
+				flag = true;
+			}
+			else if (c == StartClosure)
+			{
+				num2++;
+			}
+			else if (c == EndClosure)
+			{
+				num2--;
+			}
+			else if (c == ArgumentSplitter && num2 == 0)
+			{
+				arguments.Add(raw.Substring(num, i - num));
+				num = i + 1;
+			}
+		}
+		arguments.Add(raw.Substring(num, raw.Length - num));
+	}
+
+	private InterpolatedCommandFormatterContext SafePopContext()
+	{
+		if (availableContexts.Count != 0)
+		{
+			return availableContexts.Pop();
+		}
+		return new InterpolatedCommandFormatterContext();
+	}
+
+	public bool TryProcessExpression(string raw, string source, out string result)
+	{
+		bool result2 = false;
+		try
+		{
+			result = ProcessExpression(raw);
+			result2 = true;
+		}
+		catch (InvalidOperationException ex)
+		{
+			result = "Command interpolation (" + source + ") threw an error: " + ex.Message;
+		}
+		catch (CommandInputException ex2)
+		{
+			string text = ((ex2.ArgumentValue is IEnumerable<object> source2) ? string.Join(", ", source2.Select((object x) => $"\"{x}\"")) : ex2.ArgumentValue.ToString());
+			result = "A command errored in " + source + " command interpolation: " + ex2.Message + "\nArgument name: " + ex2.ArgumentName + "\nArgument value: " + text;
+		}
+		return result2;
+	}
+
+	public string ProcessExpression(string raw)
+	{
+		InterpolatedCommandFormatterContext interpolatedCommandFormatterContext = SafePopContext();
+		ProcessInterpolation(raw, interpolatedCommandFormatterContext);
+		string result = interpolatedCommandFormatterContext.Builder.ToString();
+		interpolatedCommandFormatterContext.Clear();
+		availableContexts.Push(interpolatedCommandFormatterContext);
+		return result;
 	}
 }

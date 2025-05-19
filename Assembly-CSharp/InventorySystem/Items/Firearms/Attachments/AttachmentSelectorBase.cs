@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CameraShaking;
 using InventorySystem.Items.Firearms.Attachments.Components;
@@ -7,439 +7,391 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace InventorySystem.Items.Firearms.Attachments
+namespace InventorySystem.Items.Firearms.Attachments;
+
+public abstract class AttachmentSelectorBase : MonoBehaviour
 {
-	public abstract class AttachmentSelectorBase : MonoBehaviour
+	public static Action OnPresetLoaded;
+
+	public static Action OnPresetSaved;
+
+	public static Action OnAttachmentsReset;
+
+	public Action OnSummaryToggled;
+
+	protected AttachmentSlot SelectedSlot = AttachmentSlot.Unassigned;
+
+	[SerializeField]
+	protected MonoBehaviour[] SlotsPool;
+
+	[SerializeField]
+	protected MonoBehaviour[] SelectableAttachmentsPool;
+
+	[SerializeField]
+	private TextMeshProUGUI _attachmentName;
+
+	[SerializeField]
+	private TextMeshProUGUI _attachmentDescription;
+
+	[SerializeField]
+	private TextMeshProUGUI _pros;
+
+	[SerializeField]
+	private TextMeshProUGUI _cons;
+
+	[SerializeField]
+	private CanvasGroup _attachmentDimmer;
+
+	[SerializeField]
+	private float _dimmerSpeed;
+
+	[SerializeField]
+	private RawImage _bodyImage;
+
+	[SerializeField]
+	private RectTransform _fullscreenRect;
+
+	[SerializeField]
+	private RectTransform _sideRect;
+
+	[SerializeField]
+	private RectTransform _selectableRect;
+
+	[SerializeField]
+	private GameObject _selectorScreen;
+
+	[SerializeField]
+	private GameObject _summaryScreen;
+
+	[SerializeField]
+	private float _selectableMaxHeight;
+
+	[SerializeField]
+	private float _selectableMaxWidth;
+
+	[SerializeField]
+	private float _selectableMaxScale;
+
+	[SerializeField]
+	private float _maxDisplayedScale = 2f;
+
+	[SerializeField]
+	private RectTransform _configIcon;
+
+	[SerializeField]
+	private HorizontalOrVerticalLayoutGroup _selectableLayoutGroup;
+
+	private Vector3 _targetScale;
+
+	private Vector3 _targetPosition;
+
+	private bool _isCorrectAttachment;
+
+	private readonly List<GameObject> _spawnedConfigButtons = new List<GameObject>();
+
+	private const byte SlotOffset = 32;
+
+	private const string AttParamsFilename = "AttachmentParameters";
+
+	public Firearm SelectedFirearm { get; protected set; }
+
+	protected abstract bool UseLookatMode { get; set; }
+
+	private static Vector3 SpinRotation => Vector3.back * Time.timeSinceLevelLoad * 100f;
+
+	public void ProcessCollider(byte colId)
 	{
-		public Firearm SelectedFirearm { get; protected set; }
-
-		protected abstract bool UseLookatMode { get; set; }
-
-		private static Vector3 SpinRotation
+		if (SelectedFirearm == null)
 		{
-			get
+			return;
+		}
+		RefreshState(SelectedFirearm, colId);
+		if (colId >= 32)
+		{
+			SelectedSlot = (AttachmentSlot)(colId - 32);
+			if (UseLookatMode)
 			{
-				return Vector3.back * Time.timeSinceLevelLoad * 100f;
+				RefreshState(SelectedFirearm, colId);
 			}
 		}
-
-		public void ProcessCollider(byte colId)
+		else
 		{
-			if (this.SelectedFirearm == null)
+			SelectAttachmentId(colId);
+		}
+	}
+
+	public void ShowStats(int attachmentId)
+	{
+		_isCorrectAttachment = attachmentId >= 0 && attachmentId < SelectedFirearm.Attachments.Length;
+		if (!_isCorrectAttachment)
+		{
+			return;
+		}
+		Attachment attachment = SelectedFirearm.Attachments[attachmentId];
+		attachment.GetNameAndDescription(out var n, out var d);
+		_pros.text = string.Empty;
+		_cons.text = string.Empty;
+		_attachmentName.text = n;
+		_attachmentDescription.text = d;
+		for (int i = 0; i < AttachmentsUtils.TotalNumberOfParams; i++)
+		{
+			attachment.GetParameterData(i, out var val, out var state);
+			if ((state & AttachmentParamState.UserInterface) == 0)
 			{
-				return;
+				continue;
 			}
-			this.RefreshState(this.SelectedFirearm, new byte?(colId));
-			if (colId >= 32)
+			AttachmentParam attachmentParam = (AttachmentParam)i;
+			if (AttachmentParameterFormatters.Formatters.TryGetValue(attachmentParam, out var value) && value.FormatParameter(attachmentParam, SelectedFirearm, attachmentId, val, out var formattedText, out var isGood))
 			{
-				this.SelectedSlot = (AttachmentSlot)(colId - 32);
-				if (this.UseLookatMode)
+				string val2;
+				bool flag = TranslationReader.TryGet("AttachmentParameters", i, out val2);
+				string text = "\n" + (flag ? val2 : attachmentParam.ToString()) + ": " + formattedText;
+				if (isGood)
 				{
-					this.RefreshState(this.SelectedFirearm, new byte?(colId));
-					return;
+					_pros.text += text;
+				}
+				else
+				{
+					_cons.text += text;
 				}
 			}
-			else
-			{
-				this.SelectAttachmentId(colId);
-			}
 		}
+		NonParameterFormatter.Format(SelectedFirearm, attachmentId, out var pros, out var cons);
+		_pros.text += pros;
+		_cons.text += cons;
+	}
 
-		public void ShowStats(int attachmentId)
+	protected abstract void LoadPreset(uint loadedCode);
+
+	protected abstract void SelectAttachmentId(byte attachmentId);
+
+	public abstract void RegisterAction(RectTransform t, Action<Vector2> action);
+
+	public bool CanSaveAsPreference(int presetId)
+	{
+		if (presetId == 0 || SelectedFirearm == null)
 		{
-			this._isCorrectAttachment = attachmentId >= 0 && attachmentId < this.SelectedFirearm.Attachments.Length;
-			if (!this._isCorrectAttachment)
-			{
-				return;
-			}
-			Attachment attachment = this.SelectedFirearm.Attachments[attachmentId];
-			string text;
-			string text2;
-			attachment.GetNameAndDescription(out text, out text2);
-			this._pros.text = string.Empty;
-			this._cons.text = string.Empty;
-			this._attachmentName.text = text;
-			this._attachmentDescription.text = text2;
-			for (int i = 0; i < AttachmentsUtils.TotalNumberOfParams; i++)
-			{
-				float num;
-				AttachmentParamState attachmentParamState;
-				attachment.GetParameterData(i, out num, out attachmentParamState);
-				if ((attachmentParamState & AttachmentParamState.UserInterface) != AttachmentParamState.Disabled)
-				{
-					AttachmentParam attachmentParam = (AttachmentParam)i;
-					IAttachmentsParameterFormatter attachmentsParameterFormatter;
-					string text3;
-					bool flag;
-					if (AttachmentParameterFormatters.Formatters.TryGetValue(attachmentParam, out attachmentsParameterFormatter) && attachmentsParameterFormatter.FormatParameter(attachmentParam, this.SelectedFirearm, attachmentId, num, out text3, out flag))
-					{
-						string text4;
-						bool flag2 = TranslationReader.TryGet("AttachmentParameters", i, out text4);
-						string text5 = "\n" + (flag2 ? text4 : attachmentParam.ToString()) + ": " + text3;
-						if (flag)
-						{
-							TextMeshProUGUI pros = this._pros;
-							pros.text += text5;
-						}
-						else
-						{
-							TextMeshProUGUI cons = this._cons;
-							cons.text += text5;
-						}
-					}
-				}
-			}
-			string text6;
-			string text7;
-			NonParameterFormatter.Format(this.SelectedFirearm, attachmentId, out text6, out text7);
-			TextMeshProUGUI pros2 = this._pros;
-			pros2.text += text6;
-			TextMeshProUGUI cons2 = this._cons;
-			cons2.text += text7;
+			return false;
 		}
+		uint currentAttachmentsCode = SelectedFirearm.GetCurrentAttachmentsCode();
+		return AttachmentPreferences.GetPreferenceCodeOfPreset(SelectedFirearm.ItemTypeId, presetId) != currentAttachmentsCode;
+	}
 
-		protected abstract void LoadPreset(uint loadedCode);
-
-		protected abstract void SelectAttachmentId(byte attachmentId);
-
-		public abstract void RegisterAction(RectTransform t, Action<Vector2> action);
-
-		public bool CanSaveAsPreference(int presetId)
+	public void SaveAsPreset(int presetId)
+	{
+		if (CanSaveAsPreference(presetId))
 		{
-			if (presetId == 0 || this.SelectedFirearm == null)
-			{
-				return false;
-			}
-			uint currentAttachmentsCode = this.SelectedFirearm.GetCurrentAttachmentsCode();
-			return AttachmentPreferences.GetPreferenceCodeOfPreset(this.SelectedFirearm.ItemTypeId, presetId) != currentAttachmentsCode;
+			AttachmentPreferences.SetPreset(SelectedFirearm.ItemTypeId, presetId);
+			SelectedFirearm.SavePreferenceCode();
+			OnPresetSaved?.Invoke();
 		}
+	}
 
-		public void SaveAsPreset(int presetId)
+	public void LoadPreset(int presetId)
+	{
+		AttachmentPreferences.SetPreset(SelectedFirearm.ItemTypeId, presetId);
+		if (presetId != 0)
 		{
-			if (!this.CanSaveAsPreference(presetId))
-			{
-				return;
-			}
-			AttachmentPreferences.SetPreset(this.SelectedFirearm.ItemTypeId, presetId);
-			this.SelectedFirearm.SavePreferenceCode();
-			Action onPresetSaved = AttachmentSelectorBase.OnPresetSaved;
-			if (onPresetSaved == null)
-			{
-				return;
-			}
-			onPresetSaved();
+			LoadPreset(SelectedFirearm.GetSavedPreferenceCode());
+			OnPresetLoaded?.Invoke();
 		}
+	}
 
-		public void LoadPreset(int presetId)
+	public void ResetAttachments()
+	{
+		AttachmentPreferences.SetPreset(SelectedFirearm.ItemTypeId, 0);
+		LoadPreset(SelectedFirearm.ValidateAttachmentsCode(0u));
+		OnAttachmentsReset?.Invoke();
+	}
+
+	public void ToggleSummaryScreen(bool summary)
+	{
+		_summaryScreen.SetActive(summary);
+		_selectorScreen.SetActive(!summary);
+		OnSummaryToggled?.Invoke();
+	}
+
+	public void ToggleSummaryScreen()
+	{
+		ToggleSummaryScreen(!_summaryScreen.activeSelf);
+	}
+
+	protected void LerpRects(float lerpState)
+	{
+		_bodyImage.rectTransform.localScale = Vector3.Lerp(_bodyImage.rectTransform.localScale, _targetScale, lerpState);
+		_bodyImage.rectTransform.localPosition = Vector3.Lerp(_bodyImage.rectTransform.localPosition, _targetPosition, lerpState);
+	}
+
+	private void Lookat(Vector3 pos)
+	{
+		CameraShakeController.AddEffect(new LookatShake(pos));
+	}
+
+	private void DisableAllSelectableAttachments()
+	{
+		MonoBehaviour[] selectableAttachmentsPool = SelectableAttachmentsPool;
+		for (int i = 0; i < selectableAttachmentsPool.Length; i++)
 		{
-			AttachmentPreferences.SetPreset(this.SelectedFirearm.ItemTypeId, presetId);
-			if (presetId != 0)
-			{
-				this.LoadPreset(this.SelectedFirearm.GetSavedPreferenceCode());
-				Action onPresetLoaded = AttachmentSelectorBase.OnPresetLoaded;
-				if (onPresetLoaded == null)
-				{
-					return;
-				}
-				onPresetLoaded();
-			}
+			((IAttachmentSelectorButton)selectableAttachmentsPool[i]).RectTransform.gameObject.SetActive(value: false);
 		}
+	}
 
-		public void ResetAttachments()
+	protected bool RefreshState(Firearm firearm, byte? refreshReason)
+	{
+		_spawnedConfigButtons.ForEach(delegate(GameObject x)
 		{
-			AttachmentPreferences.SetPreset(this.SelectedFirearm.ItemTypeId, 0);
-			this.LoadPreset(this.SelectedFirearm.ValidateAttachmentsCode(0U));
-			Action onAttachmentsReset = AttachmentSelectorBase.OnAttachmentsReset;
-			if (onAttachmentsReset == null)
-			{
-				return;
-			}
-			onAttachmentsReset();
-		}
-
-		public void ToggleSummaryScreen(bool summary)
+			UnityEngine.Object.Destroy(x.gameObject);
+		});
+		_spawnedConfigButtons.Clear();
+		if (firearm != SelectedFirearm)
 		{
-			this._summaryScreen.SetActive(summary);
-			this._selectorScreen.SetActive(!summary);
-			Action onSummaryToggled = this.OnSummaryToggled;
-			if (onSummaryToggled == null)
-			{
-				return;
-			}
-			onSummaryToggled();
-		}
-
-		public void ToggleSummaryScreen()
-		{
-			this.ToggleSummaryScreen(!this._summaryScreen.activeSelf);
-		}
-
-		protected void LerpRects(float lerpState)
-		{
-			this._bodyImage.rectTransform.localScale = Vector3.Lerp(this._bodyImage.rectTransform.localScale, this._targetScale, lerpState);
-			this._bodyImage.rectTransform.localPosition = Vector3.Lerp(this._bodyImage.rectTransform.localPosition, this._targetPosition, lerpState);
-		}
-
-		private void Lookat(Vector3 pos)
-		{
-			CameraShakeController.AddEffect(new LookatShake(pos));
-		}
-
-		private void DisableAllSelectableAttachments()
-		{
-			MonoBehaviour[] selectableAttachmentsPool = this.SelectableAttachmentsPool;
-			for (int i = 0; i < selectableAttachmentsPool.Length; i++)
-			{
-				((IAttachmentSelectorButton)selectableAttachmentsPool[i]).RectTransform.gameObject.SetActive(false);
-			}
-		}
-
-		protected bool RefreshState(Firearm firearm, byte? refreshReason)
-		{
-			this._spawnedConfigButtons.ForEach(delegate(GameObject x)
-			{
-				global::UnityEngine.Object.Destroy(x.gameObject);
-			});
-			this._spawnedConfigButtons.Clear();
-			if (firearm != this.SelectedFirearm)
-			{
-				this.SelectedFirearm = firearm;
-				this.SelectedSlot = AttachmentSlot.Unassigned;
-				this._bodyImage.rectTransform.localScale = Vector3.zero;
-				this.DisableAllSelectableAttachments();
-				if (firearm == null)
-				{
-					return false;
-				}
-				if (this.SelectedFirearm.GetSavedPreferenceCode() != this.SelectedFirearm.GetCurrentAttachmentsCode())
-				{
-					AttachmentPreferences.SetPreset(this.SelectedFirearm.ItemTypeId, 0);
-				}
-			}
+			SelectedFirearm = firearm;
+			SelectedSlot = AttachmentSlot.Unassigned;
+			_bodyImage.rectTransform.localScale = Vector3.zero;
+			DisableAllSelectableAttachments();
 			if (firearm == null)
 			{
 				return false;
 			}
-			this._attachmentDimmer.alpha = Mathf.Clamp01(this._attachmentDimmer.alpha + Time.deltaTime * (this._isCorrectAttachment ? this._dimmerSpeed : (-this._dimmerSpeed)));
-			this._bodyImage.texture = firearm.BodyIconTexture;
-			this._bodyImage.rectTransform.sizeDelta = new Vector2((float)firearm.BodyIconTexture.width, (float)firearm.BodyIconTexture.height);
-			int num = 0;
-			for (int i = 0; i < firearm.Attachments.Length; i++)
+			if (SelectedFirearm.GetSavedPreferenceCode() != SelectedFirearm.GetCurrentAttachmentsCode())
 			{
-				IAttachmentSelectorButton component = this.SlotsPool[num].GetComponent<IAttachmentSelectorButton>();
-				if (firearm.Attachments[i].IsEnabled)
-				{
-					IDisplayableAttachment displayableAttachment = firearm.Attachments[i] as IDisplayableAttachment;
-					if (displayableAttachment != null)
-					{
-						Vector2 vector = displayableAttachment.IconOffset;
-						if (firearm.Attachments[Mathf.Clamp(displayableAttachment.ParentId, 0, firearm.Attachments.Length)].IsEnabled)
-						{
-							vector += displayableAttachment.ParentOffset;
-						}
-						component.RectTransform.gameObject.SetActive(true);
-						component.Setup(displayableAttachment.Icon, firearm.Attachments[i].Slot, new Vector2?(vector), firearm);
-						component.ButtonId = (byte)(32 + firearm.Attachments[i].Slot);
-						ICustomizableAttachment ica = displayableAttachment as ICustomizableAttachment;
-						if (ica != null)
-						{
-							RectTransform rectTransform = global::UnityEngine.Object.Instantiate<RectTransform>(this._configIcon, component.RectTransform);
-							rectTransform.localScale *= ica.ConfigIconScale / rectTransform.localScale.x;
-							rectTransform.localRotation = Quaternion.Euler(AttachmentSelectorBase.SpinRotation);
-							rectTransform.localPosition = ica.ConfigIconOffset;
-							rectTransform.gameObject.SetActive(true);
-							this._spawnedConfigButtons.Add(rectTransform.gameObject);
-							Attachment att = firearm.Attachments[i];
-							this.RegisterAction(rectTransform, delegate(Vector2 _)
-							{
-								RectTransform component2 = this._selectorScreen.GetComponent<RectTransform>();
-								AttachmentConfigWindow attachmentConfigWindow = global::UnityEngine.Object.Instantiate<AttachmentConfigWindow>(ica.ConfigWindow, component2.parent);
-								attachmentConfigWindow.Setup(this, att, component2);
-								attachmentConfigWindow.OnDestroyed = (Action)Delegate.Combine(attachmentConfigWindow.OnDestroyed, new Action(delegate
-								{
-									this.ToggleSummaryScreen(false);
-								}));
-							});
-						}
-						num++;
-						if (this.UseLookatMode)
-						{
-							this.LerpRects(1f);
-							if (refreshReason != null && refreshReason.Value < 32 && firearm.Attachments[(int)refreshReason.Value].Slot == firearm.Attachments[i].Slot)
-							{
-								this.Lookat(component.RectTransform.transform.position);
-							}
-						}
-					}
-				}
+				AttachmentPreferences.SetPreset(SelectedFirearm.ItemTypeId, 0);
 			}
-			for (int j = num; j < this.SlotsPool.Length; j++)
-			{
-				this.SlotsPool[j].gameObject.SetActive(false);
-			}
-			this.DisableAllSelectableAttachments();
-			if (this.SelectedSlot == AttachmentSlot.Unassigned)
-			{
-				this.FitToRect(this._fullscreenRect);
-			}
-			else
-			{
-				int num2 = 0;
-				float num3 = 0f;
-				float num4 = 0f;
-				Transform transform = null;
-				byte b = 0;
-				while ((int)b < firearm.Attachments.Length)
-				{
-					IAttachmentSelectorButton attachmentSelectorButton;
-					if (firearm.Attachments[(int)b].Slot == this.SelectedSlot && this.SelectableAttachmentsPool[num2].TryGetComponent<IAttachmentSelectorButton>(out attachmentSelectorButton))
-					{
-						IDisplayableAttachment displayableAttachment2 = firearm.Attachments[(int)b] as IDisplayableAttachment;
-						if (displayableAttachment2 != null)
-						{
-							attachmentSelectorButton.RectTransform.gameObject.SetActive(true);
-							attachmentSelectorButton.ButtonId = b;
-							attachmentSelectorButton.Setup(displayableAttachment2.Icon, AttachmentSlot.Unassigned, null, firearm);
-							num4 = Mathf.Max(num4, attachmentSelectorButton.RectTransform.sizeDelta.y);
-							num3 += attachmentSelectorButton.RectTransform.sizeDelta.x;
-							if (this.UseLookatMode && refreshReason != null && refreshReason.Value - 32 == (byte)this.SelectedSlot && firearm.Attachments[(int)b].IsEnabled)
-							{
-								transform = attachmentSelectorButton.RectTransform.transform;
-							}
-							num2++;
-						}
-					}
-					b += 1;
-				}
-				float num5 = Mathf.Max(1f / this._selectableMaxScale, Mathf.Max(num3 / this._selectableMaxWidth, num4 / this._selectableMaxHeight));
-				foreach (IAttachmentSelectorButton attachmentSelectorButton2 in this.SelectableAttachmentsPool)
-				{
-					if (attachmentSelectorButton2.RectTransform.gameObject.activeSelf)
-					{
-						attachmentSelectorButton2.RectTransform.sizeDelta /= num5;
-					}
-				}
-				this.FitToRect(this._sideRect);
-				if (transform != null)
-				{
-					this._selectableLayoutGroup.SetLayoutVertical();
-					this.LerpRects(1f);
-					this.Lookat(transform.transform.position);
-				}
-			}
-			return true;
 		}
-
-		private void FitToRect(RectTransform rt)
+		if (firearm == null)
 		{
-			Vector3 localScale = this._bodyImage.rectTransform.localScale;
-			Vector3 localPosition = this._bodyImage.rectTransform.localPosition;
-			Bounds bounds = default(Bounds);
-			this._bodyImage.rectTransform.localScale = Vector3.one;
-			this._bodyImage.rectTransform.localPosition = Vector3.zero;
-			this.Encapsulate(ref bounds, this._bodyImage.rectTransform);
-			foreach (IAttachmentSelectorButton attachmentSelectorButton in this.SlotsPool)
+			return false;
+		}
+		_attachmentDimmer.alpha = Mathf.Clamp01(_attachmentDimmer.alpha + Time.deltaTime * (_isCorrectAttachment ? _dimmerSpeed : (0f - _dimmerSpeed)));
+		_bodyImage.texture = firearm.BodyIconTexture;
+		_bodyImage.rectTransform.sizeDelta = new Vector2(firearm.BodyIconTexture.width, firearm.BodyIconTexture.height);
+		int num = 0;
+		for (int i = 0; i < firearm.Attachments.Length; i++)
+		{
+			IAttachmentSelectorButton component = SlotsPool[num].GetComponent<IAttachmentSelectorButton>();
+			if (!firearm.Attachments[i].IsEnabled || !(firearm.Attachments[i] is IDisplayableAttachment { IconOffset: var vector } displayableAttachment))
 			{
+				continue;
+			}
+			if (firearm.Attachments[Mathf.Clamp(displayableAttachment.ParentId, 0, firearm.Attachments.Length)].IsEnabled)
+			{
+				vector += displayableAttachment.ParentOffset;
+			}
+			component.RectTransform.gameObject.SetActive(value: true);
+			component.Setup(displayableAttachment.Icon, firearm.Attachments[i].Slot, vector, firearm);
+			component.ButtonId = (byte)(32 + firearm.Attachments[i].Slot);
+			ICustomizableAttachment ica = displayableAttachment as ICustomizableAttachment;
+			if (ica != null)
+			{
+				RectTransform rectTransform = UnityEngine.Object.Instantiate(_configIcon, component.RectTransform);
+				rectTransform.localScale *= ica.ConfigIconScale / rectTransform.localScale.x;
+				rectTransform.localRotation = Quaternion.Euler(SpinRotation);
+				rectTransform.localPosition = ica.ConfigIconOffset;
+				rectTransform.gameObject.SetActive(value: true);
+				_spawnedConfigButtons.Add(rectTransform.gameObject);
+				Attachment att = firearm.Attachments[i];
+				RegisterAction(rectTransform, delegate
+				{
+					RectTransform component2 = _selectorScreen.GetComponent<RectTransform>();
+					AttachmentConfigWindow attachmentConfigWindow = UnityEngine.Object.Instantiate(ica.ConfigWindow, component2.parent);
+					attachmentConfigWindow.Setup(this, att, component2);
+					attachmentConfigWindow.OnDestroyed = (Action)Delegate.Combine(attachmentConfigWindow.OnDestroyed, (Action)delegate
+					{
+						ToggleSummaryScreen(summary: false);
+					});
+				});
+			}
+			num++;
+			if (UseLookatMode)
+			{
+				LerpRects(1f);
+				if (refreshReason.HasValue && refreshReason.Value < 32 && firearm.Attachments[refreshReason.Value].Slot == firearm.Attachments[i].Slot)
+				{
+					Lookat(component.RectTransform.transform.position);
+				}
+			}
+		}
+		for (int j = num; j < SlotsPool.Length; j++)
+		{
+			SlotsPool[j].gameObject.SetActive(value: false);
+		}
+		DisableAllSelectableAttachments();
+		if (SelectedSlot == AttachmentSlot.Unassigned)
+		{
+			FitToRect(_fullscreenRect);
+		}
+		else
+		{
+			int num2 = 0;
+			float num3 = 0f;
+			float num4 = 0f;
+			Transform transform = null;
+			for (byte b = 0; b < firearm.Attachments.Length; b++)
+			{
+				if (firearm.Attachments[b].Slot == SelectedSlot && SelectableAttachmentsPool[num2].TryGetComponent<IAttachmentSelectorButton>(out var component3) && firearm.Attachments[b] is IDisplayableAttachment displayableAttachment2)
+				{
+					component3.RectTransform.gameObject.SetActive(value: true);
+					component3.ButtonId = b;
+					component3.Setup(displayableAttachment2.Icon, AttachmentSlot.Unassigned, null, firearm);
+					num4 = Mathf.Max(num4, component3.RectTransform.sizeDelta.y);
+					num3 += component3.RectTransform.sizeDelta.x;
+					if (UseLookatMode && refreshReason.HasValue && refreshReason.Value - 32 == (int)SelectedSlot && firearm.Attachments[b].IsEnabled)
+					{
+						transform = component3.RectTransform.transform;
+					}
+					num2++;
+				}
+			}
+			float num5 = Mathf.Max(1f / _selectableMaxScale, Mathf.Max(num3 / _selectableMaxWidth, num4 / _selectableMaxHeight));
+			MonoBehaviour[] selectableAttachmentsPool = SelectableAttachmentsPool;
+			for (int k = 0; k < selectableAttachmentsPool.Length; k++)
+			{
+				IAttachmentSelectorButton attachmentSelectorButton = (IAttachmentSelectorButton)selectableAttachmentsPool[k];
 				if (attachmentSelectorButton.RectTransform.gameObject.activeSelf)
 				{
-					this.Encapsulate(ref bounds, attachmentSelectorButton.RectTransform);
+					attachmentSelectorButton.RectTransform.sizeDelta /= num5;
 				}
 			}
-			Vector3 vector = bounds.center - this._bodyImage.rectTransform.localPosition;
-			float num = Mathf.Min(this._maxDisplayedScale, Mathf.Min(rt.sizeDelta.x / bounds.size.x, rt.sizeDelta.y / bounds.size.y));
-			this._targetScale = Vector3.one * num;
-			this._targetPosition = rt.localPosition - vector * num;
-			this._bodyImage.rectTransform.localScale = localScale;
-			this._bodyImage.rectTransform.localPosition = localPosition;
+			FitToRect(_sideRect);
+			if (transform != null)
+			{
+				_selectableLayoutGroup.SetLayoutVertical();
+				LerpRects(1f);
+				Lookat(transform.transform.position);
+			}
 		}
+		return true;
+	}
 
-		private void Encapsulate(ref Bounds b, RectTransform rct)
+	private void FitToRect(RectTransform rt)
+	{
+		Vector3 localScale = _bodyImage.rectTransform.localScale;
+		Vector3 localPosition = _bodyImage.rectTransform.localPosition;
+		Bounds b = default(Bounds);
+		_bodyImage.rectTransform.localScale = Vector3.one;
+		_bodyImage.rectTransform.localPosition = Vector3.zero;
+		Encapsulate(ref b, _bodyImage.rectTransform);
+		MonoBehaviour[] slotsPool = SlotsPool;
+		for (int i = 0; i < slotsPool.Length; i++)
 		{
-			Vector2 vector = rct.sizeDelta / 2f;
-			b.Encapsulate(rct.localPosition + Vector3.up * vector.y + Vector3.left * vector.x);
-			b.Encapsulate(rct.localPosition + Vector3.down * vector.y + Vector3.right * vector.x);
+			IAttachmentSelectorButton attachmentSelectorButton = (IAttachmentSelectorButton)slotsPool[i];
+			if (attachmentSelectorButton.RectTransform.gameObject.activeSelf)
+			{
+				Encapsulate(ref b, attachmentSelectorButton.RectTransform);
+			}
 		}
+		Vector3 vector = b.center - _bodyImage.rectTransform.localPosition;
+		float num = Mathf.Min(_maxDisplayedScale, Mathf.Min(rt.sizeDelta.x / b.size.x, rt.sizeDelta.y / b.size.y));
+		_targetScale = Vector3.one * num;
+		_targetPosition = rt.localPosition - vector * num;
+		_bodyImage.rectTransform.localScale = localScale;
+		_bodyImage.rectTransform.localPosition = localPosition;
+	}
 
-		public static Action OnPresetLoaded;
-
-		public static Action OnPresetSaved;
-
-		public static Action OnAttachmentsReset;
-
-		public Action OnSummaryToggled;
-
-		protected AttachmentSlot SelectedSlot = AttachmentSlot.Unassigned;
-
-		[SerializeField]
-		protected MonoBehaviour[] SlotsPool;
-
-		[SerializeField]
-		protected MonoBehaviour[] SelectableAttachmentsPool;
-
-		[SerializeField]
-		private TextMeshProUGUI _attachmentName;
-
-		[SerializeField]
-		private TextMeshProUGUI _attachmentDescription;
-
-		[SerializeField]
-		private TextMeshProUGUI _pros;
-
-		[SerializeField]
-		private TextMeshProUGUI _cons;
-
-		[SerializeField]
-		private CanvasGroup _attachmentDimmer;
-
-		[SerializeField]
-		private float _dimmerSpeed;
-
-		[SerializeField]
-		private RawImage _bodyImage;
-
-		[SerializeField]
-		private RectTransform _fullscreenRect;
-
-		[SerializeField]
-		private RectTransform _sideRect;
-
-		[SerializeField]
-		private RectTransform _selectableRect;
-
-		[SerializeField]
-		private GameObject _selectorScreen;
-
-		[SerializeField]
-		private GameObject _summaryScreen;
-
-		[SerializeField]
-		private float _selectableMaxHeight;
-
-		[SerializeField]
-		private float _selectableMaxWidth;
-
-		[SerializeField]
-		private float _selectableMaxScale;
-
-		[SerializeField]
-		private float _maxDisplayedScale = 2f;
-
-		[SerializeField]
-		private RectTransform _configIcon;
-
-		[SerializeField]
-		private HorizontalOrVerticalLayoutGroup _selectableLayoutGroup;
-
-		private Vector3 _targetScale;
-
-		private Vector3 _targetPosition;
-
-		private bool _isCorrectAttachment;
-
-		private readonly List<GameObject> _spawnedConfigButtons = new List<GameObject>();
-
-		private const byte SlotOffset = 32;
-
-		private const string AttParamsFilename = "AttachmentParameters";
+	private void Encapsulate(ref Bounds b, RectTransform rct)
+	{
+		Vector2 vector = rct.sizeDelta / 2f;
+		b.Encapsulate(rct.localPosition + Vector3.up * vector.y + Vector3.left * vector.x);
+		b.Encapsulate(rct.localPosition + Vector3.down * vector.y + Vector3.right * vector.x);
 	}
 }

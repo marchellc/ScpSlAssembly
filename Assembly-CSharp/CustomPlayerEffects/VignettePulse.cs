@@ -1,8 +1,5 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public class VignettePulse : PostProcessEffectPulse
 {
-	public class VignettePulse : PostProcessEffectPulse
-	{
-	}
 }

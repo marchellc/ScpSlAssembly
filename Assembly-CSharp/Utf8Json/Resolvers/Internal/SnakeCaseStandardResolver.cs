@@ -1,72 +1,72 @@
-﻿using System;
 using System.Linq;
 using Utf8Json.Formatters;
 
-namespace Utf8Json.Resolvers.Internal
+namespace Utf8Json.Resolvers.Internal;
+
+internal sealed class SnakeCaseStandardResolver : IJsonFormatterResolver
 {
-	internal sealed class SnakeCaseStandardResolver : IJsonFormatterResolver
+	private static class FormatterCache<T>
 	{
-		private SnakeCaseStandardResolver()
+		public static readonly IJsonFormatter<T> formatter;
+
+		static FormatterCache()
+		{
+			if (typeof(T) == typeof(object))
+			{
+				formatter = (IJsonFormatter<T>)fallbackFormatter;
+			}
+			else
+			{
+				formatter = InnerResolver.Instance.GetFormatter<T>();
+			}
+		}
+	}
+
+	private sealed class InnerResolver : IJsonFormatterResolver
+	{
+		private static class FormatterCache<T>
+		{
+			public static readonly IJsonFormatter<T> formatter;
+
+			static FormatterCache()
+			{
+				IJsonFormatterResolver[] resolvers = InnerResolver.resolvers;
+				for (int i = 0; i < resolvers.Length; i++)
+				{
+					IJsonFormatter<T> jsonFormatter = resolvers[i].GetFormatter<T>();
+					if (jsonFormatter != null)
+					{
+						formatter = jsonFormatter;
+						break;
+					}
+				}
+			}
+		}
+
+		public static readonly IJsonFormatterResolver Instance = new InnerResolver();
+
+		private static readonly IJsonFormatterResolver[] resolvers = StandardResolverHelper.CompositeResolverBase.Concat(new IJsonFormatterResolver[1] { DynamicObjectResolver.SnakeCase }).ToArray();
+
+		private InnerResolver()
 		{
 		}
 
 		public IJsonFormatter<T> GetFormatter<T>()
 		{
-			return SnakeCaseStandardResolver.FormatterCache<T>.formatter;
+			return FormatterCache<T>.formatter;
 		}
+	}
 
-		public static readonly IJsonFormatterResolver Instance = new SnakeCaseStandardResolver();
+	public static readonly IJsonFormatterResolver Instance = new SnakeCaseStandardResolver();
 
-		private static readonly IJsonFormatter<object> fallbackFormatter = new DynamicObjectTypeFallbackFormatter(new IJsonFormatterResolver[] { SnakeCaseStandardResolver.InnerResolver.Instance });
+	private static readonly IJsonFormatter<object> fallbackFormatter = new DynamicObjectTypeFallbackFormatter(InnerResolver.Instance);
 
-		private static class FormatterCache<T>
-		{
-			static FormatterCache()
-			{
-				if (typeof(T) == typeof(object))
-				{
-					SnakeCaseStandardResolver.FormatterCache<T>.formatter = (IJsonFormatter<T>)SnakeCaseStandardResolver.fallbackFormatter;
-					return;
-				}
-				SnakeCaseStandardResolver.FormatterCache<T>.formatter = SnakeCaseStandardResolver.InnerResolver.Instance.GetFormatter<T>();
-			}
+	private SnakeCaseStandardResolver()
+	{
+	}
 
-			public static readonly IJsonFormatter<T> formatter;
-		}
-
-		private sealed class InnerResolver : IJsonFormatterResolver
-		{
-			private InnerResolver()
-			{
-			}
-
-			public IJsonFormatter<T> GetFormatter<T>()
-			{
-				return SnakeCaseStandardResolver.InnerResolver.FormatterCache<T>.formatter;
-			}
-
-			public static readonly IJsonFormatterResolver Instance = new SnakeCaseStandardResolver.InnerResolver();
-
-			private static readonly IJsonFormatterResolver[] resolvers = StandardResolverHelper.CompositeResolverBase.Concat(new IJsonFormatterResolver[] { DynamicObjectResolver.SnakeCase }).ToArray<IJsonFormatterResolver>();
-
-			private static class FormatterCache<T>
-			{
-				static FormatterCache()
-				{
-					IJsonFormatterResolver[] resolvers = SnakeCaseStandardResolver.InnerResolver.resolvers;
-					for (int i = 0; i < resolvers.Length; i++)
-					{
-						IJsonFormatter<T> jsonFormatter = resolvers[i].GetFormatter<T>();
-						if (jsonFormatter != null)
-						{
-							SnakeCaseStandardResolver.InnerResolver.FormatterCache<T>.formatter = jsonFormatter;
-							return;
-						}
-					}
-				}
-
-				public static readonly IJsonFormatter<T> formatter;
-			}
-		}
+	public IJsonFormatter<T> GetFormatter<T>()
+	{
+		return FormatterCache<T>.formatter;
 	}
 }

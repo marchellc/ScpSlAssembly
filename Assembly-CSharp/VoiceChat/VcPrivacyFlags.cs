@@ -1,13 +1,12 @@
-﻿using System;
+using System;
 
-namespace VoiceChat
+namespace VoiceChat;
+
+[Flags]
+public enum VcPrivacyFlags : byte
 {
-	[Flags]
-	public enum VcPrivacyFlags : byte
-	{
-		None = 0,
-		SettingsSelected = 1,
-		AllowMicCapture = 2,
-		AllowRecording = 4
-	}
+	None = 0,
+	SettingsSelected = 1,
+	AllowMicCapture = 2,
+	AllowRecording = 4
 }

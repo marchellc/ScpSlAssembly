@@ -1,10 +1,7 @@
-﻿using System;
+namespace Scp914;
 
-namespace Scp914
+public enum Scp914InteractCode : byte
 {
-	public enum Scp914InteractCode : byte
-	{
-		ChangeMode,
-		Activate
-	}
+	ChangeMode,
+	Activate
 }

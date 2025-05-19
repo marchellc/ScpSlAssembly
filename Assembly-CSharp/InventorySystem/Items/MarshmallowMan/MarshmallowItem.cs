@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using InventorySystem.GUI;
 using InventorySystem.Items.Autosync;
 using InventorySystem.Items.Pickups;
 using MapGeneration.Holidays;
@@ -15,322 +14,237 @@ using Subtitles;
 using UnityEngine;
 using Utils.Networking;
 
-namespace InventorySystem.Items.MarshmallowMan
+namespace InventorySystem.Items.MarshmallowMan;
+
+public class MarshmallowItem : AutosyncItem, IInteractionBlocker, IHolidayItem
 {
-	public class MarshmallowItem : AutosyncItem, IInteractionBlocker, IHolidayItem
+	private enum RpcType
 	{
-		public static event Action<ushort> OnSwing;
+		AttackStart,
+		Hit,
+		Holster
+	}
 
-		public static event Action<ushort> OnHit;
+	public const float HolsterAnimTime = 1.1f;
 
-		public static event Action<ushort> OnHolsterRequested;
+	[SerializeField]
+	private float _detectionRadius;
 
-		private UniversalDamageHandler NewDamageHandler
+	[SerializeField]
+	private float _detectionOffset;
+
+	[SerializeField]
+	private float _attackCooldown;
+
+	[SerializeField]
+	private float _attackDamage;
+
+	private bool _markedAsRemoved;
+
+	private bool _preventAttacks;
+
+	private MarshmallowEffect _marshmallowEffect;
+
+	private readonly TolerantAbilityCooldown _cooldown = new TolerantAbilityCooldown();
+
+	private readonly HashSet<ReferenceHub> _detectedPlayers = new HashSet<ReferenceHub>();
+
+	private UniversalDamageHandler NewDamageHandler => new UniversalDamageHandler(_attackDamage, DeathTranslations.MarshmallowMan, new DamageHandlerBase.CassieAnnouncement
+	{
+		Announcement = "TERMINATED BY MARSHMALLOW MAN",
+		SubtitleParts = new SubtitlePart[1]
 		{
-			get
-			{
-				return new UniversalDamageHandler(this._attackDamage, DeathTranslations.MarshmallowMan, new DamageHandlerBase.CassieAnnouncement
-				{
-					Announcement = "TERMINATED BY MARSHMALLOW MAN",
-					SubtitleParts = new SubtitlePart[]
-					{
-						new SubtitlePart(SubtitleType.TerminatedByMarshmallowMan, null)
-					}
-				});
-			}
+			new SubtitlePart(SubtitleType.TerminatedByMarshmallowMan, (string[])null)
 		}
+	});
 
-		public override float Weight
+	public override float Weight => 0f;
+
+	public override bool AllowHolster => false;
+
+	public BlockedInteraction BlockedInteractions => BlockedInteraction.OpenInventory | BlockedInteraction.BeDisarmed | BlockedInteraction.GrabItems;
+
+	public bool CanBeCleared => !base.IsEquipped;
+
+	public HolidayType[] TargetHolidays { get; } = new HolidayType[1] { HolidayType.Christmas };
+
+	public static event Action<ushort> OnSwing;
+
+	public static event Action<ushort> OnHit;
+
+	public static event Action<ushort> OnHolsterRequested;
+
+	public void ServerRequestHolster()
+	{
+		ServerSendPublicRpc(delegate(NetworkWriter writer)
 		{
-			get
-			{
-				return 0f;
-			}
-		}
+			writer.WriteByte(2);
+		});
+	}
 
-		public override bool AllowHolster
+	public override ItemPickupBase ServerDropItem(bool spawn)
+	{
+		base.OwnerInventory.ServerRemoveItem(base.ItemSerial, null);
+		return null;
+	}
+
+	public override void OnAdded(ItemPickupBase pickup)
+	{
+		base.OnAdded(pickup);
+		base.Owner.interCoordinator.AddBlocker(this);
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return false;
-			}
-		}
-
-		public BlockedInteraction BlockedInteractions
-		{
-			get
-			{
-				return BlockedInteraction.OpenInventory | BlockedInteraction.BeDisarmed | BlockedInteraction.GrabItems;
-			}
-		}
-
-		public bool CanBeCleared
-		{
-			get
-			{
-				return !base.IsEquipped;
-			}
-		}
-
-		public HolidayType[] TargetHolidays { get; } = new HolidayType[] { HolidayType.Christmas };
-
-		public void ServerRequestHolster()
-		{
-			base.ServerSendPublicRpc(delegate(NetworkWriter writer)
-			{
-				writer.WriteByte(2);
-			});
-		}
-
-		public override ItemPickupBase ServerDropItem(bool spawn)
-		{
-			base.OwnerInventory.ServerRemoveItem(base.ItemSerial, null);
-			return null;
-		}
-
-		public override void OnAdded(ItemPickupBase pickup)
-		{
-			base.OnAdded(pickup);
-			base.Owner.interCoordinator.AddBlocker(this);
-			if (!NetworkServer.active)
-			{
-				return;
-			}
 			base.OwnerInventory.ServerSelectItem(base.ItemSerial);
-			this._marshmallowEffect = base.Owner.playerEffectsController.GetEffect<MarshmallowEffect>();
-			this._marshmallowEffect.IsEnabled = true;
+			_marshmallowEffect = base.Owner.playerEffectsController.GetEffect<MarshmallowEffect>();
+			_marshmallowEffect.IsEnabled = true;
 		}
+	}
 
-		public override void OnHolstered()
+	public override void OnHolstered()
+	{
+		base.OnHolstered();
+		if (!_markedAsRemoved)
 		{
-			base.OnHolstered();
-			if (this._markedAsRemoved)
-			{
-				return;
-			}
-			this._markedAsRemoved = true;
+			_markedAsRemoved = true;
 			if (NetworkServer.active)
 			{
 				base.OwnerInventory.ServerRemoveItem(base.ItemSerial, null);
 			}
 		}
+	}
 
-		public override void OnRemoved(ItemPickupBase pickup)
+	public override void OnRemoved(ItemPickupBase pickup)
+	{
+		base.OnRemoved(pickup);
+		_markedAsRemoved = true;
+		if (NetworkServer.active)
 		{
-			base.OnRemoved(pickup);
-			this._markedAsRemoved = true;
-			if (NetworkServer.active)
+			_marshmallowEffect.IsEnabled = false;
+		}
+	}
+
+	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	{
+		base.ClientProcessRpcTemplate(reader, serial);
+		switch ((RpcType)reader.ReadByte())
+		{
+		case RpcType.Hit:
+			MarshmallowItem.OnHit?.Invoke(serial);
+			break;
+		case RpcType.AttackStart:
+			MarshmallowItem.OnSwing?.Invoke(serial);
+			break;
+		case RpcType.Holster:
+			MarshmallowItem.OnHolsterRequested?.Invoke(serial);
+			break;
+		}
+	}
+
+	public override void ClientProcessRpcInstance(NetworkReader reader)
+	{
+		base.ClientProcessRpcInstance(reader);
+		if (IsLocalPlayer && reader.ReadByte() == 2)
+		{
+			_preventAttacks = true;
+		}
+	}
+
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (!IsLocalPlayer)
+		{
+			if (!_cooldown.TolerantIsReady)
 			{
-				this._marshmallowEffect.IsEnabled = false;
+				return;
+			}
+			_cooldown.Trigger(_attackCooldown);
+		}
+		RelativePosition relativePosition = reader.ReadRelativePosition();
+		Quaternion claimedRot = reader.ReadQuaternion();
+		FpcBacktracker fpcBacktracker;
+		if (reader.Remaining > 0 && reader.TryReadReferenceHub(out var hub2))
+		{
+			RelativePosition relativePosition2 = reader.ReadRelativePosition();
+			fpcBacktracker = new FpcBacktracker(hub2, relativePosition2.Position);
+		}
+		else
+		{
+			hub2 = null;
+			fpcBacktracker = null;
+		}
+		using (new FpcBacktracker(base.Owner, relativePosition.Position, claimedRot))
+		{
+			ServerAttack(hub2);
+		}
+		fpcBacktracker?.RestorePosition();
+		ServerSendConditionalRpc((ReferenceHub hub) => hub != base.Owner, delegate(NetworkWriter writer)
+		{
+			writer.WriteByte(0);
+		});
+	}
+
+	public override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		if (base.IsControllable)
+		{
+			UpdateClientInput();
+		}
+	}
+
+	private void UpdateClientInput()
+	{
+		if (_cooldown.IsReady && !_preventAttacks && GetActionDown(ActionName.Shoot))
+		{
+			MarshmallowItem.OnSwing?.Invoke(base.ItemSerial);
+			_cooldown.Trigger(_attackCooldown);
+			ClientSendCmd(ClientWriteAttackResult);
+		}
+	}
+
+	private void ClientWriteAttackResult(NetworkWriter writer)
+	{
+		if (!(base.Owner.roleManager.CurrentRole is IFpcRole fpcRole))
+		{
+			return;
+		}
+		writer.WriteRelativePosition(new RelativePosition(fpcRole.FpcModule.Position));
+		writer.WriteQuaternion(base.Owner.PlayerCameraReference.rotation);
+		_detectedPlayers.Clear();
+		foreach (IDestructible item in DetectDestructibles())
+		{
+			if (item is HitboxIdentity hitboxIdentity)
+			{
+				_detectedPlayers.Add(hitboxIdentity.TargetHub);
 			}
 		}
-
-		public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+		ReferenceHub primaryTarget = _detectedPlayers.GetPrimaryTarget(base.Owner.PlayerCameraReference);
+		if (!(primaryTarget == null) && primaryTarget.roleManager.CurrentRole is IFpcRole fpcRole2)
 		{
-			base.ClientProcessRpcTemplate(reader, serial);
-			switch (reader.ReadByte())
+			writer.WriteReferenceHub(primaryTarget);
+			writer.WriteRelativePosition(new RelativePosition(fpcRole2.FpcModule.Position));
+		}
+	}
+
+	private void ServerAttack(ReferenceHub syncTarget)
+	{
+		foreach (IDestructible item in DetectDestructibles())
+		{
+			if ((!(item is HitboxIdentity hitboxIdentity) || !(hitboxIdentity.TargetHub != syncTarget)) && item.Damage(_attackDamage, NewDamageHandler, item.CenterOfMass))
 			{
-			case 0:
-			{
-				Action<ushort> onSwing = MarshmallowItem.OnSwing;
-				if (onSwing == null)
+				Hitmarker.SendHitmarkerDirectly(base.Owner, 1f);
+				ServerSendPublicRpc(delegate(NetworkWriter writer)
 				{
-					return;
-				}
-				onSwing(serial);
-				return;
-			}
-			case 1:
-			{
-				Action<ushort> onHit = MarshmallowItem.OnHit;
-				if (onHit == null)
-				{
-					return;
-				}
-				onHit(serial);
-				return;
-			}
-			case 2:
-			{
-				Action<ushort> onHolsterRequested = MarshmallowItem.OnHolsterRequested;
-				if (onHolsterRequested == null)
-				{
-					return;
-				}
-				onHolsterRequested(serial);
-				return;
-			}
-			default:
-				return;
+					writer.WriteByte(1);
+				});
+				break;
 			}
 		}
+	}
 
-		public override void ClientProcessRpcInstance(NetworkReader reader)
-		{
-			base.ClientProcessRpcInstance(reader);
-			if (!this.IsLocalPlayer)
-			{
-				return;
-			}
-			if (reader.ReadByte() == 2)
-			{
-				this._preventAttacks = true;
-			}
-		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			if (!this.IsLocalPlayer)
-			{
-				if (!this._cooldown.TolerantIsReady)
-				{
-					return;
-				}
-				this._cooldown.Trigger((double)this._attackCooldown);
-			}
-			RelativePosition relativePosition = reader.ReadRelativePosition();
-			Quaternion quaternion = reader.ReadQuaternion();
-			ReferenceHub referenceHub;
-			FpcBacktracker fpcBacktracker;
-			if (reader.Remaining > 0 && reader.TryReadReferenceHub(out referenceHub))
-			{
-				RelativePosition relativePosition2 = reader.ReadRelativePosition();
-				fpcBacktracker = new FpcBacktracker(referenceHub, relativePosition2.Position, 0.4f);
-			}
-			else
-			{
-				referenceHub = null;
-				fpcBacktracker = null;
-			}
-			using (new FpcBacktracker(base.Owner, relativePosition.Position, quaternion, 0.1f, 0.15f))
-			{
-				this.ServerAttack(referenceHub);
-			}
-			if (fpcBacktracker != null)
-			{
-				fpcBacktracker.RestorePosition();
-			}
-			base.ServerSendConditionalRpc((ReferenceHub hub) => hub != base.Owner, delegate(NetworkWriter writer)
-			{
-				writer.WriteByte(0);
-			});
-		}
-
-		public override void EquipUpdate()
-		{
-			base.EquipUpdate();
-			if (this.IsLocalPlayer)
-			{
-				this.UpdateClientInput();
-			}
-		}
-
-		private void UpdateClientInput()
-		{
-			if (!this._cooldown.IsReady || this._preventAttacks)
-			{
-				return;
-			}
-			if (!InventoryGuiController.ItemsSafeForInteraction)
-			{
-				return;
-			}
-			if (!Input.GetKeyDown(NewInput.GetKey(ActionName.Shoot, KeyCode.None)))
-			{
-				return;
-			}
-			Action<ushort> onSwing = MarshmallowItem.OnSwing;
-			if (onSwing != null)
-			{
-				onSwing(base.ItemSerial);
-			}
-			this._cooldown.Trigger((double)this._attackCooldown);
-			base.ClientSendCmd(new Action<NetworkWriter>(this.ClientWriteAttackResult));
-		}
-
-		private void ClientWriteAttackResult(NetworkWriter writer)
-		{
-			IFpcRole fpcRole = base.Owner.roleManager.CurrentRole as IFpcRole;
-			if (fpcRole == null)
-			{
-				return;
-			}
-			writer.WriteRelativePosition(new RelativePosition(fpcRole.FpcModule.Position));
-			writer.WriteQuaternion(base.Owner.PlayerCameraReference.rotation);
-			this._detectedPlayers.Clear();
-			foreach (IDestructible destructible in this.DetectDestructibles())
-			{
-				HitboxIdentity hitboxIdentity = destructible as HitboxIdentity;
-				if (hitboxIdentity != null)
-				{
-					this._detectedPlayers.Add(hitboxIdentity.TargetHub);
-				}
-			}
-			ReferenceHub primaryTarget = this._detectedPlayers.GetPrimaryTarget(base.Owner.PlayerCameraReference);
-			if (!(primaryTarget == null))
-			{
-				IFpcRole fpcRole2 = primaryTarget.roleManager.CurrentRole as IFpcRole;
-				if (fpcRole2 != null)
-				{
-					writer.WriteReferenceHub(primaryTarget);
-					writer.WriteRelativePosition(new RelativePosition(fpcRole2.FpcModule.Position));
-					return;
-				}
-			}
-		}
-
-		private void ServerAttack(ReferenceHub syncTarget)
-		{
-			foreach (IDestructible destructible in this.DetectDestructibles())
-			{
-				HitboxIdentity hitboxIdentity = destructible as HitboxIdentity;
-				if ((hitboxIdentity == null || !(hitboxIdentity.TargetHub != syncTarget)) && destructible.Damage(this._attackDamage, this.NewDamageHandler, destructible.CenterOfMass))
-				{
-					Hitmarker.SendHitmarkerDirectly(base.Owner, 1f, true);
-					base.ServerSendPublicRpc(delegate(NetworkWriter writer)
-					{
-						writer.WriteByte(1);
-					});
-					break;
-				}
-			}
-		}
-
-		private ArraySegment<IDestructible> DetectDestructibles()
-		{
-			return ScpAttackAbilityBase<HumanRole>.DetectDestructibles(base.Owner, this._detectionOffset, this._detectionRadius, true);
-		}
-
-		public const float HolsterAnimTime = 1.1f;
-
-		[SerializeField]
-		private float _detectionRadius;
-
-		[SerializeField]
-		private float _detectionOffset;
-
-		[SerializeField]
-		private float _attackCooldown;
-
-		[SerializeField]
-		private float _attackDamage;
-
-		private bool _markedAsRemoved;
-
-		private bool _preventAttacks;
-
-		private MarshmallowEffect _marshmallowEffect;
-
-		private readonly TolerantAbilityCooldown _cooldown = new TolerantAbilityCooldown(0.2f);
-
-		private readonly HashSet<ReferenceHub> _detectedPlayers = new HashSet<ReferenceHub>();
-
-		private enum RpcType
-		{
-			AttackStart,
-			Hit,
-			Holster
-		}
+	private ArraySegment<IDestructible> DetectDestructibles()
+	{
+		return ScpAttackAbilityBase<HumanRole>.DetectDestructibles(base.Owner, _detectionOffset, _detectionRadius);
 	}
 }

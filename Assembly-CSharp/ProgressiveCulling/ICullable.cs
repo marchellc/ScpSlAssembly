@@ -1,16 +1,13 @@
-﻿using System;
+namespace ProgressiveCulling;
 
-namespace ProgressiveCulling
+public interface ICullable
 {
-	public interface ICullable
+	bool ShouldBeVisible { get; }
+
+	void SetVisibility(bool isVisible);
+
+	void UpdateState()
 	{
-		bool ShouldBeVisible { get; }
-
-		void SetVisibility(bool isVisible);
-
-		void UpdateState()
-		{
-			this.SetVisibility(this.ShouldBeVisible);
-		}
+		SetVisibility(ShouldBeVisible);
 	}
 }

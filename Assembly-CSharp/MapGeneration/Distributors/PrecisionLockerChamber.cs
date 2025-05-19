@@ -1,33 +1,34 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace MapGeneration.Distributors
+namespace MapGeneration.Distributors;
+
+public class PrecisionLockerChamber : LockerChamber
 {
-	public class PrecisionLockerChamber : LockerChamber
+	[Serializable]
+	private struct SpawnpointOverride
 	{
-		protected override void GetSpawnpoint(ItemType itemType, int index, out Vector3 worldPosition, out Quaternion worldRotation, out Transform parent)
+		public ItemType[] AcceptedItemTypes;
+
+		public Transform Spawnpoint;
+	}
+
+	[SerializeField]
+	private SpawnpointOverride[] _spawnpointOverrides;
+
+	protected override void GetSpawnpoint(ItemType itemType, int index, out Vector3 worldPosition, out Quaternion worldRotation, out Transform parent)
+	{
+		SpawnpointOverride[] spawnpointOverrides = _spawnpointOverrides;
+		for (int i = 0; i < spawnpointOverrides.Length; i++)
 		{
-			foreach (PrecisionLockerChamber.SpawnpointOverride spawnpointOverride in this._spawnpointOverrides)
+			SpawnpointOverride spawnpointOverride = spawnpointOverrides[i];
+			if (spawnpointOverride.AcceptedItemTypes.Contains(itemType))
 			{
-				if (spawnpointOverride.AcceptedItemTypes.Contains(itemType))
-				{
-					parent = spawnpointOverride.Spawnpoint;
-					spawnpointOverride.Spawnpoint.GetPositionAndRotation(out worldPosition, out worldRotation);
-					return;
-				}
+				parent = spawnpointOverride.Spawnpoint;
+				spawnpointOverride.Spawnpoint.GetPositionAndRotation(out worldPosition, out worldRotation);
+				return;
 			}
-			base.GetSpawnpoint(itemType, index, out worldPosition, out worldRotation, out parent);
 		}
-
-		[SerializeField]
-		private PrecisionLockerChamber.SpawnpointOverride[] _spawnpointOverrides;
-
-		[Serializable]
-		private struct SpawnpointOverride
-		{
-			public ItemType[] AcceptedItemTypes;
-
-			public Transform Spawnpoint;
-		}
+		base.GetSpawnpoint(itemType, index, out worldPosition, out worldRotation, out parent);
 	}
 }

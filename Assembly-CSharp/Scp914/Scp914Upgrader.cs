@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using InventorySystem;
 using InventorySystem.Items;
@@ -12,165 +12,141 @@ using PlayerRoles.FirstPersonControl;
 using Scp914.Processors;
 using UnityEngine;
 
-namespace Scp914
+namespace Scp914;
+
+public static class Scp914Upgrader
 {
-	public static class Scp914Upgrader
+	public static int SolidObjectMask;
+
+	public static Action<ItemPickupBase, Scp914KnobSetting> OnPickupUpgraded = delegate
 	{
-		public static event Action<Scp914Result, Scp914KnobSetting> OnUpgraded;
+	};
 
-		public static void Upgrade(Collider[] intake, Scp914Mode mode, Scp914KnobSetting setting)
+	public static Action<ItemBase, Scp914KnobSetting> OnInventoryItemUpgraded = delegate
+	{
+	};
+
+	public static event Action<Scp914Result, Scp914KnobSetting> OnUpgraded;
+
+	public static void Upgrade(Collider[] intake, Scp914Mode mode, Scp914KnobSetting setting)
+	{
+		if (!NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				throw new InvalidOperationException("Scp914Upgrader.Upgrade is a serverside-only script.");
-			}
-			HashSet<GameObject> hashSet = HashSetPool<GameObject>.Shared.Rent();
-			bool flag = (mode & Scp914Mode.Dropped) == Scp914Mode.Dropped;
-			bool flag2 = (mode & Scp914Mode.Inventory) == Scp914Mode.Inventory;
-			bool flag3 = flag2 && (mode & Scp914Mode.Held) == Scp914Mode.Held;
-			for (int i = 0; i < intake.Length; i++)
-			{
-				GameObject gameObject = intake[i].transform.root.gameObject;
-				if (hashSet.Add(gameObject))
-				{
-					ReferenceHub referenceHub;
-					ItemPickupBase itemPickupBase;
-					if (ReferenceHub.TryGetHub(gameObject, out referenceHub))
-					{
-						Scp914Upgrader.ProcessPlayer(referenceHub, flag2, flag3, setting);
-					}
-					else if (gameObject.TryGetComponent<ItemPickupBase>(out itemPickupBase))
-					{
-						Scp914Upgrader.ProcessPickup(itemPickupBase, flag, setting);
-					}
-				}
-			}
-			HashSetPool<GameObject>.Shared.Return(hashSet);
+			throw new InvalidOperationException("Scp914Upgrader.Upgrade is a serverside-only script.");
 		}
-
-		private static void ProcessPlayer(ReferenceHub ply, bool upgradeInventory, bool heldOnly, Scp914KnobSetting setting)
+		HashSet<GameObject> hashSet = HashSetPool<GameObject>.Shared.Rent();
+		bool upgradeDropped = (mode & Scp914Mode.Dropped) == Scp914Mode.Dropped;
+		bool flag = (mode & Scp914Mode.Inventory) == Scp914Mode.Inventory;
+		bool heldOnly = flag && (mode & Scp914Mode.Held) == Scp914Mode.Held;
+		for (int i = 0; i < intake.Length; i++)
 		{
-			if (Physics.Linecast(ply.transform.position, Scp914Controller.Singleton.IntakeChamber.position, Scp914Upgrader.SolidObjectMask))
+			GameObject gameObject = intake[i].transform.root.gameObject;
+			if (hashSet.Add(gameObject))
 			{
-				return;
-			}
-			Vector3 vector = ply.transform.position + Scp914Controller.MoveVector;
-			Scp914ProcessingPlayerEventArgs scp914ProcessingPlayerEventArgs = new Scp914ProcessingPlayerEventArgs(vector, setting, ply);
-			Scp914Events.OnProcessingPlayer(scp914ProcessingPlayerEventArgs);
-			if (!scp914ProcessingPlayerEventArgs.IsAllowed)
-			{
-				return;
-			}
-			setting = scp914ProcessingPlayerEventArgs.KnobSetting;
-			vector = scp914ProcessingPlayerEventArgs.NewPosition;
-			ply.TryOverridePosition(vector);
-			if (!upgradeInventory)
-			{
-				return;
-			}
-			HashSet<ushort> hashSet = HashSetPool<ushort>.Shared.Rent();
-			foreach (KeyValuePair<ushort, ItemBase> keyValuePair in ply.inventory.UserInventory.Items)
-			{
-				if (!heldOnly || keyValuePair.Key == ply.inventory.CurItem.SerialNumber)
+				ItemPickupBase component;
+				if (ReferenceHub.TryGetHub(gameObject, out var hub))
 				{
-					hashSet.Add(keyValuePair.Key);
+					ProcessPlayer(hub, flag, heldOnly, setting);
 				}
-			}
-			foreach (ushort num in hashSet)
-			{
-				ItemBase itemBase;
-				Scp914ItemProcessor scp914ItemProcessor;
-				if (ply.inventory.UserInventory.Items.TryGetValue(num, out itemBase) && Scp914Upgrader.TryGetProcessor(itemBase.ItemTypeId, out scp914ItemProcessor))
+				else if (gameObject.TryGetComponent<ItemPickupBase>(out component))
 				{
-					ItemType itemTypeId = itemBase.ItemTypeId;
-					Scp914ProcessingInventoryItemEventArgs scp914ProcessingInventoryItemEventArgs = new Scp914ProcessingInventoryItemEventArgs(itemBase, setting, ply);
-					Scp914Events.OnProcessingInventoryItem(scp914ProcessingInventoryItemEventArgs);
-					if (scp914ProcessingInventoryItemEventArgs.IsAllowed)
-					{
-						setting = scp914ProcessingInventoryItemEventArgs.KnobSetting;
-						Action<ItemBase, Scp914KnobSetting> onInventoryItemUpgraded = Scp914Upgrader.OnInventoryItemUpgraded;
-						if (onInventoryItemUpgraded != null)
-						{
-							onInventoryItemUpgraded(itemBase, setting);
-						}
-						Scp914Result scp914Result = scp914ItemProcessor.UpgradeInventoryItem(setting, itemBase);
-						Action<Scp914Result, Scp914KnobSetting> onUpgraded = Scp914Upgrader.OnUpgraded;
-						if (onUpgraded != null)
-						{
-							onUpgraded(scp914Result, setting);
-						}
-						ItemBase itemBase2;
-						if (scp914Result.ResultingItems == null || !scp914Result.ResultingItems.TryGet(0, out itemBase2))
-						{
-							itemBase2 = null;
-						}
-						if (itemBase2 != null)
-						{
-							Scp914Events.OnProcessedInventoryItem(new Scp914ProcessedInventoryItemEventArgs(itemTypeId, itemBase2, setting, ply));
-						}
-					}
+					ProcessPickup(component, upgradeDropped, setting);
 				}
-			}
-			HashSetPool<ushort>.Shared.Return(hashSet);
-			BodyArmor bodyArmor;
-			ply.inventory.RemoveEverythingExceedingLimits(ply.inventory.TryGetBodyArmor(out bodyArmor) ? bodyArmor : null, true, true);
-			Scp914Events.OnProcessedPlayer(new Scp914ProcessedPlayerEventArgs(vector, setting, ply));
-		}
-
-		private static void ProcessPickup(ItemPickupBase pickup, bool upgradeDropped, Scp914KnobSetting setting)
-		{
-			Scp914ItemProcessor scp914ItemProcessor;
-			if (!pickup.Info.Locked && upgradeDropped && Scp914Upgrader.TryGetProcessor(pickup.Info.ItemId, out scp914ItemProcessor))
-			{
-				Vector3 vector = pickup.transform.position + Scp914Controller.MoveVector;
-				ItemType itemId = pickup.Info.ItemId;
-				Scp914ProcessingPickupEventArgs scp914ProcessingPickupEventArgs = new Scp914ProcessingPickupEventArgs(vector, setting, pickup);
-				Scp914Events.OnProcessingPickup(scp914ProcessingPickupEventArgs);
-				if (!scp914ProcessingPickupEventArgs.IsAllowed)
-				{
-					return;
-				}
-				vector = scp914ProcessingPickupEventArgs.NewPosition;
-				setting = scp914ProcessingPickupEventArgs.KnobSetting;
-				Action<ItemPickupBase, Scp914KnobSetting> onPickupUpgraded = Scp914Upgrader.OnPickupUpgraded;
-				if (onPickupUpgraded != null)
-				{
-					onPickupUpgraded(pickup, setting);
-				}
-				Scp914Result scp914Result = scp914ItemProcessor.UpgradePickup(setting, pickup);
-				Action<Scp914Result, Scp914KnobSetting> onUpgraded = Scp914Upgrader.OnUpgraded;
-				if (onUpgraded != null)
-				{
-					onUpgraded(scp914Result, setting);
-				}
-				ItemPickupBase itemPickupBase;
-				if (scp914Result.ResultingPickups == null || scp914Result.ResultingPickups.TryGet(0, out itemPickupBase))
-				{
-					itemPickupBase = null;
-				}
-				Scp914Events.OnProcessedPickup(new Scp914ProcessedPickupEventArgs(itemId, vector, setting, itemPickupBase));
 			}
 		}
+		HashSetPool<GameObject>.Shared.Return(hashSet);
+	}
 
-		private static bool TryGetProcessor(ItemType itemType, out Scp914ItemProcessor processor)
+	private static void ProcessPlayer(ReferenceHub ply, bool upgradeInventory, bool heldOnly, Scp914KnobSetting setting)
+	{
+		if (Physics.Linecast(ply.transform.position, Scp914Controller.Singleton.IntakeChamber.position, SolidObjectMask))
 		{
-			ItemBase itemBase;
-			if (InventoryItemLoader.AvailableItems.TryGetValue(itemType, out itemBase) && itemBase.TryGetComponent<Scp914ItemProcessor>(out processor))
-			{
-				return true;
-			}
-			processor = null;
-			return false;
+			return;
 		}
-
-		public static int SolidObjectMask;
-
-		public static Action<ItemPickupBase, Scp914KnobSetting> OnPickupUpgraded = delegate(ItemPickupBase targetPickup, Scp914KnobSetting usedMode)
+		Vector3 newPosition = ply.transform.position + Scp914Controller.MoveVector;
+		Scp914ProcessingPlayerEventArgs scp914ProcessingPlayerEventArgs = new Scp914ProcessingPlayerEventArgs(newPosition, setting, ply);
+		Scp914Events.OnProcessingPlayer(scp914ProcessingPlayerEventArgs);
+		if (!scp914ProcessingPlayerEventArgs.IsAllowed)
 		{
-		};
-
-		public static Action<ItemBase, Scp914KnobSetting> OnInventoryItemUpgraded = delegate(ItemBase targetItem, Scp914KnobSetting usedMode)
+			return;
+		}
+		setting = scp914ProcessingPlayerEventArgs.KnobSetting;
+		newPosition = scp914ProcessingPlayerEventArgs.NewPosition;
+		ply.TryOverridePosition(newPosition);
+		if (!upgradeInventory)
 		{
-		};
+			return;
+		}
+		HashSet<ushort> hashSet = HashSetPool<ushort>.Shared.Rent();
+		foreach (KeyValuePair<ushort, ItemBase> item in ply.inventory.UserInventory.Items)
+		{
+			if (!heldOnly || item.Key == ply.inventory.CurItem.SerialNumber)
+			{
+				hashSet.Add(item.Key);
+			}
+		}
+		foreach (ushort item2 in hashSet)
+		{
+			if (!ply.inventory.UserInventory.Items.TryGetValue(item2, out var value) || !TryGetProcessor(value.ItemTypeId, out var processor))
+			{
+				continue;
+			}
+			ItemType itemTypeId = value.ItemTypeId;
+			Scp914ProcessingInventoryItemEventArgs scp914ProcessingInventoryItemEventArgs = new Scp914ProcessingInventoryItemEventArgs(value, setting, ply);
+			Scp914Events.OnProcessingInventoryItem(scp914ProcessingInventoryItemEventArgs);
+			if (scp914ProcessingInventoryItemEventArgs.IsAllowed)
+			{
+				setting = scp914ProcessingInventoryItemEventArgs.KnobSetting;
+				OnInventoryItemUpgraded?.Invoke(value, setting);
+				Scp914Result arg = processor.UpgradeInventoryItem(setting, value);
+				Scp914Upgrader.OnUpgraded?.Invoke(arg, setting);
+				if (arg.ResultingItems == null || !arg.ResultingItems.TryGet(0, out var element))
+				{
+					element = null;
+				}
+				if (element != null)
+				{
+					Scp914Events.OnProcessedInventoryItem(new Scp914ProcessedInventoryItemEventArgs(itemTypeId, element, setting, ply));
+				}
+			}
+		}
+		HashSetPool<ushort>.Shared.Return(hashSet);
+		BodyArmorUtils.SetPlayerDirty(ply);
+		Scp914Events.OnProcessedPlayer(new Scp914ProcessedPlayerEventArgs(newPosition, setting, ply));
+	}
+
+	private static void ProcessPickup(ItemPickupBase pickup, bool upgradeDropped, Scp914KnobSetting setting)
+	{
+		if (!(!pickup.Info.Locked && upgradeDropped) || !TryGetProcessor(pickup.Info.ItemId, out var processor))
+		{
+			return;
+		}
+		Vector3 newPosition = pickup.transform.position + Scp914Controller.MoveVector;
+		ItemType itemId = pickup.Info.ItemId;
+		Scp914ProcessingPickupEventArgs scp914ProcessingPickupEventArgs = new Scp914ProcessingPickupEventArgs(newPosition, setting, pickup);
+		Scp914Events.OnProcessingPickup(scp914ProcessingPickupEventArgs);
+		if (scp914ProcessingPickupEventArgs.IsAllowed)
+		{
+			newPosition = scp914ProcessingPickupEventArgs.NewPosition;
+			setting = scp914ProcessingPickupEventArgs.KnobSetting;
+			OnPickupUpgraded?.Invoke(pickup, setting);
+			Scp914Result arg = processor.UpgradePickup(setting, pickup);
+			Scp914Upgrader.OnUpgraded?.Invoke(arg, setting);
+			if (arg.ResultingPickups == null || arg.ResultingPickups.TryGet(0, out var element))
+			{
+				element = null;
+			}
+			Scp914Events.OnProcessedPickup(new Scp914ProcessedPickupEventArgs(itemId, newPosition, setting, element));
+		}
+	}
+
+	private static bool TryGetProcessor(ItemType itemType, out Scp914ItemProcessor processor)
+	{
+		if (InventoryItemLoader.AvailableItems.TryGetValue(itemType, out var value) && value.TryGetComponent<Scp914ItemProcessor>(out processor))
+		{
+			return true;
+		}
+		processor = null;
+		return false;
 	}
 }

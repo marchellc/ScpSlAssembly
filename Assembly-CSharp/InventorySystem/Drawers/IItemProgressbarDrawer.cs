@@ -1,17 +1,14 @@
-﻿using System;
+namespace InventorySystem.Drawers;
 
-namespace InventorySystem.Drawers
+public interface IItemProgressbarDrawer : IItemDrawer
 {
-	public interface IItemProgressbarDrawer : IItemDrawer
-	{
-		bool ProgressbarEnabled { get; }
+	bool ProgressbarEnabled { get; }
 
-		float ProgressbarMin { get; }
+	float ProgressbarMin { get; }
 
-		float ProgressbarMax { get; }
+	float ProgressbarMax { get; }
 
-		float ProgressbarValue { get; }
+	float ProgressbarValue { get; }
 
-		float ProgressbarWidth { get; }
-	}
+	float ProgressbarWidth { get; }
 }

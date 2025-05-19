@@ -1,15 +1,6 @@
-﻿using System;
+namespace Respawning.Objectives;
 
-namespace Respawning.Objectives
+public class GeneratorObjectiveFootprint : ObjectiveFootprintBase
 {
-	public class GeneratorObjectiveFootprint : ObjectiveFootprintBase
-	{
-		protected override FootprintsTranslation TargetTranslation
-		{
-			get
-			{
-				return FootprintsTranslation.GeneratorObjective;
-			}
-		}
-	}
+	protected override FootprintsTranslation TargetTranslation => FootprintsTranslation.GeneratorObjective;
 }

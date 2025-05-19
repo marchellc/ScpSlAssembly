@@ -1,16 +1,14 @@
-﻿using System;
 using UnityEngine;
 
-namespace RemoteAdmin
-{
-	public class PlayerRequest : MonoBehaviour
-	{
-		private void Awake()
-		{
-		}
+namespace RemoteAdmin;
 
-		private void Update()
-		{
-		}
+public class PlayerRequest : MonoBehaviour
+{
+	private void Awake()
+	{
+	}
+
+	private void Update()
+	{
 	}
 }

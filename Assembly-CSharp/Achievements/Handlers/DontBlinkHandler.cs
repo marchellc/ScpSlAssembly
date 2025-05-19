@@ -1,8 +1,5 @@
-﻿using System;
+namespace Achievements.Handlers;
 
-namespace Achievements.Handlers
+public class DontBlinkHandler : AchievementHandlerBase
 {
-	public class DontBlinkHandler : AchievementHandlerBase
-	{
-	}
 }

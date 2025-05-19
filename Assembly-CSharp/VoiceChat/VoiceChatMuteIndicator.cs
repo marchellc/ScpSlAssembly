@@ -1,38 +1,35 @@
-﻿using System;
 using Mirror;
 using UnityEngine;
 
-namespace VoiceChat
+namespace VoiceChat;
+
+public class VoiceChatMuteIndicator : MonoBehaviour
 {
-	public class VoiceChatMuteIndicator : MonoBehaviour
+	public struct SyncMuteMessage : NetworkMessage
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		public byte Flags;
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
 		{
-			CustomNetworkManager.OnClientReady += delegate
+			NetworkClient.ReplaceHandler<SyncMuteMessage>(ReceiveMessage);
+		};
+		VoiceChatMutes.OnFlagsSet += delegate(ReferenceHub hub, VcMuteFlags flags)
+		{
+			if (NetworkServer.active)
 			{
-				NetworkClient.ReplaceHandler<VoiceChatMuteIndicator.SyncMuteMessage>(new Action<VoiceChatMuteIndicator.SyncMuteMessage>(VoiceChatMuteIndicator.ReceiveMessage), true);
-			};
-			VoiceChatMutes.OnFlagsSet += delegate(ReferenceHub hub, VcMuteFlags flags)
-			{
-				if (!NetworkServer.active)
-				{
-					return;
-				}
-				hub.connectionToClient.Send<VoiceChatMuteIndicator.SyncMuteMessage>(new VoiceChatMuteIndicator.SyncMuteMessage
+				hub.connectionToClient.Send(new SyncMuteMessage
 				{
 					Flags = (byte)flags
-				}, 0);
-			};
-		}
+				});
+			}
+		};
+	}
 
-		private static void ReceiveMessage(VoiceChatMuteIndicator.SyncMuteMessage smm)
-		{
-		}
-
-		public struct SyncMuteMessage : NetworkMessage
-		{
-			public byte Flags;
-		}
+	private static void ReceiveMessage(SyncMuteMessage smm)
+	{
 	}
 }

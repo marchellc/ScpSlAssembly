@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using AnimatorLayerManagement;
@@ -9,263 +8,252 @@ using InventorySystem.Items.Thirdperson.LayerProcessors;
 using PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Thirdperson
+namespace InventorySystem.Items.Firearms.Thirdperson;
+
+public class FirearmThirdpersonItem : ThirdpersonItemBase, ILookatModifier, IHandPoseModifier
 {
-	public class FirearmThirdpersonItem : ThirdpersonItemBase, ILookatModifier, IHandPoseModifier
+	private enum FirearmAnim
 	{
-		public bool WorldmodelInstanceSet { get; private set; }
+		Ads,
+		Hip,
+		Reload
+	}
 
-		public FirearmWorldmodel WorldmodelInstance { get; private set; }
+	private readonly Dictionary<Light, Color> _defaultColors = new Dictionary<Light, Color>();
 
-		public override float GetTransitionTime(ItemIdentifier iid)
+	private readonly Stopwatch _reloadElapsed = Stopwatch.StartNew();
+
+	private const float DefaultEquipTime = 0.5f;
+
+	private const float BlendTransitionSpeed = 4f;
+
+	[SerializeField]
+	private AnimationClip _hipAnim;
+
+	[SerializeField]
+	private AnimationClip _adsAnim;
+
+	[SerializeField]
+	private AnimationClip _reloadAnim;
+
+	[SerializeField]
+	private AnimOverrideState3pPair[] _additionalOverrideClips;
+
+	[SerializeField]
+	private bool _isAdsing;
+
+	[SerializeField]
+	private bool _isReloading;
+
+	[SerializeField]
+	private float _maxReloadTimeSeconds;
+
+	[SerializeField]
+	private LayerProcessorBase _regularLayerProcessor;
+
+	[SerializeField]
+	private LayerProcessorBase _reloadLayerProcessor;
+
+	[Header("Inverse Kinematics")]
+	[SerializeField]
+	private LayerRefId _ikLayerRightHand;
+
+	[SerializeField]
+	private LayerRefId _ikLayerLeftHand;
+
+	[SerializeField]
+	private float _bodyIkMultiplier;
+
+	[SerializeField]
+	private float _bodyIkAbsolute;
+
+	[SerializeField]
+	private Vector3 _localPosition;
+
+	[SerializeField]
+	private Vector3 _localRotation;
+
+	[SerializeField]
+	private LeftHandIKHandler _leftHandIK;
+
+	[SerializeField]
+	private RightHandIKHandler _rightHandIK;
+
+	[SerializeField]
+	private bool _editorPauseIK;
+
+	private float _prevAdsBlend;
+
+	private bool _shotReceived;
+
+	private bool _eventAssigned;
+
+	private float _lastReloadBlend;
+
+	private Firearm _template;
+
+	public bool WorldmodelInstanceSet { get; private set; }
+
+	public FirearmWorldmodel WorldmodelInstance { get; private set; }
+
+	public override float GetTransitionTime(ItemIdentifier iid)
+	{
+		if (!InventoryItemLoader.TryGetItem<Firearm>(iid.TypeId, out var result))
 		{
-			Firearm firearm;
-			if (!InventoryItemLoader.TryGetItem<Firearm>(iid.TypeId, out firearm))
-			{
-				return 0.5f;
-			}
-			IEquipperModule equipperModule;
-			if (!firearm.TryGetModule(out equipperModule, true))
-			{
-				return 0.5f;
-			}
-			return Mathf.Min(equipperModule.DisplayBaseEquipTime, 0.5f);
+			return 0.5f;
 		}
-
-		public override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
+		if (!result.TryGetModule<IEquipperModule>(out var module))
 		{
-			ThirdpersonLayerWeight weightForLayer = this._regularLayerProcessor.GetWeightForLayer(this, layer);
-			ThirdpersonLayerWeight weightForLayer2 = this._reloadLayerProcessor.GetWeightForLayer(this, layer);
-			return ThirdpersonLayerWeight.Lerp(weightForLayer, weightForLayer2, this._lastReloadBlend);
+			return 0.5f;
 		}
+		return Mathf.Min(module.DisplayBaseEquipTime, 0.5f);
+	}
 
-		public override void ResetObject()
+	public override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
+	{
+		ThirdpersonLayerWeight weightForLayer = _regularLayerProcessor.GetWeightForLayer(this, layer);
+		ThirdpersonLayerWeight weightForLayer2 = _reloadLayerProcessor.GetWeightForLayer(this, layer);
+		return ThirdpersonLayerWeight.Lerp(weightForLayer, weightForLayer2, _lastReloadBlend);
+	}
+
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		_isReloading = false;
+		_isAdsing = false;
+		UnsubscribeEvents();
+	}
+
+	public LookatData ProcessLookat(LookatData data)
+	{
+		data.BodyWeight = Mathf.Clamp01(data.BodyWeight * _bodyIkMultiplier + _bodyIkAbsolute);
+		if (_lastReloadBlend > 0f)
 		{
-			base.ResetObject();
-			this._isReloading = false;
-			this._isAdsing = false;
-			this.UnsubscribeEvents();
+			float a = Mathf.Clamp01(1f - _lastReloadBlend);
+			a = Mathf.Lerp(a, 1f, Mathf.Abs(data.LookDir.y / 2f));
+			data.GlobalWeight *= a;
 		}
+		return data;
+	}
 
-		public LookatData ProcessLookat(LookatData data)
+	public HandPoseData ProcessHandPose(HandPoseData data)
+	{
+		data = _leftHandIK.ProcessHandPose(data);
+		data = _rightHandIK.ProcessHandPose(data);
+		return data;
+	}
+
+	protected override void Update()
+	{
+		base.Update();
+		if (!base.Pooled)
 		{
-			data.BodyWeight = Mathf.Clamp01(data.BodyWeight * this._bodyIkMultiplier + this._bodyIkAbsolute);
-			if (this._lastReloadBlend > 0f)
-			{
-				float num = Mathf.Clamp01(1f - this._lastReloadBlend);
-				num = Mathf.Lerp(num, 1f, Mathf.Abs(data.LookDir.y / 2f));
-				data.GlobalWeight *= num;
-			}
-			return data;
+			UpdateAnims();
 		}
+	}
 
-		public HandPoseData ProcessHandPose(HandPoseData data)
+	internal override void OnFadeChanged(float newFade)
+	{
+		base.OnFadeChanged(newFade);
+		foreach (KeyValuePair<Light, Color> defaultColor in _defaultColors)
 		{
-			data = this._leftHandIK.ProcessHandPose(data);
-			data = this._rightHandIK.ProcessHandPose(data);
-			return data;
+			defaultColor.Key.color = Color.Lerp(Color.black, defaultColor.Value, newFade);
 		}
+	}
 
-		protected override void Update()
+	internal override void Initialize(InventorySubcontroller srctr, ItemIdentifier id)
+	{
+		if (!WorldmodelInstanceSet && InventoryItemLoader.TryGetItem<Firearm>(id.TypeId, out _template))
 		{
-			base.Update();
-			if (base.Pooled)
-			{
-				return;
-			}
-			this.UpdateAnims();
+			WorldmodelInstance = Object.Instantiate(_template.WorldModel, base.transform);
+			WorldmodelInstance.transform.SetLocalPositionAndRotation(_localPosition, Quaternion.Euler(_localRotation));
+			WorldmodelInstanceSet = true;
 		}
-
-		internal override void OnFadeChanged(float newFade)
+		if (!_eventAssigned)
 		{
-			base.OnFadeChanged(newFade);
-			foreach (KeyValuePair<Light, Color> keyValuePair in this._defaultColors)
-			{
-				keyValuePair.Key.color = Color.Lerp(Color.black, keyValuePair.Value, newFade);
-			}
+			AttachmentCodeSync.OnReceived += OnAttachmentsUpdated;
+			_eventAssigned = true;
 		}
+		base.Initialize(srctr, id);
+		WorldmodelInstance.Setup(base.ItemId, srctr.Model.HasOwner ? FirearmWorldmodelType.Thirdperson : FirearmWorldmodelType.Presentation);
+		SetAnim(AnimState3p.Override1, _hipAnim);
+		SetAnim(AnimState3p.Override0, _adsAnim);
+		SetAnim(AnimState3p.Override2, _reloadAnim);
+		_additionalOverrideClips.ForEach(base.SetAnim);
+		_rightHandIK.Initialize(WorldmodelInstance, base.TargetModel);
+		_leftHandIK.Initialize(WorldmodelInstance, base.TargetModel);
+		base.OverrideBlend = 1f;
+	}
 
-		internal override void Initialize(InventorySubcontroller srctr, ItemIdentifier id)
+	internal override void OnAnimIK(int layerIndex, float ikScale)
+	{
+		base.OnAnimIK(layerIndex, ikScale);
+		ikScale = Mathf.Clamp01(ikScale - _lastReloadBlend);
+		AnimatorLayerManager layerManager = base.TargetModel.LayerManager;
+		if (layerIndex == layerManager.GetLayerIndex(_ikLayerRightHand))
 		{
-			if (!this.WorldmodelInstanceSet && InventoryItemLoader.TryGetItem<Firearm>(id.TypeId, out this._template))
-			{
-				this.WorldmodelInstance = global::UnityEngine.Object.Instantiate<FirearmWorldmodel>(this._template.WorldModel, base.transform);
-				this.WorldmodelInstance.transform.SetLocalPositionAndRotation(this._localPosition, Quaternion.Euler(this._localRotation));
-				this.WorldmodelInstanceSet = true;
-			}
-			if (!this._eventAssigned)
-			{
-				AttachmentCodeSync.OnReceived += this.OnAttachmentsUpdated;
-				this._eventAssigned = true;
-			}
-			base.Initialize(srctr, id);
-			this.WorldmodelInstance.Setup(base.ItemId, FirearmWorldmodelType.Thirdperson);
-			base.SetAnim(AnimState3p.Override1, this._hipAnim);
-			base.SetAnim(AnimState3p.Override0, this._adsAnim);
-			base.SetAnim(AnimState3p.Override2, this._reloadAnim);
-			this._additionalOverrideClips.ForEach(new Action<AnimOverrideState3pPair>(base.SetAnim));
-			this._rightHandIK.Initialize(this.WorldmodelInstance, base.TargetModel);
-			this._leftHandIK.Initialize(this.WorldmodelInstance, base.TargetModel);
+			_rightHandIK.IKUpdateRightHandRotation(ikScale, _prevAdsBlend);
 		}
-
-		internal override void OnAnimIK(int layerIndex, float ikScale)
+		if (layerIndex == layerManager.GetLayerIndex(_ikLayerLeftHand))
 		{
-			base.OnAnimIK(layerIndex, ikScale);
-			ikScale = Mathf.Clamp01(ikScale - this._lastReloadBlend);
-			AnimatorLayerManager layerManager = base.TargetModel.LayerManager;
-			if (layerIndex == layerManager.GetLayerIndex(this._ikLayerRightHand))
-			{
-				this._rightHandIK.IKUpdateRightHandRotation(ikScale, this._prevAdsBlend);
-			}
-			if (layerIndex == layerManager.GetLayerIndex(this._ikLayerLeftHand))
-			{
-				this._leftHandIK.IKUpdateLeftHandAnchor(ikScale);
-			}
+			_leftHandIK.IKUpdateLeftHandAnchor(ikScale);
 		}
+	}
 
-		private void OnAttachmentsUpdated(ushort serial, uint code)
+	private void OnAttachmentsUpdated(ushort serial, uint code)
+	{
+		if (WorldmodelInstanceSet && serial == base.ItemId.SerialNumber)
 		{
-			if (!this.WorldmodelInstanceSet)
-			{
-				return;
-			}
-			if (serial != base.ItemId.SerialNumber)
-			{
-				return;
-			}
-			this.WorldmodelInstance.Setup(base.ItemId, FirearmWorldmodelType.Thirdperson, code);
+			WorldmodelInstance.Setup(base.ItemId, FirearmWorldmodelType.Thirdperson, code);
 		}
+	}
 
-		private void Awake()
+	private void Awake()
+	{
+		Light[] componentsInChildren = GetComponentsInChildren<Light>(includeInactive: true);
+		foreach (Light light in componentsInChildren)
 		{
-			foreach (Light light in base.GetComponentsInChildren<Light>(true))
-			{
-				this._defaultColors[light] = light.color;
-			}
+			_defaultColors[light] = light.color;
 		}
+	}
 
-		private void OnDestroy()
+	private void OnDestroy()
+	{
+		UnsubscribeEvents();
+	}
+
+	private void UnsubscribeEvents()
+	{
+		if (_eventAssigned)
 		{
-			this.UnsubscribeEvents();
+			AttachmentCodeSync.OnReceived -= OnAttachmentsUpdated;
+			_eventAssigned = false;
 		}
+	}
 
-		private void UnsubscribeEvents()
+	private void UpdateAnims()
+	{
+		FirearmAnim firearmAnim = ((_isReloading && _reloadElapsed.Elapsed.TotalSeconds < (double)_maxReloadTimeSeconds) ? FirearmAnim.Reload : ((!_isAdsing) ? FirearmAnim.Hip : FirearmAnim.Ads));
+		base.OverrideBlend = Mathf.MoveTowards(base.OverrideBlend, (float)firearmAnim, Time.deltaTime * 4f);
+		_prevAdsBlend = Mathf.Clamp01(1f - base.OverrideBlend);
+		_lastReloadBlend = base.OverrideBlend - 2f + 1f;
+		if (_shotReceived)
 		{
-			if (!this._eventAssigned)
-			{
-				return;
-			}
-			AttachmentCodeSync.OnReceived -= this.OnAttachmentsUpdated;
-			this._eventAssigned = false;
+			_shotReceived = false;
 		}
-
-		private void UpdateAnims()
+		if (_template.TryGetModule<IAdsModule>(out var module))
 		{
-			FirearmThirdpersonItem.FirearmAnim firearmAnim = ((this._isReloading && this._reloadElapsed.Elapsed.TotalSeconds < (double)this._maxReloadTimeSeconds) ? FirearmThirdpersonItem.FirearmAnim.Reload : (this._isAdsing ? FirearmThirdpersonItem.FirearmAnim.Ads : FirearmThirdpersonItem.FirearmAnim.Hip));
-			base.OverrideBlend = Mathf.MoveTowards(base.OverrideBlend, (float)firearmAnim, Time.deltaTime * 4f);
-			this._prevAdsBlend = Mathf.Clamp01(1f - base.OverrideBlend);
-			this._lastReloadBlend = base.OverrideBlend - 2f + 1f;
-			if (this._shotReceived)
-			{
-				this._shotReceived = false;
-			}
-			IAdsModule adsModule;
-			if (this._template.TryGetModule(out adsModule, true))
-			{
-				float num;
-				adsModule.GetDisplayAdsValues(base.ItemId.SerialNumber, out this._isAdsing, out num);
-			}
-			IReloaderModule reloaderModule;
-			if (this._template.TryGetModule(out reloaderModule, true))
-			{
-				bool isReloading = this._isReloading;
-				this._isReloading = reloaderModule.GetDisplayReloadingOrUnloading(base.ItemId.SerialNumber);
-				if (this._isReloading && !isReloading)
-				{
-					this._reloadElapsed.Restart();
-					base.ReplayOverrideBlend(true);
-				}
-			}
+			module.GetDisplayAdsValues(base.ItemId.SerialNumber, out _isAdsing, out var _);
 		}
-
-		private readonly Dictionary<Light, Color> _defaultColors = new Dictionary<Light, Color>();
-
-		private readonly Stopwatch _reloadElapsed = Stopwatch.StartNew();
-
-		private const float DefaultEquipTime = 0.5f;
-
-		private const float BlendTransitionSpeed = 4f;
-
-		[SerializeField]
-		private AnimationClip _hipAnim;
-
-		[SerializeField]
-		private AnimationClip _adsAnim;
-
-		[SerializeField]
-		private AnimationClip _reloadAnim;
-
-		[SerializeField]
-		private AnimOverrideState3pPair[] _additionalOverrideClips;
-
-		[SerializeField]
-		private bool _isAdsing;
-
-		[SerializeField]
-		private bool _isReloading;
-
-		[SerializeField]
-		private float _maxReloadTimeSeconds;
-
-		[SerializeField]
-		private LayerProcessorBase _regularLayerProcessor;
-
-		[SerializeField]
-		private LayerProcessorBase _reloadLayerProcessor;
-
-		[Header("Inverse Kinematics")]
-		[SerializeField]
-		private LayerRefId _ikLayerRightHand;
-
-		[SerializeField]
-		private LayerRefId _ikLayerLeftHand;
-
-		[SerializeField]
-		private float _bodyIkMultiplier;
-
-		[SerializeField]
-		private float _bodyIkAbsolute;
-
-		[SerializeField]
-		private Vector3 _localPosition;
-
-		[SerializeField]
-		private Vector3 _localRotation;
-
-		[SerializeField]
-		private LeftHandIKHandler _leftHandIK;
-
-		[SerializeField]
-		private RightHandIKHandler _rightHandIK;
-
-		[SerializeField]
-		private bool _editorPauseIK;
-
-		private float _prevAdsBlend;
-
-		private bool _shotReceived;
-
-		private bool _eventAssigned;
-
-		private float _lastReloadBlend;
-
-		private Firearm _template;
-
-		private enum FirearmAnim
+		if (_template.TryGetModule<IReloaderModule>(out var module2))
 		{
-			Ads,
-			Hip,
-			Reload
+			bool isReloading = _isReloading;
+			_isReloading = module2.GetDisplayReloadingOrUnloading(base.ItemId.SerialNumber);
+			if (_isReloading && !isReloading)
+			{
+				_reloadElapsed.Restart();
+				ReplayOverrideBlend(soft: true);
+			}
 		}
 	}
 }

@@ -1,84 +1,69 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CursorManagement
+namespace CursorManagement;
+
+public static class CursorManager
 {
-	public static class CursorManager
+	private static readonly HashSet<ICursorOverride> Overrides = new HashSet<ICursorOverride>();
+
+	public static bool MovementLocked { get; private set; }
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		public static bool MovementLocked { get; private set; }
+		StaticUnityMethods.OnLateUpdate += LateUpdate;
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+	private static void LateUpdate()
+	{
+		ProcessOverrides(out var bestOverride, out var anyMovementLocked);
+		switch (bestOverride)
 		{
-			StaticUnityMethods.OnLateUpdate += CursorManager.LateUpdate;
+		case CursorOverrideMode.Confined:
+			SetLockMode(CursorLockMode.Confined);
+			break;
+		case CursorOverrideMode.Centered:
+			SetLockMode(CursorLockMode.Locked);
+			break;
+		default:
+			SetLockMode(CursorLockMode.None);
+			break;
 		}
+		MovementLocked = anyMovementLocked;
+	}
 
-		private static void LateUpdate()
+	private static void ProcessOverrides(out CursorOverrideMode bestOverride, out bool anyMovementLocked)
+	{
+		bestOverride = CursorOverrideMode.NoOverride;
+		anyMovementLocked = false;
+		if (!StaticUnityMethods.IsPlaying)
 		{
-			CursorOverrideMode cursorOverrideMode;
-			bool flag;
-			CursorManager.ProcessOverrides(out cursorOverrideMode, out flag);
-			if (cursorOverrideMode != CursorOverrideMode.Centered)
-			{
-				if (cursorOverrideMode == CursorOverrideMode.Confined)
-				{
-					CursorManager.SetLockMode(CursorLockMode.Confined);
-				}
-				else
-				{
-					CursorManager.SetLockMode(CursorLockMode.None);
-				}
-			}
-			else
-			{
-				CursorManager.SetLockMode(CursorLockMode.Locked);
-			}
-			CursorManager.MovementLocked = flag;
+			return;
 		}
-
-		private static void ProcessOverrides(out CursorOverrideMode bestOverride, out bool anyMovementLocked)
+		int num = 0;
+		Overrides.RemoveWhere((ICursorOverride x) => x == null || (x is Object @object && @object == null));
+		foreach (ICursorOverride @override in Overrides)
 		{
-			bestOverride = CursorOverrideMode.NoOverride;
-			anyMovementLocked = false;
-			if (!StaticUnityMethods.IsPlaying)
-			{
-				return;
-			}
-			int num = 0;
-			CursorManager.Overrides.RemoveWhere(delegate(ICursorOverride x)
-			{
-				if (x != null)
-				{
-					global::UnityEngine.Object @object = x as global::UnityEngine.Object;
-					return @object != null && @object == null;
-				}
-				return true;
-			});
-			foreach (ICursorOverride cursorOverride in CursorManager.Overrides)
-			{
-				num = Mathf.Max(num, (int)cursorOverride.CursorOverride);
-				anyMovementLocked |= cursorOverride.LockMovement;
-			}
-			bestOverride = (CursorOverrideMode)num;
+			num = Mathf.Max(num, (int)@override.CursorOverride);
+			anyMovementLocked |= @override.LockMovement;
 		}
+		bestOverride = (CursorOverrideMode)num;
+	}
 
-		public static void SetLockMode(CursorLockMode lockMode)
-		{
-			Cursor.lockState = lockMode;
-			Cursor.visible = lockMode != CursorLockMode.Locked;
-		}
+	public static void SetLockMode(CursorLockMode lockMode)
+	{
+		Cursor.lockState = lockMode;
+		Cursor.visible = lockMode != CursorLockMode.Locked;
+	}
 
-		public static bool Register(ICursorOverride target)
-		{
-			return CursorManager.Overrides.Add(target);
-		}
+	public static bool Register(ICursorOverride target)
+	{
+		return Overrides.Add(target);
+	}
 
-		public static bool Unregister(ICursorOverride target)
-		{
-			return CursorManager.Overrides.Remove(target);
-		}
-
-		private static readonly HashSet<ICursorOverride> Overrides = new HashSet<ICursorOverride>();
+	public static bool Unregister(ICursorOverride target)
+	{
+		return Overrides.Remove(target);
 	}
 }

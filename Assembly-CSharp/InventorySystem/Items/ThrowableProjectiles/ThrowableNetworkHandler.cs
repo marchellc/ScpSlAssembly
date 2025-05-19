@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using AudioPooling;
 using CustomPlayerEffects;
@@ -6,226 +6,223 @@ using Mirror;
 using RelativePositioning;
 using UnityEngine;
 
-namespace InventorySystem.Items.ThrowableProjectiles
+namespace InventorySystem.Items.ThrowableProjectiles;
+
+public static class ThrowableNetworkHandler
 {
-	public static class ThrowableNetworkHandler
+	public readonly struct ThrowableItemRequestMessage : NetworkMessage
 	{
-		public static event Action<ThrowableNetworkHandler.ThrowableItemAudioMessage> OnAudioMessageReceived;
+		public readonly ushort Serial;
 
-		public static event Action<ThrowableNetworkHandler.ThrowableItemRequestMessage> OnServerRequestReceived;
+		public readonly RequestType Request;
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		public readonly Quaternion CameraRotation;
+
+		public readonly RelativePosition CameraPosition;
+
+		public readonly Vector3 PlayerVelocity;
+
+		public ThrowableItemRequestMessage(ushort serial, RequestType type, Quaternion rotation, RelativePosition position, Vector3 startVel)
 		{
-			CustomNetworkManager.OnClientStarted += ThrowableNetworkHandler.RegisterProjectiles;
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				NetworkServer.ReplaceHandler<ThrowableNetworkHandler.ThrowableItemRequestMessage>(new Action<NetworkConnectionToClient, ThrowableNetworkHandler.ThrowableItemRequestMessage>(ThrowableNetworkHandler.ServerProcessRequest), true);
-				NetworkClient.ReplaceHandler<ThrowableNetworkHandler.ThrowableItemAudioMessage>(new Action<ThrowableNetworkHandler.ThrowableItemAudioMessage>(ThrowableNetworkHandler.ClientProcessAudio), true);
-			};
+			Serial = serial;
+			Request = type;
+			CameraRotation = rotation;
+			CameraPosition = position;
+			PlayerVelocity = startVel;
 		}
 
-		private static void RegisterProjectiles()
+		public ThrowableItemRequestMessage(ThrowableItem item, RequestType type, Vector3 startVel = default(Vector3))
 		{
-			foreach (KeyValuePair<ItemType, ItemBase> keyValuePair in InventoryItemLoader.AvailableItems)
+			Serial = item.ItemSerial;
+			Request = type;
+			CameraRotation = item.Owner.PlayerCameraReference.rotation;
+			CameraPosition = new RelativePosition(item.Owner.PlayerCameraReference.position);
+			PlayerVelocity = startVel;
+		}
+	}
+
+	public readonly struct ThrowableItemAudioMessage : NetworkMessage
+	{
+		public readonly ushort Serial;
+
+		public readonly RequestType Request;
+
+		public readonly float Time;
+
+		public ThrowableItemAudioMessage(ushort itemSerial, RequestType rt)
+		{
+			Serial = itemSerial;
+			Request = rt;
+			Time = UnityEngine.Time.timeSinceLevelLoad;
+		}
+	}
+
+	public enum RequestType : byte
+	{
+		BeginThrow,
+		ConfirmThrowWeak,
+		ConfirmThrowFullForce,
+		CancelThrow,
+		ForceCancel
+	}
+
+	public static readonly Dictionary<ushort, ThrowableItemAudioMessage> ReceivedRequests = new Dictionary<ushort, ThrowableItemAudioMessage>();
+
+	private const float MaxPlayerSpeed = 10f;
+
+	public static event Action<ThrowableItemAudioMessage> OnAudioMessageReceived;
+
+	public static event Action<ThrowableItemRequestMessage> OnServerRequestReceived;
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientStarted += RegisterProjectiles;
+		CustomNetworkManager.OnClientReady += delegate
+		{
+			NetworkServer.ReplaceHandler<ThrowableItemRequestMessage>(ServerProcessRequest);
+			NetworkClient.ReplaceHandler<ThrowableItemRequestMessage>(ClientProcessRequest);
+			NetworkClient.ReplaceHandler<ThrowableItemAudioMessage>(ClientProcessAudio);
+		};
+	}
+
+	private static void RegisterProjectiles()
+	{
+		foreach (KeyValuePair<ItemType, ItemBase> availableItem in InventoryItemLoader.AvailableItems)
+		{
+			if (availableItem.Value is ThrowableItem throwableItem && !(throwableItem.Projectile == null))
 			{
-				ThrowableItem throwableItem = keyValuePair.Value as ThrowableItem;
-				if (throwableItem != null && !(throwableItem.Projectile == null))
-				{
-					uint assetId = throwableItem.Projectile.netIdentity.assetId;
-					NetworkClient.prefabs[assetId] = throwableItem.Projectile.gameObject;
-				}
+				uint assetId = throwableItem.Projectile.netIdentity.assetId;
+				NetworkClient.prefabs[assetId] = throwableItem.Projectile.gameObject;
 			}
 		}
+	}
 
-		private static void ServerProcessRequest(NetworkConnection conn, ThrowableNetworkHandler.ThrowableItemRequestMessage msg)
+	private static void ServerProcessRequest(NetworkConnection conn, ThrowableItemRequestMessage msg)
+	{
+		if (ReferenceHub.TryGetHubNetID(conn.identity.netId, out var hub) && hub.inventory.CurItem.SerialNumber == msg.Serial && hub.inventory.CurInstance is ThrowableItem throwableItem)
 		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(conn.identity.netId, out referenceHub))
-			{
-				return;
-			}
-			if (referenceHub.inventory.CurItem.SerialNumber != msg.Serial)
-			{
-				return;
-			}
-			ThrowableItem throwableItem = referenceHub.inventory.CurInstance as ThrowableItem;
-			if (throwableItem == null)
-			{
-				return;
-			}
 			switch (msg.Request)
 			{
-			case ThrowableNetworkHandler.RequestType.BeginThrow:
+			case RequestType.BeginThrow:
 				throwableItem.ServerProcessInitiation();
 				break;
-			case ThrowableNetworkHandler.RequestType.ConfirmThrowWeak:
-				throwableItem.ServerProcessThrowConfirmation(false, msg.CameraPosition.Position, msg.CameraRotation, msg.PlayerVelocity);
-				break;
-			case ThrowableNetworkHandler.RequestType.ConfirmThrowFullForce:
-				throwableItem.ServerProcessThrowConfirmation(true, msg.CameraPosition.Position, msg.CameraRotation, msg.PlayerVelocity);
-				break;
-			case ThrowableNetworkHandler.RequestType.CancelThrow:
+			case RequestType.CancelThrow:
 				throwableItem.ServerProcessCancellation();
 				break;
+			case RequestType.ConfirmThrowFullForce:
+				throwableItem.ServerProcessThrowConfirmation(fullForce: true, msg.CameraPosition.Position, msg.CameraRotation, msg.PlayerVelocity);
+				break;
+			case RequestType.ConfirmThrowWeak:
+				throwableItem.ServerProcessThrowConfirmation(fullForce: false, msg.CameraPosition.Position, msg.CameraRotation, msg.PlayerVelocity);
+				break;
 			}
-			Action<ThrowableNetworkHandler.ThrowableItemRequestMessage> onServerRequestReceived = ThrowableNetworkHandler.OnServerRequestReceived;
-			if (onServerRequestReceived == null)
-			{
-				return;
-			}
-			onServerRequestReceived(msg);
+			ThrowableNetworkHandler.OnServerRequestReceived?.Invoke(msg);
 		}
+	}
 
-		private static void ClientProcessAudio(ThrowableNetworkHandler.ThrowableItemAudioMessage msg)
+	private static void ClientProcessRequest(ThrowableItemRequestMessage msg)
+	{
+		if (!ReferenceHub.TryGetLocalHub(out var hub))
 		{
-			ThrowableNetworkHandler.ReceivedRequests[msg.Serial] = msg;
-			Action<ThrowableNetworkHandler.ThrowableItemAudioMessage> onAudioMessageReceived = ThrowableNetworkHandler.OnAudioMessageReceived;
-			if (onAudioMessageReceived != null)
+			return;
+		}
+		ThrowableItem throwableItem = null;
+		foreach (KeyValuePair<ushort, ItemBase> item in hub.inventory.UserInventory.Items)
+		{
+			if (item.Key == msg.Serial && item.Value is ThrowableItem throwableItem2)
 			{
-				onAudioMessageReceived(msg);
+				throwableItem = throwableItem2;
+				break;
 			}
-			ReferenceHub referenceHub;
-			if (!InventoryExtensions.TryGetHubHoldingSerial(msg.Serial, out referenceHub) || referenceHub.isLocalPlayer)
-			{
-				return;
-			}
-			ThrowableItem throwableItem;
-			if (!InventoryItemLoader.TryGetItem<ThrowableItem>(referenceHub.inventory.CurItem.TypeId, out throwableItem))
-			{
-				return;
-			}
-			AudioClip audioClip;
+		}
+		if (!(throwableItem == null) && msg.Request == RequestType.ForceCancel)
+		{
+			throwableItem.ClientForceCancel();
+		}
+	}
+
+	private static void ClientProcessAudio(ThrowableItemAudioMessage msg)
+	{
+		ReceivedRequests[msg.Serial] = msg;
+		ThrowableNetworkHandler.OnAudioMessageReceived?.Invoke(msg);
+		if (InventoryExtensions.TryGetHubHoldingSerial(msg.Serial, out var hub) && !hub.isLocalPlayer && InventoryItemLoader.TryGetItem<ThrowableItem>(hub.inventory.CurItem.TypeId, out var result))
+		{
+			AudioClip sound;
 			switch (msg.Request)
 			{
-			case ThrowableNetworkHandler.RequestType.BeginThrow:
-				audioClip = throwableItem.BeginClip;
-				break;
-			case ThrowableNetworkHandler.RequestType.ConfirmThrowWeak:
-			case ThrowableNetworkHandler.RequestType.ConfirmThrowFullForce:
-				audioClip = throwableItem.ThrowClip;
-				break;
-			case ThrowableNetworkHandler.RequestType.CancelThrow:
-				audioClip = throwableItem.CancelClip;
-				break;
 			default:
 				return;
+			case RequestType.BeginThrow:
+				sound = result.BeginClip;
+				break;
+			case RequestType.CancelThrow:
+				sound = result.CancelClip;
+				break;
+			case RequestType.ConfirmThrowWeak:
+			case RequestType.ConfirmThrowFullForce:
+				sound = result.ThrowClip;
+				break;
 			}
-			float num;
-			if (!throwableItem.ItemTypeId.TryGetSpeedMultiplier(referenceHub, out num))
+			if (!result.ItemTypeId.TryGetSpeedMultiplier(hub, out var multiplier))
 			{
-				num = 1f;
+				multiplier = 1f;
 			}
-			AudioSourcePoolManager.PlayOnTransform(audioClip, referenceHub.transform, 10f, 1f, FalloffType.Exponential, MixerChannel.DefaultSfx, num);
+			AudioSourcePoolManager.PlayOnTransform(sound, hub.transform, 10f, 1f, FalloffType.Exponential, MixerChannel.DefaultSfx, multiplier);
 		}
+	}
 
-		public static Vector3 GetLimitedVelocity(Vector3 plyVel)
+	public static Vector3 GetLimitedVelocity(Vector3 plyVel)
+	{
+		float magnitude = plyVel.magnitude;
+		if (magnitude > 10f)
 		{
-			float magnitude = plyVel.magnitude;
-			if (magnitude > 10f)
-			{
-				plyVel /= magnitude;
-				plyVel *= 10f;
-			}
-			return plyVel;
+			plyVel /= magnitude;
+			plyVel *= 10f;
 		}
+		return plyVel;
+	}
 
-		private static bool RequiresAdditionalData(ThrowableNetworkHandler.RequestType rq)
+	private static bool RequiresAdditionalData(RequestType rq)
+	{
+		if (rq != RequestType.ConfirmThrowFullForce)
 		{
-			return rq == ThrowableNetworkHandler.RequestType.ConfirmThrowFullForce || rq == ThrowableNetworkHandler.RequestType.ConfirmThrowWeak;
+			return rq == RequestType.ConfirmThrowWeak;
 		}
+		return true;
+	}
 
-		public static void SerializeRequestMsg(this NetworkWriter writer, ThrowableNetworkHandler.ThrowableItemRequestMessage value)
+	public static void SerializeRequestMsg(this NetworkWriter writer, ThrowableItemRequestMessage value)
+	{
+		writer.WriteUShort(value.Serial);
+		writer.WriteByte((byte)value.Request);
+		if (RequiresAdditionalData(value.Request))
 		{
-			writer.WriteUShort(value.Serial);
-			writer.WriteByte((byte)value.Request);
-			if (ThrowableNetworkHandler.RequiresAdditionalData(value.Request))
-			{
-				writer.WriteLowPrecisionQuaternion(new LowPrecisionQuaternion(value.CameraRotation));
-				writer.WriteRelativePosition(value.CameraPosition);
-				writer.WriteVector3(value.PlayerVelocity);
-			}
+			writer.WriteLowPrecisionQuaternion(new LowPrecisionQuaternion(value.CameraRotation));
+			writer.WriteRelativePosition(value.CameraPosition);
+			writer.WriteVector3(value.PlayerVelocity);
 		}
+	}
 
-		public static ThrowableNetworkHandler.ThrowableItemRequestMessage DeserializeRequestMsg(this NetworkReader reader)
-		{
-			ushort num = reader.ReadUShort();
-			ThrowableNetworkHandler.RequestType requestType = (ThrowableNetworkHandler.RequestType)reader.ReadByte();
-			bool flag = ThrowableNetworkHandler.RequiresAdditionalData(requestType);
-			Quaternion quaternion = (flag ? reader.ReadLowPrecisionQuaternion().Value : default(Quaternion));
-			RelativePosition relativePosition = (flag ? reader.ReadRelativePosition() : default(RelativePosition));
-			Vector3 vector = (flag ? reader.ReadVector3() : default(Vector3));
-			return new ThrowableNetworkHandler.ThrowableItemRequestMessage(num, requestType, quaternion, relativePosition, vector);
-		}
+	public static ThrowableItemRequestMessage DeserializeRequestMsg(this NetworkReader reader)
+	{
+		ushort serial = reader.ReadUShort();
+		RequestType requestType = (RequestType)reader.ReadByte();
+		bool num = RequiresAdditionalData(requestType);
+		Quaternion rotation = (num ? reader.ReadLowPrecisionQuaternion().Value : default(Quaternion));
+		RelativePosition position = (num ? reader.ReadRelativePosition() : default(RelativePosition));
+		Vector3 startVel = (num ? reader.ReadVector3() : default(Vector3));
+		return new ThrowableItemRequestMessage(serial, requestType, rotation, position, startVel);
+	}
 
-		public static void SerializeAudioMsg(this NetworkWriter writer, ThrowableNetworkHandler.ThrowableItemAudioMessage value)
-		{
-			writer.WriteUShort(value.Serial);
-			writer.WriteByte((byte)value.Request);
-		}
+	public static void SerializeAudioMsg(this NetworkWriter writer, ThrowableItemAudioMessage value)
+	{
+		writer.WriteUShort(value.Serial);
+		writer.WriteByte((byte)value.Request);
+	}
 
-		public static ThrowableNetworkHandler.ThrowableItemAudioMessage DeserializeAudioMsg(this NetworkReader reader)
-		{
-			return new ThrowableNetworkHandler.ThrowableItemAudioMessage(reader.ReadUShort(), (ThrowableNetworkHandler.RequestType)reader.ReadByte());
-		}
-
-		public static readonly Dictionary<ushort, ThrowableNetworkHandler.ThrowableItemAudioMessage> ReceivedRequests = new Dictionary<ushort, ThrowableNetworkHandler.ThrowableItemAudioMessage>();
-
-		private const float MaxPlayerSpeed = 10f;
-
-		public readonly struct ThrowableItemRequestMessage : NetworkMessage
-		{
-			public ThrowableItemRequestMessage(ushort serial, ThrowableNetworkHandler.RequestType type, Quaternion rotation, RelativePosition position, Vector3 startVel)
-			{
-				this.Serial = serial;
-				this.Request = type;
-				this.CameraRotation = rotation;
-				this.CameraPosition = position;
-				this.PlayerVelocity = startVel;
-			}
-
-			public ThrowableItemRequestMessage(ThrowableItem item, ThrowableNetworkHandler.RequestType type, Vector3 startVel = default(Vector3))
-			{
-				this.Serial = item.ItemSerial;
-				this.Request = type;
-				this.CameraRotation = item.Owner.PlayerCameraReference.rotation;
-				this.CameraPosition = new RelativePosition(item.Owner.PlayerCameraReference.position);
-				this.PlayerVelocity = startVel;
-			}
-
-			public readonly ushort Serial;
-
-			public readonly ThrowableNetworkHandler.RequestType Request;
-
-			public readonly Quaternion CameraRotation;
-
-			public readonly RelativePosition CameraPosition;
-
-			public readonly Vector3 PlayerVelocity;
-		}
-
-		public readonly struct ThrowableItemAudioMessage : NetworkMessage
-		{
-			public ThrowableItemAudioMessage(ushort itemSerial, ThrowableNetworkHandler.RequestType rt)
-			{
-				this.Serial = itemSerial;
-				this.Request = rt;
-				this.Time = global::UnityEngine.Time.timeSinceLevelLoad;
-			}
-
-			public readonly ushort Serial;
-
-			public readonly ThrowableNetworkHandler.RequestType Request;
-
-			public readonly float Time;
-		}
-
-		public enum RequestType : byte
-		{
-			BeginThrow,
-			ConfirmThrowWeak,
-			ConfirmThrowFullForce,
-			CancelThrow
-		}
+	public static ThrowableItemAudioMessage DeserializeAudioMsg(this NetworkReader reader)
+	{
+		return new ThrowableItemAudioMessage(reader.ReadUShort(), (RequestType)reader.ReadByte());
 	}
 }

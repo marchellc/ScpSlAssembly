@@ -1,110 +1,80 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace UserSettings
+namespace UserSettings;
+
+public class ToggleOrHoldInput
 {
-	public class ToggleOrHoldInput
+	public enum InputActivationMode
 	{
-		private bool ToggleMode
+		Toggle,
+		Hold
+	}
+
+	private readonly ActionName _targetAction;
+
+	private readonly InputActivationMode _mode;
+
+	private readonly CachedUserSetting<bool> _trackedSetting;
+
+	private bool _toggled;
+
+	private bool ToggleMode => _mode switch
+	{
+		InputActivationMode.Toggle => _trackedSetting.Value, 
+		InputActivationMode.Hold => !_trackedSetting.Value, 
+		_ => throw new InvalidOperationException(string.Format("Undefined {0} with value of {1} detected for this Toggle/Hold setting.", "InputActivationMode", _mode)), 
+	};
+
+	private KeyCode TargetKey => NewInput.GetKey(_targetAction);
+
+	public bool KeyHeld => Input.GetKey(TargetKey);
+
+	public bool KeyDown => Input.GetKeyDown(TargetKey);
+
+	public bool IsActive
+	{
+		get
 		{
-			get
+			if (ToggleMode)
 			{
-				ToggleOrHoldInput.InputActivationMode mode = this._mode;
-				if (mode == ToggleOrHoldInput.InputActivationMode.Toggle)
+				if (KeyDown)
 				{
-					return this._trackedSetting.Value;
+					_toggled = !_toggled;
 				}
-				if (mode != ToggleOrHoldInput.InputActivationMode.Hold)
+			}
+			else
+			{
+				if (KeyDown)
 				{
-					throw new InvalidOperationException(string.Format("Undefined {0} with value of {1} detected for this Toggle/Hold setting.", "InputActivationMode", this._mode));
+					_toggled = true;
 				}
-				return !this._trackedSetting.Value;
-			}
-		}
-
-		private KeyCode TargetKey
-		{
-			get
-			{
-				return NewInput.GetKey(this._targetAction, KeyCode.None);
-			}
-		}
-
-		public bool KeyHeld
-		{
-			get
-			{
-				return Input.GetKey(this.TargetKey);
-			}
-		}
-
-		public bool KeyDown
-		{
-			get
-			{
-				return Input.GetKeyDown(this.TargetKey);
-			}
-		}
-
-		public bool IsActive
-		{
-			get
-			{
-				if (this.ToggleMode)
+				if (!KeyHeld)
 				{
-					if (this.KeyDown)
-					{
-						this._toggled = !this._toggled;
-					}
+					_toggled = false;
 				}
-				else
-				{
-					if (this.KeyDown)
-					{
-						this._toggled = true;
-					}
-					if (!this.KeyHeld)
-					{
-						this._toggled = false;
-					}
-				}
-				return this._toggled;
 			}
+			return _toggled;
 		}
+	}
 
-		public void ResetAll()
+	public void ResetAll()
+	{
+		_toggled = false;
+	}
+
+	public void ResetToggle()
+	{
+		if (ToggleMode)
 		{
-			this._toggled = false;
+			ResetAll();
 		}
+	}
 
-		public void ResetToggle()
-		{
-			if (!this.ToggleMode)
-			{
-				return;
-			}
-			this.ResetAll();
-		}
-
-		public ToggleOrHoldInput(ActionName targetAction, CachedUserSetting<bool> settings, ToggleOrHoldInput.InputActivationMode modeWhenTrue = ToggleOrHoldInput.InputActivationMode.Toggle)
-		{
-			this._targetAction = targetAction;
-			this._trackedSetting = settings;
-			this._mode = modeWhenTrue;
-		}
-
-		private readonly ActionName _targetAction;
-
-		private readonly ToggleOrHoldInput.InputActivationMode _mode;
-
-		private readonly CachedUserSetting<bool> _trackedSetting;
-
-		private bool _toggled;
-
-		public enum InputActivationMode
-		{
-			Toggle,
-			Hold
-		}
+	public ToggleOrHoldInput(ActionName targetAction, CachedUserSetting<bool> settings, InputActivationMode modeWhenTrue = InputActivationMode.Toggle)
+	{
+		_targetAction = targetAction;
+		_trackedSetting = settings;
+		_mode = modeWhenTrue;
 	}
 }

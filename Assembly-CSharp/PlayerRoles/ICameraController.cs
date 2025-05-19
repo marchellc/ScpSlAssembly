@@ -1,14 +1,12 @@
-﻿using System;
 using UnityEngine;
 
-namespace PlayerRoles
+namespace PlayerRoles;
+
+public interface ICameraController
 {
-	public interface ICameraController
-	{
-		Vector3 CameraPosition { get; }
+	Vector3 CameraPosition { get; }
 
-		float VerticalRotation { get; }
+	float VerticalRotation { get; }
 
-		float HorizontalRotation { get; }
-	}
+	float HorizontalRotation { get; }
 }

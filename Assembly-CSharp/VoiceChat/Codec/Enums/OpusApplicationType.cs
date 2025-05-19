@@ -1,11 +1,8 @@
-﻿using System;
+namespace VoiceChat.Codec.Enums;
 
-namespace VoiceChat.Codec.Enums
+public enum OpusApplicationType
 {
-	public enum OpusApplicationType
-	{
-		Voip = 2048,
-		Audio,
-		RestrictedLowDelay = 2051
-	}
+	Voip = 2048,
+	Audio = 2049,
+	RestrictedLowDelay = 2051
 }

@@ -1,9 +1,7 @@
-﻿using System;
 using ToggleableMenus;
 
-namespace PlayerRoles.Spectating
+namespace PlayerRoles.Spectating;
+
+public class OverwatchVoiceChatWindowToggler : SimpleToggleableMenu
 {
-	public class OverwatchVoiceChatWindowToggler : SimpleToggleableMenu
-	{
-	}
 }

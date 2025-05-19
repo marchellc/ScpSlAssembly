@@ -1,89 +1,83 @@
-﻿using System;
 using PlayerRoles.Spectating;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.HUDs
+namespace PlayerRoles.PlayableScps.HUDs;
+
+public static class ScpHudController
 {
-	public static class ScpHudController
+	public static ScpHudBase CurInstance { get; private set; }
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void InitOnLoad()
 	{
-		public static ScpHudBase CurInstance { get; private set; }
+		PlayerRoleManager.OnRoleChanged += RoleChanged;
+		SpectatorTargetTracker.OnTargetChanged += TargetChanged;
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void InitOnLoad()
+	private static bool ValidatePlayer(ReferenceHub hub)
+	{
+		if (hub.isLocalPlayer)
 		{
-			PlayerRoleManager.OnRoleChanged += ScpHudController.RoleChanged;
-			SpectatorTargetTracker.OnTargetChanged += ScpHudController.TargetChanged;
+			return true;
 		}
-
-		private static bool ValidatePlayer(ReferenceHub hub)
+		if (SpectatorTargetTracker.TryGetTrackedPlayer(out var hub2))
 		{
-			if (hub.isLocalPlayer)
-			{
-				return true;
-			}
-			ReferenceHub referenceHub;
-			if (SpectatorTargetTracker.TryGetTrackedPlayer(out referenceHub))
-			{
-				return referenceHub == hub;
-			}
-			return !(ScpHudController.CurInstance == null) && ScpHudController.CurInstance.Hub == hub;
+			return hub2 == hub;
 		}
-
-		private static void RoleChanged(ReferenceHub hub, PlayerRoleBase prev, PlayerRoleBase cur)
+		if (CurInstance == null)
 		{
-			if (!ScpHudController.ValidatePlayer(hub))
+			return false;
+		}
+		return CurInstance.Hub == hub;
+	}
+
+	private static void RoleChanged(ReferenceHub hub, PlayerRoleBase prev, PlayerRoleBase cur)
+	{
+		if (!ValidatePlayer(hub))
+		{
+			return;
+		}
+		if (cur is IHudScp hudScp)
+		{
+			DestroyOld();
+			SpawnNew(hudScp, hub);
+		}
+		else if (cur is SpectatorRole)
+		{
+			if (CurInstance != null)
 			{
-				return;
-			}
-			IHudScp hudScp = cur as IHudScp;
-			if (hudScp != null)
-			{
-				ScpHudController.DestroyOld();
-				ScpHudController.SpawnNew(hudScp, hub);
-				return;
-			}
-			if (cur is SpectatorRole)
-			{
-				if (ScpHudController.CurInstance != null)
-				{
-					ScpHudController.CurInstance.OnDied();
-					return;
-				}
-			}
-			else
-			{
-				ScpHudController.DestroyOld();
+				CurInstance.OnDied();
 			}
 		}
-
-		private static void TargetChanged()
+		else
 		{
-			ReferenceHub referenceHub;
-			if (!SpectatorTargetTracker.TryGetTrackedPlayer(out referenceHub))
+			DestroyOld();
+		}
+	}
+
+	private static void TargetChanged()
+	{
+		if (SpectatorTargetTracker.TryGetTrackedPlayer(out var hub))
+		{
+			DestroyOld();
+			if (hub.roleManager.CurrentRole is IHudScp hudScp)
 			{
-				return;
-			}
-			ScpHudController.DestroyOld();
-			IHudScp hudScp = referenceHub.roleManager.CurrentRole as IHudScp;
-			if (hudScp != null)
-			{
-				ScpHudController.SpawnNew(hudScp, referenceHub);
+				SpawnNew(hudScp, hub);
 			}
 		}
+	}
 
-		private static void DestroyOld()
+	private static void DestroyOld()
+	{
+		if (!(CurInstance == null))
 		{
-			if (ScpHudController.CurInstance == null)
-			{
-				return;
-			}
-			global::UnityEngine.Object.Destroy(ScpHudController.CurInstance.gameObject);
+			Object.Destroy(CurInstance.gameObject);
 		}
+	}
 
-		private static void SpawnNew(IHudScp hudScp, ReferenceHub owner)
-		{
-			ScpHudController.CurInstance = global::UnityEngine.Object.Instantiate<ScpHudBase>(hudScp.HudPrefab);
-			ScpHudController.CurInstance.Init(owner);
-		}
+	private static void SpawnNew(IHudScp hudScp, ReferenceHub owner)
+	{
+		CurInstance = Object.Instantiate(hudScp.HudPrefab);
+		CurInstance.Init(owner);
 	}
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
@@ -15,148 +14,135 @@ public class TeslaGateController : NetworkBehaviour
 
 	private static void ServerReceiveMessage(NetworkConnection conn, TeslaHitMsg msg)
 	{
-		ReferenceHub referenceHub;
-		if (!ReferenceHub.TryGetHubNetID(conn.identity.netId, out referenceHub))
+		if (ReferenceHub.TryGetHubNetID(conn.identity.netId, out var hub))
 		{
-			return;
-		}
-		if (msg.Gate == null)
-		{
-			referenceHub.gameConsoleTransmission.SendToClient("Received non-existing tesla gate!", "red");
-			return;
-		}
-		if (Vector3.Distance(msg.Gate.transform.position, referenceHub.transform.position) > msg.Gate.sizeOfTrigger * 2.2f)
-		{
-			referenceHub.gameConsoleTransmission.SendToClient("You are too far from a tesla gate!", "red");
-			return;
-		}
-		DamageHandlerBase.CassieAnnouncement cassieAnnouncement = new DamageHandlerBase.CassieAnnouncement
-		{
-			Announcement = "SUCCESSFULLY TERMINATED BY AUTOMATIC SECURITY SYSTEM",
-			SubtitleParts = new SubtitlePart[]
+			if (msg.Gate == null)
 			{
-				new SubtitlePart(SubtitleType.TerminatedBySecuritySystem, null)
+				hub.gameConsoleTransmission.SendToClient("Received non-existing tesla gate!", "red");
+				return;
 			}
-		};
-		referenceHub.playerStats.DealDamage(new UniversalDamageHandler((float)global::UnityEngine.Random.Range(200, 300), DeathTranslations.Tesla, cassieAnnouncement));
+			if (Vector3.Distance(msg.Gate.transform.position, hub.transform.position) > msg.Gate.sizeOfTrigger * 2.2f)
+			{
+				hub.gameConsoleTransmission.SendToClient("You are too far from a tesla gate!", "red");
+				return;
+			}
+			DamageHandlerBase.CassieAnnouncement cassieAnnouncement = new DamageHandlerBase.CassieAnnouncement();
+			cassieAnnouncement.Announcement = "SUCCESSFULLY TERMINATED BY AUTOMATIC SECURITY SYSTEM";
+			cassieAnnouncement.SubtitleParts = new SubtitlePart[1]
+			{
+				new SubtitlePart(SubtitleType.TerminatedBySecuritySystem, (string[])null)
+			};
+			DamageHandlerBase.CassieAnnouncement cassieAnnouncement2 = cassieAnnouncement;
+			hub.playerStats.DealDamage(new UniversalDamageHandler(Random.Range(200, 300), DeathTranslations.Tesla, cassieAnnouncement2));
+		}
 	}
 
 	private void Awake()
 	{
-		TeslaGateController.Singleton = this;
+		Singleton = this;
 	}
 
 	private void Start()
 	{
-		Timing.RunCoroutine(this.DelayedStopIdleParticles());
-		NetworkServer.ReplaceHandler<TeslaHitMsg>(new Action<NetworkConnectionToClient, TeslaHitMsg>(TeslaGateController.ServerReceiveMessage), true);
+		Timing.RunCoroutine(DelayedStopIdleParticles());
+		NetworkServer.ReplaceHandler<TeslaHitMsg>(ServerReceiveMessage);
 	}
 
 	private IEnumerator<float> DelayedStopIdleParticles()
 	{
-		int j;
-		for (int i = 0; i < 15; i = j + 1)
+		for (int i = 0; i < 15; i++)
 		{
 			yield return float.NegativeInfinity;
-			j = i;
 		}
-		using (HashSet<TeslaGate>.Enumerator enumerator = TeslaGate.AllGates.GetEnumerator())
+		foreach (TeslaGate allGate in TeslaGate.AllGates)
 		{
-			while (enumerator.MoveNext())
+			if (allGate == null || allGate.windupParticles == null)
 			{
-				TeslaGate teslaGate = enumerator.Current;
-				if (!(teslaGate == null) && teslaGate.windupParticles != null)
+				continue;
+			}
+			ParticleSystem[] windupParticles = allGate.windupParticles;
+			foreach (ParticleSystem particleSystem in windupParticles)
+			{
+				if (!(particleSystem == null))
 				{
-					foreach (ParticleSystem particleSystem in teslaGate.windupParticles)
-					{
-						if (!(particleSystem == null))
-						{
-							particleSystem.Stop();
-						}
-					}
+					particleSystem.Stop();
 				}
 			}
-			yield break;
 		}
-		yield break;
 	}
 
 	public void FixedUpdate()
 	{
 		if (NetworkServer.active)
 		{
-			using (HashSet<TeslaGate>.Enumerator enumerator = TeslaGate.AllGates.GetEnumerator())
+			foreach (TeslaGate allGate in TeslaGate.AllGates)
 			{
-				while (enumerator.MoveNext())
+				if (allGate.isActiveAndEnabled)
 				{
-					TeslaGate teslaGate = enumerator.Current;
-					if (teslaGate.isActiveAndEnabled)
+					if (allGate.InactiveTime > 0f)
 					{
-						if (teslaGate.InactiveTime > 0f)
+						allGate.NetworkInactiveTime = Mathf.Max(0f, allGate.InactiveTime - Time.fixedDeltaTime);
+					}
+					else
+					{
+						bool flag = false;
+						bool flag2 = false;
+						ReferenceHub hub = null;
+						ReferenceHub hub2 = null;
+						foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 						{
-							teslaGate.NetworkInactiveTime = Mathf.Max(0f, teslaGate.InactiveTime - Time.fixedDeltaTime);
+							if (allHub.IsAlive())
+							{
+								if (!flag)
+								{
+									flag = allGate.IsInIdleRange(allHub);
+									if (flag)
+									{
+										PlayerIdlingTeslaEventArgs playerIdlingTeslaEventArgs = new PlayerIdlingTeslaEventArgs(allHub, allGate);
+										PlayerEvents.OnIdlingTesla(playerIdlingTeslaEventArgs);
+										if (!playerIdlingTeslaEventArgs.IsAllowed)
+										{
+											flag = false;
+										}
+										else
+										{
+											hub = allHub;
+										}
+									}
+								}
+								if (!flag2 && allGate.PlayerInRange(allHub) && !allGate.InProgress)
+								{
+									PlayerTriggeringTeslaEventArgs playerTriggeringTeslaEventArgs = new PlayerTriggeringTeslaEventArgs(allHub, allGate);
+									PlayerEvents.OnTriggeringTesla(playerTriggeringTeslaEventArgs);
+									if (playerTriggeringTeslaEventArgs.IsAllowed)
+									{
+										hub2 = allHub;
+										flag2 = true;
+									}
+								}
+							}
 						}
-						else
+						if (flag2)
 						{
-							bool flag = false;
-							bool flag2 = false;
-							ReferenceHub referenceHub = null;
-							ReferenceHub referenceHub2 = null;
-							foreach (ReferenceHub referenceHub3 in ReferenceHub.AllHubs)
+							allGate.ServerSideCode();
+							PlayerEvents.OnTriggeredTesla(new PlayerTriggeredTeslaEventArgs(hub2, allGate));
+						}
+						if (flag != allGate.isIdling)
+						{
+							allGate.ServerSideIdle(flag);
+							if (flag)
 							{
-								if (referenceHub3.IsAlive())
-								{
-									if (!flag)
-									{
-										flag = teslaGate.IsInIdleRange(referenceHub3);
-										if (flag)
-										{
-											PlayerIdlingTeslaEventArgs playerIdlingTeslaEventArgs = new PlayerIdlingTeslaEventArgs(referenceHub3, teslaGate);
-											PlayerEvents.OnIdlingTesla(playerIdlingTeslaEventArgs);
-											if (!playerIdlingTeslaEventArgs.IsAllowed)
-											{
-												flag = false;
-											}
-											else
-											{
-												referenceHub = referenceHub3;
-											}
-										}
-									}
-									if (!flag2 && teslaGate.PlayerInRange(referenceHub3) && !teslaGate.InProgress)
-									{
-										PlayerTriggeringTeslaEventArgs playerTriggeringTeslaEventArgs = new PlayerTriggeringTeslaEventArgs(referenceHub3, teslaGate);
-										PlayerEvents.OnTriggeringTesla(playerTriggeringTeslaEventArgs);
-										if (playerTriggeringTeslaEventArgs.IsAllowed)
-										{
-											referenceHub2 = referenceHub3;
-											flag2 = true;
-										}
-									}
-								}
-							}
-							if (flag2)
-							{
-								teslaGate.ServerSideCode();
-								PlayerEvents.OnTriggeredTesla(new PlayerTriggeredTeslaEventArgs(referenceHub2, teslaGate));
-							}
-							if (flag != teslaGate.isIdling)
-							{
-								teslaGate.ServerSideIdle(flag);
-								if (flag)
-								{
-									PlayerEvents.OnIdledTesla(new PlayerIdledTeslaEventArgs(referenceHub, teslaGate));
-								}
+								PlayerEvents.OnIdledTesla(new PlayerIdledTeslaEventArgs(hub, allGate));
 							}
 						}
 					}
 				}
-				return;
 			}
+			return;
 		}
-		foreach (TeslaGate teslaGate2 in TeslaGate.AllGates)
+		foreach (TeslaGate allGate2 in TeslaGate.AllGates)
 		{
-			teslaGate2.ClientSideCode();
+			allGate2.ClientSideCode();
 		}
 	}
 

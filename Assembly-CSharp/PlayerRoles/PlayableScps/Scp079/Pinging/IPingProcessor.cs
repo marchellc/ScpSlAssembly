@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.Scp079.Pinging;
 
-namespace PlayerRoles.PlayableScps.Scp079.Pinging
+public interface IPingProcessor
 {
-	public interface IPingProcessor
-	{
-		float Range { get; }
-	}
+	float Range { get; }
 }

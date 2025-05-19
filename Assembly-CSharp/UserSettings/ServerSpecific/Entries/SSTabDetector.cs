@@ -1,44 +1,37 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace UserSettings.ServerSpecific.Entries
+namespace UserSettings.ServerSpecific.Entries;
+
+public class SSTabDetector : MonoBehaviour
 {
-	public class SSTabDetector : MonoBehaviour
+	private static bool _active;
+
+	public static bool IsOpen
 	{
-		public static event Action OnStatusChanged;
-
-		public static bool IsOpen
+		get
 		{
-			get
+			return _active;
+		}
+		private set
+		{
+			if (_active != value)
 			{
-				return SSTabDetector._active;
-			}
-			private set
-			{
-				if (SSTabDetector._active == value)
-				{
-					return;
-				}
-				SSTabDetector._active = value;
-				Action onStatusChanged = SSTabDetector.OnStatusChanged;
-				if (onStatusChanged == null)
-				{
-					return;
-				}
-				onStatusChanged();
+				_active = value;
+				SSTabDetector.OnStatusChanged?.Invoke();
 			}
 		}
+	}
 
-		private void OnEnable()
-		{
-			SSTabDetector.IsOpen = true;
-		}
+	public static event Action OnStatusChanged;
 
-		private void OnDisable()
-		{
-			SSTabDetector.IsOpen = false;
-		}
+	private void OnEnable()
+	{
+		IsOpen = true;
+	}
 
-		private static bool _active;
+	private void OnDisable()
+	{
+		IsOpen = false;
 	}
 }

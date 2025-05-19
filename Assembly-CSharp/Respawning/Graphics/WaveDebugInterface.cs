@@ -1,33 +1,28 @@
-﻿using System;
 using Respawning.Objectives;
 using Respawning.Waves;
 using TMPro;
 using UnityEngine;
 
-namespace Respawning.Graphics
+namespace Respawning.Graphics;
+
+public class WaveDebugInterface : SerializedWaveInterface
 {
-	public class WaveDebugInterface : SerializedWaveInterface
+	[SerializeField]
+	private TMP_Text _text;
+
+	private void Start()
 	{
-		private void Start()
+		if (ColorUtility.TryParseHtmlString(base.Wave.TargetFaction.GetFactionColor(), out var color))
 		{
-			Color color;
-			if (!ColorUtility.TryParseHtmlString(base.Wave.TargetFaction.GetFactionColor(), out color))
-			{
-				return;
-			}
-			this._text.color = color;
+			_text.color = color;
 		}
+	}
 
-		private void Update()
+	private void Update()
+	{
+		if (base.Wave != null)
 		{
-			if (base.Wave == null)
-			{
-				return;
-			}
-			this._text.text = base.Wave.CreateDebugString();
+			_text.text = base.Wave.CreateDebugString();
 		}
-
-		[SerializeField]
-		private TMP_Text _text;
 	}
 }

@@ -1,121 +1,118 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 
-namespace LiteNetLib
+namespace LiteNetLib;
+
+internal sealed class SequencedChannel : BaseChannel
 {
-	internal sealed class SequencedChannel : BaseChannel
+	private int _localSequence;
+
+	private ushort _remoteSequence;
+
+	private readonly bool _reliable;
+
+	private NetPacket _lastPacket;
+
+	private readonly NetPacket _ackPacket;
+
+	private bool _mustSendAck;
+
+	private readonly byte _id;
+
+	private long _lastPacketSendTime;
+
+	public SequencedChannel(NetPeer peer, bool reliable, byte id)
+		: base(peer)
 	{
-		public SequencedChannel(NetPeer peer, bool reliable, byte id)
-			: base(peer)
+		_id = id;
+		_reliable = reliable;
+		if (_reliable)
 		{
-			this._id = id;
-			this._reliable = reliable;
-			if (this._reliable)
+			_ackPacket = new NetPacket(PacketProperty.Ack, 0)
 			{
-				this._ackPacket = new NetPacket(PacketProperty.Ack, 0)
+				ChannelId = id
+			};
+		}
+	}
+
+	protected override bool SendNextPackets()
+	{
+		if (_reliable && OutgoingQueue.Count == 0)
+		{
+			long ticks = DateTime.UtcNow.Ticks;
+			if ((double)(ticks - _lastPacketSendTime) >= Peer.ResendDelay * 10000.0)
+			{
+				NetPacket lastPacket = _lastPacket;
+				if (lastPacket != null)
 				{
-					ChannelId = id
-				};
+					_lastPacketSendTime = ticks;
+					Peer.SendUserData(lastPacket);
+				}
 			}
 		}
-
-		protected override bool SendNextPackets()
+		else
 		{
-			if (this._reliable && this.OutgoingQueue.Count == 0)
+			lock (OutgoingQueue)
 			{
-				long ticks = DateTime.UtcNow.Ticks;
-				if ((double)(ticks - this._lastPacketSendTime) >= this.Peer.ResendDelay * 10000.0)
+				while (OutgoingQueue.Count > 0)
 				{
-					NetPacket lastPacket = this._lastPacket;
-					if (lastPacket != null)
+					NetPacket netPacket = OutgoingQueue.Dequeue();
+					_localSequence = (_localSequence + 1) % 32768;
+					netPacket.Sequence = (ushort)_localSequence;
+					netPacket.ChannelId = _id;
+					Peer.SendUserData(netPacket);
+					if (_reliable && OutgoingQueue.Count == 0)
 					{
-						this._lastPacketSendTime = ticks;
-						this.Peer.SendUserData(lastPacket);
+						_lastPacketSendTime = DateTime.UtcNow.Ticks;
+						_lastPacket = netPacket;
+					}
+					else
+					{
+						Peer.NetManager.PoolRecycle(netPacket);
 					}
 				}
 			}
-			else
-			{
-				Queue<NetPacket> outgoingQueue = this.OutgoingQueue;
-				lock (outgoingQueue)
-				{
-					while (this.OutgoingQueue.Count > 0)
-					{
-						NetPacket netPacket = this.OutgoingQueue.Dequeue();
-						this._localSequence = (this._localSequence + 1) % 32768;
-						netPacket.Sequence = (ushort)this._localSequence;
-						netPacket.ChannelId = this._id;
-						this.Peer.SendUserData(netPacket);
-						if (this._reliable && this.OutgoingQueue.Count == 0)
-						{
-							this._lastPacketSendTime = DateTime.UtcNow.Ticks;
-							this._lastPacket = netPacket;
-						}
-						else
-						{
-							this.Peer.NetManager.PoolRecycle(netPacket);
-						}
-					}
-				}
-			}
-			if (this._reliable && this._mustSendAck)
-			{
-				this._mustSendAck = false;
-				this._ackPacket.Sequence = this._remoteSequence;
-				this.Peer.SendUserData(this._ackPacket);
-			}
-			return this._lastPacket != null;
 		}
-
-		public override bool ProcessPacket(NetPacket packet)
+		if (_reliable && _mustSendAck)
 		{
-			if (packet.IsFragmented)
-			{
-				return false;
-			}
-			if (packet.Property == PacketProperty.Ack)
-			{
-				if (this._reliable && this._lastPacket != null && packet.Sequence == this._lastPacket.Sequence)
-				{
-					this._lastPacket = null;
-				}
-				return false;
-			}
-			int num = NetUtils.RelativeSequenceNumber((int)packet.Sequence, (int)this._remoteSequence);
-			bool flag = false;
-			if (packet.Sequence < 32768 && num > 0)
-			{
-				if (this.Peer.NetManager.EnableStatistics)
-				{
-					this.Peer.Statistics.AddPacketLoss((long)(num - 1));
-					this.Peer.NetManager.Statistics.AddPacketLoss((long)(num - 1));
-				}
-				this._remoteSequence = packet.Sequence;
-				this.Peer.NetManager.CreateReceiveEvent(packet, this._reliable ? DeliveryMethod.ReliableSequenced : DeliveryMethod.Sequenced, packet.ChannelId / 4, 4, this.Peer);
-				flag = true;
-			}
-			if (this._reliable)
-			{
-				this._mustSendAck = true;
-				base.AddToPeerChannelSendQueue();
-			}
-			return flag;
+			_mustSendAck = false;
+			_ackPacket.Sequence = _remoteSequence;
+			Peer.SendUserData(_ackPacket);
 		}
+		return _lastPacket != null;
+	}
 
-		private int _localSequence;
-
-		private ushort _remoteSequence;
-
-		private readonly bool _reliable;
-
-		private NetPacket _lastPacket;
-
-		private readonly NetPacket _ackPacket;
-
-		private bool _mustSendAck;
-
-		private readonly byte _id;
-
-		private long _lastPacketSendTime;
+	public override bool ProcessPacket(NetPacket packet)
+	{
+		if (packet.IsFragmented)
+		{
+			return false;
+		}
+		if (packet.Property == PacketProperty.Ack)
+		{
+			if (_reliable && _lastPacket != null && packet.Sequence == _lastPacket.Sequence)
+			{
+				_lastPacket = null;
+			}
+			return false;
+		}
+		int num = NetUtils.RelativeSequenceNumber(packet.Sequence, _remoteSequence);
+		bool result = false;
+		if (packet.Sequence < 32768 && num > 0)
+		{
+			if (Peer.NetManager.EnableStatistics)
+			{
+				Peer.Statistics.AddPacketLoss(num - 1);
+				Peer.NetManager.Statistics.AddPacketLoss(num - 1);
+			}
+			_remoteSequence = packet.Sequence;
+			Peer.NetManager.CreateReceiveEvent(packet, (!_reliable) ? DeliveryMethod.Sequenced : DeliveryMethod.ReliableSequenced, (byte)(packet.ChannelId / 4), 4, Peer);
+			result = true;
+		}
+		if (_reliable)
+		{
+			_mustSendAck = true;
+			AddToPeerChannelSendQueue();
+		}
+		return result;
 	}
 }

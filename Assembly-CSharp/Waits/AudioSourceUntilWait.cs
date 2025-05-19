@@ -1,15 +1,13 @@
-﻿using System;
 using UnityEngine;
 
-namespace Waits
-{
-	public class AudioSourceUntilWait : UntilWait
-	{
-		protected override bool Predicate()
-		{
-			return !this.audioSource.isPlaying;
-		}
+namespace Waits;
 
-		public AudioSource audioSource;
+public class AudioSourceUntilWait : UntilWait
+{
+	public AudioSource audioSource;
+
+	protected override bool Predicate()
+	{
+		return !audioSource.isPlaying;
 	}
 }

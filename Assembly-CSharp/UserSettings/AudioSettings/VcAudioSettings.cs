@@ -1,14 +1,12 @@
-﻿using System;
 using UnityEngine;
 
-namespace UserSettings.AudioSettings
+namespace UserSettings.AudioSettings;
+
+public static class VcAudioSettings
 {
-	public static class VcAudioSettings
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			UserSetting<bool>.SetDefaultValue<VcAudioSetting>(VcAudioSetting.NoiseReduction, true);
-		}
+		UserSetting<bool>.SetDefaultValue(VcAudioSetting.NoiseReduction, defaultValue: true);
 	}
 }

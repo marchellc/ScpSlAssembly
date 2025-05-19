@@ -1,19 +1,16 @@
-﻿using System;
+namespace VoiceChat;
 
-namespace VoiceChat
+public enum VoiceChatChannel
 {
-	public enum VoiceChatChannel
-	{
-		None,
-		Proximity,
-		Radio,
-		ScpChat,
-		Spectator,
-		RoundSummary,
-		Intercom,
-		Mimicry,
-		Scp1576,
-		PreGameLobby,
-		Scp1507 = 9
-	}
+	None = 0,
+	Proximity = 1,
+	Radio = 2,
+	ScpChat = 3,
+	Spectator = 4,
+	RoundSummary = 5,
+	Intercom = 6,
+	Mimicry = 7,
+	Scp1576 = 8,
+	PreGameLobby = 9,
+	Scp1507 = 9
 }

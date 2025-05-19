@@ -1,210 +1,186 @@
-﻿using System;
 using System.Collections.Generic;
 using AudioPooling;
 using GameObjectPools;
 using Mirror;
+using PlayerRoles.RoleAssign;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.HumeShield
+namespace PlayerRoles.PlayableScps.HumeShield;
+
+public class DynamicHumeShieldController : HumeShieldModuleBase, IPoolSpawnable, IPoolResettable
 {
-	public class DynamicHumeShieldController : HumeShieldModuleBase, IPoolSpawnable, IPoolResettable
+	public struct ShieldBreakMessage : NetworkMessage
 	{
-		public bool IsBlocked
+		public ReferenceHub Target;
+	}
+
+	private const float ShieldBreakSoundRange = 37f;
+
+	private const MixerChannel ShieldBreakSoundChannel = MixerChannel.NoDucking;
+
+	public AnimationCurve ShieldOverHealth;
+
+	public float RegenerationRate;
+
+	public float RegenerationCooldown;
+
+	[SerializeField]
+	private AudioClip _shieldBreakSound;
+
+	[SerializeField]
+	private bool _hideWhenEmpty;
+
+	private readonly HashSet<IHumeShieldBlocker> _blockers = new HashSet<IHumeShieldBlocker>();
+
+	private HealthStat _hp;
+
+	private double _nextRegenTime;
+
+	private int _blockersCount;
+
+	private float _initialRegenRate;
+
+	private float _initialRegenCooldown;
+
+	public bool IsBlocked
+	{
+		get
 		{
-			get
-			{
-				this._blockersCount -= this._blockers.RemoveWhere(delegate(IHumeShieldBlocker x)
-				{
-					global::UnityEngine.Object @object = x as global::UnityEngine.Object;
-					return (@object != null && @object == null) || x == null || !x.HumeShieldBlocked;
-				});
-				return this._blockersCount > 0;
-			}
+			_blockersCount -= _blockers.RemoveWhere((IHumeShieldBlocker x) => (x is Object @object && @object == null) || x == null || !x.HumeShieldBlocked);
+			return _blockersCount > 0;
 		}
+	}
 
-		public virtual AudioClip ShieldBreakSound
+	public virtual AudioClip ShieldBreakSound => _shieldBreakSound;
+
+	public virtual bool ServerPlayBreakSound
+	{
+		get
 		{
-			get
+			if (base.Owner.IsSCP())
 			{
-				return this._shieldBreakSound;
+				return ShieldBreakSound != null;
 			}
+			return false;
 		}
+	}
 
-		public override float HsMax
+	public override float HsMax
+	{
+		get
 		{
-			get
+			float num = ShieldOverHealth.Evaluate(_hp.NormalizedValue);
+			if (RoleAssigner.ScpsOverflowing)
 			{
-				return this.ShieldOverHealth.Evaluate(this._hp.NormalizedValue);
+				num *= RoleAssigner.ScpOverflowMaxHsMultiplier;
 			}
+			return num;
 		}
+	}
 
-		public override float HsRegeneration
+	public override float HsRegeneration
+	{
+		get
 		{
-			get
+			if (!(_nextRegenTime < NetworkTime.time) || IsBlocked)
 			{
-				if (this._nextRegenTime >= NetworkTime.time || this.IsBlocked)
-				{
-					return 0f;
-				}
-				return this.RegenerationRate;
+				return 0f;
 			}
+			return RegenerationRate;
 		}
+	}
 
-		public override Color? HsWarningColor
+	public override Color? HsWarningColor
+	{
+		get
 		{
-			get
+			if (!IsBlocked)
 			{
-				if (!this.IsBlocked)
-				{
-					return null;
-				}
-				return new Color?(new Color(1f, 0f, 0f, 0.3f));
+				return null;
 			}
+			return new Color(1f, 0f, 0f, 0.3f);
 		}
+	}
 
-		public override bool HideWhenEmpty
+	public override bool HideWhenEmpty => _hideWhenEmpty;
+
+	public void AddBlocker(IHumeShieldBlocker blocker)
+	{
+		if (_blockers.Add(blocker))
 		{
-			get
-			{
-				return this._hideWhenEmpty;
-			}
+			_blockersCount++;
 		}
+	}
 
-		public void AddBlocker(IHumeShieldBlocker blocker)
+	public void ResumeRegen()
+	{
+		_nextRegenTime = 0.0;
+	}
+
+	public override void OnHsValueChanged(float prevValue, float newValue)
+	{
+		if (NetworkServer.active && !(newValue > 0f) && !(prevValue <= 0f) && ServerPlayBreakSound)
 		{
-			if (!this._blockers.Add(blocker))
-			{
-				return;
-			}
-			this._blockersCount++;
+			ShieldBreakMessage message = default(ShieldBreakMessage);
+			message.Target = base.Owner;
+			NetworkServer.SendToReady(message);
 		}
+	}
 
-		public void ResumeRegen()
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		PlayerStats playerStats = base.Owner.playerStats;
+		_hp = playerStats.GetModule<HealthStat>();
+		playerStats.OnThisPlayerDamaged += OnDamaged;
+		if (NetworkServer.active)
 		{
-			this._nextRegenTime = 0.0;
+			base.HsCurrent = ShieldOverHealth.Evaluate(1f);
 		}
+	}
 
-		public override void OnHsValueChanged(float prevValue, float newValue)
+	public void ResetObject()
+	{
+		if (base.Owner != null)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			if (newValue > 0f || prevValue <= 0f)
-			{
-				return;
-			}
-			if (this.ShieldBreakSound == null)
-			{
-				return;
-			}
-			NetworkServer.SendToReady<DynamicHumeShieldController.ShieldBreakMessage>(new DynamicHumeShieldController.ShieldBreakMessage
-			{
-				Target = base.Owner
-			}, 0);
+			base.Owner.playerStats.OnThisPlayerDamaged -= OnDamaged;
 		}
+		RegenerationCooldown = _initialRegenCooldown;
+		RegenerationRate = _initialRegenRate;
+		_nextRegenTime = 0.0;
+		_blockersCount = 0;
+		_blockers.Clear();
+	}
 
-		public override void SpawnObject()
+	private void OnDamaged(DamageHandlerBase dhb)
+	{
+		if (NetworkServer.active)
 		{
-			base.SpawnObject();
-			PlayerStats playerStats = base.Owner.playerStats;
-			this._hp = playerStats.GetModule<HealthStat>();
-			playerStats.OnThisPlayerDamaged += this.OnDamaged;
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			base.HsCurrent = this.ShieldOverHealth.Evaluate(1f);
+			_nextRegenTime = NetworkTime.time + (double)RegenerationCooldown;
 		}
+	}
 
-		public void ResetObject()
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
 		{
-			if (base.Owner != null)
-			{
-				base.Owner.playerStats.OnThisPlayerDamaged -= this.OnDamaged;
-			}
-			this.RegenerationCooldown = this._initialRegenCooldown;
-			this.RegenerationRate = this._initialRegenRate;
-			this._nextRegenTime = 0.0;
-			this._blockersCount = 0;
-			this._blockers.Clear();
-		}
+			NetworkClient.ReplaceHandler<ShieldBreakMessage>(ProcessBreakMessage);
+		};
+	}
 
-		private void OnDamaged(DamageHandlerBase dhb)
+	private static void ProcessBreakMessage(ShieldBreakMessage msg)
+	{
+		if (!(msg.Target == null) && msg.Target.roleManager.CurrentRole is IHumeShieldedRole { HumeShieldModule: DynamicHumeShieldController humeShieldModule })
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this._nextRegenTime = NetworkTime.time + (double)this.RegenerationCooldown;
+			AudioSourcePoolManager.PlayOnTransform(humeShieldModule.ShieldBreakSound, humeShieldModule.transform, 37f, 1f, FalloffType.Exponential, MixerChannel.NoDucking);
 		}
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				NetworkClient.ReplaceHandler<DynamicHumeShieldController.ShieldBreakMessage>(new Action<DynamicHumeShieldController.ShieldBreakMessage>(DynamicHumeShieldController.ProcessBreakMessage), true);
-			};
-		}
-
-		private static void ProcessBreakMessage(DynamicHumeShieldController.ShieldBreakMessage msg)
-		{
-			if (msg.Target == null)
-			{
-				return;
-			}
-			IHumeShieldedRole humeShieldedRole = msg.Target.roleManager.CurrentRole as IHumeShieldedRole;
-			if (humeShieldedRole == null)
-			{
-				return;
-			}
-			DynamicHumeShieldController dynamicHumeShieldController = humeShieldedRole.HumeShieldModule as DynamicHumeShieldController;
-			if (dynamicHumeShieldController == null)
-			{
-				return;
-			}
-			AudioSourcePoolManager.PlayOnTransform(dynamicHumeShieldController.ShieldBreakSound, dynamicHumeShieldController.transform, 37f, 1f, FalloffType.Exponential, MixerChannel.NoDucking, 1f);
-		}
-
-		private void Awake()
-		{
-			this._initialRegenCooldown = this.RegenerationCooldown;
-			this._initialRegenRate = this.RegenerationRate;
-		}
-
-		private const float ShieldBreakSoundRange = 37f;
-
-		private const MixerChannel ShieldBreakSoundChannel = MixerChannel.NoDucking;
-
-		public AnimationCurve ShieldOverHealth;
-
-		public float RegenerationRate;
-
-		public float RegenerationCooldown;
-
-		[SerializeField]
-		private AudioClip _shieldBreakSound;
-
-		[SerializeField]
-		private bool _hideWhenEmpty;
-
-		private readonly HashSet<IHumeShieldBlocker> _blockers = new HashSet<IHumeShieldBlocker>();
-
-		private HealthStat _hp;
-
-		private double _nextRegenTime;
-
-		private int _blockersCount;
-
-		private float _initialRegenRate;
-
-		private float _initialRegenCooldown;
-
-		public struct ShieldBreakMessage : NetworkMessage
-		{
-			public ReferenceHub Target;
-		}
+	private void Awake()
+	{
+		_initialRegenCooldown = RegenerationCooldown;
+		_initialRegenRate = RegenerationRate;
 	}
 }

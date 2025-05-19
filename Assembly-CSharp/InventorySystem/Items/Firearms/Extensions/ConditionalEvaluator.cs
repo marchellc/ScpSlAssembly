@@ -1,190 +1,162 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+using System;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+[Serializable]
+public class ConditionalEvaluator
 {
 	[Serializable]
-	public class ConditionalEvaluator
+	public struct AttachmentStatusPair
 	{
-		public bool Evaluate()
-		{
-			bool? flag = this.EvaluateArray<ConditionalEvaluator.AttachmentStatusPair>(this.AttachmentConditions, new Predicate<ConditionalEvaluator.AttachmentStatusPair>(this.EvaluateAttachmentCondition));
-			bool? flag2 = this.EvaluateArray<ConditionalEvaluator.OtherCondition>(this.OtherConditions, new Predicate<ConditionalEvaluator.OtherCondition>(this.EvaluateModuleCondition));
-			if (flag == null && flag2 == null)
-			{
-				return true;
-			}
-			if (this.Any)
-			{
-				return flag.GetValueOrDefault() || flag2.GetValueOrDefault();
-			}
-			return (flag ?? true) && (flag2 ?? true);
-		}
+		public AttachmentLink Link;
 
-		public void InitInstance(Firearm instance)
+		public AttachmentStatus DesiredStatus;
+	}
+
+	public enum AttachmentStatus
+	{
+		Disabled,
+		Enabled,
+		EnabledAndReady,
+		EnabledAndNotReady
+	}
+
+	public enum OtherCondition
+	{
+		Equipped,
+		Firstperson,
+		Pickup,
+		Thirdperson
+	}
+
+	public AttachmentStatusPair[] AttachmentConditions;
+
+	public OtherCondition[] OtherConditions;
+
+	public bool Any;
+
+	private bool _worldmodelMode;
+
+	private bool _hasSetter;
+
+	private AnimatorStateSetterModule _setterModule;
+
+	private Firearm _firearm;
+
+	private FirearmWorldmodel _worldmodel;
+
+	public bool Evaluate()
+	{
+		bool? flag = EvaluateArray(AttachmentConditions, EvaluateAttachmentCondition);
+		bool? flag2 = EvaluateArray(OtherConditions, EvaluateModuleCondition);
+		if (!flag.HasValue && !flag2.HasValue)
 		{
-			this._firearm = instance;
-			this._hasSetter = instance.TryGetModule(out this._setterModule, true);
-			ConditionalEvaluator.AttachmentStatusPair[] attachmentConditions = this.AttachmentConditions;
+			return true;
+		}
+		if (Any)
+		{
+			if (flag != true)
+			{
+				return flag2 == true;
+			}
+			return true;
+		}
+		if (flag ?? true)
+		{
+			return flag2 ?? true;
+		}
+		return false;
+	}
+
+	public void InitInstance(Firearm instance)
+	{
+		_firearm = instance;
+		_hasSetter = instance.TryGetModule<AnimatorStateSetterModule>(out _setterModule);
+		AttachmentStatusPair[] attachmentConditions = AttachmentConditions;
+		for (int i = 0; i < attachmentConditions.Length; i++)
+		{
+			attachmentConditions[i].Link.InitCache(instance);
+		}
+	}
+
+	public void InitWorldmodel(FirearmWorldmodel worldmodel)
+	{
+		_worldmodel = worldmodel;
+		if ((!_worldmodelMode || !(_worldmodel == worldmodel)) && InventoryItemLoader.TryGetItem<Firearm>(worldmodel.Identifier.TypeId, out var result))
+		{
+			AttachmentStatusPair[] attachmentConditions = AttachmentConditions;
 			for (int i = 0; i < attachmentConditions.Length; i++)
 			{
-				attachmentConditions[i].Link.InitCache(instance);
+				attachmentConditions[i].Link.InitCache(result);
 			}
+			_worldmodelMode = true;
 		}
+	}
 
-		public void InitWorldmodel(FirearmWorldmodel worldmodel)
+	private bool EvaluateAttachmentCondition(AttachmentStatusPair pair)
+	{
+		AttachmentLink link = pair.Link;
+		return pair.DesiredStatus switch
 		{
-			this._worldmodel = worldmodel;
-			if (this._worldmodelMode && this._worldmodel == worldmodel)
+			AttachmentStatus.Enabled => GetEnabled(), 
+			AttachmentStatus.Disabled => !GetEnabled(), 
+			AttachmentStatus.EnabledAndReady => GetEnabled() && GetReadyFlag(), 
+			AttachmentStatus.EnabledAndNotReady => GetEnabled() && !GetReadyFlag(), 
+			_ => false, 
+		};
+		bool GetEnabled()
+		{
+			if (!_worldmodelMode)
 			{
-				return;
+				return link.Instance.IsEnabled;
 			}
-			Firearm firearm;
-			if (!InventoryItemLoader.TryGetItem<Firearm>(worldmodel.Identifier.TypeId, out firearm))
-			{
-				return;
-			}
-			ConditionalEvaluator.AttachmentStatusPair[] attachmentConditions = this.AttachmentConditions;
-			for (int i = 0; i < attachmentConditions.Length; i++)
-			{
-				attachmentConditions[i].Link.InitCache(firearm);
-			}
-			this._worldmodelMode = true;
+			return (_worldmodel.AttachmentCode & link.Filter) != 0;
 		}
-
-		private bool EvaluateAttachmentCondition(ConditionalEvaluator.AttachmentStatusPair pair)
+		bool GetReadyFlag()
 		{
-			ConditionalEvaluator.<>c__DisplayClass11_0 CS$<>8__locals1;
-			CS$<>8__locals1.<>4__this = this;
-			CS$<>8__locals1.link = pair.Link;
-			bool flag;
-			switch (pair.DesiredStatus)
+			if (_hasSetter)
 			{
-			case ConditionalEvaluator.AttachmentStatus.Disabled:
-				flag = !this.<EvaluateAttachmentCondition>g__GetEnabled|11_0(ref CS$<>8__locals1);
-				break;
-			case ConditionalEvaluator.AttachmentStatus.Enabled:
-				flag = this.<EvaluateAttachmentCondition>g__GetEnabled|11_0(ref CS$<>8__locals1);
-				break;
-			case ConditionalEvaluator.AttachmentStatus.EnabledAndReady:
-				flag = this.<EvaluateAttachmentCondition>g__GetEnabled|11_0(ref CS$<>8__locals1) && this.<EvaluateAttachmentCondition>g__GetReadyFlag|11_1(ref CS$<>8__locals1);
-				break;
-			case ConditionalEvaluator.AttachmentStatus.EnabledAndNotReady:
-				flag = this.<EvaluateAttachmentCondition>g__GetEnabled|11_0(ref CS$<>8__locals1) && !this.<EvaluateAttachmentCondition>g__GetReadyFlag|11_1(ref CS$<>8__locals1);
-				break;
-			default:
-				flag = false;
-				break;
+				return _setterModule.GetReadyFlag(link.Instance);
 			}
-			return flag;
+			return false;
 		}
+	}
 
-		private bool EvaluateModuleCondition(ConditionalEvaluator.OtherCondition cond)
+	private bool EvaluateModuleCondition(OtherCondition cond)
+	{
+		IEquipperModule module;
+		return cond switch
 		{
-			bool flag;
-			switch (cond)
-			{
-			case ConditionalEvaluator.OtherCondition.Equipped:
-			{
-				IEquipperModule equipperModule;
-				flag = this._firearm.TryGetModule(out equipperModule, true) && equipperModule.IsEquipped;
-				break;
-			}
-			case ConditionalEvaluator.OtherCondition.Firstperson:
-				flag = !this._worldmodelMode && this._firearm.HasViewmodel;
-				break;
-			case ConditionalEvaluator.OtherCondition.Pickup:
-				flag = this._worldmodelMode && this._worldmodel.WorldmodelType == FirearmWorldmodelType.Pickup;
-				break;
-			case ConditionalEvaluator.OtherCondition.Thirdperson:
-				flag = this._worldmodelMode && this._worldmodel.WorldmodelType == FirearmWorldmodelType.Thirdperson;
-				break;
-			default:
-				flag = false;
-				break;
-			}
-			return flag;
+			OtherCondition.Equipped => _firearm.TryGetModule<IEquipperModule>(out module) && module.IsEquipped, 
+			OtherCondition.Pickup => _worldmodelMode && _worldmodel.WorldmodelType == FirearmWorldmodelType.Pickup, 
+			OtherCondition.Thirdperson => _worldmodelMode && _worldmodel.WorldmodelType == FirearmWorldmodelType.Thirdperson, 
+			OtherCondition.Firstperson => !_worldmodelMode && _firearm.HasViewmodel, 
+			_ => false, 
+		};
+	}
+
+	private bool? EvaluateArray<T>(T[] arr, Predicate<T> evaluator)
+	{
+		if (arr == null || arr.Length == 0)
+		{
+			return null;
 		}
-
-		private bool? EvaluateArray<T>(T[] arr, Predicate<T> evaluator)
+		foreach (T obj in arr)
 		{
-			if (arr == null || arr.Length == 0)
+			if (evaluator(obj))
 			{
-				return null;
-			}
-			foreach (T t in arr)
-			{
-				if (evaluator(t))
+				if (Any)
 				{
-					if (this.Any)
-					{
-						return new bool?(true);
-					}
-				}
-				else if (!this.Any)
-				{
-					return new bool?(false);
+					return true;
 				}
 			}
-			return new bool?(!this.Any);
-		}
-
-		[CompilerGenerated]
-		private bool <EvaluateAttachmentCondition>g__GetEnabled|11_0(ref ConditionalEvaluator.<>c__DisplayClass11_0 A_1)
-		{
-			if (!this._worldmodelMode)
+			else if (!Any)
 			{
-				return A_1.link.Instance.IsEnabled;
+				return false;
 			}
-			return (this._worldmodel.AttachmentCode & A_1.link.Filter) > 0U;
 		}
-
-		[CompilerGenerated]
-		private bool <EvaluateAttachmentCondition>g__GetReadyFlag|11_1(ref ConditionalEvaluator.<>c__DisplayClass11_0 A_1)
-		{
-			return this._hasSetter && this._setterModule.GetReadyFlag(A_1.link.Instance);
-		}
-
-		public ConditionalEvaluator.AttachmentStatusPair[] AttachmentConditions;
-
-		public ConditionalEvaluator.OtherCondition[] OtherConditions;
-
-		public bool Any;
-
-		private bool _worldmodelMode;
-
-		private bool _hasSetter;
-
-		private AnimatorStateSetterModule _setterModule;
-
-		private Firearm _firearm;
-
-		private FirearmWorldmodel _worldmodel;
-
-		[Serializable]
-		public struct AttachmentStatusPair
-		{
-			public AttachmentLink Link;
-
-			public ConditionalEvaluator.AttachmentStatus DesiredStatus;
-		}
-
-		public enum AttachmentStatus
-		{
-			Disabled,
-			Enabled,
-			EnabledAndReady,
-			EnabledAndNotReady
-		}
-
-		public enum OtherCondition
-		{
-			Equipped,
-			Firstperson,
-			Pickup,
-			Thirdperson
-		}
+		return !Any;
 	}
 }

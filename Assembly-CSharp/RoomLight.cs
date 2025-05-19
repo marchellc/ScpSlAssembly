@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using ProgressiveCulling;
@@ -9,241 +9,6 @@ using UserSettings.VideoSettings;
 
 public class RoomLight : CullableBehaviour, IBoundsCullable, ICullable
 {
-	internal Light LightSource { get; private set; }
-
-	public override bool ShouldBeVisible
-	{
-		get
-		{
-			return this._preventSubCulling || CullingCamera.CheckBoundsVisibility(this.WorldspaceBounds);
-		}
-	}
-
-	public Bounds WorldspaceBounds
-	{
-		get
-		{
-			this.UpdateCache();
-			return new Bounds(this._centerTr.position, Vector3.one * this._lightSize);
-		}
-	}
-
-	private void UpdateCache()
-	{
-		if (this._cacheSet)
-		{
-			return;
-		}
-		this._cacheSet = true;
-		this._rendererCount = this._renderers.Length;
-		this.LightSource = base.GetComponentInChildren<Light>();
-		this.HasLight = this.LightSource != null;
-		if (!this.HasLight)
-		{
-			this._centerTr = base.transform;
-			return;
-		}
-		this._centerTr = this.LightSource.transform;
-		this._initialLightColor = this.LightSource.color;
-		this._lightSize = this.LightSource.range * 2f;
-		HDAdditionalLightData hdadditionalLightData;
-		if (!this.LightSource.TryGetComponent<HDAdditionalLightData>(out hdadditionalLightData))
-		{
-			return;
-		}
-		HDLightType type = hdadditionalLightData.type;
-		if (type == HDLightType.Directional || type == HDLightType.Area)
-		{
-			this._preventSubCulling = true;
-		}
-	}
-
-	private void OnValidate()
-	{
-		this._cacheSet = false;
-	}
-
-	private void Awake()
-	{
-		this.UpdateCache();
-		CullableRoom cullableRoom;
-		if (this._centerTr.TryGetComponentInParent(out cullableRoom))
-		{
-			cullableRoom.AddChildCullable(this);
-		}
-		if (this._rendererCount <= 0)
-		{
-			return;
-		}
-		this._copy = new Material(this._renderers[0].sharedMaterials[this._materialId]);
-		for (int i = 0; i < this._rendererCount; i++)
-		{
-			Material[] sharedMaterials = this._renderers[i].sharedMaterials;
-			sharedMaterials[this._materialId] = this._copy;
-			this._renderers[i].materials = sharedMaterials;
-		}
-		if (this._copy.HasProperty(RoomLight.EmissionColor))
-		{
-			this._useEmissionMatProperty = true;
-			this._initialMaterialColor = this._copy.GetColor(RoomLight.EmissionColor);
-		}
-		if (this._copy.HasProperty(RoomLight.BlackoutProperty))
-		{
-			this._useBlackoutMatProperty = true;
-		}
-		this.UpdateWarhead(AlphaWarheadController.InProgress);
-	}
-
-	protected override void UpdateVisible()
-	{
-		base.UpdateVisible();
-		if (!this._isDirty)
-		{
-			return;
-		}
-		this.UpdateIntensity();
-	}
-
-	private void OnDestroy()
-	{
-		RoomLight.RenderedInstances.Remove(this);
-	}
-
-	private void MarkAsDirty()
-	{
-		this._isDirty = true;
-		this.UpdateIntensity();
-	}
-
-	private void UpdateWarhead(bool val)
-	{
-		this._warheadInProgress = val;
-		this.MarkAsDirty();
-	}
-
-	private void UpdateIntensity()
-	{
-		Color color;
-		Color color2;
-		if (this._overrideColorSet)
-		{
-			color = this._overrideColor;
-			color2 = this._overrideColor;
-		}
-		else
-		{
-			color = (this._warheadInProgress ? RoomLight.DefaultWarheadColor : this._initialMaterialColor);
-			color2 = (this._warheadInProgress ? RoomLight.DefaultWarheadColor : this._initialLightColor);
-		}
-		if (!this._blackoutAnimProgress.IsRunning)
-		{
-			this._isDirty = false;
-			this.SetColors(color2, color, (float)(this._targetBlackout ? 0 : 1));
-			return;
-		}
-		float num = Mathf.Clamp01((float)this._blackoutAnimProgress.Elapsed.TotalSeconds);
-		float num2 = (this._targetBlackout ? this.FlickerBlackout(num) : this.FlickerReEnabling(num));
-		this.SetColors(color2, color, num2);
-		if (num < 1f)
-		{
-			return;
-		}
-		this._blackoutAnimProgress.Stop();
-	}
-
-	private float FlickerBlackout(float f)
-	{
-		float num = f * f * f * f;
-		return Mathf.Sin(3.1415927f * f * 20f) * (1f - num);
-	}
-
-	private float FlickerReEnabling(float f)
-	{
-		if (Mathf.Approximately(f, 0f))
-		{
-			return 0f;
-		}
-		float num = f * f * f;
-		return f / (Mathf.Cos(3.1415927f / num) + 2f);
-	}
-
-	private void SetColors(Color lightColor, Color matColor, float intensity)
-	{
-		if (this._rendererCount > 0)
-		{
-			if (this._useEmissionMatProperty)
-			{
-				this._copy.SetColor(RoomLight.EmissionColor, matColor * intensity);
-			}
-			if (this._useBlackoutMatProperty)
-			{
-				this._copy.SetFloat(RoomLight.BlackoutProperty, intensity);
-			}
-		}
-		if (this.HasLight)
-		{
-			this.LightSource.color = lightColor * intensity;
-		}
-	}
-
-	internal void SetOverrideColor(Color overrideColor)
-	{
-		this._overrideColorSet = true;
-		this._overrideColor = overrideColor;
-		this.MarkAsDirty();
-	}
-
-	internal void ResetOverrideColor()
-	{
-		this._overrideColorSet = false;
-		this.MarkAsDirty();
-	}
-
-	internal void SetBlackout(bool state)
-	{
-		this._targetBlackout = state;
-		this._blackoutAnimProgress.Restart();
-		this.MarkAsDirty();
-	}
-
-	protected override void OnVisibilityChanged(bool isVisible)
-	{
-		base.gameObject.SetActive(isVisible && RoomLight.FacilityLightsSetting.Value);
-		if (isVisible)
-		{
-			this.UpdateWarhead(AlphaWarheadController.InProgress);
-			RoomLight.RenderedInstances.Add(this);
-			return;
-		}
-		RoomLight.RenderedInstances.Remove(this);
-	}
-
-	[RuntimeInitializeOnLoadMethod]
-	private static void Init()
-	{
-		AlphaWarheadController.OnProgressChanged += RoomLight.OnWarheadChanged;
-		UserSetting<bool>.AddListener<LightingVideoSetting>(LightingVideoSetting.RenderLights, new Action<bool>(RoomLight.OnRenderLightsSettingChanged));
-	}
-
-	private static void OnRenderLightsSettingChanged(bool newSetting)
-	{
-		foreach (RoomLight roomLight in RoomLight.RenderedInstances)
-		{
-			if (!roomLight.IsCulled)
-			{
-				roomLight.gameObject.SetActive(newSetting);
-			}
-		}
-	}
-
-	private static void OnWarheadChanged(bool newProgress)
-	{
-		foreach (RoomLight roomLight in RoomLight.RenderedInstances)
-		{
-			roomLight.UpdateWarhead(newProgress);
-		}
-	}
-
 	public static readonly Color DefaultWarheadColor = new Color(1f, 0.2f, 0.2f);
 
 	private static readonly int EmissionColor = Shader.PropertyToID("_EmissiveColor");
@@ -295,4 +60,239 @@ public class RoomLight : CullableBehaviour, IBoundsCullable, ICullable
 	private Color _initialMaterialColor;
 
 	internal bool HasLight;
+
+	internal Light LightSource { get; private set; }
+
+	public override bool ShouldBeVisible
+	{
+		get
+		{
+			if (!_preventSubCulling)
+			{
+				return CullingCamera.CheckBoundsVisibility(WorldspaceBounds);
+			}
+			return true;
+		}
+	}
+
+	public Bounds WorldspaceBounds
+	{
+		get
+		{
+			UpdateCache();
+			return new Bounds(_centerTr.position, Vector3.one * _lightSize);
+		}
+	}
+
+	private void UpdateCache()
+	{
+		if (_cacheSet)
+		{
+			return;
+		}
+		_cacheSet = true;
+		_rendererCount = _renderers.Length;
+		LightSource = GetComponentInChildren<Light>();
+		HasLight = LightSource != null;
+		if (!HasLight)
+		{
+			_centerTr = base.transform;
+			return;
+		}
+		_centerTr = LightSource.transform;
+		_initialLightColor = LightSource.color;
+		_lightSize = LightSource.range * 2f;
+		if (LightSource.TryGetComponent<HDAdditionalLightData>(out var component))
+		{
+			HDLightType type = component.type;
+			if (type == HDLightType.Directional || type == HDLightType.Area)
+			{
+				_preventSubCulling = true;
+			}
+		}
+	}
+
+	private void OnValidate()
+	{
+		_cacheSet = false;
+	}
+
+	private void Awake()
+	{
+		UpdateCache();
+		if (_centerTr.TryGetComponentInParent<CullableRoom>(out var comp))
+		{
+			comp.AddChildCullable(this);
+		}
+		if (_rendererCount > 0)
+		{
+			_copy = new Material(_renderers[0].sharedMaterials[_materialId]);
+			for (int i = 0; i < _rendererCount; i++)
+			{
+				Material[] sharedMaterials = _renderers[i].sharedMaterials;
+				sharedMaterials[_materialId] = _copy;
+				_renderers[i].materials = sharedMaterials;
+			}
+			if (_copy.HasProperty(EmissionColor))
+			{
+				_useEmissionMatProperty = true;
+				_initialMaterialColor = _copy.GetColor(EmissionColor);
+			}
+			if (_copy.HasProperty(BlackoutProperty))
+			{
+				_useBlackoutMatProperty = true;
+			}
+			UpdateWarhead(AlphaWarheadController.InProgress);
+		}
+	}
+
+	protected override void UpdateVisible()
+	{
+		base.UpdateVisible();
+		if (_isDirty)
+		{
+			UpdateIntensity();
+		}
+	}
+
+	private void OnDestroy()
+	{
+		RenderedInstances.Remove(this);
+	}
+
+	private void MarkAsDirty()
+	{
+		_isDirty = true;
+		UpdateIntensity();
+	}
+
+	private void UpdateWarhead(bool val)
+	{
+		_warheadInProgress = val;
+		MarkAsDirty();
+	}
+
+	private void UpdateIntensity()
+	{
+		Color matColor;
+		Color lightColor;
+		if (_overrideColorSet)
+		{
+			matColor = _overrideColor;
+			lightColor = _overrideColor;
+		}
+		else
+		{
+			matColor = (_warheadInProgress ? DefaultWarheadColor : _initialMaterialColor);
+			lightColor = (_warheadInProgress ? DefaultWarheadColor : _initialLightColor);
+		}
+		if (!_blackoutAnimProgress.IsRunning)
+		{
+			_isDirty = false;
+			SetColors(lightColor, matColor, (!_targetBlackout) ? 1 : 0);
+			return;
+		}
+		float num = Mathf.Clamp01((float)_blackoutAnimProgress.Elapsed.TotalSeconds);
+		float intensity = (_targetBlackout ? FlickerBlackout(num) : FlickerReEnabling(num));
+		SetColors(lightColor, matColor, intensity);
+		if (!(num < 1f))
+		{
+			_blackoutAnimProgress.Stop();
+		}
+	}
+
+	private float FlickerBlackout(float f)
+	{
+		float num = f * f * f * f;
+		return Mathf.Sin(MathF.PI * f * 20f) * (1f - num);
+	}
+
+	private float FlickerReEnabling(float f)
+	{
+		if (Mathf.Approximately(f, 0f))
+		{
+			return 0f;
+		}
+		float num = f * f * f;
+		return f / (Mathf.Cos(MathF.PI / num) + 2f);
+	}
+
+	private void SetColors(Color lightColor, Color matColor, float intensity)
+	{
+		if (_rendererCount > 0)
+		{
+			if (_useEmissionMatProperty)
+			{
+				_copy.SetColor(EmissionColor, matColor * intensity);
+			}
+			if (_useBlackoutMatProperty)
+			{
+				_copy.SetFloat(BlackoutProperty, intensity);
+			}
+		}
+		if (HasLight)
+		{
+			LightSource.color = lightColor * intensity;
+		}
+	}
+
+	internal void SetOverrideColor(Color overrideColor)
+	{
+		_overrideColorSet = true;
+		_overrideColor = overrideColor;
+		MarkAsDirty();
+	}
+
+	internal void ResetOverrideColor()
+	{
+		_overrideColorSet = false;
+		MarkAsDirty();
+	}
+
+	internal void SetBlackout(bool state)
+	{
+		_targetBlackout = state;
+		_blackoutAnimProgress.Restart();
+		MarkAsDirty();
+	}
+
+	protected override void OnVisibilityChanged(bool isVisible)
+	{
+		base.gameObject.SetActive(isVisible && FacilityLightsSetting.Value);
+		if (isVisible)
+		{
+			UpdateWarhead(AlphaWarheadController.InProgress);
+			RenderedInstances.Add(this);
+		}
+		else
+		{
+			RenderedInstances.Remove(this);
+		}
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		AlphaWarheadController.OnProgressChanged += OnWarheadChanged;
+		UserSetting<bool>.AddListener(LightingVideoSetting.RenderLights, OnRenderLightsSettingChanged);
+	}
+
+	private static void OnRenderLightsSettingChanged(bool newSetting)
+	{
+		foreach (RoomLight renderedInstance in RenderedInstances)
+		{
+			if (!renderedInstance.IsCulled)
+			{
+				renderedInstance.gameObject.SetActive(newSetting);
+			}
+		}
+	}
+
+	private static void OnWarheadChanged(bool newProgress)
+	{
+		foreach (RoomLight renderedInstance in RenderedInstances)
+		{
+			renderedInstance.UpdateWarhead(newProgress);
+		}
+	}
 }

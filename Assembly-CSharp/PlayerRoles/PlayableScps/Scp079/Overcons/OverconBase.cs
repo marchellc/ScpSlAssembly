@@ -1,23 +1,21 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079.Overcons
+namespace PlayerRoles.PlayableScps.Scp079.Overcons;
+
+public abstract class OverconBase : MonoBehaviour
 {
-	public abstract class OverconBase : MonoBehaviour
+	public static readonly HashSet<OverconBase> ActiveInstances = new HashSet<OverconBase>();
+
+	public virtual bool IsHighlighted { get; internal set; }
+
+	protected virtual void OnEnable()
 	{
-		public virtual bool IsHighlighted { get; internal set; }
+		ActiveInstances.Add(this);
+	}
 
-		protected virtual void OnEnable()
-		{
-			OverconBase.ActiveInstances.Add(this);
-		}
-
-		protected virtual void OnDisable()
-		{
-			OverconBase.ActiveInstances.Remove(this);
-		}
-
-		public static readonly HashSet<OverconBase> ActiveInstances = new HashSet<OverconBase>();
+	protected virtual void OnDisable()
+	{
+		ActiveInstances.Remove(this);
 	}
 }

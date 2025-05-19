@@ -1,10 +1,8 @@
-﻿using System;
 using Mirror;
 
-namespace PlayerRoles.SpawnData
+namespace PlayerRoles.SpawnData;
+
+public interface ISpawnDataReader
 {
-	public interface ISpawnDataReader
-	{
-		void ReadSpawnData(NetworkReader reader);
-	}
+	void ReadSpawnData(NetworkReader reader);
 }

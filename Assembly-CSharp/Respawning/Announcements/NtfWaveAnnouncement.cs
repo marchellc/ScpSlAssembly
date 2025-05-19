@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using MapGeneration.Holidays;
@@ -8,78 +7,78 @@ using Subtitles;
 using Utils.Networking;
 using Utils.NonAllocLINQ;
 
-namespace Respawning.Announcements
+namespace Respawning.Announcements;
+
+public class NtfWaveAnnouncement : WaveAnnouncementBase
 {
-	public class NtfWaveAnnouncement : WaveAnnouncementBase
+	private readonly Team _team;
+
+	private int ScpsLeft => ReferenceHub.AllHubs.Count((ReferenceHub x) => x.IsSCP(includeZombies: false));
+
+	public NtfWaveAnnouncement(Team team)
 	{
-		public NtfWaveAnnouncement(Team team)
-		{
-			this._team = team;
-		}
+		_team = team;
+	}
 
-		public override void CreateAnnouncementString(StringBuilder builder)
+	public override void CreateAnnouncementString(StringBuilder builder)
+	{
+		if (!NamingRulesManager.TryGetNamingRule(_team, out var rule))
 		{
-			UnitNamingRule unitNamingRule;
-			if (!NamingRulesManager.TryGetNamingRule(this._team, out unitNamingRule))
-			{
-				return;
-			}
-			string lastGeneratedName = unitNamingRule.LastGeneratedName;
-			string text = unitNamingRule.TranslateToCassie(lastGeneratedName);
-			int num = ReferenceHub.AllHubs.Count((ReferenceHub x) => x.IsSCP(false));
-			if (HolidayUtils.IsHolidayActive(HolidayType.Christmas, false, false))
-			{
-				builder.Append("XMAS_EPSILON11 ");
-				builder.Append(text);
-				builder.Append(" XMAS_HASENTERED ");
-				builder.Append(num);
-				builder.Append(" XMAS_SCPSUBJECTS");
-			}
-			else
-			{
-				builder.Append("MTFUNIT EPSILON 11 DESIGNATED ");
-				builder.Append(text);
-				builder.Append(" HASENTERED ALLREMAINING ");
-				if (num == 0)
-				{
-					builder.Append("NOSCPSLEFT");
-				}
-				else
-				{
-					builder.Append("AWAITINGRECONTAINMENT ");
-					builder.Append(num);
-					if (num == 1)
-					{
-						builder.Append(" SCPSUBJECT");
-					}
-					else
-					{
-						builder.Append(" SCPSUBJECTS");
-					}
-				}
-			}
-			List<SubtitlePart> list = new List<SubtitlePart>
-			{
-				new SubtitlePart(SubtitleType.NTFEntrance, new string[] { lastGeneratedName })
-			};
-			if (num != 0)
-			{
-				if (num != 1)
-				{
-					list.Add(new SubtitlePart(SubtitleType.AwaitContainPlural, new string[] { num.ToString() }));
-				}
-				else
-				{
-					list.Add(new SubtitlePart(SubtitleType.AwaitContainSingle, null));
-				}
-			}
-			else
-			{
-				list.Add(new SubtitlePart(SubtitleType.ThreatRemains, null));
-			}
-			new SubtitleMessage(list.ToArray()).SendToAuthenticated(0);
+			return;
 		}
+		string lastGeneratedName = rule.LastGeneratedName;
+		int scpsLeft = ScpsLeft;
+		string value = rule.TranslateToCassie(lastGeneratedName);
+		if (HolidayUtils.IsHolidayActive(HolidayType.Christmas))
+		{
+			builder.Append("XMAS_EPSILON11 ");
+			builder.Append(value);
+			builder.Append(" XMAS_HASENTERED ");
+			builder.Append(scpsLeft);
+			builder.Append(" XMAS_SCPSUBJECTS");
+			return;
+		}
+		builder.Append("MTFUNIT EPSILON 11 DESIGNATED ");
+		builder.Append(value);
+		builder.Append(" HASENTERED ALLREMAINING ");
+		if (scpsLeft == 0)
+		{
+			builder.Append("NOSCPSLEFT");
+			return;
+		}
+		builder.Append("AWAITINGRECONTAINMENT ");
+		builder.Append(scpsLeft);
+		if (scpsLeft == 1)
+		{
+			builder.Append(" SCPSUBJECT");
+		}
+		else
+		{
+			builder.Append(" SCPSUBJECTS");
+		}
+	}
 
-		private readonly Team _team;
+	public override void SendSubtitles()
+	{
+		if (NamingRulesManager.TryGetNamingRule(_team, out var rule))
+		{
+			List<SubtitlePart> list = new List<SubtitlePart>();
+			list.Add(new SubtitlePart(SubtitleType.NTFEntrance, rule.LastGeneratedName));
+			List<SubtitlePart> list2 = list;
+			int scpsLeft = ScpsLeft;
+			switch (scpsLeft)
+			{
+			case 0:
+				list2.Add(new SubtitlePart(SubtitleType.ThreatRemains, (string[])null));
+				break;
+			case 1:
+				list2.Add(new SubtitlePart(SubtitleType.AwaitContainSingle, (string[])null));
+				break;
+			default:
+				list2.Add(new SubtitlePart(SubtitleType.AwaitContainPlural, scpsLeft.ToString()));
+				break;
+			}
+			new SubtitleMessage(list2.ToArray()).SendToAuthenticated();
+		}
 	}
 }

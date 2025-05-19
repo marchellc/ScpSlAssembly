@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public interface IWearableItem
 {
-	public interface IWearableItem
-	{
-		bool IsWorn { get; }
+	bool IsWorn { get; }
 
-		WearableSlot Slot { get; }
-	}
+	WearableSlot Slot { get; }
 }

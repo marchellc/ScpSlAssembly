@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Attachments
+namespace InventorySystem.Items.Firearms.Attachments;
+
+public class LabelledAttachmentArrayAttribute : PropertyAttribute
 {
-	public class LabelledAttachmentArrayAttribute : PropertyAttribute
-	{
-	}
 }

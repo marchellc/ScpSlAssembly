@@ -1,12 +1,9 @@
-﻿using System;
+namespace CursorManagement;
 
-namespace CursorManagement
+public enum CursorOverrideMode
 {
-	public enum CursorOverrideMode
-	{
-		NoOverride,
-		Centered,
-		Confined,
-		Free
-	}
+	NoOverride,
+	Centered,
+	Confined,
+	Free
 }

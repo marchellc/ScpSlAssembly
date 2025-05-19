@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles;
 
-namespace PlayerRoles
+public interface IObfuscatedRole
 {
-	public interface IObfuscatedRole
-	{
-		RoleTypeId GetRoleForUser(ReferenceHub receiver);
-	}
+	RoleTypeId GetRoleForUser(ReferenceHub receiver);
 }

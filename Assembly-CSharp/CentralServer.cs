@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,6 +9,18 @@ using UnityEngine;
 
 public class CentralServer : MonoBehaviour
 {
+	public static object RefreshLock;
+
+	private static string _serversPath;
+
+	private static bool _started;
+
+	private static List<string> _workingServers;
+
+	private static DateTime _lastReset;
+
+	internal static bool Abort;
+
 	public static string MasterUrl { get; internal set; }
 
 	public static string StandardUrl { get; internal set; }
@@ -23,265 +35,208 @@ public class CentralServer : MonoBehaviour
 
 	private void Start()
 	{
-		CentralServer.Init();
+		Init();
 	}
 
 	internal static void Init()
 	{
-		if (CentralServer._started)
+		if (_started)
 		{
 			return;
 		}
-		CentralServer._started = true;
-		if (File.Exists(FileManager.GetAppFolder(true, false, "") + "testserver.txt"))
+		_started = true;
+		if (File.Exists(FileManager.GetAppFolder() + "testserver.txt"))
 		{
-			CentralServer.StandardUrl = "https://test.scpslgame.com/";
-			CentralServer.MasterUrl = "https://test.scpslgame.com/";
-			CentralServer.SelectedServer = "TEST";
-			CentralServer.TestServer = true;
-			CentralServer.ServerSelected = true;
-			ServerConsole.AddLog("Using TEST central server: " + CentralServer.MasterUrl, ConsoleColor.Gray, false);
+			StandardUrl = "https://test.scpslgame.com/";
+			MasterUrl = "https://test.scpslgame.com/";
+			SelectedServer = "TEST";
+			TestServer = true;
+			ServerSelected = true;
+			ServerConsole.AddLog("Using TEST central server: " + MasterUrl);
 			return;
 		}
-		CentralServer.MasterUrl = "https://api.scpslgame.com/";
-		CentralServer.StandardUrl = "https://api.scpslgame.com/";
-		CentralServer.TestServer = false;
-		CentralServer._lastReset = DateTime.MinValue;
-		CentralServer.Servers = new string[0];
-		CentralServer._workingServers = new List<string>();
-		CentralServer.RefreshLock = new object();
-		CentralServer._serversPath = FileManager.GetAppFolder(true, false, "") + "internal/";
-		if (!Directory.Exists(CentralServer._serversPath))
+		MasterUrl = "https://api.scpslgame.com/";
+		StandardUrl = "https://api.scpslgame.com/";
+		TestServer = false;
+		_lastReset = DateTime.MinValue;
+		Servers = new string[0];
+		_workingServers = new List<string>();
+		RefreshLock = new object();
+		_serversPath = FileManager.GetAppFolder() + "internal/";
+		if (!Directory.Exists(_serversPath))
 		{
-			Directory.CreateDirectory(CentralServer._serversPath);
+			Directory.CreateDirectory(_serversPath);
 		}
-		CentralServer._serversPath += "CentralServers";
-		if (File.Exists(CentralServer._serversPath))
+		_serversPath += "CentralServers";
+		if (File.Exists(_serversPath))
 		{
-			CentralServer.Servers = FileManager.ReadAllLines(CentralServer._serversPath);
-			if (CentralServer.Servers.Any((string server) => !Regex.IsMatch(server, "^[a-zA-Z0-9]*$")))
+			Servers = FileManager.ReadAllLines(_serversPath);
+			if (Servers.Any((string server) => !Regex.IsMatch(server, "^[a-zA-Z0-9]*$")))
 			{
-				global::GameCore.Console.AddLog("Malformed server found on the list. Removing the list and redownloading it from api.scpslgame.com.", Color.yellow, false, global::GameCore.Console.ConsoleLogType.Log);
-				CentralServer.Servers = new string[0];
+				GameCore.Console.AddLog("Malformed server found on the list. Removing the list and redownloading it from api.scpslgame.com.", Color.yellow);
+				Servers = new string[0];
 				try
 				{
-					File.Delete(CentralServer._serversPath);
+					File.Delete(_serversPath);
 				}
 				catch (Exception ex)
 				{
-					global::GameCore.Console.AddLog("Failed to delete malformed central server list.\nException: " + ex.Message, Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
+					GameCore.Console.AddLog("Failed to delete malformed central server list.\nException: " + ex.Message, Color.red);
 				}
-				new Thread(delegate
+				Thread thread = new Thread((ThreadStart)delegate
 				{
-					CentralServer.RefreshServerList(true, true);
-				})
-				{
-					IsBackground = true,
-					Priority = global::System.Threading.ThreadPriority.BelowNormal,
-					Name = "SCP:SL Server list refreshing"
-				}.Start();
+					RefreshServerList(planned: true, loop: true);
+				});
+				thread.IsBackground = true;
+				thread.Priority = System.Threading.ThreadPriority.BelowNormal;
+				thread.Name = "SCP:SL Server list refreshing";
+				thread.Start();
 				return;
 			}
-			CentralServer._workingServers = CentralServer.Servers.ToList<string>();
+			_workingServers = Servers.ToList();
 			if (!ServerStatic.IsDedicated)
 			{
-				global::GameCore.Console.AddLog("Cached central servers count: " + CentralServer.Servers.Length.ToString(), Color.grey, false, global::GameCore.Console.ConsoleLogType.Log);
+				GameCore.Console.AddLog("Cached central servers count: " + Servers.Length, Color.grey);
 			}
-			if (CentralServer.Servers.Length != 0)
+			if (Servers.Length != 0)
 			{
-				global::System.Random random = new global::System.Random();
-				CentralServer.SelectedServer = CentralServer.Servers[random.Next(CentralServer.Servers.Length)];
-				CentralServer.StandardUrl = "https://" + CentralServer.SelectedServer.ToLower() + ".scpslgame.com/";
+				System.Random random = new System.Random();
+				SelectedServer = Servers[random.Next(Servers.Length)];
+				StandardUrl = "https://" + SelectedServer.ToLower() + ".scpslgame.com/";
 				if (ServerStatic.IsDedicated)
 				{
-					ServerConsole.AddLog(string.Concat(new string[]
-					{
-						"Selected central server: ",
-						CentralServer.SelectedServer,
-						" (",
-						CentralServer.StandardUrl,
-						")"
-					}), ConsoleColor.Gray, false);
+					ServerConsole.AddLog("Selected central server: " + SelectedServer + " (" + StandardUrl + ")");
 				}
 				else
 				{
-					global::GameCore.Console.AddLog(string.Concat(new string[]
-					{
-						"Selected central server: ",
-						CentralServer.SelectedServer,
-						" (",
-						CentralServer.StandardUrl,
-						")"
-					}), Color.grey, false, global::GameCore.Console.ConsoleLogType.Log);
+					GameCore.Console.AddLog("Selected central server: " + SelectedServer + " (" + StandardUrl + ")", Color.grey);
 				}
 			}
 		}
-		new Thread(delegate
+		Thread thread2 = new Thread((ThreadStart)delegate
 		{
-			CentralServer.RefreshServerList(true, true);
-		})
-		{
-			IsBackground = true,
-			Priority = global::System.Threading.ThreadPriority.BelowNormal,
-			Name = "SCP:SL Server list refreshing"
-		}.Start();
+			RefreshServerList(planned: true, loop: true);
+		});
+		thread2.IsBackground = true;
+		thread2.Priority = System.Threading.ThreadPriority.BelowNormal;
+		thread2.Name = "SCP:SL Server list refreshing";
+		thread2.Start();
 	}
 
 	private static void RefreshServerList(bool planned = false, bool loop = false)
 	{
-		while (!CentralServer.Abort)
+		while (!Abort)
 		{
-			object refreshLock = CentralServer.RefreshLock;
-			lock (refreshLock)
+			lock (RefreshLock)
 			{
-				if (CentralServer.ServerSelected)
+				if (ServerSelected)
 				{
 					break;
 				}
-				if (CentralServer._workingServers.Count == 0)
+				if (_workingServers.Count == 0)
 				{
-					if (CentralServer.Servers.Length == 0)
+					if (Servers.Length == 0)
 					{
-						CentralServer.StandardUrl = "https://api.scpslgame.com/";
-						CentralServer.SelectedServer = "Primary API";
+						StandardUrl = "https://api.scpslgame.com/";
+						SelectedServer = "Primary API";
 					}
 					else
 					{
-						CentralServer._workingServers = CentralServer.Servers.ToList<string>();
-						CentralServer.StandardUrl = "https://" + CentralServer._workingServers[0] + ".scpslgame.com/";
-						CentralServer.SelectedServer = CentralServer._workingServers[0];
+						_workingServers = Servers.ToList();
+						StandardUrl = "https://" + _workingServers[0] + ".scpslgame.com/";
+						SelectedServer = _workingServers[0];
 					}
 				}
 				byte b = 1;
-				while (!CentralServer.Abort)
+				while (!Abort && b != 3)
 				{
-					if (b == 3)
-					{
-						break;
-					}
-					b += 1;
+					b++;
 					try
 					{
-						string[] array = HttpQuery.Get(CentralServer.StandardUrl + "servers.php").Split(';', StringSplitOptions.None);
-						if (File.Exists(CentralServer._serversPath))
+						string[] array = HttpQuery.Get(StandardUrl + "servers.php").Split(';');
+						if (File.Exists(_serversPath))
 						{
-							File.Delete(CentralServer._serversPath);
+							File.Delete(_serversPath);
 						}
-						FileManager.WriteToFile(array, CentralServer._serversPath, false);
-						global::GameCore.Console.AddLog("Updated list of central servers.", Color.green, false, global::GameCore.Console.ConsoleLogType.Log);
-						global::GameCore.Console.AddLog("Central servers count: " + array.Length.ToString(), Color.cyan, false, global::GameCore.Console.ConsoleLogType.Log);
-						CentralServer.Servers = array;
-						if (planned)
+						FileManager.WriteToFile(array, _serversPath);
+						GameCore.Console.AddLog("Updated list of central servers.", Color.green);
+						GameCore.Console.AddLog("Central servers count: " + array.Length, Color.cyan);
+						Servers = array;
+						if (planned && Servers.All((string srv) => srv != SelectedServer))
 						{
-							if (CentralServer.Servers.All((string srv) => srv != CentralServer.SelectedServer))
-							{
-								CentralServer._workingServers = CentralServer.Servers.ToList<string>();
-								CentralServer.ChangeCentralServer(false);
-							}
+							_workingServers = Servers.ToList();
+							ChangeCentralServer(remove: false);
 						}
-						CentralServer.ServerSelected = true;
-						break;
+						ServerSelected = true;
 					}
 					catch (Exception ex)
 					{
-						global::GameCore.Console.AddLog("Can't update central servers list!", Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-						global::GameCore.Console.AddLog("Error: " + ex.Message, Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-						if (CentralServer.SelectedServer == "Primary API")
+						GameCore.Console.AddLog("Can't update central servers list!", Color.red);
+						GameCore.Console.AddLog("Error: " + ex.Message, Color.red);
+						if (SelectedServer == "Primary API")
 						{
-							CentralServer.ServerSelected = true;
+							ServerSelected = true;
 							break;
 						}
-						CentralServer.ChangeCentralServer(true);
+						ChangeCentralServer(remove: true);
+						continue;
 					}
+					break;
 				}
 			}
 			if (!loop)
 			{
-				return;
+				break;
 			}
-			uint num = 0U;
-			while (num < 180U && !CentralServer.Abort)
+			for (uint num = 0u; num < 180; num++)
 			{
+				if (Abort)
+				{
+					break;
+				}
 				Thread.Sleep(5000);
-				num += 1U;
 			}
 		}
 	}
 
 	internal static bool ChangeCentralServer(bool remove)
 	{
-		CentralServer.ServerSelected = false;
-		CentralServer.TestServer = false;
-		if (CentralServer.SelectedServer == "Primary API")
+		ServerSelected = false;
+		TestServer = false;
+		if (SelectedServer == "Primary API")
 		{
-			if (CentralServer._lastReset >= DateTime.Now.AddMinutes(-2.0))
+			if (_lastReset >= DateTime.Now.AddMinutes(-2.0))
 			{
 				return false;
 			}
-			CentralServer.RefreshServerList(false, false);
+			RefreshServerList();
 			return true;
 		}
-		else
+		if (_workingServers.Count == 0)
 		{
-			if (CentralServer._workingServers.Count == 0)
-			{
-				global::GameCore.Console.AddLog("All known central servers aren't working.", Color.yellow, false, global::GameCore.Console.ConsoleLogType.Log);
-				CentralServer._workingServers.Add("API");
-				CentralServer.SelectedServer = "Primary API";
-				CentralServer.StandardUrl = "https://api.scpslgame.com/";
-				global::GameCore.Console.AddLog(string.Concat(new string[]
-				{
-					"Changed central server: ",
-					CentralServer.SelectedServer,
-					" (",
-					CentralServer.StandardUrl,
-					")"
-				}), Color.yellow, false, global::GameCore.Console.ConsoleLogType.Log);
-				return true;
-			}
-			if (remove && CentralServer._workingServers.Contains(CentralServer.SelectedServer))
-			{
-				CentralServer._workingServers.Remove(CentralServer.SelectedServer);
-			}
-			if (CentralServer._workingServers.Count == 0)
-			{
-				CentralServer._workingServers.Add("API");
-				CentralServer.SelectedServer = "Primary API";
-				CentralServer.StandardUrl = "https://api.scpslgame.com/";
-				global::GameCore.Console.AddLog(string.Concat(new string[]
-				{
-					"Changed central server: ",
-					CentralServer.SelectedServer,
-					" (",
-					CentralServer.StandardUrl,
-					")"
-				}), Color.yellow, false, global::GameCore.Console.ConsoleLogType.Log);
-				return true;
-			}
-			global::System.Random random = new global::System.Random();
-			CentralServer.SelectedServer = CentralServer._workingServers[random.Next(0, CentralServer._workingServers.Count)];
-			CentralServer.StandardUrl = "https://" + CentralServer.SelectedServer.ToLower() + ".scpslgame.com/";
-			global::GameCore.Console.AddLog(string.Concat(new string[]
-			{
-				"Changed central server: ",
-				CentralServer.SelectedServer,
-				" (",
-				CentralServer.StandardUrl,
-				")"
-			}), Color.yellow, false, global::GameCore.Console.ConsoleLogType.Log);
+			GameCore.Console.AddLog("All known central servers aren't working.", Color.yellow);
+			_workingServers.Add("API");
+			SelectedServer = "Primary API";
+			StandardUrl = "https://api.scpslgame.com/";
+			GameCore.Console.AddLog("Changed central server: " + SelectedServer + " (" + StandardUrl + ")", Color.yellow);
 			return true;
 		}
+		if (remove && _workingServers.Contains(SelectedServer))
+		{
+			_workingServers.Remove(SelectedServer);
+		}
+		if (_workingServers.Count == 0)
+		{
+			_workingServers.Add("API");
+			SelectedServer = "Primary API";
+			StandardUrl = "https://api.scpslgame.com/";
+			GameCore.Console.AddLog("Changed central server: " + SelectedServer + " (" + StandardUrl + ")", Color.yellow);
+			return true;
+		}
+		System.Random random = new System.Random();
+		SelectedServer = _workingServers[random.Next(0, _workingServers.Count)];
+		StandardUrl = "https://" + SelectedServer.ToLower() + ".scpslgame.com/";
+		GameCore.Console.AddLog("Changed central server: " + SelectedServer + " (" + StandardUrl + ")", Color.yellow);
+		return true;
 	}
-
-	public static object RefreshLock;
-
-	private static string _serversPath;
-
-	private static bool _started;
-
-	private static List<string> _workingServers;
-
-	private static DateTime _lastReset;
-
-	internal static bool Abort;
 }

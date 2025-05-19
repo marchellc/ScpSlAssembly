@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using AudioPooling;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
@@ -9,192 +9,180 @@ using PlayerRoles.PlayableScps.Scp079.Overcons;
 using PlayerRoles.Spectating;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079
-{
-	public abstract class Scp079DoorAbility : Scp079KeyAbilityBase
-	{
-		public static event Action<Scp079Role, DoorVariant> OnServerAnyDoorInteraction;
+namespace PlayerRoles.PlayableScps.Scp079;
 
-		public override bool IsVisible
+public abstract class Scp079DoorAbility : Scp079KeyAbilityBase
+{
+	protected DoorVariant LastDoor;
+
+	private static string _deniedText;
+
+	private int _lastCost;
+
+	private bool _lastActionValid;
+
+	private int _failMessageAux;
+
+	private bool _failMessageDenied;
+
+	public override bool IsVisible
+	{
+		get
 		{
-			get
+			if (Scp079CursorManager.LockCameras)
 			{
-				if (Scp079CursorManager.LockCameras)
-				{
-					return false;
-				}
-				DoorOvercon doorOvercon = OverconManager.Singleton.HighlightedOvercon as DoorOvercon;
-				if (doorOvercon != null && doorOvercon != null)
-				{
-					this.LastDoor = doorOvercon.Target;
-					return true;
-				}
 				return false;
 			}
-		}
-
-		public override bool IsReady
-		{
-			get
+			if (OverconManager.Singleton.HighlightedOvercon is DoorOvercon doorOvercon && doorOvercon != null)
 			{
-				DoorAction targetAction = this.TargetAction;
-				this._lastActionValid = Scp079DoorAbility.ValidateAction(targetAction, this.LastDoor, base.CurrentCamSync.CurrentCamera);
-				this._lastCost = this.GetCostForDoor(targetAction, this.LastDoor);
-				return this._lastActionValid && (float)this._lastCost <= base.AuxManager.CurrentAux;
+				LastDoor = doorOvercon.Target;
+				return true;
 			}
+			return false;
 		}
+	}
 
-		public override string FailMessage
+	public override bool IsReady
+	{
+		get
 		{
-			get
+			DoorAction targetAction = TargetAction;
+			_lastActionValid = ValidateAction(targetAction, LastDoor, base.CurrentCamSync.CurrentCamera);
+			_lastCost = GetCostForDoor(targetAction, LastDoor);
+			if (_lastActionValid)
 			{
-				if (this._failMessageDenied)
-				{
-					return Scp079DoorAbility._deniedText;
-				}
-				if (base.AuxManager.CurrentAux >= (float)this._failMessageAux)
+				return (float)_lastCost <= base.AuxManager.CurrentAux;
+			}
+			return false;
+		}
+	}
+
+	public override string FailMessage
+	{
+		get
+		{
+			if (!_failMessageDenied)
+			{
+				if (!(base.AuxManager.CurrentAux < (float)_failMessageAux))
 				{
 					return null;
 				}
-				return base.GetNoAuxMessage((float)this._failMessageAux);
+				return GetNoAuxMessage(_failMessageAux);
 			}
+			return _deniedText;
 		}
+	}
 
-		protected abstract DoorAction TargetAction { get; }
+	protected abstract DoorAction TargetAction { get; }
 
-		protected abstract int GetCostForDoor(DoorAction action, DoorVariant door);
+	public static event Action<Scp079Role, DoorVariant> OnServerAnyDoorInteraction;
 
-		protected override void Trigger()
+	protected abstract int GetCostForDoor(DoorAction action, DoorVariant door);
+
+	protected override void Trigger()
+	{
+		ClientSendCmd();
+	}
+
+	protected override void Start()
+	{
+		base.Start();
+		_deniedText = Translations.Get(Scp079HudTranslation.DoorAccessDenied);
+		base.CurrentCamSync.OnCameraChanged += delegate
 		{
-			base.ClientSendCmd();
+			_failMessageAux = 0;
+			_failMessageDenied = false;
+		};
+	}
+
+	public override void OnFailMessageAssigned()
+	{
+		_failMessageDenied = !_lastActionValid;
+		_failMessageAux = _lastCost;
+	}
+
+	public void PlayConfirmationSound(AudioClip sound)
+	{
+		if (base.Role.IsLocalPlayer || base.Owner.IsLocallySpectated())
+		{
+			AudioSourcePoolManager.Play2D(sound);
 		}
+	}
 
-		protected override void Start()
+	public static bool ValidateAction(DoorAction action, DoorVariant door, Scp079Camera currentCamera)
+	{
+		if (!CheckVisibility(door, currentCamera))
 		{
-			base.Start();
-			Scp079DoorAbility._deniedText = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.DoorAccessDenied);
-			base.CurrentCamSync.OnCameraChanged += delegate
-			{
-				this._failMessageAux = 0;
-				this._failMessageDenied = false;
-			};
-		}
-
-		public override void OnFailMessageAssigned()
-		{
-			this._failMessageDenied = !this._lastActionValid;
-			this._failMessageAux = this._lastCost;
-		}
-
-		public void PlayConfirmationSound(AudioClip sound)
-		{
-			if (!base.Role.IsLocalPlayer && !base.Owner.IsLocallySpectated())
-			{
-				return;
-			}
-			AudioSourcePoolManager.Play2D(sound, 1f, MixerChannel.DefaultSfx, 1f);
-		}
-
-		public static bool ValidateAction(DoorAction action, DoorVariant door, Scp079Camera currentCamera)
-		{
-			if (!Scp079DoorAbility.CheckVisibility(door, currentCamera))
-			{
-				return false;
-			}
-			DoorLockReason activeLocks = (DoorLockReason)door.ActiveLocks;
-			if (activeLocks.HasFlagFast(DoorLockReason.Warhead) || activeLocks.HasFlagFast(DoorLockReason.Isolation))
-			{
-				return false;
-			}
-			DoorLockMode mode = DoorLockUtils.GetMode((DoorLockReason)door.ActiveLocks);
-			IDamageableDoor damageableDoor = door as IDamageableDoor;
-			if (damageableDoor != null && damageableDoor.IsDestroyed)
-			{
-				return false;
-			}
-			if (mode.HasFlagFast(DoorLockMode.ScpOverride))
-			{
-				return true;
-			}
-			switch (action)
-			{
-			case DoorAction.Opened:
-				return mode.HasFlagFast(DoorLockMode.CanOpen);
-			case DoorAction.Closed:
-				return mode.HasFlagFast(DoorLockMode.CanClose);
-			case DoorAction.Locked:
-				return mode != DoorLockMode.FullLock && !(door is CheckpointDoor);
-			case DoorAction.Unlocked:
-				return true;
-			}
 			return false;
 		}
-
-		public static bool CheckVisibility(DoorVariant door, Scp079Camera currentCamera)
+		DoorLockReason activeLocks = (DoorLockReason)door.ActiveLocks;
+		if (activeLocks.HasFlagFast(DoorLockReason.Warhead) || activeLocks.HasFlagFast(DoorLockReason.Isolation))
 		{
-			RoomIdentifier[] rooms = door.Rooms;
-			for (int i = 0; i < rooms.Length; i++)
-			{
-				if (!(rooms[i] != currentCamera.Room))
-				{
-					INonInteractableDoor nonInteractableDoor = door as INonInteractableDoor;
-					return nonInteractableDoor == null || !nonInteractableDoor.IgnoreLockdowns;
-				}
-			}
 			return false;
 		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		DoorLockMode mode = DoorLockUtils.GetMode((DoorLockReason)door.ActiveLocks);
+		if (door is IDamageableDoor { IsDestroyed: not false })
 		{
-			Scp079DoorLockChanger.OnServerDoorLocked += delegate(Scp079Role role, DoorVariant dv)
-			{
-				Action<Scp079Role, DoorVariant> onServerAnyDoorInteraction = Scp079DoorAbility.OnServerAnyDoorInteraction;
-				if (onServerAnyDoorInteraction == null)
-				{
-					return;
-				}
-				onServerAnyDoorInteraction(role, dv);
-			};
-			Scp079DoorStateChanger.OnServerDoorToggled += delegate(Scp079Role role, DoorVariant dv)
-			{
-				Action<Scp079Role, DoorVariant> onServerAnyDoorInteraction2 = Scp079DoorAbility.OnServerAnyDoorInteraction;
-				if (onServerAnyDoorInteraction2 == null)
-				{
-					return;
-				}
-				onServerAnyDoorInteraction2(role, dv);
-			};
-			Scp079ElevatorStateChanger.OnServerElevatorDoorClosed += delegate(Scp079Role role, ElevatorDoor dv)
-			{
-				Action<Scp079Role, DoorVariant> onServerAnyDoorInteraction3 = Scp079DoorAbility.OnServerAnyDoorInteraction;
-				if (onServerAnyDoorInteraction3 == null)
-				{
-					return;
-				}
-				onServerAnyDoorInteraction3(role, dv);
-			};
-			Scp079LockdownRoomAbility.OnServerDoorLocked += delegate(Scp079Role role, DoorVariant dv)
-			{
-				Action<Scp079Role, DoorVariant> onServerAnyDoorInteraction4 = Scp079DoorAbility.OnServerAnyDoorInteraction;
-				if (onServerAnyDoorInteraction4 == null)
-				{
-					return;
-				}
-				onServerAnyDoorInteraction4(role, dv);
-			};
+			return false;
 		}
+		if (mode.HasFlagFast(DoorLockMode.ScpOverride))
+		{
+			return true;
+		}
+		switch (action)
+		{
+		case DoorAction.Opened:
+			return mode.HasFlagFast(DoorLockMode.CanOpen);
+		case DoorAction.Closed:
+			return mode.HasFlagFast(DoorLockMode.CanClose);
+		case DoorAction.Locked:
+			if (mode != 0)
+			{
+				return !(door is CheckpointDoor);
+			}
+			return false;
+		case DoorAction.Unlocked:
+			return true;
+		default:
+			return false;
+		}
+	}
 
-		protected DoorVariant LastDoor;
+	public static bool CheckVisibility(DoorVariant door, Scp079Camera currentCamera)
+	{
+		RoomIdentifier[] rooms = door.Rooms;
+		for (int i = 0; i < rooms.Length; i++)
+		{
+			if (!(rooms[i] != currentCamera.Room))
+			{
+				if (door is INonInteractableDoor nonInteractableDoor)
+				{
+					return !nonInteractableDoor.IgnoreLockdowns;
+				}
+				return true;
+			}
+		}
+		return false;
+	}
 
-		private static string _deniedText;
-
-		private int _lastCost;
-
-		private bool _lastActionValid;
-
-		private int _failMessageAux;
-
-		private bool _failMessageDenied;
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		Scp079DoorLockChanger.OnServerDoorLocked += delegate(Scp079Role role, DoorVariant dv)
+		{
+			Scp079DoorAbility.OnServerAnyDoorInteraction?.Invoke(role, dv);
+		};
+		Scp079DoorStateChanger.OnServerDoorToggled += delegate(Scp079Role role, DoorVariant dv)
+		{
+			Scp079DoorAbility.OnServerAnyDoorInteraction?.Invoke(role, dv);
+		};
+		Scp079ElevatorStateChanger.OnServerElevatorDoorClosed += delegate(Scp079Role role, ElevatorDoor dv)
+		{
+			Scp079DoorAbility.OnServerAnyDoorInteraction?.Invoke(role, dv);
+		};
+		Scp079LockdownRoomAbility.OnServerDoorLocked += delegate(Scp079Role role, DoorVariant dv)
+		{
+			Scp079DoorAbility.OnServerAnyDoorInteraction?.Invoke(role, dv);
+		};
 	}
 }

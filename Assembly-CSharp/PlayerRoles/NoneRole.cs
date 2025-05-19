@@ -1,35 +1,16 @@
-﻿using System;
 using PlayerRoles.Voice;
 using UnityEngine;
 
-namespace PlayerRoles
+namespace PlayerRoles;
+
+public class NoneRole : PlayerRoleBase, IVoiceRole
 {
-	public class NoneRole : PlayerRoleBase, IVoiceRole
-	{
-		public VoiceModuleBase VoiceModule { get; private set; }
+	[field: SerializeField]
+	public VoiceModuleBase VoiceModule { get; private set; }
 
-		public override RoleTypeId RoleTypeId
-		{
-			get
-			{
-				return RoleTypeId.None;
-			}
-		}
+	public override RoleTypeId RoleTypeId => RoleTypeId.None;
 
-		public override Color RoleColor
-		{
-			get
-			{
-				return Color.white;
-			}
-		}
+	public override Color RoleColor => Color.white;
 
-		public override Team Team
-		{
-			get
-			{
-				return Team.Dead;
-			}
-		}
-	}
+	public override Team Team => Team.Dead;
 }

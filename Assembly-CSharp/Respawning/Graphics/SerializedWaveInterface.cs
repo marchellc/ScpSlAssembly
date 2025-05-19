@@ -1,30 +1,29 @@
-﻿using System;
+using System;
 using Respawning.Waves;
 using UnityEngine;
 
-namespace Respawning.Graphics
+namespace Respawning.Graphics;
+
+public abstract class SerializedWaveInterface : WaveInterfaceBase<SpawnableWaveBase>
 {
-	public abstract class SerializedWaveInterface : WaveInterfaceBase<SpawnableWaveBase>
+	[HideInInspector]
+	public string WaveIdentifier;
+
+	protected override void Awake()
 	{
-		protected override void Awake()
-		{
-			this.RefreshWave();
-		}
+		RefreshWave();
+	}
 
-		internal void RefreshWave()
+	internal void RefreshWave()
+	{
+		foreach (SpawnableWaveBase wave in WaveManager.Waves)
 		{
-			foreach (SpawnableWaveBase spawnableWaveBase in WaveManager.Waves)
+			if (wave.GetType().Name.Equals(WaveIdentifier, StringComparison.OrdinalIgnoreCase))
 			{
-				if (spawnableWaveBase.GetType().Name.Equals(this.WaveIdentifier, StringComparison.OrdinalIgnoreCase))
-				{
-					base.Wave = spawnableWaveBase;
-					return;
-				}
+				base.Wave = wave;
+				return;
 			}
-			throw new NullReferenceException("Unable to find any Wave by the " + this.WaveIdentifier + " name.");
 		}
-
-		[HideInInspector]
-		public string WaveIdentifier;
+		throw new NullReferenceException("Unable to find any Wave by the " + WaveIdentifier + " name.");
 	}
 }

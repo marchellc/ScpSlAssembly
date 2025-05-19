@@ -1,102 +1,101 @@
-﻿using System;
 using System.Collections.Generic;
 using Interactables.Interobjects.DoorUtils;
 using NorthwoodLib.Pools;
 using UnityEngine;
 
-namespace MapGeneration.Distributors
+namespace MapGeneration.Distributors;
+
+public class StructureDistributor : SpawnablesDistributorBase
 {
-	public class StructureDistributor : SpawnablesDistributorBase
+	private readonly Queue<int> _queuedStructures = new Queue<int>();
+
+	private readonly HashSet<int> _missingSpawnpoints = new HashSet<int>();
+
+	protected override void PlaceSpawnables()
 	{
-		protected override void PlaceSpawnables()
+		PrepareQueueForStructures();
+		int structureId;
+		StructureSpawnpoint spawnpoint;
+		while (TryGetNextStructure(out structureId, out spawnpoint))
 		{
-			this.PrepareQueueForStructures();
-			int num;
-			StructureSpawnpoint structureSpawnpoint;
-			while (this.TryGetNextStructure(out num, out structureSpawnpoint))
+			if (!(spawnpoint == null))
 			{
-				if (!(structureSpawnpoint == null))
+				SpawnStructure(Settings.SpawnableStructures[structureId], spawnpoint.transform, spawnpoint.TriggerDoorName);
+			}
+		}
+	}
+
+	private void PrepareQueueForStructures()
+	{
+		List<int> list = ListPool<int>.Shared.Rent();
+		for (int i = 0; i < Settings.SpawnableStructures.Length; i++)
+		{
+			float time = Random.Range(0f, 1f);
+			int num = Mathf.FloorToInt(Settings.SpawnableStructures[i].MinMaxProbability.Evaluate(time));
+			for (int j = 0; j < num; j++)
+			{
+				if (j < Settings.SpawnableStructures[i].MinAmount)
 				{
-					this.SpawnStructure(this.Settings.SpawnableStructures[num], structureSpawnpoint.transform, structureSpawnpoint.TriggerDoorName);
+					_queuedStructures.Enqueue(i);
+				}
+				else
+				{
+					list.Add(i);
 				}
 			}
 		}
-
-		private void PrepareQueueForStructures()
+		while (list.Count > 0)
 		{
-			List<int> list = ListPool<int>.Shared.Rent();
-			for (int i = 0; i < this.Settings.SpawnableStructures.Length; i++)
-			{
-				float num = global::UnityEngine.Random.Range(0f, 1f);
-				int num2 = Mathf.FloorToInt(this.Settings.SpawnableStructures[i].MinMaxProbability.Evaluate(num));
-				for (int j = 0; j < num2; j++)
-				{
-					if (j < this.Settings.SpawnableStructures[i].MinAmount)
-					{
-						this._queuedStructures.Enqueue(i);
-					}
-					else
-					{
-						list.Add(i);
-					}
-				}
-			}
-			while (list.Count > 0)
-			{
-				int num3 = global::UnityEngine.Random.Range(0, list.Count);
-				this._queuedStructures.Enqueue(list[num3]);
-				list.RemoveAt(num3);
-			}
-			ListPool<int>.Shared.Return(list);
+			int index = Random.Range(0, list.Count);
+			_queuedStructures.Enqueue(list[index]);
+			list.RemoveAt(index);
 		}
+		ListPool<int>.Shared.Return(list);
+	}
 
-		private bool TryGetNextStructure(out int structureId, out StructureSpawnpoint spawnpoint)
+	private bool TryGetNextStructure(out int structureId, out StructureSpawnpoint spawnpoint)
+	{
+		spawnpoint = null;
+		if (!_queuedStructures.TryDequeue(out structureId))
 		{
-			spawnpoint = null;
-			if (!this._queuedStructures.TryDequeue(out structureId))
-			{
-				return false;
-			}
-			if (this._missingSpawnpoints.Contains(structureId))
-			{
-				return true;
-			}
-			List<StructureSpawnpoint> list = ListPool<StructureSpawnpoint>.Shared.Rent();
-			foreach (StructureSpawnpoint structureSpawnpoint in StructureSpawnpoint.AvailableInstances)
-			{
-				if (!(structureSpawnpoint == null) && structureSpawnpoint.CompatibleStructures.Contains(this.Settings.SpawnableStructures[structureId].StructureType))
-				{
-					list.Add(structureSpawnpoint);
-				}
-			}
-			if (list.Count > 0)
-			{
-				StructureSpawnpoint structureSpawnpoint2 = list[global::UnityEngine.Random.Range(0, list.Count)];
-				StructureSpawnpoint.AvailableInstances.Remove(structureSpawnpoint2);
-				spawnpoint = structureSpawnpoint2;
-			}
-			else
-			{
-				this._missingSpawnpoints.Add(structureId);
-			}
+			return false;
+		}
+		if (_missingSpawnpoints.Contains(structureId))
+		{
 			return true;
 		}
-
-		private void SpawnStructure(SpawnableStructure structure, Transform tr, string doorName)
+		List<StructureSpawnpoint> list = ListPool<StructureSpawnpoint>.Shared.Rent();
+		foreach (StructureSpawnpoint availableInstance in StructureSpawnpoint.AvailableInstances)
 		{
-			SpawnableStructure spawnableStructure = global::UnityEngine.Object.Instantiate<SpawnableStructure>(structure, tr.position, tr.rotation);
-			spawnableStructure.transform.SetParent(tr);
-			DoorNametagExtension doorNametagExtension;
-			if (string.IsNullOrEmpty(doorName) || !DoorNametagExtension.NamedDoors.TryGetValue(doorName, out doorNametagExtension))
+			if (!(availableInstance == null) && availableInstance.CompatibleStructures.Contains(Settings.SpawnableStructures[structureId].StructureType))
 			{
-				this.SpawnObject(spawnableStructure.gameObject);
-				return;
+				list.Add(availableInstance);
 			}
-			base.RegisterUnspawnedObject(doorNametagExtension.TargetDoor, spawnableStructure.gameObject);
 		}
+		if (list.Count > 0)
+		{
+			StructureSpawnpoint structureSpawnpoint = list[Random.Range(0, list.Count)];
+			StructureSpawnpoint.AvailableInstances.Remove(structureSpawnpoint);
+			spawnpoint = structureSpawnpoint;
+		}
+		else
+		{
+			_missingSpawnpoints.Add(structureId);
+		}
+		return true;
+	}
 
-		private readonly Queue<int> _queuedStructures = new Queue<int>();
-
-		private readonly HashSet<int> _missingSpawnpoints = new HashSet<int>();
+	private void SpawnStructure(SpawnableStructure structure, Transform tr, string doorName)
+	{
+		SpawnableStructure spawnableStructure = Object.Instantiate(structure, tr.position, tr.rotation);
+		spawnableStructure.transform.SetParent(tr);
+		if (string.IsNullOrEmpty(doorName) || !DoorNametagExtension.NamedDoors.TryGetValue(doorName, out var value))
+		{
+			SpawnObject(spawnableStructure.gameObject);
+		}
+		else
+		{
+			RegisterUnspawnedObject(value.TargetDoor, spawnableStructure.gameObject);
+		}
 	}
 }

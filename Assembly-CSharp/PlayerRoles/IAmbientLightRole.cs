@@ -1,13 +1,10 @@
-﻿using System;
+namespace PlayerRoles;
 
-namespace PlayerRoles
+public interface IAmbientLightRole
 {
-	public interface IAmbientLightRole
-	{
-		float AmbientBoost { get; }
+	float AmbientBoost { get; }
 
-		bool ForceBlackAmbient { get; }
+	bool ForceBlackAmbient { get; }
 
-		bool InsufficientLight { get; }
-	}
+	bool InsufficientLight { get; }
 }

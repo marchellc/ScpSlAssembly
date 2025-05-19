@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Disarming
+namespace InventorySystem.Disarming;
+
+public class DisarmingGUI : MonoBehaviour
 {
-	public class DisarmingGUI : MonoBehaviour
-	{
-	}
 }

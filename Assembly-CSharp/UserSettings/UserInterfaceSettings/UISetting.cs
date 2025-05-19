@@ -1,17 +1,14 @@
-﻿using System;
+namespace UserSettings.UserInterfaceSettings;
 
-namespace UserSettings.UserInterfaceSettings
+public enum UISetting
 {
-	public enum UISetting
-	{
-		Language,
-		EnableSubtitles,
-		HealthbarMode,
-		FastRoleIntroMode,
-		HideIP,
-		FlashTaskbar,
-		PhotosensitivityDoNotShow,
-		ImperialUnits,
-		InaccuracyAsDispersion
-	}
+	Language,
+	EnableSubtitles,
+	HealthbarMode,
+	FastRoleIntroMode,
+	HideIP,
+	FlashTaskbar,
+	PhotosensitivityDoNotShow,
+	ImperialUnits,
+	InaccuracyAsDispersion
 }

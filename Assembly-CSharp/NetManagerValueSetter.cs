@@ -1,18 +1,19 @@
-﻿using System;
 using Mirror;
 using Mirror.LiteNetLib4Mirror;
 using UnityEngine;
 
 public class NetManagerValueSetter : MonoBehaviour
 {
+	private CustomNetworkManager _singleton;
+
 	private void Start()
 	{
-		this._singleton = NetworkManager.singleton.GetComponent<CustomNetworkManager>();
+		_singleton = NetworkManager.singleton.GetComponent<CustomNetworkManager>();
 	}
 
 	public void ChangeIP(string ip)
 	{
-		this._singleton.networkAddress = ip;
+		_singleton.networkAddress = ip;
 		CustomNetworkManager.ConnectionIp = ip;
 	}
 
@@ -23,18 +24,16 @@ public class NetManagerValueSetter : MonoBehaviour
 
 	public void JoinGame()
 	{
-		this._singleton.StartClient();
+		_singleton.StartClient();
 	}
 
 	public void HostGame()
 	{
-		this._singleton.StartHost();
+		_singleton.StartHost();
 	}
 
 	public void Disconnect()
 	{
-		this._singleton.StopHost();
+		_singleton.StopHost();
 	}
-
-	private CustomNetworkManager _singleton;
 }

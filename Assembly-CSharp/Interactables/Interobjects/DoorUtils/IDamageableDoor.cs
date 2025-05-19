@@ -1,24 +1,25 @@
-﻿using System;
+using System;
 using Footprinting;
 
-namespace Interactables.Interobjects.DoorUtils
+namespace Interactables.Interobjects.DoorUtils;
+
+public interface IDamageableDoor
 {
-	public interface IDamageableDoor
-	{
-		bool IsDestroyed { get; set; }
+	bool IsDestroyed { get; set; }
 
-		float MaxHealth { get; }
+	float MaxHealth { get; }
 
-		float RemainingHealth { get; }
+	float RemainingHealth { get; }
 
-		bool ServerDamage(float hp, DoorDamageType type, Footprint attacker = default(Footprint));
+	event Action OnDestroyedChanged;
 
-		bool ServerRepair();
+	bool ServerDamage(float hp, DoorDamageType type, Footprint attacker = default(Footprint));
 
-		void ClientDestroyEffects();
+	bool ServerRepair();
 
-		void ClientRepairEffects();
+	void ClientDestroyEffects();
 
-		float GetHealthPercent();
-	}
+	void ClientRepairEffects();
+
+	float GetHealthPercent();
 }

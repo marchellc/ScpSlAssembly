@@ -1,122 +1,99 @@
-﻿using System;
 using System.Collections.Generic;
 using Mirror;
 using PlayerRoles;
 using PlayerStatsSystem;
 
-namespace Achievements.Handlers
+namespace Achievements.Handlers;
+
+public class ArmyOfOneHandler : AchievementHandlerBase
 {
-	public class ArmyOfOneHandler : AchievementHandlerBase
+	private const int KillsNeeded = 4;
+
+	private static readonly Dictionary<ReferenceHub, List<ItemType>> Kills = new Dictionary<ReferenceHub, List<ItemType>>();
+
+	internal override void OnInitialize()
 	{
-		internal override void OnInitialize()
-		{
-			PlayerStats.OnAnyPlayerDied += ArmyOfOneHandler.OnAnyPlayerDied;
-			PlayerRoleManager.OnServerRoleSet += ArmyOfOneHandler.OnServerRoleSet;
-		}
+		PlayerStats.OnAnyPlayerDied += OnAnyPlayerDied;
+		PlayerRoleManager.OnServerRoleSet += OnServerRoleSet;
+	}
 
-		internal override void OnRoundStarted()
-		{
-			ArmyOfOneHandler.Kills.Clear();
-		}
+	internal override void OnRoundStarted()
+	{
+		Kills.Clear();
+	}
 
-		private static void OnServerRoleSet(ReferenceHub hub, RoleTypeId roleTypeId, RoleChangeReason changeReason)
+	private static void OnServerRoleSet(ReferenceHub hub, RoleTypeId roleTypeId, RoleChangeReason changeReason)
+	{
+		if (changeReason != RoleChangeReason.Escaped)
 		{
-			if (changeReason == RoleChangeReason.Escaped)
+			Kills.Remove(hub);
+		}
+	}
+
+	private static void OnAnyPlayerDied(ReferenceHub victim, DamageHandlerBase handler)
+	{
+		if (!NetworkServer.active || !(handler is AttackerDamageHandler attackerDamageHandler))
+		{
+			return;
+		}
+		ReferenceHub hub = attackerDamageHandler.Attacker.Hub;
+		if (hub == null || !hub.IsHuman() || !HitboxIdentity.IsEnemy(attackerDamageHandler.Attacker.Role, victim.GetRoleId()))
+		{
+			return;
+		}
+		ItemType itemType = GetItemType(handler);
+		if (itemType == ItemType.None)
+		{
+			return;
+		}
+		if (!Kills.TryGetValue(hub, out var value))
+		{
+			Kills[hub] = new List<ItemType> { itemType };
+		}
+		else if (!value.Contains(itemType))
+		{
+			value.Add(itemType);
+			Kills[hub] = value;
+			if (value.Count >= 4)
 			{
-				return;
+				AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.ArmyOfOne);
 			}
-			ArmyOfOneHandler.Kills.Remove(hub);
 		}
+	}
 
-		private static void OnAnyPlayerDied(ReferenceHub victim, DamageHandlerBase handler)
+	private static ItemType GetItemType(DamageHandlerBase handler)
+	{
+		if (!(handler is FirearmDamageHandler firearmDamageHandler))
 		{
-			if (NetworkServer.active)
+			if (!(handler is DisruptorDamageHandler))
 			{
-				AttackerDamageHandler attackerDamageHandler = handler as AttackerDamageHandler;
-				if (attackerDamageHandler != null)
+				if (!(handler is JailbirdDamageHandler))
 				{
-					ReferenceHub hub = attackerDamageHandler.Attacker.Hub;
-					if (hub == null || !hub.IsHuman())
+					if (!(handler is MicroHidDamageHandler))
 					{
-						return;
+						if (handler is ExplosionDamageHandler explosionDamageHandler)
+						{
+							return ExplosionToItemType(explosionDamageHandler.ExplosionType);
+						}
+						return ItemType.None;
 					}
-					if (!HitboxIdentity.IsEnemy(attackerDamageHandler.Attacker.Role, victim.GetRoleId()))
-					{
-						return;
-					}
-					ItemType itemType = ArmyOfOneHandler.GetItemType(handler);
-					if (itemType == ItemType.None)
-					{
-						return;
-					}
-					List<ItemType> list;
-					if (!ArmyOfOneHandler.Kills.TryGetValue(hub, out list))
-					{
-						ArmyOfOneHandler.Kills[hub] = new List<ItemType> { itemType };
-						return;
-					}
-					if (list.Contains(itemType))
-					{
-						return;
-					}
-					list.Add(itemType);
-					ArmyOfOneHandler.Kills[hub] = list;
-					if (list.Count < 4)
-					{
-						return;
-					}
-					AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.ArmyOfOne);
-					return;
+					return ItemType.MicroHID;
 				}
-			}
-		}
-
-		private static ItemType GetItemType(DamageHandlerBase handler)
-		{
-			FirearmDamageHandler firearmDamageHandler = handler as FirearmDamageHandler;
-			if (firearmDamageHandler != null)
-			{
-				return firearmDamageHandler.WeaponType;
-			}
-			if (handler is DisruptorDamageHandler)
-			{
-				return ItemType.ParticleDisruptor;
-			}
-			if (handler is JailbirdDamageHandler)
-			{
 				return ItemType.Jailbird;
 			}
-			if (handler is MicroHidDamageHandler)
-			{
-				return ItemType.MicroHID;
-			}
-			ExplosionDamageHandler explosionDamageHandler = handler as ExplosionDamageHandler;
-			if (explosionDamageHandler == null)
-			{
-				return ItemType.None;
-			}
-			return ArmyOfOneHandler.ExplosionToItemType(explosionDamageHandler.ExplosionType);
+			return ItemType.ParticleDisruptor;
 		}
+		return firearmDamageHandler.WeaponType;
+	}
 
-		private static ItemType ExplosionToItemType(ExplosionType explosionType)
+	private static ItemType ExplosionToItemType(ExplosionType explosionType)
+	{
+		return explosionType switch
 		{
-			if (explosionType == ExplosionType.Grenade)
-			{
-				return ItemType.GrenadeHE;
-			}
-			if (explosionType == ExplosionType.Disruptor)
-			{
-				return ItemType.ParticleDisruptor;
-			}
-			if (explosionType != ExplosionType.Jailbird)
-			{
-				return ItemType.None;
-			}
-			return ItemType.Jailbird;
-		}
-
-		private const int KillsNeeded = 4;
-
-		private static readonly Dictionary<ReferenceHub, List<ItemType>> Kills = new Dictionary<ReferenceHub, List<ItemType>>();
+			ExplosionType.Grenade => ItemType.GrenadeHE, 
+			ExplosionType.Disruptor => ItemType.ParticleDisruptor, 
+			ExplosionType.Jailbird => ItemType.Jailbird, 
+			_ => ItemType.None, 
+		};
 	}
 }

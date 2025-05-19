@@ -1,50 +1,32 @@
-﻿using System;
 using Mirror;
 using PlayerRoles.FirstPersonControl;
 using PlayerStatsSystem;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class Corroding : TickingEffectBase, IStaminaModifier
 {
-	public class Corroding : TickingEffectBase, IStaminaModifier
+	private const float DamagePerTick = 2.1f;
+
+	private static readonly float StaminaDrainPercentage;
+
+	public ReferenceHub AttackerHub;
+
+	public override bool AllowEnabling => true;
+
+	public bool StaminaModifierActive => base.IsEnabled;
+
+	public float StaminaRegenMultiplier => 0f;
+
+	protected override void OnTick()
 	{
-		public override bool AllowEnabling
+		if (NetworkServer.active && !(AttackerHub == null) && !Vitality.CheckPlayer(base.Hub))
 		{
-			get
+			base.Hub.playerStats.DealDamage(new ScpDamageHandler(AttackerHub, 2.1f, DeathTranslations.PocketDecay));
+			if (StaminaDrainPercentage > 0f)
 			{
-				return true;
+				base.Hub.playerStats.GetModule<StaminaStat>().CurValue -= StaminaDrainPercentage * 0.01f;
 			}
 		}
-
-		protected override void OnTick()
-		{
-			if (!NetworkServer.active || this.AttackerHub == null || Vitality.CheckPlayer(base.Hub))
-			{
-				return;
-			}
-			base.Hub.playerStats.DealDamage(new ScpDamageHandler(this.AttackerHub, 2.1f, DeathTranslations.PocketDecay));
-			base.Hub.playerStats.GetModule<StaminaStat>().CurValue -= 0.024999999f;
-		}
-
-		public bool StaminaModifierActive
-		{
-			get
-			{
-				return base.IsEnabled;
-			}
-		}
-
-		public float StaminaRegenMultiplier
-		{
-			get
-			{
-				return 0f;
-			}
-		}
-
-		private const float DamagePerTick = 2.1f;
-
-		private const float StaminaDrainPercentage = 2.5f;
-
-		public ReferenceHub AttackerHub;
 	}
 }

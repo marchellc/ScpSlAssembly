@@ -1,128 +1,124 @@
-﻿using System;
+using System;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public class ArrayFormatter<T> : IJsonFormatter<T[]>, IJsonFormatter, IOverwriteJsonFormatter<T[]>
 {
-	public class ArrayFormatter<T> : IJsonFormatter<T[]>, IJsonFormatter, IOverwriteJsonFormatter<T[]>
+	private static readonly ArrayPool<T> arrayPool = new ArrayPool<T>(99);
+
+	private readonly CollectionDeserializeToBehaviour deserializeToBehaviour;
+
+	public ArrayFormatter()
+		: this(CollectionDeserializeToBehaviour.Add)
 	{
-		public ArrayFormatter()
-			: this(CollectionDeserializeToBehaviour.Add)
-		{
-		}
+	}
 
-		public ArrayFormatter(CollectionDeserializeToBehaviour deserializeToBehaviour)
-		{
-			this.deserializeToBehaviour = deserializeToBehaviour;
-		}
+	public ArrayFormatter(CollectionDeserializeToBehaviour deserializeToBehaviour)
+	{
+		this.deserializeToBehaviour = deserializeToBehaviour;
+	}
 
-		public void Serialize(ref JsonWriter writer, T[] value, IJsonFormatterResolver formatterResolver)
+	public void Serialize(ref JsonWriter writer, T[] value, IJsonFormatterResolver formatterResolver)
+	{
+		if (value == null)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
-			writer.WriteBeginArray();
-			IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
-			if (value.Length != 0)
-			{
-				formatterWithVerify.Serialize(ref writer, value[0], formatterResolver);
-			}
-			for (int i = 1; i < value.Length; i++)
-			{
-				writer.WriteValueSeparator();
-				formatterWithVerify.Serialize(ref writer, value[i], formatterResolver);
-			}
-			writer.WriteEndArray();
+			writer.WriteNull();
+			return;
 		}
-
-		public T[] Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+		writer.WriteBeginArray();
+		IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
+		if (value.Length != 0)
 		{
-			if (reader.ReadIsNull())
+			formatterWithVerify.Serialize(ref writer, value[0], formatterResolver);
+		}
+		for (int i = 1; i < value.Length; i++)
+		{
+			writer.WriteValueSeparator();
+			formatterWithVerify.Serialize(ref writer, value[i], formatterResolver);
+		}
+		writer.WriteEndArray();
+	}
+
+	public T[] Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
+		{
+			return null;
+		}
+		int count = 0;
+		IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
+		T[] array = arrayPool.Rent();
+		try
+		{
+			T[] array2 = array;
+			reader.ReadIsBeginArrayWithVerify();
+			while (!reader.ReadIsEndArrayWithSkipValueSeparator(ref count))
 			{
-				return null;
+				if (array2.Length < count)
+				{
+					Array.Resize(ref array2, array2.Length * 2);
+				}
+				array2[count - 1] = formatterWithVerify.Deserialize(ref reader, formatterResolver);
 			}
-			int num = 0;
-			IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
-			T[] array = ArrayFormatter<T>.arrayPool.Rent();
-			T[] array4;
+			T[] array3 = new T[count];
+			Array.Copy(array2, array3, count);
+			Array.Clear(array, 0, Math.Min(count, array.Length));
+			return array3;
+		}
+		finally
+		{
+			arrayPool.Return(array);
+		}
+	}
+
+	public void DeserializeTo(ref T[] value, ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
+		{
+			return;
+		}
+		int count = 0;
+		IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
+		if (deserializeToBehaviour == CollectionDeserializeToBehaviour.Add)
+		{
+			T[] array = arrayPool.Rent();
 			try
 			{
 				T[] array2 = array;
 				reader.ReadIsBeginArrayWithVerify();
-				while (!reader.ReadIsEndArrayWithSkipValueSeparator(ref num))
+				while (!reader.ReadIsEndArrayWithSkipValueSeparator(ref count))
 				{
-					if (array2.Length < num)
+					if (array2.Length < count)
 					{
-						Array.Resize<T>(ref array2, array2.Length * 2);
+						Array.Resize(ref array2, array2.Length * 2);
 					}
-					array2[num - 1] = formatterWithVerify.Deserialize(ref reader, formatterResolver);
+					array2[count - 1] = formatterWithVerify.Deserialize(ref reader, formatterResolver);
 				}
-				T[] array3 = new T[num];
-				Array.Copy(array2, array3, num);
-				Array.Clear(array, 0, Math.Min(num, array.Length));
-				array4 = array3;
+				if (count != 0)
+				{
+					T[] destinationArray = new T[value.Length + count];
+					Array.Copy(value, 0, destinationArray, 0, value.Length);
+					Array.Copy(array2, 0, destinationArray, value.Length, count);
+					Array.Clear(array, 0, Math.Min(count, array.Length));
+				}
+				return;
 			}
 			finally
 			{
-				ArrayFormatter<T>.arrayPool.Return(array);
+				arrayPool.Return(array);
 			}
-			return array4;
 		}
-
-		public void DeserializeTo(ref T[] value, ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+		T[] array3 = value;
+		reader.ReadIsBeginArrayWithVerify();
+		while (!reader.ReadIsEndArrayWithSkipValueSeparator(ref count))
 		{
-			if (reader.ReadIsNull())
+			if (array3.Length < count)
 			{
-				return;
+				Array.Resize(ref array3, array3.Length * 2);
 			}
-			int num = 0;
-			IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
-			if (this.deserializeToBehaviour == CollectionDeserializeToBehaviour.Add)
-			{
-				T[] array = ArrayFormatter<T>.arrayPool.Rent();
-				try
-				{
-					T[] array2 = array;
-					reader.ReadIsBeginArrayWithVerify();
-					while (!reader.ReadIsEndArrayWithSkipValueSeparator(ref num))
-					{
-						if (array2.Length < num)
-						{
-							Array.Resize<T>(ref array2, array2.Length * 2);
-						}
-						array2[num - 1] = formatterWithVerify.Deserialize(ref reader, formatterResolver);
-					}
-					if (num == 0)
-					{
-						return;
-					}
-					T[] array3 = new T[value.Length + num];
-					Array.Copy(value, 0, array3, 0, value.Length);
-					Array.Copy(array2, 0, array3, value.Length, num);
-					Array.Clear(array, 0, Math.Min(num, array.Length));
-					return;
-				}
-				finally
-				{
-					ArrayFormatter<T>.arrayPool.Return(array);
-				}
-			}
-			T[] array4 = value;
-			reader.ReadIsBeginArrayWithVerify();
-			while (!reader.ReadIsEndArrayWithSkipValueSeparator(ref num))
-			{
-				if (array4.Length < num)
-				{
-					Array.Resize<T>(ref array4, array4.Length * 2);
-				}
-				array4[num - 1] = formatterWithVerify.Deserialize(ref reader, formatterResolver);
-			}
-			Array.Resize<T>(ref array4, num);
+			array3[count - 1] = formatterWithVerify.Deserialize(ref reader, formatterResolver);
 		}
-
-		private static readonly ArrayPool<T> arrayPool = new ArrayPool<T>(99);
-
-		private readonly CollectionDeserializeToBehaviour deserializeToBehaviour;
+		Array.Resize(ref array3, count);
 	}
 }

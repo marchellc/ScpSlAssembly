@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CustomPlayerEffects;
 using InventorySystem;
@@ -10,226 +10,198 @@ using PlayerRoles.PlayableScps.Scp106;
 using PlayerRoles.Ragdolls;
 using PlayerRoles.Spectating;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public class PlayerStats : NetworkBehaviour
 {
-	public class PlayerStats : NetworkBehaviour
+	public static readonly Type[] DefinedModules = new Type[6]
 	{
-		public StatBase[] StatModules
+		typeof(HealthStat),
+		typeof(AhpStat),
+		typeof(StaminaStat),
+		typeof(AdminFlagsStat),
+		typeof(HumeShieldStat),
+		typeof(VigorStat)
+	};
+
+	private ReferenceHub _hub;
+
+	private bool _eventAssigned;
+
+	private StatBase[] _statModules;
+
+	private readonly Dictionary<Type, StatBase> _dictionarizedTypes = new Dictionary<Type, StatBase>();
+
+	public StatBase[] StatModules
+	{
+		get
 		{
-			get
+			if (_statModules != null)
 			{
-				if (this._statModules != null)
-				{
-					return this._statModules;
-				}
-				this._statModules = new StatBase[PlayerStats.DefinedModules.Length];
-				for (int i = 0; i < PlayerStats.DefinedModules.Length; i++)
-				{
-					object obj = Activator.CreateInstance(PlayerStats.DefinedModules[i]);
-					this._statModules[i] = obj as StatBase;
-				}
-				return this._statModules;
+				return _statModules;
 			}
+			_statModules = new StatBase[DefinedModules.Length];
+			for (int i = 0; i < DefinedModules.Length; i++)
+			{
+				object obj = Activator.CreateInstance(DefinedModules[i]);
+				_statModules[i] = obj as StatBase;
+			}
+			return _statModules;
 		}
+	}
 
-		public event Action<DamageHandlerBase> OnThisPlayerDamaged = delegate(DamageHandlerBase usedHandler)
+	public event Action<DamageHandlerBase> OnThisPlayerDamaged = delegate
+	{
+	};
+
+	public event Action<DamageHandlerBase> OnThisPlayerDied = delegate
+	{
+	};
+
+	public static event Action<ReferenceHub, DamageHandlerBase> OnAnyPlayerDamaged;
+
+	public static event Action<ReferenceHub, DamageHandlerBase> OnAnyPlayerDied;
+
+	private void Awake()
+	{
+		StatBase[] statModules = StatModules;
+		foreach (StatBase statBase in statModules)
 		{
-		};
-
-		public event Action<DamageHandlerBase> OnThisPlayerDied = delegate(DamageHandlerBase usedHandler)
-		{
-		};
-
-		public static event Action<ReferenceHub, DamageHandlerBase> OnAnyPlayerDamaged;
-
-		public static event Action<ReferenceHub, DamageHandlerBase> OnAnyPlayerDied;
-
-		private void Awake()
-		{
-			foreach (StatBase statBase in this.StatModules)
-			{
-				this._dictionarizedTypes.Add(statBase.GetType(), statBase);
-			}
-			this._hub = ReferenceHub.GetHub(base.gameObject);
-			StatBase[] array = this.StatModules;
-			for (int i = 0; i < array.Length; i++)
-			{
-				array[i].Init(this._hub);
-			}
+			_dictionarizedTypes.Add(statBase.GetType(), statBase);
 		}
-
-		private void Start()
+		_hub = ReferenceHub.GetHub(base.gameObject);
+		statModules = StatModules;
+		for (int i = 0; i < statModules.Length; i++)
 		{
-			if (!this._hub.isLocalPlayer)
-			{
-				return;
-			}
-			PlayerRoleManager.OnRoleChanged += this.OnClassChanged;
-			this._eventAssigned = true;
+			statModules[i].Init(_hub);
 		}
+	}
 
-		private void OnDestroy()
+	private void Start()
+	{
+		if (_hub.isLocalPlayer)
 		{
-			if (!this._eventAssigned)
-			{
-				return;
-			}
-			PlayerRoleManager.OnRoleChanged -= this.OnClassChanged;
-			this._eventAssigned = false;
+			PlayerRoleManager.OnRoleChanged += OnClassChanged;
+			_eventAssigned = true;
 		}
+	}
 
-		private void Update()
+	private void OnDestroy()
+	{
+		if (_eventAssigned)
 		{
-			StatBase[] statModules = this.StatModules;
-			for (int i = 0; i < statModules.Length; i++)
-			{
-				statModules[i].Update();
-			}
+			PlayerRoleManager.OnRoleChanged -= OnClassChanged;
+			_eventAssigned = false;
 		}
+	}
 
-		public T GetModule<T>() where T : StatBase
+	private void Update()
+	{
+		StatBase[] statModules = StatModules;
+		for (int i = 0; i < statModules.Length; i++)
 		{
-			return this._dictionarizedTypes[typeof(T)] as T;
+			statModules[i].Update();
 		}
+	}
 
-		public bool TryGetModule<T>(out T module) where T : StatBase
+	public T GetModule<T>() where T : StatBase
+	{
+		return _dictionarizedTypes[typeof(T)] as T;
+	}
+
+	public bool TryGetModule<T>(out T module) where T : StatBase
+	{
+		if (_dictionarizedTypes.TryGetValue(typeof(T), out var value) && value is T val)
 		{
-			StatBase statBase;
-			if (this._dictionarizedTypes.TryGetValue(typeof(T), out statBase))
-			{
-				T t = statBase as T;
-				if (t != null)
-				{
-					module = t;
-					return true;
-				}
-			}
-			module = default(T);
+			module = val;
+			return true;
+		}
+		module = null;
+		return false;
+	}
+
+	public bool DealDamage(DamageHandlerBase handler)
+	{
+		if (_hub.characterClassManager.GodMode)
+		{
 			return false;
 		}
-
-		public bool DealDamage(DamageHandlerBase handler)
+		if (_hub.playerEffectsController.TryGetEffect<SpawnProtected>(out var playerEffect) && playerEffect.IsEnabled)
 		{
-			if (this._hub.characterClassManager.GodMode)
+			return false;
+		}
+		if (_hub.roleManager.CurrentRole is IDamageHandlerProcessingRole damageHandlerProcessingRole)
+		{
+			handler = damageHandlerProcessingRole.ProcessDamageHandler(handler);
+		}
+		ReferenceHub attacker = null;
+		if (handler is AttackerDamageHandler attackerDamageHandler)
+		{
+			attacker = attackerDamageHandler.Attacker.Hub;
+		}
+		PlayerHurtingEventArgs playerHurtingEventArgs = new PlayerHurtingEventArgs(attacker, _hub, handler);
+		PlayerEvents.OnHurting(playerHurtingEventArgs);
+		if (!playerHurtingEventArgs.IsAllowed)
+		{
+			return false;
+		}
+		DamageHandlerBase.HandlerOutput handlerOutput = handler.ApplyDamage(_hub);
+		PlayerEvents.OnHurt(new PlayerHurtEventArgs(attacker, _hub, handler));
+		if (handlerOutput == DamageHandlerBase.HandlerOutput.Nothing)
+		{
+			return false;
+		}
+		PlayerStats.OnAnyPlayerDamaged?.Invoke(_hub, handler);
+		this.OnThisPlayerDamaged?.Invoke(handler);
+		if (handlerOutput == DamageHandlerBase.HandlerOutput.Death)
+		{
+			PlayerDyingEventArgs playerDyingEventArgs = new PlayerDyingEventArgs(_hub, attacker, handler);
+			PlayerEvents.OnDying(playerDyingEventArgs);
+			if (!playerDyingEventArgs.IsAllowed)
 			{
 				return false;
 			}
-			SpawnProtected spawnProtected;
-			if (this._hub.playerEffectsController.TryGetEffect<SpawnProtected>(out spawnProtected) && spawnProtected.IsEnabled)
-			{
-				return false;
-			}
-			IDamageHandlerProcessingRole damageHandlerProcessingRole = this._hub.roleManager.CurrentRole as IDamageHandlerProcessingRole;
-			if (damageHandlerProcessingRole != null)
-			{
-				handler = damageHandlerProcessingRole.ProcessDamageHandler(handler);
-			}
-			ReferenceHub referenceHub = null;
-			AttackerDamageHandler attackerDamageHandler = handler as AttackerDamageHandler;
-			if (attackerDamageHandler != null)
-			{
-				referenceHub = attackerDamageHandler.Attacker.Hub;
-			}
-			PlayerHurtingEventArgs playerHurtingEventArgs = new PlayerHurtingEventArgs(referenceHub, this._hub, handler);
-			PlayerEvents.OnHurting(playerHurtingEventArgs);
-			if (!playerHurtingEventArgs.IsAllowed)
-			{
-				return false;
-			}
-			DamageHandlerBase.HandlerOutput handlerOutput = handler.ApplyDamage(this._hub);
-			PlayerEvents.OnHurt(new PlayerHurtEventArgs(referenceHub, this._hub, handler));
-			if (handlerOutput == DamageHandlerBase.HandlerOutput.Nothing)
-			{
-				return false;
-			}
-			Action<ReferenceHub, DamageHandlerBase> onAnyPlayerDamaged = PlayerStats.OnAnyPlayerDamaged;
-			if (onAnyPlayerDamaged != null)
-			{
-				onAnyPlayerDamaged(this._hub, handler);
-			}
-			Action<DamageHandlerBase> onThisPlayerDamaged = this.OnThisPlayerDamaged;
-			if (onThisPlayerDamaged != null)
-			{
-				onThisPlayerDamaged(handler);
-			}
-			if (handlerOutput == DamageHandlerBase.HandlerOutput.Death)
-			{
-				PlayerDyingEventArgs playerDyingEventArgs = new PlayerDyingEventArgs(this._hub, referenceHub, handler);
-				PlayerEvents.OnDying(playerDyingEventArgs);
-				if (!playerDyingEventArgs.IsAllowed)
-				{
-					return false;
-				}
-				Action<ReferenceHub, DamageHandlerBase> onAnyPlayerDied = PlayerStats.OnAnyPlayerDied;
-				if (onAnyPlayerDied != null)
-				{
-					onAnyPlayerDied(this._hub, handler);
-				}
-				Action<DamageHandlerBase> onThisPlayerDied = this.OnThisPlayerDied;
-				if (onThisPlayerDied != null)
-				{
-					onThisPlayerDied(handler);
-				}
-				this.KillPlayer(handler);
-				PlayerEvents.OnDeath(new PlayerDeathEventArgs(this._hub, referenceHub, handler));
-			}
-			return true;
+			PlayerStats.OnAnyPlayerDied?.Invoke(_hub, handler);
+			this.OnThisPlayerDied?.Invoke(handler);
+			KillPlayer(handler);
+			PlayerEvents.OnDeath(new PlayerDeathEventArgs(_hub, attacker, handler));
 		}
+		return true;
+	}
 
-		private void KillPlayer(DamageHandlerBase handler)
+	private void KillPlayer(DamageHandlerBase handler)
+	{
+		RagdollManager.ServerSpawnRagdoll(_hub, handler);
+		_hub.inventory.ServerDropEverything();
+		_hub.roleManager.ServerSetRole(RoleTypeId.Spectator, RoleChangeReason.Died);
+		_hub.gameConsoleTransmission.SendToClient("You died. Reason: " + handler.ServerLogsText, "yellow");
+		if (_hub.roleManager.CurrentRole is SpectatorRole spectatorRole)
 		{
-			RagdollManager.ServerSpawnRagdoll(this._hub, handler);
-			this._hub.inventory.ServerDropEverything();
-			this._hub.roleManager.ServerSetRole(RoleTypeId.Spectator, RoleChangeReason.Died, RoleSpawnFlags.All);
-			this._hub.gameConsoleTransmission.SendToClient("You died. Reason: " + handler.ServerLogsText, "yellow");
-			SpectatorRole spectatorRole = this._hub.roleManager.CurrentRole as SpectatorRole;
-			if (spectatorRole != null)
-			{
-				spectatorRole.ServerSetData(handler);
-			}
+			spectatorRole.ServerSetData(handler);
 		}
+	}
 
-		private void OnClassChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+	private void OnClassChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+	{
+		StatBase[] statModules = userHub.playerStats.StatModules;
+		for (int i = 0; i < statModules.Length; i++)
 		{
-			StatBase[] statModules = userHub.playerStats.StatModules;
-			for (int i = 0; i < statModules.Length; i++)
-			{
-				statModules[i].ClassChanged();
-			}
+			statModules[i].ClassChanged();
 		}
+	}
 
-		// Note: this type is marked as 'beforefieldinit'.
-		static PlayerStats()
+	static PlayerStats()
+	{
+		PlayerStats.OnAnyPlayerDamaged = delegate
 		{
-			PlayerStats.OnAnyPlayerDamaged = delegate(ReferenceHub victimPlayer, DamageHandlerBase usedHandler)
-			{
-			};
-			PlayerStats.OnAnyPlayerDied = delegate(ReferenceHub victimPlayer, DamageHandlerBase usedHandler)
-			{
-			};
-		}
-
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		public static readonly Type[] DefinedModules = new Type[]
-		{
-			typeof(HealthStat),
-			typeof(AhpStat),
-			typeof(StaminaStat),
-			typeof(AdminFlagsStat),
-			typeof(HumeShieldStat),
-			typeof(VigorStat)
 		};
+		PlayerStats.OnAnyPlayerDied = delegate
+		{
+		};
+	}
 
-		private ReferenceHub _hub;
-
-		private bool _eventAssigned;
-
-		private StatBase[] _statModules;
-
-		private readonly Dictionary<Type, StatBase> _dictionarizedTypes = new Dictionary<Type, StatBase>();
+	public override bool Weaved()
+	{
+		return true;
 	}
 }

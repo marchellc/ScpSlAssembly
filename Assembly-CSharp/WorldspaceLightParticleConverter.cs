@@ -1,18 +1,25 @@
-﻿using System;
 using UnityEngine;
 
 public class WorldspaceLightParticleConverter : MonoBehaviour
 {
+	private const string MaterialPath = "StaticMaterials/Invisible";
+
+	private const float MinFlashDur = 0.025f;
+
+	private static Material _invisibleMat;
+
+	private static bool _matLoaded;
+
 	private static Material InvisibleMaterial
 	{
 		get
 		{
-			if (!WorldspaceLightParticleConverter._matLoaded)
+			if (!_matLoaded)
 			{
-				WorldspaceLightParticleConverter._invisibleMat = Resources.Load<Material>("StaticMaterials/Invisible");
-				WorldspaceLightParticleConverter._matLoaded = true;
+				_invisibleMat = Resources.Load<Material>("StaticMaterials/Invisible");
+				_matLoaded = true;
 			}
-			return WorldspaceLightParticleConverter._invisibleMat;
+			return _invisibleMat;
 		}
 	}
 
@@ -20,15 +27,17 @@ public class WorldspaceLightParticleConverter : MonoBehaviour
 	{
 		if (includeSubsystems)
 		{
-			system.gameObject.ForEachComponentInChildren(new Action<ParticleSystem>(WorldspaceLightParticleConverter.ConvertIndividual), true);
-			return;
+			system.gameObject.ForEachComponentInChildren<ParticleSystem>(ConvertIndividual, includeInactive: true);
 		}
-		WorldspaceLightParticleConverter.ConvertIndividual(system);
+		else
+		{
+			ConvertIndividual(system);
+		}
 	}
 
 	public static void Convert(ParticleSystem system)
 	{
-		WorldspaceLightParticleConverter.Convert(system, true);
+		Convert(system, includeSubsystems: true);
 	}
 
 	private static void ConvertIndividual(ParticleSystem system)
@@ -38,25 +47,22 @@ public class WorldspaceLightParticleConverter : MonoBehaviour
 			return;
 		}
 		Transform transform = system.transform;
-		ParticleSystem particleSystem = global::UnityEngine.Object.Instantiate<ParticleSystem>(system, transform);
+		ParticleSystem particleSystem = Object.Instantiate(system, transform);
 		Transform transform2 = particleSystem.transform;
 		ParticleSystem.MainModule main = particleSystem.main;
 		transform2.localPosition = Vector3.zero;
 		transform2.localRotation = Quaternion.identity;
-		ParticleSystemScalingMode scalingMode = main.scalingMode;
-		if (scalingMode != ParticleSystemScalingMode.Hierarchy)
+		switch (main.scalingMode)
 		{
-			if (scalingMode == ParticleSystemScalingMode.Local)
-			{
-				transform2.localScale = transform.localScale;
-			}
-		}
-		else
-		{
+		case ParticleSystemScalingMode.Local:
+			transform2.localScale = transform.localScale;
+			break;
+		case ParticleSystemScalingMode.Hierarchy:
 			transform2.localScale = Vector3.one;
+			break;
 		}
 		particleSystem.gameObject.layer = 0;
-		particleSystem.GetComponent<ParticleSystemRenderer>().sharedMaterial = WorldspaceLightParticleConverter.InvisibleMaterial;
+		particleSystem.GetComponent<ParticleSystemRenderer>().sharedMaterial = InvisibleMaterial;
 		main.duration = Mathf.Max(main.duration, 0.025f);
 		Transform transform3 = particleSystem.lights.light.transform;
 		for (int i = 0; i < transform2.childCount; i++)
@@ -64,16 +70,8 @@ public class WorldspaceLightParticleConverter : MonoBehaviour
 			Transform child = transform2.GetChild(i);
 			if (!(child == transform3))
 			{
-				global::UnityEngine.Object.Destroy(child.gameObject);
+				Object.Destroy(child.gameObject);
 			}
 		}
 	}
-
-	private const string MaterialPath = "StaticMaterials/Invisible";
-
-	private const float MinFlashDur = 0.025f;
-
-	private static Material _invisibleMat;
-
-	private static bool _matLoaded;
 }

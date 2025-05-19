@@ -1,52 +1,34 @@
-﻿using System;
 using PlayerRoles.PlayableScps.Scp079.GUI;
 using PlayerRoles.PlayableScps.Scp079.Overcons;
 
-namespace PlayerRoles.PlayableScps.Scp079.Cameras
+namespace PlayerRoles.PlayableScps.Scp079.Cameras;
+
+public class Scp079OverconCameraSelector : Scp079DirectionalCameraSelector
 {
-	public class Scp079OverconCameraSelector : Scp079DirectionalCameraSelector
+	private OverconBase CurOvercon => OverconManager.Singleton.HighlightedOvercon;
+
+	public override bool IsVisible
 	{
-		private OverconBase CurOvercon
+		get
 		{
-			get
+			if (!Scp079CursorManager.LockCameras && CurOvercon is CameraOvercon cameraOvercon)
 			{
-				return OverconManager.Singleton.HighlightedOvercon;
+				return cameraOvercon != null;
 			}
+			return false;
 		}
+	}
 
-		public override bool IsVisible
-		{
-			get
-			{
-				if (!Scp079CursorManager.LockCameras)
-				{
-					CameraOvercon cameraOvercon = this.CurOvercon as CameraOvercon;
-					if (cameraOvercon != null)
-					{
-						return cameraOvercon != null;
-					}
-				}
-				return false;
-			}
-		}
+	protected override bool AllowSwitchingBetweenZones => true;
 
-		protected override bool AllowSwitchingBetweenZones
+	protected override bool TryGetCamera(out Scp079Camera targetCamera)
+	{
+		if (!IsVisible)
 		{
-			get
-			{
-				return true;
-			}
+			targetCamera = null;
+			return false;
 		}
-
-		protected override bool TryGetCamera(out Scp079Camera targetCamera)
-		{
-			if (!this.IsVisible)
-			{
-				targetCamera = null;
-				return false;
-			}
-			targetCamera = (this.CurOvercon as CameraOvercon).Target;
-			return true;
-		}
+		targetCamera = (CurOvercon as CameraOvercon).Target;
+		return true;
 	}
 }

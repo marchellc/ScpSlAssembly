@@ -1,66 +1,53 @@
-﻿using System;
+using System;
 using InventorySystem.Items.Pickups;
 using UnityEngine;
 
-namespace InventorySystem.Items.ToggleableLights.Flashlight
+namespace InventorySystem.Items.ToggleableLights.Flashlight;
+
+public class FlashlightItem : ToggleableLightItemBase
 {
-	public class FlashlightItem : ToggleableLightItemBase
+	private Light _lightSource;
+
+	private static FlashlightItem _cachedFlashlight;
+
+	private static bool _cacheSet;
+
+	public override float Weight => 0.7f;
+
+	public static FlashlightItem Template
 	{
-		public override float Weight
+		get
 		{
-			get
+			if (_cacheSet)
 			{
-				return 0.7f;
+				return _cachedFlashlight;
 			}
-		}
-
-		protected override void SetLightSourceStatus(bool value)
-		{
-			this._lightSource.enabled = value;
-		}
-
-		public static FlashlightItem Template
-		{
-			get
+			if (!InventoryItemLoader.TryGetItem<FlashlightItem>(ItemType.Flashlight, out var result))
 			{
-				if (FlashlightItem._cacheSet)
-				{
-					return FlashlightItem._cachedFlashlight;
-				}
-				FlashlightItem flashlightItem;
-				if (!InventoryItemLoader.TryGetItem<FlashlightItem>(ItemType.Flashlight, out flashlightItem))
-				{
-					throw new InvalidOperationException(string.Format("Item {0} is not defined!", ItemType.Flashlight));
-				}
-				FlashlightItem._cachedFlashlight = flashlightItem;
-				FlashlightItem._cacheSet = true;
-				return flashlightItem;
+				throw new InvalidOperationException($"Item {ItemType.Flashlight} is not defined!");
 			}
+			_cachedFlashlight = result;
+			_cacheSet = true;
+			return result;
 		}
+	}
 
-		public override void OnAdded(ItemPickupBase pickup)
+	protected override void SetLightSourceStatus(bool value)
+	{
+		_lightSource.enabled = value;
+	}
+
+	public override void OnAdded(ItemPickupBase pickup)
+	{
+		if (IsLocalPlayer)
 		{
-			if (!this.IsLocalPlayer)
-			{
-				return;
-			}
-			this._lightSource = this.ViewModel.GetComponentInChildren<Light>(true);
+			_lightSource = ViewModel.GetComponentInChildren<Light>(includeInactive: true);
 		}
+	}
 
-		protected override void OnToggled()
-		{
-			FlashlightViewmodel flashlightViewmodel = this.ViewModel as FlashlightViewmodel;
-			if (flashlightViewmodel != null)
-			{
-				flashlightViewmodel.PlayAnimation();
-			}
-			this.NextAllowedTime = Time.timeSinceLevelLoad + 0.13f;
-		}
-
-		private Light _lightSource;
-
-		private static FlashlightItem _cachedFlashlight;
-
-		private static bool _cacheSet;
+	protected override void OnToggled()
+	{
+		(ViewModel as FlashlightViewmodel)?.PlayAnimation();
+		NextAllowedTime = Time.timeSinceLevelLoad + 0.13f;
 	}
 }

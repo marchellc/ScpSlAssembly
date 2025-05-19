@@ -1,85 +1,73 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using MapGeneration;
 using NorthwoodLib.Pools;
 using UnityEngine;
 
-namespace Interactables.Interobjects
+namespace Interactables.Interobjects;
+
+public class RoomConnector : MonoBehaviour, IRoomConnector
 {
-	public class RoomConnector : MonoBehaviour, IRoomConnector
+	public static readonly HashSet<RoomConnector> AllConnectors = new HashSet<RoomConnector>();
+
+	public bool RoomsAlreadyRegistered { get; private set; }
+
+	public RoomIdentifier[] Rooms { get; private set; }
+
+	public bool IsVisibleThrough => true;
+
+	public event Action OnRoomsRegistered;
+
+	private void Start()
 	{
-		public bool RoomsAlreadyRegistered { get; private set; }
-
-		public RoomIdentifier[] Rooms { get; private set; }
-
-		public event Action OnRoomsRegistered;
-
-		public bool IsVisibleThrough
+		AllConnectors.Add(this);
+		if (SeedSynchronizer.MapGenerated)
 		{
-			get
+			RegisterRooms();
+		}
+	}
+
+	private void OnDestroy()
+	{
+		AllConnectors.Remove(this);
+	}
+
+	private void RegisterRooms()
+	{
+		Vector3 position = base.transform.position;
+		int num = 0;
+		HashSet<RoomIdentifier> hashSet = HashSetPool<RoomIdentifier>.Shared.Rent();
+		for (int i = 0; i < IRoomConnector.WorldDirections.Length; i++)
+		{
+			Vector3Int key = RoomUtils.PositionToCoords(position + IRoomConnector.WorldDirections[i]);
+			if (RoomIdentifier.RoomsByCoords.TryGetValue(key, out var value) && hashSet.Add(value))
 			{
-				return true;
+				IRoomConnector.RoomsNonAlloc[num] = value;
+				num++;
 			}
 		}
+		HashSetPool<RoomIdentifier>.Shared.Return(hashSet);
+		Rooms = new RoomIdentifier[num];
+		Array.Copy(IRoomConnector.RoomsNonAlloc, Rooms, num);
+		this.OnRoomsRegistered?.Invoke();
+		RoomsAlreadyRegistered = true;
+	}
 
-		private void Start()
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		SeedSynchronizer.OnGenerationStage += OnMapStage;
+	}
+
+	private static void OnMapStage(MapGenerationPhase stage)
+	{
+		if (stage != MapGenerationPhase.ParentRoomRegistration)
 		{
-			RoomConnector.AllConnectors.Add(this);
-			if (SeedSynchronizer.MapGenerated)
-			{
-				this.RegisterRooms();
-			}
+			return;
 		}
-
-		private void OnDestroy()
+		foreach (RoomConnector allConnector in AllConnectors)
 		{
-			RoomConnector.AllConnectors.Remove(this);
+			allConnector.RegisterRooms();
 		}
-
-		private void RegisterRooms()
-		{
-			Vector3 position = base.transform.position;
-			int num = 0;
-			HashSet<RoomIdentifier> hashSet = HashSetPool<RoomIdentifier>.Shared.Rent();
-			for (int i = 0; i < IRoomConnector.WorldDirections.Length; i++)
-			{
-				Vector3Int vector3Int = RoomUtils.PositionToCoords(position + IRoomConnector.WorldDirections[i]);
-				RoomIdentifier roomIdentifier;
-				if (RoomIdentifier.RoomsByCoordinates.TryGetValue(vector3Int, out roomIdentifier) && hashSet.Add(roomIdentifier))
-				{
-					IRoomConnector.RoomsNonAlloc[num] = roomIdentifier;
-					num++;
-				}
-			}
-			HashSetPool<RoomIdentifier>.Shared.Return(hashSet);
-			this.Rooms = new RoomIdentifier[num];
-			Array.Copy(IRoomConnector.RoomsNonAlloc, this.Rooms, num);
-			Action onRoomsRegistered = this.OnRoomsRegistered;
-			if (onRoomsRegistered != null)
-			{
-				onRoomsRegistered();
-			}
-			this.RoomsAlreadyRegistered = true;
-		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			SeedSynchronizer.OnGenerationStage += RoomConnector.OnMapStage;
-		}
-
-		private static void OnMapStage(MapGenerationPhase stage)
-		{
-			if (stage != MapGenerationPhase.ParentRoomRegistration)
-			{
-				return;
-			}
-			foreach (RoomConnector roomConnector in RoomConnector.AllConnectors)
-			{
-				roomConnector.RegisterRooms();
-			}
-		}
-
-		public static readonly HashSet<RoomConnector> AllConnectors = new HashSet<RoomConnector>();
 	}
 }

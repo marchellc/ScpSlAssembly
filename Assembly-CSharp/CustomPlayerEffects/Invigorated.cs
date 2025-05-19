@@ -1,48 +1,16 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class Invigorated : StatusEffectBase, IStaminaModifier
 {
-	public class Invigorated : StatusEffectBase, IStaminaModifier
-	{
-		public override StatusEffectBase.EffectClassification Classification
-		{
-			get
-			{
-				return StatusEffectBase.EffectClassification.Positive;
-			}
-		}
+	public override EffectClassification Classification => EffectClassification.Positive;
 
-		public bool StaminaModifierActive
-		{
-			get
-			{
-				return base.IsEnabled;
-			}
-		}
+	public bool StaminaModifierActive => base.IsEnabled;
 
-		public float StaminaUsageMultiplier
-		{
-			get
-			{
-				return 0f;
-			}
-		}
+	public float StaminaUsageMultiplier => 0f;
 
-		public float StaminaRegenMultiplier
-		{
-			get
-			{
-				return 1f;
-			}
-		}
+	public float StaminaRegenMultiplier => 1f;
 
-		public bool SprintingDisabled
-		{
-			get
-			{
-				return false;
-			}
-		}
-	}
+	public bool SprintingDisabled => false;
 }

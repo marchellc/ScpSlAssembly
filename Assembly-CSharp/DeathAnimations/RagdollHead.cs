@@ -1,8 +1,5 @@
-﻿using System;
+namespace DeathAnimations;
 
-namespace DeathAnimations
+public class RagdollHead : FirstpersonDeathAnimation
 {
-	public class RagdollHead : FirstpersonDeathAnimation
-	{
-	}
 }

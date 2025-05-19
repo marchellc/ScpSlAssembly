@@ -1,140 +1,134 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace VoiceChat
+namespace VoiceChat;
+
+public class UiWaveformVisualizer : Graphic
 {
-	public class UiWaveformVisualizer : Graphic
+	private float[] _recordedAverages;
+
+	[field: SerializeField]
+	public ushort RenderersCount { get; internal set; } = 128;
+
+	[field: SerializeField]
+	public float FlatlineHeight { get; internal set; } = 0.05f;
+
+	[field: SerializeField]
+	public bool TwoSidedMode { get; internal set; } = true;
+
+	[field: SerializeField]
+	public float MaxNormalizer { get; internal set; } = 30f;
+
+	[field: SerializeField]
+	public AnimationCurve CorrectionCurve { get; internal set; } = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+
+	public void Generate(float[] samples)
 	{
-		public ushort RenderersCount { get; internal set; } = 128;
+		Generate(samples, 0, samples.Length);
+	}
 
-		public float FlatlineHeight { get; internal set; } = 0.05f;
-
-		public bool TwoSidedMode { get; internal set; } = true;
-
-		public float MaxNormalizer { get; internal set; } = 30f;
-
-		public AnimationCurve CorrectionCurve { get; internal set; } = AnimationCurve.Linear(0f, 0f, 1f, 1f);
-
-		public void Generate(float[] samples)
+	public void Generate(float[] samples, int startIndex, int length)
+	{
+		if (RenderersCount == 0)
 		{
-			this.Generate(samples, 0, samples.Length);
+			SetVerticesDirty();
+			return;
 		}
-
-		public void Generate(float[] samples, int startIndex, int length)
+		if (_recordedAverages?.Length == RenderersCount)
 		{
-			if (this.RenderersCount == 0)
+			Array.Clear(_recordedAverages, 0, RenderersCount);
+		}
+		else
+		{
+			_recordedAverages = new float[RenderersCount];
+		}
+		float num = 0f;
+		float num2 = 0f;
+		int num3 = 0;
+		int num4 = 0;
+		int num5 = length / RenderersCount;
+		float num6 = 1f / (float)num5;
+		for (int i = 0; i < length; i++)
+		{
+			float num7 = samples[startIndex + i];
+			num = ((!(num7 < 0f)) ? (num + num7) : (num + (0f - num7)));
+			num3++;
+			if (num3 >= num5)
 			{
-				this.SetVerticesDirty();
-				return;
-			}
-			float[] recordedAverages = this._recordedAverages;
-			int? num = ((recordedAverages != null) ? new int?(recordedAverages.Length) : null);
-			int renderersCount = (int)this.RenderersCount;
-			if ((num.GetValueOrDefault() == renderersCount) & (num != null))
-			{
-				Array.Clear(this._recordedAverages, 0, (int)this.RenderersCount);
-			}
-			else
-			{
-				this._recordedAverages = new float[(int)this.RenderersCount];
-			}
-			float num2 = 0f;
-			float num3 = 0f;
-			int num4 = 0;
-			int num5 = 0;
-			int num6 = length / (int)this.RenderersCount;
-			float num7 = 1f / (float)num6;
-			for (int i = 0; i < length; i++)
-			{
-				float num8 = samples[startIndex + i];
-				if (num8 < 0f)
+				float num8 = num * num6;
+				_recordedAverages[num4++] = num8;
+				num = 0f;
+				num3 = 0;
+				if (num8 > num2)
 				{
-					num2 += -num8;
+					num2 = num8;
 				}
-				else
+				if (num4 >= RenderersCount)
 				{
-					num2 += num8;
-				}
-				num4++;
-				if (num4 >= num6)
-				{
-					float num9 = num2 * num7;
-					this._recordedAverages[num5++] = num9;
-					num2 = 0f;
-					num4 = 0;
-					if (num9 > num3)
-					{
-						num3 = num9;
-					}
-					if (num5 >= (int)this.RenderersCount)
-					{
-						break;
-					}
+					break;
 				}
 			}
-			float num10 = Mathf.Min(1f / ((num3 <= 0f) ? 1f : num3), this.MaxNormalizer);
-			for (int j = 0; j < (int)this.RenderersCount; j++)
-			{
-				this._recordedAverages[j] *= num10;
-			}
-			this.SetVerticesDirty();
 		}
-
-		protected override void OnPopulateMesh(VertexHelper vh)
+		float num9 = Mathf.Min(1f / ((num2 <= 0f) ? 1f : num2), MaxNormalizer);
+		for (int j = 0; j < RenderersCount; j++)
 		{
-			vh.Clear();
-			Rect rect = base.rectTransform.rect;
-			UIVertex simpleVert = UIVertex.simpleVert;
-			simpleVert.color = this.color;
-			this.DrawWaveform(simpleVert, rect.width, rect.height / 2f, vh);
-			if (this.TwoSidedMode)
-			{
-				this.DrawWaveform(simpleVert, rect.width, -rect.height / 2f, vh);
-			}
+			_recordedAverages[j] *= num9;
 		}
+		SetVerticesDirty();
+	}
 
-		private void DrawWaveform(UIVertex vert, float rectWidth, float rectHeight, VertexHelper vh)
+	protected override void OnPopulateMesh(VertexHelper vh)
+	{
+		vh.Clear();
+		Rect rect = base.rectTransform.rect;
+		UIVertex simpleVert = UIVertex.simpleVert;
+		simpleVert.color = color;
+		DrawWaveform(simpleVert, rect.width, rect.height / 2f, vh);
+		if (TwoSidedMode)
 		{
-			float[] recordedAverages = this._recordedAverages;
-			int num = ((recordedAverages != null) ? recordedAverages.Length : 0);
-			float num2 = this.FlatlineHeight * rectHeight;
-			float num3 = rectWidth / 2f;
-			vert.position = new Vector2(-num3, num2);
+			DrawWaveform(simpleVert, rect.width, (0f - rect.height) / 2f, vh);
+		}
+	}
+
+	private void DrawWaveform(UIVertex vert, float rectWidth, float rectHeight, VertexHelper vh)
+	{
+		float[] recordedAverages = _recordedAverages;
+		int num = ((recordedAverages != null) ? recordedAverages.Length : 0);
+		float num2 = FlatlineHeight * rectHeight;
+		float num3 = rectWidth / 2f;
+		vert.position = new Vector2(0f - num3, num2);
+		vh.AddVert(vert);
+		if (num == 0)
+		{
+			int num4 = vh.currentVertCount - 1;
+			vert.position = new Vector2(num3, num2);
 			vh.AddVert(vert);
-			if (num == 0)
-			{
-				int num4 = vh.currentVertCount - 1;
-				vert.position = new Vector2(num3, num2);
-				vh.AddVert(vert);
-				vert.position = new Vector2(num3, 0f);
-				vh.AddVert(vert);
-				vert.position = new Vector2(-num3, 0f);
-				vh.AddVert(vert);
-				vh.AddTriangle(num4, num4 + 2, num4 + 1);
-				vh.AddTriangle(num4, num4 + 2, num4 + 3);
-				return;
-			}
-			float num5 = num2;
-			float num6 = -num3;
-			for (int i = 0; i < num; i++)
-			{
-				float num7 = rectHeight * this.CorrectionCurve.Evaluate(this._recordedAverages[i]) + num2;
-				float num8 = rectWidth * (float)i / (float)(num - 1) - num3;
-				vert.position = new Vector2(num8, num7);
-				vh.AddVert(vert);
-				vert.position = new Vector3(num6, num5);
-				vh.AddVert(vert);
-				vert.position = new Vector2(num8, 0f);
-				vh.AddVert(vert);
-				num6 = num8;
-				num5 = num7;
-				int num9 = vh.currentVertCount - 1;
-				vh.AddTriangle(num9, num9 - 1, num9 - 2);
-				vh.AddTriangle(num9, num9 - 1, num9 - 3);
-			}
+			vert.position = new Vector2(num3, 0f);
+			vh.AddVert(vert);
+			vert.position = new Vector2(0f - num3, 0f);
+			vh.AddVert(vert);
+			vh.AddTriangle(num4, num4 + 2, num4 + 1);
+			vh.AddTriangle(num4, num4 + 2, num4 + 3);
+			return;
 		}
-
-		private float[] _recordedAverages;
+		float y = num2;
+		float x = 0f - num3;
+		for (int i = 0; i < num; i++)
+		{
+			float num5 = rectHeight * CorrectionCurve.Evaluate(_recordedAverages[i]) + num2;
+			float num6 = rectWidth * (float)i / (float)(num - 1) - num3;
+			vert.position = new Vector2(num6, num5);
+			vh.AddVert(vert);
+			vert.position = new Vector3(x, y);
+			vh.AddVert(vert);
+			vert.position = new Vector2(num6, 0f);
+			vh.AddVert(vert);
+			x = num6;
+			y = num5;
+			int num7 = vh.currentVertCount - 1;
+			vh.AddTriangle(num7, num7 - 1, num7 - 2);
+			vh.AddTriangle(num7, num7 - 1, num7 - 3);
+		}
 	}
 }

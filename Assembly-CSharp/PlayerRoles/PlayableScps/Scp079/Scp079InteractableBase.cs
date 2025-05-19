@@ -1,148 +1,135 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using MapGeneration;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public abstract class Scp079InteractableBase : MonoBehaviour
 {
-	public abstract class Scp079InteractableBase : MonoBehaviour
+	public static readonly List<Scp079InteractableBase> OrderedInstances = new List<Scp079InteractableBase>();
+
+	public static readonly HashSet<Scp079InteractableBase> AllInstances = new HashSet<Scp079InteractableBase>();
+
+	public static int InstancesCount;
+
+	public ushort SyncId { get; internal set; }
+
+	public Vector3 Position { get; set; }
+
+	public virtual RoomIdentifier Room { get; set; }
+
+	protected virtual void OnRegistered()
 	{
-		public ushort SyncId { get; private set; }
-
-		public Vector3 Position { get; private set; }
-
-		public virtual RoomIdentifier Room { get; private set; }
-
-		protected virtual void OnRegistered()
+		if (base.transform.position.TryGetRoom(out var room))
 		{
-			this.Room = RoomUtils.RoomAtPositionRaycasts(base.transform.position, true);
+			Room = room;
 		}
-
-		protected virtual void Awake()
+		else
 		{
-			Scp079InteractableBase.AllInstances.Add(this);
+			Debug.LogError("This SCP-079 interactable does not have a room assigned!", base.gameObject);
 		}
+	}
 
-		protected virtual void OnDestroy()
+	protected virtual void Awake()
+	{
+		AllInstances.Add(this);
+	}
+
+	protected virtual void OnDestroy()
+	{
+		if (AllInstances.Remove(this))
 		{
-			if (!Scp079InteractableBase.AllInstances.Remove(this))
-			{
-				return;
-			}
-			Scp079InteractableBase.OrderedInstances.Remove(this);
+			OrderedInstances[SyncId - 1] = null;
 		}
+	}
 
-		public override string ToString()
-		{
-			string text = ((base.transform.parent == null) ? "null" : base.transform.parent.name);
-			return string.Concat(new string[]
-			{
-				base.GetType().Name,
-				" @ (",
-				base.transform.root.name,
-				"/.../",
-				text,
-				"/",
-				base.name,
-				")"
-			});
-		}
+	public override string ToString()
+	{
+		string text = ((base.transform.parent == null) ? "null" : base.transform.parent.name);
+		return GetType().Name + " @ (" + base.transform.root.name + "/.../" + text + "/" + base.name + ")";
+	}
 
-		public static bool TryGetInteractable(ushort syncId, out Scp079InteractableBase result)
+	public static bool TryGetInteractable(ushort syncId, out Scp079InteractableBase result)
+	{
+		if (syncId == 0 || syncId > InstancesCount || !SeedSynchronizer.MapGenerated)
 		{
-			if (syncId == 0 || (int)syncId > Scp079InteractableBase._instancesCount || !SeedSynchronizer.MapGenerated)
-			{
-				result = null;
-				return false;
-			}
-			result = Scp079InteractableBase.OrderedInstances[(int)(syncId - 1)];
-			return true;
-		}
-
-		public static bool TryGetInteractable<T>(ushort syncId, out T result) where T : Scp079InteractableBase
-		{
-			Scp079InteractableBase scp079InteractableBase;
-			if (Scp079InteractableBase.TryGetInteractable(syncId, out scp079InteractableBase))
-			{
-				T t = scp079InteractableBase as T;
-				if (t != null)
-				{
-					result = t;
-					return true;
-				}
-			}
-			result = default(T);
+			result = null;
 			return false;
 		}
+		result = OrderedInstances[syncId - 1];
+		return true;
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+	public static bool TryGetInteractable<T>(ushort syncId, out T result) where T : Scp079InteractableBase
+	{
+		if (!TryGetInteractable(syncId, out var result2) || !(result2 is T val))
 		{
-			SeedSynchronizer.OnGenerationStage += Scp079InteractableBase.OnMapGenStage;
+			result = null;
+			return false;
 		}
+		result = val;
+		return true;
+	}
 
-		private static void OnMapGenStage(MapGenerationPhase stage)
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		SeedSynchronizer.OnGenerationStage += OnMapGenStage;
+	}
+
+	private static void OnMapGenStage(MapGenerationPhase stage)
+	{
+		if (stage == MapGenerationPhase.ParentRoomRegistration)
 		{
-			if (stage != MapGenerationPhase.ParentRoomRegistration)
+			RegisterIds();
+		}
+	}
+
+	private static void RegisterIds()
+	{
+		AllInstances.RemoveWhere((Scp079InteractableBase x) => !x.gameObject.activeInHierarchy);
+		OrderedInstances.Clear();
+		InstancesCount = 0;
+		foreach (Scp079InteractableBase allInstance in AllInstances)
+		{
+			HandleInstance(allInstance);
+		}
+		for (ushort num = 1; num <= InstancesCount; num++)
+		{
+			Scp079InteractableBase scp079InteractableBase = OrderedInstances[num - 1];
+			scp079InteractableBase.SyncId = num;
+			scp079InteractableBase.OnRegistered();
+		}
+	}
+
+	private static void HandleInstance(Scp079InteractableBase instance)
+	{
+		instance.Position = instance.transform.position;
+		for (int i = 0; i < InstancesCount; i++)
+		{
+			if (CheckPriority(instance, OrderedInstances[i]))
 			{
+				OrderedInstances.Insert(i, instance);
+				InstancesCount++;
 				return;
 			}
-			Scp079InteractableBase.RegisterIds();
 		}
+		OrderedInstances.Add(instance);
+		InstancesCount++;
+	}
 
-		private static void RegisterIds()
+	private static bool CheckPriority(Scp079InteractableBase target, Scp079InteractableBase other)
+	{
+		Vector3 position = target.Position;
+		Vector3 position2 = other.Position;
+		for (int i = 0; i < 3; i++)
 		{
-			Scp079InteractableBase.AllInstances.RemoveWhere((Scp079InteractableBase x) => !x.gameObject.activeInHierarchy);
-			Scp079InteractableBase.OrderedInstances.Clear();
-			Scp079InteractableBase._instancesCount = 0;
-			foreach (Scp079InteractableBase scp079InteractableBase in Scp079InteractableBase.AllInstances)
+			if (!Mathf.Approximately(position[i], position2[i]))
 			{
-				Scp079InteractableBase.HandleInstance(scp079InteractableBase);
-			}
-			ushort num = 1;
-			while ((int)num <= Scp079InteractableBase._instancesCount)
-			{
-				Scp079InteractableBase scp079InteractableBase2 = Scp079InteractableBase.OrderedInstances[(int)(num - 1)];
-				scp079InteractableBase2.SyncId = num;
-				scp079InteractableBase2.OnRegistered();
-				num += 1;
+				return position[i] < position2[i];
 			}
 		}
-
-		private static void HandleInstance(Scp079InteractableBase instance)
-		{
-			instance.Position = instance.transform.position;
-			for (int i = 0; i < Scp079InteractableBase._instancesCount; i++)
-			{
-				if (Scp079InteractableBase.CheckPriority(instance, Scp079InteractableBase.OrderedInstances[i]))
-				{
-					Scp079InteractableBase.OrderedInstances.Insert(i, instance);
-					Scp079InteractableBase._instancesCount++;
-					return;
-				}
-			}
-			Scp079InteractableBase.OrderedInstances.Add(instance);
-			Scp079InteractableBase._instancesCount++;
-		}
-
-		private static bool CheckPriority(Scp079InteractableBase target, Scp079InteractableBase other)
-		{
-			Vector3 position = target.Position;
-			Vector3 position2 = other.Position;
-			for (int i = 0; i < 3; i++)
-			{
-				if (!Mathf.Approximately(position[i], position2[i]))
-				{
-					return position[i] < position2[i];
-				}
-			}
-			throw new InvalidOperationException(string.Format("Position signature collision detected between {0} and {1}!", target, other));
-		}
-
-		public static readonly List<Scp079InteractableBase> OrderedInstances = new List<Scp079InteractableBase>();
-
-		public static readonly HashSet<Scp079InteractableBase> AllInstances = new HashSet<Scp079InteractableBase>();
-
-		private static int _instancesCount;
+		throw new InvalidOperationException($"Position signature collision detected between {target} and {other}!");
 	}
 }

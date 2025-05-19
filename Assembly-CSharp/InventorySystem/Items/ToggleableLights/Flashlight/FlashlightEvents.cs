@@ -1,25 +1,17 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.ToggleableLights.Flashlight
+namespace InventorySystem.Items.ToggleableLights.Flashlight;
+
+public class FlashlightEvents : MonoBehaviour
 {
-	public class FlashlightEvents : MonoBehaviour
+	[SerializeField]
+	private ItemViewmodelBase _ivb;
+
+	private void Toggle()
 	{
-		private void Toggle()
+		if (!(_ivb.ParentItem == null) && _ivb.ParentItem.OwnerInventory.CurInstance is FlashlightItem flashlightItem)
 		{
-			if (this._ivb.ParentItem == null)
-			{
-				return;
-			}
-			FlashlightItem flashlightItem = this._ivb.ParentItem.OwnerInventory.CurInstance as FlashlightItem;
-			if (flashlightItem == null)
-			{
-				return;
-			}
 			flashlightItem.ClientSendRequest(!flashlightItem.IsEmittingLight);
 		}
-
-		[SerializeField]
-		private ItemViewmodelBase _ivb;
 	}
 }

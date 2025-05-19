@@ -1,53 +1,58 @@
-﻿using System;
 using UnityEngine;
 
-namespace ProgressiveCulling
+namespace ProgressiveCulling;
+
+public abstract class CullableBehaviour : MonoBehaviour, ICullable
 {
-	public abstract class CullableBehaviour : MonoBehaviour, ICullable
+	private bool? _prevVisible;
+
+	public bool IsCulled
 	{
-		public bool IsCulled
+		get
 		{
-			get
+			if (_prevVisible.HasValue)
 			{
-				return this._prevVisible != null && !this._prevVisible.Value;
+				return !_prevVisible.Value;
 			}
+			return false;
 		}
+	}
 
-		public abstract bool ShouldBeVisible { get; }
+	public abstract bool ShouldBeVisible { get; }
 
-		private protected bool EditorShowGizmos { protected get; private set; }
+	protected bool EditorShowGizmos { get; private set; }
 
-		public void SetVisibility(bool isVisible)
+	public void SetVisibility(bool isVisible)
+	{
+		if (_prevVisible == isVisible)
 		{
-			bool? prevVisible = this._prevVisible;
-			if (!((prevVisible.GetValueOrDefault() == isVisible) & (prevVisible != null)))
-			{
-				this._prevVisible = new bool?(isVisible);
-				this.OnVisibilityChanged(isVisible);
-				return;
-			}
 			if (isVisible)
 			{
-				this.UpdateVisible();
-				return;
+				UpdateVisible();
 			}
-			this.UpdateInvisible();
+			else
+			{
+				UpdateInvisible();
+			}
 		}
-
-		protected virtual void UpdateVisible()
+		else
 		{
+			_prevVisible = isVisible;
+			OnVisibilityChanged(isVisible);
 		}
+	}
 
-		protected virtual void UpdateInvisible()
-		{
-		}
+	protected virtual void UpdateVisible()
+	{
+	}
 
-		protected abstract void OnVisibilityChanged(bool isVisible);
+	protected virtual void UpdateInvisible()
+	{
+	}
 
-		protected virtual void OnDrawGizmosSelected()
-		{
-		}
+	protected abstract void OnVisibilityChanged(bool isVisible);
 
-		private bool? _prevVisible;
+	protected virtual void OnDrawGizmosSelected()
+	{
 	}
 }

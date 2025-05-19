@@ -1,10 +1,8 @@
-﻿using System;
 using Scp914;
 
-namespace InventorySystem.Items
+namespace InventorySystem.Items;
+
+public interface IUpgradeTrigger
 {
-	public interface IUpgradeTrigger
-	{
-		void ServerOnUpgraded(Scp914KnobSetting setting);
-	}
+	void ServerOnUpgraded(Scp914KnobSetting setting);
 }

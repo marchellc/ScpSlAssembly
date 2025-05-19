@@ -1,13 +1,10 @@
-﻿using System;
+namespace PlayerRoles;
 
-namespace PlayerRoles
+public enum Faction : byte
 {
-	public enum Faction : byte
-	{
-		SCP,
-		FoundationStaff,
-		FoundationEnemy,
-		Unclassified,
-		Flamingos
-	}
+	SCP,
+	FoundationStaff,
+	FoundationEnemy,
+	Unclassified,
+	Flamingos
 }

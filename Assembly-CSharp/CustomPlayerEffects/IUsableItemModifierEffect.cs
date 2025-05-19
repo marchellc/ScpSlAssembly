@@ -1,9 +1,6 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public interface IUsableItemModifierEffect
 {
-	public interface IUsableItemModifierEffect
-	{
-		bool TryGetSpeed(ItemType item, out float speed);
-	}
+	bool TryGetSpeed(ItemType item, out float speed);
 }

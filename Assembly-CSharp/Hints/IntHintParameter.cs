@@ -1,31 +1,30 @@
-﻿using System;
+using System;
 using Mirror;
 
-namespace Hints
+namespace Hints;
+
+public class IntHintParameter : PrimitiveHintParameter<int>
 {
-	public class IntHintParameter : PrimitiveHintParameter<int>
+	public static IntHintParameter FromNetwork(NetworkReader reader)
 	{
-		public static IntHintParameter FromNetwork(NetworkReader reader)
-		{
-			IntHintParameter intHintParameter = new IntHintParameter();
-			intHintParameter.Deserialize(reader);
-			return intHintParameter;
-		}
+		IntHintParameter intHintParameter = new IntHintParameter();
+		intHintParameter.Deserialize(reader);
+		return intHintParameter;
+	}
 
-		protected IntHintParameter()
-			: base(new Func<NetworkReader, int>(NetworkReaderExtensions.ReadInt), delegate(NetworkWriter writer, int writerValue)
-			{
-				writer.WriteInt(writerValue);
-			})
+	protected IntHintParameter()
+		: base((Func<NetworkReader, int>)NetworkReaderExtensions.ReadInt, (Action<NetworkWriter, int>)delegate(NetworkWriter writer, int writerValue)
 		{
-		}
+			writer.WriteInt(writerValue);
+		})
+	{
+	}
 
-		public IntHintParameter(int value)
-			: base(value, new Func<NetworkReader, int>(NetworkReaderExtensions.ReadInt), delegate(NetworkWriter writer, int writerValue)
-			{
-				writer.WriteInt(writerValue);
-			})
+	public IntHintParameter(int value)
+		: base(value, (Func<NetworkReader, int>)NetworkReaderExtensions.ReadInt, (Action<NetworkWriter, int>)delegate(NetworkWriter writer, int writerValue)
 		{
-		}
+			writer.WriteInt(writerValue);
+		})
+	{
 	}
 }

@@ -1,27 +1,13 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Attachments.Components
+namespace InventorySystem.Items.Firearms.Attachments.Components;
+
+[CreateAssetMenu(fileName = "New Sight Pack", menuName = "ScriptableObject/Firearms/Reflex Sight Pack")]
+public class ReflexSightReticlePack : ScriptableObject
 {
-	[CreateAssetMenu(fileName = "New Sight Pack", menuName = "ScriptableObject/Firearms/Reflex Sight Pack")]
-	public class ReflexSightReticlePack : ScriptableObject
-	{
-		public Texture this[int index]
-		{
-			get
-			{
-				return this.Reticles[index];
-			}
-		}
+	public Texture[] Reticles;
 
-		public int Length
-		{
-			get
-			{
-				return this.Reticles.Length;
-			}
-		}
+	public Texture this[int index] => Reticles[index];
 
-		public Texture[] Reticles;
-	}
+	public int Length => Reticles.Length;
 }

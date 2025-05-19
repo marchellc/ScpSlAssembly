@@ -1,32 +1,31 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace MapGeneration.Holidays
+namespace MapGeneration.Holidays;
+
+public class HolidayMaterialReplacer : MonoBehaviour
 {
-	public class HolidayMaterialReplacer : MonoBehaviour
+	[Serializable]
+	private struct MaterialReplacement : IHolidayFetchableData<Material>
 	{
-		private void Start()
+		[field: SerializeField]
+		public HolidayType Holiday { get; private set; }
+
+		[field: SerializeField]
+		public Material Result { get; private set; }
+	}
+
+	[SerializeField]
+	private Renderer _renderer;
+
+	[SerializeField]
+	private MaterialReplacement[] _materials;
+
+	private void Start()
+	{
+		if (_materials.TryGetResult<MaterialReplacement, Material>(out var result))
 		{
-			Material material;
-			if (!this._materials.TryGetResult(out material))
-			{
-				return;
-			}
-			this._renderer.material = material;
-		}
-
-		[SerializeField]
-		private Renderer _renderer;
-
-		[SerializeField]
-		private HolidayMaterialReplacer.MaterialReplacement[] _materials;
-
-		[Serializable]
-		private struct MaterialReplacement : IHolidayFetchableData<Material>
-		{
-			public HolidayType Holiday { readonly get; private set; }
-
-			public Material Result { readonly get; private set; }
+			_renderer.material = result;
 		}
 	}
 }

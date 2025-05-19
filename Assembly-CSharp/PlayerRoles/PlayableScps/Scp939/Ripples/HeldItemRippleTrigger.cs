@@ -1,8 +1,5 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.Scp939.Ripples;
 
-namespace PlayerRoles.PlayableScps.Scp939.Ripples
+public class HeldItemRippleTrigger : RippleTriggerBase
 {
-	public class HeldItemRippleTrigger : RippleTriggerBase
-	{
-	}
 }

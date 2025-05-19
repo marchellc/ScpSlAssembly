@@ -1,60 +1,58 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Authenticator;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters.Authenticator
+namespace Utf8Json.Formatters.Authenticator;
+
+public sealed class AuthenticatorPlayerObjectsFormatter : IJsonFormatter<AuthenticatorPlayerObjects>, IJsonFormatter
 {
-	public sealed class AuthenticatorPlayerObjectsFormatter : IJsonFormatter<AuthenticatorPlayerObjects>, IJsonFormatter
+	private readonly AutomataDictionary ____keyMapping;
+
+	private readonly byte[][] ____stringByteKeys;
+
+	public AuthenticatorPlayerObjectsFormatter()
 	{
-		public AuthenticatorPlayerObjectsFormatter()
+		____keyMapping = new AutomataDictionary { 
 		{
-			this.____keyMapping = new AutomataDictionary { 
-			{
-				JsonWriter.GetEncodedPropertyNameWithoutQuotation("objects"),
-				0
-			} };
-			this.____stringByteKeys = new byte[][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("objects") };
-		}
+			JsonWriter.GetEncodedPropertyNameWithoutQuotation("objects"),
+			0
+		} };
+		____stringByteKeys = new byte[1][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("objects") };
+	}
 
-		public void Serialize(ref JsonWriter writer, AuthenticatorPlayerObjects value, IJsonFormatterResolver formatterResolver)
-		{
-			writer.WriteRaw(this.____stringByteKeys[0]);
-			formatterResolver.GetFormatterWithVerify<List<AuthenticatorPlayerObject>>().Serialize(ref writer, value.objects, formatterResolver);
-			writer.WriteEndObject();
-		}
+	public void Serialize(ref JsonWriter writer, AuthenticatorPlayerObjects value, IJsonFormatterResolver formatterResolver)
+	{
+		writer.WriteRaw(____stringByteKeys[0]);
+		formatterResolver.GetFormatterWithVerify<List<AuthenticatorPlayerObject>>().Serialize(ref writer, value.objects, formatterResolver);
+		writer.WriteEndObject();
+	}
 
-		public AuthenticatorPlayerObjects Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public AuthenticatorPlayerObjects Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
+			throw new InvalidOperationException("typecode is null, struct not supported");
+		}
+		List<AuthenticatorPlayerObject> objects = null;
+		int count = 0;
+		reader.ReadIsBeginObjectWithVerify();
+		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
+		{
+			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
+			if (!____keyMapping.TryGetValueSafe(key, out var value))
 			{
-				throw new InvalidOperationException("typecode is null, struct not supported");
+				reader.ReadNextBlock();
 			}
-			List<AuthenticatorPlayerObject> list = null;
-			int num = 0;
-			reader.ReadIsBeginObjectWithVerify();
-			while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref num))
+			else if (value == 0)
 			{
-				ArraySegment<byte> arraySegment = reader.ReadPropertyNameSegmentRaw();
-				int num2;
-				if (!this.____keyMapping.TryGetValueSafe(arraySegment, out num2))
-				{
-					reader.ReadNextBlock();
-				}
-				else if (num2 == 0)
-				{
-					list = formatterResolver.GetFormatterWithVerify<List<AuthenticatorPlayerObject>>().Deserialize(ref reader, formatterResolver);
-				}
-				else
-				{
-					reader.ReadNextBlock();
-				}
+				objects = formatterResolver.GetFormatterWithVerify<List<AuthenticatorPlayerObject>>().Deserialize(ref reader, formatterResolver);
 			}
-			return new AuthenticatorPlayerObjects(list);
+			else
+			{
+				reader.ReadNextBlock();
+			}
 		}
-
-		private readonly AutomataDictionary ____keyMapping;
-
-		private readonly byte[][] ____stringByteKeys;
+		return new AuthenticatorPlayerObjects(objects);
 	}
 }

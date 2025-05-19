@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public interface IIdentifierProvider
 {
-	public interface IIdentifierProvider
-	{
-		ItemIdentifier ItemId { get; }
-	}
+	ItemIdentifier ItemId { get; }
 }

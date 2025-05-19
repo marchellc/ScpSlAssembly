@@ -1,176 +1,173 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Interactables.Interobjects.DoorUtils;
 using Mirror;
+using PlayerRoles.FirstPersonControl;
 using PlayerRoles.PlayableScps.Scp079.Cameras;
 using UnityEngine;
 
-namespace MapGeneration.Distributors
+namespace MapGeneration.Distributors;
+
+public abstract class SpawnablesDistributorBase : MonoBehaviour
 {
-	public abstract class SpawnablesDistributorBase : MonoBehaviour
+	public static readonly HashSet<Rigidbody> BodiesToUnfreeze = new HashSet<Rigidbody>();
+
+	private readonly Dictionary<DoorVariant, HashSet<GameObject>> _unspawnedObjects = new Dictionary<DoorVariant, HashSet<GameObject>>();
+
+	[SerializeField]
+	protected SpawnablesDistributorSettings Settings;
+
+	private bool _eventsRegistered;
+
+	private bool _placed;
+
+	private bool _unfrozen;
+
+	private readonly Stopwatch _stopwatch = new Stopwatch();
+
+	private void Awake()
 	{
-		private void Awake()
+		if (NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this._eventsRegistered = true;
-			SeedSynchronizer.OnGenerationStage += this.OnMapStage;
-			Scp079Camera.OnAnyCameraStateChanged += this.On079CamChanged;
-			DoorEvents.OnDoorAction += this.OnDoorAction;
-			PocketDimensionTeleport.OnPlayerEscapePocketDimension += this.OnPlayerEscapePocketDimension;
-			this.Register();
+			_eventsRegistered = true;
+			CustomNetworkManager.OnClientReady += OnClientReady;
+			SeedSynchronizer.OnGenerationStage += OnMapStage;
+			Scp079Camera.OnAnyCameraStateChanged += On079CamChanged;
+			DoorEvents.OnDoorAction += OnDoorAction;
+			PocketDimensionTeleport.OnPlayerEscapePocketDimension += OnPlayerEscapePocketDimension;
+			Register();
 		}
+	}
 
-		private void OnDestroy()
+	private void OnDestroy()
+	{
+		if (_eventsRegistered)
 		{
-			if (this._eventsRegistered)
-			{
-				SeedSynchronizer.OnGenerationStage -= this.OnMapStage;
-				Scp079Camera.OnAnyCameraStateChanged -= this.On079CamChanged;
-				DoorEvents.OnDoorAction -= this.OnDoorAction;
-				PocketDimensionTeleport.OnPlayerEscapePocketDimension -= this.OnPlayerEscapePocketDimension;
-				this.Unregister();
-			}
+			CustomNetworkManager.OnClientReady -= OnClientReady;
+			SeedSynchronizer.OnGenerationStage -= OnMapStage;
+			Scp079Camera.OnAnyCameraStateChanged -= On079CamChanged;
+			DoorEvents.OnDoorAction -= OnDoorAction;
+			PocketDimensionTeleport.OnPlayerEscapePocketDimension -= OnPlayerEscapePocketDimension;
+			Unregister();
 		}
+	}
 
-		private void OnMapStage(MapGenerationPhase stage)
+	private void OnMapStage(MapGenerationPhase stage)
+	{
+		if (stage == MapGenerationPhase.SpawnableStructures && NetworkClient.ready)
 		{
-			if (stage != MapGenerationPhase.SpawnableStructures)
-			{
-				return;
-			}
-			this._stopwatch.Restart();
+			_stopwatch.Restart();
 		}
+	}
 
-		private void Update()
+	private void OnClientReady()
+	{
+		if (SeedSynchronizer.MapGenerated)
 		{
-			if (!NetworkServer.active || !NetworkClient.active || !this._stopwatch.IsRunning)
+			_stopwatch.Restart();
+		}
+	}
+
+	private void Update()
+	{
+		if (!NetworkServer.active || !NetworkClient.active || !_stopwatch.IsRunning)
+		{
+			return;
+		}
+		float num = (float)_stopwatch.Elapsed.TotalSeconds;
+		if (!_placed && num > Settings.SpawnerDelay)
+		{
+			_placed = true;
+			PlaceSpawnables();
+		}
+		else if (!_unfrozen && num > Settings.UnfreezeDelay)
+		{
+			foreach (Rigidbody item in BodiesToUnfreeze)
 			{
-				return;
-			}
-			float num = (float)this._stopwatch.Elapsed.TotalSeconds;
-			if (!this._placed && num > this.Settings.SpawnerDelay)
-			{
-				this.PlaceSpawnables();
-				this._placed = true;
-			}
-			else if (!this._unfrozen && num > this.Settings.UnfreezeDelay)
-			{
-				foreach (Rigidbody rigidbody in SpawnablesDistributorBase.BodiesToUnfreeze)
+				if (item != null)
 				{
-					if (rigidbody != null)
-					{
-						rigidbody.isKinematic = false;
-					}
+					item.isKinematic = false;
 				}
-				SpawnablesDistributorBase.BodiesToUnfreeze.Clear();
-				this._unfrozen = true;
 			}
-			if (this._placed && this._unfrozen)
-			{
-				this._stopwatch.Stop();
-			}
+			BodiesToUnfreeze.Clear();
+			_unfrozen = true;
 		}
-
-		private void OnDoorAction(DoorVariant door, DoorAction action, ReferenceHub hub)
+		if (_placed && _unfrozen)
 		{
-			if (action != DoorAction.Opened && action != DoorAction.Destroyed)
-			{
-				return;
-			}
-			this.SpawnForDoor(door);
+			_stopwatch.Stop();
 		}
+	}
 
-		private void On079CamChanged(Scp079Camera cam)
+	private void OnDoorAction(DoorVariant door, DoorAction action, ReferenceHub hub)
+	{
+		if (action == DoorAction.Opened || action == DoorAction.Destroyed)
 		{
-			if (!cam.IsActive)
-			{
-				return;
-			}
-			HashSet<DoorVariant> hashSet;
-			if (!DoorVariant.DoorsByRoom.TryGetValue(cam.Room, out hashSet))
-			{
-				return;
-			}
-			foreach (DoorVariant doorVariant in hashSet)
-			{
-				this.SpawnForDoor(doorVariant);
-			}
+			SpawnForDoor(door);
 		}
+	}
 
-		private void OnPlayerEscapePocketDimension(ReferenceHub hub)
+	private void On079CamChanged(Scp079Camera cam)
+	{
+		if (!cam.IsActive || !DoorVariant.DoorsByRoom.TryGetValue(cam.Room, out var value))
 		{
-			RoomIdentifier roomIdentifier = RoomUtils.RoomAtPositionRaycasts(hub.transform.position, true);
-			HashSet<DoorVariant> hashSet;
-			if (!DoorVariant.DoorsByRoom.TryGetValue(roomIdentifier, out hashSet))
-			{
-				return;
-			}
-			foreach (DoorVariant doorVariant in hashSet)
-			{
-				this.SpawnForDoor(doorVariant);
-			}
+			return;
 		}
-
-		protected abstract void PlaceSpawnables();
-
-		protected virtual void Register()
+		foreach (DoorVariant item in value)
 		{
+			SpawnForDoor(item);
 		}
+	}
 
-		protected virtual void Unregister()
+	private void OnPlayerEscapePocketDimension(ReferenceHub hub)
+	{
+		if (!(hub.roleManager.CurrentRole is IFpcRole fpcRole) || !fpcRole.FpcModule.Position.TryGetRoom(out var room) || !DoorVariant.DoorsByRoom.TryGetValue(room, out var value))
 		{
+			return;
 		}
-
-		protected void RegisterUnspawnedObject(DoorVariant door, GameObject unspawnedObject)
+		foreach (DoorVariant item in value)
 		{
-			HashSet<GameObject> hashSet;
-			if (this._unspawnedObjects.TryGetValue(door, out hashSet) && hashSet != null)
-			{
-				hashSet.Add(unspawnedObject);
-				return;
-			}
-			this._unspawnedObjects[door] = new HashSet<GameObject> { unspawnedObject };
+			SpawnForDoor(item);
 		}
+	}
 
-		protected virtual void SpawnObject(GameObject objectToSpawn)
+	protected abstract void PlaceSpawnables();
+
+	protected virtual void Register()
+	{
+	}
+
+	protected virtual void Unregister()
+	{
+	}
+
+	protected void RegisterUnspawnedObject(DoorVariant door, GameObject unspawnedObject)
+	{
+		if (_unspawnedObjects.TryGetValue(door, out var value) && value != null)
 		{
-			if (objectToSpawn != null)
-			{
-				NetworkServer.Spawn(objectToSpawn, null);
-			}
+			value.Add(unspawnedObject);
+			return;
 		}
+		_unspawnedObjects[door] = new HashSet<GameObject> { unspawnedObject };
+	}
 
-		public void SpawnForDoor(DoorVariant door)
+	protected virtual void SpawnObject(GameObject objectToSpawn)
+	{
+		if (objectToSpawn != null)
 		{
-			HashSet<GameObject> hashSet;
-			if (!this._unspawnedObjects.TryGetValue(door, out hashSet) || hashSet == null)
-			{
-				return;
-			}
-			foreach (GameObject gameObject in hashSet)
-			{
-				this.SpawnObject(gameObject);
-			}
-			this._unspawnedObjects.Remove(door);
+			NetworkServer.Spawn(objectToSpawn);
 		}
+	}
 
-		public static readonly HashSet<Rigidbody> BodiesToUnfreeze = new HashSet<Rigidbody>();
-
-		private readonly Dictionary<DoorVariant, HashSet<GameObject>> _unspawnedObjects = new Dictionary<DoorVariant, HashSet<GameObject>>();
-
-		[SerializeField]
-		protected SpawnablesDistributorSettings Settings;
-
-		private bool _eventsRegistered;
-
-		private bool _placed;
-
-		private bool _unfrozen;
-
-		private readonly Stopwatch _stopwatch = new Stopwatch();
+	public void SpawnForDoor(DoorVariant door)
+	{
+		if (!_unspawnedObjects.TryGetValue(door, out var value) || value == null)
+		{
+			return;
+		}
+		foreach (GameObject item in value)
+		{
+			SpawnObject(item);
+		}
+		_unspawnedObjects.Remove(door);
 	}
 }

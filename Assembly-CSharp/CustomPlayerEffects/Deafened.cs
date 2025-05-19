@@ -1,25 +1,16 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public class Deafened : StatusEffectBase, IHealableEffect
 {
-	public class Deafened : StatusEffectBase, IHealableEffect
+	public override bool AllowEnabling => !SpawnProtected.CheckPlayer(base.Hub);
+
+	public bool IsHealable(ItemType it)
 	{
-		public bool IsHealable(ItemType it)
-		{
-			return it == ItemType.SCP500;
-		}
+		return it == ItemType.SCP500;
+	}
 
-		public override bool AllowEnabling
-		{
-			get
-			{
-				return !SpawnProtected.CheckPlayer(base.Hub);
-			}
-		}
-
-		private void OnDestroy()
-		{
-			base.Hub.playerEffectsController.mixer.SetFloat("MasterVolumeLowpassFreq", 22000f);
-		}
+	private void OnDestroy()
+	{
+		base.Hub.playerEffectsController.mixer.SetFloat("MasterVolumeLowpassFreq", 22000f);
 	}
 }

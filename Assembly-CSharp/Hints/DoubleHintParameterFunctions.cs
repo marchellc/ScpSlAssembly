@@ -1,18 +1,16 @@
-﻿using System;
 using Mirror;
 
-namespace Hints
-{
-	public static class DoubleHintParameterFunctions
-	{
-		public static void Serialize(this NetworkWriter writer, DoubleHintParameter value)
-		{
-			value.Serialize(writer);
-		}
+namespace Hints;
 
-		public static DoubleHintParameter Deserialize(this NetworkReader reader)
-		{
-			return DoubleHintParameter.FromNetwork(reader);
-		}
+public static class DoubleHintParameterFunctions
+{
+	public static void Serialize(this NetworkWriter writer, DoubleHintParameter value)
+	{
+		value.Serialize(writer);
+	}
+
+	public static DoubleHintParameter Deserialize(this NetworkReader reader)
+	{
+		return DoubleHintParameter.FromNetwork(reader);
 	}
 }

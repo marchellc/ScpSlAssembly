@@ -1,14 +1,11 @@
-﻿using System;
+namespace InventorySystem.Items.Jailbird;
 
-namespace InventorySystem.Items.Jailbird
+public enum JailbirdWearState
 {
-	public enum JailbirdWearState
-	{
-		Healthy,
-		LowWear,
-		MediumWear,
-		HighWear,
-		AlmostBroken,
-		Broken
-	}
+	Healthy,
+	LowWear,
+	MediumWear,
+	HighWear,
+	AlmostBroken,
+	Broken
 }

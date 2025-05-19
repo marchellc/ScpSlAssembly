@@ -1,8 +1,5 @@
-﻿using System;
+namespace InventorySystem.Disarming;
 
-namespace InventorySystem.Disarming
+public static class DisarmingController
 {
-	public static class DisarmingController
-	{
-	}
 }

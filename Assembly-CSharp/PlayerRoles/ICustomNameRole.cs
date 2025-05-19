@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles;
 
-namespace PlayerRoles
+public interface ICustomNameRole
 {
-	public interface ICustomNameRole
-	{
-		string CustomRoleName { get; }
-	}
+	string CustomRoleName { get; }
 }

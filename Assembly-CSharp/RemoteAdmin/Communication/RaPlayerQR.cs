@@ -1,25 +1,17 @@
-﻿using System;
 using RemoteAdmin.Interfaces;
 
-namespace RemoteAdmin.Communication
+namespace RemoteAdmin.Communication;
+
+public class RaPlayerQR : IClientCommunication
 {
-	public class RaPlayerQR : IClientCommunication
+	public int DataId => 2;
+
+	public void ReceiveData(string data, bool secure)
 	{
-		public int DataId
-		{
-			get
-			{
-				return 2;
-			}
-		}
+	}
 
-		public void ReceiveData(string data, bool secure)
-		{
-		}
-
-		public static void Send(CommandSender sender, bool isBig, string data)
-		{
-			sender.RaReply(string.Format("$2 {0} {1}", isBig ? 1 : 0, data), true, false, string.Empty);
-		}
+	public static void Send(CommandSender sender, bool isBig, string data)
+	{
+		sender.RaReply($"$2 {(isBig ? 1 : 0)} {data}", success: true, logToConsole: false, string.Empty);
 	}
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Cryptography;
 using GameCore;
 using Mirror;
@@ -8,6 +8,10 @@ using Utf8Json;
 
 public class SignedToken : IJsonSerializable
 {
+	public readonly string token;
+
+	public readonly string signature;
+
 	[SerializationConstructor]
 	public SignedToken(string token, string signature)
 	{
@@ -17,8 +21,8 @@ public class SignedToken : IJsonSerializable
 
 	public void Serialize(NetworkWriter writer)
 	{
-		writer.WriteString(this.token);
-		writer.WriteString(this.signature);
+		writer.WriteString(token);
+		writer.WriteString(signature);
 	}
 
 	public static SignedToken Deserialize(NetworkReader reader)
@@ -28,63 +32,51 @@ public class SignedToken : IJsonSerializable
 
 	public bool TryGetToken<T>(string usage, out T token, out string error, out string userId, int expTimeOffset = 0) where T : Token, IJsonSerializable
 	{
-		bool flag;
 		try
 		{
-			token = default(T);
+			token = null;
 			error = null;
 			userId = null;
-			if (!ECDSA.Verify(this.token, this.signature, ServerConsole.PublicKey))
+			if (!ECDSA.Verify(this.token, signature, ServerConsole.PublicKey))
 			{
 				error = "invalid signature of token used for " + usage;
-				flag = false;
+				return false;
 			}
-			else
+			T val = JsonSerialize.FromJson<T>(StringUtils.Base64Decode(this.token));
+			userId = val.UserId;
+			if (val.TokenVersion != 2)
 			{
-				T t = JsonSerialize.FromJson<T>(StringUtils.Base64Decode(this.token));
-				userId = t.UserId;
-				if (t.TokenVersion != 2)
-				{
-					error = string.Format("invalid token version. Expected: {0}, got: {1}", 2, t.TokenVersion);
-					flag = false;
-				}
-				else if (!t.Usage.Equals(usage, StringComparison.Ordinal))
-				{
-					error = "invalid token usage. Expected: " + usage + ", got: " + t.Usage;
-					flag = false;
-				}
-				else if (t.ExpirationTime < DateTime.UtcNow.AddMinutes((double)(-(double)expTimeOffset)))
-				{
-					error = "expired token used for " + usage;
-					flag = false;
-				}
-				else if (t.IssuanceTime > DateTime.UtcNow.AddMinutes(20.0))
-				{
-					error = "non-issued token used for " + usage;
-					flag = false;
-				}
-				else if (t.TestSignature && !CentralServer.TestServer)
-				{
-					error = "test-only token used for " + usage;
-					flag = false;
-				}
-				else
-				{
-					token = t;
-					flag = true;
-				}
+				error = $"invalid token version. Expected: {2}, got: {val.TokenVersion}";
+				return false;
 			}
+			if (!val.Usage.Equals(usage, StringComparison.Ordinal))
+			{
+				error = "invalid token usage. Expected: " + usage + ", got: " + val.Usage;
+				return false;
+			}
+			if (val.ExpirationTime < DateTime.UtcNow.AddMinutes(-expTimeOffset))
+			{
+				error = "expired token used for " + usage;
+				return false;
+			}
+			if (val.IssuanceTime > DateTime.UtcNow.AddMinutes(20.0))
+			{
+				error = "non-issued token used for " + usage;
+				return false;
+			}
+			if (val.TestSignature && !CentralServer.TestServer)
+			{
+				error = "test-only token used for " + usage;
+				return false;
+			}
+			token = val;
+			return true;
 		}
 		catch (Exception ex)
 		{
-			global::GameCore.Console.AddLog("Failed to TryGetToken<>: " + ex.Message, Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
-			global::GameCore.Console.AddLog(ex.StackTrace, Color.red, false, global::GameCore.Console.ConsoleLogType.Log);
+			GameCore.Console.AddLog("Failed to TryGetToken<>: " + ex.Message, Color.red);
+			GameCore.Console.AddLog(ex.StackTrace, Color.red);
 			throw;
 		}
-		return flag;
 	}
-
-	public readonly string token;
-
-	public readonly string signature;
 }

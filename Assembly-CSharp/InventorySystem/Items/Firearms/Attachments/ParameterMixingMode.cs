@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Attachments;
 
-namespace InventorySystem.Items.Firearms.Attachments
+public enum ParameterMixingMode
 {
-	public enum ParameterMixingMode
-	{
-		Override,
-		Additive,
-		Percent
-	}
+	Override,
+	Additive,
+	Percent
 }

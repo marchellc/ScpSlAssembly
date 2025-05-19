@@ -1,10 +1,8 @@
-﻿using System;
 using Mirror;
 
-namespace UserSettings.ServerSpecific
+namespace UserSettings.ServerSpecific;
+
+public interface ISSUpdatable
 {
-	public interface ISSUpdatable
-	{
-		void DeserializeUpdate(NetworkReader reader);
-	}
+	void DeserializeUpdate(NetworkReader reader);
 }

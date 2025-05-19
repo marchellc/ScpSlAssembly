@@ -1,38 +1,39 @@
-﻿using System;
+using System;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class NullableDateTimeFormatter : IJsonFormatter<DateTime?>, IJsonFormatter
 {
-	public sealed class NullableDateTimeFormatter : IJsonFormatter<DateTime?>, IJsonFormatter
+	private readonly DateTimeFormatter innerFormatter;
+
+	public NullableDateTimeFormatter()
 	{
-		public NullableDateTimeFormatter()
-		{
-			this.innerFormatter = new DateTimeFormatter();
-		}
+		innerFormatter = new DateTimeFormatter();
+	}
 
-		public NullableDateTimeFormatter(string formatString)
-		{
-			this.innerFormatter = new DateTimeFormatter(formatString);
-		}
+	public NullableDateTimeFormatter(string formatString)
+	{
+		innerFormatter = new DateTimeFormatter(formatString);
+	}
 
-		public void Serialize(ref JsonWriter writer, DateTime? value, IJsonFormatterResolver formatterResolver)
+	public void Serialize(ref JsonWriter writer, DateTime? value, IJsonFormatterResolver formatterResolver)
+	{
+		if (!value.HasValue)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
-			this.innerFormatter.Serialize(ref writer, value.Value, formatterResolver);
+			writer.WriteNull();
 		}
-
-		public DateTime? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+		else
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			return new DateTime?(this.innerFormatter.Deserialize(ref reader, formatterResolver));
+			innerFormatter.Serialize(ref writer, value.Value, formatterResolver);
 		}
+	}
 
-		private readonly DateTimeFormatter innerFormatter;
+	public DateTime? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
+		{
+			return null;
+		}
+		return innerFormatter.Deserialize(ref reader, formatterResolver);
 	}
 }

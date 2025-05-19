@@ -1,12 +1,14 @@
-﻿using System;
+using System;
+using UnityEngine;
 
-namespace MapGeneration.Holidays
+namespace MapGeneration.Holidays;
+
+[Serializable]
+public struct HolidayRoomVariant : IHolidayFetchableData<SpawnableRoom>
 {
-	[Serializable]
-	public struct HolidayRoomVariant : IHolidayFetchableData<SpawnableRoom>
-	{
-		public HolidayType Holiday { readonly get; private set; }
+	[field: SerializeField]
+	public HolidayType Holiday { get; private set; }
 
-		public SpawnableRoom Result { readonly get; private set; }
-	}
+	[field: SerializeField]
+	public SpawnableRoom Result { get; private set; }
 }

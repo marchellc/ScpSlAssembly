@@ -1,22 +1,17 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl;
 
-namespace PlayerRoles.PlayableScps.Scp1507
-{
-	public class Scp1507VisibilityController : FpcVisibilityController
-	{
-		protected override int NormalMaxRangeSqr
-		{
-			get
-			{
-				return this.SurfaceMaxRangeSqr;
-			}
-		}
+namespace PlayerRoles.PlayableScps.Scp1507;
 
-		public override bool ValidateVisibility(ReferenceHub hub)
+public class Scp1507VisibilityController : FpcVisibilityController
+{
+	protected override int NormalMaxRangeSqr => SurfaceMaxRangeSqr;
+
+	public override bool ValidateVisibility(ReferenceHub hub)
+	{
+		if (hub.roleManager.CurrentRole is Scp1507Role { Team: Team.Flamingos })
 		{
-			Scp1507Role scp1507Role = hub.roleManager.CurrentRole as Scp1507Role;
-			return (scp1507Role != null && scp1507Role.Team == Team.Flamingos) || base.ValidateVisibility(hub);
+			return true;
 		}
+		return base.ValidateVisibility(hub);
 	}
 }

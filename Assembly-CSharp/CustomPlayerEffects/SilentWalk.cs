@@ -1,23 +1,15 @@
-﻿using System;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class SilentWalk : StatusEffectBase, IFootstepEffect
 {
-	public class SilentWalk : StatusEffectBase, IFootstepEffect
+	private const float VolumePerStack = 0.1f;
+
+	public override EffectClassification Classification => EffectClassification.Positive;
+
+	public float ProcessFootstepOverrides(float dis)
 	{
-		public override StatusEffectBase.EffectClassification Classification
-		{
-			get
-			{
-				return StatusEffectBase.EffectClassification.Positive;
-			}
-		}
-
-		public float ProcessFootstepOverrides(float dis)
-		{
-			return Mathf.Max(1f - 0.1f * (float)base.Intensity, 0f);
-		}
-
-		private const float VolumePerStack = 0.1f;
+		return Mathf.Max(1f - 0.1f * (float)(int)base.Intensity, 0f);
 	}
 }

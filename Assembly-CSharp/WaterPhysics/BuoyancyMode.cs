@@ -1,14 +1,11 @@
-﻿using System;
+namespace WaterPhysics;
 
-namespace WaterPhysics
+public enum BuoyancyMode
 {
-	public enum BuoyancyMode
-	{
-		SuperHeavy,
-		NonBuoyant,
-		ShortTimeFloaters,
-		LongTimeFloaters,
-		Floater,
-		SuperLight
-	}
+	SuperHeavy,
+	NonBuoyant,
+	ShortTimeFloaters,
+	LongTimeFloaters,
+	Floater,
+	SuperLight
 }

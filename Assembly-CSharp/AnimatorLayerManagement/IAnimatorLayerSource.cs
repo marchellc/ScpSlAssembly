@@ -1,10 +1,8 @@
-﻿using System;
 using UnityEngine;
 
-namespace AnimatorLayerManagement
+namespace AnimatorLayerManagement;
+
+public interface IAnimatorLayerSource
 {
-	public interface IAnimatorLayerSource
-	{
-		RuntimeAnimatorController AnimLayersSource { get; }
-	}
+	RuntimeAnimatorController AnimLayersSource { get; }
 }

@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms;
 
-namespace InventorySystem.Items.Firearms
+public enum FirearmWorldmodelType
 {
-	public enum FirearmWorldmodelType
-	{
-		Pickup,
-		Thirdperson,
-		Presentation
-	}
+	Pickup,
+	Thirdperson,
+	Presentation
 }

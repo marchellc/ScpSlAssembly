@@ -1,35 +1,33 @@
-﻿using System;
 using Mirror;
 using UnityEngine;
 using Utils.Networking;
 
-namespace PlayerRoles.FirstPersonControl
+namespace PlayerRoles.FirstPersonControl;
+
+public static class SyncedGravityMessages
 {
-	public static class SyncedGravityMessages
+	public readonly struct GravityMessage : NetworkMessage
 	{
-		public static void Serialize(this NetworkWriter writer, SyncedGravityMessages.GravityMessage value)
+		public readonly Vector3 Gravity;
+
+		public readonly ReferenceHub TargetHub;
+
+		public GravityMessage(Vector3 gravity, ReferenceHub targetHub)
 		{
-			writer.WriteReferenceHub(value.TargetHub);
-			writer.WriteVector3(value.Gravity);
+			Gravity = gravity;
+			TargetHub = targetHub;
 		}
+	}
 
-		public static SyncedGravityMessages.GravityMessage Deserialize(this NetworkReader reader)
-		{
-			ReferenceHub referenceHub = reader.ReadReferenceHub();
-			return new SyncedGravityMessages.GravityMessage(reader.ReadVector3(), referenceHub);
-		}
+	public static void Serialize(this NetworkWriter writer, GravityMessage value)
+	{
+		writer.WriteReferenceHub(value.TargetHub);
+		writer.WriteVector3(value.Gravity);
+	}
 
-		public readonly struct GravityMessage : NetworkMessage
-		{
-			public GravityMessage(Vector3 gravity, ReferenceHub targetHub)
-			{
-				this.Gravity = gravity;
-				this.TargetHub = targetHub;
-			}
-
-			public readonly Vector3 Gravity;
-
-			public readonly ReferenceHub TargetHub;
-		}
+	public static GravityMessage Deserialize(this NetworkReader reader)
+	{
+		ReferenceHub targetHub = reader.ReadReferenceHub();
+		return new GravityMessage(reader.ReadVector3(), targetHub);
 	}
 }

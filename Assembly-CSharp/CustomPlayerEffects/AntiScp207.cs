@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mirror;
 using PlayerRoles.FirstPersonControl;
@@ -6,251 +6,216 @@ using PlayerStatsSystem;
 using RemoteAdmin.Interfaces;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class AntiScp207 : CokeBase<AntiScp207Stack>, ISpectatorDataPlayerEffect, ICustomRADisplay, IDamageModifierEffect
 {
-	public class AntiScp207 : CokeBase<AntiScp207Stack>, ISpectatorDataPlayerEffect, ICustomRADisplay, IDamageModifierEffect
+	private struct BreakMessage : NetworkMessage
 	{
-		public override StatusEffectBase.EffectClassification Classification
+		public Vector3 SoundPos;
+	}
+
+	private const float AhpDecayValue = 1f;
+
+	public static readonly float DeathSaveHealth = 1f;
+
+	public static readonly float VitalitySpeedMultipler = 1f;
+
+	public static readonly float HumanAHPEfficacy = 1f;
+
+	public static readonly float TeslaImmunityTime = 2f;
+
+	public static readonly float BreakSoundDistance = 25f;
+
+	public static readonly float BreakVolumeModifier = 0.45f;
+
+	public static readonly float DamageImmunityTime = 1.5f;
+
+	[SerializeField]
+	private AudioClip[] _ambienceSounds;
+
+	[SerializeField]
+	private AudioSource _ambienceSource;
+
+	[SerializeField]
+	private AudioClip _effectBreakSound;
+
+	private float _lastSaveTime;
+
+	private bool _isDamageModifierEnabled;
+
+	private AhpStat.AhpProcess _ahpProcess;
+
+	private HealthStat _healthStat;
+
+	private AhpStat _ahpStat;
+
+	public override EffectClassification Classification => EffectClassification.Mixed;
+
+	public override Dictionary<PlayerMovementState, float> StateMultipliers { get; } = new Dictionary<PlayerMovementState, float>
+	{
+		[PlayerMovementState.Crouching] = 1f,
+		[PlayerMovementState.Sneaking] = 0.7f,
+		[PlayerMovementState.Walking] = 0.6f,
+		[PlayerMovementState.Sprinting] = 0.1f
+	};
+
+	public string DisplayName => "SCP-207?";
+
+	public bool CanBeDisplayed => false;
+
+	public override float MovementSpeedMultiplier
+	{
+		get
 		{
-			get
+			if (!Vitality.CheckPlayer(base.Hub))
 			{
-				return StatusEffectBase.EffectClassification.Mixed;
+				return base.CurrentStack.SpeedMultiplier;
 			}
+			return VitalitySpeedMultipler;
 		}
+	}
 
-		public override Dictionary<PlayerMovementState, float> StateMultipliers { get; }
-
-		public string DisplayName
+	public bool DamageModifierActive
+	{
+		get
 		{
-			get
+			if (_isDamageModifierEnabled)
 			{
-				return "SCP-207?";
-			}
-		}
-
-		public bool CanBeDisplayed
-		{
-			get
-			{
-				return false;
-			}
-		}
-
-		public override float MovementSpeedMultiplier
-		{
-			get
-			{
-				if (!Vitality.CheckPlayer(base.Hub))
+				if (!base.IsEnabled)
 				{
-					return base.CurrentStack.SpeedMultiplier;
+					return IsTeslaImmunityActive;
 				}
-				return AntiScp207.VitalitySpeedMultipler;
+				return true;
 			}
+			return false;
 		}
+	}
 
-		public bool DamageModifierActive
+	private bool IsTeslaImmunityActive => _lastSaveTime + TeslaImmunityTime >= Time.timeSinceLevelLoad;
+
+	private bool IsImmunityActive => _lastSaveTime + DamageImmunityTime >= Time.timeSinceLevelLoad;
+
+	private float CurrentHealing => base.CurrentStack.HealAmount * GetMovementStateMultiplier();
+
+	public override bool CheckConflicts(StatusEffectBase other)
+	{
+		return _isDamageModifierEnabled = !base.CheckConflicts(other);
+	}
+
+	public bool GetSpectatorText(out string s)
+	{
+		s = ((base.Intensity > 1) ? $"SCP-207? (x{base.Intensity})" : "SCP-207?");
+		return true;
+	}
+
+	public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
+	{
+		UniversalDamageHandler universalDamageHandler = handler as UniversalDamageHandler;
+		if (IsImmunityActive)
 		{
-			get
-			{
-				return this._isDamageModifierEnabled && (base.IsEnabled || this.IsTeslaImmunityActive);
-			}
+			return 0f;
 		}
-
-		private bool IsTeslaImmunityActive
+		if (IsTeslaImmunityActive && universalDamageHandler != null && universalDamageHandler.TranslationId == DeathTranslations.Tesla.Id)
 		{
-			get
-			{
-				return this._lastSaveTime + AntiScp207.TeslaImmunityTime >= Time.timeSinceLevelLoad;
-			}
+			return 0f;
 		}
-
-		private bool IsImmunityActive
+		if (!base.IsEnabled)
 		{
-			get
-			{
-				return this._lastSaveTime + AntiScp207.DamageImmunityTime >= Time.timeSinceLevelLoad;
-			}
+			return 1f;
 		}
-
-		private float CurrentHealing
+		if (universalDamageHandler != null && (universalDamageHandler.TranslationId == DeathTranslations.Scp207.Id || universalDamageHandler.TranslationId == DeathTranslations.PocketDecay.Id))
 		{
-			get
-			{
-				return base.CurrentStack.HealAmount * base.GetMovementStateMultiplier();
-			}
+			return 1f;
 		}
-
-		public override bool CheckConflicts(StatusEffectBase other)
+		float curValue = base.Hub.playerStats.GetModule<HealthStat>().CurValue;
+		float curValue2 = base.Hub.playerStats.GetModule<AhpStat>().CurValue;
+		float num = curValue + curValue2;
+		if (curValue > baseDamage || num > baseDamage)
 		{
-			return this._isDamageModifierEnabled = !base.CheckConflicts(other);
+			return 1f;
 		}
+		DisableEffect();
+		BreakMessage message = default(BreakMessage);
+		message.SoundPos = base.Hub.transform.position;
+		NetworkServer.SendToReady(message);
+		_lastSaveTime = Time.timeSinceLevelLoad;
+		return (num - DeathSaveHealth) / baseDamage;
+	}
 
-		public bool GetSpectatorText(out string s)
+	protected override void IntensityChanged(byte prevState, byte newState)
+	{
+		base.IntensityChanged(prevState, newState);
+		if (base.IsLocalPlayer)
 		{
-			s = ((base.Intensity > 1) ? string.Format("SCP-207? (x{0})", base.Intensity) : "SCP-207?");
-			return true;
-		}
-
-		public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
-		{
-			UniversalDamageHandler universalDamageHandler = handler as UniversalDamageHandler;
-			if (this.IsImmunityActive)
-			{
-				return 0f;
-			}
-			if (this.IsTeslaImmunityActive && universalDamageHandler != null && universalDamageHandler.TranslationId == DeathTranslations.Tesla.Id)
-			{
-				return 0f;
-			}
-			if (!base.IsEnabled)
-			{
-				return 1f;
-			}
-			if (universalDamageHandler != null && (universalDamageHandler.TranslationId == DeathTranslations.Scp207.Id || universalDamageHandler.TranslationId == DeathTranslations.PocketDecay.Id))
-			{
-				return 1f;
-			}
-			float curValue = base.Hub.playerStats.GetModule<HealthStat>().CurValue;
-			float curValue2 = base.Hub.playerStats.GetModule<AhpStat>().CurValue;
-			float num = curValue + curValue2;
-			if (curValue > baseDamage || num > baseDamage)
-			{
-				return 1f;
-			}
-			this.DisableEffect();
-			NetworkServer.SendToReady<AntiScp207.BreakMessage>(new AntiScp207.BreakMessage
-			{
-				SoundPos = base.Hub.transform.position
-			}, 0);
-			this._lastSaveTime = Time.timeSinceLevelLoad;
-			return (num - AntiScp207.DeathSaveHealth) / baseDamage;
-		}
-
-		protected override void IntensityChanged(byte prevState, byte newState)
-		{
-			base.IntensityChanged(prevState, newState);
-			if (!base.IsLocalPlayer)
-			{
-				return;
-			}
-			this._ambienceSource.Stop();
+			_ambienceSource.Stop();
 			if (newState > 0)
 			{
-				this._ambienceSource.clip = this._ambienceSounds[Mathf.Min((int)newState, this._ambienceSounds.Length) - 1];
-				this._ambienceSource.Play();
+				_ambienceSource.clip = _ambienceSounds[Mathf.Min(newState, _ambienceSounds.Length) - 1];
+				_ambienceSource.Play();
 			}
 		}
+	}
 
-		protected override void OnTick()
+	protected override void OnTick()
+	{
+		if (!NetworkServer.active)
 		{
-			if (!NetworkServer.active)
+			return;
+		}
+		float currentHealing = CurrentHealing;
+		if (!_healthStat.FullyHealed)
+		{
+			if (_ahpProcess != null)
 			{
-				return;
+				_ahpProcess.DecayRate = 0f;
 			}
-			float currentHealing = this.CurrentHealing;
-			if (!this._healthStat.FullyHealed)
+			_healthStat.ServerHeal(currentHealing);
+		}
+		else
+		{
+			if (_ahpProcess == null)
 			{
-				if (this._ahpProcess != null)
-				{
-					this._ahpProcess.DecayRate = 0f;
-				}
-				this._healthStat.ServerHeal(currentHealing);
-				return;
+				_ahpProcess = _ahpStat.ServerAddProcess(0f, _ahpStat.MaxValue, 0f - currentHealing, 0.7f, 0f, persistant: true);
 			}
-			if (this._ahpProcess == null)
-			{
-				this._ahpProcess = this._ahpStat.ServerAddProcess(0f, this._ahpStat.MaxValue, -currentHealing, 0.7f, 0f, true);
-			}
-			this._ahpProcess.DecayRate = -currentHealing;
+			_ahpProcess.DecayRate = 0f - currentHealing;
 		}
+	}
 
-		protected override void Enabled()
+	protected override void Enabled()
+	{
+		base.Enabled();
+		_isDamageModifierEnabled = true;
+		_ahpProcess = null;
+		if (!base.Hub.playerStats.TryGetModule<HealthStat>(out _healthStat))
 		{
-			base.Enabled();
-			this._isDamageModifierEnabled = true;
-			this._ahpProcess = null;
-			if (!base.Hub.playerStats.TryGetModule<HealthStat>(out this._healthStat))
-			{
-				throw new NullReferenceException();
-			}
-			if (!base.Hub.playerStats.TryGetModule<AhpStat>(out this._ahpStat))
-			{
-				throw new NullReferenceException();
-			}
+			throw new NullReferenceException();
 		}
-
-		protected override void Disabled()
+		if (!base.Hub.playerStats.TryGetModule<AhpStat>(out _ahpStat))
 		{
-			base.Disabled();
-			if (this._ahpProcess == null)
-			{
-				return;
-			}
-			this._ahpProcess.DecayRate = 1f;
+			throw new NullReferenceException();
 		}
+	}
 
-		private static void OnBreak(AntiScp207.BreakMessage msg)
+	protected override void Disabled()
+	{
+		base.Disabled();
+		if (_ahpProcess != null)
 		{
+			_ahpProcess.DecayRate = 1f;
 		}
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+	private static void OnBreak(BreakMessage msg)
+	{
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
 		{
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				NetworkClient.ReplaceHandler<AntiScp207.BreakMessage>(new Action<AntiScp207.BreakMessage>(AntiScp207.OnBreak), true);
-			};
-		}
-
-		public AntiScp207()
-		{
-			Dictionary<PlayerMovementState, float> dictionary = new Dictionary<PlayerMovementState, float>();
-			dictionary[PlayerMovementState.Crouching] = 1f;
-			dictionary[PlayerMovementState.Sneaking] = 0.7f;
-			dictionary[PlayerMovementState.Walking] = 0.6f;
-			dictionary[PlayerMovementState.Sprinting] = 0.1f;
-			this.StateMultipliers = dictionary;
-			base..ctor();
-		}
-
-		private const float AhpDecayValue = 1f;
-
-		public static readonly float DeathSaveHealth = 1f;
-
-		public static readonly float VitalitySpeedMultipler = 1f;
-
-		public static readonly float HumanAHPEfficacy = 1f;
-
-		public static readonly float TeslaImmunityTime = 2f;
-
-		public static readonly float BreakSoundDistance = 25f;
-
-		public static readonly float BreakVolumeModifier = 0.45f;
-
-		public static readonly float DamageImmunityTime = 1.5f;
-
-		[SerializeField]
-		private AudioClip[] _ambienceSounds;
-
-		[SerializeField]
-		private AudioSource _ambienceSource;
-
-		[SerializeField]
-		private AudioClip _effectBreakSound;
-
-		private float _lastSaveTime;
-
-		private bool _isDamageModifierEnabled;
-
-		private AhpStat.AhpProcess _ahpProcess;
-
-		private HealthStat _healthStat;
-
-		private AhpStat _ahpStat;
-
-		private struct BreakMessage : NetworkMessage
-		{
-			public Vector3 SoundPos;
-		}
+			NetworkClient.ReplaceHandler<BreakMessage>(OnBreak);
+		};
 	}
 }

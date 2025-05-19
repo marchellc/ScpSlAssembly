@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mirror;
 using Mirror.RemoteCalls;
@@ -7,46 +7,73 @@ using UnityEngine;
 
 public class AmbientSoundPlayer : NetworkBehaviour
 {
+	[Serializable]
+	public class AmbientClip
+	{
+		public AudioClip clip;
+
+		public bool repeatable = true;
+
+		public bool is3D = true;
+
+		public bool played;
+
+		public int index;
+	}
+
+	public GameObject audioPrefab;
+
+	public int minTime = 30;
+
+	public int maxTime = 60;
+
+	public AmbientClip[] clips;
+
+	private List<AmbientClip> list = new List<AmbientClip>();
+
+	private RateLimit _ambientSoundRateLimit = new RateLimit(4, 3f);
+
 	private void Start()
 	{
-		if (!base.isLocalPlayer || !base.isServer)
+		if (base.isLocalPlayer && base.isServer)
 		{
-			return;
+			for (int i = 0; i < clips.Length; i++)
+			{
+				clips[i].index = i;
+			}
+			Invoke("GenerateRandom", 10f);
 		}
-		for (int i = 0; i < this.clips.Length; i++)
-		{
-			this.clips[i].index = i;
-		}
-		base.Invoke("GenerateRandom", 10f);
 	}
 
 	private void GenerateRandom()
 	{
-		this.list.Clear();
-		foreach (AmbientSoundPlayer.AmbientClip ambientClip in this.clips)
+		list.Clear();
+		int num = 0;
+		AmbientClip[] array = clips;
+		foreach (AmbientClip ambientClip in array)
 		{
 			if (!ambientClip.played)
 			{
-				this.list.Add(ambientClip);
+				list.Add(ambientClip);
 			}
 		}
-		int num = global::UnityEngine.Random.Range(0, this.list.Count);
-		int index = this.list[num].index;
-		if (!this.clips[index].repeatable)
+		num = UnityEngine.Random.Range(0, list.Count);
+		int index = list[num].index;
+		if (!clips[index].repeatable)
 		{
-			this.clips[index].played = true;
+			clips[index].played = true;
 		}
-		this.RpcPlaySound(index);
-		base.Invoke("GenerateRandom", (float)global::UnityEngine.Random.Range(this.minTime, this.maxTime));
+		RpcPlaySound(index);
+		Invoke("GenerateRandom", UnityEngine.Random.Range(minTime, maxTime));
 	}
 
 	[ClientRpc]
 	private void RpcPlaySound(int id)
 	{
-		NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-		networkWriterPooled.WriteInt(id);
-		this.SendRPCInternal("System.Void AmbientSoundPlayer::RpcPlaySound(System.Int32)", -1494438428, networkWriterPooled, 0, true);
-		NetworkWriterPool.Return(networkWriterPooled);
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteInt(id);
+		SendRPCInternal("System.Void AmbientSoundPlayer::RpcPlaySound(System.Int32)", -1494438428, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
 	}
 
 	public override bool Weaved()
@@ -63,39 +90,15 @@ public class AmbientSoundPlayer : NetworkBehaviour
 		if (!NetworkClient.active)
 		{
 			Debug.LogError("RPC RpcPlaySound called on server.");
-			return;
 		}
-		((AmbientSoundPlayer)obj).UserCode_RpcPlaySound__Int32(reader.ReadInt());
+		else
+		{
+			((AmbientSoundPlayer)obj).UserCode_RpcPlaySound__Int32(reader.ReadInt());
+		}
 	}
 
 	static AmbientSoundPlayer()
 	{
-		RemoteProcedureCalls.RegisterRpc(typeof(AmbientSoundPlayer), "System.Void AmbientSoundPlayer::RpcPlaySound(System.Int32)", new RemoteCallDelegate(AmbientSoundPlayer.InvokeUserCode_RpcPlaySound__Int32));
-	}
-
-	public GameObject audioPrefab;
-
-	public int minTime = 30;
-
-	public int maxTime = 60;
-
-	public AmbientSoundPlayer.AmbientClip[] clips;
-
-	private List<AmbientSoundPlayer.AmbientClip> list = new List<AmbientSoundPlayer.AmbientClip>();
-
-	private RateLimit _ambientSoundRateLimit = new RateLimit(4, 3f, null);
-
-	[Serializable]
-	public class AmbientClip
-	{
-		public AudioClip clip;
-
-		public bool repeatable = true;
-
-		public bool is3D = true;
-
-		public bool played;
-
-		public int index;
+		RemoteProcedureCalls.RegisterRpc(typeof(AmbientSoundPlayer), "System.Void AmbientSoundPlayer::RpcPlaySound(System.Int32)", InvokeUserCode_RpcPlaySound__Int32);
 	}
 }

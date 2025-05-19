@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using InventorySystem;
 using InventorySystem.Items;
@@ -7,70 +6,69 @@ using InventorySystem.Items.Usables;
 using PlayerRoles;
 using Scp914;
 
-namespace Respawning.Objectives
+namespace Respawning.Objectives;
+
+public class ScpItemPickupObjective : HumanObjectiveBase<PickupObjectiveFootprint>
 {
-	public class ScpItemPickupObjective : HumanObjectiveBase<PickupObjectiveFootprint>
+	private const float PickupItemTimer = -5f;
+
+	private const float PickupItemInfluence = 2f;
+
+	private const float PickupConsumableTimer = -2f;
+
+	private const float PickupConsumableInfluence = 1f;
+
+	private static readonly HashSet<ushort> BlacklistedItems = new HashSet<ushort>();
+
+	protected override PickupObjectiveFootprint ClientCreateFootprint()
 	{
-		protected override PickupObjectiveFootprint ClientCreateFootprint()
-		{
-			return new PickupObjectiveFootprint();
-		}
+		return new PickupObjectiveFootprint();
+	}
 
-		protected override void OnInstanceCreated()
-		{
-			base.OnInstanceCreated();
-			InventoryExtensions.OnItemAdded += this.OnItemAdded;
-			Scp914Upgrader.OnUpgraded += this.OnPickupUpgraded;
-		}
+	protected override void OnInstanceCreated()
+	{
+		base.OnInstanceCreated();
+		InventoryExtensions.OnItemAdded += OnItemAdded;
+		Scp914Upgrader.OnUpgraded += OnPickupUpgraded;
+	}
 
-		protected override void OnInstanceReset()
-		{
-			base.OnInstanceReset();
-			ScpItemPickupObjective.BlacklistedItems.Clear();
-		}
+	protected override void OnInstanceReset()
+	{
+		base.OnInstanceReset();
+		BlacklistedItems.Clear();
+	}
 
-		private void OnPickupUpgraded(Scp914Result result, Scp914KnobSetting _)
+	private void OnPickupUpgraded(Scp914Result result, Scp914KnobSetting _)
+	{
+		if (result.ResultingPickups != null)
 		{
-			if (result.ResultingPickups != null)
+			ItemPickupBase[] resultingPickups = result.ResultingPickups;
+			foreach (ItemPickupBase itemPickupBase in resultingPickups)
 			{
-				foreach (ItemPickupBase itemPickupBase in result.ResultingPickups)
+				if (!(itemPickupBase == null))
 				{
-					if (!(itemPickupBase == null))
-					{
-						ScpItemPickupObjective.BlacklistedItems.Add(itemPickupBase.Info.Serial);
-					}
-				}
-			}
-			if (result.ResultingItems != null)
-			{
-				foreach (ItemBase itemBase in result.ResultingItems)
-				{
-					if (!(itemBase == null))
-					{
-						ScpItemPickupObjective.BlacklistedItems.Add(itemBase.ItemSerial);
-					}
+					BlacklistedItems.Add(itemPickupBase.Info.Serial);
 				}
 			}
 		}
-
-		private void OnItemAdded(ReferenceHub hub, ItemBase item, ItemPickupBase pickup)
+		if (result.ResultingItems == null)
 		{
-			if (pickup == null)
+			return;
+		}
+		ItemBase[] resultingItems = result.ResultingItems;
+		foreach (ItemBase itemBase in resultingItems)
+		{
+			if (!(itemBase == null))
 			{
-				return;
+				BlacklistedItems.Add(itemBase.ItemSerial);
 			}
-			if (item.Category != ItemCategory.SCPItem)
-			{
-				return;
-			}
-			if (item.ItemTypeId == ItemType.SCP330)
-			{
-				return;
-			}
-			if (!ScpItemPickupObjective.BlacklistedItems.Add(pickup.Info.Serial))
-			{
-				return;
-			}
+		}
+	}
+
+	private void OnItemAdded(ReferenceHub hub, ItemBase item, ItemPickupBase pickup)
+	{
+		if (!(pickup == null) && item.Category == ItemCategory.SCPItem && item.ItemTypeId != ItemType.SCP330 && BlacklistedItems.Add(pickup.Info.Serial))
+		{
 			Faction faction = hub.GetFaction();
 			float num;
 			float num2;
@@ -84,26 +82,16 @@ namespace Respawning.Objectives
 				num = 2f;
 				num2 = -5f;
 			}
-			base.GrantInfluence(faction, num);
-			base.ReduceTimer(faction, num2);
+			GrantInfluence(faction, num);
+			ReduceTimer(faction, num2);
 			base.ObjectiveFootprint = new PickupObjectiveFootprint
 			{
 				InfluenceReward = num,
 				TimeReward = num2,
-				AchievingPlayer = new ObjectiveHubFootprint(hub, RoleTypeId.None),
+				AchievingPlayer = new ObjectiveHubFootprint(hub),
 				PickupType = item.ItemTypeId
 			};
-			base.ServerSendUpdate();
+			ServerSendUpdate();
 		}
-
-		private const float PickupItemTimer = -5f;
-
-		private const float PickupItemInfluence = 2f;
-
-		private const float PickupConsumableTimer = -2f;
-
-		private const float PickupConsumableInfluence = 1f;
-
-		private static readonly HashSet<ushort> BlacklistedItems = new HashSet<ushort>();
 	}
 }

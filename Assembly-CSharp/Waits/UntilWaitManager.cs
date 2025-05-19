@@ -1,27 +1,25 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using MEC;
 
-namespace Waits
+namespace Waits;
+
+public abstract class UntilWaitManager : WaitManager
 {
-	public abstract class UntilWaitManager : WaitManager
+	protected Func<bool> allocatedKeepRunning;
+
+	protected override void Awake()
 	{
-		protected override void Awake()
-		{
-			base.Awake();
-			this.allocatedKeepRunning = new Func<bool>(this.KeepRunning);
-		}
+		base.Awake();
+		allocatedKeepRunning = KeepRunning;
+	}
 
-		protected abstract bool KeepRunning();
+	protected abstract bool KeepRunning();
 
-		public override IEnumerator<float> _Run()
-		{
-			base.StartAll();
-			yield return float.NegativeInfinity;
-			yield return Timing.WaitUntilFalse(this.allocatedKeepRunning);
-			yield break;
-		}
-
-		protected Func<bool> allocatedKeepRunning;
+	public override IEnumerator<float> _Run()
+	{
+		StartAll();
+		yield return float.NegativeInfinity;
+		yield return Timing.WaitUntilFalse(allocatedKeepRunning);
 	}
 }

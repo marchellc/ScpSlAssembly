@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+public interface IAdsPreventerModule
 {
-	public interface IAdsPreventerModule
-	{
-		bool AdsAllowed { get; }
-	}
+	bool AdsAllowed { get; }
 }

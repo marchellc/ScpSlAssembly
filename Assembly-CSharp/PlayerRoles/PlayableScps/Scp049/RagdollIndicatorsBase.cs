@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mirror;
@@ -9,215 +8,196 @@ using UnityEngine;
 using Utils.Networking;
 using Utils.NonAllocLINQ;
 
-namespace PlayerRoles.PlayableScps.Scp049
+namespace PlayerRoles.PlayableScps.Scp049;
+
+public abstract class RagdollIndicatorsBase<T> : StandardSubroutine<T> where T : PlayerRoleBase
 {
-	public abstract class RagdollIndicatorsBase<T> : StandardSubroutine<T> where T : PlayerRoleBase
+	private readonly struct Indicator
 	{
-		protected virtual void Update()
+		public readonly GameObject Instance;
+
+		private readonly CanvasGroup _group;
+
+		public void SetAlpha(float f)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			if (!this.ServerCheckNew())
-			{
-				this.ServerRevalidateOld();
-			}
+			f = Mathf.Clamp01(f);
+			_group.alpha = f;
 		}
 
-		protected virtual GameObject GenerateIndicator(BasicRagdoll ragdoll)
+		public Indicator(GameObject inst)
 		{
-			return global::UnityEngine.Object.Instantiate<GameObject>(this._indicatorTemplate);
+			Instance = inst;
+			_group = inst.GetComponentInChildren<CanvasGroup>();
+			SetAlpha(0f);
 		}
+	}
 
-		protected abstract bool ValidateRagdoll(BasicRagdoll ragdoll);
+	private enum ListSyncRpcType
+	{
+		FullResync,
+		Add,
+		Remove
+	}
 
-		private bool ServerCheckNew()
+	[SerializeField]
+	private float _showDelay;
+
+	[SerializeField]
+	private float _fullOpacityDistance;
+
+	[SerializeField]
+	private float _visibleDistance;
+
+	[SerializeField]
+	private GameObject _indicatorTemplate;
+
+	[SerializeField]
+	private Vector3 _posOffset;
+
+	private readonly Dictionary<BasicRagdoll, Indicator> _indicatorInstances = new Dictionary<BasicRagdoll, Indicator>();
+
+	private readonly HashSet<BasicRagdoll> _availableRagdolls = new HashSet<BasicRagdoll>();
+
+	private ListSyncRpcType _rpcType;
+
+	private uint _syncRagdoll;
+
+	protected virtual void Update()
+	{
+		if (NetworkServer.active && !ServerCheckNew())
 		{
-			foreach (BasicRagdoll basicRagdoll in RagdollManager.AllRagdolls)
-			{
-				if (this.ValidateRagdoll(basicRagdoll) && basicRagdoll.Info.ExistenceTime > this._showDelay && this._availableRagdolls.Add(basicRagdoll))
-				{
-					this.ServerSendRpc(RagdollIndicatorsBase<T>.ListSyncRpcType.Add, basicRagdoll);
-					return true;
-				}
-			}
-			return false;
+			ServerRevalidateOld();
 		}
+	}
 
-		private void ServerRevalidateOld()
-		{
-			BasicRagdoll basicRagdoll;
-			if (!this._availableRagdolls.TryGetFirst((BasicRagdoll x) => !this.ValidateRagdoll(x), out basicRagdoll))
-			{
-				return;
-			}
-			this._availableRagdolls.Remove(basicRagdoll);
-			this.ServerSendRpc(RagdollIndicatorsBase<T>.ListSyncRpcType.Remove, basicRagdoll);
-		}
+	protected virtual GameObject GenerateIndicator(BasicRagdoll ragdoll)
+	{
+		return Object.Instantiate(_indicatorTemplate);
+	}
 
-		public override void SpawnObject()
-		{
-			base.SpawnObject();
-			PlayerRoleManager.OnRoleChanged += this.OnRoleChanged;
-			RagdollManager.OnRagdollRemoved += this.ClientRemoveRagdoll;
-		}
+	protected abstract bool ValidateRagdoll(BasicRagdoll ragdoll);
 
-		public override void ResetObject()
+	private bool ServerCheckNew()
+	{
+		foreach (BasicRagdoll allRagdoll in RagdollManager.AllRagdolls)
 		{
-			base.ResetObject();
-			this._availableRagdolls.Clear();
-			PlayerRoleManager.OnRoleChanged -= this.OnRoleChanged;
-			RagdollManager.OnRagdollRemoved -= this.ClientRemoveRagdoll;
-			this._indicatorInstances.ForEachValue(delegate(RagdollIndicatorsBase<T>.Indicator x)
+			if (ValidateRagdoll(allRagdoll) && !(allRagdoll.Info.ExistenceTime <= _showDelay) && _availableRagdolls.Add(allRagdoll))
 			{
-				global::UnityEngine.Object.Destroy(x.Instance);
-			});
-			this._indicatorInstances.Clear();
-		}
-
-		public override void ServerWriteRpc(NetworkWriter writer)
-		{
-			base.ServerWriteRpc(writer);
-			writer.WriteByte((byte)this._rpcType);
-			if (this._rpcType != RagdollIndicatorsBase<T>.ListSyncRpcType.FullResync)
-			{
-				writer.WriteUInt(this._syncRagdoll);
-				return;
-			}
-			this._availableRagdolls.ForEach(delegate(BasicRagdoll x)
-			{
-				writer.WriteUInt(x.netId);
-			});
-		}
-
-		public override void ClientProcessRpc(NetworkReader reader)
-		{
-			base.ClientProcessRpc(reader);
-			this._rpcType = (RagdollIndicatorsBase<T>.ListSyncRpcType)reader.ReadByte();
-			RagdollIndicatorsBase<T>.ListSyncRpcType rpcType = this._rpcType;
-			if (rpcType != RagdollIndicatorsBase<T>.ListSyncRpcType.FullResync)
-			{
-				if (rpcType - RagdollIndicatorsBase<T>.ListSyncRpcType.Add <= 1)
-				{
-					this.ClientProcessRpcSingularNetId(reader.ReadUInt(), this._rpcType);
-					return;
-				}
-			}
-			else
-			{
-				while (this._availableRagdolls.Count > 0)
-				{
-					this.ClientRemoveRagdoll(this._availableRagdolls.First<BasicRagdoll>());
-				}
-				while (reader.Remaining > 0)
-				{
-					this.ClientProcessRpcSingularNetId(reader.ReadUInt(), RagdollIndicatorsBase<T>.ListSyncRpcType.Add);
-				}
+				ServerSendRpc(ListSyncRpcType.Add, allRagdoll);
+				return true;
 			}
 		}
+		return false;
+	}
 
-		private void ClientProcessRpcSingularNetId(uint netId, RagdollIndicatorsBase<T>.ListSyncRpcType rpcType)
+	private void ServerRevalidateOld()
+	{
+		if (_availableRagdolls.TryGetFirst((BasicRagdoll x) => !ValidateRagdoll(x), out var first))
 		{
-			NetworkIdentity networkIdentity;
-			if (!NetworkUtils.SpawnedNetIds.TryGetValue(netId, out networkIdentity))
-			{
-				return;
-			}
-			BasicRagdoll basicRagdoll;
-			if (!networkIdentity.TryGetComponent<BasicRagdoll>(out basicRagdoll))
-			{
-				return;
-			}
-			if (rpcType == RagdollIndicatorsBase<T>.ListSyncRpcType.Add)
-			{
-				this._availableRagdolls.Add(basicRagdoll);
-				return;
-			}
-			if (rpcType != RagdollIndicatorsBase<T>.ListSyncRpcType.Remove)
-			{
-				return;
-			}
-			this.ClientRemoveRagdoll(basicRagdoll);
+			_availableRagdolls.Remove(first);
+			ServerSendRpc(ListSyncRpcType.Remove, first);
 		}
+	}
 
-		private void OnRoleChanged(ReferenceHub hub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
+		RagdollManager.OnRagdollRemoved += ClientRemoveRagdoll;
+	}
+
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		_availableRagdolls.Clear();
+		PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
+		RagdollManager.OnRagdollRemoved -= ClientRemoveRagdoll;
+		_indicatorInstances.ForEachValue(delegate(Indicator x)
 		{
-			if (!NetworkServer.active || !(newRole is SpectatorRole))
-			{
-				return;
-			}
-			this._rpcType = RagdollIndicatorsBase<T>.ListSyncRpcType.FullResync;
-			base.ServerSendRpc(hub);
+			Object.Destroy(x.Instance);
+		});
+		_indicatorInstances.Clear();
+	}
+
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteByte((byte)_rpcType);
+		if (_rpcType != 0)
+		{
+			writer.WriteUInt(_syncRagdoll);
+			return;
 		}
-
-		private void ServerSendRpc(RagdollIndicatorsBase<T>.ListSyncRpcType rpcType, BasicRagdoll ragdoll)
+		_availableRagdolls.ForEach(delegate(BasicRagdoll x)
 		{
-			this._rpcType = rpcType;
-			this._syncRagdoll = ragdoll.netId;
-			base.ServerSendRpc((ReferenceHub x) => x == base.Owner || x.roleManager.CurrentRole is SpectatorRole);
+			writer.WriteUInt(x.netId);
+		});
+	}
+
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		_rpcType = (ListSyncRpcType)reader.ReadByte();
+		switch (_rpcType)
+		{
+		case ListSyncRpcType.Add:
+		case ListSyncRpcType.Remove:
+			ClientProcessRpcSingularNetId(reader.ReadUInt(), _rpcType);
+			return;
+		case ListSyncRpcType.FullResync:
+			break;
+		default:
+			return;
 		}
-
-		private void ClientRemoveRagdoll(BasicRagdoll ragdoll)
+		while (_availableRagdolls.Count > 0)
 		{
-			this._availableRagdolls.Remove(ragdoll);
-			RagdollIndicatorsBase<T>.Indicator indicator;
-			if (!this._indicatorInstances.TryGetValue(ragdoll.Info.Serial, out indicator))
-			{
-				return;
-			}
-			global::UnityEngine.Object.Destroy(indicator.Instance);
-			this._indicatorInstances.Remove(ragdoll.Info.Serial);
+			ClientRemoveRagdoll(_availableRagdolls.First());
 		}
-
-		[SerializeField]
-		private float _showDelay;
-
-		[SerializeField]
-		private float _fullOpacityDistance;
-
-		[SerializeField]
-		private float _visibleDistance;
-
-		[SerializeField]
-		private GameObject _indicatorTemplate;
-
-		[SerializeField]
-		private Vector3 _posOffset;
-
-		private readonly Dictionary<ushort, RagdollIndicatorsBase<T>.Indicator> _indicatorInstances = new Dictionary<ushort, RagdollIndicatorsBase<T>.Indicator>();
-
-		private readonly HashSet<BasicRagdoll> _availableRagdolls = new HashSet<BasicRagdoll>();
-
-		private RagdollIndicatorsBase<T>.ListSyncRpcType _rpcType;
-
-		private uint _syncRagdoll;
-
-		private readonly struct Indicator
+		while (reader.Remaining > 0)
 		{
-			public void SetAlpha(float f)
-			{
-				f = Mathf.Clamp01(f);
-				this._group.alpha = f;
-			}
-
-			public Indicator(GameObject inst)
-			{
-				this.Instance = inst;
-				this._group = inst.GetComponentInChildren<CanvasGroup>();
-				this.SetAlpha(0f);
-			}
-
-			public readonly GameObject Instance;
-
-			private readonly CanvasGroup _group;
+			ClientProcessRpcSingularNetId(reader.ReadUInt(), ListSyncRpcType.Add);
 		}
+	}
 
-		private enum ListSyncRpcType
+	private void ClientProcessRpcSingularNetId(uint netId, ListSyncRpcType rpcType)
+	{
+		if (NetworkUtils.SpawnedNetIds.TryGetValue(netId, out var value) && value.TryGetComponent<BasicRagdoll>(out var component))
 		{
-			FullResync,
-			Add,
-			Remove
+			switch (rpcType)
+			{
+			case ListSyncRpcType.Add:
+				_availableRagdolls.Add(component);
+				break;
+			case ListSyncRpcType.Remove:
+				ClientRemoveRagdoll(component);
+				break;
+			}
+		}
+	}
+
+	private void OnRoleChanged(ReferenceHub hub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+	{
+		if (NetworkServer.active && newRole is SpectatorRole)
+		{
+			_rpcType = ListSyncRpcType.FullResync;
+			ServerSendRpc(hub);
+		}
+	}
+
+	private void ServerSendRpc(ListSyncRpcType rpcType, BasicRagdoll ragdoll)
+	{
+		_rpcType = rpcType;
+		_syncRagdoll = ragdoll.netId;
+		ServerSendRpc((ReferenceHub x) => x == base.Owner || x.roleManager.CurrentRole is SpectatorRole);
+	}
+
+	private void ClientRemoveRagdoll(BasicRagdoll ragdoll)
+	{
+		_availableRagdolls.Remove(ragdoll);
+		if (_indicatorInstances.TryGetValue(ragdoll, out var value))
+		{
+			Object.Destroy(value.Instance);
+			_indicatorInstances.Remove(ragdoll);
 		}
 	}
 }

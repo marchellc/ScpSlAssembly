@@ -1,16 +1,15 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace GameCore
+namespace GameCore;
+
+[Serializable]
+public class CommandHint
 {
-	[Serializable]
-	public class CommandHint
-	{
-		public string name;
+	public string name;
 
-		public string shortDesc;
+	public string shortDesc;
 
-		[Multiline]
-		public string fullDesc;
-	}
+	[Multiline]
+	public string fullDesc;
 }

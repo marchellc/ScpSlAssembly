@@ -1,12 +1,9 @@
-﻿using System;
+namespace LiteNetLib4Mirror.Open.Nat;
 
-namespace LiteNetLib4Mirror.Open.Nat
+internal enum MappingLifetime
 {
-	internal enum MappingLifetime
-	{
-		Permanent,
-		Session,
-		Manual,
-		ForcedSession
-	}
+	Permanent,
+	Session,
+	Manual,
+	ForcedSession
 }

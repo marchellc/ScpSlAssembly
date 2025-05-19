@@ -1,11 +1,8 @@
-﻿using System;
+namespace PlayerRoles.Spectating;
 
-namespace PlayerRoles.Spectating
+public enum SpectatorSpawnReason : byte
 {
-	public enum SpectatorSpawnReason : byte
-	{
-		None,
-		KilledByPlayer,
-		Other
-	}
+	None,
+	KilledByPlayer,
+	Other
 }

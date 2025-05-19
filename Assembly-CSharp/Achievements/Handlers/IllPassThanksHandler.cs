@@ -1,53 +1,46 @@
-﻿using System;
 using InventorySystem.Items.MicroHID;
 using InventorySystem.Items.MicroHID.Modules;
 using PlayerRoles;
 using PlayerRoles.PlayableScps.Scp106;
 using PlayerStatsSystem;
 
-namespace Achievements.Handlers
-{
-	public class IllPassThanksHandler : AchievementHandlerBase
-	{
-		internal override void OnInitialize()
-		{
-			PlayerStats.OnAnyPlayerDied += this.HandleDeath;
-			Scp106Attack.OnPlayerTeleported += this.PlayerTeleported;
-		}
+namespace Achievements.Handlers;
 
-		private void PlayerTeleported(ReferenceHub scp106, ReferenceHub hub)
+public class IllPassThanksHandler : AchievementHandlerBase
+{
+	internal override void OnInitialize()
+	{
+		PlayerStats.OnAnyPlayerDied += HandleDeath;
+		Scp106Attack.OnPlayerTeleported += PlayerTeleported;
+	}
+
+	private void PlayerTeleported(ReferenceHub scp106, ReferenceHub hub)
+	{
+		if (CheckConditionsForVictim(hub))
 		{
-			if (!this.CheckConditionsForVictim(hub))
-			{
-				return;
-			}
 			AchievementHandlerBase.ServerAchieve(scp106.connectionToClient, AchievementName.IllPassThanks);
 		}
+	}
 
-		private void HandleDeath(ReferenceHub deadPlayer, DamageHandlerBase handler)
+	private void HandleDeath(ReferenceHub deadPlayer, DamageHandlerBase handler)
+	{
+		if (handler is AttackerDamageHandler attackerDamageHandler)
 		{
-			AttackerDamageHandler attackerDamageHandler = handler as AttackerDamageHandler;
-			if (attackerDamageHandler == null)
-			{
-				return;
-			}
 			ReferenceHub hub = attackerDamageHandler.Attacker.Hub;
-			if (hub == null || !hub.IsSCP(true) || !this.CheckConditionsForVictim(deadPlayer))
+			if (!(hub == null) && hub.IsSCP() && CheckConditionsForVictim(deadPlayer))
 			{
-				return;
+				AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.IllPassThanks);
 			}
-			AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.IllPassThanks);
 		}
+	}
 
-		private bool CheckConditionsForVictim(ReferenceHub hub)
+	private bool CheckConditionsForVictim(ReferenceHub hub)
+	{
+		if (hub.inventory.CurInstance is MicroHIDItem microHIDItem && microHIDItem != null)
 		{
-			MicroHIDItem microHIDItem = hub.inventory.CurInstance as MicroHIDItem;
-			if (microHIDItem != null && microHIDItem != null)
-			{
-				MicroHidPhase phase = microHIDItem.CycleController.Phase;
-				return phase == MicroHidPhase.WindingUp || phase == MicroHidPhase.Firing;
-			}
-			return false;
+			MicroHidPhase phase = microHIDItem.CycleController.Phase;
+			return phase == MicroHidPhase.WindingUp || phase == MicroHidPhase.Firing;
 		}
+		return false;
 	}
 }

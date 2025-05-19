@@ -1,8 +1,18 @@
-﻿using System;
+using System;
 using Utf8Json;
 
 public readonly struct RequestSignatureResponse : IEquatable<RequestSignatureResponse>, IJsonSerializable
 {
+	public readonly bool success;
+
+	public readonly string error;
+
+	public readonly SignedToken authToken;
+
+	public readonly SignedToken badgeToken;
+
+	public readonly string nonce;
+
 	[SerializationConstructor]
 	public RequestSignatureResponse(bool success, string error, SignedToken authToken, SignedToken badgeToken, string nonce)
 	{
@@ -15,22 +25,26 @@ public readonly struct RequestSignatureResponse : IEquatable<RequestSignatureRes
 
 	public bool Equals(RequestSignatureResponse other)
 	{
-		return this.success == other.success && this.error == other.error && this.authToken == other.authToken && this.badgeToken == other.badgeToken && this.nonce == other.nonce;
+		if (success == other.success && error == other.error && authToken == other.authToken && badgeToken == other.badgeToken)
+		{
+			return nonce == other.nonce;
+		}
+		return false;
 	}
 
 	public override bool Equals(object obj)
 	{
-		if (obj is RequestSignatureResponse)
+		if (obj is RequestSignatureResponse other)
 		{
-			RequestSignatureResponse requestSignatureResponse = (RequestSignatureResponse)obj;
-			return this.Equals(requestSignatureResponse);
+			return Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((((((this.success.GetHashCode() * 397) ^ ((this.error != null) ? this.error.GetHashCode() : 0)) * 397) ^ ((this.authToken != null) ? this.authToken.GetHashCode() : 0)) * 397) ^ ((this.badgeToken != null) ? this.badgeToken.GetHashCode() : 0)) * 397) ^ ((this.nonce != null) ? this.nonce.GetHashCode() : 0);
+		bool flag = success;
+		return (((((((flag.GetHashCode() * 397) ^ ((error != null) ? error.GetHashCode() : 0)) * 397) ^ ((authToken != null) ? authToken.GetHashCode() : 0)) * 397) ^ ((badgeToken != null) ? badgeToken.GetHashCode() : 0)) * 397) ^ ((nonce != null) ? nonce.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(RequestSignatureResponse left, RequestSignatureResponse right)
@@ -42,14 +56,4 @@ public readonly struct RequestSignatureResponse : IEquatable<RequestSignatureRes
 	{
 		return !left.Equals(right);
 	}
-
-	public readonly bool success;
-
-	public readonly string error;
-
-	public readonly SignedToken authToken;
-
-	public readonly SignedToken badgeToken;
-
-	public readonly string nonce;
 }

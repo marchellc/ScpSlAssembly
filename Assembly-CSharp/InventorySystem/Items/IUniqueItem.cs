@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public interface IUniqueItem
 {
-	public interface IUniqueItem
-	{
-		bool CompareIdentical(ItemBase other);
-	}
+	bool CompareIdentical(ItemBase other);
 }

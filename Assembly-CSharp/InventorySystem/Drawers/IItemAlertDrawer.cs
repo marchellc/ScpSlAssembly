@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Drawers;
 
-namespace InventorySystem.Drawers
+public interface IItemAlertDrawer : IItemDrawer
 {
-	public interface IItemAlertDrawer : IItemDrawer
-	{
-		AlertContent Alert { get; }
-	}
+	AlertContent Alert { get; }
 }

@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public interface IItemNametag
 {
-	public interface IItemNametag
-	{
-		string Name { get; }
-	}
+	string Name { get; }
 }

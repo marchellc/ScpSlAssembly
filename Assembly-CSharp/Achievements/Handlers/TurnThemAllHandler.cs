@@ -1,58 +1,55 @@
-﻿using System;
 using Mirror;
 using PlayerRoles;
 
-namespace Achievements.Handlers
+namespace Achievements.Handlers;
+
+public class TurnThemAllHandler : AchievementHandlerBase
 {
-	public class TurnThemAllHandler : AchievementHandlerBase
+	private const int TargetCured = 10;
+
+	private static int _healedPlayers;
+
+	private static bool _alreadyAchieved;
+
+	internal override void OnInitialize()
 	{
-		internal override void OnInitialize()
-		{
-			PlayerRoleManager.OnServerRoleSet += TurnThemAllHandler.OnRoleChanged;
-		}
+		PlayerRoleManager.OnServerRoleSet += OnRoleChanged;
+	}
 
-		internal override void OnRoundStarted()
-		{
-			TurnThemAllHandler._healedPlayers = 0;
-			TurnThemAllHandler._alreadyAchieved = false;
-		}
+	internal override void OnRoundStarted()
+	{
+		_healedPlayers = 0;
+		_alreadyAchieved = false;
+	}
 
-		private static void OnRoleChanged(ReferenceHub userHub, RoleTypeId newClass, RoleChangeReason reason)
+	private static void OnRoleChanged(ReferenceHub userHub, RoleTypeId newClass, RoleChangeReason reason)
+	{
+		if (!NetworkServer.active || _alreadyAchieved || newClass != RoleTypeId.Scp0492 || reason != RoleChangeReason.Revived)
 		{
-			if (!NetworkServer.active || TurnThemAllHandler._alreadyAchieved || newClass != RoleTypeId.Scp0492 || reason != RoleChangeReason.Revived)
+			return;
+		}
+		_healedPlayers++;
+		if (_healedPlayers < 10)
+		{
+			return;
+		}
+		NetworkConnection conn = null;
+		bool flag = false;
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (allHub.GetRoleId() == RoleTypeId.Scp049)
 			{
-				return;
-			}
-			TurnThemAllHandler._healedPlayers++;
-			if (TurnThemAllHandler._healedPlayers < 10)
-			{
-				return;
-			}
-			NetworkConnection networkConnection = null;
-			bool flag = false;
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				if (referenceHub.GetRoleId() == RoleTypeId.Scp049)
+				if (flag)
 				{
-					if (flag)
-					{
-						return;
-					}
-					networkConnection = referenceHub.networkIdentity.connectionToClient;
-					flag = true;
+					return;
 				}
+				conn = allHub.networkIdentity.connectionToClient;
+				flag = true;
 			}
-			if (!flag)
-			{
-				return;
-			}
-			AchievementHandlerBase.ServerAchieve(networkConnection, AchievementName.TurnThemAll);
 		}
-
-		private const int TargetCured = 10;
-
-		private static int _healedPlayers;
-
-		private static bool _alreadyAchieved;
+		if (flag)
+		{
+			AchievementHandlerBase.ServerAchieve(conn, AchievementName.TurnThemAll);
+		}
 	}
 }

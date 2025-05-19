@@ -1,10 +1,8 @@
-﻿using System;
 using UnityEngine;
 
-namespace WaterPhysics
+namespace WaterPhysics;
+
+public class BuoyancyDefinition : MonoBehaviour
 {
-	public class BuoyancyDefinition : MonoBehaviour
-	{
-		public BuoyancyMode Mode;
-	}
+	public BuoyancyMode Mode;
 }

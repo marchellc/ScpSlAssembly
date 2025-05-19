@@ -1,8 +1,5 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public class LerpAudioMixerVisuals : LerpVisualsBase
 {
-	public class LerpAudioMixerVisuals : LerpVisualsBase
-	{
-	}
 }

@@ -1,17 +1,15 @@
-﻿using System;
+namespace Interactables.Interobjects;
 
-namespace Interactables.Interobjects
+public enum ElevatorGroup
 {
-	public enum ElevatorGroup
-	{
-		GateA,
-		GateB,
-		LczA01,
-		LczA02,
-		LczB01,
-		LczB02,
-		Nuke01,
-		Scp049,
-		Nuke02
-	}
+	GateA,
+	GateB,
+	LczA01,
+	LczA02,
+	LczB01,
+	LczB02,
+	Nuke01,
+	Scp049,
+	Nuke02,
+	ServerRoom
 }

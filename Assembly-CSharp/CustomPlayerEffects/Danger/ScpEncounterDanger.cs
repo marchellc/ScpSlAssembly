@@ -1,43 +1,40 @@
-﻿using System;
 using PlayerRoles;
 using PlayerRoles.PlayableScps;
 
-namespace CustomPlayerEffects.Danger
+namespace CustomPlayerEffects.Danger;
+
+public class ScpEncounterDanger : EncounterDangerBase
 {
-	public class ScpEncounterDanger : EncounterDangerBase
+	public override bool IsActive
 	{
-		public override bool IsActive
+		get
 		{
-			get
-			{
-				this.UpdateState();
-				return base.IsActive;
-			}
-			protected set
-			{
-				base.IsActive = value;
-			}
+			UpdateState();
+			return base.IsActive;
 		}
-
-		public override float DangerPerEncounter { get; } = 1f;
-
-		public override float DangerPerAdditionalEncounter { get; } = 0.5f;
-
-		private void UpdateState()
+		protected set
 		{
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
+			base.IsActive = value;
+		}
+	}
+
+	public override float DangerPerEncounter { get; } = 1f;
+
+	public override float DangerPerAdditionalEncounter { get; } = 0.5f;
+
+	private void UpdateState()
+	{
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (!(allHub == base.Owner) && allHub.roleManager.CurrentRole.Team == Team.SCPs && allHub.roleManager.CurrentRole.RoleTypeId != RoleTypeId.Scp0492 && VisionInformation.IsInView(base.Owner, allHub))
 			{
-				if (!(referenceHub == base.Owner) && referenceHub.roleManager.CurrentRole.Team == Team.SCPs && referenceHub.roleManager.CurrentRole.RoleTypeId != RoleTypeId.Scp0492 && VisionInformation.IsInView(base.Owner, referenceHub))
+				if (WasEncounteredRecently(allHub, out var cachedEncounter))
 				{
-					CachedEncounterDanger cachedEncounterDanger;
-					if (base.WasEncounteredRecently(referenceHub, out cachedEncounterDanger))
-					{
-						cachedEncounterDanger.TimeTracker.Restart();
-					}
-					else
-					{
-						base.RegisterEncounter(referenceHub);
-					}
+					cachedEncounter.TimeTracker.Restart();
+				}
+				else
+				{
+					RegisterEncounter(allHub);
 				}
 			}
 		}

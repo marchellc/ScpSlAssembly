@@ -1,24 +1,27 @@
-﻿using System;
 using Utf8Json.Resolvers.Internal;
 
-namespace Utf8Json.Resolvers
+namespace Utf8Json.Resolvers;
+
+public sealed class DynamicGenericResolver : IJsonFormatterResolver
 {
-	public sealed class DynamicGenericResolver : IJsonFormatterResolver
+	private static class FormatterCache<T>
 	{
-		private DynamicGenericResolver()
-		{
-		}
+		public static readonly IJsonFormatter<T> formatter;
 
-		public IJsonFormatter<T> GetFormatter<T>()
+		static FormatterCache()
 		{
-			return DynamicGenericResolver.FormatterCache<T>.formatter;
+			formatter = (IJsonFormatter<T>)DynamicGenericResolverGetFormatterHelper.GetFormatter(typeof(T));
 		}
+	}
 
-		public static readonly IJsonFormatterResolver Instance = new DynamicGenericResolver();
+	public static readonly IJsonFormatterResolver Instance = new DynamicGenericResolver();
 
-		private static class FormatterCache<T>
-		{
-			public static readonly IJsonFormatter<T> formatter = (IJsonFormatter<T>)DynamicGenericResolverGetFormatterHelper.GetFormatter(typeof(T));
-		}
+	private DynamicGenericResolver()
+	{
+	}
+
+	public IJsonFormatter<T> GetFormatter<T>()
+	{
+		return FormatterCache<T>.formatter;
 	}
 }

@@ -1,64 +1,60 @@
-﻿using System;
+namespace UserSettings.ServerSpecific.Examples;
 
-namespace UserSettings.ServerSpecific.Examples
+public abstract class SSExampleImplementationBase
 {
-	public abstract class SSExampleImplementationBase
+	private static SSExampleImplementationBase _activeExample;
+
+	public static readonly SSExampleImplementationBase[] AllExamples = new SSExampleImplementationBase[6]
 	{
-		public abstract string Name { get; }
+		new SSFieldsDemoExample(),
+		new SSAbilitiesExample(),
+		new SSTextAreaExample(),
+		new SSPagesExample(),
+		new SSPrimitiveSpawnerExample(),
+		new SSLightSpawnerExample()
+	};
 
-		public abstract void Activate();
+	public abstract string Name { get; }
 
-		public abstract void Deactivate();
+	public abstract void Activate();
 
-		public static bool TryActivateExample(int index, out string message)
+	public abstract void Deactivate();
+
+	public static bool TryActivateExample(int index, out string message)
+	{
+		if (!AllExamples.TryGet(index, out var element))
 		{
-			SSExampleImplementationBase ssexampleImplementationBase;
-			if (!SSExampleImplementationBase.AllExamples.TryGet(index, out ssexampleImplementationBase))
-			{
-				message = string.Format("Index {0} out of range.", index);
-				return false;
-			}
-			if (SSExampleImplementationBase._activeExample == ssexampleImplementationBase)
-			{
-				message = "This example is already active. Use the 'stop' argument to deactivate.";
-				return false;
-			}
-			if (SSExampleImplementationBase._activeExample != null)
-			{
-				message = "Another example is already active. Use the 'stop' argument to deactivate.";
-				return false;
-			}
-			SSExampleImplementationBase._activeExample = ssexampleImplementationBase;
-			SSExampleImplementationBase._activeExample.Activate();
-			message = ssexampleImplementationBase.Name + " activated.";
-			return true;
+			message = $"Index {index} out of range.";
+			return false;
 		}
-
-		public static bool TryDeactivateExample(out string disabledName)
+		if (_activeExample == element)
 		{
-			if (SSExampleImplementationBase._activeExample == null)
-			{
-				disabledName = null;
-				return false;
-			}
-			disabledName = SSExampleImplementationBase._activeExample.Name;
-			SSExampleImplementationBase._activeExample.Deactivate();
-			SSExampleImplementationBase._activeExample = null;
-			ServerSpecificSettingsSync.DefinedSettings = null;
-			ServerSpecificSettingsSync.SendToAll();
-			return true;
+			message = "This example is already active. Use the 'stop' argument to deactivate.";
+			return false;
 		}
-
-		private static SSExampleImplementationBase _activeExample;
-
-		public static readonly SSExampleImplementationBase[] AllExamples = new SSExampleImplementationBase[]
+		if (_activeExample != null)
 		{
-			new SSFieldsDemoExample(),
-			new SSAbilitiesExample(),
-			new SSTextAreaExample(),
-			new SSPagesExample(),
-			new SSPrimitiveSpawnerExample(),
-			new SSLightSpawnerExample()
-		};
+			message = "Another example is already active. Use the 'stop' argument to deactivate.";
+			return false;
+		}
+		_activeExample = element;
+		_activeExample.Activate();
+		message = element.Name + " activated.";
+		return true;
+	}
+
+	public static bool TryDeactivateExample(out string disabledName)
+	{
+		if (_activeExample == null)
+		{
+			disabledName = null;
+			return false;
+		}
+		disabledName = _activeExample.Name;
+		_activeExample.Deactivate();
+		_activeExample = null;
+		ServerSpecificSettingsSync.DefinedSettings = null;
+		ServerSpecificSettingsSync.SendToAll();
+		return true;
 	}
 }

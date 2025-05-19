@@ -1,55 +1,40 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Interactables.Interobjects.DoorUtils
+namespace Interactables.Interobjects.DoorUtils;
+
+public class DoorNametagExtension : DoorVariantExtension
 {
-	public class DoorNametagExtension : DoorVariantExtension
+	public static readonly Dictionary<string, DoorNametagExtension> NamedDoors = new Dictionary<string, DoorNametagExtension>();
+
+	[SerializeField]
+	private string _nametag;
+
+	public string GetName => _nametag;
+
+	private void Start()
 	{
-		public string GetName
+		UpdateName(_nametag);
+		if (TryGetComponent<DoorVariant>(out var component))
 		{
-			get
-			{
-				return this._nametag;
-			}
+			component.DoorName = _nametag;
 		}
+	}
 
-		private void Start()
+	private void FixedUpdate()
+	{
+	}
+
+	public void UpdateName(string newName)
+	{
+		if (string.IsNullOrEmpty(newName))
 		{
-			this.UpdateName(this._nametag);
-			DoorVariant doorVariant;
-			if (!base.TryGetComponent<DoorVariant>(out doorVariant))
-			{
-				return;
-			}
-			doorVariant.DoorName = this._nametag;
+			Debug.LogError("Nametag of " + base.transform.parent.name + "/" + base.name + " has not been set", base.gameObject);
 		}
-
-		private void FixedUpdate()
+		else
 		{
+			_nametag = newName;
+			NamedDoors[newName] = this;
 		}
-
-		public void UpdateName(string newName)
-		{
-			if (string.IsNullOrEmpty(newName))
-			{
-				Debug.LogError(string.Concat(new string[]
-				{
-					"Nametag of ",
-					base.transform.parent.name,
-					"/",
-					base.name,
-					" has not been set"
-				}), base.gameObject);
-				return;
-			}
-			this._nametag = newName;
-			DoorNametagExtension.NamedDoors[newName] = this;
-		}
-
-		public static readonly Dictionary<string, DoorNametagExtension> NamedDoors = new Dictionary<string, DoorNametagExtension>();
-
-		[SerializeField]
-		private string _nametag;
 	}
 }

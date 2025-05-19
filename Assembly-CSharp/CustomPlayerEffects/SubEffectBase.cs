@@ -1,47 +1,37 @@
-﻿using System;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public abstract class SubEffectBase : MonoBehaviour
 {
-	public abstract class SubEffectBase : MonoBehaviour
+	protected StatusEffectBase MainEffect { get; private set; }
+
+	protected ReferenceHub Hub => MainEffect.Hub;
+
+	protected bool IsLocalPlayer => MainEffect.IsLocalPlayer;
+
+	public virtual bool IsActive
 	{
-		private protected StatusEffectBase MainEffect { protected get; private set; }
-
-		protected ReferenceHub Hub
+		get
 		{
-			get
+			if (base.gameObject.activeInHierarchy)
 			{
-				return this.MainEffect.Hub;
+				return MainEffect.IsEnabled;
 			}
+			return false;
 		}
+	}
 
-		protected bool IsLocalPlayer
-		{
-			get
-			{
-				return this.MainEffect.IsLocalPlayer;
-			}
-		}
+	public virtual void DisableEffect()
+	{
+	}
 
-		public virtual bool IsActive
-		{
-			get
-			{
-				return base.gameObject.activeInHierarchy && this.MainEffect.IsEnabled;
-			}
-		}
+	internal virtual void Init(StatusEffectBase mainEffect)
+	{
+		MainEffect = mainEffect;
+	}
 
-		public virtual void DisableEffect()
-		{
-		}
-
-		internal virtual void Init(StatusEffectBase mainEffect)
-		{
-			this.MainEffect = mainEffect;
-		}
-
-		internal virtual void UpdateEffect()
-		{
-		}
+	internal virtual void UpdateEffect()
+	{
 	}
 }

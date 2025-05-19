@@ -1,10 +1,7 @@
-﻿using System;
+namespace Security;
 
-namespace Security
+public enum ServerRateLimit : ushort
 {
-	public enum ServerRateLimit : ushort
-	{
-		playerInteract,
-		commands
-	}
+	playerInteract,
+	commands
 }

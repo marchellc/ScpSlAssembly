@@ -1,13 +1,10 @@
-﻿using System;
+namespace InventorySystem.Items.MicroHID.Modules;
 
-namespace InventorySystem.Items.MicroHID.Modules
+public enum MicroHidPhase
 {
-	public enum MicroHidPhase
-	{
-		Standby,
-		WindingUp,
-		WindingDown,
-		WoundUpSustain,
-		Firing
-	}
+	Standby,
+	WindingUp,
+	WindingDown,
+	WoundUpSustain,
+	Firing
 }

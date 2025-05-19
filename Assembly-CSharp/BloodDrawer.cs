@@ -1,4 +1,3 @@
-﻿using System;
 using Mirror;
 using UnityEngine;
 

@@ -1,90 +1,92 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules.Misc
+namespace InventorySystem.Items.Firearms.Modules.Misc;
+
+[Serializable]
+public class AnimatorLayerMask
 {
-	[Serializable]
-	public class AnimatorLayerMask
+	[SerializeField]
+	private int _maskValue;
+
+	private int _cachedMaskValue;
+
+	private int[] _cachedMaskArray;
+
+	public int[] Layers
 	{
-		public int[] Layers
+		get
 		{
-			get
+			if (_cachedMaskValue == _maskValue && _cachedMaskArray != null)
 			{
-				if (this._cachedMaskValue == this._maskValue && this._cachedMaskArray != null)
-				{
-					return this._cachedMaskArray;
-				}
-				uint num = (uint)this._maskValue;
-				int num2 = 0;
-				while (num != 0U)
-				{
-					num2++;
-					num &= num - 1U;
-				}
-				if (this._cachedMaskArray == null || this._cachedMaskArray.Length != num2)
-				{
-					this._cachedMaskArray = new int[num2];
-				}
-				for (int i = 0; i < 32; i++)
-				{
-					int num3 = 1 << i;
-					if (num3 > this._maskValue)
-					{
-						break;
-					}
-					if ((this._maskValue & num3) != 0)
-					{
-						this._cachedMaskArray[--num2] = i;
-					}
-				}
-				this._cachedMaskValue = this._maskValue;
-				return this._cachedMaskArray;
+				return _cachedMaskArray;
 			}
-			set
+			uint num = (uint)_maskValue;
+			int num2 = 0;
+			while (num != 0)
 			{
-				this._maskValue = 0;
-				value.ForEach(delegate(int x)
+				num2++;
+				num &= num - 1;
+			}
+			if (_cachedMaskArray == null || _cachedMaskArray.Length != num2)
+			{
+				_cachedMaskArray = new int[num2];
+			}
+			for (int i = 0; i < 32; i++)
+			{
+				int num3 = 1 << i;
+				if (num3 > _maskValue)
 				{
-					this.SetLayer(x, true);
-				});
+					break;
+				}
+				if ((_maskValue & num3) != 0)
+				{
+					_cachedMaskArray[--num2] = i;
+				}
 			}
+			_cachedMaskValue = _maskValue;
+			return _cachedMaskArray;
 		}
-
-		public void SetLayer(int layerIndex, bool state)
+		set
 		{
-			int num = 1 << layerIndex;
-			if (state)
+			_maskValue = 0;
+			value.ForEach(delegate(int x)
 			{
-				this._maskValue |= num;
-				return;
-			}
-			this._maskValue &= ~num;
+				SetLayer(x, state: true);
+			});
 		}
+	}
 
-		public bool GetLayer(int layerIndex)
+	public void SetLayer(int layerIndex, bool state)
+	{
+		int num = 1 << layerIndex;
+		if (state)
 		{
-			int num = 1 << layerIndex;
-			return (this._maskValue & num) == num;
+			_maskValue |= num;
 		}
-
-		public void SetWeight(Animator anim, float weight)
+		else
 		{
-			this.SetWeight(new Action<int, float>(anim.SetLayerWeight), weight);
+			_maskValue &= ~num;
 		}
+	}
 
-		public void SetWeight(Action<int, float> setter, float weight)
+	public bool GetLayer(int layerIndex)
+	{
+		int num = 1 << layerIndex;
+		return (_maskValue & num) == num;
+	}
+
+	public void SetWeight(Animator anim, float weight)
+	{
+		SetWeight(anim.SetLayerWeight, weight);
+	}
+
+	public void SetWeight(Action<int, float> setter, float weight)
+	{
+		int[] layers = Layers;
+		foreach (int arg in layers)
 		{
-			foreach (int num in this.Layers)
-			{
-				setter(num, weight);
-			}
+			setter(arg, weight);
 		}
-
-		[SerializeField]
-		private int _maskValue;
-
-		private int _cachedMaskValue;
-
-		private int[] _cachedMaskArray;
 	}
 }

@@ -1,21 +1,19 @@
-﻿using System;
 using Mirror;
 
-namespace InventorySystem.Disarming
+namespace InventorySystem.Disarming;
+
+public readonly struct DisarmMessage : NetworkMessage
 {
-	public readonly struct DisarmMessage : NetworkMessage
+	public readonly ReferenceHub PlayerToDisarm;
+
+	public readonly bool Disarm;
+
+	public readonly bool PlayerIsNull;
+
+	public DisarmMessage(ReferenceHub playerToDisarm, bool disarm, bool isNull)
 	{
-		public DisarmMessage(ReferenceHub playerToDisarm, bool disarm, bool isNull)
-		{
-			this.PlayerToDisarm = playerToDisarm;
-			this.Disarm = disarm;
-			this.PlayerIsNull = isNull;
-		}
-
-		public readonly ReferenceHub PlayerToDisarm;
-
-		public readonly bool Disarm;
-
-		public readonly bool PlayerIsNull;
+		PlayerToDisarm = playerToDisarm;
+		Disarm = disarm;
+		PlayerIsNull = isNull;
 	}
 }

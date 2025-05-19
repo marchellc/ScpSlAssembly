@@ -1,73 +1,72 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Firearms.ShotEvents;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+public abstract class ShootingEffectsExtensionBase : MixedExtension
 {
-	public abstract class ShootingEffectsExtensionBase : MixedExtension
+	[Serializable]
+	protected struct ParticleCollection
 	{
-		protected virtual void OnEnable()
-		{
-			this._standbyMode = false;
-		}
+		public ParticleSystem[] ParticleSystems;
 
-		protected virtual void OnDisable()
+		public readonly void Play()
 		{
-			this._standbyMode = true;
-		}
-
-		protected virtual void Awake()
-		{
-			ShootingEffectsExtensionBase.Instances.Add(this);
-		}
-
-		protected virtual void OnDestroy()
-		{
-			ShootingEffectsExtensionBase.Instances.Remove(this);
-		}
-
-		protected abstract void PlayEffects(ShotEvent ev);
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			ShotEventManager.OnShot += ShootingEffectsExtensionBase.Play;
-		}
-
-		public static void Play(ShotEvent ev)
-		{
-			foreach (ShootingEffectsExtensionBase shootingEffectsExtensionBase in ShootingEffectsExtensionBase.Instances)
+			ParticleSystem[] particleSystems = ParticleSystems;
+			for (int i = 0; i < particleSystems.Length; i++)
 			{
-				if (!shootingEffectsExtensionBase._standbyMode && !(shootingEffectsExtensionBase.Identifier != ev.ItemId))
-				{
-					shootingEffectsExtensionBase.PlayEffects(ev);
-				}
+				particleSystems[i].Play(withChildren: true);
 			}
 		}
 
-		private static readonly HashSet<ShootingEffectsExtensionBase> Instances = new HashSet<ShootingEffectsExtensionBase>();
-
-		private bool _standbyMode;
-
-		[Serializable]
-		protected struct ParticleCollection
+		public readonly void ConvertLights()
 		{
-			public readonly void Play()
-			{
-				ParticleSystem[] particleSystems = this.ParticleSystems;
-				for (int i = 0; i < particleSystems.Length; i++)
-				{
-					particleSystems[i].Play(true);
-				}
-			}
+			ParticleSystems.ForEach(WorldspaceLightParticleConverter.Convert);
+		}
+	}
 
-			public readonly void ConvertLights()
-			{
-				this.ParticleSystems.ForEach(new Action<ParticleSystem>(WorldspaceLightParticleConverter.Convert));
-			}
+	private static readonly HashSet<ShootingEffectsExtensionBase> Instances = new HashSet<ShootingEffectsExtensionBase>();
 
-			public ParticleSystem[] ParticleSystems;
+	private bool _standbyMode;
+
+	protected virtual void OnEnable()
+	{
+		_standbyMode = false;
+	}
+
+	protected virtual void OnDisable()
+	{
+		_standbyMode = true;
+	}
+
+	protected virtual void Awake()
+	{
+		Instances.Add(this);
+	}
+
+	protected virtual void OnDestroy()
+	{
+		Instances.Remove(this);
+	}
+
+	protected abstract void PlayEffects(ShotEvent ev);
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		ShotEventManager.OnShot += Play;
+	}
+
+	public static void Play(ShotEvent ev)
+	{
+		foreach (ShootingEffectsExtensionBase instance in Instances)
+		{
+			if (!instance._standbyMode && !(instance.Identifier != ev.ItemId))
+			{
+				instance.PlayEffects(ev);
+			}
 		}
 	}
 }

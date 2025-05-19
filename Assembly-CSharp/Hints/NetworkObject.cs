@@ -1,12 +1,10 @@
-﻿using System;
 using Mirror;
 
-namespace Hints
-{
-	public abstract class NetworkObject<TData> : NetworkMessage
-	{
-		public abstract void Deserialize(NetworkReader reader);
+namespace Hints;
 
-		public abstract void Serialize(NetworkWriter writer);
-	}
+public abstract class NetworkObject<TData> : NetworkMessage
+{
+	public abstract void Deserialize(NetworkReader reader);
+
+	public abstract void Serialize(NetworkWriter writer);
 }

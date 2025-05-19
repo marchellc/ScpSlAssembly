@@ -1,14 +1,11 @@
-﻿using System;
+namespace MapGeneration;
 
-namespace MapGeneration
+public enum FacilityZone
 {
-	public enum FacilityZone
-	{
-		None,
-		LightContainment,
-		HeavyContainment,
-		Entrance,
-		Surface,
-		Other
-	}
+	None,
+	LightContainment,
+	HeavyContainment,
+	Entrance,
+	Surface,
+	Other
 }

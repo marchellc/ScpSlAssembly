@@ -1,21 +1,18 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl.Thirdperson;
 using UnityEngine;
 
-namespace InventorySystem.Items.MarshmallowMan
-{
-	public class MarshmallowModel : AnimatedCharacterModel
-	{
-		protected override void Update()
-		{
-			base.Update();
-			if (base.Pooled)
-			{
-				return;
-			}
-			base.Animator.SetBool(MarshmallowModel.HashGrounded, base.FpcModule.Noclip.IsActive || base.FpcModule.IsGrounded);
-		}
+namespace InventorySystem.Items.MarshmallowMan;
 
-		private static readonly int HashGrounded = Animator.StringToHash("Grounded");
+public class MarshmallowModel : AnimatedCharacterModel
+{
+	private static readonly int HashGrounded = Animator.StringToHash("Grounded");
+
+	protected override void Update()
+	{
+		base.Update();
+		if (!base.Pooled)
+		{
+			base.Animator.SetBool(HashGrounded, base.FpcModule.Noclip.IsActive || base.FpcModule.IsGrounded);
+		}
 	}
 }

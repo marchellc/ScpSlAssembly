@@ -1,8 +1,5 @@
-﻿using System;
+namespace DeathAnimations;
 
-namespace DeathAnimations
+public class Scp106Animation : FirstpersonDeathAnimation
 {
-	public class Scp106Animation : FirstpersonDeathAnimation
-	{
-	}
 }

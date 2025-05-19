@@ -1,46 +1,42 @@
-﻿using System;
 using System.Text;
 using NorthwoodLib.Pools;
 
-namespace PlayerRoles.PlayableScps.Scp079.GUI
+namespace PlayerRoles.PlayableScps.Scp079.GUI;
+
+public class Scp079AccentedNotification : Scp079SimpleNotification
 {
-	public class Scp079AccentedNotification : Scp079SimpleNotification
+	public const char ToggleChar = '$';
+
+	public const string AccentColor = "#00a2ff";
+
+	private const string FormatStartColor = "<color={0}>";
+
+	private const string FormatEndColor = "</color>";
+
+	public Scp079AccentedNotification(string message, string color = "#00a2ff", char triggerChar = '$')
+		: base(ProcessText(message, color, triggerChar))
 	{
-		public Scp079AccentedNotification(string message, string color = "#00a2ff", char triggerChar = '$')
-			: base(Scp079AccentedNotification.ProcessText(message, color, triggerChar), false)
+	}
+
+	private static string ProcessText(string message, string color, char triggerChar)
+	{
+		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
+		bool flag = false;
+		string text = $"<color={color}>";
+		foreach (char c in message)
 		{
+			if (c != triggerChar)
+			{
+				stringBuilder.Append(c);
+				continue;
+			}
+			stringBuilder.Append(flag ? "</color>" : text);
+			flag = !flag;
 		}
-
-		private static string ProcessText(string message, string color, char triggerChar)
+		if (flag)
 		{
-			StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-			bool flag = false;
-			string text = string.Format("<color={0}>", color);
-			foreach (char c in message)
-			{
-				if (c != triggerChar)
-				{
-					stringBuilder.Append(c);
-				}
-				else
-				{
-					stringBuilder.Append(flag ? "</color>" : text);
-					flag = !flag;
-				}
-			}
-			if (flag)
-			{
-				stringBuilder.Append("</color>");
-			}
-			return StringBuilderPool.Shared.ToStringReturn(stringBuilder);
+			stringBuilder.Append("</color>");
 		}
-
-		public const char ToggleChar = '$';
-
-		public const string AccentColor = "#00a2ff";
-
-		private const string FormatStartColor = "<color={0}>";
-
-		private const string FormatEndColor = "</color>";
+		return StringBuilderPool.Shared.ToStringReturn(stringBuilder);
 	}
 }

@@ -1,58 +1,56 @@
-﻿using System;
+using System;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class NewsRawFormatter : IJsonFormatter<NewsRaw>, IJsonFormatter
 {
-	public sealed class NewsRawFormatter : IJsonFormatter<NewsRaw>, IJsonFormatter
+	private readonly AutomataDictionary ____keyMapping;
+
+	private readonly byte[][] ____stringByteKeys;
+
+	public NewsRawFormatter()
 	{
-		public NewsRawFormatter()
+		____keyMapping = new AutomataDictionary { 
 		{
-			this.____keyMapping = new AutomataDictionary { 
-			{
-				JsonWriter.GetEncodedPropertyNameWithoutQuotation("appnews"),
-				0
-			} };
-			this.____stringByteKeys = new byte[][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("appnews") };
-		}
+			JsonWriter.GetEncodedPropertyNameWithoutQuotation("appnews"),
+			0
+		} };
+		____stringByteKeys = new byte[1][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("appnews") };
+	}
 
-		public void Serialize(ref JsonWriter writer, NewsRaw value, IJsonFormatterResolver formatterResolver)
-		{
-			writer.WriteRaw(this.____stringByteKeys[0]);
-			formatterResolver.GetFormatterWithVerify<NewsList>().Serialize(ref writer, value.appnews, formatterResolver);
-			writer.WriteEndObject();
-		}
+	public void Serialize(ref JsonWriter writer, NewsRaw value, IJsonFormatterResolver formatterResolver)
+	{
+		writer.WriteRaw(____stringByteKeys[0]);
+		formatterResolver.GetFormatterWithVerify<NewsList>().Serialize(ref writer, value.appnews, formatterResolver);
+		writer.WriteEndObject();
+	}
 
-		public NewsRaw Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public NewsRaw Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
+			throw new InvalidOperationException("typecode is null, struct not supported");
+		}
+		NewsList appnews = default(NewsList);
+		int count = 0;
+		reader.ReadIsBeginObjectWithVerify();
+		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
+		{
+			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
+			if (!____keyMapping.TryGetValueSafe(key, out var value))
 			{
-				throw new InvalidOperationException("typecode is null, struct not supported");
+				reader.ReadNextBlock();
 			}
-			NewsList newsList = default(NewsList);
-			int num = 0;
-			reader.ReadIsBeginObjectWithVerify();
-			while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref num))
+			else if (value == 0)
 			{
-				ArraySegment<byte> arraySegment = reader.ReadPropertyNameSegmentRaw();
-				int num2;
-				if (!this.____keyMapping.TryGetValueSafe(arraySegment, out num2))
-				{
-					reader.ReadNextBlock();
-				}
-				else if (num2 == 0)
-				{
-					newsList = formatterResolver.GetFormatterWithVerify<NewsList>().Deserialize(ref reader, formatterResolver);
-				}
-				else
-				{
-					reader.ReadNextBlock();
-				}
+				appnews = formatterResolver.GetFormatterWithVerify<NewsList>().Deserialize(ref reader, formatterResolver);
 			}
-			return new NewsRaw(newsList);
+			else
+			{
+				reader.ReadNextBlock();
+			}
 		}
-
-		private readonly AutomataDictionary ____keyMapping;
-
-		private readonly byte[][] ____stringByteKeys;
+		return new NewsRaw(appnews);
 	}
 }

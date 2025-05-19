@@ -1,101 +1,95 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Interactables.Interobjects;
 using NorthwoodLib.Pools;
 
-namespace CommandSystem.Commands.RemoteAdmin
+namespace CommandSystem.Commands.RemoteAdmin;
+
+[CommandHandler(typeof(ElevatorCommand))]
+public class ElevatorSendCommand : ICommand
 {
-	[CommandHandler(typeof(ElevatorCommand))]
-	public class ElevatorSendCommand : ICommand
+	public string Command { get; } = "send";
+
+	public string[] Aliases { get; } = new string[2] { "s", "snd" };
+
+	public string Description { get; } = "Sends an elevator.";
+
+	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
-		public string Command { get; } = "send";
-
-		public string[] Aliases { get; } = new string[] { "s", "snd" };
-
-		public string Description { get; } = "Sends an elevator.";
-
-		public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+		if (!sender.CheckPermission(PlayerPermissions.FacilityManagement, out response))
 		{
-			if (!sender.CheckPermission(PlayerPermissions.FacilityManagement, out response))
-			{
-				return false;
-			}
-			if (arguments.Count < 1 || arguments.Count > 2)
-			{
-				response = "Syntax error: elevator send <Elevator ID / \"all\"> [level]";
-				return false;
-			}
-			string text = arguments.At(0);
-			bool flag = text.Equals("all", StringComparison.OrdinalIgnoreCase) || text.Equals("*", StringComparison.OrdinalIgnoreCase);
-			int num = -1;
-			if (arguments.Count > 1 && (!int.TryParse(arguments.At(1), out num) || num < 0))
-			{
-				response = "Level must be a nonnegative integer.";
-				return false;
-			}
-			if (flag)
-			{
-				StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-				bool flag2 = true;
-				bool flag3;
-				try
-				{
-					ElevatorGroup[] values = EnumUtils<ElevatorGroup>.Values;
-					for (int i = 0; i < values.Length; i++)
-					{
-						string text2;
-						if (!ElevatorSendCommand.SendElevator(values[i], -1, out text2, sender))
-						{
-							flag2 = false;
-						}
-						stringBuilder.AppendFormat("{0}\n", text2);
-					}
-					response = stringBuilder.ToString();
-					flag3 = flag2;
-				}
-				finally
-				{
-					StringBuilderPool.Shared.Return(stringBuilder);
-				}
-				return flag3;
-			}
-			ElevatorGroup elevatorGroup;
-			if (!ElevatorCommand.TryParseGroup(text, out elevatorGroup))
+			return false;
+		}
+		if (arguments.Count < 1 || arguments.Count > 2)
+		{
+			response = "Syntax error: elevator send <Elevator ID / \"all\"> [level]";
+			return false;
+		}
+		string text = arguments.At(0);
+		bool flag = text.Equals("all", StringComparison.OrdinalIgnoreCase) || text.Equals("*", StringComparison.OrdinalIgnoreCase);
+		int result = -1;
+		if (arguments.Count > 1 && (!int.TryParse(arguments.At(1), out result) || result < 0))
+		{
+			response = "Level must be a nonnegative integer.";
+			return false;
+		}
+		if (!flag)
+		{
+			if (!ElevatorCommand.TryParseGroup(text, out var group))
 			{
 				response = "Elevator \"" + text + "\" not found.";
 				return false;
 			}
-			return ElevatorSendCommand.SendElevator(elevatorGroup, num, out response, sender);
+			return SendElevator(group, result, out response, sender);
 		}
-
-		private static bool SendElevator(ElevatorGroup group, int level, out string response, ICommandSender sender)
+		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
+		bool result2 = true;
+		try
 		{
-			List<ElevatorDoor> doorsForGroup = ElevatorDoor.GetDoorsForGroup(group);
-			if (doorsForGroup.Count == 0)
+			ElevatorGroup[] values = EnumUtils<ElevatorGroup>.Values;
+			for (int i = 0; i < values.Length; i++)
 			{
-				response = string.Format("No doors for \"{0}\" could not be found in the Facility.", group);
-				return false;
+				if (!SendElevator(values[i], -1, out var response2, sender))
+				{
+					result2 = false;
+				}
+				stringBuilder.AppendFormat("{0}\n", response2);
 			}
-			ElevatorChamber elevatorChamber;
-			if (!ElevatorChamber.TryGetChamber(group, out elevatorChamber))
-			{
-				response = string.Format("Chamber for elevator \"{0}\" is not spawned.", group);
-				return false;
-			}
-			if (level == -1)
-			{
-				level = elevatorChamber.NextLevel;
-			}
-			else if (level >= doorsForGroup.Count)
-			{
-				response = string.Format("Elevator \"{0}\" does not have a level {1}.", group, level);
-				return false;
-			}
-			elevatorChamber.ServerSetDestination(level, true);
-			ServerLogs.AddLog(ServerLogs.Modules.Administrative, string.Format("{0} sent elevator {1} to level {2}.", sender.LogName, group, level), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging, false);
-			response = string.Format("Elevator \"{0}\" has been sent to level {1}.", group, level);
-			return true;
+			response = stringBuilder.ToString();
+			return result2;
 		}
+		finally
+		{
+			StringBuilderPool.Shared.Return(stringBuilder);
+		}
+	}
+
+	private static bool SendElevator(ElevatorGroup group, int level, out string response, ICommandSender sender)
+	{
+		List<ElevatorDoor> doorsForGroup = ElevatorDoor.GetDoorsForGroup(group);
+		if (doorsForGroup.Count == 0)
+		{
+			response = $"No doors for \"{group}\" could not be found in the Facility.";
+			return false;
+		}
+		if (!ElevatorChamber.TryGetChamber(group, out var chamber))
+		{
+			response = $"Chamber for elevator \"{group}\" is not spawned.";
+			return false;
+		}
+		if (level == -1)
+		{
+			level = chamber.NextLevel;
+		}
+		else if (level >= doorsForGroup.Count)
+		{
+			response = $"Elevator \"{group}\" does not have a level {level}.";
+			return false;
+		}
+		chamber.ServerSetDestination(level, allowQueueing: true);
+		ServerLogs.AddLog(ServerLogs.Modules.Administrative, $"{sender.LogName} sent elevator {group} to level {level}.", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
+		response = $"Elevator \"{group}\" has been sent to level {level}.";
+		return true;
 	}
 }

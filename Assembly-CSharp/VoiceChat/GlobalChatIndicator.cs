@@ -1,137 +1,128 @@
-﻿using System;
 using PlayerRoles;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using VoiceChat.Playbacks;
 
-namespace VoiceChat
+namespace VoiceChat;
+
+public class GlobalChatIndicator : MonoBehaviour
 {
-	public class GlobalChatIndicator : MonoBehaviour
+	[SerializeField]
+	private TextMeshProUGUI _nickname;
+
+	[SerializeField]
+	private RawImage _icon;
+
+	[SerializeField]
+	private Graphic[] _backgrounds;
+
+	[SerializeField]
+	private Outline[] _outlines;
+
+	[SerializeField]
+	private GameObject _iconRoot;
+
+	[SerializeField]
+	private Texture _radioIcon;
+
+	[SerializeField]
+	private Texture _intercomIcon;
+
+	private IGlobalPlayback _playback;
+
+	private ReferenceHub _owner;
+
+	private bool _wasSpeaking;
+
+	private float _noSpeakTime;
+
+	private Color _lastColor;
+
+	private Transform _t;
+
+	private const float SustainTime = 0.3f;
+
+	public void Setup(IGlobalPlayback igp, ReferenceHub owner)
 	{
-		public void Setup(IGlobalPlayback igp, ReferenceHub owner)
-		{
-			this._playback = igp;
-			this._owner = owner;
-			this._t = base.transform;
-			this._noSpeakTime = 0f;
-		}
+		_playback = igp;
+		_owner = owner;
+		_t = base.transform;
+		_noSpeakTime = 0f;
+	}
 
-		public void Refresh()
+	public void Refresh()
+	{
+		if (!_playback.GlobalChatActive)
 		{
-			if (this._playback.GlobalChatActive)
+			if (_wasSpeaking)
 			{
-				if (!this._wasSpeaking)
+				_noSpeakTime += Time.deltaTime;
+				SetColors(0f);
+				if (!(_noSpeakTime < 0.3f))
 				{
-					base.gameObject.SetActive(true);
-					this._t.SetAsLastSibling();
-					this._wasSpeaking = true;
+					base.gameObject.SetActive(value: false);
+					_wasSpeaking = false;
 				}
-				this._lastColor = this._playback.GlobalChatColor;
-				this.SetColors(this._playback.GlobalChatLoudness);
-				Texture texture;
-				if (this.TryGetIcon(this._playback.GlobalChatIcon, this._owner, out texture))
-				{
-					this._icon.texture = texture;
-					this._iconRoot.SetActive(true);
-				}
-				else
-				{
-					this._iconRoot.SetActive(false);
-				}
-				this._nickname.text = this._playback.GlobalChatName;
-				return;
 			}
-			if (!this._wasSpeaking)
-			{
-				return;
-			}
-			this._noSpeakTime += Time.deltaTime;
-			this.SetColors(0f);
-			if (this._noSpeakTime < 0.3f)
-			{
-				return;
-			}
-			base.gameObject.SetActive(false);
-			this._wasSpeaking = false;
+			return;
 		}
-
-		private void SetColors(float loudness)
+		if (!_wasSpeaking)
 		{
-			Graphic[] backgrounds = this._backgrounds;
-			for (int i = 0; i < backgrounds.Length; i++)
-			{
-				backgrounds[i].color = Color.Lerp(Color.black, this._lastColor, loudness);
-			}
-			Outline[] outlines = this._outlines;
-			for (int i = 0; i < outlines.Length; i++)
-			{
-				outlines[i].effectColor = Color.Lerp(this._lastColor, Color.white, loudness);
-			}
+			base.gameObject.SetActive(value: true);
+			_t.SetAsLastSibling();
+			_wasSpeaking = true;
 		}
-
-		private bool TryGetIcon(GlobalChatIconType icon, ReferenceHub owner, out Texture result)
+		_lastColor = _playback.GlobalChatColor;
+		SetColors(_playback.GlobalChatLoudness);
+		if (TryGetIcon(_playback.GlobalChatIcon, _owner, out var result))
 		{
-			result = null;
-			switch (icon)
+			_icon.texture = result;
+			_iconRoot.SetActive(value: true);
+		}
+		else
+		{
+			_iconRoot.SetActive(value: false);
+		}
+		_nickname.text = _playback.GlobalChatName;
+	}
+
+	private void SetColors(float loudness)
+	{
+		Graphic[] backgrounds = _backgrounds;
+		for (int i = 0; i < backgrounds.Length; i++)
+		{
+			backgrounds[i].color = Color.Lerp(Color.black, _lastColor, loudness);
+		}
+		Outline[] outlines = _outlines;
+		for (int i = 0; i < outlines.Length; i++)
+		{
+			outlines[i].effectColor = Color.Lerp(_lastColor, Color.white, loudness);
+		}
+	}
+
+	private bool TryGetIcon(GlobalChatIconType icon, ReferenceHub owner, out Texture result)
+	{
+		result = null;
+		switch (icon)
+		{
+		case GlobalChatIconType.None:
+			return false;
+		case GlobalChatIconType.Radio:
+			result = _radioIcon;
+			return true;
+		case GlobalChatIconType.Intercom:
+			result = _intercomIcon;
+			return true;
+		case GlobalChatIconType.Avatar:
+			if (owner == null || !(owner.roleManager.CurrentRole is IAvatarRole avatarRole))
 			{
-			case GlobalChatIconType.None:
-				return false;
-			case GlobalChatIconType.Avatar:
-				if (!(owner == null))
-				{
-					IAvatarRole avatarRole = owner.roleManager.CurrentRole as IAvatarRole;
-					if (avatarRole != null)
-					{
-						result = avatarRole.RoleAvatar;
-						return true;
-					}
-				}
-				return false;
-			case GlobalChatIconType.Radio:
-				result = this._radioIcon;
-				return true;
-			case GlobalChatIconType.Intercom:
-				result = this._intercomIcon;
-				return true;
-			default:
 				return false;
 			}
+			result = avatarRole.RoleAvatar;
+			return true;
+		default:
+			return false;
 		}
-
-		[SerializeField]
-		private TextMeshProUGUI _nickname;
-
-		[SerializeField]
-		private RawImage _icon;
-
-		[SerializeField]
-		private Graphic[] _backgrounds;
-
-		[SerializeField]
-		private Outline[] _outlines;
-
-		[SerializeField]
-		private GameObject _iconRoot;
-
-		[SerializeField]
-		private Texture _radioIcon;
-
-		[SerializeField]
-		private Texture _intercomIcon;
-
-		private IGlobalPlayback _playback;
-
-		private ReferenceHub _owner;
-
-		private bool _wasSpeaking;
-
-		private float _noSpeakTime;
-
-		private Color _lastColor;
-
-		private Transform _t;
-
-		private const float SustainTime = 0.3f;
 	}
 }

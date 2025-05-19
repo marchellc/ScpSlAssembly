@@ -1,39 +1,39 @@
-﻿using System;
 using Mirror;
 
-namespace PlayerRoles.Subroutines
+namespace PlayerRoles.Subroutines;
+
+public class DynamicAbilityCooldown : AbilityCooldown
 {
-	public class DynamicAbilityCooldown : AbilityCooldown
+	private bool _appendCooldownNext;
+
+	public void Append(double cooldown)
 	{
-		public void Append(double cooldown)
-		{
-			base.Remaining = (float)cooldown;
-			this._appendCooldownNext = true;
-		}
+		base.Remaining = (float)cooldown;
+		_appendCooldownNext = true;
+	}
 
-		public override void WriteCooldown(NetworkWriter writer)
-		{
-			writer.WriteBool(this._appendCooldownNext);
-			base.WriteCooldown(writer);
-			this._appendCooldownNext = false;
-		}
+	public override void WriteCooldown(NetworkWriter writer)
+	{
+		writer.WriteBool(_appendCooldownNext);
+		base.WriteCooldown(writer);
+		_appendCooldownNext = false;
+	}
 
-		public override void ReadCooldown(NetworkReader reader)
+	public override void ReadCooldown(NetworkReader reader)
+	{
+		if (!reader.ReadBool())
 		{
-			if (!reader.ReadBool())
-			{
-				base.ReadCooldown(reader);
-				return;
-			}
+			base.ReadCooldown(reader);
+		}
+		else
+		{
 			base.NextUse = reader.ReadDouble();
 		}
+	}
 
-		public override void Clear()
-		{
-			base.Clear();
-			this._appendCooldownNext = false;
-		}
-
-		private bool _appendCooldownNext;
+	public override void Clear()
+	{
+		base.Clear();
+		_appendCooldownNext = false;
 	}
 }

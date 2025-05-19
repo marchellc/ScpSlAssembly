@@ -1,64 +1,54 @@
-﻿using System;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Modules;
 using UnityEngine;
 
-namespace InventorySystem.Crosshairs
+namespace InventorySystem.Crosshairs;
+
+public abstract class FirearmCrosshairBase : MonoBehaviour
 {
-	public abstract class FirearmCrosshairBase : MonoBehaviour
+	[SerializeField]
+	private CanvasGroup _fadeGroup;
+
+	protected virtual float GetAlpha(Firearm firearm)
 	{
-		protected virtual float GetAlpha(Firearm firearm)
+		bool flag = firearm.HasDownsideFlag(AttachmentDescriptiveDownsides.Laser);
+		bool flag2 = Cursor.visible || flag;
+		if (flag || flag2)
 		{
-			bool flag = firearm.HasDownsideFlag(AttachmentDescriptiveDownsides.Laser);
-			bool flag2 = Cursor.visible || flag;
-			if (flag || flag2)
-			{
-				return 0f;
-			}
-			float adsAmount = this.GetAdsAmount(firearm);
-			return 1f - adsAmount;
+			return 0f;
 		}
-
-		private float GetAdsAmount(Firearm firearm)
-		{
-			IAdsModule adsModule;
-			if (!firearm.TryGetModule(out adsModule, true))
-			{
-				return 0f;
-			}
-			return adsModule.AdsAmount * 3.2f;
-		}
-
-		private void Update()
-		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetLocalHub(out referenceHub))
-			{
-				return;
-			}
-			Firearm firearm = referenceHub.inventory.CurInstance as Firearm;
-			if (firearm == null || firearm == null)
-			{
-				return;
-			}
-			this._fadeGroup.alpha = this.GetAlpha(firearm);
-			float num = 0f;
-			ModuleBase[] modules = firearm.Modules;
-			for (int i = 0; i < modules.Length; i++)
-			{
-				IInaccuracyProviderModule inaccuracyProviderModule = modules[i] as IInaccuracyProviderModule;
-				if (inaccuracyProviderModule != null)
-				{
-					num += inaccuracyProviderModule.Inaccuracy;
-				}
-			}
-			this.UpdateCrosshair(firearm, num);
-		}
-
-		protected abstract void UpdateCrosshair(Firearm firearm, float currentInaccuracy);
-
-		[SerializeField]
-		private CanvasGroup _fadeGroup;
+		float adsAmount = GetAdsAmount(firearm);
+		return 1f - adsAmount;
 	}
+
+	private float GetAdsAmount(Firearm firearm)
+	{
+		if (!firearm.TryGetModule<IAdsModule>(out var module))
+		{
+			return 0f;
+		}
+		return module.AdsAmount * 3.2f;
+	}
+
+	private void Update()
+	{
+		if (!ReferenceHub.TryGetLocalHub(out var hub) || !(hub.inventory.CurInstance is Firearm firearm) || firearm == null)
+		{
+			return;
+		}
+		_fadeGroup.alpha = GetAlpha(firearm);
+		float num = 0f;
+		ModuleBase[] modules = firearm.Modules;
+		for (int i = 0; i < modules.Length; i++)
+		{
+			if (modules[i] is IInaccuracyProviderModule inaccuracyProviderModule)
+			{
+				num += inaccuracyProviderModule.Inaccuracy;
+			}
+		}
+		UpdateCrosshair(firearm, num);
+	}
+
+	protected abstract void UpdateCrosshair(Firearm firearm, float currentInaccuracy);
 }

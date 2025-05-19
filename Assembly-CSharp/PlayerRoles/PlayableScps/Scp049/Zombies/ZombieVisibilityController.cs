@@ -1,13 +1,15 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl;
 
-namespace PlayerRoles.PlayableScps.Scp049.Zombies
+namespace PlayerRoles.PlayableScps.Scp049.Zombies;
+
+public class ZombieVisibilityController : FpcVisibilityController
 {
-	public class ZombieVisibilityController : FpcVisibilityController
+	public override bool ValidateVisibility(ReferenceHub hub)
 	{
-		public override bool ValidateVisibility(ReferenceHub hub)
+		if (!base.ValidateVisibility(hub))
 		{
-			return base.ValidateVisibility(hub) || hub.roleManager.CurrentRole is Scp049Role;
+			return hub.roleManager.CurrentRole is Scp049Role;
 		}
+		return true;
 	}
 }

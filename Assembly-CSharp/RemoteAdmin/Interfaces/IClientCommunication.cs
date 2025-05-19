@@ -1,11 +1,8 @@
-﻿using System;
+namespace RemoteAdmin.Interfaces;
 
-namespace RemoteAdmin.Interfaces
+public interface IClientCommunication
 {
-	public interface IClientCommunication
-	{
-		int DataId { get; }
+	int DataId { get; }
 
-		void ReceiveData(string data, bool secure = true);
-	}
+	void ReceiveData(string data, bool secure = true);
 }

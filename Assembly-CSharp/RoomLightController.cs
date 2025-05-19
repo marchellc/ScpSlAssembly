@@ -1,97 +1,117 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using MapGeneration;
 using Mirror;
 using UnityEngine;
+using Utils.NonAllocLINQ;
 
 public class RoomLightController : NetworkBehaviour
 {
-	public static event Action<RoomLightController> OnAdded;
+	public const float HeightRadius = 50f;
 
-	public static event Action<RoomLightController> OnRemoved;
+	private float _flickerDuration;
+
+	private RoomIdentifier _cachedRoom;
+
+	private bool _roomCacheSet;
+
+	[SyncVar(hook = "LightsEnabledHook")]
+	public bool LightsEnabled;
+
+	[SyncVar(hook = "OverrideColorHook")]
+	public Color OverrideColor;
+
+	public static readonly List<RoomLightController> Instances = new List<RoomLightController>();
 
 	public RoomIdentifier Room
 	{
 		get
 		{
-			if (!this._roomCacheSet)
+			if (!_roomCacheSet)
 			{
-				if (!base.transform.TryGetComponentInParent(out this._cachedRoom))
+				if (!base.transform.TryGetComponentInParent<RoomIdentifier>(out _cachedRoom))
 				{
 					throw new NullReferenceException("Null room for Light Controller: " + base.transform.GetHierarchyPath());
 				}
-				this._roomCacheSet = true;
+				_roomCacheSet = true;
 			}
-			return this._cachedRoom;
+			return _cachedRoom;
 		}
 	}
 
-	public event Action<bool> OnLightsSet;
+	public bool NetworkLightsEnabled
+	{
+		get
+		{
+			return LightsEnabled;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref LightsEnabled, 1uL, LightsEnabledHook);
+		}
+	}
 
-	public static event Action<RoomLightController> OnInstanceAdded;
+	public Color NetworkOverrideColor
+	{
+		get
+		{
+			return OverrideColor;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref OverrideColor, 2uL, OverrideColorHook);
+		}
+	}
+
+	public static event Action<RoomLightController> OnAdded;
+
+	public static event Action<RoomLightController> OnRemoved;
+
+	public event Action<bool> OnLightsSet;
 
 	private void Start()
 	{
 		if (NetworkServer.active)
 		{
-			this.NetworkLightsEnabled = true;
+			NetworkLightsEnabled = true;
 		}
 		else
 		{
-			this.SetLights(this.LightsEnabled);
+			SetLights(LightsEnabled);
 		}
-		RoomLightController.Instances.Add(this);
-		Action<RoomLightController> onInstanceAdded = RoomLightController.OnInstanceAdded;
-		if (onInstanceAdded != null)
-		{
-			onInstanceAdded(this);
-		}
-		Action<RoomLightController> onAdded = RoomLightController.OnAdded;
-		if (onAdded == null)
-		{
-			return;
-		}
-		onAdded(this);
+		Instances.Add(this);
+		RoomLightController.OnAdded?.Invoke(this);
+		Room.LightControllers.AddIfNotContains(this);
 	}
 
 	private void OnDestroy()
 	{
-		RoomLightController.Instances.Remove(this);
-		Action<RoomLightController> onRemoved = RoomLightController.OnRemoved;
-		if (onRemoved == null)
-		{
-			return;
-		}
-		onRemoved(this);
+		Instances.Remove(this);
+		RoomLightController.OnRemoved?.Invoke(this);
 	}
 
 	private void Update()
 	{
-		if (!NetworkServer.active || this._flickerDuration <= 0f)
+		if (NetworkServer.active && !(_flickerDuration <= 0f))
 		{
-			return;
+			_flickerDuration -= Time.deltaTime;
+			if (!(_flickerDuration > 0f))
+			{
+				SetLights(state: true);
+			}
 		}
-		this._flickerDuration -= Time.deltaTime;
-		if (this._flickerDuration > 0f)
-		{
-			return;
-		}
-		this.SetLights(true);
 	}
 
 	private void SetLights(bool state)
 	{
 		if (NetworkServer.active)
 		{
-			this.NetworkLightsEnabled = state;
+			NetworkLightsEnabled = state;
 		}
-		Action<bool> onLightsSet = this.OnLightsSet;
-		if (onLightsSet == null)
-		{
-			return;
-		}
-		onLightsSet(state);
+		this.OnLightsSet?.Invoke(state);
 	}
 
 	private void LightsEnabledHook(bool oldValue, bool newValue)
@@ -108,33 +128,34 @@ public class RoomLightController : NetworkBehaviour
 		if (!NetworkServer.active)
 		{
 			Debug.LogWarning("[Server] function 'System.Void RoomLightController::ServerFlickerLights(System.Single)' called when server was not active");
-			return;
 		}
-		if (dur <= 0f)
+		else if (dur <= 0f)
 		{
-			this._flickerDuration = 0f;
-			this.SetLights(true);
-			return;
+			_flickerDuration = 0f;
+			SetLights(state: true);
 		}
-		this._flickerDuration = dur;
-		this.SetLights(false);
+		else
+		{
+			_flickerDuration = dur;
+			SetLights(state: false);
+		}
 	}
 
 	public static bool IsInDarkenedRoom(Vector3 positionToCheck)
 	{
-		RoomIdentifier roomIdentifier = RoomUtils.RoomAtPosition(positionToCheck);
-		if (roomIdentifier == null)
+		if (positionToCheck.TryGetRoom(out var room))
 		{
-			roomIdentifier = RoomUtils.RoomAtPositionRaycasts(positionToCheck, true);
+			return IsInDarkenedRoom(room, positionToCheck);
 		}
-		if (roomIdentifier == null)
+		return false;
+	}
+
+	public static bool IsInDarkenedRoom(RoomIdentifier rid, Vector3 positionToCheck)
+	{
+		foreach (RoomLightController lightController in rid.LightControllers)
 		{
-			return false;
-		}
-		foreach (RoomLightController roomLightController in roomIdentifier.LightControllers)
-		{
-			float num = Mathf.Abs(roomLightController.transform.position.y - positionToCheck.y);
-			if (!roomLightController.LightsEnabled && num <= 100f)
+			float num = Mathf.Abs(lightController.transform.position.y - positionToCheck.y);
+			if (!lightController.LightsEnabled && !(num > 50f))
 			{
 				return true;
 			}
@@ -147,49 +168,23 @@ public class RoomLightController : NetworkBehaviour
 		return true;
 	}
 
-	public bool NetworkLightsEnabled
-	{
-		get
-		{
-			return this.LightsEnabled;
-		}
-		[param: In]
-		set
-		{
-			base.GeneratedSyncVarSetter<bool>(value, ref this.LightsEnabled, 1UL, new Action<bool, bool>(this.LightsEnabledHook));
-		}
-	}
-
-	public Color NetworkOverrideColor
-	{
-		get
-		{
-			return this.OverrideColor;
-		}
-		[param: In]
-		set
-		{
-			base.GeneratedSyncVarSetter<Color>(value, ref this.OverrideColor, 2UL, new Action<Color, Color>(this.OverrideColorHook));
-		}
-	}
-
 	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
 	{
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(this.LightsEnabled);
-			writer.WriteColor(this.OverrideColor);
+			writer.WriteBool(LightsEnabled);
+			writer.WriteColor(OverrideColor);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
-		if ((base.syncVarDirtyBits & 1UL) != 0UL)
+		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteBool(this.LightsEnabled);
+			writer.WriteBool(LightsEnabled);
 		}
-		if ((base.syncVarDirtyBits & 2UL) != 0UL)
+		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteColor(this.OverrideColor);
+			writer.WriteColor(OverrideColor);
 		}
 	}
 
@@ -198,34 +193,18 @@ public class RoomLightController : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			base.GeneratedSyncVarDeserialize<bool>(ref this.LightsEnabled, new Action<bool, bool>(this.LightsEnabledHook), reader.ReadBool());
-			base.GeneratedSyncVarDeserialize<Color>(ref this.OverrideColor, new Action<Color, Color>(this.OverrideColorHook), reader.ReadColor());
+			GeneratedSyncVarDeserialize(ref LightsEnabled, LightsEnabledHook, reader.ReadBool());
+			GeneratedSyncVarDeserialize(ref OverrideColor, OverrideColorHook, reader.ReadColor());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			base.GeneratedSyncVarDeserialize<bool>(ref this.LightsEnabled, new Action<bool, bool>(this.LightsEnabledHook), reader.ReadBool());
+			GeneratedSyncVarDeserialize(ref LightsEnabled, LightsEnabledHook, reader.ReadBool());
 		}
 		if ((num & 2L) != 0L)
 		{
-			base.GeneratedSyncVarDeserialize<Color>(ref this.OverrideColor, new Action<Color, Color>(this.OverrideColorHook), reader.ReadColor());
+			GeneratedSyncVarDeserialize(ref OverrideColor, OverrideColorHook, reader.ReadColor());
 		}
 	}
-
-	public const float HeightRadius = 100f;
-
-	private float _flickerDuration;
-
-	private RoomIdentifier _cachedRoom;
-
-	private bool _roomCacheSet;
-
-	[SyncVar(hook = "LightsEnabledHook")]
-	public bool LightsEnabled;
-
-	[SyncVar(hook = "OverrideColorHook")]
-	public Color OverrideColor;
-
-	public static readonly List<RoomLightController> Instances = new List<RoomLightController>();
 }

@@ -1,96 +1,80 @@
-﻿using System;
 using CursorManagement;
 using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
 using VoiceChat;
 
-namespace PlayerRoles.PlayableScps.Scp939.Mimicry
+namespace PlayerRoles.PlayableScps.Scp939.Mimicry;
+
+public class MimicryConfirmationBox : MonoBehaviour, ICursorOverride
 {
-	public class MimicryConfirmationBox : MonoBehaviour, ICursorOverride
+	private const string PrefsKey = "MimicryRememberChoice";
+
+	[SerializeField]
+	private GameObject _moreInfoRoot;
+
+	[SerializeField]
+	private Image _progress;
+
+	[SerializeField]
+	private float _duration;
+
+	[SerializeField]
+	private Canvas _hideHudCanvas;
+
+	[SerializeField]
+	private Toggle _rememberToggle;
+
+	public static bool Remember
 	{
-		public static bool Remember
+		get
 		{
-			get
-			{
-				return PlayerPrefsSl.Get("MimicryRememberChoice", false);
-			}
-			set
-			{
-				PlayerPrefsSl.Set("MimicryRememberChoice", value);
-			}
+			return PlayerPrefsSl.Get("MimicryRememberChoice", defaultValue: false);
 		}
-
-		public CursorOverrideMode CursorOverride
+		set
 		{
-			get
-			{
-				return CursorOverrideMode.Free;
-			}
+			PlayerPrefsSl.Set("MimicryRememberChoice", value);
 		}
+	}
 
-		public bool LockMovement
+	public CursorOverrideMode CursorOverride => CursorOverrideMode.Free;
+
+	public bool LockMovement => false;
+
+	public void ButtonOk()
+	{
+		if (_rememberToggle.isOn)
 		{
-			get
-			{
-				return false;
-			}
+			Remember = true;
 		}
+		Object.Destroy(base.gameObject);
+	}
 
-		public void ButtonOk()
+	public void ButtonDelete()
+	{
+		VcPrivacyFlags vcPrivacyFlags = VoiceChatPrivacySettings.PrivacyFlags & ~VcPrivacyFlags.AllowRecording;
+		if (_rememberToggle.isOn)
 		{
-			if (this._rememberToggle.isOn)
-			{
-				MimicryConfirmationBox.Remember = true;
-			}
-			global::UnityEngine.Object.Destroy(base.gameObject);
+			VoiceChatPrivacySettings.PrivacyFlags = vcPrivacyFlags;
+			VoiceChatPrivacySettings.Singleton.UpdateToggles();
 		}
+		VoiceChatPrivacySettings.VcPrivacyMessage message = default(VoiceChatPrivacySettings.VcPrivacyMessage);
+		message.Flags = (byte)vcPrivacyFlags;
+		NetworkClient.Send(message);
+		Object.Destroy(base.gameObject);
+	}
 
-		public void ButtonDelete()
+	private void Update()
+	{
+		if (_moreInfoRoot.activeSelf)
 		{
-			VcPrivacyFlags vcPrivacyFlags = VoiceChatPrivacySettings.PrivacyFlags & ~VcPrivacyFlags.AllowRecording;
-			if (this._rememberToggle.isOn)
-			{
-				VoiceChatPrivacySettings.PrivacyFlags = vcPrivacyFlags;
-				VoiceChatPrivacySettings.Singleton.UpdateToggles();
-			}
-			NetworkClient.Send<VoiceChatPrivacySettings.VcPrivacyMessage>(new VoiceChatPrivacySettings.VcPrivacyMessage
-			{
-				Flags = (byte)vcPrivacyFlags
-			}, 0);
-			global::UnityEngine.Object.Destroy(base.gameObject);
+			_progress.fillAmount = 1f;
+			return;
 		}
-
-		private void Update()
+		_progress.fillAmount -= Time.deltaTime / _duration;
+		if (!(_progress.fillAmount > 0f))
 		{
-			if (this._moreInfoRoot.activeSelf)
-			{
-				this._progress.fillAmount = 1f;
-				return;
-			}
-			this._progress.fillAmount -= Time.deltaTime / this._duration;
-			if (this._progress.fillAmount > 0f)
-			{
-				return;
-			}
-			global::UnityEngine.Object.Destroy(base.gameObject);
+			Object.Destroy(base.gameObject);
 		}
-
-		private const string PrefsKey = "MimicryRememberChoice";
-
-		[SerializeField]
-		private GameObject _moreInfoRoot;
-
-		[SerializeField]
-		private Image _progress;
-
-		[SerializeField]
-		private float _duration;
-
-		[SerializeField]
-		private Canvas _hideHudCanvas;
-
-		[SerializeField]
-		private Toggle _rememberToggle;
 	}
 }

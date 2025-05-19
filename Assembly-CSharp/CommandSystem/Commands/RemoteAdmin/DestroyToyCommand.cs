@@ -1,44 +1,40 @@
-﻿using System;
+using System;
 using AdminToys;
 using Mirror;
 using Utils.Networking;
 
-namespace CommandSystem.Commands.RemoteAdmin
+namespace CommandSystem.Commands.RemoteAdmin;
+
+[CommandHandler(typeof(RemoteAdminCommandHandler))]
+public class DestroyToyCommand : ICommand, IUsageProvider
 {
-	[CommandHandler(typeof(RemoteAdminCommandHandler))]
-	public class DestroyToyCommand : ICommand, IUsageProvider
+	public string Command { get; } = "destroytoy";
+
+	public string[] Aliases { get; }
+
+	public string Description { get; } = "Despawns a toy placed by an admin.";
+
+	public string[] Usage { get; } = new string[1] { "NetID of toy to remove." };
+
+	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
-		public string Command { get; } = "destroytoy";
-
-		public string[] Aliases { get; }
-
-		public string Description { get; } = "Despawns a toy placed by an admin.";
-
-		public string[] Usage { get; } = new string[] { "NetID of toy to remove." };
-
-		public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+		if (!sender.CheckPermission(PlayerPermissions.FacilityManagement, out response))
 		{
-			if (!sender.CheckPermission(PlayerPermissions.FacilityManagement, out response))
-			{
-				return false;
-			}
-			uint num;
-			if (arguments.Count < 1 || !uint.TryParse(arguments.Array[1], out num))
-			{
-				response = "Failed to parse NetID of the toy to destroy.";
-				return false;
-			}
-			NetworkIdentity networkIdentity;
-			AdminToyBase adminToyBase;
-			if (!NetworkUtils.SpawnedNetIds.TryGetValue(num, out networkIdentity) || !networkIdentity.TryGetComponent<AdminToyBase>(out adminToyBase))
-			{
-				response = string.Format("{0} is not a valid toy NetID.", num);
-				return false;
-			}
-			ServerLogs.AddLog(ServerLogs.Modules.Administrative, string.Format("{0} removed admin toy: {1} ({2}).", sender.LogName, adminToyBase.CommandName, adminToyBase.netId), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging, false);
-			response = string.Format("Toy {0} successfully removed.", num);
-			NetworkServer.Destroy(adminToyBase.gameObject);
-			return true;
+			return false;
 		}
+		if (arguments.Count < 1 || !uint.TryParse(arguments.Array[1], out var result))
+		{
+			response = "Failed to parse NetID of the toy to destroy.";
+			return false;
+		}
+		if (!NetworkUtils.SpawnedNetIds.TryGetValue(result, out var value) || !value.TryGetComponent<AdminToyBase>(out var component))
+		{
+			response = $"{result} is not a valid toy NetID.";
+			return false;
+		}
+		ServerLogs.AddLog(ServerLogs.Modules.Administrative, $"{sender.LogName} removed admin toy: {component.CommandName} ({component.netId}).", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
+		response = $"Toy {result} successfully removed.";
+		NetworkServer.Destroy(component.gameObject);
+		return true;
 	}
 }

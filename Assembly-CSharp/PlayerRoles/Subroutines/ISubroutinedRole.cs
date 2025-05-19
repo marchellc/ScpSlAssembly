@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles.Subroutines;
 
-namespace PlayerRoles.Subroutines
+public interface ISubroutinedRole
 {
-	public interface ISubroutinedRole
-	{
-		SubroutineManagerModule SubroutineModule { get; }
-	}
+	SubroutineManagerModule SubroutineModule { get; }
 }

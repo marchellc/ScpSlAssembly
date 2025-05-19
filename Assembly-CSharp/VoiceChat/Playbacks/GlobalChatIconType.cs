@@ -1,12 +1,9 @@
-﻿using System;
+namespace VoiceChat.Playbacks;
 
-namespace VoiceChat.Playbacks
+public enum GlobalChatIconType
 {
-	public enum GlobalChatIconType
-	{
-		None,
-		Avatar,
-		Radio,
-		Intercom
-	}
+	None,
+	Avatar,
+	Radio,
+	Intercom
 }

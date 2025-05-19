@@ -1,4 +1,3 @@
-﻿using System;
 using GameCore;
 using TMPro;
 using UnityEngine;
@@ -6,48 +5,6 @@ using UnityEngine.UI;
 
 public class LauncherAssetScanProgressBar : MonoBehaviour
 {
-	private void Awake()
-	{
-		this._version.text = this.GetVersionName();
-	}
-
-	private void Update()
-	{
-		this._throbber.fillAmount = LauncherAssetScanProgressBar.Progress;
-		this._text.text = string.Format("{0}\n{1}%", LauncherAssetScanProgressBar.Text, Mathf.RoundToInt(LauncherAssetScanProgressBar.Progress * 100f));
-	}
-
-	private string GetVersionName()
-	{
-		string text;
-		switch (global::GameCore.Version.BuildType)
-		{
-		case global::GameCore.Version.VersionType.PublicRC:
-		case global::GameCore.Version.VersionType.PrivateRC:
-		case global::GameCore.Version.VersionType.PrivateRCStreamingForbidden:
-			text = "RELEASE CANDIDATE";
-			break;
-		case global::GameCore.Version.VersionType.PublicBeta:
-			text = "PUBLIC BETA";
-			break;
-		case global::GameCore.Version.VersionType.PrivateBeta:
-		case global::GameCore.Version.VersionType.PrivateBetaStreamingForbidden:
-			text = "CLOSED BETA";
-			break;
-		case global::GameCore.Version.VersionType.Development:
-			return "INTERNAL BUILD " + global::GameCore.Version.VersionString;
-		default:
-			text = global::GameCore.Version.BuildType.ToString().ToUpperInvariant();
-			break;
-		}
-		string text2 = global::GameCore.Version.Major.ToString() + "." + global::GameCore.Version.Minor.ToString();
-		if (global::GameCore.Version.Revision > 0)
-		{
-			text2 = text2 + "." + global::GameCore.Version.Revision.ToString();
-		}
-		return text + " " + text2;
-	}
-
 	[SerializeField]
 	private Image _throbber;
 
@@ -63,4 +20,51 @@ public class LauncherAssetScanProgressBar : MonoBehaviour
 	public static float Progress;
 
 	public static string Text;
+
+	private void Awake()
+	{
+		_version.text = GetVersionName();
+	}
+
+	private void Update()
+	{
+		_throbber.fillAmount = Progress;
+		_text.text = $"{Text}\n{Mathf.RoundToInt(Progress * 100f)}%";
+	}
+
+	private string GetVersionName()
+	{
+		string text;
+		switch (Version.BuildType)
+		{
+		case Version.VersionType.Development:
+			return "INTERNAL BUILD " + Version.VersionString;
+		case Version.VersionType.PrivateBeta:
+		case Version.VersionType.PrivateBetaStreamingForbidden:
+			text = "CLOSED BETA";
+			break;
+		case Version.VersionType.PublicRC:
+		case Version.VersionType.PrivateRC:
+		case Version.VersionType.PrivateRCStreamingForbidden:
+			text = "RELEASE CANDIDATE";
+			break;
+		case Version.VersionType.PublicBeta:
+			text = "PUBLIC BETA";
+			break;
+		default:
+			text = Version.BuildType.ToString().ToUpperInvariant();
+			break;
+		}
+		byte major = Version.Major;
+		string text2 = major.ToString();
+		major = Version.Minor;
+		string text3 = text2 + "." + major;
+		if (Version.Revision > 0)
+		{
+			string text4 = text3;
+			major = Version.Revision;
+			text3 = text4 + "." + major;
+		}
+		return text + " " + text3;
+	}
 }

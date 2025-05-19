@@ -1,12 +1,10 @@
-﻿using System;
 using UnityEngine;
 
-namespace RemoteAdmin
+namespace RemoteAdmin;
+
+internal class PlayerInfoQR : MonoBehaviour
 {
-	internal class PlayerInfoQR : MonoBehaviour
+	public void OnEnable()
 	{
-		public void OnEnable()
-		{
-		}
 	}
 }

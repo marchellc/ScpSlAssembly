@@ -1,283 +1,260 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Autosync;
 using InventorySystem.Items.Pickups;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.MicroHID.Modules
+namespace InventorySystem.Items.MicroHID.Modules;
+
+public class CycleController
 {
-	public class CycleController
+	private const float MinIdleCooldown = 1.5f;
+
+	private float _windUpProgress;
+
+	private float _serverIdleTimer;
+
+	private bool _hasOwner;
+
+	private MicroHidPhase _phase;
+
+	private MicroHIDItem _prevItem;
+
+	private readonly List<FiringModeControllerModule> _firingModeControllers = new List<FiringModeControllerModule>();
+
+	private readonly Dictionary<MicroHidPhase, double> _lastChangeTimes = new Dictionary<MicroHidPhase, double>();
+
+	public readonly ushort Serial;
+
+	public float ServerWindUpProgress
 	{
-		public static event Action<ushort, MicroHidPhase> OnPhaseChanged;
-
-		public float ServerWindUpProgress
+		get
 		{
-			get
+			return _windUpProgress;
+		}
+		private set
+		{
+			_windUpProgress = Mathf.Clamp01(value);
+		}
+	}
+
+	public float CurrentPhaseElapsed
+	{
+		get
+		{
+			if (!TryGetElapsed(Phase, out var elapsed))
 			{
-				return this._windUpProgress;
+				return Time.timeSinceLevelLoad;
 			}
-			private set
+			return elapsed;
+		}
+	}
+
+	public MicroHidPhase Phase
+	{
+		get
+		{
+			return _phase;
+		}
+		set
+		{
+			if (_phase != value)
 			{
-				this._windUpProgress = Mathf.Clamp01(value);
+				_phase = value;
+				_lastChangeTimes[value] = NetworkTime.time;
+				CycleController.OnPhaseChanged?.Invoke(Serial, value);
 			}
 		}
+	}
 
-		public float CurrentPhaseElapsed
+	public MicroHidFiringMode LastFiringMode { get; set; }
+
+	public static event Action<ushort, MicroHidPhase> OnPhaseChanged;
+
+	public CycleController(ushort serial)
+	{
+		Serial = serial;
+	}
+
+	public void ServerUpdateHeldItem(MicroHIDItem item)
+	{
+		if (item.ItemSerial != Serial)
 		{
-			get
-			{
-				float num;
-				if (!this.TryGetElapsed(this.Phase, out num))
-				{
-					return Time.timeSinceLevelLoad;
-				}
-				return num;
-			}
+			throw new ArgumentException("The provided held MicroHID has a serial number that does not match the controller.", "item");
 		}
-
-		public MicroHidPhase Phase
+		if (item != _prevItem)
 		{
-			get
-			{
-				return this._phase;
-			}
-			set
-			{
-				if (this._phase == value)
-				{
-					return;
-				}
-				this._phase = value;
-				this._lastChangeTimes[value] = NetworkTime.time;
-				Action<ushort, MicroHidPhase> onPhaseChanged = CycleController.OnPhaseChanged;
-				if (onPhaseChanged == null)
-				{
-					return;
-				}
-				onPhaseChanged(this.Serial, value);
-			}
+			RecacheFiringModes(item);
+			_prevItem = item;
 		}
+		_hasOwner = true;
+		UpdatePhase();
+	}
 
-		public MicroHidFiringMode LastFiringMode { get; set; }
-
-		public CycleController(ushort serial)
+	public void ServerUpdatePickup(MicroHIDPickup pickup)
+	{
+		PickupSyncInfo info = pickup.Info;
+		if (info.Serial != Serial)
 		{
-			this.Serial = serial;
+			throw new ArgumentException("The provided MicroHID pickup has a serial number that does not match the controller.", "pickup");
 		}
-
-		public void ServerUpdateHeldItem(MicroHIDItem item)
+		if (_hasOwner)
 		{
-			if (item.ItemSerial != this.Serial)
-			{
-				throw new ArgumentException("The provided held MicroHID has a serial number that does not match the controller.", "item");
-			}
-			if (item != this._prevItem)
-			{
-				this.RecacheFiringModes(item);
-				this._prevItem = item;
-			}
-			this._hasOwner = true;
-			this.UpdatePhase();
+			_hasOwner = false;
+			_prevItem = null;
+			RecacheFiringModes(info.ItemId.GetTemplate<MicroHIDItem>());
 		}
+		UpdatePhase();
+	}
 
-		public void ServerUpdatePickup(MicroHIDPickup pickup)
+	public bool TryGetElapsed(MicroHidPhase phase, out float elapsed)
+	{
+		if (_lastChangeTimes.TryGetValue(phase, out var value))
 		{
-			PickupSyncInfo info = pickup.Info;
-			if (info.Serial != this.Serial)
-			{
-				throw new ArgumentException("The provided MicroHID pickup has a serial number that does not match the controller.", "pickup");
-			}
-			if (this._hasOwner)
-			{
-				this._hasOwner = false;
-				this._prevItem = null;
-				this.RecacheFiringModes(info.ItemId.GetTemplate<MicroHIDItem>());
-			}
-			this.UpdatePhase();
+			elapsed = (float)(NetworkTime.time - value);
+			return true;
 		}
+		elapsed = 0f;
+		return false;
+	}
 
-		public bool TryGetElapsed(MicroHidPhase phase, out float elapsed)
+	public bool TryGetLastFiringController(out FiringModeControllerModule ret)
+	{
+		if (!NetworkServer.active && _firingModeControllers.Count == 0)
 		{
-			double num;
-			if (this._lastChangeTimes.TryGetValue(phase, out num))
+			RecacheFiringModes(ItemType.MicroHID.GetTemplate<MicroHIDItem>());
+		}
+		foreach (FiringModeControllerModule firingModeController in _firingModeControllers)
+		{
+			if (firingModeController.AssignedMode == LastFiringMode)
 			{
-				elapsed = (float)(NetworkTime.time - num);
+				ret = firingModeController;
 				return true;
 			}
-			elapsed = 0f;
-			return false;
 		}
+		ret = null;
+		return false;
+	}
 
-		public bool TryGetLastFiringController(out FiringModeControllerModule ret)
+	private void RecacheFiringModes(MicroHIDItem item)
+	{
+		_firingModeControllers.Clear();
+		SubcomponentBase[] allSubcomponents = item.AllSubcomponents;
+		for (int i = 0; i < allSubcomponents.Length; i++)
 		{
-			if (!NetworkServer.active && this._firingModeControllers.Count == 0)
+			if (allSubcomponents[i] is FiringModeControllerModule item2)
 			{
-				this.RecacheFiringModes(ItemType.MicroHID.GetTemplate<MicroHIDItem>());
-			}
-			foreach (FiringModeControllerModule firingModeControllerModule in this._firingModeControllers)
-			{
-				if (firingModeControllerModule.AssignedMode == this.LastFiringMode)
-				{
-					ret = firingModeControllerModule;
-					return true;
-				}
-			}
-			ret = null;
-			return false;
-		}
-
-		private void RecacheFiringModes(MicroHIDItem item)
-		{
-			this._firingModeControllers.Clear();
-			SubcomponentBase[] allSubcomponents = item.AllSubcomponents;
-			for (int i = 0; i < allSubcomponents.Length; i++)
-			{
-				FiringModeControllerModule firingModeControllerModule = allSubcomponents[i] as FiringModeControllerModule;
-				if (firingModeControllerModule != null)
-				{
-					this._firingModeControllers.Add(firingModeControllerModule);
-				}
+				_firingModeControllers.Add(item2);
 			}
 		}
+	}
 
-		private void UpdatePhase()
+	private void UpdatePhase()
+	{
+		if (!NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				throw new InvalidOperationException("Attempting to update phase as a client");
-			}
-			switch (this.Phase)
-			{
-			case MicroHidPhase.Standby:
-				this.UpdateStandby();
-				return;
-			case MicroHidPhase.WindingUp:
-				this.UpdateWindingUp();
-				break;
-			case MicroHidPhase.WindingDown:
-				this.UpdateWindingDown();
-				break;
-			case MicroHidPhase.WoundUpSustain:
-				this.UpdateWoundUp();
-				break;
-			case MicroHidPhase.Firing:
-				this.UpdateFiring();
-				break;
-			default:
-				throw new InvalidOperationException(string.Format("Unknown {0}: {1}", "MicroHidPhase", this.Phase));
-			}
-			FiringModeControllerModule firingModeControllerModule;
-			if (this._hasOwner && this.TryGetLastFiringController(out firingModeControllerModule))
-			{
-				firingModeControllerModule.ServerUpdateSelected(this.Phase);
-			}
+			throw new InvalidOperationException("Attempting to update phase as a client");
 		}
-
-		private void UpdateStandby()
+		switch (Phase)
 		{
-			if (this._serverIdleTimer < 1.5f)
-			{
-				this._serverIdleTimer += Time.deltaTime;
-				return;
-			}
-			if (!this._hasOwner)
+		case MicroHidPhase.Standby:
+			UpdateStandby();
+			return;
+		case MicroHidPhase.WindingUp:
+			UpdateWindingUp();
+			break;
+		case MicroHidPhase.WindingDown:
+			UpdateWindingDown();
+			break;
+		case MicroHidPhase.WoundUpSustain:
+			UpdateWoundUp();
+			break;
+		case MicroHidPhase.Firing:
+			UpdateFiring();
+			break;
+		default:
+			throw new InvalidOperationException(string.Format("Unknown {0}: {1}", "MicroHidPhase", Phase));
+		}
+		if (_hasOwner && TryGetLastFiringController(out var ret))
+		{
+			ret.ServerUpdateSelected(Phase);
+		}
+	}
+
+	private void UpdateStandby()
+	{
+		if (_serverIdleTimer < 1.5f)
+		{
+			_serverIdleTimer += Time.deltaTime;
+		}
+		else
+		{
+			if (!_hasOwner)
 			{
 				return;
 			}
-			foreach (FiringModeControllerModule firingModeControllerModule in this._firingModeControllers)
+			foreach (FiringModeControllerModule firingModeController in _firingModeControllers)
 			{
-				if (firingModeControllerModule.ValidateStart && firingModeControllerModule.ValidateUpdate)
+				if (firingModeController.ValidateStart && firingModeController.ValidateUpdate)
 				{
-					this._serverIdleTimer = 0f;
-					this.Phase = MicroHidPhase.WindingUp;
-					this.LastFiringMode = firingModeControllerModule.AssignedMode;
+					_serverIdleTimer = 0f;
+					Phase = MicroHidPhase.WindingUp;
+					LastFiringMode = firingModeController.AssignedMode;
 					break;
 				}
 			}
 		}
+	}
 
-		private void UpdateWindingUp()
+	private void UpdateWindingUp()
+	{
+		if (TryGetLastFiringController(out var ret))
 		{
-			FiringModeControllerModule firingModeControllerModule;
-			if (!this.TryGetLastFiringController(out firingModeControllerModule))
+			ServerWindUpProgress += ret.WindUpRate * Time.deltaTime;
+			if (!_hasOwner || !ret.ValidateUpdate)
 			{
-				return;
+				Phase = MicroHidPhase.WindingDown;
 			}
-			this.ServerWindUpProgress += firingModeControllerModule.WindUpRate * Time.deltaTime;
-			if (!this._hasOwner || !firingModeControllerModule.ValidateUpdate)
+			else if (ServerWindUpProgress >= 1f)
 			{
-				this.Phase = MicroHidPhase.WindingDown;
-				return;
-			}
-			if (this.ServerWindUpProgress >= 1f)
-			{
-				this.Phase = (firingModeControllerModule.ValidateEnterFire ? MicroHidPhase.Firing : MicroHidPhase.WoundUpSustain);
+				Phase = (ret.ValidateEnterFire ? MicroHidPhase.Firing : MicroHidPhase.WoundUpSustain);
 			}
 		}
+	}
 
-		private void UpdateWindingDown()
+	private void UpdateWindingDown()
+	{
+		if (TryGetLastFiringController(out var ret))
 		{
-			FiringModeControllerModule firingModeControllerModule;
-			if (!this.TryGetLastFiringController(out firingModeControllerModule))
+			ServerWindUpProgress -= ret.WindDownRate * Time.deltaTime;
+			if (ServerWindUpProgress <= 0f)
 			{
-				return;
-			}
-			this.ServerWindUpProgress -= firingModeControllerModule.WindDownRate * Time.deltaTime;
-			if (this.ServerWindUpProgress <= 0f)
-			{
-				this.Phase = MicroHidPhase.Standby;
+				Phase = MicroHidPhase.Standby;
 			}
 		}
+	}
 
-		private void UpdateWoundUp()
+	private void UpdateWoundUp()
+	{
+		if (TryGetLastFiringController(out var ret))
 		{
-			FiringModeControllerModule firingModeControllerModule;
-			if (!this.TryGetLastFiringController(out firingModeControllerModule))
+			if (!_hasOwner || !ret.ValidateUpdate)
 			{
-				return;
+				Phase = MicroHidPhase.WindingDown;
 			}
-			if (!this._hasOwner || !firingModeControllerModule.ValidateUpdate)
+			else if (ret.ValidateEnterFire)
 			{
-				this.Phase = MicroHidPhase.WindingDown;
-				return;
-			}
-			if (firingModeControllerModule.ValidateEnterFire)
-			{
-				this.Phase = MicroHidPhase.Firing;
+				Phase = MicroHidPhase.Firing;
 			}
 		}
+	}
 
-		private void UpdateFiring()
+	private void UpdateFiring()
+	{
+		if (TryGetLastFiringController(out var ret) && (!_hasOwner || !ret.ValidateUpdate))
 		{
-			FiringModeControllerModule firingModeControllerModule;
-			if (!this.TryGetLastFiringController(out firingModeControllerModule))
-			{
-				return;
-			}
-			if (this._hasOwner && firingModeControllerModule.ValidateUpdate)
-			{
-				return;
-			}
-			this.Phase = MicroHidPhase.WindingDown;
+			Phase = MicroHidPhase.WindingDown;
 		}
-
-		private const float MinIdleCooldown = 1.5f;
-
-		private float _windUpProgress;
-
-		private float _serverIdleTimer;
-
-		private bool _hasOwner;
-
-		private MicroHidPhase _phase;
-
-		private MicroHIDItem _prevItem;
-
-		private readonly List<FiringModeControllerModule> _firingModeControllers = new List<FiringModeControllerModule>();
-
-		private readonly Dictionary<MicroHidPhase, double> _lastChangeTimes = new Dictionary<MicroHidPhase, double>();
-
-		public readonly ushort Serial;
 	}
 }

@@ -1,11 +1,8 @@
-﻿using System;
+namespace MapGeneration.Holidays;
 
-namespace MapGeneration.Holidays
+public interface IHolidayFetchableData<T>
 {
-	public interface IHolidayFetchableData<T>
-	{
-		HolidayType Holiday { get; }
+	HolidayType Holiday { get; }
 
-		T Result { get; }
-	}
+	T Result { get; }
 }

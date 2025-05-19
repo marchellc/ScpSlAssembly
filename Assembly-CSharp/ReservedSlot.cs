@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using CentralAuth;
@@ -6,38 +6,43 @@ using GameCore;
 
 public static class ReservedSlot
 {
+	public static readonly HashSet<string> Users;
+
 	static ReservedSlot()
 	{
-		ReservedSlot.Reload();
+		Users = new HashSet<string>();
+		Reload();
 	}
 
 	public static void Reload()
 	{
-		string text = ConfigSharing.Paths[3] + "UserIDReservedSlots.txt";
-		ReservedSlot.Users.Clear();
-		if (!File.Exists(text))
+		string path = ConfigSharing.Paths[3] + "UserIDReservedSlots.txt";
+		Users.Clear();
+		if (!File.Exists(path))
 		{
-			FileManager.WriteStringToFile("#Put one UserID (eg. 76561198071934271@steam or 274613382353518592@discord) per line. Lines prefixed with \"#\" are ignored.", text);
+			FileManager.WriteStringToFile("#Put one UserID (eg. 76561198071934271@steam or 274613382353518592@discord) per line. Lines prefixed with \"#\" are ignored.", path);
 			return;
 		}
-		using (StreamReader streamReader = new StreamReader(text))
+		using (StreamReader streamReader = new StreamReader(path))
 		{
-			string text2;
-			while ((text2 = streamReader.ReadLine()) != null)
+			string text;
+			while ((text = streamReader.ReadLine()) != null)
 			{
-				if (!string.IsNullOrWhiteSpace(text2) && !text2.TrimStart().StartsWith("#", StringComparison.Ordinal) && text2.Contains("@"))
+				if (!string.IsNullOrWhiteSpace(text) && !text.TrimStart().StartsWith("#", StringComparison.Ordinal) && text.Contains("@"))
 				{
-					ReservedSlot.Users.Add(text2.Trim());
+					Users.Add(text.Trim());
 				}
 			}
 		}
-		ServerConsole.AddLog("Reserved slots list has been loaded.", ConsoleColor.Gray, false);
+		ServerConsole.AddLog("Reserved slots list has been loaded.");
 	}
 
 	public static bool HasReservedSlot(string userId)
 	{
-		return ReservedSlot.Users.Contains(userId.Trim()) || !PlayerAuthenticationManager.OnlineMode;
+		if (!Users.Contains(userId.Trim()))
+		{
+			return !PlayerAuthenticationManager.OnlineMode;
+		}
+		return true;
 	}
-
-	public static readonly HashSet<string> Users = new HashSet<string>();
 }

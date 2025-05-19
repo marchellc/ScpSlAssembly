@@ -1,108 +1,104 @@
-﻿using System;
 using InventorySystem.Items;
 using PlayerRoles;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace InventorySystem.Drawers
+namespace InventorySystem.Drawers;
+
+public class InventoryDrawersController : MonoBehaviour
 {
-	public class InventoryDrawersController : MonoBehaviour
+	[SerializeField]
+	private TextMeshProUGUI _alertText;
+
+	[SerializeField]
+	private Slider _progressbarSlider;
+
+	[SerializeField]
+	private RectTransform _progressbarSliderRect;
+
+	[SerializeField]
+	private Graphic[] _detailsToRecolor;
+
+	[SerializeField]
+	private CanvasGroup _thisGroup;
+
+	[SerializeField]
+	private CanvasGroup _inventoryGroup;
+
+	private IItemAlertDrawer _alertToTrack;
+
+	private IItemProgressbarDrawer _progressbarToTrack;
+
+	private bool _active;
+
+	private Color _roleColor;
+
+	private void Start()
 	{
-		private void Start()
-		{
-			Inventory.OnCurrentItemChanged += this.ItemChanged;
-			PlayerRoleManager.OnRoleChanged += this.RecolorDetails;
-		}
+		Inventory.OnCurrentItemChanged += ItemChanged;
+		PlayerRoleManager.OnRoleChanged += RecolorDetails;
+	}
 
-		private void OnDestroy()
-		{
-			Inventory.OnCurrentItemChanged -= this.ItemChanged;
-			PlayerRoleManager.OnRoleChanged -= this.RecolorDetails;
-		}
+	private void OnDestroy()
+	{
+		Inventory.OnCurrentItemChanged -= ItemChanged;
+		PlayerRoleManager.OnRoleChanged -= RecolorDetails;
+	}
 
-		private void RecolorDetails(ReferenceHub hub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+	private void RecolorDetails(ReferenceHub hub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+	{
+		if (hub.isLocalPlayer)
 		{
-			if (!hub.isLocalPlayer)
+			_roleColor = newRole.RoleColor;
+			Graphic[] detailsToRecolor = _detailsToRecolor;
+			foreach (Graphic graphic in detailsToRecolor)
 			{
-				return;
-			}
-			this._roleColor = newRole.RoleColor;
-			foreach (Graphic graphic in this._detailsToRecolor)
-			{
-				Color roleColor = this._roleColor;
+				Color roleColor = _roleColor;
 				roleColor.a = graphic.color.a;
 				graphic.color = roleColor;
 			}
 		}
+	}
 
-		private void Update()
+	private void Update()
+	{
+		if (!_active)
 		{
-			if (!this._active)
+			return;
+		}
+		float num = 1f - _inventoryGroup.alpha;
+		if (num != _thisGroup.alpha)
+		{
+			_thisGroup.alpha = num;
+		}
+		_alertText.text = _alertToTrack?.Alert.ParseText(_roleColor) ?? string.Empty;
+		if (_progressbarToTrack != null)
+		{
+			if (_progressbarToTrack.ProgressbarEnabled)
 			{
-				return;
+				_progressbarSlider.gameObject.SetActive(value: true);
+				_progressbarSlider.minValue = _progressbarToTrack.ProgressbarMin;
+				_progressbarSlider.maxValue = _progressbarToTrack.ProgressbarMax;
+				_progressbarSlider.value = _progressbarToTrack.ProgressbarValue;
+				_progressbarSliderRect.sizeDelta = new Vector2(_progressbarToTrack.ProgressbarWidth, 10f);
 			}
-			float num = 1f - this._inventoryGroup.alpha;
-			if (num != this._thisGroup.alpha)
+			else
 			{
-				this._thisGroup.alpha = num;
-			}
-			TMP_Text alertText = this._alertText;
-			IItemAlertDrawer alertToTrack = this._alertToTrack;
-			alertText.text = ((alertToTrack != null) ? alertToTrack.Alert.ParseText(this._roleColor) : null) ?? string.Empty;
-			if (this._progressbarToTrack != null)
-			{
-				if (this._progressbarToTrack.ProgressbarEnabled)
-				{
-					this._progressbarSlider.gameObject.SetActive(true);
-					this._progressbarSlider.minValue = this._progressbarToTrack.ProgressbarMin;
-					this._progressbarSlider.maxValue = this._progressbarToTrack.ProgressbarMax;
-					this._progressbarSlider.value = this._progressbarToTrack.ProgressbarValue;
-					this._progressbarSliderRect.sizeDelta = new Vector2(this._progressbarToTrack.ProgressbarWidth, 10f);
-					return;
-				}
-				this._progressbarSlider.gameObject.SetActive(false);
+				_progressbarSlider.gameObject.SetActive(value: false);
 			}
 		}
+	}
 
-		private void ItemChanged(ReferenceHub hub, ItemIdentifier prevItem, ItemIdentifier newItem)
+	private void ItemChanged(ReferenceHub hub, ItemIdentifier prevItem, ItemIdentifier newItem)
+	{
+		if (hub.isLocalPlayer)
 		{
-			if (!hub.isLocalPlayer)
-			{
-				return;
-			}
-			ItemBase itemBase;
-			this._active = hub.inventory.UserInventory.Items.TryGetValue(newItem.SerialNumber, out itemBase) && itemBase is IItemDrawer;
-			this._alertToTrack = itemBase as IItemAlertDrawer;
-			this._alertText.text = string.Empty;
-			this._progressbarToTrack = itemBase as IItemProgressbarDrawer;
-			this._progressbarSlider.gameObject.SetActive(false);
+			_active = hub.inventory.UserInventory.Items.TryGetValue(newItem.SerialNumber, out var value) && value is IItemDrawer;
+			_alertToTrack = value as IItemAlertDrawer;
+			_alertText.text = string.Empty;
+			_progressbarToTrack = value as IItemProgressbarDrawer;
+			_progressbarSlider.gameObject.SetActive(value: false);
 		}
-
-		[SerializeField]
-		private TextMeshProUGUI _alertText;
-
-		[SerializeField]
-		private Slider _progressbarSlider;
-
-		[SerializeField]
-		private RectTransform _progressbarSliderRect;
-
-		[SerializeField]
-		private Graphic[] _detailsToRecolor;
-
-		[SerializeField]
-		private CanvasGroup _thisGroup;
-
-		[SerializeField]
-		private CanvasGroup _inventoryGroup;
-
-		private IItemAlertDrawer _alertToTrack;
-
-		private IItemProgressbarDrawer _progressbarToTrack;
-
-		private bool _active;
-
-		private Color _roleColor;
 	}
 }

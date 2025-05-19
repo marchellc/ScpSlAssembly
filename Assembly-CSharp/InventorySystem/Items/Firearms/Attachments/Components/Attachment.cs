@@ -1,135 +1,125 @@
-﻿using System;
-using InventorySystem.Items.Autosync;
+using System;
 
-namespace InventorySystem.Items.Firearms.Attachments.Components
+namespace InventorySystem.Items.Firearms.Attachments.Components;
+
+public abstract class Attachment : FirearmSubcomponentBase
 {
-	public abstract class Attachment : FirearmSubcomponentBase
+	private AttachmentParamState[] _parameterStates;
+
+	private float[] _parameterValues;
+
+	private bool _arraysInitialized;
+
+	private const string AttNamesFilename = "AttachmentNames";
+
+	public abstract AttachmentName Name { get; }
+
+	public abstract AttachmentSlot Slot { get; }
+
+	public abstract float Weight { get; }
+
+	public abstract float Length { get; }
+
+	public abstract AttachmentDescriptiveAdvantages DescriptivePros { get; }
+
+	public abstract AttachmentDescriptiveDownsides DescriptiveCons { get; }
+
+	public byte Index { get; private set; }
+
+	public virtual bool IsEnabled { get; set; }
+
+	private void SetupArrays()
 	{
-		public abstract AttachmentName Name { get; }
-
-		public abstract AttachmentSlot Slot { get; }
-
-		public abstract float Weight { get; }
-
-		public abstract float Length { get; }
-
-		public abstract AttachmentDescriptiveAdvantages DescriptivePros { get; }
-
-		public abstract AttachmentDescriptiveDownsides DescriptiveCons { get; }
-
-		public byte Index { get; private set; }
-
-		public virtual bool IsEnabled { get; set; }
-
-		private void SetupArrays()
+		if (!_arraysInitialized)
 		{
-			if (this._arraysInitialized)
-			{
-				return;
-			}
 			int totalNumberOfParams = AttachmentsUtils.TotalNumberOfParams;
-			this._parameterValues = new float[totalNumberOfParams];
-			this._parameterStates = new AttachmentParamState[totalNumberOfParams];
-			this._arraysInitialized = true;
+			_parameterValues = new float[totalNumberOfParams];
+			_parameterStates = new AttachmentParamState[totalNumberOfParams];
+			_arraysInitialized = true;
 		}
+	}
 
-		protected override void OnInit()
+	protected override void OnInit()
+	{
+		base.OnInit();
+		if (base.Firearm.AllSubcomponents.TryGet(base.SyncId - 1, out var element) && element is Attachment attachment)
 		{
-			base.OnInit();
-			SubcomponentBase subcomponentBase;
-			if (base.Firearm.AllSubcomponents.TryGet((int)(base.SyncId - 1), out subcomponentBase))
-			{
-				Attachment attachment = subcomponentBase as Attachment;
-				if (attachment != null)
-				{
-					this.Index = attachment.Index + 1;
-					return;
-				}
-			}
+			Index = (byte)(attachment.Index + 1);
 		}
+	}
 
-		protected virtual void EnabledEquipUpdate()
+	protected virtual void EnabledEquipUpdate()
+	{
+	}
+
+	protected void SetParameter(AttachmentParameterValuePair pair)
+	{
+		SetParameter((int)pair.Parameter, pair.Value, pair.UIOnly ? AttachmentParamState.UserInterface : AttachmentParamState.ActiveAndDisplayed);
+	}
+
+	protected void SetParameter(int param, float val, AttachmentParamState state)
+	{
+		SetupArrays();
+		_parameterValues[param] = val;
+		_parameterStates[param] = state;
+	}
+
+	protected void ClearParameter(AttachmentParam param)
+	{
+		if (_arraysInitialized)
 		{
+			_parameterStates[(int)param] = AttachmentParamState.Disabled;
 		}
+	}
 
-		protected void SetParameter(AttachmentParameterValuePair pair)
+	protected void ClearAllParameters()
+	{
+		if (_arraysInitialized)
 		{
-			this.SetParameter((int)pair.Parameter, pair.Value, pair.UIOnly ? AttachmentParamState.UserInterface : AttachmentParamState.ActiveAndDisplayed);
+			Array.Clear(_parameterStates, 0, AttachmentsUtils.TotalNumberOfParams);
 		}
+	}
 
-		protected void SetParameter(int param, float val, AttachmentParamState state)
+	public void GetParameterData(int param, out float val, out AttachmentParamState state)
+	{
+		SetupArrays();
+		val = _parameterValues[param];
+		state = _parameterStates[param];
+	}
+
+	public bool TryGetActiveValue(AttachmentParam param, out float val)
+	{
+		GetParameterData((int)param, out val, out var state);
+		return (state & AttachmentParamState.SilentlyActive) != 0;
+	}
+
+	public bool TryGetDisplayValue(AttachmentParam param, out float val)
+	{
+		GetParameterData((int)param, out val, out var state);
+		return (state & AttachmentParamState.UserInterface) != 0;
+	}
+
+	public void GetNameAndDescription(out string n, out string d)
+	{
+		if (TranslationReader.TryGet("AttachmentNames", (int)Name, out var val))
 		{
-			this.SetupArrays();
-			this._parameterValues[param] = val;
-			this._parameterStates[param] = state;
+			string[] array = val.Split('~');
+			n = array[0];
+			d = ((array.Length == 1) ? string.Empty : array[1]);
 		}
-
-		protected void ClearParameter(AttachmentParam param)
+		else
 		{
-			if (this._arraysInitialized)
-			{
-				this._parameterStates[(int)param] = AttachmentParamState.Disabled;
-			}
-		}
-
-		protected void ClearAllParameters()
-		{
-			if (this._arraysInitialized)
-			{
-				Array.Clear(this._parameterStates, 0, AttachmentsUtils.TotalNumberOfParams);
-			}
-		}
-
-		public void GetParameterData(int param, out float val, out AttachmentParamState state)
-		{
-			this.SetupArrays();
-			val = this._parameterValues[param];
-			state = this._parameterStates[param];
-		}
-
-		public bool TryGetActiveValue(AttachmentParam param, out float val)
-		{
-			AttachmentParamState attachmentParamState;
-			this.GetParameterData((int)param, out val, out attachmentParamState);
-			return (attachmentParamState & AttachmentParamState.SilentlyActive) > AttachmentParamState.Disabled;
-		}
-
-		public bool TryGetDisplayValue(AttachmentParam param, out float val)
-		{
-			AttachmentParamState attachmentParamState;
-			this.GetParameterData((int)param, out val, out attachmentParamState);
-			return (attachmentParamState & AttachmentParamState.UserInterface) > AttachmentParamState.Disabled;
-		}
-
-		public void GetNameAndDescription(out string n, out string d)
-		{
-			string text;
-			if (TranslationReader.TryGet("AttachmentNames", (int)this.Name, out text))
-			{
-				string[] array = text.Split('~', StringSplitOptions.None);
-				n = array[0];
-				d = ((array.Length == 1) ? string.Empty : array[1]);
-				return;
-			}
-			n = this.Name.ToString();
+			n = Name.ToString();
 			d = string.Empty;
 		}
+	}
 
-		internal sealed override void EquipUpdate()
+	internal sealed override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		if (IsEnabled)
 		{
-			base.EquipUpdate();
-			if (this.IsEnabled)
-			{
-				this.EnabledEquipUpdate();
-			}
+			EnabledEquipUpdate();
 		}
-
-		private AttachmentParamState[] _parameterStates;
-
-		private float[] _parameterValues;
-
-		private bool _arraysInitialized;
-
-		private const string AttNamesFilename = "AttachmentNames";
 	}
 }

@@ -1,194 +1,231 @@
-﻿using System;
+using System;
 using CursorManagement;
+using InventorySystem.Items;
 using Mirror;
+using NetworkManagerUtils.Dummies;
 using RelativePositioning;
 using UnityEngine;
 using UserSettings.ControlsSettings;
 
-namespace PlayerRoles.FirstPersonControl
+namespace PlayerRoles.FirstPersonControl;
+
+public class FpcMouseLook : IDummyActionProvider
 {
-	public class FpcMouseLook
+	private static FpcMouseLook _localInstance;
+
+	public const float MinimumVer = -88f;
+
+	public const float MaximumVer = 88f;
+
+	public const float OverallMultiplier = 2f;
+
+	private const float FullAngle = 360f;
+
+	private const float SmoothTime = 10f;
+
+	private const float ThirdpersonSmooth = 22f;
+
+	private readonly ReferenceHub _hub;
+
+	private readonly FirstPersonMovementModule _fpmm;
+
+	private float _curHorizontal;
+
+	private float _curVertical;
+
+	private float _syncHorizontal;
+
+	private float _syncVertical;
+
+	private float _inputHorizontal;
+
+	private float _inputVertical;
+
+	private ushort _prevSyncH;
+
+	private ushort _prevSyncV;
+
+	protected virtual float BiaxialSensitivity
 	{
-		public FpcMouseLook(ReferenceHub hub, FirstPersonMovementModule fpmm)
+		get
 		{
-			this._hub = hub;
-			this._fpmm = fpmm;
-			this.CurrentHorizontal = hub.transform.eulerAngles.y;
-			this.CurrentVertical = 0f;
-			if (hub.isLocalPlayer)
+			float num = SensitivitySettings.SensMultiplier * 2f;
+			if (_hub.inventory.CurInstance is IZoomModifyingItem zoomModifyingItem && zoomModifyingItem != null)
 			{
-				FpcMouseLook._localInstance = this;
+				num *= zoomModifyingItem.SensitivityScale;
 			}
+			return num;
 		}
+	}
 
-		public static bool TryGetLocalMouseLook(out FpcMouseLook ml)
+	public float CurrentHorizontal
+	{
+		get
 		{
-			ml = FpcMouseLook._localInstance;
-			return ml != null;
+			return _curHorizontal;
 		}
-
-		public float CurrentHorizontal
+		set
 		{
-			get
-			{
-				return this._curHorizontal;
-			}
-			set
-			{
-				float num = this.ClampHorizontal(value);
-				this._curHorizontal = num;
-				this._inputHorizontal = num;
-			}
+			_inputHorizontal = (_curHorizontal = ClampHorizontal(value));
 		}
+	}
 
-		public float CurrentVertical
+	public float CurrentVertical
+	{
+		get
 		{
-			get
-			{
-				return this._curVertical;
-			}
-			set
-			{
-				float num = this.ClampVertical(value);
-				this._curVertical = num;
-				this._inputVertical = num;
-			}
+			return _curVertical;
 		}
-
-		private Quaternion TargetHubRotation
+		set
 		{
-			get
-			{
-				return Quaternion.Euler(Vector3.up * this._curHorizontal);
-			}
+			_inputVertical = (_curVertical = ClampVertical(value));
 		}
+	}
 
-		private Quaternion TargetCamRotation
+	private Quaternion TargetHubRotation => Quaternion.Euler(Vector3.up * _curHorizontal);
+
+	private Quaternion TargetCamRotation => Quaternion.Euler(Vector3.left * _curVertical);
+
+	public FpcMouseLook(ReferenceHub hub, FirstPersonMovementModule fpmm)
+	{
+		_hub = hub;
+		_fpmm = fpmm;
+		CurrentHorizontal = hub.transform.eulerAngles.y;
+		CurrentVertical = 0f;
+		if (hub.isLocalPlayer)
 		{
-			get
-			{
-				return Quaternion.Euler(Vector3.left * this._curVertical);
-			}
+			_localInstance = this;
 		}
+	}
 
-		public void UpdateRotation()
+	public static bool TryGetLocalMouseLook(out FpcMouseLook ml)
+	{
+		ml = _localInstance;
+		return ml != null;
+	}
+
+	public void UpdateRotation()
+	{
+		Quaternion rotation;
+		Quaternion localRotation;
+		if (_hub.isLocalPlayer)
 		{
-			Quaternion quaternion;
-			Quaternion quaternion2;
-			if (this._hub.isLocalPlayer)
+			GetMouseInput(out var hRot, out var vRot);
+			if (Cursor.visible || CursorManager.MovementLocked)
 			{
-				float num;
-				float num2;
-				this.GetMouseInput(out num, out num2);
-				if (Cursor.visible || CursorManager.MovementLocked)
-				{
-					num = 0f;
-					num2 = 0f;
-				}
-				this._inputVertical = this.ClampVertical(this._inputVertical + num2);
-				this._inputHorizontal = this.ClampHorizontal(this._inputHorizontal + num);
-				float num3 = (SensitivitySettings.SmoothInput ? (10f * Time.deltaTime) : 1f);
-				this._curVertical = this.ClampVertical(Mathf.LerpAngle(this._curVertical, this._inputVertical, num3));
-				this._curHorizontal = this.ClampHorizontal(Mathf.LerpAngle(this._curHorizontal, this._inputHorizontal, num3));
-				quaternion = this.TargetHubRotation;
-				quaternion2 = this.TargetCamRotation;
+				hRot = 0f;
+				vRot = 0f;
 			}
-			else
-			{
-				if (!NetworkServer.active || !this._hub.IsDummy)
-				{
-					this.CurrentHorizontal = WaypointBase.GetWorldRotation(this._fpmm.Motor.ReceivedPosition.WaypointId, Quaternion.Euler(Vector3.up * this._syncHorizontal)).eulerAngles.y;
-					this.CurrentVertical = this._syncVertical;
-				}
-				float num4 = (NetworkServer.active ? 1f : (22f * Time.deltaTime));
-				quaternion = Quaternion.Lerp(this._hub.transform.rotation, this.TargetHubRotation, num4);
-				quaternion2 = Quaternion.Lerp(this._hub.PlayerCameraReference.localRotation, this.TargetCamRotation, num4);
-			}
-			this._hub.transform.rotation = quaternion;
-			this._hub.PlayerCameraReference.localRotation = quaternion2;
+			_inputVertical = ClampVertical(_inputVertical + vRot);
+			_inputHorizontal = ClampHorizontal(_inputHorizontal + hRot);
+			float t = (SensitivitySettings.SmoothInput ? (10f * Time.deltaTime) : 1f);
+			_curVertical = ClampVertical(Mathf.LerpAngle(_curVertical, _inputVertical, t));
+			_curHorizontal = ClampHorizontal(Mathf.LerpAngle(_curHorizontal, _inputHorizontal, t));
+			rotation = TargetHubRotation;
+			localRotation = TargetCamRotation;
 		}
-
-		public void GetMouseInput(out float hRot, out float vRot)
+		else
 		{
-			hRot = Input.GetAxisRaw("Mouse X");
-			vRot = Input.GetAxisRaw("Mouse Y");
+			if (!NetworkServer.active || !_hub.IsDummy)
+			{
+				CurrentHorizontal = WaypointBase.GetWorldRotation(_fpmm.Motor.ReceivedPosition.WaypointId, Quaternion.Euler(Vector3.up * _syncHorizontal)).eulerAngles.y;
+				CurrentVertical = _syncVertical;
+			}
+			float t2 = (NetworkServer.active ? 1f : (22f * Time.deltaTime));
+			rotation = Quaternion.Lerp(_hub.transform.rotation, TargetHubRotation, t2);
+			localRotation = Quaternion.Lerp(_hub.PlayerCameraReference.localRotation, TargetCamRotation, t2);
 		}
+		_hub.transform.rotation = rotation;
+		_hub.PlayerCameraReference.localRotation = localRotation;
+	}
 
-		public void ApplySyncValues(ushort horizontal, ushort vertical)
+	public void GetMouseInput(out float hRot, out float vRot)
+	{
+		hRot = Input.GetAxisRaw("Mouse X");
+		vRot = Input.GetAxisRaw("Mouse Y");
+		float biaxialSensitivity = BiaxialSensitivity;
+		hRot = ProcessHorizontalInput(hRot * biaxialSensitivity);
+		vRot = ProcessVerticalInput(vRot * biaxialSensitivity);
+	}
+
+	public void ApplySyncValues(ushort horizontal, ushort vertical)
+	{
+		if (_prevSyncH == horizontal && _prevSyncV == vertical)
 		{
-			if (this._prevSyncH == horizontal && this._prevSyncV == vertical)
-			{
-				this._fpmm.Motor.RotationDetected = false;
-				return;
-			}
-			this._prevSyncH = horizontal;
-			this._prevSyncV = vertical;
-			this._syncHorizontal = Mathf.Lerp(0f, 360f, (float)horizontal / 65535f);
-			this._syncVertical = Mathf.Lerp(-88f, 88f, (float)vertical / 65535f);
-			if (this._hub.isLocalPlayer)
-			{
-				this.CurrentHorizontal = this._syncHorizontal;
-				this.CurrentVertical = this._syncVertical;
-			}
-			this._fpmm.Motor.RotationDetected = true;
+			_fpmm.Motor.RotationDetected = false;
+			return;
 		}
-
-		public void GetSyncValues(byte waypointId, out ushort syncH, out ushort syncV)
+		_prevSyncH = horizontal;
+		_prevSyncV = vertical;
+		_syncHorizontal = Mathf.Lerp(0f, 360f, (float)(int)horizontal / 65535f);
+		_syncVertical = Mathf.Lerp(-88f, 88f, (float)(int)vertical / 65535f);
+		if (_hub.isLocalPlayer)
 		{
-			syncH = (ushort)Mathf.RoundToInt(Mathf.InverseLerp(0f, 360f, WaypointBase.GetRelativeRotation(waypointId, Quaternion.Euler(Vector3.up * this.CurrentHorizontal)).eulerAngles.y) * 65535f);
-			syncV = (ushort)Mathf.RoundToInt(Mathf.InverseLerp(-88f, 88f, this.CurrentVertical) * 65535f);
+			CurrentHorizontal = _syncHorizontal;
+			CurrentVertical = _syncVertical;
 		}
+		_fpmm.Motor.RotationDetected = true;
+	}
 
-		protected virtual float ClampHorizontal(float f)
+	public void GetSyncValues(byte waypointId, out ushort syncH, out ushort syncV)
+	{
+		syncH = (ushort)Mathf.RoundToInt(Mathf.InverseLerp(0f, 360f, WaypointBase.GetRelativeRotation(waypointId, Quaternion.Euler(Vector3.up * CurrentHorizontal)).eulerAngles.y) * 65535f);
+		syncV = (ushort)Mathf.RoundToInt(Mathf.InverseLerp(-88f, 88f, CurrentVertical) * 65535f);
+	}
+
+	protected virtual float ClampHorizontal(float f)
+	{
+		while (f < 0f)
 		{
-			while (f < 0f)
-			{
-				f += 360f;
-			}
-			while (f > 360f)
-			{
-				f -= 360f;
-			}
+			f += 360f;
+		}
+		while (f > 360f)
+		{
+			f -= 360f;
+		}
+		return f;
+	}
+
+	protected virtual float ClampVertical(float f)
+	{
+		return Mathf.Clamp(f, -88f, 88f);
+	}
+
+	protected virtual float ProcessVerticalInput(float f)
+	{
+		if (!SensitivitySettings.Invert)
+		{
 			return f;
 		}
+		return 0f - f;
+	}
 
-		protected virtual float ClampVertical(float f)
+	protected virtual float ProcessHorizontalInput(float f)
+	{
+		return f;
+	}
+
+	public void PopulateDummyActions(Action<DummyAction> actionAdder)
+	{
+		int[] array = new int[4] { 1, 10, 45, 180 };
+		foreach (int i2 in array)
 		{
-			return Mathf.Clamp(f, -88f, 88f);
+			actionAdder(new DummyAction(string.Format("{0}-{1}", "CurrentHorizontal", i2), delegate
+			{
+				CurrentHorizontal -= (float)i2;
+			}));
+			actionAdder(new DummyAction(string.Format("{0}+{1}", "CurrentHorizontal", i2), delegate
+			{
+				CurrentHorizontal += (float)i2;
+			}));
+			actionAdder(new DummyAction(string.Format("{0}-{1}", "CurrentVertical", i2), delegate
+			{
+				CurrentVertical -= (float)i2;
+			}));
+			actionAdder(new DummyAction(string.Format("{0}+{1}", "CurrentVertical", i2), delegate
+			{
+				CurrentVertical += (float)i2;
+			}));
 		}
-
-		private static FpcMouseLook _localInstance;
-
-		public const float MinimumVer = -88f;
-
-		public const float MaximumVer = 88f;
-
-		public const float OverallMultiplier = 2f;
-
-		private const float FullAngle = 360f;
-
-		private const float SmoothTime = 10f;
-
-		private const float ThirdpersonSmooth = 22f;
-
-		private readonly ReferenceHub _hub;
-
-		private readonly FirstPersonMovementModule _fpmm;
-
-		private float _curHorizontal;
-
-		private float _curVertical;
-
-		private float _syncHorizontal;
-
-		private float _syncVertical;
-
-		private float _inputHorizontal;
-
-		private float _inputVertical;
-
-		private ushort _prevSyncH;
-
-		private ushort _prevSyncV;
 	}
 }

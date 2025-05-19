@@ -1,17 +1,14 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.Scp079.GUI;
 
-namespace PlayerRoles.PlayableScps.Scp079.GUI
+public interface IScp079Notification
 {
-	public interface IScp079Notification
-	{
-		string DisplayedText { get; }
+	string DisplayedText { get; }
 
-		float Opacity { get; }
+	float Opacity { get; }
 
-		bool Delete { get; }
+	bool Delete { get; }
 
-		NotificationSound Sound { get; }
+	NotificationSound Sound { get; }
 
-		float Height { get; }
-	}
+	float Height { get; }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
@@ -6,75 +6,65 @@ using InventorySystem.Items.ThrowableProjectiles;
 using Mirror;
 using UnityEngine;
 
-namespace Scp914.Processors
+namespace Scp914.Processors;
+
+public class Scp2176ItemProcessor : StandardItemProcessor
 {
-	public class Scp2176ItemProcessor : StandardItemProcessor
+	private const float NumOfCoins = 12f;
+
+	private const float NumOfFlashlights = 1f;
+
+	private const float FlashlightChance = 0.2f;
+
+	public override Scp914Result UpgradePickup(Scp914KnobSetting setting, ItemPickupBase sourcePickup)
 	{
-		public override Scp914Result UpgradePickup(Scp914KnobSetting setting, ItemPickupBase sourcePickup)
+		if (!(sourcePickup is Scp2176Projectile scp2176Projectile))
 		{
-			Scp2176Projectile scp2176Projectile = sourcePickup as Scp2176Projectile;
-			if (scp2176Projectile == null)
+			throw new InvalidOperationException(string.Format("Attempted to use {0} on item with type {1}", "Scp2176ItemProcessor", sourcePickup.Info.ItemId));
+		}
+		ClearCombiner();
+		switch (setting)
+		{
+		case Scp914KnobSetting.Rough:
+			scp2176Projectile.ServerImmediatelyShatter();
+			break;
+		case Scp914KnobSetting.OneToOne:
+		{
+			for (int j = 0; (float)j < 12f; j++)
 			{
-				throw new InvalidOperationException(string.Format("Attempted to use {0} on item with type {1}", "Scp2176ItemProcessor", sourcePickup.Info.ItemId));
+				SpawnItem(ItemType.Coin, sourcePickup);
 			}
-			base.ClearCombiner();
-			switch (setting)
+			sourcePickup.DestroySelf();
+			break;
+		}
+		case Scp914KnobSetting.VeryFine:
+			if (!(UnityEngine.Random.value < 0.2f))
 			{
-			case Scp914KnobSetting.Rough:
-				scp2176Projectile.ServerImmediatelyShatter();
-				goto IL_00B2;
-			case Scp914KnobSetting.OneToOne:
-			{
-				int num = 0;
-				while ((float)num < 12f)
+				for (int i = 0; (float)i < 1f; i++)
 				{
-					this.SpawnItem(ItemType.Coin, sourcePickup);
-					num++;
+					SpawnItem(ItemType.Flashlight, sourcePickup);
 				}
 				sourcePickup.DestroySelf();
-				goto IL_00B2;
 			}
-			case Scp914KnobSetting.VeryFine:
-				if (global::UnityEngine.Random.value >= 0.2f)
-				{
-					int num2 = 0;
-					while ((float)num2 < 1f)
-					{
-						this.SpawnItem(ItemType.Flashlight, sourcePickup);
-						num2++;
-					}
-					sourcePickup.DestroySelf();
-					goto IL_00B2;
-				}
-				goto IL_00B2;
-			}
+			break;
+		default:
 			return base.UpgradePickup(setting, sourcePickup);
-			IL_00B2:
-			return base.GenerateResultFromCombiner(sourcePickup);
 		}
+		return GenerateResultFromCombiner(sourcePickup);
+	}
 
-		private void SpawnItem(ItemType itemType, ItemPickupBase sourcePickup)
+	private void SpawnItem(ItemType itemType, ItemPickupBase sourcePickup)
+	{
+		if (InventoryItemLoader.AvailableItems.TryGetValue(itemType, out var value))
 		{
-			ItemBase itemBase;
-			if (!InventoryItemLoader.AvailableItems.TryGetValue(itemType, out itemBase))
-			{
-				return;
-			}
-			PickupSyncInfo pickupSyncInfo = new PickupSyncInfo
-			{
-				ItemId = itemType,
-				Serial = ItemSerialGenerator.GenerateNext(),
-				WeightKg = itemBase.Weight
-			};
-			bool flag = NetworkServer.spawned.ContainsKey(sourcePickup.netId);
-			ItemPickupBase itemPickupBase = InventoryExtensions.ServerCreatePickup(itemBase, new PickupSyncInfo?(pickupSyncInfo), sourcePickup.Position + Scp914Controller.MoveVector, sourcePickup.Rotation, flag, null);
-			base.AddResultToCombiner(itemPickupBase);
+			PickupSyncInfo pickupSyncInfo = default(PickupSyncInfo);
+			pickupSyncInfo.ItemId = itemType;
+			pickupSyncInfo.Serial = ItemSerialGenerator.GenerateNext();
+			pickupSyncInfo.WeightKg = value.Weight;
+			PickupSyncInfo value2 = pickupSyncInfo;
+			bool spawn = NetworkServer.spawned.ContainsKey(sourcePickup.netId);
+			ItemPickupBase resultingPickup = InventoryExtensions.ServerCreatePickup(value, value2, sourcePickup.Position + Scp914Controller.MoveVector, sourcePickup.Rotation, spawn);
+			AddResultToCombiner(resultingPickup);
 		}
-
-		private const float NumOfCoins = 12f;
-
-		private const float NumOfFlashlights = 1f;
-
-		private const float FlashlightChance = 0.2f;
 	}
 }

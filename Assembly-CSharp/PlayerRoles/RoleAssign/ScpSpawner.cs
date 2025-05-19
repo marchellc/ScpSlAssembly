@@ -1,189 +1,182 @@
-﻿using System;
 using System.Collections.Generic;
 using PlayerRoles.PlayableScps;
 using UnityEngine;
 
-namespace PlayerRoles.RoleAssign
+namespace PlayerRoles.RoleAssign;
+
+public static class ScpSpawner
 {
-	public static class ScpSpawner
+	private static readonly Dictionary<ReferenceHub, float> SelectedSpawnChances = new Dictionary<ReferenceHub, float>();
+
+	private static readonly Dictionary<ReferenceHub, float> ChancesBuffer = new Dictionary<ReferenceHub, float>();
+
+	private static readonly List<RoleTypeId> BackupScps = new List<RoleTypeId>(8);
+
+	private static readonly List<RoleTypeId> EnqueuedScps = new List<RoleTypeId>(8);
+
+	private static PlayerRoleBase[] _cachedSpawnableScps;
+
+	private static float[] _chancesArray;
+
+	private static bool _cacheSet;
+
+	public static int MaxSpawnableScps => SpawnableScps.Length;
+
+	private static PlayerRoleBase[] SpawnableScps
 	{
-		private static PlayerRoleBase[] SpawnableScps
+		get
 		{
-			get
+			if (_cacheSet)
 			{
-				if (ScpSpawner._cacheSet)
+				return _cachedSpawnableScps;
+			}
+			List<PlayerRoleBase> list = new List<PlayerRoleBase>();
+			foreach (KeyValuePair<RoleTypeId, PlayerRoleBase> allRole in PlayerRoleLoader.AllRoles)
+			{
+				if (allRole.Value is ISpawnableScp)
 				{
-					return ScpSpawner._cachedSpawnableScps;
+					list.Add(allRole.Value);
 				}
-				List<PlayerRoleBase> list = new List<PlayerRoleBase>();
-				foreach (KeyValuePair<RoleTypeId, PlayerRoleBase> keyValuePair in PlayerRoleLoader.AllRoles)
+			}
+			_cacheSet = true;
+			_chancesArray = new float[list.Count];
+			return _cachedSpawnableScps = list.ToArray();
+		}
+	}
+
+	private static RoleTypeId NextScp
+	{
+		get
+		{
+			float num = 0f;
+			int num2 = SpawnableScps.Length;
+			for (int i = 0; i < num2; i++)
+			{
+				PlayerRoleBase playerRoleBase = SpawnableScps[i];
+				if (EnqueuedScps.Contains(playerRoleBase.RoleTypeId))
 				{
-					if (keyValuePair.Value is ISpawnableScp)
+					_chancesArray[i] = 0f;
+					continue;
+				}
+				float spawnChance = (SpawnableScps[i] as ISpawnableScp).GetSpawnChance(EnqueuedScps);
+				spawnChance = Mathf.Max(spawnChance, 0f);
+				num += spawnChance;
+				_chancesArray[i] = spawnChance;
+			}
+			if (num == 0f)
+			{
+				return RandomLeastFrequentScp;
+			}
+			float num3 = Random.Range(0f, num);
+			for (int j = 0; j < num2; j++)
+			{
+				num3 -= _chancesArray[j];
+				if (!(num3 >= 0f))
+				{
+					return SpawnableScps[j].RoleTypeId;
+				}
+			}
+			return SpawnableScps[num2 - 1].RoleTypeId;
+		}
+	}
+
+	private static RoleTypeId RandomLeastFrequentScp
+	{
+		get
+		{
+			int num = SpawnableScps.Length;
+			int num2 = int.MaxValue;
+			for (int i = 0; i < num; i++)
+			{
+				RoleTypeId roleTypeId = SpawnableScps[i].RoleTypeId;
+				int num3 = 0;
+				foreach (RoleTypeId enqueuedScp in EnqueuedScps)
+				{
+					if (enqueuedScp == roleTypeId)
 					{
-						list.Add(keyValuePair.Value);
+						num3++;
 					}
 				}
-				ScpSpawner._cacheSet = true;
-				ScpSpawner._chancesArray = new float[list.Count];
-				return ScpSpawner._cachedSpawnableScps = list.ToArray();
-			}
-		}
-
-		private static RoleTypeId NextScp
-		{
-			get
-			{
-				float num = 0f;
-				int num2 = ScpSpawner.SpawnableScps.Length;
-				for (int i = 0; i < num2; i++)
+				if (num3 <= num2)
 				{
-					PlayerRoleBase playerRoleBase = ScpSpawner.SpawnableScps[i];
-					if (ScpSpawner.EnqueuedScps.Contains(playerRoleBase.RoleTypeId))
+					if (num3 < num2)
 					{
-						ScpSpawner._chancesArray[i] = 0f;
+						BackupScps.Clear();
 					}
-					else
-					{
-						float num3 = (ScpSpawner.SpawnableScps[i] as ISpawnableScp).GetSpawnChance(ScpSpawner.EnqueuedScps);
-						num3 = Mathf.Max(num3, 0f);
-						num += num3;
-						ScpSpawner._chancesArray[i] = num3;
-					}
+					BackupScps.Add(roleTypeId);
+					num2 = num3;
 				}
-				if (num == 0f)
-				{
-					return ScpSpawner.RandomLeastFrequentScp;
-				}
-				float num4 = global::UnityEngine.Random.Range(0f, num);
-				for (int j = 0; j < num2; j++)
-				{
-					num4 -= ScpSpawner._chancesArray[j];
-					if (num4 < 0f)
-					{
-						return ScpSpawner.SpawnableScps[j].RoleTypeId;
-					}
-				}
-				return ScpSpawner.SpawnableScps[num2 - 1].RoleTypeId;
 			}
+			return BackupScps.RandomItem();
 		}
+	}
 
-		private static RoleTypeId RandomLeastFrequentScp
+	public static void SpawnScps(int targetScpNumber)
+	{
+		EnqueuedScps.Clear();
+		for (int i = 0; i < targetScpNumber; i++)
 		{
-			get
-			{
-				int num = ScpSpawner.SpawnableScps.Length;
-				int num2 = int.MaxValue;
-				for (int i = 0; i < num; i++)
-				{
-					RoleTypeId roleTypeId = ScpSpawner.SpawnableScps[i].RoleTypeId;
-					int num3 = 0;
-					using (List<RoleTypeId>.Enumerator enumerator = ScpSpawner.EnqueuedScps.GetEnumerator())
-					{
-						while (enumerator.MoveNext())
-						{
-							if (enumerator.Current == roleTypeId)
-							{
-								num3++;
-							}
-						}
-					}
-					if (num3 <= num2)
-					{
-						if (num3 < num2)
-						{
-							ScpSpawner.BackupScps.Clear();
-						}
-						ScpSpawner.BackupScps.Add(roleTypeId);
-						num2 = num3;
-					}
-				}
-				return ScpSpawner.BackupScps.RandomItem<RoleTypeId>();
-			}
+			EnqueuedScps.Add(NextScp);
 		}
-
-		public static void SpawnScps(int targetScpNumber)
+		List<ReferenceHub> chosenPlayers = ScpPlayerPicker.ChoosePlayers(targetScpNumber);
+		while (EnqueuedScps.Count > 0)
 		{
-			ScpSpawner.EnqueuedScps.Clear();
-			for (int i = 0; i < targetScpNumber; i++)
-			{
-				ScpSpawner.EnqueuedScps.Add(ScpSpawner.NextScp);
-			}
-			List<ReferenceHub> list = ScpPlayerPicker.ChoosePlayers(targetScpNumber);
-			while (ScpSpawner.EnqueuedScps.Count > 0)
-			{
-				RoleTypeId roleTypeId = ScpSpawner.EnqueuedScps[0];
-				ScpSpawner.EnqueuedScps.RemoveAt(0);
-				ScpSpawner.AssignScp(list, roleTypeId, ScpSpawner.EnqueuedScps);
-			}
+			RoleTypeId scp = EnqueuedScps[0];
+			EnqueuedScps.RemoveAt(0);
+			AssignScp(chosenPlayers, scp, EnqueuedScps);
 		}
+	}
 
-		private static void AssignScp(List<ReferenceHub> chosenPlayers, RoleTypeId scp, List<RoleTypeId> otherScps)
+	private static void AssignScp(List<ReferenceHub> chosenPlayers, RoleTypeId scp, List<RoleTypeId> otherScps)
+	{
+		ChancesBuffer.Clear();
+		int num = 1;
+		int num2 = 0;
+		foreach (ReferenceHub chosenPlayer in chosenPlayers)
 		{
-			ScpSpawner.ChancesBuffer.Clear();
-			int num = 1;
-			int num2 = 0;
-			foreach (ReferenceHub referenceHub in chosenPlayers)
+			int num3 = GetPreferenceOfPlayer(chosenPlayer, scp);
+			foreach (RoleTypeId otherScp in otherScps)
 			{
-				int num3 = ScpSpawner.GetPreferenceOfPlayer(referenceHub, scp);
-				foreach (RoleTypeId roleTypeId in otherScps)
-				{
-					num3 -= ScpSpawner.GetPreferenceOfPlayer(referenceHub, roleTypeId);
-				}
-				num2++;
-				ScpSpawner.ChancesBuffer[referenceHub] = (float)num3;
-				num = Mathf.Min(num3, num);
+				num3 -= GetPreferenceOfPlayer(chosenPlayer, otherScp);
 			}
-			float num4 = 0f;
-			ScpSpawner.SelectedSpawnChances.Clear();
-			foreach (KeyValuePair<ReferenceHub, float> keyValuePair in ScpSpawner.ChancesBuffer)
-			{
-				float num5 = Mathf.Pow(keyValuePair.Value - (float)num + 1f, (float)num2);
-				ScpSpawner.SelectedSpawnChances[keyValuePair.Key] = num5;
-				num4 += num5;
-			}
-			float num6 = num4 * global::UnityEngine.Random.value;
-			float num7 = 0f;
-			foreach (KeyValuePair<ReferenceHub, float> keyValuePair2 in ScpSpawner.SelectedSpawnChances)
-			{
-				num7 += keyValuePair2.Value;
-				if (num7 >= num6)
-				{
-					ReferenceHub key = keyValuePair2.Key;
-					chosenPlayers.Remove(key);
-					key.roleManager.ServerSetRole(scp, RoleChangeReason.RoundStart, RoleSpawnFlags.All);
-					break;
-				}
-			}
+			num2++;
+			ChancesBuffer[chosenPlayer] = num3;
+			num = Mathf.Min(num3, num);
 		}
-
-		private static int GetPreferenceOfPlayer(ReferenceHub ply, RoleTypeId scp)
+		float num4 = 0f;
+		SelectedSpawnChances.Clear();
+		foreach (KeyValuePair<ReferenceHub, float> item in ChancesBuffer)
 		{
-			int connectionId = ply.connectionToClient.connectionId;
-			ScpSpawnPreferences.SpawnPreferences spawnPreferences;
-			if (!ScpSpawnPreferences.Preferences.TryGetValue(connectionId, out spawnPreferences))
-			{
-				return 0;
-			}
-			int num;
-			if (!spawnPreferences.Preferences.TryGetValue(scp, out num))
-			{
-				num = 0;
-			}
-			return num;
+			float num5 = Mathf.Pow(item.Value - (float)num + 1f, num2);
+			SelectedSpawnChances[item.Key] = num5;
+			num4 += num5;
 		}
+		float num6 = num4 * Random.value;
+		float num7 = 0f;
+		foreach (KeyValuePair<ReferenceHub, float> selectedSpawnChance in SelectedSpawnChances)
+		{
+			num7 += selectedSpawnChance.Value;
+			if (!(num7 < num6))
+			{
+				ReferenceHub key = selectedSpawnChance.Key;
+				chosenPlayers.Remove(key);
+				key.roleManager.ServerSetRole(scp, RoleChangeReason.RoundStart);
+				break;
+			}
+		}
+	}
 
-		private static readonly Dictionary<ReferenceHub, float> SelectedSpawnChances = new Dictionary<ReferenceHub, float>();
-
-		private static readonly Dictionary<ReferenceHub, float> ChancesBuffer = new Dictionary<ReferenceHub, float>();
-
-		private static readonly List<RoleTypeId> BackupScps = new List<RoleTypeId>(8);
-
-		private static readonly List<RoleTypeId> EnqueuedScps = new List<RoleTypeId>(8);
-
-		private static PlayerRoleBase[] _cachedSpawnableScps;
-
-		private static float[] _chancesArray;
-
-		private static bool _cacheSet;
+	private static int GetPreferenceOfPlayer(ReferenceHub ply, RoleTypeId scp)
+	{
+		int connectionId = ply.connectionToClient.connectionId;
+		if (!ScpSpawnPreferences.Preferences.TryGetValue(connectionId, out var value))
+		{
+			return 0;
+		}
+		if (!value.Preferences.TryGetValue(scp, out var value2))
+		{
+			return 0;
+		}
+		return value2;
 	}
 }

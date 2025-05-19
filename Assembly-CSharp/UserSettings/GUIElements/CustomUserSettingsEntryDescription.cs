@@ -1,22 +1,13 @@
-﻿using System;
+namespace UserSettings.GUIElements;
 
-namespace UserSettings.GUIElements
+public class CustomUserSettingsEntryDescription : UserSettingsEntryDescription
 {
-	public class CustomUserSettingsEntryDescription : UserSettingsEntryDescription
+	private string _customText;
+
+	public override string Text => _customText;
+
+	public void SetCustomText(string text)
 	{
-		public override string Text
-		{
-			get
-			{
-				return this._customText;
-			}
-		}
-
-		public void SetCustomText(string text)
-		{
-			this._customText = text;
-		}
-
-		private string _customText;
+		_customText = text;
 	}
 }

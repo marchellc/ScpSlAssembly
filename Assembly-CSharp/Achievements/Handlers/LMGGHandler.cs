@@ -1,80 +1,62 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Firearms.Modules;
 using Mirror;
 using PlayerRoles;
 using PlayerStatsSystem;
 
-namespace Achievements.Handlers
+namespace Achievements.Handlers;
+
+public class LMGGHandler : AchievementHandlerBase
 {
-	public class LMGGHandler : AchievementHandlerBase
+	private const int KillsNeeded = 3;
+
+	private static readonly Dictionary<ReferenceHub, double> LastHeldTime = new Dictionary<ReferenceHub, double>();
+
+	private static readonly Dictionary<ReferenceHub, int> KillsSinceHeld = new Dictionary<ReferenceHub, int>();
+
+	internal override void OnInitialize()
 	{
-		internal override void OnInitialize()
-		{
-			PlayerStats.OnAnyPlayerDied += this.OnAnyPlayerDied;
-		}
+		PlayerStats.OnAnyPlayerDied += OnAnyPlayerDied;
+	}
 
-		internal override void OnRoundStarted()
-		{
-			LMGGHandler.LastHeldTime.Clear();
-			LMGGHandler.KillsSinceHeld.Clear();
-		}
+	internal override void OnRoundStarted()
+	{
+		LastHeldTime.Clear();
+		KillsSinceHeld.Clear();
+	}
 
-		private void OnAnyPlayerDied(ReferenceHub victim, DamageHandlerBase handler)
+	private void OnAnyPlayerDied(ReferenceHub victim, DamageHandlerBase handler)
+	{
+		if (!NetworkServer.active || !(handler is FirearmDamageHandler { WeaponType: var weaponType } firearmDamageHandler) || (weaponType != ItemType.GunFRMG0 && weaponType != ItemType.GunLogicer))
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			FirearmDamageHandler firearmDamageHandler = handler as FirearmDamageHandler;
-			if (firearmDamageHandler == null)
-			{
-				return;
-			}
-			ItemType weaponType = firearmDamageHandler.WeaponType;
-			if (weaponType != ItemType.GunFRMG0 && weaponType != ItemType.GunLogicer)
-			{
-				return;
-			}
-			ReferenceHub hub = firearmDamageHandler.Attacker.Hub;
-			if (!hub.IsHuman())
-			{
-				return;
-			}
-			if (!HitboxIdentity.IsEnemy(firearmDamageHandler.Attacker.Role, victim.GetRoleId()))
-			{
-				return;
-			}
-			SimpleTriggerModule.ReceivedData data = SimpleTriggerModule.GetData(firearmDamageHandler.Firearm.ItemSerial);
-			double pressTime;
-			if (!LMGGHandler.LastHeldTime.TryGetValue(hub, out pressTime))
-			{
-				pressTime = data.PressTime;
-				LMGGHandler.LastHeldTime[hub] = pressTime;
-			}
-			if (Math.Abs(data.PressTime - pressTime) > 1E-09)
-			{
-				LMGGHandler.LastHeldTime[hub] = data.PressTime;
-				LMGGHandler.KillsSinceHeld[hub] = 1;
-				return;
-			}
-			int num;
-			if (!LMGGHandler.KillsSinceHeld.TryGetValue(hub, out num))
-			{
-				num = 0;
-			}
-			num = (LMGGHandler.KillsSinceHeld[hub] = num + 1);
-			if (num < 3)
-			{
-				return;
-			}
+			return;
+		}
+		ReferenceHub hub = firearmDamageHandler.Attacker.Hub;
+		if (!hub.IsHuman() || !HitboxIdentity.IsEnemy(firearmDamageHandler.Attacker.Role, victim.GetRoleId()))
+		{
+			return;
+		}
+		SimpleTriggerModule.ReceivedData data = SimpleTriggerModule.GetData(firearmDamageHandler.Firearm.ItemSerial);
+		if (!LastHeldTime.TryGetValue(hub, out var value))
+		{
+			value = data.PressTime;
+			LastHeldTime[hub] = value;
+		}
+		if (Math.Abs(data.PressTime - value) > 1E-09)
+		{
+			LastHeldTime[hub] = data.PressTime;
+			KillsSinceHeld[hub] = 1;
+			return;
+		}
+		if (!KillsSinceHeld.TryGetValue(hub, out var value2))
+		{
+			value2 = 0;
+		}
+		value2 = (KillsSinceHeld[hub] = value2 + 1);
+		if (value2 >= 3)
+		{
 			AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.LMGG);
 		}
-
-		private const int KillsNeeded = 3;
-
-		private static readonly Dictionary<ReferenceHub, double> LastHeldTime = new Dictionary<ReferenceHub, double>();
-
-		private static readonly Dictionary<ReferenceHub, int> KillsSinceHeld = new Dictionary<ReferenceHub, int>();
 	}
 }

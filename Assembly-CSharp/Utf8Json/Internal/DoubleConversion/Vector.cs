@@ -1,57 +1,54 @@
-﻿using System;
+namespace Utf8Json.Internal.DoubleConversion;
 
-namespace Utf8Json.Internal.DoubleConversion
+internal struct Vector
 {
-	internal struct Vector
+	public readonly byte[] bytes;
+
+	public readonly int start;
+
+	public readonly int _length;
+
+	public byte this[int i]
 	{
-		public Vector(byte[] bytes, int start, int length)
+		get
 		{
-			this.bytes = bytes;
-			this.start = start;
-			this._length = length;
+			return bytes[start + i];
 		}
-
-		public byte this[int i]
+		set
 		{
-			get
-			{
-				return this.bytes[this.start + i];
-			}
-			set
-			{
-				this.bytes[this.start + i] = value;
-			}
+			bytes[start + i] = value;
 		}
+	}
 
-		public int length()
-		{
-			return this._length;
-		}
+	public Vector(byte[] bytes, int start, int length)
+	{
+		this.bytes = bytes;
+		this.start = start;
+		_length = length;
+	}
 
-		public byte first()
-		{
-			return this.bytes[this.start];
-		}
+	public int length()
+	{
+		return _length;
+	}
 
-		public byte last()
-		{
-			return this.bytes[this._length - 1];
-		}
+	public byte first()
+	{
+		return bytes[start];
+	}
 
-		public bool is_empty()
-		{
-			return this._length == 0;
-		}
+	public byte last()
+	{
+		return bytes[_length - 1];
+	}
 
-		public Vector SubVector(int from, int to)
-		{
-			return new Vector(this.bytes, this.start + from, to - from);
-		}
+	public bool is_empty()
+	{
+		return _length == 0;
+	}
 
-		public readonly byte[] bytes;
-
-		public readonly int start;
-
-		public readonly int _length;
+	public Vector SubVector(int from, int to)
+	{
+		return new Vector(bytes, start + from, to - from);
 	}
 }

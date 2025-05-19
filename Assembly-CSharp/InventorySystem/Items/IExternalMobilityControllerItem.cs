@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public interface IExternalMobilityControllerItem
 {
-	public interface IExternalMobilityControllerItem
-	{
-		object DesignatedMobilityControllerClass { get; }
-	}
+	object DesignatedMobilityControllerClass { get; }
 }

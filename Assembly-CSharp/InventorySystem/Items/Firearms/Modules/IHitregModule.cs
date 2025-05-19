@@ -1,17 +1,16 @@
-﻿using System;
+using System;
 using InventorySystem.Items.Firearms.ShotEvents;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+[UniqueModule]
+public interface IHitregModule
 {
-	[UniqueModule]
-	public interface IHitregModule
-	{
-		event Action ServerOnFired;
+	float DisplayDamage { get; }
 
-		float DisplayDamage { get; }
+	float DisplayPenetration { get; }
 
-		float DisplayPenetration { get; }
+	event Action ServerOnFired;
 
-		void Fire(ReferenceHub primaryTarget, ShotEvent shotData);
-	}
+	void Fire(ReferenceHub primaryTarget, ShotEvent shotData);
 }

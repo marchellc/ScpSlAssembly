@@ -1,139 +1,125 @@
-﻿using System;
 using System.Net;
 using System.Threading;
 using LiteNetLib.Utils;
 
-namespace LiteNetLib
+namespace LiteNetLib;
+
+public class ConnectionRequest
 {
-	public class ConnectionRequest
+	private readonly NetManager _listener;
+
+	private int _used;
+
+	internal NetConnectRequestPacket InternalPacket;
+
+	public readonly IPEndPoint RemoteEndPoint;
+
+	public NetDataReader Data => InternalPacket.Data;
+
+	internal ConnectionRequestResult Result { get; private set; }
+
+	internal void UpdateRequest(NetConnectRequestPacket connectRequest)
 	{
-		public NetDataReader Data
+		if (connectRequest.ConnectionTime >= InternalPacket.ConnectionTime && (connectRequest.ConnectionTime != InternalPacket.ConnectionTime || connectRequest.ConnectionNumber != InternalPacket.ConnectionNumber))
 		{
-			get
-			{
-				return this.InternalPacket.Data;
-			}
+			InternalPacket = connectRequest;
 		}
+	}
 
-		internal ConnectionRequestResult Result { get; private set; }
+	private bool TryActivate()
+	{
+		return Interlocked.CompareExchange(ref _used, 1, 0) == 0;
+	}
 
-		internal void UpdateRequest(NetConnectRequestPacket connectRequest)
+	internal ConnectionRequest(IPEndPoint remoteEndPoint, NetConnectRequestPacket requestPacket, NetManager listener)
+	{
+		InternalPacket = requestPacket;
+		RemoteEndPoint = remoteEndPoint;
+		_listener = listener;
+	}
+
+	public NetPeer AcceptIfKey(string key)
+	{
+		if (!TryActivate())
 		{
-			if (connectRequest.ConnectionTime < this.InternalPacket.ConnectionTime)
-			{
-				return;
-			}
-			if (connectRequest.ConnectionTime == this.InternalPacket.ConnectionTime && connectRequest.ConnectionNumber == this.InternalPacket.ConnectionNumber)
-			{
-				return;
-			}
-			this.InternalPacket = connectRequest;
-		}
-
-		private bool TryActivate()
-		{
-			return Interlocked.CompareExchange(ref this._used, 1, 0) == 0;
-		}
-
-		internal ConnectionRequest(IPEndPoint remoteEndPoint, NetConnectRequestPacket requestPacket, NetManager listener)
-		{
-			this.InternalPacket = requestPacket;
-			this.RemoteEndPoint = remoteEndPoint;
-			this._listener = listener;
-		}
-
-		public NetPeer AcceptIfKey(string key)
-		{
-			if (!this.TryActivate())
-			{
-				return null;
-			}
-			try
-			{
-				if (this.Data.GetString() == key)
-				{
-					this.Result = ConnectionRequestResult.Accept;
-				}
-			}
-			catch
-			{
-				NetDebug.WriteError("[AC] Invalid incoming data");
-			}
-			if (this.Result == ConnectionRequestResult.Accept)
-			{
-				return this._listener.OnConnectionSolved(this, null, 0, 0);
-			}
-			this.Result = ConnectionRequestResult.Reject;
-			this._listener.OnConnectionSolved(this, null, 0, 0);
 			return null;
 		}
-
-		public NetPeer Accept()
+		try
 		{
-			if (!this.TryActivate())
+			if (Data.GetString() == key)
 			{
-				return null;
+				Result = ConnectionRequestResult.Accept;
 			}
-			this.Result = ConnectionRequestResult.Accept;
-			return this._listener.OnConnectionSolved(this, null, 0, 0);
 		}
-
-		public void Reject(byte[] rejectData, int start, int length, bool force)
+		catch
 		{
-			if (!this.TryActivate())
-			{
-				return;
-			}
-			this.Result = (force ? ConnectionRequestResult.RejectForce : ConnectionRequestResult.Reject);
-			this._listener.OnConnectionSolved(this, rejectData, start, length);
+			NetDebug.WriteError("[AC] Invalid incoming data");
 		}
-
-		public void Reject(byte[] rejectData, int start, int length)
+		if (Result == ConnectionRequestResult.Accept)
 		{
-			this.Reject(rejectData, start, length, false);
+			return _listener.OnConnectionSolved(this, null, 0, 0);
 		}
+		Result = ConnectionRequestResult.Reject;
+		_listener.OnConnectionSolved(this, null, 0, 0);
+		return null;
+	}
 
-		public void RejectForce(byte[] rejectData, int start, int length)
+	public NetPeer Accept()
+	{
+		if (!TryActivate())
 		{
-			this.Reject(rejectData, start, length, true);
+			return null;
 		}
+		Result = ConnectionRequestResult.Accept;
+		return _listener.OnConnectionSolved(this, null, 0, 0);
+	}
 
-		public void RejectForce()
+	public void Reject(byte[] rejectData, int start, int length, bool force)
+	{
+		if (TryActivate())
 		{
-			this.Reject(null, 0, 0, true);
+			Result = (force ? ConnectionRequestResult.RejectForce : ConnectionRequestResult.Reject);
+			_listener.OnConnectionSolved(this, rejectData, start, length);
 		}
+	}
 
-		public void RejectForce(byte[] rejectData)
-		{
-			this.Reject(rejectData, 0, rejectData.Length, true);
-		}
+	public void Reject(byte[] rejectData, int start, int length)
+	{
+		Reject(rejectData, start, length, force: false);
+	}
 
-		public void RejectForce(NetDataWriter rejectData)
-		{
-			this.Reject(rejectData.Data, 0, rejectData.Length, true);
-		}
+	public void RejectForce(byte[] rejectData, int start, int length)
+	{
+		Reject(rejectData, start, length, force: true);
+	}
 
-		public void Reject()
-		{
-			this.Reject(null, 0, 0, false);
-		}
+	public void RejectForce()
+	{
+		Reject(null, 0, 0, force: true);
+	}
 
-		public void Reject(byte[] rejectData)
-		{
-			this.Reject(rejectData, 0, rejectData.Length, false);
-		}
+	public void RejectForce(byte[] rejectData)
+	{
+		Reject(rejectData, 0, rejectData.Length, force: true);
+	}
 
-		public void Reject(NetDataWriter rejectData)
-		{
-			this.Reject(rejectData.Data, 0, rejectData.Length, false);
-		}
+	public void RejectForce(NetDataWriter rejectData)
+	{
+		Reject(rejectData.Data, 0, rejectData.Length, force: true);
+	}
 
-		private readonly NetManager _listener;
+	public void Reject()
+	{
+		Reject(null, 0, 0, force: false);
+	}
 
-		private int _used;
+	public void Reject(byte[] rejectData)
+	{
+		Reject(rejectData, 0, rejectData.Length, force: false);
+	}
 
-		internal NetConnectRequestPacket InternalPacket;
-
-		public readonly IPEndPoint RemoteEndPoint;
+	public void Reject(NetDataWriter rejectData)
+	{
+		Reject(rejectData.Data, 0, rejectData.Length, force: false);
 	}
 }

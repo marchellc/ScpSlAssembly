@@ -1,141 +1,125 @@
-﻿using System;
 using Mirror;
 using PlayerRoles.PlayableScps.HumeShield;
 using UnityEngine;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public class HumeShieldStat : SyncedStatBase
 {
-	public class HumeShieldStat : SyncedStatBase
+	private float _syncMax;
+
+	private bool _maxValueOverride;
+
+	public override SyncMode Mode => SyncMode.PrivateAndSpectators;
+
+	public override float MinValue => 0f;
+
+	public override float MaxValue
 	{
-		public override SyncedStatBase.SyncMode Mode
+		get
 		{
-			get
-			{
-				return SyncedStatBase.SyncMode.PrivateAndSpectators;
-			}
+			return _syncMax;
 		}
-
-		public override float MinValue
+		set
 		{
-			get
-			{
-				return 0f;
-			}
+			_syncMax = value;
+			_maxValueOverride = value >= 0f;
+			MaxValueDirty = true;
 		}
+	}
 
-		public override float MaxValue
+	public override float CurValue
+	{
+		get
 		{
-			get
-			{
-				if (this._maxValueOverride >= this.MinValue)
-				{
-					return this._maxValueOverride;
-				}
-				HumeShieldModuleBase humeShieldModuleBase;
-				if (!this.TryGetHsModule(out humeShieldModuleBase))
-				{
-					return 0f;
-				}
-				return humeShieldModuleBase.HsMax;
-			}
-			set
-			{
-				this._maxValueOverride = value;
-				this.MaxValueDirty = true;
-			}
+			return base.CurValue;
 		}
-
-		public override float CurValue
+		set
 		{
-			get
-			{
-				return base.CurValue;
-			}
-			set
-			{
-				base.CurValue = Mathf.Max(0f, value);
-			}
+			base.CurValue = Mathf.Max(0f, value);
 		}
+	}
 
-		public override bool CheckDirty(float prevValue, float newValue)
+	public override bool CheckDirty(float prevValue, float newValue)
+	{
+		return Mathf.CeilToInt(prevValue) != Mathf.CeilToInt(newValue);
+	}
+
+	public override float ReadValue(SyncedStatMessages.StatMessageType type, NetworkReader reader)
+	{
+		if (type != 0)
 		{
-			return Mathf.CeilToInt(prevValue) != Mathf.CeilToInt(newValue);
+			return reader.ReadFloat();
 		}
+		return (int)reader.ReadUShort();
+	}
 
-		public override float ReadValue(NetworkReader reader)
+	public override void WriteValue(SyncedStatMessages.StatMessageType type, NetworkWriter writer)
+	{
+		switch (type)
 		{
-			return (float)reader.ReadUShort();
-		}
-
-		public override void WriteValue(SyncedStatMessages.StatMessageType type, NetworkWriter writer)
+		case SyncedStatMessages.StatMessageType.CurrentValue:
 		{
-			int num = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? Mathf.Clamp(Mathf.CeilToInt(this.CurValue), 0, 65535) : Mathf.Clamp(Mathf.CeilToInt(this.MaxValue), 0, 65535));
+			int num = Mathf.Clamp(Mathf.CeilToInt(CurValue), 0, 65535);
 			writer.WriteUShort((ushort)num);
+			break;
 		}
+		case SyncedStatMessages.StatMessageType.MaxValue:
+			writer.WriteFloat(MaxValue);
+			break;
+		}
+	}
 
-		internal override void Update()
+	internal override void Update()
+	{
+		base.Update();
+		if (!NetworkServer.active)
 		{
-			base.Update();
-			HumeShieldModuleBase humeShieldModuleBase;
-			if (!NetworkServer.active || !this.TryGetHsModule(out humeShieldModuleBase) || humeShieldModuleBase.HsRegeneration == 0f)
+			return;
+		}
+		IHumeShieldProvider.GetForHub(base.Hub, out var _, out var hsMax, out var hsRegen, out var _);
+		float curValue = CurValue;
+		float num = hsRegen * Time.deltaTime;
+		if (_syncMax != hsMax)
+		{
+			if (_maxValueOverride)
 			{
-				return;
-			}
-			float hsCurrent = humeShieldModuleBase.HsCurrent;
-			float num = humeShieldModuleBase.HsRegeneration * Time.deltaTime;
-			float num2 = ((this._maxValueOverride != -1f) ? this._maxValueOverride : humeShieldModuleBase.HsMax);
-			if (num > 0f)
-			{
-				if (hsCurrent >= num2)
-				{
-					return;
-				}
-				this.CurValue = Mathf.MoveTowards(hsCurrent, num2, num);
-				return;
+				hsMax = MaxValue;
 			}
 			else
 			{
-				if (hsCurrent <= 0f)
-				{
-					return;
-				}
-				this.CurValue = hsCurrent + num;
-				return;
+				_syncMax = hsMax;
+				MaxValueDirty = true;
 			}
 		}
-
-		internal override void ClassChanged()
+		if (num > 0f)
 		{
-			base.ClassChanged();
-			if (base.Hub.roleManager.CurrentRole is IHumeShieldedRole)
+			if (!(curValue >= hsMax))
 			{
-				return;
+				CurValue = Mathf.MoveTowards(curValue, hsMax, num);
 			}
-			this.MaxValue = float.MinValue;
-			this.CurValue = 0f;
 		}
-
-		protected override void OnValueChanged(float prevValue, float newValue)
+		else if (!(curValue <= 0f))
 		{
-			HumeShieldModuleBase humeShieldModuleBase;
-			if (this.TryGetHsModule(out humeShieldModuleBase))
-			{
-				humeShieldModuleBase.OnHsValueChanged(prevValue, newValue);
-			}
+			CurValue = curValue + num;
 		}
+	}
 
-		private bool TryGetHsModule(out HumeShieldModuleBase controller)
+	internal override void ClassChanged()
+	{
+		base.ClassChanged();
+		if (!(base.Hub.roleManager.CurrentRole is IHumeShieldedRole))
 		{
-			IHumeShieldedRole humeShieldedRole = base.Hub.roleManager.CurrentRole as IHumeShieldedRole;
-			if (humeShieldedRole != null)
-			{
-				controller = humeShieldedRole.HumeShieldModule;
-				return true;
-			}
-			controller = null;
-			return false;
+			MaxValue = float.MinValue;
+			CurValue = 0f;
 		}
+	}
 
-		private float _maxValueOverride = float.MinValue;
+	protected override void OnValueChanged(float prevValue, float newValue)
+	{
+		if (base.Hub.roleManager.CurrentRole is IHumeShieldedRole humeShieldedRole)
+		{
+			humeShieldedRole.HumeShieldModule.OnHsValueChanged(prevValue, newValue);
+		}
 	}
 }

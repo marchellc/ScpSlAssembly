@@ -1,13 +1,12 @@
-﻿using System;
+using System;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+[Flags]
+public enum AdminFlags
 {
-	[Flags]
-	public enum AdminFlags
-	{
-		None = 0,
-		Noclip = 1,
-		GodMode = 2,
-		BypassMode = 4
-	}
+	None = 0,
+	Noclip = 1,
+	GodMode = 2,
+	BypassMode = 4
 }

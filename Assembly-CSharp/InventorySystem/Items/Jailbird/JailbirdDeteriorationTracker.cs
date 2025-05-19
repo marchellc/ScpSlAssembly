@@ -1,140 +1,131 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Autosync;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.Jailbird
+namespace InventorySystem.Items.Jailbird;
+
+[Serializable]
+public class JailbirdDeteriorationTracker
 {
-	[Serializable]
-	public class JailbirdDeteriorationTracker
+	public static Dictionary<ushort, JailbirdWearState> ReceivedStates = new Dictionary<ushort, JailbirdWearState>();
+
+	private static bool _anyReceived;
+
+	private static bool _914ValuesSet;
+
+	private JailbirdItem _jailbird;
+
+	private JailbirdHitreg _hitreg;
+
+	[SerializeField]
+	private AnimationCurve _damageToWearState;
+
+	[SerializeField]
+	private AnimationCurve _chargesToWearState;
+
+	public static float Scp914CoarseDamage { get; private set; }
+
+	public static int Scp914CoarseCharges { get; private set; }
+
+	public JailbirdWearState WearState
 	{
-		public static float Scp914CoarseDamage { get; private set; }
-
-		public static int Scp914CoarseCharges { get; private set; }
-
-		public JailbirdWearState WearState
+		get
 		{
-			get
+			if (!ReceivedStates.TryGetValue(_jailbird.ItemSerial, out var value))
 			{
-				JailbirdWearState jailbirdWearState;
-				if (!JailbirdDeteriorationTracker.ReceivedStates.TryGetValue(this._jailbird.ItemSerial, out jailbirdWearState))
-				{
-					return JailbirdWearState.Healthy;
-				}
-				return jailbirdWearState;
+				return JailbirdWearState.Healthy;
+			}
+			return value;
+		}
+	}
+
+	public bool IsBroken => WearState == JailbirdWearState.Broken;
+
+	public void Setup(JailbirdItem item, JailbirdHitreg hitreg)
+	{
+		_jailbird = item;
+		_hitreg = hitreg;
+		if (_914ValuesSet)
+		{
+			return;
+		}
+		for (int i = 0; i < _damageToWearState.length; i++)
+		{
+			Keyframe keyframe = _damageToWearState.keys[i];
+			if (FloatToState(keyframe.value) == JailbirdWearState.AlmostBroken)
+			{
+				Scp914CoarseDamage = keyframe.time;
+				break;
 			}
 		}
-
-		public bool IsBroken
+		for (int j = 0; j < _chargesToWearState.length; j++)
 		{
-			get
+			Keyframe keyframe2 = _chargesToWearState.keys[j];
+			if (FloatToState(keyframe2.value) == JailbirdWearState.AlmostBroken)
 			{
-				return this.WearState == JailbirdWearState.Broken;
+				Scp914CoarseCharges = Mathf.RoundToInt(keyframe2.time);
+				break;
 			}
 		}
+		_914ValuesSet = true;
+	}
 
-		public void Setup(JailbirdItem item, JailbirdHitreg hitreg)
+	private JailbirdWearState FloatToState(float stateFloat)
+	{
+		return (JailbirdWearState)Mathf.Clamp((int)stateFloat, 0, 5);
+	}
+
+	private JailbirdWearState StateForTotalDamage(float totalDamage)
+	{
+		return FloatToState(_damageToWearState.Evaluate(totalDamage));
+	}
+
+	private JailbirdWearState StateForCharges(int numOfCharges)
+	{
+		return FloatToState(_chargesToWearState.Evaluate(numOfCharges));
+	}
+
+	public void RecheckUsage()
+	{
+		JailbirdWearState jailbirdWearState = StateForTotalDamage(_hitreg.TotalMeleeDamageDealt);
+		JailbirdWearState jailbirdWearState2 = StateForCharges(_jailbird.TotalChargesPerformed);
+		JailbirdWearState jailbirdWearState3 = ((jailbirdWearState > jailbirdWearState2) ? jailbirdWearState : jailbirdWearState2);
+		ReceivedStates[_jailbird.ItemSerial] = jailbirdWearState3;
+		NetworkWriter writer;
+		using (new AutosyncRpc(_jailbird.ItemId, out writer))
 		{
-			this._jailbird = item;
-			this._hitreg = hitreg;
-			if (JailbirdDeteriorationTracker._914ValuesSet)
+			writer.WriteByte(0);
+			writer.WriteByte((byte)jailbirdWearState3);
+		}
+		if (jailbirdWearState3 != JailbirdWearState.Broken)
+		{
+			return;
+		}
+		NetworkWriter writer2;
+		using (new AutosyncRpc(_jailbird.ItemId, out writer2))
+		{
+			writer2.WriteByte(1);
+		}
+	}
+
+	public static void ReadUsage(ushort serial, NetworkReader reader)
+	{
+		ReceivedStates[serial] = (JailbirdWearState)reader.ReadByte();
+		_anyReceived = true;
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
+		{
+			if (_anyReceived)
 			{
-				return;
+				_anyReceived = false;
+				ReceivedStates.Clear();
 			}
-			for (int i = 0; i < this._damageToWearState.length; i++)
-			{
-				Keyframe keyframe = this._damageToWearState.keys[i];
-				if (this.FloatToState(keyframe.value) == JailbirdWearState.AlmostBroken)
-				{
-					JailbirdDeteriorationTracker.Scp914CoarseDamage = keyframe.time;
-					break;
-				}
-			}
-			for (int j = 0; j < this._chargesToWearState.length; j++)
-			{
-				Keyframe keyframe2 = this._chargesToWearState.keys[j];
-				if (this.FloatToState(keyframe2.value) == JailbirdWearState.AlmostBroken)
-				{
-					JailbirdDeteriorationTracker.Scp914CoarseCharges = Mathf.RoundToInt(keyframe2.time);
-					break;
-				}
-			}
-			JailbirdDeteriorationTracker._914ValuesSet = true;
-		}
-
-		private JailbirdWearState FloatToState(float stateFloat)
-		{
-			return (JailbirdWearState)Mathf.Clamp((int)stateFloat, 0, 5);
-		}
-
-		private JailbirdWearState StateForTotalDamage(float totalDamage)
-		{
-			return this.FloatToState(this._damageToWearState.Evaluate(totalDamage));
-		}
-
-		private JailbirdWearState StateForCharges(int numOfCharges)
-		{
-			return this.FloatToState(this._chargesToWearState.Evaluate((float)numOfCharges));
-		}
-
-		public void RecheckUsage()
-		{
-			JailbirdWearState jailbirdWearState = this.StateForTotalDamage(this._hitreg.TotalMeleeDamageDealt);
-			JailbirdWearState jailbirdWearState2 = this.StateForCharges(this._jailbird.TotalChargesPerformed);
-			JailbirdWearState jailbirdWearState3 = ((jailbirdWearState > jailbirdWearState2) ? jailbirdWearState : jailbirdWearState2);
-			JailbirdDeteriorationTracker.ReceivedStates[this._jailbird.ItemSerial] = jailbirdWearState3;
-			NetworkWriter networkWriter;
-			using (new AutosyncRpc(this._jailbird.ItemId, out networkWriter))
-			{
-				networkWriter.WriteByte(0);
-				networkWriter.WriteByte((byte)jailbirdWearState3);
-			}
-			if (jailbirdWearState3 != JailbirdWearState.Broken)
-			{
-				return;
-			}
-			NetworkWriter networkWriter2;
-			using (new AutosyncRpc(this._jailbird.ItemId, out networkWriter2))
-			{
-				networkWriter2.WriteByte(1);
-			}
-		}
-
-		public static void ReadUsage(ushort serial, NetworkReader reader)
-		{
-			JailbirdDeteriorationTracker.ReceivedStates[serial] = (JailbirdWearState)reader.ReadByte();
-			JailbirdDeteriorationTracker._anyReceived = true;
-		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				if (!JailbirdDeteriorationTracker._anyReceived)
-				{
-					return;
-				}
-				JailbirdDeteriorationTracker._anyReceived = false;
-				JailbirdDeteriorationTracker.ReceivedStates.Clear();
-			};
-		}
-
-		public static Dictionary<ushort, JailbirdWearState> ReceivedStates = new Dictionary<ushort, JailbirdWearState>();
-
-		private static bool _anyReceived;
-
-		private static bool _914ValuesSet;
-
-		private JailbirdItem _jailbird;
-
-		private JailbirdHitreg _hitreg;
-
-		[SerializeField]
-		private AnimationCurve _damageToWearState;
-
-		[SerializeField]
-		private AnimationCurve _chargesToWearState;
+		};
 	}
 }

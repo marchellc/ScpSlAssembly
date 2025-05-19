@@ -1,24 +1,22 @@
-﻿using System;
 using GameCore;
 using MapGeneration.Holidays;
 
-namespace InventorySystem.Items
-{
-	public interface IHolidayItem
-	{
-		bool IsAvailable
-		{
-			get
-			{
-				if (this.TargetHolidays.IsAnyHolidayActive(true, true))
-				{
-					return true;
-				}
-				global::GameCore.Version.VersionType buildType = global::GameCore.Version.BuildType;
-				return buildType == global::GameCore.Version.VersionType.Development || buildType == global::GameCore.Version.VersionType.Nightly;
-			}
-		}
+namespace InventorySystem.Items;
 
-		HolidayType[] TargetHolidays { get; }
+public interface IHolidayItem
+{
+	bool IsAvailable
+	{
+		get
+		{
+			if (TargetHolidays.IsAnyHolidayActive(mustBeForced: true, ignoreServerConfig: true))
+			{
+				return true;
+			}
+			Version.VersionType buildType = Version.BuildType;
+			return buildType == Version.VersionType.Development || buildType == Version.VersionType.Nightly;
+		}
 	}
+
+	HolidayType[] TargetHolidays { get; }
 }

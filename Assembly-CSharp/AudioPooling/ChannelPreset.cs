@@ -1,13 +1,12 @@
-﻿using System;
+using System;
 using UnityEngine.Audio;
 
-namespace AudioPooling
-{
-	[Serializable]
-	public struct ChannelPreset
-	{
-		public MixerChannel Type;
+namespace AudioPooling;
 
-		public AudioMixerGroup Group;
-	}
+[Serializable]
+public struct ChannelPreset
+{
+	public MixerChannel Type;
+
+	public AudioMixerGroup Group;
 }

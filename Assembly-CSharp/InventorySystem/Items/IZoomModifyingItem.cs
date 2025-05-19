@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public interface IZoomModifyingItem
 {
-	public interface IZoomModifyingItem
-	{
-		float ZoomAmount { get; }
+	float ZoomAmount { get; }
 
-		float SensitivityScale { get; }
-	}
+	float SensitivityScale { get; }
 }

@@ -1,119 +1,101 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
+
+public static class EmotionSync
 {
-	public static class EmotionSync
+	public struct EmotionSyncMessage : NetworkMessage
 	{
-		public static EmotionPresetType GetEmotionPreset(ReferenceHub hub)
-		{
-			return EmotionSync.Database.GetValueOrDefault(hub, EmotionPresetType.Neutral);
-		}
+		public uint HubNetId;
 
-		public static void ServerSetEmotionPreset(this ReferenceHub hub, EmotionPresetType preset)
-		{
-			if (!NetworkServer.active)
-			{
-				throw new InvalidOperationException("Unable to set emotions on client!");
-			}
-			EmotionSync.Database[hub] = preset;
-			NetworkServer.SendToAll<EmotionSync.EmotionSyncMessage>(new EmotionSync.EmotionSyncMessage
-			{
-				HubNetId = hub.netId,
-				Data = preset
-			}, 0, true);
-		}
+		public EmotionPresetType Data;
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			ReferenceHub.OnPlayerAdded = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerAdded, new Action<ReferenceHub>(EmotionSync.OnHubAdded));
-			ReferenceHub.OnPlayerRemoved = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerRemoved, new Action<ReferenceHub>(EmotionSync.OnHubRemoved));
-			PlayerRoleManager.OnServerRoleSet += EmotionSync.OnServerRoleSet;
-			CustomNetworkManager.OnClientReady += EmotionSync.OnClientReady;
-		}
+	private static readonly Dictionary<ReferenceHub, EmotionPresetType> Database = new Dictionary<ReferenceHub, EmotionPresetType>();
 
-		private static void OnClientReady()
-		{
-			EmotionSync.Database.Clear();
-			NetworkClient.ReplaceHandler<EmotionSync.EmotionSyncMessage>(new Action<EmotionSync.EmotionSyncMessage>(EmotionSync.ProcessMessage), true);
-			NetworkServer.ReplaceHandler<EmotionSync.EmotionSyncMessage>(new Action<NetworkConnectionToClient, EmotionSync.EmotionSyncMessage>(EmotionSync.TempServerProcessMessage), true);
-		}
+	public static EmotionPresetType GetEmotionPreset(ReferenceHub hub)
+	{
+		return Database.GetValueOrDefault(hub, EmotionPresetType.Neutral);
+	}
 
-		private static void ProcessMessage(EmotionSync.EmotionSyncMessage msg)
+	public static void ServerSetEmotionPreset(this ReferenceHub hub, EmotionPresetType preset)
+	{
+		if (!NetworkServer.active)
 		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(msg.HubNetId, out referenceHub))
-			{
-				return;
-			}
-			EmotionSync.Database[referenceHub] = msg.Data;
-			IFpcRole fpcRole = referenceHub.roleManager.CurrentRole as IFpcRole;
-			if (fpcRole == null)
-			{
-				return;
-			}
-			AnimatedCharacterModel animatedCharacterModel = fpcRole.FpcModule.CharacterModelInstance as AnimatedCharacterModel;
-			if (animatedCharacterModel == null)
-			{
-				return;
-			}
-			EmotionSubcontroller emotionSubcontroller;
-			if (!animatedCharacterModel.TryGetSubcontroller<EmotionSubcontroller>(out emotionSubcontroller))
-			{
-				return;
-			}
-			emotionSubcontroller.SetPreset(msg.Data);
+			throw new InvalidOperationException("Unable to set emotions on client!");
 		}
+		Database[hub] = preset;
+		EmotionSyncMessage message = default(EmotionSyncMessage);
+		message.HubNetId = hub.netId;
+		message.Data = preset;
+		NetworkServer.SendToAll(message, 0, sendToReadyOnly: true);
+	}
 
-		private static void OnHubRemoved(ReferenceHub hub)
-		{
-			EmotionSync.Database.Remove(hub);
-		}
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		ReferenceHub.OnPlayerAdded += OnHubAdded;
+		ReferenceHub.OnPlayerRemoved += OnHubRemoved;
+		PlayerRoleManager.OnServerRoleSet += OnServerRoleSet;
+		CustomNetworkManager.OnClientReady += OnClientReady;
+	}
 
-		private static void OnHubAdded(ReferenceHub hub)
+	private static void OnClientReady()
+	{
+		Database.Clear();
+		NetworkClient.ReplaceHandler<EmotionSyncMessage>(ProcessMessage);
+		NetworkServer.ReplaceHandler<EmotionSyncMessage>(TempServerProcessMessage);
+	}
+
+	private static void ProcessMessage(EmotionSyncMessage msg)
+	{
+		if (ReferenceHub.TryGetHubNetID(msg.HubNetId, out var hub))
 		{
-			if (!NetworkServer.active)
+			Database[hub] = msg.Data;
+			if (hub.roleManager.CurrentRole is IFpcRole fpcRole && fpcRole.FpcModule.CharacterModelInstance is AnimatedCharacterModel animatedCharacterModel && animatedCharacterModel.TryGetSubcontroller<EmotionSubcontroller>(out var subcontroller))
 			{
-				return;
+				subcontroller.SetPreset(msg.Data);
 			}
-			foreach (KeyValuePair<ReferenceHub, EmotionPresetType> keyValuePair in EmotionSync.Database)
+		}
+	}
+
+	private static void OnHubRemoved(ReferenceHub hub)
+	{
+		Database.Remove(hub);
+	}
+
+	private static void OnHubAdded(ReferenceHub hub)
+	{
+		if (!NetworkServer.active)
+		{
+			return;
+		}
+		foreach (KeyValuePair<ReferenceHub, EmotionPresetType> item in Database)
+		{
+			if (item.Value != 0)
 			{
-				if (keyValuePair.Value != EmotionPresetType.Neutral)
+				hub.connectionToClient.Send(new EmotionSyncMessage
 				{
-					hub.connectionToClient.Send<EmotionSync.EmotionSyncMessage>(new EmotionSync.EmotionSyncMessage
-					{
-						HubNetId = keyValuePair.Key.netId,
-						Data = keyValuePair.Value
-					}, 0);
-				}
+					HubNetId = item.Key.netId,
+					Data = item.Value
+				});
 			}
 		}
+	}
 
-		private static void OnServerRoleSet(ReferenceHub userHub, RoleTypeId newRole, RoleChangeReason reason)
+	private static void OnServerRoleSet(ReferenceHub userHub, RoleTypeId newRole, RoleChangeReason reason)
+	{
+		userHub.ServerSetEmotionPreset(EmotionPresetType.Neutral);
+	}
+
+	private static void TempServerProcessMessage(NetworkConnection conn, EmotionSyncMessage msg)
+	{
+		if (ReferenceHub.TryGetHubNetID(msg.HubNetId, out var hub) && !(hub.netIdentity != conn.identity))
 		{
-			userHub.ServerSetEmotionPreset(EmotionPresetType.Neutral);
-		}
-
-		private static void TempServerProcessMessage(NetworkConnection conn, EmotionSync.EmotionSyncMessage msg)
-		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(msg.HubNetId, out referenceHub) || referenceHub.netIdentity != conn.identity)
-			{
-				return;
-			}
-			referenceHub.ServerSetEmotionPreset(msg.Data);
-		}
-
-		private static readonly Dictionary<ReferenceHub, EmotionPresetType> Database = new Dictionary<ReferenceHub, EmotionPresetType>();
-
-		public struct EmotionSyncMessage : NetworkMessage
-		{
-			public uint HubNetId;
-
-			public EmotionPresetType Data;
+			hub.ServerSetEmotionPreset(msg.Data);
 		}
 	}
 }

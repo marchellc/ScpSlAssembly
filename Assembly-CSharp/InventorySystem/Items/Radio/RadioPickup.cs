@@ -1,4 +1,3 @@
-﻿using System;
 using System.Runtime.InteropServices;
 using InventorySystem.Items.Pickups;
 using Mirror;
@@ -6,152 +5,147 @@ using Scp914;
 using UnityEngine;
 using VoiceChat.Playbacks;
 
-namespace InventorySystem.Items.Radio
+namespace InventorySystem.Items.Radio;
+
+public class RadioPickup : CollisionDetectionPickup, IUpgradeTrigger
 {
-	public class RadioPickup : CollisionDetectionPickup, IUpgradeTrigger
+	[SyncVar]
+	public bool SavedEnabled;
+
+	[SyncVar]
+	public byte SavedRange;
+
+	public float SavedBattery;
+
+	private static RadioItem _radioCache;
+
+	private static bool _radioCacheSet;
+
+	[SerializeField]
+	private Material _enabledMat;
+
+	[SerializeField]
+	private Material _disabledMat;
+
+	[SerializeField]
+	private Renderer _targetRenderer;
+
+	[SerializeField]
+	private GameObject _activeObject;
+
+	[SerializeField]
+	private SpatializedRadioPlaybackBase _playback;
+
+	private bool _prevEnabled;
+
+	public bool NetworkSavedEnabled
 	{
-		private void Update()
+		get
 		{
-			this._playback.RangeId = (int)this.SavedRange;
-			if (this._prevEnabled == this.SavedEnabled)
-			{
-				return;
-			}
-			bool savedEnabled = this.SavedEnabled;
-			this._prevEnabled = savedEnabled;
-			this._activeObject.SetActive(savedEnabled);
-			this._targetRenderer.sharedMaterial = (savedEnabled ? this._enabledMat : this._disabledMat);
+			return SavedEnabled;
 		}
-
-		protected override void Awake()
+		[param: In]
+		set
 		{
-			base.Awake();
-			if (RadioPickup._radioCacheSet)
-			{
-				return;
-			}
-			RadioPickup._radioCacheSet = InventoryItemLoader.TryGetItem<RadioItem>(ItemType.Radio, out RadioPickup._radioCache);
+			GeneratedSyncVarSetter(value, ref SavedEnabled, 2uL, null);
 		}
+	}
 
-		private void LateUpdate()
+	public byte NetworkSavedRange
+	{
+		get
 		{
-			if (!NetworkServer.active || !this.SavedEnabled || !RadioPickup._radioCacheSet)
-			{
-				return;
-			}
-			float num = RadioPickup._radioCache.Ranges[(int)this.SavedRange].MinuteCostWhenIdle / 60f;
-			float num2 = this.SavedBattery - Time.deltaTime * num / 100f;
+			return SavedRange;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref SavedRange, 4uL, null);
+		}
+	}
+
+	private void Update()
+	{
+		_playback.RangeId = SavedRange;
+		if (_prevEnabled != SavedEnabled)
+		{
+			bool flag = (_prevEnabled = SavedEnabled);
+			_activeObject.SetActive(flag);
+			_targetRenderer.sharedMaterial = (flag ? _enabledMat : _disabledMat);
+		}
+	}
+
+	protected override void Awake()
+	{
+		base.Awake();
+		if (!_radioCacheSet)
+		{
+			_radioCacheSet = InventoryItemLoader.TryGetItem<RadioItem>(ItemType.Radio, out _radioCache);
+		}
+	}
+
+	private void LateUpdate()
+	{
+		if (NetworkServer.active && SavedEnabled && _radioCacheSet)
+		{
+			float num = _radioCache.Ranges[SavedRange].MinuteCostWhenIdle / 60f;
+			float num2 = SavedBattery - Time.deltaTime * num / 100f;
 			if (num2 <= 0f)
 			{
-				this.NetworkSavedEnabled = false;
+				NetworkSavedEnabled = false;
 				num2 = 0f;
 			}
-			this.SavedBattery = num2;
+			SavedBattery = num2;
 		}
+	}
 
-		public void ServerOnUpgraded(Scp914KnobSetting setting)
+	public void ServerOnUpgraded(Scp914KnobSetting setting)
+	{
+		SavedBattery = 1f;
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			this.SavedBattery = 1f;
+			writer.WriteBool(SavedEnabled);
+			NetworkWriterExtensions.WriteByte(writer, SavedRange);
+			return;
 		}
-
-		public override bool Weaved()
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			return true;
+			writer.WriteBool(SavedEnabled);
 		}
-
-		public bool NetworkSavedEnabled
+		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			get
-			{
-				return this.SavedEnabled;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<bool>(value, ref this.SavedEnabled, 2UL, null);
-			}
+			NetworkWriterExtensions.WriteByte(writer, SavedRange);
 		}
+	}
 
-		public byte NetworkSavedRange
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
 		{
-			get
-			{
-				return this.SavedRange;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<byte>(value, ref this.SavedRange, 4UL, null);
-			}
+			GeneratedSyncVarDeserialize(ref SavedEnabled, null, reader.ReadBool());
+			GeneratedSyncVarDeserialize(ref SavedRange, null, NetworkReaderExtensions.ReadByte(reader));
+			return;
 		}
-
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+		long num = (long)reader.ReadULong();
+		if ((num & 2L) != 0L)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteBool(this.SavedEnabled);
-				writer.WriteByte(this.SavedRange);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 2UL) != 0UL)
-			{
-				writer.WriteBool(this.SavedEnabled);
-			}
-			if ((base.syncVarDirtyBits & 4UL) != 0UL)
-			{
-				writer.WriteByte(this.SavedRange);
-			}
+			GeneratedSyncVarDeserialize(ref SavedEnabled, null, reader.ReadBool());
 		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+		if ((num & 4L) != 0L)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<bool>(ref this.SavedEnabled, null, reader.ReadBool());
-				base.GeneratedSyncVarDeserialize<byte>(ref this.SavedRange, null, reader.ReadByte());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 2L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<bool>(ref this.SavedEnabled, null, reader.ReadBool());
-			}
-			if ((num & 4L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<byte>(ref this.SavedRange, null, reader.ReadByte());
-			}
+			GeneratedSyncVarDeserialize(ref SavedRange, null, NetworkReaderExtensions.ReadByte(reader));
 		}
-
-		[SyncVar]
-		public bool SavedEnabled;
-
-		[SyncVar]
-		public byte SavedRange;
-
-		public float SavedBattery;
-
-		private static RadioItem _radioCache;
-
-		private static bool _radioCacheSet;
-
-		[SerializeField]
-		private Material _enabledMat;
-
-		[SerializeField]
-		private Material _disabledMat;
-
-		[SerializeField]
-		private Renderer _targetRenderer;
-
-		[SerializeField]
-		private GameObject _activeObject;
-
-		[SerializeField]
-		private SpatializedRadioPlaybackBase _playback;
-
-		private bool _prevEnabled;
 	}
 }

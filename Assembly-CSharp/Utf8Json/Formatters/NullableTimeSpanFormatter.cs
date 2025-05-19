@@ -1,33 +1,34 @@
-﻿using System;
+using System;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class NullableTimeSpanFormatter : IJsonFormatter<TimeSpan?>, IJsonFormatter
 {
-	public sealed class NullableTimeSpanFormatter : IJsonFormatter<TimeSpan?>, IJsonFormatter
+	private readonly TimeSpanFormatter innerFormatter;
+
+	public NullableTimeSpanFormatter()
 	{
-		public NullableTimeSpanFormatter()
-		{
-			this.innerFormatter = new TimeSpanFormatter();
-		}
+		innerFormatter = new TimeSpanFormatter();
+	}
 
-		public void Serialize(ref JsonWriter writer, TimeSpan? value, IJsonFormatterResolver formatterResolver)
+	public void Serialize(ref JsonWriter writer, TimeSpan? value, IJsonFormatterResolver formatterResolver)
+	{
+		if (!value.HasValue)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
-			this.innerFormatter.Serialize(ref writer, value.Value, formatterResolver);
+			writer.WriteNull();
 		}
-
-		public TimeSpan? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+		else
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			return new TimeSpan?(this.innerFormatter.Deserialize(ref reader, formatterResolver));
+			innerFormatter.Serialize(ref writer, value.Value, formatterResolver);
 		}
+	}
 
-		private readonly TimeSpanFormatter innerFormatter;
+	public TimeSpan? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
+		{
+			return null;
+		}
+		return innerFormatter.Deserialize(ref reader, formatterResolver);
 	}
 }

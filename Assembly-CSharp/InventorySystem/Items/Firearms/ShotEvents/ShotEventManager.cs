@@ -1,21 +1,13 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.ShotEvents;
 
-namespace InventorySystem.Items.Firearms.ShotEvents
+public static class ShotEventManager
 {
-	public static class ShotEventManager
+	public delegate void Shot(ShotEvent shotEvent);
+
+	public static event Shot OnShot;
+
+	public static void Trigger(ShotEvent ev)
 	{
-		public static event ShotEventManager.Shot OnShot;
-
-		public static void Trigger(ShotEvent ev)
-		{
-			ShotEventManager.Shot onShot = ShotEventManager.OnShot;
-			if (onShot == null)
-			{
-				return;
-			}
-			onShot(ev);
-		}
-
-		public delegate void Shot(ShotEvent shotEvent);
+		ShotEventManager.OnShot?.Invoke(ev);
 	}
 }

@@ -1,10 +1,8 @@
-﻿using System;
 using Decals;
 
-namespace InventorySystem.Items.Firearms
+namespace InventorySystem.Items.Firearms;
+
+public interface ICustomBulletholeFirearm
 {
-	public interface ICustomBulletholeFirearm
-	{
-		DecalPoolType BulletholeType { get; }
-	}
+	DecalPoolType BulletholeType { get; }
 }

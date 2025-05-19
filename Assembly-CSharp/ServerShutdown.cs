@@ -1,90 +1,10 @@
-﻿using System;
+using System;
+using System.Runtime.InteropServices;
 using Mirror;
-using Query;
 using UnityEngine;
 
 public class ServerShutdown : MonoBehaviour
 {
-	[RuntimeInitializeOnLoadMethod]
-	private static void InitOnLoad()
-	{
-		CustomNetworkManager.OnClientReady += delegate
-		{
-			NetworkClient.ReplaceHandler<ServerShutdown.ServerShutdownMessage>(new Action<ServerShutdown.ServerShutdownMessage>(ServerShutdown.HandleServerShutdown), true);
-		};
-	}
-
-	public static ServerShutdown.ServerShutdownState ShutdownState { get; set; }
-
-	private void Update()
-	{
-		switch (ServerShutdown.ShutdownState)
-		{
-		case ServerShutdown.ServerShutdownState.NotInitiated:
-		case ServerShutdown.ServerShutdownState.Complete:
-			return;
-		case ServerShutdown.ServerShutdownState.BroadcastingShutdown:
-			if (ServerShutdown._c > 400f)
-			{
-				ServerConsole.AddLog("Shutting down the server...", ConsoleColor.DarkCyan, false);
-				ServerShutdown.ShutdownState = ServerShutdown.ServerShutdownState.ShuttingDown;
-				ServerShutdown._c = 0f;
-				NetworkServer.Shutdown();
-				return;
-			}
-			break;
-		case ServerShutdown.ServerShutdownState.ShuttingDown:
-			if (ServerShutdown._c > 1000f)
-			{
-				ServerConsole.AddLog("Server shutdown completed.", ConsoleColor.DarkCyan, false);
-				ServerShutdown.ShutdownState = ServerShutdown.ServerShutdownState.Complete;
-				return;
-			}
-			break;
-		default:
-			return;
-		}
-		ServerShutdown._c += Time.unscaledDeltaTime;
-	}
-
-	internal static void Shutdown(bool noBroadcast = false)
-	{
-		if (ServerShutdown.ShutdownState != ServerShutdown.ServerShutdownState.NotInitiated)
-		{
-			return;
-		}
-		if (!NetworkServer.active)
-		{
-			ServerShutdown.ShutdownState = ServerShutdown.ServerShutdownState.Complete;
-			return;
-		}
-		ServerConsole.AddLog("Server shutdown initiated.", ConsoleColor.DarkCyan, false);
-		ServerShutdown.ShutdownState = ServerShutdown.ServerShutdownState.BroadcastingShutdown;
-		IdleMode.SetIdleMode(false);
-		CustomLiteNetLib4MirrorTransport.DelayConnections = true;
-		QueryServer queryServer = CustomNetworkManager.QueryServer;
-		if (queryServer != null)
-		{
-			queryServer.StopServer();
-		}
-		if (noBroadcast)
-		{
-			return;
-		}
-		if (noBroadcast)
-		{
-			return;
-		}
-		ServerConsole.AddLog("Broadcasting server shutdown to all connected players...", ConsoleColor.DarkCyan, false);
-		NetworkServer.SendToAll<ServerShutdown.ServerShutdownMessage>(default(ServerShutdown.ServerShutdownMessage), 4, true);
-	}
-
-	private static void HandleServerShutdown(ServerShutdown.ServerShutdownMessage ssm)
-	{
-	}
-
-	private static float _c;
-
 	public enum ServerShutdownState : byte
 	{
 		NotInitiated,
@@ -93,7 +13,79 @@ public class ServerShutdown : MonoBehaviour
 		Complete
 	}
 
+	[StructLayout(LayoutKind.Sequential, Size = 1)]
 	private struct ServerShutdownMessage : NetworkMessage
+	{
+	}
+
+	private static float _c;
+
+	public static ServerShutdownState ShutdownState { get; set; }
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void InitOnLoad()
+	{
+		CustomNetworkManager.OnClientReady += delegate
+		{
+			NetworkClient.ReplaceHandler<ServerShutdownMessage>(HandleServerShutdown);
+		};
+	}
+
+	private void Update()
+	{
+		switch (ShutdownState)
+		{
+		default:
+			return;
+		case ServerShutdownState.NotInitiated:
+		case ServerShutdownState.Complete:
+			return;
+		case ServerShutdownState.BroadcastingShutdown:
+			if (_c > 400f)
+			{
+				ServerConsole.AddLog("Shutting down the server...", ConsoleColor.DarkCyan);
+				ShutdownState = ServerShutdownState.ShuttingDown;
+				_c = 0f;
+				NetworkServer.Shutdown();
+				return;
+			}
+			break;
+		case ServerShutdownState.ShuttingDown:
+			if (_c > 1000f)
+			{
+				ServerConsole.AddLog("Server shutdown completed.", ConsoleColor.DarkCyan);
+				ShutdownState = ServerShutdownState.Complete;
+				return;
+			}
+			break;
+		}
+		_c += Time.unscaledDeltaTime;
+	}
+
+	internal static void Shutdown(bool noBroadcast = false)
+	{
+		if (ShutdownState != 0)
+		{
+			return;
+		}
+		if (!NetworkServer.active)
+		{
+			ShutdownState = ServerShutdownState.Complete;
+			return;
+		}
+		ServerConsole.AddLog("Server shutdown initiated.", ConsoleColor.DarkCyan);
+		ShutdownState = ServerShutdownState.BroadcastingShutdown;
+		IdleMode.SetIdleMode(state: false);
+		CustomLiteNetLib4MirrorTransport.DelayConnections = true;
+		CustomNetworkManager.QueryServer?.StopServer();
+		if (!noBroadcast && !noBroadcast)
+		{
+			ServerConsole.AddLog("Broadcasting server shutdown to all connected players...", ConsoleColor.DarkCyan);
+			NetworkServer.SendToAll(default(ServerShutdownMessage), 4, sendToReadyOnly: true);
+		}
+	}
+
+	private static void HandleServerShutdown(ServerShutdownMessage ssm)
 	{
 	}
 }

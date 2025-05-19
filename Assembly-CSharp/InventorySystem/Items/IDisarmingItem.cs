@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public interface IDisarmingItem
 {
-	public interface IDisarmingItem
-	{
-		bool AllowDisarming { get; }
-	}
+	bool AllowDisarming { get; }
 }

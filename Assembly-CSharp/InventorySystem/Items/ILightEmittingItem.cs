@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public interface ILightEmittingItem
 {
-	public interface ILightEmittingItem
-	{
-		bool IsEmittingLight { get; }
-	}
+	bool IsEmittingLight { get; }
 }

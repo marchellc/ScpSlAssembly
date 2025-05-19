@@ -1,11 +1,8 @@
-﻿using System;
+namespace RoundRestarting;
 
-namespace RoundRestarting
+public enum RoundRestartType : byte
 {
-	public enum RoundRestartType : byte
-	{
-		FullRestart,
-		FastRestart,
-		RedirectRestart
-	}
+	FullRestart,
+	FastRestart,
+	RedirectRestart
 }

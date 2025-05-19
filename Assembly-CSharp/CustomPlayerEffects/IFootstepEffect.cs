@@ -1,9 +1,6 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public interface IFootstepEffect
 {
-	public interface IFootstepEffect
-	{
-		float ProcessFootstepOverrides(float dis);
-	}
+	float ProcessFootstepOverrides(float dis);
 }

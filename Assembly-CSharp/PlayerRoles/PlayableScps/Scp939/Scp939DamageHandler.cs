@@ -1,4 +1,3 @@
-﻿using System;
 using Footprinting;
 using InventorySystem.Items.Armor;
 using Mirror;
@@ -7,157 +6,138 @@ using PlayerStatsSystem;
 using RelativePositioning;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp939
+namespace PlayerRoles.PlayableScps.Scp939;
+
+public class Scp939DamageHandler : AttackerDamageHandler
 {
-	public class Scp939DamageHandler : AttackerDamageHandler
+	private string _ragdollInspect;
+
+	private RagdollAnimationTemplate _lungeTemplate;
+
+	private RelativePosition _hitPos;
+
+	private bool _lungeTemplateSet;
+
+	private const float LungeUpwardsSpeed = 3.5f;
+
+	private const float LungeTotalSpeed = 5.5f;
+
+	public override bool AllowSelfDamage => false;
+
+	public override float Damage { get; internal set; }
+
+	public override Footprint Attacker { get; protected set; }
+
+	public override string ServerLogsText => $"Killed by SCP-939 ({Attacker.Nickname}) with {Scp939DamageType}.";
+
+	public override string RagdollInspectText => _ragdollInspect;
+
+	public override string DeathScreenText => string.Empty;
+
+	private RagdollAnimationTemplate LungeTemplate
 	{
-		public override bool AllowSelfDamage
+		get
 		{
-			get
+			if (_lungeTemplateSet)
 			{
-				return false;
+				return _lungeTemplate;
 			}
+			if (!PlayerRoleLoader.TryGetRoleTemplate<Scp939Role>(RoleTypeId.Scp939, out var result))
+			{
+				return null;
+			}
+			if (!result.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out var subroutine))
+			{
+				return null;
+			}
+			_lungeTemplate = subroutine.LungeDeathAnim;
+			_lungeTemplateSet = true;
+			return LungeTemplate;
 		}
+	}
 
-		public override float Damage { get; internal set; }
+	public Scp939DamageType Scp939DamageType { get; private set; }
 
-		public override Footprint Attacker { get; protected set; }
-
-		public override string ServerLogsText
+	public Scp939DamageHandler(Scp939Role scp939, float damage, Scp939DamageType type = Scp939DamageType.None)
+	{
+		switch (type)
 		{
-			get
-			{
-				return string.Format("Killed by SCP-939 ({0}) with {1}.", this.Attacker.Nickname, this._damageType);
-			}
+		case Scp939DamageType.None:
+			return;
+		case Scp939DamageType.LungeSecondary:
+			_hitPos = new RelativePosition(scp939.FpcModule.Position);
+			break;
 		}
-
-		private RagdollAnimationTemplate LungeTemplate
+		if (scp939.TryGetOwner(out var hub))
 		{
-			get
-			{
-				if (this._lungeTemplateSet)
-				{
-					return this._lungeTemplate;
-				}
-				Scp939Role scp939Role;
-				if (!PlayerRoleLoader.TryGetRoleTemplate<Scp939Role>(RoleTypeId.Scp939, out scp939Role))
-				{
-					return null;
-				}
-				Scp939LungeAbility scp939LungeAbility;
-				if (!scp939Role.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out scp939LungeAbility))
-				{
-					return null;
-				}
-				this._lungeTemplate = scp939LungeAbility.LungeDeathAnim;
-				this._lungeTemplateSet = true;
-				return this.LungeTemplate;
-			}
+			Damage = damage;
+			Attacker = new Footprint(hub);
+			Scp939DamageType = type;
 		}
+	}
 
-		public Scp939DamageType Scp939DamageType
+	protected override void ProcessDamage(ReferenceHub ply)
+	{
+		if (!(ply.roleManager.CurrentRole is HumanRole humanRole))
 		{
-			get
-			{
-				return this._damageType;
-			}
-		}
-
-		public Scp939DamageHandler(Scp939Role scp939, float damage, Scp939DamageType type = Scp939DamageType.None)
-		{
-			if (type == Scp939DamageType.None)
-			{
-				return;
-			}
-			if (type == Scp939DamageType.LungeSecondary)
-			{
-				this._hitPos = new RelativePosition(scp939.FpcModule.Position);
-			}
-			ReferenceHub referenceHub;
-			if (!scp939.TryGetOwner(out referenceHub))
-			{
-				return;
-			}
-			this.Damage = damage;
-			this.Attacker = new Footprint(referenceHub);
-			this._damageType = type;
-		}
-
-		protected override void ProcessDamage(ReferenceHub ply)
-		{
-			HumanRole humanRole = ply.roleManager.CurrentRole as HumanRole;
-			if (humanRole == null)
-			{
-				base.ProcessDamage(ply);
-				return;
-			}
-			if (this._damageType == Scp939DamageType.Claw)
-			{
-				int armorEfficacy = humanRole.GetArmorEfficacy(HitboxType.Body);
-				int num = 75;
-				this.Damage = BodyArmorUtils.ProcessDamage(armorEfficacy, this.Damage, num);
-			}
 			base.ProcessDamage(ply);
+			return;
 		}
-
-		public override void WriteAdditionalData(NetworkWriter writer)
+		if (Scp939DamageType == Scp939DamageType.Claw)
 		{
-			base.WriteAdditionalData(writer);
-			writer.WriteByte((byte)this._damageType);
-			if (this._damageType == Scp939DamageType.LungeSecondary)
-			{
-				writer.WriteRelativePosition(this._hitPos);
-			}
+			int armorEfficacy = humanRole.GetArmorEfficacy(HitboxType.Body);
+			int bulletPenetrationPercent = 75;
+			Damage = BodyArmorUtils.ProcessDamage(armorEfficacy, Damage, bulletPenetrationPercent);
 		}
+		base.ProcessDamage(ply);
+	}
 
-		public override void ReadAdditionalData(NetworkReader reader)
+	public override void WriteAdditionalData(NetworkWriter writer)
+	{
+		base.WriteAdditionalData(writer);
+		writer.WriteByte((byte)Scp939DamageType);
+		if (Scp939DamageType == Scp939DamageType.LungeSecondary)
 		{
-			base.ReadAdditionalData(reader);
-			this._damageType = (Scp939DamageType)reader.ReadByte();
-			if (this._damageType == Scp939DamageType.LungeSecondary)
-			{
-				this._hitPos = reader.ReadRelativePosition();
-			}
+			writer.WriteRelativePosition(_hitPos);
 		}
+	}
 
-		public override void ProcessRagdoll(BasicRagdoll ragdoll)
+	public override void ReadAdditionalData(NetworkReader reader)
+	{
+		base.ReadAdditionalData(reader);
+		Scp939DamageType = (Scp939DamageType)reader.ReadByte();
+		if (Scp939DamageType == Scp939DamageType.LungeSecondary)
 		{
-			DynamicRagdoll dynamicRagdoll = ragdoll as DynamicRagdoll;
-			if (dynamicRagdoll == null)
-			{
-				return;
-			}
-			Scp939DamageType damageType = this._damageType;
-			if (damageType == Scp939DamageType.LungeTarget)
-			{
-				this.LungeTemplate.ProcessRagdoll(ragdoll);
-				return;
-			}
-			if (damageType != Scp939DamageType.LungeSecondary)
-			{
-				base.ProcessRagdoll(ragdoll);
-				return;
-			}
-			Vector3 vector = ragdoll.Info.StartPosition - this._hitPos.Position;
+			_hitPos = reader.ReadRelativePosition();
+		}
+	}
+
+	public override void ProcessRagdoll(BasicRagdoll ragdoll)
+	{
+		if (!(ragdoll is DynamicRagdoll dynamicRagdoll))
+		{
+			return;
+		}
+		switch (Scp939DamageType)
+		{
+		case Scp939DamageType.LungeTarget:
+			LungeTemplate.ProcessRagdoll(ragdoll);
+			break;
+		case Scp939DamageType.LungeSecondary:
+		{
+			Vector3 vector = ragdoll.Info.StartPosition - _hitPos.Position;
 			vector.y = 3.5f;
 			vector = vector.normalized * 5.5f;
 			Rigidbody[] linkedRigidbodies = dynamicRagdoll.LinkedRigidbodies;
 			for (int i = 0; i < linkedRigidbodies.Length; i++)
 			{
-				linkedRigidbodies[i].velocity = vector;
+				linkedRigidbodies[i].linearVelocity = vector;
 			}
+			break;
 		}
-
-		private Scp939DamageType _damageType;
-
-		private RagdollAnimationTemplate _lungeTemplate;
-
-		private RelativePosition _hitPos;
-
-		private bool _lungeTemplateSet;
-
-		private const float LungeUpwardsSpeed = 3.5f;
-
-		private const float LungeTotalSpeed = 5.5f;
+		default:
+			base.ProcessRagdoll(ragdoll);
+			break;
+		}
 	}
 }

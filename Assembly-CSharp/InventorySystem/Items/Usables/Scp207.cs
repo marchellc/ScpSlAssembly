@@ -1,30 +1,25 @@
-﻿using System;
 using CustomPlayerEffects;
 using PlayerStatsSystem;
 
-namespace InventorySystem.Items.Usables
+namespace InventorySystem.Items.Usables;
+
+public class Scp207 : Consumable
 {
-	public class Scp207 : Consumable
+	private const int InstantHealth = 30;
+
+	private const byte MaxColas = 4;
+
+	protected override void OnEffectsActivated()
 	{
-		protected override void OnEffectsActivated()
+		base.Owner.playerStats.GetModule<StaminaStat>().CurValue = 1f;
+		base.Owner.playerStats.GetModule<HealthStat>().ServerHeal(30f);
+		if (base.Owner.playerEffectsController.TryGetEffect<CustomPlayerEffects.Scp207>(out var playerEffect))
 		{
-			base.Owner.playerStats.GetModule<StaminaStat>().CurValue = 1f;
-			base.Owner.playerStats.GetModule<HealthStat>().ServerHeal(30f);
-			Scp207 scp;
-			if (!base.Owner.playerEffectsController.TryGetEffect<Scp207>(out scp))
+			byte intensity = playerEffect.Intensity;
+			if (intensity < 4)
 			{
-				return;
+				base.Owner.playerEffectsController.ChangeState<CustomPlayerEffects.Scp207>(++intensity);
 			}
-			byte intensity = scp.Intensity;
-			if (intensity >= 4)
-			{
-				return;
-			}
-			base.Owner.playerEffectsController.ChangeState<Scp207>(intensity + 1, 0f, false);
 		}
-
-		private const int InstantHealth = 30;
-
-		private const byte MaxColas = 4;
 	}
 }

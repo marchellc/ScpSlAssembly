@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public interface ISoundEmittingItem
 {
-	public interface ISoundEmittingItem
-	{
-		bool ServerTryGetSoundEmissionRange(out float range);
-	}
+	bool ServerTryGetSoundEmissionRange(out float range);
 }

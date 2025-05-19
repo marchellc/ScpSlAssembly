@@ -1,14 +1,12 @@
-﻿using System;
 using System.Linq;
 using MEC;
 
-namespace Waits
+namespace Waits;
+
+public class OrWaitManager : UntilWaitManager
 {
-	public class OrWaitManager : UntilWaitManager
+	protected override bool KeepRunning()
 	{
-		protected override bool KeepRunning()
-		{
-			return this.waitHandles.Any((CoroutineHandle x) => x.IsRunning);
-		}
+		return waitHandles.Any((CoroutineHandle x) => x.IsRunning);
 	}
 }

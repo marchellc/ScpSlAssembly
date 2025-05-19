@@ -1,23 +1,23 @@
-﻿using System;
+using System.Runtime.InteropServices;
 
-namespace ServerOutput
+namespace ServerOutput;
+
+[StructLayout(LayoutKind.Sequential, Size = 1)]
+public struct IdleEnterEntry : IOutputEntry
 {
-	public struct IdleEnterEntry : IOutputEntry
+	public string GetString()
 	{
-		public string GetString()
-		{
-			return 17.ToString();
-		}
+		return ((byte)17).ToString();
+	}
 
-		public int GetBytesLength()
-		{
-			return 1;
-		}
+	public int GetBytesLength()
+	{
+		return 1;
+	}
 
-		public void GetBytes(ref byte[] buffer, out int length)
-		{
-			length = 1;
-			buffer[0] = 17;
-		}
+	public void GetBytes(ref byte[] buffer, out int length)
+	{
+		length = 1;
+		buffer[0] = 17;
 	}
 }

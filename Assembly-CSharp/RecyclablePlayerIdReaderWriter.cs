@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 using Mirror;
 
 public static class RecyclablePlayerIdReaderWriter
 {
 	public static void WriteRecyclablePlayerId(this NetworkWriter writer, RecyclablePlayerId val)
 	{
-		for (int i = val.Value; i >= 0; i -= 255)
+		for (int num = val.Value; num >= 0; num -= 255)
 		{
-			writer.WriteByte((byte)Math.Min(i, 255));
+			writer.WriteByte((byte)Math.Min(num, 255));
 		}
 	}
 
@@ -18,9 +18,9 @@ public static class RecyclablePlayerIdReaderWriter
 		do
 		{
 			b = reader.ReadByte();
-			num += (int)b;
+			num += b;
 		}
-		while (b == 255);
+		while (b == byte.MaxValue);
 		return new RecyclablePlayerId(num);
 	}
 }

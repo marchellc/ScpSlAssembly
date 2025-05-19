@@ -1,29 +1,24 @@
-﻿using System;
 using UnityEngine;
 
-namespace CustomPlayerEffects
-{
-	public interface IConflictableEffect
-	{
-		bool CheckConflicts(StatusEffectBase other);
+namespace CustomPlayerEffects;
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+public interface IConflictableEffect
+{
+	bool CheckConflicts(StatusEffectBase other);
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		StatusEffectBase.OnEnabled += delegate(StatusEffectBase newEffect)
 		{
-			StatusEffectBase.OnEnabled += delegate(StatusEffectBase newEffect)
+			StatusEffectBase[] allEffects = newEffect.Hub.playerEffectsController.AllEffects;
+			foreach (StatusEffectBase statusEffectBase in allEffects)
 			{
-				foreach (StatusEffectBase statusEffectBase in newEffect.Hub.playerEffectsController.AllEffects)
+				if (statusEffectBase.IsEnabled && statusEffectBase is IConflictableEffect conflictableEffect && !(statusEffectBase == newEffect))
 				{
-					if (statusEffectBase.IsEnabled)
-					{
-						IConflictableEffect conflictableEffect = statusEffectBase as IConflictableEffect;
-						if (conflictableEffect != null && !(statusEffectBase == newEffect))
-						{
-							conflictableEffect.CheckConflicts(newEffect);
-						}
-					}
+					conflictableEffect.CheckConflicts(newEffect);
 				}
-			};
-		}
+			}
+		};
 	}
 }

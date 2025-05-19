@@ -1,8 +1,5 @@
-﻿using System;
+namespace UserSettings.VideoSettings;
 
-namespace UserSettings.VideoSettings
+public static class LightingVideoSettings
 {
-	public static class LightingVideoSettings
-	{
-	}
 }

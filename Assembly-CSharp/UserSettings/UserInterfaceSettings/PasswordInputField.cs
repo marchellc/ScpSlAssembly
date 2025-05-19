@@ -1,41 +1,38 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace UserSettings.UserInterfaceSettings
+namespace UserSettings.UserInterfaceSettings;
+
+public class PasswordInputField : MonoBehaviour
 {
-	public class PasswordInputField : MonoBehaviour
+	private TMP_InputField _inputField;
+
+	[SerializeField]
+	private Toggle _toggleVisibility;
+
+	[SerializeField]
+	private TMP_InputField.ContentType _falseType;
+
+	[SerializeField]
+	private TMP_InputField.ContentType _trueType;
+
+	private bool _prevValue;
+
+	private void Awake()
 	{
-		private void Awake()
+		_inputField = GetComponent<TMP_InputField>();
+		_prevValue = !_toggleVisibility.isOn;
+	}
+
+	private void Update()
+	{
+		bool isOn = _toggleVisibility.isOn;
+		if (_prevValue != isOn)
 		{
-			this._inputField = base.GetComponent<TMP_InputField>();
-			this._prevValue = !this._toggleVisibility.isOn;
+			_inputField.contentType = (isOn ? _trueType : _falseType);
+			_inputField.ForceLabelUpdate();
+			_prevValue = isOn;
 		}
-
-		private void Update()
-		{
-			bool isOn = this._toggleVisibility.isOn;
-			if (this._prevValue == isOn)
-			{
-				return;
-			}
-			this._inputField.contentType = (isOn ? this._trueType : this._falseType);
-			this._inputField.ForceLabelUpdate();
-			this._prevValue = isOn;
-		}
-
-		private TMP_InputField _inputField;
-
-		[SerializeField]
-		private Toggle _toggleVisibility;
-
-		[SerializeField]
-		private TMP_InputField.ContentType _falseType;
-
-		[SerializeField]
-		private TMP_InputField.ContentType _trueType;
-
-		private bool _prevValue;
 	}
 }

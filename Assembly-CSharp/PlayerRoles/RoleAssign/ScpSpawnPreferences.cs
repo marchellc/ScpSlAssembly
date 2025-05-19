@@ -1,114 +1,121 @@
-﻿using System;
 using System.Collections.Generic;
 using Mirror;
 using PlayerRoles.PlayableScps;
 using UnityEngine;
+using UserSettings;
+using UserSettings.OtherSettings;
 
-namespace PlayerRoles.RoleAssign
+namespace PlayerRoles.RoleAssign;
+
+public static class ScpSpawnPreferences
 {
-	public static class ScpSpawnPreferences
+	public readonly struct SpawnPreferences : NetworkMessage
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				ScpSpawnPreferences.Preferences.Clear();
-				NetworkServer.ReplaceHandler<ScpSpawnPreferences.SpawnPreferences>(new Action<NetworkConnectionToClient, ScpSpawnPreferences.SpawnPreferences>(ScpSpawnPreferences.OnMessageReceived), true);
-				NetworkClient.Send<ScpSpawnPreferences.SpawnPreferences>(new ScpSpawnPreferences.SpawnPreferences(true), 0);
-			};
-		}
+		private readonly byte _count;
 
-		private static int ClampPreference(int val)
-		{
-			return Mathf.Clamp(val, -5, 5);
-		}
+		public readonly Dictionary<RoleTypeId, int> Preferences;
 
-		private static void OnMessageReceived(NetworkConnection conn, ScpSpawnPreferences.SpawnPreferences msg)
-		{
-			ScpSpawnPreferences.Preferences[conn.connectionId] = msg;
-		}
+		public readonly bool OptOutOfScp;
 
-		public static int GetPreference(RoleTypeId role)
+		public SpawnPreferences(bool autoSetup)
 		{
-			string text = "SpawnPreference_Role_";
-			int num = (int)role;
-			return ScpSpawnPreferences.ClampPreference(PlayerPrefsSl.Get(text + num.ToString(), 0));
-		}
-
-		public static void SavePreference(RoleTypeId role, int value)
-		{
-			string text = "SpawnPreference_Role_";
-			int num = (int)role;
-			PlayerPrefsSl.Set(text + num.ToString(), value);
-			if (!NetworkClient.active)
+			_count = 0;
+			Preferences = new Dictionary<RoleTypeId, int>();
+			OptOutOfScp = false;
+			if (!autoSetup)
 			{
 				return;
 			}
-			NetworkClient.Send<ScpSpawnPreferences.SpawnPreferences>(new ScpSpawnPreferences.SpawnPreferences(true), 0);
-		}
-
-		public static void WriteSpawnPreferences(this NetworkWriter writer, ScpSpawnPreferences.SpawnPreferences msg)
-		{
-			msg.Serialize(writer);
-		}
-
-		public static ScpSpawnPreferences.SpawnPreferences ReadSpawnPreferences(this NetworkReader reader)
-		{
-			return new ScpSpawnPreferences.SpawnPreferences(reader);
-		}
-
-		public static readonly Dictionary<int, ScpSpawnPreferences.SpawnPreferences> Preferences = new Dictionary<int, ScpSpawnPreferences.SpawnPreferences>();
-
-		public const int MaxPreference = 5;
-
-		private const string PrefsPrefix = "SpawnPreference_Role_";
-
-		public readonly struct SpawnPreferences : NetworkMessage
-		{
-			public SpawnPreferences(bool autoSetup)
+			OptOutOfScp = UserSetting<bool>.Get(ScpSetting.ScpOptOut, defaultValue: false);
+			foreach (KeyValuePair<RoleTypeId, PlayerRoleBase> allRole in PlayerRoleLoader.AllRoles)
 			{
-				this._count = 0;
-				this.Preferences = new Dictionary<RoleTypeId, int>();
-				if (!autoSetup)
+				if (allRole.Value is ISpawnableScp)
 				{
-					return;
-				}
-				foreach (KeyValuePair<RoleTypeId, PlayerRoleBase> keyValuePair in PlayerRoleLoader.AllRoles)
-				{
-					if (keyValuePair.Value is ISpawnableScp)
-					{
-						this.Preferences[keyValuePair.Key] = ScpSpawnPreferences.GetPreference(keyValuePair.Key);
-						this._count += 1;
-					}
+					Preferences[allRole.Key] = GetPreference(allRole.Key);
+					_count++;
 				}
 			}
-
-			public SpawnPreferences(NetworkReader reader)
-			{
-				this._count = reader.ReadByte();
-				this.Preferences = new Dictionary<RoleTypeId, int>((int)this._count);
-				for (int i = 0; i < (int)this._count; i++)
-				{
-					RoleTypeId roleTypeId = reader.ReadRoleType();
-					int num = (int)reader.ReadSByte();
-					this.Preferences[roleTypeId] = ScpSpawnPreferences.ClampPreference(num);
-				}
-			}
-
-			public void Serialize(NetworkWriter writer)
-			{
-				writer.WriteByte(this._count);
-				foreach (KeyValuePair<RoleTypeId, int> keyValuePair in this.Preferences)
-				{
-					writer.WriteRoleType(keyValuePair.Key);
-					writer.WriteSByte((sbyte)keyValuePair.Value);
-				}
-			}
-
-			private readonly byte _count;
-
-			public readonly Dictionary<RoleTypeId, int> Preferences;
 		}
+
+		public SpawnPreferences(NetworkReader reader)
+		{
+			OptOutOfScp = reader.ReadBool();
+			_count = reader.ReadByte();
+			Preferences = new Dictionary<RoleTypeId, int>(_count);
+			for (int i = 0; i < _count; i++)
+			{
+				RoleTypeId key = reader.ReadRoleType();
+				int val = reader.ReadSByte();
+				Preferences[key] = ClampPreference(val);
+			}
+		}
+
+		public void Serialize(NetworkWriter writer)
+		{
+			writer.WriteBool(OptOutOfScp);
+			writer.WriteByte(_count);
+			foreach (KeyValuePair<RoleTypeId, int> preference in Preferences)
+			{
+				writer.WriteRoleType(preference.Key);
+				writer.WriteSByte((sbyte)preference.Value);
+			}
+		}
+	}
+
+	public static readonly Dictionary<int, SpawnPreferences> Preferences = new Dictionary<int, SpawnPreferences>();
+
+	public const int MaxPreference = 5;
+
+	private const string PrefsPrefix = "SpawnPreference_Role_";
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
+		{
+			Preferences.Clear();
+			NetworkServer.ReplaceHandler<SpawnPreferences>(OnMessageReceived);
+			NetworkClient.Send(new SpawnPreferences(autoSetup: true));
+			UserSetting<bool>.AddListener(ScpSetting.ScpOptOut, delegate
+			{
+				NetworkClient.Send(new SpawnPreferences(autoSetup: true));
+			});
+		};
+	}
+
+	private static int ClampPreference(int val)
+	{
+		return Mathf.Clamp(val, -5, 5);
+	}
+
+	private static void OnMessageReceived(NetworkConnection conn, SpawnPreferences msg)
+	{
+		Preferences[conn.connectionId] = msg;
+	}
+
+	public static int GetPreference(RoleTypeId role)
+	{
+		int num = (int)role;
+		return ClampPreference(PlayerPrefsSl.Get("SpawnPreference_Role_" + num, 0));
+	}
+
+	public static void SavePreference(RoleTypeId role, int value)
+	{
+		int num = (int)role;
+		PlayerPrefsSl.Set("SpawnPreference_Role_" + num, value);
+		if (NetworkClient.active)
+		{
+			NetworkClient.Send(new SpawnPreferences(autoSetup: true));
+		}
+	}
+
+	public static void WriteSpawnPreferences(this NetworkWriter writer, SpawnPreferences msg)
+	{
+		msg.Serialize(writer);
+	}
+
+	public static SpawnPreferences ReadSpawnPreferences(this NetworkReader reader)
+	{
+		return new SpawnPreferences(reader);
 	}
 }

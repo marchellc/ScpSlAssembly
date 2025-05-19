@@ -1,33 +1,19 @@
-﻿using System;
 using PlayerStatsSystem;
 
-namespace InventorySystem.Items.Usables.Scp330
+namespace InventorySystem.Items.Usables.Scp330;
+
+public class CandyBlue : ICandy
 {
-	public class CandyBlue : ICandy
+	private const int AhpInstant = 30;
+
+	private const float AhpDecay = 0f;
+
+	public CandyKindID Kind => CandyKindID.Blue;
+
+	public float SpawnChanceWeight => 1f;
+
+	public void ServerApplyEffects(ReferenceHub hub)
 	{
-		public CandyKindID Kind
-		{
-			get
-			{
-				return CandyKindID.Blue;
-			}
-		}
-
-		public float SpawnChanceWeight
-		{
-			get
-			{
-				return 1f;
-			}
-		}
-
-		public void ServerApplyEffects(ReferenceHub hub)
-		{
-			hub.playerStats.GetModule<AhpStat>().ServerAddProcess(30f).DecayRate = 0f;
-		}
-
-		private const int AhpInstant = 30;
-
-		private const float AhpDecay = 0f;
+		hub.playerStats.GetModule<AhpStat>().ServerAddProcess(30f).DecayRate = 0f;
 	}
 }

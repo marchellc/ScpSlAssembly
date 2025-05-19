@@ -1,54 +1,40 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace Interactables
+namespace Interactables;
+
+public class CenterScreenRaycast : MonoBehaviour
 {
-	public class CenterScreenRaycast : MonoBehaviour
+	[SerializeField]
+	private float _rayDistance = 300f;
+
+	[SerializeField]
+	private LayerMask _centerScreenRayHits;
+
+	public static event Action<RaycastHit> OnCenterRaycastHit;
+
+	public static event Action OnCenterRaycastMissed;
+
+	private void Awake()
 	{
-		public static event Action<RaycastHit> OnCenterRaycastHit;
+		MainCameraController.OnUpdated += PerformRaycast;
+	}
 
-		public static event Action OnCenterRaycastMissed;
+	private void OnDestroy()
+	{
+		MainCameraController.OnUpdated -= PerformRaycast;
+	}
 
-		private void Awake()
+	private void PerformRaycast()
+	{
+		Transform currentCamera = MainCameraController.CurrentCamera;
+		if (Physics.Raycast(new Ray(currentCamera.position, currentCamera.forward), out var hitInfo, _rayDistance, _centerScreenRayHits))
 		{
-			MainCameraController.OnUpdated += this.PerformRaycast;
+			CenterScreenRaycast.OnCenterRaycastHit?.Invoke(hitInfo);
 		}
-
-		private void OnDestroy()
+		else
 		{
-			MainCameraController.OnUpdated -= this.PerformRaycast;
+			CenterScreenRaycast.OnCenterRaycastMissed?.Invoke();
 		}
-
-		private void PerformRaycast()
-		{
-			Transform currentCamera = MainCameraController.CurrentCamera;
-			RaycastHit raycastHit;
-			if (Physics.Raycast(new Ray(currentCamera.position, currentCamera.forward), out raycastHit, this._rayDistance, this._centerScreenRayHits))
-			{
-				Action<RaycastHit> onCenterRaycastHit = CenterScreenRaycast.OnCenterRaycastHit;
-				if (onCenterRaycastHit == null)
-				{
-					return;
-				}
-				onCenterRaycastHit(raycastHit);
-				return;
-			}
-			else
-			{
-				Action onCenterRaycastMissed = CenterScreenRaycast.OnCenterRaycastMissed;
-				if (onCenterRaycastMissed == null)
-				{
-					return;
-				}
-				onCenterRaycastMissed();
-				return;
-			}
-		}
-
-		[SerializeField]
-		private float _rayDistance = 300f;
-
-		[SerializeField]
-		private LayerMask _centerScreenRayHits;
 	}
 }

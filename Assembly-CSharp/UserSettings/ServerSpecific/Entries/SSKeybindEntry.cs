@@ -1,54 +1,51 @@
-﻿using System;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.UI;
 
-namespace UserSettings.ServerSpecific.Entries
+namespace UserSettings.ServerSpecific.Entries;
+
+public class SSKeybindEntry : KeycodeField, ISSEntry
 {
-	public class SSKeybindEntry : KeycodeField, ISSEntry
+	private SSKeybindSetting _setting;
+
+	[SerializeField]
+	private Image _undoImage;
+
+	[SerializeField]
+	private Image _suggestionImage;
+
+	[SerializeField]
+	private SSEntryLabel _label;
+
+	public void ApplySuggestion()
 	{
-		public void ApplySuggestion()
-		{
-			this.ApplyPressedKey(this._setting.SuggestedKey);
-		}
+		ApplyPressedKey(_setting.SuggestedKey);
+	}
 
-		public bool CheckCompatibility(ServerSpecificSettingBase setting)
-		{
-			return setting is SSKeybindSetting;
-		}
+	public bool CheckCompatibility(ServerSpecificSettingBase setting)
+	{
+		return setting is SSKeybindSetting;
+	}
 
-		public void Init(ServerSpecificSettingBase setting)
-		{
-			this._setting = setting as SSKeybindSetting;
-			this._label.Set(setting);
-			this._undoImage.GetComponent<Button>().onClick.AddListener(new UnityAction(this.PressUndo));
-			this._suggestionImage.GetComponent<Button>().onClick.AddListener(new UnityAction(this.ApplySuggestion));
-			this.ApplyPressedKey((KeyCode)PlayerPrefsSl.Get(this._setting.PlayerPrefsKey, 0));
-		}
+	public void Init(ServerSpecificSettingBase setting)
+	{
+		_setting = setting as SSKeybindSetting;
+		_label.Set(setting);
+		_undoImage.GetComponent<Button>().onClick.AddListener(PressUndo);
+		_suggestionImage.GetComponent<Button>().onClick.AddListener(ApplySuggestion);
+		ApplyPressedKey((KeyCode)PlayerPrefsSl.Get(_setting.PlayerPrefsKey, 0));
+	}
 
-		protected override void ApplyPressedKey(KeyCode key)
-		{
-			base.ApplyPressedKey(key);
-			this._setting.AssignedKeyCode = key;
-			PlayerPrefsSl.Set(this._setting.PlayerPrefsKey, (int)key);
-			this._undoImage.enabled = key > KeyCode.None;
-			this._suggestionImage.enabled = key == KeyCode.None && this._setting.SuggestedKey > KeyCode.None;
-		}
+	protected override void ApplyPressedKey(KeyCode key)
+	{
+		base.ApplyPressedKey(key);
+		_setting.AssignedKeyCode = key;
+		PlayerPrefsSl.Set(_setting.PlayerPrefsKey, (int)key);
+		_undoImage.enabled = key != KeyCode.None;
+		_suggestionImage.enabled = key == KeyCode.None && _setting.SuggestedKey != KeyCode.None;
+	}
 
-		private void PressUndo()
-		{
-			this.ApplyPressedKey(KeyCode.None);
-		}
-
-		private SSKeybindSetting _setting;
-
-		[SerializeField]
-		private Image _undoImage;
-
-		[SerializeField]
-		private Image _suggestionImage;
-
-		[SerializeField]
-		private SSEntryLabel _label;
+	private void PressUndo()
+	{
+		ApplyPressedKey(KeyCode.None);
 	}
 }

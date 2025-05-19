@@ -1,40 +1,38 @@
-﻿using System;
 using Mirror;
 
-namespace Hints
+namespace Hints;
+
+public class TextHint : FormattableHint<TextHint>
 {
-	public class TextHint : FormattableHint<TextHint>
+	protected string Text { get; private set; }
+
+	public static TextHint FromNetwork(NetworkReader reader)
 	{
-		public static TextHint FromNetwork(NetworkReader reader)
-		{
-			TextHint textHint = new TextHint();
-			textHint.Deserialize(reader);
-			return textHint;
-		}
+		TextHint textHint = new TextHint();
+		textHint.Deserialize(reader);
+		return textHint;
+	}
 
-		private protected string Text { protected get; private set; }
+	private TextHint()
+		: base((HintParameter[])null, (HintEffect[])null, 0f)
+	{
+	}
 
-		private TextHint()
-			: base(null, null, 0f)
-		{
-		}
+	public TextHint(string text, HintParameter[] parameters = null, HintEffect[] effects = null, float durationScalar = 3f)
+		: base(parameters, effects, durationScalar)
+	{
+		Text = text;
+	}
 
-		public TextHint(string text, HintParameter[] parameters = null, HintEffect[] effects = null, float durationScalar = 3f)
-			: base(parameters, effects, durationScalar)
-		{
-			this.Text = text;
-		}
+	public override void Deserialize(NetworkReader reader)
+	{
+		base.Deserialize(reader);
+		Text = reader.ReadString();
+	}
 
-		public override void Deserialize(NetworkReader reader)
-		{
-			base.Deserialize(reader);
-			this.Text = reader.ReadString();
-		}
-
-		public override void Serialize(NetworkWriter writer)
-		{
-			base.Serialize(writer);
-			writer.WriteString(this.Text);
-		}
+	public override void Serialize(NetworkWriter writer)
+	{
+		base.Serialize(writer);
+		writer.WriteString(Text);
 	}
 }

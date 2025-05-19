@@ -1,4 +1,3 @@
-﻿using System;
 using InventorySystem;
 using InventorySystem.Items.MicroHID;
 using InventorySystem.Items.MicroHID.Modules;
@@ -9,123 +8,90 @@ using PlayerStatsSystem;
 using UnityEngine;
 using Utils.NonAllocLINQ;
 
-namespace PlayerRoles.PlayableScps.Scp079.Rewards
+namespace PlayerRoles.PlayableScps.Scp079.Rewards;
+
+public static class HidStoppedReward
 {
-	public static class HidStoppedReward
+	private const int Reward = 50;
+
+	private const float MinReadiness = 0.75f;
+
+	private const float TimeTolerance = 10f;
+
+	private const float ScpMinProximitySqr = 600f;
+
+	private static bool _available;
+
+	private static double _microDamageCooldown;
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub hub, PlayerRoleBase x, PlayerRoleBase y)
 		{
-			PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub hub, PlayerRoleBase x, PlayerRoleBase y)
+			if (NetworkServer.active && y is Scp079Role)
 			{
-				if (!NetworkServer.active)
-				{
-					return;
-				}
-				if (y is Scp079Role)
-				{
-					HidStoppedReward._available = true;
-				}
-			};
-			PlayerStats.OnAnyPlayerDamaged += delegate(ReferenceHub hub, DamageHandlerBase dh)
+				_available = true;
+			}
+		};
+		PlayerStats.OnAnyPlayerDamaged += delegate(ReferenceHub hub, DamageHandlerBase dh)
+		{
+			if (NetworkServer.active && _available && dh is MicroHidDamageHandler)
 			{
-				if (!NetworkServer.active || !HidStoppedReward._available)
-				{
-					return;
-				}
-				if (dh is MicroHidDamageHandler)
-				{
-					HidStoppedReward._microDamageCooldown = NetworkTime.time + 10.0;
-				}
-			};
-			PlayerStats.OnAnyPlayerDied += delegate(ReferenceHub hub, DamageHandlerBase dh)
+				_microDamageCooldown = NetworkTime.time + 10.0;
+			}
+		};
+		PlayerStats.OnAnyPlayerDied += delegate(ReferenceHub hub, DamageHandlerBase dh)
+		{
+			if (NetworkServer.active && _available && hub.inventory.CurInstance is MicroHIDItem microHIDItem && !(microHIDItem == null) && !(microHIDItem.CycleController.ServerWindUpProgress < 0.75f))
 			{
-				if (!NetworkServer.active || !HidStoppedReward._available)
-				{
-					return;
-				}
-				MicroHIDItem microHIDItem = hub.inventory.CurInstance as MicroHIDItem;
-				if (microHIDItem == null)
-				{
-					return;
-				}
-				if (microHIDItem == null || microHIDItem.CycleController.ServerWindUpProgress < 0.75f)
-				{
-					return;
-				}
-				HidStoppedReward.TryGrant(hub);
-			};
-			CycleController.OnPhaseChanged += delegate(ushort serial, MicroHidPhase phase)
+				TryGrant(hub);
+			}
+		};
+		CycleController.OnPhaseChanged += delegate(ushort serial, MicroHidPhase phase)
+		{
+			if (NetworkServer.active)
 			{
-				if (!NetworkServer.active)
-				{
-					return;
-				}
 				CycleController cycleController = CycleSyncModule.GetCycleController(serial);
-				if (!HidStoppedReward._available || NetworkTime.time < HidStoppedReward._microDamageCooldown)
+				if (_available && !(NetworkTime.time < _microDamageCooldown) && phase == MicroHidPhase.WindingDown && !(cycleController.ServerWindUpProgress < 0.75f) && InventoryExtensions.TryGetHubHoldingSerial(serial, out var hub2))
 				{
-					return;
+					TryGrant(hub2);
 				}
-				if (phase != MicroHidPhase.WindingDown || cycleController.ServerWindUpProgress < 0.75f)
-				{
-					return;
-				}
-				ReferenceHub referenceHub;
-				if (!InventoryExtensions.TryGetHubHoldingSerial(serial, out referenceHub))
-				{
-					return;
-				}
-				HidStoppedReward.TryGrant(referenceHub);
-			};
-		}
+			}
+		};
+	}
 
-		private static void TryGrant(ReferenceHub ply)
+	private static void TryGrant(ReferenceHub ply)
+	{
+		if (!(ply.roleManager.CurrentRole is IFpcRole fpcRole))
 		{
-			IFpcRole fpcRole = ply.roleManager.CurrentRole as IFpcRole;
-			if (fpcRole == null)
-			{
-				return;
-			}
-			Vector3 humanPos = fpcRole.FpcModule.Position;
-			RoomIdentifier roomIdentifier = RoomUtils.RoomAtPositionRaycasts(humanPos, true);
-			if (roomIdentifier == null)
-			{
-				return;
-			}
-			if (!ReferenceHub.AllHubs.Any((ReferenceHub x) => HidStoppedReward.IsNearbyTeammate(humanPos, x)))
-			{
-				return;
-			}
-			foreach (Scp079Role scp079Role in Scp079Role.ActiveInstances)
-			{
-				if (Scp079RewardManager.CheckForRoomInteractions(scp079Role, roomIdentifier))
-				{
-					HidStoppedReward._available = false;
-					Scp079RewardManager.GrantExp(scp079Role, 50, Scp079HudTranslation.ExpGainHidStopped, RoleTypeId.None);
-				}
-			}
+			return;
 		}
-
-		private static bool IsNearbyTeammate(Vector3 attackerPos, ReferenceHub teammate)
+		Vector3 humanPos = fpcRole.FpcModule.Position;
+		if (!humanPos.TryGetRoom(out var room) || !ReferenceHub.AllHubs.Any((ReferenceHub x) => IsNearbyTeammate(humanPos, x)))
 		{
-			if (!teammate.IsSCP(false))
-			{
-				return false;
-			}
-			IFpcRole fpcRole = teammate.roleManager.CurrentRole as IFpcRole;
-			return fpcRole != null && (fpcRole.FpcModule.Position - attackerPos).sqrMagnitude < 600f;
+			return;
 		}
+		foreach (Scp079Role activeInstance in Scp079Role.ActiveInstances)
+		{
+			if (Scp079RewardManager.CheckForRoomInteractions(activeInstance, room))
+			{
+				_available = false;
+				Scp079RewardManager.GrantExp(activeInstance, 50, Scp079HudTranslation.ExpGainHidStopped);
+			}
+		}
+	}
 
-		private const int Reward = 50;
-
-		private const float MinReadiness = 0.75f;
-
-		private const float TimeTolerance = 10f;
-
-		private const float ScpMinProximitySqr = 600f;
-
-		private static bool _available;
-
-		private static double _microDamageCooldown;
+	private static bool IsNearbyTeammate(Vector3 attackerPos, ReferenceHub teammate)
+	{
+		if (!teammate.IsSCP(includeZombies: false))
+		{
+			return false;
+		}
+		if (!(teammate.roleManager.CurrentRole is IFpcRole fpcRole))
+		{
+			return false;
+		}
+		return (fpcRole.FpcModule.Position - attackerPos).sqrMagnitude < 600f;
 	}
 }

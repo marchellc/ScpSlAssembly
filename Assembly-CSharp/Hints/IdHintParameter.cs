@@ -1,29 +1,40 @@
-﻿using System;
 using Mirror;
 
-namespace Hints
+namespace Hints;
+
+public abstract class IdHintParameter : HintParameter
 {
-	public abstract class IdHintParameter : HintParameter
+	private bool _stopFormatting;
+
+	protected int Id { get; private set; }
+
+	protected IdHintParameter()
 	{
-		private protected int Id { protected get; private set; }
-
-		protected IdHintParameter()
-		{
-		}
-
-		protected IdHintParameter(byte id)
-		{
-			this.Id = (int)id;
-		}
-
-		public override void Deserialize(NetworkReader reader)
-		{
-			this.Id = reader.ReadInt();
-		}
-
-		public override void Serialize(NetworkWriter writer)
-		{
-			writer.WriteInt(this.Id);
-		}
 	}
+
+	protected IdHintParameter(byte id)
+	{
+		Id = id;
+	}
+
+	public override void Deserialize(NetworkReader reader)
+	{
+		Id = reader.ReadInt();
+	}
+
+	public override void Serialize(NetworkWriter writer)
+	{
+		writer.WriteInt(Id);
+	}
+
+	protected override string UpdateState(float progress)
+	{
+		if (_stopFormatting)
+		{
+			return null;
+		}
+		return FormatId(progress, out _stopFormatting);
+	}
+
+	protected abstract string FormatId(float progress, out bool stopFormatting);
 }

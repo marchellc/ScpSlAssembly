@@ -1,14 +1,11 @@
-﻿using System;
+namespace PlayerRoles.RoleAssign;
 
-namespace PlayerRoles.RoleAssign
+public class OneRoleHumanSpawner : IHumanSpawnHandler
 {
-	public class OneRoleHumanSpawner : IHumanSpawnHandler
-	{
-		public RoleTypeId NextRole { get; }
+	public RoleTypeId NextRole { get; }
 
-		public OneRoleHumanSpawner(RoleTypeId targetRole)
-		{
-			this.NextRole = targetRole;
-		}
+	public OneRoleHumanSpawner(RoleTypeId targetRole)
+	{
+		NextRole = targetRole;
 	}
 }

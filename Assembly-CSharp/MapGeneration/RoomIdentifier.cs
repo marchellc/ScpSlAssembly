@@ -1,135 +1,117 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace MapGeneration
+namespace MapGeneration;
+
+public class RoomIdentifier : MonoBehaviour
 {
-	public class RoomIdentifier : MonoBehaviour
+	public static readonly HashSet<RoomIdentifier> AllRoomIdentifiers = new HashSet<RoomIdentifier>();
+
+	public static readonly Dictionary<Vector3Int, RoomIdentifier> RoomsByCoords = new Dictionary<Vector3Int, RoomIdentifier>();
+
+	public static readonly Vector3 GridScale = new Vector3(15f, 100f, 15f);
+
+	public readonly HashSet<RoomIdentifier> ConnectedRooms = new HashSet<RoomIdentifier>();
+
+	public readonly List<RoomLightController> LightControllers = new List<RoomLightController>();
+
+	public RoomShape Shape;
+
+	public RoomName Name;
+
+	public FacilityZone Zone;
+
+	public Sprite Icon;
+
+	public Vector3Int MainCoords { get; private set; }
+
+	public Bounds WorldspaceBounds { get; private set; }
+
+	public static event Action<RoomIdentifier> OnAdded;
+
+	public static event Action<RoomIdentifier> OnRemoved;
+
+	private void Awake()
 	{
-		public Vector3Int[] OccupiedCoords { get; private set; }
-
-		public HashSet<RoomIdentifier> ConnectedRooms { get; private set; } = new HashSet<RoomIdentifier>();
-
-		public List<RoomLightController> LightControllers { get; private set; } = new List<RoomLightController>(2);
-
-		public static event Action<RoomIdentifier> OnAdded;
-
-		public static event Action<RoomIdentifier> OnRemoved;
-
-		private void Awake()
+		SeedSynchronizer.OnGenerationStage += OnMapgenPhase;
+		if (SeedSynchronizer.MapGenerated)
 		{
-			RoomIdentifier.AllRoomIdentifiers.Add(this);
-			Action<RoomIdentifier> onAdded = RoomIdentifier.OnAdded;
-			if (onAdded == null)
-			{
-				return;
-			}
-			onAdded(this);
+			RegisterCoords();
 		}
+		AllRoomIdentifiers.Add(this);
+		RoomIdentifier.OnAdded?.Invoke(this);
+	}
 
-		private void OnDestroy()
+	private void OnDestroy()
+	{
+		SeedSynchronizer.OnGenerationStage -= OnMapgenPhase;
+		AllRoomIdentifiers.Remove(this);
+		RoomsByCoords.Remove(MainCoords);
+		RoomIdentifier.OnRemoved?.Invoke(this);
+		LightControllers.Clear();
+	}
+
+	private void OnMapgenPhase(MapGenerationPhase phase)
+	{
+		if (phase == MapGenerationPhase.RoomCoordsRegistrations)
 		{
-			RoomIdentifier.AllRoomIdentifiers.Remove(this);
-			Action<RoomIdentifier> onRemoved = RoomIdentifier.OnRemoved;
-			if (onRemoved != null)
-			{
-				onRemoved(this);
-			}
-			this.LightControllers.Clear();
-			if (this.OccupiedCoords == null)
-			{
-				return;
-			}
-			foreach (Vector3Int vector3Int in this.OccupiedCoords)
-			{
-				RoomIdentifier.RoomsByCoordinates.Remove(vector3Int);
-			}
+			RegisterCoords();
 		}
+	}
 
-		public bool TryAssignId()
+	private void RegisterCoords()
+	{
+		MainCoords = RoomUtils.PositionToCoords(base.transform.position);
+		RoomsByCoords[MainCoords] = this;
+		RecalculateWorldspaceBounds();
+	}
+
+	private void RecalculateWorldspaceBounds()
+	{
+		Bounds worldspaceBounds = new Bounds(base.transform.position, Vector3.zero);
+		MeshRenderer[] componentsInChildren = GetComponentsInChildren<MeshRenderer>();
+		foreach (MeshRenderer meshRenderer in componentsInChildren)
 		{
-			if (!base.gameObject.activeInHierarchy)
-			{
-				return false;
-			}
-			Vector3Int vector3Int = RoomUtils.PositionToCoords(base.transform.position);
-			RoomIdentifier.RoomsByCoordinates[vector3Int] = this;
-			this.OccupiedCoords = new Vector3Int[this.AdditionalZones.Length + 1];
-			this.OccupiedCoords[0] = vector3Int;
-			int num = 1;
-			Vector3Int[] additionalZones = this.AdditionalZones;
-			for (int i = 0; i < additionalZones.Length; i++)
-			{
-				Vector3 vector = Vector3.Scale(additionalZones[i], RoomIdentifier.GridScale);
-				vector3Int = RoomUtils.PositionToCoords(base.transform.position + base.transform.TransformDirection(vector));
-				RoomIdentifier.RoomsByCoordinates[vector3Int] = this;
-				this.OccupiedCoords[num] = vector3Int;
-				num++;
-			}
-			return true;
+			meshRenderer.ResetBounds();
+			worldspaceBounds.Encapsulate(meshRenderer.bounds);
 		}
+		WorldspaceBounds = worldspaceBounds;
+	}
 
-		public bool TryGetMainCoords(out Vector3Int coords)
+	public RoomLightController GetClosestLightController(ReferenceHub hub)
+	{
+		if (hub == null || !(hub.roleManager.CurrentRole is IFpcRole fpcRole))
 		{
-			if (this.OccupiedCoords == null || this.OccupiedCoords.Length == 0)
-			{
-				coords = Vector3Int.zero;
-				return false;
-			}
-			coords = this.OccupiedCoords[0];
-			return true;
-		}
-
-		public RoomLightController GetClosestLightController(ReferenceHub hub)
-		{
-			if (!(hub == null))
-			{
-				IFpcRole fpcRole = hub.roleManager.CurrentRole as IFpcRole;
-				if (fpcRole != null)
-				{
-					if (this.LightControllers.Count == 0)
-					{
-						return null;
-					}
-					if (this.LightControllers.Count == 1)
-					{
-						return this.LightControllers[0];
-					}
-					Vector3 position = fpcRole.FpcModule.Position;
-					float num = float.MaxValue;
-					RoomLightController roomLightController = null;
-					foreach (RoomLightController roomLightController2 in this.LightControllers)
-					{
-						float sqrMagnitude = (roomLightController2.transform.position - position).sqrMagnitude;
-						if (sqrMagnitude < num)
-						{
-							num = sqrMagnitude;
-							roomLightController = roomLightController2;
-						}
-					}
-					return roomLightController;
-				}
-			}
 			return null;
 		}
+		if (LightControllers.Count == 0)
+		{
+			return null;
+		}
+		if (LightControllers.Count == 1)
+		{
+			return LightControllers[0];
+		}
+		Vector3 position = fpcRole.FpcModule.Position;
+		float num = float.MaxValue;
+		RoomLightController result = null;
+		foreach (RoomLightController lightController in LightControllers)
+		{
+			float sqrMagnitude = (lightController.transform.position - position).sqrMagnitude;
+			if (sqrMagnitude < num)
+			{
+				num = sqrMagnitude;
+				result = lightController;
+			}
+		}
+		return result;
+	}
 
-		public RoomShape Shape;
-
-		public RoomName Name;
-
-		public FacilityZone Zone;
-
-		public Vector3Int[] AdditionalZones;
-
-		public Bounds[] SubBounds;
-
-		public Sprite Icon;
-
-		public static readonly HashSet<RoomIdentifier> AllRoomIdentifiers = new HashSet<RoomIdentifier>();
-
-		public static readonly Dictionary<Vector3Int, RoomIdentifier> RoomsByCoordinates = new Dictionary<Vector3Int, RoomIdentifier>();
-
-		public static readonly Vector3 GridScale = new Vector3(15f, 100f, 15f);
+	private void OnDrawGizmosSelected()
+	{
+		Gizmos.color = Color.white;
+		Gizmos.DrawWireCube(WorldspaceBounds.center, WorldspaceBounds.size);
 	}
 }

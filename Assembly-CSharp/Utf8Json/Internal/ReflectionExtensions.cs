@@ -1,79 +1,80 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace Utf8Json.Internal
+namespace Utf8Json.Internal;
+
+internal static class ReflectionExtensions
 {
-	internal static class ReflectionExtensions
+	public static bool IsNullable(this TypeInfo type)
 	{
-		public static bool IsNullable(this TypeInfo type)
+		if (type.IsGenericType)
 		{
-			return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+			return type.GetGenericTypeDefinition() == typeof(Nullable<>);
 		}
+		return false;
+	}
 
-		public static bool IsPublic(this TypeInfo type)
+	public static bool IsPublic(this TypeInfo type)
+	{
+		return type.IsPublic;
+	}
+
+	public static bool IsAnonymous(this TypeInfo type)
+	{
+		if (type.GetCustomAttribute<CompilerGeneratedAttribute>() != null && type.Name.Contains("AnonymousType") && (type.Name.StartsWith("<>") || type.Name.StartsWith("VB$")))
 		{
-			return type.IsPublic;
+			return (type.Attributes & TypeAttributes.NotPublic) == 0;
 		}
+		return false;
+	}
 
-		public static bool IsAnonymous(this TypeInfo type)
-		{
-			return type.GetCustomAttribute<CompilerGeneratedAttribute>() != null && type.Name.Contains("AnonymousType") && (type.Name.StartsWith("<>") || type.Name.StartsWith("VB$")) && (type.Attributes & TypeAttributes.NotPublic) == TypeAttributes.NotPublic;
-		}
+	public static IEnumerable<PropertyInfo> GetAllProperties(this Type type)
+	{
+		return GetAllPropertiesCore(type, new HashSet<string>());
+	}
 
-		public static IEnumerable<PropertyInfo> GetAllProperties(this Type type)
+	private static IEnumerable<PropertyInfo> GetAllPropertiesCore(Type type, HashSet<string> nameCheck)
+	{
+		foreach (PropertyInfo runtimeProperty in type.GetRuntimeProperties())
 		{
-			return ReflectionExtensions.GetAllPropertiesCore(type, new HashSet<string>());
-		}
-
-		private static IEnumerable<PropertyInfo> GetAllPropertiesCore(Type type, HashSet<string> nameCheck)
-		{
-			foreach (PropertyInfo propertyInfo in type.GetRuntimeProperties())
+			if (nameCheck.Add(runtimeProperty.Name))
 			{
-				if (nameCheck.Add(propertyInfo.Name))
-				{
-					yield return propertyInfo;
-				}
+				yield return runtimeProperty;
 			}
-			IEnumerator<PropertyInfo> enumerator = null;
-			if (type.BaseType != null)
-			{
-				foreach (PropertyInfo propertyInfo2 in ReflectionExtensions.GetAllPropertiesCore(type.BaseType, nameCheck))
-				{
-					yield return propertyInfo2;
-				}
-				enumerator = null;
-			}
-			yield break;
+		}
+		if (!(type.BaseType != null))
+		{
 			yield break;
 		}
-
-		public static IEnumerable<FieldInfo> GetAllFields(this Type type)
+		foreach (PropertyInfo item in GetAllPropertiesCore(type.BaseType, nameCheck))
 		{
-			return ReflectionExtensions.GetAllFieldsCore(type, new HashSet<string>());
+			yield return item;
 		}
+	}
 
-		private static IEnumerable<FieldInfo> GetAllFieldsCore(Type type, HashSet<string> nameCheck)
+	public static IEnumerable<FieldInfo> GetAllFields(this Type type)
+	{
+		return GetAllFieldsCore(type, new HashSet<string>());
+	}
+
+	private static IEnumerable<FieldInfo> GetAllFieldsCore(Type type, HashSet<string> nameCheck)
+	{
+		foreach (FieldInfo runtimeField in type.GetRuntimeFields())
 		{
-			foreach (FieldInfo fieldInfo in type.GetRuntimeFields())
+			if (nameCheck.Add(runtimeField.Name))
 			{
-				if (nameCheck.Add(fieldInfo.Name))
-				{
-					yield return fieldInfo;
-				}
+				yield return runtimeField;
 			}
-			IEnumerator<FieldInfo> enumerator = null;
-			if (type.BaseType != null)
-			{
-				foreach (FieldInfo fieldInfo2 in ReflectionExtensions.GetAllFieldsCore(type.BaseType, nameCheck))
-				{
-					yield return fieldInfo2;
-				}
-				enumerator = null;
-			}
+		}
+		if (!(type.BaseType != null))
+		{
 			yield break;
-			yield break;
+		}
+		foreach (FieldInfo item in GetAllFieldsCore(type.BaseType, nameCheck))
+		{
+			yield return item;
 		}
 	}
 }

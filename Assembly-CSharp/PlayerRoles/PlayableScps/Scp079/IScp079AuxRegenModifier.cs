@@ -1,11 +1,8 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.Scp079;
 
-namespace PlayerRoles.PlayableScps.Scp079
+public interface IScp079AuxRegenModifier
 {
-	public interface IScp079AuxRegenModifier
-	{
-		string AuxReductionMessage { get; }
+	string AuxReductionMessage { get; }
 
-		float AuxRegenMultiplier { get; }
-	}
+	float AuxRegenMultiplier { get; }
 }

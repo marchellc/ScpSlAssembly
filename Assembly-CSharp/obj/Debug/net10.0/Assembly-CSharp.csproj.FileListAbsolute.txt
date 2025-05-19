@@ -1,3 +1,0 @@
-C:\Users\mcx\Documents\Development\AssemblyDecomp\Assembly-CSharp\obj\Debug\net10.0\Assembly-CSharp.csproj.AssemblyReference.cache
-C:\Users\mcx\Documents\Development\AssemblyDecomp\Assembly-CSharp\obj\Debug\net10.0\Assembly-CSharp.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\mcx\Documents\Development\AssemblyDecomp\Assembly-CSharp\obj\Debug\net10.0\Assembly-CSharp.csproj.CoreCompileInputs.cache

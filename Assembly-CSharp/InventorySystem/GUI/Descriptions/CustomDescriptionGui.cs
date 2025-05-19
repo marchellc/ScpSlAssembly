@@ -1,79 +1,74 @@
-﻿using System;
 using System.Collections.Generic;
 using InventorySystem.Items;
 using TMPro;
 using UnityEngine;
 
-namespace InventorySystem.GUI.Descriptions
+namespace InventorySystem.GUI.Descriptions;
+
+public class CustomDescriptionGui : RadialDescriptionBase
 {
-	public class CustomDescriptionGui : RadialDescriptionBase
+	private readonly Dictionary<CustomDescriptionGui, CustomDescriptionGui> _instancesByPrefab = new Dictionary<CustomDescriptionGui, CustomDescriptionGui>();
+
+	private readonly List<CustomDescriptionGui> _allInstances = new List<CustomDescriptionGui>();
+
+	[SerializeField]
+	private TextMeshProUGUI _title;
+
+	[SerializeField]
+	private TextMeshProUGUI _description;
+
+	[SerializeField]
+	private TextMeshProUGUI[] _dynamicTexts;
+
+	public override void UpdateInfo(ItemBase targetItem, Color roleColor)
 	{
-		public override void UpdateInfo(ItemBase targetItem, Color roleColor)
+		if (!(targetItem is ICustomDescriptionItem customDescriptionItem))
 		{
-			ICustomDescriptionItem customDescriptionItem = targetItem as ICustomDescriptionItem;
-			if (customDescriptionItem == null)
-			{
-				Debug.LogError(string.Format("Item {0} must implement {1} in order to use {2}.", targetItem.ItemTypeId, "ICustomDescriptionItem", "CustomDescriptionGui"));
-				return;
-			}
-			this.DisableAllInstances();
-			this.GetOrAdd(customDescriptionItem.CustomGuiPrefab).UpdateInstance(targetItem.ItemTypeId, customDescriptionItem);
+			Debug.LogError(string.Format("Item {0} must implement {1} in order to use {2}.", targetItem.ItemTypeId, "ICustomDescriptionItem", "CustomDescriptionGui"));
+			return;
 		}
+		DisableAllInstances();
+		GetOrAdd(customDescriptionItem.CustomGuiPrefab).UpdateInstance(targetItem.ItemTypeId, customDescriptionItem);
+	}
 
-		private void DisableAllInstances()
+	private void DisableAllInstances()
+	{
+		foreach (CustomDescriptionGui allInstance in _allInstances)
 		{
-			foreach (CustomDescriptionGui customDescriptionGui in this._allInstances)
-			{
-				customDescriptionGui.gameObject.SetActive(false);
-			}
+			allInstance.gameObject.SetActive(value: false);
 		}
+	}
 
-		private CustomDescriptionGui GetOrAdd(CustomDescriptionGui template)
+	private CustomDescriptionGui GetOrAdd(CustomDescriptionGui template)
+	{
+		if (_instancesByPrefab.TryGetValue(template, out var value))
 		{
-			CustomDescriptionGui customDescriptionGui;
-			if (this._instancesByPrefab.TryGetValue(template, out customDescriptionGui))
-			{
-				return customDescriptionGui;
-			}
-			CustomDescriptionGui customDescriptionGui2 = global::UnityEngine.Object.Instantiate<CustomDescriptionGui>(template, base.transform);
-			this._allInstances.Add(customDescriptionGui2);
-			this._instancesByPrefab[template] = customDescriptionGui2;
-			return customDescriptionGui2;
+			return value;
 		}
+		CustomDescriptionGui customDescriptionGui = Object.Instantiate(template, base.transform);
+		_allInstances.Add(customDescriptionGui);
+		_instancesByPrefab[template] = customDescriptionGui;
+		return customDescriptionGui;
+	}
 
-		private void UpdateInstance(ItemType itemType, ICustomDescriptionItem icd)
+	private void UpdateInstance(ItemType itemType, ICustomDescriptionItem icd)
+	{
+		base.gameObject.SetActive(value: true);
+		if (_title != null)
 		{
-			base.gameObject.SetActive(true);
-			if (this._title != null)
+			_title.text = itemType.GetName();
+		}
+		if (_description != null)
+		{
+			_description.text = itemType.GetDescription();
+		}
+		string[] customDescriptionContent = icd.CustomDescriptionContent;
+		for (int i = 0; i < _dynamicTexts.Length; i++)
+		{
+			if (customDescriptionContent.TryGet(i, out var element))
 			{
-				this._title.text = itemType.GetName();
-			}
-			if (this._description != null)
-			{
-				this._description.text = itemType.GetDescription();
-			}
-			string[] customDescriptionContent = icd.CustomDescriptionContent;
-			for (int i = 0; i < this._dynamicTexts.Length; i++)
-			{
-				string text;
-				if (customDescriptionContent.TryGet(i, out text))
-				{
-					this._dynamicTexts[i].text = text;
-				}
+				_dynamicTexts[i].text = element;
 			}
 		}
-
-		private readonly Dictionary<CustomDescriptionGui, CustomDescriptionGui> _instancesByPrefab = new Dictionary<CustomDescriptionGui, CustomDescriptionGui>();
-
-		private readonly List<CustomDescriptionGui> _allInstances = new List<CustomDescriptionGui>();
-
-		[SerializeField]
-		private TextMeshProUGUI _title;
-
-		[SerializeField]
-		private TextMeshProUGUI _description;
-
-		[SerializeField]
-		private TextMeshProUGUI[] _dynamicTexts;
 	}
 }

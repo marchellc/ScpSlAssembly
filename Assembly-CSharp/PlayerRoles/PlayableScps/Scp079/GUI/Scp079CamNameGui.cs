@@ -1,31 +1,27 @@
-﻿using System;
 using PlayerRoles.PlayableScps.Scp079.Cameras;
 using TMPro;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079.GUI
+namespace PlayerRoles.PlayableScps.Scp079.GUI;
+
+public class Scp079CamNameGui : Scp079GuiElementBase
 {
-	public class Scp079CamNameGui : Scp079GuiElementBase
+	[SerializeField]
+	private TextMeshProUGUI _label;
+
+	private Scp079CurrentCameraSync _curCamSync;
+
+	internal override void Init(Scp079Role role, ReferenceHub owner)
 	{
-		internal override void Init(Scp079Role role, ReferenceHub owner)
+		base.Init(role, owner);
+		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out _curCamSync);
+	}
+
+	private void Update()
+	{
+		if (_curCamSync.TryGetCurrentCamera(out var cam))
 		{
-			base.Init(role, owner);
-			role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out this._curCamSync);
+			_label.text = cam.Label;
 		}
-
-		private void Update()
-		{
-			Scp079Camera scp079Camera;
-			if (!this._curCamSync.TryGetCurrentCamera(out scp079Camera))
-			{
-				return;
-			}
-			this._label.text = scp079Camera.Label;
-		}
-
-		[SerializeField]
-		private TextMeshProUGUI _label;
-
-		private Scp079CurrentCameraSync _curCamSync;
 	}
 }

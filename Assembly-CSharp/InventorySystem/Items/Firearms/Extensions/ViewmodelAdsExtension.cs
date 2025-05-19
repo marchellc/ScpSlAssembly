@@ -1,282 +1,268 @@
-﻿using System;
+using System;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Modules;
 using InventorySystem.Items.Firearms.Modules.Misc;
 using InventorySystem.Items.SwayControllers;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+public class ViewmodelAdsExtension : MonoBehaviour, IViewmodelExtension
 {
-	public class ViewmodelAdsExtension : MonoBehaviour, IViewmodelExtension
+	[Serializable]
+	private struct RandomizerSettings
 	{
-		public GoopSway.GoopSwaySettings AdsSway { get; private set; }
+		public bool Randomize;
 
-		public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
+		public int TotalSights;
+	}
+
+	[Serializable]
+	private class OffsetSettings
+	{
+		public float AdsFov;
+
+		public Vector3 HipPosition;
+
+		public Vector3 AdsPosition;
+
+		public Vector3 AdsRotation;
+
+		public Vector2 AdsSpeedMultiplierOffset;
+
+		public float ShotAnimIntensity = 1f;
+
+		public void Combine(OffsetSettings toCombine)
 		{
-			this._firearm = viewmodel.ParentFirearm;
-			this._viewmodelTr = viewmodel.transform;
-			this._viewmodel = viewmodel;
-			ViewmodelAdsExtension.AdsAttachmentOffset[] attachmentOffsets = this._attachmentOffsets;
-			for (int i = 0; i < attachmentOffsets.Length; i++)
-			{
-				attachmentOffsets[i].TargetAttachment.InitCache(this._firearm);
-			}
-			if (!this._firearm.TryGetModule(out this._adsModule, true))
-			{
-				return;
-			}
-			this.RefreshAttachments();
-			this._initialized = true;
-			this._viewmodel.OnAttachmentsUpdated += this.RefreshAttachments;
-			if (!viewmodel.IsSpectator)
-			{
-				return;
-			}
-			float adsAmountForSerial = LinearAdsModule.GetAdsAmountForSerial(this._firearm.ItemSerial);
-			this._prevAdsAmount = adsAmountForSerial;
-			this._animationTime = adsAmountForSerial;
-			this._returnAnimation = false;
+			AdsFov += toCombine.AdsFov;
+			HipPosition += toCombine.HipPosition;
+			AdsPosition += toCombine.AdsPosition;
+			AdsRotation += toCombine.AdsRotation;
+			AdsSpeedMultiplierOffset += toCombine.AdsSpeedMultiplierOffset;
+			ShotAnimIntensity *= toCombine.ShotAnimIntensity;
 		}
 
-		private void RefreshAttachments()
+		public void SetFrom(OffsetSettings source)
 		{
-			this._combinedSettings.SetFrom(this._defaultOffset);
-			for (int i = 0; i < this._attachmentOffsets.Length; i++)
+			AdsFov = source.AdsFov;
+			HipPosition = source.HipPosition;
+			AdsPosition = source.AdsPosition;
+			AdsRotation = source.AdsRotation;
+			AdsSpeedMultiplierOffset = source.AdsSpeedMultiplierOffset;
+			ShotAnimIntensity = source.ShotAnimIntensity;
+		}
+	}
+
+	[Serializable]
+	private class AdsAttachmentOffset
+	{
+		public AttachmentLink TargetAttachment;
+
+		public OffsetSettings OffsetSettings;
+
+		public bool OverridePrevious;
+	}
+
+	private static readonly AnimationCurve CorrectionCurve = new AnimationCurve(new Keyframe(0f, 0f, 0.052537024f, 0.052537024f, 0f, 0.13378957f), new Keyframe(0.32f, 0.5f, 2.188895f, 2.188895f, 0.3333f, 0.079453f), new Keyframe(0.65f, 1f, -0.003068474f, -0.003068474f, 0.14362735f, 0f));
+
+	private const float OverallAdsAnimSpeedMultiplier = 5f;
+
+	private readonly OffsetSettings _combinedSettings = new OffsetSettings();
+
+	private AnimatedFirearmViewmodel _viewmodel;
+
+	private Transform _viewmodelTr;
+
+	private Firearm _firearm;
+
+	private IAdsModule _adsModule;
+
+	private float _animationTime;
+
+	private bool _prevAdsTarget;
+
+	private float _prevAdsAmount;
+
+	private bool _initialized;
+
+	private bool _returnAnimation;
+
+	private bool _wasTransitioning;
+
+	[Tooltip("Weight of AdsShotBlend at which the weapon does not move when firing.")]
+	[SerializeField]
+	private float _noShootingAnimBlendWeight;
+
+	[SerializeField]
+	private bool _enableShootingAnimReduction;
+
+	[SerializeField]
+	private AnimatorLayerMask _adsAnimsLayer;
+
+	[SerializeField]
+	private OffsetSettings _defaultOffset;
+
+	[SerializeField]
+	private AdsAttachmentOffset[] _attachmentOffsets;
+
+	[SerializeField]
+	private AudioClip _adsInSound;
+
+	[SerializeField]
+	private AudioClip _adsOutSound;
+
+	[SerializeField]
+	private float _adsInAnimationSpeed = 0.8f;
+
+	[SerializeField]
+	private float _adsOutAnimationSpeed = 0.8f;
+
+	[SerializeField]
+	private RandomizerSettings _randomizerSettings;
+
+	[field: SerializeField]
+	public GoopSway.GoopSwaySettings AdsSway { get; private set; }
+
+	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
+	{
+		_firearm = viewmodel.ParentFirearm;
+		_viewmodelTr = viewmodel.transform;
+		_viewmodel = viewmodel;
+		AdsAttachmentOffset[] attachmentOffsets = _attachmentOffsets;
+		for (int i = 0; i < attachmentOffsets.Length; i++)
+		{
+			attachmentOffsets[i].TargetAttachment.InitCache(_firearm);
+		}
+		if (_firearm.TryGetModule<IAdsModule>(out _adsModule))
+		{
+			RefreshAttachments();
+			_initialized = true;
+			_viewmodel.OnAttachmentsUpdated += RefreshAttachments;
+			if (viewmodel.IsSpectator)
 			{
-				ViewmodelAdsExtension.AdsAttachmentOffset adsAttachmentOffset = this._attachmentOffsets[i];
-				if (adsAttachmentOffset.TargetAttachment.Instance.IsEnabled)
+				_animationTime = (_prevAdsAmount = LinearAdsModule.GetAdsAmountForSerial(_firearm.ItemSerial));
+				_returnAnimation = false;
+			}
+		}
+	}
+
+	private void RefreshAttachments()
+	{
+		_combinedSettings.SetFrom(_defaultOffset);
+		for (int i = 0; i < _attachmentOffsets.Length; i++)
+		{
+			AdsAttachmentOffset adsAttachmentOffset = _attachmentOffsets[i];
+			if (adsAttachmentOffset.TargetAttachment.Instance.IsEnabled)
+			{
+				if (adsAttachmentOffset.OverridePrevious)
 				{
-					if (adsAttachmentOffset.OverridePrevious)
-					{
-						this._combinedSettings.SetFrom(adsAttachmentOffset.OffsetSettings);
-					}
-					else
-					{
-						this._combinedSettings.Combine(adsAttachmentOffset.OffsetSettings);
-					}
+					_combinedSettings.SetFrom(adsAttachmentOffset.OffsetSettings);
+				}
+				else
+				{
+					_combinedSettings.Combine(adsAttachmentOffset.OffsetSettings);
 				}
 			}
 		}
+	}
 
-		private void OnValidate()
+	private void OnValidate()
+	{
+		if (_initialized)
 		{
-			if (!this._initialized)
-			{
-				return;
-			}
-			this.RefreshAttachments();
+			RefreshAttachments();
 		}
+	}
 
-		private void Update()
+	private void Update()
+	{
+		if (_initialized)
 		{
-			if (!this._initialized)
+			UpdateOffset();
+			UpdateSounds();
+			int[] layers = _adsAnimsLayer.Layers;
+			foreach (int layer in layers)
 			{
-				return;
-			}
-			this.UpdateOffset();
-			this.UpdateSounds();
-			foreach (int num in this._adsAnimsLayer.Layers)
-			{
-				this.UpdateAnims(num);
+				UpdateAnims(layer);
 			}
 		}
+	}
 
-		private void UpdateOffset()
-		{
-			float num = ViewmodelAdsExtension.CorrectionCurve.Evaluate(this._adsModule.AdsAmount);
-			Vector3 vector = Vector3.Lerp(this._combinedSettings.HipPosition, this._combinedSettings.AdsPosition, num);
-			Quaternion quaternion = Quaternion.Euler(this._combinedSettings.AdsRotation * num);
-			this._viewmodelTr.SetLocalPositionAndRotation(vector, quaternion);
-			this._viewmodel.FovOffset = this._combinedSettings.AdsFov * num;
-		}
+	private void UpdateOffset()
+	{
+		float num = CorrectionCurve.Evaluate(_adsModule.AdsAmount);
+		Vector3 localPosition = Vector3.Lerp(_combinedSettings.HipPosition, _combinedSettings.AdsPosition, num);
+		Quaternion localRotation = Quaternion.Euler(_combinedSettings.AdsRotation * num);
+		_viewmodelTr.SetLocalPositionAndRotation(localPosition, localRotation);
+		_viewmodel.FovOffset = _combinedSettings.AdsFov * num;
+	}
 
-		private void UpdateSounds()
+	private void UpdateSounds()
+	{
+		if (_firearm.TryGetModule<AudioModule>(out var module))
 		{
-			AudioModule audioModule;
-			if (!this._firearm.TryGetModule(out audioModule, true))
-			{
-				return;
-			}
-			float adsAmount = this._adsModule.AdsAmount;
+			float adsAmount = _adsModule.AdsAmount;
 			bool flag = adsAmount > 0f && adsAmount < 1f;
-			if (flag && !this._wasTransitioning)
+			if (flag && !_wasTransitioning)
 			{
-				audioModule.PlayClientside(this._adsModule.AdsTarget ? this._adsInSound : this._adsOutSound);
+				module.PlayClientside(_adsModule.AdsTarget ? _adsInSound : _adsOutSound);
 			}
-			this._wasTransitioning = flag;
+			_wasTransitioning = flag;
 		}
+	}
 
-		private void UpdateAnims(int layer)
+	private void UpdateAnims(int layer)
+	{
+		float adsAmount = _adsModule.AdsAmount;
+		bool adsTarget = _adsModule.AdsTarget;
+		if (_prevAdsTarget != adsTarget)
 		{
-			float adsAmount = this._adsModule.AdsAmount;
-			bool adsTarget = this._adsModule.AdsTarget;
-			if (this._prevAdsTarget != adsTarget)
+			if (adsTarget && _prevAdsAmount <= 0f)
 			{
-				if (adsTarget && this._prevAdsAmount <= 0f)
-				{
-					this._animationTime = 0f;
-					this._returnAnimation = false;
-					this.Randomize();
-				}
-				else if (!adsTarget && this._prevAdsAmount >= 1f)
-				{
-					this._animationTime = 1f;
-					this._returnAnimation = true;
-				}
+				_animationTime = 0f;
+				_returnAnimation = false;
+				Randomize();
 			}
-			float num = (float)(adsTarget ? 1 : 0);
-			float num2 = this._adsInAnimationSpeed + this._combinedSettings.AdsSpeedMultiplierOffset.x;
-			float num3 = this._adsOutAnimationSpeed + this._combinedSettings.AdsSpeedMultiplierOffset.y;
-			float num4 = (this._returnAnimation ? num3 : num2);
-			float num5 = this._firearm.AttachmentsValue(AttachmentParam.AdsSpeedMultiplier) * 5f * num4;
-			this._animationTime = Mathf.MoveTowards(this._animationTime, num, Time.deltaTime * num5);
-			if (this._returnAnimation)
+			else if (!adsTarget && _prevAdsAmount >= 1f)
 			{
-				this._viewmodel.AnimatorPlay(FirearmAnimatorHashes.AdsOutState, layer, 1f - this._animationTime);
-				if (this._animationTime == 1f && adsTarget)
-				{
-					this._returnAnimation = false;
-				}
+				_animationTime = 1f;
+				_returnAnimation = true;
 			}
-			else
-			{
-				this._viewmodel.AnimatorPlay(FirearmAnimatorHashes.AdsInState, layer, this._animationTime);
-			}
-			this._prevAdsTarget = adsTarget;
-			this._prevAdsAmount = adsAmount;
-			this._viewmodel.AnimatorSetFloat(FirearmAnimatorHashes.AdsCurrent, adsAmount);
-			if (!this._enableShootingAnimReduction)
-			{
-				return;
-			}
-			float num6 = Mathf.Lerp(this._noShootingAnimBlendWeight, adsAmount, this._combinedSettings.ShotAnimIntensity);
-			this._viewmodel.AnimatorSetFloat(FirearmAnimatorHashes.AdsShotBlend, adsAmount * num6);
 		}
-
-		private void Randomize()
+		float target = (adsTarget ? 1 : 0);
+		float num = _adsInAnimationSpeed + _combinedSettings.AdsSpeedMultiplierOffset.x;
+		float num2 = _adsOutAnimationSpeed + _combinedSettings.AdsSpeedMultiplierOffset.y;
+		float num3 = (_returnAnimation ? num2 : num);
+		float num4 = _firearm.AttachmentsValue(AttachmentParam.AdsSpeedMultiplier) * 5f * num3;
+		_animationTime = Mathf.MoveTowards(_animationTime, target, Time.deltaTime * num4);
+		if (_returnAnimation)
 		{
-			if (!this._randomizerSettings.Randomize)
+			_viewmodel.AnimatorPlay(FirearmAnimatorHashes.AdsOutState, layer, 1f - _animationTime);
+			if (_animationTime == 1f && adsTarget)
 			{
-				return;
+				_returnAnimation = false;
 			}
-			int num = global::UnityEngine.Random.Range(0, this._randomizerSettings.TotalSights);
-			this._viewmodel.AnimatorSetFloat(FirearmAnimatorHashes.AdsRandom, (float)num);
 		}
-
-		private static readonly AnimationCurve CorrectionCurve = new AnimationCurve(new Keyframe[]
+		else
 		{
-			new Keyframe(0f, 0f, 0.052537024f, 0.052537024f, 0f, 0.13378957f),
-			new Keyframe(0.32f, 0.5f, 2.188895f, 2.188895f, 0.3333f, 0.079453f),
-			new Keyframe(0.65f, 1f, -0.003068474f, -0.003068474f, 0.14362735f, 0f)
-		});
-
-		private const float OverallAdsAnimSpeedMultiplier = 5f;
-
-		private readonly ViewmodelAdsExtension.OffsetSettings _combinedSettings = new ViewmodelAdsExtension.OffsetSettings();
-
-		private AnimatedFirearmViewmodel _viewmodel;
-
-		private Transform _viewmodelTr;
-
-		private Firearm _firearm;
-
-		private IAdsModule _adsModule;
-
-		private float _animationTime;
-
-		private bool _prevAdsTarget;
-
-		private float _prevAdsAmount;
-
-		private bool _initialized;
-
-		private bool _returnAnimation;
-
-		private bool _wasTransitioning;
-
-		[Tooltip("Weight of AdsShotBlend at which the weapon does not move when firing.")]
-		[SerializeField]
-		private float _noShootingAnimBlendWeight;
-
-		[SerializeField]
-		private bool _enableShootingAnimReduction;
-
-		[SerializeField]
-		private AnimatorLayerMask _adsAnimsLayer;
-
-		[SerializeField]
-		private ViewmodelAdsExtension.OffsetSettings _defaultOffset;
-
-		[SerializeField]
-		private ViewmodelAdsExtension.AdsAttachmentOffset[] _attachmentOffsets;
-
-		[SerializeField]
-		private AudioClip _adsInSound;
-
-		[SerializeField]
-		private AudioClip _adsOutSound;
-
-		[SerializeField]
-		private float _adsInAnimationSpeed = 0.8f;
-
-		[SerializeField]
-		private float _adsOutAnimationSpeed = 0.8f;
-
-		[SerializeField]
-		private ViewmodelAdsExtension.RandomizerSettings _randomizerSettings;
-
-		[Serializable]
-		private struct RandomizerSettings
-		{
-			public bool Randomize;
-
-			public int TotalSights;
+			_viewmodel.AnimatorPlay(FirearmAnimatorHashes.AdsInState, layer, _animationTime);
 		}
-
-		[Serializable]
-		private class OffsetSettings
+		_prevAdsTarget = adsTarget;
+		_prevAdsAmount = adsAmount;
+		_viewmodel.AnimatorSetFloat(FirearmAnimatorHashes.AdsCurrent, adsAmount);
+		if (_enableShootingAnimReduction)
 		{
-			public void Combine(ViewmodelAdsExtension.OffsetSettings toCombine)
-			{
-				this.AdsFov += toCombine.AdsFov;
-				this.HipPosition += toCombine.HipPosition;
-				this.AdsPosition += toCombine.AdsPosition;
-				this.AdsRotation += toCombine.AdsRotation;
-				this.AdsSpeedMultiplierOffset += toCombine.AdsSpeedMultiplierOffset;
-				this.ShotAnimIntensity *= toCombine.ShotAnimIntensity;
-			}
-
-			public void SetFrom(ViewmodelAdsExtension.OffsetSettings source)
-			{
-				this.AdsFov = source.AdsFov;
-				this.HipPosition = source.HipPosition;
-				this.AdsPosition = source.AdsPosition;
-				this.AdsRotation = source.AdsRotation;
-				this.AdsSpeedMultiplierOffset = source.AdsSpeedMultiplierOffset;
-				this.ShotAnimIntensity = source.ShotAnimIntensity;
-			}
-
-			public float AdsFov;
-
-			public Vector3 HipPosition;
-
-			public Vector3 AdsPosition;
-
-			public Vector3 AdsRotation;
-
-			public Vector2 AdsSpeedMultiplierOffset;
-
-			public float ShotAnimIntensity = 1f;
+			float num5 = Mathf.Lerp(_noShootingAnimBlendWeight, adsAmount, _combinedSettings.ShotAnimIntensity);
+			_viewmodel.AnimatorSetFloat(FirearmAnimatorHashes.AdsShotBlend, adsAmount * num5);
 		}
+	}
 
-		[Serializable]
-		private class AdsAttachmentOffset
+	private void Randomize()
+	{
+		if (_randomizerSettings.Randomize)
 		{
-			public AttachmentLink TargetAttachment;
-
-			public ViewmodelAdsExtension.OffsetSettings OffsetSettings;
-
-			public bool OverridePrevious;
+			int num = UnityEngine.Random.Range(0, _randomizerSettings.TotalSights);
+			_viewmodel.AnimatorSetFloat(FirearmAnimatorHashes.AdsRandom, num);
 		}
 	}
 }

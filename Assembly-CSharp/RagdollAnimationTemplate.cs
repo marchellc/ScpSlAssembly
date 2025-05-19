@@ -1,35 +1,9 @@
-﻿using System;
+using System;
 using PlayerRoles.Ragdolls;
 using UnityEngine;
 
 public class RagdollAnimationTemplate : MonoBehaviour
 {
-	public void ProcessRagdoll(BasicRagdoll rg)
-	{
-		DynamicRagdoll dynamicRagdoll = rg as DynamicRagdoll;
-		if (dynamicRagdoll == null)
-		{
-			return;
-		}
-		int num = Mathf.Min(this._bones.Length, dynamicRagdoll.LinkedRigidbodies.Length);
-		rg.transform.rotation *= this._overallRotation;
-		for (int i = 0; i < num; i++)
-		{
-			Rigidbody rigidbody = dynamicRagdoll.LinkedRigidbodies[i];
-			RagdollAnimationTemplate.RagdollBone ragdollBone = this._bones[i];
-			Transform transform = rigidbody.transform;
-			transform.localRotation = ragdollBone.RotationOffset;
-			transform.position = rg.Info.StartPosition + rg.Info.StartRotation * ragdollBone.PositionOffset;
-			rigidbody.velocity = rg.Info.StartRotation * ragdollBone.StartVelocity;
-		}
-	}
-
-	[SerializeField]
-	private RagdollAnimationTemplate.RagdollBone[] _bones;
-
-	[SerializeField]
-	private Quaternion _overallRotation;
-
 	[Serializable]
 	private struct RagdollBone
 	{
@@ -38,5 +12,29 @@ public class RagdollAnimationTemplate : MonoBehaviour
 		public Quaternion RotationOffset;
 
 		public Vector3 StartVelocity;
+	}
+
+	[SerializeField]
+	private RagdollBone[] _bones;
+
+	[SerializeField]
+	private Quaternion _overallRotation;
+
+	public void ProcessRagdoll(BasicRagdoll rg)
+	{
+		if (rg is DynamicRagdoll dynamicRagdoll)
+		{
+			int num = Mathf.Min(_bones.Length, dynamicRagdoll.LinkedRigidbodies.Length);
+			rg.transform.rotation *= _overallRotation;
+			for (int i = 0; i < num; i++)
+			{
+				Rigidbody obj = dynamicRagdoll.LinkedRigidbodies[i];
+				RagdollBone ragdollBone = _bones[i];
+				Transform obj2 = obj.transform;
+				obj2.localRotation = ragdollBone.RotationOffset;
+				obj2.position = rg.Info.StartPosition + rg.Info.StartRotation * ragdollBone.PositionOffset;
+				obj.linearVelocity = rg.Info.StartRotation * ragdollBone.StartVelocity;
+			}
+		}
 	}
 }

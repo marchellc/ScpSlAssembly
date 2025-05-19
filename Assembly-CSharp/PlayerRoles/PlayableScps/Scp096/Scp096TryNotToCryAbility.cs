@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using CursorManagement;
 using LabApi.Events.Arguments.Scp096Events;
@@ -10,391 +10,366 @@ using PlayerRoles.Subroutines;
 using RelativePositioning;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp096
+namespace PlayerRoles.PlayableScps.Scp096;
+
+public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverride
 {
-	public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverride
+	private const float HumeRegenerationMultiplier = 2f;
+
+	[SerializeField]
+	private float _clientDotTolerance;
+
+	[SerializeField]
+	private float _serverDotTolerance;
+
+	[SerializeField]
+	private float _clientDisTolerance;
+
+	[SerializeField]
+	private float _serverDisTolerance;
+
+	[SerializeField]
+	private float _maxVerticalAngle;
+
+	[SerializeField]
+	private float _maxDistance;
+
+	[SerializeField]
+	private float _minWidth;
+
+	[SerializeField]
+	private float _sideOffset;
+
+	[SerializeField]
+	private float _groundLevelMaxDiff;
+
+	private DynamicHumeShieldController _dhs;
+
+	private RelativePosition _syncPoint;
+
+	private Quaternion _syncRot;
+
+	private float _cachedBaseRegen;
+
+	private bool _canceled;
+
+	private readonly Stopwatch _freezeSw = new Stopwatch();
+
+	private const float AbsFreezeDuration = 0.1f;
+
+	private const float RadiusTolerance = 0.9f;
+
+	private static readonly Quaternion[] RotationAngles = new Quaternion[2]
 	{
-		public CursorOverrideMode CursorOverride
-		{
-			get
-			{
-				return CursorOverrideMode.NoOverride;
-			}
-		}
+		Quaternion.Euler(Vector3.up * 90f),
+		Quaternion.Euler(Vector3.down * 90f)
+	};
 
-		public bool LockMovement
-		{
-			get
-			{
-				if (!base.Owner.isLocalPlayer || this._canceled)
-				{
-					return false;
-				}
-				if (this.IsActive)
-				{
-					return true;
-				}
-				if (!this._freezeSw.IsRunning)
-				{
-					return false;
-				}
-				double num = NetworkTime.rtt + 0.10000000149011612;
-				return this._freezeSw.Elapsed.TotalSeconds < num;
-			}
-		}
+	private static readonly ActionName[] CancelKeys = new ActionName[5]
+	{
+		ActionName.MoveBackward,
+		ActionName.MoveForward,
+		ActionName.MoveLeft,
+		ActionName.MoveRight,
+		ActionName.Jump
+	};
 
-		protected override ActionName TargetKey
-		{
-			get
-			{
-				return ActionName.Zoom;
-			}
-		}
+	private static readonly CachedLayerMask Mask = new CachedLayerMask("Door", "Glass", "Default");
 
-		private bool IsActive
+	private static readonly float[] Heights = new float[3] { 0f, -0.4f, -0.9f };
+
+	private static readonly Vector3[] Offsets = new Vector3[RotationAngles.Length + 1];
+
+	private static readonly Vector3[] GroundPoints = new Vector3[4];
+
+	public CursorOverrideMode CursorOverride => CursorOverrideMode.NoOverride;
+
+	public bool LockMovement
+	{
+		get
 		{
-			get
+			if (!base.Owner.isLocalPlayer || _canceled)
 			{
-				return base.CastRole.IsAbilityState(Scp096AbilityState.TryingNotToCry);
+				return false;
 			}
-			set
+			if (IsActive)
 			{
-				if (!NetworkServer.active)
-				{
-					throw new InvalidOperationException(string.Format("Cannot set {0}.{1} as client.", this, "IsActive"));
-				}
-				if (this.IsActive == value)
-				{
-					return;
-				}
-				if (!value)
-				{
-					if (this.IsActive)
-					{
-						Scp096StartCryingEventArgs scp096StartCryingEventArgs = new Scp096StartCryingEventArgs(base.Owner);
-						Scp096Events.OnStartCrying(scp096StartCryingEventArgs);
-						if (!scp096StartCryingEventArgs.IsAllowed)
-						{
-							return;
-						}
-						base.CastRole.ResetAbilityState();
-						this._dhs.RegenerationRate = this._cachedBaseRegen;
-						Scp096Events.OnStartedCrying(new Scp096StartedCryingEventArgs(base.Owner));
-					}
-					return;
-				}
+				return true;
+			}
+			if (!_freezeSw.IsRunning)
+			{
+				return false;
+			}
+			double num = NetworkTime.rtt + 0.10000000149011612;
+			return _freezeSw.Elapsed.TotalSeconds < num;
+		}
+	}
+
+	protected override ActionName TargetKey => ActionName.Zoom;
+
+	private bool IsActive
+	{
+		get
+		{
+			return base.CastRole.IsAbilityState(Scp096AbilityState.TryingNotToCry);
+		}
+		set
+		{
+			if (!NetworkServer.active)
+			{
+				throw new InvalidOperationException(string.Format("Cannot set {0}.{1} as client.", this, "IsActive"));
+			}
+			if (IsActive == value)
+			{
+				return;
+			}
+			if (value)
+			{
 				Scp096TryingNotToCryEventArgs scp096TryingNotToCryEventArgs = new Scp096TryingNotToCryEventArgs(base.Owner);
 				Scp096Events.OnTryingNotToCry(scp096TryingNotToCryEventArgs);
-				if (!scp096TryingNotToCryEventArgs.IsAllowed)
+				if (scp096TryingNotToCryEventArgs.IsAllowed)
 				{
-					return;
+					base.CastRole.StateController.SetAbilityState(Scp096AbilityState.TryingNotToCry);
+					_dhs.RegenerationRate = _cachedBaseRegen * 2f;
+					Scp096Events.OnTriedNotToCry(new Scp096TriedNotToCryEventArgs(base.Owner));
 				}
-				base.CastRole.StateController.SetAbilityState(Scp096AbilityState.TryingNotToCry);
-				this._dhs.RegenerationRate = this._cachedBaseRegen * 2f;
-				Scp096Events.OnTriedNotToCry(new Scp096TriedNotToCryEventArgs(base.Owner));
+			}
+			else if (IsActive)
+			{
+				Scp096StartCryingEventArgs scp096StartCryingEventArgs = new Scp096StartCryingEventArgs(base.Owner);
+				Scp096Events.OnStartCrying(scp096StartCryingEventArgs);
+				if (scp096StartCryingEventArgs.IsAllowed)
+				{
+					base.CastRole.ResetAbilityState();
+					_dhs.RegenerationRate = _cachedBaseRegen;
+					Scp096Events.OnStartedCrying(new Scp096StartedCryingEventArgs(base.Owner));
+				}
 			}
 		}
+	}
 
-		protected override void Update()
+	protected override void Update()
+	{
+		base.Update();
+		if (IsActive)
 		{
-			base.Update();
-			if (!this.IsActive)
-			{
-				return;
-			}
 			if (base.Owner.isLocalPlayer)
 			{
-				this.UpdateClient();
+				UpdateClient();
 			}
-			if (NetworkServer.active && !this.ServerValidate())
+			if (NetworkServer.active && !ServerValidate())
 			{
-				this.IsActive = false;
+				IsActive = false;
 			}
 		}
+	}
 
-		protected override void OnKeyDown()
+	protected override void OnKeyDown()
+	{
+		base.OnKeyDown();
+		if (!IsActive && ValidatePoint())
 		{
-			base.OnKeyDown();
-			if (this.IsActive || !this.ValidatePoint())
-			{
-				return;
-			}
-			this._canceled = false;
-			this._freezeSw.Restart();
-			base.ClientSendCmd();
+			_canceled = false;
+			_freezeSw.Restart();
+			ClientSendCmd();
 		}
+	}
 
-		public override void ClientWriteCmd(NetworkWriter writer)
+	public override void ClientWriteCmd(NetworkWriter writer)
+	{
+		base.ClientWriteCmd(writer);
+		if (!_canceled)
 		{
-			base.ClientWriteCmd(writer);
-			if (this._canceled)
+			RelativePosition msg = new RelativePosition(base.CastRole.FpcModule.Position);
+			if (WaypointBase.TryGetWaypoint(msg.WaypointId, out var wp))
 			{
-				return;
-			}
-			RelativePosition relativePosition = new RelativePosition(base.CastRole.FpcModule.Position);
-			WaypointBase waypointBase;
-			if (!WaypointBase.TryGetWaypoint(relativePosition.WaypointId, out waypointBase))
-			{
-				return;
-			}
-			writer.WriteRelativePosition(relativePosition);
-			writer.WriteQuaternion(waypointBase.GetRelativeRotation(base.Owner.PlayerCameraReference.rotation));
-		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			if (reader.Position >= reader.Capacity)
-			{
-				this.IsActive = false;
-				return;
-			}
-			this._syncPoint = reader.ReadRelativePosition();
-			this._syncRot = reader.ReadQuaternion();
-			this.IsActive = this.ServerValidate();
-		}
-
-		public override void SpawnObject()
-		{
-			base.SpawnObject();
-			CursorManager.Register(this);
-			DynamicHumeShieldController dynamicHumeShieldController = base.CastRole.HumeShieldModule as DynamicHumeShieldController;
-			if (dynamicHumeShieldController == null)
-			{
-				return;
-			}
-			this._cachedBaseRegen = dynamicHumeShieldController.RegenerationRate;
-			this._dhs = dynamicHumeShieldController;
-		}
-
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			this._freezeSw.Reset();
-			this._dhs.RegenerationRate = this._cachedBaseRegen;
-			CursorManager.Unregister(this);
-		}
-
-		private void UpdateClient()
-		{
-			if (this._canceled)
-			{
-				return;
-			}
-			ActionName[] cancelKeys = Scp096TryNotToCryAbility.CancelKeys;
-			for (int i = 0; i < cancelKeys.Length; i++)
-			{
-				if (Input.GetKeyDown(NewInput.GetKey(cancelKeys[i], KeyCode.None)))
-				{
-					this._canceled = true;
-					base.ClientSendCmd();
-					return;
-				}
+				writer.WriteRelativePosition(msg);
+				writer.WriteQuaternion(wp.GetRelativeRotation(base.Owner.PlayerCameraReference.rotation));
 			}
 		}
+	}
 
-		private bool ServerValidate()
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (reader.Position >= reader.Capacity)
 		{
-			if (base.CastRole.StateController.RageState != Scp096RageState.Docile)
+			IsActive = false;
+			return;
+		}
+		_syncPoint = reader.ReadRelativePosition();
+		_syncRot = reader.ReadQuaternion();
+		IsActive = ServerValidate();
+	}
+
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		CursorManager.Register(this);
+		if (base.CastRole.HumeShieldModule is DynamicHumeShieldController dynamicHumeShieldController)
+		{
+			_cachedBaseRegen = dynamicHumeShieldController.RegenerationRate;
+			_dhs = dynamicHumeShieldController;
+		}
+	}
+
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		_freezeSw.Reset();
+		_dhs.RegenerationRate = _cachedBaseRegen;
+		CursorManager.Unregister(this);
+	}
+
+	private void UpdateClient()
+	{
+		if (_canceled)
+		{
+			return;
+		}
+		ActionName[] cancelKeys = CancelKeys;
+		for (int i = 0; i < cancelKeys.Length; i++)
+		{
+			if (Input.GetKeyDown(NewInput.GetKey(cancelKeys[i])))
+			{
+				_canceled = true;
+				ClientSendCmd();
+				break;
+			}
+		}
+	}
+
+	private bool ServerValidate()
+	{
+		if (base.CastRole.StateController.RageState != 0)
+		{
+			return false;
+		}
+		if (!WaypointBase.TryGetWaypoint(_syncPoint.WaypointId, out var wp))
+		{
+			return false;
+		}
+		Vector3 worldspacePosition = wp.GetWorldspacePosition(_syncPoint.Relative);
+		Quaternion worldspaceRotation = wp.GetWorldspaceRotation(_syncRot);
+		using (new FpcBacktracker(base.Owner, worldspacePosition, worldspaceRotation))
+		{
+			return ValidatePoint();
+		}
+	}
+
+	private bool ValidatePoint()
+	{
+		if (ValidateGround())
+		{
+			return ValidateWall();
+		}
+		return false;
+	}
+
+	private bool ValidateGround()
+	{
+		if (!base.CastRole.FpcModule.IsGrounded)
+		{
+			return false;
+		}
+		Transform transform = base.Owner.transform;
+		float height = base.CastRole.FpcModule.CharController.height;
+		float num = base.CastRole.FpcModule.CharController.radius * 0.9f;
+		GroundPoints[0] = transform.position + transform.forward * num;
+		GroundPoints[1] = transform.position + transform.right * num;
+		GroundPoints[2] = transform.position - transform.forward * num;
+		GroundPoints[3] = transform.position - transform.right * num;
+		float num2 = float.MaxValue;
+		float num3 = 0f;
+		for (int i = 0; i < GroundPoints.Length; i++)
+		{
+			if (!Physics.Raycast(GroundPoints[i], Vector3.down, out var hitInfo, height, Mask))
 			{
 				return false;
 			}
-			WaypointBase waypointBase;
-			if (!WaypointBase.TryGetWaypoint(this._syncPoint.WaypointId, out waypointBase))
+			float distance = hitInfo.distance;
+			if (distance < num2)
+			{
+				num2 = distance;
+			}
+			if (distance > num3)
+			{
+				num3 = distance;
+			}
+			if (num3 - num2 > _groundLevelMaxDiff)
 			{
 				return false;
 			}
-			Vector3 worldspacePosition = waypointBase.GetWorldspacePosition(this._syncPoint.Relative);
-			Quaternion worldspaceRotation = waypointBase.GetWorldspaceRotation(this._syncRot);
-			bool flag;
-			using (new FpcBacktracker(base.Owner, worldspacePosition, worldspaceRotation, 0.1f, 0.15f))
-			{
-				flag = this.ValidatePoint();
-			}
-			return flag;
 		}
+		return true;
+	}
 
-		private bool ValidatePoint()
+	private bool ValidateWall()
+	{
+		Vector3 position = base.Owner.PlayerCameraReference.position;
+		Vector3 forward = base.Owner.PlayerCameraReference.forward;
+		if (base.Owner.isLocalPlayer && Mathf.Abs(base.CastRole.FpcModule.MouseLook.CurrentVertical) > _maxVerticalAngle)
 		{
-			return this.ValidateGround() && this.ValidateWall();
+			return false;
 		}
-
-		private bool ValidateGround()
+		forward.y = 0f;
+		float magnitude = forward.magnitude;
+		if (magnitude == 0f)
 		{
-			if (!base.CastRole.FpcModule.IsGrounded)
+			return false;
+		}
+		forward /= magnitude;
+		if (!Physics.Raycast(position, forward, out var hitInfo, _maxDistance, Mask))
+		{
+			return false;
+		}
+		float num = (base.Owner.isLocalPlayer ? _clientDotTolerance : _serverDotTolerance);
+		Vector3 normal = hitInfo.normal;
+		if (Vector3.Dot(forward, normal) > num)
+		{
+			return false;
+		}
+		Vector3 vector = position + normal * _minWidth;
+		Vector3 start = vector + Vector3.down * _sideOffset;
+		Vector3 end = vector + Vector3.up * (Heights[Heights.Length - 1] + _sideOffset);
+		if (Physics.CheckCapsule(start, end, _sideOffset, Mask))
+		{
+			return false;
+		}
+		float num2 = (base.Owner.isLocalPlayer ? _clientDisTolerance : _serverDisTolerance);
+		float num3 = float.MaxValue;
+		float num4 = 0f;
+		for (int i = 0; i < RotationAngles.Length; i++)
+		{
+			Offsets[i] = RotationAngles[i] * normal;
+		}
+		for (int j = 0; j < Offsets.Length; j++)
+		{
+			for (int k = 0; k < Heights.Length; k++)
 			{
-				return false;
-			}
-			Transform transform = base.Owner.transform;
-			float height = base.CastRole.FpcModule.CharController.height;
-			float num = base.CastRole.FpcModule.CharController.radius * 0.9f;
-			Scp096TryNotToCryAbility.GroundPoints[0] = transform.position + transform.forward * num;
-			Scp096TryNotToCryAbility.GroundPoints[1] = transform.position + transform.right * num;
-			Scp096TryNotToCryAbility.GroundPoints[2] = transform.position - transform.forward * num;
-			Scp096TryNotToCryAbility.GroundPoints[3] = transform.position - transform.right * num;
-			float num2 = float.MaxValue;
-			float num3 = 0f;
-			for (int i = 0; i < Scp096TryNotToCryAbility.GroundPoints.Length; i++)
-			{
-				RaycastHit raycastHit;
-				if (!Physics.Raycast(Scp096TryNotToCryAbility.GroundPoints[i], Vector3.down, out raycastHit, height, Scp096TryNotToCryAbility.Mask))
+				if (!Physics.Raycast(Offsets[j] * _sideOffset + normal + position + Vector3.up * Heights[k], -normal, out var hitInfo2, _maxDistance, Mask))
 				{
 					return false;
 				}
-				float distance = raycastHit.distance;
-				if (distance < num2)
+				if (Vector3.Dot(forward, normal) > num)
 				{
-					num2 = distance;
+					return false;
 				}
-				if (distance > num3)
+				float distance = hitInfo2.distance;
+				if (distance < num3)
 				{
 					num3 = distance;
 				}
-				if (num3 - num2 > this._groundLevelMaxDiff)
+				if (distance > num4)
+				{
+					num4 = distance;
+				}
+				if (num4 - num3 > num2)
 				{
 					return false;
 				}
 			}
-			return true;
 		}
-
-		private bool ValidateWall()
-		{
-			Vector3 position = base.Owner.PlayerCameraReference.position;
-			Vector3 vector = base.Owner.PlayerCameraReference.forward;
-			if (base.Owner.isLocalPlayer && Mathf.Abs(base.CastRole.FpcModule.MouseLook.CurrentVertical) > this._maxVerticalAngle)
-			{
-				return false;
-			}
-			vector.y = 0f;
-			float magnitude = vector.magnitude;
-			if (magnitude == 0f)
-			{
-				return false;
-			}
-			vector /= magnitude;
-			RaycastHit raycastHit;
-			if (!Physics.Raycast(position, vector, out raycastHit, this._maxDistance, Scp096TryNotToCryAbility.Mask))
-			{
-				return false;
-			}
-			float num = (base.Owner.isLocalPlayer ? this._clientDotTolerance : this._serverDotTolerance);
-			Vector3 normal = raycastHit.normal;
-			if (Vector3.Dot(vector, normal) > num)
-			{
-				return false;
-			}
-			Vector3 vector2 = position + normal * this._minWidth;
-			Vector3 vector3 = vector2 + Vector3.down * this._sideOffset;
-			Vector3 vector4 = vector2 + Vector3.up * (Scp096TryNotToCryAbility.Heights[Scp096TryNotToCryAbility.Heights.Length - 1] + this._sideOffset);
-			if (Physics.CheckCapsule(vector3, vector4, this._sideOffset, Scp096TryNotToCryAbility.Mask))
-			{
-				return false;
-			}
-			float num2 = (base.Owner.isLocalPlayer ? this._clientDisTolerance : this._serverDisTolerance);
-			float num3 = float.MaxValue;
-			float num4 = 0f;
-			for (int i = 0; i < Scp096TryNotToCryAbility.RotationAngles.Length; i++)
-			{
-				Scp096TryNotToCryAbility.Offsets[i] = Scp096TryNotToCryAbility.RotationAngles[i] * normal;
-			}
-			for (int j = 0; j < Scp096TryNotToCryAbility.Offsets.Length; j++)
-			{
-				for (int k = 0; k < Scp096TryNotToCryAbility.Heights.Length; k++)
-				{
-					RaycastHit raycastHit2;
-					if (!Physics.Raycast(Scp096TryNotToCryAbility.Offsets[j] * this._sideOffset + normal + position + Vector3.up * Scp096TryNotToCryAbility.Heights[k], -normal, out raycastHit2, this._maxDistance, Scp096TryNotToCryAbility.Mask))
-					{
-						return false;
-					}
-					if (Vector3.Dot(vector, normal) > num)
-					{
-						return false;
-					}
-					float distance = raycastHit2.distance;
-					if (distance < num3)
-					{
-						num3 = distance;
-					}
-					if (distance > num4)
-					{
-						num4 = distance;
-					}
-					if (num4 - num3 > num2)
-					{
-						return false;
-					}
-				}
-			}
-			return true;
-		}
-
-		private const float HumeRegenerationMultiplier = 2f;
-
-		[SerializeField]
-		private float _clientDotTolerance;
-
-		[SerializeField]
-		private float _serverDotTolerance;
-
-		[SerializeField]
-		private float _clientDisTolerance;
-
-		[SerializeField]
-		private float _serverDisTolerance;
-
-		[SerializeField]
-		private float _maxVerticalAngle;
-
-		[SerializeField]
-		private float _maxDistance;
-
-		[SerializeField]
-		private float _minWidth;
-
-		[SerializeField]
-		private float _sideOffset;
-
-		[SerializeField]
-		private float _groundLevelMaxDiff;
-
-		private DynamicHumeShieldController _dhs;
-
-		private RelativePosition _syncPoint;
-
-		private Quaternion _syncRot;
-
-		private float _cachedBaseRegen;
-
-		private bool _canceled;
-
-		private readonly Stopwatch _freezeSw = new Stopwatch();
-
-		private const float AbsFreezeDuration = 0.1f;
-
-		private const float RadiusTolerance = 0.9f;
-
-		private static readonly Quaternion[] RotationAngles = new Quaternion[]
-		{
-			Quaternion.Euler(Vector3.up * 90f),
-			Quaternion.Euler(Vector3.down * 90f)
-		};
-
-		private static readonly ActionName[] CancelKeys = new ActionName[]
-		{
-			ActionName.MoveBackward,
-			ActionName.MoveForward,
-			ActionName.MoveLeft,
-			ActionName.MoveRight,
-			ActionName.Jump
-		};
-
-		private static readonly CachedLayerMask Mask = new CachedLayerMask(new string[] { "Door", "Glass", "Default" });
-
-		private static readonly float[] Heights = new float[] { 0f, -0.4f, -0.9f };
-
-		private static readonly Vector3[] Offsets = new Vector3[Scp096TryNotToCryAbility.RotationAngles.Length + 1];
-
-		private static readonly Vector3[] GroundPoints = new Vector3[4];
+		return true;
 	}
 }

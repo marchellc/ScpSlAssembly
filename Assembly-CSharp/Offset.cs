@@ -1,34 +1,43 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 [Serializable]
 public struct Offset : IEquatable<Offset>
 {
+	public Vector3 position;
+
+	public Vector3 rotation;
+
+	public Vector3 scale;
+
 	public bool Equals(Offset other)
 	{
-		return this.position == other.position && this.rotation == other.rotation && this.scale == other.scale;
+		if (position == other.position && rotation == other.rotation)
+		{
+			return scale == other.scale;
+		}
+		return false;
 	}
 
 	public override bool Equals(object obj)
 	{
-		if (obj is Offset)
+		if (obj is Offset other)
 		{
-			Offset offset = (Offset)obj;
-			return this.Equals(offset);
+			return Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((this.position.GetHashCode() * 397) ^ this.rotation.GetHashCode()) * 397) ^ this.scale.GetHashCode();
+		return (((position.GetHashCode() * 397) ^ rotation.GetHashCode()) * 397) ^ scale.GetHashCode();
 	}
 
 	public Offset(Transform t, bool local)
 	{
-		this.position = (local ? t.localPosition : t.position);
-		this.rotation = (local ? t.localEulerAngles : t.eulerAngles);
-		this.scale = t.localScale;
+		position = (local ? t.localPosition : t.position);
+		rotation = (local ? t.localEulerAngles : t.eulerAngles);
+		scale = t.localScale;
 	}
 
 	public static bool operator ==(Offset left, Offset right)
@@ -40,10 +49,4 @@ public struct Offset : IEquatable<Offset>
 	{
 		return !left.Equals(right);
 	}
-
-	public Vector3 position;
-
-	public Vector3 rotation;
-
-	public Vector3 scale;
 }

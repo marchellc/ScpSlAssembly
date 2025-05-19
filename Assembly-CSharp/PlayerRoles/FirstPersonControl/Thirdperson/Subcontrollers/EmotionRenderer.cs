@@ -1,51 +1,51 @@
-﻿using System;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
+
+public class EmotionRenderer : MonoBehaviour
 {
-	public class EmotionRenderer : MonoBehaviour
+	private SkinnedMeshRenderer _rend;
+
+	private int?[] _blendshapeToIndex;
+
+	[field: SerializeField]
+	public EmotionBlendshape[] Blendshapes { get; private set; }
+
+	private void Awake()
 	{
-		public EmotionBlendshape[] Blendshapes { get; private set; }
-
-		private void Awake()
+		_rend = GetComponent<SkinnedMeshRenderer>();
+		_blendshapeToIndex = new int?[EnumUtils<EmotionBlendshape>.Values.Length];
+		for (int i = 0; i < Blendshapes.Length; i++)
 		{
-			this._rend = base.GetComponent<SkinnedMeshRenderer>();
-			this._blendshapeToIndex = new int?[EnumUtils<EmotionBlendshape>.Values.Length];
-			for (int i = 0; i < this.Blendshapes.Length; i++)
-			{
-				this._blendshapeToIndex[(int)this.Blendshapes[i]] = new int?(i);
-			}
+			_blendshapeToIndex[(int)Blendshapes[i]] = i;
 		}
+	}
 
-		public float GetWeight(EmotionBlendshape blendshape)
+	public float GetWeight(EmotionBlendshape blendshape)
+	{
+		int? num = _blendshapeToIndex[(int)blendshape];
+		if (!num.HasValue)
 		{
-			int? num = this._blendshapeToIndex[(int)blendshape];
-			if (num == null)
-			{
-				return 0f;
-			}
-			return this._rend.GetBlendShapeWeight(num.Value) * 100f;
+			return 0f;
 		}
+		return _rend.GetBlendShapeWeight(num.Value) * 100f;
+	}
 
-		public void SetWeight(EmotionBlendshape blendshape, float weight)
+	public void SetWeight(EmotionBlendshape blendshape, float weight)
+	{
+		int? num = _blendshapeToIndex[(int)blendshape];
+		if (num.HasValue)
 		{
-			int? num = this._blendshapeToIndex[(int)blendshape];
-			if (num != null)
-			{
-				this._rend.SetBlendShapeWeight(num.Value, weight * 100f);
-			}
+			_rend.SetBlendShapeWeight(num.Value, weight * 100f);
 		}
+	}
 
-		public void ResetWeights()
+	public void ResetWeights()
+	{
+		EmotionBlendshape[] blendshapes = Blendshapes;
+		foreach (EmotionBlendshape blendshape in blendshapes)
 		{
-			foreach (EmotionBlendshape emotionBlendshape in this.Blendshapes)
-			{
-				this.SetWeight(emotionBlendshape, 0f);
-			}
+			SetWeight(blendshape, 0f);
 		}
-
-		private SkinnedMeshRenderer _rend;
-
-		private int?[] _blendshapeToIndex;
 	}
 }

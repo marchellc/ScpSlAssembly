@@ -1,10 +1,7 @@
-﻿using System;
+namespace LiteNetLib;
 
-namespace LiteNetLib
+public enum NatAddressType
 {
-	public enum NatAddressType
-	{
-		Internal,
-		External
-	}
+	Internal,
+	External
 }

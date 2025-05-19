@@ -1,24 +1,22 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using MEC;
 
-namespace Waits
+namespace Waits;
+
+public abstract class UntilWait : Wait
 {
-	public abstract class UntilWait : Wait
+	private Func<bool> allocatedPredicate;
+
+	protected virtual void Awake()
 	{
-		protected virtual void Awake()
-		{
-			this.allocatedPredicate = new Func<bool>(this.Predicate);
-		}
+		allocatedPredicate = Predicate;
+	}
 
-		protected abstract bool Predicate();
+	protected abstract bool Predicate();
 
-		public override IEnumerator<float> _Run()
-		{
-			yield return Timing.WaitUntilTrue(this.allocatedPredicate);
-			yield break;
-		}
-
-		private Func<bool> allocatedPredicate;
+	public override IEnumerator<float> _Run()
+	{
+		yield return Timing.WaitUntilTrue(allocatedPredicate);
 	}
 }

@@ -1,19 +1,18 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using InventorySystem.Items.Firearms.Attachments.Components;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms
+namespace InventorySystem.Items.Firearms;
+
+public static class FirearmUtils
 {
-	public static class FirearmUtils
+	private static readonly Dictionary<RuntimeAnimatorController, HashSet<int>> ExistingHashes = new Dictionary<RuntimeAnimatorController, HashSet<int>>();
+
+	public static void AnimSetInt(this Firearm fa, int hash, int i, bool checkIfExists = false)
 	{
-		public static void AnimSetInt(this Firearm fa, int hash, int i, bool checkIfExists = false)
+		if (!checkIfExists || HasParam(fa, hash))
 		{
-			if (checkIfExists && !FirearmUtils.HasParam(fa, hash))
-			{
-				return;
-			}
 			if (fa.IsServer)
 			{
 				fa.ServerSideAnimator.SetInteger(hash, i);
@@ -23,13 +22,12 @@ namespace InventorySystem.Items.Firearms
 				fa.ClientViewmodelInstance.AnimatorSetInt(hash, i);
 			}
 		}
+	}
 
-		public static void AnimSetFloat(this Firearm fa, int hash, float f, bool checkIfExists = false)
+	public static void AnimSetFloat(this Firearm fa, int hash, float f, bool checkIfExists = false)
+	{
+		if (!checkIfExists || HasParam(fa, hash))
 		{
-			if (checkIfExists && !FirearmUtils.HasParam(fa, hash))
-			{
-				return;
-			}
 			if (fa.IsServer)
 			{
 				fa.ServerSideAnimator.SetFloat(hash, f);
@@ -39,13 +37,12 @@ namespace InventorySystem.Items.Firearms
 				fa.ClientViewmodelInstance.AnimatorSetFloat(hash, f);
 			}
 		}
+	}
 
-		public static void AnimSetBool(this Firearm fa, int hash, bool b, bool checkIfExists = false)
+	public static void AnimSetBool(this Firearm fa, int hash, bool b, bool checkIfExists = false)
+	{
+		if (!checkIfExists || HasParam(fa, hash))
 		{
-			if (checkIfExists && !FirearmUtils.HasParam(fa, hash))
-			{
-				return;
-			}
 			if (fa.IsServer)
 			{
 				fa.ServerSideAnimator.SetBool(hash, b);
@@ -55,13 +52,12 @@ namespace InventorySystem.Items.Firearms
 				fa.ClientViewmodelInstance.AnimatorSetBool(hash, b);
 			}
 		}
+	}
 
-		public static void AnimSetTrigger(this Firearm fa, int hash, bool checkIfExists = false)
+	public static void AnimSetTrigger(this Firearm fa, int hash, bool checkIfExists = false)
+	{
+		if (!checkIfExists || HasParam(fa, hash))
 		{
-			if (checkIfExists && !FirearmUtils.HasParam(fa, hash))
-			{
-				return;
-			}
 			if (fa.IsServer)
 			{
 				fa.ServerSideAnimator.SetTrigger(hash);
@@ -71,65 +67,65 @@ namespace InventorySystem.Items.Firearms
 				fa.ClientViewmodelInstance.AnimatorSetTrigger(hash);
 			}
 		}
+	}
 
-		public static AnimatorStateInfo AnimGetCurStateInfo(this Firearm fa, int layer)
+	public static AnimatorStateInfo AnimGetCurStateInfo(this Firearm fa, int layer)
+	{
+		if (fa.IsServer)
 		{
-			if (fa.IsServer)
-			{
-				return fa.ServerSideAnimator.GetCurrentAnimatorStateInfo(layer);
-			}
-			if (fa.HasViewmodel)
-			{
-				return fa.ClientViewmodelInstance.AnimatorStateInfo(layer);
-			}
-			return default(AnimatorStateInfo);
+			return fa.ServerSideAnimator.GetCurrentAnimatorStateInfo(layer);
 		}
-
-		public static void AnimForceUpdate(this Firearm fa, float deltaTime)
+		if (fa.HasViewmodel)
 		{
-			if (fa.IsServer)
-			{
-				fa.ServerSideAnimator.Update(deltaTime);
-			}
-			if (fa.HasViewmodel)
-			{
-				fa.ClientViewmodelInstance.AnimatorForceUpdate(deltaTime, true);
-			}
+			return fa.ClientViewmodelInstance.AnimatorStateInfo(layer);
 		}
+		return default(AnimatorStateInfo);
+	}
 
-		public static float TotalWeightKg(this Firearm fa)
+	public static void AnimForceUpdate(this Firearm fa, float deltaTime)
+	{
+		if (fa.IsServer)
 		{
-			float num = fa.BaseWeight;
-			foreach (Attachment attachment in fa.Attachments)
-			{
-				if (attachment.IsEnabled)
-				{
-					num += attachment.Weight;
-				}
-			}
-			return num;
+			fa.ServerSideAnimator.Update(deltaTime);
 		}
-
-		public static float TotalLengthInches(this Firearm fa)
+		if (fa.HasViewmodel)
 		{
-			float num = fa.BaseLength;
-			foreach (Attachment attachment in fa.Attachments)
-			{
-				if (attachment.IsEnabled)
-				{
-					num += attachment.Length;
-				}
-			}
-			return num;
+			fa.ClientViewmodelInstance.AnimatorForceUpdate(deltaTime);
 		}
+	}
 
-		private static bool HasParam(Firearm fa, int hash)
+	public static float TotalWeightKg(this Firearm fa)
+	{
+		float num = fa.BaseWeight;
+		Attachment[] attachments = fa.Attachments;
+		foreach (Attachment attachment in attachments)
 		{
-			Animator anim = fa.ServerSideAnimator;
-			RuntimeAnimatorController runtimeAnimatorController = anim.runtimeAnimatorController;
-			return FirearmUtils.ExistingHashes.GetOrAdd(runtimeAnimatorController, () => anim.parameters.Select((AnimatorControllerParameter x) => x.nameHash).ToHashSet<int>()).Contains(hash);
+			if (attachment.IsEnabled)
+			{
+				num += attachment.Weight;
+			}
 		}
+		return num;
+	}
 
-		private static readonly Dictionary<RuntimeAnimatorController, HashSet<int>> ExistingHashes = new Dictionary<RuntimeAnimatorController, HashSet<int>>();
+	public static float TotalLengthInches(this Firearm fa)
+	{
+		float num = fa.BaseLength;
+		Attachment[] attachments = fa.Attachments;
+		foreach (Attachment attachment in attachments)
+		{
+			if (attachment.IsEnabled)
+			{
+				num += attachment.Length;
+			}
+		}
+		return num;
+	}
+
+	private static bool HasParam(Firearm fa, int hash)
+	{
+		Animator anim = fa.ServerSideAnimator;
+		RuntimeAnimatorController runtimeAnimatorController = anim.runtimeAnimatorController;
+		return ExistingHashes.GetOrAdd(runtimeAnimatorController, () => anim.parameters.Select((AnimatorControllerParameter x) => x.nameHash).ToHashSet()).Contains(hash);
 	}
 }

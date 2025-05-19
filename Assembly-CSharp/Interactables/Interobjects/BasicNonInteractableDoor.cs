@@ -1,97 +1,83 @@
-﻿using System;
 using System.Runtime.InteropServices;
 using Interactables.Interobjects.DoorUtils;
 using Mirror;
 using UnityEngine;
 
-namespace Interactables.Interobjects
+namespace Interactables.Interobjects;
+
+public class BasicNonInteractableDoor : BasicDoor, INonInteractableDoor, IScp106PassableDoor
 {
-	public class BasicNonInteractableDoor : BasicDoor, INonInteractableDoor, IScp106PassableDoor
+	[SerializeField]
+	private bool _ignoreLockdowns;
+
+	[SerializeField]
+	private bool _ignoreRemoteAdmin;
+
+	[SerializeField]
+	[SyncVar]
+	private bool _blockScp106;
+
+	public bool IgnoreLockdowns => _ignoreLockdowns;
+
+	public bool IgnoreRemoteAdmin => _ignoreRemoteAdmin;
+
+	public bool IsScp106Passable
 	{
-		public bool IgnoreLockdowns
+		get
 		{
-			get
-			{
-				return this._ignoreLockdowns;
-			}
+			return !_blockScp106;
 		}
-
-		public bool IgnoreRemoteAdmin
+		set
 		{
-			get
-			{
-				return this._ignoreRemoteAdmin;
-			}
+			Network_blockScp106 = !value;
 		}
+	}
 
-		public bool IsScp106Passable
+	public bool Network_blockScp106
+	{
+		get
 		{
-			get
-			{
-				return !this._blockScp106;
-			}
-			set
-			{
-				this.Network_blockScp106 = !value;
-			}
+			return _blockScp106;
 		}
-
-		public override bool Weaved()
+		[param: In]
+		set
 		{
-			return true;
+			GeneratedSyncVarSetter(value, ref _blockScp106, 8uL, null);
 		}
+	}
 
-		public bool Network_blockScp106
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			get
-			{
-				return this._blockScp106;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<bool>(value, ref this._blockScp106, 8UL, null);
-			}
+			writer.WriteBool(_blockScp106);
+			return;
 		}
-
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteBool(this._blockScp106);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 8UL) != 0UL)
-			{
-				writer.WriteBool(this._blockScp106);
-			}
+			writer.WriteBool(_blockScp106);
 		}
+	}
 
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<bool>(ref this._blockScp106, null, reader.ReadBool());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 8L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<bool>(ref this._blockScp106, null, reader.ReadBool());
-			}
+			GeneratedSyncVarDeserialize(ref _blockScp106, null, reader.ReadBool());
+			return;
 		}
-
-		[SerializeField]
-		private bool _ignoreLockdowns;
-
-		[SerializeField]
-		private bool _ignoreRemoteAdmin;
-
-		[SerializeField]
-		[SyncVar]
-		private bool _blockScp106;
+		long num = (long)reader.ReadULong();
+		if ((num & 8L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _blockScp106, null, reader.ReadBool());
+		}
 	}
 }

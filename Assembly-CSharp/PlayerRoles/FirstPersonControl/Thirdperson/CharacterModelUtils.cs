@@ -1,69 +1,85 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
 using PlayerRoles.Ragdolls;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson
+namespace PlayerRoles.FirstPersonControl.Thirdperson;
+
+public static class CharacterModelUtils
 {
-	public static class CharacterModelUtils
+	private static readonly Dictionary<Material, int[]> TextureHashes = new Dictionary<Material, int[]>();
+
+	private static readonly List<Renderer> RenderersNonAlloc = new List<Renderer>();
+
+	private static readonly List<Material> MaterialsNonAlloc = new List<Material>();
+
+	private static readonly int[] FloatsToCopy = new int[1] { Shader.PropertyToID("_UseMaskMap") };
+
+	public static bool TryGetWearableSubcontroller<T>(this ReferenceHub userHub, out T subcontroller) where T : class
 	{
-		public static void ConvertRagdoll(BasicRagdoll ragdoll, Func<Renderer, List<Material>, bool> filter, Material template, List<Material> appliedMaterials)
+		if (!(userHub.roleManager.CurrentRole is IFpcRole role))
 		{
-			appliedMaterials.Clear();
-			CharacterModelUtils.RenderersNonAlloc.Clear();
-			ragdoll.GetComponentsInChildren<Renderer>(true, CharacterModelUtils.RenderersNonAlloc);
-			foreach (Renderer renderer in CharacterModelUtils.RenderersNonAlloc)
+			subcontroller = null;
+			return false;
+		}
+		if (!role.TryGetRpcTarget(out var target))
+		{
+			subcontroller = null;
+			return false;
+		}
+		return target.TryGetSubcontroller<T>(out subcontroller);
+	}
+
+	public static void ConvertRagdoll(BasicRagdoll ragdoll, Func<Renderer, List<Material>, bool> filter, Material template, List<Material> appliedMaterials)
+	{
+		appliedMaterials.Clear();
+		RenderersNonAlloc.Clear();
+		ragdoll.GetComponentsInChildren(includeInactive: true, RenderersNonAlloc);
+		foreach (Renderer item in RenderersNonAlloc)
+		{
+			if (item is ParticleSystemRenderer)
 			{
-				if (!(renderer is ParticleSystemRenderer))
+				continue;
+			}
+			item.GetSharedMaterials(MaterialsNonAlloc);
+			if (filter == null || filter(item, MaterialsNonAlloc))
+			{
+				int count = MaterialsNonAlloc.Count;
+				Material[] array = new Material[count];
+				for (int i = 0; i < count; i++)
 				{
-					renderer.GetSharedMaterials(CharacterModelUtils.MaterialsNonAlloc);
-					if (filter == null || filter(renderer, CharacterModelUtils.MaterialsNonAlloc))
-					{
-						int count = CharacterModelUtils.MaterialsNonAlloc.Count;
-						Material[] array = new Material[count];
-						for (int i = 0; i < count; i++)
-						{
-							array[i] = CharacterModelUtils.ConvertShader(renderer.sharedMaterials[i], template);
-						}
-						renderer.materials = array;
-						appliedMaterials.AddRange(array);
-					}
+					array[i] = ConvertShader(item.sharedMaterials[i], template);
 				}
+				item.materials = array;
+				appliedMaterials.AddRange(array);
 			}
 		}
+	}
 
-		public static Material ConvertShader(Material original, Material shaderTemplate)
+	public static Material ConvertShader(Material original, Material shaderTemplate)
+	{
+		int[] orAdd = TextureHashes.GetOrAdd(shaderTemplate, () => shaderTemplate.GetTexturePropertyNameIDs());
+		Material result = new Material(shaderTemplate);
+		CopyProperties(orAdd, original, result, (Material og, int hash) => og.HasTexture(hash), delegate(Material og, int hash, Material res)
 		{
-			int[] orAdd = CharacterModelUtils.TextureHashes.GetOrAdd(shaderTemplate, () => shaderTemplate.GetTexturePropertyNameIDs());
-			Material material = new Material(shaderTemplate);
-			CharacterModelUtils.CopyProperties(orAdd, original, material, (Material og, int hash) => og.HasTexture(hash), delegate(Material og, int hash, Material res)
-			{
-				res.SetTexture(hash, og.GetTexture(hash));
-			});
-			CharacterModelUtils.CopyProperties(CharacterModelUtils.FloatsToCopy, original, material, (Material og, int hash) => og.HasFloat(hash), delegate(Material og, int hash, Material res)
-			{
-				res.SetFloat(hash, og.GetFloat(hash));
-			});
-			return material;
-		}
+			res.SetTexture(hash, og.GetTexture(hash));
+		});
+		CopyProperties(FloatsToCopy, original, result, (Material og, int hash) => og.HasFloat(hash), delegate(Material og, int hash, Material res)
+		{
+			res.SetFloat(hash, og.GetFloat(hash));
+		});
+		return result;
+	}
 
-		private static void CopyProperties(int[] ids, Material original, Material result, Func<Material, int, bool> hasChecker, Action<Material, int, Material> applier)
+	private static void CopyProperties(int[] ids, Material original, Material result, Func<Material, int, bool> hasChecker, Action<Material, int, Material> applier)
+	{
+		foreach (int arg in ids)
 		{
-			foreach (int num in ids)
+			if (hasChecker(original, arg))
 			{
-				if (hasChecker(original, num))
-				{
-					applier(original, num, result);
-				}
+				applier(original, arg, result);
 			}
 		}
-
-		private static readonly Dictionary<Material, int[]> TextureHashes = new Dictionary<Material, int[]>();
-
-		private static readonly List<Renderer> RenderersNonAlloc = new List<Renderer>();
-
-		private static readonly List<Material> MaterialsNonAlloc = new List<Material>();
-
-		private static readonly int[] FloatsToCopy = new int[] { Shader.PropertyToID("_UseMaskMap") };
 	}
 }

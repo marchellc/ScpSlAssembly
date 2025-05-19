@@ -1,64 +1,60 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace Respawning.Waves
+namespace Respawning.Waves;
+
+public abstract class WaveAnimationBase<T> : MonoBehaviour where T : SpawnableWaveBase, IAnimatedWave
 {
-	public abstract class WaveAnimationBase<T> : MonoBehaviour where T : SpawnableWaveBase, IAnimatedWave
+	private static readonly int PlayKey = Animator.StringToHash("Play");
+
+	private float _animationTime;
+
+	public T Wave { get; private set; }
+
+	protected Animator AnimatorTrigger { get; private set; }
+
+	protected virtual void Awake()
 	{
-		public T Wave { get; private set; }
-
-		private protected Animator AnimatorTrigger { protected get; private set; }
-
-		protected virtual void Awake()
+		if (!WaveManager.TryGet<T>(out var spawnWave))
 		{
-			T t;
-			if (!WaveManager.TryGet<T>(out t))
-			{
-				throw new NullReferenceException("Could not find a reference to the T spawn wave.");
-			}
-			this.Wave = t;
-			WaveManager.OnWaveTrigger += this.OnWaveTrigger;
+			throw new NullReferenceException("Could not find a reference to the T spawn wave.");
 		}
+		Wave = spawnWave;
+		WaveManager.OnWaveTrigger += OnWaveTrigger;
+	}
 
-		protected virtual void OnWaveTriggered()
+	protected virtual void OnWaveTriggered()
+	{
+		Wave.IsAnimationPlaying = true;
+		AnimatorTrigger.SetTrigger(PlayKey);
+	}
+
+	protected virtual void OnAnimationEnd()
+	{
+		Wave.IsAnimationPlaying = false;
+	}
+
+	protected virtual void Update()
+	{
+		bool isAnimationPlaying = Wave.IsAnimationPlaying;
+		bool flag = Time.time >= _animationTime;
+		if (isAnimationPlaying && flag)
 		{
-			this.Wave.IsAnimationPlaying = true;
-			this.AnimatorTrigger.SetTrigger(WaveAnimationBase<T>.PlayKey);
+			OnAnimationEnd();
 		}
+	}
 
-		protected virtual void OnAnimationEnd()
+	private void OnWaveTrigger(SpawnableWaveBase triggeredWave)
+	{
+		if (triggeredWave == Wave)
 		{
-			this.Wave.IsAnimationPlaying = false;
+			_animationTime = Time.time + Wave.AnimationDuration;
+			OnWaveTriggered();
 		}
+	}
 
-		protected virtual void Update()
-		{
-			bool isAnimationPlaying = this.Wave.IsAnimationPlaying;
-			bool flag = Time.time >= this._animationTime;
-			if (!isAnimationPlaying || !flag)
-			{
-				return;
-			}
-			this.OnAnimationEnd();
-		}
-
-		private void OnWaveTrigger(SpawnableWaveBase triggeredWave)
-		{
-			if (triggeredWave != this.Wave)
-			{
-				return;
-			}
-			this._animationTime = Time.time + this.Wave.AnimationDuration;
-			this.OnWaveTriggered();
-		}
-
-		private void OnDestroy()
-		{
-			WaveManager.OnWaveTrigger -= this.OnWaveTrigger;
-		}
-
-		private static readonly int PlayKey = Animator.StringToHash("Play");
-
-		private float _animationTime;
+	private void OnDestroy()
+	{
+		WaveManager.OnWaveTrigger -= OnWaveTrigger;
 	}
 }

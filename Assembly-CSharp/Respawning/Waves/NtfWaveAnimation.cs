@@ -1,8 +1,5 @@
-﻿using System;
+namespace Respawning.Waves;
 
-namespace Respawning.Waves
+public class NtfWaveAnimation : WaveAnimationBase<NtfSpawnWave>
 {
-	public class NtfWaveAnimation : WaveAnimationBase<NtfSpawnWave>
-	{
-	}
 }

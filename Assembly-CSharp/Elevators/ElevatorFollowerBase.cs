@@ -1,57 +1,48 @@
-﻿using System;
 using Interactables.Interobjects;
 using UnityEngine;
 
-namespace Elevators
+namespace Elevators;
+
+public abstract class ElevatorFollowerBase : MonoBehaviour
 {
-	public abstract class ElevatorFollowerBase : MonoBehaviour
+	public Vector3 LastPosition;
+
+	public ElevatorChamber TrackedChamber { get; private set; }
+
+	public bool InElevator { get; private set; }
+
+	protected virtual void Awake()
 	{
-		public ElevatorChamber TrackedChamber { get; private set; }
+		ElevatorChamber.OnElevatorMoved += OnElevatorMoved;
+	}
 
-		public bool InElevator { get; private set; }
+	protected virtual void OnDestroy()
+	{
+		ElevatorChamber.OnElevatorMoved -= OnElevatorMoved;
+	}
 
-		protected virtual void Awake()
+	protected virtual void LateUpdate()
+	{
+	}
+
+	protected virtual void OnElevatorMoved(Bounds elevatorBounds, ElevatorChamber chamber, Vector3 deltaPos, Quaternion deltaRot)
+	{
+		bool flag = InElevator && chamber == TrackedChamber;
+		if (!elevatorBounds.Contains(LastPosition))
 		{
-			ElevatorChamber.OnElevatorMoved += this.OnElevatorMoved;
-		}
-
-		protected virtual void OnDestroy()
-		{
-			ElevatorChamber.OnElevatorMoved -= this.OnElevatorMoved;
-		}
-
-		protected virtual void LateUpdate()
-		{
-		}
-
-		protected virtual void OnElevatorMoved(Bounds elevatorBounds, ElevatorChamber chamber, Vector3 deltaPos, Quaternion deltaRot)
-		{
-			bool flag = this.InElevator && chamber == this.TrackedChamber;
-			if (!elevatorBounds.Contains(this.LastPosition))
+			if (flag)
 			{
-				if (!flag)
-				{
-					return;
-				}
-				this.InElevator = false;
+				InElevator = false;
 				base.transform.position -= deltaPos;
 				base.transform.SetParent(null);
-				return;
-			}
-			else
-			{
-				if (flag)
-				{
-					return;
-				}
-				base.transform.SetParent(chamber.transform);
-				base.transform.position += deltaPos;
-				this.TrackedChamber = chamber;
-				this.InElevator = true;
-				return;
 			}
 		}
-
-		public Vector3 LastPosition;
+		else if (!flag)
+		{
+			base.transform.SetParent(chamber.transform);
+			base.transform.position += deltaPos;
+			TrackedChamber = chamber;
+			InElevator = true;
+		}
 	}
 }

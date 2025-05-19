@@ -1,18 +1,16 @@
-﻿using System;
 using Mirror;
 
-namespace Hints
-{
-	public static class OutlineEffectFunctions
-	{
-		public static void Serialize(this NetworkWriter writer, OutlineEffect value)
-		{
-			value.Serialize(writer);
-		}
+namespace Hints;
 
-		public static OutlineEffect Deserialize(this NetworkReader reader)
-		{
-			return OutlineEffect.FromNetwork(reader);
-		}
+public static class OutlineEffectFunctions
+{
+	public static void Serialize(this NetworkWriter writer, OutlineEffect value)
+	{
+		value.Serialize(writer);
+	}
+
+	public static OutlineEffect Deserialize(this NetworkReader reader)
+	{
+		return OutlineEffect.FromNetwork(reader);
 	}
 }

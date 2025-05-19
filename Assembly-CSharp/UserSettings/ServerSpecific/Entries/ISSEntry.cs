@@ -1,11 +1,8 @@
-﻿using System;
+namespace UserSettings.ServerSpecific.Entries;
 
-namespace UserSettings.ServerSpecific.Entries
+public interface ISSEntry
 {
-	public interface ISSEntry
-	{
-		bool CheckCompatibility(ServerSpecificSettingBase setting);
+	bool CheckCompatibility(ServerSpecificSettingBase setting);
 
-		void Init(ServerSpecificSettingBase setting);
-	}
+	void Init(ServerSpecificSettingBase setting);
 }

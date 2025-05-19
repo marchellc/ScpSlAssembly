@@ -1,23 +1,23 @@
-﻿using System;
+using System.Runtime.InteropServices;
 
-namespace ServerOutput
+namespace ServerOutput;
+
+[StructLayout(LayoutKind.Sequential, Size = 1)]
+public struct HeartbeatEntry : IOutputEntry
 {
-	public struct HeartbeatEntry : IOutputEntry
+	public string GetString()
 	{
-		public string GetString()
-		{
-			return 23.ToString();
-		}
+		return ((byte)23).ToString();
+	}
 
-		public int GetBytesLength()
-		{
-			return 1;
-		}
+	public int GetBytesLength()
+	{
+		return 1;
+	}
 
-		public void GetBytes(ref byte[] buffer, out int length)
-		{
-			length = 1;
-			buffer[0] = 23;
-		}
+	public void GetBytes(ref byte[] buffer, out int length)
+	{
+		length = 1;
+		buffer[0] = 23;
 	}
 }

@@ -1,70 +1,61 @@
-﻿using System;
 using Mirror;
 using PlayerRoles.SpawnData;
 
-namespace PlayerRoles
+namespace PlayerRoles;
+
+public struct RoleSyncInfo : NetworkMessage
 {
-	public struct RoleSyncInfo : NetworkMessage
+	private readonly uint _targetNetId;
+
+	private readonly uint _receiverNetId;
+
+	private readonly PlayerRoleBase _role;
+
+	private readonly RoleTypeId _targetRole;
+
+	public RoleSyncInfo(ReferenceHub target, RoleTypeId role, ReferenceHub receiver)
 	{
-		public RoleSyncInfo(ReferenceHub target, RoleTypeId role, ReferenceHub receiver)
+		_targetNetId = target.netId;
+		_targetRole = role;
+		_receiverNetId = receiver.netId;
+		_role = target.roleManager.CurrentRole;
+	}
+
+	public RoleSyncInfo(NetworkReader reader)
+	{
+		_receiverNetId = 0u;
+		_targetNetId = reader.ReadUInt();
+		if (!ReferenceHub.TryGetHubNetID(_targetNetId, out var hub))
 		{
-			this._targetNetId = target.netId;
-			this._targetRole = role;
-			this._receiverNetId = receiver.netId;
-			this._role = target.roleManager.CurrentRole;
+			PlayerRolesNetUtils.QueuedRoles[_targetNetId] = reader;
+			_role = null;
+			_targetRole = RoleTypeId.None;
+			return;
 		}
-
-		public RoleSyncInfo(NetworkReader reader)
+		_targetRole = reader.ReadRoleType();
+		if (!NetworkServer.active)
 		{
-			this._receiverNetId = 0U;
-			this._targetNetId = reader.ReadUInt();
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(this._targetNetId, out referenceHub))
-			{
-				PlayerRolesNetUtils.QueuedRoles[this._targetNetId] = reader;
-				this._role = null;
-				this._targetRole = RoleTypeId.None;
-				return;
-			}
-			this._targetRole = reader.ReadRoleType();
-			if (!NetworkServer.active)
-			{
-				referenceHub.roleManager.InitializeNewRole(this._targetRole, RoleChangeReason.None, RoleSpawnFlags.All, reader);
-			}
-			this._role = referenceHub.roleManager.CurrentRole;
+			hub.roleManager.InitializeNewRole(_targetRole, RoleChangeReason.None, RoleSpawnFlags.All, reader);
 		}
+		_role = hub.roleManager.CurrentRole;
+	}
 
-		public void Write(NetworkWriter writer)
+	public void Write(NetworkWriter writer)
+	{
+		writer.WriteUInt(_targetNetId);
+		writer.WriteRoleType(_targetRole);
+		if (_role is IPublicSpawnDataWriter publicSpawnDataWriter)
 		{
-			writer.WriteUInt(this._targetNetId);
-			writer.WriteRoleType(this._targetRole);
-			IPublicSpawnDataWriter publicSpawnDataWriter = this._role as IPublicSpawnDataWriter;
-			if (publicSpawnDataWriter != null)
-			{
-				publicSpawnDataWriter.WritePublicSpawnData(writer);
-			}
-			if (this._receiverNetId != this._targetNetId)
-			{
-				return;
-			}
-			IPrivateSpawnDataWriter privateSpawnDataWriter = this._role as IPrivateSpawnDataWriter;
-			if (privateSpawnDataWriter != null)
-			{
-				privateSpawnDataWriter.WritePrivateSpawnData(writer);
-			}
+			publicSpawnDataWriter.WritePublicSpawnData(writer);
 		}
-
-		public override string ToString()
+		if (_receiverNetId == _targetNetId && _role is IPrivateSpawnDataWriter privateSpawnDataWriter)
 		{
-			return string.Format("{0} (TargetNetId = '{1}' Role = '{2}')", "RoleSyncInfo", this._targetNetId, this._role);
+			privateSpawnDataWriter.WritePrivateSpawnData(writer);
 		}
+	}
 
-		private readonly uint _targetNetId;
-
-		private readonly uint _receiverNetId;
-
-		private readonly PlayerRoleBase _role;
-
-		private readonly RoleTypeId _targetRole;
+	public override string ToString()
+	{
+		return string.Format("{0} (TargetNetId = '{1}' Role = '{2}')", "RoleSyncInfo", _targetNetId, _role);
 	}
 }

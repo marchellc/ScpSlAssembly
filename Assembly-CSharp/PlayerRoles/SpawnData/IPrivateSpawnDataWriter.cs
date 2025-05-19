@@ -1,10 +1,8 @@
-﻿using System;
 using Mirror;
 
-namespace PlayerRoles.SpawnData
+namespace PlayerRoles.SpawnData;
+
+public interface IPrivateSpawnDataWriter
 {
-	public interface IPrivateSpawnDataWriter
-	{
-		void WritePrivateSpawnData(NetworkWriter writer);
-	}
+	void WritePrivateSpawnData(NetworkWriter writer);
 }

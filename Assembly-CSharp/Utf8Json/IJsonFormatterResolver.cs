@@ -1,9 +1,6 @@
-﻿using System;
+namespace Utf8Json;
 
-namespace Utf8Json
+public interface IJsonFormatterResolver
 {
-	public interface IJsonFormatterResolver
-	{
-		IJsonFormatter<T> GetFormatter<T>();
-	}
+	IJsonFormatter<T> GetFormatter<T>();
 }

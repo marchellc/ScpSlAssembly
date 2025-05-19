@@ -1,77 +1,73 @@
-﻿using System;
 using PlayerRoles.Spectating;
 using UnityEngine;
 
-namespace InventorySystem.Items
+namespace InventorySystem.Items;
+
+public class ViewmodelCamera : MonoBehaviour
 {
-	public class ViewmodelCamera : MonoBehaviour
+	private bool _resetting;
+
+	private static Camera _viewModelCamera;
+
+	private static bool _camSet;
+
+	private void ResetCam()
 	{
-		private void ResetCam()
+		_resetting = true;
+	}
+
+	private void Awake()
+	{
+		_camSet = true;
+		_viewModelCamera = GetComponent<Camera>();
+		SpectatorTargetTracker.OnTargetChanged += ResetCam;
+	}
+
+	private void OnDestroy()
+	{
+		_camSet = false;
+		SpectatorTargetTracker.OnTargetChanged -= ResetCam;
+	}
+
+	private void LateUpdate()
+	{
+		if (TryGetViewmodelFov(out var fov) && !_resetting)
 		{
-			this._resetting = true;
+			_viewModelCamera.fieldOfView = fov;
 		}
-
-		private void Awake()
+		else
 		{
-			ViewmodelCamera._camSet = true;
-			ViewmodelCamera._viewModelCamera = base.GetComponent<Camera>();
-			SpectatorTargetTracker.OnTargetChanged += this.ResetCam;
+			_resetting = false;
 		}
+	}
 
-		private void OnDestroy()
+	private bool TryGetViewmodelFov(out float fov)
+	{
+		fov = _viewModelCamera.fieldOfView;
+		if (!ReferenceHub.TryGetLocalHub(out var hub))
 		{
-			ViewmodelCamera._camSet = false;
-			SpectatorTargetTracker.OnTargetChanged -= this.ResetCam;
+			return false;
 		}
-
-		private void LateUpdate()
+		if (!(hub.roleManager.CurrentRole is IViewmodelRole viewmodelRole))
 		{
-			float num;
-			if (this.TryGetViewmodelFov(out num) && !this._resetting)
-			{
-				ViewmodelCamera._viewModelCamera.fieldOfView = num;
-				return;
-			}
-			this._resetting = false;
+			return false;
 		}
-
-		private bool TryGetViewmodelFov(out float fov)
+		if (!viewmodelRole.TryGetViewmodelFov(out var fov2))
 		{
-			fov = ViewmodelCamera._viewModelCamera.fieldOfView;
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetLocalHub(out referenceHub))
-			{
-				return false;
-			}
-			IViewmodelRole viewmodelRole = referenceHub.roleManager.CurrentRole as IViewmodelRole;
-			if (viewmodelRole == null)
-			{
-				return false;
-			}
-			float num;
-			if (!viewmodelRole.TryGetViewmodelFov(out num))
-			{
-				return false;
-			}
-			fov = num;
-			return true;
+			return false;
 		}
+		fov = fov2;
+		return true;
+	}
 
-		public static bool TryGetViewportPoint(Vector3 worldPos, out Vector3 viewport)
+	public static bool TryGetViewportPoint(Vector3 worldPos, out Vector3 viewport)
+	{
+		if (!_camSet)
 		{
-			if (!ViewmodelCamera._camSet)
-			{
-				viewport = Vector3.zero;
-				return false;
-			}
-			viewport = ViewmodelCamera._viewModelCamera.WorldToViewportPoint(worldPos);
-			return true;
+			viewport = Vector3.zero;
+			return false;
 		}
-
-		private bool _resetting;
-
-		private static Camera _viewModelCamera;
-
-		private static bool _camSet;
+		viewport = _viewModelCamera.WorldToViewportPoint(worldPos);
+		return true;
 	}
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Modules.Misc;
@@ -7,351 +7,302 @@ using Mirror;
 using Scp914;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazineControllerModule, IPrimaryAmmoContainerModule, IAmmoContainerModule, IDisplayableAmmoProviderModule, IAmmoDropPreventer
 {
-	public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazineControllerModule, IPrimaryAmmoContainerModule, IAmmoContainerModule, IDisplayableAmmoProviderModule, IAmmoDropPreventer
+	private static readonly Dictionary<ushort, int> SyncData = new Dictionary<ushort, int>();
+
+	[SerializeField]
+	private int _defaultCapacity;
+
+	[SerializeField]
+	private ItemType _ammoType;
+
+	[SerializeField]
+	private AnimatorConditionalOverride _magazineRemovedOverrideLayers;
+
+	public ItemType AmmoType => _ammoType;
+
+	public virtual IReloadUnloadValidatorModule.Authorization ReloadAuthorization
 	{
-		public static event Action<ushort> OnDataReceived;
-
-		public ItemType AmmoType
+		get
 		{
-			get
+			if (AmmoStored >= AmmoMax || base.Firearm.OwnerInventory.GetCurAmmo(AmmoType) <= 0)
 			{
-				return this._ammoType;
+				return IReloadUnloadValidatorModule.Authorization.Idle;
+			}
+			return IReloadUnloadValidatorModule.Authorization.Allowed;
+		}
+	}
+
+	public virtual IReloadUnloadValidatorModule.Authorization UnloadAuthorization
+	{
+		get
+		{
+			if (AmmoStored <= 0)
+			{
+				return IReloadUnloadValidatorModule.Authorization.Idle;
+			}
+			return IReloadUnloadValidatorModule.Authorization.Allowed;
+		}
+	}
+
+	public int AmmoMax => _defaultCapacity + (int)base.Firearm.AttachmentsValue(AttachmentParam.MagazineCapacityModifier);
+
+	public int AmmoStored
+	{
+		get
+		{
+			return GetAmmoStoredForSerial(base.ItemSerial);
+		}
+		private set
+		{
+			if (MagazineInserted)
+			{
+				SyncData[base.ItemSerial] = value + 1;
 			}
 		}
+	}
 
-		public IReloadUnloadValidatorModule.Authorization ReloadAuthorization
+	public bool MagazineInserted
+	{
+		get
 		{
-			get
-			{
-				if (this.AmmoStored >= this.AmmoMax || base.Firearm.OwnerInventory.GetCurAmmo(this.AmmoType) <= 0)
-				{
-					return IReloadUnloadValidatorModule.Authorization.Idle;
-				}
-				return IReloadUnloadValidatorModule.Authorization.Allowed;
-			}
+			return GetMagazineInserted(base.ItemSerial);
 		}
-
-		public IReloadUnloadValidatorModule.Authorization UnloadAuthorization
+		private set
 		{
-			get
-			{
-				if (this.AmmoStored <= 0)
-				{
-					return IReloadUnloadValidatorModule.Authorization.Idle;
-				}
-				return IReloadUnloadValidatorModule.Authorization.Allowed;
-			}
+			SyncData[base.ItemSerial] = (value ? (AmmoStored + 1) : 0);
 		}
+	}
 
-		public int AmmoMax
+	public DisplayAmmoValues PredictedDisplayAmmo => default(DisplayAmmoValues);
+
+	private Inventory UserInv => base.Firearm.OwnerInventory;
+
+	public static event Action<ushort> OnDataReceived;
+
+	public static bool GetMagazineInserted(ushort serial)
+	{
+		if (SyncData.TryGetValue(serial, out var value))
 		{
-			get
-			{
-				return this._defaultCapacity + (int)base.Firearm.AttachmentsValue(AttachmentParam.MagazineCapacityModifier);
-			}
+			return value > 0;
 		}
+		return false;
+	}
 
-		public int AmmoStored
+	public void ServerSetInstanceAmmo(ushort serial, int amount)
+	{
+		SyncData[serial] = amount + 1;
+		SendRpc(delegate(NetworkWriter writer)
 		{
-			get
-			{
-				return this.GetAmmoStoredForSerial(base.ItemSerial);
-			}
-			private set
-			{
-				if (!this.MagazineInserted)
-				{
-					return;
-				}
-				MagazineModule.SyncData[base.ItemSerial] = value + 1;
-			}
+			writer.WriteUShort(serial);
+			writer.WriteByte((byte)(amount + 1));
+		});
+	}
+
+	[ExposedFirearmEvent]
+	public void ServerRemoveMagazine()
+	{
+		if (base.IsServer)
+		{
+			UserInv.ServerAddAmmo(AmmoType, AmmoStored);
+			MagazineInserted = false;
+			ServerResyncData();
 		}
+	}
 
-		public bool MagazineInserted
+	[ExposedFirearmEvent]
+	public void ServerInsertMagazine()
+	{
+		if (base.IsServer)
 		{
-			get
-			{
-				return MagazineModule.GetMagazineInserted(base.ItemSerial);
-			}
-			private set
-			{
-				MagazineModule.SyncData[base.ItemSerial] = (value ? (this.AmmoStored + 1) : 0);
-			}
+			ServerInsertEmptyMagazine();
+			ServerLoadAmmoFromInventory();
 		}
+	}
 
-		public DisplayAmmoValues PredictedDisplayAmmo
+	[ExposedFirearmEvent]
+	public void ServerInsertEmptyMagazine()
+	{
+		if (base.IsServer)
 		{
-			get
-			{
-				return default(DisplayAmmoValues);
-			}
+			MagazineInserted = true;
+			ServerResyncData();
 		}
+	}
 
-		private Inventory UserInv
+	[ExposedFirearmEvent]
+	public void ServerLoadAmmoFromInventory(int insertionLimit)
+	{
+		if (base.IsServer)
 		{
-			get
-			{
-				return base.Firearm.OwnerInventory;
-			}
+			int b = AmmoMax - AmmoStored;
+			int num = Mathf.Min(Mathf.Min(UserInv.GetCurAmmo(AmmoType), b), insertionLimit);
+			UserInv.ServerAddAmmo(AmmoType, -num);
+			AmmoStored += num;
+			ServerResyncData();
 		}
+	}
 
-		public static bool GetMagazineInserted(ushort serial)
-		{
-			int num;
-			return MagazineModule.SyncData.TryGetValue(serial, out num) && num > 0;
-		}
+	[ExposedFirearmEvent]
+	public void ServerLoadAmmoFromInventory()
+	{
+		ServerLoadAmmoFromInventory(int.MaxValue);
+	}
 
-		public void ServerSetInstanceAmmo(ushort serial, int amount)
+	public void ServerResyncData()
+	{
+		if (SyncData.TryGetValue(base.ItemSerial, out var syncData))
 		{
-			MagazineModule.SyncData[serial] = amount + 1;
-			this.SendRpc(delegate(NetworkWriter writer)
+			SendRpc(delegate(NetworkWriter writer)
 			{
-				writer.WriteUShort(serial);
-				writer.WriteByte((byte)(amount + 1));
-			}, true);
-		}
-
-		[ExposedFirearmEvent]
-		public void ServerRemoveMagazine()
-		{
-			if (!base.IsServer)
-			{
-				return;
-			}
-			this.UserInv.ServerAddAmmo(this.AmmoType, this.AmmoStored);
-			this.MagazineInserted = false;
-			this.ServerResyncData();
-		}
-
-		[ExposedFirearmEvent]
-		public void ServerInsertMagazine()
-		{
-			if (!base.IsServer)
-			{
-				return;
-			}
-			this.ServerInsertEmptyMagazine();
-			this.ServerLoadAmmoFromInventory();
-		}
-
-		[ExposedFirearmEvent]
-		public void ServerInsertEmptyMagazine()
-		{
-			if (!base.IsServer)
-			{
-				return;
-			}
-			this.MagazineInserted = true;
-			this.ServerResyncData();
-		}
-
-		[ExposedFirearmEvent]
-		public void ServerLoadAmmoFromInventory(int insertionLimit)
-		{
-			if (!base.IsServer)
-			{
-				return;
-			}
-			int num = this.AmmoMax - this.AmmoStored;
-			int num2 = Mathf.Min(Mathf.Min((int)this.UserInv.GetCurAmmo(this.AmmoType), num), insertionLimit);
-			this.UserInv.ServerAddAmmo(this.AmmoType, -num2);
-			this.AmmoStored += num2;
-			this.ServerResyncData();
-		}
-
-		[ExposedFirearmEvent]
-		public void ServerLoadAmmoFromInventory()
-		{
-			this.ServerLoadAmmoFromInventory(int.MaxValue);
-		}
-
-		public void ServerResyncData()
-		{
-			int syncData;
-			if (!MagazineModule.SyncData.TryGetValue(base.ItemSerial, out syncData))
-			{
-				return;
-			}
-			this.SendRpc(delegate(NetworkWriter writer)
-			{
-				writer.WriteUShort(this.ItemSerial);
+				writer.WriteUShort(base.ItemSerial);
 				writer.WriteByte((byte)syncData);
-			}, true);
-		}
-
-		public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
-		{
-			while (reader.Remaining > 0)
-			{
-				ushort num = reader.ReadUShort();
-				byte b = reader.ReadByte();
-				MagazineModule.SyncData[num] = (int)b;
-				Action<ushort> onDataReceived = MagazineModule.OnDataReceived;
-				if (onDataReceived != null)
-				{
-					onDataReceived(num);
-				}
-			}
-		}
-
-		public void ServerModifyAmmo(int amt)
-		{
-			this.AmmoStored += amt;
-			this.ServerResyncData();
-		}
-
-		public int GetAmmoStoredForSerial(ushort serial)
-		{
-			int num;
-			if (!MagazineModule.SyncData.TryGetValue(serial, out num))
-			{
-				return 0;
-			}
-			return Mathf.Max(0, num - 1);
-		}
-
-		public DisplayAmmoValues GetDisplayAmmoForSerial(ushort serial)
-		{
-			return new DisplayAmmoValues(this.GetAmmoStoredForSerial(serial), 0);
-		}
-
-		internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
-		{
-			base.ServerOnPlayerConnected(hub, firstModule);
-			if (!firstModule)
-			{
-				return;
-			}
-			this.SendRpc(hub, delegate(NetworkWriter writer)
-			{
-				foreach (KeyValuePair<ushort, int> keyValuePair in MagazineModule.SyncData)
-				{
-					writer.WriteUShort(keyValuePair.Key);
-					writer.WriteByte((byte)keyValuePair.Value);
-				}
 			});
 		}
+	}
 
-		internal override void EquipUpdate()
+	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	{
+		while (reader.Remaining > 0)
 		{
-			base.EquipUpdate();
-			this._magazineRemovedOverrideLayers.Update(base.Firearm, !this.MagazineInserted);
-			base.Firearm.AnimSetInt(FirearmAnimatorHashes.MagazineAmmo, this.AmmoStored, true);
-			base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsMagInserted, this.MagazineInserted, true);
+			ushort num = reader.ReadUShort();
+			byte value = reader.ReadByte();
+			SyncData[num] = value;
+			MagazineModule.OnDataReceived?.Invoke(num);
 		}
+	}
 
-		internal override void OnAdded()
+	public void ServerModifyAmmo(int amt)
+	{
+		AmmoStored += amt;
+		ServerResyncData();
+	}
+
+	public int GetAmmoStoredForSerial(ushort serial)
+	{
+		if (!SyncData.TryGetValue(serial, out var value))
 		{
-			base.OnAdded();
-			if (!base.IsServer)
+			return 0;
+		}
+		return Mathf.Max(0, value - 1);
+	}
+
+	public DisplayAmmoValues GetDisplayAmmoForSerial(ushort serial)
+	{
+		return new DisplayAmmoValues(GetAmmoStoredForSerial(serial));
+	}
+
+	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
+	{
+		base.ServerOnPlayerConnected(hub, firstModule);
+		if (!firstModule)
+		{
+			return;
+		}
+		SendRpc(hub, delegate(NetworkWriter writer)
+		{
+			foreach (KeyValuePair<ushort, int> syncDatum in SyncData)
 			{
-				return;
+				writer.WriteUShort(syncDatum.Key);
+				writer.WriteByte((byte)syncDatum.Value);
 			}
+		});
+	}
+
+	internal override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		_magazineRemovedOverrideLayers.Update(base.Firearm, !MagazineInserted);
+		base.Firearm.AnimSetInt(FirearmAnimatorHashes.MagazineAmmo, AmmoStored, checkIfExists: true);
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsMagInserted, MagazineInserted, checkIfExists: true);
+	}
+
+	internal override void OnAdded()
+	{
+		base.OnAdded();
+		if (base.IsServer)
+		{
 			switch (base.Firearm.ServerAddReason)
 			{
 			case ItemAddReason.AdminCommand:
 			case ItemAddReason.Scp2536:
-				this.MagazineInserted = true;
-				this.AmmoStored = this.AmmoMax;
+				MagazineInserted = true;
+				AmmoStored = AmmoMax;
 				break;
 			case ItemAddReason.StartingItem:
-				this.ServerInsertMagazine();
+				ServerInsertMagazine();
 				return;
 			}
-			this.ServerResyncData();
+			ServerResyncData();
 		}
+	}
 
-		internal override void OnAttachmentsApplied()
+	internal override void OnAttachmentsApplied()
+	{
+		base.OnAttachmentsApplied();
+		if (base.IsServer)
 		{
-			base.OnAttachmentsApplied();
-			if (!base.IsServer)
+			int num = AmmoStored - AmmoMax;
+			if (num > 0)
 			{
-				return;
+				AmmoStored -= num;
+				UserInv.ServerAddAmmo(AmmoType, num);
+				ServerResyncData();
 			}
-			int num = this.AmmoStored - this.AmmoMax;
-			if (num <= 0)
-			{
-				return;
-			}
-			this.AmmoStored -= num;
-			this.UserInv.ServerAddAmmo(this.AmmoType, num);
-			this.ServerResyncData();
 		}
+	}
 
-		internal override void OnEquipped()
+	internal override void OnEquipped()
+	{
+		base.OnEquipped();
+		if (base.IsServer)
 		{
-			base.OnEquipped();
-			if (!base.IsServer)
-			{
-				return;
-			}
-			this.ServerResyncData();
+			ServerResyncData();
 		}
+	}
 
-		internal override void ServerProcessMapgenDistribution(ItemPickupBase pickupBase)
+	internal override void ServerProcessMapgenDistribution(ItemPickupBase pickupBase)
+	{
+		base.ServerProcessMapgenDistribution(pickupBase);
+		if (pickupBase is FirearmPickup firearmPickup && AttachmentPreview.TryGet(firearmPickup.CurId, reValidate: false, out var result) && result.TryGetModule<MagazineModule>(out var module))
 		{
-			base.ServerProcessMapgenDistribution(pickupBase);
-			FirearmPickup firearmPickup = pickupBase as FirearmPickup;
-			if (firearmPickup == null)
-			{
-				return;
-			}
-			Firearm firearm;
-			if (!AttachmentPreview.TryGet(firearmPickup.CurId, false, out firearm))
-			{
-				return;
-			}
-			MagazineModule magazineModule;
-			if (!firearm.TryGetModule(out magazineModule, true))
-			{
-				return;
-			}
-			MagazineModule.SyncData[firearmPickup.CurId.SerialNumber] = magazineModule.AmmoMax + 1;
+			SyncData[firearmPickup.CurId.SerialNumber] = module.AmmoMax + 1;
 		}
+	}
 
-		internal override void ServerProcessScp914Creation(ushort serial, Scp914KnobSetting knobSetting, Scp914Result scp914Result, ItemType itemType)
+	internal override void ServerProcessScp914Creation(ushort serial, Scp914KnobSetting knobSetting, Scp914Result scp914Result, ItemType itemType)
+	{
+		base.ServerProcessScp914Creation(serial, knobSetting, scp914Result, itemType);
+		if (itemType != ItemType.ParticleDisruptor)
 		{
-			base.ServerProcessScp914Creation(serial, knobSetting, scp914Result, itemType);
-			if (itemType != ItemType.ParticleDisruptor)
-			{
-				return;
-			}
-			MagazineModule.SyncData[serial] = this.AmmoMax + 1;
-			int syncData;
-			if (!MagazineModule.SyncData.TryGetValue(serial, out syncData))
-			{
-				return;
-			}
-			this.SendRpc(delegate(NetworkWriter writer)
+			return;
+		}
+		SyncData[serial] = AmmoMax + 1;
+		if (SyncData.TryGetValue(serial, out var syncData))
+		{
+			SendRpc(delegate(NetworkWriter writer)
 			{
 				writer.WriteUShort(serial);
 				writer.WriteByte((byte)syncData);
-			}, true);
+			});
 		}
+	}
 
-		internal override void OnClientReady()
+	internal override void OnClientReady()
+	{
+		base.OnClientReady();
+		SyncData.Clear();
+	}
+
+	public bool ValidateAmmoDrop(ItemType id)
+	{
+		if (id == AmmoType && base.Firearm.TryGetModule<IReloaderModule>(out var module))
 		{
-			base.OnClientReady();
-			MagazineModule.SyncData.Clear();
+			return !module.IsReloadingOrUnloading;
 		}
-
-		public bool ValidateAmmoDrop(ItemType id)
-		{
-			IReloaderModule reloaderModule;
-			return id != this.AmmoType || !base.Firearm.TryGetModule(out reloaderModule, true) || !reloaderModule.IsReloadingOrUnloading;
-		}
-
-		private static readonly Dictionary<ushort, int> SyncData = new Dictionary<ushort, int>();
-
-		[SerializeField]
-		private int _defaultCapacity;
-
-		[SerializeField]
-		private ItemType _ammoType;
-
-		[SerializeField]
-		private AnimatorConditionalOverride _magazineRemovedOverrideLayers;
+		return true;
 	}
 }

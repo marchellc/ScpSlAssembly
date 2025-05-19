@@ -1,33 +1,41 @@
-﻿using System;
+using System;
 using Mirror;
 
-namespace Hints
+namespace Hints;
+
+public abstract class FormattablePrimitiveHintParameter<TValue> : PrimitiveHintParameter<TValue>
 {
-	public abstract class FormattablePrimitiveHintParameter<TValue> : PrimitiveHintParameter<TValue>
+	private readonly Func<TValue, string, string> _formatter;
+
+	protected string Format { get; private set; }
+
+	protected FormattablePrimitiveHintParameter(TValue value, string format, Func<TValue, string, string> formatter, Func<NetworkReader, TValue> deserializer, Action<NetworkWriter, TValue> serializer)
+		: base(value, deserializer, serializer)
 	{
-		private protected string Format { protected get; private set; }
+		_formatter = formatter;
+		Format = format;
+	}
 
-		protected FormattablePrimitiveHintParameter(Func<NetworkReader, TValue> deserializer, Action<NetworkWriter, TValue> serializer)
-			: base(deserializer, serializer)
-		{
-		}
+	protected FormattablePrimitiveHintParameter(Func<TValue, string, string> formatter, Func<NetworkReader, TValue> deserializer, Action<NetworkWriter, TValue> serializer)
+		: this(default(TValue), string.Empty, formatter, deserializer, serializer)
+	{
+	}
 
-		protected FormattablePrimitiveHintParameter(TValue value, string format, Func<NetworkReader, TValue> deserializer, Action<NetworkWriter, TValue> serializer)
-			: base(value, deserializer, serializer)
-		{
-			this.Format = format;
-		}
+	public override void Deserialize(NetworkReader reader)
+	{
+		base.Deserialize(reader);
+		Format = reader.ReadString();
+	}
 
-		public override void Deserialize(NetworkReader reader)
-		{
-			base.Deserialize(reader);
-			this.Format = reader.ReadString();
-		}
+	public override void Serialize(NetworkWriter writer)
+	{
+		base.Serialize(writer);
+		writer.WriteString(Format);
+	}
 
-		public override void Serialize(NetworkWriter writer)
-		{
-			base.Serialize(writer);
-			writer.WriteString(this.Format);
-		}
+	protected override string FormatValue(float progress, out bool stopFormatting)
+	{
+		stopFormatting = true;
+		return _formatter(base.Value, Format);
 	}
 }

@@ -1,11 +1,9 @@
-﻿using System;
 using Mirror;
 
-namespace Interactables
+namespace Interactables;
+
+public interface IServerInteractable : IInteractable
 {
-	public interface IServerInteractable : IInteractable
-	{
-		[Server]
-		void ServerInteract(ReferenceHub ply, byte colliderId);
-	}
+	[Server]
+	void ServerInteract(ReferenceHub ply, byte colliderId);
 }

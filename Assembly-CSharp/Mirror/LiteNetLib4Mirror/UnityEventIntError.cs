@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using System.Net.Sockets;
 using UnityEngine.Events;
 
-namespace Mirror.LiteNetLib4Mirror
+namespace Mirror.LiteNetLib4Mirror;
+
+[Serializable]
+public class UnityEventIntError : UnityEvent<int, SocketError>
 {
-	[Serializable]
-	public class UnityEventIntError : UnityEvent<int, SocketError>
-	{
-	}
 }

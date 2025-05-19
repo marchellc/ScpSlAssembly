@@ -1,126 +1,112 @@
-﻿using System;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 
-namespace UserSettings.GUIElements
+namespace UserSettings.GUIElements;
+
+public abstract class UserSettingsUIBase<TBehaviour, TStoredValue> : MonoBehaviour where TBehaviour : UIBehaviour
 {
-	public abstract class UserSettingsUIBase<TBehaviour, TStoredValue> : MonoBehaviour where TBehaviour : UIBehaviour
+	[SerializeField]
+	private bool _setupOnAwake = true;
+
+	private bool _cachedTargetSet;
+
+	private TBehaviour _cachedTargetUi;
+
+	public LinkableEnum TargetEnum { get; private set; }
+
+	public TStoredValue DefaultValue { get; private set; }
+
+	public bool OverrideDefaultValue { get; private set; }
+
+	public bool IsSetup { get; private set; }
+
+	public TBehaviour TargetUI
 	{
-		public LinkableEnum TargetEnum { get; private set; }
-
-		public TStoredValue DefaultValue { get; private set; }
-
-		public bool OverrideDefaultValue { get; private set; }
-
-		public bool IsSetup { get; private set; }
-
-		public TBehaviour TargetUI
+		get
 		{
-			get
+			if (!_cachedTargetSet)
 			{
-				if (!this._cachedTargetSet)
-				{
-					this._cachedTargetUi = base.GetComponent<TBehaviour>();
-					this._cachedTargetSet = true;
-				}
-				return this._cachedTargetUi;
+				_cachedTargetUi = GetComponent<TBehaviour>();
+				_cachedTargetSet = true;
 			}
+			return _cachedTargetUi;
 		}
+	}
 
-		protected abstract UnityEvent<TStoredValue> OnValueChangedEvent { get; }
+	protected abstract UnityEvent<TStoredValue> OnValueChangedEvent { get; }
 
-		protected TStoredValue StoredValue
+	protected TStoredValue StoredValue
+	{
+		get
 		{
-			get
-			{
-				return this.ReadSavedValue();
-			}
-			set
-			{
-				this.SaveValue(value);
-			}
+			return ReadSavedValue();
 		}
-
-		protected virtual void SaveValue(TStoredValue val)
+		set
 		{
-			UserSetting<TStoredValue>.Set(this.TargetEnum.TypeHash, this.TargetEnum.Value, val);
+			SaveValue(value);
 		}
+	}
 
-		protected virtual TStoredValue ReadSavedValue()
+	protected virtual void SaveValue(TStoredValue val)
+	{
+		UserSetting<TStoredValue>.Set(TargetEnum.TypeHash, TargetEnum.Value, val);
+	}
+
+	protected virtual TStoredValue ReadSavedValue()
+	{
+		if (OverrideDefaultValue)
 		{
-			if (this.OverrideDefaultValue)
-			{
-				return UserSetting<TStoredValue>.Get(this.TargetEnum.TypeHash, this.TargetEnum.Value, this.DefaultValue, false);
-			}
-			return UserSetting<TStoredValue>.Get(this.TargetEnum.TypeHash, this.TargetEnum.Value);
+			return UserSetting<TStoredValue>.Get(TargetEnum.TypeHash, TargetEnum.Value, DefaultValue);
 		}
+		return UserSetting<TStoredValue>.Get(TargetEnum.TypeHash, TargetEnum.Value);
+	}
 
-		protected virtual void Awake()
+	protected virtual void Awake()
+	{
+		if (_setupOnAwake)
 		{
-			if (!this._setupOnAwake)
-			{
-				return;
-			}
-			this.Setup();
+			Setup();
 		}
+	}
 
-		protected virtual void OnDestroy()
+	protected virtual void OnDestroy()
+	{
+		Unlink();
+	}
+
+	protected abstract void SetValueAndTriggerEvent(TStoredValue val);
+
+	protected abstract void SetValueWithoutNotify(TStoredValue val);
+
+	public void Setup()
+	{
+		if (!IsSetup)
 		{
-			this.Unlink();
+			IsSetup = true;
+			SetValueWithoutNotify(StoredValue);
+			OnValueChangedEvent?.AddListener(SaveValue);
+			UserSetting<TStoredValue>.AddListener(TargetEnum.TypeHash, TargetEnum.Value, SetValueWithoutNotify);
 		}
+	}
 
-		protected abstract void SetValueAndTriggerEvent(TStoredValue val);
-
-		protected abstract void SetValueWithoutNotify(TStoredValue val);
-
-		public void Setup()
+	public void Unlink()
+	{
+		if (IsSetup)
 		{
-			if (this.IsSetup)
-			{
-				return;
-			}
-			this.IsSetup = true;
-			this.SetValueWithoutNotify(this.StoredValue);
-			UnityEvent<TStoredValue> onValueChangedEvent = this.OnValueChangedEvent;
-			if (onValueChangedEvent != null)
-			{
-				onValueChangedEvent.AddListener(new UnityAction<TStoredValue>(this.SaveValue));
-			}
-			UserSetting<TStoredValue>.AddListener(this.TargetEnum.TypeHash, this.TargetEnum.Value, new Action<TStoredValue>(this.SetValueWithoutNotify));
+			IsSetup = false;
+			OnValueChangedEvent?.RemoveListener(SaveValue);
+			UserSetting<TStoredValue>.RemoveListener(SetValueWithoutNotify);
 		}
+	}
 
-		public void Unlink()
+	public void ChangeTargetEnum(LinkableEnum newEnum, bool autoSetup = true)
+	{
+		Unlink();
+		TargetEnum = newEnum;
+		if (autoSetup)
 		{
-			if (!this.IsSetup)
-			{
-				return;
-			}
-			this.IsSetup = false;
-			UnityEvent<TStoredValue> onValueChangedEvent = this.OnValueChangedEvent;
-			if (onValueChangedEvent != null)
-			{
-				onValueChangedEvent.RemoveListener(new UnityAction<TStoredValue>(this.SaveValue));
-			}
-			UserSetting<TStoredValue>.RemoveListener(new Action<TStoredValue>(this.SetValueWithoutNotify));
+			Setup();
 		}
-
-		public void ChangeTargetEnum(LinkableEnum newEnum, bool autoSetup = true)
-		{
-			this.Unlink();
-			this.TargetEnum = newEnum;
-			if (!autoSetup)
-			{
-				return;
-			}
-			this.Setup();
-		}
-
-		[SerializeField]
-		private bool _setupOnAwake = true;
-
-		private bool _cachedTargetSet;
-
-		private TBehaviour _cachedTargetUi;
 	}
 }

@@ -1,38 +1,30 @@
-﻿using System;
 using InventorySystem.Items.Firearms.Modules;
 using InventorySystem.Items.Firearms.ShotEvents;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+public class DisruptorMuzzleExtension : ShootingEffectsExtensionBase
 {
-	public class DisruptorMuzzleExtension : ShootingEffectsExtensionBase
+	[SerializeField]
+	private ParticleCollection _singleShotEffects;
+
+	[SerializeField]
+	private ParticleCollection _rapidFireEffects;
+
+	protected override void PlayEffects(ShotEvent ev)
 	{
-		protected override void PlayEffects(ShotEvent ev)
+		if (ev is DisruptorShotEvent { State: var state })
 		{
-			DisruptorShotEvent disruptorShotEvent = ev as DisruptorShotEvent;
-			if (disruptorShotEvent == null)
+			switch (state)
 			{
-				return;
-			}
-			DisruptorActionModule.FiringState state = disruptorShotEvent.State;
-			if (state != DisruptorActionModule.FiringState.FiringRapid)
-			{
-				if (state == DisruptorActionModule.FiringState.FiringSingle)
-				{
-					this._singleShotEffects.Play();
-					return;
-				}
-			}
-			else
-			{
-				this._rapidFireEffects.Play();
+			case DisruptorActionModule.FiringState.FiringSingle:
+				_singleShotEffects.Play();
+				break;
+			case DisruptorActionModule.FiringState.FiringRapid:
+				_rapidFireEffects.Play();
+				break;
 			}
 		}
-
-		[SerializeField]
-		private ShootingEffectsExtensionBase.ParticleCollection _singleShotEffects;
-
-		[SerializeField]
-		private ShootingEffectsExtensionBase.ParticleCollection _rapidFireEffects;
 	}
 }

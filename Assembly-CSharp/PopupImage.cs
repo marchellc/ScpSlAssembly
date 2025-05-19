@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 [Obsolete("Replaced by PopupImageInterobject", true)]

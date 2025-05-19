@@ -1,109 +1,117 @@
-﻿using System;
 using MapGeneration.Holidays;
 using Steam;
 
-namespace GameCore
+namespace GameCore;
+
+public static class Version
 {
-	public static class Version
+	public enum VersionType : byte
 	{
-		static Version()
-		{
-			SteamServerInfo.Version = Version.VersionString;
-		}
+		Release,
+		PublicRC,
+		PublicBeta,
+		PrivateRC,
+		PrivateRCStreamingForbidden,
+		PrivateBeta,
+		PrivateBetaStreamingForbidden,
+		Development,
+		Nightly
+	}
 
-		public static bool PublicBeta
+	public static readonly byte Major;
+
+	public static readonly byte Minor;
+
+	public static readonly byte Revision;
+
+	public static readonly bool AlwaysAcceptReleaseBuilds;
+
+	public static readonly VersionType BuildType;
+
+	public static readonly HolidayType ActiveHoliday;
+
+	public static readonly bool BackwardCompatibility;
+
+	public static readonly byte BackwardRevision;
+
+	public static readonly string DescriptionOverride;
+
+	public static readonly string VersionString;
+
+	public static bool PublicBeta
+	{
+		get
 		{
-			get
+			if (BuildType != VersionType.PublicBeta)
 			{
-				return Version.BuildType == Version.VersionType.PublicBeta || Version.BuildType == Version.VersionType.PublicRC;
+				return BuildType == VersionType.PublicRC;
 			}
+			return true;
 		}
+	}
 
-		public static bool PrivateBeta
+	public static bool PrivateBeta
+	{
+		get
 		{
-			get
+			VersionType buildType = BuildType;
+			return buildType == VersionType.PrivateBeta || buildType == VersionType.PrivateBetaStreamingForbidden || buildType == VersionType.PrivateRC || buildType == VersionType.PrivateRCStreamingForbidden || buildType == VersionType.Development || buildType == VersionType.Nightly;
+		}
+	}
+
+	public static bool ReleaseCandidate
+	{
+		get
+		{
+			VersionType buildType = BuildType;
+			return buildType == VersionType.PublicRC || buildType == VersionType.PrivateRC || buildType == VersionType.PrivateRCStreamingForbidden;
+		}
+	}
+
+	public static bool StreamingAllowed
+	{
+		get
+		{
+			VersionType buildType = BuildType;
+			if (buildType != VersionType.PrivateBetaStreamingForbidden && buildType != VersionType.PrivateRCStreamingForbidden && buildType != VersionType.Development)
 			{
-				Version.VersionType buildType = Version.BuildType;
-				return buildType == Version.VersionType.PrivateBeta || buildType == Version.VersionType.PrivateBetaStreamingForbidden || buildType == Version.VersionType.PrivateRC || buildType == Version.VersionType.PrivateRCStreamingForbidden || buildType == Version.VersionType.Development || buildType == Version.VersionType.Nightly;
+				return buildType != VersionType.Nightly;
 			}
+			return false;
 		}
+	}
 
-		public static bool ReleaseCandidate
+	public static bool ExtendedVersionCheckNeeded => BuildType != VersionType.Release;
+
+	static Version()
+	{
+		Major = 14;
+		Minor = 1;
+		Revision = 0;
+		AlwaysAcceptReleaseBuilds = false;
+		BuildType = VersionType.Release;
+		ActiveHoliday = HolidayType.None;
+		BackwardCompatibility = false;
+		BackwardRevision = 0;
+		DescriptionOverride = "release-beta-90e1f22c";
+		VersionString = string.Format("{0}.{1}.{2}{3}", Major, Minor, Revision, (!ExtendedVersionCheckNeeded) ? string.Empty : ("-" + (DescriptionOverride ?? "release-beta-8b5899d8")));
+		SteamServerInfo.Version = VersionString;
+	}
+
+	public static bool CompatibilityCheck(byte sMajor, byte sMinor, byte sRevision, byte cMajor, byte cMinor, byte cRevision, bool cBackwardEnabled, byte cBackwardRevision)
+	{
+		if (sMajor != cMajor || sMinor != cMinor)
 		{
-			get
-			{
-				Version.VersionType buildType = Version.BuildType;
-				return buildType == Version.VersionType.PublicRC || buildType == Version.VersionType.PrivateRC || buildType == Version.VersionType.PrivateRCStreamingForbidden;
-			}
+			return false;
 		}
-
-		public static bool StreamingAllowed
+		if (!cBackwardEnabled)
 		{
-			get
-			{
-				Version.VersionType buildType = Version.BuildType;
-				return buildType != Version.VersionType.PrivateBetaStreamingForbidden && buildType != Version.VersionType.PrivateRCStreamingForbidden && buildType != Version.VersionType.Development && buildType != Version.VersionType.Nightly;
-			}
+			return sRevision == cRevision;
 		}
-
-		public static bool ExtendedVersionCheckNeeded
+		if (sRevision >= cBackwardRevision)
 		{
-			get
-			{
-				return Version.BuildType > Version.VersionType.Release;
-			}
+			return sRevision <= cRevision;
 		}
-
-		public static bool CompatibilityCheck(byte sMajor, byte sMinor, byte sRevision, byte cMajor, byte cMinor, byte cRevision, bool cBackwardEnabled, byte cBackwardRevision)
-		{
-			if (sMajor != cMajor || sMinor != cMinor)
-			{
-				return false;
-			}
-			if (!cBackwardEnabled)
-			{
-				return sRevision == cRevision;
-			}
-			return sRevision >= cBackwardRevision && sRevision <= cRevision;
-		}
-
-		public static readonly byte Major = 14;
-
-		public static readonly byte Minor = 0;
-
-		public static readonly byte Revision = 3;
-
-		public static readonly bool AlwaysAcceptReleaseBuilds = false;
-
-		public static readonly Version.VersionType BuildType = Version.VersionType.PublicBeta;
-
-		public static readonly HolidayType ActiveHoliday = HolidayType.None;
-
-		public static readonly bool BackwardCompatibility = false;
-
-		public static readonly byte BackwardRevision = 0;
-
-		public static readonly string DescriptionOverride = null;
-
-		public static readonly string VersionString = string.Format("{0}.{1}.{2}{3}", new object[]
-		{
-			Version.Major,
-			Version.Minor,
-			Version.Revision,
-			(!Version.ExtendedVersionCheckNeeded) ? string.Empty : ("-" + (Version.DescriptionOverride ?? "labapi-publicbeta-0fab0c82"))
-		});
-
-		public enum VersionType : byte
-		{
-			Release,
-			PublicRC,
-			PublicBeta,
-			PrivateRC,
-			PrivateRCStreamingForbidden,
-			PrivateBeta,
-			PrivateBetaStreamingForbidden,
-			Development,
-			Nightly
-		}
+		return false;
 	}
 }

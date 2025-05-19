@@ -1,15 +1,13 @@
-﻿using System;
 using TMPro;
 
-namespace InventorySystem.Items.Test
-{
-	public class TestItemViewmodel : ItemViewmodelBase
-	{
-		public void UpdateText(string stringUwU)
-		{
-			this.Text.text = stringUwU;
-		}
+namespace InventorySystem.Items.Test;
 
-		public TextMeshProUGUI Text;
+public class TestItemViewmodel : ItemViewmodelBase
+{
+	public TextMeshProUGUI Text;
+
+	public void UpdateText(string stringUwU)
+	{
+		Text.text = stringUwU;
 	}
 }

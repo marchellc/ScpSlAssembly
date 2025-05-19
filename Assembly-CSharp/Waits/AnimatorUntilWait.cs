@@ -1,15 +1,13 @@
-﻿using System;
 using UnityEngine;
 
-namespace Waits
-{
-	public class AnimatorUntilWait : UntilWait
-	{
-		protected override bool Predicate()
-		{
-			return this.animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f;
-		}
+namespace Waits;
 
-		public Animator animator;
+public class AnimatorUntilWait : UntilWait
+{
+	public Animator animator;
+
+	protected override bool Predicate()
+	{
+		return animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f;
 	}
 }

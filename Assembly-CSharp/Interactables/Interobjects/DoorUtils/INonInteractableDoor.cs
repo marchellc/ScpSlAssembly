@@ -1,11 +1,8 @@
-﻿using System;
+namespace Interactables.Interobjects.DoorUtils;
 
-namespace Interactables.Interobjects.DoorUtils
+public interface INonInteractableDoor
 {
-	public interface INonInteractableDoor
-	{
-		bool IgnoreLockdowns { get; }
+	bool IgnoreLockdowns { get; }
 
-		bool IgnoreRemoteAdmin { get; }
-	}
+	bool IgnoreRemoteAdmin { get; }
 }

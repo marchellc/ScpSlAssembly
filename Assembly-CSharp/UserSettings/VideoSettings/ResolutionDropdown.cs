@@ -1,67 +1,66 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 
-namespace UserSettings.VideoSettings
+namespace UserSettings.VideoSettings;
+
+public class ResolutionDropdown : MonoBehaviour
 {
-	public class ResolutionDropdown : MonoBehaviour
+	[SerializeField]
+	private TextLanguageReplacer _noResolutionsErrorMessage;
+
+	[SerializeField]
+	private TMP_Text _unsupportedRatioText;
+
+	private TMP_Dropdown _dropdown;
+
+	private void Awake()
 	{
-		private void Awake()
+		_dropdown = GetComponent<TMP_Dropdown>();
+		UpdateValues();
+		DisplayVideoSettings.OnDisplayChanged += UpdateValues;
+		UserSetting<int>.AddListener(DisplayVideoSetting.AspectRatio, OnAspectRatioChanged);
+	}
+
+	private void OnDestroy()
+	{
+		DisplayVideoSettings.OnDisplayChanged -= UpdateValues;
+		UserSetting<int>.RemoveListener(DisplayVideoSetting.AspectRatio, OnAspectRatioChanged);
+	}
+
+	private void Update()
+	{
+		Resolution resolution = default(Resolution);
+		resolution.width = Screen.width;
+		resolution.height = Screen.height;
+		Resolution res = resolution;
+		_unsupportedRatioText.enabled = !DisplayVideoSettings.IsSupportedRatio(res);
+	}
+
+	private void UpdateValues()
+	{
+		OnAspectRatioChanged(UserSetting<int>.Get(DisplayVideoSetting.AspectRatio));
+	}
+
+	private void OnAspectRatioChanged(int selectedOption)
+	{
+		_dropdown.ClearOptions();
+		bool flag = false;
+		Resolution[] selectedAspectResolutions = DisplayVideoSettings.GetSelectedAspectResolutions(selectedOption);
+		for (int i = 0; i < selectedAspectResolutions.Length; i++)
 		{
-			this._dropdown = base.GetComponent<TMP_Dropdown>();
-			this.UpdateValues();
-			DisplayVideoSettings.OnDisplayChanged += this.UpdateValues;
-			UserSetting<int>.AddListener<DisplayVideoSetting>(DisplayVideoSetting.AspectRatio, new Action<int>(this.OnAspectRatioChanged));
+			Resolution resolution = selectedAspectResolutions[i];
+			flag = true;
+			_dropdown.options.Add(new TMP_Dropdown.OptionData($"{resolution.width} × {resolution.height}"));
 		}
-
-		private void OnDestroy()
+		_dropdown.interactable = flag;
+		if (!flag)
 		{
-			DisplayVideoSettings.OnDisplayChanged -= this.UpdateValues;
-			UserSetting<int>.RemoveListener<DisplayVideoSetting>(DisplayVideoSetting.AspectRatio, new Action<int>(this.OnAspectRatioChanged));
+			_dropdown.options.Add(new TMP_Dropdown.OptionData(_noResolutionsErrorMessage.DisplayText));
 		}
-
-		private void Update()
+		else
 		{
-			Resolution resolution = new Resolution
-			{
-				width = Screen.width,
-				height = Screen.height
-			};
-			this._unsupportedRatioText.enabled = !DisplayVideoSettings.IsSupportedRatio(resolution);
+			_dropdown.SetValueWithoutNotify(UserSetting<int>.Get(DisplayVideoSetting.Resolution));
 		}
-
-		private void UpdateValues()
-		{
-			this.OnAspectRatioChanged(UserSetting<int>.Get<DisplayVideoSetting>(DisplayVideoSetting.AspectRatio));
-		}
-
-		private void OnAspectRatioChanged(int selectedOption)
-		{
-			this._dropdown.ClearOptions();
-			bool flag = false;
-			foreach (Resolution resolution in DisplayVideoSettings.GetSelectedAspectResolutions(selectedOption))
-			{
-				flag = true;
-				this._dropdown.options.Add(new TMP_Dropdown.OptionData(string.Format("{0} × {1}", resolution.width, resolution.height)));
-			}
-			this._dropdown.interactable = flag;
-			if (!flag)
-			{
-				this._dropdown.options.Add(new TMP_Dropdown.OptionData(this._noResolutionsErrorMessage.DisplayText));
-			}
-			else
-			{
-				this._dropdown.SetValueWithoutNotify(UserSetting<int>.Get<DisplayVideoSetting>(DisplayVideoSetting.Resolution));
-			}
-			this._dropdown.RefreshShownValue();
-		}
-
-		[SerializeField]
-		private TextLanguageReplacer _noResolutionsErrorMessage;
-
-		[SerializeField]
-		private TMP_Text _unsupportedRatioText;
-
-		private TMP_Dropdown _dropdown;
+		_dropdown.RefreshShownValue();
 	}
 }

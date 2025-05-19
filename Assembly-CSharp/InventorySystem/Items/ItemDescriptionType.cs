@@ -1,15 +1,12 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public enum ItemDescriptionType
 {
-	public enum ItemDescriptionType
-	{
-		Default,
-		Keycard,
-		Firearm,
-		Armor,
-		None,
-		Scp330Bag,
-		Custom
-	}
+	Default,
+	Keycard,
+	Firearm,
+	Armor,
+	None,
+	Scp330Bag,
+	Custom
 }

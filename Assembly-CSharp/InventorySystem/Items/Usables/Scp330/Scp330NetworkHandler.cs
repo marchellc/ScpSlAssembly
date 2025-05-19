@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Footprinting;
 using InventorySystem.Items.Pickups;
@@ -6,171 +6,140 @@ using Mirror;
 using UnityEngine;
 using Utils.Networking;
 
-namespace InventorySystem.Items.Usables.Scp330
+namespace InventorySystem.Items.Usables.Scp330;
+
+public static class Scp330NetworkHandler
 {
-	public static class Scp330NetworkHandler
+	public static readonly Dictionary<ushort, CandyKindID> ReceivedSelectedCandies = new Dictionary<ushort, CandyKindID>();
+
+	public static event Action<SelectScp330Message> OnClientSelectMessageReceived;
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		public static event Action<SelectScp330Message> OnClientSelectMessageReceived;
+		CustomNetworkManager.OnClientReady += RegisterHandlers;
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			CustomNetworkManager.OnClientReady += Scp330NetworkHandler.RegisterHandlers;
-		}
+	private static void RegisterHandlers()
+	{
+		NetworkServer.ReplaceHandler<SelectScp330Message>(ServerSelectMessageReceived);
+		NetworkClient.ReplaceHandler<SelectScp330Message>(ClientSelectMessageReceived);
+		NetworkClient.ReplaceHandler<SyncScp330Message>(ClientSyncMessageReceived);
+		ReceivedSelectedCandies.Clear();
+	}
 
-		private static void RegisterHandlers()
+	private static void ServerSelectMessageReceived(NetworkConnection conn, SelectScp330Message msg)
+	{
+		if (ReferenceHub.TryGetHubNetID(conn.identity.netId, out var hub) && hub.inventory.CurInstance is Scp330Bag scp330Bag && !(scp330Bag == null) && scp330Bag.ItemSerial == msg.Serial && msg.CandyID < scp330Bag.Candies.Count)
 		{
-			NetworkServer.ReplaceHandler<SelectScp330Message>(new Action<NetworkConnectionToClient, SelectScp330Message>(Scp330NetworkHandler.ServerSelectMessageReceived), true);
-			NetworkClient.ReplaceHandler<SelectScp330Message>(new Action<SelectScp330Message>(Scp330NetworkHandler.ClientSelectMessageReceived), true);
-			NetworkClient.ReplaceHandler<SyncScp330Message>(new Action<SyncScp330Message>(Scp330NetworkHandler.ClientSyncMessageReceived), true);
-			Scp330NetworkHandler.ReceivedSelectedCandies.Clear();
-		}
-
-		private static void ServerSelectMessageReceived(NetworkConnection conn, SelectScp330Message msg)
-		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(conn.identity.netId, out referenceHub))
-			{
-				return;
-			}
-			Scp330Bag scp330Bag = referenceHub.inventory.CurInstance as Scp330Bag;
-			if (scp330Bag == null || scp330Bag == null)
-			{
-				return;
-			}
-			if (scp330Bag.ItemSerial != msg.Serial || msg.CandyID >= scp330Bag.Candies.Count)
-			{
-				return;
-			}
 			if (msg.Drop)
 			{
-				PickupSyncInfo pickupSyncInfo = new PickupSyncInfo(scp330Bag.ItemTypeId, scp330Bag.Weight, 0, false);
-				Scp330Pickup scp330Pickup = referenceHub.inventory.ServerCreatePickup(scp330Bag, new PickupSyncInfo?(pickupSyncInfo), true, null) as Scp330Pickup;
-				if (scp330Pickup == null)
-				{
-					return;
-				}
-				scp330Pickup.PreviousOwner = new Footprint(referenceHub);
-				CandyKindID candyKindID = scp330Bag.TryRemove(msg.CandyID);
-				if (candyKindID == CandyKindID.None)
-				{
-					return;
-				}
-				scp330Pickup.NetworkExposedCandy = candyKindID;
-				scp330Pickup.StoredCandies.Add(candyKindID);
-				return;
+				scp330Bag.ServerDropCandy(msg.CandyID);
 			}
 			else
 			{
-				if (msg.CandyID < 0 || msg.CandyID >= scp330Bag.Candies.Count)
-				{
-					return;
-				}
-				scp330Bag.SelectedCandyId = msg.CandyID;
-				msg.CandyID = (int)scp330Bag.Candies[msg.CandyID];
-				PlayerHandler handler = UsableItemsController.GetHandler(referenceHub);
-				handler.CurrentUsable = new CurrentlyUsedItem(scp330Bag, msg.Serial, Time.timeSinceLevelLoad);
-				handler.CurrentUsable.Item.OnUsingStarted();
-				msg.SendToAuthenticated(0);
-				return;
+				scp330Bag.ServerSelectCandy(msg.CandyID);
 			}
 		}
+	}
 
-		private static void ClientSyncMessageReceived(SyncScp330Message msg)
+	public static void ServerDropCandy(this Scp330Bag bag, int index)
+	{
+		if (InventoryExtensions.ServerCreatePickup(psi: new PickupSyncInfo(bag.ItemTypeId, bag.Weight, 0), inv: bag.OwnerInventory, item: bag) is Scp330Pickup scp330Pickup)
 		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetLocalHub(out referenceHub))
+			scp330Pickup.PreviousOwner = new Footprint(bag.Owner);
+			CandyKindID candyKindID = bag.TryRemove(index);
+			if (candyKindID != 0)
 			{
-				return;
-			}
-			ItemBase itemBase;
-			if (!referenceHub.inventory.UserInventory.Items.TryGetValue(msg.Serial, out itemBase))
-			{
-				return;
-			}
-			Scp330Bag scp330Bag = itemBase as Scp330Bag;
-			if (scp330Bag != null)
-			{
-				scp330Bag.Candies = msg.Candies;
+				scp330Pickup.NetworkExposedCandy = candyKindID;
+				scp330Pickup.StoredCandies.Add(candyKindID);
 			}
 		}
+	}
 
-		private static void ClientSelectMessageReceived(SelectScp330Message msg)
+	public static void ServerSelectCandy(this Scp330Bag bag, int index)
+	{
+		if (bag.Candies.TryGet(index, out var element))
 		{
-			CandyKindID candyKindID = (CandyKindID)msg.CandyID;
-			Scp330NetworkHandler.ReceivedSelectedCandies[msg.Serial] = candyKindID;
-			Action<SelectScp330Message> onClientSelectMessageReceived = Scp330NetworkHandler.OnClientSelectMessageReceived;
-			if (onClientSelectMessageReceived != null)
-			{
-				onClientSelectMessageReceived(msg);
-			}
-			ReferenceHub referenceHub;
-			if (!InventoryExtensions.TryGetHubHoldingSerial(msg.Serial, out referenceHub))
-			{
-				return;
-			}
-			if (referenceHub.isLocalPlayer)
-			{
-				Scp330Bag scp330Bag = referenceHub.inventory.CurInstance as Scp330Bag;
-				if (scp330Bag != null && scp330Bag != null)
-				{
-					scp330Bag.OnUsingStarted();
-				}
-			}
-			Scp330Bag scp330Bag2;
-			if (!InventoryItemLoader.TryGetItem<Scp330Bag>(ItemType.SCP330, out scp330Bag2))
-			{
-				return;
-			}
-			UsableItemsController.PlaySoundOnPlayer(referenceHub, Scp330Viewmodel.GetClipForCandy(candyKindID));
-			UsableItemsController.StartTimes[msg.Serial] = Time.timeSinceLevelLoad;
+			bag.SelectedCandyId = index;
+			PlayerHandler handler = UsableItemsController.GetHandler(bag.Owner);
+			handler.CurrentUsable = new CurrentlyUsedItem(bag, bag.ItemSerial, Time.timeSinceLevelLoad);
+			handler.CurrentUsable.Item.OnUsingStarted();
+			SelectScp330Message message = default(SelectScp330Message);
+			message.CandyID = (int)element;
+			message.Drop = false;
+			message.Serial = bag.ItemSerial;
+			message.SendToAuthenticated();
 		}
+	}
 
-		public static void SerializeSyncMessage(this NetworkWriter writer, SyncScp330Message value)
+	private static void ClientSyncMessageReceived(SyncScp330Message msg)
+	{
+		if (ReferenceHub.TryGetLocalHub(out var hub) && hub.inventory.UserInventory.Items.TryGetValue(msg.Serial, out var value) && value is Scp330Bag scp330Bag)
 		{
-			writer.WriteUShort(value.Serial);
-			writer.WriteByte((byte)value.Candies.Count);
-			foreach (CandyKindID candyKindID in value.Candies)
+			scp330Bag.Candies = msg.Candies;
+		}
+	}
+
+	private static void ClientSelectMessageReceived(SelectScp330Message msg)
+	{
+		CandyKindID candyKindID = (CandyKindID)msg.CandyID;
+		ReceivedSelectedCandies[msg.Serial] = candyKindID;
+		Scp330NetworkHandler.OnClientSelectMessageReceived?.Invoke(msg);
+		if (InventoryExtensions.TryGetHubHoldingSerial(msg.Serial, out var hub))
+		{
+			if (hub.isLocalPlayer && hub.inventory.CurInstance is Scp330Bag scp330Bag && scp330Bag != null)
 			{
-				writer.WriteByte((byte)candyKindID);
+				scp330Bag.OnUsingStarted();
+			}
+			if (InventoryItemLoader.TryGetItem<Scp330Bag>(ItemType.SCP330, out var _))
+			{
+				UsableItemsController.PlaySoundOnPlayer(hub, Scp330Viewmodel.GetClipForCandy(candyKindID));
+				UsableItemsController.StartTimes[msg.Serial] = Time.timeSinceLevelLoad;
 			}
 		}
+	}
 
-		public static SyncScp330Message DeserializeSyncMessage(this NetworkReader reader)
+	public static void SerializeSyncMessage(this NetworkWriter writer, SyncScp330Message value)
+	{
+		writer.WriteUShort(value.Serial);
+		writer.WriteByte((byte)value.Candies.Count);
+		foreach (CandyKindID candy in value.Candies)
 		{
-			ushort num = reader.ReadUShort();
-			byte b = reader.ReadByte();
-			List<CandyKindID> list = new List<CandyKindID>();
-			for (int i = 0; i < (int)b; i++)
-			{
-				list.Add((CandyKindID)reader.ReadByte());
-			}
-			return new SyncScp330Message
-			{
-				Candies = list,
-				Serial = num
-			};
+			writer.WriteByte((byte)candy);
 		}
+	}
 
-		public static void SerializeSelectMessage(this NetworkWriter writer, SelectScp330Message value)
+	public static SyncScp330Message DeserializeSyncMessage(this NetworkReader reader)
+	{
+		ushort serial = reader.ReadUShort();
+		byte b = reader.ReadByte();
+		List<CandyKindID> list = new List<CandyKindID>();
+		for (int i = 0; i < b; i++)
 		{
-			int num = value.CandyID + 1;
-			writer.WriteUShort(value.Serial);
-			writer.WriteSByte((sbyte)(value.Drop ? (-(sbyte)num) : num));
+			list.Add((CandyKindID)reader.ReadByte());
 		}
+		SyncScp330Message result = default(SyncScp330Message);
+		result.Candies = list;
+		result.Serial = serial;
+		return result;
+	}
 
-		public static SelectScp330Message DeserializeSelectMessage(this NetworkReader reader)
-		{
-			ushort num = reader.ReadUShort();
-			int num2 = (int)reader.ReadSByte();
-			return new SelectScp330Message
-			{
-				CandyID = Mathf.Abs(num2) - 1,
-				Serial = num,
-				Drop = (num2 < 0)
-			};
-		}
+	public static void SerializeSelectMessage(this NetworkWriter writer, SelectScp330Message value)
+	{
+		int num = value.CandyID + 1;
+		writer.WriteUShort(value.Serial);
+		writer.WriteSByte((sbyte)(value.Drop ? (-num) : num));
+	}
 
-		public static readonly Dictionary<ushort, CandyKindID> ReceivedSelectedCandies = new Dictionary<ushort, CandyKindID>();
+	public static SelectScp330Message DeserializeSelectMessage(this NetworkReader reader)
+	{
+		ushort serial = reader.ReadUShort();
+		int num = reader.ReadSByte();
+		SelectScp330Message result = default(SelectScp330Message);
+		result.CandyID = Mathf.Abs(num) - 1;
+		result.Serial = serial;
+		result.Drop = num < 0;
+		return result;
 	}
 }

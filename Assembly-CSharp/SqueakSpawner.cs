@@ -1,4 +1,3 @@
-﻿using System;
 using System.Runtime.InteropServices;
 using Interactables.Interobjects;
 using Mirror;
@@ -7,50 +6,60 @@ using UnityEngine;
 
 public class SqueakSpawner : NetworkBehaviour
 {
+	[SerializeField]
+	private int spawnChancePercent = 10;
+
+	[SerializeField]
+	private GameObject[] mice;
+
+	[SyncVar(hook = "SyncMouseSpawn")]
+	private byte syncSpawn;
+
+	private SqueakInteraction _spawnedMouse;
+
+	public byte NetworksyncSpawn
+	{
+		get
+		{
+			return syncSpawn;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref syncSpawn, 1uL, SyncMouseSpawn);
+		}
+	}
+
 	private void Awake()
 	{
-		if (NetworkServer.active && global::UnityEngine.Random.Range(0, 100) <= this.spawnChancePercent)
+		if (NetworkServer.active && Random.Range(0, 100) <= spawnChancePercent)
 		{
-			this.NetworksyncSpawn = (byte)global::UnityEngine.Random.Range(1, this.mice.Length + 1);
-			this.SyncMouseSpawn(0, this.syncSpawn);
+			NetworksyncSpawn = (byte)Random.Range(1, mice.Length + 1);
+			SyncMouseSpawn(0, syncSpawn);
 		}
 	}
 
 	[TargetRpc]
 	public void TargetHitMouse(NetworkConnection networkConnection)
 	{
-		NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-		this.SendTargetRPCInternal(networkConnection, "System.Void SqueakSpawner::TargetHitMouse(Mirror.NetworkConnection)", 1242807795, networkWriterPooled, 0);
-		NetworkWriterPool.Return(networkWriterPooled);
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		SendTargetRPCInternal(networkConnection, "System.Void SqueakSpawner::TargetHitMouse(Mirror.NetworkConnection)", 1242807795, writer, 0);
+		NetworkWriterPool.Return(writer);
 	}
 
 	private void SyncMouseSpawn(byte oldValue, byte newValue)
 	{
-		if (newValue == 0)
+		if (newValue != 0)
 		{
-			return;
+			GameObject gameObject = mice[newValue - 1];
+			gameObject.SetActive(value: true);
+			_spawnedMouse = gameObject.GetComponent<SqueakInteraction>();
 		}
-		GameObject gameObject = this.mice[(int)(newValue - 1)];
-		gameObject.SetActive(true);
-		this._spawnedMouse = gameObject.GetComponent<SqueakInteraction>();
 	}
 
 	public override bool Weaved()
 	{
 		return true;
-	}
-
-	public byte NetworksyncSpawn
-	{
-		get
-		{
-			return this.syncSpawn;
-		}
-		[param: In]
-		set
-		{
-			base.GeneratedSyncVarSetter<byte>(value, ref this.syncSpawn, 1UL, new Action<byte, byte>(this.SyncMouseSpawn));
-		}
 	}
 
 	protected void UserCode_TargetHitMouse__NetworkConnection(NetworkConnection networkConnection)
@@ -62,14 +71,16 @@ public class SqueakSpawner : NetworkBehaviour
 		if (!NetworkClient.active)
 		{
 			Debug.LogError("TargetRPC TargetHitMouse called on server.");
-			return;
 		}
-		((SqueakSpawner)obj).UserCode_TargetHitMouse__NetworkConnection(null);
+		else
+		{
+			((SqueakSpawner)obj).UserCode_TargetHitMouse__NetworkConnection(null);
+		}
 	}
 
 	static SqueakSpawner()
 	{
-		RemoteProcedureCalls.RegisterRpc(typeof(SqueakSpawner), "System.Void SqueakSpawner::TargetHitMouse(Mirror.NetworkConnection)", new RemoteCallDelegate(SqueakSpawner.InvokeUserCode_TargetHitMouse__NetworkConnection));
+		RemoteProcedureCalls.RegisterRpc(typeof(SqueakSpawner), "System.Void SqueakSpawner::TargetHitMouse(Mirror.NetworkConnection)", InvokeUserCode_TargetHitMouse__NetworkConnection);
 	}
 
 	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
@@ -77,13 +88,13 @@ public class SqueakSpawner : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteByte(this.syncSpawn);
+			NetworkWriterExtensions.WriteByte(writer, syncSpawn);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
-		if ((base.syncVarDirtyBits & 1UL) != 0UL)
+		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteByte(this.syncSpawn);
+			NetworkWriterExtensions.WriteByte(writer, syncSpawn);
 		}
 	}
 
@@ -92,24 +103,13 @@ public class SqueakSpawner : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			base.GeneratedSyncVarDeserialize<byte>(ref this.syncSpawn, new Action<byte, byte>(this.SyncMouseSpawn), reader.ReadByte());
+			GeneratedSyncVarDeserialize(ref syncSpawn, SyncMouseSpawn, NetworkReaderExtensions.ReadByte(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			base.GeneratedSyncVarDeserialize<byte>(ref this.syncSpawn, new Action<byte, byte>(this.SyncMouseSpawn), reader.ReadByte());
+			GeneratedSyncVarDeserialize(ref syncSpawn, SyncMouseSpawn, NetworkReaderExtensions.ReadByte(reader));
 		}
 	}
-
-	[SerializeField]
-	private int spawnChancePercent = 10;
-
-	[SerializeField]
-	private GameObject[] mice;
-
-	[SyncVar(hook = "SyncMouseSpawn")]
-	private byte syncSpawn;
-
-	private SqueakInteraction _spawnedMouse;
 }

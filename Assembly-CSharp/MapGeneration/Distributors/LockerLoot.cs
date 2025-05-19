@@ -1,18 +1,17 @@
-﻿using System;
+using System;
 
-namespace MapGeneration.Distributors
+namespace MapGeneration.Distributors;
+
+[Serializable]
+public class LockerLoot
 {
-	[Serializable]
-	public class LockerLoot
-	{
-		public ItemType TargetItem;
+	public ItemType TargetItem;
 
-		public int RemainingUses;
+	public int RemainingUses;
 
-		public int MaxPerChamber;
+	public int MaxPerChamber;
 
-		public int ProbabilityPoints;
+	public int ProbabilityPoints;
 
-		public int MinPerChamber = 1;
-	}
+	public int MinPerChamber = 1;
 }

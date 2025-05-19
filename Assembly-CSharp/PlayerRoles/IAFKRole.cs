@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles;
 
-namespace PlayerRoles
+public interface IAFKRole
 {
-	public interface IAFKRole
-	{
-		bool IsAFK { get; }
-	}
+	bool IsAFK { get; }
 }

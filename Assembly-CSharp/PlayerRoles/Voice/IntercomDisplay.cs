@@ -1,105 +1,103 @@
-﻿using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Mirror;
 using UnityEngine;
 
-namespace PlayerRoles.Voice
+namespace PlayerRoles.Voice;
+
+public class IntercomDisplay : NetworkBehaviour
 {
-	public class IntercomDisplay : NetworkBehaviour
+	private enum IcomText
 	{
-		private void Awake()
+		Ready,
+		Transmitting,
+		TrasmittingBypass,
+		Restarting,
+		AdminUsing,
+		Muted,
+		Unknown,
+		Wait
+	}
+
+	private static IntercomDisplay _singleton;
+
+	[SyncVar]
+	private string _overrideText;
+
+	private Intercom _icom;
+
+	private string[] _translations;
+
+	private bool[] _translationsSet;
+
+	public string Network_overrideText
+	{
+		get
 		{
-			this._icom = base.GetComponent<Intercom>();
-			IntercomDisplay._singleton = this;
-			int num = 0;
-			foreach (int num2 in EnumUtils<IntercomDisplay.IcomText>.Values.ToArray<IntercomDisplay.IcomText>().Cast<int>())
-			{
-				num = Mathf.Max(num, num2 + 1);
-			}
-			this._translations = new string[num];
-			this._translationsSet = new bool[num];
+			return _overrideText;
 		}
-
-		public static bool TrySetDisplay(string str)
+		[param: In]
+		set
 		{
-			if (IntercomDisplay._singleton == null)
-			{
-				return false;
-			}
-			IntercomDisplay._singleton.Network_overrideText = str;
-			return true;
+			GeneratedSyncVarSetter(value, ref _overrideText, 1uL, null);
 		}
+	}
 
-		public override bool Weaved()
+	private void Awake()
+	{
+		_icom = GetComponent<Intercom>();
+		_singleton = this;
+		int num = 0;
+		foreach (int item in EnumUtils<IcomText>.Values.ToArray().Cast<int>())
 		{
-			return true;
+			num = Mathf.Max(num, item + 1);
 		}
+		_translations = new string[num];
+		_translationsSet = new bool[num];
+	}
 
-		public string Network_overrideText
+	public static bool TrySetDisplay(string str)
+	{
+		if (_singleton == null)
 		{
-			get
-			{
-				return this._overrideText;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<string>(value, ref this._overrideText, 1UL, null);
-			}
+			return false;
 		}
+		_singleton.Network_overrideText = str;
+		return true;
+	}
 
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteString(this._overrideText);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 1UL) != 0UL)
-			{
-				writer.WriteString(this._overrideText);
-			}
+			writer.WriteString(_overrideText);
+			return;
 		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<string>(ref this._overrideText, null, reader.ReadString());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 1L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<string>(ref this._overrideText, null, reader.ReadString());
-			}
+			writer.WriteString(_overrideText);
 		}
+	}
 
-		private static IntercomDisplay _singleton;
-
-		[SyncVar]
-		private string _overrideText;
-
-		private Intercom _icom;
-
-		private string[] _translations;
-
-		private bool[] _translationsSet;
-
-		private enum IcomText
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
 		{
-			Ready,
-			Transmitting,
-			TrasmittingBypass,
-			Restarting,
-			AdminUsing,
-			Muted,
-			Unknown,
-			Wait
+			GeneratedSyncVarDeserialize(ref _overrideText, null, reader.ReadString());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 1L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _overrideText, null, reader.ReadString());
 		}
 	}
 }

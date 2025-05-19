@@ -1,67 +1,58 @@
-﻿using System;
+using System;
 using System.Text;
 using Mirror;
 using RemoteAdmin;
 
-namespace CommandSystem.Commands.RemoteAdmin.Stripdown
+namespace CommandSystem.Commands.RemoteAdmin.Stripdown;
+
+[CommandHandler(typeof(StripdownCommand))]
+public abstract class StripdownInstructionBase : ICommand
 {
-	[CommandHandler(typeof(StripdownCommand))]
-	public abstract class StripdownInstructionBase : ICommand
+	private static readonly StringBuilder Combiner = new StringBuilder();
+
+	public abstract string Command { get; }
+
+	public string[] Aliases => null;
+
+	public abstract string Description { get; }
+
+	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
-		public abstract string Command { get; }
-
-		public string[] Aliases
+		if (!sender.CheckPermission(PlayerPermissions.PermissionsManagement, out response))
 		{
-			get
-			{
-				return null;
-			}
+			return false;
 		}
-
-		public abstract string Description { get; }
-
-		public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+		NetworkConnection connectionToClient;
+		if (sender is PlayerCommandSender playerCommandSender)
 		{
-			if (!sender.CheckPermission(PlayerPermissions.PermissionsManagement, out response))
+			connectionToClient = playerCommandSender.ReferenceHub.connectionToClient;
+		}
+		else
+		{
+			if (!(sender is ServerConsoleSender) || !ReferenceHub.TryGetLocalHub(out var hub))
 			{
+				response = "No valid receiver found.";
 				return false;
 			}
-			PlayerCommandSender playerCommandSender = sender as PlayerCommandSender;
-			NetworkConnection networkConnection;
-			if (playerCommandSender != null)
+			connectionToClient = hub.connectionToClient;
+		}
+		Combiner.Clear();
+		bool flag = false;
+		for (int i = 0; i < arguments.Count; i++)
+		{
+			if (flag)
 			{
-				networkConnection = playerCommandSender.ReferenceHub.connectionToClient;
+				Combiner.Append(' ');
 			}
 			else
 			{
-				ReferenceHub referenceHub;
-				if (!(sender is ServerConsoleSender) || !ReferenceHub.TryGetLocalHub(out referenceHub))
-				{
-					response = "No valid receiver found.";
-					return false;
-				}
-				networkConnection = referenceHub.connectionToClient;
+				flag = true;
 			}
-			StripdownInstructionBase.Combiner.Clear();
-			bool flag = false;
-			for (int i = 0; i < arguments.Count; i++)
-			{
-				if (flag)
-				{
-					StripdownInstructionBase.Combiner.Append(' ');
-				}
-				else
-				{
-					flag = true;
-				}
-				StripdownInstructionBase.Combiner.Append(arguments.Array[arguments.Offset + i]);
-			}
-			response = this.ProcessInstruction(networkConnection, StripdownInstructionBase.Combiner.ToString());
-			return true;
+			Combiner.Append(arguments.Array[arguments.Offset + i]);
 		}
-
-		protected abstract string ProcessInstruction(NetworkConnection conn, string instruction);
-
-		private static readonly StringBuilder Combiner = new StringBuilder();
+		response = ProcessInstruction(connectionToClient, Combiner.ToString());
+		return true;
 	}
+
+	protected abstract string ProcessInstruction(NetworkConnection conn, string instruction);
 }

@@ -1,94 +1,95 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
-namespace InventorySystem.Items
+namespace InventorySystem.Items;
+
+public static class ItemTranslationReader
 {
-	public static class ItemTranslationReader
+	private class NameDescriptionPair
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			TranslationReader.OnTranslationsRefreshed += ItemTranslationReader.ReloadTranslations;
-		}
+		public string Name;
 
-		private static void ReloadTranslations()
+		public string Description;
+	}
+
+	private const char SplitChar = '~';
+
+	private static NameDescriptionPair[] _cachedTranslations;
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		TranslationReader.OnTranslationsRefreshed += ReloadTranslations;
+	}
+
+	private static void ReloadTranslations()
+	{
+		int num = 0;
+		foreach (KeyValuePair<ItemType, ItemBase> availableItem in InventoryItemLoader.AvailableItems)
 		{
-			if (ItemTranslationReader._cachedTranslations == null)
+			num = Mathf.Max(num, (int)availableItem.Key);
+		}
+		if (_cachedTranslations == null)
+		{
+			_cachedTranslations = new NameDescriptionPair[num + 1];
+		}
+		string val;
+		for (int i = 0; TranslationReader.TryGet("Items", i, out val); i++)
+		{
+			string[] array = val.Split('~');
+			if (array.Length >= 2 && int.TryParse(array[0], out var result))
 			{
-				ItemTranslationReader._cachedTranslations = new ItemTranslationReader.NameDescriptionPair[InventoryItemLoader.AvailableItems.Count];
-			}
-			int num = 0;
-			string text;
-			while (TranslationReader.TryGet("Items", num, out text))
-			{
-				string[] array = text.Split('~', StringSplitOptions.None);
-				int num2;
-				if (array.Length >= 2 && int.TryParse(array[0], out num2))
+				string name = array[1];
+				string description = ((array.Length > 2) ? array[2] : string.Empty);
+				EnsureCapacity(result);
+				_cachedTranslations[result] = new NameDescriptionPair
 				{
-					string text2 = array[1];
-					string text3 = ((array.Length > 2) ? array[2] : string.Empty);
-					ItemTranslationReader.EnsureCapacity(num2);
-					ItemTranslationReader._cachedTranslations[num2] = new ItemTranslationReader.NameDescriptionPair
-					{
-						Name = text2,
-						Description = text3
-					};
-				}
-				num++;
-			}
-		}
-
-		private static void EnsureCapacity(int cap)
-		{
-			if (cap < ItemTranslationReader._cachedTranslations.Length)
-			{
-				return;
-			}
-			Array.Resize<ItemTranslationReader.NameDescriptionPair>(ref ItemTranslationReader._cachedTranslations, cap * 2);
-		}
-
-		private static ItemTranslationReader.NameDescriptionPair GetTranslation(ItemType it)
-		{
-			int num = (int)it;
-			if (num < 0)
-			{
-				throw new InvalidOperationException(string.Format("Cannot load translation for item {0}", it));
-			}
-			if (ItemTranslationReader._cachedTranslations == null)
-			{
-				ItemTranslationReader.ReloadTranslations();
-			}
-			ItemTranslationReader.NameDescriptionPair nameDescriptionPair = ItemTranslationReader._cachedTranslations[num];
-			if (nameDescriptionPair == null)
-			{
-				nameDescriptionPair = new ItemTranslationReader.NameDescriptionPair
-				{
-					Name = it.ToString()
+					Name = name,
+					Description = description
 				};
-				ItemTranslationReader._cachedTranslations[num] = nameDescriptionPair;
 			}
-			return nameDescriptionPair;
 		}
+	}
 
-		public static string GetName(this ItemType it)
+	private static void EnsureCapacity(int cap)
+	{
+		if (cap >= _cachedTranslations.Length)
 		{
-			return ItemTranslationReader.GetTranslation(it).Name;
+			Array.Resize(ref _cachedTranslations, cap * 2);
 		}
+	}
 
-		public static string GetDescription(this ItemType it)
+	private static NameDescriptionPair GetTranslation(ItemType it)
+	{
+		int num = (int)it;
+		if (num < 0)
 		{
-			return ItemTranslationReader.GetTranslation(it).Description;
+			throw new InvalidOperationException($"Cannot load translation for item {it}");
 		}
-
-		private const char SplitChar = '~';
-
-		private static ItemTranslationReader.NameDescriptionPair[] _cachedTranslations;
-
-		private class NameDescriptionPair
+		if (_cachedTranslations == null)
 		{
-			public string Name;
-
-			public string Description;
+			ReloadTranslations();
 		}
+		NameDescriptionPair nameDescriptionPair = _cachedTranslations[num];
+		if (nameDescriptionPair == null)
+		{
+			nameDescriptionPair = new NameDescriptionPair
+			{
+				Name = it.ToString()
+			};
+			_cachedTranslations[num] = nameDescriptionPair;
+		}
+		return nameDescriptionPair;
+	}
+
+	public static string GetName(this ItemType it)
+	{
+		return GetTranslation(it).Name;
+	}
+
+	public static string GetDescription(this ItemType it)
+	{
+		return GetTranslation(it).Description;
 	}
 }

@@ -1,107 +1,89 @@
-﻿using System;
 using GameCore;
 using InventorySystem.Items.Autosync;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.Test
+namespace InventorySystem.Items.Test;
+
+public class TestItem : AutosyncItem
 {
-	public class TestItem : AutosyncItem
+	public override float Weight => 1f;
+
+	public static void Log(string msg)
 	{
-		public override float Weight
+		Console.AddLog("TEST ITEM: " + msg, new Color(0.3765f, 0.7882f, 0.9019f));
+	}
+
+	public override void EquipUpdate()
+	{
+		if (!IsLocalPlayer)
 		{
-			get
+			return;
+		}
+		if (Input.GetKeyDown(KeyCode.G))
+		{
+			Log("Sending empty message");
+			new AutosyncCmd(base.ItemId).Send();
+		}
+		if (Input.GetKeyDown(KeyCode.H))
+		{
+			Log("Sending 'KNOCK KNOCK'");
+			NetworkWriter writer;
+			using (new AutosyncCmd(base.ItemId, out writer))
 			{
-				return 1f;
+				writer.WriteString("KNOCK KNOCK");
 			}
 		}
-
-		public static void Log(string msg)
+		if (!Input.GetKeyDown(KeyCode.J))
 		{
-			global::GameCore.Console.AddLog("TEST ITEM: " + msg, new Color(0.3765f, 0.7882f, 0.9019f), false, global::GameCore.Console.ConsoleLogType.Log);
+			return;
 		}
-
-		public override void EquipUpdate()
+		Log("Sending a sequence:");
+		for (int i = 1; i <= 10; i++)
 		{
-			if (!this.IsLocalPlayer)
+			NetworkWriter writer2;
+			using (new AutosyncCmd(base.ItemId, out writer2))
 			{
-				return;
-			}
-			if (Input.GetKeyDown(KeyCode.G))
-			{
-				TestItem.Log("Sending empty message");
-				new AutosyncCmd(base.ItemId).Send();
-			}
-			if (Input.GetKeyDown(KeyCode.H))
-			{
-				TestItem.Log("Sending 'KNOCK KNOCK'");
-				NetworkWriter networkWriter;
-				using (new AutosyncCmd(base.ItemId, out networkWriter))
-				{
-					networkWriter.WriteString("KNOCK KNOCK");
-				}
-			}
-			if (Input.GetKeyDown(KeyCode.J))
-			{
-				TestItem.Log("Sending a sequence:");
-				for (int i = 1; i <= 10; i++)
-				{
-					NetworkWriter networkWriter2;
-					using (new AutosyncCmd(base.ItemId, out networkWriter2))
-					{
-						networkWriter2.WriteString("Sequence: " + i.ToString());
-					}
-				}
+				writer2.WriteString("Sequence: " + i);
 			}
 		}
+	}
 
-		public override void ServerConfirmAcqusition()
+	public override void ServerConfirmAcqusition()
+	{
+		base.ServerConfirmAcqusition();
+		Log("Received acquisition confirmation of " + base.ItemSerial);
+	}
+
+	public override void ClientProcessRpcInstance(NetworkReader reader)
+	{
+		base.ClientProcessRpcInstance(reader);
+		if (IsLocalPlayer && ViewModel is TestItemViewmodel testItemViewmodel)
 		{
-			base.ServerConfirmAcqusition();
-			TestItem.Log("Received acquisition confirmation of " + base.ItemSerial.ToString());
+			testItemViewmodel.UpdateText(reader.ReadString());
 		}
+	}
 
-		public override void ClientProcessRpcInstance(NetworkReader reader)
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		string text;
+		if (reader.Position >= reader.Capacity)
 		{
-			base.ClientProcessRpcInstance(reader);
-			if (this.IsLocalPlayer)
-			{
-				TestItemViewmodel testItemViewmodel = this.ViewModel as TestItemViewmodel;
-				if (testItemViewmodel != null)
-				{
-					testItemViewmodel.UpdateText(reader.ReadString());
-				}
-			}
+			text = "Empty";
+			Log("Received an empty message.");
 		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
+		else
 		{
-			base.ServerProcessCmd(reader);
-			string text;
-			if (reader.Position >= reader.Capacity)
-			{
-				text = "Empty";
-				TestItem.Log("Received an empty message.");
-			}
-			else
-			{
-				string text2 = reader.ReadString();
-				TestItem.Log("Received a message - " + text2);
-				if (text2 == "KNOCK KNOCK")
-				{
-					text = "Who's there?";
-				}
-				else
-				{
-					text = "Unknown - " + text2;
-				}
-			}
-			TestItem.Log("Sending response - " + text);
-			NetworkWriter networkWriter;
-			using (new AutosyncRpc(base.ItemId, base.Owner, out networkWriter))
-			{
-				networkWriter.WriteString(text);
-			}
+			string text2 = reader.ReadString();
+			Log("Received a message - " + text2);
+			text = ((!(text2 == "KNOCK KNOCK")) ? ("Unknown - " + text2) : "Who's there?");
+		}
+		Log("Sending response - " + text);
+		NetworkWriter writer;
+		using (new AutosyncRpc(base.ItemId, base.Owner, out writer))
+		{
+			writer.WriteString(text);
 		}
 	}
 }

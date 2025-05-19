@@ -1,83 +1,66 @@
-﻿using System;
 using Footprinting;
 using InventorySystem.Items.MicroHID;
 using InventorySystem.Items.MicroHID.Modules;
 using Mirror;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public class MicroHidDamageHandler : AttackerDamageHandler, DisintegrateDeathAnimation.IDisintegrateDamageHandler
 {
-	public class MicroHidDamageHandler : AttackerDamageHandler, DisintegrateDeathAnimation.IDisintegrateDamageHandler
+	private readonly string _deathScreenText;
+
+	private readonly string _serverLogsText;
+
+	private readonly string _ragdollInspectText;
+
+	public override float Damage { get; internal set; }
+
+	public override Footprint Attacker { get; protected set; }
+
+	public override bool AllowSelfDamage => Disintegrate;
+
+	public override string ServerLogsText => _serverLogsText;
+
+	public override string RagdollInspectText => _ragdollInspectText;
+
+	public override string DeathScreenText => _deathScreenText;
+
+	public MicroHidFiringMode FiringMode { get; private set; }
+
+	public bool Disintegrate { get; private set; }
+
+	public MicroHidDamageHandler(FiringModeControllerModule module, float impulseDamage)
 	{
-		public override float Damage { get; internal set; }
-
-		public override Footprint Attacker { get; protected set; }
-
-		public override bool AllowSelfDamage
+		_ragdollInspectText = DeathTranslations.MicroHID.RagdollTranslation;
+		_deathScreenText = DeathTranslations.MicroHID.DeathscreenTranslation;
+		if (!(module == null))
 		{
-			get
-			{
-				return this.Disintegrate;
-			}
+			FiringMode = module.AssignedMode;
+			Attacker = new Footprint(module.Item.Owner);
+			_serverLogsText = "Deep fried by " + Attacker.Nickname + " with " + DeathTranslations.MicroHID.LogLabel + " using " + FiringMode;
+			Damage = impulseDamage;
 		}
+	}
 
-		public override string ServerLogsText
-		{
-			get
-			{
-				return this._serverLogsText;
-			}
-		}
+	public MicroHidDamageHandler(float damage, MicroHIDItem micro)
+	{
+		Attacker = new Footprint(micro.Owner);
+		_serverLogsText = "MicroHID overcharge";
+		Damage = damage;
+		Disintegrate = true;
+	}
 
-		public MicroHidFiringMode FiringMode { get; private set; }
+	public override void WriteAdditionalData(NetworkWriter writer)
+	{
+		base.WriteAdditionalData(writer);
+		writer.WriteByte((byte)FiringMode);
+		writer.WriteBool(Disintegrate);
+	}
 
-		public bool Disintegrate { get; private set; }
-
-		public MicroHidDamageHandler(FiringModeControllerModule module, float impulseDamage)
-		{
-			if (module == null)
-			{
-				return;
-			}
-			this.FiringMode = module.AssignedMode;
-			this.Attacker = new Footprint(module.Item.Owner);
-			this._serverLogsText = string.Concat(new string[]
-			{
-				"Deep fried by ",
-				this.Attacker.Nickname,
-				" with ",
-				DeathTranslations.MicroHID.LogLabel,
-				" using ",
-				this.FiringMode.ToString()
-			});
-			this.Damage = impulseDamage;
-		}
-
-		public MicroHidDamageHandler(float damage, MicroHIDItem micro)
-		{
-			this.Attacker = new Footprint(micro.Owner);
-			this._serverLogsText = "MicroHID overcharge";
-			this.Damage = damage;
-			this.Disintegrate = true;
-		}
-
-		public override void WriteAdditionalData(NetworkWriter writer)
-		{
-			base.WriteAdditionalData(writer);
-			writer.WriteByte((byte)this.FiringMode);
-			writer.WriteBool(this.Disintegrate);
-		}
-
-		public override void ReadAdditionalData(NetworkReader reader)
-		{
-			base.ReadAdditionalData(reader);
-			this.FiringMode = (MicroHidFiringMode)reader.ReadByte();
-			this.Disintegrate = reader.ReadBool();
-		}
-
-		private readonly string _deathScreenText;
-
-		private readonly string _serverLogsText;
-
-		private readonly string _ragdollInspectText;
+	public override void ReadAdditionalData(NetworkReader reader)
+	{
+		base.ReadAdditionalData(reader);
+		FiringMode = (MicroHidFiringMode)reader.ReadByte();
+		Disintegrate = reader.ReadBool();
 	}
 }

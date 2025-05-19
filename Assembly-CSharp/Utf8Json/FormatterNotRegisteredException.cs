@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 
-namespace Utf8Json
+namespace Utf8Json;
+
+public class FormatterNotRegisteredException : Exception
 {
-	public class FormatterNotRegisteredException : Exception
+	public FormatterNotRegisteredException(string message)
+		: base(message)
 	{
-		public FormatterNotRegisteredException(string message)
-			: base(message)
-		{
-		}
 	}
 }

@@ -1,13 +1,10 @@
-﻿using System;
+namespace InventorySystem.Items.Usables.Scp330;
 
-namespace InventorySystem.Items.Usables.Scp330
+public interface ICandy
 {
-	public interface ICandy
-	{
-		CandyKindID Kind { get; }
+	CandyKindID Kind { get; }
 
-		float SpawnChanceWeight { get; }
+	float SpawnChanceWeight { get; }
 
-		void ServerApplyEffects(ReferenceHub hub);
-	}
+	void ServerApplyEffects(ReferenceHub hub);
 }

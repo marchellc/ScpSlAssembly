@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Extensions;
 
-namespace InventorySystem.Items.Firearms.Extensions
+public interface IPickupLockingExtension
 {
-	public interface IPickupLockingExtension
-	{
-		bool LockPrefab { get; }
-	}
+	bool LockPrefab { get; }
 }

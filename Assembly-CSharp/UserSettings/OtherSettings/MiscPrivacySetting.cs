@@ -1,15 +1,12 @@
-﻿using System;
+namespace UserSettings.OtherSettings;
 
-namespace UserSettings.OtherSettings
+public enum MiscPrivacySetting
 {
-	public enum MiscPrivacySetting
-	{
-		DoNotTrack,
-		SteamLobbyPrivacy,
-		RichPresence,
-		HideSteamProfile,
-		BadgePreferences,
-		GlobalBadgeVisibility,
-		LocalBadgeVisibility
-	}
+	DoNotTrack,
+	SteamLobbyPrivacy,
+	RichPresence,
+	HideSteamProfile,
+	BadgePreferences,
+	GlobalBadgeVisibility,
+	LocalBadgeVisibility
 }

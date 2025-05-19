@@ -1,23 +1,21 @@
-﻿using System;
 using UnityEngine;
 
-namespace Interactables.Interobjects.DoorUtils
+namespace Interactables.Interobjects.DoorUtils;
+
+public abstract class DoorVariantExtension : MonoBehaviour
 {
-	public abstract class DoorVariantExtension : MonoBehaviour
+	public DoorVariant TargetDoor;
+
+	private void OnValidate()
 	{
-		private void OnValidate()
-		{
-			this.TargetDoor = base.GetComponent<DoorVariant>();
-		}
+		TargetDoor = GetComponent<DoorVariant>();
+	}
 
-		private void Awake()
+	private void Awake()
+	{
+		if (!TargetDoor)
 		{
-			if (!this.TargetDoor)
-			{
-				this.TargetDoor = base.GetComponent<DoorVariant>();
-			}
+			TargetDoor = GetComponent<DoorVariant>();
 		}
-
-		public DoorVariant TargetDoor;
 	}
 }

@@ -1,81 +1,81 @@
-﻿using System;
+using System;
 using MapGeneration;
 using Mirror;
 using UnityEngine;
 
-namespace Interactables.Interobjects
+namespace Interactables.Interobjects;
+
+public class ElevatorManager : MonoBehaviour
 {
-	public class ElevatorManager : MonoBehaviour
+	[Serializable]
+	private struct ChamberTypePair
 	{
-		private void Awake()
-		{
-			this.RegisterElevatorPrefab(this._defaultChamber);
-			this._customChambers.ForEach(delegate(ElevatorManager.ChamberTypePair x)
-			{
-				this.RegisterElevatorPrefab(x.Prefab);
-			});
-		}
+		public ElevatorGroup Group;
 
-		private void RegisterElevatorPrefab(ElevatorChamber chamber)
-		{
-			NetworkClient.prefabs[chamber.netIdentity.assetId] = chamber.gameObject;
-		}
+		public ElevatorChamber Prefab;
+	}
 
-		private void Start()
+	[SerializeField]
+	private ChamberTypePair[] _customChambers;
+
+	[SerializeField]
+	private ElevatorChamber _defaultChamber;
+
+	private void Awake()
+	{
+		RegisterElevatorPrefab(_defaultChamber);
+		_customChambers.ForEach(delegate(ChamberTypePair x)
 		{
-			SeedSynchronizer.OnGenerationFinished += this.SpawnAllChambers;
-			if (SeedSynchronizer.MapGenerated)
+			RegisterElevatorPrefab(x.Prefab);
+		});
+	}
+
+	private void RegisterElevatorPrefab(ElevatorChamber chamber)
+	{
+		NetworkClient.prefabs[chamber.netIdentity.assetId] = chamber.gameObject;
+	}
+
+	private void Start()
+	{
+		SeedSynchronizer.OnGenerationFinished += SpawnAllChambers;
+		if (SeedSynchronizer.MapGenerated)
+		{
+			SpawnAllChambers();
+		}
+	}
+
+	private void OnDestroy()
+	{
+		SeedSynchronizer.OnGenerationFinished -= SpawnAllChambers;
+	}
+
+	private void SpawnAllChambers()
+	{
+		if (NetworkServer.active)
+		{
+			EnumUtils<ElevatorGroup>.Values.ForEach(SpawnChamber);
+		}
+	}
+
+	private void SpawnChamber(ElevatorGroup group)
+	{
+		if (ElevatorDoor.GetDoorsForGroup(group).Count == 0)
+		{
+			return;
+		}
+		ElevatorChamber original = _defaultChamber;
+		ChamberTypePair[] customChambers = _customChambers;
+		for (int i = 0; i < customChambers.Length; i++)
+		{
+			ChamberTypePair chamberTypePair = customChambers[i];
+			if (chamberTypePair.Group == group)
 			{
-				this.SpawnAllChambers();
+				original = chamberTypePair.Prefab;
+				break;
 			}
 		}
-
-		private void OnDestroy()
-		{
-			SeedSynchronizer.OnGenerationFinished -= this.SpawnAllChambers;
-		}
-
-		private void SpawnAllChambers()
-		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			EnumUtils<ElevatorGroup>.Values.ForEach(new Action<ElevatorGroup>(this.SpawnChamber));
-		}
-
-		private void SpawnChamber(ElevatorGroup group)
-		{
-			if (ElevatorDoor.GetDoorsForGroup(group).Count == 0)
-			{
-				return;
-			}
-			ElevatorChamber elevatorChamber = this._defaultChamber;
-			foreach (ElevatorManager.ChamberTypePair chamberTypePair in this._customChambers)
-			{
-				if (chamberTypePair.Group == group)
-				{
-					elevatorChamber = chamberTypePair.Prefab;
-					break;
-				}
-			}
-			ElevatorChamber elevatorChamber2 = global::UnityEngine.Object.Instantiate<ElevatorChamber>(elevatorChamber, null);
-			elevatorChamber2.NetworkAssignedGroup = group;
-			NetworkServer.Spawn(elevatorChamber2.gameObject, null);
-		}
-
-		[SerializeField]
-		private ElevatorManager.ChamberTypePair[] _customChambers;
-
-		[SerializeField]
-		private ElevatorChamber _defaultChamber;
-
-		[Serializable]
-		private struct ChamberTypePair
-		{
-			public ElevatorGroup Group;
-
-			public ElevatorChamber Prefab;
-		}
+		ElevatorChamber elevatorChamber = UnityEngine.Object.Instantiate(original, null);
+		elevatorChamber.NetworkAssignedGroup = group;
+		NetworkServer.Spawn(elevatorChamber.gameObject);
 	}
 }

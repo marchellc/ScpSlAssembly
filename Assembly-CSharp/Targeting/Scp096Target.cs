@@ -1,31 +1,29 @@
-﻿using System;
 using UnityEngine;
 
-namespace Targeting
+namespace Targeting;
+
+public class Scp096Target : TargetComponent
 {
-	public class Scp096Target : TargetComponent
+	[SerializeField]
+	private GameObject _targetParticles;
+
+	private bool _isTarget;
+
+	public override bool IsTarget
 	{
-		public override bool IsTarget
+		get
 		{
-			get
-			{
-				return this._isTarget;
-			}
-			set
-			{
-				this._targetParticles.SetActive(value);
-				this._isTarget = value;
-			}
+			return _isTarget;
 		}
-
-		private void Start()
+		set
 		{
-			this.IsTarget = false;
+			_targetParticles.SetActive(value);
+			_isTarget = value;
 		}
+	}
 
-		[SerializeField]
-		private GameObject _targetParticles;
-
-		private bool _isTarget;
+	private void Start()
+	{
+		IsTarget = false;
 	}
 }

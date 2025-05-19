@@ -1,25 +1,23 @@
-﻿using System;
 using Mirror;
 
-namespace Hints
+namespace Hints;
+
+public abstract class DisplayableObject<TData> : NetworkObject<TData>
 {
-	public abstract class DisplayableObject<TData> : NetworkObject<TData>
+	public float DurationScalar { get; private set; }
+
+	protected DisplayableObject(float durationScalar = 1f)
 	{
-		public float DurationScalar { get; private set; }
+		DurationScalar = durationScalar;
+	}
 
-		protected DisplayableObject(float durationScalar = 1f)
-		{
-			this.DurationScalar = durationScalar;
-		}
+	public override void Deserialize(NetworkReader reader)
+	{
+		DurationScalar = reader.ReadFloat();
+	}
 
-		public override void Deserialize(NetworkReader reader)
-		{
-			this.DurationScalar = reader.ReadFloat();
-		}
-
-		public override void Serialize(NetworkWriter writer)
-		{
-			writer.WriteFloat(this.DurationScalar);
-		}
+	public override void Serialize(NetworkWriter writer)
+	{
+		writer.WriteFloat(DurationScalar);
 	}
 }

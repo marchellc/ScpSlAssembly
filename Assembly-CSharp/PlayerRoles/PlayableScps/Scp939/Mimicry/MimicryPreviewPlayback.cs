@@ -1,61 +1,62 @@
-﻿using System;
 using VoiceChat.Networking;
 using VoiceChat.Playbacks;
 
-namespace PlayerRoles.PlayableScps.Scp939.Mimicry
+namespace PlayerRoles.PlayableScps.Scp939.Mimicry;
+
+public class MimicryPreviewPlayback : VoiceChatPlaybackBase
 {
-	public class MimicryPreviewPlayback : VoiceChatPlaybackBase
+	private PlaybackBuffer _playback;
+
+	private bool _playbackSet;
+
+	public override int MaxSamples
 	{
-		public override int MaxSamples
+		get
 		{
-			get
+			if (!_playbackSet)
 			{
-				if (!this._playbackSet)
-				{
-					return 0;
-				}
-				return this._playback.Length;
+				return 0;
 			}
+			return _playback.Length;
 		}
+	}
 
-		protected override float ReadSample()
+	public bool IsEmpty
+	{
+		get
 		{
-			return this._playback.Read();
+			if (_playbackSet)
+			{
+				return _playback.ReadHead == _playback.WriteHead;
+			}
+			return true;
 		}
+	}
 
-		public bool IsEmpty
+	protected override float ReadSample()
+	{
+		return _playback.Read();
+	}
+
+	public void StartPreview(PlaybackBuffer pb, int startIndex, int length)
+	{
+		if (_playbackSet)
 		{
-			get
-			{
-				return !this._playbackSet || this._playback.ReadHead == this._playback.WriteHead;
-			}
+			_playback.Clear();
 		}
-
-		public void StartPreview(PlaybackBuffer pb, int startIndex, int length)
+		else
 		{
-			if (this._playbackSet)
-			{
-				this._playback.Clear();
-			}
-			else
-			{
-				this._playback = new PlaybackBuffer(pb.Buffer.Length, true);
-				this._playbackSet = true;
-			}
-			this._playback.Write(pb.Buffer, length, startIndex);
+			_playback = new PlaybackBuffer(pb.Buffer.Length, endlessTapeMode: true);
+			_playbackSet = true;
 		}
+		_playback.Write(pb.Buffer, length, startIndex);
+	}
 
-		public void StopPreview()
+	public void StopPreview()
+	{
+		if (_playbackSet)
 		{
-			if (!this._playbackSet)
-			{
-				return;
-			}
-			this._playback.Clear();
+			_playback.Clear();
 		}
-
-		private PlaybackBuffer _playback;
-
-		private bool _playbackSet;
 	}
 }

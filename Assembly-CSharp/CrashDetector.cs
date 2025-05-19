@@ -1,25 +1,8 @@
-﻿using System;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class CrashDetector : MonoBehaviour
 {
-	private void Awake()
-	{
-		if (this.image == null)
-		{
-			global::UnityEngine.Object.Destroy(this);
-			return;
-		}
-		CrashDetector.singleton = this;
-		base.gameObject.SetActive(this.Show());
-	}
-
-	public bool Show()
-	{
-		return false;
-	}
-
 	public static CrashDetector singleton;
 
 	[SerializeField]
@@ -30,4 +13,20 @@ public class CrashDetector : MonoBehaviour
 
 	[SerializeField]
 	private Text text;
+
+	private void Awake()
+	{
+		if (image == null)
+		{
+			Object.Destroy(this);
+			return;
+		}
+		singleton = this;
+		base.gameObject.SetActive(Show());
+	}
+
+	public bool Show()
+	{
+		return false;
+	}
 }

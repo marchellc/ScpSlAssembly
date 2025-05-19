@@ -1,46 +1,31 @@
-﻿using System;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Spawnpoints
+namespace PlayerRoles.FirstPersonControl.Spawnpoints;
+
+public class RoleSpawnpointVisualizer : MonoBehaviour
 {
-	public class RoleSpawnpointVisualizer : MonoBehaviour
+	[SerializeField]
+	private Color _gizmosColor = Color.white;
+
+	[SerializeField]
+	private int _numberOfTests = 64;
+
+	[SerializeField]
+	private RoleTypeId _role;
+
+	private void OnDrawGizmosSelected()
 	{
-		private void OnDrawGizmosSelected()
+		Gizmos.color = _gizmosColor;
+		if (!PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(_role, out var result) || !(result is IFpcRole { SpawnpointHandler: { } spawnpointHandler }))
 		{
-			Gizmos.color = this._gizmosColor;
-			PlayerRoleBase playerRoleBase;
-			if (!PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(this._role, out playerRoleBase))
+			return;
+		}
+		for (int i = 0; i < _numberOfTests; i++)
+		{
+			if (spawnpointHandler.TryGetSpawnpoint(out var position, out var _))
 			{
-				return;
-			}
-			IFpcRole fpcRole = playerRoleBase as IFpcRole;
-			if (fpcRole == null)
-			{
-				return;
-			}
-			ISpawnpointHandler spawnpointHandler = fpcRole.SpawnpointHandler;
-			if (spawnpointHandler == null)
-			{
-				return;
-			}
-			for (int i = 0; i < this._numberOfTests; i++)
-			{
-				Vector3 vector;
-				float num;
-				if (spawnpointHandler.TryGetSpawnpoint(out vector, out num))
-				{
-					Gizmos.DrawWireSphere(vector, 0.2f);
-				}
+				Gizmos.DrawWireSphere(position, 0.2f);
 			}
 		}
-
-		[SerializeField]
-		private Color _gizmosColor = Color.white;
-
-		[SerializeField]
-		private int _numberOfTests = 64;
-
-		[SerializeField]
-		private RoleTypeId _role;
 	}
 }

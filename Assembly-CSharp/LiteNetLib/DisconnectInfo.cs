@@ -1,14 +1,12 @@
-﻿using System;
 using System.Net.Sockets;
 
-namespace LiteNetLib
+namespace LiteNetLib;
+
+public struct DisconnectInfo
 {
-	public struct DisconnectInfo
-	{
-		public DisconnectReason Reason;
+	public DisconnectReason Reason;
 
-		public SocketError SocketErrorCode;
+	public SocketError SocketErrorCode;
 
-		public NetPacketReader AdditionalData;
-	}
+	public NetPacketReader AdditionalData;
 }

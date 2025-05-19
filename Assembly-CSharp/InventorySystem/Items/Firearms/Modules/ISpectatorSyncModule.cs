@@ -1,10 +1,7 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+[UniqueModule]
+public interface ISpectatorSyncModule
 {
-	[UniqueModule]
-	public interface ISpectatorSyncModule
-	{
-		void SetupViewmodel(AnimatedFirearmViewmodel viewmodel, float defaultSkipTime);
-	}
+	void SetupViewmodel(AnimatedFirearmViewmodel viewmodel, float defaultSkipTime);
 }

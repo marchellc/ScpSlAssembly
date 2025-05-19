@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CustomPlayerEffects;
 using MapGeneration;
@@ -8,251 +8,239 @@ using RelativePositioning;
 using UnityEngine;
 using Utils.Networking;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public class Scp079ScannerSequence
 {
-	public class Scp079ScannerSequence
+	private enum ScanSequenceStep
 	{
-		public bool SequencePaused { get; private set; }
+		Init,
+		CountingDown,
+		ScanningFindNewTarget,
+		ScanningFailedCooldown,
+		ScanningUpdateTarget
+	}
 
-		public float RemainingTime
+	private enum TrackerMessage
+	{
+		None,
+		ScannerDisabled,
+		ScanTimeSync,
+		ScanNoResults,
+		ScanSuccessful
+	}
+
+	private const float TotalCountdownTime = 20f;
+
+	private const float AddZonesDuringCooldownPenalty = 4f;
+
+	private const float ScanningTime = 3.2f;
+
+	private const float ScannedEffectDuration = 7.5f;
+
+	private readonly Scp079ScannerMenuToggler _menuToggler;
+
+	private readonly Scp079ScannerZoneSelector _zoneSelector;
+
+	private readonly Scp079ScannerTeamFilterSelector _teamSelector;
+
+	private readonly Scp079ScannerTracker _tracker;
+
+	private int _prevZonesCnt;
+
+	private int _detectedPlayer;
+
+	private double _nextScanTime;
+
+	private double _scanCompleteTime;
+
+	private bool _wasEnabled;
+
+	private Team[] _teamsToDetect;
+
+	private FacilityZone[] _zonesToDetect;
+
+	private ScanSequenceStep _curStep;
+
+	private TrackerMessage _rpcToSend;
+
+	public bool SequencePaused { get; private set; }
+
+	public float RemainingTime => (float)(_nextScanTime - NetworkTime.time);
+
+	private bool ScanningPossible
+	{
+		get
 		{
-			get
+			if (_menuToggler.IsUnlocked && _zoneSelector.SelectedZonesCnt > 0)
 			{
-				return (float)(this._nextScanTime - NetworkTime.time);
+				return _teamSelector.AnySelected;
 			}
+			return false;
 		}
+	}
 
-		private bool ScanningPossible
+	private Scp079ScannerTrackedPlayer[] TrackedPlayers => _tracker.TrackedPlayers;
+
+	private TrackerMessage UpdateSequence()
+	{
+		double time = NetworkTime.time;
+		switch (_curStep)
 		{
-			get
+		case ScanSequenceStep.Init:
+			if (!ScanningPossible)
 			{
-				return this._menuToggler.IsUnlocked && this._zoneSelector.SelectedZonesCnt > 0 && this._teamSelector.AnySelected;
+				if (!_wasEnabled)
+				{
+					return TrackerMessage.None;
+				}
+				_wasEnabled = false;
+				return TrackerMessage.ScannerDisabled;
 			}
+			_nextScanTime = time + 20.0;
+			_prevZonesCnt = _zoneSelector.SelectedZonesCnt;
+			_wasEnabled = true;
+			_curStep = ScanSequenceStep.CountingDown;
+			return TrackerMessage.ScanTimeSync;
+		case ScanSequenceStep.CountingDown:
+		{
+			if (time >= _nextScanTime)
+			{
+				_teamsToDetect = _teamSelector.SelectedTeams;
+				_zonesToDetect = _zoneSelector.SelectedZones;
+				_curStep = ScanSequenceStep.ScanningFindNewTarget;
+				return TrackerMessage.None;
+			}
+			if (!ScanningPossible)
+			{
+				_curStep = ScanSequenceStep.Init;
+				return TrackerMessage.None;
+			}
+			int selectedZonesCnt = _zoneSelector.SelectedZonesCnt;
+			int prevZonesCnt = _prevZonesCnt;
+			_prevZonesCnt = selectedZonesCnt;
+			if (selectedZonesCnt <= prevZonesCnt)
+			{
+				return TrackerMessage.None;
+			}
+			_nextScanTime = Math.Min(time + 20.0, _nextScanTime + 4.0);
+			return TrackerMessage.ScanTimeSync;
 		}
-
-		private Scp079ScannerTrackedPlayer[] TrackedPlayers
+		case ScanSequenceStep.ScanningFindNewTarget:
 		{
-			get
-			{
-				return this._tracker.TrackedPlayers;
-			}
-		}
-
-		private Scp079ScannerSequence.TrackerMessage UpdateSequence()
-		{
-			double time = NetworkTime.time;
-			switch (this._curStep)
-			{
-			case Scp079ScannerSequence.ScanSequenceStep.Init:
-				if (this.ScanningPossible)
-				{
-					this._nextScanTime = time + 20.0;
-					this._prevZonesCnt = this._zoneSelector.SelectedZonesCnt;
-					this._wasEnabled = true;
-					this._curStep = Scp079ScannerSequence.ScanSequenceStep.CountingDown;
-					return Scp079ScannerSequence.TrackerMessage.ScanTimeSync;
-				}
-				if (!this._wasEnabled)
-				{
-					return Scp079ScannerSequence.TrackerMessage.None;
-				}
-				this._wasEnabled = false;
-				return Scp079ScannerSequence.TrackerMessage.ScannerDisabled;
-			case Scp079ScannerSequence.ScanSequenceStep.CountingDown:
-			{
-				if (time >= this._nextScanTime)
-				{
-					this._teamsToDetect = this._teamSelector.SelectedTeams;
-					this._zonesToDetect = this._zoneSelector.SelectedZones;
-					this._curStep = Scp079ScannerSequence.ScanSequenceStep.ScanningFindNewTarget;
-					return Scp079ScannerSequence.TrackerMessage.None;
-				}
-				if (!this.ScanningPossible)
-				{
-					this._curStep = Scp079ScannerSequence.ScanSequenceStep.Init;
-					return Scp079ScannerSequence.TrackerMessage.None;
-				}
-				int selectedZonesCnt = this._zoneSelector.SelectedZonesCnt;
-				int prevZonesCnt = this._prevZonesCnt;
-				this._prevZonesCnt = selectedZonesCnt;
-				if (selectedZonesCnt <= prevZonesCnt)
-				{
-					return Scp079ScannerSequence.TrackerMessage.None;
-				}
-				this._nextScanTime = Math.Min(time + 20.0, this._nextScanTime + 4.0);
-				return Scp079ScannerSequence.TrackerMessage.ScanTimeSync;
-			}
-			case Scp079ScannerSequence.ScanSequenceStep.ScanningFindNewTarget:
-				break;
-			case Scp079ScannerSequence.ScanSequenceStep.ScanningFailedCooldown:
-				if (time < this._scanCompleteTime)
-				{
-					return Scp079ScannerSequence.TrackerMessage.None;
-				}
-				this._curStep = Scp079ScannerSequence.ScanSequenceStep.Init;
-				return Scp079ScannerSequence.TrackerMessage.ScanNoResults;
-			case Scp079ScannerSequence.ScanSequenceStep.ScanningUpdateTarget:
-			{
-				Scp079ScannerTrackedPlayer scp079ScannerTrackedPlayer = this.TrackedPlayers[this._detectedPlayer];
-				if (scp079ScannerTrackedPlayer != null && scp079ScannerTrackedPlayer.LastZone != FacilityZone.Other)
-				{
-					if (time < this._scanCompleteTime)
-					{
-						return Scp079ScannerSequence.TrackerMessage.None;
-					}
-					this._curStep = Scp079ScannerSequence.ScanSequenceStep.Init;
-					return Scp079ScannerSequence.TrackerMessage.ScanSuccessful;
-				}
-				break;
-			}
-			default:
-				return Scp079ScannerSequence.TrackerMessage.None;
-			}
 			List<int> list = ListPool<int>.Shared.Rent();
-			for (int i = 0; i < this.TrackedPlayers.Length; i++)
+			for (int i = 0; i < TrackedPlayers.Length; i++)
 			{
-				Scp079ScannerTrackedPlayer scp079ScannerTrackedPlayer2 = this.TrackedPlayers[i];
-				if (scp079ScannerTrackedPlayer2 != null && scp079ScannerTrackedPlayer2.IsCamping && this._zonesToDetect.Contains(scp079ScannerTrackedPlayer2.LastZone) && this._teamsToDetect.Contains(scp079ScannerTrackedPlayer2.Hub.GetTeam()))
+				Scp079ScannerTrackedPlayer scp079ScannerTrackedPlayer2 = TrackedPlayers[i];
+				if (scp079ScannerTrackedPlayer2 != null && scp079ScannerTrackedPlayer2.IsCamping && _zonesToDetect.Contains(scp079ScannerTrackedPlayer2.LastZone) && _teamsToDetect.Contains(scp079ScannerTrackedPlayer2.Hub.GetTeam()))
 				{
 					list.Add(i);
 				}
 			}
-			this._scanCompleteTime = time + 3.200000047683716;
+			_scanCompleteTime = time + 3.200000047683716;
 			if (list.Count == 0)
 			{
-				this._curStep = Scp079ScannerSequence.ScanSequenceStep.ScanningFailedCooldown;
+				_curStep = ScanSequenceStep.ScanningFailedCooldown;
 			}
 			else
 			{
-				this._detectedPlayer = list.RandomItem<int>();
+				_detectedPlayer = list.RandomItem();
 				ListPool<int>.Shared.Return(list);
-				this.TrackedPlayers[this._detectedPlayer].Hub.playerEffectsController.EnableEffect<Scanned>(7.5f, false);
-				this._curStep = Scp079ScannerSequence.ScanSequenceStep.ScanningUpdateTarget;
+				TrackedPlayers[_detectedPlayer].Hub.playerEffectsController.EnableEffect<Scanned>(7.5f);
+				_curStep = ScanSequenceStep.ScanningUpdateTarget;
 			}
-			return Scp079ScannerSequence.TrackerMessage.None;
+			return TrackerMessage.None;
 		}
-
-		public Scp079ScannerSequence(Scp079Role role)
-		{
-			this.SequencePaused = true;
-			role.SubroutineModule.TryGetSubroutine<Scp079ScannerMenuToggler>(out this._menuToggler);
-			role.SubroutineModule.TryGetSubroutine<Scp079ScannerZoneSelector>(out this._zoneSelector);
-			role.SubroutineModule.TryGetSubroutine<Scp079ScannerTeamFilterSelector>(out this._teamSelector);
-			role.SubroutineModule.TryGetSubroutine<Scp079ScannerTracker>(out this._tracker);
-		}
-
-		public void ServerUpdate(out bool rpcRequested)
-		{
-			if (!NetworkServer.active)
+		case ScanSequenceStep.ScanningFailedCooldown:
+			if (time < _scanCompleteTime)
 			{
-				throw new InvalidOperationException("Breach Scanner sequence can only be updated by the server!");
+				return TrackerMessage.None;
 			}
-			Scp079ScannerSequence.TrackerMessage trackerMessage = this.UpdateSequence();
-			rpcRequested = trackerMessage > Scp079ScannerSequence.TrackerMessage.None;
-			if (rpcRequested)
-			{
-				this._rpcToSend = trackerMessage;
-			}
-		}
-
-		public void WriteRpc(NetworkWriter writer)
+			_curStep = ScanSequenceStep.Init;
+			return TrackerMessage.ScanNoResults;
+		case ScanSequenceStep.ScanningUpdateTarget:
 		{
-			writer.WriteByte((byte)this._rpcToSend);
-			switch (this._rpcToSend)
+			Scp079ScannerTrackedPlayer scp079ScannerTrackedPlayer = TrackedPlayers[_detectedPlayer];
+			if (scp079ScannerTrackedPlayer != null && scp079ScannerTrackedPlayer.LastZone != FacilityZone.Other)
 			{
-			case Scp079ScannerSequence.TrackerMessage.ScanTimeSync:
-				writer.WriteDouble(this._nextScanTime);
-				return;
-			case Scp079ScannerSequence.TrackerMessage.ScanNoResults:
-				writer.WriteByte((byte)(this.ScanningPossible ? 20f : 0f));
-				return;
-			case Scp079ScannerSequence.TrackerMessage.ScanSuccessful:
-			{
-				Scp079ScannerTrackedPlayer scp079ScannerTrackedPlayer = this.TrackedPlayers[this._detectedPlayer];
-				Vector3 vector = RoomUtils.CoordsToCenterPos(RoomUtils.PositionToCoords(scp079ScannerTrackedPlayer.PlyPos));
-				Vector3 vector2 = new Vector3(vector.x, scp079ScannerTrackedPlayer.PlyPos.y, vector.z);
-				writer.WriteReferenceHub(scp079ScannerTrackedPlayer.Hub);
-				writer.WriteByte(20);
-				writer.WriteRelativePosition(new RelativePosition(vector2));
-				return;
+				if (time < _scanCompleteTime)
+				{
+					return TrackerMessage.None;
+				}
+				_curStep = ScanSequenceStep.Init;
+				return TrackerMessage.ScanSuccessful;
 			}
-			default:
-				return;
-			}
+			goto case ScanSequenceStep.ScanningFindNewTarget;
 		}
-
-		public void ReadRpc(NetworkReader reader)
-		{
-			switch (reader.ReadByte())
-			{
-			case 1:
-				this.SequencePaused = true;
-				return;
-			case 2:
-				this.SequencePaused = false;
-				this._nextScanTime = reader.ReadDouble();
-				return;
-			case 3:
-				this._tracker.ClientProcessScanResult(null, (int)reader.ReadByte(), null);
-				return;
-			case 4:
-				this._tracker.ClientProcessScanResult(reader.ReadReferenceHub(), (int)reader.ReadByte(), reader);
-				return;
-			default:
-				return;
-			}
+		default:
+			return TrackerMessage.None;
 		}
+	}
 
-		private const float TotalCountdownTime = 20f;
+	public Scp079ScannerSequence(Scp079Role role)
+	{
+		SequencePaused = true;
+		role.SubroutineModule.TryGetSubroutine<Scp079ScannerMenuToggler>(out _menuToggler);
+		role.SubroutineModule.TryGetSubroutine<Scp079ScannerZoneSelector>(out _zoneSelector);
+		role.SubroutineModule.TryGetSubroutine<Scp079ScannerTeamFilterSelector>(out _teamSelector);
+		role.SubroutineModule.TryGetSubroutine<Scp079ScannerTracker>(out _tracker);
+	}
 
-		private const float AddZonesDuringCooldownPenalty = 4f;
-
-		private const float ScanningTime = 3.2f;
-
-		private const float ScannedEffectDuration = 7.5f;
-
-		private readonly Scp079ScannerMenuToggler _menuToggler;
-
-		private readonly Scp079ScannerZoneSelector _zoneSelector;
-
-		private readonly Scp079ScannerTeamFilterSelector _teamSelector;
-
-		private readonly Scp079ScannerTracker _tracker;
-
-		private int _prevZonesCnt;
-
-		private int _detectedPlayer;
-
-		private double _nextScanTime;
-
-		private double _scanCompleteTime;
-
-		private bool _wasEnabled;
-
-		private Team[] _teamsToDetect;
-
-		private FacilityZone[] _zonesToDetect;
-
-		private Scp079ScannerSequence.ScanSequenceStep _curStep;
-
-		private Scp079ScannerSequence.TrackerMessage _rpcToSend;
-
-		private enum ScanSequenceStep
+	public void ServerUpdate(out bool rpcRequested)
+	{
+		if (!NetworkServer.active)
 		{
-			Init,
-			CountingDown,
-			ScanningFindNewTarget,
-			ScanningFailedCooldown,
-			ScanningUpdateTarget
+			throw new InvalidOperationException("Breach Scanner sequence can only be updated by the server!");
 		}
-
-		private enum TrackerMessage
+		TrackerMessage trackerMessage = UpdateSequence();
+		rpcRequested = trackerMessage != TrackerMessage.None;
+		if (rpcRequested)
 		{
-			None,
-			ScannerDisabled,
-			ScanTimeSync,
-			ScanNoResults,
-			ScanSuccessful
+			_rpcToSend = trackerMessage;
+		}
+	}
+
+	public void WriteRpc(NetworkWriter writer)
+	{
+		writer.WriteByte((byte)_rpcToSend);
+		switch (_rpcToSend)
+		{
+		case TrackerMessage.ScanNoResults:
+			writer.WriteByte((byte)(ScanningPossible ? 20f : 0f));
+			break;
+		case TrackerMessage.ScanTimeSync:
+			writer.WriteDouble(_nextScanTime);
+			break;
+		case TrackerMessage.ScanSuccessful:
+		{
+			Scp079ScannerTrackedPlayer scp079ScannerTrackedPlayer = TrackedPlayers[_detectedPlayer];
+			Vector3 vector = RoomUtils.CoordsToCenterPos(RoomUtils.PositionToCoords(scp079ScannerTrackedPlayer.PlyPos));
+			Vector3 targetPos = new Vector3(vector.x, scp079ScannerTrackedPlayer.PlyPos.y, vector.z);
+			writer.WriteReferenceHub(scp079ScannerTrackedPlayer.Hub);
+			writer.WriteByte(20);
+			writer.WriteRelativePosition(new RelativePosition(targetPos));
+			break;
+		}
+		}
+	}
+
+	public void ReadRpc(NetworkReader reader)
+	{
+		switch ((TrackerMessage)reader.ReadByte())
+		{
+		case TrackerMessage.ScannerDisabled:
+			SequencePaused = true;
+			break;
+		case TrackerMessage.ScanTimeSync:
+			SequencePaused = false;
+			_nextScanTime = reader.ReadDouble();
+			break;
+		case TrackerMessage.ScanNoResults:
+			_tracker.ClientProcessScanResult(null, reader.ReadByte(), null);
+			break;
+		case TrackerMessage.ScanSuccessful:
+			_tracker.ClientProcessScanResult(reader.ReadReferenceHub(), reader.ReadByte(), reader);
+			break;
 		}
 	}
 }

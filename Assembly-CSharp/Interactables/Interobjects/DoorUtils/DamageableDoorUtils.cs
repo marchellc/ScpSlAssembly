@@ -1,12 +1,9 @@
-﻿using System;
+namespace Interactables.Interobjects.DoorUtils;
 
-namespace Interactables.Interobjects.DoorUtils
+public static class DamageableDoorUtils
 {
-	public static class DamageableDoorUtils
+	public static bool HasFlagFast(this DoorDamageType value, DoorDamageType flag)
 	{
-		public static bool HasFlagFast(this DoorDamageType value, DoorDamageType flag)
-		{
-			return (value & flag) == flag;
-		}
+		return (value & flag) == flag;
 	}
 }

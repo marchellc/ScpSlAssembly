@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mirror;
 using PlayerRoles.FirstPersonControl;
@@ -6,182 +6,164 @@ using RelativePositioning;
 using UnityEngine;
 using Utils.Networking;
 
-namespace InventorySystem.Items.MicroHID.Modules
+namespace InventorySystem.Items.MicroHID.Modules;
+
+public class BacktrackerModule : MicroHidModuleBase
 {
-	public class BacktrackerModule : MicroHidModuleBase
+	private struct BacktrackPair
 	{
-		private void UpdateTick()
+		public ReferenceHub Hub;
+
+		public RelativePosition RelPos;
+
+		public BacktrackPair(ReferenceHub hub, RelativePosition pos)
 		{
-			FiringModeControllerModule firingModeControllerModule;
-			if (!base.MicroHid.CycleController.TryGetLastFiringController(out firingModeControllerModule))
+			Hub = hub;
+			RelPos = pos;
+		}
+	}
+
+	private const float TickCooldown = 0.05f;
+
+	private const float WindupWarmupDuration = 0.3f;
+
+	private const float AlwaysIncludeDistSqr = 4f;
+
+	private const float BacktrackExpirationSeconds = 0.5f;
+
+	private const float BacktrackExtraDistance = 4f;
+
+	private float _remainingCooldown;
+
+	private double _lastReceivedMessageTimestamp;
+
+	private FiringModeControllerModule _lastFiringMode;
+
+	private IFpcRole _lastOwnerFpc;
+
+	private RelativePosition _receivedOwnerPosition;
+
+	private Quaternion _receivedOwnerRotation;
+
+	private readonly List<BacktrackPair> _receivedBacktracks = new List<BacktrackPair>();
+
+	private static readonly List<FpcBacktracker> VictimBacktrackers = new List<FpcBacktracker>();
+
+	private void UpdateTick()
+	{
+		if (!base.MicroHid.CycleController.TryGetLastFiringController(out var ret))
+		{
+			return;
+		}
+		switch (base.MicroHid.CycleController.Phase)
+		{
+		case MicroHidPhase.WoundUpSustain:
+		case MicroHidPhase.Firing:
+			ClientSendUpdate(ret);
+			break;
+		case MicroHidPhase.WindingUp:
+		{
+			float windUpRate = ret.WindUpRate;
+			if (!(windUpRate <= 0f) && !((1f - base.MicroHid.CycleController.ServerWindUpProgress) / windUpRate > 0.3f))
 			{
-				return;
+				ClientSendUpdate(ret);
 			}
-			MicroHidPhase phase = base.MicroHid.CycleController.Phase;
-			if (phase != MicroHidPhase.WindingUp)
+			break;
+		}
+		}
+	}
+
+	private void ClientSendUpdate(FiringModeControllerModule firingCtrl)
+	{
+		if (base.MicroHid.Owner.roleManager.CurrentRole is IFpcRole lastOwnerFpc)
+		{
+			_lastFiringMode = firingCtrl;
+			_lastOwnerFpc = lastOwnerFpc;
+			SendCmd(ClientWriteMessage);
+		}
+	}
+
+	private void ClientWriteMessage(NetworkWriter writer)
+	{
+		Vector3 position = _lastOwnerFpc.FpcModule.Position;
+		RelativePosition msg = new RelativePosition(position);
+		Transform playerCameraReference = base.MicroHid.Owner.PlayerCameraReference;
+		writer.WriteRelativePosition(msg);
+		writer.WriteQuaternion(WaypointBase.GetRelativeRotation(msg.WaypointId, playerCameraReference.rotation));
+		float num = _lastFiringMode.FiringRange + 4f;
+		float num2 = num * num;
+		float backtrackerDot = _lastFiringMode.BacktrackerDot;
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (allHub.isLocalPlayer && allHub.roleManager.CurrentRole is IFpcRole fpcRole)
 			{
-				if (phase - MicroHidPhase.WoundUpSustain <= 1)
+				float num3 = fpcRole.SqrDistanceTo(position);
+				if (!(num3 > num2) && (num3 <= 4f || fpcRole.GetDot(playerCameraReference) <= backtrackerDot))
 				{
-					this.ClientSendUpdate(firingModeControllerModule);
-					return;
-				}
-			}
-			else
-			{
-				float windUpRate = firingModeControllerModule.WindUpRate;
-				if (windUpRate > 0f && (1f - base.MicroHid.CycleController.ServerWindUpProgress) / windUpRate <= 0.3f)
-				{
-					this.ClientSendUpdate(firingModeControllerModule);
+					writer.WriteReferenceHub(allHub);
+					writer.WriteRelativePosition(new RelativePosition(fpcRole));
 				}
 			}
 		}
+	}
 
-		private void ClientSendUpdate(FiringModeControllerModule firingCtrl)
+	internal override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		if (base.IsLocalPlayer)
 		{
-			IFpcRole fpcRole = base.MicroHid.Owner.roleManager.CurrentRole as IFpcRole;
-			if (fpcRole == null)
+			_remainingCooldown -= Time.deltaTime;
+			if (!(_remainingCooldown > 0f))
 			{
-				return;
-			}
-			this._lastFiringMode = firingCtrl;
-			this._lastOwnerFpc = fpcRole;
-			this.SendCmd(new Action<NetworkWriter>(this.ClientWriteMessage));
-		}
-
-		private void ClientWriteMessage(NetworkWriter writer)
-		{
-			Vector3 position = this._lastOwnerFpc.FpcModule.Position;
-			RelativePosition relativePosition = new RelativePosition(position);
-			Transform playerCameraReference = base.MicroHid.Owner.PlayerCameraReference;
-			writer.WriteRelativePosition(relativePosition);
-			writer.WriteQuaternion(WaypointBase.GetRelativeRotation(relativePosition.WaypointId, playerCameraReference.rotation));
-			float num = this._lastFiringMode.FiringRange + 4f;
-			float num2 = num * num;
-			float backtrackerDot = this._lastFiringMode.BacktrackerDot;
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				if (referenceHub.isLocalPlayer)
-				{
-					IFpcRole fpcRole = referenceHub.roleManager.CurrentRole as IFpcRole;
-					if (fpcRole != null)
-					{
-						float num3 = fpcRole.SqrDistanceTo(position);
-						if (num3 <= num2 && (num3 <= 4f || fpcRole.GetDot(playerCameraReference, 0.5f) <= backtrackerDot))
-						{
-							writer.WriteReferenceHub(referenceHub);
-							writer.WriteRelativePosition(new RelativePosition(fpcRole));
-						}
-					}
-				}
+				UpdateTick();
+				_remainingCooldown = 0.05f;
 			}
 		}
+	}
 
-		internal override void EquipUpdate()
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		_receivedBacktracks.Clear();
+		_receivedOwnerPosition = reader.ReadRelativePosition();
+		_receivedOwnerRotation = reader.ReadQuaternion();
+		while (reader.Remaining > 0)
 		{
-			base.EquipUpdate();
-			if (!base.IsLocalPlayer)
+			ReferenceHub hub;
+			bool num = reader.TryReadReferenceHub(out hub);
+			RelativePosition pos = reader.ReadRelativePosition();
+			if (num)
 			{
-				return;
-			}
-			this._remainingCooldown -= Time.deltaTime;
-			if (this._remainingCooldown > 0f)
-			{
-				return;
-			}
-			this.UpdateTick();
-			this._remainingCooldown = 0.05f;
-		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			this._receivedBacktracks.Clear();
-			this._receivedOwnerPosition = reader.ReadRelativePosition();
-			this._receivedOwnerRotation = reader.ReadQuaternion();
-			while (reader.Remaining > 0)
-			{
-				ReferenceHub referenceHub;
-				bool flag = reader.TryReadReferenceHub(out referenceHub);
-				RelativePosition relativePosition = reader.ReadRelativePosition();
-				if (flag)
-				{
-					this._receivedBacktracks.Add(new BacktrackerModule.BacktrackPair(referenceHub, relativePosition));
-				}
-			}
-			this._lastReceivedMessageTimestamp = NetworkTime.time;
-		}
-
-		public void BacktrackAll(Action callback)
-		{
-			WaypointBase waypointBase;
-			if (NetworkTime.time - this._lastReceivedMessageTimestamp > 0.5 || !WaypointBase.TryGetWaypoint(this._receivedOwnerPosition.WaypointId, out waypointBase))
-			{
-				if (callback != null)
-				{
-					callback();
-				}
-				return;
-			}
-			Vector3 worldspacePosition = waypointBase.GetWorldspacePosition(this._receivedOwnerPosition.Relative);
-			Quaternion worldspaceRotation = waypointBase.GetWorldspaceRotation(this._receivedOwnerRotation);
-			using (new FpcBacktracker(base.MicroHid.Owner, worldspacePosition, worldspaceRotation, 0.1f, 0.15f))
-			{
-				foreach (BacktrackerModule.BacktrackPair backtrackPair in this._receivedBacktracks)
-				{
-					List<FpcBacktracker> victimBacktrackers = BacktrackerModule.VictimBacktrackers;
-					ReferenceHub hub = backtrackPair.Hub;
-					RelativePosition relPos = backtrackPair.RelPos;
-					victimBacktrackers.Add(new FpcBacktracker(hub, relPos.Position, 0.4f));
-				}
-				if (callback != null)
-				{
-					callback();
-				}
-				foreach (FpcBacktracker fpcBacktracker2 in BacktrackerModule.VictimBacktrackers)
-				{
-					fpcBacktracker2.RestorePosition();
-				}
-				BacktrackerModule.VictimBacktrackers.Clear();
+				_receivedBacktracks.Add(new BacktrackPair(hub, pos));
 			}
 		}
+		_lastReceivedMessageTimestamp = NetworkTime.time;
+	}
 
-		private const float TickCooldown = 0.05f;
-
-		private const float WindupWarmupDuration = 0.3f;
-
-		private const float AlwaysIncludeDistSqr = 4f;
-
-		private const float BacktrackExpirationSeconds = 0.5f;
-
-		private const float BacktrackExtraDistance = 4f;
-
-		private float _remainingCooldown;
-
-		private double _lastReceivedMessageTimestamp;
-
-		private FiringModeControllerModule _lastFiringMode;
-
-		private IFpcRole _lastOwnerFpc;
-
-		private RelativePosition _receivedOwnerPosition;
-
-		private Quaternion _receivedOwnerRotation;
-
-		private readonly List<BacktrackerModule.BacktrackPair> _receivedBacktracks = new List<BacktrackerModule.BacktrackPair>();
-
-		private static readonly List<FpcBacktracker> VictimBacktrackers = new List<FpcBacktracker>();
-
-		private struct BacktrackPair
+	public void BacktrackAll(Action callback)
+	{
+		if (NetworkTime.time - _lastReceivedMessageTimestamp > 0.5 || !WaypointBase.TryGetWaypoint(_receivedOwnerPosition.WaypointId, out var wp))
 		{
-			public BacktrackPair(ReferenceHub hub, RelativePosition pos)
+			callback?.Invoke();
+			return;
+		}
+		Vector3 worldspacePosition = wp.GetWorldspacePosition(_receivedOwnerPosition.Relative);
+		Quaternion worldspaceRotation = wp.GetWorldspaceRotation(_receivedOwnerRotation);
+		using (new FpcBacktracker(base.MicroHid.Owner, worldspacePosition, worldspaceRotation))
+		{
+			foreach (BacktrackPair receivedBacktrack in _receivedBacktracks)
 			{
-				this.Hub = hub;
-				this.RelPos = pos;
+				List<FpcBacktracker> victimBacktrackers = VictimBacktrackers;
+				ReferenceHub hub = receivedBacktrack.Hub;
+				RelativePosition relPos = receivedBacktrack.RelPos;
+				victimBacktrackers.Add(new FpcBacktracker(hub, relPos.Position));
 			}
-
-			public ReferenceHub Hub;
-
-			public RelativePosition RelPos;
+			callback?.Invoke();
+			foreach (FpcBacktracker victimBacktracker in VictimBacktrackers)
+			{
+				victimBacktracker.RestorePosition();
+			}
+			VictimBacktrackers.Clear();
 		}
 	}
 }

@@ -1,8 +1,5 @@
-﻿using System;
+namespace PlayerRoles.Spectating;
 
-namespace PlayerRoles.Spectating
+public class StandardSpectatableListElement : FullSizeSpectatableListElement
 {
-	public class StandardSpectatableListElement : FullSizeSpectatableListElement
-	{
-	}
 }

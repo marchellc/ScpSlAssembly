@@ -1,63 +1,59 @@
-﻿using System;
 using UnityEngine;
 using UserSettings.GUIElements;
 
-namespace Respawning.Graphics
+namespace Respawning.Graphics;
+
+public class ObjectiveFeedToggle : UserSettingsToggle
 {
-	public class ObjectiveFeedToggle : UserSettingsToggle
+	[SerializeField]
+	private RectTransform _targetTransform;
+
+	[SerializeField]
+	private float _disabledRotation = 180f;
+
+	[SerializeField]
+	private float _rotationSpeed = 7.5f;
+
+	private float _targetRotation;
+
+	private float _cachedRotation;
+
+	protected override void SetValueAndTriggerEvent(bool val)
 	{
-		protected override void SetValueAndTriggerEvent(bool val)
+		base.SetValueAndTriggerEvent(val);
+		SetRotationStatus(val);
+	}
+
+	protected override void SetValueWithoutNotify(bool val)
+	{
+		base.SetValueWithoutNotify(val);
+		SetRotationStatus(val);
+	}
+
+	protected override void Awake()
+	{
+		base.Awake();
+		_cachedRotation = _targetTransform.eulerAngles.z;
+		SetRotationStatus(base.StoredValue, instantRotation: true);
+	}
+
+	private void SetRotationStatus(bool isEnabled, bool instantRotation = false)
+	{
+		_targetRotation = (isEnabled ? _cachedRotation : _disabledRotation);
+		if (instantRotation)
 		{
-			base.SetValueAndTriggerEvent(val);
-			this.SetRotationStatus(val, false);
+			Vector3 eulerAngles = _targetTransform.eulerAngles;
+			_targetTransform.rotation = Quaternion.Euler(eulerAngles.x, eulerAngles.y, _targetRotation);
 		}
+	}
 
-		protected override void SetValueWithoutNotify(bool val)
+	private void Update()
+	{
+		Vector3 eulerAngles = _targetTransform.eulerAngles;
+		if (eulerAngles.z != _targetRotation)
 		{
-			base.SetValueWithoutNotify(val);
-			this.SetRotationStatus(val, false);
+			float z = Mathf.LerpAngle(eulerAngles.z, _targetRotation, _rotationSpeed * Time.deltaTime);
+			_targetTransform.rotation = Quaternion.Euler(eulerAngles.x, eulerAngles.y, z);
 		}
-
-		protected override void Awake()
-		{
-			base.Awake();
-			this._cachedRotation = this._targetTransform.eulerAngles.z;
-			this.SetRotationStatus(base.StoredValue, true);
-		}
-
-		private void SetRotationStatus(bool isEnabled, bool instantRotation = false)
-		{
-			this._targetRotation = (isEnabled ? this._cachedRotation : this._disabledRotation);
-			if (!instantRotation)
-			{
-				return;
-			}
-			Vector3 eulerAngles = this._targetTransform.eulerAngles;
-			this._targetTransform.rotation = Quaternion.Euler(eulerAngles.x, eulerAngles.y, this._targetRotation);
-		}
-
-		private void Update()
-		{
-			Vector3 eulerAngles = this._targetTransform.eulerAngles;
-			if (eulerAngles.z == this._targetRotation)
-			{
-				return;
-			}
-			float num = Mathf.LerpAngle(eulerAngles.z, this._targetRotation, this._rotationSpeed * Time.deltaTime);
-			this._targetTransform.rotation = Quaternion.Euler(eulerAngles.x, eulerAngles.y, num);
-		}
-
-		[SerializeField]
-		private RectTransform _targetTransform;
-
-		[SerializeField]
-		private float _disabledRotation = 180f;
-
-		[SerializeField]
-		private float _rotationSpeed = 7.5f;
-
-		private float _targetRotation;
-
-		private float _cachedRotation;
 	}
 }

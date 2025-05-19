@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.HUDs;
 
-namespace PlayerRoles.PlayableScps.HUDs
+public interface IHudScp
 {
-	public interface IHudScp
-	{
-		ScpHudBase HudPrefab { get; }
-	}
+	ScpHudBase HudPrefab { get; }
 }

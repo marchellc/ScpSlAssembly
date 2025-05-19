@@ -1,11 +1,11 @@
-﻿using System;
 using System.Text;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl
+namespace PlayerRoles.FirstPersonControl;
+
+public interface ICustomNicknameDisplayRole
 {
-	public interface ICustomNicknameDisplayRole
-	{
-		void WriteNickname(ReferenceHub owner, StringBuilder sb, out Color texColor);
-	}
+	Color NicknameColor { get; }
+
+	void WriteNickname(StringBuilder sb);
 }

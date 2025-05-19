@@ -1,52 +1,44 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp1507
+namespace PlayerRoles.PlayableScps.Scp1507;
+
+public class Scp1507MovementModule : FirstPersonMovementModule
 {
-	public class Scp1507MovementModule : FirstPersonMovementModule
+	private const float SpeedPerSwarmAlly = 0.2f;
+
+	[SerializeField]
+	private Scp1507Role _scp1507;
+
+	private Scp1507SwarmAbility _swarmAbility;
+
+	private float _cachedDefaultSpeed;
+
+	private float SpeedBoost => Mathf.Min((float)_swarmAbility.FlockSize * 0.2f, 1.4f);
+
+	private float MovementSpeed
 	{
-		private float SpeedBoost
+		get
 		{
-			get
-			{
-				return Mathf.Min((float)this._swarmAbility.FlockSize * 0.2f, 1.4f);
-			}
+			return WalkSpeed;
 		}
-
-		private float MovementSpeed
+		set
 		{
-			get
-			{
-				return this.WalkSpeed;
-			}
-			set
-			{
-				this.WalkSpeed = value;
-				this.SprintSpeed = value;
-				this.CrouchSpeed = value;
-			}
+			WalkSpeed = value;
+			SprintSpeed = value;
+			CrouchSpeed = value;
 		}
+	}
 
-		protected override void UpdateMovement()
-		{
-			base.UpdateMovement();
-			this.MovementSpeed = this._cachedDefaultSpeed + this.SpeedBoost;
-		}
+	protected override void UpdateMovement()
+	{
+		base.UpdateMovement();
+		MovementSpeed = _cachedDefaultSpeed + SpeedBoost;
+	}
 
-		private void Awake()
-		{
-			this._scp1507.SubroutineModule.TryGetSubroutine<Scp1507SwarmAbility>(out this._swarmAbility);
-			this._cachedDefaultSpeed = this.MovementSpeed;
-		}
-
-		private const float SpeedPerSwarmAlly = 0.2f;
-
-		[SerializeField]
-		private Scp1507Role _scp1507;
-
-		private Scp1507SwarmAbility _swarmAbility;
-
-		private float _cachedDefaultSpeed;
+	private void Awake()
+	{
+		_scp1507.SubroutineModule.TryGetSubroutine<Scp1507SwarmAbility>(out _swarmAbility);
+		_cachedDefaultSpeed = MovementSpeed;
 	}
 }

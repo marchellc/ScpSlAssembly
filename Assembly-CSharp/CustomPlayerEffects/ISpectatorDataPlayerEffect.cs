@@ -1,9 +1,6 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public interface ISpectatorDataPlayerEffect
 {
-	public interface ISpectatorDataPlayerEffect
-	{
-		bool GetSpectatorText(out string display);
-	}
+	bool GetSpectatorText(out string display);
 }

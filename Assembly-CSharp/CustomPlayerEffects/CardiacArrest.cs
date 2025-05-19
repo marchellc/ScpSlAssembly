@@ -1,4 +1,3 @@
-﻿using System;
 using AudioPooling;
 using Footprinting;
 using Mirror;
@@ -7,124 +6,94 @@ using PlayerRoles.Spectating;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class CardiacArrest : ParentEffectBase<SubEffectBase>, IHealableEffect, IStaminaModifier
 {
-	public class CardiacArrest : ParentEffectBase<SubEffectBase>, IHealableEffect, IStaminaModifier
+	private const float SprintStaminaUsage = 3f;
+
+	private const float DamagePerTick = 8f;
+
+	private Footprint _attacker;
+
+	[SerializeField]
+	private AudioClip _dyingSoundEffect;
+
+	[Tooltip("Used to track intervals/timers/etc without every effect needing to redefine a unique float.")]
+	public float TimeBetweenTicks;
+
+	private float _timeTillTick;
+
+	private AudioPoolSession _dyingSoundSession;
+
+	public bool StaminaModifierActive => base.IsEnabled;
+
+	public float StaminaUsageMultiplier => 3f;
+
+	public float StaminaRegenMultiplier => 1f;
+
+	public bool SprintingDisabled => false;
+
+	public override bool AllowEnabling => !SpawnProtected.CheckPlayer(base.Hub);
+
+	protected override void Enabled()
 	{
-		public bool StaminaModifierActive
+		base.Enabled();
+		if (base.Hub.isLocalPlayer || base.Hub.IsLocallySpectated())
 		{
-			get
-			{
-				return base.IsEnabled;
-			}
+			_dyingSoundSession = new AudioPoolSession(AudioSourcePoolManager.Play2D(_dyingSoundEffect));
 		}
-
-		public float StaminaUsageMultiplier
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return 3f;
-			}
+			_timeTillTick = 0f;
 		}
+	}
 
-		public float StaminaRegenMultiplier
+	protected override void Disabled()
+	{
+		base.Disabled();
+		_attacker = default(Footprint);
+	}
+
+	public void SetAttacker(ReferenceHub ply)
+	{
+		_attacker = new Footprint(ply);
+	}
+
+	public bool IsHealable(ItemType it)
+	{
+		if (it != ItemType.SCP500)
 		{
-			get
-			{
-				return 1f;
-			}
+			return it == ItemType.Adrenaline;
 		}
+		return true;
+	}
 
-		public bool SprintingDisabled
+	protected override void OnEffectUpdate()
+	{
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return false;
-			}
+			ServerUpdate();
 		}
+		UpdateSubEffects();
+	}
 
-		public override bool AllowEnabling
+	public override void OnStopSpectating()
+	{
+		base.OnStopSpectating();
+		if (_dyingSoundSession.SameSession)
 		{
-			get
-			{
-				return !SpawnProtected.CheckPlayer(base.Hub);
-			}
+			_dyingSoundSession.Source.Stop();
 		}
+	}
 
-		protected override void Enabled()
+	private void ServerUpdate()
+	{
+		_timeTillTick -= Time.deltaTime;
+		if (!(_timeTillTick > 0f))
 		{
-			base.Enabled();
-			if (base.Hub.isLocalPlayer || base.Hub.IsLocallySpectated())
-			{
-				this._dyingSoundSession = new AudioPoolSession(AudioSourcePoolManager.Play2D(this._dyingSoundEffect, 1f, MixerChannel.DefaultSfx, 1f));
-			}
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this._timeTillTick = 0f;
+			_timeTillTick += TimeBetweenTicks;
+			base.Hub.playerStats.DealDamage(new Scp049DamageHandler(_attacker, 8f, Scp049DamageHandler.AttackType.CardiacArrest));
 		}
-
-		protected override void Disabled()
-		{
-			base.Disabled();
-			this._attacker = default(Footprint);
-		}
-
-		public void SetAttacker(ReferenceHub ply)
-		{
-			this._attacker = new Footprint(ply);
-		}
-
-		public bool IsHealable(ItemType it)
-		{
-			return it == ItemType.SCP500 || it == ItemType.Adrenaline;
-		}
-
-		protected override void OnEffectUpdate()
-		{
-			if (NetworkServer.active)
-			{
-				this.ServerUpdate();
-			}
-			this.UpdateSubEffects();
-		}
-
-		public override void OnStopSpectating()
-		{
-			base.OnStopSpectating();
-			if (!this._dyingSoundSession.SameSession)
-			{
-				return;
-			}
-			this._dyingSoundSession.Source.Stop();
-		}
-
-		private void ServerUpdate()
-		{
-			this._timeTillTick -= Time.deltaTime;
-			if (this._timeTillTick > 0f)
-			{
-				return;
-			}
-			this._timeTillTick += this.TimeBetweenTicks;
-			base.Hub.playerStats.DealDamage(new Scp049DamageHandler(this._attacker, 8f, Scp049DamageHandler.AttackType.CardiacArrest));
-		}
-
-		private const float SprintStaminaUsage = 3f;
-
-		private const float DamagePerTick = 8f;
-
-		private Footprint _attacker;
-
-		[SerializeField]
-		private AudioClip _dyingSoundEffect;
-
-		[Tooltip("Used to track intervals/timers/etc without every effect needing to redefine a unique float.")]
-		public float TimeBetweenTicks;
-
-		private float _timeTillTick;
-
-		private AudioPoolSession _dyingSoundSession;
 	}
 }

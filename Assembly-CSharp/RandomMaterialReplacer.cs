@@ -1,17 +1,16 @@
-﻿using System;
 using UnityEngine;
 
 public class RandomMaterialReplacer : MonoBehaviour
 {
+	public Material[] mats;
+
 	private void Start()
 	{
-		int num = global::UnityEngine.Random.Range(0, this.mats.Length);
-		MeshRenderer[] componentsInChildren = base.GetComponentsInChildren<MeshRenderer>();
+		int num = Random.Range(0, mats.Length);
+		MeshRenderer[] componentsInChildren = GetComponentsInChildren<MeshRenderer>();
 		for (int i = 0; i < componentsInChildren.Length; i++)
 		{
-			componentsInChildren[i].material = this.mats[num];
+			componentsInChildren[i].material = mats[num];
 		}
 	}
-
-	public Material[] mats;
 }

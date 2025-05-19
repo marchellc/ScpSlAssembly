@@ -1,29 +1,28 @@
-﻿using System;
+using System;
 using TMPro;
 using UnityEngine;
 using UserSettings.GUIElements;
 
-namespace UserSettings.ServerSpecific.Entries
+namespace UserSettings.ServerSpecific.Entries;
+
+[Serializable]
+public class SSEntryLabel
 {
-	[Serializable]
-	public class SSEntryLabel
+	[SerializeField]
+	private TMP_Text _label;
+
+	[SerializeField]
+	private CustomUserSettingsEntryDescription _hint;
+
+	public void Set(ServerSpecificSettingBase setting)
 	{
-		public void Set(ServerSpecificSettingBase setting)
+		_label.text = setting.Label;
+		if (string.IsNullOrEmpty(setting.HintDescription))
 		{
-			this._label.text = setting.Label;
-			if (string.IsNullOrEmpty(setting.HintDescription))
-			{
-				this._hint.gameObject.SetActive(false);
-				return;
-			}
-			this._hint.gameObject.SetActive(true);
-			this._hint.SetCustomText(setting.HintDescription);
+			_hint.gameObject.SetActive(value: false);
+			return;
 		}
-
-		[SerializeField]
-		private TMP_Text _label;
-
-		[SerializeField]
-		private CustomUserSettingsEntryDescription _hint;
+		_hint.gameObject.SetActive(value: true);
+		_hint.SetCustomText(setting.HintDescription);
 	}
 }

@@ -1,74 +1,62 @@
-﻿using System;
-using InventorySystem.Items.Pickups;
+using System;
 using Mirror;
 using Utils;
 
-namespace InventorySystem.Searching
+namespace InventorySystem.Searching;
+
+public struct SearchSession : ISearchSession, NetworkMessage, IEquatable<SearchSession>
 {
-	public struct SearchSession : ISearchSession, NetworkMessage, IEquatable<SearchSession>
+	public ISearchable Target { get; set; }
+
+	public double InitialTime { get; set; }
+
+	public double FinishTime { get; set; }
+
+	public double Duration => FinishTime - InitialTime;
+
+	public double Progress => MoreMath.InverseLerp(InitialTime, FinishTime, NetworkTime.time);
+
+	public SearchSession(double initialTime, double finishTime, ISearchable target)
 	{
-		public ItemPickupBase Target { readonly get; set; }
+		Target = target;
+		InitialTime = initialTime;
+		FinishTime = finishTime;
+	}
 
-		public double InitialTime { readonly get; set; }
+	public void Deserialize(NetworkReader reader)
+	{
+		Target = reader.ReadNetworkIdentity().GetComponent<ISearchable>();
+		InitialTime = reader.ReadDouble();
+		FinishTime = reader.ReadDouble();
+	}
 
-		public double FinishTime { readonly get; set; }
+	public void Serialize(NetworkWriter writer)
+	{
+		writer.WriteNetworkIdentity(Target?.netIdentity);
+		writer.WriteDouble(InitialTime);
+		writer.WriteDouble(FinishTime);
+	}
 
-		public double Duration
+	public bool Equals(SearchSession other)
+	{
+		if (object.Equals(Target, other.Target) && InitialTime.Equals(other.InitialTime))
 		{
-			get
-			{
-				return this.FinishTime - this.InitialTime;
-			}
+			return FinishTime.Equals(other.FinishTime);
 		}
+		return false;
+	}
 
-		public double Progress
+	public override bool Equals(object obj)
+	{
+		if (obj is SearchSession other)
 		{
-			get
-			{
-				return MoreMath.InverseLerp(this.InitialTime, this.FinishTime, NetworkTime.time);
-			}
+			return Equals(other);
 		}
+		return false;
+	}
 
-		public SearchSession(double initialTime, double finishTime, ItemPickupBase target)
-		{
-			this.Target = target;
-			this.InitialTime = initialTime;
-			this.FinishTime = finishTime;
-		}
-
-		public void Deserialize(NetworkReader reader)
-		{
-			NetworkIdentity networkIdentity = reader.ReadNetworkIdentity();
-			this.Target = ((networkIdentity == null) ? null : networkIdentity.GetComponent<ItemPickupBase>());
-			this.InitialTime = reader.ReadDouble();
-			this.FinishTime = reader.ReadDouble();
-		}
-
-		public void Serialize(NetworkWriter writer)
-		{
-			writer.WriteNetworkIdentity((this.Target == null) ? null : this.Target.netIdentity);
-			writer.WriteDouble(this.InitialTime);
-			writer.WriteDouble(this.FinishTime);
-		}
-
-		public bool Equals(SearchSession other)
-		{
-			return object.Equals(this.Target, other.Target) && this.InitialTime.Equals(other.InitialTime) && this.FinishTime.Equals(other.FinishTime);
-		}
-
-		public override bool Equals(object obj)
-		{
-			if (obj is SearchSession)
-			{
-				SearchSession searchSession = (SearchSession)obj;
-				return this.Equals(searchSession);
-			}
-			return false;
-		}
-
-		public override int GetHashCode()
-		{
-			return (((((this.Target != null) ? this.Target.GetHashCode() : 0) * 397) ^ this.InitialTime.GetHashCode()) * 397) ^ this.FinishTime.GetHashCode();
-		}
+	public override int GetHashCode()
+	{
+		return (((((Target != null) ? Target.GetHashCode() : 0) * 397) ^ InitialTime.GetHashCode()) * 397) ^ FinishTime.GetHashCode();
 	}
 }

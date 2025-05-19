@@ -1,33 +1,40 @@
-﻿using System;
+using System;
 using Utf8Json;
 
 public readonly struct AuthenticatiorAuthReject : IEquatable<AuthenticatiorAuthReject>, IJsonSerializable
 {
+	public readonly string Id;
+
+	public readonly string Reason;
+
 	[SerializationConstructor]
 	public AuthenticatiorAuthReject(string id, string reason)
 	{
-		this.Id = id;
-		this.Reason = reason;
+		Id = id;
+		Reason = reason;
 	}
 
 	public bool Equals(AuthenticatiorAuthReject other)
 	{
-		return string.Equals(this.Id, other.Id) && string.Equals(this.Reason, other.Reason);
+		if (string.Equals(Id, other.Id))
+		{
+			return string.Equals(Reason, other.Reason);
+		}
+		return false;
 	}
 
 	public override bool Equals(object obj)
 	{
-		if (obj is AuthenticatiorAuthReject)
+		if (obj is AuthenticatiorAuthReject other)
 		{
-			AuthenticatiorAuthReject authenticatiorAuthReject = (AuthenticatiorAuthReject)obj;
-			return this.Equals(authenticatiorAuthReject);
+			return Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((this.Id != null) ? this.Id.GetHashCode() : 0) * 397) ^ ((this.Reason != null) ? this.Reason.GetHashCode() : 0);
+		return (((Id != null) ? Id.GetHashCode() : 0) * 397) ^ ((Reason != null) ? Reason.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(AuthenticatiorAuthReject left, AuthenticatiorAuthReject right)
@@ -39,8 +46,4 @@ public readonly struct AuthenticatiorAuthReject : IEquatable<AuthenticatiorAuthR
 	{
 		return !left.Equals(right);
 	}
-
-	public readonly string Id;
-
-	public readonly string Reason;
 }

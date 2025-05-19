@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Autosync;
 using InventorySystem.Items.Firearms.Attachments;
@@ -11,651 +11,574 @@ using UnityEngine;
 using Utils;
 using Utils.NonAllocLINQ;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModule, IInspectPreventerModule
 {
-	public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModule, IInspectPreventerModule
+	private enum MessageType : byte
 	{
-		public static event Action<ushort, bool> OnCockedChanged;
+		RpcNewPlayerResync,
+		RpcSetCockedTrue,
+		RpcSetCockedFalse,
+		RpcFire,
+		RpcDryFire,
+		CmdUpdatePulling,
+		CmdShoot,
+		StartPulling,
+		StartCocking
+	}
 
-		public bool IsBusy
+	private class TriggerPull
+	{
+		private double _pullStartTime;
+
+		private double _pullEndTime;
+
+		private double InverseLerpTime => MoreMath.InverseLerp(_pullStartTime, _pullEndTime, NetworkTime.time);
+
+		public float PullProgress
 		{
 			get
 			{
-				return this.OnCooldown || this.IsCocking || this._triggerPull.IsPulling;
-			}
-		}
-
-		public bool InspectionAllowed
-		{
-			get
-			{
-				if (this._cylinderModule.AmmoStored != 0)
+				if (!IsPulling)
 				{
-					return !this.IsBusy;
+					return 0f;
 				}
-				return !this.IsCocking;
+				return (float)InverseLerpTime;
 			}
 		}
 
-		public bool Cocked
+		public bool IsPulling { get; private set; }
+
+		public void Pull(float durationSeconds)
 		{
-			get
+			IsPulling = true;
+			_pullStartTime = NetworkTime.time;
+			_pullEndTime = NetworkTime.time + (double)durationSeconds;
+		}
+
+		public void Reset()
+		{
+			IsPulling = false;
+		}
+	}
+
+	private static readonly HashSet<ushort> CockedHashes = new HashSet<ushort>();
+
+	private const float CockingKeyMaxHoldTime = 0.5f;
+
+	[SerializeField]
+	private float _baseDoubleActionTime;
+
+	[SerializeField]
+	private float _basePostShotCooldown;
+
+	[SerializeField]
+	private AudioClip[] _fireClips;
+
+	[SerializeField]
+	private AudioClip _dryFireClip;
+
+	[SerializeField]
+	private AudioClip _doubleActionClip;
+
+	[SerializeField]
+	private AudioClip _cockingClip;
+
+	[SerializeField]
+	private AudioClip _decockingClip;
+
+	private float _cockingKeyHoldTime;
+
+	private int? _afterDecockTrigger;
+
+	private bool _cockingBusy;
+
+	private bool _serverPullTokenUsed;
+
+	private ClientPredictedValue<bool> _clientCocked;
+
+	private AudioModule _audioModule;
+
+	private CylinderAmmoModule _cylinderModule;
+
+	private IHitregModule _hitregModule;
+
+	private readonly TriggerPull _triggerPull = new TriggerPull();
+
+	private readonly ClientRequestTimer _cockRequestTimer = new ClientRequestTimer();
+
+	private readonly FullAutoRateLimiter _clientShotCooldown = new FullAutoRateLimiter();
+
+	private readonly FullAutoRateLimiter _serverShotCooldown = new FullAutoRateLimiter();
+
+	public bool IsBusy
+	{
+		get
+		{
+			if (!OnCooldown && !IsCocking)
 			{
-				if (!base.IsServer)
-				{
-					return this._clientCocked.Value;
-				}
-				return DoubleActionModule.GetCocked(base.ItemSerial);
+				return _triggerPull.IsPulling;
 			}
-			private set
+			return true;
+		}
+	}
+
+	public bool InspectionAllowed
+	{
+		get
+		{
+			if (_cylinderModule.AmmoStored != 0)
 			{
-				if (!base.IsServer)
-				{
-					this._clientCocked.Value = value;
-					return;
-				}
-				if (value)
-				{
-					DoubleActionModule.CockedHashes.Add(base.ItemSerial);
-					this.SendRpc(DoubleActionModule.MessageType.RpcSetCockedTrue, null, true);
-					return;
-				}
-				DoubleActionModule.CockedHashes.Remove(base.ItemSerial);
-				this.SendRpc(DoubleActionModule.MessageType.RpcSetCockedFalse, null, true);
+				return !IsBusy;
 			}
+			return !IsCocking;
 		}
+	}
 
-		public float TriggerPullProgress
+	public bool Cocked
+	{
+		get
 		{
-			get
-			{
-				return this._triggerPull.PullProgress;
-			}
-		}
-
-		public float DisplayCyclicRate
-		{
-			get
-			{
-				return 1f / (this.DoubleActionTime + this.TimeBetweenShots);
-			}
-		}
-
-		public bool IsLoaded
-		{
-			get
-			{
-				return this._cylinderModule.AmmoStored > 0;
-			}
-		}
-
-		private float DoubleActionTime
-		{
-			get
-			{
-				return this._baseDoubleActionTime / base.Firearm.AttachmentsValue(AttachmentParam.DoubleActionSpeedMultiplier);
-			}
-		}
-
-		private float TimeBetweenShots
-		{
-			get
-			{
-				return this._basePostShotCooldown / base.Firearm.AttachmentsValue(AttachmentParam.FireRateMultiplier);
-			}
-		}
-
-		private bool OnCooldown
-		{
-			get
-			{
-				return !this._clientShotCooldown.Ready || !this._serverShotCooldown.Ready;
-			}
-		}
-
-		private bool IsCocking
-		{
-			get
-			{
-				return this._cockingBusy || this._cockRequestTimer.Busy;
-			}
-		}
-
-		public static bool GetCocked(ushort serial)
-		{
-			return DoubleActionModule.CockedHashes.Contains(serial);
-		}
-
-		public void TriggerDecocking(int? nextTriggerHash = null)
-		{
-			this._audioModule.PlayQuiet(this._decockingClip);
-			this._cockingBusy = true;
-			this._afterDecockTrigger = nextTriggerHash;
-			base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.DeCock, false);
-		}
-
-		public void TriggerCocking()
-		{
-			this._audioModule.PlayNormal(this._cockingClip);
-			this._cockingBusy = true;
-			base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.Cock, false);
-			if (base.IsLocalPlayer)
-			{
-				this._cylinderModule.ClientHoldPrediction();
-			}
-		}
-
-		[ExposedFirearmEvent]
-		public void SetCocked(bool value)
-		{
-			this.Cocked = value;
-		}
-
-		[ExposedFirearmEvent]
-		public void OnDecockingAnimComplete()
-		{
-			this._cockingBusy = false;
-			if (this._afterDecockTrigger == null)
-			{
-				return;
-			}
-			base.Firearm.AnimSetTrigger(this._afterDecockTrigger.Value, false);
-			this._afterDecockTrigger = null;
-		}
-
-		[ExposedFirearmEvent]
-		public void OnCockingAnimComplete()
-		{
-			this._cockingBusy = false;
-		}
-
-		public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
-		{
-			base.ClientProcessRpcTemplate(reader, serial);
-			switch (this.DecodeHeader(reader))
-			{
-			case DoubleActionModule.MessageType.RpcNewPlayerResync:
-				foreach (ushort num in DoubleActionModule.CockedHashes)
-				{
-					Action<ushort, bool> onCockedChanged = DoubleActionModule.OnCockedChanged;
-					if (onCockedChanged != null)
-					{
-						onCockedChanged(num, false);
-					}
-				}
-				DoubleActionModule.CockedHashes.Clear();
-				DoubleActionModule.CockedHashes.EnsureCapacity(reader.Remaining / 2);
-				while (reader.Remaining > 0)
-				{
-					ushort num2 = reader.ReadUShort();
-					DoubleActionModule.CockedHashes.Add(num2);
-					Action<ushort, bool> onCockedChanged2 = DoubleActionModule.OnCockedChanged;
-					if (onCockedChanged2 != null)
-					{
-						onCockedChanged2(num2, true);
-					}
-				}
-				return;
-			case DoubleActionModule.MessageType.RpcSetCockedTrue:
-			{
-				DoubleActionModule.CockedHashes.Add(serial);
-				Action<ushort, bool> onCockedChanged3 = DoubleActionModule.OnCockedChanged;
-				if (onCockedChanged3 == null)
-				{
-					return;
-				}
-				onCockedChanged3(serial, true);
-				return;
-			}
-			case DoubleActionModule.MessageType.RpcSetCockedFalse:
-			{
-				DoubleActionModule.CockedHashes.Remove(serial);
-				Action<ushort, bool> onCockedChanged4 = DoubleActionModule.OnCockedChanged;
-				if (onCockedChanged4 == null)
-				{
-					return;
-				}
-				onCockedChanged4(serial, false);
-				return;
-			}
-			case DoubleActionModule.MessageType.RpcFire:
-				ShotEventManager.Trigger(new BulletShotEvent(new ItemIdentifier(base.Firearm)));
-				return;
-			default:
-				return;
-			}
-		}
-
-		public override void ClientProcessRpcInstance(NetworkReader reader)
-		{
-			base.ClientProcessRpcInstance(reader);
-			switch (this.DecodeHeader(reader))
-			{
-			case DoubleActionModule.MessageType.RpcFire:
-				if (base.IsSpectator)
-				{
-					this.PlayFireAnims(FirearmAnimatorHashes.Fire);
-					this._triggerPull.Reset();
-					return;
-				}
-				break;
-			case DoubleActionModule.MessageType.RpcDryFire:
-				if (base.IsSpectator)
-				{
-					this.PlayFireAnims(FirearmAnimatorHashes.DryFire);
-					this._triggerPull.Reset();
-				}
-				break;
-			case DoubleActionModule.MessageType.CmdUpdatePulling:
-			case DoubleActionModule.MessageType.CmdShoot:
-				break;
-			case DoubleActionModule.MessageType.StartPulling:
-				if (base.IsSpectator)
-				{
-					this._triggerPull.Pull(this.DoubleActionTime);
-					return;
-				}
-				break;
-			case DoubleActionModule.MessageType.StartCocking:
-				this.TriggerCocking();
-				return;
-			default:
-				return;
-			}
-		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			if (base.PrimaryActionBlocked)
-			{
-				return;
-			}
-			switch (this.DecodeHeader(reader))
-			{
-			case DoubleActionModule.MessageType.CmdShoot:
-				this.Fire(reader);
-				this._cylinderModule.ServerResync();
-				break;
-			case DoubleActionModule.MessageType.StartPulling:
-				if (!this._serverPullTokenUsed)
-				{
-					this._serverPullTokenUsed = true;
-					this._audioModule.PlayQuiet(this._doubleActionClip);
-					double targetTime = NetworkTime.time + (double)this.DoubleActionTime;
-					this.SendRpc(DoubleActionModule.MessageType.StartPulling, delegate(NetworkWriter x)
-					{
-						x.WriteDouble(targetTime);
-					}, true);
-					return;
-				}
-				break;
-			case DoubleActionModule.MessageType.StartCocking:
-				if (!base.Firearm.AnyModuleBusy(this) && !this.Cocked && !this._cockingBusy)
-				{
-					this.SendRpc(DoubleActionModule.MessageType.StartCocking, null, true);
-					return;
-				}
-				break;
-			default:
-				return;
-			}
-		}
-
-		protected override void OnInit()
-		{
-			base.OnInit();
-			this._clientCocked = new ClientPredictedValue<bool>(() => DoubleActionModule.GetCocked(base.ItemSerial));
-			if (!base.Firearm.TryGetModules(out this._audioModule, out this._cylinderModule, out this._hitregModule))
-			{
-				throw new InvalidOperationException(string.Concat(new string[]
-				{
-					"The ",
-					base.Firearm.name,
-					" is missing one or more essential modules (required by ",
-					base.name,
-					")."
-				}));
-			}
-			this._audioModule.RegisterClip(this._dryFireClip);
-			this._audioModule.RegisterClip(this._doubleActionClip);
-			this._audioModule.RegisterClip(this._cockingClip);
-			this._audioModule.RegisterClip(this._decockingClip);
-			foreach (AudioClip audioClip in this._fireClips)
-			{
-				this._audioModule.RegisterClip(audioClip);
-			}
-		}
-
-		internal override void OnClientReady()
-		{
-			base.OnClientReady();
-			DoubleActionModule.CockedHashes.Clear();
-		}
-
-		internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
-		{
-			base.ServerOnPlayerConnected(hub, firstModule);
-			if (!firstModule)
-			{
-				return;
-			}
-			this.SendRpc(hub, delegate(NetworkWriter writer)
-			{
-				writer.WriteSubheader(DoubleActionModule.MessageType.RpcNewPlayerResync);
-				DoubleActionModule.CockedHashes.ForEach(delegate(ushort x)
-				{
-					writer.WriteUShort(x);
-				});
-			});
-		}
-
-		internal override void OnHolstered()
-		{
-			base.OnHolstered();
-			this._cockingBusy = false;
-			this._cockingKeyHoldTime = 0f;
-			this._serverPullTokenUsed = false;
-			this._triggerPull.Reset();
-		}
-
-		internal override void OnEquipped()
-		{
-			base.OnEquipped();
 			if (!base.IsServer)
 			{
-				return;
+				return _clientCocked.Value;
 			}
-			if (this.Cocked)
-			{
-				this.SendRpc(DoubleActionModule.MessageType.RpcSetCockedTrue, null, true);
-				return;
-			}
-			this.SendRpc(DoubleActionModule.MessageType.RpcSetCockedFalse, null, true);
+			return GetCocked(base.ItemSerial);
 		}
-
-		internal override void EquipUpdate()
+		private set
 		{
-			base.EquipUpdate();
-			this._clientShotCooldown.Update();
-			this._serverShotCooldown.Update();
-			if (base.IsLocalPlayer)
+			if (!base.IsServer)
 			{
-				this.UpdateInputs();
-				if (this._triggerPull.IsPulling && (this.TriggerPullProgress >= 1f || this.Cocked))
-				{
-					this.Fire(null);
-				}
+				_clientCocked.Value = value;
 			}
-			base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsCocked, this.Cocked, false);
-			base.Firearm.AnimSetFloat(FirearmAnimatorHashes.TriggerState, this.TriggerPullProgress, false);
-		}
-
-		private void UpdateInputs()
-		{
-			if (base.Firearm.AnyModuleBusy(null))
+			else if (value)
 			{
-				return;
-			}
-			if (base.PrimaryActionBlocked)
-			{
-				return;
-			}
-			if (base.GetAction(ActionName.WeaponAlt))
-			{
-				this._cockingKeyHoldTime += Time.deltaTime;
-			}
-			else if (this._cockingKeyHoldTime > 0f)
-			{
-				if (this._cockingKeyHoldTime < 0.5f)
-				{
-					this._cockRequestTimer.Trigger();
-					this.SendCmd(DoubleActionModule.MessageType.StartCocking, null);
-				}
-				this._cockingKeyHoldTime = 0f;
-			}
-			ITriggerControllerModule triggerControllerModule;
-			if (base.Firearm.TryGetModule(out triggerControllerModule, true) && triggerControllerModule.TriggerHeld)
-			{
-				this._triggerPull.Pull(this.DoubleActionTime);
-				if (!this.Cocked)
-				{
-					this.SendCmd(DoubleActionModule.MessageType.StartPulling, null);
-					this._audioModule.PlayClientside(this._doubleActionClip);
-				}
-			}
-		}
-
-		private unsafe void Fire(NetworkReader extraData)
-		{
-			if (base.IsLocalPlayer)
-			{
-				this._triggerPull.Reset();
-				this._clientShotCooldown.Trigger(this.TimeBetweenShots);
+				CockedHashes.Add(base.ItemSerial);
+				SendRpc(MessageType.RpcSetCockedTrue);
 			}
 			else
 			{
-				if (!this._serverShotCooldown.Ready)
-				{
-					return;
-				}
-				this._serverPullTokenUsed = false;
-				this._serverShotCooldown.Trigger(this.TimeBetweenShots);
+				CockedHashes.Remove(base.ItemSerial);
+				SendRpc(MessageType.RpcSetCockedFalse);
 			}
-			if (!this.Cocked)
+		}
+	}
+
+	public float TriggerPullProgress => _triggerPull.PullProgress;
+
+	public float DisplayCyclicRate => 1f / (DoubleActionTime + TimeBetweenShots);
+
+	public bool IsLoaded => _cylinderModule.AmmoStored > 0;
+
+	private float DoubleActionTime => _baseDoubleActionTime / base.Firearm.AttachmentsValue(AttachmentParam.DoubleActionSpeedMultiplier);
+
+	private float TimeBetweenShots => _basePostShotCooldown / base.Firearm.AttachmentsValue(AttachmentParam.FireRateMultiplier);
+
+	private bool OnCooldown
+	{
+		get
+		{
+			if (_clientShotCooldown.Ready)
 			{
-				this._cylinderModule.RotateCylinder(1);
+				return !_serverShotCooldown.Ready;
+			}
+			return true;
+		}
+	}
+
+	private bool IsCocking
+	{
+		get
+		{
+			if (!_cockingBusy)
+			{
+				return _cockRequestTimer.Busy;
+			}
+			return true;
+		}
+	}
+
+	public static event Action<ushort, bool> OnCockedChanged;
+
+	public static bool GetCocked(ushort serial)
+	{
+		return CockedHashes.Contains(serial);
+	}
+
+	public void TriggerDecocking(int? nextTriggerHash = null)
+	{
+		_audioModule.PlayQuiet(_decockingClip);
+		_cockingBusy = true;
+		_afterDecockTrigger = nextTriggerHash;
+		base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.DeCock);
+	}
+
+	public void TriggerCocking()
+	{
+		_audioModule.PlayNormal(_cockingClip);
+		_cockingBusy = true;
+		base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.Cock);
+		if (base.IsLocalPlayer)
+		{
+			_cylinderModule.ClientHoldPrediction();
+		}
+	}
+
+	[ExposedFirearmEvent]
+	public void SetCocked(bool value)
+	{
+		Cocked = value;
+	}
+
+	[ExposedFirearmEvent]
+	public void OnDecockingAnimComplete()
+	{
+		_cockingBusy = false;
+		if (_afterDecockTrigger.HasValue)
+		{
+			base.Firearm.AnimSetTrigger(_afterDecockTrigger.Value);
+			_afterDecockTrigger = null;
+		}
+	}
+
+	[ExposedFirearmEvent]
+	public void OnCockingAnimComplete()
+	{
+		_cockingBusy = false;
+	}
+
+	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	{
+		base.ClientProcessRpcTemplate(reader, serial);
+		switch (DecodeHeader(reader))
+		{
+		case MessageType.RpcNewPlayerResync:
+			foreach (ushort cockedHash in CockedHashes)
+			{
+				DoubleActionModule.OnCockedChanged?.Invoke(cockedHash, arg2: false);
+			}
+			CockedHashes.Clear();
+			CockedHashes.EnsureCapacity(reader.Remaining / 2);
+			while (reader.Remaining > 0)
+			{
+				ushort num = reader.ReadUShort();
+				CockedHashes.Add(num);
+				DoubleActionModule.OnCockedChanged?.Invoke(num, arg2: true);
+			}
+			break;
+		case MessageType.RpcSetCockedTrue:
+			CockedHashes.Add(serial);
+			DoubleActionModule.OnCockedChanged?.Invoke(serial, arg2: true);
+			break;
+		case MessageType.RpcSetCockedFalse:
+			CockedHashes.Remove(serial);
+			DoubleActionModule.OnCockedChanged?.Invoke(serial, arg2: false);
+			break;
+		case MessageType.RpcFire:
+			ShotEventManager.Trigger(new BulletShotEvent(new ItemIdentifier(base.Firearm.ItemTypeId, serial)));
+			break;
+		}
+	}
+
+	public override void ClientProcessRpcInstance(NetworkReader reader)
+	{
+		base.ClientProcessRpcInstance(reader);
+		switch (DecodeHeader(reader))
+		{
+		case MessageType.StartCocking:
+			TriggerCocking();
+			break;
+		case MessageType.StartPulling:
+			if (base.IsSpectator)
+			{
+				_triggerPull.Pull(DoubleActionTime);
+			}
+			break;
+		case MessageType.RpcFire:
+			if (base.IsSpectator)
+			{
+				PlayFireAnims(FirearmAnimatorHashes.Fire);
+				_triggerPull.Reset();
+			}
+			break;
+		case MessageType.RpcDryFire:
+			if (base.IsSpectator)
+			{
+				PlayFireAnims(FirearmAnimatorHashes.DryFire);
+				_triggerPull.Reset();
+			}
+			break;
+		case MessageType.CmdUpdatePulling:
+		case MessageType.CmdShoot:
+			break;
+		}
+	}
+
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (base.PrimaryActionBlocked)
+		{
+			return;
+		}
+		switch (DecodeHeader(reader))
+		{
+		case MessageType.StartCocking:
+			if (!base.Firearm.AnyModuleBusy(this) && !Cocked && !_cockingBusy)
+			{
+				SendRpc(MessageType.StartCocking);
+			}
+			break;
+		case MessageType.StartPulling:
+			if (!_serverPullTokenUsed)
+			{
+				_serverPullTokenUsed = true;
+				_audioModule.PlayQuiet(_doubleActionClip);
+				double targetTime = NetworkTime.time + (double)DoubleActionTime;
+				SendRpc(MessageType.StartPulling, delegate(NetworkWriter x)
+				{
+					x.WriteDouble(targetTime);
+				});
+			}
+			break;
+		case MessageType.CmdShoot:
+			Fire(reader);
+			_cylinderModule.ServerResync();
+			break;
+		}
+	}
+
+	protected override void OnInit()
+	{
+		base.OnInit();
+		_clientCocked = new ClientPredictedValue<bool>(() => GetCocked(base.ItemSerial));
+		if (!base.Firearm.TryGetModules<AudioModule, CylinderAmmoModule, IHitregModule>(out _audioModule, out _cylinderModule, out _hitregModule))
+		{
+			throw new InvalidOperationException("The " + base.Firearm.name + " is missing one or more essential modules (required by " + base.name + ").");
+		}
+		_audioModule.RegisterClip(_dryFireClip);
+		_audioModule.RegisterClip(_doubleActionClip);
+		_audioModule.RegisterClip(_cockingClip);
+		_audioModule.RegisterClip(_decockingClip);
+		AudioClip[] fireClips = _fireClips;
+		foreach (AudioClip clip in fireClips)
+		{
+			_audioModule.RegisterClip(clip);
+		}
+	}
+
+	internal override void OnClientReady()
+	{
+		base.OnClientReady();
+		CockedHashes.Clear();
+	}
+
+	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
+	{
+		base.ServerOnPlayerConnected(hub, firstModule);
+		if (!firstModule)
+		{
+			return;
+		}
+		SendRpc(hub, delegate(NetworkWriter writer)
+		{
+			writer.WriteSubheader(MessageType.RpcNewPlayerResync);
+			CockedHashes.ForEach(delegate(ushort x)
+			{
+				writer.WriteUShort(x);
+			});
+		});
+	}
+
+	internal override void OnHolstered()
+	{
+		base.OnHolstered();
+		_cockingBusy = false;
+		_cockingKeyHoldTime = 0f;
+		_serverPullTokenUsed = false;
+		_triggerPull.Reset();
+	}
+
+	internal override void OnEquipped()
+	{
+		base.OnEquipped();
+		if (base.IsServer)
+		{
+			if (Cocked)
+			{
+				SendRpc(MessageType.RpcSetCockedTrue);
 			}
 			else
 			{
-				this.Cocked = false;
-			}
-			CylinderAmmoModule.Chamber chamber = *this._cylinderModule.Chambers[0];
-			if (chamber.ContextState == CylinderAmmoModule.ChamberState.Live)
-			{
-				this.FireLive(chamber, extraData);
-			}
-			else
-			{
-				this.FireDry();
-			}
-			if (base.IsLocalPlayer && !base.IsServer)
-			{
-				this.SendCmd(DoubleActionModule.MessageType.CmdShoot, delegate(NetworkWriter x)
-				{
-					x.WriteBacktrackData(new ShotBacktrackData(base.Firearm));
-				});
+				SendRpc(MessageType.RpcSetCockedFalse);
 			}
 		}
+	}
 
-		private void FireLive(CylinderAmmoModule.Chamber chamber, NetworkReader extraData)
+	internal override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		_clientShotCooldown.Update();
+		_serverShotCooldown.Update();
+		if (base.IsControllable)
 		{
-			BulletShotEvent shotEvent = new BulletShotEvent(new ItemIdentifier(base.Firearm));
-			if (base.IsServer)
+			UpdateInputs();
+			if (_triggerPull.IsPulling && (TriggerPullProgress >= 1f || Cocked))
 			{
-				PlayerShootingWeaponEventArgs playerShootingWeaponEventArgs = new PlayerShootingWeaponEventArgs(base.Firearm.Owner, base.Firearm);
-				PlayerEvents.OnShootingWeapon(playerShootingWeaponEventArgs);
-				if (!playerShootingWeaponEventArgs.IsAllowed)
-				{
-					return;
-				}
-				(base.IsLocalPlayer ? new ShotBacktrackData(base.Firearm) : new ShotBacktrackData(extraData)).ProcessShot(base.Firearm, delegate(ReferenceHub target)
-				{
-					this._hitregModule.Fire(target, shotEvent);
-				});
-				this.SendRpc((ReferenceHub hub) => hub != this.Firearm.Owner && !hub.isLocalPlayer, delegate(NetworkWriter x)
-				{
-					x.WriteSubheader(DoubleActionModule.MessageType.RpcFire);
-				});
-				PlayerEvents.OnShotWeapon(new PlayerShotWeaponEventArgs(base.Firearm.Owner, base.Firearm));
+				Fire(null);
 			}
-			float num = base.Firearm.AttachmentsValue(AttachmentParam.ShotClipIdOverride);
-			this._audioModule.PlayGunshot(this._fireClips[(int)num]);
-			chamber.ContextState = CylinderAmmoModule.ChamberState.Discharged;
-			ShotEventManager.Trigger(shotEvent);
-			this.PlayFireAnims(FirearmAnimatorHashes.Fire);
 		}
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsCocked, Cocked);
+		base.Firearm.AnimSetFloat(FirearmAnimatorHashes.TriggerState, TriggerPullProgress);
+	}
 
-		private void FireDry()
+	private void UpdateInputs()
+	{
+		if (base.Firearm.AnyModuleBusy() || base.PrimaryActionBlocked)
 		{
-			if (base.IsServer)
+			return;
+		}
+		if (GetAction(ActionName.WeaponAlt))
+		{
+			_cockingKeyHoldTime += Time.deltaTime;
+		}
+		else if (_cockingKeyHoldTime > 0f)
+		{
+			if (_cockingKeyHoldTime < 0.5f)
 			{
-				PlayerDryFiringWeaponEventArgs playerDryFiringWeaponEventArgs = new PlayerDryFiringWeaponEventArgs(base.Firearm.Owner, base.Firearm);
-				PlayerEvents.OnDryFiringWeapon(playerDryFiringWeaponEventArgs);
-				if (!playerDryFiringWeaponEventArgs.IsAllowed)
-				{
-					return;
-				}
-				this.SendRpc(DoubleActionModule.MessageType.RpcDryFire, null, true);
-				PlayerEvents.OnDryFiredWeapon(new PlayerDryFiredWeaponEventArgs(base.Firearm.Owner, base.Firearm));
+				_cockRequestTimer.Trigger();
+				SendCmd(MessageType.StartCocking);
 			}
-			if (base.IsLocalPlayer)
+			_cockingKeyHoldTime = 0f;
+		}
+		if (base.Firearm.TryGetModule<ITriggerControllerModule>(out var module) && module.TriggerHeld)
+		{
+			_triggerPull.Pull(DoubleActionTime);
+			if (!Cocked)
 			{
-				this.PlayFireAnims(FirearmAnimatorHashes.DryFire);
+				SendCmd(MessageType.StartPulling);
+				_audioModule.PlayClientside(_doubleActionClip);
 			}
-			this._audioModule.PlayNormal(this._dryFireClip);
 		}
+	}
 
-		private void PlayFireAnims(int hash)
+	private void Fire(NetworkReader extraData)
+	{
+		if (base.IsLocalPlayer)
 		{
-			base.Firearm.AnimSetFloat(FirearmAnimatorHashes.Random, global::UnityEngine.Random.value, true);
-			base.Firearm.AnimSetTrigger(hash, false);
+			_triggerPull.Reset();
+			_clientShotCooldown.Trigger(TimeBetweenShots);
 		}
-
-		private DoubleActionModule.MessageType DecodeHeader(NetworkReader reader)
+		else
 		{
-			return (DoubleActionModule.MessageType)reader.ReadByte();
-		}
-
-		private void SendRpc(DoubleActionModule.MessageType header, Action<NetworkWriter> writerFunc = null, bool toAll = true)
-		{
-			this.SendRpc(delegate(NetworkWriter x)
+			if (!_serverShotCooldown.Ready)
 			{
-				x.WriteSubheader(header);
-				Action<NetworkWriter> writerFunc2 = writerFunc;
-				if (writerFunc2 == null)
-				{
-					return;
-				}
-				writerFunc2(x);
-			}, toAll);
+				return;
+			}
+			_serverPullTokenUsed = false;
+			_serverShotCooldown.Trigger(TimeBetweenShots);
 		}
-
-		private void SendCmd(DoubleActionModule.MessageType header, Action<NetworkWriter> writerFunc = null)
+		if (!Cocked)
 		{
-			this.SendCmd(delegate(NetworkWriter x)
+			_cylinderModule.RotateCylinder(1);
+		}
+		else
+		{
+			Cocked = false;
+		}
+		CylinderAmmoModule.Chamber chamber = _cylinderModule.Chambers[0];
+		if (chamber.ContextState == CylinderAmmoModule.ChamberState.Live)
+		{
+			FireLive(chamber, extraData);
+		}
+		else
+		{
+			FireDry();
+		}
+		if (base.IsLocalPlayer && !base.IsServer)
+		{
+			SendCmd(MessageType.CmdShoot, delegate(NetworkWriter x)
 			{
-				x.WriteSubheader(header);
-				Action<NetworkWriter> writerFunc2 = writerFunc;
-				if (writerFunc2 == null)
-				{
-					return;
-				}
-				writerFunc2(x);
+				x.WriteBacktrackData(new ShotBacktrackData(base.Firearm));
 			});
 		}
+	}
 
-		private static readonly HashSet<ushort> CockedHashes = new HashSet<ushort>();
-
-		private const float CockingKeyMaxHoldTime = 0.5f;
-
-		[SerializeField]
-		private float _baseDoubleActionTime;
-
-		[SerializeField]
-		private float _basePostShotCooldown;
-
-		[SerializeField]
-		private AudioClip[] _fireClips;
-
-		[SerializeField]
-		private AudioClip _dryFireClip;
-
-		[SerializeField]
-		private AudioClip _doubleActionClip;
-
-		[SerializeField]
-		private AudioClip _cockingClip;
-
-		[SerializeField]
-		private AudioClip _decockingClip;
-
-		private float _cockingKeyHoldTime;
-
-		private int? _afterDecockTrigger;
-
-		private bool _cockingBusy;
-
-		private bool _serverPullTokenUsed;
-
-		private ClientPredictedValue<bool> _clientCocked;
-
-		private AudioModule _audioModule;
-
-		private CylinderAmmoModule _cylinderModule;
-
-		private IHitregModule _hitregModule;
-
-		private readonly DoubleActionModule.TriggerPull _triggerPull = new DoubleActionModule.TriggerPull();
-
-		private readonly ClientRequestTimer _cockRequestTimer = new ClientRequestTimer();
-
-		private readonly FullAutoRateLimiter _clientShotCooldown = new FullAutoRateLimiter();
-
-		private readonly FullAutoRateLimiter _serverShotCooldown = new FullAutoRateLimiter();
-
-		private enum MessageType : byte
+	private void FireLive(CylinderAmmoModule.Chamber chamber, NetworkReader extraData)
+	{
+		BulletShotEvent shotEvent = new BulletShotEvent(new ItemIdentifier(base.Firearm));
+		if (base.IsServer)
 		{
-			RpcNewPlayerResync,
-			RpcSetCockedTrue,
-			RpcSetCockedFalse,
-			RpcFire,
-			RpcDryFire,
-			CmdUpdatePulling,
-			CmdShoot,
-			StartPulling,
-			StartCocking
+			PlayerShootingWeaponEventArgs playerShootingWeaponEventArgs = new PlayerShootingWeaponEventArgs(base.Firearm.Owner, base.Firearm);
+			PlayerEvents.OnShootingWeapon(playerShootingWeaponEventArgs);
+			if (!playerShootingWeaponEventArgs.IsAllowed)
+			{
+				return;
+			}
+			(base.IsLocalPlayer ? new ShotBacktrackData(base.Firearm) : new ShotBacktrackData(extraData)).ProcessShot(base.Firearm, delegate(ReferenceHub target)
+			{
+				_hitregModule.Fire(target, shotEvent);
+			});
+			SendRpc((ReferenceHub hub) => hub != base.Firearm.Owner && !hub.isLocalPlayer, delegate(NetworkWriter x)
+			{
+				x.WriteSubheader(MessageType.RpcFire);
+			});
+			PlayerEvents.OnShotWeapon(new PlayerShotWeaponEventArgs(base.Firearm.Owner, base.Firearm));
 		}
+		float num = base.Firearm.AttachmentsValue(AttachmentParam.ShotClipIdOverride);
+		_audioModule.PlayGunshot(_fireClips[(int)num]);
+		chamber.ContextState = CylinderAmmoModule.ChamberState.Discharged;
+		ShotEventManager.Trigger(shotEvent);
+		PlayFireAnims(FirearmAnimatorHashes.Fire);
+	}
 
-		private class TriggerPull
+	private void FireDry()
+	{
+		if (base.IsServer)
 		{
-			private double InverseLerpTime
+			PlayerDryFiringWeaponEventArgs playerDryFiringWeaponEventArgs = new PlayerDryFiringWeaponEventArgs(base.Firearm.Owner, base.Firearm);
+			PlayerEvents.OnDryFiringWeapon(playerDryFiringWeaponEventArgs);
+			if (!playerDryFiringWeaponEventArgs.IsAllowed)
 			{
-				get
-				{
-					return MoreMath.InverseLerp(this._pullStartTime, this._pullEndTime, NetworkTime.time);
-				}
+				return;
 			}
-
-			public float PullProgress
-			{
-				get
-				{
-					if (!this.IsPulling)
-					{
-						return 0f;
-					}
-					return (float)this.InverseLerpTime;
-				}
-			}
-
-			public bool IsPulling { get; private set; }
-
-			public void Pull(float durationSeconds)
-			{
-				this.IsPulling = true;
-				this._pullStartTime = NetworkTime.time;
-				this._pullEndTime = NetworkTime.time + (double)durationSeconds;
-			}
-
-			public void Reset()
-			{
-				this.IsPulling = false;
-			}
-
-			private double _pullStartTime;
-
-			private double _pullEndTime;
+			SendRpc(MessageType.RpcDryFire);
+			PlayerEvents.OnDryFiredWeapon(new PlayerDryFiredWeaponEventArgs(base.Firearm.Owner, base.Firearm));
 		}
+		if (base.IsLocalPlayer)
+		{
+			PlayFireAnims(FirearmAnimatorHashes.DryFire);
+		}
+		_audioModule.PlayNormal(_dryFireClip);
+	}
+
+	private void PlayFireAnims(int hash)
+	{
+		base.Firearm.AnimSetFloat(FirearmAnimatorHashes.Random, UnityEngine.Random.value, checkIfExists: true);
+		base.Firearm.AnimSetTrigger(hash);
+	}
+
+	private MessageType DecodeHeader(NetworkReader reader)
+	{
+		return (MessageType)reader.ReadByte();
+	}
+
+	private void SendRpc(MessageType header, Action<NetworkWriter> writerFunc = null, bool toAll = true)
+	{
+		SendRpc(delegate(NetworkWriter x)
+		{
+			x.WriteSubheader(header);
+			writerFunc?.Invoke(x);
+		}, toAll);
+	}
+
+	private void SendCmd(MessageType header, Action<NetworkWriter> writerFunc = null)
+	{
+		SendCmd(delegate(NetworkWriter x)
+		{
+			x.WriteSubheader(header);
+			writerFunc?.Invoke(x);
+		});
 	}
 }

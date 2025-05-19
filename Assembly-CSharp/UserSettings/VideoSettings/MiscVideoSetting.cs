@@ -1,13 +1,11 @@
-﻿using System;
+namespace UserSettings.VideoSettings;
 
-namespace UserSettings.VideoSettings
+public enum MiscVideoSetting
 {
-	public enum MiscVideoSetting
-	{
-		Brightness,
-		ExplosionShake,
-		HeadBobbing,
-		FlashbangDarkMode,
-		ShowNeedles
-	}
+	Brightness,
+	ExplosionShake,
+	HeadBobbing,
+	FlashbangDarkMode,
+	ShowNeedles,
+	Scp939VisionBlur
 }

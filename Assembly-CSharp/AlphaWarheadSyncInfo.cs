@@ -1,19 +1,19 @@
-﻿using System;
+using System;
 
 [Serializable]
 public struct AlphaWarheadSyncInfo : IEquatable<AlphaWarheadSyncInfo>
 {
-	public bool InProgress
-	{
-		get
-		{
-			return this.StartTime != 0.0;
-		}
-	}
+	public byte ScenarioId;
+
+	public WarheadScenarioType ScenarioType;
+
+	public double StartTime;
+
+	public bool InProgress => StartTime != 0.0;
 
 	public override int GetHashCode()
 	{
-		return (int)((byte)((int)(this.StartTime * 10.0) % 32767 * 255 + (int)this.ScenarioId) + this.ScenarioType);
+		return (int)(StartTime * 10.0) % 32767 * 255 + ScenarioId + (int)ScenarioType;
 	}
 
 	public static bool operator ==(AlphaWarheadSyncInfo left, AlphaWarheadSyncInfo right)
@@ -28,22 +28,19 @@ public struct AlphaWarheadSyncInfo : IEquatable<AlphaWarheadSyncInfo>
 
 	public bool Equals(AlphaWarheadSyncInfo other)
 	{
-		return other.ScenarioId == this.ScenarioId && other.StartTime == this.StartTime && other.ScenarioType == this.ScenarioType;
-	}
-
-	public override bool Equals(object obj)
-	{
-		if (obj is AlphaWarheadSyncInfo)
+		if (other.ScenarioId == ScenarioId && other.StartTime == StartTime)
 		{
-			AlphaWarheadSyncInfo alphaWarheadSyncInfo = (AlphaWarheadSyncInfo)obj;
-			return this.Equals(alphaWarheadSyncInfo);
+			return other.ScenarioType == ScenarioType;
 		}
 		return false;
 	}
 
-	public byte ScenarioId;
-
-	public WarheadScenarioType ScenarioType;
-
-	public double StartTime;
+	public override bool Equals(object obj)
+	{
+		if (obj is AlphaWarheadSyncInfo other)
+		{
+			return Equals(other);
+		}
+		return false;
+	}
 }

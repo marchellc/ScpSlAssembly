@@ -1,74 +1,62 @@
-﻿using System;
 using AudioPooling;
 using InventorySystem.Items.Thirdperson;
 using PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
 using UnityEngine;
 
-namespace InventorySystem.Items.ToggleableLights.Flashlight
+namespace InventorySystem.Items.ToggleableLights.Flashlight;
+
+public class FlashlightThirdpersonItem : IdleThirdpersonItem
 {
-	public class FlashlightThirdpersonItem : IdleThirdpersonItem
+	public const float MaxAudioDistance = 3.2f;
+
+	[SerializeField]
+	private Light _lightSource;
+
+	[SerializeField]
+	private Renderer[] _targetRenderers;
+
+	[SerializeField]
+	private Material _onMat;
+
+	[SerializeField]
+	private Material _offMat;
+
+	private static FlashlightItem Template => FlashlightItem.Template;
+
+	internal override void Initialize(InventorySubcontroller subctrl, ItemIdentifier id)
 	{
-		private static FlashlightItem Template
+		base.Initialize(subctrl, id);
+		FlashlightNetworkHandler.OnStatusReceived += ProcesReceivedStatus;
+		if (FlashlightNetworkHandler.ReceivedStatuses.TryGetValue(id.SerialNumber, out var value))
 		{
-			get
-			{
-				return FlashlightItem.Template;
-			}
+			SetState(value);
 		}
+	}
 
-		internal override void Initialize(InventorySubcontroller subctrl, ItemIdentifier id)
+	private void OnDestroy()
+	{
+		FlashlightNetworkHandler.OnStatusReceived -= ProcesReceivedStatus;
+	}
+
+	private void ProcesReceivedStatus(FlashlightNetworkHandler.FlashlightMessage msg)
+	{
+		if (msg.Serial == base.ItemId.SerialNumber)
 		{
-			base.Initialize(subctrl, id);
-			FlashlightNetworkHandler.OnStatusReceived += this.ProcesReceivedStatus;
-			bool flag;
-			if (!FlashlightNetworkHandler.ReceivedStatuses.TryGetValue(id.SerialNumber, out flag))
-			{
-				return;
-			}
-			this.SetState(flag);
+			SetState(msg.NewState);
 		}
+	}
 
-		private void OnDestroy()
+	private void SetState(bool newState)
+	{
+		if (_lightSource.enabled != newState)
 		{
-			FlashlightNetworkHandler.OnStatusReceived -= this.ProcesReceivedStatus;
-		}
-
-		private void ProcesReceivedStatus(FlashlightNetworkHandler.FlashlightMessage msg)
-		{
-			if (msg.Serial != base.ItemId.SerialNumber)
-			{
-				return;
-			}
-			this.SetState(msg.NewState);
-		}
-
-		private void SetState(bool newState)
-		{
-			if (this._lightSource.enabled == newState)
-			{
-				return;
-			}
-			this._lightSource.enabled = newState;
-			Renderer[] targetRenderers = this._targetRenderers;
+			_lightSource.enabled = newState;
+			Renderer[] targetRenderers = _targetRenderers;
 			for (int i = 0; i < targetRenderers.Length; i++)
 			{
-				targetRenderers[i].sharedMaterial = (newState ? this._onMat : this._offMat);
+				targetRenderers[i].sharedMaterial = (newState ? _onMat : _offMat);
 			}
-			AudioSourcePoolManager.PlayOnTransform(newState ? FlashlightThirdpersonItem.Template.OnClip : FlashlightThirdpersonItem.Template.OffClip, base.transform, 3.2f, 1f, FalloffType.Exponential, MixerChannel.DefaultSfx, 1f);
+			AudioSourcePoolManager.PlayOnTransform(newState ? Template.OnClip : Template.OffClip, base.transform, 3.2f);
 		}
-
-		public const float MaxAudioDistance = 3.2f;
-
-		[SerializeField]
-		private Light _lightSource;
-
-		[SerializeField]
-		private Renderer[] _targetRenderers;
-
-		[SerializeField]
-		private Material _onMat;
-
-		[SerializeField]
-		private Material _offMat;
 	}
 }

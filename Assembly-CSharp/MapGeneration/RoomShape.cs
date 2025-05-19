@@ -1,14 +1,11 @@
-﻿using System;
+namespace MapGeneration;
 
-namespace MapGeneration
+public enum RoomShape
 {
-	public enum RoomShape
-	{
-		Undefined,
-		Endroom,
-		Straight,
-		Curve,
-		TShape,
-		XShape
-	}
+	Undefined,
+	Endroom,
+	Straight,
+	Curve,
+	TShape,
+	XShape
 }

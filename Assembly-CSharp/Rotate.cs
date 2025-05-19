@@ -1,12 +1,11 @@
-﻿using System;
 using UnityEngine;
 
 public class Rotate : MonoBehaviour
 {
+	private Vector3 speed;
+
 	private void Update()
 	{
-		base.transform.Rotate(this.speed * Time.deltaTime);
+		base.transform.Rotate(speed * Time.deltaTime);
 	}
-
-	private Vector3 speed;
 }

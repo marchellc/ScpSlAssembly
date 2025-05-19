@@ -1,83 +1,79 @@
-﻿using System;
+using System;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class SignedTokenFormatter : IJsonFormatter<SignedToken>, IJsonFormatter
 {
-	public sealed class SignedTokenFormatter : IJsonFormatter<SignedToken>, IJsonFormatter
+	private readonly AutomataDictionary ____keyMapping;
+
+	private readonly byte[][] ____stringByteKeys;
+
+	public SignedTokenFormatter()
 	{
-		public SignedTokenFormatter()
+		____keyMapping = new AutomataDictionary
 		{
-			this.____keyMapping = new AutomataDictionary
 			{
-				{
-					JsonWriter.GetEncodedPropertyNameWithoutQuotation("token"),
-					0
-				},
-				{
-					JsonWriter.GetEncodedPropertyNameWithoutQuotation("signature"),
-					1
-				}
-			};
-			this.____stringByteKeys = new byte[][]
+				JsonWriter.GetEncodedPropertyNameWithoutQuotation("token"),
+				0
+			},
 			{
-				JsonWriter.GetEncodedPropertyNameWithBeginObject("token"),
-				JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("signature")
-			};
-		}
-
-		public void Serialize(ref JsonWriter writer, SignedToken value, IJsonFormatterResolver formatterResolver)
+				JsonWriter.GetEncodedPropertyNameWithoutQuotation("signature"),
+				1
+			}
+		};
+		____stringByteKeys = new byte[2][]
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
-			writer.WriteRaw(this.____stringByteKeys[0]);
-			writer.WriteString(value.token);
-			writer.WriteRaw(this.____stringByteKeys[1]);
-			writer.WriteString(value.signature);
-			writer.WriteEndObject();
-		}
+			JsonWriter.GetEncodedPropertyNameWithBeginObject("token"),
+			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("signature")
+		};
+	}
 
-		public SignedToken Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public void Serialize(ref JsonWriter writer, SignedToken value, IJsonFormatterResolver formatterResolver)
+	{
+		if (value == null)
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			string text = null;
-			string text2 = null;
-			int num = 0;
-			reader.ReadIsBeginObjectWithVerify();
-			while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref num))
-			{
-				ArraySegment<byte> arraySegment = reader.ReadPropertyNameSegmentRaw();
-				int num2;
-				if (!this.____keyMapping.TryGetValueSafe(arraySegment, out num2))
-				{
-					reader.ReadNextBlock();
-				}
-				else if (num2 != 0)
-				{
-					if (num2 != 1)
-					{
-						reader.ReadNextBlock();
-					}
-					else
-					{
-						text2 = reader.ReadString();
-					}
-				}
-				else
-				{
-					text = reader.ReadString();
-				}
-			}
-			return new SignedToken(text, text2);
+			writer.WriteNull();
+			return;
 		}
+		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteString(value.token);
+		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteString(value.signature);
+		writer.WriteEndObject();
+	}
 
-		private readonly AutomataDictionary ____keyMapping;
-
-		private readonly byte[][] ____stringByteKeys;
+	public SignedToken Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
+		{
+			return null;
+		}
+		string token = null;
+		string signature = null;
+		int count = 0;
+		reader.ReadIsBeginObjectWithVerify();
+		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
+		{
+			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
+			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			{
+				reader.ReadNextBlock();
+				continue;
+			}
+			switch (value)
+			{
+			case 0:
+				token = reader.ReadString();
+				break;
+			case 1:
+				signature = reader.ReadString();
+				break;
+			default:
+				reader.ReadNextBlock();
+				break;
+			}
+		}
+		return new SignedToken(token, signature);
 	}
 }

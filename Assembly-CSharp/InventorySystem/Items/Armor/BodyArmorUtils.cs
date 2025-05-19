@@ -1,98 +1,109 @@
-﻿using System;
 using System.Collections.Generic;
 using InventorySystem.Configs;
-using NorthwoodLib.Pools;
+using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.Armor
+namespace InventorySystem.Items.Armor;
+
+public static class BodyArmorUtils
 {
-	public static class BodyArmorUtils
+	private static readonly HashSet<ReferenceHub> DirtyArmorPlayers = new HashSet<ReferenceHub>();
+
+	private static readonly HashSet<ushort> ItemsToRemoveNonAlloc = new HashSet<ushort>();
+
+	private static readonly Dictionary<ItemCategory, int> CategoryCounterNonAlloc = new Dictionary<ItemCategory, int>();
+
+	private static readonly Dictionary<ItemType, ushort> AmmoToRemoveNonAlloc = new Dictionary<ItemType, ushort>();
+
+	public static void SetPlayerDirty(ReferenceHub player)
 	{
-		public static bool TryGetBodyArmor(this Inventory inv, out BodyArmor bodyArmor)
-		{
-			ushort num;
-			return inv.TryGetBodyArmorAndItsSerial(out bodyArmor, out num);
-		}
+		DirtyArmorPlayers.Add(player);
+	}
 
-		public static bool TryGetBodyArmorAndItsSerial(this Inventory inv, out BodyArmor bodyArmor, out ushort serial)
+	public static bool TryGetBodyArmor(this Inventory inv, out BodyArmor bodyArmor)
+	{
+		foreach (KeyValuePair<ushort, ItemBase> item in inv.UserInventory.Items)
 		{
-			foreach (KeyValuePair<ushort, ItemBase> keyValuePair in inv.UserInventory.Items)
+			if (item.Value is BodyArmor bodyArmor2)
 			{
-				BodyArmor bodyArmor2 = keyValuePair.Value as BodyArmor;
-				if (bodyArmor2 != null)
-				{
-					serial = keyValuePair.Key;
-					bodyArmor = bodyArmor2;
-					return true;
-				}
+				bodyArmor = bodyArmor2;
+				return true;
 			}
-			serial = 0;
-			bodyArmor = null;
-			return false;
 		}
+		bodyArmor = null;
+		return false;
+	}
 
-		public static float ProcessDamage(int efficacy, float baseDamage, int bulletPenetrationPercent)
-		{
-			float num = (float)efficacy / 100f;
-			float num2 = (float)bulletPenetrationPercent / 100f;
-			return baseDamage * (1f - num * (1f - num2));
-		}
+	public static float ProcessDamage(int efficacy, float baseDamage, int bulletPenetrationPercent)
+	{
+		float num = (float)efficacy / 100f;
+		float num2 = (float)bulletPenetrationPercent / 100f;
+		return baseDamage * (1f - num * (1f - num2));
+	}
 
-		public static void RemoveEverythingExceedingLimits(this Inventory inv, bool removeItems = true, bool removeAmmo = true)
+	public static void RemoveEverythingExceedingLimits(this Inventory inv)
+	{
+		ItemsToRemoveNonAlloc.Clear();
+		CategoryCounterNonAlloc.Clear();
+		AmmoToRemoveNonAlloc.Clear();
+		HashSet<ushort> itemsToRemoveNonAlloc = ItemsToRemoveNonAlloc;
+		Dictionary<ItemCategory, int> categoryCounterNonAlloc = CategoryCounterNonAlloc;
+		Dictionary<ItemType, ushort> ammoToRemoveNonAlloc = AmmoToRemoveNonAlloc;
+		inv.TryGetBodyArmor(out var bodyArmor);
+		foreach (KeyValuePair<ushort, ItemBase> item in inv.UserInventory.Items)
 		{
-			BodyArmor bodyArmor;
-			inv.TryGetBodyArmor(out bodyArmor);
-			inv.RemoveEverythingExceedingLimits(bodyArmor, removeItems, removeAmmo);
+			ItemCategory category = item.Value.Category;
+			if (category != ItemCategory.Armor)
+			{
+				int num = Mathf.Abs(InventoryLimits.GetCategoryLimit(bodyArmor, category));
+				int num2 = 1 + categoryCounterNonAlloc.GetValueOrDefault(category);
+				if (num2 > num)
+				{
+					itemsToRemoveNonAlloc.Add(item.Key);
+				}
+				categoryCounterNonAlloc[category] = num2;
+			}
 		}
+		foreach (KeyValuePair<ItemType, ushort> item2 in inv.UserInventory.ReserveAmmo)
+		{
+			ushort ammoLimit = InventoryLimits.GetAmmoLimit(bodyArmor, item2.Key);
+			if (item2.Value > ammoLimit)
+			{
+				ammoToRemoveNonAlloc.Add(item2.Key, (ushort)(item2.Value - ammoLimit));
+			}
+		}
+		foreach (ushort item3 in itemsToRemoveNonAlloc)
+		{
+			inv.ServerDropItem(item3);
+		}
+		foreach (KeyValuePair<ItemType, ushort> item4 in ammoToRemoveNonAlloc)
+		{
+			inv.ServerDropAmmo(item4.Key, item4.Value);
+		}
+	}
 
-		public static void RemoveEverythingExceedingLimits(this Inventory inv, BodyArmor armor, bool removeItems = true, bool removeAmmo = true)
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		StaticUnityMethods.OnLateUpdate += UpdateDirty;
+	}
+
+	private static void UpdateDirty()
+	{
+		if (DirtyArmorPlayers.Count == 0)
 		{
-			HashSet<ushort> hashSet = HashSetPool<ushort>.Shared.Rent();
-			Dictionary<ItemCategory, int> dictionary = new Dictionary<ItemCategory, int>();
-			Dictionary<ItemType, ushort> dictionary2 = new Dictionary<ItemType, ushort>();
-			foreach (KeyValuePair<ushort, ItemBase> keyValuePair in inv.UserInventory.Items)
+			return;
+		}
+		if (NetworkServer.active)
+		{
+			foreach (ReferenceHub dirtyArmorPlayer in DirtyArmorPlayers)
 			{
-				if (keyValuePair.Value.Category != ItemCategory.Armor)
+				if (!(dirtyArmorPlayer == null))
 				{
-					int num = Mathf.Abs((int)InventoryLimits.GetCategoryLimit(armor, keyValuePair.Value.Category));
-					int num2;
-					if (!dictionary.TryGetValue(keyValuePair.Value.Category, out num2))
-					{
-						num2 = 1;
-					}
-					else
-					{
-						num2++;
-					}
-					if (num2 > num)
-					{
-						hashSet.Add(keyValuePair.Key);
-					}
-					dictionary[keyValuePair.Value.Category] = num2;
-				}
-			}
-			foreach (KeyValuePair<ItemType, ushort> keyValuePair2 in inv.UserInventory.ReserveAmmo)
-			{
-				ushort ammoLimit = InventoryLimits.GetAmmoLimit(armor, keyValuePair2.Key);
-				if (keyValuePair2.Value > ammoLimit)
-				{
-					dictionary2.Add(keyValuePair2.Key, keyValuePair2.Value - ammoLimit);
-				}
-			}
-			if (removeItems)
-			{
-				foreach (ushort num3 in hashSet)
-				{
-					inv.ServerDropItem(num3);
-				}
-			}
-			if (removeAmmo)
-			{
-				foreach (KeyValuePair<ItemType, ushort> keyValuePair3 in dictionary2)
-				{
-					inv.ServerDropAmmo(keyValuePair3.Key, keyValuePair3.Value, false);
+					dirtyArmorPlayer.inventory.RemoveEverythingExceedingLimits();
 				}
 			}
 		}
+		DirtyArmorPlayers.Clear();
 	}
 }

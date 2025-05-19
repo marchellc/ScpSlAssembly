@@ -1,8 +1,8 @@
-﻿using System;
+using MapGeneration.StaticHelpers;
 using PlayerStatsSystem;
 using UnityEngine;
 
-public interface IDestructible
+public interface IDestructible : IBlockStaticBatching
 {
 	uint NetworkId { get; }
 

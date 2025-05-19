@@ -1,62 +1,53 @@
-﻿using System;
 using CursorManagement;
 using UnityEngine;
 
-namespace ToggleableMenus
+namespace ToggleableMenus;
+
+public abstract class ToggleableMenuBase : MonoBehaviour, IRegisterableMenu, ICursorOverride
 {
-	public abstract class ToggleableMenuBase : MonoBehaviour, IRegisterableMenu, ICursorOverride
+	private bool _isEnabled;
+
+	public ActionName MenuActionKey;
+
+	public abstract bool CanToggle { get; }
+
+	public virtual CursorOverrideMode CursorOverride
 	{
-		public abstract bool CanToggle { get; }
-
-		public virtual CursorOverrideMode CursorOverride
+		get
 		{
-			get
+			if (!IsEnabled)
 			{
-				if (!this.IsEnabled)
-				{
-					return CursorOverrideMode.NoOverride;
-				}
-				return CursorOverrideMode.Free;
+				return CursorOverrideMode.NoOverride;
+			}
+			return CursorOverrideMode.Free;
+		}
+	}
+
+	public virtual bool LockMovement => false;
+
+	public virtual bool IsEnabled
+	{
+		get
+		{
+			return _isEnabled;
+		}
+		set
+		{
+			if (value != _isEnabled)
+			{
+				_isEnabled = value;
+				OnToggled();
 			}
 		}
+	}
 
-		public virtual bool LockMovement
-		{
-			get
-			{
-				return false;
-			}
-		}
+	protected abstract void OnToggled();
 
-		public virtual bool IsEnabled
-		{
-			get
-			{
-				return this._isEnabled;
-			}
-			set
-			{
-				if (value == this._isEnabled)
-				{
-					return;
-				}
-				this._isEnabled = value;
-				this.OnToggled();
-			}
-		}
+	protected virtual void Awake()
+	{
+	}
 
-		protected abstract void OnToggled();
-
-		protected virtual void Awake()
-		{
-		}
-
-		protected virtual void OnDestroy()
-		{
-		}
-
-		private bool _isEnabled;
-
-		public ActionName MenuActionKey;
+	protected virtual void OnDestroy()
+	{
 	}
 }

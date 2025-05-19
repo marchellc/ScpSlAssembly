@@ -1,9 +1,6 @@
-﻿using System;
+namespace LiteNetLib;
 
-namespace LiteNetLib
+public interface INetLogger
 {
-	public interface INetLogger
-	{
-		void WriteNet(NetLogLevel level, string str, params object[] args);
-	}
+	void WriteNet(NetLogLevel level, string str, params object[] args);
 }

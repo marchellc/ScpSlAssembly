@@ -1,229 +1,211 @@
-﻿using System;
 using Interactables.Interobjects.DoorUtils;
 using Interactables.Verification;
 using Mirror;
 using Mirror.RemoteCalls;
 using UnityEngine;
 
-namespace Interactables.Interobjects
-{
-	public class AirlockController : NetworkBehaviour, IServerInteractable, IInteractable
-	{
-		private void Start()
-		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			DoorEvents.OnDoorAction += this.OnDoorAction;
-			DoorEventOpenerExtension.OnDoorsTriggerred += this.EventTriggerred;
-		}
+namespace Interactables.Interobjects;
 
-		private void EventTriggerred(DoorEventOpenerExtension.OpenerEventType eventType)
+public class AirlockController : NetworkBehaviour, IServerInteractable, IInteractable
+{
+	private static readonly int AnimationTriggerHash;
+
+	public bool AirlockDisabled;
+
+	[SerializeField]
+	private DoorVariant _doorA;
+
+	[SerializeField]
+	private DoorVariant _doorB;
+
+	[SerializeField]
+	private float _lockdownDuration;
+
+	[SerializeField]
+	private float _lockdownCooldown;
+
+	[SerializeField]
+	private Animator _targetAnimator;
+
+	private float _lockdownCombinedTimer;
+
+	private byte _frameCooldownTimer;
+
+	private bool _targetStateA;
+
+	private bool _doorsLocked;
+
+	private bool _warheadInProgress;
+
+	private bool _readyToUse;
+
+	public IVerificationRule VerificationRule => StandardDistanceVerification.Default;
+
+	private void Start()
+	{
+		if (NetworkServer.active)
 		{
-			if (eventType > DoorEventOpenerExtension.OpenerEventType.WarheadCancel)
+			DoorEvents.OnDoorAction += OnDoorAction;
+			DoorEventOpenerExtension.OnDoorsTriggerred += EventTriggerred;
+		}
+	}
+
+	private void EventTriggerred(DoorEventOpenerExtension.OpenerEventType eventType)
+	{
+		switch (eventType)
+		{
+		case DoorEventOpenerExtension.OpenerEventType.WarheadStart:
+		case DoorEventOpenerExtension.OpenerEventType.WarheadCancel:
+			_warheadInProgress = eventType == DoorEventOpenerExtension.OpenerEventType.WarheadStart;
+			_doorA.ServerChangeLock(DoorLockReason.Warhead, _warheadInProgress);
+			_doorB.ServerChangeLock(DoorLockReason.Warhead, _warheadInProgress);
+			if (_warheadInProgress)
 			{
-				if (eventType != DoorEventOpenerExtension.OpenerEventType.DeconFinish)
-				{
-					return;
-				}
-				this._doorsLocked = true;
-				this._doorA.ServerChangeLock(DoorLockReason.DecontLockdown, true);
-				this._doorB.ServerChangeLock(DoorLockReason.DecontLockdown, true);
-				this._doorA.NetworkTargetState = (this._doorB.NetworkTargetState = false);
-				this._lockdownCombinedTimer = 65535f;
-				return;
+				DoorVariant doorA2 = _doorA;
+				bool networkTargetState = (_doorB.NetworkTargetState = true);
+				doorA2.NetworkTargetState = networkTargetState;
+				_frameCooldownTimer = 5;
 			}
 			else
 			{
-				this._warheadInProgress = eventType == DoorEventOpenerExtension.OpenerEventType.WarheadStart;
-				this._doorA.ServerChangeLock(DoorLockReason.Warhead, this._warheadInProgress);
-				this._doorB.ServerChangeLock(DoorLockReason.Warhead, this._warheadInProgress);
-				if (this._warheadInProgress)
-				{
-					this._doorA.NetworkTargetState = (this._doorB.NetworkTargetState = true);
-					this._frameCooldownTimer = 5;
-					return;
-				}
-				this.ToggleAirlock();
-				return;
+				ToggleAirlock();
 			}
-		}
-
-		private void OnDestroy()
+			break;
+		case DoorEventOpenerExtension.OpenerEventType.DeconFinish:
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			DoorEvents.OnDoorAction -= this.OnDoorAction;
-			DoorEventOpenerExtension.OnDoorsTriggerred -= this.EventTriggerred;
+			_doorsLocked = true;
+			_doorA.ServerChangeLock(DoorLockReason.DecontLockdown, newState: true);
+			_doorB.ServerChangeLock(DoorLockReason.DecontLockdown, newState: true);
+			DoorVariant doorA = _doorA;
+			bool networkTargetState = (_doorB.NetworkTargetState = false);
+			doorA.NetworkTargetState = networkTargetState;
+			_lockdownCombinedTimer = 65535f;
+			break;
 		}
+		}
+	}
 
-		private void OnDoorAction(DoorVariant door, DoorAction action, ReferenceHub ply)
+	private void OnDestroy()
+	{
+		if (NetworkServer.active)
 		{
-			if (door.ActiveLocks > 0 || (door != this._doorA && door != this._doorB) || this.AirlockDisabled || this._warheadInProgress || !this._readyToUse)
-			{
-				return;
-			}
+			DoorEvents.OnDoorAction -= OnDoorAction;
+			DoorEventOpenerExtension.OnDoorsTriggerred -= EventTriggerred;
+		}
+	}
+
+	private void OnDoorAction(DoorVariant door, DoorAction action, ReferenceHub ply)
+	{
+		if (door.ActiveLocks <= 0 && (!(door != _doorA) || !(door != _doorB)) && !AirlockDisabled && !_warheadInProgress && _readyToUse)
+		{
 			if (action == DoorAction.Destroyed)
 			{
-				this.AirlockDisabled = true;
-				return;
+				AirlockDisabled = true;
 			}
-			if (!this._doorA.AllowInteracting(ply, 0) && !this._doorB.AllowInteracting(ply, 0))
+			else if ((_doorA.AllowInteracting(ply, 0) || _doorB.AllowInteracting(ply, 0)) && _frameCooldownTimer <= 0 && (action == DoorAction.Opened || action == DoorAction.Closed))
 			{
-				return;
-			}
-			if (this._frameCooldownTimer > 0)
-			{
-				return;
-			}
-			if (action == DoorAction.Opened || action == DoorAction.Closed)
-			{
-				this.ToggleAirlock();
+				ToggleAirlock();
 			}
 		}
+	}
 
-		private void ToggleAirlock()
+	private void ToggleAirlock()
+	{
+		_targetStateA = !_targetStateA;
+		_doorB.NetworkTargetState = _targetStateA;
+		_doorA.NetworkTargetState = !_targetStateA;
+		_frameCooldownTimer = 5;
+	}
+
+	private void Update()
+	{
+		if (!NetworkServer.active)
 		{
-			this._targetStateA = !this._targetStateA;
-			this._doorB.NetworkTargetState = this._targetStateA;
-			this._doorA.NetworkTargetState = !this._targetStateA;
-			this._frameCooldownTimer = 5;
+			return;
 		}
-
-		private void Update()
+		if (_frameCooldownTimer > 0)
 		{
-			if (!NetworkServer.active)
+			_frameCooldownTimer--;
+		}
+		if (_readyToUse)
+		{
+			if (_lockdownCombinedTimer > 0f - Mathf.Abs(_lockdownCooldown))
 			{
-				return;
-			}
-			if (this._frameCooldownTimer > 0)
-			{
-				this._frameCooldownTimer -= 1;
-			}
-			if (this._readyToUse)
-			{
-				if (this._lockdownCombinedTimer <= -Mathf.Abs(this._lockdownCooldown))
+				_lockdownCombinedTimer -= Time.deltaTime;
+				if (_doorsLocked && _lockdownCombinedTimer <= 0f)
 				{
-					return;
+					_doorsLocked = false;
+					_doorA.ServerChangeLock(DoorLockReason.SpecialDoorFeature, newState: false);
+					_doorB.ServerChangeLock(DoorLockReason.SpecialDoorFeature, newState: false);
+					_doorA.NetworkTargetState = _targetStateA;
+					_doorB.NetworkTargetState = !_targetStateA;
 				}
-				this._lockdownCombinedTimer -= Time.deltaTime;
-				if (!this._doorsLocked || this._lockdownCombinedTimer > 0f)
-				{
-					return;
-				}
-				this._doorsLocked = false;
-				this._doorA.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-				this._doorB.ServerChangeLock(DoorLockReason.SpecialDoorFeature, false);
-				this._doorA.NetworkTargetState = this._targetStateA;
-				this._doorB.NetworkTargetState = !this._targetStateA;
-				return;
+			}
+		}
+		else if (_frameCooldownTimer == 0)
+		{
+			if (Mathf.RoundToInt(_doorA.GetExactState()) == Mathf.RoundToInt(_doorB.GetExactState()))
+			{
+				_doorB.NetworkTargetState = _targetStateA;
+				_doorA.NetworkTargetState = !_targetStateA;
+				_frameCooldownTimer = 200;
 			}
 			else
 			{
-				if (this._frameCooldownTimer != 0)
-				{
-					return;
-				}
-				if (Mathf.RoundToInt(this._doorA.GetExactState()) == Mathf.RoundToInt(this._doorB.GetExactState()))
-				{
-					this._doorB.NetworkTargetState = this._targetStateA;
-					this._doorA.NetworkTargetState = !this._targetStateA;
-					this._frameCooldownTimer = 200;
-					return;
-				}
-				this._readyToUse = true;
-				this._frameCooldownTimer = 10;
-				return;
+				_readyToUse = true;
+				_frameCooldownTimer = 10;
 			}
 		}
+	}
 
-		[ClientRpc]
-		private void RpcAlarm()
+	[ClientRpc]
+	private void RpcAlarm()
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		SendRPCInternal("System.Void Interactables.Interobjects.AirlockController::RpcAlarm()", -536901961, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
+	}
+
+	public void ServerInteract(ReferenceHub ply, byte colliderId)
+	{
+		if (!AirlockDisabled && !(_lockdownCombinedTimer > 0f - Mathf.Abs(_lockdownCooldown)))
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			this.SendRPCInternal("System.Void Interactables.Interobjects.AirlockController::RpcAlarm()", -536901961, networkWriterPooled, 0, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			_lockdownCombinedTimer = Mathf.Abs(_lockdownDuration);
+			_doorsLocked = true;
+			_doorA.ServerChangeLock(DoorLockReason.SpecialDoorFeature, newState: true);
+			_doorB.ServerChangeLock(DoorLockReason.SpecialDoorFeature, newState: true);
+			DoorVariant doorA = _doorA;
+			bool networkTargetState = (_doorB.NetworkTargetState = false);
+			doorA.NetworkTargetState = networkTargetState;
+			RpcAlarm();
 		}
+	}
 
-		public IVerificationRule VerificationRule
+	static AirlockController()
+	{
+		AnimationTriggerHash = Animator.StringToHash("Lockdown");
+		RemoteProcedureCalls.RegisterRpc(typeof(AirlockController), "System.Void Interactables.Interobjects.AirlockController::RpcAlarm()", InvokeUserCode_RpcAlarm);
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	protected void UserCode_RpcAlarm()
+	{
+		_targetAnimator.SetTrigger(AnimationTriggerHash);
+	}
+
+	protected static void InvokeUserCode_RpcAlarm(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
 		{
-			get
-			{
-				return StandardDistanceVerification.Default;
-			}
+			Debug.LogError("RPC RpcAlarm called on server.");
 		}
-
-		public void ServerInteract(ReferenceHub ply, byte colliderId)
+		else
 		{
-			if (this.AirlockDisabled || this._lockdownCombinedTimer > -Mathf.Abs(this._lockdownCooldown))
-			{
-				return;
-			}
-			this._lockdownCombinedTimer = Mathf.Abs(this._lockdownDuration);
-			this._doorsLocked = true;
-			this._doorA.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
-			this._doorB.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
-			this._doorA.NetworkTargetState = (this._doorB.NetworkTargetState = false);
-			this.RpcAlarm();
-		}
-
-		static AirlockController()
-		{
-			RemoteProcedureCalls.RegisterRpc(typeof(AirlockController), "System.Void Interactables.Interobjects.AirlockController::RpcAlarm()", new RemoteCallDelegate(AirlockController.InvokeUserCode_RpcAlarm));
-		}
-
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		protected void UserCode_RpcAlarm()
-		{
-			this._targetAnimator.SetTrigger(AirlockController.AnimationTriggerHash);
-		}
-
-		protected static void InvokeUserCode_RpcAlarm(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
-		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogError("RPC RpcAlarm called on server.");
-				return;
-			}
 			((AirlockController)obj).UserCode_RpcAlarm();
 		}
-
-		private static readonly int AnimationTriggerHash = Animator.StringToHash("Lockdown");
-
-		public bool AirlockDisabled;
-
-		[SerializeField]
-		private DoorVariant _doorA;
-
-		[SerializeField]
-		private DoorVariant _doorB;
-
-		[SerializeField]
-		private float _lockdownDuration;
-
-		[SerializeField]
-		private float _lockdownCooldown;
-
-		[SerializeField]
-		private Animator _targetAnimator;
-
-		private float _lockdownCombinedTimer;
-
-		private byte _frameCooldownTimer;
-
-		private bool _targetStateA;
-
-		private bool _doorsLocked;
-
-		private bool _warheadInProgress;
-
-		private bool _readyToUse;
 	}
 }

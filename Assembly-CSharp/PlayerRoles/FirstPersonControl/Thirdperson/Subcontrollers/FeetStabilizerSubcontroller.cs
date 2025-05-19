@@ -1,125 +1,118 @@
-﻿using System;
+using System;
 using AnimatorLayerManagement;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
+
+public class FeetStabilizerSubcontroller : SubcontrollerBehaviour
 {
-	public class FeetStabilizerSubcontroller : SubcontrollerBehaviour
+	[Serializable]
+	private class Foot
 	{
-		public override void Init(AnimatedCharacterModel model, int index)
+		[SerializeField]
+		private AvatarIKGoal _goal;
+
+		[SerializeField]
+		private HumanBodyBones _bone;
+
+		[SerializeField]
+		private Vector3 _modelspacePosition;
+
+		[SerializeField]
+		private bool _calibrate;
+
+		private Transform _footTr;
+
+		public void Init(Animator anim)
 		{
-			base.Init(model, index);
-			if (!model.TryGetSubcontroller<IRotationRetainer>(out this._rotationRetainer))
-			{
-				throw new InvalidOperationException("FeetStabilizerSubcontroller requires IRotationRetainer to operate!");
-			}
-			if (base.HasCuller)
-			{
-				base.Culler.OnAnimatorUpdated += this.UpdateWeight;
-			}
-			FeetStabilizerSubcontroller.Foot[] feet = this._feet;
-			for (int i = 0; i < feet.Length; i++)
-			{
-				feet[i].Init(model.Animator);
-			}
+			_footTr = anim.GetBoneTransform(_bone);
 		}
 
-		private void OnAnimatorIK(int layerIndex)
+		public void OnIK(AnimatedCharacterModel model, float weight)
 		{
-			if (layerIndex != base.Model.LayerManager.GetLayerIndex(this._ikLayer) || base.Culled)
+			Transform cachedTransform = model.CachedTransform;
+			if (_calibrate)
 			{
+				_modelspacePosition = cachedTransform.InverseTransformPoint(_footTr.position);
 				return;
 			}
-			if (base.OwnerHub.transform.localScale != Vector3.one)
-			{
-				return;
-			}
-			this._lastRetentionWeight = this._rotationRetainer.RetentionWeight;
-			FeetStabilizerSubcontroller.Foot[] feet = this._feet;
+			Vector3 goalPosition = cachedTransform.TransformPoint(_modelspacePosition);
+			model.Animator.SetIKPosition(_goal, goalPosition);
+			model.Animator.SetIKPositionWeight(_goal, weight);
+		}
+	}
+
+	[SerializeField]
+	private LayerRefId _ikLayer;
+
+	[SerializeField]
+	private Foot[] _feet;
+
+	[SerializeField]
+	private float _maxWeightAdjustSpeed;
+
+	[SerializeField]
+	private float _maxWeightTurnDecreaseSpeed;
+
+	private IRotationRetainer _rotationRetainer;
+
+	private float _lastRetentionWeight;
+
+	private float _maxWeight;
+
+	public override void Init(AnimatedCharacterModel model, int index)
+	{
+		base.Init(model, index);
+		if (!model.TryGetSubcontroller<IRotationRetainer>(out _rotationRetainer))
+		{
+			throw new InvalidOperationException("FeetStabilizerSubcontroller requires IRotationRetainer to operate!");
+		}
+		if (base.HasCuller)
+		{
+			base.Culler.OnAnimatorUpdated += UpdateWeight;
+		}
+		Foot[] feet = _feet;
+		for (int i = 0; i < feet.Length; i++)
+		{
+			feet[i].Init(model.Animator);
+		}
+	}
+
+	private void OnAnimatorIK(int layerIndex)
+	{
+		if (layerIndex == base.Model.LayerManager.GetLayerIndex(_ikLayer) && !base.Culled && (!base.HasOwner || !(base.OwnerHub.transform.localScale != Vector3.one)))
+		{
+			_lastRetentionWeight = _rotationRetainer.RetentionWeight;
+			Foot[] feet = _feet;
 			for (int i = 0; i < feet.Length; i++)
 			{
-				feet[i].OnIK(base.Model, Mathf.Min(this._lastRetentionWeight, this._maxWeight));
+				feet[i].OnIK(base.Model, Mathf.Min(_lastRetentionWeight, _maxWeight));
 			}
 		}
+	}
 
-		private void UpdateWeight()
+	private void UpdateWeight()
+	{
+		float lastMovedDeltaT = base.Model.LastMovedDeltaT;
+		if (_rotationRetainer.IsTurning)
 		{
-			float lastMovedDeltaT = base.Model.LastMovedDeltaT;
-			if (this._rotationRetainer.IsTurning)
+			_maxWeight -= _maxWeightTurnDecreaseSpeed * lastMovedDeltaT;
+			if (_maxWeight < 0f)
 			{
-				this._maxWeight -= this._maxWeightTurnDecreaseSpeed * lastMovedDeltaT;
-				if (this._maxWeight < 0f)
-				{
-					this._maxWeight = 0f;
-					return;
-				}
-			}
-			else
-			{
-				this._maxWeight = Mathf.MoveTowards(this._maxWeight, this._lastRetentionWeight, lastMovedDeltaT * this._maxWeightAdjustSpeed);
+				_maxWeight = 0f;
 			}
 		}
-
-		private void Update()
+		else
 		{
-			if (!base.HasCuller)
-			{
-				this.UpdateWeight();
-			}
+			_maxWeight = Mathf.MoveTowards(_maxWeight, _lastRetentionWeight, lastMovedDeltaT * _maxWeightAdjustSpeed);
 		}
+	}
 
-		[SerializeField]
-		private LayerRefId _ikLayer;
-
-		[SerializeField]
-		private FeetStabilizerSubcontroller.Foot[] _feet;
-
-		[SerializeField]
-		private float _maxWeightAdjustSpeed;
-
-		[SerializeField]
-		private float _maxWeightTurnDecreaseSpeed;
-
-		private IRotationRetainer _rotationRetainer;
-
-		private float _lastRetentionWeight;
-
-		private float _maxWeight;
-
-		[Serializable]
-		private class Foot
+	private void Update()
+	{
+		if (!base.HasCuller)
 		{
-			public void Init(Animator anim)
-			{
-				this._footTr = anim.GetBoneTransform(this._bone);
-			}
-
-			public void OnIK(AnimatedCharacterModel model, float weight)
-			{
-				Transform cachedTransform = model.CachedTransform;
-				if (this._calibrate)
-				{
-					this._modelspacePosition = cachedTransform.InverseTransformPoint(this._footTr.position);
-					return;
-				}
-				Vector3 vector = cachedTransform.TransformPoint(this._modelspacePosition);
-				model.Animator.SetIKPosition(this._goal, vector);
-				model.Animator.SetIKPositionWeight(this._goal, weight);
-			}
-
-			[SerializeField]
-			private AvatarIKGoal _goal;
-
-			[SerializeField]
-			private HumanBodyBones _bone;
-
-			[SerializeField]
-			private Vector3 _modelspacePosition;
-
-			[SerializeField]
-			private bool _calibrate;
-
-			private Transform _footTr;
+			UpdateWeight();
 		}
 	}
 }

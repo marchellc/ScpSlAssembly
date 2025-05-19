@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Hotkeys
+namespace InventorySystem.Hotkeys;
+
+public class HotkeyHud : MonoBehaviour
 {
-	public class HotkeyHud : MonoBehaviour
-	{
-	}
 }

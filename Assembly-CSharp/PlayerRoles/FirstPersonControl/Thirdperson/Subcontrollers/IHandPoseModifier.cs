@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers
+public interface IHandPoseModifier
 {
-	public interface IHandPoseModifier
-	{
-		HandPoseData ProcessHandPose(HandPoseData data);
-	}
+	HandPoseData ProcessHandPose(HandPoseData data);
 }

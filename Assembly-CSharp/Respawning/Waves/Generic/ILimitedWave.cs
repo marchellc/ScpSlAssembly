@@ -1,11 +1,8 @@
-﻿using System;
+namespace Respawning.Waves.Generic;
 
-namespace Respawning.Waves.Generic
+public interface ILimitedWave
 {
-	public interface ILimitedWave
-	{
-		int InitialRespawnTokens { get; set; }
+	int InitialRespawnTokens { get; set; }
 
-		int RespawnTokens { get; set; }
-	}
+	int RespawnTokens { get; set; }
 }

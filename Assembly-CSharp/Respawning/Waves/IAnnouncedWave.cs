@@ -1,10 +1,8 @@
-﻿using System;
 using Respawning.Announcements;
 
-namespace Respawning.Waves
+namespace Respawning.Waves;
+
+public interface IAnnouncedWave
 {
-	public interface IAnnouncedWave
-	{
-		WaveAnnouncementBase Announcement { get; }
-	}
+	WaveAnnouncementBase Announcement { get; }
 }

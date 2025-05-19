@@ -1,62 +1,40 @@
-﻿using System;
 using PlayerRoles.PlayableScps.Subroutines;
 using PlayerStatsSystem;
 
-namespace PlayerRoles.PlayableScps.Scp049.Zombies
+namespace PlayerRoles.PlayableScps.Scp049.Zombies;
+
+public class ZombieAttackAbility : SingleTargetAttackAbility<ZombieRole>
 {
-	public class ZombieAttackAbility : SingleTargetAttackAbility<ZombieRole>
+	private ZombieConsumeAbility _consumeAbility;
+
+	public override float DamageAmount => 40f;
+
+	protected override float AttackDelay => 0f;
+
+	protected override float BaseCooldown => 1.3f;
+
+	protected override bool CanTriggerAbility
 	{
-		public override float DamageAmount
+		get
 		{
-			get
+			if (!_consumeAbility.IsInProgress)
 			{
-				return 40f;
+				return base.CanTriggerAbility;
 			}
+			return false;
 		}
+	}
 
-		protected override float AttackDelay
-		{
-			get
-			{
-				return 0f;
-			}
-		}
+	protected override bool SelfRepeating => false;
 
-		protected override float BaseCooldown
-		{
-			get
-			{
-				return 1.3f;
-			}
-		}
+	protected override DamageHandlerBase DamageHandler(float damage)
+	{
+		return new Scp049DamageHandler(base.Owner, damage, Scp049DamageHandler.AttackType.Scp0492);
+	}
 
-		protected override bool CanTriggerAbility
-		{
-			get
-			{
-				return !this._consumeAbility.IsInProgress && base.CanTriggerAbility;
-			}
-		}
-
-		protected override bool SelfRepeating
-		{
-			get
-			{
-				return false;
-			}
-		}
-
-		protected override DamageHandlerBase DamageHandler(float damage)
-		{
-			return new Scp049DamageHandler(base.Owner, damage, Scp049DamageHandler.AttackType.Scp0492);
-		}
-
-		protected override void Awake()
-		{
-			base.Awake();
-			base.CastRole.SubroutineModule.TryGetSubroutine<ZombieConsumeAbility>(out this._consumeAbility);
-		}
-
-		private ZombieConsumeAbility _consumeAbility;
+	protected override void Awake()
+	{
+		base.Awake();
+		base.CastRole.SubroutineModule.TryGetSubroutine<ZombieConsumeAbility>(out _consumeAbility);
 	}
 }

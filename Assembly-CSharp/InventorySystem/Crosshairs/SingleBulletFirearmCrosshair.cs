@@ -1,48 +1,47 @@
-﻿using System;
 using InventorySystem.Items.Firearms;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace InventorySystem.Crosshairs
+namespace InventorySystem.Crosshairs;
+
+public class SingleBulletFirearmCrosshair : FirearmCrosshairBase
 {
-	public class SingleBulletFirearmCrosshair : FirearmCrosshairBase
+	[SerializeField]
+	private RectTransform[] _elements;
+
+	[SerializeField]
+	private float _sizeRatio;
+
+	[SerializeField]
+	private float _width;
+
+	[SerializeField]
+	private float _lerpSpeed;
+
+	[SerializeField]
+	private AnimationCurve _sizeOverSpeed;
+
+	private void SetupElements(float innerAngle, float speed, bool forceLerp)
 	{
-		private void SetupElements(float innerAngle, float speed, bool forceLerp)
+		float t = (forceLerp ? 1f : (Time.deltaTime * _lerpSpeed));
+		Vector2 b = _sizeRatio * innerAngle * Vector2.left;
+		Vector3 vector = new Vector3(_sizeOverSpeed.Evaluate(speed), _width);
+		RectTransform[] elements = _elements;
+		foreach (RectTransform obj in elements)
 		{
-			float num = (forceLerp ? 1f : (Time.deltaTime * this._lerpSpeed));
-			Vector2 vector = this._sizeRatio * innerAngle * Vector2.left;
-			Vector3 vector2 = new Vector3(this._sizeOverSpeed.Evaluate(speed), this._width);
-			foreach (RectTransform rectTransform in this._elements)
-			{
-				rectTransform.sizeDelta = Vector2.Lerp(rectTransform.sizeDelta, vector2, num);
-				rectTransform.anchoredPosition = Vector2.Lerp(rectTransform.anchoredPosition, vector, num);
-			}
+			obj.sizeDelta = Vector2.Lerp(obj.sizeDelta, vector, t);
+			obj.anchoredPosition = Vector2.Lerp(obj.anchoredPosition, b, t);
 		}
+	}
 
-		private void OnEnable()
-		{
-			this.SetupElements(0f, 20f, true);
-		}
+	private void OnEnable()
+	{
+		SetupElements(0f, 20f, forceLerp: true);
+	}
 
-		protected override void UpdateCrosshair(Firearm firearm, float currentInaccuracy)
-		{
-			float num = firearm.Owner.GetVelocity().MagnitudeIgnoreY();
-			this.SetupElements(currentInaccuracy, num, false);
-		}
-
-		[SerializeField]
-		private RectTransform[] _elements;
-
-		[SerializeField]
-		private float _sizeRatio;
-
-		[SerializeField]
-		private float _width;
-
-		[SerializeField]
-		private float _lerpSpeed;
-
-		[SerializeField]
-		private AnimationCurve _sizeOverSpeed;
+	protected override void UpdateCrosshair(Firearm firearm, float currentInaccuracy)
+	{
+		float speed = firearm.Owner.GetVelocity().MagnitudeIgnoreY();
+		SetupElements(currentInaccuracy, speed, forceLerp: false);
 	}
 }

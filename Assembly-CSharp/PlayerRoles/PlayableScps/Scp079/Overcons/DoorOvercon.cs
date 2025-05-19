@@ -1,70 +1,66 @@
-﻿using System;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079.Overcons
+namespace PlayerRoles.PlayableScps.Scp079.Overcons;
+
+public class DoorOvercon : StandardOvercon
 {
-	public class DoorOvercon : StandardOvercon
+	[SerializeField]
+	private Sprite _openSprite;
+
+	[SerializeField]
+	private Sprite _closedSprite;
+
+	private SphereCollider _col;
+
+	public DoorVariant Target { get; internal set; }
+
+	private bool IsInvisible => !IsCurrentDoorValid();
+
+	private bool IsCurrentDoorValid()
 	{
-		public DoorVariant Target { get; internal set; }
-
-		private bool IsInvisible
+		DoorVariant target = Target;
+		if (target is IDamageableDoor damageableDoor)
 		{
-			get
-			{
-				return !this.IsCurrentDoorValid();
-			}
-		}
-
-		private bool IsCurrentDoorValid()
-		{
-			DoorVariant target = this.Target;
-			IDamageableDoor damageableDoor = target as IDamageableDoor;
-			if (damageableDoor != null)
-			{
-				if (damageableDoor.IsDestroyed)
-				{
-					return false;
-				}
-				CheckpointDoor checkpointDoor = target as CheckpointDoor;
-				if (checkpointDoor != null)
-				{
-					return !checkpointDoor.TargetState && checkpointDoor.GetExactState() <= 0f;
-				}
-			}
-			else if (!(target is PryableDoor))
-			{
-				return true;
-			}
-			DoorLockReason activeLocks = (DoorLockReason)this.Target.ActiveLocks;
-			if (activeLocks.HasFlagFast(DoorLockReason.Warhead) || activeLocks.HasFlagFast(DoorLockReason.Isolation))
+			if (damageableDoor.IsDestroyed)
 			{
 				return false;
 			}
-			return true;
+			if (target is CheckpointDoor checkpointDoor)
+			{
+				if (!checkpointDoor.TargetState)
+				{
+					return checkpointDoor.GetExactState() <= 0f;
+				}
+				return false;
+			}
 		}
-
-		private void LateUpdate()
+		else if (!(target is PryableDoor))
 		{
-			this.TargetSprite.sprite = (this.Target.TargetState ? this._openSprite : this._closedSprite);
-			bool flag = !this.IsInvisible;
-			this.TargetSprite.enabled = flag;
-			this._col.enabled = flag;
+			goto IL_0070;
 		}
-
-		protected override void Awake()
+		DoorLockReason activeLocks = (DoorLockReason)Target.ActiveLocks;
+		if (activeLocks.HasFlagFast(DoorLockReason.Warhead) || activeLocks.HasFlagFast(DoorLockReason.Isolation))
 		{
-			base.Awake();
-			this._col = base.GetComponent<SphereCollider>();
+			return false;
 		}
+		goto IL_0070;
+		IL_0070:
+		return true;
+	}
 
-		[SerializeField]
-		private Sprite _openSprite;
+	private void LateUpdate()
+	{
+		TargetSprite.sprite = (Target.TargetState ? _openSprite : _closedSprite);
+		bool flag = !IsInvisible;
+		TargetSprite.enabled = flag;
+		_col.enabled = flag;
+	}
 
-		[SerializeField]
-		private Sprite _closedSprite;
-
-		private SphereCollider _col;
+	protected override void Awake()
+	{
+		base.Awake();
+		_col = GetComponent<SphereCollider>();
 	}
 }

@@ -1,31 +1,29 @@
-﻿using System;
 using PlayerRoles.PlayableScps.HumeShield;
 
-namespace PlayerRoles.PlayableScps.Scp106
+namespace PlayerRoles.PlayableScps.Scp106;
+
+public class Scp106HumeShieldController : DynamicHumeShieldController
 {
-	public class Scp106HumeShieldController : DynamicHumeShieldController
+	private Scp106Role _role106;
+
+	private Scp106StalkAbility _stalk;
+
+	public override float HsRegeneration
 	{
-		public override float HsRegeneration
+		get
 		{
-			get
+			if (!_stalk.StalkActive || !_role106.Sinkhole.IsHidden)
 			{
-				if (!this._stalk.StalkActive || !this._role106.Sinkhole.IsHidden)
-				{
-					return 0f;
-				}
-				return this.RegenerationRate * this.HsMax;
+				return 0f;
 			}
+			return RegenerationRate * HsMax;
 		}
+	}
 
-		public override void SpawnObject()
-		{
-			base.SpawnObject();
-			this._role106 = base.Role as Scp106Role;
-			this._role106.SubroutineModule.TryGetSubroutine<Scp106StalkAbility>(out this._stalk);
-		}
-
-		private Scp106Role _role106;
-
-		private Scp106StalkAbility _stalk;
+	public override void SpawnObject()
+	{
+		_role106 = base.Role as Scp106Role;
+		_role106.SubroutineModule.TryGetSubroutine<Scp106StalkAbility>(out _stalk);
+		base.SpawnObject();
 	}
 }

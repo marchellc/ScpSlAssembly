@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem.Items.Autosync;
 
-namespace InventorySystem.Items.Autosync
+public enum AutosyncMessageType
 {
-	public enum AutosyncMessageType
-	{
-		RpcInstance,
-		RpcTemplate,
-		Cmd
-	}
+	RpcInstance,
+	RpcTemplate,
+	Cmd
 }

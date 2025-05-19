@@ -1,122 +1,108 @@
-﻿using System;
+using System;
 using InventorySystem.Items.Firearms.Modules.Misc;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class RevolverRouletteModule : ModuleBase, IBusyIndicatorModule, IAdsPreventerModule
 {
-	public class RevolverRouletteModule : ModuleBase, IBusyIndicatorModule, IAdsPreventerModule
+	private readonly ClientRequestTimer _requestTimer = new ClientRequestTimer();
+
+	private CylinderAmmoModule _cylinderModule;
+
+	private DoubleActionModule _doubleActionModule;
+
+	private float _keyHoldTime;
+
+	private bool _busy;
+
+	public bool IsBusy
 	{
-		public bool IsBusy
+		get
 		{
-			get
+			if (!_busy)
 			{
-				return this._busy || this._requestTimer.Busy;
+				return _requestTimer.Busy;
 			}
+			return true;
 		}
+	}
 
-		public bool AdsAllowed
+	public bool AdsAllowed => !_busy;
+
+	protected override void OnInit()
+	{
+		base.OnInit();
+		if (!base.Firearm.TryGetModules<DoubleActionModule, CylinderAmmoModule>(out _doubleActionModule, out _cylinderModule))
 		{
-			get
-			{
-				return !this._busy;
-			}
+			throw new InvalidOperationException("The " + base.Firearm.name + " is missing one or more essential modules (required by " + base.name + ").");
 		}
+	}
 
-		protected override void OnInit()
+	internal override void OnHolstered()
+	{
+		base.OnHolstered();
+		_busy = false;
+	}
+
+	internal override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		if (!base.IsControllable || base.PrimaryActionBlocked)
 		{
-			base.OnInit();
-			if (!base.Firearm.TryGetModules(out this._doubleActionModule, out this._cylinderModule))
-			{
-				throw new InvalidOperationException(string.Concat(new string[]
-				{
-					"The ",
-					base.Firearm.name,
-					" is missing one or more essential modules (required by ",
-					base.name,
-					")."
-				}));
-			}
+			return;
 		}
-
-		internal override void OnHolstered()
+		if (!GetAction(ActionName.WeaponAlt) || base.Firearm.AnyModuleBusy())
 		{
-			base.OnHolstered();
-			this._busy = false;
+			_keyHoldTime = 0f;
+			return;
 		}
-
-		internal override void EquipUpdate()
+		_keyHoldTime += Time.deltaTime;
+		if (_keyHoldTime > 1f)
 		{
-			base.EquipUpdate();
-			if (!base.IsLocalPlayer)
-			{
-				return;
-			}
-			if (base.PrimaryActionBlocked)
-			{
-				return;
-			}
-			if (!base.GetAction(ActionName.WeaponAlt) || base.Firearm.AnyModuleBusy(null))
-			{
-				this._keyHoldTime = 0f;
-				return;
-			}
-			this._keyHoldTime += Time.deltaTime;
-			if (this._keyHoldTime > 1f)
-			{
-				this._requestTimer.Trigger();
-				this.SendCmd(null);
-			}
+			_requestTimer.Trigger();
+			SendCmd();
 		}
+	}
 
-		public override void ServerProcessCmd(NetworkReader reader)
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (base.IsLocalPlayer || !base.Firearm.AnyModuleBusy())
 		{
-			base.ServerProcessCmd(reader);
-			if (!base.IsLocalPlayer && base.Firearm.AnyModuleBusy(null))
-			{
-				return;
-			}
-			this.SendRpc(null, true);
+			SendRpc();
 		}
+	}
 
-		public override void ClientProcessRpcInstance(NetworkReader reader)
+	public override void ClientProcessRpcInstance(NetworkReader reader)
+	{
+		base.ClientProcessRpcInstance(reader);
+		_busy = true;
+		if (_doubleActionModule.Cocked)
 		{
-			base.ClientProcessRpcInstance(reader);
-			this._busy = true;
-			if (this._doubleActionModule.Cocked)
-			{
-				this._doubleActionModule.TriggerDecocking(new int?(FirearmAnimatorHashes.Roulette));
-				return;
-			}
-			base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.Roulette, false);
+			_doubleActionModule.TriggerDecocking(FirearmAnimatorHashes.Roulette);
 		}
-
-		[ExposedFirearmEvent]
-		public void ServerRandomize()
+		else
 		{
-			if (!base.IsServer)
-			{
-				return;
-			}
-			int ammoMax = this._cylinderModule.AmmoMax;
-			int num = global::UnityEngine.Random.Range(0, ammoMax);
-			this._cylinderModule.RotateCylinder(num);
+			base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.Roulette);
 		}
+	}
 
-		[ExposedFirearmEvent]
-		public void EndSpin()
+	[ExposedFirearmEvent]
+	public void ServerRandomize()
+	{
+		if (base.IsServer)
 		{
-			this._busy = false;
+			int ammoMax = _cylinderModule.AmmoMax;
+			int rotations = UnityEngine.Random.Range(0, ammoMax);
+			_cylinderModule.RotateCylinder(rotations);
 		}
+	}
 
-		private readonly ClientRequestTimer _requestTimer = new ClientRequestTimer();
-
-		private CylinderAmmoModule _cylinderModule;
-
-		private DoubleActionModule _doubleActionModule;
-
-		private float _keyHoldTime;
-
-		private bool _busy;
+	[ExposedFirearmEvent]
+	public void EndSpin()
+	{
+		_busy = false;
 	}
 }

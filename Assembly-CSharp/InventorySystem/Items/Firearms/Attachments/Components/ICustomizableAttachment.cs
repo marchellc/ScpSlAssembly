@@ -1,14 +1,12 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Attachments.Components
+namespace InventorySystem.Items.Firearms.Attachments.Components;
+
+public interface ICustomizableAttachment
 {
-	public interface ICustomizableAttachment
-	{
-		AttachmentConfigWindow ConfigWindow { get; }
+	AttachmentConfigWindow ConfigWindow { get; }
 
-		Vector2 ConfigIconOffset { get; }
+	Vector2 ConfigIconOffset { get; }
 
-		float ConfigIconScale { get; }
-	}
+	float ConfigIconScale { get; }
 }

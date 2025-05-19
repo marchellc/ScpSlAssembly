@@ -1,35 +1,33 @@
-﻿using System;
 using Mirror;
 
-namespace InventorySystem.Items.Radio
+namespace InventorySystem.Items.Radio;
+
+public struct RadioStatusMessage : NetworkMessage
 {
-	public struct RadioStatusMessage : NetworkMessage
+	public readonly RadioMessages.RadioRangeLevel Range;
+
+	public readonly byte Battery;
+
+	public readonly uint Owner;
+
+	public void Serialize(NetworkWriter writer)
 	{
-		public void Serialize(NetworkWriter writer)
-		{
-			writer.WriteSByte((sbyte)this.Range);
-			writer.WriteByte(this.Battery);
-			writer.WriteUInt(this.Owner);
-		}
+		writer.WriteSByte((sbyte)Range);
+		writer.WriteByte(Battery);
+		writer.WriteUInt(Owner);
+	}
 
-		public RadioStatusMessage(NetworkReader reader)
-		{
-			this.Range = (RadioMessages.RadioRangeLevel)reader.ReadSByte();
-			this.Battery = reader.ReadByte();
-			this.Owner = reader.ReadUInt();
-		}
+	public RadioStatusMessage(NetworkReader reader)
+	{
+		Range = (RadioMessages.RadioRangeLevel)reader.ReadSByte();
+		Battery = reader.ReadByte();
+		Owner = reader.ReadUInt();
+	}
 
-		public RadioStatusMessage(RadioItem radio)
-		{
-			this.Range = radio.RangeLevel;
-			this.Battery = radio.BatteryPercent;
-			this.Owner = radio.Owner.netId;
-		}
-
-		public readonly RadioMessages.RadioRangeLevel Range;
-
-		public readonly byte Battery;
-
-		public readonly uint Owner;
+	public RadioStatusMessage(RadioItem radio)
+	{
+		Range = radio.RangeLevel;
+		Battery = radio.BatteryPercent;
+		Owner = radio.Owner.netId;
 	}
 }

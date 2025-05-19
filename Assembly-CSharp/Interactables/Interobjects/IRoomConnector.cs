@@ -1,27 +1,32 @@
-﻿using System;
+using System;
 using MapGeneration;
 using UnityEngine;
 
-namespace Interactables.Interobjects
+namespace Interactables.Interobjects;
+
+public interface IRoomConnector
 {
-	public interface IRoomConnector
+	protected static readonly Vector3[] WorldDirections;
+
+	protected static readonly RoomIdentifier[] RoomsNonAlloc;
+
+	RoomIdentifier[] Rooms { get; }
+
+	bool RoomsAlreadyRegistered { get; }
+
+	bool IsVisibleThrough { get; }
+
+	event Action OnRoomsRegistered;
+
+	static IRoomConnector()
 	{
-		RoomIdentifier[] Rooms { get; }
-
-		event Action OnRoomsRegistered;
-
-		bool RoomsAlreadyRegistered { get; }
-
-		bool IsVisibleThrough { get; }
-
-		protected static readonly Vector3[] WorldDirections = new Vector3[]
+		WorldDirections = new Vector3[4]
 		{
 			Vector3.forward,
 			Vector3.back,
 			Vector3.left,
 			Vector3.right
 		};
-
-		protected static readonly RoomIdentifier[] RoomsNonAlloc = new RoomIdentifier[IRoomConnector.WorldDirections.Length];
+		RoomsNonAlloc = new RoomIdentifier[WorldDirections.Length];
 	}
 }

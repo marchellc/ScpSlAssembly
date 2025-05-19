@@ -1,26 +1,25 @@
-﻿using System;
+namespace Utf8Json.Formatters;
 
-namespace Utf8Json.Formatters
+public sealed class NullableFormatter<T> : IJsonFormatter<T?>, IJsonFormatter where T : struct
 {
-	public sealed class NullableFormatter<T> : IJsonFormatter<T?>, IJsonFormatter where T : struct
+	public void Serialize(ref JsonWriter writer, T? value, IJsonFormatterResolver formatterResolver)
 	{
-		public void Serialize(ref JsonWriter writer, T? value, IJsonFormatterResolver formatterResolver)
+		if (!value.HasValue)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
+			writer.WriteNull();
+		}
+		else
+		{
 			formatterResolver.GetFormatterWithVerify<T>().Serialize(ref writer, value.Value, formatterResolver);
 		}
+	}
 
-		public T? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public T? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			return new T?(formatterResolver.GetFormatterWithVerify<T>().Deserialize(ref reader, formatterResolver));
+			return null;
 		}
+		return formatterResolver.GetFormatterWithVerify<T>().Deserialize(ref reader, formatterResolver);
 	}
 }

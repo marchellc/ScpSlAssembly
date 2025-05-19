@@ -1,13 +1,10 @@
-﻿using System;
+namespace PlayerRoles.FirstPersonControl;
 
-namespace PlayerRoles.FirstPersonControl
+public interface IMovementSpeedModifier
 {
-	public interface IMovementSpeedModifier
-	{
-		bool MovementModifierActive { get; }
+	bool MovementModifierActive { get; }
 
-		float MovementSpeedMultiplier { get; }
+	float MovementSpeedMultiplier { get; }
 
-		float MovementSpeedLimit { get; }
-	}
+	float MovementSpeedLimit { get; }
 }

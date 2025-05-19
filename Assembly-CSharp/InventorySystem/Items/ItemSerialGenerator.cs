@@ -1,24 +1,21 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public static class ItemSerialGenerator
 {
-	public static class ItemSerialGenerator
+	private static ushort _ai;
+
+	public static void Reset()
 	{
-		public static void Reset()
-		{
-			ItemSerialGenerator._ai = 0;
-		}
+		_ai = 0;
+	}
 
-		public static ushort GenerateNext()
+	public static ushort GenerateNext()
+	{
+		if (_ai > 65000)
 		{
-			if (ItemSerialGenerator._ai > 65000)
-			{
-				ItemSerialGenerator.Reset();
-			}
-			ItemSerialGenerator._ai += 1;
-			return ItemSerialGenerator._ai;
+			Reset();
 		}
-
-		private static ushort _ai;
+		_ai++;
+		return _ai;
 	}
 }

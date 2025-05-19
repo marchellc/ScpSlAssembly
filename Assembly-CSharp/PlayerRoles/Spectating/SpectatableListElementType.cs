@@ -1,11 +1,8 @@
-﻿using System;
+namespace PlayerRoles.Spectating;
 
-namespace PlayerRoles.Spectating
+public enum SpectatableListElementType
 {
-	public enum SpectatableListElementType
-	{
-		Standard,
-		Scp079,
-		Scp3114
-	}
+	Standard,
+	Scp079,
+	Scp3114
 }

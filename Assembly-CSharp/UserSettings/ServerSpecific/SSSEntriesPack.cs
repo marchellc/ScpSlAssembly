@@ -1,46 +1,45 @@
-﻿using System;
 using Mirror;
 
-namespace UserSettings.ServerSpecific
+namespace UserSettings.ServerSpecific;
+
+public readonly struct SSSEntriesPack : NetworkMessage
 {
-	public readonly struct SSSEntriesPack : NetworkMessage
+	public readonly ServerSpecificSettingBase[] Settings;
+
+	public readonly int Version;
+
+	public SSSEntriesPack(NetworkReader reader)
 	{
-		public SSSEntriesPack(NetworkReader reader)
+		Version = reader.ReadInt();
+		Settings = new ServerSpecificSettingBase[reader.ReadByte()];
+		for (int i = 0; i < Settings.Length; i++)
 		{
-			this.Version = reader.ReadInt();
-			this.Settings = new ServerSpecificSettingBase[(int)reader.ReadByte()];
-			for (int i = 0; i < this.Settings.Length; i++)
-			{
-				ServerSpecificSettingBase serverSpecificSettingBase = ServerSpecificSettingsSync.CreateInstance(ServerSpecificSettingsSync.GetTypeFromCode(reader.ReadByte())) as ServerSpecificSettingBase;
-				serverSpecificSettingBase.DeserializeEntry(reader);
-				this.Settings[i] = serverSpecificSettingBase;
-			}
+			ServerSpecificSettingBase serverSpecificSettingBase = ServerSpecificSettingsSync.CreateInstance(ServerSpecificSettingsSync.GetTypeFromCode(reader.ReadByte())) as ServerSpecificSettingBase;
+			serverSpecificSettingBase.DeserializeEntry(reader);
+			Settings[i] = serverSpecificSettingBase;
 		}
+	}
 
-		public SSSEntriesPack(ServerSpecificSettingBase[] settings, int version)
+	public SSSEntriesPack(ServerSpecificSettingBase[] settings, int version)
+	{
+		Settings = settings;
+		Version = version;
+	}
+
+	public void Serialize(NetworkWriter writer)
+	{
+		writer.WriteInt(Version);
+		if (Settings == null)
 		{
-			this.Settings = settings;
-			this.Version = version;
+			writer.WriteByte(0);
+			return;
 		}
-
-		public void Serialize(NetworkWriter writer)
+		writer.WriteByte((byte)Settings.Length);
+		ServerSpecificSettingBase[] settings = Settings;
+		foreach (ServerSpecificSettingBase serverSpecificSettingBase in settings)
 		{
-			writer.WriteInt(this.Version);
-			if (this.Settings == null)
-			{
-				writer.WriteByte(0);
-				return;
-			}
-			writer.WriteByte((byte)this.Settings.Length);
-			foreach (ServerSpecificSettingBase serverSpecificSettingBase in this.Settings)
-			{
-				writer.WriteByte(ServerSpecificSettingsSync.GetCodeFromType(serverSpecificSettingBase.GetType()));
-				serverSpecificSettingBase.SerializeEntry(writer);
-			}
+			writer.WriteByte(ServerSpecificSettingsSync.GetCodeFromType(serverSpecificSettingBase.GetType()));
+			serverSpecificSettingBase.SerializeEntry(writer);
 		}
-
-		public readonly ServerSpecificSettingBase[] Settings;
-
-		public readonly int Version;
 	}
 }

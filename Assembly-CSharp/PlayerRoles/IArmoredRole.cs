@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles;
 
-namespace PlayerRoles
+public interface IArmoredRole
 {
-	public interface IArmoredRole
-	{
-		int GetArmorEfficacy(HitboxType hitbox);
-	}
+	int GetArmorEfficacy(HitboxType hitbox);
 }

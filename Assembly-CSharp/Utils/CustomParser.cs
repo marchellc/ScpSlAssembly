@@ -1,116 +1,113 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using NorthwoodLib.Pools;
 using UnityEngine;
 
-namespace Utils
+namespace Utils;
+
+public static class CustomParser
 {
-	public static class CustomParser
+	public enum ParseResult : byte
 	{
-		public static bool RemoveUnknownCharacters(string source, out string res)
+		FullSuccess,
+		PartialSuccess,
+		Failed
+	}
+
+	private static readonly HashSet<char> KnownCharacters = new HashSet<char>("0123456789.,");
+
+	public static bool RemoveUnknownCharacters(string source, out string res)
+	{
+		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent(source.Length);
+		bool flag = false;
+		foreach (char c in source)
 		{
-			StringBuilder stringBuilder = StringBuilderPool.Shared.Rent(source.Length);
-			bool flag = false;
-			foreach (char c in source)
+			if (KnownCharacters.Contains(c))
 			{
-				if (CustomParser.KnownCharacters.Contains(c))
-				{
-					stringBuilder.Append(c);
-				}
-				else
-				{
-					flag = true;
-				}
-			}
-			if (flag)
-			{
-				res = stringBuilder.ToString();
+				stringBuilder.Append(c);
 			}
 			else
 			{
-				res = source;
+				flag = true;
 			}
-			StringBuilderPool.Shared.Return(stringBuilder);
-			return flag;
 		}
-
-		public static CustomParser.ParseResult TryParseFloat(string source, out float val)
+		if (flag)
 		{
-			CustomParser.ParseResult parseResult = CustomParser.ParseResult.FullSuccess;
-			val = 0f;
-			if (CustomParser.RemoveUnknownCharacters(source, out source))
+			res = stringBuilder.ToString();
+		}
+		else
+		{
+			res = source;
+		}
+		StringBuilderPool.Shared.Return(stringBuilder);
+		return flag;
+	}
+
+	public static ParseResult TryParseFloat(string source, out float val)
+	{
+		ParseResult result = ParseResult.FullSuccess;
+		val = 0f;
+		if (RemoveUnknownCharacters(source, out source))
+		{
+			result = ParseResult.PartialSuccess;
+		}
+		if (string.IsNullOrEmpty(source))
+		{
+			return ParseResult.Failed;
+		}
+		source = source.Replace(",", ".");
+		if (source.Contains("."))
+		{
+			string[] array = source.Split('.');
+			if (array.Length > 2)
 			{
-				parseResult = CustomParser.ParseResult.PartialSuccess;
-			}
-			if (string.IsNullOrEmpty(source))
-			{
-				return CustomParser.ParseResult.Failed;
-			}
-			source = source.Replace(",", ".");
-			if (source.Contains("."))
-			{
-				string[] array = source.Split('.', StringSplitOptions.None);
-				if (array.Length > 2)
+				string text = string.Empty;
+				for (int i = 0; i < array.Length - 1; i++)
 				{
-					string text = string.Empty;
-					for (int i = 0; i < array.Length - 1; i++)
-					{
-						text += array[i];
-					}
-					array[0] = text;
-					array[1] = array[array.Length - 1];
+					text += array[i];
 				}
-				if (string.IsNullOrEmpty(array[0]))
-				{
-					array[0] = "0";
-				}
-				val = float.Parse(array[0]);
-				if (!string.IsNullOrEmpty(array[1]))
-				{
-					float num;
-					if (float.TryParse(array[1], out num))
-					{
-						val += num / Mathf.Pow(10f, (float)array[1].Length);
-					}
-					else
-					{
-						parseResult = CustomParser.ParseResult.PartialSuccess;
-					}
-				}
-				return parseResult;
+				array[0] = text;
+				array[1] = array[^1];
 			}
-			if (!float.TryParse(source, out val))
+			if (string.IsNullOrEmpty(array[0]))
 			{
-				return CustomParser.ParseResult.Failed;
+				array[0] = "0";
 			}
+			val = float.Parse(array[0]);
+			if (!string.IsNullOrEmpty(array[1]))
+			{
+				if (float.TryParse(array[1], out var result2))
+				{
+					val += result2 / Mathf.Pow(10f, array[1].Length);
+				}
+				else
+				{
+					result = ParseResult.PartialSuccess;
+				}
+			}
+			return result;
+		}
+		if (!float.TryParse(source, out val))
+		{
+			return ParseResult.Failed;
+		}
+		return result;
+	}
+
+	public static ParseResult TryParseInt(string source, out int val)
+	{
+		float val2;
+		ParseResult parseResult = TryParseFloat(source, out val2);
+		if (parseResult == ParseResult.Failed)
+		{
+			val = 0;
 			return parseResult;
 		}
-
-		public static CustomParser.ParseResult TryParseInt(string source, out int val)
+		val = (int)val2;
+		if (val2 == (float)(int)val2)
 		{
-			float num;
-			CustomParser.ParseResult parseResult = CustomParser.TryParseFloat(source, out num);
-			if (parseResult == CustomParser.ParseResult.Failed)
-			{
-				val = 0;
-				return parseResult;
-			}
-			val = (int)num;
-			if (num == (float)((int)num))
-			{
-				return parseResult;
-			}
-			return CustomParser.ParseResult.PartialSuccess;
+			return parseResult;
 		}
-
-		private static readonly HashSet<char> KnownCharacters = new HashSet<char>("0123456789.,");
-
-		public enum ParseResult : byte
-		{
-			FullSuccess,
-			PartialSuccess,
-			Failed
-		}
+		return ParseResult.PartialSuccess;
 	}
 }

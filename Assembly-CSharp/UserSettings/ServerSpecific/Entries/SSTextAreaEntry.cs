@@ -1,112 +1,105 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UserSettings.GUIElements;
 
-namespace UserSettings.ServerSpecific.Entries
+namespace UserSettings.ServerSpecific.Entries;
+
+public class SSTextAreaEntry : MonoBehaviour, ISSEntry
 {
-	public class SSTextAreaEntry : MonoBehaviour, ISSEntry
+	[SerializeField]
+	private TMP_Text _shortText;
+
+	[SerializeField]
+	private TMP_Text _mainText;
+
+	[SerializeField]
+	private CanvasGroup _group;
+
+	[SerializeField]
+	private Toggle _toggle;
+
+	[SerializeField]
+	private UserSettingsFoldoutGroup _foldoutGroup;
+
+	[SerializeField]
+	private GameObject[] _disableWhenNotCollapsable;
+
+	private SSTextArea.FoldoutMode _foldoutMode;
+
+	private SSTextArea _textArea;
+
+	public bool CheckCompatibility(ServerSpecificSettingBase setting)
 	{
-		public bool CheckCompatibility(ServerSpecificSettingBase setting)
+		return setting is SSTextArea;
+	}
+
+	public void Init(ServerSpecificSettingBase setting)
+	{
+		_textArea = setting as SSTextArea;
+		_mainText.text = _textArea.Label;
+		_mainText.alignment = _textArea.AlignmentOptions;
+		_foldoutMode = _textArea.Foldout;
+		UpdateText();
+		switch (_foldoutMode)
 		{
-			return setting is SSTextArea;
+		case SSTextArea.FoldoutMode.CollapseOnEntry:
+		case SSTextArea.FoldoutMode.CollapsedByDefault:
+			_foldoutGroup.FoldInstantly();
+			break;
+		case SSTextArea.FoldoutMode.ExtendOnEntry:
+		case SSTextArea.FoldoutMode.ExtendedByDefault:
+			_foldoutGroup.ExtendInstantly();
+			break;
+		case SSTextArea.FoldoutMode.NotCollapsable:
+			_toggle.isOn = true;
+			_mainText.raycastTarget = true;
+			_foldoutGroup.ExtendInstantly();
+			_disableWhenNotCollapsable.ForEach(delegate(GameObject x)
+			{
+				x.SetActive(value: false);
+			});
+			break;
 		}
+		_textArea.OnTextUpdated += UpdateText;
+	}
 
-		public void Init(ServerSpecificSettingBase setting)
+	private void UpdateText()
+	{
+		_mainText.SetText(_textArea.Label);
+		_foldoutGroup.RefreshSize();
+		if (_foldoutMode != 0)
 		{
-			this._textArea = setting as SSTextArea;
-			this._mainText.text = this._textArea.Label;
-			this._mainText.alignment = this._textArea.AlignmentOptions;
-			this._foldoutMode = this._textArea.Foldout;
-			this.UpdateText();
-			switch (this._foldoutMode)
-			{
-			case SSTextArea.FoldoutMode.NotCollapsable:
-				this._toggle.isOn = true;
-				this._mainText.raycastTarget = true;
-				this._foldoutGroup.ExtendInstantly();
-				this._disableWhenNotCollapsable.ForEach(delegate(GameObject x)
-				{
-					x.SetActive(false);
-				});
-				break;
-			case SSTextArea.FoldoutMode.CollapseOnEntry:
-			case SSTextArea.FoldoutMode.CollapsedByDefault:
-				this._foldoutGroup.FoldInstantly();
-				break;
-			case SSTextArea.FoldoutMode.ExtendOnEntry:
-			case SSTextArea.FoldoutMode.ExtendedByDefault:
-				this._foldoutGroup.ExtendInstantly();
-				break;
-			}
-			this._textArea.OnTextUpdated += this.UpdateText;
+			_shortText.text = (string.IsNullOrEmpty(_textArea.HintDescription) ? _textArea.Label : _textArea.HintDescription);
 		}
+	}
 
-		private void UpdateText()
+	private void OnDestroy()
+	{
+		if (_textArea != null)
 		{
-			this._mainText.SetText(this._textArea.Label);
-			this._foldoutGroup.RefreshSize();
-			if (this._foldoutMode == SSTextArea.FoldoutMode.NotCollapsable)
-			{
-				return;
-			}
-			this._shortText.text = (string.IsNullOrEmpty(this._textArea.HintDescription) ? this._textArea.Label : this._textArea.HintDescription);
+			_textArea.OnTextUpdated -= UpdateText;
 		}
+	}
 
-		private void OnDestroy()
+	private void OnDisable()
+	{
+		switch (_foldoutMode)
 		{
-			if (this._textArea == null)
-			{
-				return;
-			}
-			this._textArea.OnTextUpdated -= this.UpdateText;
+		case SSTextArea.FoldoutMode.CollapseOnEntry:
+			_foldoutGroup.FoldInstantly();
+			break;
+		case SSTextArea.FoldoutMode.ExtendOnEntry:
+			_foldoutGroup.ExtendInstantly();
+			break;
 		}
+	}
 
-		private void OnDisable()
+	private void Update()
+	{
+		if (_foldoutMode != 0)
 		{
-			SSTextArea.FoldoutMode foldoutMode = this._foldoutMode;
-			if (foldoutMode == SSTextArea.FoldoutMode.CollapseOnEntry)
-			{
-				this._foldoutGroup.FoldInstantly();
-				return;
-			}
-			if (foldoutMode != SSTextArea.FoldoutMode.ExtendOnEntry)
-			{
-				return;
-			}
-			this._foldoutGroup.ExtendInstantly();
+			_shortText.alpha = 1f - _group.alpha;
 		}
-
-		private void Update()
-		{
-			if (this._foldoutMode == SSTextArea.FoldoutMode.NotCollapsable)
-			{
-				return;
-			}
-			this._shortText.alpha = 1f - this._group.alpha;
-		}
-
-		[SerializeField]
-		private TMP_Text _shortText;
-
-		[SerializeField]
-		private TMP_Text _mainText;
-
-		[SerializeField]
-		private CanvasGroup _group;
-
-		[SerializeField]
-		private Toggle _toggle;
-
-		[SerializeField]
-		private UserSettingsFoldoutGroup _foldoutGroup;
-
-		[SerializeField]
-		private GameObject[] _disableWhenNotCollapsable;
-
-		private SSTextArea.FoldoutMode _foldoutMode;
-
-		private SSTextArea _textArea;
 	}
 }

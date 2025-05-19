@@ -1,210 +1,164 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using System.Xml;
 
-namespace LiteNetLib4Mirror.Open.Nat
+namespace LiteNetLib4Mirror.Open.Nat;
+
+internal sealed class UpnpNatDevice : NatDevice
 {
-	internal sealed class UpnpNatDevice : NatDevice
+	internal readonly UpnpNatDeviceInfo DeviceInfo;
+
+	private readonly SoapClient _soapClient;
+
+	internal UpnpNatDevice(UpnpNatDeviceInfo deviceInfo)
 	{
-		internal UpnpNatDevice(UpnpNatDeviceInfo deviceInfo)
-		{
-			base.Touch();
-			this.DeviceInfo = deviceInfo;
-			this._soapClient = new SoapClient(this.DeviceInfo.ServiceControlUri, this.DeviceInfo.ServiceType);
-		}
+		Touch();
+		DeviceInfo = deviceInfo;
+		_soapClient = new SoapClient(DeviceInfo.ServiceControlUri, DeviceInfo.ServiceType);
+	}
 
-		public override async Task<IPAddress> GetExternalIPAsync()
-		{
-			NatDiscoverer.TraceSource.LogInfo("GetExternalIPAsync - Getting external IP address", Array.Empty<object>());
-			GetExternalIPAddressRequestMessage getExternalIPAddressRequestMessage = new GetExternalIPAddressRequestMessage();
-			TaskAwaiter<XmlDocument> taskAwaiter = this._soapClient.InvokeAsync("GetExternalIPAddress", getExternalIPAddressRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0)).GetAwaiter();
-			if (!taskAwaiter.IsCompleted)
-			{
-				await taskAwaiter;
-				TaskAwaiter<XmlDocument> taskAwaiter2;
-				taskAwaiter = taskAwaiter2;
-				taskAwaiter2 = default(TaskAwaiter<XmlDocument>);
-			}
-			return new GetExternalIPAddressResponseMessage(taskAwaiter.GetResult(), this.DeviceInfo.ServiceType).ExternalIPAddress;
-		}
+	public override async Task<IPAddress> GetExternalIPAsync()
+	{
+		NatDiscoverer.TraceSource.LogInfo("GetExternalIPAsync - Getting external IP address");
+		GetExternalIPAddressRequestMessage getExternalIPAddressRequestMessage = new GetExternalIPAddressRequestMessage();
+		return new GetExternalIPAddressResponseMessage(await _soapClient.InvokeAsync("GetExternalIPAddress", getExternalIPAddressRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0)), DeviceInfo.ServiceType).ExternalIPAddress;
+	}
 
-		public override async Task CreatePortMapAsync(Mapping mapping)
+	public override async Task CreatePortMapAsync(Mapping mapping)
+	{
+		Guard.IsNotNull(mapping, "mapping");
+		if (mapping.PrivateIP.Equals(IPAddress.None))
 		{
-			Guard.IsNotNull(mapping, "mapping");
-			if (mapping.PrivateIP.Equals(IPAddress.None))
+			mapping.PrivateIP = DeviceInfo.LocalAddress;
+		}
+		NatDiscoverer.TraceSource.LogInfo("CreatePortMapAsync - Creating port mapping {0}", mapping);
+		bool retry = false;
+		try
+		{
+			CreatePortMappingRequestMessage createPortMappingRequestMessage = new CreatePortMappingRequestMessage(mapping);
+			await _soapClient.InvokeAsync("AddPortMapping", createPortMappingRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0));
+			RegisterMapping(mapping);
+		}
+		catch (MappingException ex)
+		{
+			switch (ex.ErrorCode)
 			{
-				mapping.PrivateIP = this.DeviceInfo.LocalAddress;
+			case 725:
+				NatDiscoverer.TraceSource.LogWarn("Only Permanent Leases Supported - There is no warranty it will be closed");
+				mapping.Lifetime = 0;
+				mapping.LifetimeType = MappingLifetime.ForcedSession;
+				retry = true;
+				break;
+			case 724:
+				NatDiscoverer.TraceSource.LogWarn("Same Port Values Required - Using internal port {0}", mapping.PrivatePort);
+				mapping.PublicPort = mapping.PrivatePort;
+				retry = true;
+				break;
+			case 726:
+				NatDiscoverer.TraceSource.LogWarn("Remote Host Only Supports Wildcard");
+				mapping.PublicIP = IPAddress.None;
+				retry = true;
+				break;
+			case 727:
+				NatDiscoverer.TraceSource.LogWarn("External Port Only Supports Wildcard");
+				throw;
+			case 718:
+				NatDiscoverer.TraceSource.LogWarn("Conflict with an already existing mapping");
+				throw;
+			default:
+				throw;
 			}
-			NatDiscoverer.TraceSource.LogInfo("CreatePortMapAsync - Creating port mapping {0}", new object[] { mapping });
-			bool retry = false;
+		}
+		if (retry)
+		{
+			await CreatePortMapAsync(mapping);
+		}
+	}
+
+	public override async Task DeletePortMapAsync(Mapping mapping)
+	{
+		Guard.IsNotNull(mapping, "mapping");
+		if (mapping.PrivateIP.Equals(IPAddress.None))
+		{
+			mapping.PrivateIP = DeviceInfo.LocalAddress;
+		}
+		NatDiscoverer.TraceSource.LogInfo("DeletePortMapAsync - Deleteing port mapping {0}", mapping);
+		try
+		{
+			DeletePortMappingRequestMessage deletePortMappingRequestMessage = new DeletePortMappingRequestMessage(mapping);
+			await _soapClient.InvokeAsync("DeletePortMapping", deletePortMappingRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0));
+			UnregisterMapping(mapping);
+		}
+		catch (MappingException ex)
+		{
+			if (ex.ErrorCode != 714)
+			{
+				throw;
+			}
+		}
+	}
+
+	public override async Task<IEnumerable<Mapping>> GetAllMappingsAsync()
+	{
+		int index = 0;
+		List<Mapping> mappings = new List<Mapping>();
+		NatDiscoverer.TraceSource.LogInfo("GetAllMappingsAsync - Getting all mappings");
+		while (true)
+		{
 			try
 			{
-				CreatePortMappingRequestMessage createPortMappingRequestMessage = new CreatePortMappingRequestMessage(mapping);
-				await this._soapClient.InvokeAsync("AddPortMapping", createPortMappingRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0));
-				base.RegisterMapping(mapping);
-			}
-			catch (MappingException ex)
-			{
-				int errorCode = ex.ErrorCode;
-				if (errorCode == 718)
+				GetGenericPortMappingEntry getGenericPortMappingEntry = new GetGenericPortMappingEntry(index++);
+				GetPortMappingEntryResponseMessage getPortMappingEntryResponseMessage = new GetPortMappingEntryResponseMessage(await _soapClient.InvokeAsync("GetGenericPortMappingEntry", getGenericPortMappingEntry.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0)), DeviceInfo.ServiceType, genericMapping: true);
+				if (!IPAddress.TryParse(getPortMappingEntryResponseMessage.InternalClient, out var address))
 				{
-					NatDiscoverer.TraceSource.LogWarn("Conflict with an already existing mapping", Array.Empty<object>());
-					throw;
-				}
-				switch (errorCode)
-				{
-				case 724:
-					NatDiscoverer.TraceSource.LogWarn("Same Port Values Required - Using internal port {0}", new object[] { mapping.PrivatePort });
-					mapping.PublicPort = mapping.PrivatePort;
-					retry = true;
-					break;
-				case 725:
-					NatDiscoverer.TraceSource.LogWarn("Only Permanent Leases Supported - There is no warranty it will be closed", Array.Empty<object>());
-					mapping.Lifetime = 0;
-					mapping.LifetimeType = MappingLifetime.ForcedSession;
-					retry = true;
-					break;
-				case 726:
-					NatDiscoverer.TraceSource.LogWarn("Remote Host Only Supports Wildcard", Array.Empty<object>());
-					mapping.PublicIP = IPAddress.None;
-					retry = true;
-					break;
-				case 727:
-					NatDiscoverer.TraceSource.LogWarn("External Port Only Supports Wildcard", Array.Empty<object>());
-					throw;
-				default:
-					throw;
-				}
-			}
-			if (retry)
-			{
-				await this.CreatePortMapAsync(mapping);
-			}
-		}
-
-		public override async Task DeletePortMapAsync(Mapping mapping)
-		{
-			Guard.IsNotNull(mapping, "mapping");
-			if (mapping.PrivateIP.Equals(IPAddress.None))
-			{
-				mapping.PrivateIP = this.DeviceInfo.LocalAddress;
-			}
-			NatDiscoverer.TraceSource.LogInfo("DeletePortMapAsync - Deleteing port mapping {0}", new object[] { mapping });
-			try
-			{
-				DeletePortMappingRequestMessage deletePortMappingRequestMessage = new DeletePortMappingRequestMessage(mapping);
-				await this._soapClient.InvokeAsync("DeletePortMapping", deletePortMappingRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0));
-				base.UnregisterMapping(mapping);
-			}
-			catch (MappingException ex)
-			{
-				if (ex.ErrorCode != 714)
-				{
-					throw;
-				}
-			}
-		}
-
-		public override async Task<IEnumerable<Mapping>> GetAllMappingsAsync()
-		{
-			int index = 0;
-			List<Mapping> mappings = new List<Mapping>();
-			NatDiscoverer.TraceSource.LogInfo("GetAllMappingsAsync - Getting all mappings", Array.Empty<object>());
-			for (;;)
-			{
-				try
-				{
-					int num = index;
-					index = num + 1;
-					GetGenericPortMappingEntry getGenericPortMappingEntry = new GetGenericPortMappingEntry(num);
-					TaskAwaiter<XmlDocument> taskAwaiter = this._soapClient.InvokeAsync("GetGenericPortMappingEntry", getGenericPortMappingEntry.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0)).GetAwaiter();
-					if (!taskAwaiter.IsCompleted)
-					{
-						await taskAwaiter;
-						TaskAwaiter<XmlDocument> taskAwaiter2;
-						taskAwaiter = taskAwaiter2;
-						taskAwaiter2 = default(TaskAwaiter<XmlDocument>);
-					}
-					GetPortMappingEntryResponseMessage getPortMappingEntryResponseMessage = new GetPortMappingEntryResponseMessage(taskAwaiter.GetResult(), this.DeviceInfo.ServiceType, true);
-					IPAddress ipaddress;
-					if (!IPAddress.TryParse(getPortMappingEntryResponseMessage.InternalClient, out ipaddress))
-					{
-						NatDiscoverer.TraceSource.LogWarn("InternalClient is not an IP address. Mapping ignored!", Array.Empty<object>());
-						continue;
-					}
-					Mapping mapping = new Mapping(getPortMappingEntryResponseMessage.NetworkProtocolType, ipaddress, getPortMappingEntryResponseMessage.InternalPort, getPortMappingEntryResponseMessage.ExternalPort, getPortMappingEntryResponseMessage.LeaseDuration, getPortMappingEntryResponseMessage.PortMappingDescription);
-					mappings.Add(mapping);
+					NatDiscoverer.TraceSource.LogWarn("InternalClient is not an IP address. Mapping ignored!");
 					continue;
 				}
-				catch (MappingException ex)
-				{
-					if (ex.ErrorCode != 713 && ex.ErrorCode != 714 && ex.ErrorCode != 402 && ex.ErrorCode != 501)
-					{
-						throw;
-					}
-					NatDiscoverer.TraceSource.LogWarn("Router failed with {0}-{1}. No more mappings is assumed.", new object[] { ex.ErrorCode, ex.ErrorText });
-				}
-				break;
-			}
-			return mappings.ToArray();
-		}
-
-		public override async Task<Mapping> GetSpecificMappingAsync(NetworkProtocolType networkProtocolType, int publicPort)
-		{
-			Guard.IsTrue(networkProtocolType == NetworkProtocolType.Tcp || networkProtocolType == NetworkProtocolType.Udp, "protocol");
-			Guard.IsInRange(publicPort, 0, 65535, "port");
-			NatDiscoverer.TraceSource.LogInfo("GetSpecificMappingAsync - Getting mapping for protocol: {0} port: {1}", new object[]
-			{
-				Enum.GetName(typeof(NetworkProtocolType), networkProtocolType),
-				publicPort
-			});
-			Mapping mapping;
-			try
-			{
-				GetSpecificPortMappingEntryRequestMessage getSpecificPortMappingEntryRequestMessage = new GetSpecificPortMappingEntryRequestMessage(networkProtocolType, publicPort);
-				TaskAwaiter<XmlDocument> taskAwaiter = this._soapClient.InvokeAsync("GetSpecificPortMappingEntry", getSpecificPortMappingEntryRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0)).GetAwaiter();
-				if (!taskAwaiter.IsCompleted)
-				{
-					await taskAwaiter;
-					TaskAwaiter<XmlDocument> taskAwaiter2;
-					taskAwaiter = taskAwaiter2;
-					taskAwaiter2 = default(TaskAwaiter<XmlDocument>);
-				}
-				GetPortMappingEntryResponseMessage getPortMappingEntryResponseMessage = new GetPortMappingEntryResponseMessage(taskAwaiter.GetResult(), this.DeviceInfo.ServiceType, false);
-				if (getPortMappingEntryResponseMessage.NetworkProtocolType != networkProtocolType)
-				{
-					NatDiscoverer.TraceSource.LogWarn("Router responded to a protocol {0} query with a protocol {1} answer, work around applied.", new object[] { networkProtocolType, getPortMappingEntryResponseMessage.NetworkProtocolType });
-				}
-				mapping = new Mapping(networkProtocolType, IPAddress.Parse(getPortMappingEntryResponseMessage.InternalClient), getPortMappingEntryResponseMessage.InternalPort, publicPort, getPortMappingEntryResponseMessage.LeaseDuration, getPortMappingEntryResponseMessage.PortMappingDescription);
+				Mapping item = new Mapping(getPortMappingEntryResponseMessage.NetworkProtocolType, address, getPortMappingEntryResponseMessage.InternalPort, getPortMappingEntryResponseMessage.ExternalPort, getPortMappingEntryResponseMessage.LeaseDuration, getPortMappingEntryResponseMessage.PortMappingDescription);
+				mappings.Add(item);
 			}
 			catch (MappingException ex)
 			{
-				if (ex.ErrorCode != 713 && ex.ErrorCode != 714 && ex.ErrorCode != 402 && ex.ErrorCode != 501)
+				if (ex.ErrorCode == 713 || ex.ErrorCode == 714 || ex.ErrorCode == 402 || ex.ErrorCode == 501)
 				{
-					throw;
+					NatDiscoverer.TraceSource.LogWarn("Router failed with {0}-{1}. No more mappings is assumed.", ex.ErrorCode, ex.ErrorText);
+					break;
 				}
-				NatDiscoverer.TraceSource.LogWarn("Router failed with {0}-{1}. No more mappings is assumed.", new object[] { ex.ErrorCode, ex.ErrorText });
-				mapping = null;
+				throw;
 			}
-			return mapping;
 		}
+		return mappings.ToArray();
+	}
 
-		public override string ToString()
+	public override async Task<Mapping> GetSpecificMappingAsync(NetworkProtocolType networkProtocolType, int publicPort)
+	{
+		Guard.IsTrue(networkProtocolType == NetworkProtocolType.Tcp || networkProtocolType == NetworkProtocolType.Udp, "protocol");
+		Guard.IsInRange(publicPort, 0, 65535, "port");
+		NatDiscoverer.TraceSource.LogInfo("GetSpecificMappingAsync - Getting mapping for protocol: {0} port: {1}", Enum.GetName(typeof(NetworkProtocolType), networkProtocolType), publicPort);
+		try
 		{
-			return string.Format("EndPoint: {0}\nControl Url: {1}\nService Type: {2}\nLast Seen: {3}", new object[]
+			GetSpecificPortMappingEntryRequestMessage getSpecificPortMappingEntryRequestMessage = new GetSpecificPortMappingEntryRequestMessage(networkProtocolType, publicPort);
+			GetPortMappingEntryResponseMessage getPortMappingEntryResponseMessage = new GetPortMappingEntryResponseMessage(await _soapClient.InvokeAsync("GetSpecificPortMappingEntry", getSpecificPortMappingEntryRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0)), DeviceInfo.ServiceType, genericMapping: false);
+			if (getPortMappingEntryResponseMessage.NetworkProtocolType != networkProtocolType)
 			{
-				this.DeviceInfo.HostEndPoint,
-				this.DeviceInfo.ServiceControlUri,
-				this.DeviceInfo.ServiceType,
-				base.LastSeen
-			});
+				NatDiscoverer.TraceSource.LogWarn("Router responded to a protocol {0} query with a protocol {1} answer, work around applied.", networkProtocolType, getPortMappingEntryResponseMessage.NetworkProtocolType);
+			}
+			return new Mapping(networkProtocolType, IPAddress.Parse(getPortMappingEntryResponseMessage.InternalClient), getPortMappingEntryResponseMessage.InternalPort, publicPort, getPortMappingEntryResponseMessage.LeaseDuration, getPortMappingEntryResponseMessage.PortMappingDescription);
 		}
+		catch (MappingException ex)
+		{
+			if (ex.ErrorCode == 713 || ex.ErrorCode == 714 || ex.ErrorCode == 402 || ex.ErrorCode == 501)
+			{
+				NatDiscoverer.TraceSource.LogWarn("Router failed with {0}-{1}. No more mappings is assumed.", ex.ErrorCode, ex.ErrorText);
+				return null;
+			}
+			throw;
+		}
+	}
 
-		internal readonly UpnpNatDeviceInfo DeviceInfo;
-
-		private readonly SoapClient _soapClient;
+	public override string ToString()
+	{
+		return $"EndPoint: {DeviceInfo.HostEndPoint}\nControl Url: {DeviceInfo.ServiceControlUri}\nService Type: {DeviceInfo.ServiceType}\nLast Seen: {base.LastSeen}";
 	}
 }

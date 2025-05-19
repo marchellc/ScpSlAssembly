@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Runtime.InteropServices;
 using Interactables.Interobjects.DoorUtils;
 using Mirror;
@@ -7,125 +6,11 @@ using UnityEngine;
 
 public class AlphaWarheadNukesitePanel : NetworkBehaviour
 {
-	public bool AnyBlastdoorClosed
+	private enum DiodeType
 	{
-		get
-		{
-			using (HashSet<BlastDoor>.Enumerator enumerator = BlastDoor.Instances.GetEnumerator())
-			{
-				while (enumerator.MoveNext())
-				{
-					if (enumerator.Current.IsOpen)
-					{
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-	}
-
-	private void Awake()
-	{
-		AlphaWarheadNukesitePanel.Singleton = this;
-		int num = this._ledRenderer.sharedMaterials.Length;
-		this._matSet = new Material[num];
-		this._prevMats = new bool[num];
-		for (int i = 0; i < num; i++)
-		{
-			this._matSet[i] = this._offMat;
-		}
-	}
-
-	public bool AllowChangeLevelState()
-	{
-		return Math.Abs(this._leverStatus) < 0.001f || Math.Abs(this._leverStatus - 1f) < 0.001f;
-	}
-
-	private bool OutsideDoorOpen
-	{
-		get
-		{
-			if (!this._doorFound)
-			{
-				this._doorFound = DoorNametagExtension.NamedDoors.TryGetValue("SURFACE_NUKE", out this._outsideDoor);
-			}
-			return this._doorFound && this._outsideDoor.TargetDoor.TargetState;
-		}
-	}
-
-	private void SetDiode(AlphaWarheadNukesitePanel.DiodeType diode, bool status)
-	{
-		if (this._prevMats[(int)diode] == status)
-		{
-			return;
-		}
-		this._matSet[(int)diode] = (status ? this._onMat : this._offMat);
-		this._prevMats[(int)diode] = status;
-		this._anyModified = true;
-	}
-
-	private void Update()
-	{
-		this._anyModified = false;
-		this.SetDiode(AlphaWarheadNukesitePanel.DiodeType.InProgress, AlphaWarheadController.InProgress);
-		this.SetDiode(AlphaWarheadNukesitePanel.DiodeType.OutsideDoor, this.OutsideDoorOpen);
-		this.SetDiode(AlphaWarheadNukesitePanel.DiodeType.BlastDoor, this.AnyBlastdoorClosed);
-		if (this._anyModified)
-		{
-			this._ledRenderer.sharedMaterials = this._matSet;
-		}
-		this._leverStatus += (this.enabled ? 0.04f : (-0.04f));
-		this._leverStatus = Mathf.Clamp01(this._leverStatus);
-		this.lever.localRotation = Quaternion.Slerp(this._disabledLeverRotation, this._enabledLeverRotation, this._leverStatus);
-	}
-
-	public override bool Weaved()
-	{
-		return true;
-	}
-
-	public bool Networkenabled
-	{
-		get
-		{
-			return this.enabled;
-		}
-		[param: In]
-		set
-		{
-			base.GeneratedSyncVarSetter<bool>(value, ref this.enabled, 1UL, null);
-		}
-	}
-
-	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
-	{
-		base.SerializeSyncVars(writer, forceAll);
-		if (forceAll)
-		{
-			writer.WriteBool(this.enabled);
-			return;
-		}
-		writer.WriteULong(base.syncVarDirtyBits);
-		if ((base.syncVarDirtyBits & 1UL) != 0UL)
-		{
-			writer.WriteBool(this.enabled);
-		}
-	}
-
-	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
-	{
-		base.DeserializeSyncVars(reader, initialState);
-		if (initialState)
-		{
-			base.GeneratedSyncVarDeserialize<bool>(ref this.enabled, null, reader.ReadBool());
-			return;
-		}
-		long num = (long)reader.ReadULong();
-		if ((num & 1L) != 0L)
-		{
-			base.GeneratedSyncVarDeserialize<bool>(ref this.enabled, null, reader.ReadBool());
-		}
+		InProgress,
+		BlastDoor,
+		OutsideDoor
 	}
 
 	public Transform lever;
@@ -164,10 +49,128 @@ public class AlphaWarheadNukesitePanel : NetworkBehaviour
 
 	private DoorNametagExtension _outsideDoor;
 
-	private enum DiodeType
+	public bool AnyBlastdoorClosed
 	{
-		InProgress,
-		BlastDoor,
-		OutsideDoor
+		get
+		{
+			foreach (BlastDoor instance in BlastDoor.Instances)
+			{
+				if (!instance.IsOpen)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
+	private bool OutsideDoorOpen
+	{
+		get
+		{
+			if (!_doorFound)
+			{
+				_doorFound = DoorNametagExtension.NamedDoors.TryGetValue("SURFACE_NUKE", out _outsideDoor);
+			}
+			if (_doorFound)
+			{
+				return _outsideDoor.TargetDoor.TargetState;
+			}
+			return false;
+		}
+	}
+
+	public bool Networkenabled
+	{
+		get
+		{
+			return enabled;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref enabled, 1uL, null);
+		}
+	}
+
+	private void Awake()
+	{
+		Singleton = this;
+		int num = _ledRenderer.sharedMaterials.Length;
+		_matSet = new Material[num];
+		_prevMats = new bool[num];
+		for (int i = 0; i < num; i++)
+		{
+			_matSet[i] = _offMat;
+		}
+	}
+
+	public bool AllowChangeLevelState()
+	{
+		if (!(Math.Abs(_leverStatus) < 0.001f))
+		{
+			return Math.Abs(_leverStatus - 1f) < 0.001f;
+		}
+		return true;
+	}
+
+	private void SetDiode(DiodeType diode, bool status)
+	{
+		if (_prevMats[(int)diode] != status)
+		{
+			_matSet[(int)diode] = (status ? _onMat : _offMat);
+			_prevMats[(int)diode] = status;
+			_anyModified = true;
+		}
+	}
+
+	private void Update()
+	{
+		_anyModified = false;
+		SetDiode(DiodeType.InProgress, AlphaWarheadController.InProgress);
+		SetDiode(DiodeType.OutsideDoor, OutsideDoorOpen);
+		SetDiode(DiodeType.BlastDoor, AnyBlastdoorClosed);
+		if (_anyModified)
+		{
+			_ledRenderer.sharedMaterials = _matSet;
+		}
+		_leverStatus += (enabled ? 0.04f : (-0.04f));
+		_leverStatus = Mathf.Clamp01(_leverStatus);
+		lever.localRotation = Quaternion.Slerp(_disabledLeverRotation, _enabledLeverRotation, _leverStatus);
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
+		{
+			writer.WriteBool(enabled);
+			return;
+		}
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 1L) != 0L)
+		{
+			writer.WriteBool(enabled);
+		}
+	}
+
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref enabled, null, reader.ReadBool());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 1L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref enabled, null, reader.ReadBool());
+		}
 	}
 }

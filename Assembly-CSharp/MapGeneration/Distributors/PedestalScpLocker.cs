@@ -1,12 +1,9 @@
-﻿using System;
+namespace MapGeneration.Distributors;
 
-namespace MapGeneration.Distributors
+public class PedestalScpLocker : Locker
 {
-	public class PedestalScpLocker : Locker
+	public override bool Weaved()
 	{
-		public override bool Weaved()
-		{
-			return true;
-		}
+		return true;
 	}
 }

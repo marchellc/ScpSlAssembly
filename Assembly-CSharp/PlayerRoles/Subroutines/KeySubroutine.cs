@@ -1,77 +1,77 @@
-﻿using System;
 using UnityEngine;
 
-namespace PlayerRoles.Subroutines
-{
-	public abstract class KeySubroutine<T> : StandardSubroutine<T> where T : PlayerRoleBase
-	{
-		protected abstract ActionName TargetKey { get; }
+namespace PlayerRoles.Subroutines;
 
-		protected virtual bool IsKeyHeld
+public abstract class KeySubroutine<T> : StandardSubroutine<T> where T : PlayerRoleBase
+{
+	private bool _held;
+
+	protected abstract ActionName TargetKey { get; }
+
+	protected virtual bool IsKeyHeld
+	{
+		get
 		{
-			get
+			return _held;
+		}
+		set
+		{
+			if (value != _held)
 			{
-				return this._held;
-			}
-			set
-			{
-				if (value == this._held)
-				{
-					return;
-				}
-				this._held = value;
+				_held = value;
 				if (value)
 				{
-					this.OnKeyDown();
-					return;
+					OnKeyDown();
 				}
-				this.OnKeyUp();
+				else
+				{
+					OnKeyUp();
+				}
 			}
 		}
+	}
 
-		protected virtual bool KeyPressable
+	protected virtual bool KeyPressable
+	{
+		get
 		{
-			get
+			if (!base.Role.IsEmulatedDummy)
 			{
-				return base.Owner.isLocalPlayer && !Cursor.visible;
+				if (base.Role.IsLocalPlayer)
+				{
+					return !Cursor.visible;
+				}
+				return false;
 			}
+			return true;
 		}
+	}
 
-		protected virtual bool KeyReleasable
+	protected virtual bool KeyReleasable => true;
+
+	protected virtual void Update()
+	{
+		if (KeyPressable && GetAction(TargetKey))
 		{
-			get
-			{
-				return true;
-			}
+			IsKeyHeld = true;
 		}
-
-		protected virtual void Update()
+		else if (IsKeyHeld && KeyReleasable)
 		{
-			if (this.KeyPressable && Input.GetKey(NewInput.GetKey(this.TargetKey, KeyCode.None)))
-			{
-				this.IsKeyHeld = true;
-				return;
-			}
-			if (this.IsKeyHeld && this.KeyReleasable)
-			{
-				this.IsKeyHeld = false;
-			}
+			IsKeyHeld = false;
 		}
+	}
 
-		protected virtual void OnKeyDown()
-		{
-		}
+	protected virtual void OnKeyDown()
+	{
+	}
 
-		protected virtual void OnKeyUp()
-		{
-		}
+	protected virtual void OnKeyUp()
+	{
+	}
 
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			this._held = false;
-		}
-
-		private bool _held;
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		_held = false;
 	}
 }

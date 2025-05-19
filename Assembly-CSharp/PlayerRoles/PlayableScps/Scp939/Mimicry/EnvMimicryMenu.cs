@@ -1,55 +1,52 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp939.Mimicry
+namespace PlayerRoles.PlayableScps.Scp939.Mimicry;
+
+public class EnvMimicryMenu : MimicryMenuBase
 {
-	public class EnvMimicryMenu : MimicryMenuBase
+	[SerializeField]
+	private CanvasGroup _fader;
+
+	[SerializeField]
+	private float _fadedAlpha;
+
+	[SerializeField]
+	private float _fadeSpeed;
+
+	[SerializeField]
+	private TMP_Text _cooldownText;
+
+	private EnvironmentalMimicry _envMimicry;
+
+	protected override void Setup(Scp939Role role)
 	{
-		protected override void Setup(Scp939Role role)
+		base.Setup(role);
+		role.SubroutineModule.TryGetSubroutine<EnvironmentalMimicry>(out _envMimicry);
+	}
+
+	private void UpdateFade(bool instant)
+	{
+		bool isReady = _envMimicry.Cooldown.IsReady;
+		float maxDelta = (instant ? 1f : (Time.deltaTime * _fadeSpeed));
+		float target = (isReady ? 1f : _fadedAlpha);
+		_fader.alpha = Mathf.MoveTowards(_fader.alpha, target, maxDelta);
+		_fader.blocksRaycasts = isReady;
+		float target2 = ((!isReady) ? 1 : 0);
+		_cooldownText.alpha = Mathf.MoveTowards(_cooldownText.alpha, target2, maxDelta);
+		if (!isReady)
 		{
-			base.Setup(role);
-			role.SubroutineModule.TryGetSubroutine<EnvironmentalMimicry>(out this._envMimicry);
+			_cooldownText.text = _envMimicry.CooldownText;
 		}
+	}
 
-		private void UpdateFade(bool instant)
-		{
-			bool isReady = this._envMimicry.Cooldown.IsReady;
-			float num = (instant ? 1f : (Time.deltaTime * this._fadeSpeed));
-			float num2 = (isReady ? 1f : this._fadedAlpha);
-			this._fader.alpha = Mathf.MoveTowards(this._fader.alpha, num2, num);
-			this._fader.blocksRaycasts = isReady;
-			float num3 = (float)(isReady ? 0 : 1);
-			this._cooldownText.alpha = Mathf.MoveTowards(this._cooldownText.alpha, num3, num);
-			if (isReady)
-			{
-				return;
-			}
-			this._cooldownText.text = this._envMimicry.CooldownText;
-		}
+	private void OnEnable()
+	{
+		UpdateFade(instant: true);
+	}
 
-		private void OnEnable()
-		{
-			this.UpdateFade(true);
-		}
-
-		private void Update()
-		{
-			this.UpdateFade(false);
-		}
-
-		[SerializeField]
-		private CanvasGroup _fader;
-
-		[SerializeField]
-		private float _fadedAlpha;
-
-		[SerializeField]
-		private float _fadeSpeed;
-
-		[SerializeField]
-		private TMP_Text _cooldownText;
-
-		private EnvironmentalMimicry _envMimicry;
+	private void Update()
+	{
+		UpdateFade(instant: false);
 	}
 }

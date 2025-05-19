@@ -1,75 +1,78 @@
-﻿using System;
 using Elevators;
 using Mirror;
 using UnityEngine;
 
-namespace Hazards
+namespace Hazards;
+
+[RequireComponent(typeof(TransformElevatorFollower))]
+public abstract class TemporaryHazard : EnvironmentalHazard
 {
-	[RequireComponent(typeof(TransformElevatorFollower))]
-	public abstract class TemporaryHazard : EnvironmentalHazard
+	public float Elapsed;
+
+	private bool _active;
+
+	private bool _destroyed;
+
+	public override bool IsActive
 	{
-		public override bool IsActive
+		get
 		{
-			get
+			if (!_destroyed)
 			{
-				return !this._destroyed && this._active;
+				return _active;
 			}
-			set
+			return false;
+		}
+		set
+		{
+			_active = value;
+		}
+	}
+
+	public abstract float HazardDuration { get; set; }
+
+	public virtual float DecaySpeed { get; set; } = 1f;
+
+	[Server]
+	public virtual void ServerDestroy()
+	{
+		if (!NetworkServer.active)
+		{
+			Debug.LogWarning("[Server] function 'System.Void Hazards.TemporaryHazard::ServerDestroy()' called when server was not active");
+			return;
+		}
+		_destroyed = true;
+		IsActive = false;
+		for (int num = base.AffectedPlayers.Count - 1; num >= 0; num--)
+		{
+			OnExit(base.AffectedPlayers[num]);
+		}
+	}
+
+	protected override void Start()
+	{
+		base.Start();
+		IsActive = true;
+	}
+
+	protected override void Update()
+	{
+		base.Update();
+		if (NetworkServer.active && IsActive)
+		{
+			if (Elapsed > HazardDuration)
 			{
-				this._active = value;
+				ServerDestroy();
+			}
+			else
+			{
+				Elapsed += DecaySpeed * Time.deltaTime;
 			}
 		}
+	}
 
-		public abstract float HazardDuration { get; set; }
-
-		public virtual float DecaySpeed { get; set; } = 1f;
-
-		[Server]
-		public virtual void ServerDestroy()
-		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void Hazards.TemporaryHazard::ServerDestroy()' called when server was not active");
-				return;
-			}
-			this._destroyed = true;
-			this.IsActive = false;
-			base.AffectedPlayers.ForEach(delegate(ReferenceHub n)
-			{
-				this.OnExit(n);
-			});
-		}
-
-		protected override void Start()
-		{
-			base.Start();
-			this.IsActive = true;
-		}
-
-		protected override void Update()
-		{
-			base.Update();
-			if (!NetworkServer.active || !this.IsActive)
-			{
-				return;
-			}
-			if (this.Elapsed > this.HazardDuration)
-			{
-				this.ServerDestroy();
-				return;
-			}
-			this.Elapsed += this.DecaySpeed * Time.deltaTime;
-		}
-
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		public float Elapsed;
-
-		private bool _active;
-
-		private bool _destroyed;
+	public override bool Weaved()
+	{
+		return true;
 	}
 }

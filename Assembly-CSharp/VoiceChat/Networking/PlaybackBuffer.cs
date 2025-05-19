@@ -1,189 +1,169 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace VoiceChat.Networking
+namespace VoiceChat.Networking;
+
+public class PlaybackBuffer : IDisposable
 {
-	public class PlaybackBuffer : IDisposable
+	private static readonly Dictionary<int, Queue<float[]>> PoolsOfSize = new Dictionary<int, Queue<float[]>>();
+
+	private static float[] _organizerArr;
+
+	private static float _organizerSize;
+
+	private readonly int _bufferSize;
+
+	private readonly bool _endless;
+
+	public long ReadHead;
+
+	public long WriteHead;
+
+	public readonly float[] Buffer;
+
+	public int Length => (int)(WriteHead - ReadHead);
+
+	public PlaybackBuffer(int capacity = 24000, bool endlessTapeMode = false)
 	{
-		public float ReplayVolumeScale { get; set; }
+		_bufferSize = capacity;
+		Buffer = ((PoolsOfSize.TryGetValue(capacity, out var value) && value.TryDequeue(out var result)) ? result : new float[_bufferSize]);
+		_endless = endlessTapeMode;
+		ReadHead = 0L;
+		WriteHead = 0L;
+	}
 
-		public PlaybackBuffer(int capacity = 24000, bool endlessTapeMode = false)
+	public void Write(float[] f, int length, int sourceIndex)
+	{
+		long num = WriteHead + length - ReadHead - _bufferSize;
+		if (num > 0)
 		{
-			this._bufferSize = capacity;
-			Queue<float[]> queue;
-			float[] array;
-			this.Buffer = ((PlaybackBuffer.PoolsOfSize.TryGetValue(capacity, out queue) && queue.TryDequeue(out array)) ? array : new float[this._bufferSize]);
-			this._endless = endlessTapeMode;
-			this.ReadHead = 0L;
-			this.WriteHead = 0L;
-		}
-
-		public int Length
-		{
-			get
+			if (_endless)
 			{
-				return (int)(this.WriteHead - this.ReadHead);
-			}
-		}
-
-		public void Write(float[] f, int length, int sourceIndex)
-		{
-			long num = this.WriteHead + (long)length - this.ReadHead - (long)this._bufferSize;
-			if (num > 0L)
-			{
-				if (this._endless)
-				{
-					this.ReadHead += num;
-				}
-				else
-				{
-					this.Clear();
-				}
-			}
-			long num2 = this.HeadToIndex(this.WriteHead);
-			long num3 = (long)this._bufferSize - num2 - (long)length;
-			if (num3 >= 0L)
-			{
-				Array.Copy(f, (long)sourceIndex, this.Buffer, num2, (long)length);
+				ReadHead += num;
 			}
 			else
 			{
-				long num4 = (long)length + num3;
-				Array.Copy(f, (long)sourceIndex, this.Buffer, num2, num4);
-				Array.Copy(f, num4 + (long)sourceIndex, this.Buffer, 0L, -num3);
+				Clear();
 			}
-			this.WriteHead += (long)length;
 		}
-
-		public void Write(float[] f, int length)
+		long num2 = HeadToIndex(WriteHead);
+		long num3 = _bufferSize - num2 - length;
+		if (num3 >= 0)
 		{
-			this.Write(f, length, 0);
+			Array.Copy(f, sourceIndex, Buffer, num2, length);
 		}
-
-		public void Write(float f)
+		else
 		{
-			if (this.WriteHead >= this.ReadHead + (long)this._bufferSize)
-			{
-				this.Clear();
-			}
-			float[] buffer = this.Buffer;
-			long writeHead = this.WriteHead;
-			this.WriteHead = writeHead + 1L;
-			buffer[(int)(checked((IntPtr)this.HeadToIndex(writeHead)))] = f;
+			long num4 = length + num3;
+			Array.Copy(f, sourceIndex, Buffer, num2, num4);
+			Array.Copy(f, num4 + sourceIndex, Buffer, 0L, -num3);
 		}
+		WriteHead += length;
+	}
 
-		public float Read()
+	public void Write(float[] f, int length)
+	{
+		Write(f, length, 0);
+	}
+
+	public void Write(float f)
+	{
+		if (WriteHead >= ReadHead + _bufferSize)
 		{
-			if (this.ReadHead < this.WriteHead)
-			{
-				float[] buffer = this.Buffer;
-				long readHead = this.ReadHead;
-				this.ReadHead = readHead + 1L;
-				return buffer[(int)(checked((IntPtr)this.HeadToIndex(readHead)))];
-			}
-			return 0f;
+			Clear();
 		}
+		Buffer[HeadToIndex(WriteHead++)] = f;
+	}
 
-		public void ReadTo(float[] arr, long readLength, long destinationIndex = 0L)
+	public float Read()
+	{
+		if (ReadHead < WriteHead)
 		{
-			Array.Copy(this.Buffer, this.HeadToIndex(this.ReadHead), arr, destinationIndex, readLength);
-			this.ReadHead += readLength;
+			return Buffer[HeadToIndex(ReadHead++)];
 		}
+		return 0f;
+	}
 
-		public void Clear()
+	public void ReadTo(float[] arr, long readLength, long destinationIndex = 0L)
+	{
+		Array.Copy(Buffer, HeadToIndex(ReadHead), arr, destinationIndex, readLength);
+		ReadHead += readLength;
+	}
+
+	public void Clear()
+	{
+		ReadHead = 0L;
+		WriteHead = 0L;
+	}
+
+	public void Reorganize()
+	{
+		if (ReadHead == 0L)
 		{
-			this.ReadHead = 0L;
-			this.WriteHead = 0L;
+			return;
 		}
-
-		public void Reorganize()
+		int length = Length;
+		if (length == 0)
 		{
-			if (this.ReadHead == 0L)
-			{
-				return;
-			}
-			int length = this.Length;
-			if (length == 0)
-			{
-				this.Clear();
-				return;
-			}
-			if ((float)length > PlaybackBuffer._organizerSize)
-			{
-				PlaybackBuffer._organizerArr = new float[length];
-				PlaybackBuffer._organizerSize = (float)length;
-			}
-			long num = this.HeadToIndex(this.ReadHead);
-			long num2 = (long)this._bufferSize - num;
-			if (num2 >= (long)length)
-			{
-				Array.Copy(this.Buffer, num, PlaybackBuffer._organizerArr, 0L, (long)length);
-			}
-			else
-			{
-				Array.Copy(this.Buffer, num, PlaybackBuffer._organizerArr, 0L, num2);
-				Array.Copy(this.Buffer, num + num2 - (long)this._bufferSize, PlaybackBuffer._organizerArr, num2, (long)length - num2);
-			}
-			Array.Copy(PlaybackBuffer._organizerArr, this.Buffer, length);
-			this.ReadHead = 0L;
-			this.WriteHead = (long)length;
+			Clear();
+			return;
 		}
-
-		public int AddDelay(int samples, bool force = false)
+		if ((float)length > _organizerSize)
 		{
-			if (!force)
-			{
-				samples = Mathf.Min(Mathf.Abs(samples), this._bufferSize - this.Length);
-			}
-			for (int i = 0; i < samples; i++)
-			{
-				float[] buffer = this.Buffer;
-				long num = this.ReadHead - 1L;
-				this.ReadHead = num;
-				buffer[(int)(checked((IntPtr)this.HeadToIndex(num)))] = 0f;
-			}
-			return samples;
+			_organizerArr = new float[length];
+			_organizerSize = length;
 		}
-
-		public long SyncWith(PlaybackBuffer buffer, int delay = 0)
+		long num = HeadToIndex(ReadHead);
+		long num2 = _bufferSize - num;
+		if (num2 >= length)
 		{
-			long num = (long)(this.Length - buffer.Length - delay);
-			if (num >= 0L)
-			{
-				this.ReadHead += num;
-			}
-			else
-			{
-				this.AddDelay((int)(-(int)num), true);
-			}
-			return num;
+			Array.Copy(Buffer, num, _organizerArr, 0L, length);
 		}
-
-		public long HeadToIndex(long headPosition)
+		else
 		{
-			return (headPosition % (long)this._bufferSize + (long)this._bufferSize) % (long)this._bufferSize;
+			Array.Copy(Buffer, num, _organizerArr, 0L, num2);
+			Array.Copy(Buffer, num + num2 - _bufferSize, _organizerArr, num2, length - num2);
 		}
+		Array.Copy(_organizerArr, Buffer, length);
+		ReadHead = 0L;
+		WriteHead = length;
+	}
 
-		public void Dispose()
+	public int AddDelay(int samples, bool force = false)
+	{
+		if (!force)
 		{
-			PlaybackBuffer.PoolsOfSize.GetOrAdd(this._bufferSize, () => new Queue<float[]>()).Enqueue(this.Buffer);
+			samples = Mathf.Min(Mathf.Abs(samples), _bufferSize - Length);
 		}
+		for (int i = 0; i < samples; i++)
+		{
+			Buffer[HeadToIndex(--ReadHead)] = 0f;
+		}
+		return samples;
+	}
 
-		private static readonly Dictionary<int, Queue<float[]>> PoolsOfSize = new Dictionary<int, Queue<float[]>>();
+	public long SyncWith(PlaybackBuffer buffer, int delay = 0)
+	{
+		long num = Length - buffer.Length - delay;
+		if (num >= 0)
+		{
+			ReadHead += num;
+		}
+		else
+		{
+			AddDelay((int)(-num), force: true);
+		}
+		return num;
+	}
 
-		private static float[] _organizerArr;
+	public long HeadToIndex(long headPosition)
+	{
+		return (headPosition % _bufferSize + _bufferSize) % _bufferSize;
+	}
 
-		private static float _organizerSize;
-
-		private readonly int _bufferSize;
-
-		private readonly bool _endless;
-
-		public long ReadHead;
-
-		public long WriteHead;
-
-		public readonly float[] Buffer;
+	public void Dispose()
+	{
+		PoolsOfSize.GetOrAddNew(_bufferSize).Enqueue(Buffer);
 	}
 }

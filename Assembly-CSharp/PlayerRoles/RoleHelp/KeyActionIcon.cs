@@ -1,84 +1,83 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace PlayerRoles.RoleHelp
+namespace PlayerRoles.RoleHelp;
+
+public class KeyActionIcon : MonoBehaviour
 {
-	public class KeyActionIcon : MonoBehaviour
+	[SerializeField]
+	private ActionName _action;
+
+	[SerializeField]
+	private Image _keycodeBg;
+
+	[SerializeField]
+	private TMP_Text _keycodeText;
+
+	[SerializeField]
+	private TMP_Text _mouseText;
+
+	[SerializeField]
+	private GameObject[] _mouseIcons;
+
+	private const KeyCode MouseMin = KeyCode.Mouse0;
+
+	private const KeyCode MouseMax = KeyCode.Mouse6;
+
+	private void Awake()
 	{
-		private void Awake()
+		Refresh();
+		NewInput.OnKeyModified += OnKeyModified;
+	}
+
+	private void OnDestroy()
+	{
+		NewInput.OnKeyModified -= OnKeyModified;
+	}
+
+	private void OnKeyModified(ActionName actionName, KeyCode kc)
+	{
+		if (actionName == _action)
 		{
-			this.Refresh();
-			NewInput.OnKeyModified += this.OnKeyModified;
+			Refresh(kc);
 		}
+	}
 
-		private void OnDestroy()
+	private void Refresh()
+	{
+		Refresh(NewInput.GetKey(_action));
+	}
+
+	private void Refresh(KeyCode kc)
+	{
+		_mouseIcons.ForEach(delegate(GameObject x)
 		{
-			NewInput.OnKeyModified -= this.OnKeyModified;
-		}
-
-		private void OnKeyModified(ActionName actionName, KeyCode kc)
+			x.SetActive(value: false);
+		});
+		if (kc >= KeyCode.Mouse0 && kc <= KeyCode.Mouse6)
 		{
-			if (actionName != this._action)
-			{
-				return;
-			}
-			this.Refresh(kc);
+			HandleMouse((int)(kc - 323));
 		}
-
-		private void Refresh()
+		else
 		{
-			this.Refresh(NewInput.GetKey(this._action, KeyCode.None));
+			HandleKeycode(new ReadableKeyCode(kc));
 		}
+	}
 
-		private void Refresh(KeyCode kc)
-		{
-			this._mouseIcons.ForEach(delegate(GameObject x)
-			{
-				x.SetActive(false);
-			});
-			if (kc >= KeyCode.Mouse0 && kc <= KeyCode.Mouse6)
-			{
-				this.HandleMouse(kc - KeyCode.Mouse0);
-				return;
-			}
-			this.HandleKeycode(new ReadableKeyCode(kc));
-		}
+	private void HandleMouse(int buttonId)
+	{
+		_keycodeText.text = string.Empty;
+		_mouseText.text = buttonId.ToString();
+		int b = _mouseIcons.Length - 1;
+		int num = Mathf.Min(buttonId, b);
+		_mouseIcons[num].SetActive(value: true);
+		_keycodeBg.enabled = false;
+	}
 
-		private void HandleMouse(int buttonId)
-		{
-			this._keycodeText.text = string.Empty;
-			this._mouseText.text = buttonId.ToString();
-			int num = this._mouseIcons.Length - 1;
-			int num2 = Mathf.Min(buttonId, num);
-			this._mouseIcons[num2].SetActive(true);
-			this._keycodeBg.enabled = false;
-		}
-
-		private void HandleKeycode(ReadableKeyCode rkc)
-		{
-			this._keycodeText.text = rkc.NormalVersion;
-			this._keycodeBg.enabled = true;
-		}
-
-		[SerializeField]
-		private ActionName _action;
-
-		[SerializeField]
-		private Image _keycodeBg;
-
-		[SerializeField]
-		private TMP_Text _keycodeText;
-
-		[SerializeField]
-		private TMP_Text _mouseText;
-
-		[SerializeField]
-		private GameObject[] _mouseIcons;
-
-		private const KeyCode MouseMin = KeyCode.Mouse0;
-
-		private const KeyCode MouseMax = KeyCode.Mouse6;
+	private void HandleKeycode(ReadableKeyCode rkc)
+	{
+		_keycodeText.text = rkc.NormalVersion;
+		_keycodeBg.enabled = true;
 	}
 }

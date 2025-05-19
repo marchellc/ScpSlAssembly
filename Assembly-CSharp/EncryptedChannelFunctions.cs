@@ -1,4 +1,3 @@
-﻿using System;
 using Mirror;
 
 internal static class EncryptedChannelFunctions

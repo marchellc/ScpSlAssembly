@@ -1,89 +1,77 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using GameObjectPools;
 using UnityEngine;
 
-namespace PlayerRoles.Spectating
+namespace PlayerRoles.Spectating;
+
+public abstract class SpectatableModuleBase : MonoBehaviour, IPoolSpawnable, IPoolResettable
 {
-	public abstract class SpectatableModuleBase : MonoBehaviour, IPoolSpawnable, IPoolResettable
+	public delegate void Added(SpectatableModuleBase module);
+
+	public delegate void Removed(SpectatableModuleBase module);
+
+	public static readonly HashSet<SpectatableModuleBase> AllInstances = new HashSet<SpectatableModuleBase>();
+
+	public SpectatableListElementType ListElementType;
+
+	private PlayerRoleBase _cachedRole;
+
+	private bool _roleCacheSet;
+
+	public abstract Vector3 CameraPosition { get; }
+
+	public abstract Vector3 CameraRotation { get; }
+
+	public PlayerRoleBase MainRole
 	{
-		public static event SpectatableModuleBase.Added OnAdded;
-
-		public static event SpectatableModuleBase.Removed OnRemoved;
-
-		public abstract Vector3 CameraPosition { get; }
-
-		public abstract Vector3 CameraRotation { get; }
-
-		public PlayerRoleBase MainRole
+		get
 		{
-			get
+			if (!_roleCacheSet)
 			{
-				if (!this._roleCacheSet)
+				if (!TryGetComponent<PlayerRoleBase>(out _cachedRole))
 				{
-					if (!base.TryGetComponent<PlayerRoleBase>(out this._cachedRole))
-					{
-						throw new InvalidOperationException("SpectatableModuleBase of name '" + base.name + "' is not assigned to any role!");
-					}
-					this._roleCacheSet = true;
+					throw new InvalidOperationException("SpectatableModuleBase of name '" + base.name + "' is not assigned to any role!");
 				}
-				return this._cachedRole;
+				_roleCacheSet = true;
 			}
+			return _cachedRole;
 		}
+	}
 
-		public ReferenceHub TargetHub
+	public ReferenceHub TargetHub
+	{
+		get
 		{
-			get
+			if (!MainRole.TryGetOwner(out var hub))
 			{
-				ReferenceHub referenceHub;
-				if (!this.MainRole.TryGetOwner(out referenceHub))
-				{
-					throw new InvalidOperationException("SpectatableModuleBase of name '" + base.name + "' does not have an owner!");
-				}
-				return referenceHub;
+				throw new InvalidOperationException("SpectatableModuleBase of name '" + base.name + "' does not have an owner!");
 			}
+			return hub;
 		}
+	}
 
-		public virtual void ResetObject()
-		{
-			SpectatableModuleBase.AllInstances.Remove(this);
-			SpectatableModuleBase.Removed onRemoved = SpectatableModuleBase.OnRemoved;
-			if (onRemoved == null)
-			{
-				return;
-			}
-			onRemoved(this);
-		}
+	public static event Added OnAdded;
 
-		public virtual void SpawnObject()
-		{
-			SpectatableModuleBase.AllInstances.Add(this);
-			SpectatableModuleBase.Added onAdded = SpectatableModuleBase.OnAdded;
-			if (onAdded == null)
-			{
-				return;
-			}
-			onAdded(this);
-		}
+	public static event Removed OnRemoved;
 
-		internal virtual void OnBeganSpectating()
-		{
-		}
+	public virtual void ResetObject()
+	{
+		AllInstances.Remove(this);
+		SpectatableModuleBase.OnRemoved?.Invoke(this);
+	}
 
-		internal virtual void OnStoppedSpectating()
-		{
-		}
+	public virtual void SpawnObject()
+	{
+		AllInstances.Add(this);
+		SpectatableModuleBase.OnAdded?.Invoke(this);
+	}
 
-		public static readonly HashSet<SpectatableModuleBase> AllInstances = new HashSet<SpectatableModuleBase>();
+	internal virtual void OnBeganSpectating()
+	{
+	}
 
-		public SpectatableListElementType ListElementType;
-
-		private PlayerRoleBase _cachedRole;
-
-		private bool _roleCacheSet;
-
-		public delegate void Added(SpectatableModuleBase module);
-
-		public delegate void Removed(SpectatableModuleBase module);
+	internal virtual void OnStoppedSpectating()
+	{
 	}
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using MapGeneration;
 using Mirror;
 using PlayerRoles.FirstPersonControl;
@@ -7,94 +6,84 @@ using PlayerStatsSystem;
 using UnityEngine;
 using Utils.NonAllocLINQ;
 
-namespace PlayerRoles.PlayableScps.Scp079.Rewards
+namespace PlayerRoles.PlayableScps.Scp079.Rewards;
+
+public static class TerminationRewards
 {
-	public static class TerminationRewards
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			PlayerStats.OnAnyPlayerDied += TerminationRewards.OnHumanTerminated;
-			Scp106Attack.OnPlayerTeleported += TerminationRewards.OnPlayerTeleported;
-		}
+		PlayerStats.OnAnyPlayerDied += OnHumanTerminated;
+		Scp106Attack.OnPlayerTeleported += OnPlayerTeleported;
+	}
 
-		private static void OnPlayerTeleported(ReferenceHub scp106, ReferenceHub hub)
-		{
-			TerminationRewards.OnHumanTerminated(hub, new ScpDamageHandler(scp106, DeathTranslations.PocketDecay));
-		}
+	private static void OnPlayerTeleported(ReferenceHub scp106, ReferenceHub hub)
+	{
+		OnHumanTerminated(hub, new ScpDamageHandler(scp106, DeathTranslations.PocketDecay));
+	}
 
-		private static void OnHumanTerminated(ReferenceHub ply, DamageHandlerBase damageHandler)
+	private static void OnHumanTerminated(ReferenceHub ply, DamageHandlerBase damageHandler)
+	{
+		if (NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
 			Scp079Role.ActiveInstances.ForEach(delegate(Scp079Role x)
 			{
-				TerminationRewards.GainReward(x, ply, damageHandler);
+				GainReward(x, ply, damageHandler);
 			});
 		}
+	}
 
-		private static void GainReward(Scp079Role scp079, ReferenceHub deadPly, DamageHandlerBase damageHandler)
+	private static void GainReward(Scp079Role scp079, ReferenceHub deadPly, DamageHandlerBase damageHandler)
+	{
+		PlayerRoleBase currentRole = deadPly.roleManager.CurrentRole;
+		if (!(currentRole is IFpcRole) || !TryGetBaseReward(currentRole.RoleTypeId, out var amount))
 		{
-			PlayerRoleBase currentRole = deadPly.roleManager.CurrentRole;
-			IFpcRole fpcRole = currentRole as IFpcRole;
-			if (fpcRole == null)
+			return;
+		}
+		Scp079HudTranslation scp079HudTranslation = EvaluateGainReason(deadPly, damageHandler);
+		RoomIdentifier room;
+		bool num = deadPly.TryGetCurrentRoom(out room);
+		bool flag = num && Scp079RewardManager.CheckForRoomInteractions(scp079, room);
+		bool flag2 = num && scp079.CurrentCamera.Room == room;
+		int reward;
+		switch (scp079HudTranslation)
+		{
+		default:
+			return;
+		case Scp079HudTranslation.ExpGainTerminationDirect:
+			if (!flag)
 			{
 				return;
 			}
-			int num;
-			if (!TerminationRewards.TryGetBaseReward(currentRole.RoleTypeId, out num))
+			reward = amount * 2;
+			break;
+		case Scp079HudTranslation.ExpGainTerminationAssist:
+			if (!flag)
 			{
-				return;
-			}
-			RoomIdentifier roomIdentifier = RoomUtils.RoomAtPositionRaycasts(fpcRole.FpcModule.Position, true);
-			Scp079HudTranslation scp079HudTranslation = TerminationRewards.EvaluateGainReason(deadPly, damageHandler);
-			bool flag = roomIdentifier != null && Scp079RewardManager.CheckForRoomInteractions(scp079, roomIdentifier);
-			bool flag2 = scp079.CurrentCamera.Room == roomIdentifier;
-			int num2;
-			switch (scp079HudTranslation)
-			{
-			case Scp079HudTranslation.ExpGainTerminationAssist:
-				if (flag)
-				{
-					num2 = num;
-					goto IL_00A6;
-				}
 				scp079HudTranslation = Scp079HudTranslation.ExpGainTerminationWitness;
-				break;
-			case Scp079HudTranslation.ExpGainTerminationDirect:
-				if (!flag)
-				{
-					return;
-				}
-				num2 = num * 2;
-				goto IL_00A6;
-			case Scp079HudTranslation.ExpGainTerminationWitness:
-				break;
-			default:
-				return;
+				goto case Scp079HudTranslation.ExpGainTerminationWitness;
 			}
+			reward = amount;
+			break;
+		case Scp079HudTranslation.ExpGainTerminationWitness:
 			if (!flag2)
 			{
 				return;
 			}
-			num2 = num / 2;
-			IL_00A6:
-			Scp079RewardManager.GrantExp(scp079, num2, scp079HudTranslation, currentRole.RoleTypeId);
+			reward = amount / 2;
+			break;
 		}
+		Scp079RewardManager.GrantExp(scp079, reward, scp079HudTranslation, currentRole.RoleTypeId);
+	}
 
-		private static Scp079HudTranslation EvaluateGainReason(ReferenceHub deadPlayer, DamageHandlerBase damageHandler)
+	private static Scp079HudTranslation EvaluateGainReason(ReferenceHub deadPlayer, DamageHandlerBase damageHandler)
+	{
+		if (CheckDirectTermination(damageHandler))
 		{
-			if (TerminationRewards.CheckDirectTermination(damageHandler))
-			{
-				return Scp079HudTranslation.ExpGainTerminationDirect;
-			}
-			AttackerDamageHandler attackerDamageHandler = damageHandler as AttackerDamageHandler;
-			if (attackerDamageHandler == null)
-			{
-				return Scp079HudTranslation.ExpGainTerminationAssist;
-			}
+			return Scp079HudTranslation.ExpGainTerminationDirect;
+		}
+		if (damageHandler is AttackerDamageHandler attackerDamageHandler)
+		{
 			if (attackerDamageHandler.Attacker.Role.GetTeam() == Team.SCPs)
 			{
 				return Scp079HudTranslation.ExpGainTerminationAssist;
@@ -105,36 +94,44 @@ namespace PlayerRoles.PlayableScps.Scp079.Rewards
 			}
 			return Scp079HudTranslation.Zoom;
 		}
+		return Scp079HudTranslation.ExpGainTerminationAssist;
+	}
 
-		private static bool CheckDirectTermination(DamageHandlerBase damageHandler)
+	private static bool CheckDirectTermination(DamageHandlerBase damageHandler)
+	{
+		if (damageHandler is UniversalDamageHandler universalDamageHandler)
 		{
-			UniversalDamageHandler universalDamageHandler = damageHandler as UniversalDamageHandler;
-			return universalDamageHandler != null && universalDamageHandler.TranslationId == DeathTranslations.Tesla.Id;
+			return universalDamageHandler.TranslationId == DeathTranslations.Tesla.Id;
 		}
+		return false;
+	}
 
-		public static bool TryGetBaseReward(RoleTypeId rt, out int amount)
+	public static bool TryGetBaseReward(RoleTypeId rt, out int amount)
+	{
+		switch (rt.GetTeam())
 		{
-			switch (rt.GetTeam())
-			{
-			case Team.FoundationForces:
-				amount = ((rt == RoleTypeId.FacilityGuard) ? 30 : 50);
-				return true;
-			case Team.ChaosInsurgency:
-				amount = 50;
-				return true;
-			case Team.Scientists:
-				amount = 40;
-				return true;
-			case Team.ClassD:
-				amount = 30;
-				return true;
-			case Team.OtherAlive:
-				amount = 50;
-				return true;
-			case Team.Flamingos:
-				amount = 15;
-				return true;
-			}
+		case Team.ChaosInsurgency:
+			amount = 50;
+			return true;
+		case Team.ClassD:
+			amount = 30;
+			return true;
+		case Team.Scientists:
+			amount = 40;
+			return true;
+		case Team.OtherAlive:
+			amount = 50;
+			return true;
+		case Team.FoundationForces:
+		{
+			bool flag = rt == RoleTypeId.FacilityGuard;
+			amount = (flag ? 30 : 50);
+			return true;
+		}
+		case Team.Flamingos:
+			amount = 15;
+			return true;
+		default:
 			amount = 0;
 			return false;
 		}

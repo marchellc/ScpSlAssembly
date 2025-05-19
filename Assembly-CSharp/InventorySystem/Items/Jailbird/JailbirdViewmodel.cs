@@ -1,315 +1,307 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 using Utils.NonAllocLINQ;
 
-namespace InventorySystem.Items.Jailbird
+namespace InventorySystem.Items.Jailbird;
+
+public class JailbirdViewmodel : StandardAnimatedViemodel
 {
-	public class JailbirdViewmodel : StandardAnimatedViemodel
+	[Serializable]
+	private struct InspectPreset
 	{
-		public override void InitAny()
-		{
-			base.InitAny();
-			JailbirdItem.OnRpcReceived += this.RpcReceived;
-			this._materialController.SetSerial(base.ItemId.SerialNumber);
-		}
+		public JailbirdWearState State;
 
-		internal override void OnEquipped()
-		{
-			base.OnEquipped();
-			this.AnimatorSetBool(JailbirdViewmodel.SkipPickupHash, JailbirdViewmodel._alreadyPickedUp);
-			this.PlaySound(JailbirdViewmodel._alreadyPickedUp ? this._normalEquipSound : this._firstEquipSound, base.SkipEquipTime, true, 0f);
-			JailbirdViewmodel._alreadyPickedUp = true;
-		}
+		public AudioClip Sound;
 
-		public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
+		public float Speed;
+
+		public int VariantId;
+	}
+
+	private static readonly Dictionary<ushort, double> LastUpdates = new Dictionary<ushort, double>();
+
+	private static readonly Dictionary<ushort, JailbirdMessageType> LastRpcs = new Dictionary<ushort, JailbirdMessageType>();
+
+	private static readonly HashSet<ushort> BrokenJailbirds = new HashSet<ushort>();
+
+	private static readonly int BrokenHash = Animator.StringToHash("Broken");
+
+	private static readonly int LeftHandHash = Animator.StringToHash("LeftHand");
+
+	private static readonly int ChargeLoadHash = Animator.StringToHash("ChargeLoad");
+
+	private static readonly int ChargingHash = Animator.StringToHash("Charging");
+
+	private static readonly int SkipPickupHash = Animator.StringToHash("AlreadyPickedUp");
+
+	private static readonly int AttackTriggerHash = Animator.StringToHash("Attack");
+
+	private static readonly int InspectTriggerHash = Animator.StringToHash("Inspect");
+
+	private static readonly int InspectSpeedHash = Animator.StringToHash("InspectSpeed");
+
+	private static readonly int InspectVariantHash = Animator.StringToHash("InspectVariant");
+
+	private static readonly int IdleTagHash = Animator.StringToHash("Idle");
+
+	private static Dictionary<JailbirdWearState, InspectPreset> _presetsByWear;
+
+	private static bool _alreadyPickedUp;
+
+	private static bool _anyCollectionModified;
+
+	private static bool _wasLeftHand;
+
+	private const float FastModeThreshold = 1.5f;
+
+	private const float InspectCooldown = 0.5f;
+
+	[SerializeField]
+	private JailbirdMaterialController _materialController;
+
+	[SerializeField]
+	private GameObject _particlesSmall;
+
+	[SerializeField]
+	private GameObject _particlesLarge;
+
+	[SerializeField]
+	private GameObject _particlesTrail;
+
+	[SerializeField]
+	private GameObject _particlesBroken;
+
+	[SerializeField]
+	private InspectPreset[] _inspectPresets;
+
+	[SerializeField]
+	private AudioClip _firstEquipSound;
+
+	[SerializeField]
+	private AudioClip _normalEquipSound;
+
+	[SerializeField]
+	private AudioClip _chargeLoadSound;
+
+	[SerializeField]
+	private AudioClip _chargingSound;
+
+	[SerializeField]
+	private AudioClip _swipeSoundLeft;
+
+	[SerializeField]
+	private AudioClip _swipeSoundRight;
+
+	[SerializeField]
+	private AudioClip _chargeHitSound;
+
+	[SerializeField]
+	private AudioClip _brokenSound;
+
+	[SerializeField]
+	private AudioSource _targetAudioSource;
+
+	[SerializeField]
+	private GameObject _inspectParticlesRoot;
+
+	private double _nextInspect;
+
+	private bool _wasCharging;
+
+	public override void InitAny()
+	{
+		base.InitAny();
+		JailbirdItem.OnRpcReceived += RpcReceived;
+		_materialController.SetSerial(base.ItemId.SerialNumber);
+	}
+
+	internal override void OnEquipped()
+	{
+		base.OnEquipped();
+		AnimatorSetBool(SkipPickupHash, _alreadyPickedUp);
+		PlaySound(_alreadyPickedUp ? _normalEquipSound : _firstEquipSound, base.SkipEquipTime);
+		_alreadyPickedUp = true;
+	}
+
+	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
+	{
+		base.InitSpectator(ply, id, wasEquipped);
+		if (BrokenJailbirds.Contains(id.SerialNumber))
 		{
-			base.InitSpectator(ply, id, wasEquipped);
-			if (JailbirdViewmodel.BrokenJailbirds.Contains(id.SerialNumber))
+			SetBroken();
+		}
+		AnimatorForceUpdate(base.SkipEquipTime);
+		if (LastRpcs.TryGetValue(id.SerialNumber, out var value) && LastUpdates.TryGetValue(id.SerialNumber, out var value2))
+		{
+			float num = (float)(NetworkTime.time - value2);
+			ProcessRpc(value, num);
+			if (num > 1.5f)
 			{
-				this.SetBroken();
+				AnimatorForceUpdate(1.5f, fastMode: false);
+				AnimatorForceUpdate(num - 1.5f);
 			}
-			this.AnimatorForceUpdate(base.SkipEquipTime, true);
-			JailbirdMessageType jailbirdMessageType;
-			if (!JailbirdViewmodel.LastRpcs.TryGetValue(id.SerialNumber, out jailbirdMessageType))
+			else
+			{
+				AnimatorForceUpdate(num, fastMode: false);
+			}
+		}
+	}
+
+	public override void InitLocal(ItemBase ib)
+	{
+		base.InitLocal(ib);
+		(base.ParentItem as JailbirdItem).OnCmdSent += OnCmdSent;
+	}
+
+	private void OnDestroy()
+	{
+		JailbirdItem.OnRpcReceived -= RpcReceived;
+	}
+
+	private void Update()
+	{
+		int tagHash = AnimatorStateInfo(0).tagHash;
+		_particlesSmall.SetActive(tagHash == AttackTriggerHash);
+		_particlesTrail.SetActive(tagHash == ChargingHash);
+		_particlesLarge.SetActive(tagHash == ChargeLoadHash || tagHash == ChargingHash);
+		_inspectParticlesRoot.SetActive(tagHash == InspectTriggerHash);
+	}
+
+	private void RpcReceived(ushort serial, JailbirdMessageType rpc)
+	{
+		if (serial == base.ItemId.SerialNumber)
+		{
+			ProcessRpc(rpc, 0f);
+		}
+	}
+
+	private void ProcessRpc(JailbirdMessageType rpc, float delay)
+	{
+		bool flag = rpc == JailbirdMessageType.ChargeStarted;
+		bool val = rpc == JailbirdMessageType.ChargeLoadTriggered;
+		AnimatorSetBool(ChargingHash, flag);
+		AnimatorSetBool(ChargeLoadHash, val);
+		if (_wasCharging && !flag)
+		{
+			PlaySound(_chargeHitSound, delay);
+		}
+		switch (rpc)
+		{
+		case JailbirdMessageType.AttackTriggered:
+			if (base.IsSpectator)
+			{
+				PlayAttackAnim(delay);
+			}
+			break;
+		case JailbirdMessageType.ChargeLoadTriggered:
+			PlaySound(_chargeLoadSound, delay);
+			break;
+		case JailbirdMessageType.ChargeStarted:
+			PlaySound(_chargingSound, delay);
+			break;
+		case JailbirdMessageType.ChargeFailed:
+			PlaySound(null, delay);
+			break;
+		case JailbirdMessageType.Broken:
+			SetBroken();
+			PlaySound(_brokenSound, delay, stopPrev: false);
+			break;
+		case JailbirdMessageType.Inspect:
+		{
+			if (AnimatorStateInfo(0).tagHash != IdleTagHash || _nextInspect > NetworkTime.time)
+			{
+				break;
+			}
+			JailbirdDeteriorationTracker.ReceivedStates.TryGetValue(base.ItemId.SerialNumber, out var value);
+			if (_presetsByWear == null)
+			{
+				_presetsByWear = new Dictionary<JailbirdWearState, InspectPreset>();
+				_presetsByWear.FromArray(_inspectPresets, (InspectPreset x) => x.State);
+			}
+			if (_presetsByWear.TryGetValue(value, out var value2))
+			{
+				PlaySound(value2.Sound, delay);
+				AnimatorSetTrigger(InspectTriggerHash);
+				AnimatorSetFloat(InspectSpeedHash, value2.Speed);
+				AnimatorSetFloat(InspectVariantHash, value2.VariantId);
+				_nextInspect = NetworkTime.time + 0.5;
+			}
+			break;
+		}
+		}
+		_wasCharging = flag;
+	}
+
+	private void PlaySound(AudioClip clip, float delay, bool stopPrev = true, float pitchRandom = 0f)
+	{
+		int num = 0;
+		if (stopPrev)
+		{
+			_targetAudioSource.Stop();
+		}
+		if (delay > 0f)
+		{
+			num = Mathf.RoundToInt(delay * (float)AudioSettings.outputSampleRate);
+			if (num > clip.samples)
 			{
 				return;
 			}
-			double num;
-			if (!JailbirdViewmodel.LastUpdates.TryGetValue(id.SerialNumber, out num))
+		}
+		_targetAudioSource.PlayOneShot(clip);
+		_targetAudioSource.pitch = 1f + UnityEngine.Random.Range(0f - pitchRandom, pitchRandom);
+		if (num != 0)
+		{
+			_targetAudioSource.timeSamples = num;
+		}
+	}
+
+	private void SetBroken()
+	{
+		AnimatorSetBool(BrokenHash, val: true);
+		_particlesBroken.SetActive(value: true);
+	}
+
+	private void OnCmdSent(JailbirdMessageType cmd)
+	{
+		if (cmd == JailbirdMessageType.AttackTriggered)
+		{
+			PlayAttackAnim(0f);
+		}
+	}
+
+	private void PlayAttackAnim(float delay)
+	{
+		_wasLeftHand = !_wasLeftHand;
+		AnimatorSetBool(LeftHandHash, _wasLeftHand);
+		AnimatorSetTrigger(AttackTriggerHash);
+		PlaySound(_wasLeftHand ? _swipeSoundLeft : _swipeSoundRight, delay, stopPrev: true, 0.1f);
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
+		{
+			_alreadyPickedUp = false;
+			if (_anyCollectionModified)
 			{
-				return;
+				LastRpcs.Clear();
+				LastUpdates.Clear();
+				BrokenJailbirds.Clear();
+				_anyCollectionModified = false;
 			}
-			float num2 = (float)(NetworkTime.time - num);
-			this.ProcessRpc(jailbirdMessageType, num2);
-			if (num2 > 1.5f)
+		};
+		JailbirdItem.OnRpcReceived += delegate(ushort serial, JailbirdMessageType rpc)
+		{
+			_anyCollectionModified = true;
+			LastRpcs[serial] = rpc;
+			LastUpdates[serial] = NetworkTime.time;
+			if (rpc == JailbirdMessageType.Broken)
 			{
-				this.AnimatorForceUpdate(1.5f, false);
-				this.AnimatorForceUpdate(num2 - 1.5f, true);
-				return;
+				BrokenJailbirds.Add(serial);
 			}
-			this.AnimatorForceUpdate(num2, false);
-		}
-
-		public override void InitLocal(ItemBase ib)
-		{
-			base.InitLocal(ib);
-			(base.ParentItem as JailbirdItem).OnCmdSent += this.OnCmdSent;
-		}
-
-		private void OnDestroy()
-		{
-			JailbirdItem.OnRpcReceived -= this.RpcReceived;
-		}
-
-		private void Update()
-		{
-			int tagHash = this.AnimatorStateInfo(0).tagHash;
-			this._particlesSmall.SetActive(tagHash == JailbirdViewmodel.AttackTriggerHash);
-			this._particlesTrail.SetActive(tagHash == JailbirdViewmodel.ChargingHash);
-			this._particlesLarge.SetActive(tagHash == JailbirdViewmodel.ChargeLoadHash || tagHash == JailbirdViewmodel.ChargingHash);
-			this._inspectParticlesRoot.SetActive(tagHash == JailbirdViewmodel.InspectTriggerHash);
-		}
-
-		private void RpcReceived(ushort serial, JailbirdMessageType rpc)
-		{
-			if (serial != base.ItemId.SerialNumber)
-			{
-				return;
-			}
-			this.ProcessRpc(rpc, 0f);
-		}
-
-		private void ProcessRpc(JailbirdMessageType rpc, float delay)
-		{
-			bool flag = rpc == JailbirdMessageType.ChargeStarted;
-			bool flag2 = rpc == JailbirdMessageType.ChargeLoadTriggered;
-			this.AnimatorSetBool(JailbirdViewmodel.ChargingHash, flag);
-			this.AnimatorSetBool(JailbirdViewmodel.ChargeLoadHash, flag2);
-			if (this._wasCharging && !flag)
-			{
-				this.PlaySound(this._chargeHitSound, delay, true, 0f);
-			}
-			switch (rpc)
-			{
-			case JailbirdMessageType.Broken:
-				this.SetBroken();
-				this.PlaySound(this._brokenSound, delay, false, 0f);
-				break;
-			case JailbirdMessageType.AttackTriggered:
-				if (base.IsSpectator)
-				{
-					this.PlayAttackAnim(delay);
-				}
-				break;
-			case JailbirdMessageType.ChargeLoadTriggered:
-				this.PlaySound(this._chargeLoadSound, delay, true, 0f);
-				break;
-			case JailbirdMessageType.ChargeFailed:
-				this.PlaySound(null, delay, true, 0f);
-				break;
-			case JailbirdMessageType.ChargeStarted:
-				this.PlaySound(this._chargingSound, delay, true, 0f);
-				break;
-			case JailbirdMessageType.Inspect:
-				if (this.AnimatorStateInfo(0).tagHash == JailbirdViewmodel.IdleTagHash && this._nextInspect <= NetworkTime.time)
-				{
-					JailbirdWearState jailbirdWearState;
-					JailbirdDeteriorationTracker.ReceivedStates.TryGetValue(base.ItemId.SerialNumber, out jailbirdWearState);
-					if (JailbirdViewmodel._presetsByWear == null)
-					{
-						JailbirdViewmodel._presetsByWear = new Dictionary<JailbirdWearState, JailbirdViewmodel.InspectPreset>();
-						JailbirdViewmodel._presetsByWear.FromArray(this._inspectPresets, (JailbirdViewmodel.InspectPreset x) => x.State);
-					}
-					JailbirdViewmodel.InspectPreset inspectPreset;
-					if (JailbirdViewmodel._presetsByWear.TryGetValue(jailbirdWearState, out inspectPreset))
-					{
-						this.PlaySound(inspectPreset.Sound, delay, true, 0f);
-						this.AnimatorSetTrigger(JailbirdViewmodel.InspectTriggerHash);
-						this.AnimatorSetFloat(JailbirdViewmodel.InspectSpeedHash, inspectPreset.Speed);
-						this.AnimatorSetFloat(JailbirdViewmodel.InspectVariantHash, (float)inspectPreset.VariantId);
-						this._nextInspect = NetworkTime.time + 0.5;
-					}
-				}
-				break;
-			}
-			this._wasCharging = flag;
-		}
-
-		private void PlaySound(AudioClip clip, float delay, bool stopPrev = true, float pitchRandom = 0f)
-		{
-			int num = 0;
-			if (stopPrev)
-			{
-				this._targetAudioSource.Stop();
-			}
-			if (delay > 0f)
-			{
-				num = Mathf.RoundToInt(delay * (float)AudioSettings.outputSampleRate);
-				if (num > clip.samples)
-				{
-					return;
-				}
-			}
-			this._targetAudioSource.PlayOneShot(clip);
-			this._targetAudioSource.pitch = 1f + global::UnityEngine.Random.Range(-pitchRandom, pitchRandom);
-			if (num == 0)
-			{
-				return;
-			}
-			this._targetAudioSource.timeSamples = num;
-		}
-
-		private void SetBroken()
-		{
-			this.AnimatorSetBool(JailbirdViewmodel.BrokenHash, true);
-			this._particlesBroken.SetActive(true);
-		}
-
-		private void OnCmdSent(JailbirdMessageType cmd)
-		{
-			if (cmd == JailbirdMessageType.AttackTriggered)
-			{
-				this.PlayAttackAnim(0f);
-			}
-		}
-
-		private void PlayAttackAnim(float delay)
-		{
-			JailbirdViewmodel._wasLeftHand = !JailbirdViewmodel._wasLeftHand;
-			this.AnimatorSetBool(JailbirdViewmodel.LeftHandHash, JailbirdViewmodel._wasLeftHand);
-			this.AnimatorSetTrigger(JailbirdViewmodel.AttackTriggerHash);
-			this.PlaySound(JailbirdViewmodel._wasLeftHand ? this._swipeSoundLeft : this._swipeSoundRight, delay, true, 0.1f);
-		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				JailbirdViewmodel._alreadyPickedUp = false;
-				if (!JailbirdViewmodel._anyCollectionModified)
-				{
-					return;
-				}
-				JailbirdViewmodel.LastRpcs.Clear();
-				JailbirdViewmodel.LastUpdates.Clear();
-				JailbirdViewmodel.BrokenJailbirds.Clear();
-				JailbirdViewmodel._anyCollectionModified = false;
-			};
-			JailbirdItem.OnRpcReceived += delegate(ushort serial, JailbirdMessageType rpc)
-			{
-				JailbirdViewmodel._anyCollectionModified = true;
-				JailbirdViewmodel.LastRpcs[serial] = rpc;
-				JailbirdViewmodel.LastUpdates[serial] = NetworkTime.time;
-				if (rpc == JailbirdMessageType.Broken)
-				{
-					JailbirdViewmodel.BrokenJailbirds.Add(serial);
-				}
-			};
-		}
-
-		private static readonly Dictionary<ushort, double> LastUpdates = new Dictionary<ushort, double>();
-
-		private static readonly Dictionary<ushort, JailbirdMessageType> LastRpcs = new Dictionary<ushort, JailbirdMessageType>();
-
-		private static readonly HashSet<ushort> BrokenJailbirds = new HashSet<ushort>();
-
-		private static readonly int BrokenHash = Animator.StringToHash("Broken");
-
-		private static readonly int LeftHandHash = Animator.StringToHash("LeftHand");
-
-		private static readonly int ChargeLoadHash = Animator.StringToHash("ChargeLoad");
-
-		private static readonly int ChargingHash = Animator.StringToHash("Charging");
-
-		private static readonly int SkipPickupHash = Animator.StringToHash("AlreadyPickedUp");
-
-		private static readonly int AttackTriggerHash = Animator.StringToHash("Attack");
-
-		private static readonly int InspectTriggerHash = Animator.StringToHash("Inspect");
-
-		private static readonly int InspectSpeedHash = Animator.StringToHash("InspectSpeed");
-
-		private static readonly int InspectVariantHash = Animator.StringToHash("InspectVariant");
-
-		private static readonly int IdleTagHash = Animator.StringToHash("Idle");
-
-		private static Dictionary<JailbirdWearState, JailbirdViewmodel.InspectPreset> _presetsByWear;
-
-		private static bool _alreadyPickedUp;
-
-		private static bool _anyCollectionModified;
-
-		private static bool _wasLeftHand;
-
-		private const float FastModeThreshold = 1.5f;
-
-		private const float InspectCooldown = 0.5f;
-
-		[SerializeField]
-		private JailbirdMaterialController _materialController;
-
-		[SerializeField]
-		private GameObject _particlesSmall;
-
-		[SerializeField]
-		private GameObject _particlesLarge;
-
-		[SerializeField]
-		private GameObject _particlesTrail;
-
-		[SerializeField]
-		private GameObject _particlesBroken;
-
-		[SerializeField]
-		private JailbirdViewmodel.InspectPreset[] _inspectPresets;
-
-		[SerializeField]
-		private AudioClip _firstEquipSound;
-
-		[SerializeField]
-		private AudioClip _normalEquipSound;
-
-		[SerializeField]
-		private AudioClip _chargeLoadSound;
-
-		[SerializeField]
-		private AudioClip _chargingSound;
-
-		[SerializeField]
-		private AudioClip _swipeSoundLeft;
-
-		[SerializeField]
-		private AudioClip _swipeSoundRight;
-
-		[SerializeField]
-		private AudioClip _chargeHitSound;
-
-		[SerializeField]
-		private AudioClip _brokenSound;
-
-		[SerializeField]
-		private AudioSource _targetAudioSource;
-
-		[SerializeField]
-		private GameObject _inspectParticlesRoot;
-
-		private double _nextInspect;
-
-		private bool _wasCharging;
-
-		[Serializable]
-		private struct InspectPreset
-		{
-			public JailbirdWearState State;
-
-			public AudioClip Sound;
-
-			public float Speed;
-
-			public int VariantId;
-		}
+		};
 	}
 }

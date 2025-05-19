@@ -1,121 +1,113 @@
-﻿using System;
 using Mirror;
 using UnityEngine;
 
-namespace UserSettings.ServerSpecific
+namespace UserSettings.ServerSpecific;
+
+public class SSDropdownSetting : ServerSpecificSettingBase
 {
-	public class SSDropdownSetting : ServerSpecificSettingBase
+	public enum DropdownEntryType
 	{
-		public string[] Options { get; private set; }
+		Regular,
+		Scrollable,
+		ScrollableLoop,
+		Hybrid,
+		HybridLoop
+	}
 
-		public int DefaultOptionIndex { get; private set; }
+	public string[] Options { get; private set; }
 
-		public SSDropdownSetting.DropdownEntryType EntryType { get; private set; }
+	public int DefaultOptionIndex { get; private set; }
 
-		public int SyncSelectionIndexRaw { get; internal set; }
+	public DropdownEntryType EntryType { get; private set; }
 
-		public string SyncSelectionText
+	public int SyncSelectionIndexRaw { get; internal set; }
+
+	public string SyncSelectionText
+	{
+		get
 		{
-			get
+			if (!(base.OriginalDefinition is SSDropdownSetting sSDropdownSetting))
 			{
-				SSDropdownSetting ssdropdownSetting = base.OriginalDefinition as SSDropdownSetting;
-				if (ssdropdownSetting == null)
-				{
-					return string.Empty;
-				}
-				int num = ssdropdownSetting.Options.Length - 1;
-				int num2 = Mathf.Clamp(this.SyncSelectionIndexRaw, 0, num);
-				return ssdropdownSetting.Options[num2];
+				return string.Empty;
+			}
+			int max = sSDropdownSetting.Options.Length - 1;
+			int num = Mathf.Clamp(SyncSelectionIndexRaw, 0, max);
+			return sSDropdownSetting.Options[num];
+		}
+	}
+
+	public int SyncSelectionIndexValidated
+	{
+		get
+		{
+			if (!(base.OriginalDefinition is SSDropdownSetting sSDropdownSetting))
+			{
+				return 0;
+			}
+			int max = sSDropdownSetting.Options.Length - 1;
+			return Mathf.Clamp(SyncSelectionIndexRaw, 0, max);
+		}
+	}
+
+	public override string DebugValue => $"{SyncSelectionIndexRaw} ({SyncSelectionText})";
+
+	public SSDropdownSetting(int? id, string label, string[] options, int defaultOptionIndex = 0, DropdownEntryType entryType = DropdownEntryType.Regular, string hint = null)
+	{
+		SetId(id, label);
+		if (options == null || options.Length == 0)
+		{
+			options = new string[0];
+		}
+		base.Label = label;
+		base.HintDescription = hint;
+		Options = options;
+		EntryType = entryType;
+		DefaultOptionIndex = defaultOptionIndex;
+	}
+
+	public override void ApplyDefaultValues()
+	{
+		SyncSelectionIndexRaw = 0;
+	}
+
+	public override void SerializeEntry(NetworkWriter writer)
+	{
+		base.SerializeEntry(writer);
+		writer.WriteByte((byte)DefaultOptionIndex);
+		writer.WriteByte((byte)EntryType);
+		writer.WriteByte((byte)Options.Length);
+		Options.ForEach(writer.WriteString);
+	}
+
+	public override void DeserializeEntry(NetworkReader reader)
+	{
+		base.DeserializeEntry(reader);
+		DefaultOptionIndex = reader.ReadByte();
+		EntryType = (DropdownEntryType)reader.ReadByte();
+		int num = reader.ReadByte();
+		if (num > 0)
+		{
+			Options = new string[num];
+			for (int i = 0; i < Options.Length; i++)
+			{
+				Options[i] = reader.ReadString();
 			}
 		}
-
-		public int SyncSelectionIndexValidated
+		else
 		{
-			get
-			{
-				SSDropdownSetting ssdropdownSetting = base.OriginalDefinition as SSDropdownSetting;
-				if (ssdropdownSetting == null)
-				{
-					return 0;
-				}
-				int num = ssdropdownSetting.Options.Length - 1;
-				return Mathf.Clamp(this.SyncSelectionIndexRaw, 0, num);
-			}
+			Options = new string[1] { string.Empty };
 		}
+	}
 
-		public override string DebugValue
-		{
-			get
-			{
-				return string.Format("{0} ({1})", this.SyncSelectionIndexRaw, this.SyncSelectionText);
-			}
-		}
+	public override void SerializeValue(NetworkWriter writer)
+	{
+		base.SerializeValue(writer);
+		writer.WriteByte((byte)SyncSelectionIndexRaw);
+	}
 
-		public SSDropdownSetting(int? id, string label, string[] options, int defaultOptionIndex = 0, SSDropdownSetting.DropdownEntryType entryType = SSDropdownSetting.DropdownEntryType.Regular, string hint = null)
-		{
-			base.SetId(id, label);
-			if (options == null || options.Length == 0)
-			{
-				options = new string[0];
-			}
-			base.Label = label;
-			base.HintDescription = hint;
-			this.Options = options;
-			this.EntryType = entryType;
-			this.DefaultOptionIndex = defaultOptionIndex;
-		}
-
-		public override void ApplyDefaultValues()
-		{
-			this.SyncSelectionIndexRaw = 0;
-		}
-
-		public override void SerializeEntry(NetworkWriter writer)
-		{
-			base.SerializeEntry(writer);
-			writer.WriteByte((byte)this.DefaultOptionIndex);
-			writer.WriteByte((byte)this.EntryType);
-			writer.WriteByte((byte)this.Options.Length);
-			this.Options.ForEach(new Action<string>(writer.WriteString));
-		}
-
-		public override void DeserializeEntry(NetworkReader reader)
-		{
-			base.DeserializeEntry(reader);
-			this.DefaultOptionIndex = (int)reader.ReadByte();
-			this.EntryType = (SSDropdownSetting.DropdownEntryType)reader.ReadByte();
-			int num = (int)reader.ReadByte();
-			if (num > 0)
-			{
-				this.Options = new string[num];
-				for (int i = 0; i < this.Options.Length; i++)
-				{
-					this.Options[i] = reader.ReadString();
-				}
-				return;
-			}
-			this.Options = new string[] { string.Empty };
-		}
-
-		public override void SerializeValue(NetworkWriter writer)
-		{
-			base.SerializeValue(writer);
-			writer.WriteByte((byte)this.SyncSelectionIndexRaw);
-		}
-
-		public override void DeserializeValue(NetworkReader reader)
-		{
-			base.DeserializeValue(reader);
-			this.SyncSelectionIndexRaw = (int)reader.ReadByte();
-		}
-
-		public enum DropdownEntryType
-		{
-			Regular,
-			Scrollable,
-			ScrollableLoop,
-			Hybrid,
-			HybridLoop
-		}
+	public override void DeserializeValue(NetworkReader reader)
+	{
+		base.DeserializeValue(reader);
+		SyncSelectionIndexRaw = reader.ReadByte();
 	}
 }

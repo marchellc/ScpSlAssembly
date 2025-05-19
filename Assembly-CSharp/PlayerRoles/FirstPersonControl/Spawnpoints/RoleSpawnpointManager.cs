@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
@@ -6,89 +5,75 @@ using MapGeneration;
 using Mirror;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Spawnpoints
+namespace PlayerRoles.FirstPersonControl.Spawnpoints;
+
+public static class RoleSpawnpointManager
 {
-	public static class RoleSpawnpointManager
+	private struct SpawnpointDefinition
 	{
-		public static bool TryGetSpawnpointForRole(RoleTypeId role, out ISpawnpointHandler spawnpoint)
+		public RoleTypeId[] Roles;
+
+		public ISpawnpointHandler[] CompatibleSpawnpoints;
+
+		public SpawnpointDefinition(params RoleTypeId[] roles)
 		{
-			bool flag = false;
-			List<ISpawnpointHandler> list = new List<ISpawnpointHandler>();
-			foreach (RoleSpawnpointManager.SpawnpointDefinition spawnpointDefinition in RoleSpawnpointManager.DefinedSpawnpoints)
-			{
-				if (spawnpointDefinition.Roles.Contains(role))
-				{
-					flag = true;
-					list.AddRange(spawnpointDefinition.CompatibleSpawnpoints);
-				}
-			}
-			spawnpoint = (flag ? list.RandomItem<ISpawnpointHandler>() : null);
-			return flag;
+			Roles = roles;
+			CompatibleSpawnpoints = null;
 		}
 
-		internal static void SetPosition(ReferenceHub hub, PlayerRoleBase newRole)
+		public SpawnpointDefinition SetSpawnpoints(params ISpawnpointHandler[] spawnpoints)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			IFpcRole fpcRole = newRole as IFpcRole;
-			if (fpcRole == null)
-			{
-				return;
-			}
-			if (fpcRole.SpawnpointHandler == null)
-			{
-				return;
-			}
-			Vector3 spawnLocation;
-			float horizontalRotation;
-			bool flag = fpcRole.SpawnpointHandler.TryGetSpawnpoint(out spawnLocation, out horizontalRotation);
-			PlayerSpawningEventArgs playerSpawningEventArgs = new PlayerSpawningEventArgs(hub, newRole, flag, spawnLocation, horizontalRotation);
-			PlayerEvents.OnSpawning(playerSpawningEventArgs);
-			if (!playerSpawningEventArgs.IsAllowed)
-			{
-				return;
-			}
-			spawnLocation = playerSpawningEventArgs.SpawnLocation;
-			horizontalRotation = playerSpawningEventArgs.HorizontalRotation;
-			flag = playerSpawningEventArgs.UseSpawnPoint;
-			if (!newRole.ServerSpawnFlags.HasFlag(RoleSpawnFlags.UseSpawnpoint) || !flag)
-			{
-				PlayerEvents.OnSpawned(new PlayerSpawnedEventArgs(hub, newRole, flag, spawnLocation, horizontalRotation));
-				return;
-			}
-			hub.transform.position = spawnLocation;
-			if (fpcRole.FpcModule.MouseLook != null)
-			{
-				fpcRole.FpcModule.MouseLook.CurrentHorizontal = horizontalRotation;
-			}
-			PlayerEvents.OnSpawned(new PlayerSpawnedEventArgs(hub, newRole, flag, spawnLocation, horizontalRotation));
+			CompatibleSpawnpoints = spawnpoints;
+			return this;
 		}
+	}
 
-		private static readonly RoleSpawnpointManager.SpawnpointDefinition[] DefinedSpawnpoints = new RoleSpawnpointManager.SpawnpointDefinition[] { new RoleSpawnpointManager.SpawnpointDefinition(new RoleTypeId[] { RoleTypeId.ClassD }).SetSpawnpoints(new ISpawnpointHandler[]
+	private static readonly SpawnpointDefinition[] DefinedSpawnpoints = new SpawnpointDefinition[1] { new SpawnpointDefinition(RoleTypeId.ClassD).SetSpawnpoints(new RoomRoleSpawnpoint(new Vector3(-6.18f, 0.91f, -4.23f), 5f, 0f, 26.26f, 0.73f, 7, 1, RoomName.LczClassDSpawn), new RoomRoleSpawnpoint(new Vector3(-6.18f, 0.91f, 4.23f), 175f, 0f, 26.26f, 0.73f, 7, 1, RoomName.LczClassDSpawn)) };
+
+	public static bool TryGetSpawnpointForRole(RoleTypeId role, out ISpawnpointHandler spawnpoint)
+	{
+		bool flag = false;
+		List<ISpawnpointHandler> list = new List<ISpawnpointHandler>();
+		SpawnpointDefinition[] definedSpawnpoints = DefinedSpawnpoints;
+		for (int i = 0; i < definedSpawnpoints.Length; i++)
 		{
-			new RoomRoleSpawnpoint(new Vector3(-6.18f, 0.91f, -4.23f), 5f, 0f, 26.26f, 0.73f, 7, 1, RoomName.LczClassDSpawn, FacilityZone.None, RoomShape.Undefined),
-			new RoomRoleSpawnpoint(new Vector3(-6.18f, 0.91f, 4.23f), 175f, 0f, 26.26f, 0.73f, 7, 1, RoomName.LczClassDSpawn, FacilityZone.None, RoomShape.Undefined)
-		}) };
-
-		private struct SpawnpointDefinition
-		{
-			public SpawnpointDefinition(params RoleTypeId[] roles)
+			SpawnpointDefinition spawnpointDefinition = definedSpawnpoints[i];
+			if (spawnpointDefinition.Roles.Contains(role))
 			{
-				this.Roles = roles;
-				this.CompatibleSpawnpoints = null;
+				flag = true;
+				list.AddRange(spawnpointDefinition.CompatibleSpawnpoints);
 			}
-
-			public RoleSpawnpointManager.SpawnpointDefinition SetSpawnpoints(params ISpawnpointHandler[] spawnpoints)
-			{
-				this.CompatibleSpawnpoints = spawnpoints;
-				return this;
-			}
-
-			public RoleTypeId[] Roles;
-
-			public ISpawnpointHandler[] CompatibleSpawnpoints;
 		}
+		spawnpoint = (flag ? list.RandomItem() : null);
+		return flag;
+	}
+
+	internal static void SetPosition(ReferenceHub hub, PlayerRoleBase newRole)
+	{
+		if (!NetworkServer.active || !(newRole is IFpcRole { SpawnpointHandler: not null } fpcRole))
+		{
+			return;
+		}
+		bool useSpawnPoint = fpcRole.SpawnpointHandler.TryGetSpawnpoint(out var position, out var horizontalRot);
+		PlayerSpawningEventArgs playerSpawningEventArgs = new PlayerSpawningEventArgs(hub, newRole, useSpawnPoint, position, horizontalRot);
+		PlayerEvents.OnSpawning(playerSpawningEventArgs);
+		if (!playerSpawningEventArgs.IsAllowed)
+		{
+			return;
+		}
+		position = playerSpawningEventArgs.SpawnLocation;
+		horizontalRot = playerSpawningEventArgs.HorizontalRotation;
+		useSpawnPoint = playerSpawningEventArgs.UseSpawnPoint;
+		if (!newRole.ServerSpawnFlags.HasFlag(RoleSpawnFlags.UseSpawnpoint) || !useSpawnPoint)
+		{
+			PlayerEvents.OnSpawned(new PlayerSpawnedEventArgs(hub, newRole, useSpawnPoint, position, horizontalRot));
+			return;
+		}
+		hub.transform.position = position;
+		if (fpcRole.FpcModule.MouseLook != null)
+		{
+			fpcRole.FpcModule.MouseLook.CurrentHorizontal = horizontalRot;
+		}
+		PlayerEvents.OnSpawned(new PlayerSpawnedEventArgs(hub, newRole, useSpawnPoint, position, horizontalRot));
 	}
 }

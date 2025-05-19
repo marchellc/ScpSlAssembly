@@ -1,11 +1,8 @@
-﻿using System;
+namespace RemoteAdmin.Interfaces;
 
-namespace RemoteAdmin.Interfaces
+public interface ICustomRADisplay
 {
-	public interface ICustomRADisplay
-	{
-		string DisplayName { get; }
+	string DisplayName { get; }
 
-		bool CanBeDisplayed { get; }
-	}
+	bool CanBeDisplayed { get; }
 }

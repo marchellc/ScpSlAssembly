@@ -1,30 +1,25 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl.Thirdperson;
 using UnityEngine;
 
-namespace InventorySystem.Items.Thirdperson.LayerProcessors
+namespace InventorySystem.Items.Thirdperson.LayerProcessors;
+
+public class RightHandedLayerProcessor : LayerProcessorBase
 {
-	public class RightHandedLayerProcessor : LayerProcessorBase
+	private const float HandEaseout = 0.75f;
+
+	protected override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
 	{
-		protected override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
-		{
-			return new ThirdpersonLayerWeight(RightHandedLayerProcessor.CalculateWeight(base.TargetModel, layer), false);
-		}
+		return new ThirdpersonLayerWeight(CalculateWeight(base.TargetModel, layer), allowOther: false);
+	}
 
-		public static float CalculateWeight(AnimatedCharacterModel model, AnimItemLayer3p layer)
+	public static float CalculateWeight(AnimatedCharacterModel model, AnimItemLayer3p layer)
+	{
+		return layer switch
 		{
-			switch (layer)
-			{
-			case AnimItemLayer3p.Right:
-				return Mathf.Lerp(1f, 0.75f, model.WalkLayerWeight);
-			case AnimItemLayer3p.Middle:
-				return 1f - model.WalkLayerWeight;
-			case AnimItemLayer3p.PreMovement:
-				return 1f;
-			}
-			return 0f;
-		}
-
-		private const float HandEaseout = 0.75f;
+			AnimItemLayer3p.PreMovement => 1f, 
+			AnimItemLayer3p.Right => Mathf.Lerp(1f, 0.75f, model.WalkLayerWeight), 
+			AnimItemLayer3p.Middle => 1f - model.WalkLayerWeight, 
+			_ => 0f, 
+		};
 	}
 }

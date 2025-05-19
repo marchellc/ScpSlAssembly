@@ -1,176 +1,176 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
-namespace MapGeneration.RoomConnectors.Spawners
+namespace MapGeneration.RoomConnectors.Spawners;
+
+public static class RoomConnectorSpawner
 {
-	public static class RoomConnectorSpawner
+	private readonly struct SpawnpointWeightPair
 	{
-		public static void ServerSpawnAllConnectors(HashSet<RoomConnectorSpawnpointBase> readyToSpawn)
+		public readonly float Weight;
+
+		public readonly RoomConnectorSpawnpointBase Spawnpoint;
+
+		public SpawnpointWeightPair(RoomConnectorSpawnpointBase sp, SpawnableRoomConnectorType type)
 		{
-			Random random = new Random(SeedSynchronizer.Seed);
-			Queue<SpawnableRoomConnectorType> queue = RoomConnectorSpawner.GenerateSpawnQueue(RoomConnectorSpawner.GenerateCompatibleSpawnpointCounts(readyToSpawn), random);
-			List<int> allPriorities = RoomConnectorSpawner.GetAllPriorities(readyToSpawn);
-			SpawnableRoomConnectorType spawnableRoomConnectorType;
-			while (queue.TryDequeue(out spawnableRoomConnectorType))
+			Spawnpoint = sp;
+			Weight = sp.GetSpawnChanceWeight(type);
+		}
+	}
+
+	private static readonly List<SpawnpointWeightPair> CompatibleNonAlloc = new List<SpawnpointWeightPair>();
+
+	public static void ServerSpawnAllConnectors(HashSet<RoomConnectorSpawnpointBase> readyToSpawn)
+	{
+		Random rng = new Random(SeedSynchronizer.Seed);
+		Queue<SpawnableRoomConnectorType> queue = GenerateSpawnQueue(GenerateCompatibleSpawnpointCounts(readyToSpawn), rng);
+		List<int> allPriorities = GetAllPriorities(readyToSpawn);
+		SpawnableRoomConnectorType result;
+		while (queue.TryDequeue(out result))
+		{
+			TrySpawnConnector(result, allPriorities, readyToSpawn, rng);
+		}
+		foreach (RoomConnectorSpawnpointBase item in readyToSpawn)
+		{
+			item.SpawnFallback();
+		}
+	}
+
+	private static bool TrySpawnConnector(SpawnableRoomConnectorType type, List<int> priorities, HashSet<RoomConnectorSpawnpointBase> remainingSpawnpoints, Random rng)
+	{
+		bool flag = false;
+		RoomConnectorSpawnpointBase result = null;
+		foreach (int priority in priorities)
+		{
+			if (TryGetRandomSpawnpointForPriority(type, priority, remainingSpawnpoints, rng, out result))
 			{
-				RoomConnectorSpawner.TrySpawnConnector(spawnableRoomConnectorType, allPriorities, readyToSpawn, random);
-			}
-			foreach (RoomConnectorSpawnpointBase roomConnectorSpawnpointBase in readyToSpawn)
-			{
-				roomConnectorSpawnpointBase.SpawnFallback();
+				flag = true;
+				break;
 			}
 		}
-
-		private static bool TrySpawnConnector(SpawnableRoomConnectorType type, List<int> priorities, HashSet<RoomConnectorSpawnpointBase> remainingSpawnpoints, Random rng)
+		if (!flag)
 		{
-			bool flag = false;
-			RoomConnectorSpawnpointBase roomConnectorSpawnpointBase = null;
-			foreach (int num in priorities)
+			return false;
+		}
+		result.Spawn(type);
+		remainingSpawnpoints.Remove(result);
+		return true;
+	}
+
+	private static bool TryGetRandomSpawnpointForPriority(SpawnableRoomConnectorType type, int priority, HashSet<RoomConnectorSpawnpointBase> remainingSpawnpoints, Random rng, out RoomConnectorSpawnpointBase result)
+	{
+		CompatibleNonAlloc.Clear();
+		double num = 0.0;
+		foreach (RoomConnectorSpawnpointBase remainingSpawnpoint in remainingSpawnpoints)
+		{
+			if (remainingSpawnpoint.SpawnPriority == priority)
 			{
-				if (RoomConnectorSpawner.TryGetRandomSpawnpointForPriority(type, num, remainingSpawnpoints, rng, out roomConnectorSpawnpointBase))
+				SpawnpointWeightPair item = new SpawnpointWeightPair(remainingSpawnpoint, type);
+				if (!(item.Weight <= 0f))
 				{
+					num += (double)item.Weight;
+					CompatibleNonAlloc.Add(item);
+				}
+			}
+		}
+		if (CompatibleNonAlloc.Count == 0)
+		{
+			result = null;
+			return false;
+		}
+		double num2 = rng.NextDouble() * num;
+		double num3 = 0.0;
+		foreach (SpawnpointWeightPair item2 in CompatibleNonAlloc)
+		{
+			num3 += (double)item2.Weight;
+			if (!(num2 > num3))
+			{
+				result = item2.Spawnpoint;
+				return true;
+			}
+		}
+		result = null;
+		return false;
+	}
+
+	private static List<int> GetAllPriorities(HashSet<RoomConnectorSpawnpointBase> connectors)
+	{
+		List<int> list = new List<int>();
+		foreach (RoomConnectorSpawnpointBase connector in connectors)
+		{
+			int spawnPriority = connector.SpawnPriority;
+			if (list.Contains(spawnPriority))
+			{
+				continue;
+			}
+			bool flag = false;
+			for (int i = 0; i < list.Count; i++)
+			{
+				if (spawnPriority > list[i])
+				{
+					list.Insert(i, spawnPriority);
 					flag = true;
 					break;
 				}
 			}
 			if (!flag)
 			{
-				return false;
+				list.Add(spawnPriority);
 			}
-			roomConnectorSpawnpointBase.Spawn(type);
-			remainingSpawnpoints.Remove(roomConnectorSpawnpointBase);
-			return true;
 		}
+		return list;
+	}
 
-		private static bool TryGetRandomSpawnpointForPriority(SpawnableRoomConnectorType type, int priority, HashSet<RoomConnectorSpawnpointBase> remainingSpawnpoints, Random rng, out RoomConnectorSpawnpointBase result)
+	private static Queue<SpawnableRoomConnectorType> GenerateSpawnQueue(Dictionary<SpawnableRoomConnectorType, int> spawnpointCounts, Random rng)
+	{
+		Queue<SpawnableRoomConnectorType> queue = new Queue<SpawnableRoomConnectorType>();
+		foreach (SpawnableRoomConnector registeredConnector in RoomConnectorDistributorSettings.RegisteredConnectors)
 		{
-			RoomConnectorSpawner.CompatibleNonAlloc.Clear();
-			double num = 0.0;
-			foreach (RoomConnectorSpawnpointBase roomConnectorSpawnpointBase in remainingSpawnpoints)
+			RoomConnectorSpawnData spawnData = registeredConnector.SpawnData;
+			int valueOrDefault = spawnpointCounts.GetValueOrDefault(spawnData.ConnectorType);
+			int required = spawnData.GetRequired(valueOrDefault);
+			for (int i = 0; i < required; i++)
 			{
-				if (roomConnectorSpawnpointBase.SpawnPriority == priority)
+				queue.Enqueue(spawnData.ConnectorType);
+			}
+		}
+		List<SpawnableRoomConnectorType> list = new List<SpawnableRoomConnectorType>();
+		foreach (SpawnableRoomConnector registeredConnector2 in RoomConnectorDistributorSettings.RegisteredConnectors)
+		{
+			RoomConnectorSpawnData spawnData2 = registeredConnector2.SpawnData;
+			int valueOrDefault2 = spawnpointCounts.GetValueOrDefault(spawnData2.ConnectorType);
+			int optional = spawnData2.GetOptional(valueOrDefault2);
+			for (int j = 0; j < optional; j++)
+			{
+				list.Add(spawnData2.ConnectorType);
+			}
+		}
+		list.ShuffleList(rng);
+		list.ForEach(queue.Enqueue);
+		return queue;
+	}
+
+	private static Dictionary<SpawnableRoomConnectorType, int> GenerateCompatibleSpawnpointCounts(HashSet<RoomConnectorSpawnpointBase> allSpawnpoints)
+	{
+		Dictionary<SpawnableRoomConnectorType, int> dictionary = new Dictionary<SpawnableRoomConnectorType, int>();
+		foreach (RoomConnectorSpawnpointBase allSpawnpoint in allSpawnpoints)
+		{
+			SpawnableRoomConnectorType[] values = EnumUtils<SpawnableRoomConnectorType>.Values;
+			foreach (SpawnableRoomConnectorType spawnableRoomConnectorType in values)
+			{
+				if (!(allSpawnpoint.GetSpawnChanceWeight(spawnableRoomConnectorType) <= 0f))
 				{
-					RoomConnectorSpawner.SpawnpointWeightPair spawnpointWeightPair = new RoomConnectorSpawner.SpawnpointWeightPair(roomConnectorSpawnpointBase, type);
-					if (spawnpointWeightPair.Weight > 0f)
+					if (dictionary.TryGetValue(spawnableRoomConnectorType, out var value))
 					{
-						num += (double)spawnpointWeightPair.Weight;
-						RoomConnectorSpawner.CompatibleNonAlloc.Add(spawnpointWeightPair);
+						dictionary[spawnableRoomConnectorType] = value + 1;
+					}
+					else
+					{
+						dictionary.Add(spawnableRoomConnectorType, 1);
 					}
 				}
 			}
-			if (RoomConnectorSpawner.CompatibleNonAlloc.Count == 0)
-			{
-				result = null;
-				return false;
-			}
-			double num2 = rng.NextDouble() * num;
-			double num3 = 0.0;
-			foreach (RoomConnectorSpawner.SpawnpointWeightPair spawnpointWeightPair2 in RoomConnectorSpawner.CompatibleNonAlloc)
-			{
-				num3 += (double)spawnpointWeightPair2.Weight;
-				if (num2 <= num3)
-				{
-					result = spawnpointWeightPair2.Spawnpoint;
-					return true;
-				}
-			}
-			result = null;
-			return false;
 		}
-
-		private static List<int> GetAllPriorities(HashSet<RoomConnectorSpawnpointBase> connectors)
-		{
-			List<int> list = new List<int>();
-			foreach (RoomConnectorSpawnpointBase roomConnectorSpawnpointBase in connectors)
-			{
-				int spawnPriority = roomConnectorSpawnpointBase.SpawnPriority;
-				if (!list.Contains(spawnPriority))
-				{
-					bool flag = false;
-					for (int i = 0; i < list.Count; i++)
-					{
-						if (spawnPriority > list[i])
-						{
-							list.Insert(i, spawnPriority);
-							flag = true;
-							break;
-						}
-					}
-					if (!flag)
-					{
-						list.Add(spawnPriority);
-					}
-				}
-			}
-			return list;
-		}
-
-		private static Queue<SpawnableRoomConnectorType> GenerateSpawnQueue(Dictionary<SpawnableRoomConnectorType, int> spawnpointCounts, Random rng)
-		{
-			Queue<SpawnableRoomConnectorType> queue = new Queue<SpawnableRoomConnectorType>();
-			foreach (SpawnableRoomConnector spawnableRoomConnector in RoomConnectorDistributorSettings.RegisteredConnectors)
-			{
-				RoomConnectorSpawnData spawnData = spawnableRoomConnector.SpawnData;
-				int valueOrDefault = spawnpointCounts.GetValueOrDefault(spawnData.ConnectorType);
-				int required = spawnData.GetRequired(valueOrDefault);
-				for (int i = 0; i < required; i++)
-				{
-					queue.Enqueue(spawnData.ConnectorType);
-				}
-			}
-			List<SpawnableRoomConnectorType> list = new List<SpawnableRoomConnectorType>();
-			foreach (SpawnableRoomConnector spawnableRoomConnector2 in RoomConnectorDistributorSettings.RegisteredConnectors)
-			{
-				RoomConnectorSpawnData spawnData2 = spawnableRoomConnector2.SpawnData;
-				int valueOrDefault2 = spawnpointCounts.GetValueOrDefault(spawnData2.ConnectorType);
-				int optional = spawnData2.GetOptional(valueOrDefault2);
-				for (int j = 0; j < optional; j++)
-				{
-					list.Add(spawnData2.ConnectorType);
-				}
-			}
-			list.ShuffleList(rng);
-			list.ForEach(new Action<SpawnableRoomConnectorType>(queue.Enqueue));
-			return queue;
-		}
-
-		private static Dictionary<SpawnableRoomConnectorType, int> GenerateCompatibleSpawnpointCounts(HashSet<RoomConnectorSpawnpointBase> allSpawnpoints)
-		{
-			Dictionary<SpawnableRoomConnectorType, int> dictionary = new Dictionary<SpawnableRoomConnectorType, int>();
-			foreach (RoomConnectorSpawnpointBase roomConnectorSpawnpointBase in allSpawnpoints)
-			{
-				foreach (SpawnableRoomConnectorType spawnableRoomConnectorType in EnumUtils<SpawnableRoomConnectorType>.Values)
-				{
-					if (roomConnectorSpawnpointBase.GetSpawnChanceWeight(spawnableRoomConnectorType) > 0f)
-					{
-						int num;
-						if (dictionary.TryGetValue(spawnableRoomConnectorType, out num))
-						{
-							dictionary[spawnableRoomConnectorType] = num + 1;
-						}
-						else
-						{
-							dictionary.Add(spawnableRoomConnectorType, 1);
-						}
-					}
-				}
-			}
-			return dictionary;
-		}
-
-		private static readonly List<RoomConnectorSpawner.SpawnpointWeightPair> CompatibleNonAlloc = new List<RoomConnectorSpawner.SpawnpointWeightPair>();
-
-		private readonly struct SpawnpointWeightPair
-		{
-			public SpawnpointWeightPair(RoomConnectorSpawnpointBase sp, SpawnableRoomConnectorType type)
-			{
-				this.Spawnpoint = sp;
-				this.Weight = sp.GetSpawnChanceWeight(type);
-			}
-
-			public readonly float Weight;
-
-			public readonly RoomConnectorSpawnpointBase Spawnpoint;
-		}
+		return dictionary;
 	}
 }

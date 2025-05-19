@@ -1,8 +1,5 @@
-﻿using System;
+namespace InventorySystem.Drawers;
 
-namespace InventorySystem.Drawers
+public interface IItemDrawer
 {
-	public interface IItemDrawer
-	{
-	}
 }

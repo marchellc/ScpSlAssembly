@@ -1,16 +1,12 @@
-﻿using System;
-using InventorySystem.Items.Pickups;
+namespace InventorySystem.Searching;
 
-namespace InventorySystem.Searching
+public interface ISearchSession
 {
-	public interface ISearchSession
-	{
-		ItemPickupBase Target { get; set; }
+	ISearchable Target { get; set; }
 
-		double InitialTime { get; set; }
+	double InitialTime { get; set; }
 
-		double FinishTime { get; set; }
+	double FinishTime { get; set; }
 
-		double Progress { get; }
-	}
+	double Progress { get; }
 }

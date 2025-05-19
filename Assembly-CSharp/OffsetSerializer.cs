@@ -1,4 +1,3 @@
-﻿using System;
 using System.IO;
 using Mirror;
 
@@ -18,14 +17,14 @@ public static class OffsetSerializer
 	{
 		if (reader.Position + sizeof(Offset) > reader.buffer.Count)
 		{
-			throw new EndOfStreamException("ReadByte out of range:" + ((reader != null) ? reader.ToString() : null));
+			throw new EndOfStreamException("ReadByte out of range:" + reader);
 		}
-		Offset offset;
+		Offset result;
 		fixed (byte* ptr = &reader.buffer.Array[reader.buffer.Offset + reader.Position])
 		{
-			offset = *(Offset*)ptr;
+			result = *(Offset*)ptr;
 		}
 		reader.Position += sizeof(Offset);
-		return offset;
+		return result;
 	}
 }

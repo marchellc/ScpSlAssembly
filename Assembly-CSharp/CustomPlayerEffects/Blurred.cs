@@ -1,8 +1,5 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public class Blurred : StatusEffectBase
 {
-	public class Blurred : StatusEffectBase
-	{
-	}
 }

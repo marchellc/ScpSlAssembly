@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using CustomPlayerEffects;
 using Footprinting;
 using GameCore;
@@ -10,178 +10,181 @@ using Subtitles;
 using UnityEngine;
 using Utils.Networking;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public abstract class AttackerDamageHandler : StandardDamageHandler
 {
-	public abstract class AttackerDamageHandler : StandardDamageHandler
+	private static float _ffMultiplier = 1f;
+
+	private static bool _eventAssigned = false;
+
+	public abstract Footprint Attacker { get; protected set; }
+
+	public bool IsFriendlyFire { get; private set; }
+
+	public bool IsSuicide { get; private set; }
+
+	public override CassieAnnouncement CassieDeathAnnouncement
 	{
-		public abstract Footprint Attacker { get; protected set; }
-
-		public bool IsFriendlyFire { get; private set; }
-
-		public bool IsSuicide { get; private set; }
-
-		public override DamageHandlerBase.CassieAnnouncement CassieDeathAnnouncement
+		get
 		{
-			get
+			if (!Attacker.IsSet || !PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(Attacker.Role, out var result))
 			{
-				PlayerRoleBase playerRoleBase;
-				if (!this.Attacker.IsSet || !PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(this.Attacker.Role, out playerRoleBase))
+				return CassieAnnouncement.Default;
+			}
+			CassieAnnouncement cassieAnnouncement = new CassieAnnouncement();
+			switch (result.Team)
+			{
+			case Team.ClassD:
+				cassieAnnouncement.Announcement = "CONTAINEDSUCCESSFULLY BY CLASSD PERSONNEL";
+				cassieAnnouncement.SubtitleParts = new SubtitlePart[1]
 				{
-					return DamageHandlerBase.CassieAnnouncement.Default;
-				}
-				DamageHandlerBase.CassieAnnouncement cassieAnnouncement = new DamageHandlerBase.CassieAnnouncement();
-				switch (playerRoleBase.Team)
+					new SubtitlePart(SubtitleType.ContainedByClassD, (string[])null)
+				};
+				break;
+			case Team.ChaosInsurgency:
+				cassieAnnouncement.Announcement = "CONTAINEDSUCCESSFULLY BY CHAOSINSURGENCY";
+				cassieAnnouncement.SubtitleParts = new SubtitlePart[1]
 				{
-				case Team.SCPs:
-				case Team.Flamingos:
+					new SubtitlePart(SubtitleType.ContainedByChaos, (string[])null)
+				};
+				break;
+			case Team.Scientists:
+				cassieAnnouncement.Announcement = "CONTAINEDSUCCESSFULLY BY SCIENCE PERSONNEL";
+				cassieAnnouncement.SubtitleParts = new SubtitlePart[1]
 				{
-					string text;
-					string text2;
-					NineTailedFoxAnnouncer.ConvertSCP(this.Attacker.Role, out text, out text2);
-					cassieAnnouncement.Announcement = "TERMINATED BY SCP " + text2;
-					cassieAnnouncement.SubtitleParts = new SubtitlePart[]
-					{
-						new SubtitlePart(SubtitleType.TerminatedBySCP, new string[] { text })
-					};
-					return cassieAnnouncement;
-				}
-				case Team.FoundationForces:
+					new SubtitlePart(SubtitleType.ContainedByScientist, (string[])null)
+				};
+				break;
+			case Team.FoundationForces:
+			{
+				if (!NamingRulesManager.TryGetNamingRule(result.Team, out var rule))
 				{
-					UnitNamingRule unitNamingRule;
-					if (!NamingRulesManager.TryGetNamingRule(playerRoleBase.Team, out unitNamingRule))
+					cassieAnnouncement.Announcement = "CONTAINEDSUCCESSFULLY CONTAINMENTUNIT UNKNOWN";
+					cassieAnnouncement.SubtitleParts = new SubtitlePart[1]
 					{
-						cassieAnnouncement.Announcement = "CONTAINEDSUCCESSFULLY CONTAINMENTUNIT UNKNOWN";
-						cassieAnnouncement.SubtitleParts = new SubtitlePart[]
-						{
-							new SubtitlePart(SubtitleType.ContainUnitUnknown, null)
-						};
-						return cassieAnnouncement;
-					}
-					string text3 = unitNamingRule.TranslateToCassie(this.Attacker.UnitName);
-					cassieAnnouncement.Announcement = "CONTAINEDSUCCESSFULLY CONTAINMENTUNIT " + text3;
-					cassieAnnouncement.SubtitleParts = new SubtitlePart[]
-					{
-						new SubtitlePart(SubtitleType.ContainUnit, new string[] { this.Attacker.UnitName })
+						new SubtitlePart(SubtitleType.ContainUnitUnknown, (string[])null)
 					};
-					return cassieAnnouncement;
 				}
-				case Team.ChaosInsurgency:
-					cassieAnnouncement.Announcement = "CONTAINEDSUCCESSFULLY BY CHAOSINSURGENCY";
-					cassieAnnouncement.SubtitleParts = new SubtitlePart[]
+				else
+				{
+					string text = rule.TranslateToCassie(Attacker.UnitName);
+					cassieAnnouncement.Announcement = "CONTAINEDSUCCESSFULLY CONTAINMENTUNIT " + text;
+					cassieAnnouncement.SubtitleParts = new SubtitlePart[1]
 					{
-						new SubtitlePart(SubtitleType.ContainedByChaos, null)
+						new SubtitlePart(SubtitleType.ContainUnit, Attacker.UnitName)
 					};
-					return cassieAnnouncement;
-				case Team.Scientists:
-					cassieAnnouncement.Announcement = "CONTAINEDSUCCESSFULLY BY SCIENCE PERSONNEL";
-					cassieAnnouncement.SubtitleParts = new SubtitlePart[]
-					{
-						new SubtitlePart(SubtitleType.ContainedByScientist, null)
-					};
-					return cassieAnnouncement;
-				case Team.ClassD:
-					cassieAnnouncement.Announcement = "CONTAINEDSUCCESSFULLY BY CLASSD PERSONNEL";
-					cassieAnnouncement.SubtitleParts = new SubtitlePart[]
-					{
-						new SubtitlePart(SubtitleType.ContainedByClassD, null)
-					};
-					return cassieAnnouncement;
 				}
-				return DamageHandlerBase.CassieAnnouncement.Default;
+				break;
+			}
+			case Team.SCPs:
+			case Team.Flamingos:
+			{
+				NineTailedFoxAnnouncer.ConvertSCP(Attacker.Role, out var withoutSpace, out var withSpace);
+				cassieAnnouncement.Announcement = "TERMINATED BY SCP " + withSpace;
+				cassieAnnouncement.SubtitleParts = new SubtitlePart[1]
+				{
+					new SubtitlePart(SubtitleType.TerminatedBySCP, withoutSpace)
+				};
+				break;
+			}
+			default:
+				return CassieAnnouncement.Default;
+			}
+			return cassieAnnouncement;
+		}
+	}
+
+	public abstract bool AllowSelfDamage { get; }
+
+	protected virtual bool ForceFullFriendlyFire { get; set; }
+
+	public virtual bool IgnoreFriendlyFireDetector => ForceFullFriendlyFire;
+
+	public override string ServerMetricsText
+	{
+		get
+		{
+			int lifeIdentifier = Attacker.LifeIdentifier;
+			return lifeIdentifier.ToString();
+		}
+	}
+
+	protected override void ProcessDamage(ReferenceHub ply)
+	{
+		if (DisableSpawnProtect(Attacker.Hub, ply))
+		{
+			Damage = 0f;
+			return;
+		}
+		StatusEffectBase[] allEffects = ply.playerEffectsController.AllEffects;
+		foreach (StatusEffectBase statusEffectBase in allEffects)
+		{
+			if (statusEffectBase is IFriendlyFireModifier friendlyFireModifier && statusEffectBase.IsEnabled && friendlyFireModifier.AllowFriendlyFire(Damage, this, Hitbox))
+			{
+				ForceFullFriendlyFire = true;
+				break;
 			}
 		}
-
-		public abstract bool AllowSelfDamage { get; }
-
-		protected virtual bool ForceFullFriendlyFire { get; set; }
-
-		public virtual bool IgnoreFriendlyFireDetector
+		if (ply.networkIdentity.netId == Attacker.NetId || ForceFullFriendlyFire)
 		{
-			get
+			if (!AllowSelfDamage && !ForceFullFriendlyFire)
 			{
-				return this.ForceFullFriendlyFire;
-			}
-		}
-
-		public override string ServerMetricsText
-		{
-			get
-			{
-				return this.Attacker.LifeIdentifier.ToString();
-			}
-		}
-
-		protected override void ProcessDamage(ReferenceHub ply)
-		{
-			if (this.DisableSpawnProtect(this.Attacker.Hub, ply))
-			{
-				this.Damage = 0f;
+				Damage = 0f;
 				return;
 			}
-			foreach (StatusEffectBase statusEffectBase in ply.playerEffectsController.AllEffects)
-			{
-				IFriendlyFireModifier friendlyFireModifier = statusEffectBase as IFriendlyFireModifier;
-				if (friendlyFireModifier != null && statusEffectBase.IsEnabled && friendlyFireModifier.AllowFriendlyFire(this.Damage, this, this.Hitbox))
-				{
-					this.ForceFullFriendlyFire = true;
-					break;
-				}
-			}
-			if (ply.networkIdentity.netId == this.Attacker.NetId || this.ForceFullFriendlyFire)
-			{
-				if (!this.AllowSelfDamage && !this.ForceFullFriendlyFire)
-				{
-					this.Damage = 0f;
-					return;
-				}
-				this.IsSuicide = true;
-			}
-			else if (!HitboxIdentity.IsEnemy(this.Attacker.Role, ply.GetRoleId()))
-			{
-				this.Damage *= AttackerDamageHandler._ffMultiplier;
-				this.IsFriendlyFire = true;
-			}
-			base.ProcessDamage(ply);
+			IsSuicide = true;
 		}
-
-		private bool DisableSpawnProtect(ReferenceHub attacker, ReferenceHub target)
+		else if (!HitboxIdentity.IsEnemy(Attacker.Role, ply.GetRoleId()))
 		{
-			return !(attacker == null) && (SpawnProtected.CanShoot && SpawnProtected.CheckPlayer(attacker)) && attacker != target;
+			Damage *= _ffMultiplier;
+			IsFriendlyFire = true;
 		}
+		base.ProcessDamage(ply);
+	}
 
-		public override void WriteDeathScreen(NetworkWriter writer)
+	private bool DisableSpawnProtect(ReferenceHub attacker, ReferenceHub target)
+	{
+		if (attacker == null)
 		{
-			writer.WriteSpawnReason(SpectatorSpawnReason.KilledByPlayer);
-			writer.WriteString(this.Attacker.Nickname);
-			writer.WriteRoleType(this.Attacker.Role);
+			return false;
 		}
-
-		public override void WriteAdditionalData(NetworkWriter writer)
+		if (SpawnProtected.CanShoot && SpawnProtected.CheckPlayer(attacker))
 		{
-			base.WriteAdditionalData(writer);
-			writer.WriteReferenceHub(this.Attacker.Hub);
+			return attacker != target;
 		}
+		return false;
+	}
 
-		public override void ReadAdditionalData(NetworkReader reader)
+	public override void WriteDeathScreen(NetworkWriter writer)
+	{
+		writer.WriteSpawnReason(SpectatorSpawnReason.KilledByPlayer);
+		writer.WriteUInt(Attacker.NetId);
+		writer.WriteString(Attacker.Nickname);
+		writer.WriteRoleType(Attacker.Role);
+	}
+
+	public override void WriteAdditionalData(NetworkWriter writer)
+	{
+		base.WriteAdditionalData(writer);
+		writer.WriteReferenceHub(Attacker.Hub);
+	}
+
+	public override void ReadAdditionalData(NetworkReader reader)
+	{
+		base.ReadAdditionalData(reader);
+		Attacker = new Footprint(reader.ReadReferenceHub());
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void RefreshConfigs()
+	{
+		if (!_eventAssigned)
 		{
-			base.ReadAdditionalData(reader);
-			this.Attacker = new Footprint(reader.ReadReferenceHub());
+			ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(RefreshConfigs));
+			ServerConfigSynchronizer.OnRefreshed = (Action)Delegate.Combine(ServerConfigSynchronizer.OnRefreshed, new Action(RefreshConfigs));
+			_eventAssigned = true;
 		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void RefreshConfigs()
-		{
-			if (!AttackerDamageHandler._eventAssigned)
-			{
-				ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(AttackerDamageHandler.RefreshConfigs));
-				ServerConfigSynchronizer.OnRefreshed = (Action)Delegate.Combine(ServerConfigSynchronizer.OnRefreshed, new Action(AttackerDamageHandler.RefreshConfigs));
-				AttackerDamageHandler._eventAssigned = true;
-			}
-			AttackerDamageHandler._ffMultiplier = (ServerConsole.FriendlyFire ? ConfigFile.ServerConfig.GetFloat("friendly_fire_multiplier", 0.4f) : 0f);
-		}
-
-		private static float _ffMultiplier = 1f;
-
-		private static bool _eventAssigned = false;
+		_ffMultiplier = (ServerConsole.FriendlyFire ? ConfigFile.ServerConfig.GetFloat("friendly_fire_multiplier", 0.4f) : 0f);
 	}
 }

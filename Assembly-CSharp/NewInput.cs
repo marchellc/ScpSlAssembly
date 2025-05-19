@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -7,85 +7,134 @@ using UnityEngine;
 
 public static class NewInput
 {
+	public class ActionDefinition
+	{
+		public readonly ActionName Name;
+
+		public readonly ActionCategory Category;
+
+		public readonly KeyCode DefaultKey;
+
+		public ActionDefinition(ActionName actionName, KeyCode k, ActionCategory c)
+		{
+			Name = actionName;
+			Category = c;
+			DefaultKey = k;
+		}
+	}
+
+	public static readonly Dictionary<ActionName, KeyCode> DefaultKeybinds = new Dictionary<ActionName, KeyCode>();
+
+	private static readonly Dictionary<ActionName, KeyCode> UserKeybinds = new Dictionary<ActionName, KeyCode>();
+
+	private static readonly string SaveFilePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/SCP Secret Laboratory/keybinding.txt";
+
+	public static readonly ActionDefinition[] DefinedActions = new ActionDefinition[34]
+	{
+		new ActionDefinition(ActionName.Shoot, KeyCode.Mouse0, ActionCategory.Weapons),
+		new ActionDefinition(ActionName.Zoom, KeyCode.Mouse1, ActionCategory.Weapons),
+		new ActionDefinition(ActionName.Jump, KeyCode.Space, ActionCategory.Movement),
+		new ActionDefinition(ActionName.Interact, KeyCode.E, ActionCategory.Gameplay),
+		new ActionDefinition(ActionName.Inventory, KeyCode.Tab, ActionCategory.Gameplay),
+		new ActionDefinition(ActionName.Reload, KeyCode.R, ActionCategory.Weapons),
+		new ActionDefinition(ActionName.Run, KeyCode.LeftShift, ActionCategory.Movement),
+		new ActionDefinition(ActionName.VoiceChat, KeyCode.Q, ActionCategory.Communication),
+		new ActionDefinition(ActionName.Sneak, KeyCode.C, ActionCategory.Movement),
+		new ActionDefinition(ActionName.MoveForward, KeyCode.W, ActionCategory.Movement),
+		new ActionDefinition(ActionName.MoveBackward, KeyCode.S, ActionCategory.Movement),
+		new ActionDefinition(ActionName.MoveLeft, KeyCode.A, ActionCategory.Movement),
+		new ActionDefinition(ActionName.MoveRight, KeyCode.D, ActionCategory.Movement),
+		new ActionDefinition(ActionName.PlayerList, KeyCode.N, ActionCategory.Gameplay),
+		new ActionDefinition(ActionName.CharacterInfo, KeyCode.F1, ActionCategory.Gameplay),
+		new ActionDefinition(ActionName.RemoteAdmin, KeyCode.M, ActionCategory.System),
+		new ActionDefinition(ActionName.ToggleFlashlight, KeyCode.F, ActionCategory.Weapons),
+		new ActionDefinition(ActionName.AltVoiceChat, KeyCode.V, ActionCategory.Communication),
+		new ActionDefinition(ActionName.Noclip, KeyCode.LeftAlt, ActionCategory.System),
+		new ActionDefinition(ActionName.NoClipFogToggle, KeyCode.O, ActionCategory.System),
+		new ActionDefinition(ActionName.GameConsole, KeyCode.BackQuote, ActionCategory.System),
+		new ActionDefinition(ActionName.InspectItem, KeyCode.I, ActionCategory.Weapons),
+		new ActionDefinition(ActionName.WeaponAlt, KeyCode.Mouse2, ActionCategory.Weapons),
+		new ActionDefinition(ActionName.ThrowItem, KeyCode.T, ActionCategory.Gameplay),
+		new ActionDefinition(ActionName.HideGUI, KeyCode.P, ActionCategory.System),
+		new ActionDefinition(ActionName.PauseMenu, KeyCode.Escape, ActionCategory.Unbindable),
+		new ActionDefinition(ActionName.DebugLogMenu, KeyCode.F4, ActionCategory.Unbindable),
+		new ActionDefinition(ActionName.Scp079FreeLook, KeyCode.Space, ActionCategory.Scp079),
+		new ActionDefinition(ActionName.Scp079LockDoor, KeyCode.Mouse1, ActionCategory.Scp079),
+		new ActionDefinition(ActionName.Scp079UnlockAll, KeyCode.R, ActionCategory.Scp079),
+		new ActionDefinition(ActionName.Scp079Blackout, KeyCode.F, ActionCategory.Scp079),
+		new ActionDefinition(ActionName.Scp079Lockdown, KeyCode.G, ActionCategory.Scp079),
+		new ActionDefinition(ActionName.Scp079PingLocation, KeyCode.E, ActionCategory.Scp079),
+		new ActionDefinition(ActionName.Scp079BreachScanner, KeyCode.Space, ActionCategory.Scp079)
+	};
+
+	private static bool _loaded;
+
 	public static event Action OnAnyModified;
 
 	public static event Action<ActionName, KeyCode> OnKeyModified;
 
 	public static KeyCode GetKey(ActionName actionName, KeyCode fallbackKeycode = KeyCode.None)
 	{
-		if (!NewInput._loaded)
+		if (!_loaded)
 		{
-			NewInput.Load();
+			Load();
 		}
-		KeyCode keyCode;
-		if (!NewInput.UserKeybinds.TryGetValue(actionName, out keyCode))
+		if (!UserKeybinds.TryGetValue(actionName, out var value))
 		{
 			return fallbackKeycode;
 		}
-		return keyCode;
+		return value;
 	}
 
 	public static void Save()
 	{
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-		foreach (KeyValuePair<ActionName, KeyCode> keyValuePair in NewInput.UserKeybinds)
+		foreach (KeyValuePair<ActionName, KeyCode> userKeybind in UserKeybinds)
 		{
-			stringBuilder.Append((int)keyValuePair.Key);
+			stringBuilder.Append((int)userKeybind.Key);
 			stringBuilder.Append(':');
-			stringBuilder.Append((int)keyValuePair.Value);
+			stringBuilder.Append((int)userKeybind.Value);
 			stringBuilder.Append(';');
 		}
-		File.WriteAllText(NewInput.SaveFilePath, stringBuilder.ToString(0, stringBuilder.Length - 1));
+		File.WriteAllText(SaveFilePath, stringBuilder.ToString(0, stringBuilder.Length - 1));
 		StringBuilderPool.Shared.Return(stringBuilder);
 	}
 
 	public static void Load()
 	{
-		NewInput.ResetToDefault();
-		if (!File.Exists(NewInput.SaveFilePath))
+		ResetToDefault();
+		if (!File.Exists(SaveFilePath))
 		{
-			NewInput.Save();
+			Save();
 		}
-		string[] array = File.ReadAllText(NewInput.SaveFilePath).Split(';', StringSplitOptions.None);
+		string[] array = File.ReadAllText(SaveFilePath).Split(';');
 		for (int i = 0; i < array.Length; i++)
 		{
-			string[] array2 = array[i].Split(':', StringSplitOptions.None);
-			ActionName actionName;
-			KeyCode keyCode;
-			if (array2.Length == 2 && NewInput.TryParseActionName(array2[0], out actionName) && NewInput.TryParseKeycode(array2[1], out keyCode))
+			string[] array2 = array[i].Split(':');
+			if (array2.Length == 2 && TryParseActionName(array2[0], out var actionName) && TryParseKeycode(array2[1], out var keyCode))
 			{
-				NewInput.UserKeybinds[actionName] = keyCode;
+				UserKeybinds[actionName] = keyCode;
 			}
 		}
-		NewInput._loaded = true;
+		_loaded = true;
 	}
 
 	public static void ChangeKeybind(ActionName action, KeyCode key)
 	{
-		if (key == KeyCode.None && !NewInput.DefaultKeybinds.TryGetValue(action, out key))
+		if (key != 0 || DefaultKeybinds.TryGetValue(action, out key))
 		{
-			return;
+			UserKeybinds[action] = key;
+			NewInput.OnAnyModified?.Invoke();
+			NewInput.OnKeyModified?.Invoke(action, key);
+			Save();
 		}
-		NewInput.UserKeybinds[action] = key;
-		Action onAnyModified = NewInput.OnAnyModified;
-		if (onAnyModified != null)
-		{
-			onAnyModified();
-		}
-		Action<ActionName, KeyCode> onKeyModified = NewInput.OnKeyModified;
-		if (onKeyModified != null)
-		{
-			onKeyModified(action, key);
-		}
-		NewInput.Save();
 	}
 
 	public static bool TryParseActionName(string s, out ActionName actionName)
 	{
-		int num;
-		if (int.TryParse(s, out num) && Enum.IsDefined(typeof(ActionName), (ActionName)num))
+		if (int.TryParse(s, out var result) && Enum.IsDefined(typeof(ActionName), (ActionName)result))
 		{
-			actionName = (ActionName)num;
+			actionName = (ActionName)result;
 			return true;
 		}
 		Debug.Log("Action name " + s + " is not defined");
@@ -95,10 +144,9 @@ public static class NewInput
 
 	public static bool TryParseKeycode(string s, out KeyCode keyCode)
 	{
-		int num;
-		if (int.TryParse(s, out num) && Enum.IsDefined(typeof(KeyCode), (KeyCode)num))
+		if (int.TryParse(s, out var result) && Enum.IsDefined(typeof(KeyCode), (KeyCode)result))
 		{
-			keyCode = (KeyCode)num;
+			keyCode = (KeyCode)result;
 			return true;
 		}
 		keyCode = KeyCode.None;
@@ -107,18 +155,20 @@ public static class NewInput
 
 	public static void ResetToDefault()
 	{
-		NewInput.UserKeybinds.Clear();
-		foreach (NewInput.ActionDefinition actionDefinition in NewInput.DefinedActions)
+		UserKeybinds.Clear();
+		ActionDefinition[] definedActions = DefinedActions;
+		foreach (ActionDefinition actionDefinition in definedActions)
 		{
 			KeyCode defaultKey = actionDefinition.DefaultKey;
-			NewInput.UserKeybinds[actionDefinition.Name] = defaultKey;
-			NewInput.DefaultKeybinds[actionDefinition.Name] = defaultKey;
+			UserKeybinds[actionDefinition.Name] = defaultKey;
+			DefaultKeybinds[actionDefinition.Name] = defaultKey;
 		}
 	}
 
 	public static bool TryGetCategory(this ActionName sourceAction, out ActionCategory cat)
 	{
-		foreach (NewInput.ActionDefinition actionDefinition in NewInput.DefinedActions)
+		ActionDefinition[] definedActions = DefinedActions;
+		foreach (ActionDefinition actionDefinition in definedActions)
 		{
 			if (actionDefinition.Name == sourceAction)
 			{
@@ -128,67 +178,5 @@ public static class NewInput
 		}
 		cat = ActionCategory.Gameplay;
 		return false;
-	}
-
-	public static readonly Dictionary<ActionName, KeyCode> DefaultKeybinds = new Dictionary<ActionName, KeyCode>();
-
-	private static readonly Dictionary<ActionName, KeyCode> UserKeybinds = new Dictionary<ActionName, KeyCode>();
-
-	private static readonly string SaveFilePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/SCP Secret Laboratory/keybinding.txt";
-
-	public static readonly NewInput.ActionDefinition[] DefinedActions = new NewInput.ActionDefinition[]
-	{
-		new NewInput.ActionDefinition(ActionName.Shoot, KeyCode.Mouse0, ActionCategory.Weapons),
-		new NewInput.ActionDefinition(ActionName.Zoom, KeyCode.Mouse1, ActionCategory.Weapons),
-		new NewInput.ActionDefinition(ActionName.Jump, KeyCode.Space, ActionCategory.Movement),
-		new NewInput.ActionDefinition(ActionName.Interact, KeyCode.E, ActionCategory.Gameplay),
-		new NewInput.ActionDefinition(ActionName.Inventory, KeyCode.Tab, ActionCategory.Gameplay),
-		new NewInput.ActionDefinition(ActionName.Reload, KeyCode.R, ActionCategory.Weapons),
-		new NewInput.ActionDefinition(ActionName.Run, KeyCode.LeftShift, ActionCategory.Movement),
-		new NewInput.ActionDefinition(ActionName.VoiceChat, KeyCode.Q, ActionCategory.Communication),
-		new NewInput.ActionDefinition(ActionName.Sneak, KeyCode.C, ActionCategory.Movement),
-		new NewInput.ActionDefinition(ActionName.MoveForward, KeyCode.W, ActionCategory.Movement),
-		new NewInput.ActionDefinition(ActionName.MoveBackward, KeyCode.S, ActionCategory.Movement),
-		new NewInput.ActionDefinition(ActionName.MoveLeft, KeyCode.A, ActionCategory.Movement),
-		new NewInput.ActionDefinition(ActionName.MoveRight, KeyCode.D, ActionCategory.Movement),
-		new NewInput.ActionDefinition(ActionName.PlayerList, KeyCode.N, ActionCategory.Gameplay),
-		new NewInput.ActionDefinition(ActionName.CharacterInfo, KeyCode.F1, ActionCategory.Gameplay),
-		new NewInput.ActionDefinition(ActionName.RemoteAdmin, KeyCode.M, ActionCategory.System),
-		new NewInput.ActionDefinition(ActionName.ToggleFlashlight, KeyCode.F, ActionCategory.Weapons),
-		new NewInput.ActionDefinition(ActionName.AltVoiceChat, KeyCode.V, ActionCategory.Communication),
-		new NewInput.ActionDefinition(ActionName.Noclip, KeyCode.LeftAlt, ActionCategory.System),
-		new NewInput.ActionDefinition(ActionName.NoClipFogToggle, KeyCode.O, ActionCategory.System),
-		new NewInput.ActionDefinition(ActionName.GameConsole, KeyCode.BackQuote, ActionCategory.System),
-		new NewInput.ActionDefinition(ActionName.InspectItem, KeyCode.I, ActionCategory.Weapons),
-		new NewInput.ActionDefinition(ActionName.WeaponAlt, KeyCode.Mouse2, ActionCategory.Weapons),
-		new NewInput.ActionDefinition(ActionName.ThrowItem, KeyCode.T, ActionCategory.Gameplay),
-		new NewInput.ActionDefinition(ActionName.HideGUI, KeyCode.P, ActionCategory.System),
-		new NewInput.ActionDefinition(ActionName.PauseMenu, KeyCode.Escape, ActionCategory.Unbindable),
-		new NewInput.ActionDefinition(ActionName.DebugLogMenu, KeyCode.F4, ActionCategory.Unbindable),
-		new NewInput.ActionDefinition(ActionName.Scp079FreeLook, KeyCode.Space, ActionCategory.Scp079),
-		new NewInput.ActionDefinition(ActionName.Scp079LockDoor, KeyCode.Mouse1, ActionCategory.Scp079),
-		new NewInput.ActionDefinition(ActionName.Scp079UnlockAll, KeyCode.R, ActionCategory.Scp079),
-		new NewInput.ActionDefinition(ActionName.Scp079Blackout, KeyCode.F, ActionCategory.Scp079),
-		new NewInput.ActionDefinition(ActionName.Scp079Lockdown, KeyCode.G, ActionCategory.Scp079),
-		new NewInput.ActionDefinition(ActionName.Scp079PingLocation, KeyCode.E, ActionCategory.Scp079),
-		new NewInput.ActionDefinition(ActionName.Scp079BreachScanner, KeyCode.Space, ActionCategory.Scp079)
-	};
-
-	private static bool _loaded;
-
-	public class ActionDefinition
-	{
-		public ActionDefinition(ActionName actionName, KeyCode k, ActionCategory c)
-		{
-			this.Name = actionName;
-			this.Category = c;
-			this.DefaultKey = k;
-		}
-
-		public readonly ActionName Name;
-
-		public readonly ActionCategory Category;
-
-		public readonly KeyCode DefaultKey;
 	}
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using AudioPooling;
@@ -9,354 +8,308 @@ using Mirror;
 using PlayerRoles.PlayableScps.Scp079.GUI;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public class Scp079BlackoutRoomAbility : Scp079KeyAbilityBase, IScp079LevelUpNotifier
 {
-	public class Scp079BlackoutRoomAbility : Scp079KeyAbilityBase, IScp079LevelUpNotifier
+	private enum ValidationError
 	{
-		public override ActionName ActivationKey
-		{
-			get
-			{
-				return ActionName.Scp079Blackout;
-			}
-		}
+		None = 0,
+		NotEnoughAux = 1,
+		NoController = 26,
+		MaxCapacityReached = 27,
+		RoomOnCooldown = 28,
+		AlreadyBlackedOut = 60
+	}
 
-		public override bool IsReady
-		{
-			get
-			{
-				return this.ErrorCode == Scp079HudTranslation.Zoom;
-			}
-		}
+	[SerializeField]
+	private int[] _capacityPerTier;
 
-		public override bool IsVisible
-		{
-			get
-			{
-				return this.CurrentCapacity > 0 && !Scp079CursorManager.LockCameras;
-			}
-		}
+	[SerializeField]
+	private float _blackoutDuration;
 
-		public override string AbilityName
-		{
-			get
-			{
-				return string.Format(this._nameFormat, this.AbilityCost);
-			}
-		}
+	[SerializeField]
+	private float _cooldown;
 
-		public override string FailMessage
+	[SerializeField]
+	private int _cost;
+
+	[SerializeField]
+	private int _surfaceCost;
+
+	private string _textUnlock;
+
+	private string _textCapacityIncreased;
+
+	private string _nameFormat;
+
+	private string _failMessage;
+
+	private bool _hasFailMessage;
+
+	private bool _hasController;
+
+	private RoomLightController _successfulController;
+
+	private RoomLightController _roomController;
+
+	private readonly Dictionary<uint, double> _blackoutCooldowns = new Dictionary<uint, double>();
+
+	private readonly HashSet<uint> _obsoleteCooldowns = new HashSet<uint>();
+
+	public override ActionName ActivationKey => ActionName.Scp079Blackout;
+
+	public override bool IsReady => ErrorCode == Scp079HudTranslation.Zoom;
+
+	public override bool IsVisible
+	{
+		get
 		{
-			get
+			if (CurrentCapacity > 0)
 			{
-				if (!this._hasFailMessage)
+				return !Scp079CursorManager.LockCameras;
+			}
+			return false;
+		}
+	}
+
+	public override string AbilityName => string.Format(_nameFormat, AbilityCost);
+
+	public override bool DummyEmulationSupport => true;
+
+	public override string FailMessage
+	{
+		get
+		{
+			if (!_hasFailMessage)
+			{
+				return null;
+			}
+			return ErrorCode switch
+			{
+				Scp079HudTranslation.Zoom => null, 
+				Scp079HudTranslation.NotEnoughAux => GetNoAuxMessage(AbilityCost), 
+				Scp079HudTranslation.BlackoutRoomCooldown => _failMessage + "\n" + base.AuxManager.GenerateCustomETA(Mathf.CeilToInt(RemainingCooldown)), 
+				Scp079HudTranslation.BlackoutRoomLimit => string.Format(_failMessage, RoomsOnCooldown, CurrentCapacity), 
+				_ => _failMessage, 
+			};
+		}
+	}
+
+	[field: SerializeField]
+	public AudioClip ConfirmationSound { get; private set; }
+
+	private int CurrentCapacity => GetCapacityOfTier(base.TierManager.AccessTierIndex);
+
+	private int RoomsOnCooldown
+	{
+		get
+		{
+			int num = 0;
+			bool flag = false;
+			foreach (KeyValuePair<uint, double> blackoutCooldown in _blackoutCooldowns)
+			{
+				if (blackoutCooldown.Value < NetworkTime.time)
 				{
-					return null;
-				}
-				Scp079HudTranslation errorCode = this.ErrorCode;
-				if (errorCode <= Scp079HudTranslation.NotEnoughAux)
-				{
-					if (errorCode == Scp079HudTranslation.Zoom)
-					{
-						return null;
-					}
-					if (errorCode == Scp079HudTranslation.NotEnoughAux)
-					{
-						return base.GetNoAuxMessage(this.AbilityCost);
-					}
+					_obsoleteCooldowns.Add(blackoutCooldown.Key);
+					flag = true;
 				}
 				else
 				{
-					if (errorCode == Scp079HudTranslation.BlackoutRoomLimit)
-					{
-						return string.Format(this._failMessage, this.RoomsOnCooldown, this.CurrentCapacity);
-					}
-					if (errorCode == Scp079HudTranslation.BlackoutRoomCooldown)
-					{
-						return this._failMessage + "\n" + base.AuxManager.GenerateCustomETA(Mathf.CeilToInt(this.RemainingCooldown));
-					}
+					num++;
 				}
-				return this._failMessage;
 			}
-		}
-
-		public AudioClip ConfirmationSound { get; private set; }
-
-		private int CurrentCapacity
-		{
-			get
+			if (!flag)
 			{
-				return this.GetCapacityOfTier(base.TierManager.AccessTierIndex);
-			}
-		}
-
-		private int RoomsOnCooldown
-		{
-			get
-			{
-				int num = 0;
-				bool flag = false;
-				foreach (KeyValuePair<uint, double> keyValuePair in this._blackoutCooldowns)
-				{
-					if (keyValuePair.Value < NetworkTime.time)
-					{
-						this._obsoleteCooldowns.Add(keyValuePair.Key);
-						flag = true;
-					}
-					else
-					{
-						num++;
-					}
-				}
-				if (!flag)
-				{
-					return num;
-				}
-				foreach (uint num2 in this._obsoleteCooldowns)
-				{
-					this._blackoutCooldowns.Remove(num2);
-				}
-				this._obsoleteCooldowns.Clear();
 				return num;
 			}
-		}
-
-		private float RemainingCooldown
-		{
-			get
+			foreach (uint obsoleteCooldown in _obsoleteCooldowns)
 			{
-				double num;
-				if (!this._hasController || !this._blackoutCooldowns.TryGetValue(this._roomController.netId, out num))
-				{
-					return 0f;
-				}
-				double num2 = num - NetworkTime.time;
-				return Mathf.Max(0f, (float)num2);
+				_blackoutCooldowns.Remove(obsoleteCooldown);
 			}
+			_obsoleteCooldowns.Clear();
+			return num;
 		}
+	}
 
-		private Scp079HudTranslation ErrorCode
+	private float RemainingCooldown
+	{
+		get
 		{
-			get
+			if (!_hasController || !_blackoutCooldowns.TryGetValue(_roomController.netId, out var value))
 			{
-				if (!this._hasController)
-				{
-					return Scp079HudTranslation.BlackoutRoomUnavailable;
-				}
-				if (!this._roomController.LightsEnabled)
-				{
-					return Scp079HudTranslation.BlackoutAlreadyActive;
-				}
-				if (this.RemainingCooldown > 0f)
-				{
-					return Scp079HudTranslation.BlackoutRoomCooldown;
-				}
-				if (this.RoomsOnCooldown >= this.CurrentCapacity)
-				{
-					return Scp079HudTranslation.BlackoutRoomLimit;
-				}
-				if ((float)base.AuxManager.CurrentAuxFloored < this.AbilityCost)
-				{
-					return Scp079HudTranslation.NotEnoughAux;
-				}
-				return Scp079HudTranslation.Zoom;
+				return 0f;
 			}
+			double num = value - NetworkTime.time;
+			return Mathf.Max(0f, (float)num);
 		}
+	}
 
-		private bool IsOnSurface
+	private Scp079HudTranslation ErrorCode
+	{
+		get
 		{
-			get
+			if (!_hasController)
 			{
-				return base.CurrentCamSync.CurrentCamera.Room.Zone == FacilityZone.Surface;
+				return Scp079HudTranslation.BlackoutRoomUnavailable;
 			}
-		}
-
-		private float AbilityCost
-		{
-			get
+			if (!_roomController.LightsEnabled)
 			{
-				return (float)(this.IsOnSurface ? this._surfaceCost : this._cost);
+				return Scp079HudTranslation.BlackoutAlreadyActive;
 			}
-		}
-
-		private void RefreshCurrentController()
-		{
-			this._hasController = false;
-			this._hasFailMessage = false;
-			this._failMessage = null;
-			RoomIdentifier room = base.CurrentCamSync.CurrentCamera.Room;
-			foreach (RoomLightController roomLightController in RoomLightController.Instances)
+			if (RemainingCooldown > 0f)
 			{
-				if (!(roomLightController.Room != room))
+				return Scp079HudTranslation.BlackoutRoomCooldown;
+			}
+			if (RoomsOnCooldown >= CurrentCapacity)
+			{
+				return Scp079HudTranslation.BlackoutRoomLimit;
+			}
+			if ((float)base.AuxManager.CurrentAuxFloored < AbilityCost)
+			{
+				return Scp079HudTranslation.NotEnoughAux;
+			}
+			return Scp079HudTranslation.Zoom;
+		}
+	}
+
+	private bool IsOnSurface => base.CurrentCamSync.CurrentCamera.Room.Zone == FacilityZone.Surface;
+
+	private float AbilityCost => IsOnSurface ? _surfaceCost : _cost;
+
+	private void RefreshCurrentController()
+	{
+		_hasController = false;
+		_hasFailMessage = false;
+		_failMessage = null;
+		RoomIdentifier room = base.CurrentCamSync.CurrentCamera.Room;
+		foreach (RoomLightController instance in RoomLightController.Instances)
+		{
+			if (!(instance.Room != room))
+			{
+				float y = base.CurrentCamSync.CurrentCamera.Position.y;
+				float y2 = instance.transform.position.y;
+				if (!(Mathf.Abs(y - y2) > 50f))
 				{
-					float y = base.CurrentCamSync.CurrentCamera.Position.y;
-					float y2 = roomLightController.transform.position.y;
-					if (Mathf.Abs(y - y2) <= 100f)
-					{
-						this._roomController = roomLightController;
-						this._hasController = true;
-						break;
-					}
+					_roomController = instance;
+					_hasController = true;
+					break;
 				}
 			}
 		}
+	}
 
-		private int GetCapacityOfTier(int index)
-		{
-			index = Mathf.Clamp(index, 0, this._capacityPerTier.Length - 1);
-			return this._capacityPerTier[index];
-		}
+	private int GetCapacityOfTier(int index)
+	{
+		index = Mathf.Clamp(index, 0, _capacityPerTier.Length - 1);
+		return _capacityPerTier[index];
+	}
 
-		protected override void Start()
-		{
-			base.Start();
-			this._nameFormat = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.ActivateRoomBlackout);
-			this._textUnlock = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.BlackoutRoomAvailable);
-			this._textCapacityIncreased = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.BlackoutCapacityIncreased);
-			base.CurrentCamSync.OnCameraChanged += this.RefreshCurrentController;
-		}
+	protected override void Start()
+	{
+		base.Start();
+		_nameFormat = Translations.Get(Scp079HudTranslation.ActivateRoomBlackout);
+		_textUnlock = Translations.Get(Scp079HudTranslation.BlackoutRoomAvailable);
+		_textCapacityIncreased = Translations.Get(Scp079HudTranslation.BlackoutCapacityIncreased);
+		base.CurrentCamSync.OnCameraChanged += RefreshCurrentController;
+	}
 
-		protected override void Trigger()
-		{
-			base.ClientSendCmd();
-		}
+	protected override void Trigger()
+	{
+		ClientSendCmd();
+	}
 
-		public override void ServerProcessCmd(NetworkReader reader)
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (IsReady && !base.LostSignalHandler.Lost)
 		{
-			base.ServerProcessCmd(reader);
-			if (!this.IsReady || base.LostSignalHandler.Lost)
-			{
-				this._successfulController = null;
-				base.ServerSendRpc(false);
-				return;
-			}
-			Scp079BlackingOutRoomEventsArgs scp079BlackingOutRoomEventsArgs = new Scp079BlackingOutRoomEventsArgs(base.Owner, this._roomController.Room);
+			Scp079BlackingOutRoomEventsArgs scp079BlackingOutRoomEventsArgs = new Scp079BlackingOutRoomEventsArgs(base.Owner, _roomController.Room);
 			Scp079Events.OnBlackingOutRoom(scp079BlackingOutRoomEventsArgs);
-			if (!scp079BlackingOutRoomEventsArgs.IsAllowed)
+			if (scp079BlackingOutRoomEventsArgs.IsAllowed)
 			{
-				return;
-			}
-			base.AuxManager.CurrentAux -= this.AbilityCost;
-			base.RewardManager.MarkRoom(this._roomController.Room);
-			this._blackoutCooldowns[this._roomController.netId] = NetworkTime.time + (double)this._cooldown;
-			this._roomController.ServerFlickerLights(this._blackoutDuration);
-			this._successfulController = this._roomController;
-			base.ServerSendRpc(true);
-			Scp079Events.OnBlackedOutRoom(new Scp079BlackedOutRoomEventArgs(base.Owner, this._roomController.Room));
-		}
-
-		public override void ServerWriteRpc(NetworkWriter writer)
-		{
-			base.ServerWriteRpc(writer);
-			writer.WriteNetworkBehaviour(this._successfulController);
-			writer.WriteByte((byte)this.RoomsOnCooldown);
-			foreach (KeyValuePair<uint, double> keyValuePair in this._blackoutCooldowns)
-			{
-				writer.WriteUInt(keyValuePair.Key);
-				writer.WriteDouble(keyValuePair.Value);
+				base.AuxManager.CurrentAux -= AbilityCost;
+				base.RewardManager.MarkRoom(_roomController.Room);
+				_blackoutCooldowns[_roomController.netId] = NetworkTime.time + (double)_cooldown;
+				_roomController.ServerFlickerLights(_blackoutDuration);
+				_successfulController = _roomController;
+				ServerSendRpc(toAll: true);
+				Scp079Events.OnBlackedOutRoom(new Scp079BlackedOutRoomEventArgs(base.Owner, _roomController.Room));
 			}
 		}
-
-		public override void ClientProcessRpc(NetworkReader reader)
+		else
 		{
-			base.ClientProcessRpc(reader);
-			this._successfulController = reader.ReadNetworkBehaviour<RoomLightController>();
-			if (this._successfulController != null)
-			{
-				this.PlaySoundForController(this._successfulController);
-			}
-			int num = (int)reader.ReadByte();
-			this._blackoutCooldowns.Clear();
-			for (int i = 0; i < num; i++)
-			{
-				uint num2 = reader.ReadUInt();
-				double num3 = reader.ReadDouble();
-				this._blackoutCooldowns.Add(num2, num3);
-			}
+			_successfulController = null;
+			ServerSendRpc(toAll: false);
 		}
+	}
 
-		public override void ResetObject()
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteNetworkBehaviour(_successfulController);
+		writer.WriteByte((byte)RoomsOnCooldown);
+		foreach (KeyValuePair<uint, double> blackoutCooldown in _blackoutCooldowns)
 		{
-			base.ResetObject();
-			this._blackoutCooldowns.Clear();
-			this._obsoleteCooldowns.Clear();
+			writer.WriteUInt(blackoutCooldown.Key);
+			writer.WriteDouble(blackoutCooldown.Value);
 		}
+	}
 
-		public void PlaySoundForController(RoomLightController flc)
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		_successfulController = reader.ReadNetworkBehaviour<RoomLightController>();
+		if (_successfulController != null)
 		{
-			Vector3 vector = flc.transform.position + Vector3.down * 15f;
-			AudioSourcePoolManager.PlayAtPosition(this.ConfirmationSound, vector, 37f, 1f, FalloffType.Linear, MixerChannel.DefaultSfx, 1f).Source.minDistance = 15f;
+			PlaySoundForController(_successfulController);
 		}
-
-		public override void OnFailMessageAssigned()
+		int num = reader.ReadByte();
+		_blackoutCooldowns.Clear();
+		for (int i = 0; i < num; i++)
 		{
-			base.OnFailMessageAssigned();
-			this._hasFailMessage = true;
-			this._failMessage = Translations.Get<Scp079HudTranslation>(this.ErrorCode);
+			uint key = reader.ReadUInt();
+			double value = reader.ReadDouble();
+			_blackoutCooldowns.Add(key, value);
 		}
+	}
 
-		public bool WriteLevelUpNotification(StringBuilder sb, int newLevel)
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		_blackoutCooldowns.Clear();
+		_obsoleteCooldowns.Clear();
+	}
+
+	public void PlaySoundForController(RoomLightController flc)
+	{
+		Vector3 position = flc.transform.position + Vector3.down * 15f;
+		AudioSourcePoolManager.PlayAtPosition(ConfirmationSound, position, 37f, 1f, FalloffType.Linear).Source.minDistance = 15f;
+	}
+
+	public override void OnFailMessageAssigned()
+	{
+		base.OnFailMessageAssigned();
+		_hasFailMessage = true;
+		_failMessage = Translations.Get(ErrorCode);
+	}
+
+	public bool WriteLevelUpNotification(StringBuilder sb, int newLevel)
+	{
+		int capacityOfTier = GetCapacityOfTier(newLevel);
+		int capacityOfTier2 = GetCapacityOfTier(newLevel - 1);
+		if (capacityOfTier <= capacityOfTier2)
 		{
-			int capacityOfTier = this.GetCapacityOfTier(newLevel);
-			int capacityOfTier2 = this.GetCapacityOfTier(newLevel - 1);
-			if (capacityOfTier <= capacityOfTier2)
-			{
-				return false;
-			}
-			if (capacityOfTier2 > 0)
-			{
-				sb.AppendFormat(this._textCapacityIncreased, capacityOfTier);
-			}
-			else
-			{
-				sb.AppendFormat(this._textUnlock, string.Format("[{0}]", new ReadableKeyCode(this.ActivationKey)));
-			}
-			return true;
+			return false;
 		}
-
-		[SerializeField]
-		private int[] _capacityPerTier;
-
-		[SerializeField]
-		private float _blackoutDuration;
-
-		[SerializeField]
-		private float _cooldown;
-
-		[SerializeField]
-		private int _cost;
-
-		[SerializeField]
-		private int _surfaceCost;
-
-		private string _textUnlock;
-
-		private string _textCapacityIncreased;
-
-		private string _nameFormat;
-
-		private string _failMessage;
-
-		private bool _hasFailMessage;
-
-		private bool _hasController;
-
-		private RoomLightController _successfulController;
-
-		private RoomLightController _roomController;
-
-		private readonly Dictionary<uint, double> _blackoutCooldowns = new Dictionary<uint, double>();
-
-		private readonly HashSet<uint> _obsoleteCooldowns = new HashSet<uint>();
-
-		private enum ValidationError
+		if (capacityOfTier2 > 0)
 		{
-			None,
-			NotEnoughAux,
-			NoController = 26,
-			MaxCapacityReached,
-			RoomOnCooldown,
-			AlreadyBlackedOut = 60
+			sb.AppendFormat(_textCapacityIncreased, capacityOfTier);
 		}
+		else
+		{
+			sb.AppendFormat(_textUnlock, $"[{new ReadableKeyCode(ActivationKey)}]");
+		}
+		return true;
 	}
 }

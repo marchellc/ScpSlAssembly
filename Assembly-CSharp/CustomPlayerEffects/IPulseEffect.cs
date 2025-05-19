@@ -1,9 +1,6 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public interface IPulseEffect
 {
-	public interface IPulseEffect
-	{
-		void ExecutePulse();
-	}
+	void ExecutePulse();
 }

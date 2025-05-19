@@ -1,143 +1,96 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Interactables.Interobjects.DoorUtils;
 using UnityEngine;
 
-namespace Interactables.Interobjects
+namespace Interactables.Interobjects;
+
+public class ElevatorDoor : BasicDoor, INonInteractableDoor, IServerInteractable, IInteractable
 {
-	public class ElevatorDoor : BasicDoor, INonInteractableDoor, IServerInteractable, IInteractable
+	private static readonly Dictionary<ElevatorGroup, List<ElevatorDoor>> AllElevatorDoors = new Dictionary<ElevatorGroup, List<ElevatorDoor>>();
+
+	[SerializeField]
+	private ElevatorGroup _group;
+
+	[SerializeField]
+	private Vector3 _targetPosition;
+
+	[SerializeField]
+	private Vector3 _topPosition;
+
+	[SerializeField]
+	private Vector3 _bottomPosition;
+
+	[NonSerialized]
+	public ElevatorChamber Chamber;
+
+	public Vector3 TargetPosition => base.transform.TransformPoint(_targetPosition);
+
+	public Vector3 TopPosition => base.transform.TransformPoint(_topPosition);
+
+	public Vector3 BottomPosition => base.transform.TransformPoint(_bottomPosition);
+
+	public ElevatorGroup Group => _group;
+
+	public bool IgnoreLockdowns => true;
+
+	public bool IgnoreRemoteAdmin => true;
+
+	public static event Action<ElevatorGroup> OnLocksChanged;
+
+	public override bool AllowInteracting(ReferenceHub ply, byte colliderId)
 	{
-		public static event Action<ElevatorGroup> OnLocksChanged;
+		return false;
+	}
 
-		public Vector3 TargetPosition
+	protected override void Awake()
+	{
+		base.Awake();
+		List<ElevatorDoor> doorsForGroup = GetDoorsForGroup(_group);
+		bool flag = false;
+		float y = TargetPosition.y;
+		for (int i = 0; i < doorsForGroup.Count; i++)
 		{
-			get
+			if (!(y >= doorsForGroup[i].TargetPosition.y))
 			{
-				return base.transform.TransformPoint(this._targetPosition);
+				doorsForGroup.Insert(i, this);
+				flag = true;
+				break;
 			}
 		}
-
-		public Vector3 TopPosition
+		if (!flag)
 		{
-			get
-			{
-				return base.transform.TransformPoint(this._topPosition);
-			}
+			doorsForGroup.Add(this);
 		}
+	}
 
-		public Vector3 BottomPosition
+	public new void ServerInteract(ReferenceHub ply, byte colliderId)
+	{
+		if (Chamber.IsReadyForUserInput && ActiveLocks == 0)
 		{
-			get
-			{
-				return base.transform.TransformPoint(this._bottomPosition);
-			}
+			Chamber.ServerInteract(ply, colliderId);
 		}
+	}
 
-		public ElevatorGroup Group
-		{
-			get
-			{
-				return this._group;
-			}
-		}
+	protected override void LockChanged(ushort prevValue)
+	{
+		base.LockChanged(prevValue);
+		ElevatorDoor.OnLocksChanged?.Invoke(_group);
+	}
 
-		public bool IgnoreLockdowns
-		{
-			get
-			{
-				return true;
-			}
-		}
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+		GetDoorsForGroup(_group).Remove(this);
+	}
 
-		public bool IgnoreRemoteAdmin
-		{
-			get
-			{
-				return true;
-			}
-		}
+	public static List<ElevatorDoor> GetDoorsForGroup(ElevatorGroup group)
+	{
+		return AllElevatorDoors.GetOrAddNew(group);
+	}
 
-		public override bool AllowInteracting(ReferenceHub ply, byte colliderId)
-		{
-			return false;
-		}
-
-		protected override void Awake()
-		{
-			base.Awake();
-			List<ElevatorDoor> doorsForGroup = ElevatorDoor.GetDoorsForGroup(this._group);
-			bool flag = false;
-			float y = this.TargetPosition.y;
-			for (int i = 0; i < doorsForGroup.Count; i++)
-			{
-				if (y < doorsForGroup[i].TargetPosition.y)
-				{
-					doorsForGroup.Insert(i, this);
-					flag = true;
-					break;
-				}
-			}
-			if (!flag)
-			{
-				doorsForGroup.Add(this);
-			}
-		}
-
-		public new void ServerInteract(ReferenceHub ply, byte colliderId)
-		{
-			if (!this.Chamber.IsReadyForUserInput)
-			{
-				return;
-			}
-			if (this.ActiveLocks != 0)
-			{
-				return;
-			}
-			this.Chamber.ServerInteract(ply, colliderId);
-		}
-
-		protected override void LockChanged(ushort prevValue)
-		{
-			base.LockChanged(prevValue);
-			Action<ElevatorGroup> onLocksChanged = ElevatorDoor.OnLocksChanged;
-			if (onLocksChanged == null)
-			{
-				return;
-			}
-			onLocksChanged(this._group);
-		}
-
-		protected override void OnDestroy()
-		{
-			base.OnDestroy();
-			ElevatorDoor.GetDoorsForGroup(this._group).Remove(this);
-		}
-
-		public static List<ElevatorDoor> GetDoorsForGroup(ElevatorGroup group)
-		{
-			return ElevatorDoor.AllElevatorDoors.GetOrAdd(group, () => new List<ElevatorDoor>());
-		}
-
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		private static readonly Dictionary<ElevatorGroup, List<ElevatorDoor>> AllElevatorDoors = new Dictionary<ElevatorGroup, List<ElevatorDoor>>();
-
-		[SerializeField]
-		private ElevatorGroup _group;
-
-		[SerializeField]
-		private Vector3 _targetPosition;
-
-		[SerializeField]
-		private Vector3 _topPosition;
-
-		[SerializeField]
-		private Vector3 _bottomPosition;
-
-		[NonSerialized]
-		public ElevatorChamber Chamber;
+	public override bool Weaved()
+	{
+		return true;
 	}
 }

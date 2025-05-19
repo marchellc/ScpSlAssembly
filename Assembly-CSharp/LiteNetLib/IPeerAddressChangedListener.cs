@@ -1,10 +1,8 @@
-﻿using System;
 using System.Net;
 
-namespace LiteNetLib
+namespace LiteNetLib;
+
+public interface IPeerAddressChangedListener
 {
-	public interface IPeerAddressChangedListener
-	{
-		void OnPeerAddressChanged(NetPeer peer, IPEndPoint previousAddress);
-	}
+	void OnPeerAddressChanged(NetPeer peer, IPEndPoint previousAddress);
 }

@@ -1,15 +1,6 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.Scp079.Pinging;
 
-namespace PlayerRoles.PlayableScps.Scp079.Pinging
+public class MicroHidPingProcesssor : IPingProcessor
 {
-	public class MicroHidPingProcesssor : IPingProcessor
-	{
-		public float Range
-		{
-			get
-			{
-				return 60f;
-			}
-		}
-	}
+	public float Range => 60f;
 }

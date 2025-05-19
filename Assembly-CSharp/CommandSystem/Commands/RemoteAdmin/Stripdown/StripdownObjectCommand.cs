@@ -1,40 +1,25 @@
-﻿using System;
+using System;
 using Mirror;
 
-namespace CommandSystem.Commands.RemoteAdmin.Stripdown
+namespace CommandSystem.Commands.RemoteAdmin.Stripdown;
+
+[CommandHandler(typeof(StripdownCommand))]
+public class StripdownObjectCommand : StripdownInstructionBase
 {
-	[CommandHandler(typeof(StripdownCommand))]
-	public class StripdownObjectCommand : StripdownInstructionBase
+	public override string Command => "object";
+
+	public override string Description => "Finds all objects of provided type and selects them.";
+
+	protected override string ProcessInstruction(NetworkConnection sender, string instruction)
 	{
-		public override string Command
+		try
 		{
-			get
-			{
-				return "object";
-			}
+			int num = StripdownProcessor.SelectUnityObjects(instruction);
+			return $"Selected {num} objects of type {instruction}";
 		}
-
-		public override string Description
+		catch (Exception ex)
 		{
-			get
-			{
-				return "Finds all objects of provided type and selects them.";
-			}
-		}
-
-		protected override string ProcessInstruction(NetworkConnection sender, string instruction)
-		{
-			string text;
-			try
-			{
-				int num = StripdownProcessor.SelectUnityObjects(instruction);
-				text = string.Format("Selected {0} objects of type {1}", num, instruction);
-			}
-			catch (Exception ex)
-			{
-				text = "Failed to select objects. Exception: " + ex.Message + ";" + ex.StackTrace;
-			}
-			return text;
+			return "Failed to select objects. Exception: " + ex.Message + ";" + ex.StackTrace;
 		}
 	}
 }

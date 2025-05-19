@@ -1,97 +1,86 @@
-﻿using System;
+using System;
+using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items.MicroHID.Modules;
 using InventorySystem.Items.Pickups;
 using MapGeneration.Distributors;
 using UnityEngine;
 
-namespace InventorySystem.Items.MicroHID
+namespace InventorySystem.Items.MicroHID;
+
+public class MicroHIDPedestal : Locker
 {
-	public class MicroHIDPedestal : Locker
+	private Transform _trackedPickup;
+
+	private bool _isTrackingPickup;
+
+	private const float DisconnectPosOffsetSqr = 0.0001f;
+
+	private const float DisconnectRotationDot = 0.99f;
+
+	protected override void ServerFillChambers()
 	{
-		protected override void ServerFillChambers()
+		if (Chambers.Length != 1)
 		{
-			if (this.Chambers.Length != 1)
-			{
-				throw new InvalidOperationException("MicroHID pedestal can only have 1 chamber.");
-			}
-			LockerChamber lockerChamber = this.Chambers[0];
-			lockerChamber.SpawnItem(ItemType.MicroHID, 1);
-			MicroHIDPickup microHIDPickup;
-			if (!this.TryGetSpawnedMicro(lockerChamber, out microHIDPickup))
-			{
-				return;
-			}
-			microHIDPickup.OnSelfDestroyed += this.ReleaseConnectionWithPickup;
-			this._isTrackingPickup = true;
-			this._trackedPickup = microHIDPickup.transform;
-			PickupSyncInfo info = microHIDPickup.Info;
+			throw new InvalidOperationException("MicroHID pedestal can only have 1 chamber.");
+		}
+		LockerChamber lockerChamber = Chambers[0];
+		lockerChamber.SpawnItem(ItemType.MicroHID, 1);
+		if (TryGetSpawnedMicro(lockerChamber, out var pickup))
+		{
+			pickup.OnSelfDestroyed += ReleaseConnectionWithPickup;
+			_isTrackingPickup = true;
+			_trackedPickup = pickup.transform;
+			PickupSyncInfo info = pickup.Info;
 			info.Locked = false;
-			microHIDPickup.NetworkInfo = info;
-			MicroHIDItem microHIDItem;
-			DrawAndInspectorModule drawAndInspectorModule;
-			if (info.ItemId.TryGetTemplate(out microHIDItem) && microHIDItem.TryGetSubcomponent<DrawAndInspectorModule>(out drawAndInspectorModule))
+			pickup.NetworkInfo = info;
+			if (info.ItemId.TryGetTemplate<MicroHIDItem>(out var item) && item.TryGetSubcomponent<DrawAndInspectorModule>(out var ret))
 			{
-				drawAndInspectorModule.ServerRegisterSerial(info.Serial);
+				ret.ServerRegisterSerial(info.Serial);
 			}
 		}
+	}
 
-		protected override bool CheckTogglePerms(int chamberId, ReferenceHub ply)
-		{
-			return false;
-		}
+	protected override bool CheckTogglePerms(int chamberId, ReferenceHub ply, out PermissionUsed callback)
+	{
+		callback = null;
+		return false;
+	}
 
-		protected override void Update()
+	protected override void Update()
+	{
+		base.Update();
+		if (_isTrackingPickup)
 		{
-			base.Update();
-			if (!this._isTrackingPickup)
+			_trackedPickup.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
+			if (!(localPosition.sqrMagnitude < 0.0001f) || !(localRotation.w > 0.99f))
 			{
-				return;
+				ReleaseConnectionWithPickup();
 			}
-			Vector3 vector;
-			Quaternion quaternion;
-			this._trackedPickup.GetLocalPositionAndRotation(out vector, out quaternion);
-			if (vector.sqrMagnitude < 0.0001f && quaternion.w > 0.99f)
+		}
+	}
+
+	private void ReleaseConnectionWithPickup()
+	{
+		base.NetworkOpenedChambers = 1;
+		_isTrackingPickup = false;
+	}
+
+	private bool TryGetSpawnedMicro(LockerChamber chamber, out MicroHIDPickup pickup)
+	{
+		foreach (ItemPickupBase item in chamber.Content)
+		{
+			if (!(item == null) && item is MicroHIDPickup microHIDPickup)
 			{
-				return;
+				pickup = microHIDPickup;
+				return true;
 			}
-			this.ReleaseConnectionWithPickup();
 		}
+		pickup = null;
+		return false;
+	}
 
-		private void ReleaseConnectionWithPickup()
-		{
-			base.NetworkOpenedChambers = 1;
-			this._isTrackingPickup = false;
-		}
-
-		private bool TryGetSpawnedMicro(LockerChamber chamber, out MicroHIDPickup pickup)
-		{
-			foreach (ItemPickupBase itemPickupBase in chamber.Content)
-			{
-				if (!(itemPickupBase == null))
-				{
-					MicroHIDPickup microHIDPickup = itemPickupBase as MicroHIDPickup;
-					if (microHIDPickup != null)
-					{
-						pickup = microHIDPickup;
-						return true;
-					}
-				}
-			}
-			pickup = null;
-			return false;
-		}
-
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		private Transform _trackedPickup;
-
-		private bool _isTrackingPickup;
-
-		private const float DisconnectPosOffsetSqr = 0.0001f;
-
-		private const float DisconnectRotationDot = 0.99f;
+	public override bool Weaved()
+	{
+		return true;
 	}
 }

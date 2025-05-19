@@ -1,74 +1,71 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Text;
 
-namespace LiteNetLib.Layers
+namespace LiteNetLib.Layers;
+
+public class XorEncryptLayer : PacketLayerBase
 {
-	public class XorEncryptLayer : PacketLayerBase
+	private byte[] _byteKey;
+
+	public XorEncryptLayer()
+		: base(0)
 	{
-		public XorEncryptLayer()
-			: base(0)
-		{
-		}
+	}
 
-		public XorEncryptLayer(byte[] key)
-			: this()
-		{
-			this.SetKey(key);
-		}
+	public XorEncryptLayer(byte[] key)
+		: this()
+	{
+		SetKey(key);
+	}
 
-		public XorEncryptLayer(string key)
-			: this()
-		{
-			this.SetKey(key);
-		}
+	public XorEncryptLayer(string key)
+		: this()
+	{
+		SetKey(key);
+	}
 
-		public void SetKey(string key)
-		{
-			this._byteKey = Encoding.UTF8.GetBytes(key);
-		}
+	public void SetKey(string key)
+	{
+		_byteKey = Encoding.UTF8.GetBytes(key);
+	}
 
-		public void SetKey(byte[] key)
+	public void SetKey(byte[] key)
+	{
+		if (_byteKey == null || _byteKey.Length != key.Length)
 		{
-			if (this._byteKey == null || this._byteKey.Length != key.Length)
-			{
-				this._byteKey = new byte[key.Length];
-			}
-			Buffer.BlockCopy(key, 0, this._byteKey, 0, key.Length);
+			_byteKey = new byte[key.Length];
 		}
+		Buffer.BlockCopy(key, 0, _byteKey, 0, key.Length);
+	}
 
-		public override void ProcessInboundPacket(ref IPEndPoint endPoint, ref byte[] data, ref int offset, ref int length)
+	public override void ProcessInboundPacket(ref IPEndPoint endPoint, ref byte[] data, ref int offset, ref int length)
+	{
+		if (_byteKey != null)
 		{
-			if (this._byteKey == null)
-			{
-				return;
-			}
 			int num = offset;
-			int i = 0;
-			while (i < length)
+			int num2 = 0;
+			while (num2 < length)
 			{
-				data[num] ^= this._byteKey[i % this._byteKey.Length];
-				i++;
+				data[num] ^= _byteKey[num2 % _byteKey.Length];
+				num2++;
 				num++;
 			}
 		}
+	}
 
-		public override void ProcessOutBoundPacket(ref IPEndPoint endPoint, ref byte[] data, ref int offset, ref int length)
+	public override void ProcessOutBoundPacket(ref IPEndPoint endPoint, ref byte[] data, ref int offset, ref int length)
+	{
+		if (_byteKey != null)
 		{
-			if (this._byteKey == null)
-			{
-				return;
-			}
 			int num = offset;
-			int i = 0;
-			while (i < length)
+			int num2 = 0;
+			while (num2 < length)
 			{
-				data[num] ^= this._byteKey[i % this._byteKey.Length];
-				i++;
+				data[num] ^= _byteKey[num2 % _byteKey.Length];
+				num2++;
 				num++;
 			}
 		}
-
-		private byte[] _byteKey;
 	}
 }

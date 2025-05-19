@@ -1,39 +1,37 @@
-﻿using System;
+using System;
 using InventorySystem.Crosshairs;
 
-namespace CommandSystem.Commands.Console
+namespace CommandSystem.Commands.Console;
+
+[CommandHandler(typeof(GameConsoleCommandHandler))]
+public class AccuracyStatsCommand : ICommand
 {
-	[CommandHandler(typeof(GameConsoleCommandHandler))]
-	public class AccuracyStatsCommand : ICommand
+	public string Command { get; } = "accuracystats";
+
+	public string[] Aliases { get; } = new string[5] { "accstats", "inaccstats", "inaccuracystats", "statsacc", "statsinacc" };
+
+	public string Description { get; } = "Replaces gun crosshair with one that displays current inaccuracy.";
+
+	private bool Enabled
 	{
-		public string Command { get; } = "accuracystats";
-
-		public string[] Aliases { get; } = new string[] { "accstats", "inaccstats", "inaccuracystats", "statsacc", "statsinacc" };
-
-		public string Description { get; } = "Replaces gun crosshair with one that displays current inaccuracy.";
-
-		private bool Enabled
+		get
 		{
-			get
-			{
-				return DebugStatsCrosshair.Enabled;
-			}
-			set
-			{
-				DebugStatsCrosshair.Enabled = value;
-			}
+			return DebugStatsCrosshair.Enabled;
 		}
-
-		public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+		set
 		{
-			this.Enabled = !this.Enabled;
-			response = "Accuracy stats crosshair status: " + (this.Enabled ? "Enabled" : "Disabled") + "\nIf changes aren't applied automatically, re-equip your firearm.";
-			ReferenceHub referenceHub;
-			if (ReferenceHub.TryGetLocalHub(out referenceHub))
-			{
-				CrosshairController.Refresh(referenceHub, referenceHub.inventory.CurItem.SerialNumber);
-			}
-			return true;
+			DebugStatsCrosshair.Enabled = value;
 		}
+	}
+
+	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+	{
+		Enabled = !Enabled;
+		response = "Accuracy stats crosshair status: " + (Enabled ? "Enabled" : "Disabled") + "\nIf changes aren't applied automatically, re-equip your firearm.";
+		if (ReferenceHub.TryGetLocalHub(out var hub))
+		{
+			CrosshairController.Refresh(hub, hub.inventory.CurItem.SerialNumber);
+		}
+		return true;
 	}
 }

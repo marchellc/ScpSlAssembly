@@ -1,4 +1,3 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
@@ -7,39 +6,6 @@ using UnityEngine;
 [RequireComponent(typeof(AudioLowPassFilter))]
 public class AudioProximityEffects : MonoBehaviour
 {
-	private float ProximityLevel
-	{
-		get
-		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetLocalHub(out referenceHub))
-			{
-				return 0f;
-			}
-			IFpcRole fpcRole = referenceHub.roleManager.CurrentRole as IFpcRole;
-			if (fpcRole == null)
-			{
-				return 0f;
-			}
-			return Vector3.Distance(base.transform.position, fpcRole.FpcModule.Position) / this._audioSource.maxDistance * this._audioSource.spatialBlend;
-		}
-	}
-
-	private void Awake()
-	{
-		this._audioSource = base.GetComponent<AudioSource>();
-		this._reverbFilter = base.GetComponent<AudioReverbFilter>();
-		this._lowPassFilter = base.GetComponent<AudioLowPassFilter>();
-	}
-
-	private void Update()
-	{
-		float proximityLevel = this.ProximityLevel;
-		this._reverbFilter.dryLevel = this._reverbDryOverDistance.Evaluate(proximityLevel);
-		this._reverbFilter.room = this._reverbSizeOverDistance.Evaluate(proximityLevel);
-		this._lowPassFilter.cutoffFrequency = this._lowpassOverDistance.Evaluate(proximityLevel);
-	}
-
 	[SerializeField]
 	private AnimationCurve _reverbSizeOverDistance;
 
@@ -54,4 +20,35 @@ public class AudioProximityEffects : MonoBehaviour
 	private AudioReverbFilter _reverbFilter;
 
 	private AudioLowPassFilter _lowPassFilter;
+
+	private float ProximityLevel
+	{
+		get
+		{
+			if (!ReferenceHub.TryGetLocalHub(out var hub))
+			{
+				return 0f;
+			}
+			if (!(hub.roleManager.CurrentRole is IFpcRole fpcRole))
+			{
+				return 0f;
+			}
+			return Vector3.Distance(base.transform.position, fpcRole.FpcModule.Position) / _audioSource.maxDistance * _audioSource.spatialBlend;
+		}
+	}
+
+	private void Awake()
+	{
+		_audioSource = GetComponent<AudioSource>();
+		_reverbFilter = GetComponent<AudioReverbFilter>();
+		_lowPassFilter = GetComponent<AudioLowPassFilter>();
+	}
+
+	private void Update()
+	{
+		float proximityLevel = ProximityLevel;
+		_reverbFilter.dryLevel = _reverbDryOverDistance.Evaluate(proximityLevel);
+		_reverbFilter.room = _reverbSizeOverDistance.Evaluate(proximityLevel);
+		_lowPassFilter.cutoffFrequency = _lowpassOverDistance.Evaluate(proximityLevel);
+	}
 }

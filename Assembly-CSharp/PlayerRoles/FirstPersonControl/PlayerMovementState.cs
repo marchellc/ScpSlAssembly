@@ -1,12 +1,9 @@
-﻿using System;
+namespace PlayerRoles.FirstPersonControl;
 
-namespace PlayerRoles.FirstPersonControl
+public enum PlayerMovementState : byte
 {
-	public enum PlayerMovementState : byte
-	{
-		Crouching,
-		Sneaking,
-		Walking,
-		Sprinting
-	}
+	Crouching,
+	Sneaking,
+	Walking,
+	Sprinting
 }

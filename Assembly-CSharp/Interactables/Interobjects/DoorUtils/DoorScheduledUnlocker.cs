@@ -1,90 +1,87 @@
-﻿using System;
 using System.Collections.Generic;
 using InventorySystem;
 using UnityEngine;
 
-namespace Interactables.Interobjects.DoorUtils
+namespace Interactables.Interobjects.DoorUtils;
+
+public static class DoorScheduledUnlocker
 {
-	public static class DoorScheduledUnlocker
+	private class ScheduledUnlock
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		public readonly DoorVariant Door;
+
+		private float _targetTime;
+
+		private readonly DoorLockReason _flagsToUnset;
+
+		public ScheduledUnlock(DoorVariant targetDoor, float time, DoorLockReason flags)
 		{
-			StaticUnityMethods.OnUpdate += DoorScheduledUnlocker.UnityStaticUpdate;
-			Inventory.OnServerStarted += DoorScheduledUnlocker.Entries.Clear;
-			Inventory.OnServerStarted += DoorScheduledUnlocker.EntriesToRemove.Clear;
+			Door = targetDoor;
+			_targetTime = Time.timeSinceLevelLoad + time;
+			_flagsToUnset = flags;
 		}
 
-		private static void UnityStaticUpdate()
+		public bool Refresh()
 		{
-			if (!StaticUnityMethods.IsPlaying)
+			if (Time.timeSinceLevelLoad < _targetTime)
 			{
-				return;
+				return false;
 			}
-			bool flag = false;
-			for (int i = 0; i < DoorScheduledUnlocker.Entries.Count; i++)
+			if (Door != null)
 			{
-				if (DoorScheduledUnlocker.Entries[i].Refresh())
-				{
-					flag = true;
-					DoorScheduledUnlocker.EntriesToRemove.Add(i);
-				}
+				Door.ServerChangeLock(_flagsToUnset, newState: false);
 			}
-			if (!flag)
-			{
-				return;
-			}
-			for (int j = 0; j < DoorScheduledUnlocker.EntriesToRemove.Count; j++)
-			{
-				DoorScheduledUnlocker.Entries.RemoveAt(DoorScheduledUnlocker.EntriesToRemove[j] - j);
-			}
-			DoorScheduledUnlocker.EntriesToRemove.Clear();
+			return true;
 		}
+	}
 
-		public static void UnlockLater(this DoorVariant door, float time, DoorLockReason flagsToUnlock)
+	private static readonly List<ScheduledUnlock> Entries = new List<ScheduledUnlock>();
+
+	private static readonly List<int> EntriesToRemove = new List<int>();
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		StaticUnityMethods.OnUpdate += UnityStaticUpdate;
+		Inventory.OnServerStarted += Entries.Clear;
+		Inventory.OnServerStarted += EntriesToRemove.Clear;
+	}
+
+	private static void UnityStaticUpdate()
+	{
+		if (!StaticUnityMethods.IsPlaying)
 		{
-			DoorScheduledUnlocker.ScheduledUnlock scheduledUnlock = new DoorScheduledUnlocker.ScheduledUnlock(door, time, flagsToUnlock);
-			for (int i = 0; i < DoorScheduledUnlocker.Entries.Count; i++)
-			{
-				if (!(DoorScheduledUnlocker.Entries[i].Door != door))
-				{
-					DoorScheduledUnlocker.Entries[i] = scheduledUnlock;
-				}
-			}
-			DoorScheduledUnlocker.Entries.Add(scheduledUnlock);
+			return;
 		}
-
-		private static readonly List<DoorScheduledUnlocker.ScheduledUnlock> Entries = new List<DoorScheduledUnlocker.ScheduledUnlock>();
-
-		private static readonly List<int> EntriesToRemove = new List<int>();
-
-		private class ScheduledUnlock
+		bool flag = false;
+		for (int i = 0; i < Entries.Count; i++)
 		{
-			public ScheduledUnlock(DoorVariant targetDoor, float time, DoorLockReason flags)
+			if (Entries[i].Refresh())
 			{
-				this.Door = targetDoor;
-				this._targetTime = Time.timeSinceLevelLoad + time;
-				this._flagsToUnset = flags;
+				flag = true;
+				EntriesToRemove.Add(i);
 			}
-
-			public bool Refresh()
-			{
-				if (Time.timeSinceLevelLoad < this._targetTime)
-				{
-					return false;
-				}
-				if (this.Door != null)
-				{
-					this.Door.ServerChangeLock(this._flagsToUnset, false);
-				}
-				return true;
-			}
-
-			public readonly DoorVariant Door;
-
-			private float _targetTime;
-
-			private readonly DoorLockReason _flagsToUnset;
 		}
+		if (flag)
+		{
+			for (int j = 0; j < EntriesToRemove.Count; j++)
+			{
+				Entries.RemoveAt(EntriesToRemove[j] - j);
+			}
+			EntriesToRemove.Clear();
+		}
+	}
+
+	public static void UnlockLater(this DoorVariant door, float time, DoorLockReason flagsToUnlock)
+	{
+		ScheduledUnlock scheduledUnlock = new ScheduledUnlock(door, time, flagsToUnlock);
+		for (int i = 0; i < Entries.Count; i++)
+		{
+			if (!(Entries[i].Door != door))
+			{
+				Entries[i] = scheduledUnlock;
+			}
+		}
+		Entries.Add(scheduledUnlock);
 	}
 }

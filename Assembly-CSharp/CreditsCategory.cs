@@ -1,5 +1,3 @@
-﻿using System;
-
 public class CreditsCategory
 {
 	public string Header;

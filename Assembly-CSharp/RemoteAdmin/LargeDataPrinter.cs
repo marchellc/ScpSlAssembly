@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace RemoteAdmin
+namespace RemoteAdmin;
+
+public class LargeDataPrinter : MonoBehaviour
 {
-	public class LargeDataPrinter : MonoBehaviour
-	{
-	}
 }

@@ -1,8 +1,5 @@
-﻿using System;
+namespace DeathAnimations;
 
-namespace DeathAnimations
+public class DissolveAnimation : DeathAnimation
 {
-	public class DissolveAnimation : DeathAnimation
-	{
-	}
 }

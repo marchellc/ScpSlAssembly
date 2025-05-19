@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using PlayerRoles;
@@ -6,151 +6,133 @@ using RemoteAdmin;
 using Utils;
 using Utils.NonAllocLINQ;
 
-namespace CommandSystem.Commands.RemoteAdmin
+namespace CommandSystem.Commands.RemoteAdmin;
+
+[CommandHandler(typeof(RemoteAdminCommandHandler))]
+public class ForceRoleCommand : ICommand, IUsageProvider
 {
-	[CommandHandler(typeof(RemoteAdminCommandHandler))]
-	public class ForceRoleCommand : ICommand, IUsageProvider
+	public string Command { get; } = "forcerole";
+
+	public string[] Aliases { get; } = new string[3] { "fc", "fr", "forceclass" };
+
+	public string Description { get; } = "Forces a player to a specified role.";
+
+	public string[] Usage { get; } = new string[2] { "%player%", "%role%" };
+
+	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
-		public string Command { get; } = "forcerole";
-
-		public string[] Aliases { get; } = new string[] { "fc", "fr", "forceclass" };
-
-		public string Description { get; } = "Forces a player to a specified role.";
-
-		public string[] Usage { get; } = new string[] { "%player%", "%role%" };
-
-		public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+		if (!ReferenceHub.TryGetHostHub(out var _))
 		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHostHub(out referenceHub))
-			{
-				response = "You are not connected to a server.";
-				return false;
-			}
-			if (arguments.Count < 2)
-			{
-				response = "To execute this command provide at least 2 arguments!\nUsage: " + arguments.Array[0] + " " + this.DisplayCommandUsage();
-				return false;
-			}
-			string[] array;
-			List<ReferenceHub> list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out array, false);
-			bool flag;
-			if (list.Count == 1)
-			{
-				PlayerCommandSender playerCommandSender = sender as PlayerCommandSender;
-				if (playerCommandSender != null)
-				{
-					flag = playerCommandSender.ReferenceHub == list[0];
-					goto IL_0071;
-				}
-			}
-			flag = false;
-			IL_0071:
-			bool flag2 = flag;
-			PlayerRoleBase playerRoleBase;
-			if (!this.TryParseRole(array[0], out playerRoleBase))
-			{
-				response = "Invalid role ID / name.";
-				return false;
-			}
-			if (!this.HasPerms(playerRoleBase.RoleTypeId, flag2, sender, out response))
-			{
-				return false;
-			}
-			RoleSpawnFlags roleSpawnFlags;
-			this.ProvideRoleFlag(array, out roleSpawnFlags);
-			bool flag3 = list.Any((ReferenceHub p) => p.GetRoleId() != RoleTypeId.Overwatch);
-			int num = 0;
-			foreach (ReferenceHub referenceHub2 in list)
-			{
-				if (!(referenceHub2 == null) && (!flag3 || referenceHub2.GetRoleId() != RoleTypeId.Overwatch))
-				{
-					referenceHub2.roleManager.ServerSetRole(playerRoleBase.RoleTypeId, RoleChangeReason.RemoteAdmin, roleSpawnFlags);
-					ServerLogs.AddLog(ServerLogs.Modules.ClassChange, string.Format("{0} changed role of player {1} to {2}.", sender.LogName, referenceHub2.LoggedNameFromRefHub(), playerRoleBase.RoleTypeId), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging, false);
-					num++;
-				}
-			}
-			response = string.Format("Done! Changed role of {0} player{1} to {2}!", num, (num == 1) ? "" : "s", playerRoleBase.RoleTypeId);
-			return true;
-		}
-
-		private void ProvideRoleFlag(string[] arguments, out RoleSpawnFlags spawnFlags)
-		{
-			byte b;
-			if (arguments.Length > 1 && byte.TryParse(arguments[1], out b))
-			{
-				spawnFlags = (RoleSpawnFlags)b;
-				return;
-			}
-			spawnFlags = RoleSpawnFlags.All;
-		}
-
-		private bool TryParseRole(string s, out PlayerRoleBase prb)
-		{
-			RoleTypeId roleTypeId;
-			if (Enum.TryParse<RoleTypeId>(s, true, out roleTypeId))
-			{
-				return PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(roleTypeId, out prb);
-			}
-			foreach (PlayerRoleBase playerRoleBase in PlayerRoleLoader.AllRoles.Values)
-			{
-				if (!string.Equals(Regex.Replace(playerRoleBase.RoleName, "\\s+", ""), s, StringComparison.InvariantCultureIgnoreCase))
-				{
-					prb = playerRoleBase;
-					return true;
-				}
-			}
-			prb = null;
+			response = "You are not connected to a server.";
 			return false;
 		}
-
-		private bool HasPerms(RoleTypeId targetRole, bool self, ICommandSender sender, out string response)
+		if (arguments.Count < 2)
 		{
-			if (targetRole != RoleTypeId.Spectator)
+			response = "To execute this command provide at least 2 arguments!\nUsage: " + arguments.Array[0] + " " + this.DisplayCommandUsage();
+			return false;
+		}
+		string[] newargs;
+		List<ReferenceHub> list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out newargs);
+		bool self = list.Count == 1 && sender is PlayerCommandSender playerCommandSender && playerCommandSender.ReferenceHub == list[0];
+		if (!TryParseRole(newargs[0], out var prb))
+		{
+			response = "Invalid role ID / name.";
+			return false;
+		}
+		if (!HasPerms(prb.RoleTypeId, self, sender, out response))
+		{
+			return false;
+		}
+		ProvideRoleFlag(newargs, out var spawnFlags);
+		bool flag = list.Any((ReferenceHub p) => p.GetRoleId() != RoleTypeId.Overwatch);
+		int num = 0;
+		foreach (ReferenceHub item in list)
+		{
+			if (!(item == null) && (!flag || item.GetRoleId() != RoleTypeId.Overwatch))
 			{
-				if (targetRole != RoleTypeId.Overwatch)
-				{
-					if (self)
-					{
-						return sender.CheckPermission(new PlayerPermissions[]
-						{
-							PlayerPermissions.ForceclassWithoutRestrictions,
-							PlayerPermissions.ForceclassSelf
-						}, out response);
-					}
-					return sender.CheckPermission(PlayerPermissions.ForceclassWithoutRestrictions, out response);
-				}
-				else
-				{
-					if (self)
-					{
-						return sender.CheckPermission(PlayerPermissions.Overwatch, out response);
-					}
-					return sender.CheckPermission(PlayerPermissions.Overwatch, out response) && sender.CheckPermission(new PlayerPermissions[]
-					{
-						PlayerPermissions.ForceclassWithoutRestrictions,
-						PlayerPermissions.ForceclassToSpectator
-					}, out response);
-				}
+				item.roleManager.ServerSetRole(prb.RoleTypeId, RoleChangeReason.RemoteAdmin, spawnFlags);
+				ServerLogs.AddLog(ServerLogs.Modules.ClassChange, $"{sender.LogName} changed role of player {item.LoggedNameFromRefHub()} to {prb.RoleTypeId}.", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
+				num++;
 			}
-			else
+		}
+		response = string.Format("Done! Changed role of {0} player{1} to {2}!", num, (num == 1) ? "" : "s", prb.RoleTypeId);
+		return true;
+	}
+
+	private void ProvideRoleFlag(string[] arguments, out RoleSpawnFlags spawnFlags)
+	{
+		if (arguments.Length > 1 && byte.TryParse(arguments[1], out var result))
+		{
+			spawnFlags = (RoleSpawnFlags)result;
+		}
+		else
+		{
+			spawnFlags = RoleSpawnFlags.All;
+		}
+	}
+
+	private bool TryParseRole(string s, out PlayerRoleBase prb)
+	{
+		if (Enum.TryParse<RoleTypeId>(s, ignoreCase: true, out var result))
+		{
+			return PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(result, out prb);
+		}
+		foreach (PlayerRoleBase value in PlayerRoleLoader.AllRoles.Values)
+		{
+			if (!string.Equals(Regex.Replace(value.RoleName, "\\s+", ""), s, StringComparison.InvariantCultureIgnoreCase))
 			{
-				if (self)
+				prb = value;
+				return true;
+			}
+		}
+		prb = null;
+		return false;
+	}
+
+	private bool HasPerms(RoleTypeId targetRole, bool self, ICommandSender sender, out string response)
+	{
+		switch (targetRole)
+		{
+		case RoleTypeId.Spectator:
+			if (self)
+			{
+				return sender.CheckPermission(new PlayerPermissions[4]
 				{
-					return sender.CheckPermission(new PlayerPermissions[]
-					{
-						PlayerPermissions.ForceclassWithoutRestrictions,
-						PlayerPermissions.ForceclassToSpectator,
-						PlayerPermissions.ForceclassSelf,
-						PlayerPermissions.Overwatch
-					}, out response);
-				}
-				return sender.CheckPermission(new PlayerPermissions[]
+					PlayerPermissions.ForceclassWithoutRestrictions,
+					PlayerPermissions.ForceclassToSpectator,
+					PlayerPermissions.ForceclassSelf,
+					PlayerPermissions.Overwatch
+				}, out response);
+			}
+			return sender.CheckPermission(new PlayerPermissions[2]
+			{
+				PlayerPermissions.ForceclassWithoutRestrictions,
+				PlayerPermissions.ForceclassToSpectator
+			}, out response);
+		case RoleTypeId.Overwatch:
+			if (self)
+			{
+				return sender.CheckPermission(PlayerPermissions.Overwatch, out response);
+			}
+			if (sender.CheckPermission(PlayerPermissions.Overwatch, out response))
+			{
+				return sender.CheckPermission(new PlayerPermissions[2]
 				{
 					PlayerPermissions.ForceclassWithoutRestrictions,
 					PlayerPermissions.ForceclassToSpectator
 				}, out response);
 			}
+			return false;
+		default:
+			if (self)
+			{
+				return sender.CheckPermission(new PlayerPermissions[2]
+				{
+					PlayerPermissions.ForceclassWithoutRestrictions,
+					PlayerPermissions.ForceclassSelf
+				}, out response);
+			}
+			return sender.CheckPermission(PlayerPermissions.ForceclassWithoutRestrictions, out response);
 		}
 	}
 }

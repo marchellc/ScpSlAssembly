@@ -1,100 +1,100 @@
-﻿using System;
 using System.Diagnostics;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.Coin
+namespace InventorySystem.Items.Coin;
+
+public class CoinViewmodel : StandardAnimatedViemodel
 {
-	public class CoinViewmodel : StandardAnimatedViemodel
+	private static readonly int TriggerHash = Animator.StringToHash("Flip");
+
+	private static readonly int TailsHash = Animator.StringToHash("IsTails");
+
+	private readonly Stopwatch _animStopwatch = new Stopwatch();
+
+	private const float MessageVitality = 3.9f;
+
+	[SerializeField]
+	private AnimationCurve _positionOverrideOverTime;
+
+	[SerializeField]
+	private Transform _coinTr;
+
+	[SerializeField]
+	private Transform _coinOverrideTr;
+
+	public override void InitAny()
 	{
-		public override void InitAny()
-		{
-			base.InitAny();
-			Coin.OnFlipped += this.ProcessCoinflip;
-		}
+		base.InitAny();
+		Coin.OnFlipped += ProcessCoinflip;
+	}
 
-		public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
+	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
+	{
+		base.InitSpectator(ply, id, wasEquipped);
+		if (wasEquipped)
 		{
-			base.InitSpectator(ply, id, wasEquipped);
-			if (!wasEquipped)
+			GetComponent<AudioSource>().Stop();
+			if (TryGetMessage(id.SerialNumber, out var isTails))
 			{
-				return;
-			}
-			base.GetComponent<AudioSource>().Stop();
-			bool flag;
-			if (this.TryGetMessage(id.SerialNumber, out flag))
-			{
-				this.ProcessCoinflip(id.SerialNumber, flag);
-				this.AnimatorForceUpdate(base.SkipEquipTime, false);
-				return;
-			}
-			this.AnimatorForceUpdate(base.SkipEquipTime, true);
-		}
-
-		protected override void LateUpdate()
-		{
-			base.LateUpdate();
-			float num = this._positionOverrideOverTime.Evaluate((float)this._animStopwatch.Elapsed.TotalSeconds);
-			if (num <= 0f)
-			{
-				return;
-			}
-			this._coinTr.position = Vector3.Lerp(this._coinTr.position, this._coinOverrideTr.position, num);
-		}
-
-		private bool TryGetMessage(ushort serial, out bool isTails)
-		{
-			double num;
-			bool flag = Coin.FlipTimes.TryGetValue(serial, out num);
-			if (num < 0.0)
-			{
-				isTails = true;
-				num += NetworkTime.time;
+				ProcessCoinflip(id.SerialNumber, isTails);
+				AnimatorForceUpdate(base.SkipEquipTime, fastMode: false);
 			}
 			else
 			{
-				isTails = false;
-				num = NetworkTime.time - num;
+				AnimatorForceUpdate(base.SkipEquipTime);
 			}
-			return flag && num < 3.9000000953674316;
 		}
+	}
 
-		private void ProcessCoinflip(ushort serial, bool isTails)
+	protected override void LateUpdate()
+	{
+		base.LateUpdate();
+		float num = _positionOverrideOverTime.Evaluate((float)_animStopwatch.Elapsed.TotalSeconds);
+		if (!(num <= 0f))
 		{
-			if (serial != base.ItemId.SerialNumber)
-			{
-				return;
-			}
-			this.AnimatorSetBool(CoinViewmodel.TailsHash, isTails);
-			this.AnimatorSetTrigger(CoinViewmodel.TriggerHash);
-			this._animStopwatch.Restart();
+			_coinTr.position = Vector3.Lerp(_coinTr.position, _coinOverrideTr.position, num);
 		}
+	}
 
-		private void OnDisable()
+	private bool TryGetMessage(ushort serial, out bool isTails)
+	{
+		double value;
+		bool num = Coin.FlipTimes.TryGetValue(serial, out value);
+		if (value < 0.0)
 		{
-			this._animStopwatch.Reset();
+			isTails = true;
+			value += NetworkTime.time;
 		}
-
-		private void OnDestroy()
+		else
 		{
-			Coin.OnFlipped -= this.ProcessCoinflip;
+			isTails = false;
+			value = NetworkTime.time - value;
 		}
+		if (num)
+		{
+			return value < 3.9000000953674316;
+		}
+		return false;
+	}
 
-		private static readonly int TriggerHash = Animator.StringToHash("Flip");
+	private void ProcessCoinflip(ushort serial, bool isTails)
+	{
+		if (serial == base.ItemId.SerialNumber)
+		{
+			AnimatorSetBool(TailsHash, isTails);
+			AnimatorSetTrigger(TriggerHash);
+			_animStopwatch.Restart();
+		}
+	}
 
-		private static readonly int TailsHash = Animator.StringToHash("IsTails");
+	private void OnDisable()
+	{
+		_animStopwatch.Reset();
+	}
 
-		private readonly Stopwatch _animStopwatch = new Stopwatch();
-
-		private const float MessageVitality = 3.9f;
-
-		[SerializeField]
-		private AnimationCurve _positionOverrideOverTime;
-
-		[SerializeField]
-		private Transform _coinTr;
-
-		[SerializeField]
-		private Transform _coinOverrideTr;
+	private void OnDestroy()
+	{
+		Coin.OnFlipped -= ProcessCoinflip;
 	}
 }

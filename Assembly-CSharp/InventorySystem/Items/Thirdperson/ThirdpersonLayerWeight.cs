@@ -1,33 +1,31 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Thirdperson
+namespace InventorySystem.Items.Thirdperson;
+
+public readonly struct ThirdpersonLayerWeight
 {
-	public readonly struct ThirdpersonLayerWeight
+	public readonly float Weight;
+
+	public readonly bool AllowOther;
+
+	public ThirdpersonLayerWeight(float weight, bool allowOther = true)
 	{
-		public ThirdpersonLayerWeight(float weight, bool allowOther = true)
+		Weight = weight;
+		AllowOther = allowOther;
+	}
+
+	public static ThirdpersonLayerWeight Lerp(ThirdpersonLayerWeight lhs, ThirdpersonLayerWeight rhs, float time)
+	{
+		if (time <= 0f)
 		{
-			this.Weight = weight;
-			this.AllowOther = allowOther;
+			return lhs;
 		}
-
-		public static ThirdpersonLayerWeight Lerp(ThirdpersonLayerWeight lhs, ThirdpersonLayerWeight rhs, float time)
+		if (time >= 1f)
 		{
-			if (time <= 0f)
-			{
-				return lhs;
-			}
-			if (time >= 1f)
-			{
-				return rhs;
-			}
-			float num = Mathf.Lerp(lhs.Weight, rhs.Weight, time);
-			bool flag = lhs.AllowOther && rhs.AllowOther;
-			return new ThirdpersonLayerWeight(num, flag);
+			return rhs;
 		}
-
-		public readonly float Weight;
-
-		public readonly bool AllowOther;
+		float weight = Mathf.Lerp(lhs.Weight, rhs.Weight, time);
+		bool allowOther = lhs.AllowOther && rhs.AllowOther;
+		return new ThirdpersonLayerWeight(weight, allowOther);
 	}
 }

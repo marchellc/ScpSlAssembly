@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace UserSettings.AudioSettings
+namespace UserSettings.AudioSettings;
+
+public class MenuThemeDropdown : MonoBehaviour
 {
-	public class MenuThemeDropdown : MonoBehaviour
-	{
-	}
 }

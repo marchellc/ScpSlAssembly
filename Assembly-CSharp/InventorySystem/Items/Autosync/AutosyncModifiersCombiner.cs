@@ -1,179 +1,190 @@
-﻿using System;
+using System;
+using InventorySystem.Drawers;
+using InventorySystem.GUI.Descriptions;
 using PlayerRoles.FirstPersonControl;
+using PlayerRoles.PlayableScps.HumeShield;
 using UnityEngine;
 
-namespace InventorySystem.Items.Autosync
+namespace InventorySystem.Items.Autosync;
+
+public class AutosyncModifiersCombiner : IMovementSpeedModifier, IStaminaModifier, IZoomModifyingItem, ILightEmittingItem, IAmmoDropPreventer, IHumeShieldProvider, IItemAlertDrawer, IItemDrawer, ICustomDescriptionItem
 {
-	public class AutosyncModifiersCombiner : IMovementSpeedModifier, IStaminaModifier, IZoomModifyingItem, ILightEmittingItem, IAmmoDropPreventer
+	private static readonly IMovementSpeedModifier[] MovementSpeedModifiersNonAlloc = new IMovementSpeedModifier[16];
+
+	private static readonly IStaminaModifier[] StaminaModifiersNonAlloc = new IStaminaModifier[16];
+
+	private static readonly IZoomModifyingItem[] ZoomModifiersNonAlloc = new IZoomModifyingItem[8];
+
+	private static readonly ILightEmittingItem[] LightEmittersNonAlloc = new ILightEmittingItem[8];
+
+	private static readonly IAmmoDropPreventer[] DropPreventersNonAlloc = new IAmmoDropPreventer[8];
+
+	private static readonly IHumeShieldProvider[] HumeShieldProvidersNonAlloc = new IHumeShieldProvider[8];
+
+	private static readonly IItemAlertDrawer[] AlertDrawersNonAlloc = new IItemAlertDrawer[8];
+
+	private readonly IMovementSpeedModifier[] _movementSpeedModifiers;
+
+	private readonly IStaminaModifier[] _staminaModifiers;
+
+	private readonly IZoomModifyingItem[] _zoomModifiers;
+
+	private readonly ILightEmittingItem[] _lightEmitters;
+
+	private readonly IAmmoDropPreventer[] _dropPreventers;
+
+	private readonly IHumeShieldProvider[] _humeShields;
+
+	private readonly IItemAlertDrawer[] _alertDrawers;
+
+	private readonly ICustomDescriptionItem _customDescription;
+
+	private readonly ModularAutosyncItem _item;
+
+	public bool StaminaModifierActive => _item.IsEquipped;
+
+	public bool MovementModifierActive => _item.IsEquipped;
+
+	public float MovementSpeedMultiplier => CombineMultiplier(_movementSpeedModifiers, (IMovementSpeedModifier x) => x.MovementSpeedMultiplier, (IMovementSpeedModifier x) => x.MovementModifierActive);
+
+	public float MovementSpeedLimit => MinValue(_movementSpeedModifiers, float.MaxValue, (IMovementSpeedModifier x) => x.MovementSpeedLimit, (IMovementSpeedModifier x) => x.MovementModifierActive);
+
+	public float StaminaUsageMultiplier => CombineMultiplier(_staminaModifiers, (IStaminaModifier x) => x.StaminaUsageMultiplier, (IStaminaModifier x) => x.StaminaModifierActive);
+
+	public float StaminaRegenMultiplier => CombineMultiplier(_staminaModifiers, (IStaminaModifier x) => x.StaminaRegenMultiplier, (IStaminaModifier x) => x.StaminaModifierActive);
+
+	public bool SprintingDisabled => AnyTrue(_staminaModifiers, (IStaminaModifier x) => x.StaminaModifierActive && x.SprintingDisabled);
+
+	public float ZoomAmount => CombineMultiplier(_zoomModifiers, (IZoomModifyingItem x) => x.ZoomAmount);
+
+	public float SensitivityScale => CombineMultiplier(_zoomModifiers, (IZoomModifyingItem x) => x.SensitivityScale);
+
+	public bool IsEmittingLight => AnyTrue(_lightEmitters, (ILightEmittingItem x) => x.IsEmittingLight);
+
+	public bool ForceBarVisible => AnyTrue(_humeShields, (IHumeShieldProvider x) => x.ForceBarVisible);
+
+	public float HsMax => CombineAdditive(_humeShields, (IHumeShieldProvider x) => x.HsMax);
+
+	public float HsRegeneration => CombineAdditive(_humeShields, (IHumeShieldProvider x) => x.HsRegeneration);
+
+	public CustomDescriptionGui CustomGuiPrefab => _customDescription.CustomGuiPrefab;
+
+	public string[] CustomDescriptionContent => _customDescription.CustomDescriptionContent;
+
+	public Color? HsWarningColor
 	{
-		public bool StaminaModifierActive
+		get
 		{
-			get
+			IHumeShieldProvider[] humeShields = _humeShields;
+			for (int i = 0; i < humeShields.Length; i++)
 			{
-				return this._item.IsEquipped;
-			}
-		}
-
-		public bool MovementModifierActive
-		{
-			get
-			{
-				return this._item.IsEquipped;
-			}
-		}
-
-		public float MovementSpeedMultiplier
-		{
-			get
-			{
-				return AutosyncModifiersCombiner.CombineMultiplier<IMovementSpeedModifier>(this._movementSpeedModifiers, (IMovementSpeedModifier x) => x.MovementSpeedMultiplier, (IMovementSpeedModifier x) => x.MovementModifierActive);
-			}
-		}
-
-		public float MovementSpeedLimit
-		{
-			get
-			{
-				return AutosyncModifiersCombiner.MinValue<IMovementSpeedModifier>(this._movementSpeedModifiers, float.MaxValue, (IMovementSpeedModifier x) => x.MovementSpeedLimit, (IMovementSpeedModifier x) => x.MovementModifierActive);
-			}
-		}
-
-		public float StaminaUsageMultiplier
-		{
-			get
-			{
-				return AutosyncModifiersCombiner.CombineMultiplier<IStaminaModifier>(this._staminaModifiers, (IStaminaModifier x) => x.StaminaUsageMultiplier, (IStaminaModifier x) => x.StaminaModifierActive);
-			}
-		}
-
-		public float StaminaRegenMultiplier
-		{
-			get
-			{
-				return AutosyncModifiersCombiner.CombineMultiplier<IStaminaModifier>(this._staminaModifiers, (IStaminaModifier x) => x.StaminaRegenMultiplier, (IStaminaModifier x) => x.StaminaModifierActive);
-			}
-		}
-
-		public bool SprintingDisabled
-		{
-			get
-			{
-				return AutosyncModifiersCombiner.AnyTrue<IStaminaModifier>(this._staminaModifiers, (IStaminaModifier x) => x.StaminaModifierActive && x.SprintingDisabled);
-			}
-		}
-
-		public float ZoomAmount
-		{
-			get
-			{
-				return AutosyncModifiersCombiner.CombineMultiplier<IZoomModifyingItem>(this._zoomModifiers, (IZoomModifyingItem x) => x.ZoomAmount, null);
-			}
-		}
-
-		public float SensitivityScale
-		{
-			get
-			{
-				return AutosyncModifiersCombiner.CombineMultiplier<IZoomModifyingItem>(this._zoomModifiers, (IZoomModifyingItem x) => x.SensitivityScale, null);
-			}
-		}
-
-		public bool IsEmittingLight
-		{
-			get
-			{
-				return AutosyncModifiersCombiner.AnyTrue<ILightEmittingItem>(this._lightEmitters, (ILightEmittingItem x) => x.IsEmittingLight);
-			}
-		}
-
-		public bool ValidateAmmoDrop(ItemType id)
-		{
-			return !AutosyncModifiersCombiner.AnyTrue<IAmmoDropPreventer>(this._dropPreventers, (IAmmoDropPreventer x) => !x.ValidateAmmoDrop(id));
-		}
-
-		private static bool AnyTrue<T>(T[] arr, Func<T, bool> selector)
-		{
-			foreach (T t in arr)
-			{
-				if (selector(t))
+				Color? hsWarningColor = humeShields[i].HsWarningColor;
+				if (hsWarningColor.HasValue)
 				{
-					return true;
+					return hsWarningColor;
 				}
 			}
-			return false;
+			return null;
 		}
+	}
 
-		private static float MinValue<T>(T[] arr, float startMin, Func<T, float> selector, Func<T, bool> validator = null)
+	public AlertContent Alert
+	{
+		get
 		{
-			float num = startMin;
-			foreach (T t in arr)
+			IItemAlertDrawer[] alertDrawers = _alertDrawers;
+			foreach (IItemAlertDrawer itemAlertDrawer in alertDrawers)
 			{
-				if (validator == null || validator(t))
+				if (itemAlertDrawer.Alert.Active)
 				{
-					num = Mathf.Min(num, selector(t));
+					return itemAlertDrawer.Alert;
 				}
 			}
-			return num;
+			return default(AlertContent);
 		}
+	}
 
-		private static float CombineMultiplier<T>(T[] arr, Func<T, float> selector, Func<T, bool> validator = null)
+	public bool ValidateAmmoDrop(ItemType id)
+	{
+		return !AnyTrue(_dropPreventers, (IAmmoDropPreventer x) => !x.ValidateAmmoDrop(id));
+	}
+
+	private static bool AnyTrue<T>(T[] arr, Func<T, bool> selector)
+	{
+		foreach (T arg in arr)
 		{
-			float num = 1f;
-			foreach (T t in arr)
+			if (selector(arg))
 			{
-				if (validator == null || validator(t))
-				{
-					num *= selector(t);
-				}
+				return true;
 			}
-			return num;
 		}
+		return false;
+	}
 
-		private void FetchModifiers<T>(T[] nonAllocArray, ref T[] targetArray)
+	private static float MinValue<T>(T[] arr, float startMin, Func<T, float> selector, Func<T, bool> validator = null)
+	{
+		float num = startMin;
+		foreach (T arg in arr)
 		{
-			int num = 0;
-			foreach (SubcomponentBase subcomponentBase in this._item.AllSubcomponents)
+			if (validator == null || validator(arg))
 			{
-				if (subcomponentBase is T)
-				{
-					T t = subcomponentBase as T;
-					nonAllocArray[num++] = t;
-				}
+				num = Mathf.Min(num, selector(arg));
 			}
-			targetArray = new T[num];
-			Array.Copy(nonAllocArray, targetArray, num);
 		}
+		return num;
+	}
 
-		public AutosyncModifiersCombiner(ModularAutosyncItem item)
+	private static float CombineMultiplier<T>(T[] arr, Func<T, float> selector, Func<T, bool> validator = null)
+	{
+		float num = 1f;
+		foreach (T arg in arr)
 		{
-			this._item = item;
-			this.FetchModifiers<IMovementSpeedModifier>(AutosyncModifiersCombiner.MovementSpeedModifiersNonAlloc, ref this._movementSpeedModifiers);
-			this.FetchModifiers<IStaminaModifier>(AutosyncModifiersCombiner.StaminaModifiersNonAlloc, ref this._staminaModifiers);
-			this.FetchModifiers<IZoomModifyingItem>(AutosyncModifiersCombiner.ZoomModifiersNonAlloc, ref this._zoomModifiers);
-			this.FetchModifiers<ILightEmittingItem>(AutosyncModifiersCombiner.LightEmittersNonAlloc, ref this._lightEmitters);
-			this.FetchModifiers<IAmmoDropPreventer>(AutosyncModifiersCombiner.DropPreventersNonAlloc, ref this._dropPreventers);
+			if (validator == null || validator(arg))
+			{
+				num *= selector(arg);
+			}
 		}
+		return num;
+	}
 
-		private static readonly IMovementSpeedModifier[] MovementSpeedModifiersNonAlloc = new IMovementSpeedModifier[16];
+	private static float CombineAdditive<T>(T[] arr, Func<T, float> selector, Func<T, bool> validator = null)
+	{
+		float num = 0f;
+		foreach (T arg in arr)
+		{
+			if (validator == null || validator(arg))
+			{
+				num += selector(arg);
+			}
+		}
+		return num;
+	}
 
-		private static readonly IStaminaModifier[] StaminaModifiersNonAlloc = new IStaminaModifier[16];
+	private void FetchModifiers<T>(T[] nonAllocArray, ref T[] targetArray)
+	{
+		int num = 0;
+		SubcomponentBase[] allSubcomponents = _item.AllSubcomponents;
+		for (int i = 0; i < allSubcomponents.Length; i++)
+		{
+			if (allSubcomponents[i] is T val)
+			{
+				nonAllocArray[num++] = val;
+			}
+		}
+		targetArray = new T[num];
+		Array.Copy(nonAllocArray, targetArray, num);
+	}
 
-		private static readonly IZoomModifyingItem[] ZoomModifiersNonAlloc = new IZoomModifyingItem[8];
-
-		private static readonly ILightEmittingItem[] LightEmittersNonAlloc = new ILightEmittingItem[8];
-
-		private static readonly IAmmoDropPreventer[] DropPreventersNonAlloc = new IAmmoDropPreventer[8];
-
-		private readonly IMovementSpeedModifier[] _movementSpeedModifiers;
-
-		private readonly IStaminaModifier[] _staminaModifiers;
-
-		private readonly IZoomModifyingItem[] _zoomModifiers;
-
-		private readonly ILightEmittingItem[] _lightEmitters;
-
-		private readonly IAmmoDropPreventer[] _dropPreventers;
-
-		private readonly ModularAutosyncItem _item;
+	public AutosyncModifiersCombiner(ModularAutosyncItem item)
+	{
+		_item = item;
+		FetchModifiers(MovementSpeedModifiersNonAlloc, ref _movementSpeedModifiers);
+		FetchModifiers(StaminaModifiersNonAlloc, ref _staminaModifiers);
+		FetchModifiers(ZoomModifiersNonAlloc, ref _zoomModifiers);
+		FetchModifiers(LightEmittersNonAlloc, ref _lightEmitters);
+		FetchModifiers(DropPreventersNonAlloc, ref _dropPreventers);
+		FetchModifiers(HumeShieldProvidersNonAlloc, ref _humeShields);
+		FetchModifiers(AlertDrawersNonAlloc, ref _alertDrawers);
+		item.TryGetSubcomponent<ICustomDescriptionItem>(out _customDescription);
 	}
 }

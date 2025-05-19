@@ -1,10 +1,8 @@
-﻿using System;
 using UnityEngine;
 
-namespace Targeting
+namespace Targeting;
+
+public abstract class TargetComponent : MonoBehaviour
 {
-	public abstract class TargetComponent : MonoBehaviour
-	{
-		public abstract bool IsTarget { get; set; }
-	}
+	public abstract bool IsTarget { get; set; }
 }

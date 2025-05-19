@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
@@ -9,31 +8,42 @@ using UnityEngine;
 
 public class SnowballItem : ThrowableItem, IHolidayItem
 {
-	public new HolidayType[] TargetHolidays { get; } = new HolidayType[] { HolidayType.Christmas };
+	private static readonly Dictionary<ushort, double> StartCookingTimes = new Dictionary<ushort, double>();
+
+	private static readonly HashSet<ushort> ThrownCooked = new HashSet<ushort>();
+
+	public const float CookingTime = 4f;
+
+	private ProjectileSettings _baseSettings;
+
+	[SerializeField]
+	private ProjectileSettings _cookedSettings;
+
+	public new HolidayType[] TargetHolidays { get; } = new HolidayType[1] { HolidayType.Christmas };
 
 	public override void OnAdded(ItemPickupBase pickup)
 	{
 		base.OnAdded(pickup);
-		this._baseSettings = this.FullThrowSettings;
+		_baseSettings = FullThrowSettings;
 	}
 
 	public override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (!this.ThrowStopwatch.IsRunning)
+		if (ThrowStopwatch.IsRunning)
 		{
-			return;
+			bool flag = ThrowStopwatch.Elapsed.TotalSeconds > 4.0;
+			FullThrowSettings = (flag ? _cookedSettings : _baseSettings);
 		}
-		this.FullThrowSettings = ((this.ThrowStopwatch.Elapsed.TotalSeconds > 4.0) ? this._cookedSettings : this._baseSettings);
 	}
 
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		CustomNetworkManager.OnClientReady += SnowballItem.ThrownCooked.Clear;
-		CustomNetworkManager.OnClientReady += SnowballItem.StartCookingTimes.Clear;
-		ThrowableNetworkHandler.OnAudioMessageReceived += SnowballItem.OnMsgReceived;
-		ThrowableNetworkHandler.OnServerRequestReceived += SnowballItem.OnMsgReceived;
+		CustomNetworkManager.OnClientReady += ThrownCooked.Clear;
+		CustomNetworkManager.OnClientReady += StartCookingTimes.Clear;
+		ThrowableNetworkHandler.OnAudioMessageReceived += OnMsgReceived;
+		ThrowableNetworkHandler.OnServerRequestReceived += OnMsgReceived;
 	}
 
 	private static void ProcessRequest(ushort serial, ThrowableNetworkHandler.RequestType request)
@@ -41,51 +51,41 @@ public class SnowballItem : ThrowableItem, IHolidayItem
 		switch (request)
 		{
 		case ThrowableNetworkHandler.RequestType.BeginThrow:
-			SnowballItem.StartCookingTimes[serial] = NetworkTime.time;
-			return;
+			StartCookingTimes[serial] = NetworkTime.time;
+			break;
+		case ThrowableNetworkHandler.RequestType.CancelThrow:
+			StartCookingTimes.Remove(serial);
+			break;
 		case ThrowableNetworkHandler.RequestType.ConfirmThrowWeak:
 		case ThrowableNetworkHandler.RequestType.ConfirmThrowFullForce:
-			if (SnowballItem.IsCooked(serial, false))
+			if (IsCooked(serial, thrown: false))
 			{
-				SnowballItem.ThrownCooked.Add(serial);
+				ThrownCooked.Add(serial);
 			}
-			return;
-		case ThrowableNetworkHandler.RequestType.CancelThrow:
-			SnowballItem.StartCookingTimes.Remove(serial);
-			return;
-		default:
-			return;
+			break;
 		}
 	}
 
 	private static void OnMsgReceived(ThrowableNetworkHandler.ThrowableItemAudioMessage msg)
 	{
-		SnowballItem.ProcessRequest(msg.Serial, msg.Request);
+		ProcessRequest(msg.Serial, msg.Request);
 	}
 
 	private static void OnMsgReceived(ThrowableNetworkHandler.ThrowableItemRequestMessage msg)
 	{
-		SnowballItem.ProcessRequest(msg.Serial, msg.Request);
+		ProcessRequest(msg.Serial, msg.Request);
 	}
 
 	public static bool IsCooked(ushort serial, bool thrown)
 	{
 		if (thrown)
 		{
-			return SnowballItem.ThrownCooked.Contains(serial);
+			return ThrownCooked.Contains(serial);
 		}
-		double num;
-		return SnowballItem.StartCookingTimes.TryGetValue(serial, out num) && NetworkTime.time - num > 4.0;
+		if (StartCookingTimes.TryGetValue(serial, out var value))
+		{
+			return NetworkTime.time - value > 4.0;
+		}
+		return false;
 	}
-
-	private static readonly Dictionary<ushort, double> StartCookingTimes = new Dictionary<ushort, double>();
-
-	private static readonly HashSet<ushort> ThrownCooked = new HashSet<ushort>();
-
-	public const float CookingTime = 4f;
-
-	private ThrowableItem.ProjectileSettings _baseSettings;
-
-	[SerializeField]
-	private ThrowableItem.ProjectileSettings _cookedSettings;
 }

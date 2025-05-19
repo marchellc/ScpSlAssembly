@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem.GUI;
 
-namespace InventorySystem.GUI
+public enum InventoryGuiAction
 {
-	public enum InventoryGuiAction
-	{
-		None,
-		Drop,
-		Select
-	}
+	None,
+	Drop,
+	Select
 }

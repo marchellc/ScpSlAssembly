@@ -1,153 +1,136 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using AudioPooling;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.MicroHID.Modules
+namespace InventorySystem.Items.MicroHID.Modules;
+
+public class DrawAndInspectorModule : MicroHidModuleBase
 {
-	public class DrawAndInspectorModule : MicroHidModuleBase
+	private enum RpcType
 	{
-		public static event Action<ushort> OnInspectRequested;
+		AddPickup,
+		OnEquipped,
+		OnHolstered,
+		InspectRequested
+	}
 
-		public static bool CheckPickupPreference(ushort serial)
-		{
-			return DrawAndInspectorModule.PickupAnimSerials.Contains(serial);
-		}
+	private static readonly HashSet<ushort> PickupAnimSerials = new HashSet<ushort>();
 
-		public void ServerRegisterSerial(ushort serial)
+	[SerializeField]
+	private AudioClip _equipSound;
+
+	[SerializeField]
+	private AudioClip _pickupSound;
+
+	public static event Action<ushort> OnInspectRequested;
+
+	public static bool CheckPickupPreference(ushort serial)
+	{
+		return PickupAnimSerials.Contains(serial);
+	}
+
+	public void ServerRegisterSerial(ushort serial)
+	{
+		SendRpc(delegate(NetworkWriter x)
 		{
-			this.SendRpc(delegate(NetworkWriter x)
+			x.WriteByte(0);
+			x.WriteUShort(serial);
+		});
+	}
+
+	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	{
+		base.ClientProcessRpcTemplate(reader, serial);
+		switch ((RpcType)reader.ReadByte())
+		{
+		case RpcType.OnHolstered:
+			PickupAnimSerials.Remove(serial);
 			{
-				x.WriteByte(0);
-				x.WriteUShort(serial);
-			}, true);
-		}
-
-		public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
-		{
-			base.ClientProcessRpcTemplate(reader, serial);
-			switch (reader.ReadByte())
-			{
-			case 0:
-				while (reader.Remaining > 0)
+				foreach (AudioPoolSession activeSession in AudioManagerModule.GetController(serial).ActiveSessions)
 				{
-					DrawAndInspectorModule.PickupAnimSerials.Add(reader.ReadUShort());
-				}
-				return;
-			case 1:
-				break;
-			case 2:
-			{
-				DrawAndInspectorModule.PickupAnimSerials.Remove(serial);
-				using (List<AudioPoolSession>.Enumerator enumerator = AudioManagerModule.GetController(serial).ActiveSessions.GetEnumerator())
-				{
-					while (enumerator.MoveNext())
+					AudioClip clip = activeSession.Source.clip;
+					if (!(clip != _equipSound) || !(clip != _pickupSound))
 					{
-						AudioPoolSession audioPoolSession = enumerator.Current;
-						AudioClip clip = audioPoolSession.Source.clip;
-						if (!(clip != this._equipSound) || !(clip != this._pickupSound))
-						{
-							audioPoolSession.Source.Stop();
-						}
+						activeSession.Source.Stop();
 					}
-					return;
 				}
 				break;
 			}
-			case 3:
+		case RpcType.OnEquipped:
+			AudioManagerModule.GetController(serial).PlayOneShot(CheckPickupPreference(serial) ? _pickupSound : _equipSound);
+			break;
+		case RpcType.AddPickup:
+			while (reader.Remaining > 0)
 			{
-				Action<ushort> onInspectRequested = DrawAndInspectorModule.OnInspectRequested;
-				if (onInspectRequested == null)
-				{
-					return;
-				}
-				onInspectRequested(serial);
-				return;
+				PickupAnimSerials.Add(reader.ReadUShort());
 			}
-			default:
-				return;
-			}
-			AudioManagerModule.GetController(serial).PlayOneShot(DrawAndInspectorModule.CheckPickupPreference(serial) ? this._pickupSound : this._equipSound, 10f, MixerChannel.NoDucking);
+			break;
+		case RpcType.InspectRequested:
+			DrawAndInspectorModule.OnInspectRequested?.Invoke(serial);
+			break;
 		}
+	}
 
-		internal override void OnEquipped()
+	internal override void OnEquipped()
+	{
+		base.OnEquipped();
+		if (base.IsServer)
 		{
-			base.OnEquipped();
-			if (!base.IsServer)
-			{
-				return;
-			}
-			this.SendRpc(delegate(NetworkWriter x)
+			SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteByte(1);
-			}, true);
-		}
-
-		internal override void OnHolstered()
-		{
-			base.OnHolstered();
-			this.SendRpc(delegate(NetworkWriter x)
-			{
-				x.WriteByte(2);
-			}, true);
-		}
-
-		internal override void EquipUpdate()
-		{
-			base.EquipUpdate();
-			if (base.IsLocalPlayer && base.GetActionDown(ActionName.InspectItem))
-			{
-				this.SendCmd(null);
-			}
-		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			if (base.ItemUsageBlocked)
-			{
-				return;
-			}
-			this.SendRpc(delegate(NetworkWriter x)
-			{
-				x.WriteByte(3);
-			}, true);
-		}
-
-		internal override void OnClientReady()
-		{
-			base.OnClientReady();
-			DrawAndInspectorModule.PickupAnimSerials.Clear();
-		}
-
-		internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstSubcomponent)
-		{
-			base.ServerOnPlayerConnected(hub, firstSubcomponent);
-			this.SendRpc(hub, delegate(NetworkWriter x)
-			{
-				x.WriteByte(0);
-				foreach (ushort num in DrawAndInspectorModule.PickupAnimSerials)
-				{
-					x.WriteUShort(num);
-				}
 			});
 		}
+	}
 
-		private static readonly HashSet<ushort> PickupAnimSerials = new HashSet<ushort>();
-
-		[SerializeField]
-		private AudioClip _equipSound;
-
-		[SerializeField]
-		private AudioClip _pickupSound;
-
-		private enum RpcType
+	internal override void OnHolstered()
+	{
+		base.OnHolstered();
+		SendRpc(delegate(NetworkWriter x)
 		{
-			AddPickup,
-			OnEquipped,
-			OnHolstered,
-			InspectRequested
+			x.WriteByte(2);
+		});
+	}
+
+	internal override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		if (base.IsControllable && GetActionDown(ActionName.InspectItem))
+		{
+			SendCmd();
 		}
+	}
+
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (!base.ItemUsageBlocked)
+		{
+			SendRpc(delegate(NetworkWriter x)
+			{
+				x.WriteByte(3);
+			});
+		}
+	}
+
+	internal override void OnClientReady()
+	{
+		base.OnClientReady();
+		PickupAnimSerials.Clear();
+	}
+
+	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstSubcomponent)
+	{
+		base.ServerOnPlayerConnected(hub, firstSubcomponent);
+		SendRpc(hub, delegate(NetworkWriter x)
+		{
+			x.WriteByte(0);
+			foreach (ushort pickupAnimSerial in PickupAnimSerials)
+			{
+				x.WriteUShort(pickupAnimSerial);
+			}
+		});
 	}
 }

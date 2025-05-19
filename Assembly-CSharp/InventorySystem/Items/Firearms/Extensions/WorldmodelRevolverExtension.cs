@@ -1,170 +1,161 @@
-﻿using System;
+using System;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Modules;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+public class WorldmodelRevolverExtension : MonoBehaviour, IWorldmodelExtension, IDestroyExtensionReceiver
 {
-	public class WorldmodelRevolverExtension : MonoBehaviour, IWorldmodelExtension, IDestroyExtensionReceiver
+	[Serializable]
+	public class RoundsSet
 	{
-		public void OnDestroyExtension()
-		{
-			if (!this._eventsAssigned)
-			{
-				return;
-			}
-			DoubleActionModule.OnCockedChanged -= this.OnCockedChanged;
-			CylinderAmmoModule.OnChambersModified -= this.UpdateChambers;
-		}
-
-		public void SetupWorldmodel(FirearmWorldmodel worldmodel)
-		{
-			WorldmodelRevolverExtension.RoundsSet[] roundsSets = this._roundsSets;
-			for (int i = 0; i < roundsSets.Length; i++)
-			{
-				roundsSets[i].Init(worldmodel);
-			}
-			this._serial = worldmodel.Identifier.SerialNumber;
-			this._hammer.Polarity = DoubleActionModule.GetCocked(this._serial);
-			if (this._eventsAssigned)
-			{
-				return;
-			}
-			this._eventsAssigned = true;
-			DoubleActionModule.OnCockedChanged += this.OnCockedChanged;
-			CylinderAmmoModule.OnChambersModified += this.UpdateChambers;
-			this.UpdateChambers(worldmodel.Identifier.SerialNumber);
-		}
-
-		private void UpdateChambers(ushort serial)
-		{
-			WorldmodelRevolverExtension.RoundsSet[] roundsSets = this._roundsSets;
-			for (int i = 0; i < roundsSets.Length; i++)
-			{
-				roundsSets[i].UpdateAmount(serial, this._chambersOffset);
-			}
-		}
-
-		private void OnCockedChanged(ushort serial, bool cocked)
-		{
-			if (serial != this._serial)
-			{
-				return;
-			}
-			this._hammer.Polarity = cocked;
-		}
+		[SerializeField]
+		private AttachmentLink _attachment;
 
 		[SerializeField]
-		private WorldmodelRevolverExtension.RoundsSet[] _roundsSets;
+		private GameObject[] _liveRounds;
 
 		[SerializeField]
-		private int _chambersOffset;
+		private GameObject[] _dischargedRounds;
 
-		[SerializeField]
-		private BipolarTransform _hammer;
+		private bool _worldmodelMode;
 
-		private ushort _serial;
+		private bool _attachmentActive;
 
-		private bool _eventsAssigned;
+		private uint? _filter;
 
-		[Serializable]
-		public class RoundsSet
+		public void Init(Firearm fa)
 		{
-			public void Init(Firearm fa)
-			{
-				this._attachment.InitCache(fa);
-				this._worldmodelMode = false;
-			}
+			_attachment.InitCache(fa);
+			_worldmodelMode = false;
+		}
 
-			public void Init(FirearmWorldmodel worldmodel)
+		public void Init(FirearmWorldmodel worldmodel)
+		{
+			_worldmodelMode = true;
+			if (!_filter.HasValue)
 			{
-				this._worldmodelMode = true;
-				if (this._filter == null)
-				{
-					uint num;
-					this._attachment.TryGetFilter(worldmodel.Identifier.TypeId, out num);
-					this._filter = new uint?(num);
-				}
-				this._attachmentActive = (worldmodel.AttachmentCode & this._filter.Value) > 0U;
+				_attachment.TryGetFilter(worldmodel.Identifier.TypeId, out var filter);
+				_filter = filter;
 			}
+			_attachmentActive = (worldmodel.AttachmentCode & _filter.Value) != 0;
+		}
 
-			public void UpdateAmount(int amt, int offset)
+		public void UpdateAmount(int amt, int offset)
+		{
+			if (Setup())
 			{
-				if (!this.Setup())
-				{
-					return;
-				}
 				for (int i = 0; i < amt; i++)
 				{
-					this.GetSafe(this._liveRounds, i + offset).SetActive(true);
+					GetSafe(_liveRounds, i + offset).SetActive(value: true);
 				}
 			}
+		}
 
-			public void UpdateAmount(ushort serial, int offset)
+		public void UpdateAmount(ushort serial, int offset)
+		{
+			if (!Setup())
 			{
-				if (!this.Setup())
-				{
-					return;
-				}
-				int num = Mathf.Min(this._liveRounds.Length, this._dischargedRounds.Length);
-				CylinderAmmoModule.Chamber[] chambersArrayForSerial = CylinderAmmoModule.GetChambersArrayForSerial(serial, num);
-				for (int i = 0; i < num; i++)
-				{
-					int num2 = i + offset;
-					CylinderAmmoModule.ChamberState contextState = chambersArrayForSerial[i].ContextState;
-					if (contextState != CylinderAmmoModule.ChamberState.Live)
-					{
-						if (contextState == CylinderAmmoModule.ChamberState.Discharged)
-						{
-							this.GetSafe(this._dischargedRounds, num2).SetActive(true);
-						}
-					}
-					else
-					{
-						this.GetSafe(this._liveRounds, num2).SetActive(true);
-					}
-				}
+				return;
 			}
-
-			private bool Setup()
+			int num = Mathf.Min(_liveRounds.Length, _dischargedRounds.Length);
+			CylinderAmmoModule.Chamber[] chambersArrayForSerial = CylinderAmmoModule.GetChambersArrayForSerial(serial, num);
+			for (int i = 0; i < num; i++)
 			{
-				GameObject[] array = this._liveRounds;
-				for (int i = 0; i < array.Length; i++)
+				int index = i + offset;
+				switch (chambersArrayForSerial[i].ContextState)
 				{
-					array[i].SetActive(false);
+				case CylinderAmmoModule.ChamberState.Live:
+					GetSafe(_liveRounds, index).SetActive(value: true);
+					break;
+				case CylinderAmmoModule.ChamberState.Discharged:
+					GetSafe(_dischargedRounds, index).SetActive(value: true);
+					break;
 				}
-				array = this._dischargedRounds;
-				for (int i = 0; i < array.Length; i++)
-				{
-					array[i].SetActive(false);
-				}
-				if (!this._worldmodelMode)
-				{
-					return this._attachment.Instance.IsEnabled;
-				}
-				return this._attachmentActive;
 			}
+		}
 
-			private GameObject GetSafe(GameObject[] arr, int index)
+		private bool Setup()
+		{
+			GameObject[] liveRounds = _liveRounds;
+			for (int i = 0; i < liveRounds.Length; i++)
 			{
-				int num = arr.Length;
-				return arr[(index % num + num) % num];
+				liveRounds[i].SetActive(value: false);
 			}
+			liveRounds = _dischargedRounds;
+			for (int i = 0; i < liveRounds.Length; i++)
+			{
+				liveRounds[i].SetActive(value: false);
+			}
+			if (!_worldmodelMode)
+			{
+				return _attachment.Instance.IsEnabled;
+			}
+			return _attachmentActive;
+		}
 
-			[SerializeField]
-			private AttachmentLink _attachment;
+		private GameObject GetSafe(GameObject[] arr, int index)
+		{
+			int num = arr.Length;
+			return arr[(index % num + num) % num];
+		}
+	}
 
-			[SerializeField]
-			private GameObject[] _liveRounds;
+	[SerializeField]
+	private RoundsSet[] _roundsSets;
 
-			[SerializeField]
-			private GameObject[] _dischargedRounds;
+	[SerializeField]
+	private int _chambersOffset;
 
-			private bool _worldmodelMode;
+	[SerializeField]
+	private BipolarTransform _hammer;
 
-			private bool _attachmentActive;
+	private ushort _serial;
 
-			private uint? _filter;
+	private bool _eventsAssigned;
+
+	public void OnDestroyExtension()
+	{
+		if (_eventsAssigned)
+		{
+			DoubleActionModule.OnCockedChanged -= OnCockedChanged;
+			CylinderAmmoModule.OnChambersModified -= UpdateChambers;
+		}
+	}
+
+	public void SetupWorldmodel(FirearmWorldmodel worldmodel)
+	{
+		RoundsSet[] roundsSets = _roundsSets;
+		for (int i = 0; i < roundsSets.Length; i++)
+		{
+			roundsSets[i].Init(worldmodel);
+		}
+		_serial = worldmodel.Identifier.SerialNumber;
+		_hammer.Polarity = DoubleActionModule.GetCocked(_serial);
+		if (!_eventsAssigned)
+		{
+			_eventsAssigned = true;
+			DoubleActionModule.OnCockedChanged += OnCockedChanged;
+			CylinderAmmoModule.OnChambersModified += UpdateChambers;
+			UpdateChambers(worldmodel.Identifier.SerialNumber);
+		}
+	}
+
+	private void UpdateChambers(ushort serial)
+	{
+		RoundsSet[] roundsSets = _roundsSets;
+		for (int i = 0; i < roundsSets.Length; i++)
+		{
+			roundsSets[i].UpdateAmount(serial, _chambersOffset);
+		}
+	}
+
+	private void OnCockedChanged(ushort serial, bool cocked)
+	{
+		if (serial == _serial)
+		{
+			_hammer.Polarity = cocked;
 		}
 	}
 }

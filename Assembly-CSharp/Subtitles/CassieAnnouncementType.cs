@@ -1,12 +1,9 @@
-﻿using System;
+namespace Subtitles;
 
-namespace Subtitles
+public enum CassieAnnouncementType : byte
 {
-	public enum CassieAnnouncementType : byte
-	{
-		None,
-		Normal,
-		Decontamination,
-		Detonation
-	}
+	None,
+	Normal,
+	Decontamination,
+	Detonation
 }

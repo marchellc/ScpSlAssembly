@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,28 +7,32 @@ using NorthwoodLib.Pools;
 
 public static class FileManager
 {
+	private static string _appfolder = "";
+
+	private static string _configfolder = "";
+
 	public static void RefreshAppFolder()
 	{
-		FileManager._appfolder = ((ServerStatic.IsDedicated && ConfigFile.HosterPolicy != null && ConfigFile.HosterPolicy.GetBool("gamedir_for_configs", false)) ? "AppData" : (Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + FileManager.GetPathSeparator().ToString() + "SCP Secret Laboratory"));
+		_appfolder = ((ServerStatic.IsDedicated && ConfigFile.HosterPolicy != null && ConfigFile.HosterPolicy.GetBool("gamedir_for_configs")) ? "AppData" : (Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + GetPathSeparator() + "SCP Secret Laboratory"));
 	}
 
 	public static string GetAppFolder(bool addSeparator = true, bool serverConfig = false, string centralConfig = "")
 	{
-		if (string.IsNullOrEmpty(FileManager._appfolder))
+		if (string.IsNullOrEmpty(_appfolder))
 		{
-			FileManager.RefreshAppFolder();
+			RefreshAppFolder();
 		}
-		if (serverConfig && !string.IsNullOrEmpty(FileManager._configfolder) && string.IsNullOrEmpty(centralConfig))
+		if (serverConfig && !string.IsNullOrEmpty(_configfolder) && string.IsNullOrEmpty(centralConfig))
 		{
-			return FileManager._configfolder + (addSeparator ? FileManager.GetPathSeparator().ToString() : "");
+			return _configfolder + (addSeparator ? GetPathSeparator().ToString() : "");
 		}
-		return FileManager._appfolder + ((addSeparator || serverConfig) ? FileManager.GetPathSeparator().ToString() : "") + (serverConfig ? ("config/" + (string.IsNullOrEmpty(centralConfig) ? (ServerStatic.IsDedicated ? ServerStatic.ServerPort.ToString() : "nondedicated") : centralConfig) + (addSeparator ? FileManager.GetPathSeparator().ToString() : "")) : "");
+		return _appfolder + ((addSeparator || serverConfig) ? GetPathSeparator().ToString() : "") + (serverConfig ? ("config/" + ((!string.IsNullOrEmpty(centralConfig)) ? centralConfig : (ServerStatic.IsDedicated ? ServerStatic.ServerPort.ToString() : "nondedicated")) + (addSeparator ? GetPathSeparator().ToString() : "")) : "");
 	}
 
 	public static string StripPath(string path)
 	{
 		path = path.Replace("\"", "").Trim();
-		while (path.EndsWith("\\") || path.EndsWith("/") || path.EndsWith(FileManager.GetPathSeparator().ToString()))
+		while (path.EndsWith("\\") || path.EndsWith("/") || path.EndsWith(GetPathSeparator().ToString()))
 		{
 			path = path.Substring(0, path.Length - 1);
 		}
@@ -37,29 +41,33 @@ public static class FileManager
 
 	public static void SetAppFolder(string path)
 	{
-		path = FileManager.StripPath(path);
+		path = StripPath(path);
 		if (!Directory.Exists(path))
 		{
-			FileManager._appfolder = "";
-			return;
+			_appfolder = "";
 		}
-		FileManager._appfolder = path;
+		else
+		{
+			_appfolder = path;
+		}
 	}
 
 	public static void SetConfigFolder(string path)
 	{
-		path = FileManager.StripPath(path);
+		path = StripPath(path);
 		if (!Directory.Exists(path))
 		{
-			FileManager._configfolder = "";
-			return;
+			_configfolder = "";
 		}
-		FileManager._configfolder = path;
+		else
+		{
+			_configfolder = path;
+		}
 	}
 
 	public static string ReplacePathSeparators(string path)
 	{
-		return path.Replace('/', FileManager.GetPathSeparator()).Replace('\\', FileManager.GetPathSeparator());
+		return path.Replace('/', GetPathSeparator()).Replace('\\', GetPathSeparator());
 	}
 
 	public static char GetPathSeparator()
@@ -92,27 +100,25 @@ public static class FileManager
 		List<string> list = ListPool<string>.Shared.Rent();
 		using (StreamReader streamReader = new StreamReader(path))
 		{
-			string text;
-			while ((text = streamReader.ReadLine()) != null)
+			string item;
+			while ((item = streamReader.ReadLine()) != null)
 			{
-				list.Add(text);
+				list.Add(item);
 			}
 		}
-		string[] array = list.ToArray();
+		string[] result = list.ToArray();
 		ListPool<string>.Shared.Return(list);
-		return array;
+		return result;
 	}
 
 	public static List<string> ReadAllLinesList(string path)
 	{
 		List<string> list = new List<string>();
-		using (StreamReader streamReader = new StreamReader(path))
+		using StreamReader streamReader = new StreamReader(path);
+		string item;
+		while ((item = streamReader.ReadLine()) != null)
 		{
-			string text;
-			while ((text = streamReader.ReadLine()) != null)
-			{
-				list.Add(text);
-			}
+			list.Add(item);
 		}
 		return list;
 	}
@@ -120,48 +126,40 @@ public static class FileManager
 	public static void ReadAllLinesList(string path, List<string> list)
 	{
 		list.Clear();
-		using (StreamReader streamReader = new StreamReader(path))
+		using StreamReader streamReader = new StreamReader(path);
+		string item;
+		while ((item = streamReader.ReadLine()) != null)
 		{
-			string text;
-			while ((text = streamReader.ReadLine()) != null)
-			{
-				list.Add(text);
-			}
+			list.Add(item);
 		}
 	}
 
 	public static string[] ReadAllLinesSafe(string path)
 	{
 		List<string> list = ListPool<string>.Shared.Rent();
-		using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+		using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 		{
-			using (StreamReader streamReader = new StreamReader(fileStream))
+			using StreamReader streamReader = new StreamReader(stream);
+			string item;
+			while ((item = streamReader.ReadLine()) != null)
 			{
-				string text;
-				while ((text = streamReader.ReadLine()) != null)
-				{
-					list.Add(text);
-				}
+				list.Add(item);
 			}
 		}
-		string[] array = list.ToArray();
+		string[] result = list.ToArray();
 		ListPool<string>.Shared.Return(list);
-		return array;
+		return result;
 	}
 
 	public static List<string> ReadAllLinesSafeList(string path)
 	{
 		List<string> list = new List<string>();
-		using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+		using FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+		using StreamReader streamReader = new StreamReader(stream);
+		string item;
+		while ((item = streamReader.ReadLine()) != null)
 		{
-			using (StreamReader streamReader = new StreamReader(fileStream))
-			{
-				string text;
-				while ((text = streamReader.ReadLine()) != null)
-				{
-					list.Add(text);
-				}
-			}
+			list.Add(item);
 		}
 		return list;
 	}
@@ -169,16 +167,12 @@ public static class FileManager
 	public static void ReadAllLinesSafeList(string path, List<string> list)
 	{
 		list.Clear();
-		using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+		using FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+		using StreamReader streamReader = new StreamReader(stream);
+		string item;
+		while ((item = streamReader.ReadLine()) != null)
 		{
-			using (StreamReader streamReader = new StreamReader(fileStream))
-			{
-				string text;
-				while ((text = streamReader.ReadLine()) != null)
-				{
-					list.Add(text);
-				}
-			}
+			list.Add(item);
 		}
 	}
 
@@ -189,30 +183,15 @@ public static class FileManager
 
 	public static string ReadAllTextSafe(string path)
 	{
-		string text;
-		using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-		{
-			using (StreamReader streamReader = new StreamReader(fileStream))
-			{
-				text = streamReader.ReadToEnd();
-			}
-		}
-		return text;
+		using FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+		using StreamReader streamReader = new StreamReader(stream);
+		return streamReader.ReadToEnd();
 	}
 
 	public static void WriteToFile(IEnumerable<string> data, string path, bool removeempty = false)
 	{
-		IEnumerable<string> enumerable;
-		if (!removeempty)
-		{
-			enumerable = data;
-		}
-		else
-		{
-			enumerable = data.Where((string line) => !string.IsNullOrWhiteSpace(line.Replace(Environment.NewLine, "").Replace("\r\n", "").Replace("\n", "")
-				.Replace(" ", "")));
-		}
-		File.WriteAllLines(path, enumerable, Misc.Utf8Encoding);
+		File.WriteAllLines(path, removeempty ? data.Where((string line) => !string.IsNullOrWhiteSpace(line.Replace(Environment.NewLine, "").Replace("\r\n", "").Replace("\n", "")
+			.Replace(" ", ""))) : data, Misc.Utf8Encoding);
 	}
 
 	public static void WriteStringToFile(string data, string path)
@@ -222,46 +201,36 @@ public static class FileManager
 
 	public static void WriteToFileSafe(IEnumerable<string> data, string path, bool removeempty = false)
 	{
-		using (FileStream fileStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite))
-		{
-			using (StreamWriter streamWriter = new StreamWriter(fileStream, Misc.Utf8Encoding))
-			{
-				streamWriter.Write(string.Join("\r\n", data));
-			}
-		}
+		using FileStream stream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
+		using StreamWriter streamWriter = new StreamWriter(stream, Misc.Utf8Encoding);
+		streamWriter.Write(string.Join("\r\n", data));
 	}
 
 	public static void WriteStringToFileSafe(string data, string path)
 	{
-		using (FileStream fileStream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite))
-		{
-			using (StreamWriter streamWriter = new StreamWriter(fileStream, Misc.Utf8Encoding))
-			{
-				streamWriter.Write(data);
-			}
-		}
+		using FileStream stream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
+		using StreamWriter streamWriter = new StreamWriter(stream, Misc.Utf8Encoding);
+		streamWriter.Write(data);
 	}
 
 	public static void AppendFile(string data, string path, bool newLine = true)
 	{
-		string[] array = FileManager.ReadAllLines(path);
-		if (!newLine || array.Length == 0 || array[array.Length - 1].EndsWith(Environment.NewLine) || array[array.Length - 1].EndsWith("\n"))
+		string[] array = ReadAllLines(path);
+		if (!newLine || array.Length == 0 || array[^1].EndsWith(Environment.NewLine) || array[^1].EndsWith("\n"))
 		{
 			File.AppendAllText(path, data, Misc.Utf8Encoding);
-			return;
 		}
-		File.AppendAllText(path, Environment.NewLine + data, Misc.Utf8Encoding);
+		else
+		{
+			File.AppendAllText(path, Environment.NewLine + data, Misc.Utf8Encoding);
+		}
 	}
 
 	public static void AppendFileSafe(string data, string path, bool newLine = true)
 	{
-		using (FileStream fileStream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
-		{
-			using (StreamWriter streamWriter = new StreamWriter(fileStream, Misc.Utf8Encoding))
-			{
-				streamWriter.Write(newLine ? ("\r\n" + data) : data);
-			}
-		}
+		using FileStream stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+		using StreamWriter streamWriter = new StreamWriter(stream, Misc.Utf8Encoding);
+		streamWriter.Write(newLine ? ("\r\n" + data) : data);
 	}
 
 	public static void RenameFile(string path, string newpath)
@@ -276,21 +245,20 @@ public static class FileManager
 
 	public static void ReplaceLine(int line, string text, string path)
 	{
-		string[] array = FileManager.ReadAllLines(path);
+		string[] array = ReadAllLines(path);
 		array[line] = text;
-		FileManager.WriteToFile(array, path, false);
+		WriteToFile(array, path);
 	}
 
 	public static void RemoveEmptyLines(string path)
 	{
-		string[] array = FileManager.ReadAllLines(path);
+		string[] array = ReadAllLines(path);
 		string[] array2 = array.Where((string s) => !string.IsNullOrWhiteSpace(s.Replace(Environment.NewLine, "").Replace("\r\n", "").Replace("\n", "")
-			.Replace(" ", ""))).ToArray<string>();
-		if (array == array2)
+			.Replace(" ", ""))).ToArray();
+		if (array != array2)
 		{
-			return;
+			WriteToFile(array2, path);
 		}
-		FileManager.WriteToFile(array2, path, false);
 	}
 
 	private static void DirectoryCopy(string sourceDirName, string destDirName, bool copySubDirs = true, bool overwrite = true)
@@ -303,25 +271,23 @@ public static class FileManager
 		DirectoryInfo[] directories = directoryInfo.GetDirectories();
 		if (Directory.Exists(destDirName))
 		{
-			Directory.Delete(destDirName, true);
+			Directory.Delete(destDirName, recursive: true);
 		}
 		Directory.CreateDirectory(destDirName);
-		foreach (FileInfo fileInfo in directoryInfo.GetFiles())
+		FileInfo[] files = directoryInfo.GetFiles();
+		foreach (FileInfo fileInfo in files)
 		{
-			string text = Path.Combine(destDirName, fileInfo.Name);
-			fileInfo.CopyTo(text, overwrite);
+			string destFileName = Path.Combine(destDirName, fileInfo.Name);
+			fileInfo.CopyTo(destFileName, overwrite);
 		}
 		if (copySubDirs)
 		{
-			foreach (DirectoryInfo directoryInfo2 in directories)
+			DirectoryInfo[] array = directories;
+			foreach (DirectoryInfo directoryInfo2 in array)
 			{
-				string text2 = Path.Combine(destDirName, directoryInfo2.Name);
-				FileManager.DirectoryCopy(directoryInfo2.FullName, text2, overwrite, true);
+				string destDirName2 = Path.Combine(destDirName, directoryInfo2.Name);
+				DirectoryCopy(directoryInfo2.FullName, destDirName2, overwrite);
 			}
 		}
 	}
-
-	private static string _appfolder = "";
-
-	private static string _configfolder = "";
 }

@@ -1,94 +1,74 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Utils;
 
-namespace CommandSystem.Commands.RemoteAdmin
+namespace CommandSystem.Commands.RemoteAdmin;
+
+[CommandHandler(typeof(RemoteAdminCommandHandler))]
+public class FriendlyFireDetectorCommand : ICommand, IUsageProvider
 {
-	[CommandHandler(typeof(RemoteAdminCommandHandler))]
-	public class FriendlyFireDetectorCommand : ICommand, IUsageProvider
+	public string Command { get; } = "friendlyfiredetector";
+
+	public string[] Aliases { get; } = new string[4] { "tk", "tkd", "teamkilldetector", "ffd" };
+
+	public string Description { get; } = "Friendly fire detection and logging";
+
+	public string[] Usage { get; } = new string[1] { "Player ID or Name/status/pause/unpause>" };
+
+	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
-		public string Command { get; } = "friendlyfiredetector";
-
-		public string[] Aliases { get; } = new string[] { "tk", "tkd", "teamkilldetector", "ffd" };
-
-		public string Description { get; } = "Friendly fire detection and logging";
-
-		public string[] Usage { get; } = new string[] { "Player ID or Name/status/pause/unpause>" };
-
-		public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+		if (arguments.Count < 1)
 		{
-			if (arguments.Count < 1)
+			response = "To execute this command provide at least 1 argument!\nUsage: " + arguments.Array[0] + " " + this.DisplayCommandUsage();
+			return false;
+		}
+		if (!sender.CheckPermission(PlayerPermissions.PlayersManagement, out response))
+		{
+			return false;
+		}
+		switch (arguments.At(0))
+		{
+		case "status":
+			response = "FFD#Friendly fire detector is currently " + (FriendlyFireConfig.PauseDetector ? string.Empty : "**NOT** ") + "paused.";
+			return true;
+		case "pause":
+			if (FriendlyFireConfig.PauseDetector)
 			{
-				response = "To execute this command provide at least 1 argument!\nUsage: " + arguments.Array[0] + " " + this.DisplayCommandUsage();
+				response = "Friendly fire detector is already paused.";
 				return false;
 			}
-			if (!sender.CheckPermission(PlayerPermissions.PlayersManagement, out response))
+			FriendlyFireConfig.PauseDetector = true;
+			response = "Friendly fire detector has been paused.";
+			ServerLogs.AddLog(ServerLogs.Modules.Administrative, sender.LogName + " paused Friendly Fire Detector.", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
+			return true;
+		case "unpause":
+			if (!FriendlyFireConfig.PauseDetector)
 			{
+				response = "Friendly fire detector is not paused.";
 				return false;
 			}
-			string text = arguments.At(0);
-			if (text == "status")
+			FriendlyFireConfig.PauseDetector = false;
+			response = "Friendly fire detector has been unpaused.";
+			ServerLogs.AddLog(ServerLogs.Modules.Administrative, sender.LogName + " unpaused paused Friendly Fire Detector.", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
+			return true;
+		default:
+		{
+			string[] newargs;
+			List<ReferenceHub> list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out newargs);
+			if (list != null && list.Count != 1)
 			{
-				response = "FFD#Friendly fire detector is currently " + (FriendlyFireConfig.PauseDetector ? string.Empty : "**NOT** ") + "paused.";
-				return true;
+				response = "FFD command requires exact one selected player, not an array of players!";
+				return false;
 			}
-			if (!(text == "pause"))
+			if (list == null)
 			{
-				if (!(text == "unpause"))
-				{
-					string[] array;
-					List<ReferenceHub> list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out array, false);
-					if (list != null && list.Count != 1)
-					{
-						response = "FFD command requires exact one selected player, not an array of players!";
-						return false;
-					}
-					if (list == null)
-					{
-						response = "The specified player was not found! \nUsage: FFD <Player ID or Name/status/pause/unpause>";
-						return false;
-					}
-					FriendlyFireHandler friendlyFireHandler = list[0].FriendlyFireHandler;
-					response = string.Format("--- Friendly Fire Detector Stats ---\nKills - Damage dealt\n\nRound: {0} - {1}\nLife: {2} - {3}\nWindow: {4} - {5} [Window: {6}s]\nRespawn: {7} - {8} [Window: {9}s]", new object[]
-					{
-						friendlyFireHandler.Round.Kills,
-						friendlyFireHandler.Round.Damage,
-						friendlyFireHandler.Life.Kills,
-						friendlyFireHandler.Life.Damage,
-						friendlyFireHandler.Window.Kills,
-						friendlyFireHandler.Window.Damage,
-						FriendlyFireConfig.Window,
-						friendlyFireHandler.Respawn.Kills,
-						friendlyFireHandler.Respawn.Damage,
-						FriendlyFireConfig.RespawnWindow
-					});
-					return true;
-				}
-				else
-				{
-					if (!FriendlyFireConfig.PauseDetector)
-					{
-						response = "Friendly fire detector is not paused.";
-						return false;
-					}
-					FriendlyFireConfig.PauseDetector = false;
-					response = "Friendly fire detector has been unpaused.";
-					ServerLogs.AddLog(ServerLogs.Modules.Administrative, sender.LogName + " unpaused paused Friendly Fire Detector.", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging, false);
-					return true;
-				}
+				response = "The specified player was not found! \nUsage: FFD <Player ID or Name/status/pause/unpause>";
+				return false;
 			}
-			else
-			{
-				if (FriendlyFireConfig.PauseDetector)
-				{
-					response = "Friendly fire detector is already paused.";
-					return false;
-				}
-				FriendlyFireConfig.PauseDetector = true;
-				response = "Friendly fire detector has been paused.";
-				ServerLogs.AddLog(ServerLogs.Modules.Administrative, sender.LogName + " paused Friendly Fire Detector.", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging, false);
-				return true;
-			}
+			FriendlyFireHandler friendlyFireHandler = list[0].FriendlyFireHandler;
+			response = $"--- Friendly Fire Detector Stats ---\nKills - Damage dealt\n\nRound: {friendlyFireHandler.Round.Kills} - {friendlyFireHandler.Round.Damage}\nLife: {friendlyFireHandler.Life.Kills} - {friendlyFireHandler.Life.Damage}\nWindow: {friendlyFireHandler.Window.Kills} - {friendlyFireHandler.Window.Damage} [Window: {FriendlyFireConfig.Window}s]\nRespawn: {friendlyFireHandler.Respawn.Kills} - {friendlyFireHandler.Respawn.Damage} [Window: {FriendlyFireConfig.RespawnWindow}s]";
+			return true;
+		}
 		}
 	}
 }

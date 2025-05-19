@@ -1,10 +1,8 @@
-﻿using System;
 using LiteNetLib.Utils;
 
-namespace LiteNetLib
+namespace LiteNetLib;
+
+public interface INtpEventListener
 {
-	public interface INtpEventListener
-	{
-		void OnNtpResponse(NtpPacket packet);
-	}
+	void OnNtpResponse(NtpPacket packet);
 }

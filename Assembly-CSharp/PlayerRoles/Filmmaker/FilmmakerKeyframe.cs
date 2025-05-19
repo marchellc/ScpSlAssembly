@@ -1,13 +1,10 @@
-﻿using System;
+namespace PlayerRoles.Filmmaker;
 
-namespace PlayerRoles.Filmmaker
+public class FilmmakerKeyframe<T> where T : struct
 {
-	public class FilmmakerKeyframe<T> where T : struct
-	{
-		public T Value;
+	public T Value;
 
-		public int TimeFrames;
+	public int TimeFrames;
 
-		public FilmmakerBlendPreset BlendCurve;
-	}
+	public FilmmakerBlendPreset BlendCurve;
 }

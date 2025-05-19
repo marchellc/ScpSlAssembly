@@ -1,92 +1,88 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp049.Zombies
+namespace PlayerRoles.PlayableScps.Scp049.Zombies;
+
+public class ZombieMovementModule : FirstPersonMovementModule
 {
-	public class ZombieMovementModule : FirstPersonMovementModule
+	public const float MaxTargetTime = 5f;
+
+	private const float MinTargetTime = 1f;
+
+	private const float SpeedPerTick = 0.05f;
+
+	[SerializeField]
+	private ZombieRole _role;
+
+	private ZombieBloodlustAbility _visionTracker;
+
+	private float _speedTickTimer;
+
+	private bool _bloodlustActive;
+
+	private float _lookingTimer;
+
+	public bool CanMove { get; set; }
+
+	public float BloodlustSpeed { get; private set; }
+
+	public float NormalSpeed { get; private set; }
+
+	private float MovementSpeed
 	{
-		public bool CanMove { get; set; }
-
-		public float BloodlustSpeed { get; private set; }
-
-		public float NormalSpeed { get; private set; }
-
-		private float MovementSpeed
+		get
 		{
-			get
-			{
-				return this.WalkSpeed;
-			}
-			set
-			{
-				this.WalkSpeed = value;
-				this.SprintSpeed = value;
-			}
+			return WalkSpeed;
 		}
-
-		public void ForceBloodlustSpeed()
+		set
 		{
-			this.MovementSpeed = this.BloodlustSpeed;
+			WalkSpeed = value;
+			SprintSpeed = value;
 		}
+	}
 
-		private void Awake()
+	public void ForceBloodlustSpeed()
+	{
+		MovementSpeed = BloodlustSpeed;
+	}
+
+	private void Awake()
+	{
+		NormalSpeed = WalkSpeed;
+		BloodlustSpeed = SprintSpeed;
+		_role.SubroutineModule.TryGetSubroutine<ZombieBloodlustAbility>(out _visionTracker);
+	}
+
+	protected override void UpdateMovement()
+	{
+		float deltaTime = Time.deltaTime;
+		UpdateBloodlustState(deltaTime);
+		UpdateSpeed(deltaTime);
+		base.UpdateMovement();
+	}
+
+	private void UpdateBloodlustState(float deltaTime)
+	{
+		float value = _lookingTimer + (_visionTracker.LookingAtTarget ? deltaTime : (0f - deltaTime));
+		_lookingTimer = Mathf.Clamp(value, 0f, 5f);
+		if (_lookingTimer > 1f)
 		{
-			this.NormalSpeed = this.WalkSpeed;
-			this.BloodlustSpeed = this.SprintSpeed;
-			this._role.SubroutineModule.TryGetSubroutine<ZombieBloodlustAbility>(out this._visionTracker);
+			_bloodlustActive = true;
 		}
-
-		protected override void UpdateMovement()
+		else if (_lookingTimer == 0f)
 		{
-			float deltaTime = Time.deltaTime;
-			this.UpdateBloodlustState(deltaTime);
-			this.UpdateSpeed(deltaTime);
-			base.UpdateMovement();
+			_bloodlustActive = false;
 		}
+	}
 
-		private void UpdateBloodlustState(float deltaTime)
+	private void UpdateSpeed(float deltaTime)
+	{
+		_speedTickTimer += deltaTime;
+		if (!(_speedTickTimer < 1f))
 		{
-			float num = this._lookingTimer + (this._visionTracker.LookingAtTarget ? deltaTime : (-deltaTime));
-			this._lookingTimer = Mathf.Clamp(num, 0f, 5f);
-			if (this._lookingTimer > 1f)
-			{
-				this._bloodlustActive = true;
-				return;
-			}
-			if (this._lookingTimer == 0f)
-			{
-				this._bloodlustActive = false;
-			}
+			_speedTickTimer = 0f;
+			float value = MovementSpeed + (_bloodlustActive ? 0.05f : (-0.1f));
+			MovementSpeed = Mathf.Clamp(value, NormalSpeed, BloodlustSpeed);
 		}
-
-		private void UpdateSpeed(float deltaTime)
-		{
-			this._speedTickTimer += deltaTime;
-			if (this._speedTickTimer < 1f)
-			{
-				return;
-			}
-			this._speedTickTimer = 0f;
-			float num = this.MovementSpeed + (this._bloodlustActive ? 0.05f : (-0.1f));
-			this.MovementSpeed = Mathf.Clamp(num, this.NormalSpeed, this.BloodlustSpeed);
-		}
-
-		public const float MaxTargetTime = 5f;
-
-		private const float MinTargetTime = 1f;
-
-		private const float SpeedPerTick = 0.05f;
-
-		[SerializeField]
-		private ZombieRole _role;
-
-		private ZombieBloodlustAbility _visionTracker;
-
-		private float _speedTickTimer;
-
-		private bool _bloodlustActive;
-
-		private float _lookingTimer;
 	}
 }

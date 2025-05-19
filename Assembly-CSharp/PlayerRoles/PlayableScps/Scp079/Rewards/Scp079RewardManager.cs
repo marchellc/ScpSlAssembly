@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using GameObjectPools;
 using LabApi.Events.Arguments.Scp079Events;
@@ -6,91 +5,100 @@ using LabApi.Events.Handlers;
 using MapGeneration;
 using Mirror;
 using PlayerRoles.Subroutines;
+using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079.Rewards
+namespace PlayerRoles.PlayableScps.Scp079.Rewards;
+
+public class Scp079RewardManager : SubroutineBase, IPoolResettable
 {
-	public class Scp079RewardManager : SubroutineBase, IPoolResettable
+	private const float MarkDuration = 12f;
+
+	private readonly Dictionary<RoomIdentifier, double> _markedRooms = new Dictionary<RoomIdentifier, double>();
+
+	private static double CurTime => NetworkTime.time;
+
+	public void MarkRoom(RoomIdentifier room)
 	{
-		private static double CurTime
+		_markedRooms[room] = CurTime;
+	}
+
+	public void MarkRooms(RoomIdentifier[] rooms)
+	{
+		foreach (RoomIdentifier room in rooms)
 		{
-			get
+			MarkRoom(room);
+		}
+	}
+
+	public void ResetObject()
+	{
+		_markedRooms.Clear();
+	}
+
+	public static bool CheckForRoomInteractions(ReferenceHub scp079Player, RoomIdentifier room)
+	{
+		if (scp079Player.roleManager.CurrentRole is Scp079Role scp)
+		{
+			return CheckForRoomInteractions(scp, room);
+		}
+		return false;
+	}
+
+	public static bool CheckForRoomInteractions(RoomIdentifier room)
+	{
+		foreach (Scp079Role activeInstance in Scp079Role.ActiveInstances)
+		{
+			if (CheckForRoomInteractions(activeInstance, room))
 			{
-				return NetworkTime.time;
+				return true;
 			}
 		}
+		return false;
+	}
 
-		public void MarkRoom(RoomIdentifier room)
+	public static bool CheckForRoomInteractions(Vector3 roomPosition)
+	{
+		if (roomPosition.TryGetRoom(out var room))
 		{
-			this._markedRooms[room] = Scp079RewardManager.CurTime;
+			return CheckForRoomInteractions(room);
 		}
+		return false;
+	}
 
-		public void MarkRooms(RoomIdentifier[] rooms)
+	public static bool CheckForRoomInteractions(Scp079Role scp079, RoomIdentifier room)
+	{
+		if (!scp079.SubroutineModule.TryGetSubroutine<Scp079RewardManager>(out var subroutine))
 		{
-			foreach (RoomIdentifier roomIdentifier in rooms)
-			{
-				this.MarkRoom(roomIdentifier);
-			}
-		}
-
-		public void ResetObject()
-		{
-			this._markedRooms.Clear();
-		}
-
-		public static bool CheckForRoomInteractions(ReferenceHub scp079Player, RoomIdentifier room)
-		{
-			Scp079Role scp079Role = scp079Player.roleManager.CurrentRole as Scp079Role;
-			return scp079Role != null && Scp079RewardManager.CheckForRoomInteractions(scp079Role, room);
-		}
-
-		public static bool CheckForRoomInteractions(RoomIdentifier room)
-		{
-			using (HashSet<Scp079Role>.Enumerator enumerator = Scp079Role.ActiveInstances.GetEnumerator())
-			{
-				while (enumerator.MoveNext())
-				{
-					if (Scp079RewardManager.CheckForRoomInteractions(enumerator.Current, room))
-					{
-						return true;
-					}
-				}
-			}
 			return false;
 		}
-
-		public static bool CheckForRoomInteractions(Scp079Role scp079, RoomIdentifier room)
+		if (!subroutine._markedRooms.TryGetValue(room, out var value))
 		{
-			Scp079RewardManager scp079RewardManager;
-			double num;
-			return scp079.SubroutineModule.TryGetSubroutine<Scp079RewardManager>(out scp079RewardManager) && scp079RewardManager._markedRooms.TryGetValue(room, out num) && Scp079RewardManager.CurTime - num <= 12.0;
+			return false;
 		}
-
-		public static void GrantExp(Scp079Role instance, int reward, Scp079HudTranslation gainReason, RoleTypeId subject = RoleTypeId.None)
+		if (CurTime - value > 12.0)
 		{
-			ReferenceHub referenceHub;
-			if (!instance.TryGetOwner(out referenceHub))
-			{
-				return;
-			}
-			Scp079GainingExperienceEventArgs scp079GainingExperienceEventArgs = new Scp079GainingExperienceEventArgs(referenceHub, (float)reward, gainReason);
-			Scp079Events.OnGainingExperience(scp079GainingExperienceEventArgs);
-			if (!scp079GainingExperienceEventArgs.IsAllowed)
-			{
-				return;
-			}
+			return false;
+		}
+		return true;
+	}
+
+	public static void GrantExp(Scp079Role instance, int reward, Scp079HudTranslation gainReason, RoleTypeId subject = RoleTypeId.None)
+	{
+		if (!instance.TryGetOwner(out var hub))
+		{
+			return;
+		}
+		Scp079GainingExperienceEventArgs scp079GainingExperienceEventArgs = new Scp079GainingExperienceEventArgs(hub, reward, gainReason);
+		Scp079Events.OnGainingExperience(scp079GainingExperienceEventArgs);
+		if (scp079GainingExperienceEventArgs.IsAllowed)
+		{
 			reward = (int)scp079GainingExperienceEventArgs.Amount;
 			gainReason = scp079GainingExperienceEventArgs.Reason;
-			Scp079TierManager scp079TierManager;
-			if (!instance.SubroutineModule.TryGetSubroutine<Scp079TierManager>(out scp079TierManager))
+			if (instance.SubroutineModule.TryGetSubroutine<Scp079TierManager>(out var subroutine))
 			{
-				return;
+				subroutine.ServerGrantExperience(reward, gainReason, subject);
+				Scp079Events.OnGainedExperience(new Scp079GainedExperienceEventArgs(hub, reward, gainReason));
 			}
-			scp079TierManager.ServerGrantExperience(reward, gainReason, subject);
-			Scp079Events.OnGainedExperience(new Scp079GainedExperienceEventArgs(referenceHub, (float)reward, gainReason));
 		}
-
-		private const float MarkDuration = 12f;
-
-		private readonly Dictionary<RoomIdentifier, double> _markedRooms = new Dictionary<RoomIdentifier, double>();
 	}
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using AudioPooling;
 using CustomPlayerEffects;
@@ -13,131 +12,117 @@ using Mirror.RemoteCalls;
 using PlayerRoles;
 using UnityEngine;
 
-namespace Interactables.Interobjects
+namespace Interactables.Interobjects;
+
+public class Scp330Interobject : NetworkBehaviour, IServerInteractable, IInteractable
 {
-	public class Scp330Interobject : NetworkBehaviour, IServerInteractable, IInteractable
+	private readonly List<Footprint> _previousUses = new List<Footprint>();
+
+	[SerializeField]
+	private AudioClip _takeSound;
+
+	private const float TakeCooldown = 0.1f;
+
+	private const int MaxAmountPerLife = 2;
+
+	public IVerificationRule VerificationRule => StandardDistanceVerification.Default;
+
+	public void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
-		public IVerificationRule VerificationRule
+		if (!ply.IsHuman() || ply.HasBlock(BlockedInteraction.GrabItems))
 		{
-			get
+			return;
+		}
+		float num = 0.1f;
+		int num2 = 0;
+		bool playSound = true;
+		bool allowPunishment = true;
+		foreach (Footprint previousUse in _previousUses)
+		{
+			if (previousUse.LifeIdentifier == ply.roleManager.CurrentRole.UniqueLifeIdentifier)
 			{
-				return StandardDistanceVerification.Default;
+				double totalSeconds = previousUse.Stopwatch.Elapsed.TotalSeconds;
+				num = Mathf.Min(num, (float)totalSeconds);
+				num2++;
 			}
 		}
-
-		public void ServerInteract(ReferenceHub ply, byte colliderId)
+		if (num < 0.1f || !Scp330Bag.CanAddCandy(ply))
 		{
-			if (!ply.IsHuman() || ply.HasBlock(BlockedInteraction.GrabItems))
+			return;
+		}
+		CandyKindID random = Scp330Candies.GetRandom();
+		PlayerInteractingScp330EventArgs playerInteractingScp330EventArgs = new PlayerInteractingScp330EventArgs(ply, num2, playSound, allowPunishment, random);
+		PlayerEvents.OnInteractingScp330(playerInteractingScp330EventArgs);
+		if (!playerInteractingScp330EventArgs.IsAllowed)
+		{
+			return;
+		}
+		playSound = playerInteractingScp330EventArgs.PlaySound;
+		allowPunishment = playerInteractingScp330EventArgs.AllowPunishment;
+		num2 = playerInteractingScp330EventArgs.Uses;
+		random = playerInteractingScp330EventArgs.CandyType;
+		if (random != 0 && Scp330Bag.TryAddCandy(ply, random))
+		{
+			if (playSound)
 			{
-				return;
+				RpcMakeSound();
 			}
-			float num = 0.1f;
-			int num2 = 0;
-			bool flag = true;
-			bool flag2 = true;
-			foreach (Footprint footprint in this._previousUses)
+			if (allowPunishment && num2 >= 2)
 			{
-				if (footprint.LifeIdentifier == ply.roleManager.CurrentRole.UniqueLifeIdentifier)
-				{
-					double totalSeconds = footprint.Stopwatch.Elapsed.TotalSeconds;
-					num = Mathf.Min(num, (float)totalSeconds);
-					num2++;
-				}
-			}
-			if (num < 0.1f)
-			{
-				return;
-			}
-			if (!Scp330Bag.CanAddCandy(ply))
-			{
-				return;
-			}
-			CandyKindID candyKindID = Scp330Candies.GetRandom(CandyKindID.None);
-			PlayerInteractingScp330EventArgs playerInteractingScp330EventArgs = new PlayerInteractingScp330EventArgs(ply, num2, flag, flag2, candyKindID);
-			PlayerEvents.OnInteractingScp330(playerInteractingScp330EventArgs);
-			if (!playerInteractingScp330EventArgs.IsAllowed)
-			{
-				return;
-			}
-			flag = playerInteractingScp330EventArgs.PlaySound;
-			flag2 = playerInteractingScp330EventArgs.AllowPunishment;
-			num2 = playerInteractingScp330EventArgs.Uses;
-			candyKindID = playerInteractingScp330EventArgs.CandyType;
-			if (candyKindID == CandyKindID.None)
-			{
-				return;
-			}
-			if (!Scp330Bag.TryAddCandy(ply, candyKindID))
-			{
-				return;
-			}
-			if (flag)
-			{
-				this.RpcMakeSound();
-			}
-			if (flag2 && num2 >= 2)
-			{
-				ply.playerEffectsController.EnableEffect<SeveredHands>(0f, false);
-				this.ClearUsesForRole(ply.roleManager.CurrentRole);
+				ply.playerEffectsController.EnableEffect<SeveredHands>();
+				ClearUsesForRole(ply.roleManager.CurrentRole);
 			}
 			else
 			{
-				this._previousUses.Add(new Footprint(ply));
+				_previousUses.Add(new Footprint(ply));
 			}
-			PlayerEvents.OnInteractedScp330(new PlayerInteractedScp330EventArgs(ply, num2, flag, flag2, candyKindID));
+			PlayerEvents.OnInteractedScp330(new PlayerInteractedScp330EventArgs(ply, num2, playSound, allowPunishment, random));
 		}
+	}
 
-		private void ClearUsesForRole(PlayerRoleBase prb)
+	private void ClearUsesForRole(PlayerRoleBase prb)
+	{
+		for (int num = _previousUses.Count - 1; num >= 0; num--)
 		{
-			for (int i = this._previousUses.Count - 1; i >= 0; i--)
+			if (_previousUses[num].LifeIdentifier == prb.UniqueLifeIdentifier)
 			{
-				if (this._previousUses[i].LifeIdentifier == prb.UniqueLifeIdentifier)
-				{
-					this._previousUses.RemoveAt(i);
-				}
+				_previousUses.RemoveAt(num);
 			}
 		}
+	}
 
-		[ClientRpc]
-		private void RpcMakeSound()
+	[ClientRpc]
+	private void RpcMakeSound()
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		SendRPCInternal("System.Void Interactables.Interobjects.Scp330Interobject::RpcMakeSound()", 1231574529, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	protected void UserCode_RpcMakeSound()
+	{
+		AudioSourcePoolManager.PlayOnTransform(_takeSound, base.transform);
+	}
+
+	protected static void InvokeUserCode_RpcMakeSound(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			this.SendRPCInternal("System.Void Interactables.Interobjects.Scp330Interobject::RpcMakeSound()", 1231574529, networkWriterPooled, 0, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			Debug.LogError("RPC RpcMakeSound called on server.");
 		}
-
-		public override bool Weaved()
+		else
 		{
-			return true;
-		}
-
-		protected void UserCode_RpcMakeSound()
-		{
-			AudioSourcePoolManager.PlayOnTransform(this._takeSound, base.transform, 10f, 1f, FalloffType.Exponential, MixerChannel.DefaultSfx, 1f);
-		}
-
-		protected static void InvokeUserCode_RpcMakeSound(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
-		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogError("RPC RpcMakeSound called on server.");
-				return;
-			}
 			((Scp330Interobject)obj).UserCode_RpcMakeSound();
 		}
+	}
 
-		static Scp330Interobject()
-		{
-			RemoteProcedureCalls.RegisterRpc(typeof(Scp330Interobject), "System.Void Interactables.Interobjects.Scp330Interobject::RpcMakeSound()", new RemoteCallDelegate(Scp330Interobject.InvokeUserCode_RpcMakeSound));
-		}
-
-		private readonly List<Footprint> _previousUses = new List<Footprint>();
-
-		[SerializeField]
-		private AudioClip _takeSound;
-
-		private const float TakeCooldown = 0.1f;
-
-		private const int MaxAmountPerLife = 2;
+	static Scp330Interobject()
+	{
+		RemoteProcedureCalls.RegisterRpc(typeof(Scp330Interobject), "System.Void Interactables.Interobjects.Scp330Interobject::RpcMakeSound()", InvokeUserCode_RpcMakeSound);
 	}
 }

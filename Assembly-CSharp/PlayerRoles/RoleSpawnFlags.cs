@@ -1,13 +1,12 @@
-﻿using System;
+using System;
 
-namespace PlayerRoles
+namespace PlayerRoles;
+
+[Flags]
+public enum RoleSpawnFlags
 {
-	[Flags]
-	public enum RoleSpawnFlags
-	{
-		None = 0,
-		AssignInventory = 1,
-		UseSpawnpoint = 2,
-		All = -1
-	}
+	None = 0,
+	AssignInventory = 1,
+	UseSpawnpoint = 2,
+	All = -1
 }

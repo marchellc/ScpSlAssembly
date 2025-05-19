@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace PlayerRoles.Voice
+namespace PlayerRoles.Voice;
+
+public class VoiceBubble : MonoBehaviour
 {
-	public class VoiceBubble : MonoBehaviour
-	{
-	}
 }

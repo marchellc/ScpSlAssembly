@@ -1,111 +1,102 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using VoiceChat.Codec;
 using VoiceChat.Networking;
 
-namespace VoiceChat.Playbacks
+namespace VoiceChat.Playbacks;
+
+public class SpeakerToyPlaybackBase : VoiceChatPlaybackBase
 {
-	public class SpeakerToyPlaybackBase : VoiceChatPlaybackBase
+	public static readonly HashSet<SpeakerToyPlaybackBase> AllInstances = new HashSet<SpeakerToyPlaybackBase>();
+
+	private static float[] _receiveBuffer;
+
+	private static bool _receiveBufferSet;
+
+	private OpusDecoder _decoder = new OpusDecoder();
+
+	public byte ControllerId;
+
+	public PlaybackBuffer Buffer;
+
+	public Vector3 LastPosition { get; private set; }
+
+	public bool Culled { get; private set; }
+
+	public override int MaxSamples => Buffer.Length;
+
+	public void DecodeSamples(AudioMessage msg)
 	{
-		public Vector3 LastPosition { get; private set; }
-
-		public bool Culled { get; private set; }
-
-		public override int MaxSamples
+		if (!_receiveBufferSet)
 		{
-			get
-			{
-				return this.Buffer.Length;
-			}
+			_receiveBufferSet = true;
+			_receiveBuffer = new float[24000];
 		}
+		int length = _decoder.Decode(msg.Data, msg.DataLength, _receiveBuffer);
+		Buffer.Write(_receiveBuffer, length);
+	}
 
-		public void DecodeSamples(AudioMessage msg)
+	protected override void Awake()
+	{
+		base.Awake();
+		Buffer = new PlaybackBuffer();
+	}
+
+	protected override void OnEnable()
+	{
+		base.OnEnable();
+		AllInstances.Add(this);
+	}
+
+	protected override void OnDisable()
+	{
+		base.OnDisable();
+		AllInstances.Remove(this);
+	}
+
+	protected override void Update()
+	{
+		base.Update();
+		LastPosition = base.transform.position;
+	}
+
+	private void OnDestroy()
+	{
+		_decoder.Dispose();
+	}
+
+	protected override float ReadSample()
+	{
+		return Buffer.Read();
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		StaticUnityMethods.OnLateUpdate += OnLateUpdate;
+	}
+
+	private static void OnLateUpdate()
+	{
+		if (!MainCameraController.InstanceActive)
 		{
-			if (!SpeakerToyPlaybackBase._receiveBufferSet)
-			{
-				SpeakerToyPlaybackBase._receiveBufferSet = true;
-				SpeakerToyPlaybackBase._receiveBuffer = new float[24000];
-			}
-			int num = this._decoder.Decode(msg.Data, msg.DataLength, SpeakerToyPlaybackBase._receiveBuffer);
-			this.Buffer.Write(SpeakerToyPlaybackBase._receiveBuffer, num);
+			return;
 		}
-
-		protected override void Awake()
+		Vector3 position = MainCameraController.CurrentCamera.position;
+		foreach (SpeakerToyPlaybackBase allInstance in AllInstances)
 		{
-			base.Awake();
-			this.Buffer = new PlaybackBuffer(24000, false);
+			allInstance.Culled = true;
+			ValidatePlayback(position, allInstance);
 		}
+	}
 
-		protected override void OnEnable()
+	private static void ValidatePlayback(Vector3 cameraPosition, SpeakerToyPlaybackBase playback)
+	{
+		float sqrMagnitude = (playback.LastPosition - cameraPosition).sqrMagnitude;
+		float maxDistance = playback.Source.maxDistance;
+		if (!(sqrMagnitude > maxDistance * maxDistance))
 		{
-			base.OnEnable();
-			SpeakerToyPlaybackBase.AllInstances.Add(this);
-		}
-
-		protected override void OnDisable()
-		{
-			base.OnDisable();
-			SpeakerToyPlaybackBase.AllInstances.Remove(this);
-		}
-
-		protected override void Update()
-		{
-			base.Update();
-			this.LastPosition = base.transform.position;
-		}
-
-		private void OnDestroy()
-		{
-			this._decoder.Dispose();
-		}
-
-		protected override float ReadSample()
-		{
-			return this.Buffer.Read();
-		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			StaticUnityMethods.OnLateUpdate += SpeakerToyPlaybackBase.OnLateUpdate;
-		}
-
-		private static void OnLateUpdate()
-		{
-			if (!MainCameraController.InstanceActive)
-			{
-				return;
-			}
-			Vector3 position = MainCameraController.CurrentCamera.position;
-			foreach (SpeakerToyPlaybackBase speakerToyPlaybackBase in SpeakerToyPlaybackBase.AllInstances)
-			{
-				speakerToyPlaybackBase.Culled = true;
-				SpeakerToyPlaybackBase.ValidatePlayback(position, speakerToyPlaybackBase);
-			}
-		}
-
-		private static void ValidatePlayback(Vector3 cameraPosition, SpeakerToyPlaybackBase playback)
-		{
-			float sqrMagnitude = (playback.LastPosition - cameraPosition).sqrMagnitude;
-			float maxDistance = playback.Source.maxDistance;
-			if (sqrMagnitude > maxDistance * maxDistance)
-			{
-				return;
-			}
 			playback.Culled = false;
 		}
-
-		public static readonly HashSet<SpeakerToyPlaybackBase> AllInstances = new HashSet<SpeakerToyPlaybackBase>();
-
-		private static float[] _receiveBuffer;
-
-		private static bool _receiveBufferSet;
-
-		private OpusDecoder _decoder = new OpusDecoder();
-
-		public byte ControllerId;
-
-		public PlaybackBuffer Buffer;
 	}
 }

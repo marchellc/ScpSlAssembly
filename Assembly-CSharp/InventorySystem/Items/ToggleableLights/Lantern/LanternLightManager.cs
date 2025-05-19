@@ -1,184 +1,172 @@
-﻿using System;
 using GameObjectPools;
 using UnityEngine;
 
-namespace InventorySystem.Items.ToggleableLights.Lantern
+namespace InventorySystem.Items.ToggleableLights.Lantern;
+
+public class LanternLightManager : MonoBehaviour, IPoolResettable
 {
-	public class LanternLightManager : MonoBehaviour, IPoolResettable
+	private const float MinSquaredDistanceMovedToProduceSound = 900f;
+
+	private static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
+
+	private MaterialPropertyBlock _mpb;
+
+	public Light[] Lights;
+
+	public Renderer MainRenderer;
+
+	public Color EmissionColor;
+
+	public ParticleSystem ParticleSystem;
+
+	public float LightSpeed = 4f;
+
+	public AudioClip ForwardSound;
+
+	public AudioClip BackwardSound;
+
+	public Rigidbody SoundTriggerRb;
+
+	public float Forward;
+
+	public float Backward;
+
+	public float ForwardVolume = 0.8f;
+
+	public float BackwardVolume = 0.8f;
+
+	public float VolumeModifier = 0.2f;
+
+	private float _previousRot;
+
+	[SerializeField]
+	private AudioSource _forwardSound;
+
+	[SerializeField]
+	private AudioSource _backwardSound;
+
+	private LightBlink _blinker;
+
+	private float[] _lightRanges;
+
+	private float _enableRatio;
+
+	private bool _initialized;
+
+	private Vector3 _oldPosition;
+
+	public bool IsEnabled { get; private set; } = true;
+
+	private float AngularMag => SoundTriggerRb.angularVelocity.magnitude * VolumeModifier;
+
+	private void AudioUpdate()
 	{
-		public bool IsEnabled { get; private set; } = true;
-
-		private float AngularMag
+		float x = SoundTriggerRb.transform.localRotation.x;
+		bool flag = x > _previousRot;
+		if (flag && !_forwardSound.isPlaying && x >= Forward && _previousRot <= Forward)
 		{
-			get
-			{
-				return this.SoundTriggerRb.angularVelocity.magnitude * this.VolumeModifier;
-			}
+			_forwardSound.volume = AngularMag * ForwardVolume;
+			_forwardSound.Play();
 		}
-
-		private void AudioUpdate()
+		else if (!flag && !_backwardSound.isPlaying && x <= Backward && _previousRot >= Backward)
 		{
-			float x = this.SoundTriggerRb.transform.localRotation.x;
-			bool flag = x > this._previousRot;
-			if (flag && !this._forwardSound.isPlaying && x >= this.Forward && this._previousRot <= this.Forward)
-			{
-				this._forwardSound.volume = this.AngularMag * this.ForwardVolume;
-				this._forwardSound.Play();
-			}
-			else if (!flag && !this._backwardSound.isPlaying && x <= this.Backward && this._previousRot >= this.Backward)
-			{
-				this._backwardSound.volume = this.AngularMag * this.BackwardVolume;
-				this._backwardSound.Play();
-			}
-			this._previousRot = x;
+			_backwardSound.volume = AngularMag * BackwardVolume;
+			_backwardSound.Play();
 		}
+		_previousRot = x;
+	}
 
-		private void Awake()
+	private void Awake()
+	{
+		if (!_initialized)
 		{
-			if (this._initialized)
+			_blinker = GetComponent<LightBlink>();
+			_mpb = new MaterialPropertyBlock();
+			MainRenderer.GetPropertyBlock(_mpb, 1);
+			_lightRanges = new float[Lights.Length];
+			for (int i = 0; i < Lights.Length; i++)
 			{
-				return;
+				_lightRanges[i] = Lights[i].range;
 			}
-			this._blinker = base.GetComponent<LightBlink>();
-			this._mpb = new MaterialPropertyBlock();
-			this.MainRenderer.GetPropertyBlock(this._mpb, 1);
-			this._lightRanges = new float[this.Lights.Length];
-			for (int i = 0; i < this.Lights.Length; i++)
-			{
-				this._lightRanges[i] = this.Lights[i].range;
-			}
-			this._initialized = true;
-			this.ResetObject();
+			_initialized = true;
+			ResetObject();
 		}
+	}
 
-		public void SetLight(bool isEnabled)
+	public void SetLight(bool isEnabled)
+	{
+		if (!_initialized)
 		{
-			if (!this._initialized)
-			{
-				this.Awake();
-			}
-			if (this.IsEnabled == isEnabled || !base.enabled)
-			{
-				return;
-			}
-			this.IsEnabled = isEnabled;
-			this._blinker.enabled = isEnabled;
+			Awake();
+		}
+		if (IsEnabled != isEnabled && base.enabled)
+		{
+			IsEnabled = isEnabled;
+			_blinker.enabled = isEnabled;
 			if (isEnabled)
 			{
-				this.ParticleSystem.Play();
-				return;
+				ParticleSystem.Play();
 			}
-			this.ParticleSystem.Stop();
+			else
+			{
+				ParticleSystem.Stop();
+			}
 		}
+	}
 
-		private void Update()
+	private void Update()
+	{
+		Vector3 position = base.transform.position;
+		Vector3 force = _oldPosition - position;
+		if (force.sqrMagnitude < 900f)
 		{
-			Vector3 position = base.transform.position;
-			Vector3 vector = this._oldPosition - position;
-			if (vector.sqrMagnitude < 900f)
-			{
-				this.SoundTriggerRb.AddForce(vector, ForceMode.VelocityChange);
-			}
-			this._oldPosition = position;
-			this.AudioUpdate();
-			if ((!this.IsEnabled || this._enableRatio >= 1f) && (this.IsEnabled || this._enableRatio <= 0f))
-			{
-				return;
-			}
-			this._enableRatio += (this.IsEnabled ? Time.deltaTime : (-Time.deltaTime)) * this.LightSpeed;
-			for (int i = 0; i < this.Lights.Length; i++)
-			{
-				this.Lights[i].range = Mathf.Lerp(0f, this._lightRanges[i], this._enableRatio);
-			}
-			this._mpb.SetColor(LanternLightManager.EmissionId, Color.Lerp(Color.black, this.EmissionColor, this._enableRatio));
-			this.MainRenderer.SetPropertyBlock(this._mpb, 1);
+			SoundTriggerRb.AddForce(force, ForceMode.VelocityChange);
 		}
-
-		private void OnEnable()
+		_oldPosition = position;
+		AudioUpdate();
+		if ((IsEnabled && !(_enableRatio >= 1f)) || (!IsEnabled && !(_enableRatio <= 0f)))
 		{
-			if (!this.IsEnabled)
+			_enableRatio += (IsEnabled ? Time.deltaTime : (0f - Time.deltaTime)) * LightSpeed;
+			for (int i = 0; i < Lights.Length; i++)
 			{
-				return;
+				Lights[i].range = Mathf.Lerp(0f, _lightRanges[i], _enableRatio);
 			}
-			this.ParticleSystem.Play();
+			_mpb.SetColor(EmissionId, Color.Lerp(Color.black, EmissionColor, _enableRatio));
+			MainRenderer.SetPropertyBlock(_mpb, 1);
 		}
+	}
 
-		private void OnDisable()
+	private void OnEnable()
+	{
+		if (IsEnabled)
 		{
-			if (!this.IsEnabled)
-			{
-				return;
-			}
-			this.ParticleSystem.Stop();
+			ParticleSystem.Play();
 		}
+	}
 
-		public void ResetObject()
+	private void OnDisable()
+	{
+		if (IsEnabled)
 		{
-			if (!this.IsEnabled)
-			{
-				return;
-			}
-			this._blinker.enabled = false;
-			this._enableRatio = 0f;
-			this.IsEnabled = false;
-			Light[] lights = this.Lights;
+			ParticleSystem.Stop();
+		}
+	}
+
+	public void ResetObject()
+	{
+		if (IsEnabled)
+		{
+			_blinker.enabled = false;
+			_enableRatio = 0f;
+			IsEnabled = false;
+			Light[] lights = Lights;
 			for (int i = 0; i < lights.Length; i++)
 			{
 				lights[i].range = 0f;
 			}
-			this._mpb.SetColor(LanternLightManager.EmissionId, Color.black);
-			this.MainRenderer.SetPropertyBlock(this._mpb, 1);
-			this.ParticleSystem.Stop();
+			_mpb.SetColor(EmissionId, Color.black);
+			MainRenderer.SetPropertyBlock(_mpb, 1);
+			ParticleSystem.Stop();
 		}
-
-		private const float MinSquaredDistanceMovedToProduceSound = 900f;
-
-		private static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
-
-		private MaterialPropertyBlock _mpb;
-
-		public Light[] Lights;
-
-		public Renderer MainRenderer;
-
-		public Color EmissionColor;
-
-		public ParticleSystem ParticleSystem;
-
-		public float LightSpeed = 4f;
-
-		public AudioClip ForwardSound;
-
-		public AudioClip BackwardSound;
-
-		public Rigidbody SoundTriggerRb;
-
-		public float Forward;
-
-		public float Backward;
-
-		public float ForwardVolume = 0.8f;
-
-		public float BackwardVolume = 0.8f;
-
-		public float VolumeModifier = 0.2f;
-
-		private float _previousRot;
-
-		[SerializeField]
-		private AudioSource _forwardSound;
-
-		[SerializeField]
-		private AudioSource _backwardSound;
-
-		private LightBlink _blinker;
-
-		private float[] _lightRanges;
-
-		private float _enableRatio;
-
-		private bool _initialized;
-
-		private Vector3 _oldPosition;
 	}
 }

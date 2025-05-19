@@ -1,13 +1,10 @@
-﻿using System;
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers
+public interface IAnimatedModelSubcontroller
 {
-	public interface IAnimatedModelSubcontroller
-	{
-		void Init(AnimatedCharacterModel model, int index);
+	void Init(AnimatedCharacterModel model, int index);
 
-		void OnReassigned()
-		{
-		}
+	void OnReassigned()
+	{
 	}
 }

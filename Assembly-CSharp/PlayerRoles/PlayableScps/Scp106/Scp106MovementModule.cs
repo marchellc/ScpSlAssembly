@@ -1,45 +1,63 @@
-﻿using System;
+using System;
 using Interactables.Interobjects.DoorUtils;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp106
+namespace PlayerRoles.PlayableScps.Scp106;
+
+public class Scp106MovementModule : FirstPersonMovementModule, IFpcCollisionModifier
 {
-	public class Scp106MovementModule : FirstPersonMovementModule, IFpcCollisionModifier
+	[SerializeField]
+	private float _stalkSpeed;
+
+	private const float SubmergingLerp = 1.5f;
+
+	private const int GlassLayer = 14;
+
+	private const int DoorLayer = 27;
+
+	private const float SlowdownTransitionSpeed = 5.5f;
+
+	private const float SpeedBoostDuration = 5f;
+
+	private const float SpeedBoostMultiplier = 1.2f;
+
+	private float _slowndownTarget;
+
+	private float _slowndownSpeed;
+
+	private float _normalSpeed;
+
+	private float _remainingSpeedBoostDuration;
+
+	private Scp106SinkholeController _sinkhole;
+
+	public static readonly int PassableDetectionMask = 134234112;
+
+	private float MovementSpeed
 	{
-		private float MovementSpeed
+		get
 		{
-			get
-			{
-				return this.WalkSpeed;
-			}
-			set
-			{
-				this.SneakSpeed = value;
-				this.WalkSpeed = value;
-				this.SprintSpeed = value;
-			}
+			return WalkSpeed;
 		}
-
-		public float CurSlowdown { get; private set; }
-
-		public LayerMask DetectionMask
+		set
 		{
-			get
-			{
-				return Scp106MovementModule.PassableDetectionMask;
-			}
+			SneakSpeed = value;
+			WalkSpeed = value;
+			SprintSpeed = value;
 		}
+	}
 
-		public static float GetSlowdownFromCollider(Collider col)
+	public float CurSlowdown { get; private set; }
+
+	public LayerMask DetectionMask => PassableDetectionMask;
+
+	public static float GetSlowdownFromCollider(Collider col, out bool isPassable)
+	{
+		isPassable = false;
+		if (col.transform.TryGetComponentInParent<DoorVariant>(out var comp))
 		{
-			DoorVariant doorVariant;
-			if (!col.transform.TryGetComponentInParent(out doorVariant))
-			{
-				return (float)((col.gameObject.layer == 14 && col is BoxCollider) ? 1 : 0);
-			}
-			IScp106PassableDoor scp106PassableDoor = doorVariant as IScp106PassableDoor;
-			if (scp106PassableDoor == null)
+			if (!(comp is IScp106PassableDoor scp106PassableDoor))
 			{
 				return 0f;
 			}
@@ -47,93 +65,73 @@ namespace PlayerRoles.PlayableScps.Scp106
 			{
 				return 0f;
 			}
-			float exactState = doorVariant.GetExactState();
+			isPassable = true;
+			float exactState = comp.GetExactState();
 			return Mathf.Clamp01(1f - exactState);
 		}
-
-		private void Awake()
+		if (col.gameObject.layer == 14 && col is BoxCollider)
 		{
-			this._slowndownSpeed = this.SneakSpeed;
-			this._normalSpeed = this.WalkSpeed;
-			this.MovementSpeed = this._normalSpeed;
+			isPassable = true;
+			return 1f;
 		}
+		return 0f;
+	}
 
-		private void Update()
+	private void Awake()
+	{
+		_slowndownSpeed = SneakSpeed;
+		_normalSpeed = WalkSpeed;
+		MovementSpeed = _normalSpeed;
+	}
+
+	private void Update()
+	{
+		float deltaTime = Time.deltaTime;
+		CurSlowdown = Mathf.MoveTowards(CurSlowdown, _slowndownTarget, deltaTime * 5.5f);
+		float num;
+		if (_sinkhole.IsDuringAnimation)
 		{
-			float deltaTime = Time.deltaTime;
-			this.CurSlowdown = Mathf.MoveTowards(this.CurSlowdown, this._slowndownTarget, deltaTime * 5.5f);
-			float num;
-			if (this._sinkhole.IsDuringAnimation)
-			{
-				num = Mathf.Lerp(this.MovementSpeed, 0f, 1.5f * deltaTime);
-			}
-			else
-			{
-				float num2 = Mathf.Lerp(this._normalSpeed, this._slowndownSpeed, this.CurSlowdown);
-				num = (this._sinkhole.TargetSubmerged ? this._stalkSpeed : num2);
-			}
-			if (this._remainingSpeedBoostDuration > 0f)
-			{
-				this._remainingSpeedBoostDuration -= deltaTime;
-				num *= 1.2f;
-			}
-			this.MovementSpeed = num;
+			num = Mathf.Lerp(MovementSpeed, 0f, 1.5f * deltaTime);
 		}
-
-		public override void SpawnObject()
+		else
 		{
-			base.SpawnObject();
-			Scp106Role scp106Role = base.Role as Scp106Role;
-			FpcCollisionProcessor.AddModifier(this, scp106Role);
-			this._sinkhole = scp106Role.Sinkhole;
-			Scp106SinkholeController.OnSubmergeStateChange += this.GrantSpeedBoost;
+			float num2 = Mathf.Lerp(_normalSpeed, _slowndownSpeed, CurSlowdown);
+			num = (_sinkhole.TargetSubmerged ? _stalkSpeed : num2);
 		}
-
-		public void ProcessColliders(ArraySegment<Collider> detections)
+		if (_remainingSpeedBoostDuration > 0f)
 		{
-			this._slowndownTarget = (float)(this._sinkhole.TargetSubmerged ? 1 : 0);
-			foreach (Collider collider in detections)
-			{
-				float slowdownFromCollider = Scp106MovementModule.GetSlowdownFromCollider(collider);
-				collider.enabled = slowdownFromCollider == 0f;
-				this._slowndownTarget = Mathf.Max(this._slowndownTarget, slowdownFromCollider);
-			}
+			_remainingSpeedBoostDuration -= deltaTime;
+			num *= 1.2f;
 		}
+		MovementSpeed = num;
+	}
 
-		private void GrantSpeedBoost(Scp106Role scp106role, bool isSubmerged)
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		Scp106Role scp106Role = base.Role as Scp106Role;
+		FpcCollisionProcessor.AddModifier(this, scp106Role);
+		_sinkhole = scp106Role.Sinkhole;
+		Scp106SinkholeController.OnSubmergeStateChange += GrantSpeedBoost;
+	}
+
+	public void ProcessColliders(ArraySegment<Collider> detections)
+	{
+		_slowndownTarget = (_sinkhole.TargetSubmerged ? 1 : 0);
+		foreach (Collider item in detections)
 		{
-			if (isSubmerged || base.Role != scp106role)
-			{
-				return;
-			}
-			this._remainingSpeedBoostDuration = scp106role.Sinkhole.TargetTransitionDuration + 5f;
+			bool isPassable;
+			float slowdownFromCollider = GetSlowdownFromCollider(item, out isPassable);
+			item.enabled = slowdownFromCollider == 0f;
+			_slowndownTarget = Mathf.Max(_slowndownTarget, slowdownFromCollider);
 		}
+	}
 
-		[SerializeField]
-		private float _stalkSpeed;
-
-		private const float SubmergingLerp = 1.5f;
-
-		private const int GlassLayer = 14;
-
-		private const int DoorLayer = 27;
-
-		private const float SlowdownTransitionSpeed = 5.5f;
-
-		private const float SpeedBoostDuration = 5f;
-
-		private const float SpeedBoostMultiplier = 1.2f;
-
-		private float _slowndownTarget;
-
-		private float _slowndownSpeed;
-
-		private float _normalSpeed;
-
-		private float _remainingSpeedBoostDuration;
-
-		private Scp106SinkholeController _sinkhole;
-
-		public static readonly int PassableDetectionMask = 134234112;
+	private void GrantSpeedBoost(Scp106Role scp106role, bool isSubmerged)
+	{
+		if (!isSubmerged && !(base.Role != scp106role))
+		{
+			_remainingSpeedBoostDuration = scp106role.Sinkhole.TargetTransitionDuration + 5f;
+		}
 	}
 }

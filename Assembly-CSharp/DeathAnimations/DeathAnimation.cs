@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace DeathAnimations
+namespace DeathAnimations;
+
+public abstract class DeathAnimation : MonoBehaviour
 {
-	public abstract class DeathAnimation : MonoBehaviour
-	{
-	}
 }

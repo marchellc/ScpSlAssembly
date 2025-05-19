@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem;
 
-namespace InventorySystem
+public interface IInventoryRole
 {
-	public interface IInventoryRole
-	{
-		bool AllowDisarming(ReferenceHub detainer);
+	bool AllowDisarming(ReferenceHub detainer);
 
-		bool AllowUndisarming(ReferenceHub releaser);
-	}
+	bool AllowUndisarming(ReferenceHub releaser);
 }

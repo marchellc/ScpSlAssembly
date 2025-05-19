@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using MapGeneration;
 using PlayerRoles.PlayableScps.Scp079.Cameras;
@@ -6,94 +6,93 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using Utils.NonAllocLINQ;
 
-namespace PlayerRoles.PlayableScps.Scp079.GUI
+namespace PlayerRoles.PlayableScps.Scp079.GUI;
+
+public class Scp079Nightvision : Scp079GuiElementBase
 {
-	public class Scp079Nightvision : Scp079GuiElementBase
+	[Serializable]
+	private struct ZoneNightvisionPair
 	{
-		private Volume TargetVolume
+		public Volume PostProcess;
+
+		public FacilityZone Zone;
+	}
+
+	[SerializeField]
+	private ZoneNightvisionPair[] _pairs;
+
+	private Scp079CurrentCameraSync _curCam;
+
+	private Scp079LostSignalHandler _lostSignal;
+
+	private readonly HashSet<Volume> _volumes = new HashSet<Volume>();
+
+	private readonly Dictionary<FacilityZone, Volume> _zoneTargets = new Dictionary<FacilityZone, Volume>();
+
+	private Volume TargetVolume
+	{
+		get
 		{
-			get
+			if (_curCam.CurClientSwitchState != 0)
 			{
-				if (this._curCam.CurClientSwitchState != Scp079CurrentCameraSync.ClientSwitchState.None)
-				{
-					return null;
-				}
-				if (this._lostSignal.Lost)
-				{
-					return null;
-				}
-				Scp079Camera currentCamera = base.Role.CurrentCamera;
-				if (currentCamera == null)
-				{
-					return null;
-				}
-				if (!RoomLightController.IsInDarkenedRoom(currentCamera.Position))
-				{
-					return null;
-				}
-				Volume volume;
-				if (!this._zoneTargets.TryGetValue(currentCamera.Room.Zone, out volume))
-				{
-					return null;
-				}
-				return volume;
+				return null;
 			}
-		}
-
-		internal override void Init(Scp079Role role, ReferenceHub owner)
-		{
-			base.Init(role, owner);
-			role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out this._curCam);
-			role.SubroutineModule.TryGetSubroutine<Scp079LostSignalHandler>(out this._lostSignal);
-			this._curCam.OnCameraChanged += this.UpdateAll;
-			foreach (Scp079Nightvision.ZoneNightvisionPair zoneNightvisionPair in this._pairs)
+			if (_lostSignal.Lost)
 			{
-				this._volumes.Add(zoneNightvisionPair.PostProcess);
-				this._zoneTargets[zoneNightvisionPair.Zone] = zoneNightvisionPair.PostProcess;
+				return null;
 			}
-			this.UpdateAll();
-		}
-
-		private void OnDestroy()
-		{
-			if (this._curCam == null)
+			Scp079Camera currentCamera = base.Role.CurrentCamera;
+			if (currentCamera == null)
 			{
-				return;
+				return null;
 			}
-			this._curCam.OnCameraChanged -= this.UpdateAll;
-		}
-
-		private void Update()
-		{
-			this.UpdateAll();
-		}
-
-		private void UpdateAll()
-		{
-			Volume target = this.TargetVolume;
-			this._volumes.ForEach(delegate(Volume x)
+			if (!RoomLightController.IsInDarkenedRoom(currentCamera.Position))
 			{
-				x.enabled = x == target;
-			});
+				return null;
+			}
+			if (!_zoneTargets.TryGetValue(currentCamera.Room.Zone, out var value))
+			{
+				return null;
+			}
+			return value;
 		}
+	}
 
-		[SerializeField]
-		private Scp079Nightvision.ZoneNightvisionPair[] _pairs;
-
-		private Scp079CurrentCameraSync _curCam;
-
-		private Scp079LostSignalHandler _lostSignal;
-
-		private readonly HashSet<Volume> _volumes = new HashSet<Volume>();
-
-		private readonly Dictionary<FacilityZone, Volume> _zoneTargets = new Dictionary<FacilityZone, Volume>();
-
-		[Serializable]
-		private struct ZoneNightvisionPair
+	internal override void Init(Scp079Role role, ReferenceHub owner)
+	{
+		base.Init(role, owner);
+		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out _curCam);
+		role.SubroutineModule.TryGetSubroutine<Scp079LostSignalHandler>(out _lostSignal);
+		_curCam.OnCameraChanged += UpdateAll;
+		ZoneNightvisionPair[] pairs = _pairs;
+		for (int i = 0; i < pairs.Length; i++)
 		{
-			public Volume PostProcess;
-
-			public FacilityZone Zone;
+			ZoneNightvisionPair zoneNightvisionPair = pairs[i];
+			_volumes.Add(zoneNightvisionPair.PostProcess);
+			_zoneTargets[zoneNightvisionPair.Zone] = zoneNightvisionPair.PostProcess;
 		}
+		UpdateAll();
+	}
+
+	private void OnDestroy()
+	{
+		if (!(_curCam == null))
+		{
+			_curCam.OnCameraChanged -= UpdateAll;
+		}
+	}
+
+	private void Update()
+	{
+		UpdateAll();
+	}
+
+	private void UpdateAll()
+	{
+		Volume target = TargetVolume;
+		_volumes.ForEach(delegate(Volume x)
+		{
+			x.enabled = x == target;
+		});
 	}
 }

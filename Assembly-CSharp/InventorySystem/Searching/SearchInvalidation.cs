@@ -1,45 +1,43 @@
-﻿using System;
+using System;
 using Mirror;
 
-namespace InventorySystem.Searching
+namespace InventorySystem.Searching;
+
+public struct SearchInvalidation : ISearchIdentifiable, NetworkMessage, IEquatable<SearchInvalidation>
 {
-	public struct SearchInvalidation : ISearchIdentifiable, NetworkMessage, IEquatable<SearchInvalidation>
+	public byte Id { get; private set; }
+
+	public SearchInvalidation(byte id)
 	{
-		public byte Id { readonly get; private set; }
+		Id = id;
+	}
 
-		public SearchInvalidation(byte id)
-		{
-			this.Id = id;
-		}
+	public void Deserialize(NetworkReader reader)
+	{
+		Id = reader.ReadByte();
+	}
 
-		public void Deserialize(NetworkReader reader)
-		{
-			this.Id = reader.ReadByte();
-		}
+	public void Serialize(NetworkWriter writer)
+	{
+		writer.WriteByte(Id);
+	}
 
-		public void Serialize(NetworkWriter writer)
-		{
-			writer.WriteByte(this.Id);
-		}
+	public bool Equals(SearchInvalidation other)
+	{
+		return Id == other.Id;
+	}
 
-		public bool Equals(SearchInvalidation other)
+	public override bool Equals(object obj)
+	{
+		if (obj is SearchInvalidation other)
 		{
-			return this.Id == other.Id;
+			return Equals(other);
 		}
+		return false;
+	}
 
-		public override bool Equals(object obj)
-		{
-			if (obj is SearchInvalidation)
-			{
-				SearchInvalidation searchInvalidation = (SearchInvalidation)obj;
-				return this.Equals(searchInvalidation);
-			}
-			return false;
-		}
-
-		public override int GetHashCode()
-		{
-			return this.Id.GetHashCode();
-		}
+	public override int GetHashCode()
+	{
+		return Id.GetHashCode();
 	}
 }

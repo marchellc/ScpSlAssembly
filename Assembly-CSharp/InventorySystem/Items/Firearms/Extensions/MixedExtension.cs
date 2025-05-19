@@ -1,57 +1,55 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+public abstract class MixedExtension : MonoBehaviour, IWorldmodelExtension, IViewmodelExtension
 {
-	public abstract class MixedExtension : MonoBehaviour, IWorldmodelExtension, IViewmodelExtension
+	public const int ViewmodelLayer = 10;
+
+	public const int Worldmodellayer = 9;
+
+	protected ItemIdentifier Identifier { get; private set; }
+
+	protected FirearmWorldmodel Worldmodel { get; private set; }
+
+	protected bool WorldmodelMode { get; private set; }
+
+	protected bool ViewmodelMode { get; private set; }
+
+	protected AnimatedFirearmViewmodel Viewmodel { get; private set; }
+
+	public virtual void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		private protected ItemIdentifier Identifier { protected get; private set; }
+		Identifier = viewmodel.ItemId;
+		Viewmodel = viewmodel;
+		ViewmodelMode = true;
+		SetupAny();
+	}
 
-		private protected FirearmWorldmodel Worldmodel { protected get; private set; }
+	public virtual void SetupWorldmodel(FirearmWorldmodel worldmodel)
+	{
+		Identifier = worldmodel.Identifier;
+		Worldmodel = worldmodel;
+		WorldmodelMode = true;
+		SetupAny();
+	}
 
-		private protected bool WorldmodelMode { protected get; private set; }
+	public virtual void SetupAny()
+	{
+	}
 
-		private protected bool ViewmodelMode { protected get; private set; }
+	protected void SetLayer(int layer)
+	{
+		SetLayer(layer, base.transform);
+	}
 
-		private protected AnimatedFirearmViewmodel Viewmodel { protected get; private set; }
-
-		public virtual void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
+	private void SetLayer(int layer, Transform t)
+	{
+		t.gameObject.layer = layer;
+		int childCount = t.childCount;
+		for (int i = 0; i < childCount; i++)
 		{
-			this.Identifier = viewmodel.ItemId;
-			this.Viewmodel = viewmodel;
-			this.ViewmodelMode = true;
-			this.SetupAny();
+			SetLayer(layer, t.GetChild(i));
 		}
-
-		public virtual void SetupWorldmodel(FirearmWorldmodel worldmodel)
-		{
-			this.Identifier = worldmodel.Identifier;
-			this.Worldmodel = worldmodel;
-			this.WorldmodelMode = true;
-			this.SetupAny();
-		}
-
-		public virtual void SetupAny()
-		{
-		}
-
-		protected void SetLayer(int layer)
-		{
-			this.SetLayer(layer, base.transform);
-		}
-
-		private void SetLayer(int layer, Transform t)
-		{
-			t.gameObject.layer = layer;
-			int childCount = t.childCount;
-			for (int i = 0; i < childCount; i++)
-			{
-				this.SetLayer(layer, t.GetChild(i));
-			}
-		}
-
-		public const int ViewmodelLayer = 10;
-
-		public const int Worldmodellayer = 9;
 	}
 }

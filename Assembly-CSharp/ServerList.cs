@@ -1,8 +1,10 @@
-﻿using System;
+using System;
 using Utf8Json;
 
 public readonly struct ServerList : IEquatable<ServerList>, IJsonSerializable
 {
+	public readonly ServerListItem[] servers;
+
 	[SerializationConstructor]
 	public ServerList(ServerListItem[] servers)
 	{
@@ -11,26 +13,25 @@ public readonly struct ServerList : IEquatable<ServerList>, IJsonSerializable
 
 	public bool Equals(ServerList other)
 	{
-		return this.servers == other.servers;
+		return servers == other.servers;
 	}
 
 	public override bool Equals(object obj)
 	{
-		if (obj is ServerList)
+		if (obj is ServerList other)
 		{
-			ServerList serverList = (ServerList)obj;
-			return this.Equals(serverList);
+			return Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		if (this.servers == null)
+		if (servers == null)
 		{
 			return 0;
 		}
-		return this.servers.GetHashCode();
+		return servers.GetHashCode();
 	}
 
 	public static bool operator ==(ServerList left, ServerList right)
@@ -42,6 +43,4 @@ public readonly struct ServerList : IEquatable<ServerList>, IJsonSerializable
 	{
 		return !left.Equals(right);
 	}
-
-	public readonly ServerListItem[] servers;
 }

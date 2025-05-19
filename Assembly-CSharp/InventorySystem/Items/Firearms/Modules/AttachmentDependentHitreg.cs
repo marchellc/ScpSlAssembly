@@ -1,169 +1,139 @@
-﻿using System;
+using System;
 using InventorySystem.Crosshairs;
 using InventorySystem.Items.Firearms.Attachments.Components;
 using InventorySystem.Items.Firearms.ShotEvents;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class AttachmentDependentHitreg : ModuleBase, IHitregModule, ICustomCrosshairItem, IDisplayableInaccuracyProviderModule, IInaccuracyProviderModule
 {
-	public class AttachmentDependentHitreg : ModuleBase, IHitregModule, ICustomCrosshairItem, IDisplayableInaccuracyProviderModule, IInaccuracyProviderModule
+	[Serializable]
+	private class AttachmentOverride
 	{
-		public event Action ServerOnFired;
+		[SerializeField]
+		private Attachment _attachment;
 
-		public float DisplayDamage
+		[SerializeField]
+		private ModuleBase _module;
+
+		public IHitregModule Hitreg { get; private set; }
+
+		public bool IsEnabled => _attachment.IsEnabled;
+
+		public void Init()
 		{
-			get
+			_module.MarkAsSubmodule();
+			Hitreg = _module as IHitregModule;
+		}
+	}
+
+	[SerializeField]
+	private ModuleBase _primaryHitreg;
+
+	[SerializeField]
+	private AttachmentOverride[] _overrideHitregs;
+
+	private bool _targetCacheSet;
+
+	private IHitregModule _cachedTargetModule;
+
+	public float DisplayDamage => TargetModule.DisplayDamage;
+
+	public float DisplayPenetration => TargetModule.DisplayPenetration;
+
+	public Type CrosshairType
+	{
+		get
+		{
+			if (!(TargetModule is ICustomCrosshairItem customCrosshairItem))
 			{
-				return this.TargetModule.DisplayDamage;
+				return null;
 			}
+			return customCrosshairItem.CrosshairType;
 		}
+	}
 
-		public float DisplayPenetration
+	public DisplayInaccuracyValues DisplayInaccuracy
+	{
+		get
 		{
-			get
+			if (!(TargetModule is IDisplayableInaccuracyProviderModule displayableInaccuracyProviderModule))
 			{
-				return this.TargetModule.DisplayPenetration;
+				return default(DisplayInaccuracyValues);
 			}
+			return displayableInaccuracyProviderModule.DisplayInaccuracy;
 		}
+	}
 
-		public Type CrosshairType
+	public float Inaccuracy
+	{
+		get
 		{
-			get
+			if (!(TargetModule is IInaccuracyProviderModule inaccuracyProviderModule))
 			{
-				ICustomCrosshairItem customCrosshairItem = this.TargetModule as ICustomCrosshairItem;
-				if (customCrosshairItem == null)
-				{
-					return null;
-				}
-				return customCrosshairItem.CrosshairType;
+				return 0f;
 			}
+			return inaccuracyProviderModule.Inaccuracy;
 		}
+	}
 
-		public DisplayInaccuracyValues DisplayInaccuracy
+	private IHitregModule TargetModule
+	{
+		get
 		{
-			get
+			if (_targetCacheSet)
 			{
-				IDisplayableInaccuracyProviderModule displayableInaccuracyProviderModule = this.TargetModule as IDisplayableInaccuracyProviderModule;
-				if (displayableInaccuracyProviderModule == null)
-				{
-					return default(DisplayInaccuracyValues);
-				}
-				return displayableInaccuracyProviderModule.DisplayInaccuracy;
+				return _cachedTargetModule;
 			}
-		}
-
-		public float Inaccuracy
-		{
-			get
+			_cachedTargetModule = _primaryHitreg as IHitregModule;
+			AttachmentOverride[] overrideHitregs = _overrideHitregs;
+			foreach (AttachmentOverride attachmentOverride in overrideHitregs)
 			{
-				IInaccuracyProviderModule inaccuracyProviderModule = this.TargetModule as IInaccuracyProviderModule;
-				if (inaccuracyProviderModule == null)
+				if (attachmentOverride.IsEnabled)
 				{
-					return 0f;
+					_cachedTargetModule = attachmentOverride.Hitreg;
+					break;
 				}
-				return inaccuracyProviderModule.Inaccuracy;
 			}
+			_targetCacheSet = true;
+			return _cachedTargetModule;
 		}
+	}
 
-		private IHitregModule TargetModule
+	public event Action ServerOnFired;
+
+	public void Fire(ReferenceHub primaryTarget, ShotEvent shotData)
+	{
+		TargetModule.Fire(primaryTarget, shotData);
+	}
+
+	protected override void OnInit()
+	{
+		base.OnInit();
+		_primaryHitreg.MarkAsSubmodule();
+		(_primaryHitreg as IHitregModule).ServerOnFired += delegate
 		{
-			get
+			this.ServerOnFired?.Invoke();
+		};
+		AttachmentOverride[] overrideHitregs = _overrideHitregs;
+		foreach (AttachmentOverride obj in overrideHitregs)
+		{
+			obj.Init();
+			obj.Hitreg.ServerOnFired += delegate
 			{
-				if (this._targetCacheSet)
-				{
-					return this._cachedTargetModule;
-				}
-				this._cachedTargetModule = this._primaryHitreg as IHitregModule;
-				foreach (AttachmentDependentHitreg.AttachmentOverride attachmentOverride in this._overrideHitregs)
-				{
-					if (attachmentOverride.IsEnabled)
-					{
-						this._cachedTargetModule = attachmentOverride.Hitreg;
-						break;
-					}
-				}
-				this._targetCacheSet = true;
-				return this._cachedTargetModule;
-			}
-		}
-
-		public void Fire(ReferenceHub primaryTarget, ShotEvent shotData)
-		{
-			this.TargetModule.Fire(primaryTarget, shotData);
-		}
-
-		protected override void OnInit()
-		{
-			base.OnInit();
-			this._primaryHitreg.MarkAsSubmodule();
-			(this._primaryHitreg as IHitregModule).ServerOnFired += delegate
-			{
-				Action serverOnFired = this.ServerOnFired;
-				if (serverOnFired == null)
-				{
-					return;
-				}
-				serverOnFired();
+				this.ServerOnFired?.Invoke();
 			};
-			foreach (AttachmentDependentHitreg.AttachmentOverride attachmentOverride in this._overrideHitregs)
-			{
-				attachmentOverride.Init();
-				attachmentOverride.Hitreg.ServerOnFired += delegate
-				{
-					Action serverOnFired2 = this.ServerOnFired;
-					if (serverOnFired2 == null)
-					{
-						return;
-					}
-					serverOnFired2();
-				};
-			}
 		}
+	}
 
-		internal override void OnAttachmentsApplied()
+	internal override void OnAttachmentsApplied()
+	{
+		base.OnAttachmentsApplied();
+		_targetCacheSet = false;
+		if (base.IsLocalPlayer && base.Firearm.IsEquipped)
 		{
-			base.OnAttachmentsApplied();
-			this._targetCacheSet = false;
-			if (base.IsLocalPlayer && base.Firearm.IsEquipped)
-			{
-				CrosshairController.Refresh(base.Firearm.Owner, base.ItemSerial);
-			}
-		}
-
-		[SerializeField]
-		private ModuleBase _primaryHitreg;
-
-		[SerializeField]
-		private AttachmentDependentHitreg.AttachmentOverride[] _overrideHitregs;
-
-		private bool _targetCacheSet;
-
-		private IHitregModule _cachedTargetModule;
-
-		[Serializable]
-		private class AttachmentOverride
-		{
-			public IHitregModule Hitreg { get; private set; }
-
-			public bool IsEnabled
-			{
-				get
-				{
-					return this._attachment.IsEnabled;
-				}
-			}
-
-			public void Init()
-			{
-				this._module.MarkAsSubmodule();
-				this.Hitreg = this._module as IHitregModule;
-			}
-
-			[SerializeField]
-			private Attachment _attachment;
-
-			[SerializeField]
-			private ModuleBase _module;
+			CrosshairController.Refresh(base.Firearm.Owner, base.ItemSerial);
 		}
 	}
 }

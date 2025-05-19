@@ -1,106 +1,108 @@
-﻿using System;
+using System;
 
-namespace InventorySystem.Items.Pickups
+namespace InventorySystem.Items.Pickups;
+
+[Serializable]
+public struct PickupSyncInfo : IEquatable<PickupSyncInfo>
 {
-	[Serializable]
-	public struct PickupSyncInfo : IEquatable<PickupSyncInfo>
+	[Flags]
+	private enum PickupFlags : byte
 	{
-		public PickupSyncInfo(ItemType id, float weight, ushort serial = 0, bool locked = false)
+		Locked = 1,
+		InUse = 2
+	}
+
+	public static PickupSyncInfo None = new PickupSyncInfo
+	{
+		ItemId = ItemType.None
+	};
+
+	public ItemType ItemId;
+
+	public ushort Serial;
+
+	public float WeightKg;
+
+	private PickupFlags _flags;
+
+	public byte SyncedFlags
+	{
+		get
 		{
-			this.ItemId = id;
-			this.WeightKg = weight;
-			this._flags = (locked ? PickupSyncInfo.PickupFlags.Locked : ((PickupSyncInfo.PickupFlags)0));
-			this.Serial = ((serial == 0) ? ItemSerialGenerator.GenerateNext() : serial);
+			return (byte)_flags;
 		}
-
-		public byte SyncedFlags
+		set
 		{
-			get
-			{
-				return (byte)this._flags;
-			}
-			set
-			{
-				this._flags = (PickupSyncInfo.PickupFlags)value;
-			}
+			_flags = (PickupFlags)value;
 		}
+	}
 
-		public bool Locked
+	public bool Locked
+	{
+		get
 		{
-			get
-			{
-				return (this._flags & PickupSyncInfo.PickupFlags.Locked) == PickupSyncInfo.PickupFlags.Locked;
-			}
-			set
-			{
-				this._flags = (value ? (this._flags | PickupSyncInfo.PickupFlags.Locked) : (this._flags & ~PickupSyncInfo.PickupFlags.Locked));
-			}
+			return (_flags & PickupFlags.Locked) == PickupFlags.Locked;
 		}
-
-		public bool InUse
+		set
 		{
-			get
-			{
-				return (this._flags & PickupSyncInfo.PickupFlags.InUse) == PickupSyncInfo.PickupFlags.InUse;
-			}
-			set
-			{
-				this._flags = (value ? (this._flags | PickupSyncInfo.PickupFlags.InUse) : (this._flags & ~PickupSyncInfo.PickupFlags.InUse));
-			}
+			_flags = (value ? (_flags | PickupFlags.Locked) : (_flags & ~PickupFlags.Locked));
 		}
+	}
 
-		public override int GetHashCode()
+	public bool InUse
+	{
+		get
 		{
-			if (this.Serial == 0)
-			{
-				return (int)((this.ItemId * (ItemType)397) ^ (ItemType)this._flags);
-			}
-			return (int)this.Serial;
+			return (_flags & PickupFlags.InUse) == PickupFlags.InUse;
 		}
-
-		public static bool operator ==(PickupSyncInfo left, PickupSyncInfo right)
+		set
 		{
-			return left.Equals(right);
+			_flags = (value ? (_flags | PickupFlags.InUse) : (_flags & ~PickupFlags.InUse));
 		}
+	}
 
-		public static bool operator !=(PickupSyncInfo left, PickupSyncInfo right)
+	public PickupSyncInfo(ItemType id, float weight, ushort serial = 0, bool locked = false)
+	{
+		ItemId = id;
+		WeightKg = weight;
+		_flags = (locked ? PickupFlags.Locked : ((PickupFlags)0));
+		Serial = ((serial == 0) ? ItemSerialGenerator.GenerateNext() : serial);
+	}
+
+	public override int GetHashCode()
+	{
+		if (Serial == 0)
 		{
-			return !left.Equals(right);
+			return ((int)ItemId * 397) ^ (int)_flags;
 		}
+		return Serial;
+	}
 
-		public bool Equals(PickupSyncInfo other)
+	public static bool operator ==(PickupSyncInfo left, PickupSyncInfo right)
+	{
+		return left.Equals(right);
+	}
+
+	public static bool operator !=(PickupSyncInfo left, PickupSyncInfo right)
+	{
+		return !left.Equals(right);
+	}
+
+	public bool Equals(PickupSyncInfo other)
+	{
+		if (ItemId == other.ItemId && WeightKg == other.WeightKg)
 		{
-			return this.ItemId == other.ItemId && this.WeightKg == other.WeightKg && this._flags == other._flags;
+			return _flags == other._flags;
 		}
+		return false;
+	}
 
-		public override bool Equals(object obj)
+	public override bool Equals(object obj)
+	{
+		if (obj is PickupSyncInfo other)
 		{
-			if (obj is PickupSyncInfo)
-			{
-				PickupSyncInfo pickupSyncInfo = (PickupSyncInfo)obj;
-				return this.Equals(pickupSyncInfo);
-			}
-			return false;
+			return Equals(other);
 		}
-
-		public static PickupSyncInfo None = new PickupSyncInfo
-		{
-			ItemId = ItemType.None
-		};
-
-		public ItemType ItemId;
-
-		public ushort Serial;
-
-		public float WeightKg;
-
-		private PickupSyncInfo.PickupFlags _flags;
-
-		[Flags]
-		private enum PickupFlags : byte
-		{
-			Locked = 1,
-			InUse = 2
-		}
+		return false;
 	}
 }

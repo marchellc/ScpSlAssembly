@@ -1,18 +1,15 @@
-﻿using System;
+namespace UserSettings.VideoSettings;
 
-namespace UserSettings.VideoSettings
+public enum PerformanceVideoSetting
 {
-	public enum PerformanceVideoSetting
-	{
-		TextureResolution,
-		AntiAliasingType,
-		AntiAliasingQuality,
-		RagdollFreeze,
-		BloomQuality,
-		AOQuality,
-		BloodDecalsEnabled,
-		BulletDecalsEnabled,
-		BloodDecalsLimit,
-		BulletDecalsLimits
-	}
+	TextureResolution,
+	AntiAliasingType,
+	AntiAliasingQuality,
+	RagdollFreeze,
+	BloomQuality,
+	AOQuality,
+	BloodDecalsEnabled,
+	BulletDecalsEnabled,
+	BloodDecalsLimit,
+	BulletDecalsLimits
 }

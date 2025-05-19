@@ -1,72 +1,65 @@
-﻿using System;
 using System.Collections.Generic;
 using CustomPlayerEffects;
 using MapGeneration;
 using PlayerRoles.PlayableScps.Scp096;
 using UnityEngine;
 
-namespace Christmas.Scp2536.Gifts
+namespace Christmas.Scp2536.Gifts;
+
+public class Emergency : Scp2536ItemGift
 {
-	public class Emergency : Scp2536ItemGift
+	private static readonly Dictionary<int, float> TargetTracker = new Dictionary<int, float>();
+
+	private const float Scp096TargetPersistanceDuration = 30f;
+
+	public override UrgencyLevel Urgency => UrgencyLevel.Zero;
+
+	protected override Scp2536Reward[] Rewards => new Scp2536Reward[2]
 	{
-		public override UrgencyLevel Urgency
+		new Scp2536Reward(ItemType.SCP500, 100f),
+		new Scp2536Reward(ItemType.SCP207, 100f)
+	};
+
+	public override bool CanBeGranted(ReferenceHub hub)
+	{
+		if (!base.CanBeGranted(hub))
 		{
-			get
-			{
-				return UrgencyLevel.Zero;
-			}
+			return false;
 		}
-
-		protected override Scp2536Reward[] Rewards
+		if (hub.playerEffectsController.GetEffect<CardiacArrest>().IsEnabled)
 		{
-			get
-			{
-				return new Scp2536Reward[]
-				{
-					new Scp2536Reward(ItemType.SCP500, 100f),
-					new Scp2536Reward(ItemType.SCP207, 100f)
-				};
-			}
+			return true;
 		}
-
-		public override bool CanBeGranted(ReferenceHub hub)
+		if (hub.playerEffectsController.GetEffect<Corroding>().IsEnabled)
 		{
-			if (!base.CanBeGranted(hub))
-			{
-				return false;
-			}
-			if (hub.playerEffectsController.GetEffect<CardiacArrest>().IsEnabled)
-			{
-				return true;
-			}
-			if (hub.playerEffectsController.GetEffect<Corroding>().IsEnabled)
-			{
-				return true;
-			}
-			int uniqueLifeIdentifier = hub.roleManager.CurrentRole.UniqueLifeIdentifier;
-			float num;
-			return (Emergency.TargetTracker.TryGetValue(uniqueLifeIdentifier, out num) && Time.time <= num) || (AlphaWarheadController.InProgress && RoomUtils.RoomAtPositionRaycasts(hub.transform.position, true).Zone != FacilityZone.Surface);
+			return true;
 		}
-
-		public override void ServerGrant(ReferenceHub hub)
+		int uniqueLifeIdentifier = hub.roleManager.CurrentRole.UniqueLifeIdentifier;
+		if (TargetTracker.TryGetValue(uniqueLifeIdentifier, out var value) && Time.time <= value)
 		{
-			base.GrantAllRewards(hub);
+			return true;
 		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		if (AlphaWarheadController.InProgress)
 		{
-			Scp096TargetsTracker.OnTargetAdded += Emergency.OnTargetAdded;
+			return hub.GetCurrentZone() != FacilityZone.Surface;
 		}
+		return false;
+	}
 
-		private static void OnTargetAdded(ReferenceHub scp096, ReferenceHub target)
-		{
-			int uniqueLifeIdentifier = target.roleManager.CurrentRole.UniqueLifeIdentifier;
-			Emergency.TargetTracker[uniqueLifeIdentifier] = Time.time + 30f;
-		}
+	public override void ServerGrant(ReferenceHub hub)
+	{
+		GrantAllRewards(hub);
+	}
 
-		private static readonly Dictionary<int, float> TargetTracker = new Dictionary<int, float>();
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		Scp096TargetsTracker.OnTargetAdded += OnTargetAdded;
+	}
 
-		private const float Scp096TargetPersistanceDuration = 30f;
+	private static void OnTargetAdded(ReferenceHub scp096, ReferenceHub target)
+	{
+		int uniqueLifeIdentifier = target.roleManager.CurrentRole.UniqueLifeIdentifier;
+		TargetTracker[uniqueLifeIdentifier] = Time.time + 30f;
 	}
 }

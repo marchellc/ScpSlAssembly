@@ -1,35 +1,34 @@
-﻿using System;
+using System;
 using System.Globalization;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class DateTimeOffsetFormatter : IJsonFormatter<DateTimeOffset>, IJsonFormatter
 {
-	public sealed class DateTimeOffsetFormatter : IJsonFormatter<DateTimeOffset>, IJsonFormatter
+	private readonly string formatString;
+
+	public DateTimeOffsetFormatter()
 	{
-		public DateTimeOffsetFormatter()
-		{
-			this.formatString = null;
-		}
+		formatString = null;
+	}
 
-		public DateTimeOffsetFormatter(string formatString)
-		{
-			this.formatString = formatString;
-		}
+	public DateTimeOffsetFormatter(string formatString)
+	{
+		this.formatString = formatString;
+	}
 
-		public void Serialize(ref JsonWriter writer, DateTimeOffset value, IJsonFormatterResolver formatterResolver)
-		{
-			writer.WriteString(value.ToString(this.formatString));
-		}
+	public void Serialize(ref JsonWriter writer, DateTimeOffset value, IJsonFormatterResolver formatterResolver)
+	{
+		writer.WriteString(value.ToString(formatString));
+	}
 
-		public DateTimeOffset Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public DateTimeOffset Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		string input = reader.ReadString();
+		if (formatString == null)
 		{
-			string text = reader.ReadString();
-			if (this.formatString == null)
-			{
-				return DateTimeOffset.Parse(text, CultureInfo.InvariantCulture);
-			}
-			return DateTimeOffset.ParseExact(text, this.formatString, CultureInfo.InvariantCulture);
+			return DateTimeOffset.Parse(input, CultureInfo.InvariantCulture);
 		}
-
-		private readonly string formatString;
+		return DateTimeOffset.ParseExact(input, formatString, CultureInfo.InvariantCulture);
 	}
 }

@@ -1,13 +1,10 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+public interface IAmmoContainerModule
 {
-	public interface IAmmoContainerModule
-	{
-		int AmmoStored { get; }
+	int AmmoStored { get; }
 
-		int AmmoMax { get; }
+	int AmmoMax { get; }
 
-		int GetAmmoStoredForSerial(ushort serial);
-	}
+	int GetAmmoStoredForSerial(ushort serial);
 }

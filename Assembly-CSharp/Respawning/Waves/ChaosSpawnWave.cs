@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using PlayerRoles;
 using Respawning.Announcements;
@@ -6,77 +5,57 @@ using Respawning.Config;
 using Respawning.Waves.Generic;
 using UnityEngine;
 
-namespace Respawning.Waves
+namespace Respawning.Waves;
+
+public class ChaosSpawnWave : TimeBasedWave, IAnimatedWave, ILimitedWave, IAnnouncedWave
 {
-	public class ChaosSpawnWave : TimeBasedWave, IAnimatedWave, ILimitedWave, IAnnouncedWave
+	public float LogicerPercent = 0.2f;
+
+	public float ShotgunPercent = 0.3f;
+
+	public override float InitialSpawnInterval => 300f;
+
+	public int InitialRespawnTokens { get; set; } = 1;
+
+	public int RespawnTokens { get; set; }
+
+	public override int MaxWaveSize
 	{
-		public override float InitialSpawnInterval
+		get
 		{
-			get
+			if (!(Configuration is PrimaryWaveConfig<ChaosSpawnWave> primaryWaveConfig))
 			{
-				return 300f;
+				return 0;
 			}
+			return Mathf.CeilToInt((float)ReferenceHub.AllHubs.Count * primaryWaveConfig.SizePercentage);
 		}
+	}
 
-		public int InitialRespawnTokens { get; set; } = 1;
+	public override Faction TargetFaction => Faction.FoundationEnemy;
 
-		public int RespawnTokens { get; set; }
+	public float AnimationDuration => 13.49f;
 
-		public override int MaxWaveSize
+	public bool IsAnimationPlaying { get; set; }
+
+	public WaveAnnouncementBase Announcement { get; } = new ChaosWaveAnnouncement();
+
+	public override IWaveConfig Configuration { get; } = new PrimaryWaveConfig<ChaosSpawnWave>();
+
+	public override void PopulateQueue(Queue<RoleTypeId> queueToFill, int playersToSpawn)
+	{
+		int num = Mathf.FloorToInt((float)playersToSpawn * LogicerPercent);
+		int num2 = Mathf.FloorToInt((float)playersToSpawn * ShotgunPercent);
+		for (int i = 0; i < num; i++)
 		{
-			get
-			{
-				PrimaryWaveConfig<ChaosSpawnWave> primaryWaveConfig = this.Configuration as PrimaryWaveConfig<ChaosSpawnWave>;
-				if (primaryWaveConfig == null)
-				{
-					return 0;
-				}
-				return Mathf.CeilToInt((float)ReferenceHub.AllHubs.Count * primaryWaveConfig.SizePercentage);
-			}
+			queueToFill.Enqueue(RoleTypeId.ChaosRepressor);
 		}
-
-		public override Faction TargetFaction
+		for (int j = 0; j < num2; j++)
 		{
-			get
-			{
-				return Faction.FoundationEnemy;
-			}
+			queueToFill.Enqueue(RoleTypeId.ChaosMarauder);
 		}
-
-		public float AnimationDuration
+		for (int k = 0; k < playersToSpawn - num2 - num; k++)
 		{
-			get
-			{
-				return 13.49f;
-			}
+			queueToFill.Enqueue(RoleTypeId.ChaosRifleman);
 		}
-
-		public bool IsAnimationPlaying { get; set; }
-
-		public WaveAnnouncementBase Announcement { get; } = new ChaosWaveAnnouncement();
-
-		public override IWaveConfig Configuration { get; } = new PrimaryWaveConfig<ChaosSpawnWave>();
-
-		public override void PopulateQueue(Queue<RoleTypeId> queueToFill, int playersToSpawn)
-		{
-			int num = Mathf.FloorToInt((float)playersToSpawn * this.LogicerPercent);
-			int num2 = Mathf.FloorToInt((float)playersToSpawn * this.ShotgunPercent);
-			for (int i = 0; i < num; i++)
-			{
-				queueToFill.Enqueue(RoleTypeId.ChaosRepressor);
-			}
-			for (int j = 0; j < num2; j++)
-			{
-				queueToFill.Enqueue(RoleTypeId.ChaosMarauder);
-			}
-			for (int k = 0; k < playersToSpawn - num2 - num; k++)
-			{
-				queueToFill.Enqueue(RoleTypeId.ChaosRifleman);
-			}
-		}
-
-		public float LogicerPercent = 0.2f;
-
-		public float ShotgunPercent = 0.3f;
 	}
 }

@@ -1,230 +1,221 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Mirror;
 using UnityEngine;
 
-namespace AdminToys
+namespace AdminToys;
+
+public class PrimitiveObjectToy : AdminToyBase
 {
-	public class PrimitiveObjectToy : AdminToyBase
+	private static readonly Dictionary<Color, Material> CachedMaterials = new Dictionary<Color, Material>();
+
+	private static readonly Dictionary<PrimitiveType, Mesh> PrimitiveTypeToMesh = new Dictionary<PrimitiveType, Mesh>(6);
+
+	private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
+
+	[SerializeField]
+	private Material _regularMatTemplate;
+
+	[SerializeField]
+	private Material _transparentMatTemplate;
+
+	[SerializeField]
+	private MeshFilter _filter;
+
+	[SerializeField]
+	private MeshRenderer _renderer;
+
+	private Collider _collider;
+
+	[SyncVar(hook = "SetPrimitive")]
+	public PrimitiveType PrimitiveType;
+
+	[SyncVar(hook = "SetColor")]
+	public Color MaterialColor;
+
+	[SyncVar(hook = "SetFlags")]
+	public PrimitiveFlags PrimitiveFlags = PrimitiveFlags.Collidable | PrimitiveFlags.Visible;
+
+	public override string CommandName => "PrimitiveObject";
+
+	public PrimitiveType NetworkPrimitiveType
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		get
 		{
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				PrimitiveObjectToy.CachedMaterials.Clear();
-				PrimitiveObjectToy.PrimitiveTypeToMesh.Clear();
-				foreach (PrimitiveType primitiveType in EnumUtils<PrimitiveType>.Values)
-				{
-					GameObject gameObject = GameObject.CreatePrimitive(primitiveType);
-					Mesh sharedMesh = gameObject.GetComponent<MeshFilter>().sharedMesh;
-					PrimitiveObjectToy.PrimitiveTypeToMesh.Add(primitiveType, sharedMesh);
-					global::UnityEngine.Object.Destroy(gameObject);
-				}
-			};
+			return PrimitiveType;
 		}
-
-		public override string CommandName
+		[param: In]
+		set
 		{
-			get
-			{
-				return "PrimitiveObject";
-			}
+			GeneratedSyncVarSetter(value, ref PrimitiveType, 32uL, SetPrimitive);
 		}
+	}
 
-		public override void OnSpawned(ReferenceHub admin, ArraySegment<string> arguments)
+	public Color NetworkMaterialColor
+	{
+		get
 		{
-			string[] array = arguments.Array;
-			PrimitiveType primitiveType;
-			this.NetworkPrimitiveType = ((array.Length > 2 && Enum.TryParse<PrimitiveType>(array[2], true, out primitiveType)) ? primitiveType : PrimitiveType.Sphere);
-			Color color;
-			this.NetworkMaterialColor = ((array.Length > 3 && ColorUtility.TryParseHtmlString(array[3], out color)) ? color : Color.gray);
-			float num2;
-			float num = ((array.Length > 4 && float.TryParse(array[4], out num2)) ? num2 : 1f);
-			PrimitiveFlags primitiveFlags;
-			this.NetworkPrimitiveFlags = ((array.Length > 5 && Enum.TryParse<PrimitiveFlags>(array[5], true, out primitiveFlags)) ? primitiveFlags : ((PrimitiveFlags)255));
-			base.transform.SetPositionAndRotation(admin.PlayerCameraReference.position, admin.PlayerCameraReference.rotation);
-			base.transform.localScale = Vector3.one * num;
-			base.NetworkScale = base.transform.localScale;
-			base.OnSpawned(admin, arguments);
+			return MaterialColor;
 		}
-
-		private void Start()
+		[param: In]
+		set
 		{
-			this.SetPrimitive(PrimitiveType.Sphere, this.PrimitiveType);
+			GeneratedSyncVarSetter(value, ref MaterialColor, 64uL, SetColor);
 		}
+	}
 
-		private void SetPrimitive(PrimitiveType _, PrimitiveType newPrim)
+	public PrimitiveFlags NetworkPrimitiveFlags
+	{
+		get
 		{
-			this._filter.sharedMesh = PrimitiveObjectToy.PrimitiveTypeToMesh[newPrim];
-			if (this._collider != null)
-			{
-				global::UnityEngine.Object.Destroy(this._collider);
-			}
-			if (newPrim == PrimitiveType.Cube)
-			{
-				this._collider = base.gameObject.AddComponent<BoxCollider>();
-			}
-			else
-			{
-				MeshCollider meshCollider = base.gameObject.AddComponent<MeshCollider>();
-				bool flag = newPrim != PrimitiveType.Plane && newPrim != PrimitiveType.Quad;
-				meshCollider.convex = flag;
-				this._collider = meshCollider;
-			}
-			this.SetColor(Color.clear, this.MaterialColor);
-			this.SetFlags(PrimitiveFlags.None, this.PrimitiveFlags);
+			return PrimitiveFlags;
 		}
-
-		private void SetColor(Color _, Color newColor)
+		[param: In]
+		set
 		{
-			this._renderer.sharedMaterial = this.GetMaterialFromColor(newColor);
+			GeneratedSyncVarSetter(value, ref PrimitiveFlags, 128uL, SetFlags);
 		}
+	}
 
-		private Material GetMaterialFromColor(Color color)
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
 		{
-			Material material;
-			if (PrimitiveObjectToy.CachedMaterials.TryGetValue(color, out material))
+			CachedMaterials.Clear();
+			PrimitiveTypeToMesh.Clear();
+			PrimitiveType[] values = EnumUtils<PrimitiveType>.Values;
+			foreach (PrimitiveType primitiveType in values)
 			{
-				return material;
+				GameObject obj = GameObject.CreatePrimitive(primitiveType);
+				Mesh sharedMesh = obj.GetComponent<MeshFilter>().sharedMesh;
+				PrimitiveTypeToMesh.Add(primitiveType, sharedMesh);
+				UnityEngine.Object.Destroy(obj);
 			}
-			material = ((color.a >= 1f) ? new Material(this._regularMatTemplate) : new Material(this._transparentMatTemplate));
-			material.SetColor(PrimitiveObjectToy.BaseColor, color);
-			PrimitiveObjectToy.CachedMaterials.Add(color, material);
-			return material;
-		}
+		};
+	}
 
-		private void SetFlags(PrimitiveFlags _, PrimitiveFlags newPrimitiveFlags)
+	public override void OnSpawned(ReferenceHub admin, ArraySegment<string> arguments)
+	{
+		string[] array = arguments.Array;
+		NetworkPrimitiveType = ((array.Length > 2 && Enum.TryParse<PrimitiveType>(array[2], ignoreCase: true, out var result)) ? result : PrimitiveType.Sphere);
+		NetworkMaterialColor = ((array.Length > 3 && ColorUtility.TryParseHtmlString(array[3], out var color)) ? color : Color.gray);
+		float result2;
+		float num = ((array.Length > 4 && float.TryParse(array[4], out result2)) ? result2 : 1f);
+		NetworkPrimitiveFlags = ((array.Length > 5 && Enum.TryParse<PrimitiveFlags>(array[5], ignoreCase: true, out var result3)) ? result3 : ((PrimitiveFlags)255));
+		base.transform.SetPositionAndRotation(admin.PlayerCameraReference.position, admin.PlayerCameraReference.rotation);
+		base.transform.localScale = Vector3.one * num;
+		base.NetworkScale = base.transform.localScale;
+		base.OnSpawned(admin, arguments);
+	}
+
+	protected override void Start()
+	{
+		base.Start();
+		SetPrimitive(PrimitiveType.Sphere, PrimitiveType);
+	}
+
+	private void SetPrimitive(PrimitiveType _, PrimitiveType newPrim)
+	{
+		_filter.sharedMesh = PrimitiveTypeToMesh[newPrim];
+		if (_collider != null)
 		{
-			if (this._collider != null)
-			{
-				this._collider.enabled = newPrimitiveFlags.HasFlag(PrimitiveFlags.Collidable);
-			}
-			this._renderer.enabled = newPrimitiveFlags.HasFlag(PrimitiveFlags.Visible);
+			UnityEngine.Object.Destroy(_collider);
 		}
-
-		public override bool Weaved()
+		if (newPrim == PrimitiveType.Cube)
 		{
-			return true;
+			_collider = base.gameObject.AddComponent<BoxCollider>();
 		}
-
-		public PrimitiveType NetworkPrimitiveType
+		else
 		{
-			get
-			{
-				return this.PrimitiveType;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<PrimitiveType>(value, ref this.PrimitiveType, 32UL, new Action<PrimitiveType, PrimitiveType>(this.SetPrimitive));
-			}
+			MeshCollider meshCollider = base.gameObject.AddComponent<MeshCollider>();
+			bool convex = newPrim != PrimitiveType.Plane && newPrim != PrimitiveType.Quad;
+			meshCollider.convex = convex;
+			_collider = meshCollider;
 		}
+		SetColor(Color.clear, MaterialColor);
+		SetFlags(PrimitiveFlags.None, PrimitiveFlags);
+	}
 
-		public Color NetworkMaterialColor
+	private void SetColor(Color _, Color newColor)
+	{
+		_renderer.sharedMaterial = GetMaterialFromColor(newColor);
+	}
+
+	private Material GetMaterialFromColor(Color color)
+	{
+		if (CachedMaterials.TryGetValue(color, out var value))
 		{
-			get
-			{
-				return this.MaterialColor;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<Color>(value, ref this.MaterialColor, 64UL, new Action<Color, Color>(this.SetColor));
-			}
+			return value;
 		}
+		value = ((color.a >= 1f) ? new Material(_regularMatTemplate) : new Material(_transparentMatTemplate));
+		value.SetColor(BaseColor, color);
+		CachedMaterials.Add(color, value);
+		return value;
+	}
 
-		public PrimitiveFlags NetworkPrimitiveFlags
+	private void SetFlags(PrimitiveFlags _, PrimitiveFlags newPrimitiveFlags)
+	{
+		if (_collider != null)
 		{
-			get
-			{
-				return this.PrimitiveFlags;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<PrimitiveFlags>(value, ref this.PrimitiveFlags, 128UL, new Action<PrimitiveFlags, PrimitiveFlags>(this.SetFlags));
-			}
+			_collider.enabled = newPrimitiveFlags.HasFlag(PrimitiveFlags.Collidable);
 		}
+		_renderer.enabled = newPrimitiveFlags.HasFlag(PrimitiveFlags.Visible);
+	}
 
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				global::Mirror.GeneratedNetworkCode._Write_UnityEngine.PrimitiveType(writer, this.PrimitiveType);
-				writer.WriteColor(this.MaterialColor);
-				global::Mirror.GeneratedNetworkCode._Write_AdminToys.PrimitiveFlags(writer, this.PrimitiveFlags);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 32UL) != 0UL)
-			{
-				global::Mirror.GeneratedNetworkCode._Write_UnityEngine.PrimitiveType(writer, this.PrimitiveType);
-			}
-			if ((base.syncVarDirtyBits & 64UL) != 0UL)
-			{
-				writer.WriteColor(this.MaterialColor);
-			}
-			if ((base.syncVarDirtyBits & 128UL) != 0UL)
-			{
-				global::Mirror.GeneratedNetworkCode._Write_AdminToys.PrimitiveFlags(writer, this.PrimitiveFlags);
-			}
+			GeneratedNetworkCode._Write_UnityEngine_002EPrimitiveType(writer, PrimitiveType);
+			writer.WriteColor(MaterialColor);
+			GeneratedNetworkCode._Write_AdminToys_002EPrimitiveFlags(writer, PrimitiveFlags);
+			return;
 		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 0x20L) != 0L)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<PrimitiveType>(ref this.PrimitiveType, new Action<PrimitiveType, PrimitiveType>(this.SetPrimitive), global::Mirror.GeneratedNetworkCode._Read_UnityEngine.PrimitiveType(reader));
-				base.GeneratedSyncVarDeserialize<Color>(ref this.MaterialColor, new Action<Color, Color>(this.SetColor), reader.ReadColor());
-				base.GeneratedSyncVarDeserialize<PrimitiveFlags>(ref this.PrimitiveFlags, new Action<PrimitiveFlags, PrimitiveFlags>(this.SetFlags), global::Mirror.GeneratedNetworkCode._Read_AdminToys.PrimitiveFlags(reader));
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 32L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<PrimitiveType>(ref this.PrimitiveType, new Action<PrimitiveType, PrimitiveType>(this.SetPrimitive), global::Mirror.GeneratedNetworkCode._Read_UnityEngine.PrimitiveType(reader));
-			}
-			if ((num & 64L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<Color>(ref this.MaterialColor, new Action<Color, Color>(this.SetColor), reader.ReadColor());
-			}
-			if ((num & 128L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<PrimitiveFlags>(ref this.PrimitiveFlags, new Action<PrimitiveFlags, PrimitiveFlags>(this.SetFlags), global::Mirror.GeneratedNetworkCode._Read_AdminToys.PrimitiveFlags(reader));
-			}
+			GeneratedNetworkCode._Write_UnityEngine_002EPrimitiveType(writer, PrimitiveType);
 		}
+		if ((base.syncVarDirtyBits & 0x40L) != 0L)
+		{
+			writer.WriteColor(MaterialColor);
+		}
+		if ((base.syncVarDirtyBits & 0x80L) != 0L)
+		{
+			GeneratedNetworkCode._Write_AdminToys_002EPrimitiveFlags(writer, PrimitiveFlags);
+		}
+	}
 
-		private static readonly Dictionary<Color, Material> CachedMaterials = new Dictionary<Color, Material>();
-
-		private static readonly Dictionary<PrimitiveType, Mesh> PrimitiveTypeToMesh = new Dictionary<PrimitiveType, Mesh>(6);
-
-		private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
-
-		[SerializeField]
-		private Material _regularMatTemplate;
-
-		[SerializeField]
-		private Material _transparentMatTemplate;
-
-		[SerializeField]
-		private MeshFilter _filter;
-
-		[SerializeField]
-		private MeshRenderer _renderer;
-
-		private Collider _collider;
-
-		[SyncVar(hook = "SetPrimitive")]
-		public PrimitiveType PrimitiveType;
-
-		[SyncVar(hook = "SetColor")]
-		public Color MaterialColor;
-
-		[SyncVar(hook = "SetFlags")]
-		public PrimitiveFlags PrimitiveFlags = PrimitiveFlags.Collidable | PrimitiveFlags.Visible;
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref PrimitiveType, SetPrimitive, GeneratedNetworkCode._Read_UnityEngine_002EPrimitiveType(reader));
+			GeneratedSyncVarDeserialize(ref MaterialColor, SetColor, reader.ReadColor());
+			GeneratedSyncVarDeserialize(ref PrimitiveFlags, SetFlags, GeneratedNetworkCode._Read_AdminToys_002EPrimitiveFlags(reader));
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 0x20L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref PrimitiveType, SetPrimitive, GeneratedNetworkCode._Read_UnityEngine_002EPrimitiveType(reader));
+		}
+		if ((num & 0x40L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref MaterialColor, SetColor, reader.ReadColor());
+		}
+		if ((num & 0x80L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref PrimitiveFlags, SetFlags, GeneratedNetworkCode._Read_AdminToys_002EPrimitiveFlags(reader));
+		}
 	}
 }

@@ -1,25 +1,24 @@
-﻿using System;
+using System;
 using AnimatorLayerManagement;
 using PlayerRoles.FirstPersonControl.Thirdperson;
 
-namespace InventorySystem.Items.Thirdperson
+namespace InventorySystem.Items.Thirdperson;
+
+[Serializable]
+public class ItemLayerLink
 {
-	[Serializable]
-	public class ItemLayerLink
+	public AnimItemLayer3p Layer3p;
+
+	public LayerRefId LayerRef;
+
+	private int? _cachedIndex;
+
+	public int GetLayerIndex(AnimatedCharacterModel model)
 	{
-		public int GetLayerIndex(AnimatedCharacterModel model)
+		if (!_cachedIndex.HasValue)
 		{
-			if (this._cachedIndex == null)
-			{
-				this._cachedIndex = new int?(model.LayerManager.GetLayerIndex(this.LayerRef));
-			}
-			return this._cachedIndex.Value;
+			_cachedIndex = model.LayerManager.GetLayerIndex(LayerRef);
 		}
-
-		public AnimItemLayer3p Layer3p;
-
-		public LayerRefId LayerRef;
-
-		private int? _cachedIndex;
+		return _cachedIndex.Value;
 	}
 }

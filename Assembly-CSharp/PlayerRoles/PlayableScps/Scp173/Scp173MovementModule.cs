@@ -1,224 +1,209 @@
-﻿using System;
 using System.Diagnostics;
 using Mirror;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp173
+namespace PlayerRoles.PlayableScps.Scp173;
+
+public class Scp173MovementModule : FirstPersonMovementModule
 {
-	public class Scp173MovementModule : FirstPersonMovementModule
+	private float _normalSpeed;
+
+	private float _fastSpeed;
+
+	private float _observerSpeed;
+
+	private float _jumpSpeed;
+
+	private Scp173Role _role;
+
+	private Scp173BreakneckSpeedsAbility _breakneckSpeeds;
+
+	private Scp173ObserversTracker _observersTracker;
+
+	private static int _snapMask;
+
+	private readonly Stopwatch _lookStopwatch = Stopwatch.StartNew();
+
+	private const float ObserverSpeedMultiplier = 2f;
+
+	private const float ServerStopTime = 0.4f;
+
+	private const int GlassLayerMask = 16384;
+
+	private const float GlassRaycastDis = 0.3f;
+
+	private const float RaycastFloorHeight = 3.6f;
+
+	private const float RaycastCeilHeight = 7.2f;
+
+	private const float RaycastPilotRadius = 0.025f;
+
+	private const float RaycastFloorDot = 0.15f;
+
+	private const float RaycastCcRadiusMultiplier = 1.2f;
+
+	private const float RaycastStabilityRadiusRatio = 0.5f;
+
+	private const float RaycastStabilityDistance = 0.6f;
+
+	private float MovementSpeed
 	{
-		private float MovementSpeed
+		set
 		{
-			set
+			SneakSpeed = value;
+			WalkSpeed = value;
+			SprintSpeed = value;
+			JumpSpeed = ((value < _normalSpeed) ? 0f : _jumpSpeed);
+		}
+	}
+
+	private float TargetSpeed
+	{
+		get
+		{
+			if (_observersTracker.IsObserved)
 			{
-				this.SneakSpeed = value;
-				this.WalkSpeed = value;
-				this.SprintSpeed = value;
-				this.JumpSpeed = ((value < this._normalSpeed) ? 0f : this._jumpSpeed);
+				return 0f;
 			}
-		}
-
-		private float TargetSpeed
-		{
-			get
+			if (!_breakneckSpeeds.IsActive)
 			{
-				if (this._observersTracker.IsObserved)
-				{
-					return 0f;
-				}
-				if (!this._breakneckSpeeds.IsActive)
-				{
-					return this._normalSpeed;
-				}
-				return this._fastSpeed;
+				return _normalSpeed;
 			}
+			return _fastSpeed;
 		}
+	}
 
-		private float ServerSpeed
+	private float ServerSpeed
+	{
+		get
 		{
-			get
+			float targetSpeed = TargetSpeed;
+			if (targetSpeed > 0f)
 			{
-				float targetSpeed = this.TargetSpeed;
-				if (targetSpeed > 0f)
-				{
-					this._lookStopwatch.Restart();
-					return targetSpeed;
-				}
-				if (this._lookStopwatch.Elapsed.TotalSeconds >= 0.4000000059604645)
-				{
-					return 0f;
-				}
-				return this._normalSpeed;
+				_lookStopwatch.Restart();
+				return targetSpeed;
 			}
-		}
-
-		private static int TpMask
-		{
-			get
+			if (!(_lookStopwatch.Elapsed.TotalSeconds < 0.4000000059604645))
 			{
-				if (Scp173MovementModule._snapMask != 0)
-				{
-					return Scp173MovementModule._snapMask;
-				}
-				int num = LayerMask.NameToLayer("Player");
-				for (int i = 0; i < 32; i++)
-				{
-					if (!Physics.GetIgnoreLayerCollision(num, i))
-					{
-						Scp173MovementModule._snapMask |= 1 << i;
-					}
-				}
-				return Scp173MovementModule._snapMask;
+				return 0f;
 			}
+			return _normalSpeed;
 		}
+	}
 
-		private void Awake()
+	private static int TpMask
+	{
+		get
 		{
-			this._normalSpeed = this.WalkSpeed;
-			this._fastSpeed = this.SprintSpeed;
-			this._jumpSpeed = this.JumpSpeed;
-			this._observerSpeed = this.SprintSpeed * 2f;
-			this._role = base.GetComponent<Scp173Role>();
-			this._role.SubroutineModule.TryGetSubroutine<Scp173BreakneckSpeedsAbility>(out this._breakneckSpeeds);
-			this._role.SubroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out this._observersTracker);
-		}
-
-		protected override void UpdateMovement()
-		{
-			this.MovementSpeed = (this._role.IsLocalPlayer ? this.TargetSpeed : (NetworkServer.active ? this.ServerSpeed : this._observerSpeed));
-			base.UpdateMovement();
-			this.UpdateGlassBreaking();
-		}
-
-		private void UpdateGlassBreaking()
-		{
-			if (!NetworkServer.active || !this._breakneckSpeeds.IsActive)
+			if (_snapMask != 0)
 			{
-				return;
+				return _snapMask;
 			}
+			int layer = LayerMask.NameToLayer("Player");
+			for (int i = 0; i < 32; i++)
+			{
+				if (!Physics.GetIgnoreLayerCollision(layer, i))
+				{
+					_snapMask |= 1 << i;
+				}
+			}
+			return _snapMask;
+		}
+	}
+
+	private void Awake()
+	{
+		_normalSpeed = WalkSpeed;
+		_fastSpeed = SprintSpeed;
+		_jumpSpeed = JumpSpeed;
+		_observerSpeed = SprintSpeed * 2f;
+		_role = GetComponent<Scp173Role>();
+		_role.SubroutineModule.TryGetSubroutine<Scp173BreakneckSpeedsAbility>(out _breakneckSpeeds);
+		_role.SubroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out _observersTracker);
+	}
+
+	protected override void UpdateMovement()
+	{
+		MovementSpeed = (_role.IsLocalPlayer ? TargetSpeed : (NetworkServer.active ? ServerSpeed : _observerSpeed));
+		base.UpdateMovement();
+		UpdateGlassBreaking();
+	}
+
+	private void UpdateGlassBreaking()
+	{
+		if (NetworkServer.active && _breakneckSpeeds.IsActive)
+		{
 			Vector3 moveDirection = base.Motor.MoveDirection;
-			float num = base.CharController.radius + 0.3f;
-			RaycastHit raycastHit;
-			if (!Physics.Raycast(base.Position, moveDirection, out raycastHit, num, 16384))
+			float maxDistance = base.CharController.radius + 0.3f;
+			if (Physics.Raycast(base.Position, moveDirection, out var hitInfo, maxDistance, 16384) && hitInfo.collider.TryGetComponent<BreakableWindow>(out var component))
 			{
-				return;
+				component.Damage(component.health, _role.DamageHandler, Vector3.zero);
 			}
-			BreakableWindow breakableWindow;
-			if (!raycastHit.collider.TryGetComponent<BreakableWindow>(out breakableWindow))
-			{
-				return;
-			}
-			breakableWindow.Damage(breakableWindow.health, this._role.DamageHandler, Vector3.zero);
 		}
+	}
 
-		public bool TryGetTeleportPos(float maxDis, out Vector3 pos, out float usedDistance)
+	public bool TryGetTeleportPos(float maxDis, out Vector3 pos, out float usedDistance)
+	{
+		Vector3 position = base.Hub.PlayerCameraReference.position;
+		Vector3 forward = base.Hub.PlayerCameraReference.forward;
+		if (!Physics.SphereCast(position, 0.025f, forward, out var hitInfo, maxDis, TpMask))
 		{
-			Vector3 position = base.Hub.PlayerCameraReference.position;
-			Vector3 forward = base.Hub.PlayerCameraReference.forward;
-			RaycastHit raycastHit;
-			if (!Physics.SphereCast(position, 0.025f, forward, out raycastHit, maxDis, Scp173MovementModule.TpMask))
-			{
-				raycastHit.point = position + forward * maxDis;
-				raycastHit.normal = Vector3.up;
-				raycastHit.distance = maxDis;
-			}
-			usedDistance = raycastHit.distance;
-			return this.CheckTeleportPosition(raycastHit, out pos);
+			hitInfo.point = position + forward * maxDis;
+			hitInfo.normal = Vector3.up;
+			hitInfo.distance = maxDis;
 		}
+		usedDistance = hitInfo.distance;
+		return CheckTeleportPosition(hitInfo, out pos);
+	}
 
-		private bool CheckTeleportPosition(RaycastHit hit, out Vector3 groundPoint)
+	private bool CheckTeleportPosition(RaycastHit hit, out Vector3 groundPoint)
+	{
+		groundPoint = Vector3.zero;
+		float radius = CharacterControllerSettings.Radius;
+		float num = radius * 1.2f;
+		Vector3 vector = hit.point + hit.normal * num;
+		if (Physics.CheckSphere(vector, radius, TpMask))
 		{
-			groundPoint = Vector3.zero;
-			float radius = this.CharacterControllerSettings.Radius;
-			float num = radius * 1.2f;
-			Vector3 vector = hit.point + hit.normal * num;
-			if (Physics.CheckSphere(vector, radius, Scp173MovementModule.TpMask))
-			{
-				return false;
-			}
-			if (Physics.Raycast(hit.point, hit.normal, num, Scp173MovementModule.TpMask))
-			{
-				return false;
-			}
-			RaycastHit raycastHit;
-			if (!Physics.SphereCast(vector, radius, Vector3.down, out raycastHit, 3.6f, Scp173MovementModule.TpMask))
-			{
-				return false;
-			}
-			if (!Physics.SphereCast(new Ray(vector, Vector3.down), radius * 0.5f, raycastHit.distance + 0.6f, Scp173MovementModule.TpMask))
-			{
-				return false;
-			}
-			if (Vector3.Dot(Vector3.up, raycastHit.normal) < 0.15f)
-			{
-				return false;
-			}
-			RaycastHit raycastHit2;
-			if (!Physics.SphereCast(vector, radius, Vector3.up, out raycastHit2, 7.2f, Scp173MovementModule.TpMask))
-			{
-				raycastHit2.point = vector + Vector3.up * 7.2f;
-			}
-			if (Mathf.Abs(raycastHit.point.y - raycastHit2.point.y) < this.CharacterControllerSettings.Height)
-			{
-				return false;
-			}
-			PitKiller pitKiller;
-			if (raycastHit.collider.TryGetComponent<PitKiller>(out pitKiller))
-			{
-				return false;
-			}
-			groundPoint = raycastHit.point + (raycastHit.normal + Vector3.down) * radius;
-			return true;
+			return false;
 		}
-
-		public void ServerTeleportTo(Vector3 pos)
+		if (Physics.Raycast(hit.point, hit.normal, num, TpMask))
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			base.ServerOverridePosition(pos);
+			return false;
 		}
+		if (!Physics.SphereCast(vector, radius, Vector3.down, out var hitInfo, 3.6f, TpMask))
+		{
+			return false;
+		}
+		if (!Physics.SphereCast(new Ray(vector, Vector3.down), radius * 0.5f, hitInfo.distance + 0.6f, TpMask))
+		{
+			return false;
+		}
+		if (Vector3.Dot(Vector3.up, hitInfo.normal) < 0.15f)
+		{
+			return false;
+		}
+		if (!Physics.SphereCast(vector, radius, Vector3.up, out var hitInfo2, 7.2f, TpMask))
+		{
+			hitInfo2.point = vector + Vector3.up * 7.2f;
+		}
+		if (Mathf.Abs(hitInfo.point.y - hitInfo2.point.y) < CharacterControllerSettings.Height)
+		{
+			return false;
+		}
+		if (hitInfo.collider.TryGetComponent<PitKiller>(out var _))
+		{
+			return false;
+		}
+		groundPoint = hitInfo.point + (hitInfo.normal + Vector3.down) * radius;
+		return true;
+	}
 
-		private float _normalSpeed;
-
-		private float _fastSpeed;
-
-		private float _observerSpeed;
-
-		private float _jumpSpeed;
-
-		private Scp173Role _role;
-
-		private Scp173BreakneckSpeedsAbility _breakneckSpeeds;
-
-		private Scp173ObserversTracker _observersTracker;
-
-		private static int _snapMask;
-
-		private readonly Stopwatch _lookStopwatch = Stopwatch.StartNew();
-
-		private const float ObserverSpeedMultiplier = 2f;
-
-		private const float ServerStopTime = 0.4f;
-
-		private const int GlassLayerMask = 16384;
-
-		private const float GlassRaycastDis = 0.3f;
-
-		private const float RaycastFloorHeight = 3.6f;
-
-		private const float RaycastCeilHeight = 7.2f;
-
-		private const float RaycastPilotRadius = 0.025f;
-
-		private const float RaycastFloorDot = 0.15f;
-
-		private const float RaycastCcRadiusMultiplier = 1.2f;
-
-		private const float RaycastStabilityRadiusRatio = 0.5f;
-
-		private const float RaycastStabilityDistance = 0.6f;
+	public void ServerTeleportTo(Vector3 pos)
+	{
+		if (NetworkServer.active)
+		{
+			ServerOverridePosition(pos);
+		}
 	}
 }

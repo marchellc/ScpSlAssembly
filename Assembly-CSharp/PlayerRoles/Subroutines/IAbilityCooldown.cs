@@ -1,17 +1,14 @@
-﻿using System;
+namespace PlayerRoles.Subroutines;
 
-namespace PlayerRoles.Subroutines
+public interface IAbilityCooldown
 {
-	public interface IAbilityCooldown
-	{
-		double InitialTime { get; }
+	double InitialTime { get; }
 
-		double NextUse { get; }
+	double NextUse { get; }
 
-		bool IsReady { get; }
+	bool IsReady { get; }
 
-		float Remaining { get; }
+	float Remaining { get; }
 
-		float Readiness { get; }
-	}
+	float Readiness { get; }
 }

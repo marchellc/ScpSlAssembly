@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items.Pickups;
 
-namespace InventorySystem.Items.Pickups
+public interface IPickupDistributorTrigger
 {
-	public interface IPickupDistributorTrigger
-	{
-		void OnDistributed();
-	}
+	void OnDistributed();
 }

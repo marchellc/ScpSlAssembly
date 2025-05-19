@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Searching;
 
-namespace InventorySystem.Searching
+public interface ISearchTimeModifier
 {
-	public interface ISearchTimeModifier
-	{
-		float ProcessSearchTime(float val);
-	}
+	float ProcessSearchTime(float val);
 }

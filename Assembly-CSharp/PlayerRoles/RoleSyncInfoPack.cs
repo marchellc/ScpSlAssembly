@@ -1,37 +1,34 @@
-﻿using System;
 using Mirror;
 
-namespace PlayerRoles
+namespace PlayerRoles;
+
+public struct RoleSyncInfoPack : NetworkMessage
 {
-	public struct RoleSyncInfoPack : NetworkMessage
+	private readonly ReferenceHub _receiverHub;
+
+	public RoleSyncInfoPack(ReferenceHub receiver)
 	{
-		public RoleSyncInfoPack(ReferenceHub receiver)
-		{
-			this._receiverHub = receiver;
-		}
+		_receiverHub = receiver;
+	}
 
-		public RoleSyncInfoPack(NetworkReader reader)
+	public RoleSyncInfoPack(NetworkReader reader)
+	{
+		_receiverHub = null;
+		int num = reader.ReadUShort();
+		for (int i = 0; i < num; i++)
 		{
-			this._receiverHub = null;
-			int num = (int)reader.ReadUShort();
-			for (int i = 0; i < num; i++)
-			{
-				reader.ReadRoleSyncInfo();
-			}
+			reader.ReadRoleSyncInfo();
 		}
+	}
 
-		public void WritePlayers(NetworkWriter writer)
+	public void WritePlayers(NetworkWriter writer)
+	{
+		writer.WriteUShort((ushort)ReferenceHub.AllHubs.Count);
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			writer.WriteUShort((ushort)ReferenceHub.AllHubs.Count);
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				IObfuscatedRole obfuscatedRole = referenceHub.roleManager.CurrentRole as IObfuscatedRole;
-				RoleTypeId roleTypeId = ((obfuscatedRole != null) ? obfuscatedRole.GetRoleForUser(this._receiverHub) : referenceHub.roleManager.CurrentRole.RoleTypeId);
-				new RoleSyncInfo(referenceHub, roleTypeId, this._receiverHub).Write(writer);
-				referenceHub.roleManager.PreviouslySentRole[this._receiverHub.netId] = roleTypeId;
-			}
+			RoleTypeId roleTypeId = ((allHub.roleManager.CurrentRole is IObfuscatedRole obfuscatedRole) ? obfuscatedRole.GetRoleForUser(_receiverHub) : allHub.roleManager.CurrentRole.RoleTypeId);
+			new RoleSyncInfo(allHub, roleTypeId, _receiverHub).Write(writer);
+			allHub.roleManager.PreviouslySentRole[_receiverHub.netId] = roleTypeId;
 		}
-
-		private readonly ReferenceHub _receiverHub;
 	}
 }

@@ -1,49 +1,41 @@
-﻿using System;
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 using InventorySystem.Items.Usables.Scp244;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
-namespace InventorySystem.Searching
+namespace InventorySystem.Searching;
+
+public class Scp244SearchCompletor : ItemSearchCompletor
 {
-	public class Scp244SearchCompletor : ItemSearchCompletor
+	public Scp244SearchCompletor(ReferenceHub hub, ItemPickupBase targetPickup, ItemBase targetItem, double maxDistanceSquared)
+		: base(hub, targetPickup, targetItem, maxDistanceSquared)
 	{
-		public Scp244SearchCompletor(ReferenceHub hub, ItemPickupBase targetPickup, ItemBase targetItem, double maxDistanceSquared)
-			: base(hub, targetPickup, targetItem, maxDistanceSquared)
-		{
-		}
+	}
 
-		protected override bool ValidateAny()
+	protected override bool ValidateAny()
+	{
+		if (base.ValidateAny() && TargetPickup is Scp244DeployablePickup scp244DeployablePickup)
 		{
-			if (base.ValidateAny())
-			{
-				Scp244DeployablePickup scp244DeployablePickup = this.TargetPickup as Scp244DeployablePickup;
-				if (scp244DeployablePickup != null)
-				{
-					return !scp244DeployablePickup.ModelDestroyed;
-				}
-			}
-			return false;
+			return !scp244DeployablePickup.ModelDestroyed;
 		}
+		return false;
+	}
 
-		public override void Complete()
+	public override void Complete()
+	{
+		if (TargetPickup is Scp244DeployablePickup scp244DeployablePickup)
 		{
-			Scp244DeployablePickup scp244DeployablePickup = this.TargetPickup as Scp244DeployablePickup;
-			if (scp244DeployablePickup == null)
-			{
-				return;
-			}
-			PlayerPickingUpItemEventArgs playerPickingUpItemEventArgs = new PlayerPickingUpItemEventArgs(this.Hub, this.TargetPickup);
+			PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(base.Hub, TargetPickup));
+			PlayerPickingUpItemEventArgs playerPickingUpItemEventArgs = new PlayerPickingUpItemEventArgs(base.Hub, TargetPickup);
 			PlayerEvents.OnPickingUpItem(playerPickingUpItemEventArgs);
-			if (!playerPickingUpItemEventArgs.IsAllowed)
+			if (playerPickingUpItemEventArgs.IsAllowed)
 			{
-				return;
+				ItemBase item = base.Hub.inventory.ServerAddItem(TargetPickup.Info.ItemId, ItemAddReason.PickedUp, TargetPickup.Info.Serial, TargetPickup);
+				scp244DeployablePickup.State = Scp244State.PickedUp;
+				CheckCategoryLimitHint();
+				PlayerEvents.OnPickedUpItem(new PlayerPickedUpItemEventArgs(base.Hub, item));
 			}
-			ItemBase itemBase = this.Hub.inventory.ServerAddItem(this.TargetPickup.Info.ItemId, ItemAddReason.PickedUp, this.TargetPickup.Info.Serial, this.TargetPickup);
-			scp244DeployablePickup.State = Scp244State.PickedUp;
-			base.CheckCategoryLimitHint();
-			PlayerEvents.OnPickedUpItem(new PlayerPickedUpItemEventArgs(this.Hub, itemBase));
 		}
 	}
 }

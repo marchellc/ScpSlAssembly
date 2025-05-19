@@ -1,9 +1,11 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Interactables;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
+using LabApi.Events.Arguments.Scp079Events;
+using LabApi.Events.Handlers;
 using MapGeneration;
 using MapGeneration.Distributors;
 using Mirror;
@@ -13,333 +15,296 @@ using UnityEngine;
 using Utils.Networking;
 using Utils.NonAllocLINQ;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public class Scp079Recontainer : MonoBehaviour
 {
-	public class Scp079Recontainer : MonoBehaviour
+	public static readonly HashSet<Scp079Generator> AllGenerators = new HashSet<Scp079Generator>();
+
+	[SerializeField]
+	private DoorVariant[] _containmentGates;
+
+	[SerializeField]
+	private float _activationDelay;
+
+	[SerializeField]
+	private float _lockdownDuration;
+
+	[SerializeField]
+	private Transform _activatorButton;
+
+	[SerializeField]
+	private BreakableWindow _activatorGlass;
+
+	[SerializeField]
+	private Vector3 _activatorPos;
+
+	[SerializeField]
+	private float _activatorLerpSpeed;
+
+	[SerializeField]
+	private string _announcementProgress;
+
+	[SerializeField]
+	private string _announcementAllActivated;
+
+	[SerializeField]
+	private string _announcementCountdown;
+
+	[SerializeField]
+	private string _announcementSuccess;
+
+	[SerializeField]
+	private string _announcementFailure;
+
+	private const float AnnouncementGlitchChance = 0.035f;
+
+	private const float AnnouncementJamChance = 0.03f;
+
+	private bool _alreadyRecontained;
+
+	private bool _success;
+
+	private int _prevEngaged;
+
+	private float _recontainLater;
+
+	private readonly Stopwatch _delayStopwatch = new Stopwatch();
+
+	private readonly Stopwatch _unlockStopwatch = new Stopwatch();
+
+	private readonly HashSet<DoorVariant> _lockedDoors = new HashSet<DoorVariant>();
+
+	private bool CassieBusy => NineTailedFoxAnnouncer.singleton.queue.Count > 0;
+
+	private void Start()
 	{
-		private bool CassieBusy
+		SetContainmentDoors(opened: false, locked: true);
+		PlayerRoleManager.OnServerRoleSet += OnServerRoleChanged;
+	}
+
+	private void OnDestroy()
+	{
+		PlayerRoleManager.OnServerRoleSet -= OnServerRoleChanged;
+	}
+
+	private void Update()
+	{
+		if (!NetworkServer.active)
 		{
-			get
+			return;
+		}
+		RefreshActivator();
+		RefreshAmount();
+		if (_unlockStopwatch.IsRunning && _unlockStopwatch.Elapsed.TotalSeconds > (double)_lockdownDuration)
+		{
+			EndOvercharge();
+			_unlockStopwatch.Stop();
+		}
+		if (_recontainLater > 0f)
+		{
+			_delayStopwatch.Stop();
+			if (!CassieBusy)
 			{
-				return NineTailedFoxAnnouncer.singleton.queue.Count > 0;
+				_recontainLater -= Time.deltaTime;
+			}
+			if (_recontainLater <= 0f)
+			{
+				Recontain();
 			}
 		}
+	}
 
-		private void Start()
+	private void OnServerRoleChanged(ReferenceHub hub, RoleTypeId newRole, RoleChangeReason reason)
+	{
+		if (newRole != RoleTypeId.Spectator || !IsScpButNot079(hub.roleManager.CurrentRole) || Scp079Role.ActiveInstances.Count == 0 || ReferenceHub.AllHubs.Count((ReferenceHub x) => x != hub && IsScpButNot079(x.roleManager.CurrentRole)) > 0)
 		{
-			this.SetContainmentDoors(false, true);
-			PlayerRoleManager.OnServerRoleSet += this.OnServerRoleChanged;
+			return;
 		}
-
-		private void OnDestroy()
+		SetContainmentDoors(opened: true, locked: true);
+		_alreadyRecontained = true;
+		_recontainLater = 3f;
+		foreach (Scp079Generator allGenerator in AllGenerators)
 		{
-			PlayerRoleManager.OnServerRoleSet -= this.OnServerRoleChanged;
+			allGenerator.Engaged = true;
 		}
+	}
 
-		private void Update()
+	private bool IsScpButNot079(PlayerRoleBase prb)
+	{
+		if (prb.Team == Team.SCPs)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this.RefreshActivator();
-			this.RefreshAmount();
-			if (this._unlockStopwatch.IsRunning && this._unlockStopwatch.Elapsed.TotalSeconds > (double)this._lockdownDuration)
-			{
-				this.EndOvercharge();
-				this._unlockStopwatch.Stop();
-			}
-			if (this._recontainLater > 0f)
-			{
-				this._delayStopwatch.Stop();
-				if (!this.CassieBusy)
-				{
-					this._recontainLater -= Time.deltaTime;
-				}
-				if (this._recontainLater <= 0f)
-				{
-					this.Recontain();
-				}
-			}
+			return prb.RoleTypeId != RoleTypeId.Scp079;
 		}
+		return false;
+	}
 
-		private void OnServerRoleChanged(ReferenceHub hub, RoleTypeId newRole, RoleChangeReason reason)
+	private void RefreshActivator()
+	{
+		if (_delayStopwatch.Elapsed.TotalSeconds > (double)_activationDelay)
 		{
-			if (newRole != RoleTypeId.Spectator || !this.IsScpButNot079(hub.roleManager.CurrentRole))
+			if (_delayStopwatch.IsRunning)
 			{
-				return;
-			}
-			if (Scp079Role.ActiveInstances.Count == 0)
-			{
-				return;
-			}
-			if (ReferenceHub.AllHubs.Count((ReferenceHub x) => x != hub && this.IsScpButNot079(x.roleManager.CurrentRole)) > 0)
-			{
-				return;
-			}
-			this.SetContainmentDoors(true, true);
-			this._alreadyRecontained = true;
-			this._recontainLater = 3f;
-			foreach (Scp079Generator scp079Generator in Scp079Recontainer.AllGenerators)
-			{
-				scp079Generator.Engaged = true;
+				BeginOvercharge();
+				_delayStopwatch.Stop();
+				_unlockStopwatch.Start();
 			}
 		}
-
-		private bool IsScpButNot079(PlayerRoleBase prb)
+		else if (_activatorGlass.isBroken)
 		{
-			return prb.Team == Team.SCPs && prb.RoleTypeId != RoleTypeId.Scp079;
-		}
-
-		private void RefreshActivator()
-		{
-			if (this._delayStopwatch.Elapsed.TotalSeconds > (double)this._activationDelay)
+			_activatorButton.transform.localPosition = Vector3.Lerp(_activatorButton.transform.localPosition, _activatorPos, _activatorLerpSpeed * Time.deltaTime);
+			if (!_alreadyRecontained && !CassieBusy)
 			{
-				if (!this._delayStopwatch.IsRunning)
-				{
-					return;
-				}
-				this.BeginOvercharge();
-				this._delayStopwatch.Stop();
-				this._unlockStopwatch.Start();
-				return;
-			}
-			else
-			{
-				if (!this._activatorGlass.isBroken)
-				{
-					return;
-				}
-				this._activatorButton.transform.localPosition = Vector3.Lerp(this._activatorButton.transform.localPosition, this._activatorPos, this._activatorLerpSpeed * Time.deltaTime);
-				if (this._alreadyRecontained)
-				{
-					return;
-				}
-				if (this.CassieBusy)
-				{
-					return;
-				}
-				this.Recontain();
-				return;
+				Recontain();
 			}
 		}
+	}
 
-		private void Recontain()
+	private void Recontain()
+	{
+		_delayStopwatch.Restart();
+		PlayAnnouncement(_announcementCountdown, 0f);
+		new SubtitleMessage(new SubtitlePart(SubtitleType.OverchargeIn, (string[])null)).SendToAuthenticated();
+		_alreadyRecontained = true;
+	}
+
+	private void RefreshAmount()
+	{
+		if (_alreadyRecontained)
 		{
-			this._delayStopwatch.Restart();
-			this.PlayAnnouncement(this._announcementCountdown, 0f);
-			new SubtitleMessage(new SubtitlePart[]
-			{
-				new SubtitlePart(SubtitleType.OverchargeIn, null)
-			}).SendToAuthenticated(0);
-			this._alreadyRecontained = true;
+			return;
 		}
-
-		private void RefreshAmount()
+		int num = 0;
+		foreach (Scp079Generator allGenerator in AllGenerators)
 		{
-			if (this._alreadyRecontained)
+			if (allGenerator.Engaged)
 			{
-				return;
-			}
-			int num = 0;
-			using (HashSet<Scp079Generator>.Enumerator enumerator = Scp079Recontainer.AllGenerators.GetEnumerator())
-			{
-				while (enumerator.MoveNext())
-				{
-					if (enumerator.Current.Engaged)
-					{
-						num++;
-					}
-				}
-			}
-			if (num > this._prevEngaged)
-			{
-				this.UpdateStatus(num);
-				this._prevEngaged = num;
+				num++;
 			}
 		}
-
-		private void SetContainmentDoors(bool opened, bool locked)
+		if (num > _prevEngaged)
 		{
-			if (!NetworkServer.active)
+			UpdateStatus(num);
+			_prevEngaged = num;
+		}
+	}
+
+	private void SetContainmentDoors(bool opened, bool locked)
+	{
+		if (NetworkServer.active)
+		{
+			DoorVariant[] containmentGates = _containmentGates;
+			foreach (DoorVariant obj in containmentGates)
 			{
-				return;
-			}
-			foreach (DoorVariant doorVariant in this._containmentGates)
-			{
-				doorVariant.NetworkTargetState = opened;
-				doorVariant.ServerChangeLock(DoorLockReason.SpecialDoorFeature, locked);
+				obj.NetworkTargetState = opened;
+				obj.ServerChangeLock(DoorLockReason.SpecialDoorFeature, locked);
 			}
 		}
+	}
 
-		private void UpdateStatus(int engagedGenerators)
+	private void UpdateStatus(int engagedGenerators)
+	{
+		if (AlphaWarheadController.Detonated)
 		{
-			int count = Scp079Recontainer.AllGenerators.Count;
-			string text = string.Format(this._announcementProgress, engagedGenerators, count);
-			List<SubtitlePart> list = new List<SubtitlePart>
-			{
-				new SubtitlePart(SubtitleType.GeneratorsActivated, new string[]
-				{
-					engagedGenerators.ToString(),
-					count.ToString()
-				})
-			};
-			if (engagedGenerators >= count)
-			{
-				text += this._announcementAllActivated;
-				this.SetContainmentDoors(true, Scp079Role.ActiveInstances.Count > 0);
-				list.Add(new SubtitlePart(SubtitleType.AllGeneratorsEngaged, null));
-				DoorVariant[] containmentGates = this._containmentGates;
-				for (int i = 0; i < containmentGates.Length; i++)
-				{
-					IScp106PassableDoor scp106PassableDoor = containmentGates[i] as IScp106PassableDoor;
-					if (scp106PassableDoor != null)
-					{
-						scp106PassableDoor.IsScp106Passable = true;
-					}
-				}
-			}
-			new SubtitleMessage(list.ToArray()).SendToAuthenticated(0);
-			this.PlayAnnouncement(text, 1f);
+			return;
 		}
-
-		private void BeginOvercharge()
+		int count = AllGenerators.Count;
+		string text = string.Format(_announcementProgress, engagedGenerators, count);
+		List<SubtitlePart> list = new List<SubtitlePart>();
+		list.Add(new SubtitlePart(SubtitleType.GeneratorsActivated, engagedGenerators.ToString(), count.ToString()));
+		List<SubtitlePart> list2 = list;
+		if (engagedGenerators >= count)
 		{
-			this._success = this.TryKill079();
-			bool inProgress = AlphaWarheadController.InProgress;
-			foreach (KeyValuePair<IInteractable, Dictionary<byte, InteractableCollider>> keyValuePair in InteractableCollider.AllInstances)
+			text += _announcementAllActivated;
+			SetContainmentDoors(opened: true, Scp079Role.ActiveInstances.Count > 0);
+			list2.Add(new SubtitlePart(SubtitleType.AllGeneratorsEngaged, (string[])null));
+			DoorVariant[] containmentGates = _containmentGates;
+			for (int i = 0; i < containmentGates.Length; i++)
 			{
-				BasicDoor basicDoor = keyValuePair.Key as BasicDoor;
-				RoomIdentifier roomIdentifier;
-				if (basicDoor != null && !(basicDoor == null) && basicDoor.RequiredPermissions.RequiredPermissions == KeycardPermissions.None && RoomIdentifier.RoomsByCoordinates.TryGetValue(RoomUtils.PositionToCoords(basicDoor.transform.position), out roomIdentifier) && roomIdentifier.Zone == FacilityZone.HeavyContainment && !this._containmentGates.Contains(basicDoor))
+				if (containmentGates[i] is IScp106PassableDoor scp106PassableDoor)
 				{
-					BasicDoor basicDoor2 = basicDoor;
-					basicDoor2.NetworkTargetState = basicDoor2.TargetState && inProgress;
-					basicDoor.ServerChangeLock(DoorLockReason.NoPower, true);
-					this._lockedDoors.Add(basicDoor);
-				}
-			}
-			foreach (RoomLightController roomLightController in RoomLightController.Instances)
-			{
-				RoomIdentifier roomIdentifier2;
-				if (RoomIdentifier.RoomsByCoordinates.TryGetValue(RoomUtils.PositionToCoords(roomLightController.transform.position), out roomIdentifier2) && roomIdentifier2.Zone == FacilityZone.HeavyContainment)
-				{
-					roomLightController.ServerFlickerLights(this._lockdownDuration);
-				}
-			}
-			this.SetContainmentDoors(true, false);
-		}
-
-		private void EndOvercharge()
-		{
-			if (!this._success)
-			{
-				this.PlayAnnouncement(this._announcementFailure, 1f);
-				new SubtitleMessage(new SubtitlePart[]
-				{
-					new SubtitlePart(SubtitleType.OperationalMode, null)
-				}).SendToAuthenticated(0);
-			}
-			foreach (DoorVariant doorVariant in this._lockedDoors)
-			{
-				doorVariant.ServerChangeLock(DoorLockReason.NoPower, false);
-				ElevatorDoor elevatorDoor = doorVariant as ElevatorDoor;
-				if (elevatorDoor != null && elevatorDoor.Chamber.IsReadyForUserInput && elevatorDoor.Chamber.DestinationDoor == elevatorDoor)
-				{
-					doorVariant.NetworkTargetState = true;
+					scp106PassableDoor.IsScp106Passable = true;
 				}
 			}
 		}
+		new SubtitleMessage(list2.ToArray()).SendToAuthenticated();
+		PlayAnnouncement(text, 1f);
+	}
 
-		private bool TryKill079()
+	private void BeginOvercharge()
+	{
+		_success = TryKill079();
+		bool inProgress = AlphaWarheadController.InProgress;
+		foreach (KeyValuePair<IInteractable, Dictionary<byte, InteractableCollider>> allInstance in InteractableCollider.AllInstances)
 		{
-			bool flag = false;
-			HashSet<ReferenceHub> hashSet = new HashSet<ReferenceHub>();
-			using (HashSet<Scp079Role>.Enumerator enumerator = Scp079Role.ActiveInstances.GetEnumerator())
+			if (allInstance.Key is BasicDoor basicDoor && !(basicDoor == null) && basicDoor.RequiredPermissions.RequiredPermissions == DoorPermissionFlags.None && basicDoor.Rooms.Any((RoomIdentifier x) => x.Zone == FacilityZone.HeavyContainment) && !_containmentGates.Contains(basicDoor))
 			{
-				while (enumerator.MoveNext())
-				{
-					ReferenceHub referenceHub;
-					if (enumerator.Current.TryGetOwner(out referenceHub))
-					{
-						hashSet.Add(referenceHub);
-					}
-				}
+				basicDoor.NetworkTargetState = basicDoor.TargetState && inProgress;
+				basicDoor.ServerChangeLock(DoorLockReason.NoPower, newState: true);
+				_lockedDoors.Add(basicDoor);
 			}
-			foreach (ReferenceHub referenceHub2 in hashSet)
+		}
+		foreach (RoomLightController instance in RoomLightController.Instances)
+		{
+			if (instance.Room.Zone == FacilityZone.HeavyContainment)
 			{
-				flag = true;
-				if (this._activatorGlass.LastAttacker.IsSet)
+				instance.ServerFlickerLights(_lockdownDuration);
+			}
+		}
+		SetContainmentDoors(opened: true, locked: false);
+	}
+
+	private void EndOvercharge()
+	{
+		if (!_success)
+		{
+			PlayAnnouncement(_announcementFailure, 1f);
+			new SubtitleMessage(new SubtitlePart(SubtitleType.OperationalMode, (string[])null)).SendToAuthenticated();
+		}
+		foreach (DoorVariant lockedDoor in _lockedDoors)
+		{
+			lockedDoor.ServerChangeLock(DoorLockReason.NoPower, newState: false);
+			if (lockedDoor is ElevatorDoor elevatorDoor && elevatorDoor.Chamber.IsReadyForUserInput && elevatorDoor.Chamber.DestinationDoor == elevatorDoor)
+			{
+				lockedDoor.NetworkTargetState = true;
+			}
+		}
+	}
+
+	private bool TryKill079()
+	{
+		bool result = false;
+		HashSet<ReferenceHub> hashSet = new HashSet<ReferenceHub>();
+		foreach (Scp079Role activeInstance in Scp079Role.ActiveInstances)
+		{
+			if (activeInstance.TryGetOwner(out var hub))
+			{
+				hashSet.Add(hub);
+			}
+		}
+		foreach (ReferenceHub item in hashSet)
+		{
+			Scp079RecontainingEventArgs scp079RecontainingEventArgs = new Scp079RecontainingEventArgs(item, _activatorGlass.LastAttacker.Hub);
+			Scp079Events.OnRecontaining(scp079RecontainingEventArgs);
+			if (scp079RecontainingEventArgs.IsAllowed)
+			{
+				result = true;
+				if (_activatorGlass.LastAttacker.IsSet)
 				{
-					referenceHub2.playerStats.DealDamage(new RecontainmentDamageHandler(this._activatorGlass.LastAttacker));
+					item.playerStats.DealDamage(new RecontainmentDamageHandler(_activatorGlass.LastAttacker));
 				}
 				else
 				{
-					referenceHub2.playerStats.DealDamage(new UniversalDamageHandler(-1f, DeathTranslations.Recontained, null));
+					item.playerStats.DealDamage(new UniversalDamageHandler(-1f, DeathTranslations.Recontained));
 				}
+				Scp079Events.OnRecontained(new Scp079RecontainedEventArgs(item, _activatorGlass.LastAttacker.Hub));
 			}
-			return flag;
 		}
+		return result;
+	}
 
-		private void PlayAnnouncement(string annc, float glitchyMultiplier)
-		{
-			NineTailedFoxAnnouncer.singleton.ServerOnlyAddGlitchyPhrase(annc, 0.035f * glitchyMultiplier, 0.03f * glitchyMultiplier);
-		}
-
-		public static readonly HashSet<Scp079Generator> AllGenerators = new HashSet<Scp079Generator>();
-
-		[SerializeField]
-		private DoorVariant[] _containmentGates;
-
-		[SerializeField]
-		private float _activationDelay;
-
-		[SerializeField]
-		private float _lockdownDuration;
-
-		[SerializeField]
-		private Transform _activatorButton;
-
-		[SerializeField]
-		private BreakableWindow _activatorGlass;
-
-		[SerializeField]
-		private Vector3 _activatorPos;
-
-		[SerializeField]
-		private float _activatorLerpSpeed;
-
-		[SerializeField]
-		private string _announcementProgress;
-
-		[SerializeField]
-		private string _announcementAllActivated;
-
-		[SerializeField]
-		private string _announcementCountdown;
-
-		[SerializeField]
-		private string _announcementSuccess;
-
-		[SerializeField]
-		private string _announcementFailure;
-
-		private const float AnnouncementGlitchChance = 0.035f;
-
-		private const float AnnouncementJamChance = 0.03f;
-
-		private bool _alreadyRecontained;
-
-		private bool _success;
-
-		private int _prevEngaged;
-
-		private float _recontainLater;
-
-		private readonly Stopwatch _delayStopwatch = new Stopwatch();
-
-		private readonly Stopwatch _unlockStopwatch = new Stopwatch();
-
-		private readonly HashSet<DoorVariant> _lockedDoors = new HashSet<DoorVariant>();
+	private void PlayAnnouncement(string annc, float glitchyMultiplier)
+	{
+		NineTailedFoxAnnouncer.singleton.ServerOnlyAddGlitchyPhrase(annc, 0.035f * glitchyMultiplier, 0.03f * glitchyMultiplier);
 	}
 }

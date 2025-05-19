@@ -1,11 +1,9 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Waits
+namespace Waits;
+
+public abstract class Wait : MonoBehaviour
 {
-	public abstract class Wait : MonoBehaviour
-	{
-		public abstract IEnumerator<float> _Run();
-	}
+	public abstract IEnumerator<float> _Run();
 }

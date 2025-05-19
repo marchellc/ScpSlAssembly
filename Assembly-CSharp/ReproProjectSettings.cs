@@ -1,8 +1,16 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 public class ReproProjectSettings : ScriptableObject
 {
+	[Serializable]
+	public struct InputItem
+	{
+		public ReproProjectAssetType AssetType;
+
+		public string AssetPath;
+	}
+
 	public string ProjectName;
 
 	public string ProjectPath;
@@ -11,15 +19,7 @@ public class ReproProjectSettings : ScriptableObject
 
 	public int TextureScale;
 
-	public ReproProjectSettings.InputItem[] InputFiles;
+	public InputItem[] InputFiles;
 
-	public ReproProjectSettings.InputItem[] ProjectFiles;
-
-	[Serializable]
-	public struct InputItem
-	{
-		public ReproProjectAssetType AssetType;
-
-		public string AssetPath;
-	}
+	public InputItem[] ProjectFiles;
 }

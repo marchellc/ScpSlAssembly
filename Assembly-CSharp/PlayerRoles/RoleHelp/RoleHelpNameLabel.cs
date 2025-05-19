@@ -1,25 +1,21 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 
-namespace PlayerRoles.RoleHelp
+namespace PlayerRoles.RoleHelp;
+
+public class RoleHelpNameLabel : MonoBehaviour
 {
-	public class RoleHelpNameLabel : MonoBehaviour
+	[SerializeField]
+	private TMP_Text _text;
+
+	private const string NicknameFile = "Class_Nicknames";
+
+	private void Awake()
 	{
-		private void Awake()
+		if (ReferenceHub.TryGetLocalHub(out var hub))
 		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetLocalHub(out referenceHub))
-			{
-				return;
-			}
-			PlayerRoleBase currentRole = referenceHub.roleManager.CurrentRole;
-			this._text.text = string.Format(this._text.text, currentRole.RoleName, TranslationReader.Get("Class_Nicknames", (int)currentRole.RoleTypeId, "NO_TRANSLATION"));
+			PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
+			_text.text = string.Format(_text.text, currentRole.RoleName, TranslationReader.Get("Class_Nicknames", (int)currentRole.RoleTypeId));
 		}
-
-		[SerializeField]
-		private TMP_Text _text;
-
-		private const string NicknameFile = "Class_Nicknames";
 	}
 }

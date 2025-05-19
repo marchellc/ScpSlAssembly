@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using CustomPlayerEffects;
 using Mirror;
 using PlayerRoles.FirstPersonControl;
@@ -8,171 +8,155 @@ using PlayerStatsSystem;
 using UnityEngine;
 using Utils.Networking;
 
-namespace PlayerRoles.PlayableScps.Scp049
+namespace PlayerRoles.PlayableScps.Scp049;
+
+public class Scp049AttackAbility : KeySubroutine<Scp049Role>
 {
-	public class Scp049AttackAbility : KeySubroutine<Scp049Role>
+	private const float CooldownTime = 1.5f;
+
+	private const float LagBacktrackingCompensation = 0.4f;
+
+	private static int _attackLayerMask;
+
+	private const float AttackDistance = 1.728f;
+
+	[SerializeField]
+	private float _statusEffectDuration = 20f;
+
+	private bool _isInstaKillAttack;
+
+	private bool _isTarget;
+
+	private ReferenceHub _target;
+
+	private Scp049ResurrectAbility _resurrect;
+
+	private Scp049SenseAbility _sense;
+
+	public readonly AbilityCooldown Cooldown = new AbilityCooldown();
+
+	public AbilityHud AttackAbilityHUD;
+
+	internal static LayerMask AttackMask
 	{
-		internal static LayerMask AttackMask
+		get
 		{
-			get
+			if (_attackLayerMask == 0)
 			{
-				if (Scp049AttackAbility._attackLayerMask == 0)
-				{
-					Scp049AttackAbility._attackLayerMask = LayerMask.GetMask(new string[] { "Hitbox" }) | FpcStateProcessor.Mask;
-				}
-				return Scp049AttackAbility._attackLayerMask;
+				_attackLayerMask = LayerMask.GetMask("Hitbox") | (int)FpcStateProcessor.Mask;
 			}
+			return _attackLayerMask;
 		}
+	}
 
-		public event Action<ReferenceHub> OnServerHit;
+	protected override ActionName TargetKey => ActionName.Shoot;
 
-		protected override ActionName TargetKey
+	public event Action<ReferenceHub> OnServerHit;
+
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		if (!Cooldown.IsReady || _resurrect.IsInProgress)
 		{
-			get
-			{
-				return ActionName.Shoot;
-			}
+			return;
 		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
+		_target = reader.ReadReferenceHub();
+		if (!(_target == null) && IsTargetValid(_target))
 		{
-			if (!this.Cooldown.IsReady || this._resurrect.IsInProgress)
-			{
-				return;
-			}
-			this._target = reader.ReadReferenceHub();
-			if (this._target == null || !this.IsTargetValid(this._target))
-			{
-				return;
-			}
-			this.Cooldown.Trigger(1.5);
-			CardiacArrest effect = this._target.playerEffectsController.GetEffect<CardiacArrest>();
-			this._isInstaKillAttack = effect.IsEnabled;
-			this._isTarget = this._sense.IsTarget(this._target);
+			Cooldown.Trigger(1.5);
+			CardiacArrest effect = _target.playerEffectsController.GetEffect<CardiacArrest>();
+			_isInstaKillAttack = effect.IsEnabled;
+			_isTarget = _sense.IsTarget(_target);
 			if (effect.IsEnabled)
 			{
-				this._target.playerStats.DealDamage(new Scp049DamageHandler(base.Owner, -1f, Scp049DamageHandler.AttackType.Instakill));
+				_target.playerStats.DealDamage(new Scp049DamageHandler(base.Owner, -1f, Scp049DamageHandler.AttackType.Instakill));
 			}
 			else
 			{
 				effect.SetAttacker(base.Owner);
 				effect.Intensity = 1;
-				effect.ServerChangeDuration(this._statusEffectDuration, false);
+				effect.ServerChangeDuration(_statusEffectDuration);
 			}
-			Action<ReferenceHub> onServerHit = this.OnServerHit;
-			if (onServerHit != null)
-			{
-				onServerHit(this._target);
-			}
-			base.ServerSendRpc(true);
-			Hitmarker.SendHitmarkerDirectly(base.Owner, 1f, false);
+			this.OnServerHit?.Invoke(_target);
+			ServerSendRpc(toAll: true);
+			Hitmarker.SendHitmarkerDirectly(base.Owner, 1f, playAudio: false);
 		}
+	}
 
-		public override void ServerWriteRpc(NetworkWriter writer)
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		Cooldown.WriteCooldown(writer);
+		writer.WriteBool(_isInstaKillAttack);
+		writer.WriteBool(_isTarget);
+	}
+
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		Cooldown.ReadCooldown(reader);
+	}
+
+	public override void ClientWriteCmd(NetworkWriter writer)
+	{
+		writer.WriteReferenceHub(_target);
+	}
+
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		Cooldown.Clear();
+	}
+
+	protected override void Awake()
+	{
+		base.Awake();
+		GetSubroutine<Scp049ResurrectAbility>(out _resurrect);
+		GetSubroutine<Scp049SenseAbility>(out _sense);
+	}
+
+	protected override void OnKeyDown()
+	{
+		base.OnKeyDown();
+		if (Cooldown.IsReady && CanFindTarget(base.Owner.PlayerCameraReference, out _target))
 		{
-			this.Cooldown.WriteCooldown(writer);
-			writer.WriteBool(this._isInstaKillAttack);
-			writer.WriteBool(this._isTarget);
+			ClientSendCmd();
 		}
+	}
 
-		public override void ClientProcessRpc(NetworkReader reader)
+	private bool IsTargetValid(ReferenceHub target)
+	{
+		if (!(target.roleManager.CurrentRole is IFpcRole fpcRole))
 		{
-			this.Cooldown.ReadCooldown(reader);
+			return false;
 		}
-
-		public override void ClientWriteCmd(NetworkWriter writer)
+		if (!HitboxIdentity.IsEnemy(base.Owner, target))
 		{
-			writer.WriteReferenceHub(this._target);
+			return false;
 		}
-
-		public override void ResetObject()
+		if (base.Owner.isLocalPlayer)
 		{
-			base.ResetObject();
-			this.Cooldown.Clear();
-		}
-
-		protected override void Awake()
-		{
-			base.Awake();
-			base.GetSubroutine<Scp049ResurrectAbility>(out this._resurrect);
-			base.GetSubroutine<Scp049SenseAbility>(out this._sense);
-		}
-
-		protected override void OnKeyDown()
-		{
-			base.OnKeyDown();
-			if (!this.Cooldown.IsReady)
-			{
-				return;
-			}
-			if (!this.CanFindTarget(base.Owner.PlayerCameraReference, out this._target))
-			{
-				return;
-			}
-			base.ClientSendCmd();
-		}
-
-		private bool IsTargetValid(ReferenceHub target)
-		{
-			IFpcRole fpcRole = target.roleManager.CurrentRole as IFpcRole;
-			if (fpcRole == null)
-			{
-				return false;
-			}
-			if (!HitboxIdentity.IsEnemy(base.Owner, target))
-			{
-				return false;
-			}
-			if (base.Owner.isLocalPlayer)
-			{
-				return true;
-			}
-			Bounds bounds = fpcRole.FpcModule.Tracer.GenerateBounds(0.4f, true);
-			Vector3 position = base.CastRole.FpcModule.Position;
-			Vector3 vector = bounds.ClosestPoint(position);
-			return Vector3.Distance(position, vector) < 1.728f && !Physics.Linecast(position, vector, FpcStateProcessor.Mask);
-		}
-
-		private bool CanFindTarget(Transform camera, out ReferenceHub target)
-		{
-			target = null;
-			RaycastHit raycastHit;
-			if (!Physics.Raycast(camera.position, camera.forward, out raycastHit, 1.728f, Scp049AttackAbility.AttackMask))
-			{
-				return false;
-			}
-			HitboxIdentity hitboxIdentity;
-			if (!raycastHit.collider.TryGetComponent<HitboxIdentity>(out hitboxIdentity))
-			{
-				return false;
-			}
-			target = hitboxIdentity.TargetHub;
 			return true;
 		}
+		Bounds bounds = fpcRole.FpcModule.Tracer.GenerateBounds(0.4f, ignoreTeleports: true);
+		Vector3 position = base.CastRole.FpcModule.Position;
+		Vector3 vector = bounds.ClosestPoint(position);
+		if (Vector3.Distance(position, vector) >= 1.728f)
+		{
+			return false;
+		}
+		return !Physics.Linecast(position, vector, FpcStateProcessor.Mask);
+	}
 
-		private const float CooldownTime = 1.5f;
-
-		private const float LagBacktrackingCompensation = 0.4f;
-
-		private static int _attackLayerMask;
-
-		private const float AttackDistance = 1.728f;
-
-		[SerializeField]
-		private float _statusEffectDuration = 20f;
-
-		private bool _isInstaKillAttack;
-
-		private bool _isTarget;
-
-		private ReferenceHub _target;
-
-		private Scp049ResurrectAbility _resurrect;
-
-		private Scp049SenseAbility _sense;
-
-		public readonly AbilityCooldown Cooldown = new AbilityCooldown();
-
-		public AbilityHud AttackAbilityHUD;
+	private bool CanFindTarget(Transform camera, out ReferenceHub target)
+	{
+		target = null;
+		if (!Physics.Raycast(camera.position, camera.forward, out var hitInfo, 1.728f, AttackMask))
+		{
+			return false;
+		}
+		if (!hitInfo.collider.TryGetComponent<HitboxIdentity>(out var component))
+		{
+			return false;
+		}
+		target = component.TargetHub;
+		return true;
 	}
 }

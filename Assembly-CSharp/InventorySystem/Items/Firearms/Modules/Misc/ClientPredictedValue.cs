@@ -1,42 +1,41 @@
-﻿using System;
+using System;
 
-namespace InventorySystem.Items.Firearms.Modules.Misc
+namespace InventorySystem.Items.Firearms.Modules.Misc;
+
+public class ClientPredictedValue<T>
 {
-	public class ClientPredictedValue<T>
+	private readonly Func<T> _fetcher;
+
+	private readonly ClientRequestTimer _predictionTimeout;
+
+	private T _predicted;
+
+	public T Value
 	{
-		public T Value
+		get
 		{
-			get
+			if (_predictionTimeout.Busy)
 			{
-				if (this._predictionTimeout.Busy)
-				{
-					return this._predicted;
-				}
-				this._predicted = this._fetcher();
-				return this._predicted;
+				return _predicted;
 			}
-			set
-			{
-				this._predicted = value;
-				this._predictionTimeout.Trigger();
-			}
+			_predicted = _fetcher();
+			return _predicted;
 		}
-
-		public void ForceResync()
+		set
 		{
-			this._predictionTimeout.Reset();
+			_predicted = value;
+			_predictionTimeout.Trigger();
 		}
+	}
 
-		public ClientPredictedValue(Func<T> serverSyncvarFetcher)
-		{
-			this._fetcher = serverSyncvarFetcher;
-			this._predictionTimeout = new ClientRequestTimer();
-		}
+	public void ForceResync()
+	{
+		_predictionTimeout.Reset();
+	}
 
-		private readonly Func<T> _fetcher;
-
-		private readonly ClientRequestTimer _predictionTimeout;
-
-		private T _predicted;
+	public ClientPredictedValue(Func<T> serverSyncvarFetcher)
+	{
+		_fetcher = serverSyncvarFetcher;
+		_predictionTimeout = new ClientRequestTimer();
 	}
 }

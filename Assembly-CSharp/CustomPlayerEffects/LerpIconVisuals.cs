@@ -1,8 +1,5 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public class LerpIconVisuals : LerpVisualsBase
 {
-	public class LerpIconVisuals : LerpVisualsBase
-	{
-	}
 }

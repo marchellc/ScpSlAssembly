@@ -1,56 +1,54 @@
-﻿using System;
 using MapGeneration;
 using PlayerRoles.PlayableScps.Scp079.Cameras;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079.Overcons
+namespace PlayerRoles.PlayableScps.Scp079.Overcons;
+
+public class StandardOvercon : OverconBase
 {
-	public class StandardOvercon : OverconBase
+	[SerializeField]
+	private AnimationCurve _scaleOverDistance;
+
+	[SerializeField]
+	protected SpriteRenderer TargetSprite;
+
+	private const float SurfaceSizeScale = 2.5f;
+
+	public static Color HighlightedColor = new Color(1f, 1f, 1f, 1f);
+
+	public static Color NormalColor = new Color(1f, 1f, 1f, 0.27f);
+
+	public override bool IsHighlighted
 	{
-		public override bool IsHighlighted
+		get
 		{
-			get
-			{
-				return base.IsHighlighted;
-			}
-			internal set
-			{
-				this.TargetSprite.color = (value ? StandardOvercon.HighlightedColor : StandardOvercon.NormalColor);
-				base.IsHighlighted = value;
-			}
+			return base.IsHighlighted;
 		}
-
-		protected virtual void Awake()
+		internal set
 		{
-			this.TargetSprite.color = StandardOvercon.HighlightedColor;
+			TargetSprite.color = (value ? HighlightedColor : NormalColor);
+			base.IsHighlighted = value;
 		}
+	}
 
-		public void Rescale(Scp079Camera cam)
+	protected virtual void Awake()
+	{
+		TargetSprite.color = HighlightedColor;
+	}
+
+	public void Rescale(Scp079Camera cam)
+	{
+		Rescale(cam, Vector3.Distance(cam.Position, base.transform.position));
+	}
+
+	public void Rescale(Scp079Camera cam, float dis)
+	{
+		base.transform.LookAt(cam.Position);
+		float num = _scaleOverDistance.Evaluate(dis);
+		if (cam.Room.Zone == FacilityZone.Surface)
 		{
-			this.Rescale(cam, Vector3.Distance(cam.Position, base.transform.position));
+			num *= 2.5f;
 		}
-
-		public void Rescale(Scp079Camera cam, float dis)
-		{
-			base.transform.LookAt(cam.Position);
-			float num = this._scaleOverDistance.Evaluate(dis);
-			if (cam.Room.Zone == FacilityZone.Surface)
-			{
-				num *= 2.5f;
-			}
-			base.transform.localScale = Vector3.one * num;
-		}
-
-		[SerializeField]
-		private AnimationCurve _scaleOverDistance;
-
-		[SerializeField]
-		protected SpriteRenderer TargetSprite;
-
-		private const float SurfaceSizeScale = 2.5f;
-
-		public static Color HighlightedColor = new Color(1f, 1f, 1f, 1f);
-
-		public static Color NormalColor = new Color(1f, 1f, 1f, 0.27f);
+		base.transform.localScale = Vector3.one * num;
 	}
 }

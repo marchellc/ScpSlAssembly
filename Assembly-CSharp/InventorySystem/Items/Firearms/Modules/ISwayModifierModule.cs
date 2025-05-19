@@ -1,31 +1,10 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+public interface ISwayModifierModule
 {
-	public interface ISwayModifierModule
-	{
-		float WalkSwayScale
-		{
-			get
-			{
-				return 1f;
-			}
-		}
+	float WalkSwayScale => 1f;
 
-		float JumpSwayScale
-		{
-			get
-			{
-				return 1f;
-			}
-		}
+	float JumpSwayScale => 1f;
 
-		float BobbingSwayScale
-		{
-			get
-			{
-				return 1f;
-			}
-		}
-	}
+	float BobbingSwayScale => 1f;
 }

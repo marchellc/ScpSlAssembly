@@ -1,20 +1,17 @@
-﻿using System;
+namespace LiteNetLib;
 
-namespace LiteNetLib
+public enum DisconnectReason
 {
-	public enum DisconnectReason
-	{
-		ConnectionFailed,
-		Timeout,
-		HostUnreachable,
-		NetworkUnreachable,
-		RemoteConnectionClose,
-		DisconnectPeerCalled,
-		ConnectionRejected,
-		InvalidProtocol,
-		UnknownHost,
-		Reconnect,
-		PeerToPeerConnection,
-		PeerNotFound
-	}
+	ConnectionFailed,
+	Timeout,
+	HostUnreachable,
+	NetworkUnreachable,
+	RemoteConnectionClose,
+	DisconnectPeerCalled,
+	ConnectionRejected,
+	InvalidProtocol,
+	UnknownHost,
+	Reconnect,
+	PeerToPeerConnection,
+	PeerNotFound
 }

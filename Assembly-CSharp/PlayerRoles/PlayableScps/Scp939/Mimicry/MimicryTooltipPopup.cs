@@ -1,64 +1,62 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace PlayerRoles.PlayableScps.Scp939.Mimicry
-{
-	public class MimicryTooltipPopup : MonoBehaviour
-	{
-		private void Awake()
-		{
-			this._textLayout = this._text.GetComponent<LayoutElement>();
-		}
+namespace PlayerRoles.PlayableScps.Scp939.Mimicry;
 
-		private void Update()
+public class MimicryTooltipPopup : MonoBehaviour
+{
+	[SerializeField]
+	private TMP_Text _text;
+
+	[SerializeField]
+	private RectTransform _root;
+
+	[SerializeField]
+	private RectTransform _arrowOffset;
+
+	[SerializeField]
+	private float _panning;
+
+	private Scp939HudTranslation _prevHint;
+
+	private LayoutElement _textLayout;
+
+	private void Awake()
+	{
+		_textLayout = _text.GetComponent<LayoutElement>();
+	}
+
+	private void Update()
+	{
+		if (MimicryTooltipTarget.TryGetHint(out var hint))
 		{
-			Scp939HudTranslation scp939HudTranslation;
-			if (!MimicryTooltipTarget.TryGetHint(out scp939HudTranslation))
-			{
-				this._root.gameObject.SetActive(false);
-				return;
-			}
-			this._root.gameObject.SetActive(true);
+			_root.gameObject.SetActive(value: true);
 			float scaleFactor = MimicryMenuController.ScaleFactor;
 			float num = 1f / scaleFactor;
 			float num2 = Input.mousePosition.x * num;
-			float num3 = (Mathf.Min(this._text.preferredWidth, this._textLayout.preferredWidth) + this._panning) / 2f;
+			float num3 = (Mathf.Min(_text.preferredWidth, _textLayout.preferredWidth) + _panning) / 2f;
 			float num4 = (float)Screen.width * num;
-			float num5 = Mathf.Max(0f, num2 + num3 - num4);
-			num5 = Mathf.Min(num5, num2 - num3);
-			num2 -= num5;
+			float a = Mathf.Max(0f, num2 + num3 - num4);
+			a = Mathf.Min(a, num2 - num3);
+			num2 -= a;
 			num2 *= scaleFactor;
-			this._arrowOffset.localPosition = Vector3.right * num5;
+			_arrowOffset.localPosition = Vector3.right * a;
 			base.transform.position = new Vector3(num2, Input.mousePosition.y);
-			if (this._prevHint == scp939HudTranslation)
+			if (_prevHint != hint)
 			{
-				return;
+				_prevHint = hint;
+				_text.text = Translations.Get(hint);
 			}
-			this._prevHint = scp939HudTranslation;
-			this._text.text = Translations.Get<Scp939HudTranslation>(scp939HudTranslation);
 		}
-
-		private void LateUpdate()
+		else
 		{
-			this._textLayout.enabled = this._text.preferredWidth >= this._textLayout.preferredWidth;
+			_root.gameObject.SetActive(value: false);
 		}
+	}
 
-		[SerializeField]
-		private TMP_Text _text;
-
-		[SerializeField]
-		private RectTransform _root;
-
-		[SerializeField]
-		private RectTransform _arrowOffset;
-
-		[SerializeField]
-		private float _panning;
-
-		private Scp939HudTranslation _prevHint;
-
-		private LayoutElement _textLayout;
+	private void LateUpdate()
+	{
+		_textLayout.enabled = _text.preferredWidth >= _textLayout.preferredWidth;
 	}
 }

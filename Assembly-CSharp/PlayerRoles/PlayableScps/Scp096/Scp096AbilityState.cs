@@ -1,13 +1,10 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.Scp096;
 
-namespace PlayerRoles.PlayableScps.Scp096
+public enum Scp096AbilityState : byte
 {
-	public enum Scp096AbilityState : byte
-	{
-		None,
-		TryingNotToCry,
-		Attacking,
-		Charging,
-		PryingGate
-	}
+	None,
+	TryingNotToCry,
+	Attacking,
+	Charging,
+	PryingGate
 }

@@ -1,11 +1,10 @@
-﻿using System;
 using UnityEngine;
 
 public class NewMainMenu : MonoBehaviour
 {
 	public void QuitGame()
 	{
-		Shutdown.Quit(true, false);
+		Shutdown.Quit();
 	}
 
 	public void Refresh()

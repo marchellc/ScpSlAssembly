@@ -1,187 +1,174 @@
-﻿using System;
 using System.Collections.Generic;
 using PlayerRoles.Subroutines;
 using TMPro;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079.GUI
+namespace PlayerRoles.PlayableScps.Scp079.GUI;
+
+public class Scp079AbilityList : Scp079GuiElementBase
 {
-	public class Scp079AbilityList : Scp079GuiElementBase
+	[SerializeField]
+	private List<Scp079KeyAbilityGui> _mainGroupInstances = new List<Scp079KeyAbilityGui>();
+
+	[SerializeField]
+	private List<Scp079KeyAbilityGui> _leftGroupInstances = new List<Scp079KeyAbilityGui>();
+
+	[SerializeField]
+	private TextMeshProUGUI _failMessageText;
+
+	[SerializeField]
+	private AudioClip _popupSound;
+
+	private IScp079FailMessageProvider _trackedMessage;
+
+	private float _cachedAlpha = -1f;
+
+	private bool _failTextReady;
+
+	private float _fadeoutBeginTime;
+
+	private float _fadeoutEndTime;
+
+	private static Scp079AbilityList _singleton;
+
+	private const float TransitionSpeed = 5.5f;
+
+	private const float FadeoutDuration = 1.8f;
+
+	private const float SustainDuration = 4f;
+
+	private float FailMessageAlpha
 	{
-		private float FailMessageAlpha
+		get
 		{
-			get
+			if (_cachedAlpha < 0f)
 			{
-				if (this._cachedAlpha < 0f)
-				{
-					this._cachedAlpha = this._failMessageText.alpha;
-				}
-				return this._cachedAlpha;
+				_cachedAlpha = _failMessageText.alpha;
 			}
-			set
+			return _cachedAlpha;
+		}
+		set
+		{
+			value = Mathf.Clamp01(value);
+			if (value != _cachedAlpha)
 			{
-				value = Mathf.Clamp01(value);
-				if (value == this._cachedAlpha)
+				_failMessageText.alpha = value;
+				_cachedAlpha = value;
+			}
+		}
+	}
+
+	private static float CurrentTime => Time.timeSinceLevelLoad;
+
+	public IScp079FailMessageProvider TrackedFailMessage
+	{
+		get
+		{
+			return _trackedMessage;
+		}
+		set
+		{
+			bool flag = value == null || (value is Object @object && @object == null);
+			if (!flag)
+			{
+				value.OnFailMessageAssigned();
+				if (string.IsNullOrEmpty(value.FailMessage))
 				{
 					return;
 				}
-				this._failMessageText.alpha = value;
-				this._cachedAlpha = value;
+			}
+			_trackedMessage = value;
+			_failTextReady = false;
+			if (!flag)
+			{
+				_fadeoutBeginTime = CurrentTime + 4f;
+				_fadeoutEndTime = _fadeoutBeginTime + 1.8f;
+				PlaySound(_popupSound);
 			}
 		}
+	}
 
-		private static float CurrentTime
+	public static bool TryGetSingleton(out Scp079AbilityList singleton)
+	{
+		singleton = _singleton;
+		return singleton != null;
+	}
+
+	private void Awake()
+	{
+		_singleton = this;
+	}
+
+	private void Update()
+	{
+		UpdateFailMessage();
+		UpdateList();
+	}
+
+	private void UpdateFailMessage()
+	{
+		if (!_failTextReady || _trackedMessage == null || string.IsNullOrEmpty(_trackedMessage.FailMessage))
 		{
-			get
+			FailMessageAlpha -= Time.deltaTime * 5.5f;
+			if (FailMessageAlpha == 0f)
 			{
-				return Time.timeSinceLevelLoad;
+				_failTextReady = true;
 			}
 		}
-
-		public static Scp079AbilityList Singleton { get; private set; }
-
-		public IScp079FailMessageProvider TrackedFailMessage
+		else
 		{
-			get
+			float target = 1f - Mathf.InverseLerp(_fadeoutBeginTime, _fadeoutEndTime, CurrentTime);
+			FailMessageAlpha = Mathf.MoveTowards(FailMessageAlpha, target, Time.deltaTime * 5.5f);
+			_failMessageText.text = _trackedMessage.FailMessage;
+		}
+	}
+
+	private void UpdateList()
+	{
+		UpdateGroup(isLeft: true);
+		UpdateGroup(isLeft: false);
+	}
+
+	private void UpdateGroup(bool isLeft)
+	{
+		List<Scp079KeyAbilityGui> list = (isLeft ? _leftGroupInstances : _mainGroupInstances);
+		int num = 0;
+		int num2 = -1;
+		SubroutineBase[] allSubroutines = base.Role.SubroutineModule.AllSubroutines;
+		foreach (SubroutineBase subroutineBase in allSubroutines)
+		{
+			if (subroutineBase is Scp079LostSignalHandler { Lost: not false })
 			{
-				return this._trackedMessage;
+				num = 0;
+				break;
 			}
-			set
+			if (subroutineBase is Scp079KeyAbilityBase scp079KeyAbilityBase && scp079KeyAbilityBase.UseLeftMenu == isLeft && scp079KeyAbilityBase.IsVisible)
 			{
-				bool flag;
-				if (value != null)
+				bool createSpace;
+				if (scp079KeyAbilityBase.CategoryId != num2)
 				{
-					global::UnityEngine.Object @object = value as global::UnityEngine.Object;
-					flag = @object != null && @object == null;
+					createSpace = num2 != -1;
+					num2 = scp079KeyAbilityBase.CategoryId;
 				}
 				else
 				{
-					flag = true;
+					createSpace = false;
 				}
-				bool flag2 = flag;
-				if (!flag2)
+				list[num++].Setup(scp079KeyAbilityBase.IsReady, scp079KeyAbilityBase.AbilityName, scp079KeyAbilityBase.ActivationKey, createSpace);
+				if (num >= list.Count)
 				{
-					value.OnFailMessageAssigned();
-					if (string.IsNullOrEmpty(value.FailMessage))
-					{
-						return;
-					}
+					Scp079KeyAbilityGui scp079KeyAbilityGui = list[0];
+					list.Add(Object.Instantiate(scp079KeyAbilityGui, scp079KeyAbilityGui.transform.parent));
 				}
-				this._trackedMessage = value;
-				this._failTextReady = false;
-				if (flag2)
-				{
-					return;
-				}
-				this._fadeoutBeginTime = Scp079AbilityList.CurrentTime + 4f;
-				this._fadeoutEndTime = this._fadeoutBeginTime + 1.8f;
-				base.PlaySound(this._popupSound, 1f);
 			}
 		}
-
-		private void Awake()
+		if (!Scp079Role.LocalInstanceActive)
 		{
-			Scp079AbilityList.Singleton = this;
+			num = 0;
 		}
-
-		private void Update()
+		for (int j = num; j < list.Count; j++)
 		{
-			this.UpdateFailMessage();
-			this.UpdateList();
+			list[j].gameObject.SetActive(value: false);
 		}
-
-		private void UpdateFailMessage()
-		{
-			if (!this._failTextReady || this._trackedMessage == null || string.IsNullOrEmpty(this._trackedMessage.FailMessage))
-			{
-				this.FailMessageAlpha -= Time.deltaTime * 5.5f;
-				if (this.FailMessageAlpha == 0f)
-				{
-					this._failTextReady = true;
-				}
-				return;
-			}
-			float num = 1f - Mathf.InverseLerp(this._fadeoutBeginTime, this._fadeoutEndTime, Scp079AbilityList.CurrentTime);
-			this.FailMessageAlpha = Mathf.MoveTowards(this.FailMessageAlpha, num, Time.deltaTime * 5.5f);
-			this._failMessageText.text = this._trackedMessage.FailMessage;
-		}
-
-		private void UpdateList()
-		{
-			this.UpdateGroup(true);
-			this.UpdateGroup(false);
-		}
-
-		private void UpdateGroup(bool isLeft)
-		{
-			List<Scp079KeyAbilityGui> list = (isLeft ? this._leftGroupInstances : this._mainGroupInstances);
-			int num = 0;
-			int num2 = -1;
-			foreach (SubroutineBase subroutineBase in base.Role.SubroutineModule.AllSubroutines)
-			{
-				Scp079LostSignalHandler scp079LostSignalHandler = subroutineBase as Scp079LostSignalHandler;
-				if (scp079LostSignalHandler != null && scp079LostSignalHandler.Lost)
-				{
-					num = 0;
-					break;
-				}
-				Scp079KeyAbilityBase scp079KeyAbilityBase = subroutineBase as Scp079KeyAbilityBase;
-				if (scp079KeyAbilityBase != null && scp079KeyAbilityBase.UseLeftMenu == isLeft && scp079KeyAbilityBase.IsVisible)
-				{
-					bool flag;
-					if (scp079KeyAbilityBase.CategoryId != num2)
-					{
-						flag = num2 != -1;
-						num2 = scp079KeyAbilityBase.CategoryId;
-					}
-					else
-					{
-						flag = false;
-					}
-					list[num++].Setup(scp079KeyAbilityBase.IsReady, scp079KeyAbilityBase.AbilityName, scp079KeyAbilityBase.ActivationKey, flag);
-					if (num >= list.Count)
-					{
-						Scp079KeyAbilityGui scp079KeyAbilityGui = list[0];
-						list.Add(global::UnityEngine.Object.Instantiate<Scp079KeyAbilityGui>(scp079KeyAbilityGui, scp079KeyAbilityGui.transform.parent));
-					}
-				}
-			}
-			if (!Scp079Role.LocalInstanceActive)
-			{
-				num = 0;
-			}
-			for (int j = num; j < list.Count; j++)
-			{
-				list[j].gameObject.SetActive(false);
-			}
-		}
-
-		[SerializeField]
-		private List<Scp079KeyAbilityGui> _mainGroupInstances = new List<Scp079KeyAbilityGui>();
-
-		[SerializeField]
-		private List<Scp079KeyAbilityGui> _leftGroupInstances = new List<Scp079KeyAbilityGui>();
-
-		[SerializeField]
-		private TextMeshProUGUI _failMessageText;
-
-		[SerializeField]
-		private AudioClip _popupSound;
-
-		private IScp079FailMessageProvider _trackedMessage;
-
-		private float _cachedAlpha = -1f;
-
-		private bool _failTextReady;
-
-		private float _fadeoutBeginTime;
-
-		private float _fadeoutEndTime;
-
-		private const float TransitionSpeed = 5.5f;
-
-		private const float FadeoutDuration = 1.8f;
-
-		private const float SustainDuration = 4f;
 	}
 }

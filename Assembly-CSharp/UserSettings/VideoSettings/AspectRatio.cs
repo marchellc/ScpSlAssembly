@@ -1,20 +1,22 @@
-﻿using System;
 using UnityEngine;
 
-namespace UserSettings.VideoSettings
+namespace UserSettings.VideoSettings;
+
+public struct AspectRatio
 {
-	public struct AspectRatio
+	public float Horizontal;
+
+	public float Vertical;
+
+	public Vector2 RatioMinMax;
+
+	public bool CheckRes(Resolution res)
 	{
-		public bool CheckRes(Resolution res)
+		float num = (float)res.width / (float)res.height;
+		if (num >= RatioMinMax.x)
 		{
-			float num = (float)res.width / (float)res.height;
-			return num >= this.RatioMinMax.x && num <= this.RatioMinMax.y;
+			return num <= RatioMinMax.y;
 		}
-
-		public float Horizontal;
-
-		public float Vertical;
-
-		public Vector2 RatioMinMax;
+		return false;
 	}
 }

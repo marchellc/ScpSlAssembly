@@ -1,14 +1,11 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+[UniqueModule]
+public interface IAdsModule
 {
-	[UniqueModule]
-	public interface IAdsModule
-	{
-		bool AdsTarget { get; }
+	bool AdsTarget { get; }
 
-		float AdsAmount { get; }
+	float AdsAmount { get; }
 
-		void GetDisplayAdsValues(ushort serial, out bool adsTarget, out float adsAmount);
-	}
+	void GetDisplayAdsValues(ushort serial, out bool adsTarget, out float adsAmount);
 }

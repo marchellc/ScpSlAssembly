@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -11,20 +11,36 @@ using UnityEngine.SceneManagement;
 
 public static class TranslationReader
 {
+	private static string _translationPath;
+
+	public static readonly Dictionary<string, string[]> Elements;
+
+	public static readonly Dictionary<string, string[]> Fallback;
+
+	private static readonly Dictionary<string, Dictionary<int, Dictionary<string, int>>> _positions;
+
+	private static readonly Regex _matchFormat;
+
+	private static TMP_FontAsset[] defaultFallbacks;
+
+	public const string DefaultLanguage = "en";
+
+	public const string NoTranslation = "NO_TRANSLATION";
+
+	public const string TranslationDirectory = "Translations/";
+
 	public static string TranslationPath
 	{
 		get
 		{
-			return TranslationReader._translationPath;
+			return _translationPath;
 		}
 		private set
 		{
-			TranslationReader._translationPath = Path.GetFullPath(value);
-			TranslationReader.TranslationDirectoryName = Path.GetFileName(TranslationReader._translationPath);
+			_translationPath = Path.GetFullPath(value);
+			TranslationDirectoryName = Path.GetFileName(_translationPath);
 		}
 	}
-
-	public static event Action OnTranslationsRefreshed;
 
 	public static bool EverLoaded { get; private set; }
 
@@ -34,79 +50,78 @@ public static class TranslationReader
 
 	public static CultureInfo TranslationCulture { get; private set; }
 
+	public static event Action OnTranslationsRefreshed;
+
 	static TranslationReader()
 	{
-		TranslationReader.LoadPositions();
-		SceneManager.sceneLoaded += TranslationReader.OnSceneWasLoaded;
+		Elements = new Dictionary<string, string[]>();
+		Fallback = new Dictionary<string, string[]>();
+		_positions = new Dictionary<string, Dictionary<int, Dictionary<string, int>>>();
+		_matchFormat = new Regex("\\{.*?\\}|\\[.*?\\]");
+		LoadPositions();
+		SceneManager.sceneLoaded += OnSceneWasLoaded;
 	}
 
 	private static void OnSceneWasLoaded(Scene scene, LoadSceneMode mode)
 	{
 		PlayerPrefsSl.Refresh();
-		TranslationReader.Refresh();
+		Refresh();
 	}
 
 	public static void Refresh()
 	{
-		TranslationReader.TranslationPath = TranslationReader.GetTranslationPath();
-		TranslationReader.TranslationManifest = TranslationReader.LoadTranslation(TranslationReader.TranslationPath, TranslationReader.Elements);
-		TranslationReader.LoadTranslation(TranslationReader.CheckPath(Array.Empty<string>()), TranslationReader.Fallback);
-		TranslationReader.TranslationCulture = null;
-		foreach (string text in TranslationReader.TranslationManifest.InterfaceLocales ?? Array.Empty<string>())
+		TranslationPath = GetTranslationPath();
+		TranslationManifest = LoadTranslation(TranslationPath, Elements);
+		LoadTranslation(CheckPath(), Fallback);
+		TranslationCulture = null;
+		string[] array = TranslationManifest.InterfaceLocales ?? Array.Empty<string>();
+		foreach (string name in array)
 		{
 			try
 			{
-				TranslationReader.TranslationCulture = CultureInfo.GetCultureInfo(text);
-				break;
+				TranslationCulture = CultureInfo.GetCultureInfo(name);
 			}
 			catch
 			{
-				TranslationReader.TranslationCulture = null;
+				TranslationCulture = null;
+				continue;
 			}
+			break;
 		}
-		if (TranslationReader.TranslationCulture == null)
+		if (TranslationCulture == null)
 		{
-			TranslationReader.TranslationCulture = CultureInfo.CurrentCulture;
+			TranslationCulture = CultureInfo.CurrentCulture;
 		}
-		CultureInfo.CurrentCulture = TranslationReader.TranslationCulture;
-		CultureInfo.CurrentUICulture = TranslationReader.TranslationCulture;
-		TranslationReader.EverLoaded = true;
+		CultureInfo.CurrentCulture = TranslationCulture;
+		CultureInfo.CurrentUICulture = TranslationCulture;
+		EverLoaded = true;
 		Translations.ResetCache();
-		Action onTranslationsRefreshed = TranslationReader.OnTranslationsRefreshed;
-		if (onTranslationsRefreshed == null)
-		{
-			return;
-		}
-		onTranslationsRefreshed();
+		TranslationReader.OnTranslationsRefreshed?.Invoke();
 	}
 
 	private static string GetTranslationPath()
 	{
-		string text = TranslationReader.CheckPath(Array.Empty<string>());
-		if (text == null)
-		{
-			throw new DirectoryNotFoundException();
-		}
-		return text;
+		return CheckPath() ?? throw new DirectoryNotFoundException();
 	}
 
 	private static void LoadPositions()
 	{
-		foreach (string text in Directory.GetFiles(TranslationReader.CheckPath(Array.Empty<string>())))
+		string[] files = Directory.GetFiles(CheckPath());
+		foreach (string path in files)
 		{
-			string[] array = File.ReadAllLines(text);
+			string[] array = File.ReadAllLines(path);
 			Dictionary<int, Dictionary<string, int>> dictionary = new Dictionary<int, Dictionary<string, int>>();
 			for (int j = 0; j < array.Length; j++)
 			{
 				Dictionary<string, int> dictionary2 = new Dictionary<string, int>();
-				MatchCollection matchCollection = TranslationReader._matchFormat.Matches(array[j]);
+				MatchCollection matchCollection = _matchFormat.Matches(array[j]);
 				for (int k = 0; k < matchCollection.Count; k++)
 				{
 					dictionary2.TryAdd(matchCollection[k].Value, k);
 				}
 				dictionary.Add(j, dictionary2);
 			}
-			TranslationReader._positions.Add(Path.GetFileNameWithoutExtension(text), dictionary);
+			_positions.Add(Path.GetFileNameWithoutExtension(path), dictionary);
 		}
 	}
 
@@ -117,63 +132,57 @@ public static class TranslationReader
 		{
 			File.Delete(translationPath + "Legancy_Interfaces.txt");
 		}
-		foreach (string text in Directory.EnumerateFiles(translationPath, "*.txt"))
+		foreach (string item in Directory.EnumerateFiles(translationPath, "*.txt"))
 		{
-			string[] array = FileManager.ReadAllLines(text);
+			string[] array = FileManager.ReadAllLines(item);
 			for (int i = 0; i < array.Length; i++)
 			{
 				array[i] = array[i].Replace("\\n", Environment.NewLine);
-				foreach (object obj in TranslationReader._matchFormat.Matches(array[i]))
+				foreach (Match item2 in _matchFormat.Matches(array[i]))
 				{
-					Match match = (Match)obj;
-					Dictionary<int, Dictionary<string, int>> dictionary2;
-					Dictionary<string, int> dictionary3;
-					int num;
-					if (TranslationReader._positions.TryGetValue(Path.GetFileNameWithoutExtension(text), out dictionary2) && dictionary2.TryGetValue(i, out dictionary3) && dictionary3.TryGetValue(match.Value, out num))
+					if (_positions.TryGetValue(Path.GetFileNameWithoutExtension(item), out var value) && value.TryGetValue(i, out var value2) && value2.TryGetValue(item2.Value, out var value3))
 					{
-						array[i] = array[i].Replace(match.Value, "{" + num.ToString() + "}");
+						array[i] = array[i].Replace(item2.Value, "{" + value3 + "}");
 					}
 				}
 			}
-			string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(text);
+			string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(item);
 			dictionary[(fileNameWithoutExtension == "Legancy_Interfaces") ? "Legacy_Interfaces" : fileNameWithoutExtension] = array;
 		}
-		TranslationManifest translationManifest;
 		try
 		{
-			translationManifest = JsonSerialize.FromFile<TranslationManifest>(Path.Combine(translationPath, "manifest.json"));
+			return JsonSerialize.FromFile<TranslationManifest>(Path.Combine(translationPath, "manifest.json"));
 		}
 		catch (FileNotFoundException)
 		{
-			translationManifest = new TranslationManifest(Path.GetFileName(translationPath), Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>());
+			return new TranslationManifest(Path.GetFileName(translationPath), Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>());
 		}
-		return translationManifest;
 	}
 
 	private static string CheckPath(params string[] suffixes)
 	{
 		if (suffixes == null || suffixes.Length == 0)
 		{
-			return TranslationReader.CheckDefaultLangPath();
+			return CheckDefaultLangPath();
 		}
 		foreach (string text in suffixes)
 		{
 			if (!string.IsNullOrWhiteSpace(text))
 			{
 				string text2 = Path.Combine("Translations/", text);
-				if (TranslationReader.CheckPathInternal(text2))
+				if (CheckPathInternal(text2))
 				{
 					return text2;
 				}
 			}
 		}
-		return TranslationReader.CheckDefaultLangPath();
+		return CheckDefaultLangPath();
 	}
 
 	private static string CheckDefaultLangPath()
 	{
 		string text = Path.Combine("Translations/", "en");
-		if (!TranslationReader.CheckPathInternal(text))
+		if (!CheckPathInternal(text))
 		{
 			return null;
 		}
@@ -182,7 +191,11 @@ public static class TranslationReader
 
 	private static bool CheckPathInternal(string path)
 	{
-		return Directory.Exists(path) && Directory.EnumerateFileSystemEntries(path).Any<string>();
+		if (Directory.Exists(path))
+		{
+			return Directory.EnumerateFileSystemEntries(path).Any();
+		}
+		return false;
 	}
 
 	public static string[] GetKeys(string keyName)
@@ -191,10 +204,9 @@ public static class TranslationReader
 		{
 			keyName = "Legacy_Interfaces";
 		}
-		string[] array;
-		if (TranslationReader.Fallback.TryGetValue(keyName, out array))
+		if (Fallback.TryGetValue(keyName, out var value))
 		{
-			return array;
+			return value;
 		}
 		Debug.LogWarning("Tried to get **FALLBACK** translation from nonexistent file " + keyName);
 		return null;
@@ -206,47 +218,42 @@ public static class TranslationReader
 		{
 			keyName = "Legacy_Interfaces";
 		}
-		string[] array;
-		if (!TranslationReader.Fallback.TryGetValue(keyName, out array))
+		if (!Fallback.TryGetValue(keyName, out var value))
 		{
 			return null;
 		}
-		return array;
+		return value;
 	}
 
 	public static string Get(string keyName, int index, string defaultValue = "NO_TRANSLATION")
 	{
-		if (global::GameCore.Console.TranslationDebugMode)
+		if (GameCore.Console.TranslationDebugMode)
 		{
-			return string.Format("{0}:{1}", keyName, index);
+			return $"{keyName}:{index}";
 		}
 		if (keyName == "Legancy_Interfaces")
 		{
 			keyName = "Legacy_Interfaces";
 		}
-		return TranslationReader.GetFallback(keyName, index, defaultValue) ?? defaultValue;
+		return GetFallback(keyName, index, defaultValue) ?? defaultValue;
 	}
 
 	public static bool TryGet(string keyName, int index, out string val)
 	{
-		string[] array;
-		string text;
-		if (TranslationReader.Fallback.TryGetValue(keyName, out array) && array.TryGet(index, out text) && !string.IsNullOrWhiteSpace(text))
+		if (Fallback.TryGetValue(keyName, out var value) && value.TryGet(index, out var element) && !string.IsNullOrWhiteSpace(element))
 		{
-			val = text;
+			val = element;
 			return true;
 		}
-		val = TranslationReader.GetFallback(keyName, index, "NO_TRANSLATION");
+		val = GetFallback(keyName, index, "NO_TRANSLATION");
 		return false;
 	}
 
 	private static string GetFallback(string keyName, int index, string defaultvalue)
 	{
-		string[] array;
-		string text;
-		if (TranslationReader.Fallback.TryGetValue(keyName, out array) && array.TryGet(index, out text) && !string.IsNullOrWhiteSpace(text))
+		if (Fallback.TryGetValue(keyName, out var value) && value.TryGet(index, out var element) && !string.IsNullOrWhiteSpace(element))
 		{
-			return text;
+			return element;
 		}
 		Debug.LogWarning(string.Format("Missing **FALLBACK** translation! {0}:{1}. Default value: {2}", keyName, index, defaultvalue.Replace("<", "(<)")));
 		return null;
@@ -254,39 +261,21 @@ public static class TranslationReader
 
 	public static string GetFormatted(string keyName, int index, string defaultvalue, object obj1)
 	{
-		return string.Format(TranslationReader.Get(keyName, index, defaultvalue), obj1);
+		return string.Format(Get(keyName, index, defaultvalue), obj1);
 	}
 
 	public static string GetFormatted(string keyName, int index, string defaultvalue, object obj1, object obj2)
 	{
-		return string.Format(TranslationReader.Get(keyName, index, defaultvalue), obj1, obj2);
+		return string.Format(Get(keyName, index, defaultvalue), obj1, obj2);
 	}
 
 	public static string GetFormatted(string keyName, int index, string defaultvalue, object obj1, object obj2, object obj3)
 	{
-		return string.Format(TranslationReader.Get(keyName, index, defaultvalue), obj1, obj2, obj3);
+		return string.Format(Get(keyName, index, defaultvalue), obj1, obj2, obj3);
 	}
 
 	public static string GetFormatted(string keyName, int index, string defaultvalue, params object[] format)
 	{
-		return string.Format(TranslationReader.Get(keyName, index, defaultvalue), format);
+		return string.Format(Get(keyName, index, defaultvalue), format);
 	}
-
-	private static string _translationPath;
-
-	public static readonly Dictionary<string, string[]> Elements = new Dictionary<string, string[]>();
-
-	public static readonly Dictionary<string, string[]> Fallback = new Dictionary<string, string[]>();
-
-	private static readonly Dictionary<string, Dictionary<int, Dictionary<string, int>>> _positions = new Dictionary<string, Dictionary<int, Dictionary<string, int>>>();
-
-	private static readonly Regex _matchFormat = new Regex("\\{.*?\\}|\\[.*?\\]");
-
-	private static TMP_FontAsset[] defaultFallbacks;
-
-	public const string DefaultLanguage = "en";
-
-	public const string NoTranslation = "NO_TRANSLATION";
-
-	public const string TranslationDirectory = "Translations/";
 }

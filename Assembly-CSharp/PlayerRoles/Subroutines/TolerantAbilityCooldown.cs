@@ -1,33 +1,27 @@
-﻿using System;
 using Mirror;
 
-namespace PlayerRoles.Subroutines
+namespace PlayerRoles.Subroutines;
+
+public class TolerantAbilityCooldown : AbilityCooldown
 {
-	public class TolerantAbilityCooldown : AbilityCooldown
+	private readonly double _tolerance;
+
+	public bool TolerantIsReady => NetworkTime.time >= base.NextUse - _tolerance;
+
+	public TolerantAbilityCooldown(float tolerance = 0.2f)
 	{
-		public bool TolerantIsReady
-		{
-			get
-			{
-				return NetworkTime.time >= base.NextUse - this._tolerance;
-			}
-		}
+		_tolerance = tolerance;
+	}
 
-		public TolerantAbilityCooldown(float tolerance = 0.2f)
+	public override void Trigger(double cooldown)
+	{
+		if (IsReady)
 		{
-			this._tolerance = (double)tolerance;
+			base.Trigger(cooldown);
 		}
-
-		public override void Trigger(double cooldown)
+		else
 		{
-			if (this.IsReady)
-			{
-				base.Trigger(cooldown);
-				return;
-			}
 			base.NextUse += cooldown;
 		}
-
-		private readonly double _tolerance;
 	}
 }

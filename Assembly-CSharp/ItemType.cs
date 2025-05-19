@@ -1,5 +1,3 @@
-﻿using System;
-
 public enum ItemType
 {
 	None = -1,
@@ -62,5 +60,12 @@ public enum ItemType
 	Snowball,
 	Coal,
 	SpecialCoal,
-	SCP1507Tape
+	SCP1507Tape,
+	DebugRagdollMover,
+	SurfaceAccessPass,
+	GunSCP127,
+	KeycardCustomTaskForce,
+	KeycardCustomSite02,
+	KeycardCustomManagement,
+	KeycardCustomMetalCase
 }

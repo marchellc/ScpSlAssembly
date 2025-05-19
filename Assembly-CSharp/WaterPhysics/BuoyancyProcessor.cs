@@ -1,42 +1,41 @@
-﻿using System;
 using UnityEngine;
 
-namespace WaterPhysics
+namespace WaterPhysics;
+
+public static class BuoyancyProcessor
 {
-	public static class BuoyancyProcessor
+	private const float FullCullTime = 100f;
+
+	private const float StartCullTime = 80f;
+
+	public static void ProcessNew(Rigidbody rb, BuoyancyMode mode)
 	{
-		public static void ProcessNew(Rigidbody rb, BuoyancyMode mode)
+		switch (mode)
 		{
-			switch (mode)
-			{
-			case BuoyancyMode.SuperHeavy:
-			case BuoyancyMode.Floater:
-				rb.drag = 1.7f;
-				return;
-			case BuoyancyMode.NonBuoyant:
-			case BuoyancyMode.ShortTimeFloaters:
-			case BuoyancyMode.LongTimeFloaters:
-				rb.drag = 2f;
-				return;
-			case BuoyancyMode.SuperLight:
-				rb.drag = 0.5f;
-				return;
-			default:
-				return;
-			}
+		case BuoyancyMode.SuperLight:
+			rb.linearDamping = 0.5f;
+			break;
+		case BuoyancyMode.SuperHeavy:
+		case BuoyancyMode.Floater:
+			rb.linearDamping = 1.7f;
+			break;
+		case BuoyancyMode.NonBuoyant:
+		case BuoyancyMode.ShortTimeFloaters:
+		case BuoyancyMode.LongTimeFloaters:
+			rb.linearDamping = 2f;
+			break;
 		}
+	}
 
-		public static void ProcessExit(Rigidbody rb)
-		{
-			rb.drag = 0f;
-		}
+	public static void ProcessExit(Rigidbody rb)
+	{
+		rb.linearDamping = 0f;
+	}
 
-		public static void ProcessFixedUpdate(Rigidbody rb, BuoyancyMode mode, float stayTime, float submergeRatio, Vector3 flow)
+	public static void ProcessFixedUpdate(Rigidbody rb, BuoyancyMode mode, float stayTime, float submergeRatio, Vector3 flow)
+	{
+		if (!(stayTime > 100f))
 		{
-			if (stayTime > 100f)
-			{
-				return;
-			}
 			float num = 1f - Mathf.InverseLerp(80f, 100f, stayTime);
 			if (rb.mass < 0.2f)
 			{
@@ -46,6 +45,8 @@ namespace WaterPhysics
 			float num2;
 			switch (mode)
 			{
+			default:
+				return;
 			case BuoyancyMode.SuperHeavy:
 				return;
 			case BuoyancyMode.NonBuoyant:
@@ -63,15 +64,9 @@ namespace WaterPhysics
 			case BuoyancyMode.SuperLight:
 				num2 = 10f;
 				break;
-			default:
-				return;
 			}
 			Vector3 vector = num2 * submergeRatio * Time.fixedDeltaTime * -Physics.gravity;
 			rb.AddForce(vector * num, ForceMode.VelocityChange);
 		}
-
-		private const float FullCullTime = 100f;
-
-		private const float StartCullTime = 80f;
 	}
 }

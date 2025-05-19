@@ -1,79 +1,61 @@
-﻿using System;
 using Mirror;
 using PlayerRoles;
 using RemoteAdmin.Interfaces;
+using UserSettings;
+using UserSettings.VideoSettings;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class InsufficientLighting : StatusEffectBase, ICustomRADisplay
 {
-	public class InsufficientLighting : StatusEffectBase, ICustomRADisplay
+	private static readonly CachedUserSetting<bool> RenderLights = new CachedUserSetting<bool>(LightingVideoSetting.RenderLights);
+
+	private bool _prevTarget;
+
+	private const float NoLightsAmbient = 0.03f;
+
+	private PlayerRoleBase CurRole => base.Hub.roleManager.CurrentRole;
+
+	public string DisplayName { get; }
+
+	public bool CanBeDisplayed { get; }
+
+	public override EffectClassification Classification => EffectClassification.Technical;
+
+	public static float DefaultIntensity => 0f;
+
+	internal override void OnRoleChanged(PlayerRoleBase previousRole, PlayerRoleBase newRole)
 	{
-		private PlayerRoleBase CurRole
+		base.OnRoleChanged(previousRole, newRole);
+		_prevTarget = false;
+	}
+
+	protected override void Start()
+	{
+		base.Start();
+		StaticUnityMethods.OnUpdate += AlwaysUpdate;
+	}
+
+	private void OnDestroy()
+	{
+		StaticUnityMethods.OnUpdate -= AlwaysUpdate;
+	}
+
+	private void AlwaysUpdate()
+	{
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return base.Hub.roleManager.CurrentRole;
-			}
+			UpdateServer();
 		}
+	}
 
-		public string DisplayName { get; }
-
-		public bool CanBeDisplayed { get; }
-
-		public override StatusEffectBase.EffectClassification Classification
+	private void UpdateServer()
+	{
+		bool flag = CurRole is IAmbientLightRole ambientLightRole && ambientLightRole.InsufficientLight;
+		if (flag != _prevTarget)
 		{
-			get
-			{
-				return StatusEffectBase.EffectClassification.Technical;
-			}
+			base.Intensity = (byte)(flag ? 1u : 0u);
+			_prevTarget = flag;
 		}
-
-		public static float DefaultIntensity
-		{
-			get
-			{
-				return 0f;
-			}
-		}
-
-		internal override void OnRoleChanged(PlayerRoleBase previousRole, PlayerRoleBase newRole)
-		{
-			base.OnRoleChanged(previousRole, newRole);
-			this._prevTarget = false;
-		}
-
-		protected override void Start()
-		{
-			base.Start();
-			StaticUnityMethods.OnUpdate += this.AlwaysUpdate;
-		}
-
-		private void OnDestroy()
-		{
-			StaticUnityMethods.OnUpdate -= this.AlwaysUpdate;
-		}
-
-		private void AlwaysUpdate()
-		{
-			if (NetworkServer.active)
-			{
-				this.UpdateServer();
-			}
-		}
-
-		private void UpdateServer()
-		{
-			IAmbientLightRole ambientLightRole = this.CurRole as IAmbientLightRole;
-			bool flag = ambientLightRole != null && ambientLightRole.InsufficientLight;
-			if (flag == this._prevTarget)
-			{
-				return;
-			}
-			base.Intensity = (flag ? 1 : 0);
-			this._prevTarget = flag;
-		}
-
-		private bool _prevTarget;
-
-		private const float NoLightsAmbient = 0.03f;
 	}
 }

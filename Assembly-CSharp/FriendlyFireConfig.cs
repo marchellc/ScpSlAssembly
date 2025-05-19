@@ -1,26 +1,7 @@
-﻿using System;
 using System.Globalization;
 
 internal static class FriendlyFireConfig
 {
-	internal static FriendlyFireAction ParseAction(string action)
-	{
-		string text = action.ToLower(CultureInfo.InvariantCulture);
-		if (text == "kill")
-		{
-			return FriendlyFireAction.Kill;
-		}
-		if (text == "kick")
-		{
-			return FriendlyFireAction.Kick;
-		}
-		if (!(text == "ban"))
-		{
-			return FriendlyFireAction.Noop;
-		}
-		return FriendlyFireAction.Ban;
-	}
-
 	internal static bool RoundEnabled;
 
 	internal static bool LifeEnabled;
@@ -128,4 +109,15 @@ internal static class FriendlyFireConfig
 	internal static string WebhookUrl;
 
 	internal static bool PauseDetector;
+
+	internal static FriendlyFireAction ParseAction(string action)
+	{
+		return action.ToLower(CultureInfo.InvariantCulture) switch
+		{
+			"kill" => FriendlyFireAction.Kill, 
+			"kick" => FriendlyFireAction.Kick, 
+			"ban" => FriendlyFireAction.Ban, 
+			_ => FriendlyFireAction.Noop, 
+		};
+	}
 }

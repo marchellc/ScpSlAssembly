@@ -1,11 +1,9 @@
-﻿using System;
 using Mirror;
 
-namespace Interactables
+namespace Interactables;
+
+public interface IClientInteractable : IInteractable
 {
-	public interface IClientInteractable : IInteractable
-	{
-		[Client]
-		void ClientInteract(InteractableCollider collider);
-	}
+	[Client]
+	void ClientInteract(InteractableCollider collider);
 }

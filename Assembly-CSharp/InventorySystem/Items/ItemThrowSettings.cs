@@ -1,13 +1,12 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace InventorySystem.Items
-{
-	[Serializable]
-	public struct ItemThrowSettings
-	{
-		public Vector3 RandomTorqueA;
+namespace InventorySystem.Items;
 
-		public Vector3 RandomTorqueB;
-	}
+[Serializable]
+public struct ItemThrowSettings
+{
+	public Vector3 RandomTorqueA;
+
+	public Vector3 RandomTorqueB;
 }

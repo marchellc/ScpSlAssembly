@@ -1,27 +1,25 @@
-﻿using System;
 using Mirror;
 
-namespace RoundRestarting
+namespace RoundRestarting;
+
+public readonly struct RoundRestartMessage : NetworkMessage
 {
-	public readonly struct RoundRestartMessage : NetworkMessage
+	public readonly RoundRestartType Type;
+
+	public readonly float TimeOffset;
+
+	public readonly ushort NewPort;
+
+	public readonly bool Reconnect;
+
+	public readonly bool ExtendedReconnectionPeriod;
+
+	public RoundRestartMessage(RoundRestartType type, float offset, ushort newport, bool reconnect, bool extendedReconnectionPeriod)
 	{
-		public RoundRestartMessage(RoundRestartType type, float offset, ushort newport, bool reconnect, bool extendedReconnectionPeriod)
-		{
-			this.Type = type;
-			this.TimeOffset = offset;
-			this.NewPort = newport;
-			this.Reconnect = reconnect;
-			this.ExtendedReconnectionPeriod = extendedReconnectionPeriod;
-		}
-
-		public readonly RoundRestartType Type;
-
-		public readonly float TimeOffset;
-
-		public readonly ushort NewPort;
-
-		public readonly bool Reconnect;
-
-		public readonly bool ExtendedReconnectionPeriod;
+		Type = type;
+		TimeOffset = offset;
+		NewPort = newport;
+		Reconnect = reconnect;
+		ExtendedReconnectionPeriod = extendedReconnectionPeriod;
 	}
 }

@@ -1,11 +1,8 @@
-﻿using System;
+namespace UserSettings.OtherSettings;
 
-namespace UserSettings.OtherSettings
+public enum SteamLobbyPrivacy
 {
-	public enum SteamLobbyPrivacy
-	{
-		Private,
-		Friends,
-		Public
-	}
+	Private,
+	Friends,
+	Public
 }

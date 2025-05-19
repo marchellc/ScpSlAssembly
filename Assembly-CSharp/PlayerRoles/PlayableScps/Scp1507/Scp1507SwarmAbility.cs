@@ -1,168 +1,151 @@
-﻿using System;
 using System.Collections.Generic;
 using Mirror;
 using PlayerRoles.Subroutines;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp1507
+namespace PlayerRoles.PlayableScps.Scp1507;
+
+public class Scp1507SwarmAbility : StandardSubroutine<Scp1507Role>
 {
-	public class Scp1507SwarmAbility : StandardSubroutine<Scp1507Role>
+	private const float RegenCombatCooldown = 0.7f;
+
+	private const float EffectRange = 7.5f;
+
+	private const float BaseHealthRegenRate = 1f;
+
+	private const float EffectRangeSqr = 56.25f;
+
+	private const float AdjustSpeed = 0.6f;
+
+	private readonly HashSet<Scp1507Role> _nearbyFlamingos = new HashSet<Scp1507Role>();
+
+	private readonly HashSet<Scp1507Role> _entireFlock = new HashSet<Scp1507Role>();
+
+	private byte _flockSize;
+
+	private float _regenCooldown;
+
+	private HealthStat _healthStat;
+
+	public int FlockSize => _flockSize;
+
+	public float Multiplier { get; private set; }
+
+	private void UpdateMultiplier()
 	{
-		public int FlockSize
+		Multiplier = Mathf.MoveTowards(Multiplier, FlockSize, 0.6f * Time.deltaTime);
+	}
+
+	private void Update()
+	{
+		UpdateMultiplier();
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return (int)this._flockSize;
-			}
+			ServerUpdateNearby();
+			ServerUpdateFlock();
+			ServerUpdateHealthRegen();
 		}
+	}
 
-		public float Multiplier { get; private set; }
-
-		private void UpdateMultiplier()
+	private void ServerUpdateNearby()
+	{
+		Vector3 position = base.CastRole.FpcModule.Position;
+		_nearbyFlamingos.Clear();
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			this.Multiplier = Mathf.MoveTowards(this.Multiplier, (float)this.FlockSize, 0.6f * Time.deltaTime);
-		}
-
-		private void Update()
-		{
-			this.UpdateMultiplier();
-			if (!NetworkServer.active)
+			if (allHub.roleManager.CurrentRole is Scp1507Role { Team: Team.Flamingos } scp1507Role)
 			{
-				return;
-			}
-			this.ServerUpdateNearby();
-			this.ServerUpdateFlock();
-			this.ServerUpdateHealthRegen();
-		}
-
-		private void ServerUpdateNearby()
-		{
-			Vector3 position = base.CastRole.FpcModule.Position;
-			this._nearbyFlamingos.Clear();
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				Scp1507Role scp1507Role = referenceHub.roleManager.CurrentRole as Scp1507Role;
-				if (scp1507Role != null && scp1507Role.Team == Team.Flamingos)
+				Vector3 position2 = scp1507Role.FpcModule.Position;
+				if (!((position - position2).sqrMagnitude > 56.25f))
 				{
-					Vector3 position2 = scp1507Role.FpcModule.Position;
-					if ((position - position2).sqrMagnitude <= 56.25f)
-					{
-						this._nearbyFlamingos.Add(scp1507Role);
-					}
+					_nearbyFlamingos.Add(scp1507Role);
 				}
 			}
 		}
+	}
 
-		private void ServerUpdateFlock()
+	private void ServerUpdateFlock()
+	{
+		_entireFlock.Clear();
+		foreach (Scp1507Role nearbyFlamingo in _nearbyFlamingos)
 		{
-			this._entireFlock.Clear();
-			foreach (Scp1507Role scp1507Role in this._nearbyFlamingos)
+			_entireFlock.Add(nearbyFlamingo);
+			if (!nearbyFlamingo.SubroutineModule.TryGetSubroutine<Scp1507SwarmAbility>(out var subroutine))
 			{
-				this._entireFlock.Add(scp1507Role);
-				Scp1507SwarmAbility scp1507SwarmAbility;
-				if (scp1507Role.SubroutineModule.TryGetSubroutine<Scp1507SwarmAbility>(out scp1507SwarmAbility))
-				{
-					foreach (Scp1507Role scp1507Role2 in scp1507SwarmAbility._nearbyFlamingos)
-					{
-						this._entireFlock.Add(scp1507Role2);
-					}
-				}
+				continue;
 			}
-			int num = Mathf.Max(0, this._entireFlock.Count - 1);
-			if (num == (int)this._flockSize)
+			foreach (Scp1507Role nearbyFlamingo2 in subroutine._nearbyFlamingos)
 			{
-				return;
+				_entireFlock.Add(nearbyFlamingo2);
 			}
-			this._flockSize = (byte)num;
-			base.ServerSendRpc(true);
 		}
-
-		private void ServerUpdateHealthRegen()
+		int num = Mathf.Max(0, _entireFlock.Count - 1);
+		if (num != _flockSize)
 		{
-			if (this._regenCooldown >= 0.7f)
-			{
-				this._regenCooldown -= Time.deltaTime;
-				return;
-			}
-			this._healthStat.ServerHeal(this.Multiplier * 1f * Time.deltaTime);
+			_flockSize = (byte)num;
+			ServerSendRpc(toAll: true);
 		}
+	}
 
-		private void OnPlayerDamaged(ReferenceHub victim, DamageHandlerBase dhb)
+	private void ServerUpdateHealthRegen()
+	{
+		if (_regenCooldown >= 0.7f)
 		{
-			if (victim == base.Owner)
-			{
-				this.InitiateCombatTime();
-				return;
-			}
-			AttackerDamageHandler attackerDamageHandler = dhb as AttackerDamageHandler;
-			if (attackerDamageHandler == null)
-			{
-				return;
-			}
-			if (attackerDamageHandler.Attacker.Hub != base.Owner)
-			{
-				return;
-			}
-			this.InitiateCombatTime();
+			_regenCooldown -= Time.deltaTime;
 		}
-
-		private void InitiateCombatTime()
+		else
 		{
-			this._regenCooldown = 0.7f;
+			_healthStat.ServerHeal(Multiplier * 1f * Time.deltaTime);
 		}
+	}
 
-		public override void ServerWriteRpc(NetworkWriter writer)
+	private void OnPlayerDamaged(ReferenceHub victim, DamageHandlerBase dhb)
+	{
+		if (victim == base.Owner)
 		{
-			base.ServerWriteRpc(writer);
-			writer.WriteByte(this._flockSize);
+			InitiateCombatTime();
 		}
-
-		public override void ClientProcessRpc(NetworkReader reader)
+		else if (dhb is AttackerDamageHandler attackerDamageHandler && !(attackerDamageHandler.Attacker.Hub != base.Owner))
 		{
-			base.ClientProcessRpc(reader);
-			this._flockSize = reader.ReadByte();
+			InitiateCombatTime();
 		}
+	}
 
-		public override void SpawnObject()
+	private void InitiateCombatTime()
+	{
+		_regenCooldown = 0.7f;
+	}
+
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteByte(_flockSize);
+	}
+
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		_flockSize = reader.ReadByte();
+	}
+
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		if (NetworkServer.active)
 		{
-			base.SpawnObject();
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this._healthStat = base.Owner.playerStats.GetModule<HealthStat>();
-			PlayerStats.OnAnyPlayerDamaged += this.OnPlayerDamaged;
+			_healthStat = base.Owner.playerStats.GetModule<HealthStat>();
+			PlayerStats.OnAnyPlayerDamaged += OnPlayerDamaged;
 		}
+	}
 
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			this._flockSize = 0;
-			this.Multiplier = 0f;
-			this._nearbyFlamingos.Clear();
-			this._entireFlock.Clear();
-			PlayerStats.OnAnyPlayerDamaged -= this.OnPlayerDamaged;
-		}
-
-		private const float RegenCombatCooldown = 0.7f;
-
-		private const float EffectRange = 7.5f;
-
-		private const float BaseHealthRegenRate = 1f;
-
-		private const float EffectRangeSqr = 56.25f;
-
-		private const float AdjustSpeed = 0.6f;
-
-		private readonly HashSet<Scp1507Role> _nearbyFlamingos = new HashSet<Scp1507Role>();
-
-		private readonly HashSet<Scp1507Role> _entireFlock = new HashSet<Scp1507Role>();
-
-		private byte _flockSize;
-
-		private float _regenCooldown;
-
-		private HealthStat _healthStat;
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		_flockSize = 0;
+		Multiplier = 0f;
+		_nearbyFlamingos.Clear();
+		_entireFlock.Clear();
+		PlayerStats.OnAnyPlayerDamaged -= OnPlayerDamaged;
 	}
 }

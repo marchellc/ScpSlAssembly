@@ -1,4 +1,3 @@
-﻿using System;
 using InventorySystem.Items.ThrowableProjectiles;
 using Mirror;
 using Mirror.RemoteCalls;
@@ -6,6 +5,13 @@ using UnityEngine;
 
 public class SnowballProjectile : FlybyDetectorProjectile
 {
+	[SerializeField]
+	private AudioSource _bonk;
+
+	private const float BaseDamage = 15f;
+
+	private const float SnowedDuration = 5f;
+
 	public override void ServerProcessHit(HitboxIdentity hid)
 	{
 		base.ServerProcessHit(hid);
@@ -17,18 +23,18 @@ public class SnowballProjectile : FlybyDetectorProjectile
 			flag = true;
 			num *= 2f;
 		}
-		if (SnowballItem.IsCooked(this.Info.Serial, true))
+		if (SnowballItem.IsCooked(Info.Serial, thrown: true))
 		{
 			flag2 = true;
 			num *= 2f;
 		}
 		if (flag && flag2)
 		{
-			this.RpcBonk();
+			RpcBonk();
 		}
 		ReferenceHub targetHub = hid.TargetHub;
-		targetHub.playerEffectsController.EnableEffect<Snowed>(5f, false);
-		SnowballDamageHandler snowballDamageHandler = new SnowballDamageHandler(this.PreviousOwner, num, base.TrajPhysics.LastVelocity);
+		targetHub.playerEffectsController.EnableEffect<Snowed>(5f);
+		SnowballDamageHandler snowballDamageHandler = new SnowballDamageHandler(PreviousOwner, num, base.TrajPhysics.LastVelocity);
 		targetHub.playerStats.DealDamage(snowballDamageHandler);
 		Hitmarker.SendHitmarkerConditionally(num / 15f, snowballDamageHandler, targetHub);
 	}
@@ -36,9 +42,9 @@ public class SnowballProjectile : FlybyDetectorProjectile
 	[ClientRpc]
 	private void RpcBonk()
 	{
-		NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-		this.SendRPCInternal("System.Void SnowballProjectile::RpcBonk()", 673396225, networkWriterPooled, 0, true);
-		NetworkWriterPool.Return(networkWriterPooled);
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		SendRPCInternal("System.Void SnowballProjectile::RpcBonk()", 673396225, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
 	}
 
 	public override bool Weaved()
@@ -48,7 +54,7 @@ public class SnowballProjectile : FlybyDetectorProjectile
 
 	protected void UserCode_RpcBonk()
 	{
-		this._bonk.Play();
+		_bonk.Play();
 	}
 
 	protected static void InvokeUserCode_RpcBonk(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -56,20 +62,15 @@ public class SnowballProjectile : FlybyDetectorProjectile
 		if (!NetworkClient.active)
 		{
 			Debug.LogError("RPC RpcBonk called on server.");
-			return;
 		}
-		((SnowballProjectile)obj).UserCode_RpcBonk();
+		else
+		{
+			((SnowballProjectile)obj).UserCode_RpcBonk();
+		}
 	}
 
 	static SnowballProjectile()
 	{
-		RemoteProcedureCalls.RegisterRpc(typeof(SnowballProjectile), "System.Void SnowballProjectile::RpcBonk()", new RemoteCallDelegate(SnowballProjectile.InvokeUserCode_RpcBonk));
+		RemoteProcedureCalls.RegisterRpc(typeof(SnowballProjectile), "System.Void SnowballProjectile::RpcBonk()", InvokeUserCode_RpcBonk);
 	}
-
-	[SerializeField]
-	private AudioSource _bonk;
-
-	private const float BaseDamage = 15f;
-
-	private const float SnowedDuration = 5f;
 }

@@ -1,8 +1,5 @@
-﻿using System;
+namespace InventorySystem.Hotkeys;
 
-namespace InventorySystem.Hotkeys
+public class SimpleHotkeyIcon : HotkeyIconBase
 {
-	public class SimpleHotkeyIcon : HotkeyIconBase
-	{
-	}
 }

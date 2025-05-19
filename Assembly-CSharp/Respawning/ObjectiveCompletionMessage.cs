@@ -1,48 +1,44 @@
-﻿using System;
 using System.Collections.Generic;
 using Mirror;
 using Respawning.Objectives;
 
-namespace Respawning
+namespace Respawning;
+
+public struct ObjectiveCompletionMessage : NetworkMessage
 {
-	public struct ObjectiveCompletionMessage : NetworkMessage
+	private readonly int _index;
+
+	public FactionObjectiveBase Objective { get; private set; }
+
+	public ObjectiveCompletionMessage(FactionObjectiveBase objective)
 	{
-		public FactionObjectiveBase Objective { readonly get; private set; }
+		_index = FactionInfluenceManager.Objectives.IndexOf(objective);
+		Objective = objective;
+	}
 
-		public ObjectiveCompletionMessage(FactionObjectiveBase objective)
+	public ObjectiveCompletionMessage(int index)
+	{
+		_index = index;
+		Objective = FactionInfluenceManager.Objectives[_index];
+	}
+
+	public ObjectiveCompletionMessage(NetworkReader reader)
+	{
+		_index = reader.ReadInt();
+		if (!FactionInfluenceManager.Objectives.TryGet(_index, out var element))
 		{
-			this._index = FactionInfluenceManager.Objectives.IndexOf(objective);
-			this.Objective = objective;
+			throw new KeyNotFoundException($"Failed to get objective of index: {_index}.");
 		}
+		Objective = element;
+		Objective.ClientReadRpc(reader);
+	}
 
-		public ObjectiveCompletionMessage(int index)
+	public void Write(NetworkWriter writer)
+	{
+		writer.WriteInt(_index);
+		if (NetworkServer.active)
 		{
-			this._index = index;
-			this.Objective = FactionInfluenceManager.Objectives[this._index];
+			Objective.ServerWriteRpc(writer);
 		}
-
-		public ObjectiveCompletionMessage(NetworkReader reader)
-		{
-			this._index = reader.ReadInt();
-			FactionObjectiveBase factionObjectiveBase;
-			if (!FactionInfluenceManager.Objectives.TryGet(this._index, out factionObjectiveBase))
-			{
-				throw new KeyNotFoundException(string.Format("Failed to get objective of index: {0}.", this._index));
-			}
-			this.Objective = factionObjectiveBase;
-			this.Objective.ClientReadRpc(reader);
-		}
-
-		public void Write(NetworkWriter writer)
-		{
-			writer.WriteInt(this._index);
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this.Objective.ServerWriteRpc(writer);
-		}
-
-		private readonly int _index;
 	}
 }

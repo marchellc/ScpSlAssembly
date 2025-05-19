@@ -1,23 +1,21 @@
-﻿using System;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.BasicMessages
-{
-	public static class DamageIndicatorMessageProcessor
-	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			CustomNetworkManager.OnClientReady += DamageIndicatorMessageProcessor.RegisterHandlers;
-		}
+namespace InventorySystem.Items.Firearms.BasicMessages;
 
-		private static void RegisterHandlers()
+public static class DamageIndicatorMessageProcessor
+{
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += RegisterHandlers;
+	}
+
+	private static void RegisterHandlers()
+	{
+		NetworkClient.ReplaceHandler(delegate(DamageIndicatorMessage msg)
 		{
-			NetworkClient.ReplaceHandler<DamageIndicatorMessage>(delegate(DamageIndicatorMessage msg)
-			{
-				DamageIndicator.ReceiveDamageFromPosition(msg.DamagePosition.Position, (float)msg.ReceivedDamage);
-			}, true);
-		}
+			DamageIndicator.ReceiveDamageFromPosition(msg.DamagePosition.Position, (int)msg.ReceivedDamage);
+		});
 	}
 }

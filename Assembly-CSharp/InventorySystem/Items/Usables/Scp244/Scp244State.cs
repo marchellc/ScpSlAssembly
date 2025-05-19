@@ -1,12 +1,9 @@
-﻿using System;
+namespace InventorySystem.Items.Usables.Scp244;
 
-namespace InventorySystem.Items.Usables.Scp244
+public enum Scp244State : byte
 {
-	public enum Scp244State : byte
-	{
-		Idle,
-		Active,
-		Destroyed,
-		PickedUp
-	}
+	Idle,
+	Active,
+	Destroyed,
+	PickedUp
 }

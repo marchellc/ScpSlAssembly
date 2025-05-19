@@ -1,8 +1,14 @@
-﻿using System;
+using System;
 using Utf8Json;
 
 public readonly struct NewsList : IEquatable<NewsList>, IJsonSerializable
 {
+	public readonly int appid;
+
+	public readonly NewsListItem[] newsitems;
+
+	public readonly int count;
+
 	[SerializationConstructor]
 	public NewsList(int appid, NewsListItem[] newsitems, int count)
 	{
@@ -13,22 +19,22 @@ public readonly struct NewsList : IEquatable<NewsList>, IJsonSerializable
 
 	public bool Equals(NewsList other)
 	{
-		return this.appid == other.appid;
+		return appid == other.appid;
 	}
 
 	public override bool Equals(object obj)
 	{
-		if (obj is NewsList)
+		if (obj is NewsList other)
 		{
-			NewsList newsList = (NewsList)obj;
-			return this.Equals(newsList);
+			return Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return this.appid.GetHashCode();
+		int num = appid;
+		return num.GetHashCode();
 	}
 
 	public static bool operator ==(NewsList left, NewsList right)
@@ -40,10 +46,4 @@ public readonly struct NewsList : IEquatable<NewsList>, IJsonSerializable
 	{
 		return !left.Equals(right);
 	}
-
-	public readonly int appid;
-
-	public readonly NewsListItem[] newsitems;
-
-	public readonly int count;
 }

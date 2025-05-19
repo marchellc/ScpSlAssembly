@@ -1,52 +1,49 @@
-﻿using System;
 using System.Diagnostics;
 
-namespace CustomPlayerEffects.Danger
+namespace CustomPlayerEffects.Danger;
+
+public abstract class DangerStackBase
 {
-	public abstract class DangerStackBase
+	public readonly Stopwatch TimeTracker = new Stopwatch();
+
+	private bool _isActive;
+
+	public abstract float DangerValue { get; set; }
+
+	public virtual float Duration { get; } = 20f;
+
+	public virtual bool IsActive
 	{
-		public abstract float DangerValue { get; set; }
-
-		public virtual float Duration { get; } = 20f;
-
-		public virtual bool IsActive
+		get
 		{
-			get
+			bool flag = TimeTracker.IsRunning && TimeTracker.Elapsed.TotalSeconds <= (double)Duration;
+			if (!_isActive && !flag)
 			{
-				bool flag = this.TimeTracker.IsRunning && this.TimeTracker.Elapsed.TotalSeconds <= (double)this.Duration;
-				if (!this._isActive && !flag)
-				{
-					this.TimeTracker.Stop();
-				}
-				return this._isActive || flag;
+				TimeTracker.Stop();
 			}
-			protected set
+			return _isActive || flag;
+		}
+		protected set
+		{
+			if (value != _isActive)
 			{
-				if (value == this._isActive)
+				_isActive = value;
+				if (!_isActive)
 				{
-					return;
-				}
-				this._isActive = value;
-				if (!this._isActive)
-				{
-					this.TimeTracker.Restart();
+					TimeTracker.Restart();
 				}
 			}
 		}
+	}
 
-		protected ReferenceHub Owner { get; set; }
+	protected ReferenceHub Owner { get; set; }
 
-		public virtual void Initialize(ReferenceHub target)
-		{
-			this.Owner = target;
-		}
+	public virtual void Initialize(ReferenceHub target)
+	{
+		Owner = target;
+	}
 
-		public virtual void Dispose()
-		{
-		}
-
-		public readonly Stopwatch TimeTracker = new Stopwatch();
-
-		private bool _isActive;
+	public virtual void Dispose()
+	{
 	}
 }

@@ -1,50 +1,46 @@
-﻿using System;
 using LiteNetLib.Utils;
 
-namespace LiteNetLib
+namespace LiteNetLib;
+
+public sealed class NetPacketReader : NetDataReader
 {
-	public sealed class NetPacketReader : NetDataReader
+	private NetPacket _packet;
+
+	private readonly NetManager _manager;
+
+	private readonly NetEvent _evt;
+
+	internal NetPacketReader(NetManager manager, NetEvent evt)
 	{
-		internal NetPacketReader(NetManager manager, NetEvent evt)
+		_manager = manager;
+		_evt = evt;
+	}
+
+	internal void SetSource(NetPacket packet, int headerSize)
+	{
+		if (packet != null)
 		{
-			this._manager = manager;
-			this._evt = evt;
+			_packet = packet;
+			SetSource(packet.RawData, headerSize, packet.Size);
 		}
+	}
 
-		internal void SetSource(NetPacket packet, int headerSize)
+	internal void RecycleInternal()
+	{
+		Clear();
+		if (_packet != null)
 		{
-			if (packet == null)
-			{
-				return;
-			}
-			this._packet = packet;
-			base.SetSource(packet.RawData, headerSize, packet.Size);
+			_manager.PoolRecycle(_packet);
 		}
+		_packet = null;
+		_manager.RecycleEvent(_evt);
+	}
 
-		internal void RecycleInternal()
+	public void Recycle()
+	{
+		if (!_manager.AutoRecycle)
 		{
-			base.Clear();
-			if (this._packet != null)
-			{
-				this._manager.PoolRecycle(this._packet);
-			}
-			this._packet = null;
-			this._manager.RecycleEvent(this._evt);
+			RecycleInternal();
 		}
-
-		public void Recycle()
-		{
-			if (this._manager.AutoRecycle)
-			{
-				return;
-			}
-			this.RecycleInternal();
-		}
-
-		private NetPacket _packet;
-
-		private readonly NetManager _manager;
-
-		private readonly NetEvent _evt;
 	}
 }

@@ -1,47 +1,33 @@
-﻿using System;
 using System.Collections.Generic;
 using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Keycards;
 using Utils.NonAllocLINQ;
 
-namespace Christmas.Scp2536.Gifts
+namespace Christmas.Scp2536.Gifts;
+
+public class StarterCard : Scp2536ItemGift
 {
-	public class StarterCard : Scp2536ItemGift
+	public override UrgencyLevel Urgency => UrgencyLevel.Two;
+
+	protected override Scp2536Reward[] Rewards => new Scp2536Reward[2]
 	{
-		public override UrgencyLevel Urgency
-		{
-			get
-			{
-				return UrgencyLevel.Two;
-			}
-		}
+		new Scp2536Reward(ItemType.KeycardJanitor, 50f),
+		new Scp2536Reward(ItemType.KeycardScientist, 50f)
+	};
 
-		protected override Scp2536Reward[] Rewards
+	public override bool CanBeGranted(ReferenceHub hub)
+	{
+		if (base.CanBeGranted(hub))
 		{
-			get
-			{
-				return new Scp2536Reward[]
-				{
-					new Scp2536Reward(ItemType.KeycardJanitor, 50f),
-					new Scp2536Reward(ItemType.KeycardScientist, 50f)
-				};
-			}
+			return !hub.inventory.UserInventory.Items.Any((KeyValuePair<ushort, ItemBase> i) => i.Value is KeycardItem);
 		}
+		return false;
+	}
 
-		public override bool CanBeGranted(ReferenceHub hub)
-		{
-			if (base.CanBeGranted(hub))
-			{
-				return !hub.inventory.UserInventory.Items.Any((KeyValuePair<ushort, ItemBase> i) => i.Value is KeycardItem);
-			}
-			return false;
-		}
-
-		public override void ServerGrant(ReferenceHub hub)
-		{
-			ItemType itemType = base.GenerateRandomReward();
-			hub.inventory.ServerAddItem(itemType, ItemAddReason.Scp2536, 0, null).GrantAmmoReward();
-		}
+	public override void ServerGrant(ReferenceHub hub)
+	{
+		ItemType type = GenerateRandomReward();
+		hub.inventory.ServerAddItem(type, ItemAddReason.Scp2536, 0).GrantAmmoReward();
 	}
 }

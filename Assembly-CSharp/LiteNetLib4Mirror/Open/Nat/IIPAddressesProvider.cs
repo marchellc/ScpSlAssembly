@@ -1,15 +1,13 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Net;
 
-namespace LiteNetLib4Mirror.Open.Nat
+namespace LiteNetLib4Mirror.Open.Nat;
+
+internal interface IIPAddressesProvider
 {
-	internal interface IIPAddressesProvider
-	{
-		IEnumerable<IPAddress> DnsAddresses();
+	IEnumerable<IPAddress> DnsAddresses();
 
-		IEnumerable<IPAddress> GatewayAddresses();
+	IEnumerable<IPAddress> GatewayAddresses();
 
-		IEnumerable<IPAddress> UnicastAddresses();
-	}
+	IEnumerable<IPAddress> UnicastAddresses();
 }

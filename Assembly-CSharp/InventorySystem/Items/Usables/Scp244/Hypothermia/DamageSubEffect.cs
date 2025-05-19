@@ -1,53 +1,38 @@
-﻿using System;
 using CustomPlayerEffects;
 using Mirror;
 using PlayerRoles.PlayableScps.HumeShield;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace InventorySystem.Items.Usables.Scp244.Hypothermia
+namespace InventorySystem.Items.Usables.Scp244.Hypothermia;
+
+public class DamageSubEffect : HypothermiaSubEffectBase
 {
-	public class DamageSubEffect : HypothermiaSubEffectBase
+	private float _damageCounter;
+
+	[SerializeField]
+	private TemperatureSubEffect _temperature;
+
+	[SerializeField]
+	private AnimationCurve _damageOverTemperature;
+
+	public override bool IsActive => _temperature.IsActive;
+
+	internal override void UpdateEffect(float curExposure)
 	{
-		public override bool IsActive
+		if (NetworkServer.active && !SpawnProtected.CheckPlayer(base.Hub) && (!(base.Hub.roleManager.CurrentRole is IHumeShieldedRole humeShieldedRole) || !(humeShieldedRole.HumeShieldModule.HsCurrent > 0f)))
 		{
-			get
-			{
-				return this._temperature.IsActive;
-			}
+			DealDamage(_temperature.CurTemperature);
 		}
+	}
 
-		internal override void UpdateEffect(float curExposure)
+	private void DealDamage(float curTemp)
+	{
+		_damageCounter += Mathf.Max(_damageOverTemperature.Evaluate(curTemp) * Time.deltaTime, 0f);
+		if (!(_damageCounter < 1f))
 		{
-			if (!NetworkServer.active || SpawnProtected.CheckPlayer(base.Hub))
-			{
-				return;
-			}
-			IHumeShieldedRole humeShieldedRole = base.Hub.roleManager.CurrentRole as IHumeShieldedRole;
-			if (humeShieldedRole != null && humeShieldedRole.HumeShieldModule.HsCurrent > 0f)
-			{
-				return;
-			}
-			this.DealDamage(this._temperature.CurTemperature);
+			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(_damageCounter, DeathTranslations.Hypothermia));
+			_damageCounter = 0f;
 		}
-
-		private void DealDamage(float curTemp)
-		{
-			this._damageCounter += Mathf.Max(this._damageOverTemperature.Evaluate(curTemp) * Time.deltaTime, 0f);
-			if (this._damageCounter < 1f)
-			{
-				return;
-			}
-			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(this._damageCounter, DeathTranslations.Hypothermia, null));
-			this._damageCounter = 0f;
-		}
-
-		private float _damageCounter;
-
-		[SerializeField]
-		private TemperatureSubEffect _temperature;
-
-		[SerializeField]
-		private AnimationCurve _damageOverTemperature;
 	}
 }

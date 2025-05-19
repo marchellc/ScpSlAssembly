@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using LabApi.Events.Arguments.Scp079Events;
 using LabApi.Events.Handlers;
@@ -7,246 +7,219 @@ using PlayerRoles.PlayableScps.Scp079.GUI;
 using PlayerRoles.Subroutines;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public class Scp079TierManager : StandardSubroutine<Scp079Role>
 {
-	public class Scp079TierManager : StandardSubroutine<Scp079Role>
+	private readonly struct ExpQueuedNotification
 	{
-		public int[] AbsoluteThresholds { get; private set; }
+		public readonly int ExpAmount;
 
-		public int TotalExp
+		public readonly Scp079HudTranslation Reason;
+
+		public readonly RoleTypeId Subject;
+
+		public void Write(NetworkWriter writer)
 		{
-			get
-			{
-				return this._totalExp;
-			}
-			set
-			{
-				this._totalExp = value;
-				Action onExpChanged = this.OnExpChanged;
-				if (onExpChanged != null)
-				{
-					onExpChanged();
-				}
-				int num = 0;
-				int num2 = 0;
-				while (num2 < this._thresholdsCount && this._totalExp >= this.AbsoluteThresholds[num2])
-				{
-					num++;
-					num2++;
-				}
-				this.AccessTierIndex = num;
-				if (NetworkServer.active)
-				{
-					this._valueDirty = true;
-				}
-			}
+			writer.WriteUShort((ushort)ExpAmount);
+			writer.WriteByte((byte)Reason);
+			writer.WriteRoleType(Subject);
 		}
 
-		public int RelativeExp
+		public ExpQueuedNotification(NetworkReader reader)
 		{
-			get
-			{
-				int num = this.AccessTierIndex - 1;
-				if (num < 0)
-				{
-					return Mathf.FloorToInt((float)this.TotalExp);
-				}
-				float num2 = (float)(this.TotalExp - this.AbsoluteThresholds[num]);
-				return Mathf.Min(this.NextLevelThreshold, Mathf.FloorToInt(num2));
-			}
+			ExpAmount = reader.ReadUShort();
+			Reason = (Scp079HudTranslation)reader.ReadByte();
+			Subject = reader.ReadRoleType();
 		}
 
-		public int NextLevelThreshold
+		public ExpQueuedNotification(int amount, Scp079HudTranslation reason, RoleTypeId subject)
 		{
-			get
+			ExpAmount = Mathf.Clamp(amount, 0, 65535);
+			Reason = reason;
+			Subject = subject;
+		}
+	}
+
+	private readonly Queue<ExpQueuedNotification> _expGainQueue = new Queue<ExpQueuedNotification>();
+
+	private int _totalExp;
+
+	private bool _valueDirty;
+
+	private int _accessTier;
+
+	private int _thresholdsCount;
+
+	[SerializeField]
+	private int[] _levelupThresholds;
+
+	public Action OnLevelledUp;
+
+	public Action OnTierChanged;
+
+	public Action OnExpChanged;
+
+	public int[] AbsoluteThresholds { get; private set; }
+
+	public int TotalExp
+	{
+		get
+		{
+			return _totalExp;
+		}
+		set
+		{
+			_totalExp = value;
+			OnExpChanged?.Invoke();
+			int num = 0;
+			for (int i = 0; i < _thresholdsCount && _totalExp >= AbsoluteThresholds[i]; i++)
 			{
-				if (this.AccessTierIndex >= this._thresholdsCount)
-				{
-					return -1;
-				}
-				return this._levelupThresholds[this.AccessTierIndex];
+				num++;
+			}
+			AccessTierIndex = num;
+			if (NetworkServer.active)
+			{
+				_valueDirty = true;
 			}
 		}
+	}
 
-		public int AccessTierIndex
+	public int RelativeExp
+	{
+		get
 		{
-			get
+			int num = AccessTierIndex - 1;
+			if (num < 0)
 			{
-				return Mathf.Clamp(this._accessTier, 0, this._thresholdsCount);
+				return Mathf.FloorToInt(TotalExp);
 			}
-			private set
+			float f = TotalExp - AbsoluteThresholds[num];
+			return Mathf.Min(NextLevelThreshold, Mathf.FloorToInt(f));
+		}
+	}
+
+	public int NextLevelThreshold
+	{
+		get
+		{
+			if (AccessTierIndex >= _thresholdsCount)
 			{
-				if (this._accessTier == value)
-				{
-					return;
-				}
-				int num = value - this._accessTier;
+				return -1;
+			}
+			return _levelupThresholds[AccessTierIndex];
+		}
+	}
+
+	public int AccessTierIndex
+	{
+		get
+		{
+			return Mathf.Clamp(_accessTier, 0, _thresholdsCount);
+		}
+		private set
+		{
+			if (_accessTier != value)
+			{
+				int num = value - _accessTier;
 				for (int i = 0; i < num; i++)
 				{
-					this._accessTier++;
-					Action onLevelledUp = this.OnLevelledUp;
-					if (onLevelledUp != null)
-					{
-						onLevelledUp();
-					}
+					_accessTier++;
+					OnLevelledUp?.Invoke();
 				}
 				Scp079LevelingUpEventArgs scp079LevelingUpEventArgs = new Scp079LevelingUpEventArgs(base.Owner, value + 1);
 				Scp079Events.OnLevelingUp(scp079LevelingUpEventArgs);
-				if (!scp079LevelingUpEventArgs.IsAllowed)
+				if (scp079LevelingUpEventArgs.IsAllowed)
 				{
-					return;
-				}
-				this._accessTier = value;
-				Action onTierChanged = this.OnTierChanged;
-				if (onTierChanged != null)
-				{
-					onTierChanged();
-				}
-				Scp079Events.OnLeveledUp(new Scp079LeveledUpEventArgs(base.Owner, value + 1));
-			}
-		}
-
-		public int AccessTierLevel
-		{
-			get
-			{
-				return this.AccessTierIndex + 1;
-			}
-		}
-
-		private void Update()
-		{
-			if (!NetworkServer.active || !this._valueDirty)
-			{
-				return;
-			}
-			base.ServerSendRpc(true);
-			this._valueDirty = false;
-		}
-
-		protected override void Awake()
-		{
-			base.Awake();
-			int num = 0;
-			this._thresholdsCount = this._levelupThresholds.Length;
-			this.AbsoluteThresholds = new int[this._thresholdsCount];
-			for (int i = 0; i < this._thresholdsCount; i++)
-			{
-				num += this._levelupThresholds[i];
-				this.AbsoluteThresholds[i] = num;
-			}
-		}
-
-		public override void SpawnObject()
-		{
-			base.SpawnObject();
-			ReferenceHub.OnPlayerAdded = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerAdded, new Action<ReferenceHub>(base.ServerSendRpc));
-			this.TotalExp = 0;
-		}
-
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			ReferenceHub.OnPlayerAdded = (Action<ReferenceHub>)Delegate.Remove(ReferenceHub.OnPlayerAdded, new Action<ReferenceHub>(base.ServerSendRpc));
-		}
-
-		public void ServerGrantExperience(int amount, Scp079HudTranslation reason, RoleTypeId subject = RoleTypeId.None)
-		{
-			if (!NetworkServer.active)
-			{
-				throw new InvalidOperationException("SCP-079 experience cannot be granted by local player!");
-			}
-			if (amount <= 0)
-			{
-				return;
-			}
-			this._expGainQueue.Enqueue(new Scp079TierManager.ExpQueuedNotification(amount, reason, subject));
-			this.TotalExp += amount;
-		}
-
-		public override void ServerWriteRpc(NetworkWriter writer)
-		{
-			base.ServerWriteRpc(writer);
-			writer.WriteUShort((ushort)this.TotalExp);
-			Scp079TierManager.ExpQueuedNotification expQueuedNotification;
-			while (this._expGainQueue.TryDequeue(out expQueuedNotification))
-			{
-				expQueuedNotification.Write(writer);
-			}
-		}
-
-		public override void ClientProcessRpc(NetworkReader reader)
-		{
-			base.ClientProcessRpc(reader);
-			ushort num = reader.ReadUShort();
-			if (!Scp079Role.LocalInstanceActive && !base.CastRole.IsSpectated && !NetworkServer.active)
-			{
-				this.TotalExp = (int)num;
-				return;
-			}
-			while (reader.Remaining > 0)
-			{
-				Scp079TierManager.ExpQueuedNotification expQueuedNotification = new Scp079TierManager.ExpQueuedNotification(reader);
-				PlayerRoleBase playerRoleBase;
-				if (PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(expQueuedNotification.Subject, out playerRoleBase))
-				{
-					Scp079NotificationManager.AddNotification(expQueuedNotification.Reason, new object[] { expQueuedNotification.ExpAmount, playerRoleBase.RoleName });
+					_accessTier = value;
+					OnTierChanged?.Invoke();
+					Scp079Events.OnLeveledUp(new Scp079LeveledUpEventArgs(base.Owner, value + 1));
 				}
 			}
-			if (NetworkServer.active)
-			{
-				return;
-			}
-			this.TotalExp = (int)num;
 		}
+	}
 
-		private readonly Queue<Scp079TierManager.ExpQueuedNotification> _expGainQueue = new Queue<Scp079TierManager.ExpQueuedNotification>();
+	public int AccessTierLevel => AccessTierIndex + 1;
 
-		private int _totalExp;
-
-		private bool _valueDirty;
-
-		private int _accessTier;
-
-		private int _thresholdsCount;
-
-		[SerializeField]
-		private int[] _levelupThresholds;
-
-		public Action OnLevelledUp;
-
-		public Action OnTierChanged;
-
-		public Action OnExpChanged;
-
-		private readonly struct ExpQueuedNotification
+	private void Update()
+	{
+		if (NetworkServer.active && _valueDirty)
 		{
-			public void Write(NetworkWriter writer)
+			ServerSendRpc(toAll: true);
+			_valueDirty = false;
+		}
+	}
+
+	protected override void Awake()
+	{
+		base.Awake();
+		int num = 0;
+		_thresholdsCount = _levelupThresholds.Length;
+		AbsoluteThresholds = new int[_thresholdsCount];
+		for (int i = 0; i < _thresholdsCount; i++)
+		{
+			num += _levelupThresholds[i];
+			AbsoluteThresholds[i] = num;
+		}
+	}
+
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		ReferenceHub.OnPlayerAdded += base.ServerSendRpc;
+		TotalExp = 0;
+	}
+
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		ReferenceHub.OnPlayerAdded -= base.ServerSendRpc;
+	}
+
+	public void ServerGrantExperience(int amount, Scp079HudTranslation reason, RoleTypeId subject = RoleTypeId.None)
+	{
+		if (!NetworkServer.active)
+		{
+			throw new InvalidOperationException("SCP-079 experience cannot be granted by local player!");
+		}
+		if (amount > 0)
+		{
+			_expGainQueue.Enqueue(new ExpQueuedNotification(amount, reason, subject));
+			TotalExp += amount;
+		}
+	}
+
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteUShort((ushort)TotalExp);
+		ExpQueuedNotification result;
+		while (_expGainQueue.TryDequeue(out result))
+		{
+			result.Write(writer);
+		}
+	}
+
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		ushort totalExp = reader.ReadUShort();
+		if (!Scp079Role.LocalInstanceActive && !base.CastRole.IsSpectated && !NetworkServer.active)
+		{
+			TotalExp = totalExp;
+			return;
+		}
+		while (reader.Remaining > 0)
+		{
+			ExpQueuedNotification expQueuedNotification = new ExpQueuedNotification(reader);
+			if (PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(expQueuedNotification.Subject, out var result))
 			{
-				writer.WriteUShort((ushort)this.ExpAmount);
-				writer.WriteByte((byte)this.Reason);
-				writer.WriteRoleType(this.Subject);
+				Scp079NotificationManager.AddNotification(expQueuedNotification.Reason, expQueuedNotification.ExpAmount, result.RoleName);
 			}
-
-			public ExpQueuedNotification(NetworkReader reader)
-			{
-				this.ExpAmount = (int)reader.ReadUShort();
-				this.Reason = (Scp079HudTranslation)reader.ReadByte();
-				this.Subject = reader.ReadRoleType();
-			}
-
-			public ExpQueuedNotification(int amount, Scp079HudTranslation reason, RoleTypeId subject)
-			{
-				this.ExpAmount = Mathf.Clamp(amount, 0, 65535);
-				this.Reason = reason;
-				this.Subject = subject;
-			}
-
-			public readonly int ExpAmount;
-
-			public readonly Scp079HudTranslation Reason;
-
-			public readonly RoleTypeId Subject;
+		}
+		if (!NetworkServer.active)
+		{
+			TotalExp = totalExp;
 		}
 	}
 }

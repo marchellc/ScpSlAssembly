@@ -1,80 +1,81 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MapGeneration.RoomConnectors.Spawners
-{
-	public class AdvancedRoomConnectorSpawnpoint : RoomConnectorSpawnpointBase
-	{
-		public override SpawnableRoomConnectorType FallbackType
-		{
-			get
-			{
-				return this._fallbackType;
-			}
-		}
+namespace MapGeneration.RoomConnectors.Spawners;
 
-		public override float GetSpawnChanceWeight(SpawnableRoomConnectorType type)
+public class AdvancedRoomConnectorSpawnpoint : RoomConnectorSpawnpointBase
+{
+	[Serializable]
+	public struct ConnectorTypesChancePair
+	{
+		public float Chance;
+
+		public List<SpawnableRoomConnectorType> RoomConnectorTypes;
+	}
+
+	public ConnectorTypesChancePair[] Connectors;
+
+	[SerializeField]
+	private SpawnableRoomConnectorType _fallbackType;
+
+	public override SpawnableRoomConnectorType FallbackType => _fallbackType;
+
+	public override float GetSpawnChanceWeight(SpawnableRoomConnectorType type)
+	{
+		bool flag = false;
+		ConnectorTypesChancePair[] connectors = Connectors;
+		for (int i = 0; i < connectors.Length; i++)
 		{
-			bool flag = false;
-			foreach (AdvancedRoomConnectorSpawnpoint.ConnectorTypesChancePair connectorTypesChancePair in this.Connectors)
+			ConnectorTypesChancePair connectorTypesChancePair = connectors[i];
+			if (!(connectorTypesChancePair.Chance <= 0f) && connectorTypesChancePair.RoomConnectorTypes.Count != 0)
 			{
-				if (connectorTypesChancePair.Chance > 0f && connectorTypesChancePair.RoomConnectorTypes.Count != 0)
+				flag = true;
+				if (connectorTypesChancePair.RoomConnectorTypes.Contains(type))
 				{
-					flag = true;
-					if (connectorTypesChancePair.RoomConnectorTypes.Contains(type))
-					{
-						return connectorTypesChancePair.Chance;
-					}
+					return connectorTypesChancePair.Chance;
 				}
 			}
-			if (flag)
-			{
-				return 0f;
-			}
-			return (float)((type == this._fallbackType) ? 0 : 1);
 		}
-
-		public override void SpawnFallback()
+		if (flag)
 		{
-			List<SpawnableRoomConnectorType> list = new List<SpawnableRoomConnectorType>();
-			foreach (AdvancedRoomConnectorSpawnpoint.ConnectorTypesChancePair connectorTypesChancePair in this.Connectors)
-			{
-				list.AddRange(connectorTypesChancePair.RoomConnectorTypes);
-			}
-			if (list.Count > 0)
-			{
-				base.Spawn(list.RandomItem<SpawnableRoomConnectorType>());
-				return;
-			}
+			return 0f;
+		}
+		return (type != _fallbackType) ? 1 : 0;
+	}
+
+	public override void SpawnFallback()
+	{
+		List<SpawnableRoomConnectorType> list = new List<SpawnableRoomConnectorType>();
+		ConnectorTypesChancePair[] connectors = Connectors;
+		for (int i = 0; i < connectors.Length; i++)
+		{
+			ConnectorTypesChancePair connectorTypesChancePair = connectors[i];
+			list.AddRange(connectorTypesChancePair.RoomConnectorTypes);
+		}
+		if (list.Count > 0)
+		{
+			Spawn(list.RandomItem());
+		}
+		else
+		{
 			base.SpawnFallback();
 		}
+	}
 
-		protected override void MergeWith(RoomConnectorSpawnpointBase retired)
+	protected override void MergeWith(RoomConnectorSpawnpointBase retired)
+	{
+		ConnectorTypesChancePair[] connectors = Connectors;
+		for (int i = 0; i < connectors.Length; i++)
 		{
-			foreach (AdvancedRoomConnectorSpawnpoint.ConnectorTypesChancePair connectorTypesChancePair in this.Connectors)
+			ConnectorTypesChancePair connectorTypesChancePair = connectors[i];
+			for (int num = connectorTypesChancePair.RoomConnectorTypes.Count - 1; num >= 0; num--)
 			{
-				for (int j = connectorTypesChancePair.RoomConnectorTypes.Count - 1; j >= 0; j--)
+				if (!(retired.GetSpawnChanceWeight(connectorTypesChancePair.RoomConnectorTypes[num]) > 0f))
 				{
-					if (retired.GetSpawnChanceWeight(connectorTypesChancePair.RoomConnectorTypes[j]) <= 0f)
-					{
-						connectorTypesChancePair.RoomConnectorTypes.RemoveAt(j);
-					}
+					connectorTypesChancePair.RoomConnectorTypes.RemoveAt(num);
 				}
 			}
-		}
-
-		public AdvancedRoomConnectorSpawnpoint.ConnectorTypesChancePair[] Connectors;
-
-		[SerializeField]
-		private SpawnableRoomConnectorType _fallbackType;
-
-		[Serializable]
-		public struct ConnectorTypesChancePair
-		{
-			public float Chance;
-
-			public List<SpawnableRoomConnectorType> RoomConnectorTypes;
 		}
 	}
 }

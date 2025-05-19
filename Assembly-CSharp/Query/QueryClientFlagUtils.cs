@@ -1,12 +1,9 @@
-﻿using System;
+namespace Query;
 
-namespace Query
+public static class QueryClientFlagUtils
 {
-	public static class QueryClientFlagUtils
+	public static bool HasFlagFast(this QueryHandshake.ClientFlags res, QueryHandshake.ClientFlags flag)
 	{
-		public static bool HasFlagFast(this QueryHandshake.ClientFlags res, QueryHandshake.ClientFlags flag)
-		{
-			return (res & flag) == flag;
-		}
+		return (res & flag) == flag;
 	}
 }

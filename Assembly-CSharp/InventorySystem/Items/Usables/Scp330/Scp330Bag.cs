@@ -1,269 +1,256 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Pickups;
-using InventorySystem.Searching;
 using Mirror;
+using NetworkManagerUtils.Dummies;
 using UnityEngine;
 
-namespace InventorySystem.Items.Usables.Scp330
+namespace InventorySystem.Items.Usables.Scp330;
+
+public class Scp330Bag : UsableItem, IAcquisitionConfirmationTrigger, IUniqueItem
 {
-	public class Scp330Bag : UsableItem, ICustomSearchCompletorItem, IAcquisitionConfirmationTrigger, IUniqueItem
+	public int SelectedCandyId;
+
+	public List<CandyKindID> Candies = new List<CandyKindID>();
+
+	public const int MaxCandies = 6;
+
+	public override bool CanStartUsing => false;
+
+	public bool AcquisitionAlreadyReceived { get; set; }
+
+	public override ItemDescriptionType DescriptionType => ItemDescriptionType.Scp330Bag;
+
+	public bool IsCandySelected
 	{
-		public override bool CanStartUsing
+		get
 		{
-			get
+			if (SelectedCandyId >= 0)
 			{
-				return false;
+				return SelectedCandyId < Candies.Count;
 			}
+			return false;
 		}
+	}
 
-		public bool AcquisitionAlreadyReceived { get; set; }
-
-		public override ItemDescriptionType DescriptionType
+	public override void OnAdded(ItemPickupBase pickup)
+	{
+		base.OnAdded(pickup);
+		if (NetworkServer.active && ServerProcessPickup(base.Owner, pickup as Scp330Pickup, out var bag) && !(bag == null) && !(bag == this))
 		{
-			get
-			{
-				return ItemDescriptionType.Scp330Bag;
-			}
+			ServerRemoveSelf();
 		}
+	}
 
-		public bool IsCandySelected
+	public override void OnRemoved(ItemPickupBase pickup)
+	{
+		base.OnRemoved(pickup);
+		if (NetworkServer.active && pickup is Scp330Pickup scp330Pickup && scp330Pickup != null)
 		{
-			get
-			{
-				return this.SelectedCandyId >= 0 && this.SelectedCandyId < this.Candies.Count;
-			}
+			scp330Pickup.StoredCandies = Candies;
 		}
+	}
 
-		public SearchCompletor GetCustomSearchCompletor(ReferenceHub hub, ItemPickupBase ipb, ItemBase ib, double disSqrt)
-		{
-			return new Scp330SearchCompletor(hub, ipb, ib, disSqrt);
-		}
+	public override void OnEquipped()
+	{
+		SelectedCandyId = -1;
+	}
 
-		public override void OnAdded(ItemPickupBase pickup)
-		{
-			base.OnAdded(pickup);
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			Scp330Bag scp330Bag;
-			if (!Scp330Bag.ServerProcessPickup(base.Owner, pickup as Scp330Pickup, out scp330Bag))
-			{
-				return;
-			}
-			if (scp330Bag == null || scp330Bag == this)
-			{
-				return;
-			}
-			base.ServerRemoveSelf();
-		}
+	public override void OnHolstered()
+	{
+		IsUsing = false;
+	}
 
-		public override void OnRemoved(ItemPickupBase pickup)
-		{
-			base.OnRemoved(pickup);
-			if (NetworkServer.active)
-			{
-				Scp330Pickup scp330Pickup = pickup as Scp330Pickup;
-				if (scp330Pickup != null && scp330Pickup != null)
-				{
-					scp330Pickup.StoredCandies = this.Candies;
-				}
-			}
-		}
+	public void ServerConfirmAcqusition()
+	{
+		ServerRefreshBag();
+	}
 
-		public override void OnEquipped()
+	public override void ServerOnUsingCompleted()
+	{
+		if (IsCandySelected && Scp330Candies.CandiesById.TryGetValue(Candies[SelectedCandyId], out var value))
 		{
-			this.SelectedCandyId = -1;
-		}
-
-		public override void OnHolstered()
-		{
-			this.IsUsing = false;
-		}
-
-		public void ServerConfirmAcqusition()
-		{
-			this.ServerRefreshBag();
-		}
-
-		public override void ServerOnUsingCompleted()
-		{
-			if (!this.IsCandySelected)
-			{
-				return;
-			}
-			ICandy candy;
-			if (!Scp330Candies.CandiesById.TryGetValue(this.Candies[this.SelectedCandyId], out candy))
-			{
-				return;
-			}
-			this.IsUsing = false;
-			candy.ServerApplyEffects(base.Owner);
-			this.Candies.RemoveAt(this.SelectedCandyId);
+			IsUsing = false;
+			value.ServerApplyEffects(base.Owner);
+			Candies.RemoveAt(SelectedCandyId);
 			base.OwnerInventory.ServerSelectItem(0);
-			this.ServerRefreshBag();
+			ServerRefreshBag();
 		}
+	}
 
-		public void DropCandy(int index)
+	public void DropCandy(int index)
+	{
+		SendClientMessage(index, drop: true);
+	}
+
+	public void SelectCandy(int index)
+	{
+		SelectedCandyId = index;
+		SendClientMessage(index, drop: false);
+	}
+
+	public bool TryAddSpecific(CandyKindID kind)
+	{
+		if (Candies.Count >= 6)
 		{
-			this.SendClientMessage(index, true);
+			return false;
 		}
+		Candies.Add(kind);
+		return true;
+	}
 
-		public void SelectCandy(int index)
+	public CandyKindID TryRemove(int index)
+	{
+		if (index < 0 || index > Candies.Count)
 		{
-			this.SelectedCandyId = index;
-			this.SendClientMessage(index, false);
+			return CandyKindID.None;
 		}
+		CandyKindID result = Candies[index];
+		Candies.RemoveAt(index);
+		ServerRefreshBag();
+		return result;
+	}
 
-		public bool TryAddSpecific(CandyKindID kind)
+	public bool CompareIdentical(ItemBase ib)
+	{
+		if (!(ib is Scp330Bag scp330Bag))
 		{
-			if (this.Candies.Count >= 6)
+			return false;
+		}
+		if (Candies.Count != scp330Bag.Candies.Count)
+		{
+			return false;
+		}
+		for (int i = 0; i < Candies.Count; i++)
+		{
+			if (Candies[i] != scp330Bag.Candies[i])
 			{
 				return false;
 			}
-			this.Candies.Add(kind);
-			return true;
 		}
+		return true;
+	}
 
-		public CandyKindID TryRemove(int index)
+	public static bool ServerProcessPickup(ReferenceHub ply, Scp330Pickup pickup, out Scp330Bag bag)
+	{
+		if (!TryGetBag(ply, out bag))
 		{
-			if (index < 0 || index > this.Candies.Count)
+			int num = ((!(pickup == null)) ? pickup.Info.Serial : 0);
+			return ply.inventory.ServerAddItem(ItemType.SCP330, ItemAddReason.Scp914Upgrade, (ushort)num, pickup) != null;
+		}
+		bool result = false;
+		if (pickup == null)
+		{
+			result = bag.TryAddSpecific(Scp330Candies.GetRandom());
+		}
+		else
+		{
+			while (pickup.StoredCandies.Count > 0 && bag.TryAddSpecific(pickup.StoredCandies[0]))
 			{
-				return CandyKindID.None;
+				result = true;
+				pickup.StoredCandies.RemoveAt(0);
 			}
-			CandyKindID candyKindID = this.Candies[index];
-			this.Candies.RemoveAt(index);
-			this.ServerRefreshBag();
-			return candyKindID;
 		}
+		bag.ServerRefreshBag();
+		return result;
+	}
 
-		public bool CompareIdentical(ItemBase ib)
+	public static bool TryAddCandy(ReferenceHub hub, CandyKindID kind)
+	{
+		if (!TryGetBag(hub, out var bag))
 		{
-			Scp330Bag scp330Bag = ib as Scp330Bag;
-			if (scp330Bag == null)
+			bag = (Scp330Bag)hub.inventory.ServerAddItem(ItemType.SCP330, ItemAddReason.Scp914Upgrade, 0);
+			if (bag == null)
 			{
 				return false;
 			}
-			if (this.Candies.Count != scp330Bag.Candies.Count)
+			bag.Candies.Clear();
+		}
+		bool result = bag.TryAddSpecific(kind);
+		bag.ServerRefreshBag();
+		return result;
+	}
+
+	public static bool CanAddCandy(ReferenceHub hub)
+	{
+		if (!TryGetBag(hub, out var bag))
+		{
+			return hub.inventory.UserInventory.Items.Count < 8;
+		}
+		return bag.Candies.Count < 6;
+	}
+
+	public static bool TryGetBag(ReferenceHub hub, out Scp330Bag bag)
+	{
+		bag = null;
+		bool result = false;
+		foreach (KeyValuePair<ushort, ItemBase> item in hub.inventory.UserInventory.Items)
+		{
+			if (item.Value is Scp330Bag scp330Bag)
 			{
-				return false;
-			}
-			for (int i = 0; i < this.Candies.Count; i++)
-			{
-				if (this.Candies[i] != scp330Bag.Candies[i])
+				bag = scp330Bag;
+				result = true;
+				if (scp330Bag.Candies.Count > 0)
 				{
-					return false;
+					return true;
 				}
 			}
-			return true;
 		}
+		return result;
+	}
 
-		public static bool ServerProcessPickup(ReferenceHub ply, Scp330Pickup pickup, out Scp330Bag bag)
-		{
-			if (!Scp330Bag.TryGetBag(ply, out bag))
-			{
-				int num = (int)((pickup == null) ? 0 : pickup.Info.Serial);
-				return ply.inventory.ServerAddItem(ItemType.SCP330, ItemAddReason.Scp914Upgrade, (ushort)num, pickup) != null;
-			}
-			bool flag = false;
-			if (pickup == null)
-			{
-				flag = bag.TryAddSpecific(Scp330Candies.GetRandom(CandyKindID.None));
-			}
-			else
-			{
-				while (pickup.StoredCandies.Count > 0 && bag.TryAddSpecific(pickup.StoredCandies[0]))
-				{
-					flag = true;
-					pickup.StoredCandies.RemoveAt(0);
-				}
-			}
-			bag.ServerRefreshBag();
-			return flag;
-		}
+	public static void AddSimpleRegeneration(ReferenceHub hub, float rate, float duration)
+	{
+		AnimationCurve regenCurve = AnimationCurve.Constant(0f, duration, rate);
+		UsableItemsController.GetHandler(hub).ActiveRegenerations.Add(new RegenerationProcess(regenCurve, 1f, 1f));
+	}
 
-		public static bool TryAddCandy(ReferenceHub hub, CandyKindID kind)
-		{
-			Scp330Bag scp330Bag;
-			if (!Scp330Bag.TryGetBag(hub, out scp330Bag))
-			{
-				scp330Bag = (Scp330Bag)hub.inventory.ServerAddItem(ItemType.SCP330, ItemAddReason.Scp914Upgrade, 0, null);
-				if (scp330Bag == null)
-				{
-					return false;
-				}
-				scp330Bag.Candies.Clear();
-			}
-			bool flag = scp330Bag.TryAddSpecific(kind);
-			scp330Bag.ServerRefreshBag();
-			return flag;
-		}
+	private void SendClientMessage(int candyIdex, bool drop)
+	{
+		SelectScp330Message message = default(SelectScp330Message);
+		message.Serial = base.ItemSerial;
+		message.CandyID = (byte)candyIdex;
+		message.Drop = drop;
+		NetworkClient.Send(message);
+	}
 
-		public static bool CanAddCandy(ReferenceHub hub)
+	public void ServerRefreshBag()
+	{
+		if (Candies.Count > 0)
 		{
-			Scp330Bag scp330Bag;
-			if (!Scp330Bag.TryGetBag(hub, out scp330Bag))
-			{
-				return hub.inventory.UserInventory.Items.Count < 8;
-			}
-			return scp330Bag.Candies.Count < 6;
-		}
-
-		public static bool TryGetBag(ReferenceHub hub, out Scp330Bag bag)
-		{
-			bag = null;
-			bool flag = false;
-			foreach (KeyValuePair<ushort, ItemBase> keyValuePair in hub.inventory.UserInventory.Items)
-			{
-				Scp330Bag scp330Bag = keyValuePair.Value as Scp330Bag;
-				if (scp330Bag != null)
-				{
-					bag = scp330Bag;
-					flag = true;
-					if (scp330Bag.Candies.Count > 0)
-					{
-						return true;
-					}
-				}
-			}
-			return flag;
-		}
-
-		public static void AddSimpleRegeneration(ReferenceHub hub, float rate, float duration)
-		{
-			AnimationCurve animationCurve = AnimationCurve.Constant(0f, duration, rate);
-			UsableItemsController.GetHandler(hub).ActiveRegenerations.Add(new RegenerationProcess(animationCurve, 1f, 1f));
-		}
-
-		private void SendClientMessage(int candyIdex, bool drop)
-		{
-			NetworkClient.Send<SelectScp330Message>(new SelectScp330Message
+			base.OwnerInventory.connectionToClient.Send(new SyncScp330Message
 			{
 				Serial = base.ItemSerial,
-				CandyID = (int)((byte)candyIdex),
-				Drop = drop
-			}, 0);
+				Candies = Candies
+			});
 		}
-
-		public void ServerRefreshBag()
+		else
 		{
-			if (this.Candies.Count > 0)
-			{
-				base.OwnerInventory.connectionToClient.Send<SyncScp330Message>(new SyncScp330Message
-				{
-					Serial = base.ItemSerial,
-					Candies = this.Candies
-				}, 0);
-				return;
-			}
-			base.ServerRemoveSelf();
+			ServerRemoveSelf();
 		}
+	}
 
-		public int SelectedCandyId;
-
-		public List<CandyKindID> Candies = new List<CandyKindID>();
-
-		public const int MaxCandies = 6;
+	public override void PopulateDummyActions(Action<DummyAction> actionAdder)
+	{
+		if (!base.IsEquipped)
+		{
+			return;
+		}
+		for (int i = 0; i < Candies.Count; i++)
+		{
+			int copyI = i;
+			actionAdder(new DummyAction(string.Format("{0}->Eat_{1}_{2}", "Scp330Bag", i, Candies[i]), delegate
+			{
+				this.ServerSelectCandy(copyI);
+			}));
+		}
+		for (int j = 0; j < Candies.Count; j++)
+		{
+			int copyI2 = j;
+			actionAdder(new DummyAction(string.Format("{0}->Drop_{1}_{2}", "Scp330Bag", j, Candies[j]), delegate
+			{
+				this.ServerDropCandy(copyI2);
+			}));
+		}
 	}
 }

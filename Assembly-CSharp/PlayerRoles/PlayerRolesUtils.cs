@@ -1,166 +1,167 @@
-﻿using System;
+using System;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.Thirdperson;
 
-namespace PlayerRoles
+namespace PlayerRoles;
+
+public static class PlayerRolesUtils
 {
-	public static class PlayerRolesUtils
+	public static readonly CachedLayerMask AttackMask = new CachedLayerMask("Default", "Door", "Glass");
+
+	public static readonly CachedLayerMask LineOfSightMask = new CachedLayerMask("Default", "Door");
+
+	public static RoleTypeId GetRoleId(this ReferenceHub hub)
 	{
-		public static RoleTypeId GetRoleId(this ReferenceHub hub)
-		{
-			return hub.roleManager.CurrentRole.RoleTypeId;
-		}
+		return hub.roleManager.CurrentRole.RoleTypeId;
+	}
 
-		public static Team GetTeam(this ReferenceHub hub)
-		{
-			return hub.roleManager.CurrentRole.Team;
-		}
+	public static Team GetTeam(this ReferenceHub hub)
+	{
+		return hub.roleManager.CurrentRole.Team;
+	}
 
-		public static Team GetTeam(this RoleTypeId role)
+	public static Team GetTeam(this RoleTypeId role)
+	{
+		if (!PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(role, out var result))
 		{
-			PlayerRoleBase playerRoleBase;
-			if (!PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(role, out playerRoleBase))
-			{
-				return Team.OtherAlive;
-			}
-			return playerRoleBase.Team;
+			return Team.OtherAlive;
 		}
+		return result.Team;
+	}
 
-		public static Faction GetFaction(this ReferenceHub hub)
-		{
-			return hub.GetTeam().GetFaction();
-		}
+	public static Faction GetFaction(this ReferenceHub hub)
+	{
+		return hub.GetTeam().GetFaction();
+	}
 
-		public static Faction GetFaction(this RoleTypeId role)
-		{
-			return role.GetTeam().GetFaction();
-		}
+	public static Faction GetFaction(this RoleTypeId role)
+	{
+		return role.GetTeam().GetFaction();
+	}
 
-		public static Faction GetFaction(this Team t)
+	public static Faction GetFaction(this Team t)
+	{
+		switch (t)
 		{
-			switch (t)
-			{
-			case Team.SCPs:
-				return Faction.SCP;
-			case Team.FoundationForces:
-			case Team.Scientists:
-				return Faction.FoundationStaff;
-			case Team.ChaosInsurgency:
-			case Team.ClassD:
-				return Faction.FoundationEnemy;
-			case Team.Flamingos:
-				return Faction.Flamingos;
-			}
+		case Team.SCPs:
+			return Faction.SCP;
+		case Team.Flamingos:
+			return Faction.Flamingos;
+		case Team.FoundationForces:
+		case Team.Scientists:
+			return Faction.FoundationStaff;
+		case Team.ChaosInsurgency:
+		case Team.ClassD:
+			return Faction.FoundationEnemy;
+		default:
 			return Faction.Unclassified;
 		}
+	}
 
-		public static bool IsHuman(this RoleTypeId role)
+	public static bool IsHuman(this RoleTypeId role)
+	{
+		Team team = role.GetTeam();
+		if (team != Team.Dead && team != 0)
 		{
-			Team team = role.GetTeam();
-			return team != Team.Dead && team != Team.SCPs && !role.IsFlamingo(true);
+			return !role.IsFlamingo();
 		}
+		return false;
+	}
 
-		public static bool IsHuman(this ReferenceHub hub)
-		{
-			return hub.roleManager.CurrentRole.RoleTypeId.IsHuman();
-		}
+	public static bool IsHuman(this ReferenceHub hub)
+	{
+		return hub.roleManager.CurrentRole.RoleTypeId.IsHuman();
+	}
 
-		public static bool IsFlamingo(this RoleTypeId role, bool ignoreScpTeam = true)
+	public static bool IsFlamingo(this RoleTypeId role, bool ignoreScpTeam = true)
+	{
+		switch (role.GetTeam())
 		{
-			Team team = role.GetTeam();
-			if (team != Team.SCPs)
+		case Team.Flamingos:
+			return true;
+		case Team.SCPs:
+			if (role == RoleTypeId.ZombieFlamingo)
 			{
-				return team == Team.Flamingos;
+				return !ignoreScpTeam;
 			}
-			return role == RoleTypeId.ZombieFlamingo && !ignoreScpTeam;
+			return false;
+		default:
+			return false;
 		}
+	}
 
-		public static bool IsFlamingo(this ReferenceHub hub, bool ignoreScpTeam = true)
+	public static bool IsFlamingo(this ReferenceHub hub, bool ignoreScpTeam = true)
+	{
+		return hub.roleManager.CurrentRole.RoleTypeId.IsFlamingo(ignoreScpTeam);
+	}
+
+	public static bool IsZombie(this RoleTypeId role)
+	{
+		if (role != RoleTypeId.ZombieFlamingo)
 		{
-			return hub.roleManager.CurrentRole.RoleTypeId.IsFlamingo(ignoreScpTeam);
+			return role == RoleTypeId.Scp0492;
 		}
+		return true;
+	}
 
-		public static bool IsZombie(this RoleTypeId role)
+	public static bool IsAlive(this RoleTypeId role)
+	{
+		return role.GetTeam() != Team.Dead;
+	}
+
+	public static bool IsAlive(this ReferenceHub hub)
+	{
+		return hub.GetTeam() != Team.Dead;
+	}
+
+	public static bool IsSCP(this ReferenceHub hub, bool includeZombies = true)
+	{
+		PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
+		if (currentRole.Team != 0)
 		{
-			return role == RoleTypeId.ZombieFlamingo || role == RoleTypeId.Scp0492;
+			return false;
 		}
-
-		public static bool IsAlive(this RoleTypeId role)
+		if (!includeZombies && currentRole.RoleTypeId.IsZombie())
 		{
-			return role.GetTeam() != Team.Dead;
+			return false;
 		}
+		return true;
+	}
 
-		public static bool IsAlive(this ReferenceHub hub)
-		{
-			return hub.GetTeam() != Team.Dead;
-		}
+	public static CharacterModel GetModel(this ReferenceHub hub)
+	{
+		return (hub.roleManager.CurrentRole as IFpcRole)?.FpcModule.CharacterModelInstance;
+	}
 
-		public static bool IsSCP(this ReferenceHub hub, bool includeZombies = true)
+	public static void ForEachRole<T>(Action<ReferenceHub, T> action) where T : PlayerRoleBase
+	{
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
-			return currentRole.Team == Team.SCPs && (includeZombies || !currentRole.RoleTypeId.IsZombie());
-		}
-
-		public static CharacterModel GetModel(this ReferenceHub hub)
-		{
-			IFpcRole fpcRole = hub.roleManager.CurrentRole as IFpcRole;
-			if (fpcRole == null)
+			if (allHub.roleManager.CurrentRole is T arg)
 			{
-				return null;
+				action?.Invoke(allHub, arg);
 			}
-			return fpcRole.FpcModule.CharacterModelInstance;
 		}
+	}
 
-		public static void ForEachRole<T>(Action<ReferenceHub, T> action) where T : PlayerRoleBase
+	public static void ForEachRole<T>(Action<T> action) where T : PlayerRoleBase
+	{
+		ForEachRole(delegate(ReferenceHub x, T y)
 		{
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				T t = referenceHub.roleManager.CurrentRole as T;
-				if (t != null && action != null)
-				{
-					action(referenceHub, t);
-				}
-			}
-		}
+			action?.Invoke(y);
+		});
+	}
 
-		public static void ForEachRole<T>(Action<T> action) where T : PlayerRoleBase
+	public static void ForEachRole<T>(Action<ReferenceHub> action) where T : PlayerRoleBase
+	{
+		ForEachRole(delegate(ReferenceHub x, T y)
 		{
-			PlayerRolesUtils.ForEachRole<T>(delegate(ReferenceHub x, T y)
-			{
-				Action<T> action2 = action;
-				if (action2 == null)
-				{
-					return;
-				}
-				action2(y);
-			});
-		}
+			action?.Invoke(x);
+		});
+	}
 
-		public static void ForEachRole<T>(Action<ReferenceHub> action) where T : PlayerRoleBase
-		{
-			PlayerRolesUtils.ForEachRole<T>(delegate(ReferenceHub x, T y)
-			{
-				Action<ReferenceHub> action2 = action;
-				if (action2 == null)
-				{
-					return;
-				}
-				action2(x);
-			});
-		}
-
-		public static string GetColoredName(this PlayerRoleBase role)
-		{
-			return string.Concat(new string[]
-			{
-				"<color=",
-				role.RoleColor.ToHex(),
-				">",
-				role.RoleName,
-				"</color>"
-			});
-		}
-
-		public static readonly CachedLayerMask BlockerMask = new CachedLayerMask(new string[] { "Default", "Door", "Glass" });
+	public static string GetColoredName(this PlayerRoleBase role)
+	{
+		return "<color=" + role.RoleColor.ToHex() + ">" + role.RoleName + "</color>";
 	}
 }

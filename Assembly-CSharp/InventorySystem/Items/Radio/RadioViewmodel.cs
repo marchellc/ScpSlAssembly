@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using CameraShaking;
 using InventorySystem.Items.SwayControllers;
 using PlayerRoles.Voice;
@@ -8,282 +8,260 @@ using UnityEngine.Audio;
 using UnityEngine.UI;
 using VoiceChat.Playbacks;
 
-namespace InventorySystem.Items.Radio
+namespace InventorySystem.Items.Radio;
+
+public class RadioViewmodel : AnimatedViewmodelBase
 {
-	public class RadioViewmodel : AnimatedViewmodelBase
+	[Header("World-space User Interface")]
+	[SerializeField]
+	private GameObject _panelNoBattery;
+
+	[Header("World-space User Interface")]
+	[SerializeField]
+	private GameObject _panelMain;
+
+	[Header("World-space User Interface")]
+	[SerializeField]
+	private GameObject _panelRoot;
+
+	[SerializeField]
+	private TMP_Text _textModeShort;
+
+	[SerializeField]
+	private TMP_Text _textModeFull;
+
+	[SerializeField]
+	private TMP_Text _textBatteryLevel;
+
+	[SerializeField]
+	private TMP_Text _textVolume;
+
+	[SerializeField]
+	private TMP_Text _textTime;
+
+	[SerializeField]
+	private GameObject _txOn;
+
+	[SerializeField]
+	private GameObject _txOff;
+
+	[SerializeField]
+	private GameObject _rxOn;
+
+	[SerializeField]
+	private GameObject _rxOff;
+
+	[SerializeField]
+	private RawImage _rangeIndicator;
+
+	[SerializeField]
+	private RawImage _noBatteryIndicator;
+
+	[SerializeField]
+	private Image[] _batteryLevels;
+
+	[Header("Audio")]
+	[SerializeField]
+	private AudioMixer _voicechatMixer;
+
+	[SerializeField]
+	private AudioSource _audioSource;
+
+	[SerializeField]
+	private AudioClip _clipTurnOn;
+
+	[SerializeField]
+	private AudioClip _clipTurnOff;
+
+	[SerializeField]
+	private AudioClip _clipCircleRange;
+
+	[Header("Tracker")]
+	[SerializeField]
+	private Transform _cameraTrackerSource;
+
+	[SerializeField]
+	private Vector3 _cameraTrackerOffset;
+
+	[SerializeField]
+	private float _cameraTrackerIntensity;
+
+	[Header("Other")]
+	[SerializeField]
+	private Transform _swayPivot;
+
+	[SerializeField]
+	private MeshRenderer _radioRenderer;
+
+	[SerializeField]
+	private Material _enabledMat;
+
+	[SerializeField]
+	private Material _disabledMat;
+
+	private static readonly int IsTransmittingHash = Animator.StringToHash("IsTransmitting");
+
+	private const string RadioChannelName = "AudioSettings_VoiceChat";
+
+	private const string KeypadEmissionChannelName = "_EmissionColor";
+
+	private const float BatteryFlashRate = 2.5f;
+
+	private GoopSway _goopSway;
+
+	private float _batteryFlashTimer;
+
+	private int _prevRange = -1;
+
+	public override IItemSwayController SwayController => _goopSway;
+
+	public override float ViewmodelCameraFOV => 50f;
+
+	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
 	{
-		public override IItemSwayController SwayController
+		base.InitSpectator(ply, id, wasEquipped);
+		OnEquipped();
+		if (wasEquipped)
 		{
-			get
+			GetComponent<AudioSource>().Stop();
+			AnimatorForceUpdate(base.SkipEquipTime);
+		}
+	}
+
+	internal override void OnEquipped()
+	{
+		CameraShakeController.AddEffect(new TrackerShake(_cameraTrackerSource, Quaternion.Euler(_cameraTrackerOffset), _cameraTrackerIntensity));
+		RefreshKeypadColor(_panelRoot.activeSelf);
+	}
+
+	private void Start()
+	{
+		_goopSway = new GoopSway(new GoopSway.GoopSwaySettings(_swayPivot, 0.65f, 0.0035f, 0.04f, 7f, 6.5f, 0.03f, 1.6f, invertSway: false), base.Hub);
+	}
+
+	private void Update()
+	{
+		if (_panelMain.activeSelf && _panelRoot.activeSelf)
+		{
+			_textVolume.text = "-" + (_voicechatMixer.GetFloat("AudioSettings_VoiceChat", out var value) ? Mathf.Abs(Mathf.RoundToInt(value)) : 0);
+			_textTime.text = DateTime.Now.ToString("HH:mm:ss");
+			GetTxRx(out var tx, out var rx);
+			_txOn.SetActive(tx);
+			_txOff.SetActive(!tx);
+			_rxOn.SetActive(rx);
+			_rxOff.SetActive(!rx);
+			AnimatorSetBool(IsTransmittingHash, tx);
+		}
+		else if (_panelNoBattery.activeSelf)
+		{
+			_batteryFlashTimer += Time.deltaTime;
+			if (_batteryFlashTimer > 0.4f)
 			{
-				return this._goopSway;
+				_batteryFlashTimer = 0f;
+				_noBatteryIndicator.enabled = !_noBatteryIndicator.enabled;
 			}
 		}
+		UpdateNetwork();
+	}
 
-		public override float ViewmodelCameraFOV
+	private void UpdateNetwork()
+	{
+		if (!RadioMessages.SyncedRangeLevels.TryGetValue(base.Hub.netId, out var value))
 		{
-			get
-			{
-				return 50f;
-			}
+			return;
 		}
-
-		public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
+		SetBattery(value.Battery);
+		if (value.Battery != 0)
 		{
-			base.InitSpectator(ply, id, wasEquipped);
-			this.OnEquipped();
-			if (!wasEquipped)
+			if (value.Range == RadioMessages.RadioRangeLevel.RadioDisabled)
 			{
+				SetState(state: false);
 				return;
 			}
-			base.GetComponent<AudioSource>().Stop();
-			this.AnimatorForceUpdate(base.SkipEquipTime, true);
+			SetState(state: true);
+			SetRange((int)value.Range);
 		}
+	}
 
-		internal override void OnEquipped()
+	private void GetTxRx(out bool tx, out bool rx)
+	{
+		tx = false;
+		rx = false;
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			CameraShakeController.AddEffect(new TrackerShake(this._cameraTrackerSource, Quaternion.Euler(this._cameraTrackerOffset), this._cameraTrackerIntensity));
-			this.RefreshKeypadColor(this._panelRoot.activeSelf);
-		}
-
-		private void Start()
-		{
-			this._goopSway = new GoopSway(new GoopSway.GoopSwaySettings(this._swayPivot, 0.65f, 0.0035f, 0.04f, 7f, 6.5f, 0.03f, 1.6f, false), base.Hub);
-		}
-
-		private void Update()
-		{
-			if (this._panelMain.activeSelf && this._panelRoot.activeSelf)
+			if (allHub.roleManager.CurrentRole is IVoiceRole voiceRole && PersonalRadioPlayback.IsTransmitting(allHub))
 			{
-				float num;
-				this._textVolume.text = "-" + (this._voicechatMixer.GetFloat("AudioSettings_VoiceChat", out num) ? Mathf.Abs(Mathf.RoundToInt(num)) : 0).ToString();
-				this._textTime.text = DateTime.Now.ToString("HH:mm:ss");
-				bool flag;
-				bool flag2;
-				this.GetTxRx(out flag, out flag2);
-				this._txOn.SetActive(flag);
-				this._txOff.SetActive(!flag);
-				this._rxOn.SetActive(flag2);
-				this._rxOff.SetActive(!flag2);
-				this.AnimatorSetBool(RadioViewmodel.IsTransmittingHash, flag);
-			}
-			else if (this._panelNoBattery.activeSelf)
-			{
-				this._batteryFlashTimer += Time.deltaTime;
-				if (this._batteryFlashTimer > 0.4f)
+				if (allHub == base.Hub)
 				{
-					this._batteryFlashTimer = 0f;
-					this._noBatteryIndicator.enabled = !this._noBatteryIndicator.enabled;
+					tx = true;
 				}
-			}
-			this.UpdateNetwork();
-		}
-
-		private void UpdateNetwork()
-		{
-			RadioStatusMessage radioStatusMessage;
-			if (!RadioMessages.SyncedRangeLevels.TryGetValue(base.Hub.netId, out radioStatusMessage))
-			{
-				return;
-			}
-			this.SetBattery(radioStatusMessage.Battery);
-			if (radioStatusMessage.Battery == 0)
-			{
-				return;
-			}
-			if (radioStatusMessage.Range == RadioMessages.RadioRangeLevel.RadioDisabled)
-			{
-				this.SetState(false);
-				return;
-			}
-			this.SetState(true);
-			this.SetRange((int)radioStatusMessage.Range);
-		}
-
-		private void GetTxRx(out bool tx, out bool rx)
-		{
-			tx = false;
-			rx = false;
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				IVoiceRole voiceRole = referenceHub.roleManager.CurrentRole as IVoiceRole;
-				if (voiceRole != null && PersonalRadioPlayback.IsTransmitting(referenceHub))
+				else if (!(voiceRole.VoiceModule as IRadioVoiceModule).RadioPlayback.Source.mute)
 				{
-					if (referenceHub == base.Hub)
-					{
-						tx = true;
-					}
-					else if (!(voiceRole.VoiceModule as IRadioVoiceModule).RadioPlayback.Source.mute)
-					{
-						rx = true;
-					}
+					rx = true;
 				}
 			}
 		}
+	}
 
-		private void SetBattery(byte percent)
+	private void SetBattery(byte percent)
+	{
+		_panelMain.SetActive(percent > 0);
+		_panelNoBattery.SetActive(percent == 0);
+		if (percent > 0)
 		{
-			this._panelMain.SetActive(percent > 0);
-			this._panelNoBattery.SetActive(percent == 0);
-			if (percent > 0)
+			_textBatteryLevel.text = percent + "%";
+			float num = (float)_batteryLevels.Length / 100f;
+			for (int i = 0; i < _batteryLevels.Length; i++)
 			{
-				this._textBatteryLevel.text = percent.ToString() + "%";
-				float num = (float)this._batteryLevels.Length / 100f;
-				for (int i = 0; i < this._batteryLevels.Length; i++)
-				{
-					this._batteryLevels[i].enabled = Mathf.Round((float)percent * num) >= (float)(i + 1);
-				}
-				return;
+				_batteryLevels[i].enabled = Mathf.Round((float)(int)percent * num) >= (float)(i + 1);
 			}
-			this.AnimatorSetBool(RadioViewmodel.IsTransmittingHash, false);
 		}
-
-		private void SetRange(int rangeId)
+		else
 		{
-			if (this._prevRange != rangeId)
+			AnimatorSetBool(IsTransmittingHash, val: false);
+		}
+	}
+
+	private void SetRange(int rangeId)
+	{
+		if (_prevRange != rangeId)
+		{
+			if (base.gameObject.activeInHierarchy)
 			{
-				if (base.gameObject.activeInHierarchy)
-				{
-					this._audioSource.PlayOneShot(this._clipCircleRange);
-				}
-				this._prevRange = rangeId;
+				_audioSource.PlayOneShot(_clipCircleRange);
 			}
-			RadioItem radioItem;
-			if (!InventoryItemLoader.TryGetItem<RadioItem>(ItemType.Radio, out radioItem))
-			{
-				return;
-			}
-			RadioRangeMode[] ranges = radioItem.Ranges;
+			_prevRange = rangeId;
+		}
+		if (InventoryItemLoader.TryGetItem<RadioItem>(ItemType.Radio, out var result))
+		{
+			RadioRangeMode[] ranges = result.Ranges;
 			rangeId = Mathf.Clamp(rangeId, 0, ranges.Length - 1);
-			this._textModeShort.text = ranges[rangeId].ShortName;
-			this._textModeFull.text = ranges[rangeId].FullName;
-			this._rangeIndicator.texture = ranges[rangeId].SignalTexture;
+			_textModeShort.text = ranges[rangeId].ShortName;
+			_textModeFull.text = ranges[rangeId].FullName;
+			_rangeIndicator.texture = ranges[rangeId].SignalTexture;
 		}
+	}
 
-		private void SetState(bool state)
+	private void SetState(bool state)
+	{
+		if (_panelRoot.activeSelf != state)
 		{
-			if (this._panelRoot.activeSelf == state)
-			{
-				return;
-			}
-			this.RefreshKeypadColor(state);
-			this._panelRoot.SetActive(state);
-			this._audioSource.PlayOneShot(state ? this._clipTurnOn : this._clipTurnOff);
+			RefreshKeypadColor(state);
+			_panelRoot.SetActive(state);
+			_audioSource.PlayOneShot(state ? _clipTurnOn : _clipTurnOff);
 			if (!state)
 			{
-				this.AnimatorSetBool(RadioViewmodel.IsTransmittingHash, false);
+				AnimatorSetBool(IsTransmittingHash, val: false);
 			}
 		}
+	}
 
-		private void RefreshKeypadColor(bool state)
+	private void RefreshKeypadColor(bool state)
+	{
+		Material sharedMaterial = _radioRenderer.sharedMaterial;
+		if (!(sharedMaterial != _enabledMat) || !(sharedMaterial != _disabledMat))
 		{
-			Material sharedMaterial = this._radioRenderer.sharedMaterial;
-			if (sharedMaterial != this._enabledMat && sharedMaterial != this._disabledMat)
-			{
-				return;
-			}
-			this._radioRenderer.sharedMaterial = (state ? this._enabledMat : this._disabledMat);
+			_radioRenderer.sharedMaterial = (state ? _enabledMat : _disabledMat);
 		}
-
-		[Header("World-space User Interface")]
-		[SerializeField]
-		private GameObject _panelNoBattery;
-
-		[Header("World-space User Interface")]
-		[SerializeField]
-		private GameObject _panelMain;
-
-		[Header("World-space User Interface")]
-		[SerializeField]
-		private GameObject _panelRoot;
-
-		[SerializeField]
-		private TMP_Text _textModeShort;
-
-		[SerializeField]
-		private TMP_Text _textModeFull;
-
-		[SerializeField]
-		private TMP_Text _textBatteryLevel;
-
-		[SerializeField]
-		private TMP_Text _textVolume;
-
-		[SerializeField]
-		private TMP_Text _textTime;
-
-		[SerializeField]
-		private GameObject _txOn;
-
-		[SerializeField]
-		private GameObject _txOff;
-
-		[SerializeField]
-		private GameObject _rxOn;
-
-		[SerializeField]
-		private GameObject _rxOff;
-
-		[SerializeField]
-		private RawImage _rangeIndicator;
-
-		[SerializeField]
-		private RawImage _noBatteryIndicator;
-
-		[SerializeField]
-		private Image[] _batteryLevels;
-
-		[Header("Audio")]
-		[SerializeField]
-		private AudioMixer _voicechatMixer;
-
-		[SerializeField]
-		private AudioSource _audioSource;
-
-		[SerializeField]
-		private AudioClip _clipTurnOn;
-
-		[SerializeField]
-		private AudioClip _clipTurnOff;
-
-		[SerializeField]
-		private AudioClip _clipCircleRange;
-
-		[Header("Tracker")]
-		[SerializeField]
-		private Transform _cameraTrackerSource;
-
-		[SerializeField]
-		private Vector3 _cameraTrackerOffset;
-
-		[SerializeField]
-		private float _cameraTrackerIntensity;
-
-		[Header("Other")]
-		[SerializeField]
-		private Transform _swayPivot;
-
-		[SerializeField]
-		private MeshRenderer _radioRenderer;
-
-		[SerializeField]
-		private Material _enabledMat;
-
-		[SerializeField]
-		private Material _disabledMat;
-
-		private static readonly int IsTransmittingHash = Animator.StringToHash("IsTransmitting");
-
-		private const string RadioChannelName = "AudioSettings_VoiceChat";
-
-		private const string KeypadEmissionChannelName = "_EmissionColor";
-
-		private const float BatteryFlashRate = 2.5f;
-
-		private GoopSway _goopSway;
-
-		private float _batteryFlashTimer;
-
-		private int _prevRange = -1;
 	}
 }

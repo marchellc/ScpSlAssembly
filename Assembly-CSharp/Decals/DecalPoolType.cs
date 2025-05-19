@@ -1,13 +1,10 @@
-﻿using System;
+namespace Decals;
 
-namespace Decals
+public enum DecalPoolType
 {
-	public enum DecalPoolType
-	{
-		None,
-		Bullet,
-		Blood,
-		Buckshot,
-		GlassCrack
-	}
+	None,
+	Bullet,
+	Blood,
+	Buckshot,
+	GlassCrack
 }

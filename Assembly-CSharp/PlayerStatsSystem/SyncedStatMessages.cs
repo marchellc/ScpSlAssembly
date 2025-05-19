@@ -1,107 +1,105 @@
-﻿using System;
 using Mirror;
 using PlayerRoles;
 using PlayerRoles.Spectating;
 using UnityEngine;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public static class SyncedStatMessages
 {
-	public static class SyncedStatMessages
+	public struct StatMessage : NetworkMessage
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			CustomNetworkManager.OnClientReady += SyncedStatMessages.RegisterHandler;
-			PlayerRoleManager.OnRoleChanged += SyncedStatMessages.OnRoleChanged;
-		}
+		public SyncedStatBase Stat;
 
-		private static void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevClass, PlayerRoleBase newClass)
-		{
-			if (!NetworkServer.active || !(newClass is SpectatorRole) || userHub.isLocalPlayer)
-			{
-				return;
-			}
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				if (referenceHub.IsAlive() && !(referenceHub == userHub))
-				{
-					SyncedStatMessages.SendAllStats(userHub.networkIdentity.connectionToClient, referenceHub.playerStats);
-				}
-			}
-		}
+		public StatMessageType Type;
 
-		private static void SendAllStats(NetworkConnectionToClient conn, PlayerStats ply)
+		public float SyncedValue;
+	}
+
+	public enum StatMessageType : byte
+	{
+		CurrentValue,
+		MaxValue
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += RegisterHandler;
+		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
+	}
+
+	private static void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevClass, PlayerRoleBase newClass)
+	{
+		if (!NetworkServer.active || !(newClass is SpectatorRole) || userHub.isLocalPlayer)
 		{
-			StatBase[] statModules = ply.StatModules;
-			for (int i = 0; i < statModules.Length; i++)
+			return;
+		}
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (allHub.IsAlive() && !(allHub == userHub))
 			{
-				SyncedStatBase syncedStatBase = statModules[i] as SyncedStatBase;
-				if (syncedStatBase != null && syncedStatBase.Mode != SyncedStatBase.SyncMode.Private)
-				{
-					conn.Send<SyncedStatMessages.StatMessage>(new SyncedStatMessages.StatMessage
-					{
-						Stat = syncedStatBase,
-						Type = SyncedStatMessages.StatMessageType.CurrentValue,
-						SyncedValue = syncedStatBase.CurValue
-					}, 0);
-					conn.Send<SyncedStatMessages.StatMessage>(new SyncedStatMessages.StatMessage
-					{
-						Stat = syncedStatBase,
-						Type = SyncedStatMessages.StatMessageType.MaxValue,
-						SyncedValue = syncedStatBase.MaxValue
-					}, 0);
-				}
+				SendAllStats(userHub.networkIdentity.connectionToClient, allHub.playerStats);
 			}
 		}
+	}
 
-		public static void Serialize(this NetworkWriter writer, SyncedStatMessages.StatMessage value)
+	private static void SendAllStats(NetworkConnectionToClient conn, PlayerStats ply)
+	{
+		StatBase[] statModules = ply.StatModules;
+		for (int i = 0; i < statModules.Length; i++)
 		{
-			writer.WriteUInt(value.Stat.Hub.netId);
-			writer.WriteByte(value.Stat.SyncId);
-			writer.WriteByte((byte)value.Type);
-			value.Stat.WriteValue(value.Type, writer);
-		}
-
-		public static SyncedStatMessages.StatMessage Deserialize(this NetworkReader reader)
-		{
-			uint num = reader.ReadUInt();
-			byte b = reader.ReadByte();
-			SyncedStatMessages.StatMessageType statMessageType = (SyncedStatMessages.StatMessageType)reader.ReadByte();
-			SyncedStatBase statOfUser = SyncedStatBase.GetStatOfUser(num, b);
-			return new SyncedStatMessages.StatMessage
+			if (statModules[i] is SyncedStatBase { Mode: not SyncedStatBase.SyncMode.Private } syncedStatBase)
 			{
-				Stat = statOfUser,
-				Type = statMessageType,
-				SyncedValue = statOfUser.ReadValue(reader)
-			};
-		}
-
-		private static void RegisterHandler()
-		{
-			NetworkClient.ReplaceHandler<SyncedStatMessages.StatMessage>(delegate(SyncedStatMessages.StatMessage msg)
-			{
-				if (msg.Type == SyncedStatMessages.StatMessageType.CurrentValue)
+				conn.Send(new StatMessage
 				{
-					msg.Stat.CurValue = msg.SyncedValue;
-					return;
-				}
+					Stat = syncedStatBase,
+					Type = StatMessageType.CurrentValue,
+					SyncedValue = syncedStatBase.CurValue
+				});
+				conn.Send(new StatMessage
+				{
+					Stat = syncedStatBase,
+					Type = StatMessageType.MaxValue,
+					SyncedValue = syncedStatBase.MaxValue
+				});
+			}
+		}
+	}
+
+	public static void Serialize(this NetworkWriter writer, StatMessage value)
+	{
+		writer.WriteUInt(value.Stat.Hub.netId);
+		writer.WriteByte(value.Stat.SyncId);
+		writer.WriteByte((byte)value.Type);
+		value.Stat.WriteValue(value.Type, writer);
+	}
+
+	public static StatMessage Deserialize(this NetworkReader reader)
+	{
+		uint netId = reader.ReadUInt();
+		byte syncId = reader.ReadByte();
+		StatMessageType type = (StatMessageType)reader.ReadByte();
+		SyncedStatBase statOfUser = SyncedStatBase.GetStatOfUser(netId, syncId);
+		StatMessage result = default(StatMessage);
+		result.Stat = statOfUser;
+		result.Type = type;
+		result.SyncedValue = statOfUser.ReadValue(type, reader);
+		return result;
+	}
+
+	private static void RegisterHandler()
+	{
+		NetworkClient.ReplaceHandler(delegate(StatMessage msg)
+		{
+			if (msg.Type == StatMessageType.CurrentValue)
+			{
+				msg.Stat.CurValue = msg.SyncedValue;
+			}
+			else
+			{
 				msg.Stat.MaxValue = msg.SyncedValue;
-			}, true);
-		}
-
-		public struct StatMessage : NetworkMessage
-		{
-			public SyncedStatBase Stat;
-
-			public SyncedStatMessages.StatMessageType Type;
-
-			public float SyncedValue;
-		}
-
-		public enum StatMessageType : byte
-		{
-			CurrentValue,
-			MaxValue
-		}
+			}
+		});
 	}
 }

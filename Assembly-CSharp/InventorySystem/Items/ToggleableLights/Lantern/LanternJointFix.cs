@@ -1,47 +1,44 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.ToggleableLights.Lantern
+namespace InventorySystem.Items.ToggleableLights.Lantern;
+
+public class LanternJointFix : MonoBehaviour
 {
-	public class LanternJointFix : MonoBehaviour
+	private Quaternion _initialLocalRotation;
+
+	private Vector3 _initialLocalPosition;
+
+	private Quaternion _localRotationOnDisable;
+
+	private Vector3 _localPositionOnDisable;
+
+	private bool _hasDisabled;
+
+	private Transform _transform;
+
+	private void Awake()
 	{
-		private void Awake()
+		_transform = base.transform;
+		_initialLocalRotation = _transform.localRotation;
+		_initialLocalPosition = _transform.localPosition;
+	}
+
+	private void OnDisable()
+	{
+		_localRotationOnDisable = _transform.localRotation;
+		_transform.localRotation = _initialLocalRotation;
+		_localPositionOnDisable = _transform.localPosition;
+		_transform.localPosition = _initialLocalPosition;
+		_hasDisabled = true;
+	}
+
+	private void Update()
+	{
+		if (_hasDisabled)
 		{
-			this._transform = base.transform;
-			this._initialLocalRotation = this._transform.localRotation;
-			this._initialLocalPosition = this._transform.localPosition;
+			_hasDisabled = false;
+			_transform.localRotation = _localRotationOnDisable;
+			_transform.localPosition = _localPositionOnDisable;
 		}
-
-		private void OnDisable()
-		{
-			this._localRotationOnDisable = this._transform.localRotation;
-			this._transform.localRotation = this._initialLocalRotation;
-			this._localPositionOnDisable = this._transform.localPosition;
-			this._transform.localPosition = this._initialLocalPosition;
-			this._hasDisabled = true;
-		}
-
-		private void Update()
-		{
-			if (!this._hasDisabled)
-			{
-				return;
-			}
-			this._hasDisabled = false;
-			this._transform.localRotation = this._localRotationOnDisable;
-			this._transform.localPosition = this._localPositionOnDisable;
-		}
-
-		private Quaternion _initialLocalRotation;
-
-		private Vector3 _initialLocalPosition;
-
-		private Quaternion _localRotationOnDisable;
-
-		private Vector3 _localPositionOnDisable;
-
-		private bool _hasDisabled;
-
-		private Transform _transform;
 	}
 }

@@ -1,45 +1,43 @@
-﻿using System;
+using System;
 
-namespace CustomPlayerEffects.Danger
+namespace CustomPlayerEffects.Danger;
+
+public class CorrodingDanger : DangerStackBase
 {
-	public class CorrodingDanger : DangerStackBase
+	private Corroding _corroding;
+
+	private PocketCorroding _pocketCorroding;
+
+	public override float DangerValue { get; set; } = 1f;
+
+	public override void Initialize(ReferenceHub target)
 	{
-		public override float DangerValue { get; set; } = 1f;
-
-		public override void Initialize(ReferenceHub target)
+		base.Initialize(target);
+		if (!base.Owner.playerEffectsController.TryGetEffect<Corroding>(out _corroding))
 		{
-			base.Initialize(target);
-			if (!base.Owner.playerEffectsController.TryGetEffect<Corroding>(out this._corroding))
-			{
-				throw new NullReferenceException("Corroding wasn't found. This DangerOverride will not function as intended.");
-			}
-			if (!base.Owner.playerEffectsController.TryGetEffect<PocketCorroding>(out this._pocketCorroding))
-			{
-				throw new NullReferenceException("PocketCorroding wasn't found. This DangerOverride will not function as intended.");
-			}
-			this.IsActive = this._corroding.IsEnabled || this._pocketCorroding.IsEnabled;
-			StatusEffectBase.OnEnabled += this.UpdateState;
-			StatusEffectBase.OnDisabled += this.UpdateState;
+			throw new NullReferenceException("Corroding wasn't found. This DangerOverride will not function as intended.");
 		}
-
-		public override void Dispose()
+		if (!base.Owner.playerEffectsController.TryGetEffect<PocketCorroding>(out _pocketCorroding))
 		{
-			base.Dispose();
-			StatusEffectBase.OnEnabled -= this.UpdateState;
-			StatusEffectBase.OnDisabled -= this.UpdateState;
+			throw new NullReferenceException("PocketCorroding wasn't found. This DangerOverride will not function as intended.");
 		}
+		IsActive = _corroding.IsEnabled || _pocketCorroding.IsEnabled;
+		StatusEffectBase.OnEnabled += UpdateState;
+		StatusEffectBase.OnDisabled += UpdateState;
+	}
 
-		private void UpdateState(StatusEffectBase effect)
+	public override void Dispose()
+	{
+		base.Dispose();
+		StatusEffectBase.OnEnabled -= UpdateState;
+		StatusEffectBase.OnDisabled -= UpdateState;
+	}
+
+	private void UpdateState(StatusEffectBase effect)
+	{
+		if (!(effect != _corroding) || !(effect != _pocketCorroding))
 		{
-			if (effect != this._corroding && effect != this._pocketCorroding)
-			{
-				return;
-			}
-			this.IsActive = this._corroding.IsEnabled || this._pocketCorroding.IsEnabled;
+			IsActive = _corroding.IsEnabled || _pocketCorroding.IsEnabled;
 		}
-
-		private Corroding _corroding;
-
-		private PocketCorroding _pocketCorroding;
 	}
 }

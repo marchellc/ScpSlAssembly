@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,29 +6,29 @@ public class MoreCast : MonoBehaviour
 	public static bool BeamCast(Vector3 start, Vector3 end, Vector3 beamRadius, float beamStep, out List<RaycastHit> hitInfo, int layerMask, bool any)
 	{
 		hitInfo = new List<RaycastHit>();
-		Vector3 vector = start;
-		Vector3 vector2 = end;
-		vector -= beamRadius;
-		vector2 -= beamRadius;
-		for (float num = -beamRadius.x; num < beamRadius.x; num += beamStep)
+		Vector3 start2 = start;
+		Vector3 end2 = end;
+		start2 -= beamRadius;
+		end2 -= beamRadius;
+		for (float num = 0f - beamRadius.x; num < beamRadius.x; num += beamStep)
 		{
-			vector.y = start.y;
-			vector2.y = end.y;
-			vector.x += beamStep;
-			vector2.x += beamStep;
-			for (float num2 = -beamRadius.y; num2 < beamRadius.x; num2 += beamStep)
+			start2.y = start.y;
+			end2.y = end.y;
+			start2.x += beamStep;
+			end2.x += beamStep;
+			for (float num2 = 0f - beamRadius.y; num2 < beamRadius.x; num2 += beamStep)
 			{
-				vector.z = start.z;
-				vector2.z = end.z;
-				vector.y += beamStep;
-				vector2.y += beamStep;
-				for (float num3 = -beamRadius.x; num3 < beamRadius.x; num3 += beamStep)
+				start2.z = start.z;
+				end2.z = end.z;
+				start2.y += beamStep;
+				end2.y += beamStep;
+				for (float num3 = 0f - beamRadius.x; num3 < beamRadius.x; num3 += beamStep)
 				{
-					vector.z += beamStep;
-					vector2.z += beamStep;
-					RaycastHit raycastHit;
-					bool flag = Physics.Linecast(vector, vector2, out raycastHit, layerMask);
-					hitInfo.Add(raycastHit);
+					start2.z += beamStep;
+					end2.z += beamStep;
+					RaycastHit hitInfo2;
+					bool flag = Physics.Linecast(start2, end2, out hitInfo2, layerMask);
+					hitInfo.Add(hitInfo2);
 					if (any && flag)
 					{
 						return true;
@@ -46,7 +45,7 @@ public class MoreCast : MonoBehaviour
 
 	public static bool BeamCast(Vector3 start, Vector3 end, Vector3 beamRadius, float beamStep, int layerMask, bool any)
 	{
-		List<RaycastHit> list;
-		return MoreCast.BeamCast(start, end, beamRadius, beamStep, out list, layerMask, any);
+		List<RaycastHit> hitInfo;
+		return BeamCast(start, end, beamRadius, beamStep, out hitInfo, layerMask, any);
 	}
 }

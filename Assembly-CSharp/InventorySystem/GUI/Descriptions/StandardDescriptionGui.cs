@@ -1,41 +1,27 @@
-﻿using System;
 using InventorySystem.Items;
 using TMPro;
 using UnityEngine;
 
-namespace InventorySystem.GUI.Descriptions
+namespace InventorySystem.GUI.Descriptions;
+
+public class StandardDescriptionGui : RadialDescriptionBase
 {
-	public class StandardDescriptionGui : RadialDescriptionBase
+	[SerializeField]
+	private TextMeshProUGUI _title;
+
+	[SerializeField]
+	private TextMeshProUGUI _desc;
+
+	public override void UpdateInfo(ItemBase targetItem, Color roleColor)
 	{
-		public override void UpdateInfo(ItemBase targetItem, Color roleColor)
+		if (targetItem is IItemDescription itemDescription)
 		{
-			IItemDescription itemDescription = targetItem as IItemDescription;
-			if (itemDescription != null)
-			{
-				this._title.text = itemDescription.Name;
-				this._desc.text = itemDescription.Description;
-				return;
-			}
-			TMP_Text title = this._title;
-			IItemNametag itemNametag = targetItem as IItemNametag;
-			title.text = ((itemNametag != null) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
-			this._desc.text = string.Empty;
-			Debug.LogError(string.Concat(new string[]
-			{
-				"Item '",
-				targetItem.ItemTypeId.ToString(),
-				"' of the class '",
-				targetItem.GetType().FullName,
-				"' does have an implementation of the 'IItemDescription' interface, which is required by items of the '",
-				targetItem.Category.ToString(),
-				"' category."
-			}));
+			_title.text = itemDescription.Name;
+			_desc.text = itemDescription.Description;
+			return;
 		}
-
-		[SerializeField]
-		private TextMeshProUGUI _title;
-
-		[SerializeField]
-		private TextMeshProUGUI _desc;
+		_title.text = ((targetItem is IItemNametag itemNametag) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
+		_desc.text = string.Empty;
+		Debug.LogError("Item '" + targetItem.ItemTypeId.ToString() + "' of the class '" + targetItem.GetType().FullName + "' does have an implementation of the 'IItemDescription' interface, which is required by items of the '" + targetItem.Category.ToString() + "' category.");
 	}
 }

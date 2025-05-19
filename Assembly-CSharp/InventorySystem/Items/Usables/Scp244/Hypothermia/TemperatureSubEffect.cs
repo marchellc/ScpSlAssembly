@@ -1,51 +1,43 @@
-﻿using System;
 using CustomPlayerEffects;
 using PlayerRoles;
 using UnityEngine;
 
-namespace InventorySystem.Items.Usables.Scp244.Hypothermia
+namespace InventorySystem.Items.Usables.Scp244.Hypothermia;
+
+public class TemperatureSubEffect : HypothermiaSubEffectBase
 {
-	public class TemperatureSubEffect : HypothermiaSubEffectBase
+	[SerializeField]
+	private float _maxExitTemp;
+
+	[SerializeField]
+	private float _temperatureDrop;
+
+	public float CurTemperature { get; private set; }
+
+	public override bool IsActive => CurTemperature > 0f;
+
+	internal override void UpdateEffect(float curExposure)
 	{
-		public float CurTemperature { get; private set; }
-
-		public override bool IsActive
+		if (!base.Hub.IsAlive())
 		{
-			get
+			DisableEffect();
+		}
+		else if (curExposure == 0f)
+		{
+			if (CurTemperature != 0f)
 			{
-				return this.CurTemperature > 0f;
+				float value = CurTemperature - _temperatureDrop * Time.deltaTime;
+				CurTemperature = Mathf.Clamp(value, 0f, _maxExitTemp);
 			}
 		}
-
-		internal override void UpdateEffect(float curExposure)
+		else
 		{
-			if (!base.Hub.IsAlive())
-			{
-				this.DisableEffect();
-				return;
-			}
-			if (curExposure != 0f)
-			{
-				this.CurTemperature += curExposure * RainbowTaste.CurrentMultiplier(base.Hub) * Time.deltaTime;
-				return;
-			}
-			if (this.CurTemperature == 0f)
-			{
-				return;
-			}
-			float num = this.CurTemperature - this._temperatureDrop * Time.deltaTime;
-			this.CurTemperature = Mathf.Clamp(num, 0f, this._maxExitTemp);
+			CurTemperature += curExposure * RainbowTaste.CurrentMultiplier(base.Hub) * Time.deltaTime;
 		}
+	}
 
-		public override void DisableEffect()
-		{
-			this.CurTemperature = 0f;
-		}
-
-		[SerializeField]
-		private float _maxExitTemp;
-
-		[SerializeField]
-		private float _temperatureDrop;
+	public override void DisableEffect()
+	{
+		CurTemperature = 0f;
 	}
 }

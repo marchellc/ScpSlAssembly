@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 
-namespace LiteNetLib
+namespace LiteNetLib;
+
+public class InvalidPacketException : ArgumentException
 {
-	public class InvalidPacketException : ArgumentException
+	public InvalidPacketException(string message)
+		: base(message)
 	{
-		public InvalidPacketException(string message)
-			: base(message)
-		{
-		}
 	}
 }

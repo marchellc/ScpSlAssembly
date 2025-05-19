@@ -1,62 +1,52 @@
-﻿using System;
 using Mirror;
 using Subtitles;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public class CustomReasonDamageHandler : StandardDamageHandler
 {
-	public class CustomReasonDamageHandler : StandardDamageHandler
+	private string _deathReason;
+
+	private readonly CassieAnnouncement _cassieAnnouncement;
+
+	public override float Damage { get; internal set; }
+
+	public override string RagdollInspectText => _deathReason;
+
+	public override string DeathScreenText => _deathReason;
+
+	public override CassieAnnouncement CassieDeathAnnouncement => _cassieAnnouncement;
+
+	public override string ServerLogsText => "Killed with a custom reason - " + _deathReason;
+
+	public CustomReasonDamageHandler(string customReason)
 	{
-		public override float Damage { get; internal set; }
+		_deathReason = customReason;
+		Damage = -1f;
+		_cassieAnnouncement = new CassieAnnouncement();
+	}
 
-		public override DamageHandlerBase.CassieAnnouncement CassieDeathAnnouncement
+	public CustomReasonDamageHandler(string customReason, float damage, string customCassieAnnouncement = "")
+	{
+		_deathReason = customReason;
+		Damage = damage;
+		_cassieAnnouncement = new CassieAnnouncement();
+		_cassieAnnouncement.Announcement = customCassieAnnouncement;
+		_cassieAnnouncement.SubtitleParts = new SubtitlePart[1]
 		{
-			get
-			{
-				return this._cassieAnnouncement;
-			}
-		}
+			new SubtitlePart(SubtitleType.Custom, customCassieAnnouncement)
+		};
+	}
 
-		public override string ServerLogsText
-		{
-			get
-			{
-				return "Killed with a custom reason - " + this._deathReason;
-			}
-		}
+	public override void WriteAdditionalData(NetworkWriter writer)
+	{
+		base.WriteAdditionalData(writer);
+		writer.WriteString(_deathReason);
+	}
 
-		public CustomReasonDamageHandler(string customReason)
-		{
-			this._deathReason = customReason;
-			this.Damage = -1f;
-			this._cassieAnnouncement = new DamageHandlerBase.CassieAnnouncement();
-		}
-
-		public CustomReasonDamageHandler(string customReason, float damage, string customCassieAnnouncement = "")
-		{
-			this._deathReason = customReason;
-			this.Damage = damage;
-			this._cassieAnnouncement = new DamageHandlerBase.CassieAnnouncement();
-			this._cassieAnnouncement.Announcement = customCassieAnnouncement;
-			this._cassieAnnouncement.SubtitleParts = new SubtitlePart[]
-			{
-				new SubtitlePart(SubtitleType.Custom, new string[] { customCassieAnnouncement })
-			};
-		}
-
-		public override void WriteAdditionalData(NetworkWriter writer)
-		{
-			base.WriteAdditionalData(writer);
-			writer.WriteString(this._deathReason);
-		}
-
-		public override void ReadAdditionalData(NetworkReader reader)
-		{
-			base.ReadAdditionalData(reader);
-			this._deathReason = reader.ReadString();
-		}
-
-		private string _deathReason;
-
-		private readonly DamageHandlerBase.CassieAnnouncement _cassieAnnouncement;
+	public override void ReadAdditionalData(NetworkReader reader)
+	{
+		base.ReadAdditionalData(reader);
+		_deathReason = reader.ReadString();
 	}
 }

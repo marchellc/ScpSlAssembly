@@ -1,8 +1,5 @@
-﻿using System;
+namespace Achievements.Handlers;
 
-namespace Achievements.Handlers
+public class ProceedWithCautionHandler : AchievementHandlerBase
 {
-	public class ProceedWithCautionHandler : AchievementHandlerBase
-	{
-	}
 }

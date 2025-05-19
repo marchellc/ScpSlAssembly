@@ -1,8 +1,8 @@
-﻿using System;
+using System.Runtime.InteropServices;
 
-namespace Hints
+namespace Hints;
+
+[StructLayout(LayoutKind.Sequential, Size = 1)]
+public readonly struct SharedHintData
 {
-	public readonly struct SharedHintData
-	{
-	}
 }

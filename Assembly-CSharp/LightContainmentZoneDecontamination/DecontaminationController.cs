@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using CustomPlayerEffects;
@@ -11,549 +11,516 @@ using MapGeneration;
 using MEC;
 using Mirror;
 using PlayerRoles;
-using PlayerRoles.FirstPersonControl;
 using PlayerRoles.PlayableScps.Scp079;
 using PlayerRoles.Spectating;
 using Subtitles;
 using UnityEngine;
 
-namespace LightContainmentZoneDecontamination
+namespace LightContainmentZoneDecontamination;
+
+public class DecontaminationController : NetworkBehaviour
 {
-	public class DecontaminationController : NetworkBehaviour
+	public enum DecontaminationStatus : byte
 	{
-		public static double GetServerTime
+		None,
+		Disabled,
+		Forced
+	}
+
+	[Serializable]
+	public struct DecontaminationPhase
+	{
+		public enum PhaseFunction : byte
 		{
-			get
-			{
-				return NetworkTime.time - DecontaminationController.Singleton.RoundStartTime + (double)DecontaminationController.Singleton.TimeOffset;
-			}
+			None,
+			GloballyAudible,
+			OpenCheckpoints,
+			Final
 		}
 
-		public string ElevatorsLockedText
-		{
-			get
-			{
-				return this._elevatorsLockedText;
-			}
-			set
-			{
-				this.Network_elevatorsLockedText = value;
-			}
-		}
+		public float TimeTrigger;
 
-		private bool IsAnnouncementHearable
-		{
-			get
-			{
-				ReferenceHub referenceHub;
-				if (!ReferenceHub.TryGetLocalHub(out referenceHub))
-				{
-					return false;
-				}
-				if (this._curFunction == DecontaminationController.DecontaminationPhase.PhaseFunction.Final)
-				{
-					return true;
-				}
-				if (this._curFunction == DecontaminationController.DecontaminationPhase.PhaseFunction.GloballyAudible)
-				{
-					return true;
-				}
-				ICameraController cameraController = referenceHub.roleManager.CurrentRole as ICameraController;
-				float num = ((cameraController != null) ? cameraController.CameraPosition.y : referenceHub.transform.position.y);
-				return num > -200f && num < 200f;
-			}
-		}
+		public float GameTime;
 
-		public bool IsDecontaminating
-		{
-			get
-			{
-				return NetworkServer.active && this._decontaminationBegun;
-			}
-		}
+		public AudioClip AnnouncementLine;
 
-		public float TimeOffset
-		{
-			get
-			{
-				return this._timeOffset;
-			}
-			set
-			{
-				this._justJoinedCooldown = 9f;
-				this.Network_timeOffset = value;
-			}
-		}
+		public PhaseFunction Function;
+	}
 
-		private void OnElevatorTextChanged(string oldValue, string newValue)
-		{
-		}
+	public static DecontaminationController Singleton;
 
-		private void SetElevatorTextClient(string text)
-		{
-		}
+	private static readonly ElevatorGroup[] GroupsToLock = new ElevatorGroup[4]
+	{
+		ElevatorGroup.LczA01,
+		ElevatorGroup.LczA02,
+		ElevatorGroup.LczB01,
+		ElevatorGroup.LczB02
+	};
 
-		private void OnTimeOffsetChanged(float oldValue, float newValue)
-		{
-		}
+	[SyncVar(hook = "OnTimeOffsetChanged")]
+	private float _timeOffset;
 
-		public void OnChangeDisableDecontamination(DecontaminationController.DecontaminationStatus oldValue, DecontaminationController.DecontaminationStatus newValue)
-		{
-			if (oldValue == newValue)
-			{
-				return;
-			}
-			if (newValue == DecontaminationController.DecontaminationStatus.Disabled)
-			{
-				DoorEventOpenerExtension.TriggerAction(DoorEventOpenerExtension.OpenerEventType.DeconReset);
-				this.EnableElevators();
-			}
-		}
+	public DecontaminationPhase[] DecontaminationPhases;
 
-		public void ForceDecontamination()
-		{
-			this.NetworkDecontaminationOverride = DecontaminationController.DecontaminationStatus.Forced;
-			this.FinishDecontamination();
-		}
+	public AudioSource AnnouncementAudioSource;
 
-		private void Awake()
-		{
-			DecontaminationController.Singleton = this;
-		}
+	[SyncVar]
+	public double RoundStartTime;
 
-		private void Start()
-		{
-			if (NetworkServer.active && ConfigFile.ServerConfig.GetBool("disable_decontamination", false))
-			{
-				this.NetworkDecontaminationOverride = DecontaminationController.DecontaminationStatus.Disabled;
-			}
-			for (int i = 0; i < this.DecontaminationPhases.Length; i++)
-			{
-				DecontaminationController.DecontaminationPhase[] decontaminationPhases = this.DecontaminationPhases;
-				int num = i;
-				decontaminationPhases[num].TimeTrigger = decontaminationPhases[num].TimeTrigger * 60f;
-			}
-		}
+	[SyncVar(hook = "OnChangeDisableDecontamination")]
+	public DecontaminationStatus DecontaminationOverride;
 
-		private IEnumerator<float> KillPlayers()
-		{
-			float timer = 1f;
-			while (DecontaminationController.Singleton != null && this._decontaminationBegun && this.DecontaminationOverride != DecontaminationController.DecontaminationStatus.Disabled)
-			{
-				timer -= Time.deltaTime;
-				yield return float.NegativeInfinity;
-				if (timer <= 0f)
-				{
-					timer = 1f;
-					foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-					{
-						if (referenceHub.IsAlive())
-						{
-							float y = referenceHub.transform.position.y;
-							bool flag = y < 200f && y > -200f;
-							Decontaminating effect = referenceHub.playerEffectsController.GetEffect<Decontaminating>();
-							if (!effect.IsEnabled && flag)
-							{
-								referenceHub.playerEffectsController.EnableEffect<Decontaminating>(0f, false);
-							}
-							else if (effect.IsEnabled && !flag)
-							{
-								referenceHub.playerEffectsController.DisableEffect<Decontaminating>();
-							}
-						}
-					}
-				}
-			}
-			yield break;
-		}
+	public static bool AutoDeconBroadcastEnabled;
 
-		private void FinishDecontamination()
-		{
-			if (NetworkServer.active)
-			{
-				LczDecontaminationStartingEventArgs lczDecontaminationStartingEventArgs = new LczDecontaminationStartingEventArgs();
-				ServerEvents.OnLczDecontaminationStarting(lczDecontaminationStartingEventArgs);
-				if (!lczDecontaminationStartingEventArgs.IsAllowed)
-				{
-					return;
-				}
-				ServerLogs.AddLog(ServerLogs.Modules.GameLogic, "Decontamination started.", ServerLogs.ServerLogType.GameEvent, false);
-				DoorEventOpenerExtension.TriggerAction(DoorEventOpenerExtension.OpenerEventType.DeconFinish);
-				this.DisableElevators();
-				if (DecontaminationController.AutoDeconBroadcastEnabled && !this._decontaminationBegun)
-				{
-					Broadcast.Singleton.RpcAddElement(DecontaminationController.DeconBroadcastDeconMessage, DecontaminationController.DeconBroadcastDeconMessageTime, Broadcast.BroadcastFlags.Normal);
-				}
-				this._decontaminationBegun = true;
-				Timing.RunCoroutine(this.KillPlayers());
-				ServerEvents.OnLczDecontaminationStarted();
-			}
-		}
+	public static string DeconBroadcastDeconMessage;
 
-		public void EnableElevators()
-		{
-			ElevatorGroup[] groupsToLock = DecontaminationController.GroupsToLock;
-			for (int i = 0; i < groupsToLock.Length; i++)
-			{
-				ElevatorChamber elevatorChamber;
-				if (ElevatorChamber.TryGetChamber(groupsToLock[i], out elevatorChamber))
-				{
-					elevatorChamber.ServerLockAllDoors(DoorLockReason.DecontLockdown, false);
-				}
-			}
-			this._elevatorsDirty = false;
-		}
+	public static ushort DeconBroadcastDeconMessageTime;
 
-		public void DisableElevators()
-		{
-			ElevatorGroup[] groupsToLock = DecontaminationController.GroupsToLock;
-			for (int i = 0; i < groupsToLock.Length; i++)
-			{
-				ElevatorChamber elevatorChamber;
-				if (ElevatorChamber.TryGetChamber(groupsToLock[i], out elevatorChamber))
-				{
-					elevatorChamber.ServerLockAllDoors(DoorLockReason.DecontLockdown, true);
-					if (elevatorChamber.DestinationLevel != 1)
-					{
-						elevatorChamber.ServerSetDestination(1, true);
-					}
-				}
-			}
-			this._elevatorsDirty = false;
-		}
+	private DecontaminationPhase.PhaseFunction _curFunction;
 
-		private void Update()
-		{
-			if (this._elevatorsDirty)
-			{
-				this.DisableElevators();
-			}
-			if (this._stopUpdating)
-			{
-				return;
-			}
-			if (NetworkServer.active)
-			{
-				this.ServersideSetup();
-			}
-			this.UpdateTime();
-		}
+	private int _nextPhase;
 
-		private void ServersideSetup()
-		{
-			if (this.DecontaminationOverride != DecontaminationController.DecontaminationStatus.None)
-			{
-				return;
-			}
-			if (this.RoundStartTime != 0.0)
-			{
-				return;
-			}
-			if (RoundStart.singleton.Timer == -1)
-			{
-				this.NetworkRoundStartTime = NetworkTime.time;
-			}
-		}
+	private float _prevVolume;
 
-		private void UpdateTime()
-		{
-			if (this.DecontaminationOverride != DecontaminationController.DecontaminationStatus.None)
-			{
-				return;
-			}
-			if (this.RoundStartTime <= 0.0)
-			{
-				if (this.RoundStartTime == -1.0)
-				{
-					this._stopUpdating = true;
-				}
-				return;
-			}
-			if (this._justJoinedCooldown < 10f)
-			{
-				this._justJoinedCooldown += Time.deltaTime;
-			}
-			float num = (float)DecontaminationController.GetServerTime;
-			if (num != -1f && num > this.DecontaminationPhases[this._nextPhase].TimeTrigger)
-			{
-				if (this.DecontaminationPhases[this._nextPhase].AnnouncementLine != null && this._justJoinedCooldown >= 10f)
-				{
-					this._curFunction = this.DecontaminationPhases[this._nextPhase].Function;
-					this.UpdateSpeaker(true);
-					this.AnnouncementAudioSource.PlayOneShot(this.DecontaminationPhases[this._nextPhase].AnnouncementLine);
-					if (NetworkServer.active)
-					{
-						List<SubtitlePart> list = new List<SubtitlePart>(1);
-						switch (this._nextPhase)
-						{
-						case 0:
-							list.Add(new SubtitlePart(SubtitleType.DecontaminationStart, null));
-							break;
-						case 1:
-							list.Add(new SubtitlePart(SubtitleType.DecontaminationMinutes, new string[] { "10" }));
-							break;
-						case 2:
-							list.Add(new SubtitlePart(SubtitleType.DecontaminationMinutes, new string[] { "5" }));
-							break;
-						case 3:
-							list.Add(new SubtitlePart(SubtitleType.Decontamination1Minute, null));
-							break;
-						case 4:
-							list.Add(new SubtitlePart(SubtitleType.DecontaminationCountdown, null));
-							break;
-						case 6:
-							list.Add(new SubtitlePart(SubtitleType.DecontaminationLockdown, null));
-							break;
-						}
-						foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-						{
-							if (this.IsAudibleForClient(referenceHub))
-							{
-								new SubtitleMessage(list.ToArray()).SendToSpectatorsOf(referenceHub, true);
-							}
-						}
-					}
-				}
-				if (this.DecontaminationPhases[this._nextPhase].Function == DecontaminationController.DecontaminationPhase.PhaseFunction.Final)
-				{
-					this.FinishDecontamination();
-				}
-				if (NetworkServer.active && this.DecontaminationPhases[this._nextPhase].Function == DecontaminationController.DecontaminationPhase.PhaseFunction.OpenCheckpoints)
-				{
-					DoorEventOpenerExtension.TriggerAction(DoorEventOpenerExtension.OpenerEventType.DeconEvac);
-				}
-				if (this._nextPhase == this.DecontaminationPhases.Length - 1)
-				{
-					this._stopUpdating = true;
-					return;
-				}
-				ServerEvents.OnLczDecontaminationAnnounced(new LczDecontaminationAnnouncedEventArgs(this._nextPhase));
-				this._nextPhase++;
-			}
-		}
+	private bool _stopUpdating;
 
-		private bool IsAudibleForClient(ReferenceHub hub)
+	private bool _elevatorsDirty;
+
+	private bool _decontaminationBegun;
+
+	private float _justJoinedCooldown;
+
+	[SyncVar(hook = "OnElevatorTextChanged")]
+	private string _elevatorsLockedText;
+
+	public static double GetServerTime => NetworkTime.time - Singleton.RoundStartTime + (double)Singleton.TimeOffset;
+
+	public string ElevatorsLockedText
+	{
+		get
 		{
-			if (this._curFunction == DecontaminationController.DecontaminationPhase.PhaseFunction.Final)
+			return _elevatorsLockedText;
+		}
+		set
+		{
+			Network_elevatorsLockedText = value;
+		}
+	}
+
+	private bool IsAnnouncementHearable
+	{
+		get
+		{
+			if (!ReferenceHub.TryGetPovHub(out var hub))
+			{
+				return false;
+			}
+			if (_curFunction == DecontaminationPhase.PhaseFunction.Final)
 			{
 				return true;
 			}
-			if (this._curFunction == DecontaminationController.DecontaminationPhase.PhaseFunction.GloballyAudible)
+			if (_curFunction == DecontaminationPhase.PhaseFunction.GloballyAudible)
 			{
 				return true;
 			}
-			PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
-			Scp079Role scp079Role = currentRole as Scp079Role;
-			if (scp079Role != null)
+			return hub.GetCurrentZone() == FacilityZone.LightContainment;
+		}
+	}
+
+	public bool IsDecontaminating
+	{
+		get
+		{
+			if (NetworkServer.active)
 			{
-				return scp079Role.CurrentCamera.Room.Zone == FacilityZone.LightContainment;
-			}
-			IFpcRole fpcRole = currentRole as IFpcRole;
-			if (fpcRole != null)
-			{
-				RoomIdentifier roomIdentifier = RoomUtils.RoomAtPositionRaycasts(fpcRole.FpcModule.Position, true);
-				return roomIdentifier != null && roomIdentifier.Zone == FacilityZone.LightContainment;
+				return _decontaminationBegun;
 			}
 			return false;
 		}
+	}
 
-		private void UpdateSpeaker(bool hard)
+	public float TimeOffset
+	{
+		get
 		{
-			float num = (float)(this.IsAnnouncementHearable ? 1 : 0);
-			float num2 = (hard ? 1f : (Time.deltaTime * 4f));
-			this.AnnouncementAudioSource.volume = Mathf.Lerp(this.AnnouncementAudioSource.volume, num, num2);
+			return _timeOffset;
 		}
+		set
+		{
+			_justJoinedCooldown = 9f;
+			Network_timeOffset = value;
+		}
+	}
 
-		public override bool Weaved()
+	public float Network_timeOffset
+	{
+		get
+		{
+			return _timeOffset;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref _timeOffset, 1uL, OnTimeOffsetChanged);
+		}
+	}
+
+	public double NetworkRoundStartTime
+	{
+		get
+		{
+			return RoundStartTime;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref RoundStartTime, 2uL, null);
+		}
+	}
+
+	public DecontaminationStatus NetworkDecontaminationOverride
+	{
+		get
+		{
+			return DecontaminationOverride;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref DecontaminationOverride, 4uL, OnChangeDisableDecontamination);
+		}
+	}
+
+	public string Network_elevatorsLockedText
+	{
+		get
+		{
+			return _elevatorsLockedText;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref _elevatorsLockedText, 8uL, OnElevatorTextChanged);
+		}
+	}
+
+	private void OnElevatorTextChanged(string oldValue, string newValue)
+	{
+	}
+
+	private void SetElevatorTextClient(string text)
+	{
+	}
+
+	private void OnTimeOffsetChanged(float oldValue, float newValue)
+	{
+	}
+
+	public void OnChangeDisableDecontamination(DecontaminationStatus oldValue, DecontaminationStatus newValue)
+	{
+		if (oldValue != newValue && newValue == DecontaminationStatus.Disabled)
+		{
+			DoorEventOpenerExtension.TriggerAction(DoorEventOpenerExtension.OpenerEventType.DeconReset);
+			EnableElevators();
+		}
+	}
+
+	public void ForceDecontamination()
+	{
+		NetworkDecontaminationOverride = DecontaminationStatus.Forced;
+		FinishDecontamination();
+	}
+
+	private void Awake()
+	{
+		Singleton = this;
+	}
+
+	private void Start()
+	{
+		if (NetworkServer.active && ConfigFile.ServerConfig.GetBool("disable_decontamination"))
+		{
+			NetworkDecontaminationOverride = DecontaminationStatus.Disabled;
+		}
+		for (int i = 0; i < DecontaminationPhases.Length; i++)
+		{
+			DecontaminationPhases[i].TimeTrigger *= 60f;
+		}
+	}
+
+	private IEnumerator<float> KillPlayers()
+	{
+		float timer = 1f;
+		while (Singleton != null && _decontaminationBegun && DecontaminationOverride != DecontaminationStatus.Disabled)
+		{
+			timer -= Time.deltaTime;
+			yield return float.NegativeInfinity;
+			if (!(timer <= 0f))
+			{
+				continue;
+			}
+			timer = 1f;
+			foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+			{
+				if (allHub.IsAlive())
+				{
+					bool flag = allHub.GetLastKnownZone() == FacilityZone.LightContainment;
+					Decontaminating effect = allHub.playerEffectsController.GetEffect<Decontaminating>();
+					if (!effect.IsEnabled && flag)
+					{
+						allHub.playerEffectsController.EnableEffect<Decontaminating>();
+					}
+					else if (effect.IsEnabled && !flag)
+					{
+						allHub.playerEffectsController.DisableEffect<Decontaminating>();
+					}
+				}
+			}
+		}
+	}
+
+	private void FinishDecontamination()
+	{
+		if (!NetworkServer.active)
+		{
+			return;
+		}
+		LczDecontaminationStartingEventArgs lczDecontaminationStartingEventArgs = new LczDecontaminationStartingEventArgs();
+		ServerEvents.OnLczDecontaminationStarting(lczDecontaminationStartingEventArgs);
+		if (lczDecontaminationStartingEventArgs.IsAllowed)
+		{
+			ServerLogs.AddLog(ServerLogs.Modules.GameLogic, "Decontamination started.", ServerLogs.ServerLogType.GameEvent);
+			DoorEventOpenerExtension.TriggerAction(DoorEventOpenerExtension.OpenerEventType.DeconFinish);
+			DisableElevators();
+			if (AutoDeconBroadcastEnabled && !_decontaminationBegun)
+			{
+				Broadcast.Singleton.RpcAddElement(DeconBroadcastDeconMessage, DeconBroadcastDeconMessageTime, Broadcast.BroadcastFlags.Normal);
+			}
+			_decontaminationBegun = true;
+			Timing.RunCoroutine(KillPlayers());
+			ServerEvents.OnLczDecontaminationStarted();
+		}
+	}
+
+	public void EnableElevators()
+	{
+		ElevatorGroup[] groupsToLock = GroupsToLock;
+		for (int i = 0; i < groupsToLock.Length; i++)
+		{
+			if (ElevatorChamber.TryGetChamber(groupsToLock[i], out var chamber))
+			{
+				chamber.ServerLockAllDoors(DoorLockReason.DecontLockdown, state: false);
+			}
+		}
+		_elevatorsDirty = false;
+	}
+
+	public void DisableElevators()
+	{
+		ElevatorGroup[] groupsToLock = GroupsToLock;
+		for (int i = 0; i < groupsToLock.Length; i++)
+		{
+			if (ElevatorChamber.TryGetChamber(groupsToLock[i], out var chamber))
+			{
+				chamber.ServerLockAllDoors(DoorLockReason.DecontLockdown, state: true);
+				if (chamber.DestinationLevel != 1)
+				{
+					chamber.ServerSetDestination(1, allowQueueing: true);
+				}
+			}
+		}
+		_elevatorsDirty = false;
+	}
+
+	private void Update()
+	{
+		if (_elevatorsDirty)
+		{
+			DisableElevators();
+		}
+		if (!_stopUpdating)
+		{
+			if (NetworkServer.active)
+			{
+				ServersideSetup();
+			}
+			UpdateTime();
+		}
+	}
+
+	private void ServersideSetup()
+	{
+		if (DecontaminationOverride == DecontaminationStatus.None && RoundStartTime == 0.0 && RoundStart.singleton.Timer == -1)
+		{
+			NetworkRoundStartTime = NetworkTime.time;
+		}
+	}
+
+	private void UpdateTime()
+	{
+		if (DecontaminationOverride != 0)
+		{
+			return;
+		}
+		if (RoundStartTime <= 0.0)
+		{
+			if (RoundStartTime == -1.0)
+			{
+				_stopUpdating = true;
+			}
+			return;
+		}
+		if (_justJoinedCooldown < 10f)
+		{
+			_justJoinedCooldown += Time.deltaTime;
+		}
+		float num = (float)GetServerTime;
+		if (num == -1f || !(num > DecontaminationPhases[_nextPhase].TimeTrigger))
+		{
+			return;
+		}
+		if (DecontaminationPhases[_nextPhase].AnnouncementLine != null && _justJoinedCooldown >= 10f)
+		{
+			_curFunction = DecontaminationPhases[_nextPhase].Function;
+			UpdateSpeaker(hard: true);
+			AnnouncementAudioSource.PlayOneShot(DecontaminationPhases[_nextPhase].AnnouncementLine);
+			if (NetworkServer.active)
+			{
+				List<SubtitlePart> list = new List<SubtitlePart>(1);
+				switch (_nextPhase)
+				{
+				case 0:
+					list.Add(new SubtitlePart(SubtitleType.DecontaminationStart, (string[])null));
+					break;
+				case 1:
+					list.Add(new SubtitlePart(SubtitleType.DecontaminationMinutes, "10"));
+					break;
+				case 2:
+					list.Add(new SubtitlePart(SubtitleType.DecontaminationMinutes, "5"));
+					break;
+				case 3:
+					list.Add(new SubtitlePart(SubtitleType.Decontamination1Minute, (string[])null));
+					break;
+				case 4:
+					list.Add(new SubtitlePart(SubtitleType.DecontaminationCountdown, (string[])null));
+					break;
+				case 6:
+					list.Add(new SubtitlePart(SubtitleType.DecontaminationLockdown, (string[])null));
+					break;
+				}
+				foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+				{
+					if (IsAudibleForClient(allHub))
+					{
+						new SubtitleMessage(list.ToArray()).SendToSpectatorsOf(allHub, includeTarget: true);
+					}
+				}
+			}
+		}
+		if (DecontaminationPhases[_nextPhase].Function == DecontaminationPhase.PhaseFunction.Final)
+		{
+			FinishDecontamination();
+		}
+		if (NetworkServer.active && DecontaminationPhases[_nextPhase].Function == DecontaminationPhase.PhaseFunction.OpenCheckpoints)
+		{
+			DoorEventOpenerExtension.TriggerAction(DoorEventOpenerExtension.OpenerEventType.DeconEvac);
+		}
+		if (_nextPhase == DecontaminationPhases.Length - 1)
+		{
+			_stopUpdating = true;
+			return;
+		}
+		ServerEvents.OnLczDecontaminationAnnounced(new LczDecontaminationAnnouncedEventArgs(_nextPhase));
+		_nextPhase++;
+	}
+
+	private bool IsAudibleForClient(ReferenceHub hub)
+	{
+		if (_curFunction == DecontaminationPhase.PhaseFunction.Final)
 		{
 			return true;
 		}
-
-		public float Network_timeOffset
+		if (_curFunction == DecontaminationPhase.PhaseFunction.GloballyAudible)
 		{
-			get
-			{
-				return this._timeOffset;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<float>(value, ref this._timeOffset, 1UL, new Action<float, float>(this.OnTimeOffsetChanged));
-			}
+			return true;
 		}
-
-		public double NetworkRoundStartTime
+		if (hub.roleManager.CurrentRole is Scp079Role scp079Role)
 		{
-			get
-			{
-				return this.RoundStartTime;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<double>(value, ref this.RoundStartTime, 2UL, null);
-			}
+			return scp079Role.CurrentCamera.Room.Zone == FacilityZone.LightContainment;
 		}
+		return hub.GetCurrentZone() == FacilityZone.LightContainment;
+	}
 
-		public DecontaminationController.DecontaminationStatus NetworkDecontaminationOverride
+	private void UpdateSpeaker(bool hard)
+	{
+		float b = (IsAnnouncementHearable ? 1 : 0);
+		float t = (hard ? 1f : (Time.deltaTime * 4f));
+		_prevVolume = Mathf.Lerp(_prevVolume, b, t);
+		AnnouncementSource.SetVolumeScale(AnnouncementAudioSource, _prevVolume);
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			get
-			{
-				return this.DecontaminationOverride;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<DecontaminationController.DecontaminationStatus>(value, ref this.DecontaminationOverride, 4UL, new Action<DecontaminationController.DecontaminationStatus, DecontaminationController.DecontaminationStatus>(this.OnChangeDisableDecontamination));
-			}
+			writer.WriteFloat(_timeOffset);
+			writer.WriteDouble(RoundStartTime);
+			GeneratedNetworkCode._Write_LightContainmentZoneDecontamination_002EDecontaminationController_002FDecontaminationStatus(writer, DecontaminationOverride);
+			writer.WriteString(_elevatorsLockedText);
+			return;
 		}
-
-		public string Network_elevatorsLockedText
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			get
-			{
-				return this._elevatorsLockedText;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<string>(value, ref this._elevatorsLockedText, 8UL, new Action<string, string>(this.OnElevatorTextChanged));
-			}
+			writer.WriteFloat(_timeOffset);
 		}
-
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteFloat(this._timeOffset);
-				writer.WriteDouble(this.RoundStartTime);
-				global::Mirror.GeneratedNetworkCode._Write_LightContainmentZoneDecontamination.DecontaminationController/DecontaminationStatus(writer, this.DecontaminationOverride);
-				writer.WriteString(this._elevatorsLockedText);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 1UL) != 0UL)
-			{
-				writer.WriteFloat(this._timeOffset);
-			}
-			if ((base.syncVarDirtyBits & 2UL) != 0UL)
-			{
-				writer.WriteDouble(this.RoundStartTime);
-			}
-			if ((base.syncVarDirtyBits & 4UL) != 0UL)
-			{
-				global::Mirror.GeneratedNetworkCode._Write_LightContainmentZoneDecontamination.DecontaminationController/DecontaminationStatus(writer, this.DecontaminationOverride);
-			}
-			if ((base.syncVarDirtyBits & 8UL) != 0UL)
-			{
-				writer.WriteString(this._elevatorsLockedText);
-			}
+			writer.WriteDouble(RoundStartTime);
 		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this._timeOffset, new Action<float, float>(this.OnTimeOffsetChanged), reader.ReadFloat());
-				base.GeneratedSyncVarDeserialize<double>(ref this.RoundStartTime, null, reader.ReadDouble());
-				base.GeneratedSyncVarDeserialize<DecontaminationController.DecontaminationStatus>(ref this.DecontaminationOverride, new Action<DecontaminationController.DecontaminationStatus, DecontaminationController.DecontaminationStatus>(this.OnChangeDisableDecontamination), global::Mirror.GeneratedNetworkCode._Read_LightContainmentZoneDecontamination.DecontaminationController/DecontaminationStatus(reader));
-				base.GeneratedSyncVarDeserialize<string>(ref this._elevatorsLockedText, new Action<string, string>(this.OnElevatorTextChanged), reader.ReadString());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 1L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this._timeOffset, new Action<float, float>(this.OnTimeOffsetChanged), reader.ReadFloat());
-			}
-			if ((num & 2L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<double>(ref this.RoundStartTime, null, reader.ReadDouble());
-			}
-			if ((num & 4L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<DecontaminationController.DecontaminationStatus>(ref this.DecontaminationOverride, new Action<DecontaminationController.DecontaminationStatus, DecontaminationController.DecontaminationStatus>(this.OnChangeDisableDecontamination), global::Mirror.GeneratedNetworkCode._Read_LightContainmentZoneDecontamination.DecontaminationController/DecontaminationStatus(reader));
-			}
-			if ((num & 8L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<string>(ref this._elevatorsLockedText, new Action<string, string>(this.OnElevatorTextChanged), reader.ReadString());
-			}
+			GeneratedNetworkCode._Write_LightContainmentZoneDecontamination_002EDecontaminationController_002FDecontaminationStatus(writer, DecontaminationOverride);
 		}
-
-		private const float LowerBoundLCZ = -200f;
-
-		private const float UpperBoundLCZ = 200f;
-
-		public static DecontaminationController Singleton;
-
-		private static readonly ElevatorGroup[] GroupsToLock = new ElevatorGroup[]
+		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			ElevatorGroup.LczA01,
-			ElevatorGroup.LczA02,
-			ElevatorGroup.LczB01,
-			ElevatorGroup.LczB02
-		};
-
-		[SyncVar(hook = "OnTimeOffsetChanged")]
-		private float _timeOffset;
-
-		public DecontaminationController.DecontaminationPhase[] DecontaminationPhases;
-
-		public AudioSource AnnouncementAudioSource;
-
-		[SyncVar]
-		public double RoundStartTime;
-
-		[SyncVar(hook = "OnChangeDisableDecontamination")]
-		public DecontaminationController.DecontaminationStatus DecontaminationOverride;
-
-		public static bool AutoDeconBroadcastEnabled;
-
-		public static string DeconBroadcastDeconMessage;
-
-		public static ushort DeconBroadcastDeconMessageTime;
-
-		private DecontaminationController.DecontaminationPhase.PhaseFunction _curFunction;
-
-		private int _nextPhase;
-
-		private bool _stopUpdating;
-
-		private bool _elevatorsDirty;
-
-		private bool _decontaminationBegun;
-
-		private float _justJoinedCooldown;
-
-		[SyncVar(hook = "OnElevatorTextChanged")]
-		private string _elevatorsLockedText;
-
-		public enum DecontaminationStatus : byte
-		{
-			None,
-			Disabled,
-			Forced
+			writer.WriteString(_elevatorsLockedText);
 		}
+	}
 
-		[Serializable]
-		public struct DecontaminationPhase
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
 		{
-			public float TimeTrigger;
-
-			public float GameTime;
-
-			public AudioClip AnnouncementLine;
-
-			public DecontaminationController.DecontaminationPhase.PhaseFunction Function;
-
-			public enum PhaseFunction : byte
-			{
-				None,
-				GloballyAudible,
-				OpenCheckpoints,
-				Final
-			}
+			GeneratedSyncVarDeserialize(ref _timeOffset, OnTimeOffsetChanged, reader.ReadFloat());
+			GeneratedSyncVarDeserialize(ref RoundStartTime, null, reader.ReadDouble());
+			GeneratedSyncVarDeserialize(ref DecontaminationOverride, OnChangeDisableDecontamination, GeneratedNetworkCode._Read_LightContainmentZoneDecontamination_002EDecontaminationController_002FDecontaminationStatus(reader));
+			GeneratedSyncVarDeserialize(ref _elevatorsLockedText, OnElevatorTextChanged, reader.ReadString());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 1L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _timeOffset, OnTimeOffsetChanged, reader.ReadFloat());
+		}
+		if ((num & 2L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref RoundStartTime, null, reader.ReadDouble());
+		}
+		if ((num & 4L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref DecontaminationOverride, OnChangeDisableDecontamination, GeneratedNetworkCode._Read_LightContainmentZoneDecontamination_002EDecontaminationController_002FDecontaminationStatus(reader));
+		}
+		if ((num & 8L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _elevatorsLockedText, OnElevatorTextChanged, reader.ReadString());
 		}
 	}
 }

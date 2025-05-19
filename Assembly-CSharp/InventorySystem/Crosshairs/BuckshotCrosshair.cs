@@ -1,42 +1,39 @@
-﻿using System;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Modules;
 using UnityEngine;
 
-namespace InventorySystem.Crosshairs
+namespace InventorySystem.Crosshairs;
+
+public class BuckshotCrosshair : FirearmCrosshairBase
 {
-	public class BuckshotCrosshair : FirearmCrosshairBase
+	[SerializeField]
+	private RectTransform[] _elements;
+
+	[SerializeField]
+	private float _displacementRatio;
+
+	[SerializeField]
+	private float _radiusRatio;
+
+	[SerializeField]
+	private float _lerpSpeed;
+
+	private void SetupElements(float innerAngle, float buckshotRadius)
 	{
-		private void SetupElements(float innerAngle, float buckshotRadius)
+		RectTransform[] elements = _elements;
+		foreach (RectTransform obj in elements)
 		{
-			foreach (RectTransform rectTransform in this._elements)
-			{
-				Vector2 vector = this._displacementRatio * innerAngle * Vector2.up;
-				rectTransform.anchoredPosition = Vector2.Lerp(rectTransform.anchoredPosition, vector, Time.deltaTime * this._lerpSpeed);
-				rectTransform.sizeDelta = this._radiusRatio * buckshotRadius * Vector2.one;
-			}
+			Vector2 b = _displacementRatio * innerAngle * Vector2.up;
+			obj.anchoredPosition = Vector2.Lerp(obj.anchoredPosition, b, Time.deltaTime * _lerpSpeed);
+			obj.sizeDelta = _radiusRatio * buckshotRadius * Vector2.one;
 		}
+	}
 
-		protected override void UpdateCrosshair(Firearm firearm, float currentInaccuracy)
+	protected override void UpdateCrosshair(Firearm firearm, float currentInaccuracy)
+	{
+		if (firearm.TryGetModule<BuckshotHitreg>(out var module, ignoreSubmodules: false))
 		{
-			BuckshotHitreg buckshotHitreg;
-			if (!firearm.TryGetModule(out buckshotHitreg, false))
-			{
-				return;
-			}
-			this.SetupElements(currentInaccuracy, buckshotHitreg.BuckshotScale);
+			SetupElements(currentInaccuracy, module.BuckshotScale);
 		}
-
-		[SerializeField]
-		private RectTransform[] _elements;
-
-		[SerializeField]
-		private float _displacementRatio;
-
-		[SerializeField]
-		private float _radiusRatio;
-
-		[SerializeField]
-		private float _lerpSpeed;
 	}
 }

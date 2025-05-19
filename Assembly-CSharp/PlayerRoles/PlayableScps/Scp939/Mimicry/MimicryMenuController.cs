@@ -1,103 +1,106 @@
-﻿using System;
 using ToggleableMenus;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp939.Mimicry
+namespace PlayerRoles.PlayableScps.Scp939.Mimicry;
+
+public class MimicryMenuController : ToggleableMenuBase
 {
-	public class MimicryMenuController : ToggleableMenuBase
+	[SerializeField]
+	private float _fadeSpeed;
+
+	[SerializeField]
+	private CanvasGroup _fader;
+
+	[SerializeField]
+	private CanvasGroup[] _inverseFaders;
+
+	private bool _canvasCacheSet;
+
+	private Canvas _cachedCanvas;
+
+	public static MimicryMenuController Singleton { get; private set; }
+
+	public static bool SingletonSet { get; private set; }
+
+	public static bool FullyClosed
 	{
-		public static MimicryMenuController Singleton { get; private set; }
-
-		public static bool SingletonSet { get; private set; }
-
-		public static bool FullyClosed
+		get
 		{
-			get
+			if (SingletonSet)
 			{
-				return MimicryMenuController.SingletonSet && !MimicryMenuController.Singleton.gameObject.activeSelf;
+				return !Singleton.gameObject.activeSelf;
 			}
+			return false;
 		}
+	}
 
-		public override bool CanToggle
+	public override bool CanToggle
+	{
+		get
 		{
-			get
+			if (ReferenceHub.TryGetLocalHub(out var hub))
 			{
-				ReferenceHub referenceHub;
-				return ReferenceHub.TryGetLocalHub(out referenceHub) && referenceHub.roleManager.CurrentRole is Scp939Role;
+				return hub.roleManager.CurrentRole is Scp939Role;
 			}
+			return false;
 		}
+	}
 
-		public static float ScaleFactor
+	public static float ScaleFactor
+	{
+		get
 		{
-			get
+			if (!SingletonSet)
 			{
-				if (!MimicryMenuController.SingletonSet)
-				{
-					return 1f;
-				}
-				if (!MimicryMenuController.Singleton._canvasCacheSet)
-				{
-					MimicryMenuController.Singleton._cachedCanvas = MimicryMenuController.Singleton.GetComponentInParent<Canvas>();
-					MimicryMenuController.Singleton._canvasCacheSet = true;
-				}
-				return MimicryMenuController.Singleton._cachedCanvas.scaleFactor;
+				return 1f;
 			}
-		}
-
-		private void Update()
-		{
-			float num = (this.IsEnabled ? 1f : (-1f));
-			float newAlpha = this._fader.alpha + num * Time.deltaTime * this._fadeSpeed;
-			newAlpha = Mathf.Clamp01(newAlpha);
-			this._fader.alpha = newAlpha;
-			this._inverseFaders.ForEach(delegate(CanvasGroup x)
+			if (!Singleton._canvasCacheSet)
 			{
-				x.alpha = 1f - newAlpha;
-			});
-			if (newAlpha <= 0f)
-			{
-				base.gameObject.SetActive(false);
+				Singleton._cachedCanvas = Singleton.GetComponentInParent<Canvas>();
+				Singleton._canvasCacheSet = true;
 			}
+			return Singleton._cachedCanvas.scaleFactor;
 		}
+	}
 
-		protected override void Awake()
+	private void Update()
+	{
+		float num = (IsEnabled ? 1f : (-1f));
+		float newAlpha = _fader.alpha + num * Time.deltaTime * _fadeSpeed;
+		newAlpha = Mathf.Clamp01(newAlpha);
+		_fader.alpha = newAlpha;
+		_inverseFaders.ForEach(delegate(CanvasGroup x)
 		{
-			base.Awake();
-			MimicryMenuController.Singleton = this;
-			MimicryMenuController.SingletonSet = true;
-		}
-
-		protected override void OnDestroy()
+			x.alpha = 1f - newAlpha;
+		});
+		if (newAlpha <= 0f)
 		{
-			base.OnDestroy();
-			if (MimicryMenuController.Singleton != this)
-			{
-				return;
-			}
-			MimicryMenuController.Singleton = null;
-			MimicryMenuController.SingletonSet = false;
+			base.gameObject.SetActive(value: false);
 		}
+	}
 
-		protected override void OnToggled()
+	protected override void Awake()
+	{
+		base.Awake();
+		Singleton = this;
+		SingletonSet = true;
+	}
+
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+		if (!(Singleton != this))
 		{
-			if (!this.IsEnabled)
-			{
-				return;
-			}
-			base.gameObject.SetActive(true);
+			Singleton = null;
+			SingletonSet = false;
 		}
+	}
 
-		[SerializeField]
-		private float _fadeSpeed;
-
-		[SerializeField]
-		private CanvasGroup _fader;
-
-		[SerializeField]
-		private CanvasGroup[] _inverseFaders;
-
-		private bool _canvasCacheSet;
-
-		private Canvas _cachedCanvas;
+	protected override void OnToggled()
+	{
+		if (IsEnabled)
+		{
+			base.gameObject.SetActive(value: true);
+		}
 	}
 }

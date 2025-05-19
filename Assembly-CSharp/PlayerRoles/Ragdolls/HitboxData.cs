@@ -1,13 +1,12 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace PlayerRoles.Ragdolls
-{
-	[Serializable]
-	public struct HitboxData
-	{
-		public Rigidbody Target;
+namespace PlayerRoles.Ragdolls;
 
-		public HitboxType RelatedHitbox;
-	}
+[Serializable]
+public struct HitboxData
+{
+	public Rigidbody Target;
+
+	public HitboxType RelatedHitbox;
 }

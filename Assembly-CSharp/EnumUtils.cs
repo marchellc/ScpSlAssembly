@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 public static class EnumUtils<T> where T : struct, Enum
 {

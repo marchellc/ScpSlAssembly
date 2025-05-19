@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles.Ragdolls;
 
-namespace PlayerRoles.Ragdolls
+public interface IRagdollRole
 {
-	public interface IRagdollRole
-	{
-		BasicRagdoll Ragdoll { get; }
-	}
+	BasicRagdoll Ragdoll { get; }
 }

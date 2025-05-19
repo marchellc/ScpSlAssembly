@@ -1,12 +1,10 @@
-﻿using System;
 using UnityEngine;
 
-namespace Respawning.NamingRules
+namespace Respawning.NamingRules;
+
+public class UnitNamingHud : MonoBehaviour
 {
-	public class UnitNamingHud : MonoBehaviour
+	private void Start()
 	{
-		private void Start()
-		{
-		}
 	}
 }

@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles.Blood;
 
-namespace PlayerRoles.Blood
+public interface IBleedableRole
 {
-	public interface IBleedableRole
-	{
-		BloodSettings BloodSettings { get; }
-	}
+	BloodSettings BloodSettings { get; }
 }

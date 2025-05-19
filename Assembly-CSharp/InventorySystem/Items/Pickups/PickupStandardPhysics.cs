@@ -1,329 +1,300 @@
-﻿using System;
+using System;
 using Interactables.Interobjects;
 using MapGeneration;
 using Mirror;
 using RelativePositioning;
 using UnityEngine;
 
-namespace InventorySystem.Items.Pickups
+namespace InventorySystem.Items.Pickups;
+
+public class PickupStandardPhysics : PickupPhysicsModule
 {
-	public class PickupStandardPhysics : PickupPhysicsModule
+	public enum FreezingMode
 	{
-		public Rigidbody Rb { get; private set; }
+		Default,
+		FreezeWhenSleeping,
+		NeverFreeze
+	}
 
-		protected override ItemPickupBase Pickup
+	private readonly FreezingMode _freezingMode;
+
+	private readonly ItemPickupBase _pickup;
+
+	private readonly Action<NetworkReader> _clientApplyRigidbody;
+
+	private readonly Action<NetworkWriter> _serverWriteRigidbody;
+
+	private ElevatorChamber _trackedChamber;
+
+	private double _serverNextUpdateTime;
+
+	private RelativePosition _lastReceivedRelPos;
+
+	private Quaternion _lastReceivedRelRot;
+
+	private bool _serverPrevSleeping;
+
+	private bool _serverEverDecelerated;
+
+	private float _serverPrevVelSqr;
+
+	private bool _inElevator;
+
+	private bool _isFrozen;
+
+	private byte _serverOrderClock;
+
+	private int? _lastReceivedUpdate;
+
+	private float _freezeProgress;
+
+	private const float UpdateCooldown = 0.25f;
+
+	private const float FreezeSpeed = 1.2f;
+
+	private const float FreezePow = 5f;
+
+	private const float UnfrozenLerp = 10f;
+
+	private const float MinWeight = 0.001f;
+
+	private const float UnfreezeVelocity = 2.5f;
+
+	private const float UnfreezeVelocitySqr = 6.25f;
+
+	private const float FrozenTeleportDisSqr = 25f / 64f;
+
+	public Rigidbody Rb { get; private set; }
+
+	protected override ItemPickupBase Pickup => _pickup;
+
+	private Vector3 LastWorldPos => _lastReceivedRelPos.Position;
+
+	private Quaternion LastWorldRot => WaypointBase.GetWorldRotation(_lastReceivedRelPos.WaypointId, _lastReceivedRelRot);
+
+	private bool ClientFrozen
+	{
+		get
 		{
-			get
-			{
-				return this._pickup;
-			}
+			return _isFrozen;
 		}
-
-		private Vector3 LastWorldPos
+		set
 		{
-			get
-			{
-				return this._lastReceivedRelPos.Position;
-			}
+			_isFrozen = value;
+			Rb.isKinematic = value;
+			_freezeProgress = 0f;
 		}
+	}
 
-		private Quaternion LastWorldRot
+	private bool ServerSendFreeze
+	{
+		get
 		{
-			get
+			if (!_serverEverDecelerated)
 			{
-				return WaypointBase.GetWorldRotation(this._lastReceivedRelPos.WaypointId, this._lastReceivedRelRot);
+				return false;
 			}
-		}
-
-		private bool ClientFrozen
-		{
-			get
+			return _freezingMode switch
 			{
-				return this._isFrozen;
-			}
-			set
-			{
-				this._isFrozen = value;
-				this.Rb.isKinematic = value;
-				this._freezeProgress = 0f;
-			}
+				FreezingMode.Default => Rb.linearVelocity.sqrMagnitude < 6.25f, 
+				FreezingMode.FreezeWhenSleeping => Rb.IsSleeping(), 
+				FreezingMode.NeverFreeze => false, 
+				_ => throw new InvalidOperationException("Unhandled freezing mode for a pickup: " + _freezingMode), 
+			};
 		}
+	}
 
-		private bool ServerSendFreeze
+	public event Action OnParentSetByElevator;
+
+	public PickupStandardPhysics(ItemPickupBase targetPickup, FreezingMode freezingMode = FreezingMode.Default)
+	{
+		_pickup = targetPickup;
+		_freezingMode = freezingMode;
+		Rb = Pickup.GetComponent<Rigidbody>();
+		Rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+		_clientApplyRigidbody = ClientApplyRigidbody;
+		_serverWriteRigidbody = ServerWriteRigidbody;
+		if (NetworkServer.active)
 		{
-			get
-			{
-				if (!this._serverEverDecelerated)
-				{
-					return false;
-				}
-				switch (this._freezingMode)
-				{
-				case PickupStandardPhysics.FreezingMode.Default:
-					return this.Rb.velocity.sqrMagnitude < 6.25f;
-				case PickupStandardPhysics.FreezingMode.FreezeWhenSleeping:
-					return this.Rb.IsSleeping();
-				case PickupStandardPhysics.FreezingMode.NeverFreeze:
-					return false;
-				default:
-					throw new InvalidOperationException("Unhandled freezing mode for a pickup: " + this._freezingMode.ToString());
-				}
-			}
+			ServerSetSyncData(_serverWriteRigidbody);
 		}
-
-		public event Action OnParentSetByElevator;
-
-		public PickupStandardPhysics(ItemPickupBase targetPickup, PickupStandardPhysics.FreezingMode freezingMode = PickupStandardPhysics.FreezingMode.Default)
+		else
 		{
-			this._pickup = targetPickup;
-			this._freezingMode = freezingMode;
-			this.Rb = this.Pickup.GetComponent<Rigidbody>();
-			this.Rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-			if (NetworkServer.active)
-			{
-				base.ServerSetSyncData(new Action<NetworkWriter>(this.ServerWriteRigidbody));
-			}
-			StaticUnityMethods.OnUpdate += this.OnUpdate;
-			ElevatorChamber.OnElevatorMoved += this.OnElevatorMoved;
-			this.Pickup.OnInfoChanged += this.UpdateWeight;
-			this.Pickup.PhysicsModuleSyncData.OnModified += this.OnSyncvarsModified;
+			Rb.interpolation = RigidbodyInterpolation.Interpolate;
 		}
+		StaticUnityMethods.OnUpdate += OnUpdate;
+		ElevatorChamber.OnElevatorMoved += OnElevatorMoved;
+		Pickup.OnInfoChanged += UpdateWeight;
+		Pickup.PhysicsModuleSyncData.OnModified += OnSyncvarsModified;
+	}
 
-		private void UpdateWeight()
+	private void UpdateWeight()
+	{
+		Rb.mass = Mathf.Max(0.001f, Pickup.Info.WeightKg);
+	}
+
+	private void OnSyncvarsModified()
+	{
+		if (!NetworkServer.active)
 		{
-			this.Rb.mass = Mathf.Max(0.001f, this.Pickup.Info.WeightKg);
+			ClientReadSyncData(_clientApplyRigidbody);
 		}
+	}
 
-		private void OnSyncvarsModified()
+	private void OnUpdate()
+	{
+		if (NetworkServer.active)
 		{
-			if (NetworkServer.active)
+			UpdateServer();
+		}
+		else
+		{
+			UpdateClient();
+		}
+	}
+
+	private void UpdateServer()
+	{
+		bool flag = Rb.IsSleeping() && _freezingMode != FreezingMode.NeverFreeze;
+		if (flag)
+		{
+			if (_serverPrevSleeping)
 			{
 				return;
 			}
-			base.ClientReadSyncData(new Action<NetworkReader>(this.ClientApplyRigidbody));
+			_serverEverDecelerated = true;
+			ServerSetSyncData(_serverWriteRigidbody);
 		}
-
-		private void OnUpdate()
+		else
 		{
-			if (NetworkServer.active)
+			float sqrMagnitude = Rb.linearVelocity.sqrMagnitude;
+			if (sqrMagnitude < _serverPrevVelSqr)
 			{
-				this.UpdateServer();
+				_serverEverDecelerated = true;
+			}
+			_serverPrevVelSqr = sqrMagnitude;
+			if (!_serverPrevSleeping && _serverNextUpdateTime > NetworkTime.time)
+			{
 				return;
 			}
-			this.UpdateClient();
+			ServerSendRpc(_serverWriteRigidbody);
+			_serverNextUpdateTime = NetworkTime.time + 0.25;
 		}
+		_serverPrevSleeping = flag;
+	}
 
-		private void UpdateServer()
+	private void UpdateClient()
+	{
+		if (ClientFrozen && !(_freezeProgress > 1f) && SeedSynchronizer.MapGenerated)
 		{
-			bool flag = this.Rb.IsSleeping() && this._freezingMode != PickupStandardPhysics.FreezingMode.NeverFreeze;
+			Vector3 position = Rb.position;
+			Vector3 lastWorldPos = LastWorldPos;
+			if ((position - lastWorldPos).sqrMagnitude > 25f / 64f)
+			{
+				_freezeProgress = 0f;
+				Rb.position = lastWorldPos;
+				Rb.rotation = LastWorldRot;
+			}
+			else
+			{
+				_freezeProgress += Time.deltaTime * 1.2f;
+				float t = Mathf.Lerp(10f * Time.deltaTime, 1f, Mathf.Pow(_freezeProgress, 5f));
+				Rb.position = Vector3.Lerp(position, lastWorldPos, t);
+				Rb.rotation = Quaternion.Lerp(Rb.rotation, LastWorldRot, t);
+			}
+		}
+	}
+
+	private void ServerWriteRigidbody(NetworkWriter writer)
+	{
+		writer.WriteByte(_serverOrderClock++);
+		RelativePosition msg = new RelativePosition(Rb.position);
+		Quaternion relativeRotation = WaypointBase.GetRelativeRotation(msg.WaypointId, Rb.rotation);
+		writer.WriteRelativePosition(msg);
+		writer.WriteLowPrecisionQuaternion(new LowPrecisionQuaternion(relativeRotation));
+		if (!ServerSendFreeze)
+		{
+			writer.WriteVector3(Rb.linearVelocity);
+			writer.WriteVector3(Rb.angularVelocity);
+			if (msg.OutOfRange && base.IsSpawned)
+			{
+				Pickup.DestroySelf();
+			}
+		}
+	}
+
+	private void ClientApplyRigidbody(NetworkReader reader)
+	{
+		int num = reader.ReadByte();
+		bool flag = !_lastReceivedUpdate.HasValue;
+		if (!flag)
+		{
+			int num2 = _lastReceivedUpdate.Value - num;
+			if (num2 >= 0 && num2 < 127)
+			{
+				return;
+			}
+		}
+		_lastReceivedUpdate = num;
+		_lastReceivedRelPos = reader.ReadRelativePosition();
+		_lastReceivedRelRot = reader.ReadLowPrecisionQuaternion().Value;
+		ClientFrozen = reader.Remaining == 0;
+		_freezeProgress = 0f;
+		if (flag || !ClientFrozen)
+		{
+			Rb.position = LastWorldPos;
+			Rb.rotation = LastWorldRot;
+			if (!ClientFrozen)
+			{
+				Rb.linearVelocity = reader.ReadVector3();
+				Rb.angularVelocity = reader.ReadVector3();
+			}
+		}
+	}
+
+	private void OnElevatorMoved(Bounds elevatorBounds, ElevatorChamber chamber, Vector3 deltaPos, Quaternion deltaRot)
+	{
+		bool flag = _inElevator && chamber == _trackedChamber;
+		if (!chamber.WorldspaceBounds.Contains(Pickup.Position))
+		{
 			if (flag)
 			{
-				if (this._serverPrevSleeping)
-				{
-					return;
-				}
-				this._serverEverDecelerated = true;
-				base.ServerSetSyncData(new Action<NetworkWriter>(this.ServerWriteRigidbody));
+				_inElevator = false;
+				Pickup.Position -= deltaPos;
+				Pickup.transform.SetParent(null);
+				Rb.interpolation = RigidbodyInterpolation.Interpolate;
+				this.OnParentSetByElevator?.Invoke();
 			}
-			else
-			{
-				float sqrMagnitude = this.Rb.velocity.sqrMagnitude;
-				if (sqrMagnitude < this._serverPrevVelSqr)
-				{
-					this._serverEverDecelerated = true;
-				}
-				this._serverPrevVelSqr = sqrMagnitude;
-				if (!this._serverPrevSleeping && this._serverNextUpdateTime > NetworkTime.time)
-				{
-					return;
-				}
-				base.ServerSendRpc(new Action<NetworkWriter>(this.ServerWriteRigidbody));
-				this._serverNextUpdateTime = NetworkTime.time + 0.25;
-			}
-			this._serverPrevSleeping = flag;
+			return;
 		}
-
-		private void UpdateClient()
+		if (!Rb.isKinematic)
 		{
-			if (!this.ClientFrozen || this._freezeProgress > 1f || !SeedSynchronizer.MapGenerated)
-			{
-				return;
-			}
-			Vector3 position = this.Rb.position;
-			Vector3 lastWorldPos = this.LastWorldPos;
-			if ((position - lastWorldPos).sqrMagnitude > 0.390625f)
-			{
-				this._freezeProgress = 0f;
-				this.Rb.position = lastWorldPos;
-				this.Rb.rotation = this.LastWorldRot;
-				return;
-			}
-			this._freezeProgress += Time.deltaTime * 1.2f;
-			float num = Mathf.Lerp(10f * Time.deltaTime, 1f, Mathf.Pow(this._freezeProgress, 5f));
-			this.Rb.position = Vector3.Lerp(position, lastWorldPos, num);
-			this.Rb.rotation = Quaternion.Lerp(this.Rb.rotation, this.LastWorldRot, num);
+			Rb.linearVelocity = deltaRot * Rb.linearVelocity;
 		}
-
-		private void ServerWriteRigidbody(NetworkWriter writer)
+		if (!flag)
 		{
-			byte serverOrderClock = this._serverOrderClock;
-			this._serverOrderClock = serverOrderClock + 1;
-			writer.WriteByte(serverOrderClock);
-			RelativePosition relativePosition = new RelativePosition(this.Rb.position);
-			Quaternion relativeRotation = WaypointBase.GetRelativeRotation(relativePosition.WaypointId, this.Rb.rotation);
-			writer.WriteRelativePosition(relativePosition);
-			writer.WriteLowPrecisionQuaternion(new LowPrecisionQuaternion(relativeRotation));
-			if (this.ServerSendFreeze)
-			{
-				return;
-			}
-			writer.WriteVector3(this.Rb.velocity);
-			writer.WriteVector3(this.Rb.angularVelocity);
-			if (!relativePosition.OutOfRange || !base.IsSpawned)
-			{
-				return;
-			}
-			this.Pickup.DestroySelf();
+			Rb.interpolation = RigidbodyInterpolation.None;
+			Pickup.transform.SetParent(chamber.transform);
+			Pickup.Position += deltaPos;
+			_trackedChamber = chamber;
+			_inElevator = true;
+			this.OnParentSetByElevator?.Invoke();
 		}
+	}
 
-		private void ClientApplyRigidbody(NetworkReader reader)
+	internal override void ClientProcessRpc(NetworkReader rpcData)
+	{
+		base.ClientProcessRpc(rpcData);
+		if (!NetworkServer.active)
 		{
-			int num = (int)reader.ReadByte();
-			bool flag = this._lastReceivedUpdate == null;
-			if (!flag)
-			{
-				int num2 = this._lastReceivedUpdate.Value - num;
-				if (num2 >= 0 && num2 < 127)
-				{
-					return;
-				}
-			}
-			this._lastReceivedUpdate = new int?(num);
-			this._lastReceivedRelPos = reader.ReadRelativePosition();
-			this._lastReceivedRelRot = reader.ReadLowPrecisionQuaternion().Value;
-			this.ClientFrozen = reader.Remaining == 0;
-			this._freezeProgress = 0f;
-			if (!flag && this.ClientFrozen)
-			{
-				return;
-			}
-			this.Rb.position = this.LastWorldPos;
-			this.Rb.rotation = this.LastWorldRot;
-			if (this.ClientFrozen)
-			{
-				return;
-			}
-			this.Rb.velocity = reader.ReadVector3();
-			this.Rb.angularVelocity = reader.ReadVector3();
+			ClientApplyRigidbody(rpcData);
 		}
+	}
 
-		private void OnElevatorMoved(Bounds elevatorBounds, ElevatorChamber chamber, Vector3 deltaPos, Quaternion deltaRot)
-		{
-			bool flag = this._inElevator && chamber == this._trackedChamber;
-			if (!chamber.WorldspaceBounds.Contains(this.Pickup.Position))
-			{
-				if (!flag)
-				{
-					return;
-				}
-				this._inElevator = false;
-				this.Pickup.Position -= deltaPos;
-				this.Pickup.transform.SetParent(null);
-				Action onParentSetByElevator = this.OnParentSetByElevator;
-				if (onParentSetByElevator == null)
-				{
-					return;
-				}
-				onParentSetByElevator();
-				return;
-			}
-			else
-			{
-				this.Rb.velocity = deltaRot * this.Rb.velocity;
-				if (flag)
-				{
-					return;
-				}
-				this.Pickup.transform.SetParent(chamber.transform);
-				this.Pickup.Position += deltaPos;
-				this._trackedChamber = chamber;
-				this._inElevator = true;
-				Action onParentSetByElevator2 = this.OnParentSetByElevator;
-				if (onParentSetByElevator2 == null)
-				{
-					return;
-				}
-				onParentSetByElevator2();
-				return;
-			}
-		}
-
-		internal override void ClientProcessRpc(NetworkReader rpcData)
-		{
-			base.ClientProcessRpc(rpcData);
-			if (NetworkServer.active)
-			{
-				return;
-			}
-			this.ClientApplyRigidbody(rpcData);
-		}
-
-		public override void DestroyModule()
-		{
-			base.DestroyModule();
-			StaticUnityMethods.OnUpdate -= this.OnUpdate;
-			ElevatorChamber.OnElevatorMoved -= this.OnElevatorMoved;
-		}
-
-		private readonly PickupStandardPhysics.FreezingMode _freezingMode;
-
-		private readonly ItemPickupBase _pickup;
-
-		private ElevatorChamber _trackedChamber;
-
-		private double _serverNextUpdateTime;
-
-		private RelativePosition _lastReceivedRelPos;
-
-		private Quaternion _lastReceivedRelRot;
-
-		private bool _serverPrevSleeping;
-
-		private bool _serverEverDecelerated;
-
-		private float _serverPrevVelSqr;
-
-		private bool _inElevator;
-
-		private bool _isFrozen;
-
-		private byte _serverOrderClock;
-
-		private int? _lastReceivedUpdate;
-
-		private float _freezeProgress;
-
-		private const float UpdateCooldown = 0.25f;
-
-		private const float FreezeSpeed = 1.2f;
-
-		private const float FreezePow = 5f;
-
-		private const float UnfrozenLerp = 10f;
-
-		private const float MinWeight = 0.001f;
-
-		private const float UnfreezeVelocity = 2.5f;
-
-		private const float UnfreezeVelocitySqr = 6.25f;
-
-		private const float FrozenTeleportDisSqr = 0.390625f;
-
-		public enum FreezingMode
-		{
-			Default,
-			FreezeWhenSleeping,
-			NeverFreeze
-		}
+	public override void DestroyModule()
+	{
+		base.DestroyModule();
+		StaticUnityMethods.OnUpdate -= OnUpdate;
+		ElevatorChamber.OnElevatorMoved -= OnElevatorMoved;
 	}
 }

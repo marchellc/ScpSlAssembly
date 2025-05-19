@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Interactables.Interobjects.DoorUtils;
@@ -11,317 +11,284 @@ using PlayerRoles.Subroutines;
 using UnityEngine;
 using Utils.NonAllocLINQ;
 
-namespace PlayerRoles.PlayableScps.Scp939
+namespace PlayerRoles.PlayableScps.Scp939;
+
+public class Scp939AmnesticCloudAbility : KeySubroutine<Scp939Role>
 {
-	public class Scp939AmnesticCloudAbility : KeySubroutine<Scp939Role>
+	private static readonly Dictionary<RoomName, float[]> WhitelistedFloors = new Dictionary<RoomName, float[]>
 	{
-		public event Action<Scp939HudTranslation> OnDeployFailed;
+		[RoomName.EzOfficeSmall] = new float[1] { -0.527f },
+		[RoomName.EzOfficeStoried] = new float[1] { 3.767f },
+		[RoomName.Hcz106] = new float[1] { 1.19f },
+		[RoomName.Hcz079] = new float[1] { -4.334f },
+		[RoomName.HczWarhead] = new float[3] { -75.33f, -72.33f, -70.26f }
+	};
 
-		protected override ActionName TargetKey
+	private const float FloorTolerance = 0.2f;
+
+	private bool _targetState;
+
+	private float _sendDuration;
+
+	private Scp939FocusAbility _focusAbility;
+
+	private readonly Stopwatch _beginHeldSw = Stopwatch.StartNew();
+
+	[SerializeField]
+	private Scp939AmnesticCloudInstance _instancePrefab;
+
+	[SerializeField]
+	private float _failedCooldown;
+
+	[SerializeField]
+	private float _placedCooldown;
+
+	public readonly AbilityCooldown Duration = new AbilityCooldown();
+
+	public readonly AbilityCooldown Cooldown = new AbilityCooldown();
+
+	public readonly AbilityCooldown HudIndicatorMin = new AbilityCooldown();
+
+	public readonly AbilityCooldown HudIndicatorMax = new AbilityCooldown();
+
+	protected override ActionName TargetKey => ActionName.ToggleFlashlight;
+
+	protected override bool KeyPressable
+	{
+		get
 		{
-			get
+			if (base.KeyPressable)
 			{
-				return ActionName.ToggleFlashlight;
+				return _focusAbility.State == 0f;
 			}
+			return false;
 		}
+	}
 
-		protected override bool KeyPressable
+	public float HoldDuration => (float)_beginHeldSw.Elapsed.TotalSeconds;
+
+	public bool TargetState
+	{
+		get
 		{
-			get
-			{
-				return base.KeyPressable && this._focusAbility.State == 0f;
-			}
+			return _targetState;
 		}
-
-		public float HoldDuration
+		set
 		{
-			get
+			if (_targetState != value)
 			{
-				return (float)this._beginHeldSw.Elapsed.TotalSeconds;
-			}
-		}
-
-		public bool TargetState
-		{
-			get
-			{
-				return this._targetState;
-			}
-			set
-			{
-				if (this._targetState == value)
-				{
-					return;
-				}
-				this._targetState = value;
+				_targetState = value;
 				if (value)
 				{
-					this.OnStateEnabled();
-					return;
+					OnStateEnabled();
 				}
-				this.OnStateDisabled();
-			}
-		}
-
-		private void OnStateEnabled()
-		{
-			Scp939CreatingAmnesticCloudEventArgs scp939CreatingAmnesticCloudEventArgs = new Scp939CreatingAmnesticCloudEventArgs(base.Owner);
-			Scp939Events.OnCreatingAmnesticCloud(scp939CreatingAmnesticCloudEventArgs);
-			if (!scp939CreatingAmnesticCloudEventArgs.IsAllowed)
-			{
-				return;
-			}
-			this._beginHeldSw.Restart();
-			this.HudIndicatorMax.Clear();
-			this.HudIndicatorMin.Trigger((double)this._instancePrefab.MinMaxTime.y);
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			Scp939AmnesticCloudInstance scp939AmnesticCloudInstance = global::UnityEngine.Object.Instantiate<Scp939AmnesticCloudInstance>(this._instancePrefab);
-			scp939AmnesticCloudInstance.ServerSetup(base.Owner);
-			Scp939Events.OnCreatedAmnesticCloud(new Scp939CreatedAmnesticCloudEventArgs(base.Owner, scp939AmnesticCloudInstance));
-		}
-
-		private void OnStateDisabled()
-		{
-			this._beginHeldSw.Reset();
-		}
-
-		protected override void Awake()
-		{
-			base.Awake();
-			base.GetSubroutine<Scp939FocusAbility>(out this._focusAbility);
-		}
-
-		protected override void Update()
-		{
-			base.Update();
-			if (!base.Owner.isLocalPlayer && !base.Owner.IsLocallySpectated())
-			{
-				return;
-			}
-			if (!this.TargetState || !this.HudIndicatorMax.IsReady)
-			{
-				return;
-			}
-			Vector2 minMaxTime = this._instancePrefab.MinMaxTime;
-			if (this.HoldDuration < minMaxTime.x)
-			{
-				return;
-			}
-			this.HudIndicatorMax.NextUse = this.HudIndicatorMin.NextUse;
-			this.HudIndicatorMax.InitialTime = this.HudIndicatorMin.InitialTime;
-		}
-
-		protected override void OnKeyDown()
-		{
-			base.OnKeyDown();
-			if (!this.Cooldown.IsReady)
-			{
-				return;
-			}
-			if (!this.ValidateFloor())
-			{
-				this.ClientCancel(Scp939HudTranslation.CloudFailedPositionInvalid);
-				return;
-			}
-			this.TargetState = true;
-			base.ClientSendCmd();
-		}
-
-		protected override void OnKeyUp()
-		{
-			base.OnKeyUp();
-			if (!this.TargetState)
-			{
-				return;
-			}
-			this.ClientCancel(Scp939HudTranslation.PressKeyToLunge);
-		}
-
-		public bool ValidateFloor()
-		{
-			Vector3 pos = base.CastRole.FpcModule.Position;
-			RoomIdentifier roomIdentifier = RoomUtils.RoomAtPositionRaycasts(pos, true);
-			if (roomIdentifier == null)
-			{
-				return false;
-			}
-			float[] array;
-			if (Scp939AmnesticCloudAbility.WhitelistedFloors.TryGetValue(roomIdentifier.Name, out array))
-			{
-				float num = roomIdentifier.transform.position.y - pos.y;
-				foreach (float num2 in array)
+				else
 				{
-					if (Mathf.Abs(num + num2) <= 0.2f)
-					{
-						return true;
-					}
+					OnStateDisabled();
 				}
 			}
-			HashSet<DoorVariant> hashSet;
-			if (!DoorVariant.DoorsByRoom.TryGetValue(roomIdentifier, out hashSet))
+		}
+	}
+
+	public event Action<Scp939HudTranslation> OnDeployFailed;
+
+	private void OnStateEnabled()
+	{
+		Scp939CreatingAmnesticCloudEventArgs scp939CreatingAmnesticCloudEventArgs = new Scp939CreatingAmnesticCloudEventArgs(base.Owner);
+		Scp939Events.OnCreatingAmnesticCloud(scp939CreatingAmnesticCloudEventArgs);
+		if (scp939CreatingAmnesticCloudEventArgs.IsAllowed)
+		{
+			_beginHeldSw.Restart();
+			HudIndicatorMax.Clear();
+			HudIndicatorMin.Trigger(_instancePrefab.MinMaxTime.y);
+			if (NetworkServer.active)
 			{
-				return false;
+				Scp939AmnesticCloudInstance scp939AmnesticCloudInstance = UnityEngine.Object.Instantiate(_instancePrefab);
+				scp939AmnesticCloudInstance.ServerSetup(base.Owner);
+				Scp939Events.OnCreatedAmnesticCloud(new Scp939CreatedAmnesticCloudEventArgs(base.Owner, scp939AmnesticCloudInstance));
 			}
-			float halfHeight = base.CastRole.FpcModule.CharController.height / 2f;
-			return hashSet.Any((DoorVariant x) => Mathf.Abs(x.transform.position.y - pos.y + halfHeight) < 0.2f);
 		}
+	}
 
-		public void ClientCancel(Scp939HudTranslation reason)
+	private void OnStateDisabled()
+	{
+		_beginHeldSw.Reset();
+	}
+
+	protected override void Awake()
+	{
+		base.Awake();
+		GetSubroutine<Scp939FocusAbility>(out _focusAbility);
+	}
+
+	protected override void Update()
+	{
+		base.Update();
+		if ((base.Owner.isLocalPlayer || base.Owner.IsLocallySpectated()) && TargetState && HudIndicatorMax.IsReady)
 		{
-			if (reason - Scp939HudTranslation.CloudFailedPositionInvalid <= 1)
+			Vector2 minMaxTime = _instancePrefab.MinMaxTime;
+			if (!(HoldDuration < minMaxTime.x))
 			{
-				Action<Scp939HudTranslation> onDeployFailed = this.OnDeployFailed;
-				if (onDeployFailed != null)
-				{
-					onDeployFailed(reason);
-				}
+				HudIndicatorMax.NextUse = HudIndicatorMin.NextUse;
+				HudIndicatorMax.InitialTime = HudIndicatorMin.InitialTime;
 			}
-			this.TargetState = false;
-			base.ClientSendCmd();
 		}
+	}
 
-		public void ServerConfirmPlacement(float duration)
+	protected override void OnKeyDown()
+	{
+		base.OnKeyDown();
+		if (Cooldown.IsReady)
 		{
-			this._sendDuration = duration;
-			this.Cooldown.Trigger((double)this._placedCooldown);
-			base.ServerSendRpc(true);
-		}
-
-		public void ServerFailPlacement()
-		{
-			this._sendDuration = -128f;
-			this.Cooldown.Trigger((double)this._failedCooldown);
-			base.ServerSendRpc(true);
-		}
-
-		public override void ClientWriteCmd(NetworkWriter writer)
-		{
-			base.ClientWriteCmd(writer);
-			writer.WriteBool(this.TargetState);
-		}
-
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			this.Cooldown.Clear();
-			this.Duration.Clear();
-			this.HudIndicatorMin.Clear();
-			this.HudIndicatorMax.Clear();
-			this.TargetState = false;
-		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			bool flag = reader.ReadBool();
-			bool flag2 = flag != this.TargetState;
-			if (flag)
+			if (!ValidateFloor())
 			{
-				if (this.Cooldown.IsReady)
-				{
-					this.TargetState = flag;
-					this.Cooldown.Trigger((double)this._failedCooldown);
-				}
-			}
-			else
-			{
-				this.TargetState = false;
-			}
-			base.ServerSendRpc(flag2);
-		}
-
-		public override void ServerWriteRpc(NetworkWriter writer)
-		{
-			base.ServerWriteRpc(writer);
-			writer.WriteBool(this.TargetState);
-			if (this.TargetState)
-			{
+				ClientCancel(Scp939HudTranslation.CloudFailedPositionInvalid);
 				return;
 			}
-			this.Cooldown.WriteCooldown(writer);
-			writer.WriteFloat(this._sendDuration);
+			TargetState = true;
+			ClientSendCmd();
 		}
+	}
 
-		public override void ClientProcessRpc(NetworkReader reader)
+	protected override void OnKeyUp()
+	{
+		base.OnKeyUp();
+		if (TargetState)
 		{
-			base.ClientProcessRpc(reader);
-			this.TargetState = reader.ReadBool();
-			if (this.TargetState)
+			ClientCancel(Scp939HudTranslation.PressKeyToLunge);
+		}
+	}
+
+	public bool ValidateFloor()
+	{
+		Vector3 pos = base.CastRole.FpcModule.Position;
+		if (!pos.TryGetRoom(out var room))
+		{
+			return false;
+		}
+		if (WhitelistedFloors.TryGetValue(room.Name, out var value))
+		{
+			float num = room.transform.position.y - pos.y;
+			float[] array = value;
+			foreach (float num2 in array)
 			{
-				return;
+				if (!(Mathf.Abs(num + num2) > 0.2f))
+				{
+					return true;
+				}
 			}
-			this.Cooldown.ReadCooldown(reader);
+		}
+		if (!DoorVariant.DoorsByRoom.TryGetValue(room, out var value2))
+		{
+			return false;
+		}
+		float halfHeight = base.CastRole.FpcModule.CharController.height / 2f;
+		return value2.Any((DoorVariant x) => Mathf.Abs(x.transform.position.y - pos.y + halfHeight) < 0.2f);
+	}
+
+	public void ClientCancel(Scp939HudTranslation reason)
+	{
+		if ((uint)(reason - 12) <= 1u)
+		{
+			this.OnDeployFailed?.Invoke(reason);
+		}
+		TargetState = false;
+		ClientSendCmd();
+	}
+
+	public void ServerConfirmPlacement(float duration)
+	{
+		_sendDuration = duration;
+		Cooldown.Trigger(_placedCooldown);
+		ServerSendRpc(toAll: true);
+	}
+
+	public void ServerFailPlacement()
+	{
+		_sendDuration = -128f;
+		Cooldown.Trigger(_failedCooldown);
+		ServerSendRpc(toAll: true);
+	}
+
+	public override void ClientWriteCmd(NetworkWriter writer)
+	{
+		base.ClientWriteCmd(writer);
+		writer.WriteBool(TargetState);
+	}
+
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		Cooldown.Clear();
+		Duration.Clear();
+		HudIndicatorMin.Clear();
+		HudIndicatorMax.Clear();
+		TargetState = false;
+	}
+
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		bool flag = reader.ReadBool();
+		bool toAll = flag != TargetState;
+		if (flag)
+		{
+			if (Cooldown.IsReady)
+			{
+				TargetState = flag;
+				Cooldown.Trigger(_failedCooldown);
+			}
+		}
+		else
+		{
+			TargetState = false;
+		}
+		ServerSendRpc(toAll);
+	}
+
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteBool(TargetState);
+		if (!TargetState)
+		{
+			Cooldown.WriteCooldown(writer);
+			writer.WriteFloat(_sendDuration);
+		}
+	}
+
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		TargetState = reader.ReadBool();
+		if (!TargetState)
+		{
+			Cooldown.ReadCooldown(reader);
 			float num = reader.ReadFloat();
 			if (num <= 0f)
 			{
-				this.Duration.Clear();
+				Duration.Clear();
 				return;
 			}
-			this.Duration.Trigger((double)num);
-			this.Cooldown.InitialTime += (double)num;
+			Duration.Trigger(num);
+			Cooldown.InitialTime += num;
 		}
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientStarted += delegate
 		{
-			CustomNetworkManager.OnClientStarted += delegate
+			if (!PlayerRoleLoader.TryGetRoleTemplate<Scp939Role>(RoleTypeId.Scp939, out var result))
 			{
-				Scp939Role scp939Role;
-				if (!PlayerRoleLoader.TryGetRoleTemplate<Scp939Role>(RoleTypeId.Scp939, out scp939Role))
-				{
-					throw new InvalidOperationException("Cannot register amnestic cloud. SCP-939 role template not found.");
-				}
-				Scp939AmnesticCloudAbility scp939AmnesticCloudAbility;
-				if (!scp939Role.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out scp939AmnesticCloudAbility))
-				{
-					throw new InvalidOperationException("Cannot register amnestic cloud. Ability not found.");
-				}
-				NetworkClient.RegisterPrefab(scp939AmnesticCloudAbility._instancePrefab.gameObject);
-			};
-		}
-
-		// Note: this type is marked as 'beforefieldinit'.
-		static Scp939AmnesticCloudAbility()
-		{
-			Dictionary<RoomName, float[]> dictionary = new Dictionary<RoomName, float[]>();
-			dictionary[RoomName.EzOfficeSmall] = new float[] { -0.527f };
-			dictionary[RoomName.EzOfficeStoried] = new float[] { 3.767f };
-			dictionary[RoomName.Hcz106] = new float[] { 1.19f };
-			dictionary[RoomName.Hcz079] = new float[] { -4.334f };
-			dictionary[RoomName.HczWarhead] = new float[] { -75.33f, -72.33f, -70.26f };
-			Scp939AmnesticCloudAbility.WhitelistedFloors = dictionary;
-		}
-
-		private static readonly Dictionary<RoomName, float[]> WhitelistedFloors;
-
-		private const float FloorTolerance = 0.2f;
-
-		private bool _targetState;
-
-		private float _sendDuration;
-
-		private Scp939FocusAbility _focusAbility;
-
-		private readonly Stopwatch _beginHeldSw = Stopwatch.StartNew();
-
-		[SerializeField]
-		private Scp939AmnesticCloudInstance _instancePrefab;
-
-		[SerializeField]
-		private float _failedCooldown;
-
-		[SerializeField]
-		private float _placedCooldown;
-
-		public readonly AbilityCooldown Duration = new AbilityCooldown();
-
-		public readonly AbilityCooldown Cooldown = new AbilityCooldown();
-
-		public readonly AbilityCooldown HudIndicatorMin = new AbilityCooldown();
-
-		public readonly AbilityCooldown HudIndicatorMax = new AbilityCooldown();
+				throw new InvalidOperationException("Cannot register amnestic cloud. SCP-939 role template not found.");
+			}
+			if (!result.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out var subroutine))
+			{
+				throw new InvalidOperationException("Cannot register amnestic cloud. Ability not found.");
+			}
+			NetworkClient.RegisterPrefab(subroutine._instancePrefab.gameObject);
+		};
 	}
 }

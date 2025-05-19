@@ -1,4 +1,3 @@
-﻿using System;
 using LabApi.Events.Arguments.Scp096Events;
 using LabApi.Events.Handlers;
 using Mirror;
@@ -6,211 +5,193 @@ using PlayerRoles.PlayableScps.HumeShield;
 using PlayerRoles.Subroutines;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp096
+namespace PlayerRoles.PlayableScps.Scp096;
+
+public class Scp096RageManager : StandardSubroutine<Scp096Role>, IHumeShieldBlocker
 {
-	public class Scp096RageManager : StandardSubroutine<Scp096Role>, IHumeShieldBlocker
+	public const float NormalHumeRegenerationRate = 15f;
+
+	public const float MaxRageTime = 35f;
+
+	public const float MinimumEnrageTime = 20f;
+
+	private const float TimePerExtraTarget = 3f;
+
+	private const float CalmingShieldMultiplier = 1f;
+
+	private const float EnragingShieldMultiplier = 1f;
+
+	public readonly AbilityCooldown HudRageDuration = new AbilityCooldown();
+
+	private DynamicHumeShieldController _shieldController;
+
+	private Scp096TargetsTracker _targetsTracker;
+
+	private float _enragedTimeLeft;
+
+	public bool HumeShieldBlocked { get; set; }
+
+	public bool IsEnragedOrDistressed
 	{
-		public bool HumeShieldBlocked { get; set; }
-
-		public bool IsEnragedOrDistressed
+		get
 		{
-			get
+			if (!IsEnraged)
 			{
-				return this.IsEnraged || this.IsDistressed;
+				return IsDistressed;
+			}
+			return true;
+		}
+	}
+
+	public bool IsEnraged => base.CastRole.IsRageState(Scp096RageState.Enraged);
+
+	public bool IsDistressed => base.CastRole.IsRageState(Scp096RageState.Distressed);
+
+	public float EnragedTimeLeft
+	{
+		get
+		{
+			return _enragedTimeLeft;
+		}
+		set
+		{
+			if (value < 0f)
+			{
+				value = 0f;
+			}
+			HudRageDuration.Remaining = value;
+			_enragedTimeLeft = value;
+			if (NetworkServer.active && _enragedTimeLeft == 0f)
+			{
+				ServerEndEnrage(clearTime: false);
 			}
 		}
+	}
 
-		public bool IsEnraged
+	public float TotalRageTime { get; private set; }
+
+	public void ServerEnrage(float initialDuration = 20f)
+	{
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return base.CastRole.IsRageState(Scp096RageState.Enraged);
-			}
-		}
-
-		public bool IsDistressed
-		{
-			get
-			{
-				return base.CastRole.IsRageState(Scp096RageState.Distressed);
-			}
-		}
-
-		public float EnragedTimeLeft
-		{
-			get
-			{
-				return this._enragedTimeLeft;
-			}
-			set
-			{
-				if (value < 0f)
-				{
-					value = 0f;
-				}
-				this.HudRageDuration.Remaining = value;
-				this._enragedTimeLeft = value;
-				if (NetworkServer.active && this._enragedTimeLeft == 0f)
-				{
-					this.ServerEndEnrage(false);
-				}
-			}
-		}
-
-		public float TotalRageTime { get; private set; }
-
-		public void ServerEnrage(float initialDuration = 20f)
-		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
 			Scp096EnragingEventArgs scp096EnragingEventArgs = new Scp096EnragingEventArgs(base.Owner, initialDuration);
 			Scp096Events.OnEnraging(scp096EnragingEventArgs);
-			if (!scp096EnragingEventArgs.IsAllowed)
+			if (scp096EnragingEventArgs.IsAllowed)
 			{
-				return;
+				initialDuration = scp096EnragingEventArgs.InitialDuration;
+				EnragedTimeLeft = initialDuration;
+				TotalRageTime = initialDuration;
+				base.CastRole.StateController.SetRageState(Scp096RageState.Distressed);
+				ServerIncreaseDuration(base.Owner, Mathf.Max((float)_targetsTracker.Targets.Count - 3f, 0f));
+				Scp096Events.OnEnraged(new Scp096EnragedEventArgs(base.Owner, initialDuration));
 			}
-			initialDuration = scp096EnragingEventArgs.InitialDuration;
-			this.EnragedTimeLeft = initialDuration;
-			this.TotalRageTime = initialDuration;
-			base.CastRole.StateController.SetRageState(Scp096RageState.Distressed);
-			this.ServerIncreaseDuration(base.Owner, Mathf.Max((float)this._targetsTracker.Targets.Count - 3f, 0f));
-			Scp096Events.OnEnraged(new Scp096EnragedEventArgs(base.Owner, initialDuration));
 		}
+	}
 
-		public void ServerEndEnrage(bool clearTime = true)
+	public void ServerEndEnrage(bool clearTime = true)
+	{
+		if (NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
 			if (clearTime)
 			{
-				this.EnragedTimeLeft = 0f;
+				EnragedTimeLeft = 0f;
 			}
 			base.CastRole.StateController.SetRageState(Scp096RageState.Calming);
-			base.ServerSendRpc(true);
+			ServerSendRpc(toAll: true);
 		}
+	}
 
-		public void ServerIncreaseDuration(ReferenceHub ownerHub, float addedDuration = 3f)
+	public void ServerIncreaseDuration(ReferenceHub ownerHub, float addedDuration = 3f)
+	{
+		if (NetworkServer.active && !(ownerHub != base.Owner))
 		{
-			if (!NetworkServer.active || ownerHub != base.Owner)
-			{
-				return;
-			}
-			addedDuration = Mathf.Min(addedDuration, 35f - this.TotalRageTime);
-			this.TotalRageTime += addedDuration;
-			this.EnragedTimeLeft += addedDuration;
-			base.ServerSendRpc(true);
+			addedDuration = Mathf.Min(addedDuration, 35f - TotalRageTime);
+			TotalRageTime += addedDuration;
+			EnragedTimeLeft += addedDuration;
+			ServerSendRpc(toAll: true);
 		}
+	}
 
-		public override void ServerWriteRpc(NetworkWriter writer)
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteFloat(EnragedTimeLeft);
+	}
+
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		if (!NetworkServer.active)
 		{
-			base.ServerWriteRpc(writer);
-			writer.WriteFloat(this.EnragedTimeLeft);
+			EnragedTimeLeft = reader.ReadFloat();
 		}
+	}
 
-		public override void ClientProcessRpc(NetworkReader reader)
+	protected override void Awake()
+	{
+		base.Awake();
+		_shieldController = base.CastRole.HumeShieldModule as DynamicHumeShieldController;
+		GetSubroutine<Scp096TargetsTracker>(out _targetsTracker);
+		Scp096TargetsTracker.OnTargetAdded += delegate(ReferenceHub ownerHub, ReferenceHub targetedHub)
 		{
-			base.ClientProcessRpc(reader);
-			if (NetworkServer.active)
-			{
-				return;
-			}
-			this.EnragedTimeLeft = reader.ReadFloat();
+			ServerIncreaseDuration(ownerHub);
+		};
+		base.CastRole.StateController.OnRageUpdate += OnRageUpdate;
+	}
+
+	private void OnRageUpdate(Scp096RageState newState)
+	{
+		if (newState == Scp096RageState.Enraged)
+		{
+			HudRageDuration.Trigger(EnragedTimeLeft);
 		}
-
-		protected override void Awake()
+		if (NetworkServer.active)
 		{
-			base.Awake();
-			this._shieldController = base.CastRole.HumeShieldModule as DynamicHumeShieldController;
-			base.GetSubroutine<Scp096TargetsTracker>(out this._targetsTracker);
-			Scp096TargetsTracker.OnTargetAdded += delegate(ReferenceHub ownerHub, ReferenceHub targetedHub)
-			{
-				this.ServerIncreaseDuration(ownerHub, 3f);
-			};
-			base.CastRole.StateController.OnRageUpdate += this.OnRageUpdate;
-		}
-
-		private void OnRageUpdate(Scp096RageState newState)
-		{
-			if (newState == Scp096RageState.Enraged)
-			{
-				this.HudRageDuration.Trigger((double)this.EnragedTimeLeft);
-			}
-			if (!NetworkServer.active)
-			{
-				return;
-			}
 			float num;
-			if (newState != Scp096RageState.Enraged)
+			switch (newState)
 			{
-				if (newState != Scp096RageState.Calming)
-				{
-					this.HumeShieldBlocked = false;
-					return;
-				}
+			case Scp096RageState.Enraged:
 				num = 1f;
-				this.TotalRageTime = 0f;
-				this.HumeShieldBlocked = false;
-			}
-			else
-			{
+				HumeShieldBlocked = true;
+				_shieldController.AddBlocker(this);
+				break;
+			case Scp096RageState.Calming:
 				num = 1f;
-				this.HumeShieldBlocked = true;
-				this._shieldController.AddBlocker(this);
+				TotalRageTime = 0f;
+				HumeShieldBlocked = false;
+				break;
+			default:
+				HumeShieldBlocked = false;
+				return;
 			}
 			HumeShieldModuleBase humeShieldModule = base.CastRole.HumeShieldModule;
 			humeShieldModule.HsCurrent = Mathf.Clamp(humeShieldModule.HsCurrent * num, 0f, humeShieldModule.HsMax);
 		}
+	}
 
-		private void Update()
+	private void Update()
+	{
+		if (NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this.UpdateRage();
+			UpdateRage();
 		}
+	}
 
-		private void UpdateRage()
+	private void UpdateRage()
+	{
+		if (IsEnraged)
 		{
-			if (!this.IsEnraged)
-			{
-				return;
-			}
-			this.EnragedTimeLeft -= Time.deltaTime;
+			EnragedTimeLeft -= Time.deltaTime;
 		}
+	}
 
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			this.HudRageDuration.Clear();
-			this._shieldController.RegenerationRate = 15f;
-			this.HumeShieldBlocked = false;
-			this._enragedTimeLeft = 0f;
-			this.TotalRageTime = 0f;
-		}
-
-		public const float NormalHumeRegenerationRate = 15f;
-
-		public const float MaxRageTime = 35f;
-
-		public const float MinimumEnrageTime = 20f;
-
-		private const float TimePerExtraTarget = 3f;
-
-		private const float CalmingShieldMultiplier = 1f;
-
-		private const float EnragingShieldMultiplier = 1f;
-
-		public readonly AbilityCooldown HudRageDuration = new AbilityCooldown();
-
-		private DynamicHumeShieldController _shieldController;
-
-		private Scp096TargetsTracker _targetsTracker;
-
-		private float _enragedTimeLeft;
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		HudRageDuration.Clear();
+		_shieldController.RegenerationRate = 15f;
+		HumeShieldBlocked = false;
+		_enragedTimeLeft = 0f;
+		TotalRageTime = 0f;
 	}
 }

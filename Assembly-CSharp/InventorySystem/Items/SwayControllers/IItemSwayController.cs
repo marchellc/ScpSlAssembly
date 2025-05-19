@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items.SwayControllers;
 
-namespace InventorySystem.Items.SwayControllers
+public interface IItemSwayController
 {
-	public interface IItemSwayController
-	{
-		void UpdateSway();
-	}
+	void UpdateSway();
 }

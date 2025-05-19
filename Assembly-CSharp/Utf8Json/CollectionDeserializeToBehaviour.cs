@@ -1,10 +1,7 @@
-﻿using System;
+namespace Utf8Json;
 
-namespace Utf8Json
+public enum CollectionDeserializeToBehaviour
 {
-	public enum CollectionDeserializeToBehaviour
-	{
-		Add,
-		OverwriteReplace
-	}
+	Add,
+	OverwriteReplace
 }

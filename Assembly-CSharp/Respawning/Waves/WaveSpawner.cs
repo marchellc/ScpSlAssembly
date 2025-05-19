@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using LabApi.Events.Arguments.ServerEvents;
@@ -12,198 +12,172 @@ using UnityEngine;
 using UnityEngine.Pool;
 using Utils.NonAllocLINQ;
 
-namespace Respawning.Waves
+namespace Respawning.Waves;
+
+public static class WaveSpawner
 {
-	public static class WaveSpawner
+	public const float TimePerPoint = 15f;
+
+	private const float MaxRandomPoints = 0.25f;
+
+	private const float MinPoints = 0f;
+
+	private const float SameFactionPoints = 3f;
+
+	private static readonly Dictionary<ReferenceHub, Team> PreviousTeam = new Dictionary<ReferenceHub, Team>();
+
+	private static readonly Queue<RoleTypeId> SpawnQueue = new Queue<RoleTypeId>();
+
+	public static bool AnyPlayersAvailable => ReferenceHub.AllHubs.Any(CanBeSpawned);
+
+	public static List<ReferenceHub> GetAvailablePlayers(Team spawningTeam)
 	{
-		public static bool AnyPlayersAvailable
-		{
-			get
-			{
-				return ReferenceHub.AllHubs.Any(new Func<ReferenceHub, bool>(WaveSpawner.CanBeSpawned));
-			}
-		}
+		return (from hub in ReferenceHub.AllHubs.Where(CanBeSpawned)
+			orderby CalculatePriority(hub, spawningTeam) descending
+			select hub).ToList();
+	}
 
-		public static List<ReferenceHub> GetAvailablePlayers(Team spawningTeam)
+	public static List<ReferenceHub> SpawnWave(SpawnableWaveBase wave)
+	{
+		List<ReferenceHub> list = NorthwoodLib.Pools.ListPool<ReferenceHub>.Shared.Rent();
+		Team spawnableTeam = wave.TargetFaction.GetSpawnableTeam();
+		List<ReferenceHub> availablePlayers = GetAvailablePlayers(spawnableTeam);
+		int maxWaveSize = wave.MaxWaveSize;
+		int num = Mathf.Min(availablePlayers.Count, maxWaveSize);
+		if (num <= 0)
 		{
-			return (from hub in ReferenceHub.AllHubs.Where(new Func<ReferenceHub, bool>(WaveSpawner.CanBeSpawned))
-				orderby WaveSpawner.CalculatePriority(hub, spawningTeam) descending
-				select hub).ToList<ReferenceHub>();
-		}
-
-		public static List<ReferenceHub> SpawnWave(SpawnableWaveBase wave)
-		{
-			List<ReferenceHub> list = NorthwoodLib.Pools.ListPool<ReferenceHub>.Shared.Rent();
-			Team spawnableTeam = wave.TargetFaction.GetSpawnableTeam();
-			List<ReferenceHub> availablePlayers = WaveSpawner.GetAvailablePlayers(spawnableTeam);
-			int maxWaveSize = wave.MaxWaveSize;
-			int num = Mathf.Min(availablePlayers.Count, maxWaveSize);
-			if (num <= 0)
-			{
-				return list;
-			}
-			UnitNamingRule unitNamingRule;
-			if (NamingRulesManager.TryGetNamingRule(spawnableTeam, out unitNamingRule))
-			{
-				NamingRulesManager.ServerGenerateName(spawnableTeam, unitNamingRule);
-			}
-			wave.PopulateQueue(WaveSpawner.SpawnQueue, num);
-			RoleChangeReason roleChangeReason = ((wave is IMiniWave) ? RoleChangeReason.RespawnMiniwave : RoleChangeReason.Respawn);
-			Dictionary<ReferenceHub, RoleTypeId> dictionary = CollectionPool<Dictionary<ReferenceHub, RoleTypeId>, KeyValuePair<ReferenceHub, RoleTypeId>>.Get();
-			foreach (ReferenceHub referenceHub in availablePlayers)
-			{
-				if (list.Count >= maxWaveSize)
-				{
-					break;
-				}
-				try
-				{
-					RoleTypeId roleTypeId = WaveSpawner.SpawnQueue.Dequeue();
-					dictionary.Add(referenceHub, roleTypeId);
-				}
-				catch (Exception ex)
-				{
-					if (referenceHub != null)
-					{
-						ServerLogs.AddLog(ServerLogs.Modules.ClassChange, "Player " + referenceHub.LoggedNameFromRefHub() + " couldn't be added to spawn wave. Err msg: " + ex.Message, ServerLogs.ServerLogType.GameEvent, false);
-					}
-					else
-					{
-						ServerLogs.AddLog(ServerLogs.Modules.ClassChange, "Couldn't add a player - target's ReferenceHub is null.", ServerLogs.ServerLogType.GameEvent, false);
-					}
-				}
-			}
-			WaveRespawningEventArgs waveRespawningEventArgs = new WaveRespawningEventArgs(wave, dictionary);
-			ServerEvents.OnWaveRespawning(waveRespawningEventArgs);
-			if (!waveRespawningEventArgs.IsAllowed)
-			{
-				list.Clear();
-				CollectionPool<Dictionary<ReferenceHub, RoleTypeId>, KeyValuePair<ReferenceHub, RoleTypeId>>.Release(dictionary);
-				WaveSpawner.SpawnQueue.Clear();
-				return list;
-			}
-			foreach (KeyValuePair<Player, RoleTypeId> keyValuePair in waveRespawningEventArgs.Roles)
-			{
-				dictionary[keyValuePair.Key.ReferenceHub] = keyValuePair.Value;
-			}
-			CollectionPool<Dictionary<Player, RoleTypeId>, KeyValuePair<Player, RoleTypeId>>.Release(waveRespawningEventArgs.Roles);
-			IAnnouncedWave announcedWave = wave as IAnnouncedWave;
-			if (announcedWave != null)
-			{
-				announcedWave.Announcement.PlayAnnouncement();
-			}
-			foreach (KeyValuePair<ReferenceHub, RoleTypeId> keyValuePair2 in dictionary)
-			{
-				if (list.Count >= maxWaveSize)
-				{
-					break;
-				}
-				try
-				{
-					keyValuePair2.Key.roleManager.ServerSetRole(keyValuePair2.Value, roleChangeReason, RoleSpawnFlags.All);
-					list.Add(keyValuePair2.Key);
-					ServerLogs.AddLog(ServerLogs.Modules.ClassChange, string.Concat(new string[]
-					{
-						"Player ",
-						keyValuePair2.Key.LoggedNameFromRefHub(),
-						" respawned as ",
-						keyValuePair2.Value.ToString(),
-						"."
-					}), ServerLogs.ServerLogType.GameEvent, false);
-				}
-				catch (Exception ex2)
-				{
-					if (keyValuePair2.Key != null)
-					{
-						ServerLogs.AddLog(ServerLogs.Modules.ClassChange, "Player " + keyValuePair2.Key.LoggedNameFromRefHub() + " couldn't be spawned. Err msg: " + ex2.Message, ServerLogs.ServerLogType.GameEvent, false);
-					}
-					else
-					{
-						ServerLogs.AddLog(ServerLogs.Modules.ClassChange, "Couldn't spawn a player - target's ReferenceHub is null.", ServerLogs.ServerLogType.GameEvent, false);
-					}
-				}
-			}
-			ServerEvents.OnWaveRespawned(new WaveRespawnedEventArgs(wave, dictionary.Keys.Select(new Func<ReferenceHub, Player>(Player.Get)).ToList<Player>()));
-			if (list.Count > 0)
-			{
-				ServerLogs.AddLog(ServerLogs.Modules.ClassChange, string.Format("{0} has successfully spawned {1} players as {2}!", "WaveSpawner", list.Count, spawnableTeam), ServerLogs.ServerLogType.GameEvent, false);
-			}
-			WaveSpawner.SpawnQueue.Clear();
-			CollectionPool<Dictionary<ReferenceHub, RoleTypeId>, KeyValuePair<ReferenceHub, RoleTypeId>>.Release(dictionary);
 			return list;
 		}
-
-		public static float CalculatePriority(ReferenceHub hub, Team targetTeam)
+		if (NamingRulesManager.TryGetNamingRule(spawnableTeam, out var rule))
 		{
-			float num = global::UnityEngine.Random.Range(0f, 0.25f);
-			SpectatorRole spectatorRole = hub.roleManager.CurrentRole as SpectatorRole;
-			if (spectatorRole == null)
-			{
-				return -num;
-			}
-			num += spectatorRole.ActiveTime / 15f;
-			Team team;
-			if (!WaveSpawner.PreviousTeam.TryGetValue(hub, out team))
-			{
-				return num;
-			}
-			if (team == targetTeam)
-			{
-				num += 3f;
-			}
-			return num;
+			NamingRulesManager.ServerGenerateName(spawnableTeam, rule);
 		}
-
-		public static Team GetSpawnableTeam(this Faction faction)
+		wave.PopulateQueue(SpawnQueue, num);
+		RoleChangeReason reason = ((wave is IMiniWave) ? RoleChangeReason.RespawnMiniwave : RoleChangeReason.Respawn);
+		Dictionary<ReferenceHub, RoleTypeId> dictionary = CollectionPool<Dictionary<ReferenceHub, RoleTypeId>, KeyValuePair<ReferenceHub, RoleTypeId>>.Get();
+		foreach (ReferenceHub item in availablePlayers)
 		{
-			Team team;
-			if (faction != Faction.FoundationStaff)
+			if (list.Count >= maxWaveSize)
 			{
-				if (faction == Faction.FoundationEnemy)
+				break;
+			}
+			try
+			{
+				RoleTypeId value = SpawnQueue.Dequeue();
+				dictionary.Add(item, value);
+			}
+			catch (Exception ex)
+			{
+				if (item != null)
 				{
-					team = Team.ChaosInsurgency;
+					ServerLogs.AddLog(ServerLogs.Modules.ClassChange, "Player " + item.LoggedNameFromRefHub() + " couldn't be added to spawn wave. Err msg: " + ex.Message, ServerLogs.ServerLogType.GameEvent);
 				}
 				else
 				{
-					team = Team.OtherAlive;
+					ServerLogs.AddLog(ServerLogs.Modules.ClassChange, "Couldn't add a player - target's ReferenceHub is null.", ServerLogs.ServerLogType.GameEvent);
 				}
 			}
-			else
+		}
+		WaveRespawningEventArgs waveRespawningEventArgs = new WaveRespawningEventArgs(wave, dictionary);
+		ServerEvents.OnWaveRespawning(waveRespawningEventArgs);
+		if (!waveRespawningEventArgs.IsAllowed)
+		{
+			list.Clear();
+			CollectionPool<Dictionary<ReferenceHub, RoleTypeId>, KeyValuePair<ReferenceHub, RoleTypeId>>.Release(dictionary);
+			SpawnQueue.Clear();
+			return list;
+		}
+		foreach (KeyValuePair<Player, RoleTypeId> role in waveRespawningEventArgs.Roles)
+		{
+			dictionary[role.Key.ReferenceHub] = role.Value;
+		}
+		CollectionPool<Dictionary<Player, RoleTypeId>, KeyValuePair<Player, RoleTypeId>>.Release(waveRespawningEventArgs.Roles);
+		if (wave is IAnnouncedWave announcedWave)
+		{
+			announcedWave.Announcement.PlayAnnouncement();
+		}
+		foreach (KeyValuePair<ReferenceHub, RoleTypeId> item2 in dictionary)
+		{
+			if (list.Count >= maxWaveSize)
 			{
-				team = Team.FoundationForces;
+				break;
 			}
-			return team;
+			try
+			{
+				item2.Key.roleManager.ServerSetRole(item2.Value, reason);
+				list.Add(item2.Key);
+				ServerLogs.AddLog(ServerLogs.Modules.ClassChange, "Player " + item2.Key.LoggedNameFromRefHub() + " respawned as " + item2.Value.ToString() + ".", ServerLogs.ServerLogType.GameEvent);
+			}
+			catch (Exception ex2)
+			{
+				if (item2.Key != null)
+				{
+					ServerLogs.AddLog(ServerLogs.Modules.ClassChange, "Player " + item2.Key.LoggedNameFromRefHub() + " couldn't be spawned. Err msg: " + ex2.Message, ServerLogs.ServerLogType.GameEvent);
+				}
+				else
+				{
+					ServerLogs.AddLog(ServerLogs.Modules.ClassChange, "Couldn't spawn a player - target's ReferenceHub is null.", ServerLogs.ServerLogType.GameEvent);
+				}
+			}
 		}
-
-		public static bool CanBeSpawned(ReferenceHub player)
+		ServerEvents.OnWaveRespawned(new WaveRespawnedEventArgs(wave, dictionary.Keys.Select(Player.Get).ToList()));
+		if (list.Count > 0)
 		{
-			SpectatorRole spectatorRole = player.roleManager.CurrentRole as SpectatorRole;
-			return spectatorRole != null && spectatorRole.ReadyToRespawn;
+			ServerLogs.AddLog(ServerLogs.Modules.ClassChange, string.Format("{0} has successfully spawned {1} players as {2}!", "WaveSpawner", list.Count, spawnableTeam), ServerLogs.ServerLogType.GameEvent);
 		}
+		SpawnQueue.Clear();
+		CollectionPool<Dictionary<ReferenceHub, RoleTypeId>, KeyValuePair<ReferenceHub, RoleTypeId>>.Release(dictionary);
+		return list;
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+	public static float CalculatePriority(ReferenceHub hub, Team targetTeam)
+	{
+		float num = UnityEngine.Random.Range(0f, 0.25f);
+		if (!(hub.roleManager.CurrentRole is SpectatorRole spectatorRole))
 		{
-			PlayerRoleManager.OnServerRoleSet += WaveSpawner.OnServerRoleSet;
-			CustomNetworkManager.OnClientReady += WaveSpawner.PreviousTeam.Clear;
+			return 0f - num;
 		}
-
-		private static void OnServerRoleSet(ReferenceHub userHub, RoleTypeId newRole, RoleChangeReason reason)
+		num += spectatorRole.ActiveTime / 15f;
+		if (!PreviousTeam.TryGetValue(hub, out var value))
 		{
-			Team spawnableTeam = userHub.GetFaction().GetSpawnableTeam();
-			WaveSpawner.PreviousTeam[userHub] = spawnableTeam;
+			return num;
 		}
+		if (value == targetTeam)
+		{
+			num += 3f;
+		}
+		return num;
+	}
 
-		public const float TimePerPoint = 15f;
+	public static Team GetSpawnableTeam(this Faction faction)
+	{
+		return faction switch
+		{
+			Faction.FoundationEnemy => Team.ChaosInsurgency, 
+			Faction.FoundationStaff => Team.FoundationForces, 
+			_ => Team.OtherAlive, 
+		};
+	}
 
-		private const float MaxRandomPoints = 0.25f;
+	public static bool CanBeSpawned(ReferenceHub player)
+	{
+		if (player.roleManager.CurrentRole is SpectatorRole spectatorRole)
+		{
+			return spectatorRole.ReadyToRespawn;
+		}
+		return false;
+	}
 
-		private const float MinPoints = 0f;
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		PlayerRoleManager.OnServerRoleSet += OnServerRoleSet;
+		CustomNetworkManager.OnClientReady += PreviousTeam.Clear;
+	}
 
-		private const float SameFactionPoints = 3f;
-
-		private static readonly Dictionary<ReferenceHub, Team> PreviousTeam = new Dictionary<ReferenceHub, Team>();
-
-		private static readonly Queue<RoleTypeId> SpawnQueue = new Queue<RoleTypeId>();
+	private static void OnServerRoleSet(ReferenceHub userHub, RoleTypeId newRole, RoleChangeReason reason)
+	{
+		Team spawnableTeam = userHub.GetFaction().GetSpawnableTeam();
+		PreviousTeam[userHub] = spawnableTeam;
 	}
 }

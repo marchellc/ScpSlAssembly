@@ -1,4 +1,3 @@
-﻿using System;
 using System.IO;
 using Utf8Json;
 using Utf8Json.Resolvers;
@@ -8,19 +7,12 @@ public static class JsonSerialize
 {
 	static JsonSerialize()
 	{
-		CompositeResolver.RegisterAndSetAsDefault(new IJsonFormatterResolver[]
-		{
-			GeneratedResolver.Instance,
-			BuiltinResolver.Instance,
-			EnumResolver.Default,
-			UnityResolver.Instance,
-			StandardResolver.Default
-		});
+		CompositeResolver.RegisterAndSetAsDefault(GeneratedResolver.Instance, BuiltinResolver.Instance, EnumResolver.Default, UnityResolver.Instance, StandardResolver.Default);
 	}
 
 	public static string ToJson<T>(T value) where T : IJsonSerializable
 	{
-		return JsonSerializer.ToJsonString<T>(value);
+		return JsonSerializer.ToJsonString(value);
 	}
 
 	public static T FromJson<T>(Stream value) where T : IJsonSerializable
@@ -45,11 +37,7 @@ public static class JsonSerialize
 
 	public static T FromFile<T>(string path) where T : IJsonSerializable
 	{
-		T t;
-		using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
-		{
-			t = JsonSerializer.Deserialize<T>(fileStream);
-		}
-		return t;
+		using FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+		return JsonSerializer.Deserialize<T>(stream);
 	}
 }

@@ -1,9 +1,6 @@
-﻿using System;
+namespace CameraShaking;
 
-namespace CameraShaking
+public interface IShakeEffect
 {
-	public interface IShakeEffect
-	{
-		bool GetEffect(ReferenceHub ply, out ShakeEffectValues shakeValues);
-	}
+	bool GetEffect(ReferenceHub ply, out ShakeEffectValues shakeValues);
 }

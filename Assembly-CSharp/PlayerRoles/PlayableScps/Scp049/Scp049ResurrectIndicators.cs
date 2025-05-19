@@ -1,21 +1,19 @@
-﻿using System;
 using PlayerRoles.Ragdolls;
 
-namespace PlayerRoles.PlayableScps.Scp049
+namespace PlayerRoles.PlayableScps.Scp049;
+
+public class Scp049ResurrectIndicators : RagdollIndicatorsBase<Scp049Role>
 {
-	public class Scp049ResurrectIndicators : RagdollIndicatorsBase<Scp049Role>
+	private Scp049ResurrectAbility _resurrectAbility;
+
+	protected override void Awake()
 	{
-		protected override void Awake()
-		{
-			base.Awake();
-			base.GetSubroutine<Scp049ResurrectAbility>(out this._resurrectAbility);
-		}
+		base.Awake();
+		GetSubroutine<Scp049ResurrectAbility>(out _resurrectAbility);
+	}
 
-		protected override bool ValidateRagdoll(BasicRagdoll ragdoll)
-		{
-			return this._resurrectAbility.CheckRagdoll(ragdoll);
-		}
-
-		private Scp049ResurrectAbility _resurrectAbility;
+	protected override bool ValidateRagdoll(BasicRagdoll ragdoll)
+	{
+		return _resurrectAbility.CheckRagdoll(ragdoll);
 	}
 }

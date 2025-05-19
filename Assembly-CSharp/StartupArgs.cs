@@ -1,6 +1,11 @@
-﻿using System;
+using System;
 
 public static class StartupArgs
 {
-	public static readonly string[] Args = Environment.GetCommandLineArgs();
+	public static readonly string[] Args;
+
+	static StartupArgs()
+	{
+		Args = Environment.GetCommandLineArgs();
+	}
 }

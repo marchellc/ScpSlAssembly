@@ -1,26 +1,21 @@
-﻿using System;
+namespace CustomPlayerEffects;
 
-namespace CustomPlayerEffects
+public class Vitality : StatusEffectBase, ISpectatorDataPlayerEffect
 {
-	public class Vitality : StatusEffectBase, ISpectatorDataPlayerEffect
+	public override EffectClassification Classification => EffectClassification.Positive;
+
+	public bool GetSpectatorText(out string s)
 	{
-		public override StatusEffectBase.EffectClassification Classification
-		{
-			get
-			{
-				return StatusEffectBase.EffectClassification.Positive;
-			}
-		}
+		s = "Vitality";
+		return true;
+	}
 
-		public bool GetSpectatorText(out string s)
+	public static bool CheckPlayer(ReferenceHub ply)
+	{
+		if (ply != null)
 		{
-			s = "Vitality";
-			return true;
+			return ply.playerEffectsController.GetEffect<Vitality>().IsEnabled;
 		}
-
-		public static bool CheckPlayer(ReferenceHub ply)
-		{
-			return ply != null && ply.playerEffectsController.GetEffect<Vitality>().IsEnabled;
-		}
+		return false;
 	}
 }

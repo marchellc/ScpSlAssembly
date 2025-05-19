@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using CentralAuth;
@@ -7,206 +7,182 @@ using Mirror;
 using UnityEngine;
 using Utils.NonAllocLINQ;
 
-namespace VoiceChat
+namespace VoiceChat;
+
+public static class VoiceChatMutes
 {
-	public static class VoiceChatMutes
+	private const string Filename = "mutes.txt";
+
+	private const string IntercomPrefix = "ICOM-";
+
+	private static string _path;
+
+	private static bool _everLoaded;
+
+	private static readonly HashSet<string> Mutes = new HashSet<string>();
+
+	private static readonly Dictionary<ReferenceHub, VcMuteFlags> Flags = new Dictionary<ReferenceHub, VcMuteFlags>();
+
+	public static event Action<ReferenceHub, VcMuteFlags> OnFlagsSet;
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		public static event Action<ReferenceHub, VcMuteFlags> OnFlagsSet;
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(LoadMutes));
+		CustomNetworkManager.OnClientReady += delegate
 		{
-			ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(VoiceChatMutes.LoadMutes));
-			CustomNetworkManager.OnClientReady += delegate
+			if (!_everLoaded)
 			{
-				if (VoiceChatMutes._everLoaded)
-				{
-					return;
-				}
-				VoiceChatMutes.LoadMutes();
-			};
-			ReferenceHub.OnPlayerRemoved = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerRemoved, new Action<ReferenceHub>(delegate(ReferenceHub hub)
+				LoadMutes();
+			}
+		};
+		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub hub)
+		{
+			if (GetFlags(hub) != 0)
 			{
-				if (VoiceChatMutes.GetFlags(hub) != VcMuteFlags.None)
+				VoiceChatMutes.OnFlagsSet?.Invoke(hub, VcMuteFlags.None);
+			}
+			Flags.Remove(hub);
+		};
+		PlayerAuthenticationManager.OnSyncedUserIdAssigned += delegate(ReferenceHub hub)
+		{
+			if (!NetworkServer.active && QueryLocalMute(hub.authManager.SyncedUserId))
+			{
+				SetFlags(hub, VcMuteFlags.LocalRegular);
+			}
+		};
+		LoadMutes();
+	}
+
+	private static void LoadMutes()
+	{
+		_path = ConfigSharing.Paths[1];
+		if (string.IsNullOrEmpty(_path))
+		{
+			return;
+		}
+		_path += "mutes.txt";
+		_everLoaded = true;
+		try
+		{
+			using StreamReader streamReader = new StreamReader(_path);
+			while (true)
+			{
+				string text = streamReader.ReadLine();
+				if (text != null)
 				{
-					Action<ReferenceHub, VcMuteFlags> onFlagsSet = VoiceChatMutes.OnFlagsSet;
-					if (onFlagsSet != null)
+					if (TryValidateId(text, intercom: false, out var validated))
 					{
-						onFlagsSet(hub, VcMuteFlags.None);
+						Mutes.Add(validated);
 					}
+					continue;
 				}
-				VoiceChatMutes.Flags.Remove(hub);
-			}));
-			PlayerAuthenticationManager.OnSyncedUserIdAssigned += delegate(ReferenceHub hub)
-			{
-				if (NetworkServer.active)
-				{
-					return;
-				}
-				if (!VoiceChatMutes.QueryLocalMute(hub.authManager.SyncedUserId, false))
-				{
-					return;
-				}
-				VoiceChatMutes.SetFlags(hub, VcMuteFlags.LocalRegular);
-			};
-			VoiceChatMutes.LoadMutes();
+				break;
+			}
 		}
-
-		private static void LoadMutes()
+		catch
 		{
-			VoiceChatMutes._path = ConfigSharing.Paths[1];
-			if (string.IsNullOrEmpty(VoiceChatMutes._path))
-			{
-				return;
-			}
-			VoiceChatMutes._path += "mutes.txt";
-			VoiceChatMutes._everLoaded = true;
-			try
-			{
-				using (StreamReader streamReader = new StreamReader(VoiceChatMutes._path))
-				{
-					for (;;)
-					{
-						string text = streamReader.ReadLine();
-						if (text == null)
-						{
-							break;
-						}
-						string text2;
-						if (VoiceChatMutes.TryValidateId(text, false, out text2))
-						{
-							VoiceChatMutes.Mutes.Add(text2);
-						}
-					}
-				}
-			}
-			catch
-			{
-				global::GameCore.Console.AddLog("Can't load the mute file!", Color.yellow, false, global::GameCore.Console.ConsoleLogType.Log);
-			}
+			GameCore.Console.AddLog("Can't load the mute file!", Color.yellow);
 		}
+	}
 
-		private static bool TryValidateId(string raw, bool intercom, out string validated)
+	private static bool TryValidateId(string raw, bool intercom, out string validated)
+	{
+		validated = raw?.Trim();
+		if (string.IsNullOrEmpty(raw))
 		{
-			validated = ((raw != null) ? raw.Trim() : null);
-			if (string.IsNullOrEmpty(raw))
-			{
-				return false;
-			}
-			if (intercom)
-			{
-				validated = "ICOM-" + validated;
-			}
-			return true;
+			return false;
 		}
-
-		private static bool TryGetHub(string userId, out ReferenceHub hub)
+		if (intercom)
 		{
-			return ReferenceHub.AllHubs.TryGetFirst((ReferenceHub x) => VoiceChatMutes.CheckHub(x, userId), out hub);
+			validated = "ICOM-" + validated;
 		}
+		return true;
+	}
 
-		private static bool CheckHub(ReferenceHub hub, string id)
+	private static bool TryGetHub(string userId, out ReferenceHub hub)
+	{
+		return ReferenceHub.AllHubs.TryGetFirst((ReferenceHub x) => CheckHub(x, userId), out hub);
+	}
+
+	private static bool CheckHub(ReferenceHub hub, string id)
+	{
+		PlayerAuthenticationManager authManager = hub.authManager;
+		if (!(authManager.UserId == id))
 		{
-			PlayerAuthenticationManager authManager = hub.authManager;
-			return authManager.UserId == id || (NetworkServer.active && authManager.SyncedUserId == id);
+			if (NetworkServer.active)
+			{
+				return authManager.SyncedUserId == id;
+			}
+			return false;
 		}
+		return true;
+	}
 
-		private static VcMuteFlags GetLocalFlag(bool intercom)
+	private static VcMuteFlags GetLocalFlag(bool intercom)
+	{
+		if (!intercom)
 		{
-			if (!intercom)
-			{
-				return VcMuteFlags.LocalRegular;
-			}
-			return VcMuteFlags.LocalIntercom;
+			return VcMuteFlags.LocalRegular;
 		}
+		return VcMuteFlags.LocalIntercom;
+	}
 
-		public static bool QueryLocalMute(string userId, bool intercom = false)
+	public static bool QueryLocalMute(string userId, bool intercom = false)
+	{
+		if (TryValidateId(userId, intercom, out var validated))
 		{
-			string text;
-			return VoiceChatMutes.TryValidateId(userId, intercom, out text) && VoiceChatMutes.Mutes.Contains(text);
+			return Mutes.Contains(validated);
 		}
+		return false;
+	}
 
-		public static void IssueLocalMute(string userId, bool intercom = false)
+	public static void IssueLocalMute(string userId, bool intercom = false)
+	{
+		if (TryValidateId(userId, intercom, out var validated) && Mutes.Add(validated))
 		{
-			string text;
-			if (!VoiceChatMutes.TryValidateId(userId, intercom, out text))
+			File.AppendAllText(_path, "\r\n" + validated);
+			if (TryGetHub(userId, out var hub))
 			{
-				return;
+				SetFlags(hub, GetFlags(hub) | GetLocalFlag(intercom));
 			}
-			if (!VoiceChatMutes.Mutes.Add(text))
-			{
-				return;
-			}
-			File.AppendAllText(VoiceChatMutes._path, "\r\n" + text);
-			ReferenceHub referenceHub;
-			if (!VoiceChatMutes.TryGetHub(userId, out referenceHub))
-			{
-				return;
-			}
-			VoiceChatMutes.SetFlags(referenceHub, VoiceChatMutes.GetFlags(referenceHub) | VoiceChatMutes.GetLocalFlag(intercom));
 		}
+	}
 
-		public static void RevokeLocalMute(string userId, bool intercom = false)
+	public static void RevokeLocalMute(string userId, bool intercom = false)
+	{
+		if (TryValidateId(userId, intercom, out var validated) && Mutes.Remove(validated))
 		{
-			string text;
-			if (!VoiceChatMutes.TryValidateId(userId, intercom, out text))
+			FileManager.WriteToFile(Mutes, _path);
+			if (TryGetHub(userId, out var hub))
 			{
-				return;
+				SetFlags(hub, (VcMuteFlags)((uint)GetFlags(hub) & (uint)(byte)(~(int)GetLocalFlag(intercom))));
 			}
-			if (!VoiceChatMutes.Mutes.Remove(text))
-			{
-				return;
-			}
-			FileManager.WriteToFile(VoiceChatMutes.Mutes, VoiceChatMutes._path, false);
-			ReferenceHub referenceHub;
-			if (!VoiceChatMutes.TryGetHub(userId, out referenceHub))
-			{
-				return;
-			}
-			VoiceChatMutes.SetFlags(referenceHub, VoiceChatMutes.GetFlags(referenceHub) & ~VoiceChatMutes.GetLocalFlag(intercom));
 		}
+	}
 
-		public static void SetFlags(ReferenceHub hub, VcMuteFlags flags)
+	public static void SetFlags(ReferenceHub hub, VcMuteFlags flags)
+	{
+		Flags[hub] = flags;
+		VoiceChatMutes.OnFlagsSet?.Invoke(hub, flags);
+	}
+
+	public static VcMuteFlags GetFlags(ReferenceHub hub)
+	{
+		if (!Flags.TryGetValue(hub, out var value))
 		{
-			VoiceChatMutes.Flags[hub] = flags;
-			Action<ReferenceHub, VcMuteFlags> onFlagsSet = VoiceChatMutes.OnFlagsSet;
-			if (onFlagsSet == null)
-			{
-				return;
-			}
-			onFlagsSet(hub, flags);
+			return VcMuteFlags.None;
 		}
+		return value;
+	}
 
-		public static VcMuteFlags GetFlags(ReferenceHub hub)
+	public static bool IsMuted(ReferenceHub hub, bool checkIntercom = false)
+	{
+		VcMuteFlags flags = GetFlags(hub);
+		if (checkIntercom)
 		{
-			VcMuteFlags vcMuteFlags;
-			if (!VoiceChatMutes.Flags.TryGetValue(hub, out vcMuteFlags))
-			{
-				return VcMuteFlags.None;
-			}
-			return vcMuteFlags;
+			return flags != VcMuteFlags.None;
 		}
-
-		public static bool IsMuted(ReferenceHub hub, bool checkIntercom = false)
-		{
-			VcMuteFlags flags = VoiceChatMutes.GetFlags(hub);
-			if (checkIntercom)
-			{
-				return flags > VcMuteFlags.None;
-			}
-			return (flags & (VcMuteFlags.LocalRegular | VcMuteFlags.GlobalRegular)) > VcMuteFlags.None;
-		}
-
-		private const string Filename = "mutes.txt";
-
-		private const string IntercomPrefix = "ICOM-";
-
-		private static string _path;
-
-		private static bool _everLoaded;
-
-		private static readonly HashSet<string> Mutes = new HashSet<string>();
-
-		private static readonly Dictionary<ReferenceHub, VcMuteFlags> Flags = new Dictionary<ReferenceHub, VcMuteFlags>();
+		return (flags & (VcMuteFlags.LocalRegular | VcMuteFlags.GlobalRegular)) != 0;
 	}
 }

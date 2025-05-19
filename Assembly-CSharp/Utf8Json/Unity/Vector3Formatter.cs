@@ -1,95 +1,90 @@
-﻿using System;
+using System;
 using UnityEngine;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Unity
+namespace Utf8Json.Unity;
+
+public sealed class Vector3Formatter : IJsonFormatter<Vector3>, IJsonFormatter
 {
-	public sealed class Vector3Formatter : IJsonFormatter<Vector3>, IJsonFormatter
+	private readonly AutomataDictionary ____keyMapping;
+
+	private readonly byte[][] ____stringByteKeys;
+
+	public Vector3Formatter()
 	{
-		public Vector3Formatter()
+		____keyMapping = new AutomataDictionary
 		{
-			this.____keyMapping = new AutomataDictionary
 			{
-				{
-					JsonWriter.GetEncodedPropertyNameWithoutQuotation("x"),
-					0
-				},
-				{
-					JsonWriter.GetEncodedPropertyNameWithoutQuotation("y"),
-					1
-				},
-				{
-					JsonWriter.GetEncodedPropertyNameWithoutQuotation("z"),
-					2
-				}
-			};
-			this.____stringByteKeys = new byte[][]
+				JsonWriter.GetEncodedPropertyNameWithoutQuotation("x"),
+				0
+			},
 			{
-				JsonWriter.GetEncodedPropertyNameWithBeginObject("x"),
-				JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("y"),
-				JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("z")
-			};
-		}
-
-		public void Serialize(ref JsonWriter writer, Vector3 value, IJsonFormatterResolver formatterResolver)
-		{
-			writer.WriteRaw(this.____stringByteKeys[0]);
-			writer.WriteSingle(value.x);
-			writer.WriteRaw(this.____stringByteKeys[1]);
-			writer.WriteSingle(value.y);
-			writer.WriteRaw(this.____stringByteKeys[2]);
-			writer.WriteSingle(value.z);
-			writer.WriteEndObject();
-		}
-
-		public Vector3 Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
-		{
-			if (reader.ReadIsNull())
+				JsonWriter.GetEncodedPropertyNameWithoutQuotation("y"),
+				1
+			},
 			{
-				throw new InvalidOperationException("typecode is null, struct not supported");
+				JsonWriter.GetEncodedPropertyNameWithoutQuotation("z"),
+				2
 			}
-			float num = 0f;
-			float num2 = 0f;
-			float num3 = 0f;
-			int num4 = 0;
-			reader.ReadIsBeginObjectWithVerify();
-			while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref num4))
-			{
-				ArraySegment<byte> arraySegment = reader.ReadPropertyNameSegmentRaw();
-				int num5;
-				if (!this.____keyMapping.TryGetValueSafe(arraySegment, out num5))
-				{
-					reader.ReadNextBlock();
-				}
-				else
-				{
-					switch (num5)
-					{
-					case 0:
-						num = reader.ReadSingle();
-						break;
-					case 1:
-						num2 = reader.ReadSingle();
-						break;
-					case 2:
-						num3 = reader.ReadSingle();
-						break;
-					default:
-						reader.ReadNextBlock();
-						break;
-					}
-				}
-			}
-			return new Vector3(num, num2, num3)
-			{
-				x = num,
-				y = num2,
-				z = num3
-			};
+		};
+		____stringByteKeys = new byte[3][]
+		{
+			JsonWriter.GetEncodedPropertyNameWithBeginObject("x"),
+			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("y"),
+			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("z")
+		};
+	}
+
+	public void Serialize(ref JsonWriter writer, Vector3 value, IJsonFormatterResolver formatterResolver)
+	{
+		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteSingle(value.x);
+		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteSingle(value.y);
+		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteSingle(value.z);
+		writer.WriteEndObject();
+	}
+
+	public Vector3 Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
+		{
+			throw new InvalidOperationException("typecode is null, struct not supported");
 		}
-
-		private readonly AutomataDictionary ____keyMapping;
-
-		private readonly byte[][] ____stringByteKeys;
+		float x = 0f;
+		float y = 0f;
+		float z = 0f;
+		int count = 0;
+		reader.ReadIsBeginObjectWithVerify();
+		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
+		{
+			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
+			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			{
+				reader.ReadNextBlock();
+				continue;
+			}
+			switch (value)
+			{
+			case 0:
+				x = reader.ReadSingle();
+				break;
+			case 1:
+				y = reader.ReadSingle();
+				break;
+			case 2:
+				z = reader.ReadSingle();
+				break;
+			default:
+				reader.ReadNextBlock();
+				break;
+			}
+		}
+		Vector3 result = new Vector3(x, y, z);
+		result.x = x;
+		result.y = y;
+		result.z = z;
+		return result;
 	}
 }

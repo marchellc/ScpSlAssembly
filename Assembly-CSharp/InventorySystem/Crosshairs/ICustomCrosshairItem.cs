@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 
-namespace InventorySystem.Crosshairs
+namespace InventorySystem.Crosshairs;
+
+public interface ICustomCrosshairItem
 {
-	public interface ICustomCrosshairItem
-	{
-		Type CrosshairType { get; }
-	}
+	Type CrosshairType { get; }
 }

@@ -1,87 +1,81 @@
-﻿using System;
+using Interactables.Interobjects.DoorUtils;
 using PlayerRoles.Blood;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.Spawnpoints;
+using PlayerRoles.RoleAssign;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps
+namespace PlayerRoles.PlayableScps;
+
+public class FpcStandardScp : FpcStandardRoleBase, IBleedableRole, IDoorPermissionProvider
 {
-	public class FpcStandardScp : FpcStandardRoleBase, IBleedableRole
+	private RoomRoleSpawnpoint _cachedSpawnpoint;
+
+	[SerializeField]
+	private RoleTypeId _roleTypeId;
+
+	[SerializeField]
+	private int _maxHealth;
+
+	[SerializeField]
+	private RoomRoleSpawnpoint _roomSpawnpoint;
+
+	[SerializeField]
+	private bool _disableSpawnpoint;
+
+	[field: SerializeField]
+	public BloodSettings BloodSettings { get; private set; }
+
+	public override RoleTypeId RoleTypeId => _roleTypeId;
+
+	public override Team Team => Team.SCPs;
+
+	public override Color RoleColor => Color.red;
+
+	public override float MaxHealth
 	{
-		public BloodSettings BloodSettings { get; private set; }
-
-		public override RoleTypeId RoleTypeId
+		get
 		{
-			get
+			if (!RoleAssigner.ScpsOverflowing)
 			{
-				return this._roleTypeId;
+				return _maxHealth;
 			}
+			return (float)_maxHealth * 1.1f;
 		}
+	}
 
-		public override Team Team
+	public override ISpawnpointHandler SpawnpointHandler
+	{
+		get
 		{
-			get
+			if (_disableSpawnpoint)
 			{
-				return Team.SCPs;
+				return null;
 			}
+			if (_cachedSpawnpoint == null)
+			{
+				_cachedSpawnpoint = new RoomRoleSpawnpoint(_roomSpawnpoint);
+			}
+			return _cachedSpawnpoint;
 		}
+	}
 
-		public override Color RoleColor
+	public override float AmbientBoost
+	{
+		get
 		{
-			get
+			if (!InsufficientLight)
 			{
-				return Color.red;
+				return base.AmbientBoost;
 			}
+			return 0.2f;
 		}
+	}
 
-		public override float MaxHealth
-		{
-			get
-			{
-				return (float)this._maxHealth;
-			}
-		}
+	public PermissionUsed PermissionsUsedCallback => null;
 
-		public override ISpawnpointHandler SpawnpointHandler
-		{
-			get
-			{
-				if (this._disableSpawnpoint)
-				{
-					return null;
-				}
-				if (this._cachedSpawnpoint == null)
-				{
-					this._cachedSpawnpoint = new RoomRoleSpawnpoint(this._roomSpawnpoint);
-				}
-				return this._cachedSpawnpoint;
-			}
-		}
-
-		public override float AmbientBoost
-		{
-			get
-			{
-				if (!this.InsufficientLight)
-				{
-					return base.AmbientBoost;
-				}
-				return 0.2f;
-			}
-		}
-
-		private RoomRoleSpawnpoint _cachedSpawnpoint;
-
-		[SerializeField]
-		private RoleTypeId _roleTypeId;
-
-		[SerializeField]
-		private int _maxHealth;
-
-		[SerializeField]
-		private RoomRoleSpawnpoint _roomSpawnpoint;
-
-		[SerializeField]
-		private bool _disableSpawnpoint;
+	public DoorPermissionFlags GetPermissions(IDoorPermissionRequester requester)
+	{
+		return DoorPermissionFlags.ScpOverride;
 	}
 }

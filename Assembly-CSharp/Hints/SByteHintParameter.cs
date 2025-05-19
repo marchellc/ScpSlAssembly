@@ -1,25 +1,24 @@
-﻿using System;
+using System;
 using Mirror;
 
-namespace Hints
+namespace Hints;
+
+public class SByteHintParameter : PrimitiveHintParameter<sbyte>
 {
-	public class SByteHintParameter : PrimitiveHintParameter<sbyte>
+	public static SByteHintParameter FromNetwork(NetworkReader reader)
 	{
-		public static SByteHintParameter FromNetwork(NetworkReader reader)
-		{
-			SByteHintParameter sbyteHintParameter = new SByteHintParameter();
-			sbyteHintParameter.Deserialize(reader);
-			return sbyteHintParameter;
-		}
+		SByteHintParameter sByteHintParameter = new SByteHintParameter();
+		sByteHintParameter.Deserialize(reader);
+		return sByteHintParameter;
+	}
 
-		protected SByteHintParameter()
-			: base(new Func<NetworkReader, sbyte>(NetworkReaderExtensions.ReadSByte), new Action<NetworkWriter, sbyte>(NetworkWriterExtensions.WriteSByte))
-		{
-		}
+	protected SByteHintParameter()
+		: base((Func<NetworkReader, sbyte>)NetworkReaderExtensions.ReadSByte, (Action<NetworkWriter, sbyte>)NetworkWriterExtensions.WriteSByte)
+	{
+	}
 
-		public SByteHintParameter(sbyte value)
-			: base(value, new Func<NetworkReader, sbyte>(NetworkReaderExtensions.ReadSByte), new Action<NetworkWriter, sbyte>(NetworkWriterExtensions.WriteSByte))
-		{
-		}
+	public SByteHintParameter(sbyte value)
+		: base(value, (Func<NetworkReader, sbyte>)NetworkReaderExtensions.ReadSByte, (Action<NetworkWriter, sbyte>)NetworkWriterExtensions.WriteSByte)
+	{
 	}
 }

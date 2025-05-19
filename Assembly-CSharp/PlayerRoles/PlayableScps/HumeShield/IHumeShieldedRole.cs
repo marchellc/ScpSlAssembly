@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.HumeShield;
 
-namespace PlayerRoles.PlayableScps.HumeShield
+public interface IHumeShieldedRole
 {
-	public interface IHumeShieldedRole
-	{
-		HumeShieldModuleBase HumeShieldModule { get; }
-	}
+	HumeShieldModuleBase HumeShieldModule { get; }
 }

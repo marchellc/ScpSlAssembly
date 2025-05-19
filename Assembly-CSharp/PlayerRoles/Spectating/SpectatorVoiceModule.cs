@@ -1,63 +1,51 @@
-﻿using System;
 using InventorySystem.Items.Usables.Scp1576;
 using PlayerRoles.Voice;
 using VoiceChat;
 using VoiceChat.Playbacks;
 
-namespace PlayerRoles.Spectating
+namespace PlayerRoles.Spectating;
+
+public class SpectatorVoiceModule : GlobalVoiceModuleBase
 {
-	public class SpectatorVoiceModule : GlobalVoiceModuleBase
+	protected override VoiceChatChannel PrimaryChannel => VoiceChatChannel.Spectator;
+
+	public override GlobalChatIconType GlobalChatIcon => GlobalChatIconType.None;
+
+	public override VoiceChatChannel ValidateReceive(ReferenceHub speaker, VoiceChatChannel channel)
 	{
-		protected override VoiceChatChannel PrimaryChannel
+		if (channel != VoiceChatChannel.Scp1576)
 		{
-			get
-			{
-				return VoiceChatChannel.Spectator;
-			}
+			channel = base.ValidateReceive(speaker, channel);
 		}
-
-		public override GlobalChatIconType GlobalChatIcon
+		switch (channel)
 		{
-			get
+		case VoiceChatChannel.Proximity:
+		case VoiceChatChannel.Radio:
+		case VoiceChatChannel.Intercom:
+		case VoiceChatChannel.Scp1576:
+			if ((base.ReceiveFlags & GroupMuteFlags.Alive) != 0)
 			{
-				return GlobalChatIconType.None;
+				return VoiceChatChannel.None;
 			}
+			break;
+		case VoiceChatChannel.Spectator:
+			if ((base.ReceiveFlags & GroupMuteFlags.Spectators) != 0)
+			{
+				return VoiceChatChannel.None;
+			}
+			break;
 		}
+		return channel;
+	}
 
-		public override VoiceChatChannel ValidateReceive(ReferenceHub speaker, VoiceChatChannel channel)
+	protected override void ProcessSamples(float[] data, int len)
+	{
+		if (base.CurrentChannel == VoiceChatChannel.Scp1576)
 		{
-			if (channel != VoiceChatChannel.Scp1576)
-			{
-				channel = base.ValidateReceive(speaker, channel);
-			}
-			switch (channel)
-			{
-			case VoiceChatChannel.Proximity:
-			case VoiceChatChannel.Radio:
-			case VoiceChatChannel.Intercom:
-			case VoiceChatChannel.Scp1576:
-				if ((base.ReceiveFlags & GroupMuteFlags.Alive) != GroupMuteFlags.None)
-				{
-					return VoiceChatChannel.None;
-				}
-				break;
-			case VoiceChatChannel.Spectator:
-				if ((base.ReceiveFlags & GroupMuteFlags.Spectators) != GroupMuteFlags.None)
-				{
-					return VoiceChatChannel.None;
-				}
-				break;
-			}
-			return channel;
+			Scp1576Playback.DistributeSamples(base.Owner, data, len);
 		}
-
-		protected override void ProcessSamples(float[] data, int len)
+		else
 		{
-			if (base.CurrentChannel == VoiceChatChannel.Scp1576)
-			{
-				Scp1576Playback.DistributeSamples(base.Owner, data, len);
-				return;
-			}
 			base.ProcessSamples(data, len);
 		}
 	}

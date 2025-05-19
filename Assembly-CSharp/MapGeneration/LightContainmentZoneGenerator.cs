@@ -1,70 +1,68 @@
-﻿using System;
+using System;
 using UnityEngine;
 using Utils.NonAllocLINQ;
 
-namespace MapGeneration
+namespace MapGeneration;
+
+public class LightContainmentZoneGenerator : AtlasZoneGenerator
 {
-	public class LightContainmentZoneGenerator : AtlasZoneGenerator
+	[Serializable]
+	private class LabelSettings
 	{
-		public override void Generate(global::System.Random rng)
-		{
-			base.Generate(rng);
-			LCZ_Label.AllLabels.ForEach(new Action<LCZ_Label>(this.SetLabel));
-		}
+		public RoomName Name;
 
-		private void SetLabel(LCZ_Label label)
+		public RoomShape Shape;
+
+		public Material Label;
+
+		public int DefaultNumber;
+	}
+
+	[SerializeField]
+	private LabelSettings[] _settings;
+
+	[SerializeField]
+	private Material[] _numbers;
+
+	private const float NextRoomLabelScanRange = 8f;
+
+	public override void Generate(System.Random rng)
+	{
+		base.Generate(rng);
+		LCZ_Label.AllLabels.ForEach(SetLabel);
+	}
+
+	private void SetLabel(LCZ_Label label)
+	{
+		if (!TryFindRoom(label.transform, out var ret))
 		{
-			SpawnableRoom spawnableRoom;
-			if (!this.TryFindRoom(label.transform, out spawnableRoom))
+			return;
+		}
+		LabelSettings[] settings = _settings;
+		foreach (LabelSettings labelSettings in settings)
+		{
+			if (labelSettings.Name == ret.Room.Name && labelSettings.Shape == ret.Room.Shape)
 			{
-				return;
-			}
-			foreach (LightContainmentZoneGenerator.LabelSettings labelSettings in this._settings)
-			{
-				if (labelSettings.Name == spawnableRoom.Room.Name && labelSettings.Shape == spawnableRoom.Room.Shape)
-				{
-					int num = labelSettings.DefaultNumber + spawnableRoom.DuplicateId;
-					label.Refresh(labelSettings.Label, this._numbers[num % this._numbers.Length]);
-					return;
-				}
+				int num = labelSettings.DefaultNumber + ret.DuplicateId;
+				label.Refresh(labelSettings.Label, _numbers[num % _numbers.Length]);
+				break;
 			}
 		}
+	}
 
-		private bool TryFindRoom(Transform labelTr, out SpawnableRoom ret)
+	private bool TryFindRoom(Transform labelTr, out SpawnableRoom ret)
+	{
+		Vector3 point = labelTr.position + labelTr.forward * 8f;
+		foreach (SpawnedRoomData item in Spawned)
 		{
-			Vector3 vector = labelTr.position + labelTr.forward * 8f;
-			foreach (AtlasZoneGenerator.SpawnedRoomData spawnedRoomData in this.Spawned)
+			RoomIdentifier room = item.Instance.Room;
+			if (new Bounds(room.transform.position, RoomIdentifier.GridScale).Contains(point))
 			{
-				RoomIdentifier room = spawnedRoomData.Instance.Room;
-				Bounds bounds = new Bounds(room.transform.position, RoomIdentifier.GridScale);
-				if (bounds.Contains(vector))
-				{
-					ret = spawnedRoomData.Instance;
-					return true;
-				}
+				ret = item.Instance;
+				return true;
 			}
-			ret = null;
-			return false;
 		}
-
-		[SerializeField]
-		private LightContainmentZoneGenerator.LabelSettings[] _settings;
-
-		[SerializeField]
-		private Material[] _numbers;
-
-		private const float NextRoomLabelScanRange = 8f;
-
-		[Serializable]
-		private class LabelSettings
-		{
-			public RoomName Name;
-
-			public RoomShape Shape;
-
-			public Material Label;
-
-			public int DefaultNumber;
-		}
+		ret = null;
+		return false;
 	}
 }

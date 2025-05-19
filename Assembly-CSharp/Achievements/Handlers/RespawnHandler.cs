@@ -1,33 +1,28 @@
-﻿using System;
 using Mirror;
 using PlayerRoles;
 
-namespace Achievements.Handlers
-{
-	public class RespawnHandler : AchievementHandlerBase
-	{
-		internal override void OnInitialize()
-		{
-			PlayerRoleManager.OnServerRoleSet += RespawnHandler.OnRespawned;
-		}
+namespace Achievements.Handlers;
 
-		private static void OnRespawned(ReferenceHub userHub, RoleTypeId newRole, RoleChangeReason reason)
+public class RespawnHandler : AchievementHandlerBase
+{
+	internal override void OnInitialize()
+	{
+		PlayerRoleManager.OnServerRoleSet += OnRespawned;
+	}
+
+	private static void OnRespawned(ReferenceHub userHub, RoleTypeId newRole, RoleChangeReason reason)
+	{
+		if (reason != RoleChangeReason.Respawn && reason != RoleChangeReason.RespawnMiniwave && PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(newRole, out var result))
 		{
-			PlayerRoleBase playerRoleBase;
-			if (reason == RoleChangeReason.Respawn || reason == RoleChangeReason.RespawnMiniwave || !PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(newRole, out playerRoleBase))
-			{
-				return;
-			}
 			NetworkConnection connectionToClient = userHub.connectionToClient;
-			Team team = playerRoleBase.Team;
-			if (team == Team.FoundationForces)
+			switch (result.Team)
 			{
+			case Team.FoundationForces:
 				AchievementHandlerBase.ServerAchieve(connectionToClient, AchievementName.LightsOut);
-				return;
-			}
-			if (team == Team.ChaosInsurgency)
-			{
+				break;
+			case Team.ChaosInsurgency:
 				AchievementHandlerBase.ServerAchieve(connectionToClient, AchievementName.DeltaCommand);
+				break;
 			}
 		}
 	}

@@ -1,64 +1,47 @@
-﻿using System;
 using System.Net;
 using UnityEngine;
 
-namespace LiteNetLib
+namespace LiteNetLib;
+
+public class PausedSocketFix
 {
-	public class PausedSocketFix
+	private readonly NetManager _netManager;
+
+	private readonly IPAddress _ipv4;
+
+	private readonly IPAddress _ipv6;
+
+	private readonly int _port;
+
+	private readonly bool _manualMode;
+
+	private bool _initialized;
+
+	public PausedSocketFix(NetManager netManager, IPAddress ipv4, IPAddress ipv6, int port, bool manualMode)
 	{
-		public PausedSocketFix(NetManager netManager, IPAddress ipv4, IPAddress ipv6, int port, bool manualMode)
+		_netManager = netManager;
+		_ipv4 = ipv4;
+		_ipv6 = ipv6;
+		_port = port;
+		_manualMode = manualMode;
+		Application.focusChanged += Application_focusChanged;
+		_initialized = true;
+	}
+
+	public void Deinitialize()
+	{
+		if (_initialized)
 		{
-			this._netManager = netManager;
-			this._ipv4 = ipv4;
-			this._ipv6 = ipv6;
-			this._port = port;
-			this._manualMode = manualMode;
-			Application.focusChanged += this.Application_focusChanged;
-			this._initialized = true;
+			Application.focusChanged -= Application_focusChanged;
 		}
+		_initialized = false;
+	}
 
-		public void Deinitialize()
+	private void Application_focusChanged(bool focused)
+	{
+		if (focused && _initialized && _netManager.IsRunning && _netManager.NotConnected && !_netManager.Start(_ipv4, _ipv6, _port, _manualMode))
 		{
-			if (this._initialized)
-			{
-				Application.focusChanged -= this.Application_focusChanged;
-			}
-			this._initialized = false;
+			NetDebug.WriteError($"[S] Cannot restore connection. Ipv4 {_ipv4}, Ipv6 {_ipv6}, Port {_port}, ManualMode {_manualMode}");
 		}
-
-		private void Application_focusChanged(bool focused)
-		{
-			if (focused)
-			{
-				if (!this._initialized)
-				{
-					return;
-				}
-				if (!this._netManager.IsRunning)
-				{
-					return;
-				}
-				if (!this._netManager.NotConnected)
-				{
-					return;
-				}
-				if (!this._netManager.Start(this._ipv4, this._ipv6, this._port, this._manualMode))
-				{
-					NetDebug.WriteError(string.Format("[S] Cannot restore connection. Ipv4 {0}, Ipv6 {1}, Port {2}, ManualMode {3}", new object[] { this._ipv4, this._ipv6, this._port, this._manualMode }));
-				}
-			}
-		}
-
-		private readonly NetManager _netManager;
-
-		private readonly IPAddress _ipv4;
-
-		private readonly IPAddress _ipv6;
-
-		private readonly int _port;
-
-		private readonly bool _manualMode;
-
-		private bool _initialized;
 	}
 }

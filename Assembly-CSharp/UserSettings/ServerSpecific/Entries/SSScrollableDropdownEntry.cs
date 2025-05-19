@@ -1,79 +1,77 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace UserSettings.ServerSpecific.Entries
+namespace UserSettings.ServerSpecific.Entries;
+
+public class SSScrollableDropdownEntry : SSDropdownEntry, ISSEntry
 {
-	public class SSScrollableDropdownEntry : SSDropdownEntry, ISSEntry
+	[SerializeField]
+	private Button _prevArrow;
+
+	[SerializeField]
+	private Button _nextArrow;
+
+	[SerializeField]
+	private GameObject _hybridArrow;
+
+	private bool _loopable;
+
+	public void Next()
 	{
-		public void Next()
+		int num = base.TargetUI.value + 1;
+		base.TargetUI.value = num % base.TargetUI.options.Count;
+		UpdateInteractability();
+	}
+
+	public void Prev()
+	{
+		if (base.TargetUI.value > 0)
 		{
-			int num = base.TargetUI.value + 1;
-			base.TargetUI.value = num % base.TargetUI.options.Count;
-			this.UpdateInteractability();
+			base.TargetUI.value--;
 		}
-
-		public void Prev()
+		else
 		{
-			if (base.TargetUI.value > 0)
-			{
-				TMP_Dropdown targetUI = base.TargetUI;
-				int value = targetUI.value;
-				targetUI.value = value - 1;
-			}
-			else
-			{
-				base.TargetUI.value = base.TargetUI.options.Count - 1;
-			}
-			this.UpdateInteractability();
+			base.TargetUI.value = base.TargetUI.options.Count - 1;
 		}
+		UpdateInteractability();
+	}
 
-		public override bool CheckCompatibility(ServerSpecificSettingBase setting)
+	public override bool CheckCompatibility(ServerSpecificSettingBase setting)
+	{
+		if (setting is SSDropdownSetting sSDropdownSetting)
 		{
-			SSDropdownSetting ssdropdownSetting = setting as SSDropdownSetting;
-			return ssdropdownSetting != null && ssdropdownSetting.EntryType > SSDropdownSetting.DropdownEntryType.Regular;
+			return sSDropdownSetting.EntryType != SSDropdownSetting.DropdownEntryType.Regular;
 		}
+		return false;
+	}
 
-		public override void Init(ServerSpecificSettingBase setting)
+	public override void Init(ServerSpecificSettingBase setting)
+	{
+		base.Init(setting);
+		SSDropdownSetting.DropdownEntryType entryType = (setting as SSDropdownSetting).EntryType;
+		_loopable = entryType == SSDropdownSetting.DropdownEntryType.ScrollableLoop || entryType == SSDropdownSetting.DropdownEntryType.HybridLoop;
+		if (entryType != SSDropdownSetting.DropdownEntryType.Hybrid && entryType != SSDropdownSetting.DropdownEntryType.HybridLoop)
 		{
-			base.Init(setting);
-			SSDropdownSetting.DropdownEntryType entryType = (setting as SSDropdownSetting).EntryType;
-			this._loopable = entryType == SSDropdownSetting.DropdownEntryType.ScrollableLoop || entryType == SSDropdownSetting.DropdownEntryType.HybridLoop;
-			if (entryType != SSDropdownSetting.DropdownEntryType.Hybrid && entryType != SSDropdownSetting.DropdownEntryType.HybridLoop)
-			{
-				this._hybridArrow.SetActive(false);
-				base.TargetUI.interactable = false;
-				base.TargetUI.captionText.alignment = TextAlignmentOptions.Center;
-				RectTransform rectTransform = base.TargetUI.captionText.rectTransform;
-				rectTransform.anchoredPosition = new Vector2(0f, rectTransform.anchoredPosition.y);
-			}
-			this.UpdateInteractability();
-			base.TargetUI.onValueChanged.AddListener(delegate(int _)
-			{
-				this.UpdateInteractability();
-			});
+			_hybridArrow.SetActive(value: false);
+			base.TargetUI.interactable = false;
+			base.TargetUI.captionText.alignment = TextAlignmentOptions.Center;
+			RectTransform rectTransform = base.TargetUI.captionText.rectTransform;
+			rectTransform.anchoredPosition = new Vector2(0f, rectTransform.anchoredPosition.y);
 		}
-
-		private void UpdateInteractability()
+		UpdateInteractability();
+		base.TargetUI.onValueChanged.AddListener(delegate
 		{
-			if (this._loopable)
-			{
-				return;
-			}
-			this._prevArrow.interactable = base.TargetUI.value > 0;
-			this._nextArrow.interactable = base.TargetUI.value < base.TargetUI.options.Count - 1;
+			UpdateInteractability();
+		});
+	}
+
+	private void UpdateInteractability()
+	{
+		if (!_loopable)
+		{
+			_prevArrow.interactable = base.TargetUI.value > 0;
+			_nextArrow.interactable = base.TargetUI.value < base.TargetUI.options.Count - 1;
 		}
-
-		[SerializeField]
-		private Button _prevArrow;
-
-		[SerializeField]
-		private Button _nextArrow;
-
-		[SerializeField]
-		private GameObject _hybridArrow;
-
-		private bool _loopable;
 	}
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using System.IO;
 using Mirror;
 
@@ -18,14 +17,14 @@ public static class LowPrecisionQuaternionSerializer
 	{
 		if (reader.Position + sizeof(LowPrecisionQuaternion) > reader.buffer.Count)
 		{
-			throw new EndOfStreamException("ReadByte out of range:" + ((reader != null) ? reader.ToString() : null));
+			throw new EndOfStreamException("ReadByte out of range:" + reader);
 		}
-		LowPrecisionQuaternion lowPrecisionQuaternion;
+		LowPrecisionQuaternion result;
 		fixed (byte* ptr = &reader.buffer.Array[reader.buffer.Offset + reader.Position])
 		{
-			lowPrecisionQuaternion = *(LowPrecisionQuaternion*)ptr;
+			result = *(LowPrecisionQuaternion*)ptr;
 		}
 		reader.Position += sizeof(LowPrecisionQuaternion);
-		return lowPrecisionQuaternion;
+		return result;
 	}
 }

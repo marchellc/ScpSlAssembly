@@ -1,4 +1,3 @@
-﻿using System;
 using InventorySystem;
 using InventorySystem.Items;
 using Mirror;
@@ -7,80 +6,50 @@ using PlayerRoles.FirstPersonControl.Thirdperson;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class SeveredHands : TickingEffectBase, IInteractionBlocker
 {
-	public class SeveredHands : TickingEffectBase, IInteractionBlocker
+	private const BlockedInteraction Interactions = BlockedInteraction.All;
+
+	private static readonly int HashSeveredHands = Animator.StringToHash("SeveredHands");
+
+	[SerializeField]
+	private float _tickDamage;
+
+	public override bool AllowEnabling => true;
+
+	public bool CanBeCleared => !base.IsEnabled;
+
+	public BlockedInteraction BlockedInteractions => BlockedInteraction.All;
+
+	protected override void Enabled()
 	{
-		public override bool AllowEnabling
-		{
-			get
-			{
-				return true;
-			}
-		}
+		base.Enabled();
+		base.Hub.interCoordinator.AddBlocker(this);
+		ChangeHandsState(handsCut: true);
+	}
 
-		public bool CanBeCleared
-		{
-			get
-			{
-				return !base.IsEnabled;
-			}
-		}
+	protected override void Disabled()
+	{
+		base.Disabled();
+		ChangeHandsState(handsCut: false);
+	}
 
-		public BlockedInteraction BlockedInteractions
+	protected override void OnTick()
+	{
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return BlockedInteraction.All;
-			}
-		}
-
-		protected override void Enabled()
-		{
-			base.Enabled();
-			base.Hub.interCoordinator.AddBlocker(this);
-			this.ChangeHandsState(true);
-		}
-
-		protected override void Disabled()
-		{
-			base.Disabled();
-			this.ChangeHandsState(false);
-		}
-
-		protected override void OnTick()
-		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
 			base.Hub.inventory.ServerDropItem(base.Hub.inventory.CurItem.SerialNumber);
-			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(this._tickDamage, DeathTranslations.SeveredHands, null));
+			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(_tickDamage, DeathTranslations.SeveredHands));
 		}
+	}
 
-		private void ChangeHandsState(bool handsCut)
+	private void ChangeHandsState(bool handsCut)
+	{
+		if (base.Hub.roleManager.CurrentRole is HumanRole humanRole && humanRole.FpcModule.CharacterModelInstance is AnimatedCharacterModel animatedCharacterModel && animatedCharacterModel.HasParameter(HashSeveredHands))
 		{
-			HumanRole humanRole = base.Hub.roleManager.CurrentRole as HumanRole;
-			if (humanRole == null)
-			{
-				return;
-			}
-			AnimatedCharacterModel animatedCharacterModel = humanRole.FpcModule.CharacterModelInstance as AnimatedCharacterModel;
-			if (animatedCharacterModel == null)
-			{
-				return;
-			}
-			if (animatedCharacterModel.HasParameter(SeveredHands.HashSeveredHands))
-			{
-				animatedCharacterModel.Animator.SetBool(SeveredHands.HashSeveredHands, handsCut);
-			}
+			animatedCharacterModel.Animator.SetBool(HashSeveredHands, handsCut);
 		}
-
-		private const BlockedInteraction Interactions = BlockedInteraction.All;
-
-		private static readonly int HashSeveredHands = Animator.StringToHash("SeveredHands");
-
-		[SerializeField]
-		private float _tickDamage;
 	}
 }

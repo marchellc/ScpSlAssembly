@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using InventorySystem.Items;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Attachments;
@@ -10,193 +10,171 @@ using UnityEngine.UI;
 using UserSettings;
 using UserSettings.UserInterfaceSettings;
 
-namespace InventorySystem.GUI.Descriptions
+namespace InventorySystem.GUI.Descriptions;
+
+public class FirearmDescriptionGui : RadialDescriptionBase
 {
-	public class FirearmDescriptionGui : RadialDescriptionBase
+	[Serializable]
+	public class FirearmStatBar
 	{
-		public override void UpdateInfo(ItemBase targetItem, Color roleColor)
+		[SerializeField]
+		private Image _targetImage;
+
+		[SerializeField]
+		private TextMeshProUGUI _valueText;
+
+		[SerializeField]
+		private TextMeshProUGUI _headerText;
+
+		[SerializeField]
+		private InventoryGuiTranslation _headerTranslation;
+
+		private float _defaultWidth;
+
+		private float _defaultHeight;
+
+		private bool _defaultsSet;
+
+		public void SetValue(float normalizedValue, string text, Color col)
 		{
-			TMP_Text title = this._title;
-			IItemNametag itemNametag = targetItem as IItemNametag;
-			title.text = ((itemNametag != null) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
-			Firearm firearm = targetItem as Firearm;
-			if (firearm == null)
+			if (!_defaultsSet)
 			{
-				return;
+				if (TranslationReader.TryGet("InventoryGUI", (int)_headerTranslation, out var val))
+				{
+					_headerText.text = val;
+				}
+				_defaultHeight = _targetImage.rectTransform.sizeDelta.y;
+				_defaultWidth = _targetImage.rectTransform.sizeDelta.x;
+				_defaultsSet = true;
 			}
-			IHitregModule hitregModule;
-			if (firearm.TryGetModule(out hitregModule, true))
+			_valueText.text = text;
+			_targetImage.color = col;
+			_targetImage.rectTransform.sizeDelta = new Vector2(Mathf.Clamp01(normalizedValue) * _defaultWidth, _defaultHeight);
+		}
+	}
+
+	[SerializeField]
+	private TextMeshProUGUI _title;
+
+	[SerializeField]
+	private TextMeshProUGUI _ammoText;
+
+	[SerializeField]
+	private FirearmStatBar _damageBar;
+
+	[SerializeField]
+	private FirearmStatBar _firerateBar;
+
+	[SerializeField]
+	private FirearmStatBar _penetrationBar;
+
+	[SerializeField]
+	private FirearmStatBar _hipAccBar;
+
+	[SerializeField]
+	private FirearmStatBar _adsAccBar;
+
+	[SerializeField]
+	private FirearmStatBar _runAccBar;
+
+	[SerializeField]
+	private FirearmStatBar _staminaUsageBar;
+
+	[SerializeField]
+	private FirearmStatBar _movementSpeedBar;
+
+	[SerializeField]
+	private AnimationCurve _accuracyToValue;
+
+	[SerializeField]
+	private RawImage _bodyImage;
+
+	[SerializeField]
+	private RawImage[] _attachmentsPool;
+
+	[SerializeField]
+	private RectTransform _attachmentIconsBorders;
+
+	private const string ColorStart = "<color=white>";
+
+	private const string ColorEnd = "</color>";
+
+	public override void UpdateInfo(ItemBase targetItem, Color roleColor)
+	{
+		_title.text = ((targetItem is IItemNametag itemNametag) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
+		if (targetItem is Firearm firearm)
+		{
+			if (firearm.TryGetModule<IHitregModule>(out var module))
 			{
-				float displayDamage = hitregModule.DisplayDamage;
-				this._damageBar.SetValue(Mathf.InverseLerp(16f, 40.5f, displayDamage), (Mathf.Round(displayDamage * 10f) / 10f).ToString(), roleColor);
-				float displayPenetration = hitregModule.DisplayPenetration;
-				this._penetrationBar.SetValue(displayPenetration, Mathf.Round(displayPenetration * 100f).ToString() + "%", roleColor);
+				float displayDamage = module.DisplayDamage;
+				_damageBar.SetValue(Mathf.InverseLerp(16f, 40.5f, displayDamage), (Mathf.Round(displayDamage * 10f) / 10f).ToString(), roleColor);
+				float displayPenetration = module.DisplayPenetration;
+				_penetrationBar.SetValue(displayPenetration, Mathf.Round(displayPenetration * 100f) + "%", roleColor);
 			}
 			else
 			{
-				this._damageBar.SetValue(0f, "n/a", roleColor);
-				this._penetrationBar.SetValue(0f, "n/a", roleColor);
+				_damageBar.SetValue(0f, "n/a", roleColor);
+				_penetrationBar.SetValue(0f, "n/a", roleColor);
 			}
-			IActionModule actionModule;
-			if (firearm.TryGetModule(out actionModule, true))
+			if (firearm.TryGetModule<IActionModule>(out var module2))
 			{
-				float displayCyclicRate = actionModule.DisplayCyclicRate;
-				this._firerateBar.SetValue(Mathf.InverseLerp(2.1f, 11.5f, displayCyclicRate), Mathf.Round(displayCyclicRate * 60f).ToString(), roleColor);
-			}
-			else
-			{
-				this._firerateBar.SetValue(0f, "n/a", roleColor);
-			}
-			DisplayInaccuracyValues combinedDisplayInaccuracy = IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(firearm, true);
-			if (UserSetting<bool>.Get<UISetting>(UISetting.InaccuracyAsDispersion))
-			{
-				this._hipAccBar.SetValue(this._accuracyToValue.Evaluate(combinedDisplayInaccuracy.HipDeg), (Mathf.Round(combinedDisplayInaccuracy.HipDeg * 10f) / 10f).ToString() + "°", roleColor);
-				this._adsAccBar.SetValue(this._accuracyToValue.Evaluate(combinedDisplayInaccuracy.AdsDeg), (Mathf.Round(combinedDisplayInaccuracy.AdsDeg * 100f) / 100f).ToString() + "°", roleColor);
-				this._runAccBar.SetValue(this._accuracyToValue.Evaluate(combinedDisplayInaccuracy.RunningDeg), (Mathf.Round(combinedDisplayInaccuracy.RunningDeg * 10f) / 10f).ToString() + "°", roleColor);
+				float displayCyclicRate = module2.DisplayCyclicRate;
+				_firerateBar.SetValue(Mathf.InverseLerp(2.1f, 11.5f, displayCyclicRate), Mathf.Round(displayCyclicRate * 60f).ToString(), roleColor);
 			}
 			else
 			{
-				bool flag = UserSetting<bool>.Get<UISetting>(UISetting.ImperialUnits);
+				_firerateBar.SetValue(0f, "n/a", roleColor);
+			}
+			DisplayInaccuracyValues combinedDisplayInaccuracy = IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(firearm, addBulletToRest: true);
+			if (UserSetting<bool>.Get(UISetting.InaccuracyAsDispersion))
+			{
+				_hipAccBar.SetValue(_accuracyToValue.Evaluate(combinedDisplayInaccuracy.HipDeg), Mathf.Round(combinedDisplayInaccuracy.HipDeg * 10f) / 10f + "°", roleColor);
+				_adsAccBar.SetValue(_accuracyToValue.Evaluate(combinedDisplayInaccuracy.AdsDeg), Mathf.Round(combinedDisplayInaccuracy.AdsDeg * 100f) / 100f + "°", roleColor);
+				_runAccBar.SetValue(_accuracyToValue.Evaluate(combinedDisplayInaccuracy.RunningDeg), Mathf.Round(combinedDisplayInaccuracy.RunningDeg * 10f) / 10f + "°", roleColor);
+			}
+			else
+			{
+				bool flag = UserSetting<bool>.Get(UISetting.ImperialUnits);
 				string text = (flag ? " yd" : " m");
-				float hipAccurateRange = combinedDisplayInaccuracy.GetHipAccurateRange(flag, true);
-				float adsAccurateRange = combinedDisplayInaccuracy.GetAdsAccurateRange(flag, true);
-				float runningAccurateRange = combinedDisplayInaccuracy.GetRunningAccurateRange(flag, true);
-				this._hipAccBar.SetValue(hipAccurateRange / 75f, hipAccurateRange.ToString() + text, roleColor);
-				this._adsAccBar.SetValue(adsAccurateRange / 800f, adsAccurateRange.ToString() + text, roleColor);
-				this._runAccBar.SetValue(runningAccurateRange / 75f, runningAccurateRange.ToString() + text, roleColor);
+				float hipAccurateRange = combinedDisplayInaccuracy.GetHipAccurateRange(flag, rounded: true);
+				float adsAccurateRange = combinedDisplayInaccuracy.GetAdsAccurateRange(flag, rounded: true);
+				float runningAccurateRange = combinedDisplayInaccuracy.GetRunningAccurateRange(flag, rounded: true);
+				_hipAccBar.SetValue(hipAccurateRange / 75f, hipAccurateRange + text, roleColor);
+				_adsAccBar.SetValue(adsAccurateRange / 800f, adsAccurateRange + text, roleColor);
+				_runAccBar.SetValue(runningAccurateRange / 75f, runningAccurateRange + text, roleColor);
 			}
 			object designatedMobilityControllerClass = firearm.DesignatedMobilityControllerClass;
-			IStaminaModifier staminaModifier = designatedMobilityControllerClass as IStaminaModifier;
-			float num = ((staminaModifier != null) ? staminaModifier.StaminaUsageMultiplier : 1f);
-			this._staminaUsageBar.SetValue(Mathf.InverseLerp(1.5f, 1f, num), "+" + Mathf.Round((num - 1f) * 100f).ToString() + "%", roleColor);
-			IMovementSpeedModifier movementSpeedModifier = designatedMobilityControllerClass as IMovementSpeedModifier;
-			float num2 = ((movementSpeedModifier != null) ? movementSpeedModifier.MovementSpeedMultiplier : 1f);
-			this._movementSpeedBar.SetValue(Mathf.InverseLerp(0.85f, 1f, num2), "-" + Mathf.Round(Mathf.Abs(num2 - 1f) * 100f).ToString() + "%", roleColor);
-			uint defaultAtt = firearm.ValidateAttachmentsCode(0U);
-			firearm.GenerateIcon(this._bodyImage, this._attachmentsPool, this._attachmentIconsBorders.sizeDelta, delegate(int x)
+			float num = ((designatedMobilityControllerClass is IStaminaModifier staminaModifier) ? staminaModifier.StaminaUsageMultiplier : 1f);
+			_staminaUsageBar.SetValue(Mathf.InverseLerp(1.5f, 1f, num), "+" + Mathf.Round((num - 1f) * 100f) + "%", roleColor);
+			float num2 = ((designatedMobilityControllerClass is IMovementSpeedModifier movementSpeedModifier) ? movementSpeedModifier.MovementSpeedMultiplier : 1f);
+			_movementSpeedBar.SetValue(Mathf.InverseLerp(0.85f, 1f, num2), "-" + Mathf.Round(Mathf.Abs(num2 - 1f) * 100f) + "%", roleColor);
+			uint defaultAtt = firearm.ValidateAttachmentsCode(0u);
+			firearm.GenerateIcon(_bodyImage, _attachmentsPool, _attachmentIconsBorders.sizeDelta, delegate(int x)
 			{
-				uint num5 = 1U << x;
-				if ((defaultAtt & num5) != num5)
-				{
-					return roleColor;
-				}
-				return Color.white;
+				uint num3 = (uint)(1 << x);
+				return ((defaultAtt & num3) != num3) ? roleColor : Color.white;
 			});
-			int num3;
-			int num4;
-			firearm.GetAmmoContainerData(out num3, out num4);
-			IPrimaryAmmoContainerModule primaryAmmoContainerModule;
-			if (firearm.TryGetModule(out primaryAmmoContainerModule, true))
+			firearm.GetAmmoContainerData(out var totalStored, out var totalMax);
+			if (firearm.TryGetModule<IPrimaryAmmoContainerModule>(out var module3))
 			{
-				this.SetAmmoText(primaryAmmoContainerModule.AmmoType, num3, num4);
+				SetAmmoText(module3.AmmoType, totalStored, totalMax);
 			}
 			else
 			{
-				this.SetAmmoText(ItemType.None, num3, num4);
+				SetAmmoText(ItemType.None, totalStored, totalMax);
 			}
-			this._ammoText.color = roleColor;
+			_ammoText.color = roleColor;
 		}
+	}
 
-		private void SetAmmoText(ItemType ammoType, int curAmmo, int maxAmmo)
+	private void SetAmmoText(ItemType ammoType, int curAmmo, int maxAmmo)
+	{
+		string text = TranslationReader.Get("InventoryGUI", 0, "Ammo {0}/{1} {2}");
+		string arg = string.Empty;
+		if (ammoType.TryGetTemplate<ItemBase>(out var item) && item is IItemNametag itemNametag)
 		{
-			string text = TranslationReader.Get("InventoryGUI", 0, "Ammo {0}/{1} {2}");
-			string text2 = string.Empty;
-			ItemBase itemBase;
-			if (ammoType.TryGetTemplate(out itemBase))
-			{
-				IItemNametag itemNametag = itemBase as IItemNametag;
-				if (itemNametag != null)
-				{
-					text2 = "<color=white>" + itemNametag.Name + "</color>";
-				}
-			}
-			this._ammoText.text = string.Format("<color=white>" + text, "</color>" + curAmmo.ToString(), maxAmmo, text2);
+			arg = "<color=white>" + itemNametag.Name + "</color>";
 		}
-
-		[SerializeField]
-		private TextMeshProUGUI _title;
-
-		[SerializeField]
-		private TextMeshProUGUI _ammoText;
-
-		[SerializeField]
-		private FirearmDescriptionGui.FirearmStatBar _damageBar;
-
-		[SerializeField]
-		private FirearmDescriptionGui.FirearmStatBar _firerateBar;
-
-		[SerializeField]
-		private FirearmDescriptionGui.FirearmStatBar _penetrationBar;
-
-		[SerializeField]
-		private FirearmDescriptionGui.FirearmStatBar _hipAccBar;
-
-		[SerializeField]
-		private FirearmDescriptionGui.FirearmStatBar _adsAccBar;
-
-		[SerializeField]
-		private FirearmDescriptionGui.FirearmStatBar _runAccBar;
-
-		[SerializeField]
-		private FirearmDescriptionGui.FirearmStatBar _staminaUsageBar;
-
-		[SerializeField]
-		private FirearmDescriptionGui.FirearmStatBar _movementSpeedBar;
-
-		[SerializeField]
-		private AnimationCurve _accuracyToValue;
-
-		[SerializeField]
-		private RawImage _bodyImage;
-
-		[SerializeField]
-		private RawImage[] _attachmentsPool;
-
-		[SerializeField]
-		private RectTransform _attachmentIconsBorders;
-
-		private const string ColorStart = "<color=white>";
-
-		private const string ColorEnd = "</color>";
-
-		[Serializable]
-		public class FirearmStatBar
-		{
-			public void SetValue(float normalizedValue, string text, Color col)
-			{
-				if (!this._defaultsSet)
-				{
-					string text2;
-					if (TranslationReader.TryGet("InventoryGUI", (int)this._headerTranslation, out text2))
-					{
-						this._headerText.text = text2;
-					}
-					this._defaultHeight = this._targetImage.rectTransform.sizeDelta.y;
-					this._defaultWidth = this._targetImage.rectTransform.sizeDelta.x;
-					this._defaultsSet = true;
-				}
-				this._valueText.text = text;
-				this._targetImage.color = col;
-				this._targetImage.rectTransform.sizeDelta = new Vector2(Mathf.Clamp01(normalizedValue) * this._defaultWidth, this._defaultHeight);
-			}
-
-			[SerializeField]
-			private Image _targetImage;
-
-			[SerializeField]
-			private TextMeshProUGUI _valueText;
-
-			[SerializeField]
-			private TextMeshProUGUI _headerText;
-
-			[SerializeField]
-			private InventoryGuiTranslation _headerTranslation;
-
-			private float _defaultWidth;
-
-			private float _defaultHeight;
-
-			private bool _defaultsSet;
-		}
+		_ammoText.text = string.Format("<color=white>" + text, "</color>" + curAmmo, maxAmmo, arg);
 	}
 }

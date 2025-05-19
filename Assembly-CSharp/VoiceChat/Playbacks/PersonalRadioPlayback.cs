@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using InventorySystem;
@@ -10,417 +9,380 @@ using RelativePositioning;
 using UnityEngine;
 using VoiceChat.Networking;
 
-namespace VoiceChat.Playbacks
+namespace VoiceChat.Playbacks;
+
+public class PersonalRadioPlayback : VoiceChatPlaybackBase, IGlobalPlayback
 {
-	public class PersonalRadioPlayback : VoiceChatPlaybackBase, IGlobalPlayback
+	public struct TransmitterPositionMessage : NetworkMessage
 	{
-		private int RangeId
-		{
-			get
-			{
-				RadioStatusMessage radioStatusMessage;
-				if (!RadioMessages.SyncedRangeLevels.TryGetValue(this._owner.netId, out radioStatusMessage))
-				{
-					return 1;
-				}
-				return Mathf.Abs((int)radioStatusMessage.Range);
-			}
-		}
+		public RecyclablePlayerId Transmitter;
 
-		private RadioItem RadioTemplate
-		{
-			get
-			{
-				if (PersonalRadioPlayback._templateRadioLoaded)
-				{
-					return PersonalRadioPlayback._templateRadio;
-				}
-				RadioItem radioItem;
-				if (!InventoryItemLoader.TryGetItem<RadioItem>(ItemType.Radio, out radioItem))
-				{
-					return null;
-				}
-				PersonalRadioPlayback._templateRadioLoaded = true;
-				PersonalRadioPlayback._templateRadio = radioItem;
-				return radioItem;
-			}
-		}
+		public byte WaypointId;
+	}
 
-		private static PersonalRadioPlayback LocalPlayer
+	[SerializeField]
+	private AudioSource _noiseSource;
+
+	private int _currentId;
+
+	private bool _hasProximity;
+
+	private bool _isLocalPlayer;
+
+	private bool _recheckCachedRadio;
+
+	private ReferenceHub _owner;
+
+	private RadioItem _cachedRadio;
+
+	private SingleBufferPlayback[] _proxPlaybacks;
+
+	private readonly PlaybackBuffer _personalBuffer = new PlaybackBuffer();
+
+	private const int RadioDelay = 4000;
+
+	private const float ProxVolumeRatio = 0.35f;
+
+	private static PersonalRadioPlayback _localPlayer;
+
+	private static bool _hasLocalPlayer;
+
+	private static int _freeIdsCount;
+
+	private static int _lastTopNumber;
+
+	private static float _noiseLevel;
+
+	private static RadioItem _templateRadio;
+
+	private static bool _templateRadioLoaded;
+
+	private static readonly HashSet<int> FreeIds = new HashSet<int>();
+
+	private int RangeId
+	{
+		get
 		{
-			get
+			if (!RadioMessages.SyncedRangeLevels.TryGetValue(_owner.netId, out var value))
 			{
-				return PersonalRadioPlayback._localPlayer;
+				return 1;
 			}
-			set
+			return Mathf.Abs((int)value.Range);
+		}
+	}
+
+	private RadioItem RadioTemplate
+	{
+		get
+		{
+			if (_templateRadioLoaded)
 			{
-				if (PersonalRadioPlayback._hasLocalPlayer)
-				{
-					PersonalRadioPlayback._localPlayer._isLocalPlayer = false;
-				}
-				if (value == null)
-				{
-					PersonalRadioPlayback._localPlayer = null;
-					PersonalRadioPlayback._hasLocalPlayer = false;
-					return;
-				}
-				PersonalRadioPlayback._localPlayer = value;
-				PersonalRadioPlayback._hasLocalPlayer = true;
+				return _templateRadio;
+			}
+			if (!InventoryItemLoader.TryGetItem<RadioItem>(ItemType.Radio, out var result))
+			{
+				return null;
+			}
+			_templateRadioLoaded = true;
+			_templateRadio = result;
+			return result;
+		}
+	}
+
+	private static PersonalRadioPlayback LocalPlayer
+	{
+		get
+		{
+			return _localPlayer;
+		}
+		set
+		{
+			if (_hasLocalPlayer)
+			{
+				_localPlayer._isLocalPlayer = false;
+			}
+			if (value == null)
+			{
+				_localPlayer = null;
+				_hasLocalPlayer = false;
+			}
+			else
+			{
+				_localPlayer = value;
+				_hasLocalPlayer = true;
 				value._isLocalPlayer = true;
 			}
 		}
+	}
 
-		public Vector3 LastKnownLocation { get; private set; }
+	public Vector3 LastKnownLocation { get; private set; }
 
-		public int TemporaryId
+	public int TemporaryId
+	{
+		get
 		{
-			get
+			UpdateTemporaryId();
+			return _currentId;
+		}
+	}
+
+	public bool RadioUsable
+	{
+		get
+		{
+			if (TryGetUserRadio(out var radio))
 			{
-				this.UpdateTemporaryId();
-				return this._currentId;
+				return radio.IsUsable;
+			}
+			return false;
+		}
+	}
+
+	public override int MaxSamples => _personalBuffer.Length;
+
+	public bool GlobalChatActive
+	{
+		get
+		{
+			if (IsTransmitting(_owner))
+			{
+				return !base.Source.mute;
+			}
+			return false;
+		}
+	}
+
+	public Color GlobalChatColor => _owner.serverRoles.GetVoiceColor();
+
+	public string GlobalChatName => _owner.nicknameSync.DisplayName;
+
+	public float GlobalChatLoudness => base.Loudness;
+
+	public GlobalChatIconType GlobalChatIcon => GlobalChatIconType.Radio;
+
+	private void OnItemsModified(ReferenceHub hub)
+	{
+		if (!(hub != _owner))
+		{
+			_recheckCachedRadio = true;
+		}
+	}
+
+	private void UpdateTemporaryId()
+	{
+		if (_personalBuffer.Length == 0)
+		{
+			if (_currentId != 0)
+			{
+				FreeIds.Add(_currentId);
+				_freeIdsCount++;
+				_currentId = 0;
 			}
 		}
-
-		public bool RadioUsable
+		else if (_currentId == 0)
 		{
-			get
+			if (_freeIdsCount > 0)
 			{
-				RadioItem radioItem;
-				return this.TryGetUserRadio(out radioItem) && radioItem.IsUsable;
-			}
-		}
-
-		public override int MaxSamples
-		{
-			get
-			{
-				return this._personalBuffer.Length;
-			}
-		}
-
-		public bool GlobalChatActive
-		{
-			get
-			{
-				return PersonalRadioPlayback.IsTransmitting(this._owner) && !base.Source.mute;
-			}
-		}
-
-		public Color GlobalChatColor
-		{
-			get
-			{
-				return this._owner.serverRoles.GetVoiceColor();
-			}
-		}
-
-		public string GlobalChatName
-		{
-			get
-			{
-				return this._owner.nicknameSync.DisplayName;
-			}
-		}
-
-		public float GlobalChatLoudness
-		{
-			get
-			{
-				return base.Loudness;
-			}
-		}
-
-		public GlobalChatIconType GlobalChatIcon
-		{
-			get
-			{
-				return GlobalChatIconType.Radio;
-			}
-		}
-
-		private void OnItemsModified(ReferenceHub hub)
-		{
-			if (hub != this._owner)
-			{
-				return;
-			}
-			this._recheckCachedRadio = true;
-		}
-
-		private void UpdateTemporaryId()
-		{
-			if (this._personalBuffer.Length == 0)
-			{
-				if (this._currentId == 0)
-				{
-					return;
-				}
-				PersonalRadioPlayback.FreeIds.Add(this._currentId);
-				PersonalRadioPlayback._freeIdsCount++;
-				this._currentId = 0;
-				return;
+				_currentId = FreeIds.Min();
+				_freeIdsCount--;
 			}
 			else
 			{
-				if (this._currentId != 0)
-				{
-					return;
-				}
-				if (PersonalRadioPlayback._freeIdsCount > 0)
-				{
-					this._currentId = PersonalRadioPlayback.FreeIds.Min();
-					PersonalRadioPlayback._freeIdsCount--;
-					return;
-				}
-				this._currentId = ++PersonalRadioPlayback._lastTopNumber;
-				return;
+				_currentId = ++_lastTopNumber;
 			}
 		}
+	}
 
-		private void UpdateLoudness()
+	private void UpdateLoudness()
+	{
+		if (!_hasLocalPlayer || _isLocalPlayer || !LocalPlayer.RadioUsable)
 		{
-			if (!PersonalRadioPlayback._hasLocalPlayer || this._isLocalPlayer || !PersonalRadioPlayback.LocalPlayer.RadioUsable)
+			base.Source.mute = true;
+			if (_hasProximity)
 			{
-				base.Source.mute = true;
-				if (this._hasProximity)
+				_proxPlaybacks.ForEach(delegate(SingleBufferPlayback x)
 				{
-					this._proxPlayback.Source.volume = 1f;
-				}
-				return;
+					x.Source.volume = 1f;
+				});
 			}
-			int num = Mathf.Max(PersonalRadioPlayback._localPlayer.RangeId, this.RangeId);
-			float num2 = (float)this.RadioTemplate.Ranges[num].MaximumRange;
-			float sqrMagnitude = (MainCameraController.CurrentCamera.position - this.LastKnownLocation).sqrMagnitude;
-			if (sqrMagnitude > num2 * num2)
+			return;
+		}
+		int num = Mathf.Max(_localPlayer.RangeId, RangeId);
+		RadioRangeMode radioRangeMode = RadioTemplate.Ranges[num];
+		if (!radioRangeMode.CheckRange(MainCameraController.LastPosition, LastKnownLocation, out var sqrMag))
+		{
+			base.Source.mute = true;
+			return;
+		}
+		base.Source.mute = false;
+		float time = Mathf.Sqrt(sqrMag) / (float)radioRangeMode.MaximumRange;
+		base.Source.volume = RadioTemplate.VoiceVolumeCurve.Evaluate(time);
+		if (_personalBuffer.Length > 0)
+		{
+			_noiseLevel = Mathf.Max(_noiseLevel, RadioTemplate.NoiseLevelCurve.Evaluate(time));
+		}
+		if (_hasProximity)
+		{
+			SingleBufferPlayback[] proxPlaybacks = _proxPlaybacks;
+			for (int i = 0; i < proxPlaybacks.Length; i++)
 			{
-				base.Source.mute = true;
-				return;
-			}
-			base.Source.mute = false;
-			float num3 = Mathf.Sqrt(sqrMagnitude) / num2;
-			base.Source.volume = this.RadioTemplate.VoiceVolumeCurve.Evaluate(num3);
-			if (this._personalBuffer.Length > 0)
-			{
-				PersonalRadioPlayback._noiseLevel = Mathf.Max(PersonalRadioPlayback._noiseLevel, this.RadioTemplate.NoiseLevelCurve.Evaluate(num3));
-			}
-			if (this._hasProximity)
-			{
-				this._proxPlayback.Source.volume = ((this._personalBuffer.Length > 0) ? 0.35f : 1f);
+				proxPlaybacks[i].Source.volume = ((_personalBuffer.Length > 0) ? 0.35f : 1f);
 			}
 		}
+	}
 
-		private void UpdateNoise()
+	private void UpdateNoise()
+	{
+		if (_isLocalPlayer)
 		{
-			if (!this._isLocalPlayer)
-			{
-				return;
-			}
-			this._noiseSource.volume = PersonalRadioPlayback._noiseLevel;
-			PersonalRadioPlayback._noiseLevel = 0f;
+			_noiseSource.volume = _noiseLevel;
+			_noiseLevel = 0f;
 		}
+	}
 
-		private bool TryGetUserRadio(out RadioItem radio)
+	private bool TryGetUserRadio(out RadioItem radio)
+	{
+		if (_cachedRadio != null)
 		{
-			if (this._cachedRadio != null)
-			{
-				radio = this._cachedRadio;
-				return true;
-			}
-			radio = null;
-			if (!this._recheckCachedRadio)
-			{
-				return false;
-			}
-			foreach (KeyValuePair<ushort, ItemBase> keyValuePair in this._owner.inventory.UserInventory.Items)
-			{
-				if (keyValuePair.Value.ItemTypeId == ItemType.Radio)
-				{
-					radio = (RadioItem)keyValuePair.Value;
-					break;
-				}
-			}
-			if (radio == null)
-			{
-				return false;
-			}
-			this._cachedRadio = radio;
+			radio = _cachedRadio;
 			return true;
 		}
-
-		protected override void OnDisable()
+		radio = null;
+		if (!_recheckCachedRadio)
 		{
-			base.OnDisable();
-			Inventory.OnItemsModified -= this.OnItemsModified;
-			GlobalChatIndicatorManager.Unsubscribe(this);
-			if (!this._isLocalPlayer)
-			{
-				return;
-			}
-			PersonalRadioPlayback.LocalPlayer = null;
-			this._noiseSource.volume = 0f;
+			return false;
 		}
-
-		protected override void Update()
+		foreach (KeyValuePair<ushort, ItemBase> item in _owner.inventory.UserInventory.Items)
 		{
-			base.Update();
-			this.UpdateTemporaryId();
-			this.UpdateLoudness();
-			this.UpdateNoise();
-			if (!NetworkServer.active || !PersonalRadioPlayback.IsTransmitting(this._owner))
+			if (item.Value.ItemTypeId == ItemType.Radio)
 			{
-				return;
+				radio = (RadioItem)item.Value;
+				break;
 			}
-			NetworkServer.SendToReady<PersonalRadioPlayback.TransmitterPositionMessage>(new PersonalRadioPlayback.TransmitterPositionMessage
-			{
-				Transmitter = new RecyclablePlayerId(this._owner.PlayerId),
-				WaypointId = new RelativePosition(base.transform.position).WaypointId
-			}, 0);
 		}
-
-		protected override float ReadSample()
+		if ((object)radio == null)
 		{
-			return this._personalBuffer.Read();
+			return false;
 		}
+		_cachedRadio = radio;
+		return true;
+	}
 
-		public void Setup(ReferenceHub owner, SingleBufferPlayback proximityPlayback)
+	protected override void OnDisable()
+	{
+		base.OnDisable();
+		Inventory.OnItemsModified -= OnItemsModified;
+		GlobalChatIndicatorManager.Unsubscribe(this);
+		if (_isLocalPlayer)
 		{
-			this._owner = owner;
-			this._proxPlayback = proximityPlayback;
-			this._personalBuffer.Clear();
-			Inventory.OnItemsModified += this.OnItemsModified;
-			if (this._owner.isLocalPlayer)
-			{
-				PersonalRadioPlayback.LocalPlayer = this;
-			}
-			else
-			{
-				this._isLocalPlayer = false;
-				GlobalChatIndicatorManager.Subscribe(this, owner);
-			}
-			this._hasProximity = this._proxPlayback != null;
-			this._recheckCachedRadio = true;
+			LocalPlayer = null;
+			_noiseSource.volume = 0f;
 		}
+	}
 
-		public void DistributeSamples(float[] samples, int length)
+	protected override void Update()
+	{
+		base.Update();
+		UpdateTemporaryId();
+		UpdateLoudness();
+		UpdateNoise();
+		if (NetworkServer.active && IsTransmitting(_owner))
 		{
-			this._personalBuffer.Write(samples, length);
-			if (this._hasProximity)
+			TransmitterPositionMessage message = default(TransmitterPositionMessage);
+			message.Transmitter = new RecyclablePlayerId(_owner);
+			message.WaypointId = new RelativePosition(base.transform.position).WaypointId;
+			NetworkServer.SendToReady(message);
+		}
+	}
+
+	protected override float ReadSample()
+	{
+		return _personalBuffer.Read();
+	}
+
+	public void Setup(ReferenceHub owner, SingleBufferPlayback[] proximityPlaybacks)
+	{
+		_owner = owner;
+		_proxPlaybacks = proximityPlaybacks;
+		_personalBuffer.Clear();
+		Inventory.OnItemsModified += OnItemsModified;
+		if (_owner.isLocalPlayer)
+		{
+			LocalPlayer = this;
+		}
+		else
+		{
+			_isLocalPlayer = false;
+			GlobalChatIndicatorManager.Subscribe(this, owner);
+		}
+		_hasProximity = _proxPlaybacks != null && _proxPlaybacks.Length != 0;
+		_recheckCachedRadio = true;
+	}
+
+	public void DistributeSamples(float[] samples, int length)
+	{
+		_personalBuffer.Write(samples, length);
+		if (_hasProximity)
+		{
+			_personalBuffer.SyncWith(_proxPlaybacks[0].Buffer, 4000);
+		}
+		int num = TemporaryId - 1;
+		if (num < 0 || num >= 8)
+		{
+			return;
+		}
+		foreach (SpatializedRadioPlaybackBase allInstance in SpatializedRadioPlaybackBase.AllInstances)
+		{
+			if (allInstance.IgnoredNetId == _owner.netId || allInstance.Culled)
 			{
-				this._personalBuffer.SyncWith(this._proxPlayback.Buffer, 4000);
+				continue;
 			}
-			int num = this.TemporaryId - 1;
-			if (num < 0 || num >= 8)
+			RadioRangeMode radioRangeMode = RadioTemplate.Ranges[Mathf.Max(allInstance.RangeId, RangeId)];
+			if (radioRangeMode.CheckRange(allInstance.LastPosition, LastKnownLocation, out var _))
 			{
-				return;
-			}
-			foreach (SpatializedRadioPlaybackBase spatializedRadioPlaybackBase in SpatializedRadioPlaybackBase.AllInstances)
-			{
-				if (spatializedRadioPlaybackBase.IgnoredNetId != this._owner.netId && !spatializedRadioPlaybackBase.Culled)
+				PlaybackBuffer playbackBuffer = allInstance.Buffers[num];
+				playbackBuffer.Write(samples, length);
+				if (_hasProximity)
 				{
-					float num2 = (float)this.RadioTemplate.Ranges[Mathf.Max(spatializedRadioPlaybackBase.RangeId, this.RangeId)].MaximumRange;
-					if ((spatializedRadioPlaybackBase.LastPosition - this.LastKnownLocation).sqrMagnitude <= num2 * num2)
-					{
-						PlaybackBuffer playbackBuffer = spatializedRadioPlaybackBase.Buffers[num];
-						playbackBuffer.Write(samples, length);
-						if (this._hasProximity)
-						{
-							playbackBuffer.SyncWith(this._proxPlayback.Buffer, 4000);
-						}
-					}
+					playbackBuffer.SyncWith(_proxPlaybacks[0].Buffer, 4000);
 				}
 			}
 		}
+	}
 
-		public static bool IsTransmitting(ReferenceHub hub)
+	public static bool IsTransmitting(ReferenceHub hub)
+	{
+		if (!(hub.roleManager.CurrentRole is IVoiceRole { VoiceModule: var voiceModule }))
 		{
-			IVoiceRole voiceRole = hub.roleManager.CurrentRole as IVoiceRole;
-			if (voiceRole == null)
-			{
-				return false;
-			}
-			VoiceModuleBase voiceModule = voiceRole.VoiceModule;
-			if (!(voiceModule is IRadioVoiceModule))
-			{
-				return false;
-			}
-			if (hub.isLocalPlayer)
-			{
-				return VoiceChatMicCapture.GetCurrentChannel() == VoiceChatChannel.Radio;
-			}
-			return (NetworkServer.active ? voiceModule.ServerIsSending : voiceModule.IsSpeaking) && voiceModule.CurrentChannel == VoiceChatChannel.Radio;
+			return false;
 		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		if (!(voiceModule is IRadioVoiceModule))
 		{
-			CustomNetworkManager.OnClientReady += delegate
+			return false;
+		}
+		if (hub.isLocalPlayer)
+		{
+			return VoiceChatMicCapture.GetCurrentChannel() == VoiceChatChannel.Radio;
+		}
+		if (NetworkServer.active ? voiceModule.ServerIsSending : voiceModule.IsSpeaking)
+		{
+			return voiceModule.CurrentChannel == VoiceChatChannel.Radio;
+		}
+		return false;
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
+		{
+			NetworkClient.ReplaceHandler(delegate(TransmitterPositionMessage msg)
 			{
-				NetworkClient.ReplaceHandler<PersonalRadioPlayback.TransmitterPositionMessage>(delegate(PersonalRadioPlayback.TransmitterPositionMessage msg)
+				if (ReferenceHub.TryGetHub(msg.Transmitter.Value, out var hub) && hub.roleManager.CurrentRole is IVoiceRole { VoiceModule: IRadioVoiceModule voiceModule })
 				{
-					ReferenceHub referenceHub;
-					if (!ReferenceHub.TryGetHub(msg.Transmitter.Value, out referenceHub))
-					{
-						return;
-					}
-					IVoiceRole voiceRole = referenceHub.roleManager.CurrentRole as IVoiceRole;
-					if (voiceRole == null)
-					{
-						return;
-					}
-					IRadioVoiceModule radioVoiceModule = voiceRole.VoiceModule as IRadioVoiceModule;
-					if (radioVoiceModule == null)
-					{
-						return;
-					}
-					radioVoiceModule.RadioPlayback.LastKnownLocation = WaypointBase.GetWorldPosition(msg.WaypointId, Vector3.zero);
-				}, true);
-			};
-		}
-
-		[SerializeField]
-		private AudioSource _noiseSource;
-
-		private int _currentId;
-
-		private bool _hasProximity;
-
-		private bool _isLocalPlayer;
-
-		private bool _recheckCachedRadio;
-
-		private ReferenceHub _owner;
-
-		private RadioItem _cachedRadio;
-
-		private SingleBufferPlayback _proxPlayback;
-
-		private readonly PlaybackBuffer _personalBuffer = new PlaybackBuffer(24000, false);
-
-		private const int RadioDelay = 4000;
-
-		private const float ProxVolumeRatio = 0.35f;
-
-		private static PersonalRadioPlayback _localPlayer;
-
-		private static bool _hasLocalPlayer;
-
-		private static int _freeIdsCount;
-
-		private static int _lastTopNumber;
-
-		private static float _noiseLevel;
-
-		private static RadioItem _templateRadio;
-
-		private static bool _templateRadioLoaded;
-
-		private static readonly HashSet<int> FreeIds = new HashSet<int>();
-
-		public struct TransmitterPositionMessage : NetworkMessage
-		{
-			public RecyclablePlayerId Transmitter;
-
-			public byte WaypointId;
-		}
+					voiceModule.RadioPlayback.LastKnownLocation = WaypointBase.GetWorldPosition(msg.WaypointId, Vector3.zero);
+				}
+			});
+		};
 	}
 }

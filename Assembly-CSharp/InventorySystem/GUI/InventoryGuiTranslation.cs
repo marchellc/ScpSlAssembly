@@ -1,35 +1,34 @@
-﻿using System;
+namespace InventorySystem.GUI;
 
-namespace InventorySystem.GUI
+public enum InventoryGuiTranslation
 {
-	public enum InventoryGuiTranslation
-	{
-		FirearmAmmo,
-		FirearmDamage,
-		FirearmFireRate,
-		FirearmHipAcc,
-		FirearmAdsAcc,
-		Weight,
-		Length,
-		DropAmmo,
-		ArmorHelmetEfficacy,
-		ArmorVestEfficacy,
-		ArmorStaminaUsage,
-		ArmorMovementSpeed,
-		ArmorItemLimits,
-		ArmorAmmoLimits,
-		ArmorTotal,
-		ArmorPenetration,
-		RunningInaccuracy,
-		MarshmallowCackleHint,
-		RemainingCharge,
-		RemainingAmmo,
-		MicroHidPrimaryHint,
-		MicroHidSecondaryHint,
-		DisruptorToggleModeHint,
-		JailbirdAttackHint,
-		JailbirdChargeHint,
-		MicroHidReadyToDischarge,
-		MicroHidDamaged
-	}
+	FirearmAmmo,
+	FirearmDamage,
+	FirearmFireRate,
+	FirearmHipAcc,
+	FirearmAdsAcc,
+	Weight,
+	Length,
+	DropAmmo,
+	ArmorHelmetEfficacy,
+	ArmorVestEfficacy,
+	ArmorStaminaUsage,
+	ArmorMovementSpeed,
+	ArmorItemLimits,
+	ArmorAmmoLimits,
+	ArmorTotal,
+	ArmorPenetration,
+	RunningInaccuracy,
+	MarshmallowCackleHint,
+	RemainingCharge,
+	RemainingAmmo,
+	MicroHidPrimaryHint,
+	MicroHidSecondaryHint,
+	DisruptorToggleModeHint,
+	JailbirdAttackHint,
+	JailbirdChargeHint,
+	MicroHidReadyToDischarge,
+	MicroHidDamaged,
+	Scp127OnEquip,
+	SnakeHint
 }

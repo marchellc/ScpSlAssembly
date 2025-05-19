@@ -1,36 +1,34 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl.Thirdperson;
 using UnityEngine;
 using UserSettings;
 using UserSettings.VideoSettings;
 
-namespace CameraShaking
+namespace CameraShaking;
+
+public class HeadbobShake : IShakeEffect
 {
-	public class HeadbobShake : IShakeEffect
+	private readonly AnimatedCharacterModel _model;
+
+	private static HeadbobShake _mostCurrent;
+
+	private static readonly CachedUserSetting<bool> EnableBobbing = new CachedUserSetting<bool>(MiscVideoSetting.HeadBobbing);
+
+	public HeadbobShake(AnimatedCharacterModel model)
 	{
-		public HeadbobShake(AnimatedCharacterModel model)
+		_model = model;
+		_mostCurrent = this;
+	}
+
+	public bool GetEffect(ReferenceHub ply, out ShakeEffectValues shakeValues)
+	{
+		if (_model.Pooled || !_model.IsTracked || this != _mostCurrent)
 		{
-			this._model = model;
-			HeadbobShake._mostCurrent = this;
+			shakeValues = ShakeEffectValues.None;
+			return false;
 		}
-
-		public bool GetEffect(ReferenceHub ply, out ShakeEffectValues shakeValues)
-		{
-			if (this._model.Pooled || !this._model.IsTracked || this != HeadbobShake._mostCurrent)
-			{
-				shakeValues = ShakeEffectValues.None;
-				return false;
-			}
-			Vector3 vector = ((!HeadbobShake.EnableBobbing.Value) ? Vector3.zero : ply.transform.TransformDirection(this._model.HeadBobPosition));
-			Vector3? vector2 = new Vector3?(vector);
-			shakeValues = new ShakeEffectValues(null, null, vector2, 1f, 0f, 0f);
-			return true;
-		}
-
-		private readonly AnimatedCharacterModel _model;
-
-		private static HeadbobShake _mostCurrent;
-
-		private static readonly CachedUserSetting<bool> EnableBobbing = new CachedUserSetting<bool>(MiscVideoSetting.HeadBobbing);
+		Vector3 value = ((!EnableBobbing.Value) ? Vector3.zero : ply.transform.TransformDirection(_model.HeadBobPosition));
+		Vector3? rootCameraPositionOffset = value;
+		shakeValues = new ShakeEffectValues(null, null, rootCameraPositionOffset);
+		return true;
 	}
 }

@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles.RoleAssign;
 
-namespace PlayerRoles.RoleAssign
+public interface IHumanSpawnHandler
 {
-	public interface IHumanSpawnHandler
-	{
-		RoleTypeId NextRole { get; }
-	}
+	RoleTypeId NextRole { get; }
 }

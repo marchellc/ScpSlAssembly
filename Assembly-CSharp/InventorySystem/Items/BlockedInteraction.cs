@@ -1,17 +1,16 @@
-﻿using System;
+using System;
 
-namespace InventorySystem.Items
+namespace InventorySystem.Items;
+
+[Flags]
+public enum BlockedInteraction : byte
 {
-	[Flags]
-	public enum BlockedInteraction : byte
-	{
-		GeneralInteractions = 1,
-		OpenInventory = 2,
-		BeDisarmed = 4,
-		GrabItems = 8,
-		ItemPrimaryAction = 16,
-		ItemUsage = 48,
-		UndisarmPlayers = 64,
-		All = 255
-	}
+	GeneralInteractions = 1,
+	OpenInventory = 2,
+	BeDisarmed = 4,
+	GrabItems = 8,
+	ItemPrimaryAction = 0x10,
+	ItemUsage = 0x30,
+	UndisarmPlayers = 0x40,
+	All = byte.MaxValue
 }

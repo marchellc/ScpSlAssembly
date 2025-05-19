@@ -1,24 +1,21 @@
-﻿using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace PlayerRoles.PlayableScps.Scp939.Mimicry
+namespace PlayerRoles.PlayableScps.Scp939.Mimicry;
+
+public class MimicryRecordingRearranger : MonoBehaviour, IPointerDownHandler, IEventSystemHandler
 {
-	public class MimicryRecordingRearranger : MonoBehaviour, IPointerDownHandler, IEventSystemHandler
+	[SerializeField]
+	private MimicryRecordingsMenu _menu;
+
+	[SerializeField]
+	private MimicryRecordingIcon _icon;
+
+	public void OnPointerDown(PointerEventData eventData)
 	{
-		public void OnPointerDown(PointerEventData eventData)
+		if (eventData.button == PointerEventData.InputButton.Left)
 		{
-			if (eventData.button != PointerEventData.InputButton.Left)
-			{
-				return;
-			}
-			this._menu.BeginDrag(this._icon);
+			_menu.BeginDrag(_icon);
 		}
-
-		[SerializeField]
-		private MimicryRecordingsMenu _menu;
-
-		[SerializeField]
-		private MimicryRecordingIcon _icon;
 	}
 }

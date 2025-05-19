@@ -1,47 +1,44 @@
-﻿using System;
 using Mirror;
 using UnityEngine;
 
-namespace PlayerRoles.Subroutines
+namespace PlayerRoles.Subroutines;
+
+public class SubroutineManagerModule : MonoBehaviour
 {
-	public class SubroutineManagerModule : MonoBehaviour
+	public SubroutineBase[] AllSubroutines;
+
+	private void OnValidate()
 	{
-		private void OnValidate()
-		{
-			this.AllSubroutines = base.GetComponentsInChildren<SubroutineBase>();
-		}
+		AllSubroutines = GetComponentsInChildren<SubroutineBase>();
+	}
 
-		public bool TryGetSubroutine<T>(out T subroutine) where T : SubroutineBase
+	public bool TryGetSubroutine<T>(out T subroutine) where T : SubroutineBase
+	{
+		for (int i = 0; i < AllSubroutines.Length; i++)
 		{
-			for (int i = 0; i < this.AllSubroutines.Length; i++)
+			if (AllSubroutines[i] is T val)
 			{
-				T t = this.AllSubroutines[i] as T;
-				if (t != null)
-				{
-					subroutine = t;
-					return true;
-				}
+				subroutine = val;
+				return true;
 			}
-			subroutine = default(T);
-			return false;
 		}
+		subroutine = null;
+		return false;
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
 		{
-			CustomNetworkManager.OnClientReady += delegate
+			NetworkServer.ReplaceHandler(delegate(NetworkConnectionToClient conn, SubroutineMessage msg)
 			{
-				NetworkServer.ReplaceHandler<SubroutineMessage>(delegate(NetworkConnectionToClient conn, SubroutineMessage msg)
-				{
-					msg.ServerApplyTrigger(conn);
-				}, true);
-				NetworkClient.ReplaceHandler<SubroutineMessage>(delegate(NetworkConnection conn, SubroutineMessage msg)
-				{
-					msg.ClientApplyConfirmation();
-				}, true);
-			};
-		}
-
-		public SubroutineBase[] AllSubroutines;
+				msg.ServerApplyTrigger(conn);
+			});
+			NetworkClient.ReplaceHandler(delegate(NetworkConnection conn, SubroutineMessage msg)
+			{
+				msg.ClientApplyConfirmation();
+			});
+		};
 	}
 }

@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+public interface ITriggerPressPreventerModule
 {
-	public interface ITriggerPressPreventerModule
-	{
-		bool ClientBlockTrigger { get; }
-	}
+	bool ClientBlockTrigger { get; }
 }

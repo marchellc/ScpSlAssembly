@@ -1,4 +1,3 @@
-﻿using System;
 using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items;
 using InventorySystem.Items.Keycards;
@@ -6,46 +5,47 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace InventorySystem.GUI.Descriptions
+namespace InventorySystem.GUI.Descriptions;
+
+public class KeycardDescriptionGui : RadialDescriptionBase
 {
-	public class KeycardDescriptionGui : RadialDescriptionBase
+	[SerializeField]
+	private TextMeshProUGUI _title;
+
+	[SerializeField]
+	private Graphic[] _containmentIcons;
+
+	[SerializeField]
+	private Graphic[] _armoryIcons;
+
+	[SerializeField]
+	private Graphic[] _adminIcons;
+
+	[SerializeField]
+	private Graphic[] _otherColorable;
+
+	public override void UpdateInfo(ItemBase targetItem, Color roleColor)
 	{
-		public override void UpdateInfo(ItemBase targetItem, Color roleColor)
+		KeycardItem keycardItem = targetItem as KeycardItem;
+		KeycardLevels keycardLevels = new KeycardLevels(keycardItem.GetPermissions(null));
+		SetLevel(_containmentIcons, keycardLevels.Containment, roleColor);
+		SetLevel(_armoryIcons, keycardLevels.Armory, roleColor);
+		SetLevel(_adminIcons, keycardLevels.Admin, roleColor);
+		Graphic[] otherColorable = _otherColorable;
+		for (int i = 0; i < otherColorable.Length; i++)
 		{
-			TMP_Text title = this._title;
-			IItemNametag itemNametag = targetItem as IItemNametag;
-			title.text = ((itemNametag != null) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
-			KeycardItem keycardItem = targetItem as KeycardItem;
-			if (keycardItem != null)
-			{
-				foreach (KeycardDescriptionGui.PermissionNode permissionNode in this._nodes)
-				{
-					permissionNode.SetColor(keycardItem.Permissions, roleColor);
-				}
-			}
+			otherColorable[i].color = roleColor;
 		}
+		_title.text = keycardItem.Name;
+	}
 
-		[SerializeField]
-		private TextMeshProUGUI _title;
-
-		[SerializeField]
-		private KeycardDescriptionGui.PermissionNode[] _nodes;
-
-		[Serializable]
-		private struct PermissionNode
+	private void SetLevel(Graphic[] arr, int level, Color roleColor)
+	{
+		for (int i = 0; i < arr.Length; i++)
 		{
-			public void SetColor(KeycardPermissions keycardPerms, Color roleColor)
-			{
-				Color color = roleColor;
-				color.a = (keycardPerms.HasFlagFast(this._permission) ? 1f : 0.2f);
-				this._node.color = color;
-			}
-
-			[SerializeField]
-			private Image _node;
-
-			[SerializeField]
-			private KeycardPermissions _permission;
+			Graphic obj = arr[i];
+			obj.color = roleColor;
+			obj.enabled = i < level;
 		}
 	}
 }

@@ -1,426 +1,486 @@
-﻿using System;
+using System;
+using System.Runtime.InteropServices;
 using Footprinting;
+using Interactables.Interobjects.DoorButtons;
 using Interactables.Interobjects.DoorUtils;
 using Mirror;
 using Mirror.RemoteCalls;
 using UnityEngine;
 
-namespace Interactables.Interobjects
+namespace Interactables.Interobjects;
+
+public class CheckpointDoor : DoorVariant, IDamageableDoor
 {
-	public class CheckpointDoor : DoorVariant, IDamageableDoor
+	public enum SequenceState
 	{
-		public float MaxHealth
+		Idle,
+		Granted,
+		OpenLoop,
+		ClosingWarning
+	}
+
+	[SerializeField]
+	private AudioSource _loudSource;
+
+	[SerializeField]
+	private AudioSource _beepSource;
+
+	[SerializeField]
+	private AudioClip _deniedClip;
+
+	[SerializeField]
+	private AudioClip _warningClip;
+
+	[SyncVar(hook = "SequenceHook")]
+	private byte _curSequence;
+
+	private bool _prevDestroyed;
+
+	[field: SerializeField]
+	public DoorVariant[] SubDoors { get; private set; }
+
+	[field: SerializeField]
+	public CheckpointSequenceController SequenceCtrl { get; private set; }
+
+	public SequenceState CurSequence
+	{
+		get
 		{
-			get
+			return (SequenceState)_curSequence;
+		}
+		set
+		{
+			byte b = (byte)value;
+			if (_curSequence != b)
 			{
-				float num = 0f;
-				int num2 = 0;
-				DoorVariant[] subDoors = this._subDoors;
-				for (int i = 0; i < subDoors.Length; i++)
+				Network_curSequence = b;
+				if (NetworkServer.active)
 				{
-					IDamageableDoor damageableDoor = subDoors[i] as IDamageableDoor;
-					if (damageableDoor != null)
-					{
-						num += damageableDoor.MaxHealth;
-						num2++;
-					}
-				}
-				return num / (float)num2;
-			}
-			set
-			{
-				DoorVariant[] subDoors = this._subDoors;
-				for (int i = 0; i < subDoors.Length; i++)
-				{
-					BreakableDoor breakableDoor = subDoors[i] as BreakableDoor;
-					if (breakableDoor != null)
-					{
-						breakableDoor.MaxHealth = value;
-					}
+					this.OnSequenceChanged?.Invoke();
 				}
 			}
 		}
+	}
 
-		public float RemainingHealth
+	public float MaxHealth
+	{
+		get
 		{
-			get
+			float num = 0f;
+			int num2 = 0;
+			DoorVariant[] subDoors = SubDoors;
+			for (int i = 0; i < subDoors.Length; i++)
 			{
-				float num = 0f;
-				int num2 = 0;
-				DoorVariant[] subDoors = this._subDoors;
-				for (int i = 0; i < subDoors.Length; i++)
+				if (subDoors[i] is IDamageableDoor damageableDoor)
 				{
-					IDamageableDoor damageableDoor = subDoors[i] as IDamageableDoor;
-					if (damageableDoor != null)
-					{
-						num += damageableDoor.RemainingHealth;
-						num2++;
-					}
+					num += damageableDoor.MaxHealth;
+					num2++;
 				}
-				return num / (float)num2;
 			}
-			set
+			return num / (float)num2;
+		}
+		set
+		{
+			DoorVariant[] subDoors = SubDoors;
+			for (int i = 0; i < subDoors.Length; i++)
 			{
-				DoorVariant[] subDoors = this._subDoors;
-				for (int i = 0; i < subDoors.Length; i++)
+				if (subDoors[i] is BreakableDoor breakableDoor)
 				{
-					BreakableDoor breakableDoor = subDoors[i] as BreakableDoor;
-					if (breakableDoor != null)
-					{
-						breakableDoor.RemainingHealth = value;
-					}
+					breakableDoor.MaxHealth = value;
 				}
 			}
 		}
+	}
 
-		public bool IsDestroyed
+	public float RemainingHealth
+	{
+		get
 		{
-			get
+			float num = 0f;
+			int num2 = 0;
+			DoorVariant[] subDoors = SubDoors;
+			for (int i = 0; i < subDoors.Length; i++)
 			{
-				foreach (DoorVariant doorVariant in this._subDoors)
+				if (subDoors[i] is IDamageableDoor damageableDoor)
 				{
-					if (doorVariant is IDamageableDoor && !(doorVariant as IDamageableDoor).IsDestroyed)
-					{
-						return false;
-					}
+					num += damageableDoor.RemainingHealth;
+					num2++;
 				}
-				return true;
 			}
-			set
+			return num / (float)num2;
+		}
+		set
+		{
+			DoorVariant[] subDoors = SubDoors;
+			for (int i = 0; i < subDoors.Length; i++)
 			{
-				DoorVariant[] subDoors = this._subDoors;
-				for (int i = 0; i < subDoors.Length; i++)
+				if (subDoors[i] is BreakableDoor breakableDoor)
 				{
-					IDamageableDoor damageableDoor = subDoors[i] as IDamageableDoor;
-					if (damageableDoor != null)
-					{
-						damageableDoor.IsDestroyed = value;
-					}
+					breakableDoor.RemainingHealth = value;
 				}
 			}
 		}
+	}
 
-		public DoorVariant[] SubDoors
+	public bool IsDestroyed
+	{
+		get
 		{
-			get
+			DoorVariant[] subDoors = SubDoors;
+			for (int i = 0; i < subDoors.Length; i++)
 			{
-				return this._subDoors;
-			}
-		}
-
-		public override bool AllowInteracting(ReferenceHub ply, byte colliderId)
-		{
-			int num = 0;
-			foreach (DoorVariant doorVariant in this._subDoors)
-			{
-				IDamageableDoor damageableDoor = doorVariant as IDamageableDoor;
-				if (damageableDoor != null && damageableDoor.IsDestroyed)
+				if (!(subDoors[i] is IDamageableDoor damageableDoor))
 				{
-					num++;
+					return false;
 				}
-				else if (!doorVariant.AllowInteracting(null, colliderId))
+				if (!damageableDoor.IsDestroyed)
 				{
 					return false;
 				}
 			}
-			if (num >= this._subDoors.Length)
-			{
-				this.RpcPlayBeepSound(2);
-				return false;
-			}
-			return this.CurrentSequence == CheckpointDoor.CheckpointSequenceStage.Idle;
-		}
-
-		public override float GetExactState()
-		{
-			if (this._subDoors.Length == 0)
-			{
-				return 0f;
-			}
-			float num = 0f;
-			DoorVariant[] subDoors = this._subDoors;
-			for (int i = 0; i < subDoors.Length; i++)
-			{
-				float exactState = subDoors[i].GetExactState();
-				if (num < exactState)
-				{
-					num = exactState;
-				}
-			}
-			return num;
-		}
-
-		public override bool IsConsideredOpen()
-		{
-			DoorVariant[] subDoors = this._subDoors;
-			for (int i = 0; i < subDoors.Length; i++)
-			{
-				if (subDoors[i].IsConsideredOpen())
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-
-		public override void LockBypassDenied(ReferenceHub ply, byte colliderId)
-		{
-			this.RpcPlayBeepSound(1);
-		}
-
-		public override void PermissionsDenied(ReferenceHub ply, byte colliderId)
-		{
-			this.RpcPlayBeepSound(0);
-		}
-
-		public override bool AnticheatPassageApproved()
-		{
-			DoorVariant[] subDoors = this._subDoors;
-			for (int i = 0; i < subDoors.Length; i++)
-			{
-				if (subDoors[i].AnticheatPassageApproved())
-				{
-					return true;
-				}
-			}
-			return false;
-		}
-
-		protected override void Awake()
-		{
-			base.Awake();
-		}
-
-		protected override void LockChanged(ushort prevValue)
-		{
-		}
-
-		protected override void Update()
-		{
-			base.Update();
-			this.UpdateSequence();
-			if (!this._prevDestroyed && this.IsDestroyed)
-			{
-				this._prevDestroyed = true;
-				this.ClientDestroyEffects();
-			}
-			if (this._prevDestroyed && !this.IsDestroyed)
-			{
-				this._prevDestroyed = false;
-				this.ClientRepairEffects();
-			}
-		}
-
-		private void UpdateSequence()
-		{
-			bool flag = ((DoorLockReason)this.ActiveLocks).HasFlagFast(DoorLockReason.DecontLockdown);
-			bool flag2 = ((DoorLockReason)this.ActiveLocks).HasFlagFast(DoorLockReason.DecontEvacuate) || ((DoorLockReason)this.ActiveLocks).HasFlagFast(DoorLockReason.Warhead);
-			if (this.TargetState && this.CurrentSequence == CheckpointDoor.CheckpointSequenceStage.Idle)
-			{
-				if (NetworkServer.active)
-				{
-					this.ToggleAllDoors(true);
-				}
-				this.CurrentSequence = CheckpointDoor.CheckpointSequenceStage.Granted;
-				this.MainTimer = 0f;
-				return;
-			}
-			switch (this.CurrentSequence)
-			{
-			case CheckpointDoor.CheckpointSequenceStage.Granted:
-				this.MainTimer += Time.deltaTime;
-				if (this.MainTimer > this.OpeningTime)
-				{
-					this.CurrentSequence = CheckpointDoor.CheckpointSequenceStage.Open;
-					this.MainTimer = 0f;
-					return;
-				}
-				break;
-			case CheckpointDoor.CheckpointSequenceStage.Open:
-				if (NetworkServer.active)
-				{
-					if (!flag2)
-					{
-						this.MainTimer += Time.deltaTime;
-					}
-					if (this.MainTimer > this.WaitTime || flag)
-					{
-						this.MainTimer = 0f;
-						base.NetworkTargetState = false;
-					}
-				}
-				if (!this.TargetState)
-				{
-					this.CurrentSequence = CheckpointDoor.CheckpointSequenceStage.Closing;
-					return;
-				}
-				break;
-			case CheckpointDoor.CheckpointSequenceStage.Closing:
-				if (NetworkServer.active)
-				{
-					this.MainTimer += Time.deltaTime;
-					if (this.MainTimer <= this.WarningTime && !flag)
-					{
-						return;
-					}
-					this.CurrentSequence = CheckpointDoor.CheckpointSequenceStage.Idle;
-					this.ToggleAllDoors(false);
-					if (!DoorLockUtils.GetMode((DoorLockReason)this.ActiveLocks).HasFlagFast(DoorLockMode.CanClose) && DoorLockUtils.GetMode((DoorLockReason)this.ActiveLocks).HasFlagFast(DoorLockMode.CanOpen))
-					{
-						base.NetworkTargetState = true;
-						return;
-					}
-				}
-				else
-				{
-					foreach (DoorVariant doorVariant in this._subDoors)
-					{
-						IDamageableDoor damageableDoor = doorVariant as IDamageableDoor;
-						if ((damageableDoor == null || !damageableDoor.IsDestroyed) && doorVariant.GetExactState() >= 1f)
-						{
-							return;
-						}
-					}
-					this.CurrentSequence = CheckpointDoor.CheckpointSequenceStage.Idle;
-				}
-				break;
-			default:
-				return;
-			}
-		}
-
-		public void ToggleAllDoors(bool newState)
-		{
-			foreach (DoorVariant doorVariant in this._subDoors)
-			{
-				IDamageableDoor damageableDoor = doorVariant as IDamageableDoor;
-				if (damageableDoor == null || !damageableDoor.IsDestroyed)
-				{
-					doorVariant.NetworkTargetState = newState;
-				}
-			}
-		}
-
-		[ClientRpc]
-		public void RpcPlayBeepSound(byte deniedType)
-		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteByte(deniedType);
-			this.SendRPCInternal("System.Void Interactables.Interobjects.CheckpointDoor::RpcPlayBeepSound(System.Byte)", 1064856837, networkWriterPooled, 0, true);
-			NetworkWriterPool.Return(networkWriterPooled);
-		}
-
-		public bool ServerDamage(float hp, DoorDamageType type, Footprint attacker = default(Footprint))
-		{
-			bool flag = false;
-			DoorVariant[] subDoors = this._subDoors;
-			for (int i = 0; i < subDoors.Length; i++)
-			{
-				IDamageableDoor damageableDoor = subDoors[i] as IDamageableDoor;
-				if (damageableDoor != null)
-				{
-					flag |= damageableDoor.ServerDamage(hp, type, attacker);
-				}
-			}
-			return flag;
-		}
-
-		public bool ServerRepair()
-		{
-			bool flag = false;
-			DoorVariant[] subDoors = this._subDoors;
-			for (int i = 0; i < subDoors.Length; i++)
-			{
-				IDamageableDoor damageableDoor = subDoors[i] as IDamageableDoor;
-				if (damageableDoor != null)
-				{
-					flag |= damageableDoor.ServerRepair();
-				}
-			}
-			return flag;
-		}
-
-		public float GetHealthPercent()
-		{
-			float num = 1f;
-			DoorVariant[] subDoors = this._subDoors;
-			for (int i = 0; i < subDoors.Length; i++)
-			{
-				IDamageableDoor damageableDoor = subDoors[i] as IDamageableDoor;
-				if (damageableDoor != null)
-				{
-					num *= damageableDoor.GetHealthPercent();
-				}
-			}
-			return num;
-		}
-
-		public void ClientDestroyEffects()
-		{
-		}
-
-		public void ClientRepairEffects()
-		{
-		}
-
-		public override bool Weaved()
-		{
 			return true;
 		}
-
-		protected void UserCode_RpcPlayBeepSound__Byte(byte deniedType)
+		set
 		{
-		}
-
-		protected static void InvokeUserCode_RpcPlayBeepSound__Byte(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
-		{
-			if (!NetworkClient.active)
+			DoorVariant[] subDoors = SubDoors;
+			for (int i = 0; i < subDoors.Length; i++)
 			{
-				Debug.LogError("RPC RpcPlayBeepSound called on server.");
-				return;
+				if (subDoors[i] is IDamageableDoor damageableDoor)
+				{
+					damageableDoor.IsDestroyed = value;
+				}
 			}
-			((CheckpointDoor)obj).UserCode_RpcPlayBeepSound__Byte(reader.ReadByte());
 		}
+	}
 
-		static CheckpointDoor()
+	public byte Network_curSequence
+	{
+		get
 		{
-			RemoteProcedureCalls.RegisterRpc(typeof(CheckpointDoor), "System.Void Interactables.Interobjects.CheckpointDoor::RpcPlayBeepSound(System.Byte)", new RemoteCallDelegate(CheckpointDoor.InvokeUserCode_RpcPlayBeepSound__Byte));
+			return _curSequence;
 		}
-
-		public float OpeningTime;
-
-		public float WaitTime;
-
-		public float WarningTime;
-
-		[NonSerialized]
-		public CheckpointDoor.CheckpointSequenceStage CurrentSequence;
-
-		[NonSerialized]
-		public float MainTimer;
-
-		[SerializeField]
-		private DoorVariant[] _subDoors;
-
-		private bool _permanentDestroyment;
-
-		private string _warningText;
-
-		private bool _prevDestroyed;
-
-		public enum CheckpointSequenceStage
+		[param: In]
+		set
 		{
-			Idle,
-			Granted,
-			Open,
-			Closing
+			GeneratedSyncVarSetter(value, ref _curSequence, 8uL, SequenceHook);
 		}
+	}
 
-		private enum CheckpointErrorType : byte
+	public event Action OnDestroyedChanged;
+
+	public event Action OnSequenceChanged;
+
+	private void SequenceHook(byte prev, byte cur)
+	{
+		if (prev != cur && !NetworkServer.active)
 		{
-			Denied,
-			LockedDown,
-			Destroyed
+			this.OnSequenceChanged?.Invoke();
+		}
+	}
+
+	protected override void Awake()
+	{
+		base.Awake();
+		SequenceCtrl.Init(this);
+		ButtonVariant[] buttons = base.Buttons;
+		for (int i = 0; i < buttons.Length; i++)
+		{
+			if (buttons[i] is CheckpointKeycardButton checkpointKeycardButton)
+			{
+				checkpointKeycardButton.Init(this);
+			}
+		}
+		OnSequenceChanged += delegate
+		{
+			if (CurSequence == SequenceState.ClosingWarning)
+			{
+				PlayWarningSound();
+			}
+		};
+	}
+
+	protected override void Update()
+	{
+		base.Update();
+		if (_prevDestroyed != IsDestroyed)
+		{
+			this.OnDestroyedChanged?.Invoke();
+			_prevDestroyed = !_prevDestroyed;
+		}
+		if (NetworkServer.active)
+		{
+			CurSequence = SequenceCtrl.UpdateSequence();
+		}
+	}
+
+	public override bool AllowInteracting(ReferenceHub ply, byte colliderId)
+	{
+		if (IsDestroyed)
+		{
+			return false;
+		}
+		if (CurSequence != 0)
+		{
+			return false;
+		}
+		DoorVariant[] subDoors = SubDoors;
+		for (int i = 0; i < subDoors.Length; i++)
+		{
+			if (!subDoors[i].AllowInteracting(null, colliderId))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public override float GetExactState()
+	{
+		if (SubDoors.Length == 0)
+		{
+			return 0f;
+		}
+		float num = 0f;
+		DoorVariant[] subDoors = SubDoors;
+		foreach (DoorVariant doorVariant in subDoors)
+		{
+			num = Mathf.Max(num, doorVariant.GetExactState());
+		}
+		return num;
+	}
+
+	public override bool IsConsideredOpen()
+	{
+		DoorVariant[] subDoors = SubDoors;
+		for (int i = 0; i < subDoors.Length; i++)
+		{
+			if (subDoors[i].IsConsideredOpen())
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public override bool AnticheatPassageApproved()
+	{
+		DoorVariant[] subDoors = SubDoors;
+		for (int i = 0; i < subDoors.Length; i++)
+		{
+			if (subDoors[i].AnticheatPassageApproved())
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public void ToggleAllDoors(bool newState)
+	{
+		DoorVariant[] subDoors = SubDoors;
+		foreach (DoorVariant doorVariant in subDoors)
+		{
+			if (!(doorVariant is IDamageableDoor { IsDestroyed: not false }))
+			{
+				doorVariant.NetworkTargetState = newState;
+			}
+		}
+	}
+
+	public bool ServerDamage(float hp, DoorDamageType type, Footprint attacker = default(Footprint))
+	{
+		bool flag = false;
+		DoorVariant[] subDoors = SubDoors;
+		for (int i = 0; i < subDoors.Length; i++)
+		{
+			if (subDoors[i] is IDamageableDoor damageableDoor)
+			{
+				flag |= damageableDoor.ServerDamage(hp, type, attacker);
+			}
+		}
+		return flag;
+	}
+
+	public bool ServerRepair()
+	{
+		bool flag = false;
+		DoorVariant[] subDoors = SubDoors;
+		for (int i = 0; i < subDoors.Length; i++)
+		{
+			if (subDoors[i] is IDamageableDoor damageableDoor)
+			{
+				flag |= damageableDoor.ServerRepair();
+			}
+		}
+		return flag;
+	}
+
+	public float GetHealthPercent()
+	{
+		float num = 1f;
+		DoorVariant[] subDoors = SubDoors;
+		for (int i = 0; i < subDoors.Length; i++)
+		{
+			if (subDoors[i] is IDamageableDoor damageableDoor)
+			{
+				num *= damageableDoor.GetHealthPercent();
+			}
+		}
+		return num;
+	}
+
+	public void ClientDestroyEffects()
+	{
+	}
+
+	public void ClientRepairEffects()
+	{
+	}
+
+	internal override void TargetStateChanged()
+	{
+		base.TargetStateChanged();
+		_loudSource.Play();
+	}
+
+	public override void LockBypassDenied(ReferenceHub ply, byte colliderId)
+	{
+		RpcPlayDeniedBeep();
+	}
+
+	public override void PermissionsDenied(ReferenceHub ply, byte colliderId)
+	{
+		RpcPlayDeniedBeep();
+		PlayDeniedButtonAnims(ply.GetCombinedPermissions(this));
+	}
+
+	[ClientRpc]
+	public void RpcPlayWarningSound()
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		SendRPCInternal("System.Void Interactables.Interobjects.CheckpointDoor::RpcPlayWarningSound()", -1870757840, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
+	}
+
+	public void PlayWarningSound()
+	{
+		_beepSource.PlayOneShot(_warningClip);
+	}
+
+	[ClientRpc]
+	private void RpcPlayDeniedBeep()
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		SendRPCInternal("System.Void Interactables.Interobjects.CheckpointDoor::RpcPlayDeniedBeep()", -1557414586, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
+	}
+
+	[ClientRpc]
+	private void PlayDeniedButtonAnims(DoorPermissionFlags perms)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		GeneratedNetworkCode._Write_Interactables_002EInterobjects_002EDoorUtils_002EDoorPermissionFlags(writer, perms);
+		SendRPCInternal("System.Void Interactables.Interobjects.CheckpointDoor::PlayDeniedButtonAnims(Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", 534590385, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	protected void UserCode_RpcPlayWarningSound()
+	{
+		PlayWarningSound();
+	}
+
+	protected static void InvokeUserCode_RpcPlayWarningSound(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
+		{
+			Debug.LogError("RPC RpcPlayWarningSound called on server.");
+		}
+		else
+		{
+			((CheckpointDoor)obj).UserCode_RpcPlayWarningSound();
+		}
+	}
+
+	protected void UserCode_RpcPlayDeniedBeep()
+	{
+		_beepSource.PlayOneShot(_deniedClip);
+	}
+
+	protected static void InvokeUserCode_RpcPlayDeniedBeep(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
+		{
+			Debug.LogError("RPC RpcPlayDeniedBeep called on server.");
+		}
+		else
+		{
+			((CheckpointDoor)obj).UserCode_RpcPlayDeniedBeep();
+		}
+	}
+
+	protected void UserCode_PlayDeniedButtonAnims__DoorPermissionFlags(DoorPermissionFlags perms)
+	{
+		ButtonVariant[] buttons = base.Buttons;
+		for (int i = 0; i < buttons.Length; i++)
+		{
+			if (buttons[i] is BasicDoorButton basicDoorButton)
+			{
+				basicDoorButton.TriggerDoorDenied(perms);
+			}
+		}
+	}
+
+	protected static void InvokeUserCode_PlayDeniedButtonAnims__DoorPermissionFlags(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
+		{
+			Debug.LogError("RPC PlayDeniedButtonAnims called on server.");
+		}
+		else
+		{
+			((CheckpointDoor)obj).UserCode_PlayDeniedButtonAnims__DoorPermissionFlags(GeneratedNetworkCode._Read_Interactables_002EInterobjects_002EDoorUtils_002EDoorPermissionFlags(reader));
+		}
+	}
+
+	static CheckpointDoor()
+	{
+		RemoteProcedureCalls.RegisterRpc(typeof(CheckpointDoor), "System.Void Interactables.Interobjects.CheckpointDoor::RpcPlayWarningSound()", InvokeUserCode_RpcPlayWarningSound);
+		RemoteProcedureCalls.RegisterRpc(typeof(CheckpointDoor), "System.Void Interactables.Interobjects.CheckpointDoor::RpcPlayDeniedBeep()", InvokeUserCode_RpcPlayDeniedBeep);
+		RemoteProcedureCalls.RegisterRpc(typeof(CheckpointDoor), "System.Void Interactables.Interobjects.CheckpointDoor::PlayDeniedButtonAnims(Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", InvokeUserCode_PlayDeniedButtonAnims__DoorPermissionFlags);
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
+		{
+			NetworkWriterExtensions.WriteByte(writer, _curSequence);
+			return;
+		}
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 8L) != 0L)
+		{
+			NetworkWriterExtensions.WriteByte(writer, _curSequence);
+		}
+	}
+
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref _curSequence, SequenceHook, NetworkReaderExtensions.ReadByte(reader));
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 8L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _curSequence, SequenceHook, NetworkReaderExtensions.ReadByte(reader));
 		}
 	}
 }

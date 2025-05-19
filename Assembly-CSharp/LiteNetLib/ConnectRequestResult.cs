@@ -1,12 +1,9 @@
-﻿using System;
+namespace LiteNetLib;
 
-namespace LiteNetLib
+internal enum ConnectRequestResult
 {
-	internal enum ConnectRequestResult
-	{
-		None,
-		P2PLose,
-		Reconnection,
-		NewConnection
-	}
+	None,
+	P2PLose,
+	Reconnection,
+	NewConnection
 }

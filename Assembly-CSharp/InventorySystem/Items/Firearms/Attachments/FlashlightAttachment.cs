@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Autosync;
 using InventorySystem.Items.Firearms.Attachments.Components;
@@ -7,160 +7,144 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 using Mirror;
 
-namespace InventorySystem.Items.Firearms.Attachments
+namespace InventorySystem.Items.Firearms.Attachments;
+
+public class FlashlightAttachment : SerializableAttachment, ILightEmittingItem
 {
-	public class FlashlightAttachment : SerializableAttachment, ILightEmittingItem
+	private enum RpcType
 	{
-		public static event Action OnAnyStatusChanged;
+		Enabled,
+		Disabled,
+		FullResync
+	}
 
-		public bool IsEmittingLight
+	private static readonly HashSet<ushort> DisabledSerials = new HashSet<ushort>();
+
+	public bool IsEmittingLight
+	{
+		get
 		{
-			get
+			if (IsEnabled)
 			{
-				return this.IsEnabled && FlashlightAttachment.GetEnabled(base.ItemSerial);
+				return GetEnabled(base.ItemSerial);
 			}
+			return false;
 		}
+	}
 
-		public override bool IsEnabled
+	public override bool IsEnabled
+	{
+		get
 		{
-			get
+			return base.IsEnabled;
+		}
+		set
+		{
+			if (value != IsEnabled)
 			{
-				return base.IsEnabled;
-			}
-			set
-			{
-				if (value == this.IsEnabled)
-				{
-					return;
-				}
 				base.IsEnabled = value;
-				if (!base.IsServer)
+				if (base.IsServer && !GetEnabled(base.ItemSerial))
 				{
-					return;
+					ServerSendStatus(status: true);
 				}
-				if (FlashlightAttachment.GetEnabled(base.ItemSerial))
-				{
-					return;
-				}
-				this.ServerSendStatus(true);
 			}
 		}
+	}
 
-		private void ServerSendStatus(bool status)
+	public static event Action OnAnyStatusChanged;
+
+	private void ServerSendStatus(bool status)
+	{
+		SendRpc(delegate(NetworkWriter writer)
 		{
-			this.SendRpc(delegate(NetworkWriter writer)
-			{
-				FlashlightAttachment.RpcType rpcType = (status ? FlashlightAttachment.RpcType.Enabled : FlashlightAttachment.RpcType.Disabled);
-				writer.WriteByte((byte)rpcType);
-			}, true);
+			RpcType rpcType = ((!status) ? RpcType.Disabled : RpcType.Enabled);
+			writer.WriteByte((byte)rpcType);
+		});
+	}
+
+	protected override void EnabledEquipUpdate()
+	{
+		base.EnabledEquipUpdate();
+		if (base.IsControllable && GetActionDown(ActionName.ToggleFlashlight))
+		{
+			SendCmd();
 		}
+	}
 
-		protected override void EnabledEquipUpdate()
+	internal override void OnClientReady()
+	{
+		base.OnClientReady();
+		DisabledSerials.Clear();
+	}
+
+	internal override void OnRemoved(ItemPickupBase pickup)
+	{
+		base.OnRemoved(pickup);
+		if (base.IsServer)
 		{
-			base.EnabledEquipUpdate();
-			if (!base.IsLocalPlayer)
-			{
-				return;
-			}
-			if (!base.GetActionDown(ActionName.ToggleFlashlight))
-			{
-				return;
-			}
-			this.SendCmd(null);
+			ServerSendStatus(status: true);
 		}
+	}
 
-		internal override void OnClientReady()
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (IsEnabled && !base.ItemUsageBlocked)
 		{
-			base.OnClientReady();
-			FlashlightAttachment.DisabledSerials.Clear();
-		}
-
-		internal override void OnRemoved(ItemPickupBase pickup)
-		{
-			base.OnRemoved(pickup);
-			if (!base.IsServer)
-			{
-				return;
-			}
-			this.ServerSendStatus(true);
-		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			if (!this.IsEnabled || base.ItemUsageBlocked)
-			{
-				return;
-			}
-			bool flag = !FlashlightAttachment.GetEnabled(base.ItemSerial);
-			PlayerTogglingWeaponFlashlightEventArgs playerTogglingWeaponFlashlightEventArgs = new PlayerTogglingWeaponFlashlightEventArgs(base.Firearm.Owner, base.Firearm, flag);
+			bool newState = !GetEnabled(base.ItemSerial);
+			PlayerTogglingWeaponFlashlightEventArgs playerTogglingWeaponFlashlightEventArgs = new PlayerTogglingWeaponFlashlightEventArgs(base.Firearm.Owner, base.Firearm, newState);
 			PlayerEvents.OnTogglingWeaponFlashlight(playerTogglingWeaponFlashlightEventArgs);
-			if (!playerTogglingWeaponFlashlightEventArgs.IsAllowed)
+			if (playerTogglingWeaponFlashlightEventArgs.IsAllowed)
 			{
-				return;
+				newState = playerTogglingWeaponFlashlightEventArgs.NewState;
+				ServerSendStatus(newState);
+				PlayerEvents.OnToggledWeaponFlashlight(new PlayerToggledWeaponFlashlightEventArgs(base.Firearm.Owner, base.Firearm, newState));
 			}
-			flag = playerTogglingWeaponFlashlightEventArgs.NewState;
-			this.ServerSendStatus(flag);
-			PlayerEvents.OnToggledWeaponFlashlight(new PlayerToggledWeaponFlashlightEventArgs(base.Firearm.Owner, base.Firearm, flag));
 		}
+	}
 
-		public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	{
+		base.ClientProcessRpcTemplate(reader, serial);
+		switch ((RpcType)reader.ReadByte())
 		{
-			base.ClientProcessRpcTemplate(reader, serial);
-			switch (reader.ReadByte())
+		case RpcType.Enabled:
+			DisabledSerials.Remove(serial);
+			break;
+		case RpcType.Disabled:
+			DisabledSerials.Add(serial);
+			break;
+		case RpcType.FullResync:
+			DisabledSerials.Clear();
+			while (reader.Remaining >= 2)
 			{
-			case 0:
-				FlashlightAttachment.DisabledSerials.Remove(serial);
-				break;
-			case 1:
-				FlashlightAttachment.DisabledSerials.Add(serial);
-				break;
-			case 2:
-				FlashlightAttachment.DisabledSerials.Clear();
-				while (reader.Remaining >= 2)
-				{
-					ushort num = reader.ReadUShort();
-					FlashlightAttachment.DisabledSerials.Add(num);
-				}
-				break;
+				ushort item = reader.ReadUShort();
+				DisabledSerials.Add(item);
 			}
-			Action onAnyStatusChanged = FlashlightAttachment.OnAnyStatusChanged;
-			if (onAnyStatusChanged == null)
+			break;
+		}
+		FlashlightAttachment.OnAnyStatusChanged?.Invoke();
+	}
+
+	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstSubcomponent)
+	{
+		base.ServerOnPlayerConnected(hub, firstSubcomponent);
+		if (!firstSubcomponent)
+		{
+			return;
+		}
+		SendRpc(hub, delegate(NetworkWriter writer)
+		{
+			writer.WriteSubheader(RpcType.FullResync);
+			foreach (ushort disabledSerial in DisabledSerials)
 			{
-				return;
+				writer.WriteUShort(disabledSerial);
 			}
-			onAnyStatusChanged();
-		}
+		});
+	}
 
-		internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstSubcomponent)
-		{
-			base.ServerOnPlayerConnected(hub, firstSubcomponent);
-			if (!firstSubcomponent)
-			{
-				return;
-			}
-			this.SendRpc(hub, delegate(NetworkWriter writer)
-			{
-				writer.WriteSubheader(FlashlightAttachment.RpcType.FullResync);
-				foreach (ushort num in FlashlightAttachment.DisabledSerials)
-				{
-					writer.WriteUShort(num);
-				}
-			});
-		}
-
-		public static bool GetEnabled(ushort serial)
-		{
-			return !FlashlightAttachment.DisabledSerials.Contains(serial);
-		}
-
-		private static readonly HashSet<ushort> DisabledSerials = new HashSet<ushort>();
-
-		private enum RpcType
-		{
-			Enabled,
-			Disabled,
-			FullResync
-		}
+	public static bool GetEnabled(ushort serial)
+	{
+		return !DisabledSerials.Contains(serial);
 	}
 }

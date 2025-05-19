@@ -1,86 +1,79 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace UserSettings.GUIElements
+namespace UserSettings.GUIElements;
+
+public class UserSettingsEntryDescription : MonoBehaviour, IPointerEnterHandler, IEventSystemHandler, IPointerExitHandler
 {
-	public class UserSettingsEntryDescription : MonoBehaviour, IPointerEnterHandler, IEventSystemHandler, IPointerExitHandler
+	private bool _potentiallyCurrent;
+
+	private TextLanguageReplacer _tlr;
+
+	private Type _secondaryTranslationType;
+
+	private Enum _secondaryTranslationValue;
+
+	public static UserSettingsEntryDescription CurrentDescription { get; private set; }
+
+	public virtual string Text
 	{
-		public static UserSettingsEntryDescription CurrentDescription { get; private set; }
-
-		public virtual string Text
+		get
 		{
-			get
+			if (UsesReplacer)
 			{
-				if (this.UsesReplacer)
-				{
-					return this._tlr.DisplayText;
-				}
-				if (this._secondaryTranslationType == null)
-				{
-					return string.Empty;
-				}
-				Type secondaryTranslationType = this._secondaryTranslationType;
-				int num = ((IConvertible)this._secondaryTranslationValue).ToInt32(null);
-				string text;
-				if (!Translations.TryGet(secondaryTranslationType, num, out text))
-				{
-					return this._secondaryTranslationValue.ToString();
-				}
-				return text;
+				return _tlr.DisplayText;
 			}
-		}
-
-		public bool UsesReplacer { get; private set; }
-
-		public void SetTranslation<T>(T translation) where T : Enum
-		{
-			this.UsesReplacer = false;
-			this._secondaryTranslationType = typeof(T);
-			this._secondaryTranslationValue = translation;
-		}
-
-		public void OnPointerEnter(PointerEventData eventData)
-		{
-			this._potentiallyCurrent = true;
-			UserSettingsEntryDescription.CurrentDescription = this;
-		}
-
-		public void OnPointerExit(PointerEventData eventData)
-		{
-			this.Deselect();
-		}
-
-		private void Awake()
-		{
-			this.UsesReplacer = base.TryGetComponent<TextLanguageReplacer>(out this._tlr);
-		}
-
-		private void OnDisable()
-		{
-			this.Deselect();
-		}
-
-		private void Deselect()
-		{
-			if (!this._potentiallyCurrent)
+			if (_secondaryTranslationType == null)
 			{
-				return;
+				return string.Empty;
 			}
-			if (UserSettingsEntryDescription.CurrentDescription != this)
+			Type secondaryTranslationType = _secondaryTranslationType;
+			int index = ((IConvertible)_secondaryTranslationValue).ToInt32((IFormatProvider)null);
+			if (!Translations.TryGet(secondaryTranslationType, index, out var str))
 			{
-				return;
+				return _secondaryTranslationValue.ToString();
 			}
-			UserSettingsEntryDescription.CurrentDescription = null;
-			this._potentiallyCurrent = false;
+			return str;
 		}
+	}
 
-		private bool _potentiallyCurrent;
+	public bool UsesReplacer { get; private set; }
 
-		private TextLanguageReplacer _tlr;
+	public void SetTranslation<T>(T translation) where T : Enum
+	{
+		UsesReplacer = false;
+		_secondaryTranslationType = typeof(T);
+		_secondaryTranslationValue = translation;
+	}
 
-		private Type _secondaryTranslationType;
+	public void OnPointerEnter(PointerEventData eventData)
+	{
+		_potentiallyCurrent = true;
+		CurrentDescription = this;
+	}
 
-		private Enum _secondaryTranslationValue;
+	public void OnPointerExit(PointerEventData eventData)
+	{
+		Deselect();
+	}
+
+	private void Awake()
+	{
+		UsesReplacer = TryGetComponent<TextLanguageReplacer>(out _tlr);
+	}
+
+	private void OnDisable()
+	{
+		Deselect();
+	}
+
+	private void Deselect()
+	{
+		if (_potentiallyCurrent && !(CurrentDescription != this))
+		{
+			CurrentDescription = null;
+			_potentiallyCurrent = false;
+		}
 	}
 }

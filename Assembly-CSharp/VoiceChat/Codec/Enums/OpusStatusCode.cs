@@ -1,16 +1,13 @@
-﻿using System;
+namespace VoiceChat.Codec.Enums;
 
-namespace VoiceChat.Codec.Enums
+public enum OpusStatusCode
 {
-	public enum OpusStatusCode
-	{
-		OK,
-		BadArguments = -1,
-		BufferTooSmall = -2,
-		InternalError = -3,
-		InvalidPacket = -4,
-		Unimplemented = -5,
-		InvalidState = -6,
-		AllocFail = -7
-	}
+	OK = 0,
+	BadArguments = -1,
+	BufferTooSmall = -2,
+	InternalError = -3,
+	InvalidPacket = -4,
+	Unimplemented = -5,
+	InvalidState = -6,
+	AllocFail = -7
 }

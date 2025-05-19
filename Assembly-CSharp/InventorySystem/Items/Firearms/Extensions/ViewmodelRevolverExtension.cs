@@ -1,96 +1,93 @@
-﻿using System;
+using System;
 using InventorySystem.Items.Firearms.Modules;
 using InventorySystem.Items.Firearms.Modules.Misc;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+public class ViewmodelRevolverExtension : MonoBehaviour, IViewmodelExtension
 {
-	public class ViewmodelRevolverExtension : MonoBehaviour, IViewmodelExtension
+	[SerializeField]
+	private WorldmodelRevolverExtension.RoundsSet[] _roundsSets;
+
+	[SerializeField]
+	private int _cockedOffset;
+
+	[SerializeField]
+	private int _insertionOffset;
+
+	[SerializeField]
+	private AnimatorLayerMask _inspectTriggerOverrides;
+
+	[SerializeField]
+	private float _inspectTriggerWeightScale;
+
+	private RevolverClipReloaderModule _clipModule;
+
+	private CylinderAmmoModule _cylinderModule;
+
+	private DoubleActionModule _doubleActionModule;
+
+	private Action<int, float> _setWeightAction;
+
+	private int _prevWithheld;
+
+	private ushort _serial;
+
+	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
+		viewmodel.ParentFirearm.TryGetModules<CylinderAmmoModule, RevolverClipReloaderModule, DoubleActionModule>(out _cylinderModule, out _clipModule, out _doubleActionModule);
+		_clipModule.OnWithheld += OnAmmoWithheld;
+		_clipModule.OnAmmoInserted += OnAmmoInserted;
+		_setWeightAction = viewmodel.AnimatorSetLayerWeight;
+		_serial = viewmodel.ItemId.SerialNumber;
+		WorldmodelRevolverExtension.RoundsSet[] roundsSets = _roundsSets;
+		for (int i = 0; i < roundsSets.Length; i++)
 		{
-			viewmodel.ParentFirearm.TryGetModules(out this._cylinderModule, out this._clipModule, out this._doubleActionModule);
-			this._clipModule.OnWithheld += this.OnAmmoWithheld;
-			this._clipModule.OnAmmoInserted += this.OnAmmoInserted;
-			this._setWeightAction = new Action<int, float>(viewmodel.AnimatorSetLayerWeight);
-			this._serial = viewmodel.ItemId.SerialNumber;
-			WorldmodelRevolverExtension.RoundsSet[] roundsSets = this._roundsSets;
+			roundsSets[i].Init(viewmodel.ParentFirearm);
+		}
+	}
+
+	private void OnDisable()
+	{
+		_prevWithheld = 0;
+	}
+
+	private void OnAmmoInserted(int amt)
+	{
+		WorldmodelRevolverExtension.RoundsSet[] roundsSets = _roundsSets;
+		for (int i = 0; i < roundsSets.Length; i++)
+		{
+			roundsSets[i].UpdateAmount(amt, _insertionOffset);
+		}
+		_prevWithheld = 0;
+	}
+
+	private void OnAmmoWithheld()
+	{
+		int withheldAmmo = _clipModule.WithheldAmmo;
+		if (withheldAmmo > _prevWithheld)
+		{
+			WorldmodelRevolverExtension.RoundsSet[] roundsSets = _roundsSets;
 			for (int i = 0; i < roundsSets.Length; i++)
 			{
-				roundsSets[i].Init(viewmodel.ParentFirearm);
+				roundsSets[i].UpdateAmount(withheldAmmo, _insertionOffset);
 			}
+			_prevWithheld = withheldAmmo;
 		}
+	}
 
-		private void OnDisable()
+	private void LateUpdate()
+	{
+		_inspectTriggerOverrides.SetWeight(_setWeightAction, Mathf.Clamp01(_doubleActionModule.TriggerPullProgress * _inspectTriggerWeightScale));
+		if (!_clipModule.IsReloading && !_clipModule.IsUnloading)
 		{
-			this._prevWithheld = 0;
-		}
-
-		private void OnAmmoInserted(int amt)
-		{
-			WorldmodelRevolverExtension.RoundsSet[] roundsSets = this._roundsSets;
+			int offset = (_doubleActionModule.Cocked ? _cockedOffset : 0);
+			WorldmodelRevolverExtension.RoundsSet[] roundsSets = _roundsSets;
 			for (int i = 0; i < roundsSets.Length; i++)
 			{
-				roundsSets[i].UpdateAmount(amt, this._insertionOffset);
-			}
-			this._prevWithheld = 0;
-		}
-
-		private void OnAmmoWithheld()
-		{
-			int withheldAmmo = this._clipModule.WithheldAmmo;
-			if (withheldAmmo <= this._prevWithheld)
-			{
-				return;
-			}
-			WorldmodelRevolverExtension.RoundsSet[] roundsSets = this._roundsSets;
-			for (int i = 0; i < roundsSets.Length; i++)
-			{
-				roundsSets[i].UpdateAmount(withheldAmmo, this._insertionOffset);
-			}
-			this._prevWithheld = withheldAmmo;
-		}
-
-		private void LateUpdate()
-		{
-			this._inspectTriggerOverrides.SetWeight(this._setWeightAction, Mathf.Clamp01(this._doubleActionModule.TriggerPullProgress * this._inspectTriggerWeightScale));
-			if (this._clipModule.IsReloading || this._clipModule.IsUnloading)
-			{
-				return;
-			}
-			int num = (this._doubleActionModule.Cocked ? this._cockedOffset : 0);
-			WorldmodelRevolverExtension.RoundsSet[] roundsSets = this._roundsSets;
-			for (int i = 0; i < roundsSets.Length; i++)
-			{
-				roundsSets[i].UpdateAmount(this._serial, num);
+				roundsSets[i].UpdateAmount(_serial, offset);
 			}
 		}
-
-		[SerializeField]
-		private WorldmodelRevolverExtension.RoundsSet[] _roundsSets;
-
-		[SerializeField]
-		private int _cockedOffset;
-
-		[SerializeField]
-		private int _insertionOffset;
-
-		[SerializeField]
-		private AnimatorLayerMask _inspectTriggerOverrides;
-
-		[SerializeField]
-		private float _inspectTriggerWeightScale;
-
-		private RevolverClipReloaderModule _clipModule;
-
-		private CylinderAmmoModule _cylinderModule;
-
-		private DoubleActionModule _doubleActionModule;
-
-		private Action<int, float> _setWeightAction;
-
-		private int _prevWithheld;
-
-		private ushort _serial;
 	}
 }

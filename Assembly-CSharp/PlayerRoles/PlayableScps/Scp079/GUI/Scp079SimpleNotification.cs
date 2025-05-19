@@ -1,158 +1,127 @@
-﻿using System;
 using System.Text;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079.GUI
+namespace PlayerRoles.PlayableScps.Scp079.GUI;
+
+public class Scp079SimpleNotification : IScp079Notification
 {
-	public class Scp079SimpleNotification : IScp079Notification
+	private int _totalWritten;
+
+	private int _prevPlayed;
+
+	private int _lettersOffset;
+
+	private readonly bool _mute;
+
+	private readonly StringBuilder _writtenText;
+
+	private readonly string _targetContent;
+
+	private readonly int _length;
+
+	private readonly float _totalHeight;
+
+	private readonly float _startTime;
+
+	private readonly float _endTime;
+
+	private const float InitialSize = -5f;
+
+	private const float LettersPerSecond = 100f;
+
+	private const float SoundRateRatio = 0.2f;
+
+	private const float FadeInTime = 0.08f;
+
+	private const float AbsoluteDuration = 4.2f;
+
+	private const float PerLetterDuration = 0.05f;
+
+	protected const float FadeOutDuration = 0.18f;
+
+	private float CurrentTime => Time.timeSinceLevelLoad;
+
+	private float Elapsed => CurrentTime - _startTime;
+
+	protected virtual StringBuilder WrittenText => _writtenText;
+
+	public virtual float Opacity => Mathf.Min(1f, 1f - (CurrentTime - _endTime) / 0.18f);
+
+	public float Height
 	{
-		public Scp079SimpleNotification(string targetContent, bool mute = false)
+		get
 		{
-			this._mute = mute;
-			this._writtenText = new StringBuilder();
-			this._targetContent = targetContent;
-			this._length = this._targetContent.Length;
-			this._startTime = this.CurrentTime;
-			this._endTime = this._startTime + 4.2f + 0.05f * (float)this._length;
-			Scp079NotificationManager.TryGetTextHeight(targetContent, out this._totalHeight);
+			float t = ((Opacity > 0f) ? (Elapsed / 0.08f) : (1f + Opacity));
+			return Mathf.Lerp(-5f, _totalHeight, t);
 		}
+	}
 
-		private float CurrentTime
+	public string DisplayedText
+	{
+		get
 		{
-			get
-			{
-				return Time.timeSinceLevelLoad;
-			}
+			WriteLetters();
+			return WrittenText.ToString();
 		}
+	}
 
-		private float Elapsed
+	public NotificationSound Sound
+	{
+		get
 		{
-			get
+			int num = Mathf.CeilToInt((float)(_totalWritten - _lettersOffset) * 0.2f);
+			if (num <= _prevPlayed)
 			{
-				return this.CurrentTime - this._startTime;
-			}
-		}
-
-		protected virtual StringBuilder WrittenText
-		{
-			get
-			{
-				return this._writtenText;
-			}
-		}
-
-		public virtual float Opacity
-		{
-			get
-			{
-				return Mathf.Min(1f, 1f - (this.CurrentTime - this._endTime) / 0.18f);
-			}
-		}
-
-		public float Height
-		{
-			get
-			{
-				float num = ((this.Opacity > 0f) ? (this.Elapsed / 0.08f) : (1f + this.Opacity));
-				return Mathf.Lerp(-5f, this._totalHeight, num);
-			}
-		}
-
-		public string DisplayedText
-		{
-			get
-			{
-				this.WriteLetters();
-				return this.WrittenText.ToString();
-			}
-		}
-
-		public NotificationSound Sound
-		{
-			get
-			{
-				int num = Mathf.CeilToInt((float)(this._totalWritten - this._lettersOffset) * 0.2f);
-				if (num <= this._prevPlayed)
-				{
-					return NotificationSound.None;
-				}
-				this._prevPlayed = num;
-				if (!this._mute)
-				{
-					return NotificationSound.Standard;
-				}
 				return NotificationSound.None;
 			}
+			_prevPlayed = num;
+			if (!_mute)
+			{
+				return NotificationSound.Standard;
+			}
+			return NotificationSound.None;
 		}
+	}
 
-		public virtual bool Delete
+	public virtual bool Delete => Opacity < -1f;
+
+	public Scp079SimpleNotification(string targetContent, bool mute = false)
+	{
+		_mute = mute;
+		_writtenText = new StringBuilder();
+		_targetContent = targetContent;
+		_length = _targetContent.Length;
+		_startTime = CurrentTime;
+		_endTime = _startTime + 4.2f + 0.05f * (float)_length;
+		Scp079NotificationManager.TryGetTextHeight(targetContent, out _totalHeight);
+	}
+
+	private void WriteLetters()
+	{
+		int num = Mathf.RoundToInt((Elapsed - 0.08f) * 100f) + _lettersOffset;
+		if (num <= 0)
 		{
-			get
-			{
-				return this.Opacity < -1f;
-			}
+			return;
 		}
-
-		private void WriteLetters()
+		bool flag = false;
+		while (_totalWritten < _length && (_totalWritten < num || flag))
 		{
-			int num = Mathf.RoundToInt((this.Elapsed - 0.08f) * 100f) + this._lettersOffset;
-			if (num <= 0)
+			char c = _targetContent[_totalWritten];
+			switch (c)
 			{
-				return;
+			case '<':
+				flag = true;
+				break;
+			case '>':
+				flag = false;
+				break;
 			}
-			bool flag = false;
-			while (this._totalWritten < this._length && (this._totalWritten < num || flag))
+			_writtenText.Append(c);
+			_totalWritten++;
+			if (flag)
 			{
-				char c = this._targetContent[this._totalWritten];
-				if (c == '<')
-				{
-					flag = true;
-				}
-				else if (c == '>')
-				{
-					flag = false;
-				}
-				this._writtenText.Append(c);
-				this._totalWritten++;
-				if (flag)
-				{
-					this._lettersOffset++;
-				}
+				_lettersOffset++;
 			}
 		}
-
-		private int _totalWritten;
-
-		private int _prevPlayed;
-
-		private int _lettersOffset;
-
-		private readonly bool _mute;
-
-		private readonly StringBuilder _writtenText;
-
-		private readonly string _targetContent;
-
-		private readonly int _length;
-
-		private readonly float _totalHeight;
-
-		private readonly float _startTime;
-
-		private readonly float _endTime;
-
-		private const float InitialSize = -5f;
-
-		private const float LettersPerSecond = 100f;
-
-		private const float SoundRateRatio = 0.2f;
-
-		private const float FadeInTime = 0.08f;
-
-		private const float AbsoluteDuration = 4.2f;
-
-		private const float PerLetterDuration = 0.05f;
-
-		protected const float FadeOutDuration = 0.18f;
 	}
 }

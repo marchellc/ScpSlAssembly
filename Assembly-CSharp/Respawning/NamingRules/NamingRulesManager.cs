@@ -1,103 +1,84 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mirror;
 using PlayerRoles;
 using UnityEngine;
 using Utils.Networking;
 
-namespace Respawning.NamingRules
+namespace Respawning.NamingRules;
+
+public static class NamingRulesManager
 {
-	public static class NamingRulesManager
+	public static Dictionary<Team, List<string>> GeneratedNames = new Dictionary<Team, List<string>>();
+
+	private static readonly Dictionary<Team, UnitNamingRule> AllNamingRules = new Dictionary<Team, UnitNamingRule> { [Team.FoundationForces] = new NineTailedFoxNamingRule() };
+
+	private static readonly Team[] PregeneratedNameTeams = new Team[1] { Team.FoundationForces };
+
+	public static event Action<Team, string, int> OnNameAdded;
+
+	public static bool TryGetNamingRule(Team team, out UnitNamingRule rule)
 	{
-		public static event Action<Team, string, int> OnNameAdded;
+		return AllNamingRules.TryGetValue(team, out rule);
+	}
 
-		public static bool TryGetNamingRule(Team team, out UnitNamingRule rule)
+	public static string ClientFetchReceived(Team teamType, int unitNameId)
+	{
+		if (!GeneratedNames.TryGetValue(teamType, out var value))
 		{
-			return NamingRulesManager.AllNamingRules.TryGetValue(team, out rule);
-		}
-
-		public static string ClientFetchReceived(Team teamType, int unitNameId)
-		{
-			List<string> list;
-			if (!NamingRulesManager.GeneratedNames.TryGetValue(teamType, out list))
-			{
-				return string.Empty;
-			}
-			int count = list.Count;
-			if (count != 0 && unitNameId < count)
-			{
-				return list[unitNameId];
-			}
 			return string.Empty;
 		}
-
-		public static void ServerGenerateName(Team team, UnitNamingRule rule)
+		int count = value.Count;
+		if (count != 0 && unitNameId < count)
 		{
-			rule.GenerateNew();
-			new UnitNameMessage
-			{
-				Team = team,
-				NamingRule = rule
-			}.SendToHubsConditionally((ReferenceHub x) => true, 0);
+			return value[unitNameId];
 		}
+		return string.Empty;
+	}
 
-		private static void ProcessMessage(UnitNameMessage msg)
+	public static void ServerGenerateName(Team team, UnitNamingRule rule)
+	{
+		rule.GenerateNew();
+		UnitNameMessage msg = default(UnitNameMessage);
+		msg.Team = team;
+		msg.NamingRule = rule;
+		msg.SendToHubsConditionally((ReferenceHub x) => true);
+	}
+
+	private static void ProcessMessage(UnitNameMessage msg)
+	{
+		if (GeneratedNames.TryGetValue(msg.Team, out var value))
 		{
-			List<string> list;
-			if (NamingRulesManager.GeneratedNames.TryGetValue(msg.Team, out list))
-			{
-				list.Add(msg.UnitName);
-			}
-			else
-			{
-				list = new List<string> { msg.UnitName };
-				NamingRulesManager.GeneratedNames.Add(msg.Team, list);
-			}
-			int num = list.Count - 1;
-			Action<Team, string, int> onNameAdded = NamingRulesManager.OnNameAdded;
-			if (onNameAdded == null)
-			{
-				return;
-			}
-			onNameAdded(msg.Team, msg.UnitName, num);
+			value.Add(msg.UnitName);
 		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		else
 		{
-			CustomNetworkManager.OnClientReady += delegate
+			value = new List<string> { msg.UnitName };
+			GeneratedNames.Add(msg.Team, value);
+		}
+		int arg = value.Count - 1;
+		NamingRulesManager.OnNameAdded?.Invoke(msg.Team, msg.UnitName, arg);
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
+		{
+			UnitNameMessageHandler.ResetHistory();
+			GeneratedNames.Clear();
+			NetworkClient.ReplaceHandler<UnitNameMessage>(ProcessMessage);
+			if (NetworkServer.active)
 			{
-				UnitNameMessageHandler.ResetHistory();
-				NamingRulesManager.GeneratedNames.Clear();
-				NetworkClient.ReplaceHandler<UnitNameMessage>(new Action<UnitNameMessage>(NamingRulesManager.ProcessMessage), true);
-				if (!NetworkServer.active)
+				Team[] pregeneratedNameTeams = PregeneratedNameTeams;
+				foreach (Team team in pregeneratedNameTeams)
 				{
-					return;
-				}
-				foreach (Team team in NamingRulesManager.PregeneratedNameTeams)
-				{
-					UnitNamingRule unitNamingRule;
-					if (NamingRulesManager.TryGetNamingRule(team, out unitNamingRule))
+					if (TryGetNamingRule(team, out var rule))
 					{
-						NamingRulesManager.ServerGenerateName(team, unitNamingRule);
+						ServerGenerateName(team, rule);
 					}
 				}
-			};
-		}
-
-		// Note: this type is marked as 'beforefieldinit'.
-		static NamingRulesManager()
-		{
-			Dictionary<Team, UnitNamingRule> dictionary = new Dictionary<Team, UnitNamingRule>();
-			dictionary[Team.FoundationForces] = new NineTailedFoxNamingRule();
-			NamingRulesManager.AllNamingRules = dictionary;
-			NamingRulesManager.PregeneratedNameTeams = new Team[] { Team.FoundationForces };
-		}
-
-		public static Dictionary<Team, List<string>> GeneratedNames = new Dictionary<Team, List<string>>();
-
-		private static readonly Dictionary<Team, UnitNamingRule> AllNamingRules;
-
-		private static readonly Team[] PregeneratedNameTeams;
+			}
+		};
 	}
 }

@@ -1,14 +1,13 @@
-﻿using System;
+using System;
 
-namespace PlayerRoles.Voice
+namespace PlayerRoles.Voice;
+
+[Flags]
+public enum GroupMuteFlags
 {
-	[Flags]
-	public enum GroupMuteFlags
-	{
-		None = 0,
-		Spectators = 1,
-		Alive = 2,
-		Lobby = 4,
-		Summary = 8
-	}
+	None = 0,
+	Spectators = 1,
+	Alive = 2,
+	Lobby = 4,
+	Summary = 8
 }

@@ -1,56 +1,50 @@
-﻿using System;
 using CustomPlayerEffects;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
-{
-	public class A7BurnEffectModule : ModuleBase
-	{
-		protected override void OnInit()
-		{
-			base.OnInit();
-			IHitregModule hitregModule;
-			if (!base.Firearm.TryGetModule(out hitregModule, true))
-			{
-				return;
-			}
-			hitregModule.ServerOnFired += this.OnFired;
-		}
+namespace InventorySystem.Items.Firearms.Modules;
 
-		private void OnFired()
+public class A7BurnEffectModule : ModuleBase
+{
+	[SerializeField]
+	private int _maxDuration;
+
+	[SerializeField]
+	private int _perShotDuration;
+
+	[SerializeField]
+	private float _forwardOffset;
+
+	[SerializeField]
+	private float _radius;
+
+	protected override void OnInit()
+	{
+		base.OnInit();
+		if (base.Firearm.TryGetModule<IHitregModule>(out var module))
 		{
-			ReferenceHub owner = base.Firearm.Owner;
-			Vector3 position = owner.transform.position;
-			Vector3 forward = owner.PlayerCameraReference.forward;
-			Vector3 vector = position + forward * this._forwardOffset;
-			float num = this._radius * this._radius;
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
+			module.ServerOnFired += OnFired;
+		}
+	}
+
+	private void OnFired()
+	{
+		ReferenceHub owner = base.Firearm.Owner;
+		Vector3 position = owner.transform.position;
+		Vector3 forward = owner.PlayerCameraReference.forward;
+		Vector3 vector = position + forward * _forwardOffset;
+		float num = _radius * _radius;
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (allHub.roleManager.CurrentRole is IFpcRole fpcRole && HitboxIdentity.IsDamageable(owner, allHub) && !((vector - fpcRole.FpcModule.Position).sqrMagnitude > num) && allHub.playerEffectsController.TryGetEffect<Burned>(out var playerEffect))
 			{
-				IFpcRole fpcRole = referenceHub.roleManager.CurrentRole as IFpcRole;
-				Burned burned;
-				if (fpcRole != null && HitboxIdentity.IsDamageable(owner, referenceHub) && (vector - fpcRole.FpcModule.Position).sqrMagnitude <= num && referenceHub.playerEffectsController.TryGetEffect<Burned>(out burned))
+				float num2 = Mathf.Min(_perShotDuration, (float)_maxDuration - playerEffect.TimeLeft);
+				if (!(num2 <= 0f))
 				{
-					float num2 = Mathf.Min((float)this._perShotDuration, (float)this._maxDuration - burned.TimeLeft);
-					if (num2 > 0f)
-					{
-						burned.IsEnabled = true;
-						burned.ServerChangeDuration(num2, true);
-					}
+					playerEffect.IsEnabled = true;
+					playerEffect.ServerChangeDuration(num2, addDuration: true);
 				}
 			}
 		}
-
-		[SerializeField]
-		private int _maxDuration;
-
-		[SerializeField]
-		private int _perShotDuration;
-
-		[SerializeField]
-		private float _forwardOffset;
-
-		[SerializeField]
-		private float _radius;
 	}
 }

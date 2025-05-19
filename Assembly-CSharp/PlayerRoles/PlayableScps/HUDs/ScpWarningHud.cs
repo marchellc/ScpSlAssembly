@@ -1,74 +1,72 @@
-﻿using System;
 using System.Diagnostics;
 using TMPro;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.HUDs
+namespace PlayerRoles.PlayableScps.HUDs;
+
+public class ScpWarningHud : MonoBehaviour
 {
-	public class ScpWarningHud : MonoBehaviour
+	[SerializeField]
+	private TextMeshProUGUI _text;
+
+	private const float FadeSpeed = 8f;
+
+	private const float DefaultTime = 3.8f;
+
+	private float _duration;
+
+	private string _targetText;
+
+	private float _alpha;
+
+	private bool _dirty;
+
+	private readonly Stopwatch _elapsed = new Stopwatch();
+
+	public float Alpha
 	{
-		public float Alpha
+		get
 		{
-			get
+			return _alpha;
+		}
+		private set
+		{
+			value = Mathf.Clamp01(value);
+			if (_alpha != value)
 			{
-				return this._alpha;
-			}
-			private set
-			{
-				value = Mathf.Clamp01(value);
-				if (this._alpha == value)
-				{
-					return;
-				}
-				this._alpha = value;
-				this._text.alpha = value;
+				_alpha = value;
+				_text.alpha = value;
 			}
 		}
+	}
 
-		private void Awake()
-		{
-			this._text.alpha = this.Alpha;
-		}
+	private void Awake()
+	{
+		_text.alpha = Alpha;
+	}
 
-		private void Update()
+	private void Update()
+	{
+		if (_elapsed.Elapsed.TotalSeconds > (double)_duration || _dirty)
 		{
-			if (this._elapsed.Elapsed.TotalSeconds <= (double)this._duration && !this._dirty)
+			Alpha -= Time.deltaTime * 8f;
+			if (!(Alpha > 0f) && _dirty)
 			{
-				this.Alpha += Time.deltaTime * 8f;
-				return;
+				_text.text = _targetText;
+				_dirty = false;
 			}
-			this.Alpha -= Time.deltaTime * 8f;
-			if (this.Alpha > 0f || !this._dirty)
-			{
-				return;
-			}
-			this._text.text = this._targetText;
-			this._dirty = false;
 		}
-
-		public void SetText(string text, float duration = 3.8f)
+		else
 		{
-			this._dirty |= this._targetText != text;
-			this._targetText = text;
-			this._duration = duration;
-			this._elapsed.Restart();
+			Alpha += Time.deltaTime * 8f;
 		}
+	}
 
-		[SerializeField]
-		private TextMeshProUGUI _text;
-
-		private const float FadeSpeed = 8f;
-
-		private const float DefaultTime = 3.8f;
-
-		private float _duration;
-
-		private string _targetText;
-
-		private float _alpha;
-
-		private bool _dirty;
-
-		private readonly Stopwatch _elapsed = new Stopwatch();
+	public void SetText(string text, float duration = 3.8f)
+	{
+		_dirty |= _targetText != text;
+		_targetText = text;
+		_duration = duration;
+		_elapsed.Restart();
 	}
 }

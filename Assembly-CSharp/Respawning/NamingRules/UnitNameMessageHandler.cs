@@ -1,79 +1,76 @@
-﻿using System;
+using System;
 using Mirror;
 using PlayerRoles;
 using UnityEngine;
 
-namespace Respawning.NamingRules
+namespace Respawning.NamingRules;
+
+public static class UnitNameMessageHandler
 {
-	public static class UnitNameMessageHandler
+	private static readonly NetworkWriter SendHistory = new NetworkWriter();
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		ReferenceHub.OnPlayerAdded += delegate(ReferenceHub hub)
 		{
-			ReferenceHub.OnPlayerAdded = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerAdded, new Action<ReferenceHub>(delegate(ReferenceHub hub)
+			if (NetworkServer.active && !hub.isLocalPlayer)
 			{
-				if (!NetworkServer.active || hub.isLocalPlayer)
-				{
-					return;
-				}
-				NetworkReaderPooled networkReaderPooled = NetworkReaderPool.Get(new ArraySegment<byte>(UnitNameMessageHandler.SendHistory.buffer, 0, UnitNameMessageHandler.SendHistory.Position));
+				NetworkReaderPooled networkReaderPooled = NetworkReaderPool.Get(new ArraySegment<byte>(SendHistory.buffer, 0, SendHistory.Position));
 				while (networkReaderPooled.Remaining > 0)
 				{
 					Team team = (Team)networkReaderPooled.ReadByte();
-					UnitNamingRule unitNamingRule;
-					if (!NamingRulesManager.TryGetNamingRule(team, out unitNamingRule))
+					if (!NamingRulesManager.TryGetNamingRule(team, out var rule))
 					{
 						break;
 					}
-					hub.connectionToClient.Send<UnitNameMessage>(new UnitNameMessage
+					hub.connectionToClient.Send(new UnitNameMessage
 					{
 						Data = networkReaderPooled,
-						NamingRule = unitNamingRule,
+						NamingRule = rule,
 						Team = team
-					}, 0);
+					});
 				}
 				networkReaderPooled.Dispose();
-			}));
-		}
-
-		public static UnitNameMessage ReadUnitName(this NetworkReader reader)
-		{
-			Team team = (Team)reader.ReadByte();
-			UnitNamingRule unitNamingRule;
-			if (!NamingRulesManager.TryGetNamingRule(team, out unitNamingRule))
-			{
-				throw new InvalidOperationException(string.Format("No compatible decoder detected to read the name of spawnable team: {0}.", team));
 			}
-			return new UnitNameMessage
-			{
-				Team = team,
-				NamingRule = unitNamingRule,
-				UnitName = unitNamingRule.ReadName(reader)
-			};
-		}
+		};
+	}
 
-		public static void WriteUnitName(this NetworkWriter writer, UnitNameMessage msg)
+	public static UnitNameMessage ReadUnitName(this NetworkReader reader)
+	{
+		Team team = (Team)reader.ReadByte();
+		if (!NamingRulesManager.TryGetNamingRule(team, out var rule))
 		{
-			byte team = (byte)msg.Team;
-			writer.WriteByte(team);
-			if (msg.Data == null)
-			{
-				int position = writer.Position;
-				msg.NamingRule.WriteName(writer);
-				UnitNameMessageHandler.SendHistory.WriteByte(team);
-				UnitNameMessageHandler.SendHistory.WriteBytes(writer.buffer, position, writer.Position - position);
-				return;
-			}
+			throw new InvalidOperationException($"No compatible decoder detected to read the name of spawnable team: {team}.");
+		}
+		UnitNameMessage result = default(UnitNameMessage);
+		result.Team = team;
+		result.NamingRule = rule;
+		result.UnitName = rule.ReadName(reader);
+		return result;
+	}
+
+	public static void WriteUnitName(this NetworkWriter writer, UnitNameMessage msg)
+	{
+		byte team = (byte)msg.Team;
+		writer.WriteByte(team);
+		if (msg.Data == null)
+		{
+			int position = writer.Position;
+			msg.NamingRule.WriteName(writer);
+			SendHistory.WriteByte(team);
+			SendHistory.WriteBytes(writer.buffer, position, writer.Position - position);
+		}
+		else
+		{
 			int position2 = msg.Data.Position;
 			msg.NamingRule.ReadName(msg.Data);
 			writer.WriteBytes(msg.Data.buffer.Array, position2, msg.Data.Position - position2);
 		}
+	}
 
-		public static void ResetHistory()
-		{
-			UnitNameMessageHandler.SendHistory.Reset();
-		}
-
-		private static readonly NetworkWriter SendHistory = new NetworkWriter();
+	public static void ResetHistory()
+	{
+		SendHistory.Reset();
 	}
 }

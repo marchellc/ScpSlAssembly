@@ -1,75 +1,69 @@
-﻿using System;
+using System;
 using Mirror;
 using PlayerRoles.Subroutines;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp3114
+namespace PlayerRoles.PlayableScps.Scp3114;
+
+public class Scp3114Reveal : KeySubroutine<Scp3114Role>
 {
-	public class Scp3114Reveal : KeySubroutine<Scp3114Role>
+	private const float HoldDuration = 0.65f;
+
+	public const ActionName RevealKey = ActionName.Reload;
+
+	private float _holdTimer;
+
+	protected override ActionName TargetKey => ActionName.Reload;
+
+	protected override bool KeyPressable
 	{
-		public static event Action OnRevealFail;
-
-		protected override ActionName TargetKey
+		get
 		{
-			get
+			if (base.KeyPressable && base.CastRole.Disguised)
 			{
-				return ActionName.Reload;
+				return _holdTimer < 0.65f;
+			}
+			return false;
+		}
+	}
+
+	public static event Action OnRevealFail;
+
+	protected override void Update()
+	{
+		base.Update();
+		if (base.Role.IsLocalPlayer)
+		{
+			if (IsKeyHeld && base.CastRole.Disguised)
+			{
+				_holdTimer += Time.deltaTime;
+			}
+			else
+			{
+				_holdTimer = 0f;
 			}
 		}
+	}
 
-		protected override bool KeyPressable
+	protected override void OnKeyUp()
+	{
+		base.OnKeyUp();
+		if (base.CastRole.Disguised)
 		{
-			get
+			if (_holdTimer >= 0.65f)
 			{
-				return base.KeyPressable && base.CastRole.Disguised && this._holdTimer < 0.65f;
+				ClientSendCmd();
+			}
+			else
+			{
+				Scp3114Reveal.OnRevealFail?.Invoke();
 			}
 		}
+	}
 
-		protected override void Update()
-		{
-			base.Update();
-			if (!base.Role.IsLocalPlayer)
-			{
-				return;
-			}
-			if (this.IsKeyHeld && base.CastRole.Disguised)
-			{
-				this._holdTimer += Time.deltaTime;
-				return;
-			}
-			this._holdTimer = 0f;
-		}
-
-		protected override void OnKeyUp()
-		{
-			base.OnKeyUp();
-			if (!base.CastRole.Disguised)
-			{
-				return;
-			}
-			if (this._holdTimer >= 0.65f)
-			{
-				base.ClientSendCmd();
-				return;
-			}
-			Action onRevealFail = Scp3114Reveal.OnRevealFail;
-			if (onRevealFail == null)
-			{
-				return;
-			}
-			onRevealFail();
-		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			base.CastRole.Disguised = false;
-		}
-
-		private const float HoldDuration = 0.65f;
-
-		public const ActionName RevealKey = ActionName.Reload;
-
-		private float _holdTimer;
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		base.CastRole.Disguised = false;
 	}
 }

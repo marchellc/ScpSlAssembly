@@ -1,60 +1,63 @@
-﻿using System;
 using Mirror;
 using PlayerRoles.Ragdolls;
 using PlayerRoles.Spectating;
 using Subtitles;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public abstract class DamageHandlerBase
 {
-	public abstract class DamageHandlerBase
+	public class CassieAnnouncement
 	{
-		public abstract string ServerLogsText { get; }
-
-		public abstract string ServerMetricsText { get; }
-
-		public abstract DamageHandlerBase.CassieAnnouncement CassieDeathAnnouncement { get; }
-
-		public virtual void WriteDeathScreen(NetworkWriter writer)
+		public static readonly CassieAnnouncement Default = new CassieAnnouncement
 		{
-			writer.WriteSpawnReason(SpectatorSpawnReason.Other);
-			writer.WriteDamageHandler(this);
-		}
-
-		public virtual void WriteAdditionalData(NetworkWriter writer)
-		{
-		}
-
-		public virtual void ReadAdditionalData(NetworkReader reader)
-		{
-		}
-
-		public virtual void ProcessRagdoll(BasicRagdoll ragdoll)
-		{
-		}
-
-		public abstract DamageHandlerBase.HandlerOutput ApplyDamage(ReferenceHub ply);
-
-		public class CassieAnnouncement
-		{
-			public static readonly DamageHandlerBase.CassieAnnouncement Default = new DamageHandlerBase.CassieAnnouncement
+			Announcement = "SUCCESSFULLY TERMINATED . TERMINATION CAUSE UNSPECIFIED",
+			SubtitleParts = new SubtitlePart[1]
 			{
-				Announcement = "SUCCESSFULLY TERMINATED . TERMINATION CAUSE UNSPECIFIED",
-				SubtitleParts = new SubtitlePart[]
-				{
-					new SubtitlePart(SubtitleType.TerminationCauseUnspecified, null)
-				}
-			};
+				new SubtitlePart(SubtitleType.TerminationCauseUnspecified, (string[])null)
+			}
+		};
 
-			public string Announcement;
+		public string Announcement;
 
-			public SubtitlePart[] SubtitleParts;
-		}
-
-		public enum HandlerOutput : byte
-		{
-			Nothing,
-			Damaged,
-			Death
-		}
+		public SubtitlePart[] SubtitleParts;
 	}
+
+	public enum HandlerOutput : byte
+	{
+		Nothing,
+		Damaged,
+		Death
+	}
+
+	public abstract string RagdollInspectText { get; }
+
+	public abstract string DeathScreenText { get; }
+
+	public abstract string ServerLogsText { get; }
+
+	public abstract string ServerMetricsText { get; }
+
+	public abstract CassieAnnouncement CassieDeathAnnouncement { get; }
+
+	public virtual void WriteDeathScreen(NetworkWriter writer)
+	{
+		writer.WriteSpawnReason(SpectatorSpawnReason.Other);
+		writer.WriteUInt(0u);
+		writer.WriteDamageHandler(this);
+	}
+
+	public virtual void WriteAdditionalData(NetworkWriter writer)
+	{
+	}
+
+	public virtual void ReadAdditionalData(NetworkReader reader)
+	{
+	}
+
+	public virtual void ProcessRagdoll(BasicRagdoll ragdoll)
+	{
+	}
+
+	public abstract HandlerOutput ApplyDamage(ReferenceHub ply);
 }

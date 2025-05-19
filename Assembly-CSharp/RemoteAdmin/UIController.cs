@@ -1,9 +1,7 @@
-﻿using System;
 using ToggleableMenus;
 
-namespace RemoteAdmin
+namespace RemoteAdmin;
+
+public class UIController : SimpleToggleableMenu
 {
-	public class UIController : SimpleToggleableMenu
-	{
-	}
 }

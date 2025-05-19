@@ -1,83 +1,69 @@
-﻿using System;
 using Mirror;
 using UnityEngine;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public class AdminFlagsStat : SyncedStatBase
 {
-	public class AdminFlagsStat : SyncedStatBase
+	private float _maxValue;
+
+	public override SyncMode Mode => SyncMode.Public;
+
+	public override float MinValue => 0f;
+
+	public override float MaxValue
 	{
-		public override SyncedStatBase.SyncMode Mode
+		get
 		{
-			get
-			{
-				return SyncedStatBase.SyncMode.Public;
-			}
+			return _maxValue;
 		}
-
-		public override float MinValue
+		set
 		{
-			get
-			{
-				return 0f;
-			}
+			_maxValue = value;
 		}
+	}
 
-		public override float MaxValue
+	public AdminFlags Flags
+	{
+		get
 		{
-			get
-			{
-				return this._maxValue;
-			}
-			set
-			{
-				this._maxValue = value;
-			}
+			return (AdminFlags)Mathf.RoundToInt(CurValue);
 		}
-
-		public AdminFlags Flags
+		set
 		{
-			get
-			{
-				return (AdminFlags)Mathf.RoundToInt(this.CurValue);
-			}
-			set
-			{
-				this.CurValue = (float)value;
-			}
+			CurValue = (float)value;
 		}
+	}
 
-		public bool HasFlag(AdminFlags flag)
-		{
-			return (flag & this.Flags) == flag;
-		}
+	public bool HasFlag(AdminFlags flag)
+	{
+		return (flag & Flags) == flag;
+	}
 
-		public void InvertFlag(AdminFlags flag)
-		{
-			AdminFlags flags = this.Flags;
-			this.Flags = (((flag & flags) != flag) ? (flags | flag) : (flags & ~flag));
-		}
+	public void InvertFlag(AdminFlags flag)
+	{
+		AdminFlags flags = Flags;
+		Flags = (((flag & flags) != flag) ? (flags | flag) : (flags & ~flag));
+	}
 
-		public void SetFlag(AdminFlags flag, bool status)
-		{
-			this.Flags = (status ? (this.Flags | flag) : (this.Flags & ~flag));
-		}
+	public void SetFlag(AdminFlags flag, bool status)
+	{
+		Flags = (status ? (Flags | flag) : (Flags & ~flag));
+	}
 
-		public override float ReadValue(NetworkReader reader)
-		{
-			return (float)reader.ReadByte();
-		}
+	public override float ReadValue(SyncedStatMessages.StatMessageType type, NetworkReader reader)
+	{
+		return (int)reader.ReadByte();
+	}
 
-		public override void WriteValue(SyncedStatMessages.StatMessageType type, NetworkWriter writer)
-		{
-			byte b = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? ((byte)this.Flags) : ((byte)this.MaxValue));
-			writer.WriteByte(b);
-		}
+	public override void WriteValue(SyncedStatMessages.StatMessageType type, NetworkWriter writer)
+	{
+		byte value = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? ((byte)Flags) : ((byte)MaxValue));
+		writer.WriteByte(value);
+	}
 
-		public override bool CheckDirty(float prevValue, float newValue)
-		{
-			return (int)prevValue != (int)newValue;
-		}
-
-		private float _maxValue;
+	public override bool CheckDirty(float prevValue, float newValue)
+	{
+		return (int)prevValue != (int)newValue;
 	}
 }

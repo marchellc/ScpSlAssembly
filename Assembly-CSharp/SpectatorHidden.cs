@@ -1,4 +1,3 @@
-﻿using System;
 using GameObjectPools;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -9,11 +8,11 @@ public class SpectatorHidden : MonoBehaviour, IPoolResettable
 
 	private void Awake()
 	{
-		this.AttachedRenderer = base.GetComponent<Renderer>();
+		AttachedRenderer = GetComponent<Renderer>();
 	}
 
 	public void ResetObject()
 	{
-		this.AttachedRenderer.shadowCastingMode = ShadowCastingMode.On;
+		AttachedRenderer.shadowCastingMode = ShadowCastingMode.On;
 	}
 }

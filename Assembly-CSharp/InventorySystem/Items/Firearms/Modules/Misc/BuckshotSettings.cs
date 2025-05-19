@@ -1,17 +1,16 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules.Misc
+namespace InventorySystem.Items.Firearms.Modules.Misc;
+
+[Serializable]
+public struct BuckshotSettings
 {
-	[Serializable]
-	public struct BuckshotSettings
-	{
-		public Vector2[] PredefinedPellets;
+	public Vector2[] PredefinedPellets;
 
-		public int MaxHits;
+	public int MaxHits;
 
-		public float Randomness;
+	public float Randomness;
 
-		public float OverallScale;
-	}
+	public float OverallScale;
 }

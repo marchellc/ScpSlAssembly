@@ -1,6 +1,3 @@
-﻿using System;
+namespace Utf8Json;
 
-namespace Utf8Json
-{
-	public delegate T JsonDeserializeFunc<T>(ref JsonReader reader, IJsonFormatterResolver resolver);
-}
+public delegate T JsonDeserializeFunc<T>(ref JsonReader reader, IJsonFormatterResolver resolver);

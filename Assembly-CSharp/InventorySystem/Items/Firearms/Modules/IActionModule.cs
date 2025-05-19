@@ -1,12 +1,9 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+[UniqueModule]
+public interface IActionModule
 {
-	[UniqueModule]
-	public interface IActionModule
-	{
-		float DisplayCyclicRate { get; }
+	float DisplayCyclicRate { get; }
 
-		bool IsLoaded { get; }
-	}
+	bool IsLoaded { get; }
 }

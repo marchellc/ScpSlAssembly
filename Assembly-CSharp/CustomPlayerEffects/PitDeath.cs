@@ -1,88 +1,89 @@
-﻿using System;
 using Mirror;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class PitDeath : StatusEffectBase, IDamageModifierEffect
 {
-	public class PitDeath : StatusEffectBase, IDamageModifierEffect
+	private const float MinAliveDuration = 1f;
+
+	private const float FallbackMaxDelay = 1.2f;
+
+	private float _activeElapsed;
+
+	public override bool AllowEnabling => true;
+
+	public bool DamageModifierActive => base.IsEnabled;
+
+	public static bool ValidatePlayer(ReferenceHub hub)
 	{
-		public override bool AllowEnabling
+		PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
+		if (!(currentRole is IFpcRole fpcRole))
 		{
-			get
-			{
-				return true;
-			}
+			return false;
 		}
-
-		public bool DamageModifierActive
+		if (fpcRole.FpcModule.Noclip.IsActive)
 		{
-			get
-			{
-				return base.IsEnabled;
-			}
+			return false;
 		}
-
-		public static bool ValidatePlayer(ReferenceHub hub)
+		if (hub.characterClassManager.GodMode)
 		{
-			PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
-			IFpcRole fpcRole = currentRole as IFpcRole;
-			return fpcRole != null && !fpcRole.FpcModule.Noclip.IsActive && !hub.characterClassManager.GodMode && currentRole.ActiveTime >= 1f;
+			return false;
 		}
-
-		public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
+		if (currentRole.ActiveTime < 1f)
 		{
-			return (float)(this.IsFallDamageHandler(handler) ? 0 : 1);
+			return false;
 		}
+		return true;
+	}
 
-		protected override void Enabled()
+	public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
+	{
+		return (!IsFallDamageHandler(handler)) ? 1 : 0;
+	}
+
+	protected override void Enabled()
+	{
+		base.Enabled();
+		_activeElapsed = 0f;
+	}
+
+	protected override void OnEffectUpdate()
+	{
+		base.OnEffectUpdate();
+		if (NetworkServer.active)
 		{
-			base.Enabled();
-			this._activeElapsed = 0f;
+			_activeElapsed += Time.deltaTime;
+			CheckKillConditions();
 		}
+	}
 
-		protected override void OnEffectUpdate()
+	private bool IsFallDamageHandler(DamageHandlerBase handler)
+	{
+		if (handler is UniversalDamageHandler universalDamageHandler)
 		{
-			base.OnEffectUpdate();
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this._activeElapsed += Time.deltaTime;
-			this.CheckKillConditions();
+			return universalDamageHandler.TranslationId == DeathTranslations.Falldown.Id;
 		}
+		return false;
+	}
 
-		private bool IsFallDamageHandler(DamageHandlerBase handler)
+	private void CheckKillConditions()
+	{
+		if (!ValidatePlayer(base.Hub))
 		{
-			UniversalDamageHandler universalDamageHandler = handler as UniversalDamageHandler;
-			return universalDamageHandler != null && universalDamageHandler.TranslationId == DeathTranslations.Falldown.Id;
+			DisableEffect();
 		}
-
-		private void CheckKillConditions()
+		else if (!(_activeElapsed <= 1.2f) || base.Hub.IsGrounded())
 		{
-			if (!PitDeath.ValidatePlayer(base.Hub))
-			{
-				this.DisableEffect();
-				return;
-			}
-			if (this._activeElapsed <= 1.2f && !base.Hub.IsGrounded())
-			{
-				return;
-			}
-			this.KillPlayer();
+			KillPlayer();
 		}
+	}
 
-		private void KillPlayer()
-		{
-			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(-1f, DeathTranslations.Crushed, null));
-		}
-
-		private const float MinAliveDuration = 1f;
-
-		private const float FallbackMaxDelay = 1.2f;
-
-		private float _activeElapsed;
+	private void KillPlayer()
+	{
+		base.Hub.playerStats.DealDamage(new UniversalDamageHandler(-1f, DeathTranslations.Crushed));
 	}
 }

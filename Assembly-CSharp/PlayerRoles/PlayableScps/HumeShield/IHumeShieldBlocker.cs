@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.HumeShield;
 
-namespace PlayerRoles.PlayableScps.HumeShield
+public interface IHumeShieldBlocker
 {
-	public interface IHumeShieldBlocker
-	{
-		bool HumeShieldBlocked { get; }
-	}
+	bool HumeShieldBlocked { get; }
 }

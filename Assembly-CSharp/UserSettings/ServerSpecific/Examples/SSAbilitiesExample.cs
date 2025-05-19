@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using CustomPlayerEffects;
 using InventorySystem;
@@ -8,168 +7,151 @@ using PlayerRoles.FirstPersonControl;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace UserSettings.ServerSpecific.Examples
+namespace UserSettings.ServerSpecific.Examples;
+
+public class SSAbilitiesExample : SSExampleImplementationBase
 {
-	public class SSAbilitiesExample : SSExampleImplementationBase
+	private enum ExampleId
 	{
-		public override string Name
+		SpeedBoostKey,
+		SpeedBoostToggle,
+		HealAlly
+	}
+
+	private const float HealAllyHp = 50f;
+
+	private const float HealAllyRange = 3.5f;
+
+	private const byte BoostIntensity = 60;
+
+	private const float BoostHealthDrain = 5f;
+
+	private static HashSet<ReferenceHub> _activeSpeedBoosts;
+
+	public override string Name => "Abilities Extension";
+
+	public override void Activate()
+	{
+		_activeSpeedBoosts = new HashSet<ReferenceHub>();
+		ServerSpecificSettingsSync.DefinedSettings = new ServerSpecificSettingBase[4]
 		{
-			get
+			new SSGroupHeader("Abilities"),
+			new SSKeybindSetting(2, "Heal Ally", KeyCode.H, preventInteractionOnGui: true, $"Press this key while holding a medkit to instantly heal a stationary ally for {50f} HP."),
+			new SSKeybindSetting(0, "Speed Boost (Human-only)", KeyCode.Y, preventInteractionOnGui: true, "Increase your speed by draining your health."),
+			new SSTwoButtonsSetting(1, "Speed Boost - Activation Mode", "Hold", "Toggle")
+		};
+		ServerSpecificSettingsSync.SendToAll();
+		ServerSpecificSettingsSync.ServerOnSettingValueReceived += ProcessUserInput;
+		ReferenceHub.OnPlayerRemoved += OnPlayerDisconnected;
+		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
+		StaticUnityMethods.OnUpdate += OnUpdate;
+	}
+
+	public override void Deactivate()
+	{
+		ServerSpecificSettingsSync.ServerOnSettingValueReceived -= ProcessUserInput;
+		ReferenceHub.OnPlayerRemoved -= OnPlayerDisconnected;
+		PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
+		StaticUnityMethods.OnUpdate -= OnUpdate;
+	}
+
+	private void ProcessUserInput(ReferenceHub sender, ServerSpecificSettingBase setting)
+	{
+		switch ((ExampleId)setting.SettingId)
+		{
+		case ExampleId.HealAlly:
+			if (setting is SSKeybindSetting { SyncIsPressed: not false })
 			{
-				return "Abilities Extension";
+				TryHealAlly(sender);
 			}
-		}
-
-		public override void Activate()
-		{
-			SSAbilitiesExample._activeSpeedBoosts = new HashSet<ReferenceHub>();
-			ServerSpecificSettingsSync.DefinedSettings = new ServerSpecificSettingBase[]
+			break;
+		case ExampleId.SpeedBoostKey:
+			if (!(setting is SSKeybindSetting sSKeybindSetting))
 			{
-				new SSGroupHeader("Abilities", false, null),
-				new SSKeybindSetting(new int?(2), "Heal Ally", KeyCode.H, true, string.Format("Press this key while holding a medkit to instantly heal a stationary ally for {0} HP.", 50f)),
-				new SSKeybindSetting(new int?(0), "Speed Boost (Human-only)", KeyCode.Y, true, "Increase your speed by draining your health."),
-				new SSTwoButtonsSetting(new int?(1), "Speed Boost - Activation Mode", "Hold", "Toggle", false, null)
-			};
-			ServerSpecificSettingsSync.SendToAll();
-			ServerSpecificSettingsSync.ServerOnSettingValueReceived += this.ProcessUserInput;
-			ReferenceHub.OnPlayerRemoved = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerRemoved, new Action<ReferenceHub>(this.OnPlayerDisconnected));
-			PlayerRoleManager.OnRoleChanged += this.OnRoleChanged;
-			StaticUnityMethods.OnUpdate += this.OnUpdate;
-		}
-
-		public override void Deactivate()
-		{
-			ServerSpecificSettingsSync.ServerOnSettingValueReceived -= this.ProcessUserInput;
-			ReferenceHub.OnPlayerRemoved = (Action<ReferenceHub>)Delegate.Remove(ReferenceHub.OnPlayerRemoved, new Action<ReferenceHub>(this.OnPlayerDisconnected));
-			PlayerRoleManager.OnRoleChanged -= this.OnRoleChanged;
-			StaticUnityMethods.OnUpdate -= this.OnUpdate;
-		}
-
-		private void ProcessUserInput(ReferenceHub sender, ServerSpecificSettingBase setting)
-		{
-			switch (setting.SettingId)
-			{
-			case 0:
-			{
-				SSKeybindSetting sskeybindSetting = setting as SSKeybindSetting;
-				if (sskeybindSetting != null)
-				{
-					if (!ServerSpecificSettingsSync.GetSettingOfUser<SSTwoButtonsSetting>(sender, 1).SyncIsB)
-					{
-						this.SetSpeedBoost(sender, sskeybindSetting.SyncIsPressed);
-						return;
-					}
-					if (sskeybindSetting.SyncIsPressed)
-					{
-						this.SetSpeedBoost(sender, !SSAbilitiesExample._activeSpeedBoosts.Contains(sender));
-						return;
-					}
-				}
 				break;
 			}
-			case 1:
-				this.SetSpeedBoost(sender, false);
-				break;
-			case 2:
+			if (ServerSpecificSettingsSync.GetSettingOfUser<SSTwoButtonsSetting>(sender, 1).SyncIsB)
 			{
-				SSKeybindSetting sskeybindSetting2 = setting as SSKeybindSetting;
-				if (sskeybindSetting2 != null && sskeybindSetting2.SyncIsPressed)
+				if (sSKeybindSetting.SyncIsPressed)
 				{
-					this.TryHealAlly(sender);
-					return;
+					SetSpeedBoost(sender, !_activeSpeedBoosts.Contains(sender));
 				}
-				break;
 			}
-			default:
-				return;
+			else
+			{
+				SetSpeedBoost(sender, sSKeybindSetting.SyncIsPressed);
 			}
+			break;
+		case ExampleId.SpeedBoostToggle:
+			SetSpeedBoost(sender, state: false);
+			break;
 		}
+	}
 
-		private void TryHealAlly(ReferenceHub sender)
+	private void TryHealAlly(ReferenceHub sender)
+	{
+		ItemIdentifier curItem = sender.inventory.CurItem;
+		if (curItem.TypeId != ItemType.Medkit)
 		{
-			ItemIdentifier curItem = sender.inventory.CurItem;
-			if (curItem.TypeId != ItemType.Medkit)
-			{
-				return;
-			}
-			Vector3 vector = sender.PlayerCameraReference.position;
-			Vector3 forward = sender.PlayerCameraReference.forward;
-			RaycastHit raycastHit;
-			while (Physics.Raycast(vector, forward, out raycastHit, 3.5f))
-			{
-				HitboxIdentity hitboxIdentity;
-				if (!raycastHit.collider.TryGetComponent<HitboxIdentity>(out hitboxIdentity))
-				{
-					return;
-				}
-				if (HitboxIdentity.IsEnemy(hitboxIdentity.TargetHub, sender))
-				{
-					return;
-				}
-				if (!(hitboxIdentity.TargetHub == sender))
-				{
-					ReferenceHub targetHub = hitboxIdentity.TargetHub;
-					targetHub.playerStats.GetModule<HealthStat>().ServerHeal(50f);
-					sender.inventory.ServerRemoveItem(curItem.SerialNumber, null);
-					return;
-				}
-				vector += forward * 0.08f;
-			}
+			return;
 		}
-
-		private void SetSpeedBoost(ReferenceHub hub, bool state)
+		Vector3 position = sender.PlayerCameraReference.position;
+		Vector3 forward = sender.PlayerCameraReference.forward;
+		HitboxIdentity component;
+		while (true)
 		{
-			MovementBoost effect = hub.playerEffectsController.GetEffect<MovementBoost>();
-			if (state && hub.IsHuman())
+			if (!Physics.Raycast(position, forward, out var hitInfo, 3.5f) || !hitInfo.collider.TryGetComponent<HitboxIdentity>(out component) || HitboxIdentity.IsEnemy(component.TargetHub, sender))
 			{
-				effect.ServerSetState(60, 0f, false);
-				SSAbilitiesExample._activeSpeedBoosts.Add(hub);
 				return;
 			}
+			if (!(component.TargetHub == sender))
+			{
+				break;
+			}
+			position += forward * 0.08f;
+		}
+		ReferenceHub targetHub = component.TargetHub;
+		targetHub.playerStats.GetModule<HealthStat>().ServerHeal(50f);
+		sender.inventory.ServerRemoveItem(curItem.SerialNumber, null);
+	}
+
+	private void SetSpeedBoost(ReferenceHub hub, bool state)
+	{
+		MovementBoost effect = hub.playerEffectsController.GetEffect<MovementBoost>();
+		if (state && hub.IsHuman())
+		{
+			effect.ServerSetState(60);
+			_activeSpeedBoosts.Add(hub);
+		}
+		else
+		{
 			effect.ServerDisable();
-			SSAbilitiesExample._activeSpeedBoosts.Remove(hub);
+			_activeSpeedBoosts.Remove(hub);
 		}
+	}
 
-		private void OnPlayerDisconnected(ReferenceHub hub)
+	private void OnPlayerDisconnected(ReferenceHub hub)
+	{
+		_activeSpeedBoosts.Remove(hub);
+	}
+
+	private void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+	{
+		SetSpeedBoost(userHub, state: false);
+	}
+
+	private void OnUpdate()
+	{
+		if (!StaticUnityMethods.IsPlaying)
 		{
-			SSAbilitiesExample._activeSpeedBoosts.Remove(hub);
+			return;
 		}
-
-		private void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+		foreach (ReferenceHub activeSpeedBoost in _activeSpeedBoosts)
 		{
-			this.SetSpeedBoost(userHub, false);
-		}
-
-		private void OnUpdate()
-		{
-			if (!StaticUnityMethods.IsPlaying)
+			if (!Mathf.Approximately(activeSpeedBoost.GetVelocity().SqrMagnitudeIgnoreY(), 0f))
 			{
-				return;
+				activeSpeedBoost.playerStats.DealDamage(new UniversalDamageHandler(Time.deltaTime * 5f, DeathTranslations.Scp207));
 			}
-			foreach (ReferenceHub referenceHub in SSAbilitiesExample._activeSpeedBoosts)
-			{
-				if (!Mathf.Approximately(referenceHub.GetVelocity().SqrMagnitudeIgnoreY(), 0f))
-				{
-					referenceHub.playerStats.DealDamage(new UniversalDamageHandler(Time.deltaTime * 5f, DeathTranslations.Scp207, null));
-				}
-			}
-		}
-
-		private const float HealAllyHp = 50f;
-
-		private const float HealAllyRange = 3.5f;
-
-		private const byte BoostIntensity = 60;
-
-		private const float BoostHealthDrain = 5f;
-
-		private static HashSet<ReferenceHub> _activeSpeedBoosts;
-
-		private enum ExampleId
-		{
-			SpeedBoostKey,
-			SpeedBoostToggle,
-			HealAlly
 		}
 	}
 }

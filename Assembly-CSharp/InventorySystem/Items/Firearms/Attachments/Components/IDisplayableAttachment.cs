@@ -1,16 +1,14 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Attachments.Components
+namespace InventorySystem.Items.Firearms.Attachments.Components;
+
+public interface IDisplayableAttachment
 {
-	public interface IDisplayableAttachment
-	{
-		Texture2D Icon { get; set; }
+	Texture2D Icon { get; set; }
 
-		Vector2 IconOffset { get; set; }
+	Vector2 IconOffset { get; set; }
 
-		int ParentId { get; }
+	int ParentId { get; }
 
-		Vector2 ParentOffset { get; }
-	}
+	Vector2 ParentOffset { get; }
 }

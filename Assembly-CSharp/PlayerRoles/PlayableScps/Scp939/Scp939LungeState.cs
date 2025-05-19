@@ -1,13 +1,10 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.Scp939;
 
-namespace PlayerRoles.PlayableScps.Scp939
+public enum Scp939LungeState : byte
 {
-	public enum Scp939LungeState : byte
-	{
-		None,
-		Triggered,
-		LandHit,
-		LandRegular,
-		LandHarsh
-	}
+	None,
+	Triggered,
+	LandHit,
+	LandRegular,
+	LandHarsh
 }

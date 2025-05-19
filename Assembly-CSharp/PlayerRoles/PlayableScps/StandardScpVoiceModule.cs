@@ -1,17 +1,9 @@
-﻿using System;
 using PlayerRoles.Voice;
 using VoiceChat;
 
-namespace PlayerRoles.PlayableScps
+namespace PlayerRoles.PlayableScps;
+
+public class StandardScpVoiceModule : GlobalVoiceModuleBase
 {
-	public class StandardScpVoiceModule : GlobalVoiceModuleBase
-	{
-		protected override VoiceChatChannel PrimaryChannel
-		{
-			get
-			{
-				return VoiceChatChannel.ScpChat;
-			}
-		}
-	}
+	protected override VoiceChatChannel PrimaryChannel => VoiceChatChannel.ScpChat;
 }

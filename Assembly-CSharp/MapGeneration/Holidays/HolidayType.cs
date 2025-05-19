@@ -1,12 +1,9 @@
-﻿using System;
+namespace MapGeneration.Holidays;
 
-namespace MapGeneration.Holidays
+public enum HolidayType
 {
-	public enum HolidayType
-	{
-		None,
-		Christmas,
-		Halloween,
-		AprilFools
-	}
+	None,
+	Christmas,
+	Halloween,
+	AprilFools
 }

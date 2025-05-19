@@ -1,82 +1,79 @@
-﻿using System;
 using InventorySystem.Items.Thirdperson;
 using Mirror;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers.OverlayAnims
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers.OverlayAnims;
+
+public abstract class OverlayAnimationsBase
 {
-	public abstract class OverlayAnimationsBase
+	private static readonly int HashReplayInstant = Animator.StringToHash("FlavorOverlayTriggerInstant");
+
+	private static readonly int HashReplaySoft = Animator.StringToHash("FlavorOverlayTriggerSoft");
+
+	public bool IsPlaying { get; private set; }
+
+	protected byte SyncIndex { get; private set; }
+
+	protected OverlayAnimationsSubcontroller Controller { get; private set; }
+
+	public AnimatedCharacterModel Model { get; private set; }
+
+	public abstract bool WantsToPlay { get; }
+
+	public abstract bool Bypassable { get; }
+
+	public abstract AnimationClip Clip { get; }
+
+	public abstract float GetLayerWeight(AnimItemLayer3p layer);
+
+	public virtual void UpdateActive()
 	{
-		public bool IsPlaying { get; private set; }
+	}
 
-		private protected byte SyncIndex { protected get; private set; }
+	public virtual void OnStarted()
+	{
+		IsPlaying = true;
+	}
 
-		private protected OverlayAnimationsSubcontroller Controller { protected get; private set; }
+	public virtual void OnStopped()
+	{
+		IsPlaying = false;
+	}
 
-		public AnimatedCharacterModel Model { get; private set; }
+	public virtual void OnReassigned()
+	{
+	}
 
-		public abstract bool WantsToPlay { get; }
+	public virtual void OnReset()
+	{
+	}
 
-		public abstract bool Bypassable { get; }
+	public virtual void ProcessRpc(NetworkReader reader)
+	{
+	}
 
-		public abstract AnimationClip Clip { get; }
+	public virtual void Init(OverlayAnimationsSubcontroller ctrl, int index)
+	{
+		Controller = ctrl;
+		SyncIndex = (byte)index;
+		Model = ctrl.Model;
+	}
 
-		public abstract float GetLayerWeight(AnimItemLayer3p layer);
+	public void SendRpc()
+	{
+		SubcontrollerRpcHandler.ServerSendRpc(Controller, WriteRpcHeader);
+	}
 
-		public virtual void UpdateActive()
+	public void Replay(bool instant)
+	{
+		if (IsPlaying)
 		{
+			Model.Animator.SetTrigger(instant ? HashReplayInstant : HashReplaySoft);
 		}
+	}
 
-		public virtual void OnStarted()
-		{
-			this.IsPlaying = true;
-		}
-
-		public virtual void OnStopped()
-		{
-			this.IsPlaying = false;
-		}
-
-		public virtual void OnReassigned()
-		{
-		}
-
-		public virtual void OnReset()
-		{
-		}
-
-		public virtual void ProcessRpc(NetworkReader reader)
-		{
-		}
-
-		public virtual void Init(OverlayAnimationsSubcontroller ctrl, int index)
-		{
-			this.Controller = ctrl;
-			this.SyncIndex = (byte)index;
-			this.Model = ctrl.Model;
-		}
-
-		public void SendRpc()
-		{
-			SubcontrollerRpcHandler.ServerSendRpc(this.Controller, new Action<NetworkWriter>(this.WriteRpcHeader));
-		}
-
-		public void Replay(bool instant)
-		{
-			if (!this.IsPlaying)
-			{
-				return;
-			}
-			this.Model.Animator.SetTrigger(instant ? OverlayAnimationsBase.HashReplayInstant : OverlayAnimationsBase.HashReplaySoft);
-		}
-
-		private void WriteRpcHeader(NetworkWriter writer)
-		{
-			writer.WriteByte(this.SyncIndex);
-		}
-
-		private static readonly int HashReplayInstant = Animator.StringToHash("FlavorOverlayTriggerInstant");
-
-		private static readonly int HashReplaySoft = Animator.StringToHash("FlavorOverlayTriggerSoft");
+	private void WriteRpcHeader(NetworkWriter writer)
+	{
+		writer.WriteByte(SyncIndex);
 	}
 }

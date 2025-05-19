@@ -1,23 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class ClassPresetChooser : MonoBehaviour
 {
-	private void Update()
-	{
-	}
-
-	public GameObject bottomMenuItem;
-
-	public Transform bottomMenuHolder;
-
-	public ClassPresetChooser.PickerPreset[] presets;
-
-	private string curKey;
-
-	private List<ClassPresetChooser.PickerPreset> curPresets = new List<ClassPresetChooser.PickerPreset>();
-
 	[Serializable]
 	public class PickerPreset
 	{
@@ -38,5 +24,19 @@ public class ClassPresetChooser : MonoBehaviour
 		public string en_additionalInfo;
 
 		public string pl_additionalInfo;
+	}
+
+	public GameObject bottomMenuItem;
+
+	public Transform bottomMenuHolder;
+
+	public PickerPreset[] presets;
+
+	private string curKey;
+
+	private List<PickerPreset> curPresets = new List<PickerPreset>();
+
+	private void Update()
+	{
 	}
 }

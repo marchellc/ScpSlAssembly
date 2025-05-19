@@ -1,10 +1,8 @@
-﻿using System;
 using UnityEngine;
 
-namespace ProgressiveCulling
+namespace ProgressiveCulling;
+
+public interface IBoundsCullable : ICullable
 {
-	public interface IBoundsCullable : ICullable
-	{
-		Bounds WorldspaceBounds { get; }
-	}
+	Bounds WorldspaceBounds { get; }
 }

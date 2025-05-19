@@ -1,10 +1,10 @@
-﻿using System;
 using InventorySystem.Items.Firearms.Modules.Misc;
+using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Attachments.Components
+namespace InventorySystem.Items.Firearms.Attachments.Components;
+
+public class BuckshotPatternAttachment : SerializableAttachment
 {
-	public class BuckshotPatternAttachment : SerializableAttachment
-	{
-		public BuckshotSettings Pattern { get; private set; }
-	}
+	[field: SerializeField]
+	public BuckshotSettings Pattern { get; private set; }
 }

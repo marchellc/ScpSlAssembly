@@ -1,62 +1,73 @@
-﻿using System;
+using System.Collections.Generic;
 using InventorySystem.Items.Thirdperson;
 using PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
 using UnityEngine;
 
-namespace InventorySystem.Items.Keycards
+namespace InventorySystem.Items.Keycards;
+
+public class KeycardThirdpersonItem : IdleThirdpersonItem
 {
-	public class KeycardThirdpersonItem : IdleThirdpersonItem
+	[SerializeField]
+	private Transform _gfxSpawnPoint;
+
+	[SerializeField]
+	private AnimationClip _useClip;
+
+	private bool _eventSet;
+
+	private KeycardGfx _lastInstance;
+
+	private readonly Dictionary<KeycardGfx, KeycardGfx> _prevInstances = new Dictionary<KeycardGfx, KeycardGfx>();
+
+	internal override void Initialize(InventorySubcontroller subcontroller, ItemIdentifier id)
 	{
-		internal override void Initialize(InventorySubcontroller subcontroller, ItemIdentifier id)
+		base.Initialize(subcontroller, id);
+		if (!_eventSet)
 		{
-			base.Initialize(subcontroller, id);
-			if (!this._eventSet)
-			{
-				KeycardItem.OnKeycardUsed += this.OnKeycardUsed;
-				this._eventSet = true;
-			}
-			base.SetAnim(AnimState3p.Override1, this._useClip);
-			if (this._targetRenderer == null)
-			{
-				return;
-			}
-			KeycardItem keycardItem;
-			if (!InventoryItemLoader.TryGetItem<KeycardItem>(id.TypeId, out keycardItem))
-			{
-				return;
-			}
-			KeycardPickup keycardPickup = keycardItem.PickupDropModel as KeycardPickup;
-			if (keycardPickup == null)
-			{
-				return;
-			}
-			this._targetRenderer.sharedMaterial = keycardPickup.GetMaterialFromKeycardId(id.TypeId);
+			KeycardItem.OnKeycardUsed += OnKeycardUsed;
+			_eventSet = true;
 		}
-
-		private void OnKeycardUsed(ushort serial)
+		SetAnim(AnimState3p.Override1, _useClip);
+		if (base.ItemId.TryGetTemplate<KeycardItem>(out var item))
 		{
-			if (base.ItemId.SerialNumber != serial)
-			{
-				return;
-			}
+			SpawnKeycard(item.KeycardGfx);
+		}
+	}
+
+	private void SpawnKeycard(KeycardGfx template)
+	{
+		if (_lastInstance != null)
+		{
+			_lastInstance.gameObject.SetActive(value: false);
+		}
+		if (_prevInstances.TryGetValue(template, out var value))
+		{
+			value.gameObject.SetActive(value: true);
+			KeycardDetailSynchronizer.TryReapplyDetails(value);
+			_lastInstance = value;
+		}
+		else
+		{
+			KeycardGfx keycardGfx = Object.Instantiate(template, _gfxSpawnPoint);
+			keycardGfx.transform.ResetTransform();
+			_lastInstance = keycardGfx;
+		}
+	}
+
+	private void OnKeycardUsed(ushort serial, bool success)
+	{
+		if (base.ItemId.SerialNumber == serial)
+		{
 			base.OverrideBlend = 1f;
-			base.ReplayOverrideBlend(true);
+			ReplayOverrideBlend(soft: true);
 		}
+	}
 
-		private void OnDestroy()
+	private void OnDestroy()
+	{
+		if (_eventSet)
 		{
-			if (this._eventSet)
-			{
-				KeycardItem.OnKeycardUsed -= this.OnKeycardUsed;
-			}
+			KeycardItem.OnKeycardUsed -= OnKeycardUsed;
 		}
-
-		[SerializeField]
-		private Renderer _targetRenderer;
-
-		[SerializeField]
-		private AnimationClip _useClip;
-
-		private bool _eventSet;
 	}
 }

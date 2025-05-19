@@ -1,72 +1,66 @@
-﻿using System;
+namespace Utf8Json.Internal.DoubleConversion;
 
-namespace Utf8Json.Internal.DoubleConversion
+internal struct StringBuilder
 {
-	internal struct StringBuilder
+	public byte[] buffer;
+
+	public int offset;
+
+	public StringBuilder(byte[] buffer, int position)
 	{
-		public StringBuilder(byte[] buffer, int position)
+		this.buffer = buffer;
+		offset = position;
+	}
+
+	public void AddCharacter(byte str)
+	{
+		BinaryUtil.EnsureCapacity(ref buffer, offset, 1);
+		buffer[offset++] = str;
+	}
+
+	public void AddString(byte[] str)
+	{
+		BinaryUtil.EnsureCapacity(ref buffer, offset, str.Length);
+		for (int i = 0; i < str.Length; i++)
 		{
-			this.buffer = buffer;
-			this.offset = position;
+			buffer[offset + i] = str[i];
 		}
+		offset += str.Length;
+	}
 
-		public void AddCharacter(byte str)
+	public void AddSubstring(byte[] str, int length)
+	{
+		BinaryUtil.EnsureCapacity(ref buffer, offset, length);
+		for (int i = 0; i < length; i++)
 		{
-			BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 1);
-			byte[] array = this.buffer;
-			int num = this.offset;
-			this.offset = num + 1;
-			array[num] = str;
+			buffer[offset + i] = str[i];
 		}
+		offset += length;
+	}
 
-		public void AddString(byte[] str)
+	public void AddSubstring(byte[] str, int start, int length)
+	{
+		BinaryUtil.EnsureCapacity(ref buffer, offset, length);
+		for (int i = 0; i < length; i++)
 		{
-			BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, str.Length);
-			for (int i = 0; i < str.Length; i++)
-			{
-				this.buffer[this.offset + i] = str[i];
-			}
-			this.offset += str.Length;
+			buffer[offset + i] = str[start + i];
 		}
+		offset += length;
+	}
 
-		public void AddSubstring(byte[] str, int length)
+	public void AddPadding(byte c, int count)
+	{
+		BinaryUtil.EnsureCapacity(ref buffer, offset, count);
+		for (int i = 0; i < count; i++)
 		{
-			BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, length);
-			for (int i = 0; i < length; i++)
-			{
-				this.buffer[this.offset + i] = str[i];
-			}
-			this.offset += length;
+			buffer[offset + i] = c;
 		}
+		offset += count;
+	}
 
-		public void AddSubstring(byte[] str, int start, int length)
-		{
-			BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, length);
-			for (int i = 0; i < length; i++)
-			{
-				this.buffer[this.offset + i] = str[start + i];
-			}
-			this.offset += length;
-		}
-
-		public void AddPadding(byte c, int count)
-		{
-			BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, count);
-			for (int i = 0; i < count; i++)
-			{
-				this.buffer[this.offset + i] = c;
-			}
-			this.offset += count;
-		}
-
-		public void AddStringSlow(string str)
-		{
-			BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, StringEncoding.UTF8.GetMaxByteCount(str.Length));
-			this.offset += StringEncoding.UTF8.GetBytes(str, 0, str.Length, this.buffer, this.offset);
-		}
-
-		public byte[] buffer;
-
-		public int offset;
+	public void AddStringSlow(string str)
+	{
+		BinaryUtil.EnsureCapacity(ref buffer, offset, StringEncoding.UTF8.GetMaxByteCount(str.Length));
+		offset += StringEncoding.UTF8.GetBytes(str, 0, str.Length, buffer, offset);
 	}
 }

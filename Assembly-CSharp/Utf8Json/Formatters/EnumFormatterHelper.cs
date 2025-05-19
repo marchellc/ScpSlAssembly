@@ -1,143 +1,132 @@
-﻿using System;
+using System;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public static class EnumFormatterHelper
 {
-	public static class EnumFormatterHelper
+	public static object GetSerializeDelegate(Type type, out bool isBoxed)
 	{
-		public static object GetSerializeDelegate(Type type, out bool isBoxed)
+		Type underlyingType = Enum.GetUnderlyingType(type);
+		isBoxed = true;
+		if (underlyingType == typeof(byte))
 		{
-			Type underlyingType = Enum.GetUnderlyingType(type);
-			isBoxed = true;
-			JsonSerializeAction<object> jsonSerializeAction;
-			if (underlyingType == typeof(byte))
+			return (JsonSerializeAction<object>)delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
 			{
-				jsonSerializeAction = delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
-				{
-					writer.WriteByte((byte)value);
-				};
-			}
-			else if (underlyingType == typeof(sbyte))
-			{
-				jsonSerializeAction = delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
-				{
-					writer.WriteSByte((sbyte)value);
-				};
-			}
-			else if (underlyingType == typeof(short))
-			{
-				jsonSerializeAction = delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
-				{
-					writer.WriteInt16((short)value);
-				};
-			}
-			else if (underlyingType == typeof(ushort))
-			{
-				jsonSerializeAction = delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
-				{
-					writer.WriteUInt16((ushort)value);
-				};
-			}
-			else if (underlyingType == typeof(int))
-			{
-				jsonSerializeAction = delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
-				{
-					writer.WriteInt32((int)value);
-				};
-			}
-			else if (underlyingType == typeof(uint))
-			{
-				jsonSerializeAction = delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
-				{
-					writer.WriteUInt32((uint)value);
-				};
-			}
-			else if (underlyingType == typeof(long))
-			{
-				jsonSerializeAction = delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
-				{
-					writer.WriteInt64((long)value);
-				};
-			}
-			else
-			{
-				if (!(underlyingType == typeof(ulong)))
-				{
-					throw new InvalidOperationException("Type is not Enum. Type:" + ((type != null) ? type.ToString() : null));
-				}
-				jsonSerializeAction = delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
-				{
-					writer.WriteUInt64((ulong)value);
-				};
-			}
-			return jsonSerializeAction;
+				writer.WriteByte((byte)value);
+			};
 		}
+		if (underlyingType == typeof(sbyte))
+		{
+			return (JsonSerializeAction<object>)delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
+			{
+				writer.WriteSByte((sbyte)value);
+			};
+		}
+		if (underlyingType == typeof(short))
+		{
+			return (JsonSerializeAction<object>)delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
+			{
+				writer.WriteInt16((short)value);
+			};
+		}
+		if (underlyingType == typeof(ushort))
+		{
+			return (JsonSerializeAction<object>)delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
+			{
+				writer.WriteUInt16((ushort)value);
+			};
+		}
+		if (underlyingType == typeof(int))
+		{
+			return (JsonSerializeAction<object>)delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
+			{
+				writer.WriteInt32((int)value);
+			};
+		}
+		if (underlyingType == typeof(uint))
+		{
+			return (JsonSerializeAction<object>)delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
+			{
+				writer.WriteUInt32((uint)value);
+			};
+		}
+		if (underlyingType == typeof(long))
+		{
+			return (JsonSerializeAction<object>)delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
+			{
+				writer.WriteInt64((long)value);
+			};
+		}
+		if (underlyingType == typeof(ulong))
+		{
+			return (JsonSerializeAction<object>)delegate(ref JsonWriter writer, object value, IJsonFormatterResolver _)
+			{
+				writer.WriteUInt64((ulong)value);
+			};
+		}
+		throw new InvalidOperationException("Type is not Enum. Type:" + type);
+	}
 
-		public static object GetDeserializeDelegate(Type type, out bool isBoxed)
+	public static object GetDeserializeDelegate(Type type, out bool isBoxed)
+	{
+		Type underlyingType = Enum.GetUnderlyingType(type);
+		isBoxed = true;
+		if (underlyingType == typeof(byte))
 		{
-			Type underlyingType = Enum.GetUnderlyingType(type);
-			isBoxed = true;
-			JsonDeserializeFunc<object> jsonDeserializeFunc;
-			if (underlyingType == typeof(byte))
+			return (JsonDeserializeFunc<object>)delegate(ref JsonReader reader, IJsonFormatterResolver _)
 			{
-				jsonDeserializeFunc = delegate(ref JsonReader reader, IJsonFormatterResolver _)
-				{
-					return reader.ReadByte();
-				};
-			}
-			else if (underlyingType == typeof(sbyte))
-			{
-				jsonDeserializeFunc = delegate(ref JsonReader reader, IJsonFormatterResolver _)
-				{
-					return reader.ReadSByte();
-				};
-			}
-			else if (underlyingType == typeof(short))
-			{
-				jsonDeserializeFunc = delegate(ref JsonReader reader, IJsonFormatterResolver _)
-				{
-					return reader.ReadInt16();
-				};
-			}
-			else if (underlyingType == typeof(ushort))
-			{
-				jsonDeserializeFunc = delegate(ref JsonReader reader, IJsonFormatterResolver _)
-				{
-					return reader.ReadUInt16();
-				};
-			}
-			else if (underlyingType == typeof(int))
-			{
-				jsonDeserializeFunc = delegate(ref JsonReader reader, IJsonFormatterResolver _)
-				{
-					return reader.ReadInt32();
-				};
-			}
-			else if (underlyingType == typeof(uint))
-			{
-				jsonDeserializeFunc = delegate(ref JsonReader reader, IJsonFormatterResolver _)
-				{
-					return reader.ReadUInt32();
-				};
-			}
-			else if (underlyingType == typeof(long))
-			{
-				jsonDeserializeFunc = delegate(ref JsonReader reader, IJsonFormatterResolver _)
-				{
-					return reader.ReadInt64();
-				};
-			}
-			else
-			{
-				if (!(underlyingType == typeof(ulong)))
-				{
-					throw new InvalidOperationException("Type is not Enum. Type:" + ((type != null) ? type.ToString() : null));
-				}
-				jsonDeserializeFunc = delegate(ref JsonReader reader, IJsonFormatterResolver _)
-				{
-					return reader.ReadUInt64();
-				};
-			}
-			return jsonDeserializeFunc;
+				return reader.ReadByte();
+			};
 		}
+		if (underlyingType == typeof(sbyte))
+		{
+			return (JsonDeserializeFunc<object>)delegate(ref JsonReader reader, IJsonFormatterResolver _)
+			{
+				return reader.ReadSByte();
+			};
+		}
+		if (underlyingType == typeof(short))
+		{
+			return (JsonDeserializeFunc<object>)delegate(ref JsonReader reader, IJsonFormatterResolver _)
+			{
+				return reader.ReadInt16();
+			};
+		}
+		if (underlyingType == typeof(ushort))
+		{
+			return (JsonDeserializeFunc<object>)delegate(ref JsonReader reader, IJsonFormatterResolver _)
+			{
+				return reader.ReadUInt16();
+			};
+		}
+		if (underlyingType == typeof(int))
+		{
+			return (JsonDeserializeFunc<object>)delegate(ref JsonReader reader, IJsonFormatterResolver _)
+			{
+				return reader.ReadInt32();
+			};
+		}
+		if (underlyingType == typeof(uint))
+		{
+			return (JsonDeserializeFunc<object>)delegate(ref JsonReader reader, IJsonFormatterResolver _)
+			{
+				return reader.ReadUInt32();
+			};
+		}
+		if (underlyingType == typeof(long))
+		{
+			return (JsonDeserializeFunc<object>)delegate(ref JsonReader reader, IJsonFormatterResolver _)
+			{
+				return reader.ReadInt64();
+			};
+		}
+		if (underlyingType == typeof(ulong))
+		{
+			return (JsonDeserializeFunc<object>)delegate(ref JsonReader reader, IJsonFormatterResolver _)
+			{
+				return reader.ReadUInt64();
+			};
+		}
+		throw new InvalidOperationException("Type is not Enum. Type:" + type);
 	}
 }

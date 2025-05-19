@@ -1,51 +1,49 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Utf8Json;
 
-namespace Authenticator
+namespace Authenticator;
+
+public readonly struct AuthenticatorPlayerObjects : IEquatable<AuthenticatorPlayerObjects>, IJsonSerializable
 {
-	public readonly struct AuthenticatorPlayerObjects : IEquatable<AuthenticatorPlayerObjects>, IJsonSerializable
+	public readonly List<AuthenticatorPlayerObject> objects;
+
+	[SerializationConstructor]
+	public AuthenticatorPlayerObjects(List<AuthenticatorPlayerObject> objects)
 	{
-		[SerializationConstructor]
-		public AuthenticatorPlayerObjects(List<AuthenticatorPlayerObject> objects)
-		{
-			this.objects = objects;
-		}
+		this.objects = objects;
+	}
 
-		public bool Equals(AuthenticatorPlayerObjects other)
-		{
-			return this.objects == other.objects;
-		}
+	public bool Equals(AuthenticatorPlayerObjects other)
+	{
+		return objects == other.objects;
+	}
 
-		public override bool Equals(object obj)
+	public override bool Equals(object obj)
+	{
+		if (obj is AuthenticatorPlayerObjects other)
 		{
-			if (obj is AuthenticatorPlayerObjects)
-			{
-				AuthenticatorPlayerObjects authenticatorPlayerObjects = (AuthenticatorPlayerObjects)obj;
-				return this.Equals(authenticatorPlayerObjects);
-			}
-			return false;
+			return Equals(other);
 		}
+		return false;
+	}
 
-		public override int GetHashCode()
+	public override int GetHashCode()
+	{
+		if (objects == null)
 		{
-			if (this.objects == null)
-			{
-				return 0;
-			}
-			return this.objects.GetHashCode();
+			return 0;
 		}
+		return objects.GetHashCode();
+	}
 
-		public static bool operator ==(AuthenticatorPlayerObjects left, AuthenticatorPlayerObjects right)
-		{
-			return left.Equals(right);
-		}
+	public static bool operator ==(AuthenticatorPlayerObjects left, AuthenticatorPlayerObjects right)
+	{
+		return left.Equals(right);
+	}
 
-		public static bool operator !=(AuthenticatorPlayerObjects left, AuthenticatorPlayerObjects right)
-		{
-			return !left.Equals(right);
-		}
-
-		public readonly List<AuthenticatorPlayerObject> objects;
+	public static bool operator !=(AuthenticatorPlayerObjects left, AuthenticatorPlayerObjects right)
+	{
+		return !left.Equals(right);
 	}
 }

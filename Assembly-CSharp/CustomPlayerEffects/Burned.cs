@@ -1,36 +1,26 @@
-﻿using System;
 using PlayerStatsSystem;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class Burned : StatusEffectBase, IHealableEffect, IDamageModifierEffect
 {
-	public class Burned : StatusEffectBase, IHealableEffect, IDamageModifierEffect
+	private const float BaseDamageMultiplier = 1.25f;
+
+	public float DamageMultiplier => 0.25f * RainbowTaste.CurrentMultiplier(base.Hub) + 1f;
+
+	public bool DamageModifierActive => base.IsEnabled;
+
+	public bool IsHealable(ItemType it)
 	{
-		public float DamageMultiplier
+		if (it != ItemType.Medkit)
 		{
-			get
-			{
-				return 0.25f * RainbowTaste.CurrentMultiplier(base.Hub) + 1f;
-			}
+			return it == ItemType.SCP500;
 		}
+		return true;
+	}
 
-		public bool DamageModifierActive
-		{
-			get
-			{
-				return base.IsEnabled;
-			}
-		}
-
-		public bool IsHealable(ItemType it)
-		{
-			return it == ItemType.Medkit || it == ItemType.SCP500;
-		}
-
-		public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
-		{
-			return this.DamageMultiplier;
-		}
-
-		private const float BaseDamageMultiplier = 1.25f;
+	public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
+	{
+		return DamageMultiplier;
 	}
 }

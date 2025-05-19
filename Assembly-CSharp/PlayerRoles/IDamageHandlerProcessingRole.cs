@@ -1,10 +1,8 @@
-﻿using System;
 using PlayerStatsSystem;
 
-namespace PlayerRoles
+namespace PlayerRoles;
+
+public interface IDamageHandlerProcessingRole
 {
-	public interface IDamageHandlerProcessingRole
-	{
-		DamageHandlerBase ProcessDamageHandler(DamageHandlerBase dhb);
-	}
+	DamageHandlerBase ProcessDamageHandler(DamageHandlerBase dhb);
 }

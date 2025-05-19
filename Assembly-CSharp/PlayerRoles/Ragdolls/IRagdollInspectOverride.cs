@@ -1,8 +1,5 @@
-﻿using System;
+namespace PlayerRoles.Ragdolls;
 
-namespace PlayerRoles.Ragdolls
+public interface IRagdollInspectOverride
 {
-	public interface IRagdollInspectOverride
-	{
-	}
 }

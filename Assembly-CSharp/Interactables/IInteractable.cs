@@ -1,10 +1,8 @@
-﻿using System;
 using Interactables.Verification;
 
-namespace Interactables
+namespace Interactables;
+
+public interface IInteractable
 {
-	public interface IInteractable
-	{
-		IVerificationRule VerificationRule { get; }
-	}
+	IVerificationRule VerificationRule { get; }
 }

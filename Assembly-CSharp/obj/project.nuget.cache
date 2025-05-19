@@ -1,8 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "n7tQZ0PySSI=",
+  "dgSpecHash": "mwXmE59s4FU=",
   "success": true,
-  "projectFilePath": "C:\\Users\\mcx\\Documents\\Development\\AssemblyDecomp\\Assembly-CSharp\\Assembly-CSharp.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "C:\\Users\\mcx\\Documents\\Development\\ScpSlAssembly\\Assembly-CSharp\\Assembly-CSharp.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\mcx\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
+    "C:\\Users\\mcx\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net40\\1.0.3\\microsoft.netframework.referenceassemblies.net40.1.0.3.nupkg.sha512"
+  ],
   "logs": []
 }

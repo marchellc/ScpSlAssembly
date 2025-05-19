@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace PlayerRoles.Filmmaker
+namespace PlayerRoles.Filmmaker;
+
+public class FilmmakerUI : MonoBehaviour
 {
-	public class FilmmakerUI : MonoBehaviour
-	{
-	}
 }

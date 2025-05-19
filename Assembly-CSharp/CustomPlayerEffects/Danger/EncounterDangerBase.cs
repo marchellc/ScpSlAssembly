@@ -1,32 +1,28 @@
-﻿using System;
+namespace CustomPlayerEffects.Danger;
 
-namespace CustomPlayerEffects.Danger
+public abstract class EncounterDangerBase : ParentDangerBase
 {
-	public abstract class EncounterDangerBase : ParentDangerBase
+	public abstract float DangerPerEncounter { get; }
+
+	public abstract float DangerPerAdditionalEncounter { get; }
+
+	public void RegisterEncounter(ReferenceHub target)
 	{
-		public abstract float DangerPerEncounter { get; }
+		float dangerValue = (base.ChildDangers.IsEmpty() ? DangerPerEncounter : DangerPerAdditionalEncounter);
+		base.ChildDangers.Add(new CachedEncounterDanger(dangerValue, base.Owner, target));
+	}
 
-		public abstract float DangerPerAdditionalEncounter { get; }
-
-		public void RegisterEncounter(ReferenceHub target)
+	public bool WasEncounteredRecently(ReferenceHub hub, out CachedEncounterDanger cachedEncounter)
+	{
+		cachedEncounter = null;
+		foreach (CachedEncounterDanger childDanger in base.ChildDangers)
 		{
-			float num = (base.ChildDangers.IsEmpty<DangerStackBase>() ? this.DangerPerEncounter : this.DangerPerAdditionalEncounter);
-			base.ChildDangers.Add(new CachedEncounterDanger(num, base.Owner, target));
-		}
-
-		public bool WasEncounteredRecently(ReferenceHub hub, out CachedEncounterDanger cachedEncounter)
-		{
-			cachedEncounter = null;
-			foreach (DangerStackBase dangerStackBase in base.ChildDangers)
+			if (!(childDanger.EncounteredHub != hub))
 			{
-				CachedEncounterDanger cachedEncounterDanger = (CachedEncounterDanger)dangerStackBase;
-				if (!(cachedEncounterDanger.EncounteredHub != hub))
-				{
-					cachedEncounter = cachedEncounterDanger;
-					return true;
-				}
+				cachedEncounter = childDanger;
+				return true;
 			}
-			return false;
 		}
+		return false;
 	}
 }

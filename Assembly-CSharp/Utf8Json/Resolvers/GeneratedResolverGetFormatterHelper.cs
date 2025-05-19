@@ -1,98 +1,18 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Authenticator;
 using Utf8Json.Formatters;
 using Utf8Json.Formatters.Authenticator;
 
-namespace Utf8Json.Resolvers
-{
-	internal static class GeneratedResolverGetFormatterHelper
-	{
-		internal static object GetFormatter(Type t)
-		{
-			int num;
-			if (!GeneratedResolverGetFormatterHelper.lookup.TryGetValue(t, out num))
-			{
-				return null;
-			}
-			switch (num)
-			{
-			case 0:
-				return new ArrayFormatter<ServerListItem>();
-			case 1:
-				return new ListFormatter<string>();
-			case 2:
-				return new ArrayFormatter<NewsListItem>();
-			case 3:
-				return new ArrayFormatter<DiscordEmbedField>();
-			case 4:
-				return new ArrayFormatter<DiscordEmbed>();
-			case 5:
-				return new ListFormatter<AuthenticatorPlayerObject>();
-			case 6:
-				return new ArrayFormatter<CreditsListMember>();
-			case 7:
-				return new ArrayFormatter<CreditsListCategory>();
-			case 8:
-				return new ArrayFormatter<AuthenticatiorAuthReject>();
-			case 9:
-				return new ServerListItemFormatter();
-			case 10:
-				return new ServerListFormatter();
-			case 11:
-				return new PlayerListSerializedFormatter();
-			case 12:
-				return new NewsListItemFormatter();
-			case 13:
-				return new NewsListFormatter();
-			case 14:
-				return new DiscordEmbedFieldFormatter();
-			case 15:
-				return new DiscordEmbedFormatter();
-			case 16:
-				return new DiscordWebhookFormatter();
-			case 17:
-				return new AuthenticatorPlayerObjectFormatter();
-			case 18:
-				return new AuthenticatorPlayerObjectsFormatter();
-			case 19:
-				return new CreditsListMemberFormatter();
-			case 20:
-				return new CreditsListCategoryFormatter();
-			case 21:
-				return new CreditsListFormatter();
-			case 22:
-				return new AuthenticatiorAuthRejectFormatter();
-			case 23:
-				return new AuthenticatorResponseFormatter();
-			case 24:
-				return new NewsRawFormatter();
-			case 25:
-				return new PublicKeyResponseFormatter();
-			case 26:
-				return new RenewResponseFormatter();
-			case 27:
-				return new ServerListSignedFormatter();
-			case 28:
-				return new TranslationManifestFormatter();
-			case 29:
-				return new AuthenticateResponseFormatter();
-			case 30:
-				return new AuthenticationTokenFormatter();
-			case 31:
-				return new BadgeTokenFormatter();
-			case 32:
-				return new SignedTokenFormatter();
-			case 33:
-				return new RequestSignatureResponseFormatter();
-			case 34:
-				return new TokenFormatter();
-			default:
-				return null;
-			}
-		}
+namespace Utf8Json.Resolvers;
 
-		private static readonly Dictionary<Type, int> lookup = new Dictionary<Type, int>(35)
+internal static class GeneratedResolverGetFormatterHelper
+{
+	private static readonly Dictionary<Type, int> lookup;
+
+	static GeneratedResolverGetFormatterHelper()
+	{
+		lookup = new Dictionary<Type, int>(35)
 		{
 			{
 				typeof(ServerListItem[]),
@@ -234,6 +154,53 @@ namespace Utf8Json.Resolvers
 				typeof(Token),
 				34
 			}
+		};
+	}
+
+	internal static object GetFormatter(Type t)
+	{
+		if (!lookup.TryGetValue(t, out var value))
+		{
+			return null;
+		}
+		return value switch
+		{
+			0 => new ArrayFormatter<ServerListItem>(), 
+			1 => new ListFormatter<string>(), 
+			2 => new ArrayFormatter<NewsListItem>(), 
+			3 => new ArrayFormatter<DiscordEmbedField>(), 
+			4 => new ArrayFormatter<DiscordEmbed>(), 
+			5 => new ListFormatter<AuthenticatorPlayerObject>(), 
+			6 => new ArrayFormatter<CreditsListMember>(), 
+			7 => new ArrayFormatter<CreditsListCategory>(), 
+			8 => new ArrayFormatter<AuthenticatiorAuthReject>(), 
+			9 => new ServerListItemFormatter(), 
+			10 => new ServerListFormatter(), 
+			11 => new PlayerListSerializedFormatter(), 
+			12 => new NewsListItemFormatter(), 
+			13 => new NewsListFormatter(), 
+			14 => new DiscordEmbedFieldFormatter(), 
+			15 => new DiscordEmbedFormatter(), 
+			16 => new DiscordWebhookFormatter(), 
+			17 => new AuthenticatorPlayerObjectFormatter(), 
+			18 => new AuthenticatorPlayerObjectsFormatter(), 
+			19 => new CreditsListMemberFormatter(), 
+			20 => new CreditsListCategoryFormatter(), 
+			21 => new CreditsListFormatter(), 
+			22 => new AuthenticatiorAuthRejectFormatter(), 
+			23 => new AuthenticatorResponseFormatter(), 
+			24 => new NewsRawFormatter(), 
+			25 => new PublicKeyResponseFormatter(), 
+			26 => new RenewResponseFormatter(), 
+			27 => new ServerListSignedFormatter(), 
+			28 => new TranslationManifestFormatter(), 
+			29 => new AuthenticateResponseFormatter(), 
+			30 => new AuthenticationTokenFormatter(), 
+			31 => new BadgeTokenFormatter(), 
+			32 => new SignedTokenFormatter(), 
+			33 => new RequestSignatureResponseFormatter(), 
+			34 => new TokenFormatter(), 
+			_ => null, 
 		};
 	}
 }

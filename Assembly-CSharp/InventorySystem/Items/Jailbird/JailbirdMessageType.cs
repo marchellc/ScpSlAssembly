@@ -1,17 +1,14 @@
-﻿using System;
+namespace InventorySystem.Items.Jailbird;
 
-namespace InventorySystem.Items.Jailbird
+public enum JailbirdMessageType
 {
-	public enum JailbirdMessageType
-	{
-		UpdateState,
-		Broken,
-		Holstered,
-		AttackTriggered,
-		AttackPerformed,
-		ChargeLoadTriggered,
-		ChargeFailed,
-		ChargeStarted,
-		Inspect
-	}
+	UpdateState,
+	Broken,
+	Holstered,
+	AttackTriggered,
+	AttackPerformed,
+	ChargeLoadTriggered,
+	ChargeFailed,
+	ChargeStarted,
+	Inspect
 }

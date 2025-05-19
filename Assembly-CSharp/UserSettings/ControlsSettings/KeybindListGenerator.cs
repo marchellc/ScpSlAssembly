@@ -1,72 +1,75 @@
-﻿using System;
+using System;
 using TMPro;
 using UnityEngine;
 
-namespace UserSettings.ControlsSettings
+namespace UserSettings.ControlsSettings;
+
+public class KeybindListGenerator : MonoBehaviour
 {
-	public class KeybindListGenerator : MonoBehaviour
+	[Serializable]
+	private struct CategorizedSetting
 	{
-		private void Awake()
+		public ActionCategory Category;
+
+		public Transform Root;
+	}
+
+	[SerializeField]
+	private GameObject _template;
+
+	[SerializeField]
+	private GameObject _header;
+
+	[SerializeField]
+	private CategorizedSetting[] _categorizedSettings;
+
+	private static readonly ActionCategory[] CategorySortingOrder = new ActionCategory[6]
+	{
+		ActionCategory.Movement,
+		ActionCategory.Gameplay,
+		ActionCategory.Weapons,
+		ActionCategory.Communication,
+		ActionCategory.Scp079,
+		ActionCategory.System
+	};
+
+	private void Awake()
+	{
+		ActionCategory[] categorySortingOrder = CategorySortingOrder;
+		foreach (ActionCategory actionCategory in categorySortingOrder)
 		{
-			foreach (ActionCategory actionCategory in KeybindListGenerator.CategorySortingOrder)
+			SpawnHeader(actionCategory);
+			NewInput.ActionDefinition[] definedActions = NewInput.DefinedActions;
+			foreach (NewInput.ActionDefinition actionDefinition in definedActions)
 			{
-				this.SpawnHeader(actionCategory);
-				foreach (NewInput.ActionDefinition actionDefinition in NewInput.DefinedActions)
+				if (actionDefinition.Category == actionCategory)
 				{
-					if (actionDefinition.Category == actionCategory)
-					{
-						this.SpawnInstance(actionDefinition);
-					}
+					SpawnInstance(actionDefinition);
 				}
-				foreach (KeybindListGenerator.CategorizedSetting categorizedSetting in this._categorizedSettings)
+			}
+			CategorizedSetting[] categorizedSettings = _categorizedSettings;
+			for (int j = 0; j < categorizedSettings.Length; j++)
+			{
+				CategorizedSetting categorizedSetting = categorizedSettings[j];
+				if (categorizedSetting.Category == actionCategory)
 				{
-					if (categorizedSetting.Category == actionCategory)
-					{
-						categorizedSetting.Root.SetAsLastSibling();
-					}
+					categorizedSetting.Root.SetAsLastSibling();
 				}
 			}
 		}
+	}
 
-		private void SpawnHeader(ActionCategory cat)
-		{
-			GameObject gameObject = global::UnityEngine.Object.Instantiate<GameObject>(this._header, base.transform);
-			gameObject.SetActive(true);
-			gameObject.GetComponentInChildren<TMP_Text>().text = Translations.Get<ActionCategory>(cat);
-		}
+	private void SpawnHeader(ActionCategory cat)
+	{
+		GameObject obj = UnityEngine.Object.Instantiate(_header, base.transform);
+		obj.SetActive(value: true);
+		obj.GetComponentInChildren<TMP_Text>().text = Translations.Get(cat);
+	}
 
-		private void SpawnInstance(NewInput.ActionDefinition definition)
-		{
-			GameObject gameObject = global::UnityEngine.Object.Instantiate<GameObject>(this._template, base.transform);
-			gameObject.SetActive(true);
-			gameObject.GetComponentInChildren<KeybindEntry>().Init(definition.Name);
-		}
-
-		[SerializeField]
-		private GameObject _template;
-
-		[SerializeField]
-		private GameObject _header;
-
-		[SerializeField]
-		private KeybindListGenerator.CategorizedSetting[] _categorizedSettings;
-
-		private static readonly ActionCategory[] CategorySortingOrder = new ActionCategory[]
-		{
-			ActionCategory.Movement,
-			ActionCategory.Gameplay,
-			ActionCategory.Weapons,
-			ActionCategory.Communication,
-			ActionCategory.Scp079,
-			ActionCategory.System
-		};
-
-		[Serializable]
-		private struct CategorizedSetting
-		{
-			public ActionCategory Category;
-
-			public Transform Root;
-		}
+	private void SpawnInstance(NewInput.ActionDefinition definition)
+	{
+		GameObject obj = UnityEngine.Object.Instantiate(_template, base.transform);
+		obj.SetActive(value: true);
+		obj.GetComponentInChildren<KeybindEntry>().Init(definition.Name);
 	}
 }

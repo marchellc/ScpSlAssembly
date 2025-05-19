@@ -1,120 +1,100 @@
-﻿using System;
+using System;
 using AudioPooling;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.PlayableScps.Subroutines;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp3114
+namespace PlayerRoles.PlayableScps.Scp3114;
+
+public class Scp3114Slap : ScpAttackAbilityBase<Scp3114Role>
 {
-	public class Scp3114Slap : ScpAttackAbilityBase<Scp3114Role>
+	private const float HitHumeShieldReward = 25f;
+
+	[SerializeField]
+	private AudioClip[] _swingClips;
+
+	[SerializeField]
+	private float _swingSoundRange;
+
+	private HumeShieldStat _humeShield;
+
+	private Scp3114Strangle _strangle;
+
+	public override float DamageAmount => 15f;
+
+	protected override float AttackDelay => 0.3f;
+
+	protected override float BaseCooldown => 0.5f;
+
+	protected override bool CanTriggerAbility
 	{
-		public override float DamageAmount
+		get
 		{
-			get
+			if (base.CanTriggerAbility)
 			{
-				return 15f;
+				return !AbilityBlocked;
 			}
+			return false;
 		}
+	}
 
-		protected override float AttackDelay
+	private bool AbilityBlocked
+	{
+		get
 		{
-			get
+			if (!_strangle.SyncTarget.HasValue)
 			{
-				return 0.3f;
+				return base.CastRole.CurIdentity.Status != Scp3114Identity.DisguiseStatus.None;
 			}
+			return true;
 		}
+	}
 
-		protected override float BaseCooldown
+	public event Action ServerOnHit;
+
+	public event Action ServerOnKill;
+
+	private void PlaySwingSound()
+	{
+		AudioSourcePoolManager.PlayOnTransform(_swingClips.RandomItem(), base.transform, _swingSoundRange, 1f, FalloffType.Exponential, MixerChannel.NoDucking);
+	}
+
+	protected override DamageHandlerBase DamageHandler(float damage)
+	{
+		return new Scp3114DamageHandler(base.Owner, damage, Scp3114DamageHandler.HandlerType.Slap);
+	}
+
+	protected override void Awake()
+	{
+		base.Awake();
+		base.OnTriggered += PlaySwingSound;
+	}
+
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		GetSubroutine<Scp3114Strangle>(out _strangle);
+		_humeShield = base.Owner.playerStats.GetModule<HumeShieldStat>();
+	}
+
+	protected override void DamagePlayers()
+	{
+		Transform playerCameraReference = base.Owner.PlayerCameraReference;
+		ReferenceHub primaryTarget = DetectedPlayers.GetPrimaryTarget(playerCameraReference);
+		if (!(primaryTarget == null))
 		{
-			get
+			DamagePlayer(primaryTarget, DamageAmount);
+			if (HasAttackResultFlag(AttackResult.KilledPlayer))
 			{
-				return 0.5f;
+				this.ServerOnKill?.Invoke();
 			}
-		}
-
-		protected override bool CanTriggerAbility
-		{
-			get
+			if (HasAttackResultFlag(AttackResult.AttackedPlayer))
 			{
-				return base.CanTriggerAbility && !this.AbilityBlocked;
+				this.ServerOnHit?.Invoke();
 			}
+			float a = _humeShield.CurValue + 25f;
+			_humeShield.CurValue = Mathf.Min(a, _humeShield.MaxValue);
 		}
-
-		private bool AbilityBlocked
-		{
-			get
-			{
-				return this._strangle.SyncTarget != null || base.CastRole.CurIdentity.Status > Scp3114Identity.DisguiseStatus.None;
-			}
-		}
-
-		public event Action ServerOnHit;
-
-		public event Action ServerOnKill;
-
-		private void PlaySwingSound()
-		{
-			AudioSourcePoolManager.PlayOnTransform(this._swingClips.RandomItem<AudioClip>(), base.transform, this._swingSoundRange, 1f, FalloffType.Exponential, MixerChannel.NoDucking, 1f);
-		}
-
-		protected override DamageHandlerBase DamageHandler(float damage)
-		{
-			return new Scp3114DamageHandler(base.Owner, damage, Scp3114DamageHandler.HandlerType.Slap);
-		}
-
-		protected override void Awake()
-		{
-			base.Awake();
-			base.OnTriggered += this.PlaySwingSound;
-		}
-
-		public override void SpawnObject()
-		{
-			base.SpawnObject();
-			base.GetSubroutine<Scp3114Strangle>(out this._strangle);
-			this._humeShield = base.Owner.playerStats.GetModule<HumeShieldStat>();
-		}
-
-		protected override void DamagePlayers()
-		{
-			Transform playerCameraReference = base.Owner.PlayerCameraReference;
-			ReferenceHub primaryTarget = this.DetectedPlayers.GetPrimaryTarget(playerCameraReference);
-			if (primaryTarget == null)
-			{
-				return;
-			}
-			this.DamagePlayer(primaryTarget, this.DamageAmount);
-			if (base.HasAttackResultFlag(AttackResult.KilledPlayer))
-			{
-				Action serverOnKill = this.ServerOnKill;
-				if (serverOnKill != null)
-				{
-					serverOnKill();
-				}
-			}
-			if (base.HasAttackResultFlag(AttackResult.AttackedPlayer))
-			{
-				Action serverOnHit = this.ServerOnHit;
-				if (serverOnHit != null)
-				{
-					serverOnHit();
-				}
-			}
-			float num = this._humeShield.CurValue + 25f;
-			this._humeShield.CurValue = Mathf.Min(num, this._humeShield.MaxValue);
-		}
-
-		private const float HitHumeShieldReward = 25f;
-
-		[SerializeField]
-		private AudioClip[] _swingClips;
-
-		[SerializeField]
-		private float _swingSoundRange;
-
-		private HumeShieldStat _humeShield;
-
-		private Scp3114Strangle _strangle;
 	}
 }

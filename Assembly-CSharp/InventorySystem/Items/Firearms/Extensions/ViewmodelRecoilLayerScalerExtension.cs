@@ -1,51 +1,50 @@
-﻿using System;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Modules.Misc;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+public class ViewmodelRecoilLayerScalerExtension : MonoBehaviour, IViewmodelExtension
 {
-	public class ViewmodelRecoilLayerScalerExtension : MonoBehaviour, IViewmodelExtension
+	private Firearm _fa;
+
+	private AnimatedViewmodelBase _viewmodel;
+
+	private float _lastShotBonus;
+
+	private SubsequentShotsCounter _shotsCounter;
+
+	[SerializeField]
+	private AnimatorLayerMask _recoilLayers;
+
+	[SerializeField]
+	private float _postShotReturnSpeed;
+
+	[SerializeField]
+	private AnimationCurve _weightOverScale;
+
+	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
+		_viewmodel = viewmodel;
+		_fa = viewmodel.ParentFirearm;
+		_shotsCounter = new SubsequentShotsCounter(_fa, 0f, 0f, 0f);
+		_shotsCounter.OnShotRecorded += delegate
 		{
-			this._viewmodel = viewmodel;
-			this._fa = viewmodel.ParentFirearm;
-			this._shotsCounter = new SubsequentShotsCounter(this._fa, 0f, 0f, 0f);
-			this._shotsCounter.OnShotRecorded += delegate
-			{
-				this._lastShotBonus = (float)this._shotsCounter.SubsequentShots;
-			};
-		}
+			_lastShotBonus = _shotsCounter.SubsequentShots;
+		};
+	}
 
-		private void Update()
+	private void Update()
+	{
+		float num = _fa.AttachmentsValue(AttachmentParam.OverallRecoilMultiplier);
+		_lastShotBonus = Mathf.MoveTowards(_lastShotBonus, 1f, Time.deltaTime * _postShotReturnSpeed);
+		float num2 = _weightOverScale.Evaluate(_lastShotBonus * num);
+		_recoilLayers.SetWeight(_viewmodel.AnimatorSetLayerWeight, num2);
+		int[] layers = _recoilLayers.Layers;
+		foreach (int layer in layers)
 		{
-			float num = this._fa.AttachmentsValue(AttachmentParam.OverallRecoilMultiplier);
-			this._lastShotBonus = Mathf.MoveTowards(this._lastShotBonus, 1f, Time.deltaTime * this._postShotReturnSpeed);
-			float num2 = this._weightOverScale.Evaluate(this._lastShotBonus * num);
-			this._recoilLayers.SetWeight(new Action<int, float>(this._viewmodel.AnimatorSetLayerWeight), num2);
-			foreach (int num3 in this._recoilLayers.Layers)
-			{
-				this._viewmodel.AnimatorSetLayerWeight(num3, num2);
-			}
-			this._shotsCounter.Update();
+			_viewmodel.AnimatorSetLayerWeight(layer, num2);
 		}
-
-		private Firearm _fa;
-
-		private AnimatedViewmodelBase _viewmodel;
-
-		private float _lastShotBonus;
-
-		private SubsequentShotsCounter _shotsCounter;
-
-		[SerializeField]
-		private AnimatorLayerMask _recoilLayers;
-
-		[SerializeField]
-		private float _postShotReturnSpeed;
-
-		[SerializeField]
-		private AnimationCurve _weightOverScale;
+		_shotsCounter.Update();
 	}
 }

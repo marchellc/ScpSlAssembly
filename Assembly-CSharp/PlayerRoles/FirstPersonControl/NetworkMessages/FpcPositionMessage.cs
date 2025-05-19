@@ -1,64 +1,48 @@
-﻿using System;
 using System.Collections.Generic;
-using CustomPlayerEffects;
 using Mirror;
 
-namespace PlayerRoles.FirstPersonControl.NetworkMessages
+namespace PlayerRoles.FirstPersonControl.NetworkMessages;
+
+public readonly struct FpcPositionMessage : NetworkMessage
 {
-	public struct FpcPositionMessage : NetworkMessage
+	private readonly ReferenceHub _receiver;
+
+	private static readonly HashSet<uint> AssignedNetIds = new HashSet<uint>();
+
+	public FpcPositionMessage(ReferenceHub receiver)
 	{
-		public FpcPositionMessage(ReferenceHub receiver)
-		{
-			this._receiver = receiver;
-		}
+		_receiver = receiver;
+	}
 
-		public FpcPositionMessage(NetworkReader reader)
+	public FpcPositionMessage(NetworkReader reader)
+	{
+		_receiver = null;
+		ushort num = reader.ReadUShort();
+		AssignedNetIds.Clear();
+		for (int i = 0; i < num; i++)
 		{
-			this._receiver = null;
-			ushort num = reader.ReadUShort();
-			FpcPositionMessage.AssignedNetIds.Clear();
-			for (int i = 0; i < (int)num; i++)
+			int value = reader.ReadRecyclablePlayerId().Value;
+			FpcSyncData fpcSyncData = new FpcSyncData(reader);
+			if (value != 0 && ReferenceHub.TryGetHub(value, out var hub))
 			{
-				int value = reader.ReadRecyclablePlayerId().Value;
-				FpcSyncData fpcSyncData = new FpcSyncData(reader);
-				ReferenceHub referenceHub;
-				if (value != 0 && ReferenceHub.TryGetHub(value, out referenceHub))
+				AssignedNetIds.Add(hub.netId);
+				if (fpcSyncData.TryApply(hub, out var module, out var bit))
 				{
-					FpcPositionMessage.AssignedNetIds.Add(referenceHub.netId);
-					FirstPersonMovementModule firstPersonMovementModule;
-					bool flag;
-					if (fpcSyncData.TryApply(referenceHub, out firstPersonMovementModule, out flag))
-					{
-						firstPersonMovementModule.IsGrounded = flag;
-					}
-				}
-			}
-			ReferenceHub referenceHub2;
-			Scp1344 scp;
-			bool flag2 = ReferenceHub.TryGetLocalHub(out referenceHub2) && referenceHub2.playerEffectsController.TryGetEffect<Scp1344>(out scp) && scp.IsEnabled;
-			foreach (ReferenceHub referenceHub3 in ReferenceHub.AllHubs)
-			{
-				IFpcRole fpcRole = referenceHub3.roleManager.CurrentRole as IFpcRole;
-				if (fpcRole != null)
-				{
-					bool flag3 = !FpcPositionMessage.AssignedNetIds.Contains(referenceHub3.netId);
-					fpcRole.FpcModule.Motor.IsInvisible = flag3;
-					if (!flag3 && flag2)
-					{
-						Invisible invisible;
-						fpcRole.FpcModule.Motor.IsInvisible = referenceHub3.playerEffectsController.TryGetEffect<Invisible>(out invisible) && invisible.IsEnabled;
-					}
+					module.IsGrounded = bit;
 				}
 			}
 		}
-
-		public void Write(NetworkWriter writer)
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			FpcServerPositionDistributor.WriteAll(this._receiver, writer);
+			if (allHub.roleManager.CurrentRole is IFpcRole fpcRole)
+			{
+				fpcRole.FpcModule.Motor.IsInvisible = !AssignedNetIds.Contains(allHub.netId);
+			}
 		}
+	}
 
-		private readonly ReferenceHub _receiver;
-
-		private static readonly HashSet<uint> AssignedNetIds = new HashSet<uint>();
+	public void Write(NetworkWriter writer)
+	{
+		FpcServerPositionDistributor.WriteAll(_receiver, writer);
 	}
 }

@@ -1,355 +1,305 @@
-﻿using System;
 using System.Collections.Generic;
 using AudioPooling;
-using InventorySystem.GUI;
 using InventorySystem.Items.Firearms.Modules.Misc;
 using Mirror;
 using PlayerRoles;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
-{
-	public class SimpleInspectorModule : ModuleBase, ITriggerPressPreventerModule, ISwayModifierModule, IInspectorModule
-	{
-		private bool ValidateStart
-		{
-			get
-			{
-				foreach (ModuleBase moduleBase in base.Firearm.Modules)
-				{
-					IInspectPreventerModule inspectPreventerModule = moduleBase as IInspectPreventerModule;
-					if (inspectPreventerModule != null)
-					{
-						if (!inspectPreventerModule.InspectionAllowed)
-						{
-							return false;
-						}
-					}
-					else
-					{
-						IBusyIndicatorModule busyIndicatorModule = moduleBase as IBusyIndicatorModule;
-						if (busyIndicatorModule != null && busyIndicatorModule.IsBusy)
-						{
-							return false;
-						}
-					}
-				}
-				return true;
-			}
-		}
+namespace InventorySystem.Items.Firearms.Modules;
 
-		private bool ValidateUpdate
+public class SimpleInspectorModule : ModuleBase, ITriggerPressPreventerModule, ISwayModifierModule, IInspectorModule
+{
+	private static readonly HashSet<ushort> SpectatorInspectingFirearms = new HashSet<ushort>();
+
+	private const float MinimalIdleTime = 0.15f;
+
+	private const float MaxTransitionTime = 0.365f;
+
+	private const float SwayAdjustSpeed = 5f;
+
+	private const float ClipStoppingSpeed = 10f;
+
+	private float _idleElapsed;
+
+	private bool _isInspecting;
+
+	private bool _eventListenerSet;
+
+	private readonly List<AudioPoolSession> _capturedClips = new List<AudioPoolSession>();
+
+	[Tooltip("Layer that contains the inspect animation. It must contain an idle state with 'Idle' tag, to which the animation returns when ends.")]
+	[SerializeField]
+	private AnimatorLayerMask _inspectLayer;
+
+	[Tooltip("Scale of hip-fire bobbing when inspecting.")]
+	[SerializeField]
+	private float _bobbingScale = 1f;
+
+	[Tooltip("Scale of runnin sway when inspecting")]
+	[SerializeField]
+	private float _walkSwayScale = 1f;
+
+	[Tooltip("Scale of runnin sway when inspecting")]
+	[SerializeField]
+	private float _jumpSwayScale = 1f;
+
+	[Tooltip("List of clips produced by audio manager that will be automatically stopped when the inspection is interrupted.")]
+	[SerializeField]
+	private AudioClip[] _clipsToStopOnInterrupt;
+
+	private bool ValidateStart
+	{
+		get
 		{
-			get
+			ModuleBase[] modules = base.Firearm.Modules;
+			foreach (ModuleBase moduleBase in modules)
 			{
-				if (!this.ValidateStart)
+				if (moduleBase is IInspectPreventerModule inspectPreventerModule)
 				{
-					return false;
-				}
-				if (this._idleElapsed < 0.365f)
-				{
-					return true;
-				}
-				foreach (int num in this._inspectLayer.Layers)
-				{
-					if (base.Firearm.AnimGetCurStateInfo(num).tagHash == FirearmAnimatorHashes.Idle)
+					if (!inspectPreventerModule.InspectionAllowed)
 					{
 						return false;
 					}
 				}
+				else if (moduleBase is IBusyIndicatorModule { IsBusy: not false })
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+
+	private bool ValidateUpdate
+	{
+		get
+		{
+			if (!ValidateStart)
+			{
+				return false;
+			}
+			if (_idleElapsed < 0.365f)
+			{
 				return true;
 			}
-		}
-
-		public bool ClientBlockTrigger { get; private set; }
-
-		public float WalkSwayScale { get; private set; }
-
-		public float JumpSwayScale { get; private set; }
-
-		public float BobbingSwayScale { get; private set; }
-
-		public bool DisplayInspecting
-		{
-			get
+			int[] layers = _inspectLayer.Layers;
+			foreach (int layer in layers)
 			{
-				return this._isInspecting;
-			}
-		}
-
-		private void SetInspecting(bool val)
-		{
-			bool isInspecting = this._isInspecting;
-			this._isInspecting = val;
-			this._idleElapsed = 0f;
-			if (this._isInspecting)
-			{
-				if (!isInspecting)
+				if (base.Firearm.AnimGetCurStateInfo(layer).tagHash == FirearmAnimatorHashes.Idle)
 				{
-					this._capturedClips.Clear();
-					base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.StartInspect, true);
+					return false;
 				}
 			}
-			else
-			{
-				this.ReleaseTriggerLock();
-			}
-			base.Firearm.AnimSetBool(FirearmAnimatorHashes.Inspect, val, false);
-			if (NetworkServer.active)
-			{
-				this.SendRpc(delegate(NetworkWriter x)
-				{
-					x.WriteBool(val);
-				}, true);
-			}
+			return true;
 		}
+	}
 
-		private void UpdateSwayScale()
+	public bool ClientBlockTrigger { get; private set; }
+
+	public float WalkSwayScale { get; private set; }
+
+	public float JumpSwayScale { get; private set; }
+
+	public float BobbingSwayScale { get; private set; }
+
+	public bool DisplayInspecting => _isInspecting;
+
+	private void SetInspecting(bool val)
+	{
+		bool isInspecting = _isInspecting;
+		_isInspecting = val;
+		_idleElapsed = 0f;
+		if (_isInspecting)
 		{
-			float num;
-			float num2;
-			float num3;
-			if (this._isInspecting)
+			if (!isInspecting)
 			{
-				num = this._walkSwayScale;
-				num2 = this._jumpSwayScale;
-				num3 = this._bobbingScale;
+				_capturedClips.Clear();
+				base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.StartInspect, checkIfExists: true);
 			}
-			else
-			{
-				num = 1f;
-				num2 = 1f;
-				num3 = 1f;
-			}
-			float num4 = 5f * Time.deltaTime;
-			this.WalkSwayScale = Mathf.Lerp(this.WalkSwayScale, num, num4);
-			this.JumpSwayScale = Mathf.Lerp(this.JumpSwayScale, num2, num4);
-			this.BobbingSwayScale = Mathf.Lerp(this.BobbingSwayScale, num3, num4);
 		}
-
-		private void InterceptNewSound(ItemIdentifier id, PlayerRoleBase role, PooledAudioSource src)
+		else
 		{
-			if (!this._isInspecting)
-			{
-				return;
-			}
-			if (base.Firearm.ItemSerial != id.SerialNumber)
-			{
-				return;
-			}
-			if (base.Firearm.ItemTypeId != id.TypeId)
-			{
-				return;
-			}
-			if (!this._clipsToStopOnInterrupt.Contains(src.Source.clip))
-			{
-				return;
-			}
-			this._capturedClips.Add(new AudioPoolSession(src));
+			ReleaseTriggerLock();
 		}
-
-		private void StopInspectSounds()
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.Inspect, val);
+		if (NetworkServer.active)
 		{
-			bool flag = false;
-			foreach (AudioPoolSession audioPoolSession in this._capturedClips)
+			SendRpc(delegate(NetworkWriter x)
 			{
-				if (audioPoolSession.SameSession && audioPoolSession.Source.volume > 0f)
-				{
-					flag = true;
-					audioPoolSession.Source.volume -= Time.deltaTime * 10f;
-				}
-			}
-			if (!flag)
-			{
-				this._capturedClips.Clear();
-			}
+				x.WriteBool(val);
+			});
 		}
+	}
 
-		private void OnDestroy()
+	private void UpdateSwayScale()
+	{
+		float b;
+		float b2;
+		float b3;
+		if (_isInspecting)
 		{
-			if (!this._eventListenerSet)
-			{
-				return;
-			}
-			this._eventListenerSet = false;
-			AudioModule.OnSoundPlayed -= this.InterceptNewSound;
+			b = _walkSwayScale;
+			b2 = _jumpSwayScale;
+			b3 = _bobbingScale;
 		}
-
-		internal override void EquipUpdate()
+		else
 		{
-			base.EquipUpdate();
-			this.UpdateSwayScale();
-			if (this._isInspecting)
-			{
-				if (!this.ValidateUpdate)
-				{
-					this.SetInspecting(false);
-				}
-			}
-			else if (this._capturedClips.Count > 0)
-			{
-				this.StopInspectSounds();
-			}
-			if (this.ValidateStart)
-			{
-				this._idleElapsed += Time.deltaTime;
-			}
-			else
-			{
-				this._idleElapsed = 0f;
-			}
-			if (!base.IsLocalPlayer || this._isInspecting)
-			{
-				return;
-			}
-			if (this._idleElapsed < 0.15f)
-			{
-				return;
-			}
-			if (!InventoryGuiController.ItemsSafeForInteraction)
-			{
-				return;
-			}
-			if (!base.GetActionDown(ActionName.InspectItem))
-			{
-				return;
-			}
-			if (base.ItemUsageBlocked)
-			{
-				return;
-			}
-			this.SendCmd(null);
-			this.SetInspecting(true);
+			b = 1f;
+			b2 = 1f;
+			b3 = 1f;
 		}
+		float t = 5f * Time.deltaTime;
+		WalkSwayScale = Mathf.Lerp(WalkSwayScale, b, t);
+		JumpSwayScale = Mathf.Lerp(JumpSwayScale, b2, t);
+		BobbingSwayScale = Mathf.Lerp(BobbingSwayScale, b3, t);
+	}
 
-		internal override void OnEquipped()
+	private void InterceptNewSound(ItemIdentifier id, PlayerRoleBase role, PooledAudioSource src)
+	{
+		if (_isInspecting && base.Firearm.ItemSerial == id.SerialNumber && base.Firearm.ItemTypeId == id.TypeId && _clipsToStopOnInterrupt.Contains(src.Source.clip))
 		{
-			base.OnEquipped();
-			this._idleElapsed = 0f;
-			this.ReleaseTriggerLock();
+			_capturedClips.Add(new AudioPoolSession(src));
 		}
+	}
 
-		internal override void OnHolstered()
+	private void StopInspectSounds()
+	{
+		bool flag = false;
+		foreach (AudioPoolSession capturedClip in _capturedClips)
 		{
-			base.OnHolstered();
-			this.SetInspecting(false);
-		}
-
-		internal override void OnClientReady()
-		{
-			base.OnClientReady();
-			SimpleInspectorModule.SpectatorInspectingFirearms.Clear();
-		}
-
-		internal override void SpectatorInit()
-		{
-			base.SpectatorInit();
-			if (!SimpleInspectorModule.SpectatorInspectingFirearms.Contains(base.Firearm.ItemSerial))
+			if (capturedClip.SameSession && !(capturedClip.Source.volume <= 0f))
 			{
-				return;
-			}
-			this._isInspecting = true;
-			base.Firearm.AnimSetBool(FirearmAnimatorHashes.Inspect, true, false);
-		}
-
-		protected override void OnInit()
-		{
-			base.OnInit();
-			if (!this._eventListenerSet)
-			{
-				AudioModule.OnSoundPlayed += this.InterceptNewSound;
-				this._eventListenerSet = true;
+				flag = true;
+				capturedClip.Source.volume -= Time.deltaTime * 10f;
 			}
 		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
+		if (!flag)
 		{
-			base.ServerProcessCmd(reader);
-			if (!this.ValidateStart)
-			{
-				return;
-			}
-			this.SetInspecting(true);
+			_capturedClips.Clear();
 		}
+	}
 
-		public override void ClientProcessRpcInstance(NetworkReader reader)
+	private void OnDestroy()
+	{
+		if (_eventListenerSet)
 		{
-			base.ClientProcessRpcInstance(reader);
-			if (!base.Firearm.IsSpectator || this._isInspecting == reader.ReadBool())
-			{
-				return;
-			}
-			this.SetInspecting(!this._isInspecting);
+			_eventListenerSet = false;
+			AudioModule.OnSoundPlayed -= InterceptNewSound;
 		}
+	}
 
-		public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	internal override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		UpdateSwayScale();
+		if (_isInspecting)
 		{
-			base.ClientProcessRpcTemplate(reader, serial);
-			if (reader.ReadBool())
+			if (!ValidateUpdate)
 			{
-				SimpleInspectorModule.SpectatorInspectingFirearms.Add(serial);
-				return;
+				SetInspecting(val: false);
 			}
-			SimpleInspectorModule.SpectatorInspectingFirearms.Remove(serial);
 		}
-
-		[ExposedFirearmEvent]
-		public void BlockTrigger()
+		else if (_capturedClips.Count > 0)
 		{
-			if (!base.IsLocalPlayer)
-			{
-				return;
-			}
-			IActionModule actionModule;
-			if (base.Firearm.TryGetModule(out actionModule, true) && actionModule.IsLoaded)
-			{
-				return;
-			}
-			this.ClientBlockTrigger = true;
+			StopInspectSounds();
 		}
-
-		[ExposedFirearmEvent]
-		public void ReleaseTriggerLock()
+		if (ValidateStart)
 		{
-			this.ClientBlockTrigger = false;
+			_idleElapsed += Time.deltaTime;
 		}
+		else
+		{
+			_idleElapsed = 0f;
+		}
+		if (base.IsControllable && !_isInspecting && !(_idleElapsed < 0.15f) && GetActionDown(ActionName.InspectItem) && !base.ItemUsageBlocked)
+		{
+			SendCmd();
+			SetInspecting(val: true);
+		}
+	}
 
-		private static readonly HashSet<ushort> SpectatorInspectingFirearms = new HashSet<ushort>();
+	internal override void OnEquipped()
+	{
+		base.OnEquipped();
+		_idleElapsed = 0f;
+		ReleaseTriggerLock();
+	}
 
-		private const float MinimalIdleTime = 0.15f;
+	internal override void OnHolstered()
+	{
+		base.OnHolstered();
+		SetInspecting(val: false);
+	}
 
-		private const float MaxTransitionTime = 0.365f;
+	internal override void OnClientReady()
+	{
+		base.OnClientReady();
+		SpectatorInspectingFirearms.Clear();
+	}
 
-		private const float SwayAdjustSpeed = 5f;
+	internal override void SpectatorInit()
+	{
+		base.SpectatorInit();
+		if (SpectatorInspectingFirearms.Contains(base.Firearm.ItemSerial))
+		{
+			_isInspecting = true;
+			base.Firearm.AnimSetBool(FirearmAnimatorHashes.Inspect, b: true);
+		}
+	}
 
-		private const float ClipStoppingSpeed = 10f;
+	protected override void OnInit()
+	{
+		base.OnInit();
+		if (!_eventListenerSet)
+		{
+			AudioModule.OnSoundPlayed += InterceptNewSound;
+			_eventListenerSet = true;
+		}
+	}
 
-		private float _idleElapsed;
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (ValidateStart)
+		{
+			SetInspecting(val: true);
+		}
+	}
 
-		private bool _isInspecting;
+	public override void ClientProcessRpcInstance(NetworkReader reader)
+	{
+		base.ClientProcessRpcInstance(reader);
+		if (base.Firearm.IsSpectator && _isInspecting != reader.ReadBool())
+		{
+			SetInspecting(!_isInspecting);
+		}
+	}
 
-		private bool _eventListenerSet;
+	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	{
+		base.ClientProcessRpcTemplate(reader, serial);
+		if (reader.ReadBool())
+		{
+			SpectatorInspectingFirearms.Add(serial);
+		}
+		else
+		{
+			SpectatorInspectingFirearms.Remove(serial);
+		}
+	}
 
-		private readonly List<AudioPoolSession> _capturedClips = new List<AudioPoolSession>();
+	[ExposedFirearmEvent]
+	public void BlockTrigger()
+	{
+		if (base.IsLocalPlayer && (!base.Firearm.TryGetModule<IActionModule>(out var module) || !module.IsLoaded))
+		{
+			ClientBlockTrigger = true;
+		}
+	}
 
-		[Tooltip("Layer that contains the inspect animation. It must contain an idle state with 'Idle' tag, to which the animation returns when ends.")]
-		[SerializeField]
-		private AnimatorLayerMask _inspectLayer;
-
-		[Tooltip("Scale of hip-fire bobbing when inspecting.")]
-		[SerializeField]
-		private float _bobbingScale = 1f;
-
-		[Tooltip("Scale of runnin sway when inspecting")]
-		[SerializeField]
-		private float _walkSwayScale = 1f;
-
-		[Tooltip("Scale of runnin sway when inspecting")]
-		[SerializeField]
-		private float _jumpSwayScale = 1f;
-
-		[Tooltip("List of clips produced by audio manager that will be automatically stopped when the inspection is interrupted.")]
-		[SerializeField]
-		private AudioClip[] _clipsToStopOnInterrupt;
+	[ExposedFirearmEvent]
+	public void ReleaseTriggerLock()
+	{
+		ClientBlockTrigger = false;
 	}
 }

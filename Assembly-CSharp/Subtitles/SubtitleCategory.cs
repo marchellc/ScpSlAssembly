@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace Subtitles
+namespace Subtitles;
+
+public class SubtitleCategory : MonoBehaviour
 {
-	public class SubtitleCategory : MonoBehaviour
-	{
-	}
 }

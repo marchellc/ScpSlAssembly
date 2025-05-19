@@ -1,25 +1,24 @@
-﻿using System;
+using System;
 using Mirror;
 
-namespace Hints
+namespace Hints;
+
+public class UShortHintParameter : PrimitiveHintParameter<ushort>
 {
-	public class UShortHintParameter : PrimitiveHintParameter<ushort>
+	public static UShortHintParameter FromNetwork(NetworkReader reader)
 	{
-		public static UShortHintParameter FromNetwork(NetworkReader reader)
-		{
-			UShortHintParameter ushortHintParameter = new UShortHintParameter();
-			ushortHintParameter.Deserialize(reader);
-			return ushortHintParameter;
-		}
+		UShortHintParameter uShortHintParameter = new UShortHintParameter();
+		uShortHintParameter.Deserialize(reader);
+		return uShortHintParameter;
+	}
 
-		protected UShortHintParameter()
-			: base(new Func<NetworkReader, ushort>(NetworkReaderExtensions.ReadUShort), new Action<NetworkWriter, ushort>(NetworkWriterExtensions.WriteUShort))
-		{
-		}
+	protected UShortHintParameter()
+		: base((Func<NetworkReader, ushort>)NetworkReaderExtensions.ReadUShort, (Action<NetworkWriter, ushort>)NetworkWriterExtensions.WriteUShort)
+	{
+	}
 
-		public UShortHintParameter(ushort value)
-			: base(value, new Func<NetworkReader, ushort>(NetworkReaderExtensions.ReadUShort), new Action<NetworkWriter, ushort>(NetworkWriterExtensions.WriteUShort))
-		{
-		}
+	public UShortHintParameter(ushort value)
+		: base(value, (Func<NetworkReader, ushort>)NetworkReaderExtensions.ReadUShort, (Action<NetworkWriter, ushort>)NetworkWriterExtensions.WriteUShort)
+	{
 	}
 }

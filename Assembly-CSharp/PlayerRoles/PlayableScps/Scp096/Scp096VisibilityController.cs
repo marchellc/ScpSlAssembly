@@ -1,85 +1,78 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.Visibility;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp096
+namespace PlayerRoles.PlayableScps.Scp096;
+
+public class Scp096VisibilityController : FpcVisibilityController
 {
-	public class Scp096VisibilityController : FpcVisibilityController
+	private const float RageRangeBuffer = 10f;
+
+	private Scp096Role _role;
+
+	private Scp096TargetsTracker _targetsTracker;
+
+	public override InvisibilityFlags IgnoredFlags
 	{
-		public override InvisibilityFlags IgnoredFlags
+		get
 		{
-			get
+			InvisibilityFlags invisibilityFlags = base.IgnoredFlags;
+			if (HideNonTargets)
 			{
-				InvisibilityFlags invisibilityFlags = base.IgnoredFlags;
-				if (this.HideNonTargets)
-				{
-					invisibilityFlags |= (InvisibilityFlags)3U;
-				}
-				return invisibilityFlags;
+				invisibilityFlags |= (InvisibilityFlags)3u;
 			}
+			return invisibilityFlags;
 		}
+	}
 
-		protected override int NormalMaxRangeSqr
+	protected override int NormalMaxRangeSqr => EnsureVisiblityForState(base.NormalMaxRangeSqr);
+
+	protected override int SurfaceMaxRangeSqr => EnsureVisiblityForState(base.SurfaceMaxRangeSqr);
+
+	private bool HideNonTargets
+	{
+		get
 		{
-			get
+			if (!_role.IsRageState(Scp096RageState.Distressed))
 			{
-				return this.EnsureVisiblityForState(base.NormalMaxRangeSqr);
+				return _role.IsRageState(Scp096RageState.Enraged);
 			}
+			return true;
 		}
+	}
 
-		protected override int SurfaceMaxRangeSqr
+	private int EnsureVisiblityForState(int defaultRange)
+	{
+		if (!Scp096AudioPlayer.TryGetAudioForState(_role.StateController.RageState, out var stateAudio))
 		{
-			get
+			return defaultRange;
+		}
+		float num = stateAudio.MaxDistance + 10f;
+		return Mathf.Max(Mathf.RoundToInt(num * num), defaultRange);
+	}
+
+	public override InvisibilityFlags GetActiveFlags(ReferenceHub observer)
+	{
+		return base.GetActiveFlags(observer);
+	}
+
+	public override bool ValidateVisibility(ReferenceHub target)
+	{
+		if (HideNonTargets)
+		{
+			if (_targetsTracker.HasTarget(target))
 			{
-				return this.EnsureVisiblityForState(base.SurfaceMaxRangeSqr);
+				return base.ValidateVisibility(target);
 			}
+			return false;
 		}
+		return base.ValidateVisibility(target);
+	}
 
-		private bool HideNonTargets
-		{
-			get
-			{
-				return this._role.IsRageState(Scp096RageState.Distressed) || this._role.IsRageState(Scp096RageState.Enraged);
-			}
-		}
-
-		private int EnsureVisiblityForState(int defaultRange)
-		{
-			Scp096AudioPlayer.Scp096StateAudio scp096StateAudio;
-			if (!Scp096AudioPlayer.TryGetAudioForState(this._role.StateController.RageState, out scp096StateAudio))
-			{
-				return defaultRange;
-			}
-			float num = scp096StateAudio.MaxDistance + 10f;
-			return Mathf.Max(Mathf.RoundToInt(num * num), defaultRange);
-		}
-
-		public override InvisibilityFlags GetActiveFlags(ReferenceHub observer)
-		{
-			return base.GetActiveFlags(observer);
-		}
-
-		public override bool ValidateVisibility(ReferenceHub target)
-		{
-			if (this.HideNonTargets)
-			{
-				return this._targetsTracker.HasTarget(target) && base.ValidateVisibility(target);
-			}
-			return base.ValidateVisibility(target);
-		}
-
-		public override void SpawnObject()
-		{
-			base.SpawnObject();
-			this._role = base.Role as Scp096Role;
-			this._role.SubroutineModule.TryGetSubroutine<Scp096TargetsTracker>(out this._targetsTracker);
-		}
-
-		private const float RageRangeBuffer = 10f;
-
-		private Scp096Role _role;
-
-		private Scp096TargetsTracker _targetsTracker;
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		_role = base.Role as Scp096Role;
+		_role.SubroutineModule.TryGetSubroutine<Scp096TargetsTracker>(out _targetsTracker);
 	}
 }

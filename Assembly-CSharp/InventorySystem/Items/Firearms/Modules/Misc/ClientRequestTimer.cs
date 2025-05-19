@@ -1,52 +1,58 @@
-﻿using System;
 using System.Diagnostics;
 using Mirror;
 
-namespace InventorySystem.Items.Firearms.Modules.Misc
+namespace InventorySystem.Items.Firearms.Modules.Misc;
+
+public class ClientRequestTimer
 {
-	public class ClientRequestTimer
+	private const float AdditionalTimeout = 0.25f;
+
+	private Stopwatch _stopwatch;
+
+	private double _timeoutDuration;
+
+	public bool Sent { get; private set; }
+
+	public bool Busy
 	{
-		public bool Sent { get; private set; }
-
-		public bool Busy
+		get
 		{
-			get
+			if (Sent)
 			{
-				return this.Sent && !this.TimedOut;
+				return !TimedOut;
 			}
+			return false;
 		}
+	}
 
-		public bool TimedOut
+	public bool TimedOut
+	{
+		get
 		{
-			get
+			if (!Sent)
 			{
-				return this.Sent && this._stopwatch.Elapsed.TotalSeconds > this._timeoutDuration;
+				return false;
 			}
+			return _stopwatch.Elapsed.TotalSeconds > _timeoutDuration;
 		}
+	}
 
-		public void Trigger()
+	public void Trigger()
+	{
+		Sent = true;
+		if (_stopwatch == null)
 		{
-			this.Sent = true;
-			if (this._stopwatch == null)
-			{
-				this._stopwatch = Stopwatch.StartNew();
-			}
-			else
-			{
-				this._stopwatch.Restart();
-			}
-			this._timeoutDuration = NetworkTime.rtt + 0.25;
+			_stopwatch = Stopwatch.StartNew();
 		}
-
-		public void Reset()
+		else
 		{
-			this.Sent = false;
+			_stopwatch.Restart();
 		}
+		_timeoutDuration = NetworkTime.rtt + 0.25;
+	}
 
-		private const float AdditionalTimeout = 0.25f;
-
-		private Stopwatch _stopwatch;
-
-		private double _timeoutDuration;
+	public void Reset()
+	{
+		Sent = false;
 	}
 }

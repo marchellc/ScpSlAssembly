@@ -1,4 +1,3 @@
-﻿using System;
 using UnityEngine;
 
 public class ConnInfoButton : MonoBehaviour

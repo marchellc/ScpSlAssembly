@@ -1,17 +1,14 @@
-﻿using System;
+namespace PlayerRoles.FirstPersonControl.Spawnpoints;
 
-namespace PlayerRoles.FirstPersonControl.Spawnpoints
+public struct CachedRoom
 {
-	public struct CachedRoom
+	public RoomRoleSpawnpoint RoomType;
+
+	public int RoomIndex;
+
+	public CachedRoom(RoomRoleSpawnpoint roomType, int roomIndex)
 	{
-		public CachedRoom(RoomRoleSpawnpoint roomType, int roomIndex)
-		{
-			this.RoomType = roomType;
-			this.RoomIndex = roomIndex;
-		}
-
-		public RoomRoleSpawnpoint RoomType;
-
-		public int RoomIndex;
+		RoomType = roomType;
+		RoomIndex = roomIndex;
 	}
 }

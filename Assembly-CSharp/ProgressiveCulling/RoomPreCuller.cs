@@ -1,175 +1,163 @@
-﻿using System;
 using System.Collections.Generic;
 using MapGeneration;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace ProgressiveCulling
+namespace ProgressiveCulling;
+
+public static class RoomPreCuller
 {
-	public static class RoomPreCuller
+	private static readonly HashSet<Vector3Int> VisibleCoords = new HashSet<Vector3Int>();
+
+	private static bool _lastSuccess = false;
+
+	private static Vector3 _lastCameraPosition;
+
+	private static float? _roomSize;
+
+	private const float ExtraCameraRange = 4f;
+
+	private static readonly Vector3Int[] ScanDirections = new Vector3Int[4]
 	{
-		private static float RoomSize
+		Vector3Int.forward,
+		Vector3Int.back,
+		Vector3Int.left,
+		Vector3Int.right
+	};
+
+	private static readonly bool EnableDebugging = false;
+
+	private static float RoomSize
+	{
+		get
 		{
-			get
+			float valueOrDefault = _roomSize.GetValueOrDefault();
+			if (!_roomSize.HasValue)
 			{
-				float num = RoomPreCuller._roomSize.GetValueOrDefault();
-				if (RoomPreCuller._roomSize == null)
+				valueOrDefault = Mathf.Max(RoomIdentifier.GridScale.x, RoomIdentifier.GridScale.z);
+				_roomSize = valueOrDefault;
+			}
+			return _roomSize.Value;
+		}
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CullingCamera.OnStageStarted += OnStageStarted;
+	}
+
+	private static void OnStageStarted(RootCullablePriority priority, Camera cam)
+	{
+		if (priority == RootCullablePriority.PreCull)
+		{
+			_lastSuccess = TryPreCull(cam);
+		}
+	}
+
+	private static bool TryPreCull(Camera cam)
+	{
+		if (ReferenceHub.TryGetLocalHub(out var hub) && hub.roleManager.CurrentRole is IFpcRole fpcRole && fpcRole.FpcModule.Noclip.IsActive)
+		{
+			return false;
+		}
+		Transform transform = cam.transform;
+		_lastCameraPosition = transform.position;
+		if (!_lastCameraPosition.TryGetRoom(out var room))
+		{
+			return false;
+		}
+		VisibleCoords.Clear();
+		int maxJumps = Mathf.CeilToInt((cam.farClipPlane + 4f) / RoomSize);
+		ScanCoords(camVertex: new VertexAngle2D(transform.forward, _lastCameraPosition, cam.fieldOfView, cam.aspect), coords: room.MainCoords, maxJumps: maxJumps, iteration: 0);
+		return true;
+	}
+
+	private static void ScanCoords(Vector3Int coords, VertexAngle2D camVertex, int maxJumps, int iteration)
+	{
+		DebugVertexAngle(camVertex, (float)iteration * RoomSize + 1f);
+		VisibleCoords.Add(coords);
+		if (iteration >= maxJumps)
+		{
+			return;
+		}
+		Vector3Int[] scanDirections = ScanDirections;
+		foreach (Vector3Int vector3Int in scanDirections)
+		{
+			Vector3Int vector3Int2 = coords + vector3Int;
+			if (VisibleCoords.Contains(vector3Int2) || !RoomCullingConnection.TryGetConnection(coords, vector3Int2, out var conn))
+			{
+				continue;
+			}
+			Bounds worldspaceBounds = conn.WorldspaceBounds;
+			if (conn.Connector.IsVisibleThrough || worldspaceBounds.Contains(_lastCameraPosition))
+			{
+				VertexAngle2D vertexAngle2D = new VertexAngle2D(camVertex.Origin, worldspaceBounds);
+				VertexAngle2D result;
+				bool flag;
+				if (iteration == 0)
 				{
-					num = Mathf.Max(RoomIdentifier.GridScale.x, RoomIdentifier.GridScale.z);
-					RoomPreCuller._roomSize = new float?(num);
+					result = vertexAngle2D;
+					flag = true;
 				}
-				return RoomPreCuller._roomSize.Value;
-			}
-		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			CullingCamera.OnStageStarted += RoomPreCuller.OnStageStarted;
-		}
-
-		private static void OnStageStarted(RootCullablePriority priority, Camera cam)
-		{
-			if (priority != RootCullablePriority.PreCull)
-			{
-				return;
-			}
-			RoomPreCuller._lastSuccess = RoomPreCuller.TryPreCull(cam);
-		}
-
-		private static bool TryPreCull(Camera cam)
-		{
-			ReferenceHub referenceHub;
-			if (ReferenceHub.TryGetLocalHub(out referenceHub))
-			{
-				IFpcRole fpcRole = referenceHub.roleManager.CurrentRole as IFpcRole;
-				if (fpcRole != null && fpcRole.FpcModule.Noclip.IsActive)
+				else
 				{
-					return false;
+					flag = CullingMath.TryGetCommon(camVertex, vertexAngle2D, out result);
 				}
-			}
-			Transform transform = cam.transform;
-			RoomPreCuller._lastCameraPosition = transform.position;
-			RoomIdentifier roomIdentifier = RoomUtils.RoomAtPositionRaycasts(RoomPreCuller._lastCameraPosition, true);
-			Vector3Int vector3Int;
-			if (roomIdentifier == null || !roomIdentifier.TryGetMainCoords(out vector3Int))
-			{
-				return false;
-			}
-			RoomPreCuller.VisibleCoords.Clear();
-			int num = Mathf.CeilToInt((cam.farClipPlane + 4f) / RoomPreCuller.RoomSize);
-			VertexAngle2D vertexAngle2D = new VertexAngle2D(transform.forward, RoomPreCuller._lastCameraPosition, cam.fieldOfView, cam.aspect);
-			RoomPreCuller.ScanCoords(vector3Int, vertexAngle2D, num, 0);
-			return true;
-		}
-
-		private static void ScanCoords(Vector3Int coords, VertexAngle2D camVertex, int maxJumps, int iteration)
-		{
-			RoomPreCuller.DebugVertexAngle(camVertex, (float)iteration * RoomPreCuller.RoomSize + 1f);
-			RoomPreCuller.VisibleCoords.Add(coords);
-			if (iteration >= maxJumps)
-			{
-				return;
-			}
-			foreach (Vector3Int vector3Int in RoomPreCuller.ScanDirections)
-			{
-				Vector3Int vector3Int2 = coords + vector3Int;
-				RoomCullingConnection roomCullingConnection;
-				if (!RoomPreCuller.VisibleCoords.Contains(vector3Int2) && RoomCullingConnection.TryGetConnection(coords, vector3Int2, out roomCullingConnection))
+				if (flag && CullingCamera.CheckBoundsVisibility(worldspaceBounds))
 				{
-					Bounds worldspaceBounds = roomCullingConnection.WorldspaceBounds;
-					if (roomCullingConnection.Connector.IsVisibleThrough || worldspaceBounds.Contains(RoomPreCuller._lastCameraPosition))
-					{
-						VertexAngle2D vertexAngle2D = new VertexAngle2D(camVertex.Origin, worldspaceBounds);
-						VertexAngle2D vertexAngle2D2;
-						bool flag;
-						if (iteration == 0)
-						{
-							vertexAngle2D2 = vertexAngle2D;
-							flag = true;
-						}
-						else
-						{
-							flag = CullingMath.TryGetCommon(camVertex, vertexAngle2D, out vertexAngle2D2);
-						}
-						if (flag && CullingCamera.CheckBoundsVisibility(worldspaceBounds))
-						{
-							RoomPreCuller.ScanCoords(vector3Int2, vertexAngle2D2, maxJumps, iteration + 1);
-						}
-						else
-						{
-							RoomPreCuller.ScanBounds(roomCullingConnection, camVertex, vector3Int2);
-						}
-					}
+					ScanCoords(vector3Int2, result, maxJumps, iteration + 1);
 				}
-			}
-		}
-
-		private static void ScanBounds(RoomCullingConnection rcc, VertexAngle2D vertex, Vector3Int otherCoords)
-		{
-			RoomCullingConnection.RoomLink link = rcc.Link;
-			CullableRoom cullableRoom;
-			if (link.Coords.CoordsA == otherCoords)
-			{
-				cullableRoom = link.CullableA;
-			}
-			else
-			{
-				if (!(link.Coords.CoordsB == otherCoords))
+				else
 				{
-					Debug.LogError(string.Format("Link {0} is not matching any rooms at {1}.", rcc.name, otherCoords));
-					return;
+					ScanBounds(conn, camVertex, vector3Int2);
 				}
-				cullableRoom = link.CullableB;
 			}
-			Bounds worldspaceBounds = cullableRoom.WorldspaceBounds;
-			if (!CullingCamera.CheckBoundsVisibility(worldspaceBounds))
+		}
+	}
+
+	private static void ScanBounds(RoomCullingConnection rcc, VertexAngle2D vertex, Vector3Int otherCoords)
+	{
+		RoomCullingConnection.RoomLink link = rcc.Link;
+		CullableRoom cullableRoom;
+		if (link.Coords.CoordsA == otherCoords)
+		{
+			cullableRoom = link.CullableA;
+		}
+		else
+		{
+			if (!(link.Coords.CoordsB == otherCoords))
 			{
+				Debug.LogError($"Link {rcc.name} is not matching any rooms at {otherCoords}.");
 				return;
 			}
-			if (!CullingMath.ContainsBoundsWithinVertex(vertex, worldspaceBounds))
-			{
-				return;
-			}
-			RoomPreCuller.VisibleCoords.Add(otherCoords);
+			cullableRoom = link.CullableB;
 		}
-
-		private static void DebugVertexAngle(VertexAngle2D vertex, float distance)
+		Bounds worldspaceBounds = cullableRoom.WorldspaceBounds;
+		if (CullingCamera.CheckBoundsVisibility(worldspaceBounds) && CullingMath.ContainsBoundsWithinVertex(vertex, worldspaceBounds))
 		{
-			if (!RoomPreCuller.EnableDebugging)
-			{
-				return;
-			}
-			Vector3 vector = CullingMath.To3D(vertex.Origin, RoomPreCuller._lastCameraPosition.y);
-			Vector3 vector2 = CullingMath.To3D(vertex.Left, 0f);
-			Vector3 vector3 = CullingMath.To3D(vertex.Right, 0f);
-			Debug.DrawRay(vector, vector2 * distance, Color.green);
-			Debug.DrawRay(vector, vector3 * distance, Color.yellow);
+			VisibleCoords.Add(otherCoords);
 		}
+	}
 
-		public static bool ValidateCoords(Vector3Int coords)
+	private static void DebugVertexAngle(VertexAngle2D vertex, float distance)
+	{
+		if (EnableDebugging)
 		{
-			return !RoomPreCuller._lastSuccess || RoomPreCuller.VisibleCoords.Contains(coords);
+			Vector3 start = CullingMath.To3D(vertex.Origin, _lastCameraPosition.y);
+			Vector3 vector = CullingMath.To3D(vertex.Left, 0f);
+			Vector3 vector2 = CullingMath.To3D(vertex.Right, 0f);
+			Debug.DrawRay(start, vector * distance, Color.green);
+			Debug.DrawRay(start, vector2 * distance, Color.yellow);
 		}
+	}
 
-		private static readonly HashSet<Vector3Int> VisibleCoords = new HashSet<Vector3Int>();
-
-		private static bool _lastSuccess = false;
-
-		private static Vector3 _lastCameraPosition;
-
-		private static float? _roomSize;
-
-		private const float ExtraCameraRange = 4f;
-
-		private static readonly Vector3Int[] ScanDirections = new Vector3Int[]
+	public static bool ValidateCoords(Vector3Int coords)
+	{
+		if (_lastSuccess)
 		{
-			Vector3Int.forward,
-			Vector3Int.back,
-			Vector3Int.left,
-			Vector3Int.right
-		};
-
-		private static readonly bool EnableDebugging = false;
+			return VisibleCoords.Contains(coords);
+		}
+		return true;
 	}
 }

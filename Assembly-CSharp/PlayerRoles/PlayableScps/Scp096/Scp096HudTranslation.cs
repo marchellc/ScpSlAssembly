@@ -1,16 +1,13 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.Scp096;
 
-namespace PlayerRoles.PlayableScps.Scp096
+public enum Scp096HudTranslation
 {
-	public enum Scp096HudTranslation
-	{
-		HelpMenuDescription,
-		HelpMenuTryNotToCry,
-		HelpMenuMeeleAttack,
-		HelpMenuCharge,
-		HelpMenuRageOnly,
-		HelpMenuDocileOnly,
-		EnterRageKeyInfo,
-		ExitRageKeyInfo
-	}
+	HelpMenuDescription,
+	HelpMenuTryNotToCry,
+	HelpMenuMeeleAttack,
+	HelpMenuCharge,
+	HelpMenuRageOnly,
+	HelpMenuDocileOnly,
+	EnterRageKeyInfo,
+	ExitRageKeyInfo
 }

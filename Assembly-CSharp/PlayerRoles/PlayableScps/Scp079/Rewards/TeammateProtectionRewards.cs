@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using Interactables.Interobjects.DoorUtils;
 using Mirror;
@@ -6,180 +5,163 @@ using PlayerRoles.FirstPersonControl;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079.Rewards
+namespace PlayerRoles.PlayableScps.Scp079.Rewards;
+
+public static class TeammateProtectionRewards
 {
-	public static class TeammateProtectionRewards
+	private class TrackedTeammate
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		public readonly ReferenceHub Hub;
+
+		public readonly FpcStandardRoleBase Role;
+
+		private readonly Dictionary<uint, double> _attackers;
+
+		private const float MinDamage = 100f;
+
+		private const float TimeTolerance = 6f;
+
+		private const int AttackersLimit = 5;
+
+		private double _lastDamageTime;
+
+		private float _damageReceived;
+
+		private static readonly Vector3[] AttackersNonAlloc = new Vector3[5];
+
+		public TrackedTeammate(ReferenceHub ply)
 		{
-			Scp079DoorAbility.OnServerAnyDoorInteraction += TeammateProtectionRewards.CheckBlock;
-			PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub hub, PlayerRoleBase prev, PlayerRoleBase cur)
-			{
-				if (!NetworkServer.active)
-				{
-					return;
-				}
-				if (TeammateProtectionRewards.ValidateRole(prev))
-				{
-					TeammateProtectionRewards.Teammates.RemoveWhere((TeammateProtectionRewards.TrackedTeammate x) => x.Hub == hub);
-				}
-				if (TeammateProtectionRewards.ValidateRole(cur))
-				{
-					TeammateProtectionRewards.Teammates.Add(new TeammateProtectionRewards.TrackedTeammate(hub));
-				}
-			};
-			ReferenceHub.OnPlayerRemoved = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerRemoved, new Action<ReferenceHub>(delegate(ReferenceHub hub)
-			{
-				if (!NetworkServer.active)
-				{
-					return;
-				}
-				if (TeammateProtectionRewards.ValidateRole(hub.roleManager.CurrentRole))
-				{
-					TeammateProtectionRewards.Teammates.RemoveWhere((TeammateProtectionRewards.TrackedTeammate x) => x.Hub == hub);
-				}
-			}));
+			Hub = ply;
+			Role = ply.roleManager.CurrentRole as FpcStandardRoleBase;
+			_attackers = new Dictionary<uint, double>();
+			Hub.playerStats.OnThisPlayerDamaged += OnDamaged;
 		}
 
-		private static bool ValidateRole(PlayerRoleBase prb)
+		public void Unsubscribe()
 		{
-			return prb is FpcStandardRoleBase && prb.Team == Team.SCPs;
+			if (!(Hub == null))
+			{
+				Hub.playerStats.OnThisPlayerDamaged -= OnDamaged;
+			}
 		}
 
-		private static void CheckBlock(Scp079Role scp079, DoorVariant dv)
+		public int GetAttackersNonAlloc(out Vector3[] attackersPositions)
 		{
-			if (dv.TargetState)
+			attackersPositions = AttackersNonAlloc;
+			if (NetworkTime.time > _lastDamageTime || _damageReceived < 100f)
 			{
-				return;
-			}
-			DoorLockReason activeLocks = (DoorLockReason)dv.ActiveLocks;
-			if (!activeLocks.HasFlagFast(DoorLockReason.Lockdown079) && !activeLocks.HasFlagFast(DoorLockReason.Regular079))
-			{
-				return;
-			}
-			if (TeammateProtectionRewards._grantTargetCooldown > NetworkTime.time)
-			{
-				return;
+				return 0;
 			}
 			int num = 0;
-			Transform transform = dv.transform;
-			foreach (TeammateProtectionRewards.TrackedTeammate trackedTeammate in TeammateProtectionRewards.Teammates)
+			foreach (KeyValuePair<uint, double> attacker in _attackers)
 			{
-				Vector3[] array;
-				int attackersNonAlloc = trackedTeammate.GetAttackersNonAlloc(out array);
-				if (attackersNonAlloc != 0)
+				if (!(attacker.Value > _lastDamageTime) && ReferenceHub.TryGetHubNetID(attacker.Key, out var hub) && hub.roleManager.CurrentRole is IFpcRole fpcRole)
 				{
-					bool flag = transform.InverseTransformPoint(trackedTeammate.Role.FpcModule.Position).z > 0f;
-					for (int i = 0; i < attackersNonAlloc; i++)
+					AttackersNonAlloc[num] = fpcRole.FpcModule.Position;
+					if (++num >= 5)
 					{
-						bool flag2 = transform.InverseTransformPoint(array[i]).z > 0f;
-						if (flag != flag2)
-						{
-							num++;
-						}
+						break;
 					}
 				}
 			}
-			int num2 = Mathf.Min(num, TeammateProtectionRewards.Rewards.Length - 1);
-			Scp079RewardManager.GrantExp(scp079, TeammateProtectionRewards.Rewards[num2], Scp079HudTranslation.ExpGainTeammateProtection, RoleTypeId.None);
-			TeammateProtectionRewards._grantTargetCooldown = NetworkTime.time + 10.0;
+			_attackers.Clear();
+			_damageReceived = 0f;
+			return num;
 		}
 
-		private const float Cooldown = 10f;
-
-		private static readonly int[] Rewards = new int[] { 0, 10, 15, 25, 40, 60 };
-
-		private static readonly HashSet<TeammateProtectionRewards.TrackedTeammate> Teammates = new HashSet<TeammateProtectionRewards.TrackedTeammate>();
-
-		private static double _grantTargetCooldown;
-
-		private class TrackedTeammate
+		private void OnDamaged(DamageHandlerBase dhb)
 		{
-			public TrackedTeammate(ReferenceHub ply)
+			if (dhb is AttackerDamageHandler attackerDamageHandler && !(dhb is Scp018DamageHandler) && !(dhb is ExplosionDamageHandler))
 			{
-				this.Hub = ply;
-				this.Role = ply.roleManager.CurrentRole as FpcStandardRoleBase;
-				this._attackers = new Dictionary<uint, double>();
-				this.Hub.playerStats.OnThisPlayerDamaged += this.OnDamaged;
-			}
-
-			public void Unsubscribe()
-			{
-				if (this.Hub == null)
-				{
-					return;
-				}
-				this.Hub.playerStats.OnThisPlayerDamaged -= this.OnDamaged;
-			}
-
-			public int GetAttackersNonAlloc(out Vector3[] attackersPositions)
-			{
-				attackersPositions = TeammateProtectionRewards.TrackedTeammate.AttackersNonAlloc;
-				if (NetworkTime.time > this._lastDamageTime || this._damageReceived < 100f)
-				{
-					return 0;
-				}
-				int num = 0;
-				foreach (KeyValuePair<uint, double> keyValuePair in this._attackers)
-				{
-					ReferenceHub referenceHub;
-					if (keyValuePair.Value <= this._lastDamageTime && ReferenceHub.TryGetHubNetID(keyValuePair.Key, out referenceHub))
-					{
-						IFpcRole fpcRole = referenceHub.roleManager.CurrentRole as IFpcRole;
-						if (fpcRole != null)
-						{
-							TeammateProtectionRewards.TrackedTeammate.AttackersNonAlloc[num] = fpcRole.FpcModule.Position;
-							if (++num >= 5)
-							{
-								break;
-							}
-						}
-					}
-				}
-				this._attackers.Clear();
-				this._damageReceived = 0f;
-				return num;
-			}
-
-			private void OnDamaged(DamageHandlerBase dhb)
-			{
-				AttackerDamageHandler attackerDamageHandler = dhb as AttackerDamageHandler;
-				if (attackerDamageHandler == null)
-				{
-					return;
-				}
-				if (dhb is Scp018DamageHandler || dhb is ExplosionDamageHandler)
-				{
-					return;
-				}
 				double time = NetworkTime.time;
-				if (time > this._lastDamageTime)
+				if (time > _lastDamageTime)
 				{
-					this._damageReceived = 0f;
+					_damageReceived = 0f;
 				}
-				this._damageReceived += attackerDamageHandler.DealtHealthDamage;
-				this._lastDamageTime = time + 6.0;
-				this._attackers[attackerDamageHandler.Attacker.NetId] = this._lastDamageTime;
+				_damageReceived += attackerDamageHandler.DealtHealthDamage;
+				_lastDamageTime = time + 6.0;
+				_attackers[attackerDamageHandler.Attacker.NetId] = _lastDamageTime;
 			}
-
-			public readonly ReferenceHub Hub;
-
-			public readonly FpcStandardRoleBase Role;
-
-			private readonly Dictionary<uint, double> _attackers;
-
-			private const float MinDamage = 100f;
-
-			private const float TimeTolerance = 6f;
-
-			private const int AttackersLimit = 5;
-
-			private double _lastDamageTime;
-
-			private float _damageReceived;
-
-			private static readonly Vector3[] AttackersNonAlloc = new Vector3[5];
 		}
+	}
+
+	private const float Cooldown = 10f;
+
+	private static readonly int[] Rewards = new int[6] { 0, 10, 15, 25, 40, 60 };
+
+	private static readonly HashSet<TrackedTeammate> Teammates = new HashSet<TrackedTeammate>();
+
+	private static double _grantTargetCooldown;
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		Scp079DoorAbility.OnServerAnyDoorInteraction += CheckBlock;
+		PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub hub, PlayerRoleBase prev, PlayerRoleBase cur)
+		{
+			if (NetworkServer.active)
+			{
+				if (ValidateRole(prev))
+				{
+					Teammates.RemoveWhere((TrackedTeammate x) => x.Hub == hub);
+				}
+				if (ValidateRole(cur))
+				{
+					Teammates.Add(new TrackedTeammate(hub));
+				}
+			}
+		};
+		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub hub)
+		{
+			if (NetworkServer.active && ValidateRole(hub.roleManager.CurrentRole))
+			{
+				Teammates.RemoveWhere((TrackedTeammate x) => x.Hub == hub);
+			}
+		};
+	}
+
+	private static bool ValidateRole(PlayerRoleBase prb)
+	{
+		if (prb is FpcStandardRoleBase)
+		{
+			return prb.Team == Team.SCPs;
+		}
+		return false;
+	}
+
+	private static void CheckBlock(Scp079Role scp079, DoorVariant dv)
+	{
+		if (dv.TargetState)
+		{
+			return;
+		}
+		DoorLockReason activeLocks = (DoorLockReason)dv.ActiveLocks;
+		if ((!activeLocks.HasFlagFast(DoorLockReason.Lockdown079) && !activeLocks.HasFlagFast(DoorLockReason.Regular079)) || _grantTargetCooldown > NetworkTime.time)
+		{
+			return;
+		}
+		int num = 0;
+		Transform transform = dv.transform;
+		foreach (TrackedTeammate teammate in Teammates)
+		{
+			Vector3[] attackersPositions;
+			int attackersNonAlloc = teammate.GetAttackersNonAlloc(out attackersPositions);
+			if (attackersNonAlloc == 0)
+			{
+				continue;
+			}
+			bool flag = transform.InverseTransformPoint(teammate.Role.FpcModule.Position).z > 0f;
+			for (int i = 0; i < attackersNonAlloc; i++)
+			{
+				bool flag2 = transform.InverseTransformPoint(attackersPositions[i]).z > 0f;
+				if (flag != flag2)
+				{
+					num++;
+				}
+			}
+		}
+		int num2 = Mathf.Min(num, Rewards.Length - 1);
+		Scp079RewardManager.GrantExp(scp079, Rewards[num2], Scp079HudTranslation.ExpGainTeammateProtection);
+		_grantTargetCooldown = NetworkTime.time + 10.0;
 	}
 }

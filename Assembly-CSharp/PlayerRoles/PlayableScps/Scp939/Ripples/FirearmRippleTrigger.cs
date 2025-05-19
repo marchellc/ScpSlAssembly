@@ -1,4 +1,3 @@
-﻿using System;
 using AudioPooling;
 using InventorySystem.Items;
 using InventorySystem.Items.Firearms.Modules;
@@ -7,100 +6,84 @@ using RelativePositioning;
 using UnityEngine;
 using Utils.Networking;
 
-namespace PlayerRoles.PlayableScps.Scp939.Ripples
+namespace PlayerRoles.PlayableScps.Scp939.Ripples;
+
+public class FirearmRippleTrigger : RippleTriggerBase
 {
-	public class FirearmRippleTrigger : RippleTriggerBase
+	private Scp939FocusAbility _focus;
+
+	private RelativePosition _syncRipplePos;
+
+	private RoleTypeId _syncRoleColor;
+
+	private ReferenceHub _syncPlayer;
+
+	public override void SpawnObject()
 	{
-		public override void SpawnObject()
-		{
-			base.SpawnObject();
-			AudioModule.OnSoundPlayed += this.OnFirearmPlayed;
-		}
+		base.SpawnObject();
+		AudioModule.OnSoundPlayed += OnFirearmPlayed;
+	}
 
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			AudioModule.OnSoundPlayed -= this.OnFirearmPlayed;
-		}
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		AudioModule.OnSoundPlayed -= OnFirearmPlayed;
+	}
 
-		public override void ServerWriteRpc(NetworkWriter writer)
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteRelativePosition(_syncRipplePos);
+		writer.WriteReferenceHub(_syncPlayer);
+		if (!(_focus.State < 1f))
 		{
-			base.ServerWriteRpc(writer);
-			writer.WriteRelativePosition(this._syncRipplePos);
-			writer.WriteReferenceHub(this._syncPlayer);
-			if (this._focus.State < 1f)
-			{
-				return;
-			}
-			writer.WriteSByte((sbyte)this._syncRoleColor);
+			writer.WriteSByte((sbyte)_syncRoleColor);
 		}
+	}
 
-		public override void ClientProcessRpc(NetworkReader reader)
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		Vector3 position = reader.ReadRelativePosition().Position;
+		if (reader.TryReadReferenceHub(out var hub))
 		{
-			base.ClientProcessRpc(reader);
-			Vector3 position = reader.ReadRelativePosition().Position;
-			ReferenceHub referenceHub;
-			if (reader.TryReadReferenceHub(out referenceHub))
-			{
-				base.OnPlayedRipple(referenceHub);
-			}
-			base.Player.Play(position, this.DecodeColor(reader));
+			OnPlayedRipple(hub);
 		}
+		base.Player.Play(position, DecodeColor(reader));
+	}
 
-		protected override void Awake()
-		{
-			base.Awake();
-			base.GetSubroutine<Scp939FocusAbility>(out this._focus);
-		}
+	protected override void Awake()
+	{
+		base.Awake();
+		GetSubroutine<Scp939FocusAbility>(out _focus);
+	}
 
-		private void OnFirearmPlayed(ItemIdentifier id, PlayerRoleBase shooterRole, PooledAudioSource src)
+	private void OnFirearmPlayed(ItemIdentifier id, PlayerRoleBase shooterRole, PooledAudioSource src)
+	{
+		if (NetworkServer.active && shooterRole.TryGetOwner(out var hub) && shooterRole is HumanRole humanRole && !CheckVisibility(hub))
 		{
-			ReferenceHub referenceHub;
-			if (!NetworkServer.active || !shooterRole.TryGetOwner(out referenceHub))
-			{
-				return;
-			}
-			HumanRole humanRole = shooterRole as HumanRole;
-			if (humanRole == null)
-			{
-				return;
-			}
-			if (base.CheckVisibility(referenceHub))
-			{
-				return;
-			}
 			Vector3 position = humanRole.FpcModule.Position;
 			float maxDistance = src.Source.maxDistance;
-			if ((position - base.CastRole.FpcModule.Position).sqrMagnitude > maxDistance * maxDistance)
+			if (!((position - base.CastRole.FpcModule.Position).sqrMagnitude > maxDistance * maxDistance))
 			{
-				return;
+				_syncRipplePos = new RelativePosition(humanRole.FpcModule.Position);
+				_syncRoleColor = humanRole.RoleTypeId;
+				_syncPlayer = hub;
+				ServerSendRpcToObservers();
 			}
-			this._syncRipplePos = new RelativePosition(humanRole.FpcModule.Position);
-			this._syncRoleColor = humanRole.RoleTypeId;
-			this._syncPlayer = referenceHub;
-			base.ServerSendRpcToObservers();
 		}
+	}
 
-		private Color DecodeColor(NetworkReader reader)
+	private Color DecodeColor(NetworkReader reader)
+	{
+		if (reader.Position >= reader.Capacity)
 		{
-			if (reader.Position >= reader.Capacity)
-			{
-				return Color.red;
-			}
-			HumanRole humanRole;
-			if (!PlayerRoleLoader.TryGetRoleTemplate<HumanRole>((RoleTypeId)reader.ReadSByte(), out humanRole))
-			{
-				return Color.red;
-			}
-			return humanRole.RoleColor;
+			return Color.red;
 		}
-
-		private Scp939FocusAbility _focus;
-
-		private RelativePosition _syncRipplePos;
-
-		private RoleTypeId _syncRoleColor;
-
-		private ReferenceHub _syncPlayer;
+		if (!PlayerRoleLoader.TryGetRoleTemplate<HumanRole>((RoleTypeId)reader.ReadSByte(), out var result))
+		{
+			return Color.red;
+		}
+		return result.RoleColor;
 	}
 }

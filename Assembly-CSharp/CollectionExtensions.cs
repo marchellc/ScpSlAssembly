@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -9,11 +9,11 @@ using UnityEngine;
 
 public static class CollectionExtensions
 {
-	public static void ShuffleQueue<T>(this Queue<T> queue, global::System.Random rng = null)
+	public static void ShuffleQueue<T>(this Queue<T> queue, System.Random rng = null)
 	{
 		if (rng == null)
 		{
-			rng = new global::System.Random();
+			rng = new System.Random();
 		}
 		List<T> list = ListPool<T>.Shared.Rent(queue.Count);
 		while (queue.Count > 0)
@@ -23,66 +23,63 @@ public static class CollectionExtensions
 		queue.Clear();
 		while (list.Count > 0)
 		{
-			int num = rng.Next(list.Count);
-			queue.Enqueue(list[num]);
-			list.RemoveAt(num);
+			int index = rng.Next(list.Count);
+			queue.Enqueue(list[index]);
+			list.RemoveAt(index);
 		}
 		ListPool<T>.Shared.Return(list);
 	}
 
-	public static void ShuffleList<T>(this IList<T> list, global::System.Random rng = null)
+	public static void ShuffleList<T>(this IList<T> list, System.Random rng = null)
 	{
 		if (rng == null)
 		{
-			rng = new global::System.Random();
+			rng = new System.Random();
 		}
-		int i = list.Count;
-		while (i > 1)
+		int num = list.Count;
+		while (num > 1)
 		{
-			i--;
-			int num = rng.Next(i + 1);
-			T t = list[num];
-			list[num] = list[i];
-			list[i] = t;
+			num--;
+			int index = rng.Next(num + 1);
+			T value = list[index];
+			list[index] = list[num];
+			list[num] = value;
 		}
 	}
 
 	public static void ShuffleListSecure<T>(this IList<T> list)
 	{
-		using (RNGCryptoServiceProvider rngcryptoServiceProvider = new RNGCryptoServiceProvider())
+		using RNGCryptoServiceProvider rNGCryptoServiceProvider = new RNGCryptoServiceProvider();
+		int num = list.Count;
+		while (num > 1)
 		{
-			int i = list.Count;
-			while (i > 1)
+			byte[] array = new byte[1];
+			do
 			{
-				byte[] array = new byte[1];
-				do
-				{
-					rngcryptoServiceProvider.GetBytes(array);
-				}
-				while ((int)array[0] >= i * (255 / i));
-				int num = (int)array[0] % i;
-				i--;
-				T t = list[num];
-				list[num] = list[i];
-				list[i] = t;
+				rNGCryptoServiceProvider.GetBytes(array);
 			}
+			while (array[0] >= num * (255 / num));
+			int index = array[0] % num;
+			num--;
+			T value = list[index];
+			list[index] = list[num];
+			list[num] = value;
 		}
 	}
 
 	public static TReturn[] OfType<TOriginal, TReturn>(this TOriginal[] original)
 	{
 		List<TReturn> list = ListPool<TReturn>.Shared.Rent();
-		foreach (TOriginal toriginal in original)
+		foreach (TOriginal val in original)
 		{
-			if (toriginal is TReturn)
+			if (val is TReturn item)
 			{
-				TReturn treturn = toriginal as TReturn;
-				list.Add(treturn);
+				list.Add(item);
 			}
 		}
-		TReturn[] array = list.ToArray();
+		TReturn[] result = list.ToArray();
 		ListPool<TReturn>.Shared.Return(list);
-		return array;
+		return result;
 	}
 
 	public static bool IsEmpty(this Array array)
@@ -152,7 +149,7 @@ public static class CollectionExtensions
 
 	public static bool IsEmpty<T>(this IEnumerable<T> iEnumerable)
 	{
-		return !iEnumerable.Any<T>();
+		return !iEnumerable.Any();
 	}
 
 	public static void EnsureCapacity<T>(this List<T> list, int capacity)
@@ -177,11 +174,11 @@ public static class CollectionExtensions
 
 	public static int LastIndexOf<T>(this T[] array, T obj)
 	{
-		for (int i = array.Length - 1; i >= 0; i--)
+		for (int num = array.Length - 1; num >= 0; num--)
 		{
-			if (EqualityComparer<T>.Default.Equals(array[i], obj))
+			if (EqualityComparer<T>.Default.Equals(array[num], obj))
 			{
-				return i;
+				return num;
 			}
 		}
 		return -1;
@@ -203,24 +200,21 @@ public static class CollectionExtensions
 	{
 		for (int i = 0; i < array.Length; i++)
 		{
-			if (obj != null)
-			{
-				obj(array[i]);
-			}
+			obj?.Invoke(array[i]);
 		}
 	}
 
 	public static void Reverse<T>(this T[] array)
 	{
-		int i = 0;
-		int num = array.Length;
-		while (i < num)
+		int num = 0;
+		int num2 = array.Length;
+		while (num < num2)
 		{
-			T t = array[i];
-			array[i] = array[num];
-			array[num] = t;
-			i++;
-			num--;
+			T val = array[num];
+			array[num] = array[num2];
+			array[num2] = val;
+			num++;
+			num2--;
 		}
 	}
 
@@ -402,11 +396,46 @@ public static class CollectionExtensions
 
 	public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, Func<TValue> factory) where TValue : class
 	{
-		TValue tvalue;
-		if (!dictionary.TryGetValue(key, out tvalue))
+		if (!dictionary.TryGetValue(key, out var value))
 		{
 			return dictionary[key] = factory();
 		}
-		return tvalue;
+		return value;
+	}
+
+	public static HashSet<TValue> GetOrAddNew<TKey, TValue>(this Dictionary<TKey, HashSet<TValue>> dictionary, TKey key)
+	{
+		if (!dictionary.TryGetValue(key, out var value))
+		{
+			return dictionary[key] = new HashSet<TValue>();
+		}
+		return value;
+	}
+
+	public static List<TValue> GetOrAddNew<TKey, TValue>(this Dictionary<TKey, List<TValue>> dictionary, TKey key)
+	{
+		if (!dictionary.TryGetValue(key, out var value))
+		{
+			return dictionary[key] = new List<TValue>();
+		}
+		return value;
+	}
+
+	public static Queue<TValue> GetOrAddNew<TKey, TValue>(this Dictionary<TKey, Queue<TValue>> dictionary, TKey key)
+	{
+		if (!dictionary.TryGetValue(key, out var value))
+		{
+			return dictionary[key] = new Queue<TValue>();
+		}
+		return value;
+	}
+
+	public static Stack<TValue> GetOrAddNew<TKey, TValue>(this Dictionary<TKey, Stack<TValue>> dictionary, TKey key)
+	{
+		if (!dictionary.TryGetValue(key, out var value))
+		{
+			return dictionary[key] = new Stack<TValue>();
+		}
+		return value;
 	}
 }

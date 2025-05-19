@@ -1,82 +1,69 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
-namespace Serialization
+namespace Serialization;
+
+internal sealed class CommentsPropertyDescriptor : IPropertyDescriptor
 {
-	internal sealed class CommentsPropertyDescriptor : IPropertyDescriptor
+	private readonly IPropertyDescriptor _baseDescriptor;
+
+	public string Name { get; set; }
+
+	public Type Type => _baseDescriptor.Type;
+
+	public Type TypeOverride
 	{
-		public CommentsPropertyDescriptor(IPropertyDescriptor baseDescriptor)
+		get
 		{
-			this._baseDescriptor = baseDescriptor;
-			this.Name = baseDescriptor.Name;
+			return _baseDescriptor.TypeOverride;
 		}
-
-		public string Name { get; set; }
-
-		public Type Type
+		set
 		{
-			get
-			{
-				return this._baseDescriptor.Type;
-			}
+			_baseDescriptor.TypeOverride = value;
 		}
+	}
 
-		public Type TypeOverride
+	public int Order { get; set; }
+
+	public ScalarStyle ScalarStyle
+	{
+		get
 		{
-			get
-			{
-				return this._baseDescriptor.TypeOverride;
-			}
-			set
-			{
-				this._baseDescriptor.TypeOverride = value;
-			}
+			return _baseDescriptor.ScalarStyle;
 		}
-
-		public int Order { get; set; }
-
-		public ScalarStyle ScalarStyle
+		set
 		{
-			get
-			{
-				return this._baseDescriptor.ScalarStyle;
-			}
-			set
-			{
-				this._baseDescriptor.ScalarStyle = value;
-			}
+			_baseDescriptor.ScalarStyle = value;
 		}
+	}
 
-		public bool CanWrite
+	public bool CanWrite => _baseDescriptor.CanWrite;
+
+	public CommentsPropertyDescriptor(IPropertyDescriptor baseDescriptor)
+	{
+		_baseDescriptor = baseDescriptor;
+		Name = baseDescriptor.Name;
+	}
+
+	public void Write(object target, object value)
+	{
+		_baseDescriptor.Write(target, value);
+	}
+
+	public T GetCustomAttribute<T>() where T : Attribute
+	{
+		return _baseDescriptor.GetCustomAttribute<T>();
+	}
+
+	public IObjectDescriptor Read(object target)
+	{
+		DescriptionAttribute customAttribute = _baseDescriptor.GetCustomAttribute<DescriptionAttribute>();
+		if (customAttribute == null)
 		{
-			get
-			{
-				return this._baseDescriptor.CanWrite;
-			}
+			return _baseDescriptor.Read(target);
 		}
-
-		public void Write(object target, object value)
-		{
-			this._baseDescriptor.Write(target, value);
-		}
-
-		public T GetCustomAttribute<T>() where T : Attribute
-		{
-			return this._baseDescriptor.GetCustomAttribute<T>();
-		}
-
-		public IObjectDescriptor Read(object target)
-		{
-			DescriptionAttribute customAttribute = this._baseDescriptor.GetCustomAttribute<DescriptionAttribute>();
-			if (customAttribute == null)
-			{
-				return this._baseDescriptor.Read(target);
-			}
-			return new CommentsObjectDescriptor(this._baseDescriptor.Read(target), customAttribute.Description);
-		}
-
-		private readonly IPropertyDescriptor _baseDescriptor;
+		return new CommentsObjectDescriptor(_baseDescriptor.Read(target), customAttribute.Description);
 	}
 }

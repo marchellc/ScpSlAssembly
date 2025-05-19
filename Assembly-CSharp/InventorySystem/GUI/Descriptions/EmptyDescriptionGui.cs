@@ -1,20 +1,16 @@
-﻿using System;
 using InventorySystem.Items;
 using TMPro;
 using UnityEngine;
 
-namespace InventorySystem.GUI.Descriptions
-{
-	public class EmptyDescriptionGui : RadialDescriptionBase
-	{
-		public override void UpdateInfo(ItemBase targetItem, Color roleColor)
-		{
-			TMP_Text desc = this._desc;
-			IItemNametag itemNametag = targetItem as IItemNametag;
-			desc.text = ((itemNametag != null) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
-		}
+namespace InventorySystem.GUI.Descriptions;
 
-		[SerializeField]
-		private TextMeshProUGUI _desc;
+public class EmptyDescriptionGui : RadialDescriptionBase
+{
+	[SerializeField]
+	private TextMeshProUGUI _desc;
+
+	public override void UpdateInfo(ItemBase targetItem, Color roleColor)
+	{
+		_desc.text = ((targetItem is IItemNametag itemNametag) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
 	}
 }

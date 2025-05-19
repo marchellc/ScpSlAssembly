@@ -1,28 +1,29 @@
-﻿using System;
+using System;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class UriFormatter : IJsonFormatter<Uri>, IJsonFormatter
 {
-	public sealed class UriFormatter : IJsonFormatter<Uri>, IJsonFormatter
+	public static readonly IJsonFormatter<Uri> Default = new UriFormatter();
+
+	public void Serialize(ref JsonWriter writer, Uri value, IJsonFormatterResolver formatterResolver)
 	{
-		public void Serialize(ref JsonWriter writer, Uri value, IJsonFormatterResolver formatterResolver)
+		if (value == null)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
+			writer.WriteNull();
+		}
+		else
+		{
 			writer.WriteString(value.ToString());
 		}
+	}
 
-		public Uri Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public Uri Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			return new Uri(reader.ReadString(), UriKind.RelativeOrAbsolute);
+			return null;
 		}
-
-		public static readonly IJsonFormatter<Uri> Default = new UriFormatter();
+		return new Uri(reader.ReadString(), UriKind.RelativeOrAbsolute);
 	}
 }

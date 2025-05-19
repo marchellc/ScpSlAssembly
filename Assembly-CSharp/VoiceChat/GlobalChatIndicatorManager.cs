@@ -1,84 +1,78 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using VoiceChat.Playbacks;
 
-namespace VoiceChat
+namespace VoiceChat;
+
+public class GlobalChatIndicatorManager : MonoBehaviour
 {
-	public class GlobalChatIndicatorManager : MonoBehaviour
+	[SerializeField]
+	private GlobalChatIndicator _template;
+
+	[SerializeField]
+	private RectTransform _root;
+
+	private readonly Queue<GlobalChatIndicator> _pool = new Queue<GlobalChatIndicator>();
+
+	private readonly Dictionary<IGlobalPlayback, GlobalChatIndicator> _instances = new Dictionary<IGlobalPlayback, GlobalChatIndicator>();
+
+	private static GlobalChatIndicatorManager _singleton;
+
+	private static bool _singletonSet;
+
+	private void Awake()
 	{
-		private void Awake()
+		_singleton = this;
+		_singletonSet = true;
+	}
+
+	private void OnDestroy()
+	{
+		_singletonSet = false;
+	}
+
+	private void LateUpdate()
+	{
+		foreach (KeyValuePair<IGlobalPlayback, GlobalChatIndicator> instance in _instances)
 		{
-			GlobalChatIndicatorManager._singleton = this;
-			GlobalChatIndicatorManager._singletonSet = true;
+			instance.Value.Refresh();
 		}
+	}
 
-		private void OnDestroy()
+	private void SpawnIndicator(IGlobalPlayback igp, ReferenceHub ply)
+	{
+		if (!_pool.TryDequeue(out var result))
 		{
-			GlobalChatIndicatorManager._singletonSet = false;
+			result = Object.Instantiate(_template);
 		}
+		Transform obj = result.transform;
+		obj.SetParent(_root);
+		obj.localScale = Vector3.one;
+		obj.SetAsLastSibling();
+		result.Setup(igp, ply);
+		_instances[igp] = result;
+	}
 
-		private void LateUpdate()
+	private void ReturnIndicator(IGlobalPlayback igp)
+	{
+		if (_instances.TryGetValue(igp, out var value))
 		{
-			foreach (KeyValuePair<IGlobalPlayback, GlobalChatIndicator> keyValuePair in this._instances)
-			{
-				keyValuePair.Value.Refresh();
-			}
+			value.gameObject.SetActive(value: false);
+			_pool.Enqueue(value);
+			_instances.Remove(igp);
 		}
+	}
 
-		private void SpawnIndicator(IGlobalPlayback igp, ReferenceHub ply)
+	public static void Subscribe(IGlobalPlayback igp, ReferenceHub player)
+	{
+		_singleton.SpawnIndicator(igp, player);
+	}
+
+	public static void Unsubscribe(IGlobalPlayback igp)
+	{
+		if (_singletonSet)
 		{
-			GlobalChatIndicator globalChatIndicator;
-			if (!this._pool.TryDequeue(out globalChatIndicator))
-			{
-				globalChatIndicator = global::UnityEngine.Object.Instantiate<GlobalChatIndicator>(this._template);
-			}
-			Transform transform = globalChatIndicator.transform;
-			transform.SetParent(this._root);
-			transform.localScale = Vector3.one;
-			transform.SetAsLastSibling();
-			globalChatIndicator.Setup(igp, ply);
-			this._instances[igp] = globalChatIndicator;
+			_singleton.ReturnIndicator(igp);
 		}
-
-		private void ReturnIndicator(IGlobalPlayback igp)
-		{
-			GlobalChatIndicator globalChatIndicator;
-			if (!this._instances.TryGetValue(igp, out globalChatIndicator))
-			{
-				return;
-			}
-			globalChatIndicator.gameObject.SetActive(false);
-			this._pool.Enqueue(globalChatIndicator);
-			this._instances.Remove(igp);
-		}
-
-		public static void Subscribe(IGlobalPlayback igp, ReferenceHub player)
-		{
-			GlobalChatIndicatorManager._singleton.SpawnIndicator(igp, player);
-		}
-
-		public static void Unsubscribe(IGlobalPlayback igp)
-		{
-			if (!GlobalChatIndicatorManager._singletonSet)
-			{
-				return;
-			}
-			GlobalChatIndicatorManager._singleton.ReturnIndicator(igp);
-		}
-
-		[SerializeField]
-		private GlobalChatIndicator _template;
-
-		[SerializeField]
-		private RectTransform _root;
-
-		private readonly Queue<GlobalChatIndicator> _pool = new Queue<GlobalChatIndicator>();
-
-		private readonly Dictionary<IGlobalPlayback, GlobalChatIndicator> _instances = new Dictionary<IGlobalPlayback, GlobalChatIndicator>();
-
-		private static GlobalChatIndicatorManager _singleton;
-
-		private static bool _singletonSet;
 	}
 }

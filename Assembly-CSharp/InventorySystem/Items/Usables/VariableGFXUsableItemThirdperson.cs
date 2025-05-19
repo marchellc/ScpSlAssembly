@@ -1,92 +1,90 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Usables
+namespace InventorySystem.Items.Usables;
+
+public class VariableGFXUsableItemThirdperson : UsableItemThirdperson
 {
-	public class VariableGFXUsableItemThirdperson : UsableItemThirdperson
+	[SerializeField]
+	private float _replacementTime;
+
+	private float _remainingToReplace;
+
+	private bool _alreadyReplaced;
+
+	private GameObject _lastInstance;
+
+	[field: SerializeField]
+	protected GameObject MainGfx { get; private set; }
+
+	[field: SerializeField]
+	protected GameObject LeftHandedGfx { get; private set; }
+
+	public override void ResetObject()
 	{
-		private protected GameObject MainGfx { protected get; private set; }
+		base.ResetObject();
+		RestoreMainGfx();
+	}
 
-		private protected GameObject LeftHandedGfx { protected get; private set; }
-
-		public override void ResetObject()
+	protected override void Update()
+	{
+		base.Update();
+		if (base.IsUsing && !_alreadyReplaced)
 		{
-			base.ResetObject();
-			this.RestoreMainGfx();
-		}
-
-		protected override void Update()
-		{
-			base.Update();
-			if (!base.IsUsing || this._alreadyReplaced)
+			_remainingToReplace -= Time.deltaTime;
+			if (_remainingToReplace < 0f)
 			{
-				return;
-			}
-			this._remainingToReplace -= Time.deltaTime;
-			if (this._remainingToReplace < 0f)
-			{
-				this.ReplaceGfx();
-				this._alreadyReplaced = true;
+				ReplaceGfx();
+				_alreadyReplaced = true;
 			}
 		}
+	}
 
-		protected override void OnUsingStatusChanged()
+	protected override void OnUsingStatusChanged()
+	{
+		base.OnUsingStatusChanged();
+		if (base.IsUsing)
 		{
-			base.OnUsingStatusChanged();
-			if (base.IsUsing)
-			{
-				this._remainingToReplace = this._replacementTime;
-			}
-			else
-			{
-				this.RestoreMainGfx();
-			}
-			this._alreadyReplaced = false;
+			_remainingToReplace = _replacementTime;
 		}
-
-		protected virtual void SetupLeftHandedInstance(GameObject instance, Transform leftHand)
+		else
 		{
-			Transform transform = instance.transform;
-			transform.SetParent(leftHand);
-			transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-			instance.SetActive(true);
+			RestoreMainGfx();
 		}
+		_alreadyReplaced = false;
+	}
 
-		private void RestoreMainGfx()
+	protected virtual void SetupLeftHandedInstance(GameObject instance, Transform leftHand)
+	{
+		Transform obj = instance.transform;
+		obj.SetParent(leftHand);
+		obj.ResetLocalPose();
+		instance.SetActive(value: true);
+	}
+
+	private void RestoreMainGfx()
+	{
+		MainGfx.SetActive(value: true);
+		if (_alreadyReplaced && _lastInstance != null)
 		{
-			this.MainGfx.SetActive(true);
-			if (this._alreadyReplaced && this._lastInstance != null)
-			{
-				this._lastInstance.transform.SetParent(null);
-				this._lastInstance.SetActive(false);
-			}
+			_lastInstance.transform.SetParent(null);
+			_lastInstance.SetActive(value: false);
 		}
+	}
 
-		private void ReplaceGfx()
+	private void ReplaceGfx()
+	{
+		MainGfx.SetActive(value: false);
+		if (!(LeftHandedGfx == null))
 		{
-			this.MainGfx.SetActive(false);
-			if (this.LeftHandedGfx == null)
+			if (_lastInstance == null)
 			{
-				return;
-			}
-			if (this._lastInstance == null)
-			{
-				this._lastInstance = global::UnityEngine.Object.Instantiate<GameObject>(this.LeftHandedGfx);
+				_lastInstance = Object.Instantiate(LeftHandedGfx);
 			}
 			Transform boneTransform = base.Animator.GetBoneTransform(HumanBodyBones.LeftHand);
 			if (boneTransform != null)
 			{
-				this.SetupLeftHandedInstance(this._lastInstance, boneTransform);
+				SetupLeftHandedInstance(_lastInstance, boneTransform);
 			}
 		}
-
-		[SerializeField]
-		private float _replacementTime;
-
-		private float _remainingToReplace;
-
-		private bool _alreadyReplaced;
-
-		private GameObject _lastInstance;
 	}
 }

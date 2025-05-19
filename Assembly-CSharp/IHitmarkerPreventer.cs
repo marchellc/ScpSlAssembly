@@ -1,4 +1,3 @@
-﻿using System;
 using PlayerStatsSystem;
 
 public interface IHitmarkerPreventer

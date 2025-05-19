@@ -1,42 +1,38 @@
-﻿using System;
+using System;
 using Mirror;
 
-namespace Achievements
+namespace Achievements;
+
+public abstract class AchievementHandlerBase
 {
-	public abstract class AchievementHandlerBase
+	internal virtual void OnInitialize()
 	{
-		internal virtual void OnInitialize()
-		{
-		}
+	}
 
-		internal virtual void OnRoundStarted()
-		{
-		}
+	internal virtual void OnRoundStarted()
+	{
+	}
 
-		public static void ClientAchieve(AchievementName targetAchievement)
+	public static void ClientAchieve(AchievementName targetAchievement)
+	{
+		if (AchievementManager.Achievements.TryGetValue(targetAchievement, out var value))
 		{
-			Achievement achievement;
-			if (!AchievementManager.Achievements.TryGetValue(targetAchievement, out achievement))
-			{
-				return;
-			}
-			achievement.Achieve();
+			value.Achieve();
 		}
+	}
 
-		public static void ServerAchieve(NetworkConnection conn, AchievementName targetAchievement)
+	public static void ServerAchieve(NetworkConnection conn, AchievementName targetAchievement)
+	{
+		if (!NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				throw new InvalidOperationException("Method ServerAchieve can only be executed on the server.");
-			}
-			if (conn.identity.isLocalPlayer)
-			{
-				return;
-			}
-			conn.Send<AchievementManager.AchievementMessage>(new AchievementManager.AchievementMessage
+			throw new InvalidOperationException("Method ServerAchieve can only be executed on the server.");
+		}
+		if (!conn.identity.isLocalPlayer)
+		{
+			conn.Send(new AchievementManager.AchievementMessage
 			{
 				AchievementId = (byte)targetAchievement
-			}, 0);
+			});
 		}
 	}
 }

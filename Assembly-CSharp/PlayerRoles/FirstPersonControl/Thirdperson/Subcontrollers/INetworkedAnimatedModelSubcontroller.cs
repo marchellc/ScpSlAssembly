@@ -1,10 +1,8 @@
-﻿using System;
 using Mirror;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
+
+public interface INetworkedAnimatedModelSubcontroller : IAnimatedModelSubcontroller
 {
-	public interface INetworkedAnimatedModelSubcontroller : IAnimatedModelSubcontroller
-	{
-		void ProcessRpc(NetworkReader reader);
-	}
+	void ProcessRpc(NetworkReader reader);
 }

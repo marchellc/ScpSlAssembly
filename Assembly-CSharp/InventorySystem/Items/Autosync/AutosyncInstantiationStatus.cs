@@ -1,12 +1,9 @@
-﻿using System;
+namespace InventorySystem.Items.Autosync;
 
-namespace InventorySystem.Items.Autosync
+public enum AutosyncInstantiationStatus
 {
-	public enum AutosyncInstantiationStatus
-	{
-		Unspecified,
-		Template,
-		InventoryInstance,
-		SimulatedInstance
-	}
+	Unspecified,
+	Template,
+	InventoryInstance,
+	SimulatedInstance
 }

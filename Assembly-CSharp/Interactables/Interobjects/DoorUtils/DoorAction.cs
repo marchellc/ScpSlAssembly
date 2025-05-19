@@ -1,14 +1,11 @@
-﻿using System;
+namespace Interactables.Interobjects.DoorUtils;
 
-namespace Interactables.Interobjects.DoorUtils
+public enum DoorAction
 {
-	public enum DoorAction
-	{
-		Opened,
-		Closed,
-		AccessDenied,
-		Locked,
-		Unlocked,
-		Destroyed
-	}
+	Opened,
+	Closed,
+	AccessDenied,
+	Locked,
+	Unlocked,
+	Destroyed
 }

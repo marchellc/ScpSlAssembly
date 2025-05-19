@@ -1,14 +1,11 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.ShotEvents;
 
-namespace InventorySystem.Items.Firearms.ShotEvents
+public abstract class ShotEvent
 {
-	public abstract class ShotEvent
-	{
-		public ShotEvent(ItemIdentifier shotFirearm)
-		{
-			this.ItemId = shotFirearm;
-		}
+	public readonly ItemIdentifier ItemId;
 
-		public readonly ItemIdentifier ItemId;
+	public ShotEvent(ItemIdentifier shotFirearm)
+	{
+		ItemId = shotFirearm;
 	}
 }

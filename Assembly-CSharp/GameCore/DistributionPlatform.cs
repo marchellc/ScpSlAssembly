@@ -1,11 +1,8 @@
-﻿using System;
+namespace GameCore;
 
-namespace GameCore
+public enum DistributionPlatform
 {
-	public enum DistributionPlatform
-	{
-		Dedicated,
-		Steam,
-		Discord
-	}
+	Dedicated,
+	Steam,
+	Discord
 }

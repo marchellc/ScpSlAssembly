@@ -1,13 +1,10 @@
-﻿using System;
+namespace Scp914;
 
-namespace Scp914
+public enum Scp914KnobSetting : byte
 {
-	public enum Scp914KnobSetting : byte
-	{
-		Rough,
-		Coarse,
-		OneToOne,
-		Fine,
-		VeryFine
-	}
+	Rough,
+	Coarse,
+	OneToOne,
+	Fine,
+	VeryFine
 }

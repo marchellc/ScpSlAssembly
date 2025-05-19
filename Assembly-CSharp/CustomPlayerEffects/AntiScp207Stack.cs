@@ -1,14 +1,16 @@
-﻿using System;
+using System;
+using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+[Serializable]
+public struct AntiScp207Stack : ICokeStack
 {
-	[Serializable]
-	public struct AntiScp207Stack : ICokeStack
-	{
-		public float PostProcessIntensity { readonly get; set; }
+	public float HealAmount;
 
-		public float SpeedMultiplier { readonly get; set; }
+	[field: SerializeField]
+	public float PostProcessIntensity { get; set; }
 
-		public float HealAmount;
-	}
+	[field: SerializeField]
+	public float SpeedMultiplier { get; set; }
 }

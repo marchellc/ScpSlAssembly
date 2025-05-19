@@ -1,64 +1,62 @@
-﻿using System;
 using Interactables.Interobjects;
 using UnityEngine;
 
-namespace RelativePositioning
+namespace RelativePositioning;
+
+public class ElevatorWaypoint : WaypointBase
 {
-	public class ElevatorWaypoint : WaypointBase
+	[SerializeField]
+	private ElevatorChamber _elevator;
+
+	private Transform _transform;
+
+	private bool _transformSet;
+
+	private Transform ElevatorTransform
 	{
-		private Transform ElevatorTransform
+		get
 		{
-			get
+			if (!_transformSet)
 			{
-				if (!this._transformSet)
-				{
-					this._transform = this._elevator.transform;
-					this._transformSet = true;
-				}
-				return this._transform;
+				_transform = _elevator.transform;
+				_transformSet = true;
 			}
+			return _transform;
 		}
+	}
 
-		protected override void Start()
+	protected override void Start()
+	{
+		base.Start();
+		SetId((byte)(_elevator.AssignedGroup + 1));
+	}
+
+	protected override float SqrDistanceTo(Vector3 pos)
+	{
+		if (!_elevator.WorldspaceBounds.Contains(pos))
 		{
-			base.Start();
-			base.SetId((byte)(this._elevator.AssignedGroup + 1));
+			return float.MaxValue;
 		}
+		return -1f;
+	}
 
-		protected override float SqrDistanceTo(Vector3 pos)
-		{
-			if (!this._elevator.WorldspaceBounds.Contains(pos))
-			{
-				return float.MaxValue;
-			}
-			return -1f;
-		}
+	public override Vector3 GetWorldspacePosition(Vector3 relPosition)
+	{
+		return ElevatorTransform.TransformPoint(relPosition);
+	}
 
-		public override Vector3 GetWorldspacePosition(Vector3 relPosition)
-		{
-			return this.ElevatorTransform.TransformPoint(relPosition);
-		}
+	public override Vector3 GetRelativePosition(Vector3 worldPoint)
+	{
+		return ElevatorTransform.InverseTransformPoint(worldPoint);
+	}
 
-		public override Vector3 GetRelativePosition(Vector3 worldPoint)
-		{
-			return this.ElevatorTransform.InverseTransformPoint(worldPoint);
-		}
+	public override Quaternion GetWorldspaceRotation(Quaternion relRotation)
+	{
+		return ElevatorTransform.rotation * relRotation;
+	}
 
-		public override Quaternion GetWorldspaceRotation(Quaternion relRotation)
-		{
-			return this.ElevatorTransform.rotation * relRotation;
-		}
-
-		public override Quaternion GetRelativeRotation(Quaternion worldRot)
-		{
-			return Quaternion.Inverse(this.ElevatorTransform.rotation) * worldRot;
-		}
-
-		[SerializeField]
-		private ElevatorChamber _elevator;
-
-		private Transform _transform;
-
-		private bool _transformSet;
+	public override Quaternion GetRelativeRotation(Quaternion worldRot)
+	{
+		return Quaternion.Inverse(ElevatorTransform.rotation) * worldRot;
 	}
 }

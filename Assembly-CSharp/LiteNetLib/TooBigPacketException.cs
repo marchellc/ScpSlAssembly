@@ -1,12 +1,9 @@
-﻿using System;
+namespace LiteNetLib;
 
-namespace LiteNetLib
+public class TooBigPacketException : InvalidPacketException
 {
-	public class TooBigPacketException : InvalidPacketException
+	public TooBigPacketException(string message)
+		: base(message)
 	{
-		public TooBigPacketException(string message)
-			: base(message)
-		{
-		}
 	}
 }

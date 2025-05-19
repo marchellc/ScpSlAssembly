@@ -1,34 +1,31 @@
-﻿using System;
 using MapGeneration.Distributors;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp939.Ripples
+namespace PlayerRoles.PlayableScps.Scp939.Ripples;
+
+public class GeneratorRippleTrigger : RippleTriggerBase
 {
-	public class GeneratorRippleTrigger : RippleTriggerBase
+	private readonly Vector3 _offset = Vector3.up * 1.5f;
+
+	private const float RangeSqr = 100f;
+
+	public override void SpawnObject()
 	{
-		public override void SpawnObject()
+		base.SpawnObject();
+		Scp079Generator.OnCount += OnCount;
+	}
+
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		Scp079Generator.OnCount -= OnCount;
+	}
+
+	private void OnCount(Scp079Generator generator)
+	{
+		if (base.IsLocalOrSpectated)
 		{
-			base.SpawnObject();
-			Scp079Generator.OnCount += this.OnCount;
+			PlayInRangeSqr(generator.transform.position + _offset, 100f, Color.red);
 		}
-
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			Scp079Generator.OnCount -= this.OnCount;
-		}
-
-		private void OnCount(Scp079Generator generator)
-		{
-			if (!base.IsLocalOrSpectated)
-			{
-				return;
-			}
-			base.PlayInRangeSqr(generator.transform.position + this._offset, 100f, Color.red);
-		}
-
-		private readonly Vector3 _offset = Vector3.up * 1.5f;
-
-		private const float RangeSqr = 100f;
 	}
 }

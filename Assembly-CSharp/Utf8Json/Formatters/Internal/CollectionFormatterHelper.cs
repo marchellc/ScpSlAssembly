@@ -1,17 +1,21 @@
-﻿using System;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters.Internal
+namespace Utf8Json.Formatters.Internal;
+
+internal static class CollectionFormatterHelper
 {
-	internal static class CollectionFormatterHelper
+	internal static readonly byte[][] groupingName;
+
+	internal static readonly AutomataDictionary groupingAutomata;
+
+	static CollectionFormatterHelper()
 	{
-		internal static readonly byte[][] groupingName = new byte[][]
+		groupingName = new byte[2][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("Key"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("Elements")
 		};
-
-		internal static readonly AutomataDictionary groupingAutomata = new AutomataDictionary
+		groupingAutomata = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("Key"),

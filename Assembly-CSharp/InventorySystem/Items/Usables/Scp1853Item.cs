@@ -1,13 +1,11 @@
-﻿using System;
 using CustomPlayerEffects;
 
-namespace InventorySystem.Items.Usables
+namespace InventorySystem.Items.Usables;
+
+public class Scp1853Item : Consumable
 {
-	public class Scp1853Item : Consumable
+	protected override void OnEffectsActivated()
 	{
-		protected override void OnEffectsActivated()
-		{
-			base.Owner.playerEffectsController.EnableEffect<Scp1853>(0f, false);
-		}
+		base.Owner.playerEffectsController.EnableEffect<Scp1853>();
 	}
 }

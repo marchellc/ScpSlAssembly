@@ -1,64 +1,53 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace ProgressiveCulling
+namespace ProgressiveCulling;
+
+public class CullableRig : DynamicCullableBase
 {
-	public class CullableRig : DynamicCullableBase
+	[SerializeField]
+	private float _boundsSize = 1f;
+
+	[SerializeField]
+	private Transform _rootBone;
+
+	[SerializeField]
+	private GameObject[] _targetRenderers;
+
+	protected override Vector3 BoundsOrigin
 	{
-		public event Action OnVisibleAgain;
-
-		protected override Vector3 BoundsOrigin
+		get
 		{
-			get
+			if (!(_rootBone == null))
 			{
-				if (!(this._rootBone == null))
-				{
-					return this._rootBone.position;
-				}
-				return base.transform.position;
+				return _rootBone.position;
+			}
+			return base.transform.position;
+		}
+	}
+
+	protected override float BoundsSize => _boundsSize;
+
+	public event Action OnVisibleAgain;
+
+	protected override void OnVisibilityChanged(bool isVisible)
+	{
+		GameObject[] targetRenderers = _targetRenderers;
+		foreach (GameObject gameObject in targetRenderers)
+		{
+			if (!(gameObject == null))
+			{
+				gameObject.SetActive(isVisible);
 			}
 		}
-
-		protected override float BoundsSize
+		if (isVisible)
 		{
-			get
-			{
-				return this._boundsSize;
-			}
+			this.OnVisibleAgain?.Invoke();
 		}
+	}
 
-		protected override void OnVisibilityChanged(bool isVisible)
-		{
-			foreach (GameObject gameObject in this._targetRenderers)
-			{
-				if (!(gameObject == null))
-				{
-					gameObject.SetActive(isVisible);
-				}
-			}
-			if (isVisible)
-			{
-				Action onVisibleAgain = this.OnVisibleAgain;
-				if (onVisibleAgain == null)
-				{
-					return;
-				}
-				onVisibleAgain();
-			}
-		}
-
-		public void SetTargetRenderers(GameObject[] newTargetRenderers)
-		{
-			this._targetRenderers = newTargetRenderers;
-		}
-
-		[SerializeField]
-		private float _boundsSize = 1f;
-
-		[SerializeField]
-		private Transform _rootBone;
-
-		[SerializeField]
-		private GameObject[] _targetRenderers;
+	public void SetTargetRenderers(GameObject[] newTargetRenderers)
+	{
+		_targetRenderers = newTargetRenderers;
 	}
 }

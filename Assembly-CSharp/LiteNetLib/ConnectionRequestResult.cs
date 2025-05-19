@@ -1,12 +1,9 @@
-﻿using System;
+namespace LiteNetLib;
 
-namespace LiteNetLib
+internal enum ConnectionRequestResult
 {
-	internal enum ConnectionRequestResult
-	{
-		None,
-		Accept,
-		Reject,
-		RejectForce
-	}
+	None,
+	Accept,
+	Reject,
+	RejectForce
 }

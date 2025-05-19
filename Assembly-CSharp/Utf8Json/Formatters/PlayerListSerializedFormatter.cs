@@ -1,59 +1,57 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class PlayerListSerializedFormatter : IJsonFormatter<PlayerListSerialized>, IJsonFormatter
 {
-	public sealed class PlayerListSerializedFormatter : IJsonFormatter<PlayerListSerialized>, IJsonFormatter
+	private readonly AutomataDictionary ____keyMapping;
+
+	private readonly byte[][] ____stringByteKeys;
+
+	public PlayerListSerializedFormatter()
 	{
-		public PlayerListSerializedFormatter()
+		____keyMapping = new AutomataDictionary { 
 		{
-			this.____keyMapping = new AutomataDictionary { 
-			{
-				JsonWriter.GetEncodedPropertyNameWithoutQuotation("objects"),
-				0
-			} };
-			this.____stringByteKeys = new byte[][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("objects") };
-		}
+			JsonWriter.GetEncodedPropertyNameWithoutQuotation("objects"),
+			0
+		} };
+		____stringByteKeys = new byte[1][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("objects") };
+	}
 
-		public void Serialize(ref JsonWriter writer, PlayerListSerialized value, IJsonFormatterResolver formatterResolver)
-		{
-			writer.WriteRaw(this.____stringByteKeys[0]);
-			formatterResolver.GetFormatterWithVerify<List<string>>().Serialize(ref writer, value.objects, formatterResolver);
-			writer.WriteEndObject();
-		}
+	public void Serialize(ref JsonWriter writer, PlayerListSerialized value, IJsonFormatterResolver formatterResolver)
+	{
+		writer.WriteRaw(____stringByteKeys[0]);
+		formatterResolver.GetFormatterWithVerify<List<string>>().Serialize(ref writer, value.objects, formatterResolver);
+		writer.WriteEndObject();
+	}
 
-		public PlayerListSerialized Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public PlayerListSerialized Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
+			throw new InvalidOperationException("typecode is null, struct not supported");
+		}
+		List<string> objects = null;
+		int count = 0;
+		reader.ReadIsBeginObjectWithVerify();
+		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
+		{
+			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
+			if (!____keyMapping.TryGetValueSafe(key, out var value))
 			{
-				throw new InvalidOperationException("typecode is null, struct not supported");
+				reader.ReadNextBlock();
 			}
-			List<string> list = null;
-			int num = 0;
-			reader.ReadIsBeginObjectWithVerify();
-			while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref num))
+			else if (value == 0)
 			{
-				ArraySegment<byte> arraySegment = reader.ReadPropertyNameSegmentRaw();
-				int num2;
-				if (!this.____keyMapping.TryGetValueSafe(arraySegment, out num2))
-				{
-					reader.ReadNextBlock();
-				}
-				else if (num2 == 0)
-				{
-					list = formatterResolver.GetFormatterWithVerify<List<string>>().Deserialize(ref reader, formatterResolver);
-				}
-				else
-				{
-					reader.ReadNextBlock();
-				}
+				objects = formatterResolver.GetFormatterWithVerify<List<string>>().Deserialize(ref reader, formatterResolver);
 			}
-			return new PlayerListSerialized(list);
+			else
+			{
+				reader.ReadNextBlock();
+			}
 		}
-
-		private readonly AutomataDictionary ____keyMapping;
-
-		private readonly byte[][] ____stringByteKeys;
+		return new PlayerListSerialized(objects);
 	}
 }

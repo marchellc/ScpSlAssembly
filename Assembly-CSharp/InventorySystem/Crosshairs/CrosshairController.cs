@@ -1,90 +1,89 @@
-﻿using System;
+using System;
 using InventorySystem.Items;
 using PlayerRoles;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace InventorySystem.Crosshairs
+namespace InventorySystem.Crosshairs;
+
+public class CrosshairController : MonoBehaviour
 {
-	public class CrosshairController : MonoBehaviour
+	private static CrosshairController _singleton;
+
+	private static bool _singletonSet;
+
+	[SerializeField]
+	private MonoBehaviour _defaultCrosshair;
+
+	[SerializeField]
+	private MonoBehaviour[] _customCrosshairs;
+
+	[SerializeField]
+	private GameObject _rootObject;
+
+	[SerializeField]
+	private CanvasScaler _canvasScaler;
+
+	private bool IsLowResolution
 	{
-		private bool IsLowResolution
+		get
 		{
-			get
+			if (Screen.width < 1280)
 			{
-				return Screen.width < 1280 && Screen.height < 720;
+				return Screen.height < 720;
 			}
+			return false;
 		}
+	}
 
-		private void Start()
+	private void Start()
+	{
+		Inventory.OnCurrentItemChanged += OnItemChanged;
+		_singleton = this;
+		_singletonSet = true;
+	}
+
+	private void OnDestroy()
+	{
+		Inventory.OnCurrentItemChanged -= OnItemChanged;
+		_singletonSet = false;
+	}
+
+	private void Update()
+	{
+		_rootObject.SetActive(ReferenceHub.TryGetLocalHub(out var hub) && hub.roleManager.CurrentRole is IHealthbarRole && hub.IsAlive() && !Cursor.visible);
+		AdjustScaleMode();
+	}
+
+	private static void OnItemChanged(ReferenceHub ply, ItemIdentifier prevItem, ItemIdentifier newItem)
+	{
+		if (ply.isLocalPlayer)
 		{
-			Inventory.OnCurrentItemChanged += CrosshairController.OnItemChanged;
-			CrosshairController._singleton = this;
-			CrosshairController._singletonSet = true;
+			Refresh(ply, newItem.SerialNumber);
 		}
+	}
 
-		private void OnDestroy()
+	public static void Refresh(ReferenceHub ply, ushort serial)
+	{
+		if (_singletonSet)
 		{
-			Inventory.OnCurrentItemChanged -= CrosshairController.OnItemChanged;
-			CrosshairController._singletonSet = false;
-		}
-
-		private void Update()
-		{
-			ReferenceHub referenceHub;
-			this._rootObject.SetActive(ReferenceHub.TryGetLocalHub(out referenceHub) && referenceHub.roleManager.CurrentRole is IHealthbarRole && referenceHub.IsAlive() && !Cursor.visible);
-			this.AdjustScaleMode();
-		}
-
-		private static void OnItemChanged(ReferenceHub ply, ItemIdentifier prevItem, ItemIdentifier newItem)
-		{
-			if (!ply.isLocalPlayer)
+			if (!ply.inventory.UserInventory.Items.TryGetValue(serial, out var value))
 			{
-				return;
+				value = null;
 			}
-			CrosshairController.Refresh(ply, newItem.SerialNumber);
-		}
-
-		public static void Refresh(ReferenceHub ply, ushort serial)
-		{
-			if (!CrosshairController._singletonSet)
+			Type type = ((value is ICustomCrosshairItem customCrosshairItem) ? customCrosshairItem.CrosshairType : null);
+			MonoBehaviour[] customCrosshairs = _singleton._customCrosshairs;
+			foreach (MonoBehaviour obj in customCrosshairs)
 			{
-				return;
+				Type type2 = obj.GetType();
+				obj.gameObject.SetActive(type2 == type);
 			}
-			ItemBase itemBase;
-			if (!ply.inventory.UserInventory.Items.TryGetValue(serial, out itemBase))
-			{
-				itemBase = null;
-			}
-			ICustomCrosshairItem customCrosshairItem = itemBase as ICustomCrosshairItem;
-			Type type = ((customCrosshairItem != null) ? customCrosshairItem.CrosshairType : null);
-			foreach (MonoBehaviour monoBehaviour in CrosshairController._singleton._customCrosshairs)
-			{
-				Type type2 = monoBehaviour.GetType();
-				monoBehaviour.gameObject.SetActive(type2 == type);
-			}
-			CrosshairController._singleton._defaultCrosshair.gameObject.SetActive(type == null);
+			_singleton._defaultCrosshair.gameObject.SetActive(type == null);
 		}
+	}
 
-		private void AdjustScaleMode()
-		{
-			this._canvasScaler.uiScaleMode = (this.IsLowResolution ? CanvasScaler.ScaleMode.ConstantPixelSize : CanvasScaler.ScaleMode.ScaleWithScreenSize);
-		}
-
-		private static CrosshairController _singleton;
-
-		private static bool _singletonSet;
-
-		[SerializeField]
-		private MonoBehaviour _defaultCrosshair;
-
-		[SerializeField]
-		private MonoBehaviour[] _customCrosshairs;
-
-		[SerializeField]
-		private GameObject _rootObject;
-
-		[SerializeField]
-		private CanvasScaler _canvasScaler;
+	private void AdjustScaleMode()
+	{
+		_canvasScaler.uiScaleMode = ((!IsLowResolution) ? CanvasScaler.ScaleMode.ScaleWithScreenSize : CanvasScaler.ScaleMode.ConstantPixelSize);
 	}
 }

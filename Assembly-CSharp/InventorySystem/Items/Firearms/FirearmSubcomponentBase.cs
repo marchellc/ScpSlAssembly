@@ -1,28 +1,26 @@
-﻿using System;
 using InventorySystem.Items.Autosync;
 
-namespace InventorySystem.Items.Firearms
+namespace InventorySystem.Items.Firearms;
+
+public abstract class FirearmSubcomponentBase : SubcomponentBase
 {
-	public abstract class FirearmSubcomponentBase : SubcomponentBase
+	public Firearm Firearm { get; private set; }
+
+	protected override void OnInit()
 	{
-		public Firearm Firearm { get; private set; }
+		base.OnInit();
+		Firearm = base.Item as Firearm;
+	}
 
-		protected override void OnInit()
-		{
-			base.OnInit();
-			this.Firearm = base.Item as Firearm;
-		}
+	public virtual void OnFirearmValidate(Firearm fa)
+	{
+	}
 
-		public virtual void OnFirearmValidate(Firearm fa)
-		{
-		}
+	internal virtual void OnAttachmentsApplied()
+	{
+	}
 
-		internal virtual void OnAttachmentsApplied()
-		{
-		}
-
-		internal virtual void SpectatorPostprocessSkip()
-		{
-		}
+	internal virtual void SpectatorPostprocessSkip()
+	{
 	}
 }

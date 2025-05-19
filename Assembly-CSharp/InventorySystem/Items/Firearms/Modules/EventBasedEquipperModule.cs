@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Autosync;
 using InventorySystem.Items.Firearms.Modules.Misc;
@@ -6,186 +6,179 @@ using Mirror;
 using UnityEngine;
 using Utils.NonAllocLINQ;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class EventBasedEquipperModule : ModuleBase, IEquipperModule, IBusyIndicatorModule
 {
-	public class EventBasedEquipperModule : ModuleBase, IEquipperModule, IBusyIndicatorModule
+	private enum RpcType
 	{
-		public float DisplayBaseEquipTime { get; private set; }
+		SeedSync,
+		FirstTimeTrue,
+		FirstTimeFalse,
+		ResyncAllFirstTime
+	}
 
-		public bool RandomizeOnEquip { get; private set; }
+	private static readonly HashSet<ushort> ClientAlreadyEquippedSerials = new HashSet<ushort>();
 
-		public bool IsBusy
+	private static readonly HashSet<ushort> SyncFirstEquips = new HashSet<ushort>();
+
+	private static readonly Dictionary<ushort, ushort> NextSeeds = new Dictionary<ushort, ushort>();
+
+	[field: SerializeField]
+	public float DisplayBaseEquipTime { get; private set; }
+
+	[field: SerializeField]
+	public bool RandomizeOnEquip { get; private set; }
+
+	public bool IsBusy
+	{
+		get
 		{
-			get
+			if (IsEquipped || base.IsSpectator)
 			{
-				return (!this.IsEquipped && !base.IsSpectator) || base.Firearm.IsHolstering;
+				return base.Firearm.IsHolstering;
 			}
+			return true;
 		}
+	}
 
-		public bool IsEquipped { get; private set; }
+	public bool IsEquipped { get; private set; }
 
-		public override bool AllowCmdsWhileHolstered
+	public override bool AllowCmdsWhileHolstered => true;
+
+	internal override void OnEquipped()
+	{
+		base.OnEquipped();
+		Randomize();
+		ApplyFirstTimeAnims();
+		if (base.IsLocalPlayer)
 		{
-			get
+			ClientAlreadyEquippedSerials.Add(base.ItemSerial);
+		}
+	}
+
+	internal override void SpectatorInit()
+	{
+		base.SpectatorInit();
+		Randomize();
+		ApplyFirstTimeAnims();
+	}
+
+	internal override void OnAdded()
+	{
+		base.OnAdded();
+		ServerUpdateSeed();
+		if (base.IsLocalPlayer && !ClientAlreadyEquippedSerials.Contains(base.ItemSerial))
+		{
+			SendCmd();
+		}
+	}
+
+	internal override void OnHolstered()
+	{
+		base.OnHolstered();
+		IsEquipped = false;
+		ServerUpdateSeed();
+		if (base.IsServer && SyncFirstEquips.Contains(base.ItemSerial))
+		{
+			SendRpc(delegate(NetworkWriter x)
 			{
-				return true;
+				x.WriteSubheader(RpcType.FirstTimeFalse);
+			});
+		}
+	}
+
+	internal override void OnClientReady()
+	{
+		base.OnClientReady();
+		NextSeeds.Clear();
+		SyncFirstEquips.Clear();
+		ClientAlreadyEquippedSerials.Clear();
+	}
+
+	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
+	{
+		base.ServerOnPlayerConnected(hub, firstModule);
+		if (!firstModule)
+		{
+			return;
+		}
+		SendRpc(delegate(NetworkWriter writer)
+		{
+			writer.WriteSubheader(RpcType.ResyncAllFirstTime);
+			SyncFirstEquips.ForEach(delegate(ushort s)
+			{
+				writer.WriteUShort(s);
+			});
+		});
+	}
+
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		SendRpc(delegate(NetworkWriter x)
+		{
+			x.WriteSubheader(RpcType.FirstTimeTrue);
+		});
+	}
+
+	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	{
+		base.ClientProcessRpcTemplate(reader, serial);
+		switch ((RpcType)reader.ReadByte())
+		{
+		case RpcType.SeedSync:
+			NextSeeds[serial] = reader.ReadUShort();
+			break;
+		case RpcType.FirstTimeTrue:
+			SyncFirstEquips.Add(serial);
+			break;
+		case RpcType.FirstTimeFalse:
+			SyncFirstEquips.Remove(serial);
+			break;
+		case RpcType.ResyncAllFirstTime:
+			SyncFirstEquips.Clear();
+			while (reader.Remaining > 0)
+			{
+				SyncFirstEquips.Add(reader.ReadUShort());
 			}
+			break;
 		}
+	}
 
-		internal override void OnEquipped()
+	private void ServerUpdateSeed()
+	{
+		if (base.IsServer && RandomizeOnEquip)
 		{
-			base.OnEquipped();
-			this.Randomize();
-			this.ApplyFirstTimeAnims();
-			if (base.IsLocalPlayer)
+			int rand = UnityEngine.Random.Range(0, 65535);
+			SendRpc(delegate(NetworkWriter x)
 			{
-				EventBasedEquipperModule.ClientAlreadyEquippedSerials.Add(base.ItemSerial);
-			}
-		}
-
-		internal override void SpectatorInit()
-		{
-			base.SpectatorInit();
-			this.Randomize();
-			this.ApplyFirstTimeAnims();
-		}
-
-		internal override void OnAdded()
-		{
-			base.OnAdded();
-			this.ServerUpdateSeed();
-			if (!base.IsLocalPlayer || EventBasedEquipperModule.ClientAlreadyEquippedSerials.Contains(base.ItemSerial))
-			{
-				return;
-			}
-			this.SendCmd(null);
-		}
-
-		internal override void OnHolstered()
-		{
-			base.OnHolstered();
-			this.IsEquipped = false;
-			this.ServerUpdateSeed();
-			if (base.IsServer && EventBasedEquipperModule.SyncFirstEquips.Contains(base.ItemSerial))
-			{
-				this.SendRpc(delegate(NetworkWriter x)
-				{
-					x.WriteSubheader(EventBasedEquipperModule.RpcType.FirstTimeFalse);
-				}, true);
-			}
-		}
-
-		internal override void OnClientReady()
-		{
-			base.OnClientReady();
-			EventBasedEquipperModule.NextSeeds.Clear();
-			EventBasedEquipperModule.SyncFirstEquips.Clear();
-			EventBasedEquipperModule.ClientAlreadyEquippedSerials.Clear();
-		}
-
-		internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
-		{
-			base.ServerOnPlayerConnected(hub, firstModule);
-			if (!firstModule)
-			{
-				return;
-			}
-			this.SendRpc(delegate(NetworkWriter writer)
-			{
-				writer.WriteSubheader(EventBasedEquipperModule.RpcType.ResyncAllFirstTime);
-				EventBasedEquipperModule.SyncFirstEquips.ForEach(delegate(ushort s)
-				{
-					writer.WriteUShort(s);
-				});
-			}, true);
-		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			this.SendRpc(delegate(NetworkWriter x)
-			{
-				x.WriteSubheader(EventBasedEquipperModule.RpcType.FirstTimeTrue);
-			}, true);
-		}
-
-		public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
-		{
-			base.ClientProcessRpcTemplate(reader, serial);
-			switch (reader.ReadByte())
-			{
-			case 0:
-				EventBasedEquipperModule.NextSeeds[serial] = reader.ReadUShort();
-				return;
-			case 1:
-				EventBasedEquipperModule.SyncFirstEquips.Add(serial);
-				return;
-			case 2:
-				EventBasedEquipperModule.SyncFirstEquips.Remove(serial);
-				return;
-			case 3:
-				EventBasedEquipperModule.SyncFirstEquips.Clear();
-				while (reader.Remaining > 0)
-				{
-					EventBasedEquipperModule.SyncFirstEquips.Add(reader.ReadUShort());
-				}
-				return;
-			default:
-				return;
-			}
-		}
-
-		private void ServerUpdateSeed()
-		{
-			if (!base.IsServer || !this.RandomizeOnEquip)
-			{
-				return;
-			}
-			int rand = global::UnityEngine.Random.Range(0, 65535);
-			this.SendRpc(delegate(NetworkWriter x)
-			{
-				x.WriteSubheader(EventBasedEquipperModule.RpcType.SeedSync);
+				x.WriteSubheader(RpcType.SeedSync);
 				x.WriteUShort((ushort)rand);
-			}, true);
+			});
 		}
+	}
 
-		private void Randomize()
+	private void Randomize()
+	{
+		if (RandomizeOnEquip)
 		{
-			if (!this.RandomizeOnEquip)
-			{
-				return;
-			}
-			double num = new global::System.Random((int)EventBasedEquipperModule.NextSeeds.GetValueOrDefault(base.ItemSerial, base.ItemSerial)).NextDouble();
-			base.Firearm.AnimSetFloat(FirearmAnimatorHashes.Random, (float)num, false);
+			double num = new System.Random(NextSeeds.GetValueOrDefault(base.ItemSerial, base.ItemSerial)).NextDouble();
+			base.Firearm.AnimSetFloat(FirearmAnimatorHashes.Random, (float)num);
 		}
+	}
 
-		private void ApplyFirstTimeAnims()
+	private void ApplyFirstTimeAnims()
+	{
+		if (SyncFirstEquips.Contains(base.ItemSerial))
 		{
-			if (!EventBasedEquipperModule.SyncFirstEquips.Contains(base.ItemSerial))
-			{
-				return;
-			}
-			base.Firearm.AnimSetBool(FirearmAnimatorHashes.FirstTimePickup, true, true);
+			base.Firearm.AnimSetBool(FirearmAnimatorHashes.FirstTimePickup, b: true, checkIfExists: true);
 		}
+	}
 
-		[ExposedFirearmEvent]
-		public void Equip()
-		{
-			this.IsEquipped = true;
-		}
-
-		private static readonly HashSet<ushort> ClientAlreadyEquippedSerials = new HashSet<ushort>();
-
-		private static readonly HashSet<ushort> SyncFirstEquips = new HashSet<ushort>();
-
-		private static readonly Dictionary<ushort, ushort> NextSeeds = new Dictionary<ushort, ushort>();
-
-		private enum RpcType
-		{
-			SeedSync,
-			FirstTimeTrue,
-			FirstTimeFalse,
-			ResyncAllFirstTime
-		}
+	[ExposedFirearmEvent]
+	public void Equip()
+	{
+		IsEquipped = true;
 	}
 }

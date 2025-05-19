@@ -1,17 +1,14 @@
-﻿using System;
+namespace UserSettings;
 
-namespace UserSettings
+public class StringReaderWriter : IPrefsReaderWriter<string>
 {
-	public class StringReaderWriter : IPrefsReaderWriter<string>
+	public string Load(string key, string defValue)
 	{
-		public string Load(string key, string defValue)
-		{
-			return PlayerPrefsSl.Get(key, defValue);
-		}
+		return PlayerPrefsSl.Get(key, defValue);
+	}
 
-		public void Save(string key, string val)
-		{
-			PlayerPrefsSl.Set(key, val);
-		}
+	public void Save(string key, string val)
+	{
+		PlayerPrefsSl.Set(key, val);
 	}
 }

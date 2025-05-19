@@ -1,41 +1,33 @@
-﻿using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class CardiacHealthIndicator : SubEffectBase
 {
-	public class CardiacHealthIndicator : SubEffectBase
+	[SerializeField]
+	private AnimationCurve _healthToWeight;
+
+	[SerializeField]
+	private Volume _ppv;
+
+	[SerializeField]
+	private float _speedMultiplier;
+
+	public override bool IsActive => base.MainEffect.IsEnabled;
+
+	public override void DisableEffect()
 	{
-		public override bool IsActive
-		{
-			get
-			{
-				return base.MainEffect.IsEnabled;
-			}
-		}
+		base.DisableEffect();
+	}
 
-		public override void DisableEffect()
-		{
-			base.DisableEffect();
-		}
+	internal override void UpdateEffect()
+	{
+		base.UpdateEffect();
+	}
 
-		internal override void UpdateEffect()
-		{
-			base.UpdateEffect();
-		}
-
-		internal override void Init(StatusEffectBase mainEffect)
-		{
-			base.Init(mainEffect);
-		}
-
-		[SerializeField]
-		private AnimationCurve _healthToWeight;
-
-		[SerializeField]
-		private Volume _ppv;
-
-		[SerializeField]
-		private float _speedMultiplier;
+	internal override void Init(StatusEffectBase mainEffect)
+	{
+		base.Init(mainEffect);
 	}
 }

@@ -1,67 +1,66 @@
-﻿using System;
+using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Utf8Json.Internal.Emit
+namespace Utf8Json.Internal.Emit;
+
+internal static class ExpressionUtility
 {
-	internal static class ExpressionUtility
+	private static MethodInfo GetMethodInfoCore(LambdaExpression expression)
 	{
-		private static MethodInfo GetMethodInfoCore(LambdaExpression expression)
+		if (expression == null)
 		{
-			if (expression == null)
-			{
-				throw new ArgumentNullException("expression");
-			}
-			return (expression.Body as MethodCallExpression).Method;
+			throw new ArgumentNullException("expression");
 		}
+		return (expression.Body as MethodCallExpression).Method;
+	}
 
-		public static MethodInfo GetMethodInfo<T>(Expression<Func<T>> expression)
-		{
-			return ExpressionUtility.GetMethodInfoCore(expression);
-		}
+	public static MethodInfo GetMethodInfo<T>(Expression<Func<T>> expression)
+	{
+		return GetMethodInfoCore(expression);
+	}
 
-		public static MethodInfo GetMethodInfo(Expression<Action> expression)
-		{
-			return ExpressionUtility.GetMethodInfoCore(expression);
-		}
+	public static MethodInfo GetMethodInfo(Expression<Action> expression)
+	{
+		return GetMethodInfoCore(expression);
+	}
 
-		public static MethodInfo GetMethodInfo<T, TR>(Expression<Func<T, TR>> expression)
-		{
-			return ExpressionUtility.GetMethodInfoCore(expression);
-		}
+	public static MethodInfo GetMethodInfo<T, TR>(Expression<Func<T, TR>> expression)
+	{
+		return GetMethodInfoCore(expression);
+	}
 
-		public static MethodInfo GetMethodInfo<T>(Expression<Action<T>> expression)
-		{
-			return ExpressionUtility.GetMethodInfoCore(expression);
-		}
+	public static MethodInfo GetMethodInfo<T>(Expression<Action<T>> expression)
+	{
+		return GetMethodInfoCore(expression);
+	}
 
-		public static MethodInfo GetMethodInfo<TArg1, TArg2>(Expression<Action<TArg1, TArg2>> expression)
-		{
-			return ExpressionUtility.GetMethodInfoCore(expression);
-		}
+	public static MethodInfo GetMethodInfo<TArg1, TArg2>(Expression<Action<TArg1, TArg2>> expression)
+	{
+		return GetMethodInfoCore(expression);
+	}
 
-		public static MethodInfo GetMethodInfo<T, TArg1, TR>(Expression<Func<T, TArg1, TR>> expression)
-		{
-			return ExpressionUtility.GetMethodInfoCore(expression);
-		}
+	public static MethodInfo GetMethodInfo<T, TArg1, TR>(Expression<Func<T, TArg1, TR>> expression)
+	{
+		return GetMethodInfoCore(expression);
+	}
 
-		private static MemberInfo GetMemberInfoCore<T>(Expression<T> source)
+	private static MemberInfo GetMemberInfoCore<T>(Expression<T> source)
+	{
+		if (source == null)
 		{
-			if (source == null)
-			{
-				throw new ArgumentNullException("source");
-			}
-			return (source.Body as MemberExpression).Member;
+			throw new ArgumentNullException("source");
 		}
+		return (source.Body as MemberExpression).Member;
+	}
 
-		public static PropertyInfo GetPropertyInfo<T, TR>(Expression<Func<T, TR>> expression)
-		{
-			return ExpressionUtility.GetMemberInfoCore<Func<T, TR>>(expression) as PropertyInfo;
-		}
+	public static PropertyInfo GetPropertyInfo<T, TR>(Expression<Func<T, TR>> expression)
+	{
+		return GetMemberInfoCore(expression) as PropertyInfo;
+	}
 
-		public static FieldInfo GetFieldInfo<T, TR>(Expression<Func<T, TR>> expression)
-		{
-			return ExpressionUtility.GetMemberInfoCore<Func<T, TR>>(expression) as FieldInfo;
-		}
+	public static FieldInfo GetFieldInfo<T, TR>(Expression<Func<T, TR>> expression)
+	{
+		return GetMemberInfoCore(expression) as FieldInfo;
 	}
 }

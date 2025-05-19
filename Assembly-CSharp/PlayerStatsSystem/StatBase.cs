@@ -1,40 +1,37 @@
-﻿using System;
+namespace PlayerStatsSystem;
 
-namespace PlayerStatsSystem
+public abstract class StatBase
 {
-	public abstract class StatBase
+	public abstract float CurValue { get; set; }
+
+	public abstract float MinValue { get; }
+
+	public abstract float MaxValue { get; set; }
+
+	public float NormalizedValue
 	{
-		public abstract float CurValue { get; set; }
-
-		public abstract float MinValue { get; }
-
-		public abstract float MaxValue { get; set; }
-
-		public float NormalizedValue
+		get
 		{
-			get
+			if (MinValue != MaxValue)
 			{
-				if (this.MinValue != this.MaxValue)
-				{
-					return (this.CurValue - this.MinValue) / (this.MaxValue - this.MinValue);
-				}
-				return 0f;
+				return (CurValue - MinValue) / (MaxValue - MinValue);
 			}
+			return 0f;
 		}
+	}
 
-		public ReferenceHub Hub { get; private set; }
+	public ReferenceHub Hub { get; private set; }
 
-		internal virtual void Init(ReferenceHub ply)
-		{
-			this.Hub = ply;
-		}
+	internal virtual void Init(ReferenceHub ply)
+	{
+		Hub = ply;
+	}
 
-		internal virtual void Update()
-		{
-		}
+	internal virtual void Update()
+	{
+	}
 
-		internal virtual void ClassChanged()
-		{
-		}
+	internal virtual void ClassChanged()
+	{
 	}
 }

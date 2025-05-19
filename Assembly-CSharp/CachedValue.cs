@@ -1,52 +1,7 @@
-﻿using System;
+using System;
 
 public class CachedValue<T>
 {
-	public CachedValue(Func<T> factory)
-	{
-		this._factory = factory;
-		this._usesChecker = false;
-		this._updateChecker = null;
-	}
-
-	public CachedValue(Func<T> factory, Func<bool> checker)
-	{
-		this._factory = factory;
-		this._usesChecker = true;
-		this._updateChecker = checker;
-	}
-
-	public T Value
-	{
-		get
-		{
-			if (this.IsDirty || (this._usesChecker && this._updateChecker()))
-			{
-				this.RefreshValue();
-			}
-			return this._cachedValue;
-		}
-	}
-
-	public bool IsDirty
-	{
-		get
-		{
-			return !this._cacheSet;
-		}
-	}
-
-	public void RefreshValue()
-	{
-		this._cacheSet = true;
-		this._cachedValue = this._factory();
-	}
-
-	public void SetDirty()
-	{
-		this._cacheSet = false;
-	}
-
 	private bool _cacheSet;
 
 	private T _cachedValue;
@@ -56,4 +11,43 @@ public class CachedValue<T>
 	private readonly Func<bool> _updateChecker;
 
 	private readonly bool _usesChecker;
+
+	public T Value
+	{
+		get
+		{
+			if (IsDirty || (_usesChecker && _updateChecker()))
+			{
+				RefreshValue();
+			}
+			return _cachedValue;
+		}
+	}
+
+	public bool IsDirty => !_cacheSet;
+
+	public CachedValue(Func<T> factory)
+	{
+		_factory = factory;
+		_usesChecker = false;
+		_updateChecker = null;
+	}
+
+	public CachedValue(Func<T> factory, Func<bool> checker)
+	{
+		_factory = factory;
+		_usesChecker = true;
+		_updateChecker = checker;
+	}
+
+	public void RefreshValue()
+	{
+		_cacheSet = true;
+		_cachedValue = _factory();
+	}
+
+	public void SetDirty()
+	{
+		_cacheSet = false;
+	}
 }

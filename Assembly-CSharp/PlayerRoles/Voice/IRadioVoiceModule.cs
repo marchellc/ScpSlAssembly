@@ -1,10 +1,8 @@
-﻿using System;
 using VoiceChat.Playbacks;
 
-namespace PlayerRoles.Voice
+namespace PlayerRoles.Voice;
+
+public interface IRadioVoiceModule
 {
-	public interface IRadioVoiceModule
-	{
-		PersonalRadioPlayback RadioPlayback { get; }
-	}
+	PersonalRadioPlayback RadioPlayback { get; }
 }

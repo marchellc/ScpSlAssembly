@@ -1,22 +1,23 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+[UniqueModule]
+public interface IReloaderModule
 {
-	[UniqueModule]
-	public interface IReloaderModule
+	bool IsReloading { get; }
+
+	bool IsUnloading { get; }
+
+	bool IsReloadingOrUnloading
 	{
-		bool IsReloading { get; }
-
-		bool IsUnloading { get; }
-
-		bool IsReloadingOrUnloading
+		get
 		{
-			get
+			if (!IsReloading)
 			{
-				return this.IsReloading || this.IsUnloading;
+				return IsUnloading;
 			}
+			return true;
 		}
-
-		bool GetDisplayReloadingOrUnloading(ushort serial);
 	}
+
+	bool GetDisplayReloadingOrUnloading(ushort serial);
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using GameCore;
@@ -6,129 +6,109 @@ using Mirror;
 using PlayerRoles;
 using UnityEngine;
 
-namespace AFK
+namespace AFK;
+
+public static class AFKManager
 {
-	public static class AFKManager
+	public delegate void AFKKick(ReferenceHub userHub);
+
+	private static readonly Dictionary<ReferenceHub, Stopwatch> AFKTimers = new Dictionary<ReferenceHub, Stopwatch>();
+
+	private static float _kickTime;
+
+	private static bool _constantlyCheck;
+
+	private static string _kickMessage;
+
+	private static bool _eventsStatus;
+
+	public static event AFKKick OnAFKKick;
+
+	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
+	private static void Init()
 	{
-		public static event AFKManager.AFKKick OnAFKKick;
+		ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(ConfigReloaded));
+	}
 
-		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
-		private static void Init()
+	private static void ConfigReloaded()
+	{
+		_constantlyCheck = ConfigFile.ServerConfig.GetBool("constantly_check_afk");
+		_kickTime = ConfigFile.ServerConfig.GetFloat("afk_time", 90f);
+		_kickMessage = ConfigFile.ServerConfig.GetString("afk_kick_message", "AFK");
+		if (_kickTime <= 0f)
 		{
-			ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(AFKManager.ConfigReloaded));
+			if (_eventsStatus)
+			{
+				_eventsStatus = false;
+				ReferenceHub.OnPlayerAdded -= AddPlayer;
+				ReferenceHub.OnPlayerRemoved -= RemovePlayer;
+				StaticUnityMethods.OnUpdate -= OnUpdate;
+				PlayerRoleManager.OnRoleChanged -= RoleChange;
+			}
 		}
-
-		private static void ConfigReloaded()
+		else if (!_eventsStatus)
 		{
-			AFKManager._constantlyCheck = ConfigFile.ServerConfig.GetBool("constantly_check_afk", false);
-			AFKManager._kickTime = ConfigFile.ServerConfig.GetFloat("afk_time", 90f);
-			AFKManager._kickMessage = ConfigFile.ServerConfig.GetString("afk_kick_message", "AFK");
-			if (AFKManager._kickTime > 0f)
-			{
-				if (!AFKManager._eventsStatus)
-				{
-					AFKManager._eventsStatus = true;
-					ReferenceHub.OnPlayerAdded = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerAdded, new Action<ReferenceHub>(AFKManager.AddPlayer));
-					ReferenceHub.OnPlayerRemoved = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerRemoved, new Action<ReferenceHub>(AFKManager.RemovePlayer));
-					StaticUnityMethods.OnUpdate += AFKManager.OnUpdate;
-					PlayerRoleManager.OnRoleChanged += AFKManager.RoleChange;
-				}
-				return;
-			}
-			if (!AFKManager._eventsStatus)
-			{
-				return;
-			}
-			AFKManager._eventsStatus = false;
-			ReferenceHub.OnPlayerAdded = (Action<ReferenceHub>)Delegate.Remove(ReferenceHub.OnPlayerAdded, new Action<ReferenceHub>(AFKManager.AddPlayer));
-			ReferenceHub.OnPlayerRemoved = (Action<ReferenceHub>)Delegate.Remove(ReferenceHub.OnPlayerRemoved, new Action<ReferenceHub>(AFKManager.RemovePlayer));
-			StaticUnityMethods.OnUpdate -= AFKManager.OnUpdate;
-			PlayerRoleManager.OnRoleChanged -= AFKManager.RoleChange;
+			_eventsStatus = true;
+			ReferenceHub.OnPlayerAdded += AddPlayer;
+			ReferenceHub.OnPlayerRemoved += RemovePlayer;
+			StaticUnityMethods.OnUpdate += OnUpdate;
+			PlayerRoleManager.OnRoleChanged += RoleChange;
 		}
+	}
 
-		public static void AddPlayer(ReferenceHub hub)
+	public static void AddPlayer(ReferenceHub hub)
+	{
+		if (NetworkServer.active && !(hub == ReferenceHub.HostHub) && !AFKTimers.ContainsKey(hub) && !PermissionsHandler.IsPermitted(hub.serverRoles.Permissions, PlayerPermissions.AFKImmunity))
 		{
-			if (!NetworkServer.active || hub == ReferenceHub.HostHub || AFKManager.AFKTimers.ContainsKey(hub))
-			{
-				return;
-			}
-			if (PermissionsHandler.IsPermitted(hub.serverRoles.Permissions, PlayerPermissions.AFKImmunity))
-			{
-				return;
-			}
-			AFKManager.AFKTimers.Add(hub, Stopwatch.StartNew());
+			AFKTimers.Add(hub, Stopwatch.StartNew());
 		}
+	}
 
-		private static void RemovePlayer(ReferenceHub hub)
-		{
-			AFKManager.AFKTimers.Remove(hub);
-		}
+	private static void RemovePlayer(ReferenceHub hub)
+	{
+		AFKTimers.Remove(hub);
+	}
 
-		private static void RoleChange(ReferenceHub hub, PlayerRoleBase oldRole, PlayerRoleBase newRole)
+	private static void RoleChange(ReferenceHub hub, PlayerRoleBase oldRole, PlayerRoleBase newRole)
+	{
+		if (NetworkServer.active && AFKTimers.TryGetValue(hub, out var value))
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			Stopwatch stopwatch;
-			if (!AFKManager.AFKTimers.TryGetValue(hub, out stopwatch))
-			{
-				return;
-			}
 			if (PermissionsHandler.IsPermitted(hub.serverRoles.Permissions, PlayerPermissions.AFKImmunity) || hub == ReferenceHub.HostHub)
 			{
-				AFKManager.AFKTimers.Remove(hub);
-				return;
+				AFKTimers.Remove(hub);
 			}
-			stopwatch.Restart();
-		}
-
-		private static void OnUpdate()
-		{
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
+			else
 			{
-				Stopwatch stopwatch;
-				if (AFKManager.AFKTimers.TryGetValue(referenceHub, out stopwatch) && stopwatch.IsRunning)
+				value.Restart();
+			}
+		}
+	}
+
+	private static void OnUpdate()
+	{
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (!AFKTimers.TryGetValue(allHub, out var value) || !value.IsRunning || !(allHub.roleManager.CurrentRole is IAFKRole iAFKRole))
+			{
+				continue;
+			}
+			if (!iAFKRole.IsAFK)
+			{
+				if (_constantlyCheck)
 				{
-					IAFKRole iafkrole = referenceHub.roleManager.CurrentRole as IAFKRole;
-					if (iafkrole != null)
-					{
-						if (!iafkrole.IsAFK)
-						{
-							if (AFKManager._constantlyCheck)
-							{
-								stopwatch.Restart();
-							}
-							else
-							{
-								stopwatch.Reset();
-							}
-						}
-						else if (stopwatch.Elapsed.TotalSeconds >= (double)AFKManager._kickTime)
-						{
-							stopwatch.Reset();
-							AFKManager.AFKKick onAFKKick = AFKManager.OnAFKKick;
-							if (onAFKKick != null)
-							{
-								onAFKKick(referenceHub);
-							}
-							BanPlayer.KickUser(referenceHub, AFKManager._kickMessage);
-						}
-					}
+					value.Restart();
+				}
+				else
+				{
+					value.Reset();
 				}
 			}
+			else if (value.Elapsed.TotalSeconds >= (double)_kickTime)
+			{
+				value.Reset();
+				AFKManager.OnAFKKick?.Invoke(allHub);
+				BanPlayer.KickUser(allHub, _kickMessage);
+			}
 		}
-
-		private static readonly Dictionary<ReferenceHub, Stopwatch> AFKTimers = new Dictionary<ReferenceHub, Stopwatch>();
-
-		private static float _kickTime;
-
-		private static bool _constantlyCheck;
-
-		private static string _kickMessage;
-
-		private static bool _eventsStatus;
-
-		public delegate void AFKKick(ReferenceHub userHub);
 	}
 }

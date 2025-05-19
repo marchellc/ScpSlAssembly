@@ -1,24 +1,16 @@
-﻿using System;
 using UnityEngine;
 
-namespace ToggleableMenus
+namespace ToggleableMenus;
+
+public class SimpleToggleableMenu : ToggleableMenuBase
 {
-	public class SimpleToggleableMenu : ToggleableMenuBase
+	[SerializeField]
+	private GameObject _targetRoot;
+
+	public override bool CanToggle => true;
+
+	protected override void OnToggled()
 	{
-		public override bool CanToggle
-		{
-			get
-			{
-				return true;
-			}
-		}
-
-		protected override void OnToggled()
-		{
-			this._targetRoot.SetActive(this.IsEnabled);
-		}
-
-		[SerializeField]
-		private GameObject _targetRoot;
+		_targetRoot.SetActive(IsEnabled);
 	}
 }

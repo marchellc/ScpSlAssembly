@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Autosync;
 using InventorySystem.Items.Firearms.Modules;
@@ -8,181 +7,164 @@ using PlayerRoles.Spectating;
 using UnityEngine;
 using Utils.Networking;
 
-namespace InventorySystem.Items.Firearms.Ammo
+namespace InventorySystem.Items.Firearms.Ammo;
+
+public static class ReserveAmmoSync
 {
-	public static class ReserveAmmoSync
+	private class LastSent
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		public ItemType AmmoType;
+
+		public int AmmoCount;
+	}
+
+	public readonly struct ReserveAmmoMessage : NetworkMessage
+	{
+		private readonly sbyte _ammoType;
+
+		private readonly byte _amount;
+
+		private readonly RecyclablePlayerId _player;
+
+		public ReserveAmmoMessage(NetworkReader reader)
 		{
-			ReferenceHub.OnPlayerRemoved = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerRemoved, new Action<ReferenceHub>(delegate(ReferenceHub hub)
-			{
-				ReserveAmmoSync.SyncData.Remove(hub);
-			}));
-			PlayerRoleManager.OnServerRoleSet += delegate(ReferenceHub hub, RoleTypeId newRole, RoleChangeReason reason)
-			{
-				if (newRole.IsAlive())
-				{
-					return;
-				}
-				ReserveAmmoSync.SendAllToNewSpectator(hub);
-			};
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				ReserveAmmoSync.SyncData.Clear();
-				NetworkClient.ReplaceHandler<ReserveAmmoSync.ReserveAmmoMessage>(delegate(ReserveAmmoSync.ReserveAmmoMessage msg)
-				{
-					msg.Apply();
-				}, true);
-			};
-			StaticUnityMethods.OnUpdate += delegate
-			{
-				if (!NetworkServer.active)
-				{
-					return;
-				}
-				ReserveAmmoSync.UpdateDelta();
-			};
+			_ammoType = reader.ReadSByte();
+			_amount = reader.ReadByte();
+			_player = reader.ReadRecyclablePlayerId();
 		}
 
-		private static void SendAllToNewSpectator(ReferenceHub spectator)
+		public ReserveAmmoMessage(ReferenceHub owner, ItemType ammoType)
 		{
-			using (HashSet<AutosyncItem>.Enumerator enumerator = AutosyncItem.Instances.GetEnumerator())
-			{
-				while (enumerator.MoveNext())
-				{
-					ReferenceHub referenceHub;
-					ItemType itemType;
-					if (ReserveAmmoSync.TryUnpack(enumerator.Current, out referenceHub, out itemType))
-					{
-						spectator.connectionToClient.Send<ReserveAmmoSync.ReserveAmmoMessage>(new ReserveAmmoSync.ReserveAmmoMessage(referenceHub, itemType), 0);
-					}
-				}
-			}
+			_ammoType = (sbyte)ammoType;
+			_amount = (byte)Mathf.Clamp(owner.inventory.GetCurAmmo(ammoType), 0, 255);
+			_player = new RecyclablePlayerId(owner);
 		}
 
-		private static void UpdateDelta()
+		public void Serialize(NetworkWriter writer)
 		{
-			using (HashSet<AutosyncItem>.Enumerator enumerator = AutosyncItem.Instances.GetEnumerator())
-			{
-				while (enumerator.MoveNext())
-				{
-					ReferenceHub referenceHub;
-					ItemType itemType;
-					if (ReserveAmmoSync.TryUnpack(enumerator.Current, out referenceHub, out itemType))
-					{
-						int curAmmo = (int)referenceHub.inventory.GetCurAmmo(itemType);
-						ReserveAmmoSync.LastSent orAdd = ReserveAmmoSync.ServerLastSent.GetOrAdd(referenceHub, () => new ReserveAmmoSync.LastSent());
-						if (orAdd.AmmoCount != curAmmo || orAdd.AmmoType != itemType)
-						{
-							orAdd.AmmoType = itemType;
-							orAdd.AmmoCount = curAmmo;
-							new ReserveAmmoSync.ReserveAmmoMessage(referenceHub, itemType).SendToHubsConditionally((ReferenceHub x) => x.roleManager.CurrentRole is SpectatorRole, 0);
-						}
-					}
-				}
-			}
+			writer.WriteSByte(_ammoType);
+			writer.WriteByte(_amount);
+			writer.WriteRecyclablePlayerId(_player);
 		}
 
-		private static bool TryUnpack(AutosyncItem src, out ReferenceHub owner, out ItemType ammoType)
+		public void Apply()
 		{
-			owner = null;
-			ammoType = ItemType.KeycardJanitor;
-			Firearm firearm = src as Firearm;
-			if (firearm == null || !firearm.HasOwner)
+			if (ReferenceHub.TryGetHub(_player.Value, out var hub))
 			{
-				return false;
+				Set(hub, (ItemType)_ammoType, _amount);
 			}
-			IPrimaryAmmoContainerModule primaryAmmoContainerModule;
-			if (!firearm.TryGetModule(out primaryAmmoContainerModule, true))
+		}
+	}
+
+	private static readonly Dictionary<ReferenceHub, Dictionary<ItemType, int>> SyncData = new Dictionary<ReferenceHub, Dictionary<ItemType, int>>();
+
+	private static readonly Dictionary<ReferenceHub, LastSent> ServerLastSent = new Dictionary<ReferenceHub, LastSent>();
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub hub)
+		{
+			SyncData.Remove(hub);
+		};
+		PlayerRoleManager.OnServerRoleSet += delegate(ReferenceHub hub, RoleTypeId newRole, RoleChangeReason reason)
+		{
+			if (!newRole.IsAlive())
 			{
-				return false;
+				SendAllToNewSpectator(hub);
 			}
-			ammoType = primaryAmmoContainerModule.AmmoType;
-			owner = firearm.Owner;
+		};
+		CustomNetworkManager.OnClientReady += delegate
+		{
+			SyncData.Clear();
+			NetworkClient.ReplaceHandler(delegate(ReserveAmmoMessage msg)
+			{
+				msg.Apply();
+			});
+		};
+		StaticUnityMethods.OnUpdate += delegate
+		{
+			if (NetworkServer.active)
+			{
+				UpdateDelta();
+			}
+		};
+	}
+
+	private static void SendAllToNewSpectator(ReferenceHub spectator)
+	{
+		foreach (AutosyncItem instance in AutosyncItem.Instances)
+		{
+			if (TryUnpack(instance, out var owner, out var ammoType))
+			{
+				spectator.connectionToClient.Send(new ReserveAmmoMessage(owner, ammoType));
+			}
+		}
+	}
+
+	private static void UpdateDelta()
+	{
+		foreach (AutosyncItem instance in AutosyncItem.Instances)
+		{
+			if (!TryUnpack(instance, out var owner, out var ammoType))
+			{
+				continue;
+			}
+			int curAmmo = owner.inventory.GetCurAmmo(ammoType);
+			LastSent orAdd = ServerLastSent.GetOrAdd(owner, () => new LastSent());
+			if (orAdd.AmmoCount != curAmmo || orAdd.AmmoType != ammoType)
+			{
+				orAdd.AmmoType = ammoType;
+				orAdd.AmmoCount = curAmmo;
+				new ReserveAmmoMessage(owner, ammoType).SendToHubsConditionally((ReferenceHub x) => x.roleManager.CurrentRole is SpectatorRole);
+			}
+		}
+	}
+
+	private static bool TryUnpack(AutosyncItem src, out ReferenceHub owner, out ItemType ammoType)
+	{
+		owner = null;
+		ammoType = ItemType.KeycardJanitor;
+		if (!(src is Firearm { HasOwner: not false } firearm))
+		{
+			return false;
+		}
+		if (!firearm.TryGetModule<IPrimaryAmmoContainerModule>(out var module))
+		{
+			return false;
+		}
+		ammoType = module.AmmoType;
+		owner = firearm.Owner;
+		return true;
+	}
+
+	private static void Set(ReferenceHub hub, ItemType ammoType, int reserveAmmo)
+	{
+		SyncData.GetOrAdd(hub, () => new Dictionary<ItemType, int>())[ammoType] = reserveAmmo;
+	}
+
+	public static bool TryGet(ReferenceHub hub, ItemType ammoType, out int reserveAmmo)
+	{
+		if (NetworkServer.active || hub.isLocalPlayer)
+		{
+			reserveAmmo = hub.inventory.GetCurAmmo(ammoType);
 			return true;
 		}
-
-		private static void Set(ReferenceHub hub, ItemType ammoType, int reserveAmmo)
+		if (!SyncData.TryGetValue(hub, out var value))
 		{
-			ReserveAmmoSync.SyncData.GetOrAdd(hub, () => new Dictionary<ItemType, int>())[ammoType] = reserveAmmo;
+			reserveAmmo = 0;
+			return false;
 		}
+		return value.TryGetValue(ammoType, out reserveAmmo);
+	}
 
-		public static bool TryGet(ReferenceHub hub, ItemType ammoType, out int reserveAmmo)
-		{
-			if (NetworkServer.active || hub.isLocalPlayer)
-			{
-				reserveAmmo = (int)hub.inventory.GetCurAmmo(ammoType);
-				return true;
-			}
-			Dictionary<ItemType, int> dictionary;
-			if (!ReserveAmmoSync.SyncData.TryGetValue(hub, out dictionary))
-			{
-				reserveAmmo = 0;
-				return false;
-			}
-			return dictionary.TryGetValue(ammoType, out reserveAmmo);
-		}
+	public static void WriteReserveAmmoMessage(this NetworkWriter writer, ReserveAmmoMessage value)
+	{
+		value.Serialize(writer);
+	}
 
-		public static void WriteReserveAmmoMessage(this NetworkWriter writer, ReserveAmmoSync.ReserveAmmoMessage value)
-		{
-			value.Serialize(writer);
-		}
-
-		public static ReserveAmmoSync.ReserveAmmoMessage ReadReserveAmmoMessage(this NetworkReader reader)
-		{
-			return new ReserveAmmoSync.ReserveAmmoMessage(reader);
-		}
-
-		private static readonly Dictionary<ReferenceHub, Dictionary<ItemType, int>> SyncData = new Dictionary<ReferenceHub, Dictionary<ItemType, int>>();
-
-		private static readonly Dictionary<ReferenceHub, ReserveAmmoSync.LastSent> ServerLastSent = new Dictionary<ReferenceHub, ReserveAmmoSync.LastSent>();
-
-		private class LastSent
-		{
-			public ItemType AmmoType;
-
-			public int AmmoCount;
-		}
-
-		public readonly struct ReserveAmmoMessage : NetworkMessage
-		{
-			public ReserveAmmoMessage(NetworkReader reader)
-			{
-				this._ammoType = reader.ReadSByte();
-				this._amount = reader.ReadByte();
-				this._player = reader.ReadRecyclablePlayerId();
-			}
-
-			public ReserveAmmoMessage(ReferenceHub owner, ItemType ammoType)
-			{
-				this._ammoType = (sbyte)ammoType;
-				this._amount = (byte)Mathf.Clamp((int)owner.inventory.GetCurAmmo(ammoType), 0, 255);
-				this._player = new RecyclablePlayerId(owner.PlayerId);
-			}
-
-			public void Serialize(NetworkWriter writer)
-			{
-				writer.WriteSByte(this._ammoType);
-				writer.WriteByte(this._amount);
-				writer.WriteRecyclablePlayerId(this._player);
-			}
-
-			public void Apply()
-			{
-				ReferenceHub referenceHub;
-				if (!ReferenceHub.TryGetHub(this._player.Value, out referenceHub))
-				{
-					return;
-				}
-				ReserveAmmoSync.Set(referenceHub, (ItemType)this._ammoType, (int)this._amount);
-			}
-
-			private readonly sbyte _ammoType;
-
-			private readonly byte _amount;
-
-			private readonly RecyclablePlayerId _player;
-		}
+	public static ReserveAmmoMessage ReadReserveAmmoMessage(this NetworkReader reader)
+	{
+		return new ReserveAmmoMessage(reader);
 	}
 }

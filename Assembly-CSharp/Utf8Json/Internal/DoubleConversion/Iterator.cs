@@ -1,95 +1,85 @@
-﻿using System;
+namespace Utf8Json.Internal.DoubleConversion;
 
-namespace Utf8Json.Internal.DoubleConversion
+internal struct Iterator
 {
-	internal struct Iterator
+	private byte[] buffer;
+
+	private int offset;
+
+	public byte Value => buffer[offset];
+
+	public Iterator(byte[] buffer, int offset)
 	{
-		public Iterator(byte[] buffer, int offset)
-		{
-			this.buffer = buffer;
-			this.offset = offset;
-		}
+		this.buffer = buffer;
+		this.offset = offset;
+	}
 
-		public byte Value
-		{
-			get
-			{
-				return this.buffer[this.offset];
-			}
-		}
+	public static Iterator operator ++(Iterator self)
+	{
+		self.offset++;
+		return self;
+	}
 
-		public static Iterator operator ++(Iterator self)
-		{
-			self.offset++;
-			return self;
-		}
+	public static Iterator operator +(Iterator self, int length)
+	{
+		Iterator result = default(Iterator);
+		result.buffer = self.buffer;
+		result.offset = self.offset + length;
+		return result;
+	}
 
-		public static Iterator operator +(Iterator self, int length)
-		{
-			return new Iterator
-			{
-				buffer = self.buffer,
-				offset = self.offset + length
-			};
-		}
+	public static int operator -(Iterator lhs, Iterator rhs)
+	{
+		return lhs.offset - rhs.offset;
+	}
 
-		public static int operator -(Iterator lhs, Iterator rhs)
-		{
-			return lhs.offset - rhs.offset;
-		}
+	public static bool operator ==(Iterator lhs, Iterator rhs)
+	{
+		return lhs.offset == rhs.offset;
+	}
 
-		public static bool operator ==(Iterator lhs, Iterator rhs)
-		{
-			return lhs.offset == rhs.offset;
-		}
+	public static bool operator !=(Iterator lhs, Iterator rhs)
+	{
+		return lhs.offset != rhs.offset;
+	}
 
-		public static bool operator !=(Iterator lhs, Iterator rhs)
-		{
-			return lhs.offset != rhs.offset;
-		}
+	public static bool operator ==(Iterator lhs, char rhs)
+	{
+		return lhs.buffer[lhs.offset] == (byte)rhs;
+	}
 
-		public static bool operator ==(Iterator lhs, char rhs)
-		{
-			return lhs.buffer[lhs.offset] == (byte)rhs;
-		}
+	public static bool operator !=(Iterator lhs, char rhs)
+	{
+		return lhs.buffer[lhs.offset] != (byte)rhs;
+	}
 
-		public static bool operator !=(Iterator lhs, char rhs)
-		{
-			return lhs.buffer[lhs.offset] != (byte)rhs;
-		}
+	public static bool operator ==(Iterator lhs, byte rhs)
+	{
+		return lhs.buffer[lhs.offset] == rhs;
+	}
 
-		public static bool operator ==(Iterator lhs, byte rhs)
-		{
-			return lhs.buffer[lhs.offset] == rhs;
-		}
+	public static bool operator !=(Iterator lhs, byte rhs)
+	{
+		return lhs.buffer[lhs.offset] != rhs;
+	}
 
-		public static bool operator !=(Iterator lhs, byte rhs)
-		{
-			return lhs.buffer[lhs.offset] != rhs;
-		}
+	public static bool operator >=(Iterator lhs, char rhs)
+	{
+		return lhs.buffer[lhs.offset] >= (byte)rhs;
+	}
 
-		public static bool operator >=(Iterator lhs, char rhs)
-		{
-			return lhs.buffer[lhs.offset] >= (byte)rhs;
-		}
+	public static bool operator <=(Iterator lhs, char rhs)
+	{
+		return lhs.buffer[lhs.offset] <= (byte)rhs;
+	}
 
-		public static bool operator <=(Iterator lhs, char rhs)
-		{
-			return lhs.buffer[lhs.offset] <= (byte)rhs;
-		}
+	public static bool operator >(Iterator lhs, char rhs)
+	{
+		return lhs.buffer[lhs.offset] > (byte)rhs;
+	}
 
-		public static bool operator >(Iterator lhs, char rhs)
-		{
-			return lhs.buffer[lhs.offset] > (byte)rhs;
-		}
-
-		public static bool operator <(Iterator lhs, char rhs)
-		{
-			return lhs.buffer[lhs.offset] < (byte)rhs;
-		}
-
-		private byte[] buffer;
-
-		private int offset;
+	public static bool operator <(Iterator lhs, char rhs)
+	{
+		return lhs.buffer[lhs.offset] < (byte)rhs;
 	}
 }

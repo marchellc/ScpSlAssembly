@@ -1,26 +1,25 @@
-﻿using System;
 using Mirror;
 using UnityEngine;
 
-namespace MapGeneration.Holidays
+namespace MapGeneration.Holidays;
+
+public class HolidaySpawner : MonoBehaviour
 {
-	public class HolidaySpawner : MonoBehaviour
+	public HolidaySpawnable[] Spawnables;
+
+	private void Awake()
 	{
-		private void Awake()
+		HolidaySpawnable[] spawnables = Spawnables;
+		foreach (HolidaySpawnable holidaySpawnable in spawnables)
 		{
-			foreach (HolidaySpawnable holidaySpawnable in this.Spawnables)
+			if (holidaySpawnable.AvailableHolidays.IsAnyHolidayActive(mustBeForced: true))
 			{
-				if (holidaySpawnable.AvailableHolidays.IsAnyHolidayActive(true, false))
+				NetworkClient.RegisterPrefab(holidaySpawnable.gameObject);
+				if (NetworkServer.active)
 				{
-					NetworkClient.RegisterPrefab(holidaySpawnable.gameObject);
-					if (NetworkServer.active)
-					{
-						NetworkServer.Spawn(global::UnityEngine.Object.Instantiate<GameObject>(holidaySpawnable.gameObject), null);
-					}
+					NetworkServer.Spawn(Object.Instantiate(holidaySpawnable.gameObject));
 				}
 			}
 		}
-
-		public HolidaySpawnable[] Spawnables;
 	}
 }

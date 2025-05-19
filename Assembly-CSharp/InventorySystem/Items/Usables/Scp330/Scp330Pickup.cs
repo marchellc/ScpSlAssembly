@@ -1,103 +1,108 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using InventorySystem.Items.Pickups;
+using InventorySystem.Searching;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.Usables.Scp330
+namespace InventorySystem.Items.Usables.Scp330;
+
+public class Scp330Pickup : CollisionDetectionPickup
 {
-	public class Scp330Pickup : CollisionDetectionPickup
+	[Serializable]
+	private struct IndividualCandy
 	{
-		private void Update()
-		{
-			int exposedCandy = (int)this.ExposedCandy;
-			if (this._prevExposed == exposedCandy)
-			{
-				return;
-			}
-			foreach (Scp330Pickup.IndividualCandy individualCandy in this._candyTypes)
-			{
-				individualCandy.Refresh(this.ExposedCandy);
-			}
-			this._prevExposed = exposedCandy;
-			if (NetworkServer.active && this.StoredCandies.Count == 0)
-			{
-				base.DestroySelf();
-			}
-		}
-
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		public CandyKindID NetworkExposedCandy
-		{
-			get
-			{
-				return this.ExposedCandy;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<CandyKindID>(value, ref this.ExposedCandy, 2UL, null);
-			}
-		}
-
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
-		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				global::Mirror.GeneratedNetworkCode._Write_InventorySystem.Items.Usables.Scp330.CandyKindID(writer, this.ExposedCandy);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 2UL) != 0UL)
-			{
-				global::Mirror.GeneratedNetworkCode._Write_InventorySystem.Items.Usables.Scp330.CandyKindID(writer, this.ExposedCandy);
-			}
-		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
-		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<CandyKindID>(ref this.ExposedCandy, null, global::Mirror.GeneratedNetworkCode._Read_InventorySystem.Items.Usables.Scp330.CandyKindID(reader));
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 2L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<CandyKindID>(ref this.ExposedCandy, null, global::Mirror.GeneratedNetworkCode._Read_InventorySystem.Items.Usables.Scp330.CandyKindID(reader));
-			}
-		}
-
-		public List<CandyKindID> StoredCandies = new List<CandyKindID>();
-
-		[SyncVar]
-		public CandyKindID ExposedCandy;
+		[SerializeField]
+		private CandyKindID _kind;
 
 		[SerializeField]
-		private Scp330Pickup.IndividualCandy[] _candyTypes;
+		private GameObject _candyObject;
 
-		private int _prevExposed = -1;
-
-		[Serializable]
-		private struct IndividualCandy
+		public void Refresh(CandyKindID exposed)
 		{
-			public void Refresh(CandyKindID exposed)
+			_candyObject.SetActive(exposed == _kind);
+		}
+	}
+
+	public List<CandyKindID> StoredCandies = new List<CandyKindID>();
+
+	[SyncVar]
+	public CandyKindID ExposedCandy;
+
+	[SerializeField]
+	private IndividualCandy[] _candyTypes;
+
+	private int _prevExposed = -1;
+
+	public CandyKindID NetworkExposedCandy
+	{
+		get
+		{
+			return ExposedCandy;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref ExposedCandy, 2uL, null);
+		}
+	}
+
+	public override PickupSearchCompletor GetPickupSearchCompletor(SearchCoordinator coordinator, float sqrDistance)
+	{
+		return new Scp330SearchCompletor(coordinator.Hub, this, sqrDistance);
+	}
+
+	private void Update()
+	{
+		int exposedCandy = (int)ExposedCandy;
+		if (_prevExposed != exposedCandy)
+		{
+			IndividualCandy[] candyTypes = _candyTypes;
+			foreach (IndividualCandy individualCandy in candyTypes)
 			{
-				this._candyObject.SetActive(exposed == this._kind);
+				individualCandy.Refresh(ExposedCandy);
 			}
+			_prevExposed = exposedCandy;
+			if (NetworkServer.active && StoredCandies.Count == 0)
+			{
+				DestroySelf();
+			}
+		}
+	}
 
-			[SerializeField]
-			private CandyKindID _kind;
+	public override bool Weaved()
+	{
+		return true;
+	}
 
-			[SerializeField]
-			private GameObject _candyObject;
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
+		{
+			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EUsables_002EScp330_002ECandyKindID(writer, ExposedCandy);
+			return;
+		}
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 2L) != 0L)
+		{
+			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EUsables_002EScp330_002ECandyKindID(writer, ExposedCandy);
+		}
+	}
+
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref ExposedCandy, null, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EUsables_002EScp330_002ECandyKindID(reader));
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 2L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref ExposedCandy, null, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EUsables_002EScp330_002ECandyKindID(reader));
 		}
 	}
 }

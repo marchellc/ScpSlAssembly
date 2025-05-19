@@ -1,17 +1,17 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
 
 public static class GpuDriver
 {
-	[DllImport("GpuDriver.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "get_gpu_driver")]
-	private static extern IntPtr GetDriverVersion([MarshalAs(UnmanagedType.LPWStr)] string name);
+	private const string Library = "GpuDriver.dll";
 
-	[DllImport("GpuDriver.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "free_driver")]
-	private static extern void Free(IntPtr version);
+	private const CallingConvention CallingConv = CallingConvention.StdCall;
 
-	public static event Action<string> DriverLoaded;
+	private static string _driverVersion;
+
+	private static readonly object _dataLock = new object();
 
 	public static string DriverVersion
 	{
@@ -21,65 +21,53 @@ public static class GpuDriver
 			{
 				return SystemInfo.graphicsDeviceVersion;
 			}
-			object dataLock = GpuDriver._dataLock;
-			string text;
-			lock (dataLock)
+			lock (_dataLock)
 			{
-				if (!string.IsNullOrWhiteSpace(GpuDriver._driverVersion))
+				if (!string.IsNullOrWhiteSpace(_driverVersion))
 				{
-					text = GpuDriver._driverVersion;
+					return _driverVersion;
 				}
-				else
+				try
 				{
-					try
+					string gpuName = SystemInfo.graphicsDeviceName;
+					Thread thread = new Thread((ThreadStart)delegate
 					{
-						string gpuName = SystemInfo.graphicsDeviceName;
-						Thread thread = new Thread(delegate
+						lock (_dataLock)
 						{
-							object dataLock2 = GpuDriver._dataLock;
-							lock (dataLock2)
+							IntPtr driverVersion = GetDriverVersion(gpuName);
+							if (driverVersion == IntPtr.Zero)
 							{
-								IntPtr intPtr = GpuDriver.GetDriverVersion(gpuName);
-								if (intPtr == IntPtr.Zero)
-								{
-									Debug.LogWarning("GPU Driver version for " + gpuName + " not found!");
-									intPtr = GpuDriver.GetDriverVersion(null);
-								}
-								GpuDriver._driverVersion = Marshal.PtrToStringUni(intPtr) ?? "Loading failed";
-								GpuDriver.Free(intPtr);
-								Debug.Log("GPU Driver version: " + GpuDriver._driverVersion);
-								MainThreadDispatcher.Dispatch(delegate
-								{
-									Action<string> driverLoaded = GpuDriver.DriverLoaded;
-									if (driverLoaded == null)
-									{
-										return;
-									}
-									driverLoaded(GpuDriver._driverVersion);
-								}, MainThreadDispatcher.DispatchTime.Update);
+								Debug.LogWarning("GPU Driver version for " + gpuName + " not found!");
+								driverVersion = GetDriverVersion(null);
 							}
-						});
-						thread.IsBackground = true;
-						thread.SetApartmentState(ApartmentState.MTA);
-						thread.Start();
-						text = "Loading...";
-					}
-					catch (Exception ex)
-					{
-						Debug.Log(ex);
-						text = SystemInfo.graphicsDeviceVersion;
-					}
+							_driverVersion = Marshal.PtrToStringUni(driverVersion) ?? "Loading failed";
+							Free(driverVersion);
+							Debug.Log("GPU Driver version: " + _driverVersion);
+							MainThreadDispatcher.Dispatch(delegate
+							{
+								GpuDriver.DriverLoaded?.Invoke(_driverVersion);
+							});
+						}
+					});
+					thread.IsBackground = true;
+					thread.SetApartmentState(ApartmentState.MTA);
+					thread.Start();
+					return "Loading...";
+				}
+				catch (Exception message)
+				{
+					Debug.Log(message);
+					return SystemInfo.graphicsDeviceVersion;
 				}
 			}
-			return text;
 		}
 	}
 
-	private const string Library = "GpuDriver.dll";
+	public static event Action<string> DriverLoaded;
 
-	private const CallingConvention CallingConv = CallingConvention.StdCall;
+	[DllImport("GpuDriver.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "get_gpu_driver")]
+	private static extern IntPtr GetDriverVersion([MarshalAs(UnmanagedType.LPWStr)] string name);
 
-	private static string _driverVersion;
-
-	private static readonly object _dataLock = new object();
+	[DllImport("GpuDriver.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "free_driver")]
+	private static extern void Free(IntPtr version);
 }

@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem.Items;
 
-namespace InventorySystem.Items
+public interface IInteractionBlocker
 {
-	public interface IInteractionBlocker
-	{
-		BlockedInteraction BlockedInteractions { get; }
+	BlockedInteraction BlockedInteractions { get; }
 
-		bool CanBeCleared { get; }
-	}
+	bool CanBeCleared { get; }
 }

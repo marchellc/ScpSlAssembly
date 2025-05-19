@@ -1,51 +1,37 @@
-﻿using System;
+using System;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.PlayableScps.Scp106;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class Ghostly : StatusEffectBase, IFpcCollisionModifier
 {
-	public class Ghostly : StatusEffectBase, IFpcCollisionModifier
+	public LayerMask DetectionMask => Scp106MovementModule.PassableDetectionMask;
+
+	public override EffectClassification Classification => EffectClassification.Positive;
+
+	public void ProcessColliders(ArraySegment<Collider> detections)
 	{
-		public LayerMask DetectionMask
+		foreach (Collider item in detections)
 		{
-			get
-			{
-				return Scp106MovementModule.PassableDetectionMask;
-			}
+			Scp106MovementModule.GetSlowdownFromCollider(item, out var isPassable);
+			item.enabled = !isPassable;
 		}
+	}
 
-		public override StatusEffectBase.EffectClassification Classification
+	protected override void Enabled()
+	{
+		base.Enabled();
+		if (base.Hub.roleManager.CurrentRole is IFpcRole fpcRole)
 		{
-			get
-			{
-				return StatusEffectBase.EffectClassification.Positive;
-			}
-		}
-
-		public void ProcessColliders(ArraySegment<Collider> detections)
-		{
-			foreach (Collider collider in detections)
-			{
-				collider.enabled = Scp106MovementModule.GetSlowdownFromCollider(collider) == 0f;
-			}
-		}
-
-		protected override void Enabled()
-		{
-			base.Enabled();
-			IFpcRole fpcRole = base.Hub.roleManager.CurrentRole as IFpcRole;
-			if (fpcRole == null)
-			{
-				return;
-			}
 			FpcCollisionProcessor.AddModifier(this, fpcRole);
 		}
+	}
 
-		protected override void Disabled()
-		{
-			base.Disabled();
-			FpcCollisionProcessor.RemoveModifier(this);
-		}
+	protected override void Disabled()
+	{
+		base.Disabled();
+		FpcCollisionProcessor.RemoveModifier(this);
 	}
 }

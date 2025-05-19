@@ -1,32 +1,29 @@
-﻿using System;
+namespace Utf8Json.Unity;
 
-namespace Utf8Json.Unity
+public class UnityResolver : IJsonFormatterResolver
 {
-	public class UnityResolver : IJsonFormatterResolver
+	private static class FormatterCache<T>
 	{
-		private UnityResolver()
-		{
-		}
+		public static readonly IJsonFormatter<T> formatter;
 
-		public IJsonFormatter<T> GetFormatter<T>()
+		static FormatterCache()
 		{
-			return UnityResolver.FormatterCache<T>.formatter;
-		}
-
-		public static readonly IJsonFormatterResolver Instance = new UnityResolver();
-
-		private static class FormatterCache<T>
-		{
-			static FormatterCache()
+			object obj = UnityResolverGetFormatterHelper.GetFormatter(typeof(T));
+			if (obj != null)
 			{
-				object obj = UnityResolverGetFormatterHelper.GetFormatter(typeof(T));
-				if (obj != null)
-				{
-					UnityResolver.FormatterCache<T>.formatter = (IJsonFormatter<T>)obj;
-				}
+				formatter = (IJsonFormatter<T>)obj;
 			}
-
-			public static readonly IJsonFormatter<T> formatter;
 		}
+	}
+
+	public static readonly IJsonFormatterResolver Instance = new UnityResolver();
+
+	private UnityResolver()
+	{
+	}
+
+	public IJsonFormatter<T> GetFormatter<T>()
+	{
+		return FormatterCache<T>.formatter;
 	}
 }

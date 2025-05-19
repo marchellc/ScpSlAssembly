@@ -1,9 +1,7 @@
-﻿using System;
 using Respawning.Waves;
 
-namespace Respawning.Graphics
+namespace Respawning.Graphics;
+
+public class NtfMiniWaveIndicator : MiniWaveIndicator<NtfMiniWave>
 {
-	public class NtfMiniWaveIndicator : MiniWaveIndicator<NtfMiniWave>
-	{
-	}
 }

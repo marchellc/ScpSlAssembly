@@ -1,37 +1,34 @@
-﻿using System;
+namespace PlayerRoles;
 
-namespace PlayerRoles
+public enum RoleTypeId : sbyte
 {
-	public enum RoleTypeId : sbyte
-	{
-		None = -1,
-		Scp173,
-		ClassD,
-		Spectator,
-		Scp106,
-		NtfSpecialist,
-		Scp049,
-		Scientist,
-		Scp079,
-		ChaosConscript,
-		Scp096,
-		Scp0492,
-		NtfSergeant,
-		NtfCaptain,
-		NtfPrivate,
-		Tutorial,
-		FacilityGuard,
-		Scp939,
-		CustomRole,
-		ChaosRifleman,
-		ChaosMarauder,
-		ChaosRepressor,
-		Overwatch,
-		Filmmaker,
-		Scp3114,
-		Destroyed,
-		Flamingo,
-		AlphaFlamingo,
-		ZombieFlamingo
-	}
+	None = -1,
+	Scp173,
+	ClassD,
+	Spectator,
+	Scp106,
+	NtfSpecialist,
+	Scp049,
+	Scientist,
+	Scp079,
+	ChaosConscript,
+	Scp096,
+	Scp0492,
+	NtfSergeant,
+	NtfCaptain,
+	NtfPrivate,
+	Tutorial,
+	FacilityGuard,
+	Scp939,
+	CustomRole,
+	ChaosRifleman,
+	ChaosMarauder,
+	ChaosRepressor,
+	Overwatch,
+	Filmmaker,
+	Scp3114,
+	Destroyed,
+	Flamingo,
+	AlphaFlamingo,
+	ZombieFlamingo
 }

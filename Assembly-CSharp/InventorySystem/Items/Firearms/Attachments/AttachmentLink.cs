@@ -1,116 +1,111 @@
-﻿using System;
+using System;
 using InventorySystem.Items.Firearms.Attachments.Components;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Attachments
+namespace InventorySystem.Items.Firearms.Attachments;
+
+[Serializable]
+public class AttachmentLink
 {
-	[Serializable]
-	public class AttachmentLink
+	private bool _instanceSet;
+
+	private Attachment _cachedInstance;
+
+	private bool _filterSet;
+
+	private uint _cachedFilter;
+
+	[SerializeField]
+	public int Id;
+
+	public Attachment Instance
 	{
-		public Attachment Instance
+		get
 		{
-			get
+			if (!_instanceSet)
 			{
-				if (!this._instanceSet)
-				{
-					throw new InvalidOperationException("Attempting to access attachment without assigning an instance.");
-				}
-				return this._cachedInstance;
+				throw new InvalidOperationException("Attempting to access attachment without assigning an instance.");
 			}
+			return _cachedInstance;
 		}
+	}
 
-		public uint Filter
+	public uint Filter
+	{
+		get
 		{
-			get
+			if (!_filterSet)
 			{
-				if (!this._filterSet)
-				{
-					throw new InvalidOperationException("Attempting to access attachment without assigning an item type.");
-				}
-				return this._cachedFilter;
+				throw new InvalidOperationException("Attempting to access attachment without assigning an item type.");
 			}
+			return _cachedFilter;
 		}
+	}
 
-		public void InitCache(Firearm fa)
+	public void InitCache(Firearm fa)
+	{
+		_cachedInstance = GetAttachment(fa);
+		_instanceSet = true;
+		_cachedFilter = 1u;
+		for (int i = 0; i < _cachedInstance.Index; i++)
 		{
-			this._cachedInstance = this.GetAttachment(fa);
-			this._instanceSet = true;
-			this._cachedFilter = 1U;
-			for (int i = 0; i < (int)this._cachedInstance.Index; i++)
-			{
-				this._cachedFilter *= 2U;
-			}
-			this._filterSet = true;
+			_cachedFilter *= 2u;
 		}
+		_filterSet = true;
+	}
 
-		public void InitCache(ItemType firearmType)
+	public void InitCache(ItemType firearmType)
+	{
+		_filterSet = true;
+		TryGetFilter(firearmType, out _cachedFilter);
+	}
+
+	public Attachment GetAttachment(Firearm instance)
+	{
+		TryGetAttachment(instance, out var att);
+		return att;
+	}
+
+	public bool TryGetAttachment(Firearm instance, out Attachment att)
+	{
+		return instance.TryGetAttachmentWithId(Id, out att);
+	}
+
+	public bool TryGetIndex(ItemType weaponType, out int index)
+	{
+		if (!weaponType.TryGetTemplate<Firearm>(out var item) || !TryGetAttachment(item, out var att))
 		{
-			this._filterSet = true;
-			this.TryGetFilter(firearmType, out this._cachedFilter);
+			index = -1;
+			return false;
 		}
+		index = att.Index;
+		return true;
+	}
 
-		public Attachment GetAttachment(Firearm instance)
+	public bool TryGetFilter(ItemType weaponType, out uint filter)
+	{
+		if (!TryGetIndex(weaponType, out var index))
 		{
-			Attachment attachment;
-			this.TryGetAttachment(instance, out attachment);
-			return attachment;
+			filter = 0u;
+			return false;
 		}
-
-		public bool TryGetAttachment(Firearm instance, out Attachment att)
+		uint num = 1u;
+		for (int i = 0; i < index; i++)
 		{
-			return instance.TryGetAttachmentWithId(this.Id, out att);
+			num *= 2;
 		}
+		filter = num;
+		return true;
+	}
 
-		public bool TryGetIndex(ItemType weaponType, out int index)
+	public uint GetFilter(Firearm firearm)
+	{
+		int index = GetAttachment(firearm).Index;
+		uint num = 1u;
+		for (int i = 0; i < index; i++)
 		{
-			Firearm firearm;
-			Attachment attachment;
-			if (!weaponType.TryGetTemplate(out firearm) || !this.TryGetAttachment(firearm, out attachment))
-			{
-				index = -1;
-				return false;
-			}
-			index = (int)attachment.Index;
-			return true;
+			num *= 2;
 		}
-
-		public bool TryGetFilter(ItemType weaponType, out uint filter)
-		{
-			int num;
-			if (!this.TryGetIndex(weaponType, out num))
-			{
-				filter = 0U;
-				return false;
-			}
-			uint num2 = 1U;
-			for (int i = 0; i < num; i++)
-			{
-				num2 *= 2U;
-			}
-			filter = num2;
-			return true;
-		}
-
-		public uint GetFilter(Firearm firearm)
-		{
-			int index = (int)this.GetAttachment(firearm).Index;
-			uint num = 1U;
-			for (int i = 0; i < index; i++)
-			{
-				num *= 2U;
-			}
-			return num;
-		}
-
-		private bool _instanceSet;
-
-		private Attachment _cachedInstance;
-
-		private bool _filterSet;
-
-		private uint _cachedFilter;
-
-		[SerializeField]
-		public int Id;
+		return num;
 	}
 }

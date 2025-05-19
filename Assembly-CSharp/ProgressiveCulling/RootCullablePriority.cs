@@ -1,11 +1,8 @@
-﻿using System;
+namespace ProgressiveCulling;
 
-namespace ProgressiveCulling
+public enum RootCullablePriority
 {
-	public enum RootCullablePriority
-	{
-		PreCull,
-		Rooms,
-		Dynamic
-	}
+	PreCull,
+	Rooms,
+	Dynamic
 }

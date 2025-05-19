@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 
 public static class StartupArguments
@@ -10,14 +10,23 @@ public static class StartupArguments
 
 	public static bool IsSetBool(string param, string alias = "")
 	{
-		return Environment.GetCommandLineArgs().Contains("--" + param) || (!string.IsNullOrEmpty(alias) && StartupArguments.IsSetShort(alias));
+		if (!Environment.GetCommandLineArgs().Contains<string>("--" + param))
+		{
+			if (!string.IsNullOrEmpty(alias))
+			{
+				return IsSetShort(alias);
+			}
+			return false;
+		}
+		return true;
 	}
 
 	public static string GetArgument(string param, string alias = "", string def = "")
 	{
 		string[] commandLineArgs = Environment.GetCommandLineArgs();
 		bool flag = false;
-		foreach (string text in commandLineArgs)
+		string[] array = commandLineArgs;
+		foreach (string text in array)
 		{
 			if (flag && !text.StartsWith("-"))
 			{

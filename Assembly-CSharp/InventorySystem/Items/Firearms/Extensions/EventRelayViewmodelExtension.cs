@@ -1,39 +1,38 @@
-﻿using System;
+using System;
 using InventorySystem.Items.Firearms.Modules;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+public class EventRelayViewmodelExtension : MonoBehaviour, IViewmodelExtension
 {
-	public class EventRelayViewmodelExtension : MonoBehaviour, IViewmodelExtension
+	[Serializable]
+	private class Relay
 	{
-		public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
-		{
-			EventManagerModule eventManagerModule;
-			viewmodel.ParentFirearm.TryGetModule(out eventManagerModule, true);
-			eventManagerModule.OnEventRelayed += this.OnTriggered;
-		}
+		public int GUID;
 
-		private void OnTriggered(int guid)
+		public UnityEvent Action;
+	}
+
+	[SerializeField]
+	private Relay[] _relays;
+
+	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
+	{
+		viewmodel.ParentFirearm.TryGetModule<EventManagerModule>(out var module);
+		module.OnEventRelayed += OnTriggered;
+	}
+
+	private void OnTriggered(int guid)
+	{
+		Relay[] relays = _relays;
+		foreach (Relay relay in relays)
 		{
-			foreach (EventRelayViewmodelExtension.Relay relay in this._relays)
+			if (relay.GUID == guid)
 			{
-				if (relay.GUID == guid)
-				{
-					relay.Action.Invoke();
-				}
+				relay.Action.Invoke();
 			}
-		}
-
-		[SerializeField]
-		private EventRelayViewmodelExtension.Relay[] _relays;
-
-		[Serializable]
-		private class Relay
-		{
-			public int GUID;
-
-			public UnityEvent Action;
 		}
 	}
 }

@@ -1,18 +1,15 @@
-﻿using System;
+namespace Utf8Json.Formatters;
 
-namespace Utf8Json.Formatters
+public sealed class IgnoreFormatter<T> : IJsonFormatter<T>, IJsonFormatter
 {
-	public sealed class IgnoreFormatter<T> : IJsonFormatter<T>, IJsonFormatter
+	public void Serialize(ref JsonWriter writer, T value, IJsonFormatterResolver formatterResolver)
 	{
-		public void Serialize(ref JsonWriter writer, T value, IJsonFormatterResolver formatterResolver)
-		{
-			writer.WriteNull();
-		}
+		writer.WriteNull();
+	}
 
-		public T Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
-		{
-			reader.ReadNextBlock();
-			return default(T);
-		}
+	public T Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		reader.ReadNextBlock();
+		return default(T);
 	}
 }

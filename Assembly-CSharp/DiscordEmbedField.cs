@@ -1,8 +1,14 @@
-﻿using System;
+using System;
 using Utf8Json;
 
 public readonly struct DiscordEmbedField : IEquatable<DiscordEmbedField>, IJsonSerializable
 {
+	public readonly string name;
+
+	public readonly string value;
+
+	public readonly bool inline;
+
 	[SerializationConstructor]
 	public DiscordEmbedField(string name, string value, bool inline)
 	{
@@ -13,22 +19,27 @@ public readonly struct DiscordEmbedField : IEquatable<DiscordEmbedField>, IJsonS
 
 	public bool Equals(DiscordEmbedField other)
 	{
-		return this.name == other.name && this.value == other.value && this.inline == other.inline;
+		if (name == other.name && value == other.value)
+		{
+			return inline == other.inline;
+		}
+		return false;
 	}
 
 	public override bool Equals(object obj)
 	{
-		if (obj is DiscordEmbedField)
+		if (obj is DiscordEmbedField other)
 		{
-			DiscordEmbedField discordEmbedField = (DiscordEmbedField)obj;
-			return this.Equals(discordEmbedField);
+			return Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((((this.name != null) ? this.name.GetHashCode() : 0) * 397) ^ ((this.value != null) ? this.value.GetHashCode() : 0)) * 397) ^ this.inline.GetHashCode();
+		int num = ((((name != null) ? name.GetHashCode() : 0) * 397) ^ ((value != null) ? value.GetHashCode() : 0)) * 397;
+		bool flag = inline;
+		return num ^ flag.GetHashCode();
 	}
 
 	public static bool operator ==(DiscordEmbedField left, DiscordEmbedField right)
@@ -40,10 +51,4 @@ public readonly struct DiscordEmbedField : IEquatable<DiscordEmbedField>, IJsonS
 	{
 		return !left.Equals(right);
 	}
-
-	public readonly string name;
-
-	public readonly string value;
-
-	public readonly bool inline;
 }

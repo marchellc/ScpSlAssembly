@@ -1,115 +1,107 @@
-﻿using System;
 using System.Text;
 using Mirror;
 
-namespace UserSettings.ServerSpecific
+namespace UserSettings.ServerSpecific;
+
+public abstract class ServerSpecificSettingBase
 {
-	public abstract class ServerSpecificSettingBase
+	public enum UserResponseMode
 	{
-		public int SettingId { get; private set; }
+		None,
+		ChangeOnly,
+		AcquisitionAndChange
+	}
 
-		public string Label { get; protected set; }
+	private static readonly StringBuilder KeyGeneratorSb = new StringBuilder();
 
-		public string HintDescription { get; protected set; }
+	public int SettingId { get; private set; }
 
-		public string PlayerPrefsKey { get; private set; }
+	public string Label { get; protected set; }
 
-		public virtual ServerSpecificSettingBase.UserResponseMode ResponseMode
+	public string HintDescription { get; protected set; }
+
+	public string PlayerPrefsKey { get; private set; }
+
+	public virtual UserResponseMode ResponseMode => UserResponseMode.AcquisitionAndChange;
+
+	public abstract string DebugValue { get; }
+
+	public ServerSpecificSettingBase OriginalDefinition
+	{
+		get
 		{
-			get
+			ServerSpecificSettingBase[] definedSettings = ServerSpecificSettingsSync.DefinedSettings;
+			foreach (ServerSpecificSettingBase serverSpecificSettingBase in definedSettings)
 			{
-				return ServerSpecificSettingBase.UserResponseMode.AcquisitionAndChange;
-			}
-		}
-
-		public abstract string DebugValue { get; }
-
-		public ServerSpecificSettingBase OriginalDefinition
-		{
-			get
-			{
-				foreach (ServerSpecificSettingBase serverSpecificSettingBase in ServerSpecificSettingsSync.DefinedSettings)
+				if (serverSpecificSettingBase.SettingId == SettingId && !(serverSpecificSettingBase.GetType() != GetType()))
 				{
-					if (serverSpecificSettingBase.SettingId == this.SettingId && !(serverSpecificSettingBase.GetType() != base.GetType()))
-					{
-						return serverSpecificSettingBase;
-					}
+					return serverSpecificSettingBase;
 				}
-				return null;
 			}
+			return null;
 		}
+	}
 
-		public void ClientSendValue()
+	public void ClientSendValue()
+	{
+		if (NetworkClient.active)
 		{
-			if (!NetworkClient.active)
-			{
-				return;
-			}
-			NetworkClient.Send<SSSClientResponse>(new SSSClientResponse(this), 0);
+			NetworkClient.Send(new SSSClientResponse(this));
 		}
+	}
 
-		public virtual void SerializeEntry(NetworkWriter writer)
+	public virtual void SerializeEntry(NetworkWriter writer)
+	{
+		writer.WriteInt(SettingId);
+		writer.WriteString(Label);
+		writer.WriteString(HintDescription);
+	}
+
+	public virtual void DeserializeEntry(NetworkReader reader)
+	{
+		SettingId = reader.ReadInt();
+		PlayerPrefsKey = GeneratePrefsKey();
+		Label = reader.ReadString();
+		HintDescription = reader.ReadString();
+	}
+
+	public virtual void OnUpdate()
+	{
+	}
+
+	public virtual void SerializeValue(NetworkWriter writer)
+	{
+	}
+
+	public virtual void DeserializeValue(NetworkReader reader)
+	{
+	}
+
+	public abstract void ApplyDefaultValues();
+
+	public override string ToString()
+	{
+		return $"{GetType().Name} [ID: {SettingId}] Value: {DebugValue}";
+	}
+
+	internal void SetId(int? id, string labelFallback)
+	{
+		if (!id.HasValue)
 		{
-			writer.WriteInt(this.SettingId);
-			writer.WriteString(this.Label);
-			writer.WriteString(this.HintDescription);
+			id = labelFallback.GetStableHashCode();
 		}
+		SettingId = id.Value;
+	}
 
-		public virtual void DeserializeEntry(NetworkReader reader)
-		{
-			this.SettingId = reader.ReadInt();
-			this.PlayerPrefsKey = this.GeneratePrefsKey();
-			this.Label = reader.ReadString();
-			this.HintDescription = reader.ReadString();
-		}
-
-		public virtual void OnUpdate()
-		{
-		}
-
-		public virtual void SerializeValue(NetworkWriter writer)
-		{
-		}
-
-		public virtual void DeserializeValue(NetworkReader reader)
-		{
-		}
-
-		public abstract void ApplyDefaultValues();
-
-		public override string ToString()
-		{
-			return string.Format("{0} [ID: {1}] Value: {2}", base.GetType().Name, this.SettingId, this.DebugValue);
-		}
-
-		internal void SetId(int? id, string labelFallback)
-		{
-			if (id == null)
-			{
-				id = new int?(labelFallback.GetStableHashCode());
-			}
-			this.SettingId = id.Value;
-		}
-
-		private string GeneratePrefsKey()
-		{
-			ServerSpecificSettingBase.KeyGeneratorSb.Clear();
-			ServerSpecificSettingBase.KeyGeneratorSb.Append("SrvSp_");
-			ServerSpecificSettingBase.KeyGeneratorSb.Append(ServerSpecificSettingsSync.CurServerPrefsKey);
-			ServerSpecificSettingBase.KeyGeneratorSb.Append('_');
-			ServerSpecificSettingBase.KeyGeneratorSb.Append(ServerSpecificSettingsSync.GetCodeFromType(base.GetType()));
-			ServerSpecificSettingBase.KeyGeneratorSb.Append('_');
-			ServerSpecificSettingBase.KeyGeneratorSb.Append(this.SettingId);
-			return ServerSpecificSettingBase.KeyGeneratorSb.ToString();
-		}
-
-		private static readonly StringBuilder KeyGeneratorSb = new StringBuilder();
-
-		public enum UserResponseMode
-		{
-			None,
-			ChangeOnly,
-			AcquisitionAndChange
-		}
+	private string GeneratePrefsKey()
+	{
+		KeyGeneratorSb.Clear();
+		KeyGeneratorSb.Append("SrvSp_");
+		KeyGeneratorSb.Append(ServerSpecificSettingsSync.CurServerPrefsKey);
+		KeyGeneratorSb.Append('_');
+		KeyGeneratorSb.Append(ServerSpecificSettingsSync.GetCodeFromType(GetType()));
+		KeyGeneratorSb.Append('_');
+		KeyGeneratorSb.Append(SettingId);
+		return KeyGeneratorSb.ToString();
 	}
 }

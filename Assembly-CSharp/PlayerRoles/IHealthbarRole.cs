@@ -1,12 +1,10 @@
-﻿using System;
 using PlayerStatsSystem;
 
-namespace PlayerRoles
-{
-	public interface IHealthbarRole
-	{
-		float MaxHealth { get; }
+namespace PlayerRoles;
 
-		PlayerStats TargetStats { get; }
-	}
+public interface IHealthbarRole
+{
+	float MaxHealth { get; }
+
+	PlayerStats TargetStats { get; }
 }

@@ -1,153 +1,132 @@
-﻿using System;
 using MapGeneration;
 using Mirror;
 using Respawning.Waves.Generic;
 using UnityEngine;
 
-namespace Respawning.Waves
+namespace Respawning.Waves;
+
+public class WaveTimer
 {
-	public class WaveTimer
+	public const float CountdownPauseThresholdSeconds = 30f;
+
+	private readonly TimeBasedWave _wave;
+
+	private float _pauseTimer;
+
+	public float TimePassed { get; private set; }
+
+	public float DefaultSpawnInterval { get; set; }
+
+	public float SpawnIntervalSeconds { get; set; }
+
+	public float TimeLeft => SpawnIntervalSeconds - TimePassed;
+
+	public bool IsReadyToSpawn => TimePassed >= SpawnIntervalSeconds;
+
+	public bool IsPaused
 	{
-		public WaveTimer(TimeBasedWave wave)
+		get
 		{
-			this.DefaultSpawnInterval = wave.InitialSpawnInterval;
-			this._wave = wave;
-			StaticUnityMethods.OnUpdate += this.Update;
-			SeedSynchronizer.OnGenerationFinished += this.OnMapGenerated;
-			WaveManager.OnWaveUpdateMsgReceived += this.OnUpdateMessageReceived;
-		}
-
-		public float TimePassed { get; private set; }
-
-		public float DefaultSpawnInterval { get; set; }
-
-		public float SpawnIntervalSeconds { get; set; }
-
-		public float TimeLeft
-		{
-			get
+			if (!(_pauseTimer > Time.time))
 			{
-				return this.SpawnIntervalSeconds - this.TimePassed;
+				return IsOutOfRespawns;
+			}
+			return true;
+		}
+	}
+
+	public float PauseTimeLeft => Mathf.Max(_pauseTimer - Time.time, 0f);
+
+	private bool IsOutOfRespawns
+	{
+		get
+		{
+			if (_wave is ILimitedWave limitedWave)
+			{
+				return limitedWave.RespawnTokens <= 0;
+			}
+			return false;
+		}
+	}
+
+	public WaveTimer(TimeBasedWave wave)
+	{
+		DefaultSpawnInterval = wave.InitialSpawnInterval;
+		_wave = wave;
+		StaticUnityMethods.OnUpdate += Update;
+		SeedSynchronizer.OnGenerationFinished += OnMapGenerated;
+		WaveManager.OnWaveUpdateMsgReceived += OnUpdateMessageReceived;
+	}
+
+	public void AddTime(float seconds)
+	{
+		SetTime(TimePassed + seconds);
+	}
+
+	public void SetTime(float seconds)
+	{
+		TimePassed = seconds;
+		if (NetworkServer.active)
+		{
+			WaveUpdateMessage.ServerSendUpdate(_wave, UpdateMessageFlags.Timer);
+		}
+	}
+
+	public void Reset(bool resetSpawnInterval = true)
+	{
+		TimePassed = 0f;
+		if (resetSpawnInterval)
+		{
+			SpawnIntervalSeconds = DefaultSpawnInterval;
+		}
+		WaveUpdateMessage.ServerSendUpdate(_wave, UpdateMessageFlags.Timer);
+	}
+
+	public void Pause(float duration)
+	{
+		_pauseTimer = Time.time + duration;
+		if (NetworkServer.active)
+		{
+			WaveUpdateMessage.ServerSendUpdate(_wave, UpdateMessageFlags.Pause);
+		}
+	}
+
+	public void Destroy()
+	{
+		StaticUnityMethods.OnUpdate -= Update;
+		SeedSynchronizer.OnGenerationFinished -= OnMapGenerated;
+		WaveManager.OnWaveUpdateMsgReceived -= OnUpdateMessageReceived;
+	}
+
+	private void Update()
+	{
+		if ((!IsPaused || !(TimeLeft <= 30f)) && RoundSummary.RoundInProgress())
+		{
+			TimePassed += Time.deltaTime;
+		}
+	}
+
+	private void OnUpdateMessageReceived(WaveUpdateMessage msg)
+	{
+		if (_wave == msg.Wave)
+		{
+			if (msg.SpawnIntervalSeconds.HasValue)
+			{
+				SpawnIntervalSeconds = msg.SpawnIntervalSeconds.Value;
+			}
+			if (msg.TimePassed.HasValue)
+			{
+				TimePassed = msg.TimePassed.Value;
+			}
+			if (msg.PauseDuration.HasValue)
+			{
+				_pauseTimer = msg.PauseDuration.Value;
 			}
 		}
+	}
 
-		public bool IsReadyToSpawn
-		{
-			get
-			{
-				return this.TimePassed >= this.SpawnIntervalSeconds;
-			}
-		}
-
-		public bool IsPaused
-		{
-			get
-			{
-				return this._pauseTimer > Time.time || this.IsOutOfRespawns;
-			}
-		}
-
-		public float PauseTimeLeft
-		{
-			get
-			{
-				return Mathf.Max(this._pauseTimer - Time.time, 0f);
-			}
-		}
-
-		private bool IsOutOfRespawns
-		{
-			get
-			{
-				ILimitedWave limitedWave = this._wave as ILimitedWave;
-				return limitedWave != null && limitedWave.RespawnTokens <= 0;
-			}
-		}
-
-		public void AddTime(float seconds)
-		{
-			this.SetTime(this.TimePassed + seconds);
-		}
-
-		public void SetTime(float seconds)
-		{
-			this.TimePassed = seconds;
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			WaveUpdateMessage.ServerSendUpdate(this._wave, UpdateMessageFlags.Timer);
-		}
-
-		public void Reset(bool resetSpawnInterval = true)
-		{
-			this.TimePassed = 0f;
-			if (resetSpawnInterval)
-			{
-				this.SpawnIntervalSeconds = this.DefaultSpawnInterval;
-			}
-			WaveUpdateMessage.ServerSendUpdate(this._wave, UpdateMessageFlags.Timer);
-		}
-
-		public void Pause(float duration)
-		{
-			this._pauseTimer = Time.time + duration;
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			WaveUpdateMessage.ServerSendUpdate(this._wave, UpdateMessageFlags.Pause);
-		}
-
-		public void Destroy()
-		{
-			StaticUnityMethods.OnUpdate -= this.Update;
-			SeedSynchronizer.OnGenerationFinished -= this.OnMapGenerated;
-			WaveManager.OnWaveUpdateMsgReceived -= this.OnUpdateMessageReceived;
-		}
-
-		private void Update()
-		{
-			if (this.IsPaused && this.TimeLeft <= 30f)
-			{
-				return;
-			}
-			if (!RoundSummary.RoundInProgress())
-			{
-				return;
-			}
-			this.TimePassed += Time.deltaTime;
-		}
-
-		private void OnUpdateMessageReceived(WaveUpdateMessage msg)
-		{
-			if (this._wave != msg.Wave)
-			{
-				return;
-			}
-			if (msg.SpawnIntervalSeconds != null)
-			{
-				this.SpawnIntervalSeconds = msg.SpawnIntervalSeconds.Value;
-			}
-			if (msg.TimePassed != null)
-			{
-				this.TimePassed = msg.TimePassed.Value;
-			}
-			if (msg.PauseDuration != null)
-			{
-				this._pauseTimer = msg.PauseDuration.Value;
-			}
-		}
-
-		private void OnMapGenerated()
-		{
-			this.Reset(true);
-		}
-
-		public const float CountdownPauseThresholdSeconds = 30f;
-
-		private readonly TimeBasedWave _wave;
-
-		private float _pauseTimer;
+	private void OnMapGenerated()
+	{
+		Reset();
 	}
 }

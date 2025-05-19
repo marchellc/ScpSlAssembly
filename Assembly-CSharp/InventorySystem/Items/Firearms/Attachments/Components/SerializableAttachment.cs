@@ -1,163 +1,111 @@
-﻿using System;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Attachments.Components
+namespace InventorySystem.Items.Firearms.Attachments.Components;
+
+public class SerializableAttachment : Attachment, IDisplayableAttachment
 {
-	public class SerializableAttachment : Attachment, IDisplayableAttachment
+	[SerializeField]
+	private AttachmentName _name;
+
+	[SerializeField]
+	private AttachmentSlot _slot;
+
+	[Space]
+	[SerializeField]
+	private float _weight;
+
+	[SerializeField]
+	private float _length;
+
+	[Space]
+	[SerializeField]
+	private AttachmentDescriptiveAdvantages _extraPros;
+
+	[SerializeField]
+	private AttachmentDescriptiveDownsides _extraCons;
+
+	[Space]
+	[SerializeField]
+	private Texture2D _icon;
+
+	[SerializeField]
+	private Vector2 _iconOffset;
+
+	[SerializeField]
+	private int _parentId;
+
+	[SerializeField]
+	private Vector2 _parentOffset;
+
+	[Space]
+	[SerializeField]
+	private AttachmentParameterValuePair[] _params;
+
+	public override AttachmentName Name => _name;
+
+	public override AttachmentSlot Slot => _slot;
+
+	public override float Weight => _weight;
+
+	public override float Length => _length;
+
+	public override AttachmentDescriptiveAdvantages DescriptivePros => _extraPros;
+
+	public override AttachmentDescriptiveDownsides DescriptiveCons => _extraCons;
+
+	public Texture2D Icon
 	{
-		public override AttachmentName Name
+		get
 		{
-			get
-			{
-				return this._name;
-			}
+			return _icon;
 		}
-
-		public override AttachmentSlot Slot
+		set
 		{
-			get
-			{
-				return this._slot;
-			}
+			_icon = value;
 		}
+	}
 
-		public override float Weight
+	public Vector2 IconOffset
+	{
+		get
 		{
-			get
-			{
-				return this._weight;
-			}
+			return _iconOffset;
 		}
-
-		public override float Length
+		set
 		{
-			get
-			{
-				return this._length;
-			}
+			_iconOffset = value;
 		}
+	}
 
-		public override AttachmentDescriptiveAdvantages DescriptivePros
+	public int ParentId => _parentId;
+
+	public Vector2 ParentOffset => _parentOffset;
+
+	protected virtual void Awake()
+	{
+		SetDefaultParameters();
+	}
+
+	protected void SetDefaultParameters()
+	{
+		_params.ForEach(base.SetParameter);
+	}
+
+	protected virtual void Reset()
+	{
+		if (TryGetComponent<SerializableAttachment>(out var component) && !(component == this))
 		{
-			get
-			{
-				return this._extraPros;
-			}
+			_name = component._name;
+			_slot = component._slot;
+			_weight = component._weight;
+			_length = component._length;
+			_extraPros = component._extraPros;
+			_extraCons = component._extraCons;
+			_icon = component._icon;
+			_iconOffset = component._iconOffset;
+			_parentId = component._parentId;
+			_parentOffset = component._parentOffset;
+			_params = component._params;
 		}
-
-		public override AttachmentDescriptiveDownsides DescriptiveCons
-		{
-			get
-			{
-				return this._extraCons;
-			}
-		}
-
-		public Texture2D Icon
-		{
-			get
-			{
-				return this._icon;
-			}
-			set
-			{
-				this._icon = value;
-			}
-		}
-
-		public Vector2 IconOffset
-		{
-			get
-			{
-				return this._iconOffset;
-			}
-			set
-			{
-				this._iconOffset = value;
-			}
-		}
-
-		public int ParentId
-		{
-			get
-			{
-				return this._parentId;
-			}
-		}
-
-		public Vector2 ParentOffset
-		{
-			get
-			{
-				return this._parentOffset;
-			}
-		}
-
-		protected virtual void Awake()
-		{
-			this.SetDefaultParameters();
-		}
-
-		protected void SetDefaultParameters()
-		{
-			this._params.ForEach(new Action<AttachmentParameterValuePair>(base.SetParameter));
-		}
-
-		protected virtual void Reset()
-		{
-			SerializableAttachment serializableAttachment;
-			if (!base.TryGetComponent<SerializableAttachment>(out serializableAttachment) || serializableAttachment == this)
-			{
-				return;
-			}
-			this._name = serializableAttachment._name;
-			this._slot = serializableAttachment._slot;
-			this._weight = serializableAttachment._weight;
-			this._length = serializableAttachment._length;
-			this._extraPros = serializableAttachment._extraPros;
-			this._extraCons = serializableAttachment._extraCons;
-			this._icon = serializableAttachment._icon;
-			this._iconOffset = serializableAttachment._iconOffset;
-			this._parentId = serializableAttachment._parentId;
-			this._parentOffset = serializableAttachment._parentOffset;
-			this._params = serializableAttachment._params;
-		}
-
-		[SerializeField]
-		private AttachmentName _name;
-
-		[SerializeField]
-		private AttachmentSlot _slot;
-
-		[Space]
-		[SerializeField]
-		private float _weight;
-
-		[SerializeField]
-		private float _length;
-
-		[Space]
-		[SerializeField]
-		private AttachmentDescriptiveAdvantages _extraPros;
-
-		[SerializeField]
-		private AttachmentDescriptiveDownsides _extraCons;
-
-		[Space]
-		[SerializeField]
-		private Texture2D _icon;
-
-		[SerializeField]
-		private Vector2 _iconOffset;
-
-		[SerializeField]
-		private int _parentId;
-
-		[SerializeField]
-		private Vector2 _parentOffset;
-
-		[Space]
-		[SerializeField]
-		private AttachmentParameterValuePair[] _params;
 	}
 }

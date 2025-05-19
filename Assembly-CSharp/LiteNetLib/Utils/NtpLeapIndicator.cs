@@ -1,12 +1,9 @@
-﻿using System;
+namespace LiteNetLib.Utils;
 
-namespace LiteNetLib.Utils
+public enum NtpLeapIndicator
 {
-	public enum NtpLeapIndicator
-	{
-		NoWarning,
-		LastMinuteHas61Seconds,
-		LastMinuteHas59Seconds,
-		AlarmCondition
-	}
+	NoWarning,
+	LastMinuteHas61Seconds,
+	LastMinuteHas59Seconds,
+	AlarmCondition
 }

@@ -1,62 +1,60 @@
-﻿using System;
 using UnityEngine;
 
-namespace UserSettings.ControlsSettings
+namespace UserSettings.ControlsSettings;
+
+public static class SensitivitySettings
 {
-	public static class SensitivitySettings
+	private static CachedUserSetting<float> _sensMultiplier;
+
+	private static CachedUserSetting<float> _adsReductionMultiplier;
+
+	private static CachedUserSetting<bool> _invert;
+
+	public static bool SmoothInput;
+
+	public static float SensMultiplier
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+		get
 		{
-			UserSetting<float>.SetDefaultValue<SensitivitySetting>(SensitivitySetting.SensMultiplier, 1f);
-			UserSetting<float>.SetDefaultValue<SensitivitySetting>(SensitivitySetting.AdsReductionMultiplier, 1f);
-			SensitivitySettings._sensMultiplier = new CachedUserSetting<float>(SensitivitySetting.SensMultiplier);
-			SensitivitySettings._adsReductionMultiplier = new CachedUserSetting<float>(SensitivitySetting.AdsReductionMultiplier);
-			SensitivitySettings._invert = new CachedUserSetting<bool>(SensitivitySetting.Invert);
+			return _sensMultiplier.Value;
 		}
-
-		public static float SensMultiplier
+		set
 		{
-			get
-			{
-				return SensitivitySettings._sensMultiplier.Value;
-			}
-			set
-			{
-				SensitivitySettings._sensMultiplier.Value = value;
-			}
+			_sensMultiplier.Value = value;
 		}
+	}
 
-		public static float AdsReductionMultiplier
+	public static float AdsReductionMultiplier
+	{
+		get
 		{
-			get
-			{
-				return SensitivitySettings._adsReductionMultiplier.Value;
-			}
-			set
-			{
-				SensitivitySettings._adsReductionMultiplier.Value = value;
-			}
+			return _adsReductionMultiplier.Value;
 		}
-
-		public static bool Invert
+		set
 		{
-			get
-			{
-				return SensitivitySettings._invert.Value;
-			}
-			set
-			{
-				SensitivitySettings._invert.Value = value;
-			}
+			_adsReductionMultiplier.Value = value;
 		}
+	}
 
-		private static CachedUserSetting<float> _sensMultiplier;
+	public static bool Invert
+	{
+		get
+		{
+			return _invert.Value;
+		}
+		set
+		{
+			_invert.Value = value;
+		}
+	}
 
-		private static CachedUserSetting<float> _adsReductionMultiplier;
-
-		private static CachedUserSetting<bool> _invert;
-
-		public static bool SmoothInput;
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		UserSetting<float>.SetDefaultValue(SensitivitySetting.SensMultiplier, 1f);
+		UserSetting<float>.SetDefaultValue(SensitivitySetting.AdsReductionMultiplier, 1f);
+		_sensMultiplier = new CachedUserSetting<float>(SensitivitySetting.SensMultiplier);
+		_adsReductionMultiplier = new CachedUserSetting<float>(SensitivitySetting.AdsReductionMultiplier);
+		_invert = new CachedUserSetting<bool>(SensitivitySetting.Invert);
 	}
 }

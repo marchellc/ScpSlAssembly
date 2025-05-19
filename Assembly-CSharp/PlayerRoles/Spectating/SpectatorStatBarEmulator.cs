@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace PlayerRoles.Spectating
+namespace PlayerRoles.Spectating;
+
+public class SpectatorStatBarEmulator : MonoBehaviour
 {
-	public class SpectatorStatBarEmulator : MonoBehaviour
-	{
-	}
 }

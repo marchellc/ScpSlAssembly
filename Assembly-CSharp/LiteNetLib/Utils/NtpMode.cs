@@ -1,10 +1,7 @@
-﻿using System;
+namespace LiteNetLib.Utils;
 
-namespace LiteNetLib.Utils
+public enum NtpMode
 {
-	public enum NtpMode
-	{
-		Client = 3,
-		Server
-	}
+	Client = 3,
+	Server
 }

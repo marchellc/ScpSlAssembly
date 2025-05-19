@@ -1,164 +1,151 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Mirror;
 
-namespace InventorySystem.Items.MicroHID.Modules
+namespace InventorySystem.Items.MicroHID.Modules;
+
+public class CycleSyncModule : MicroHidModuleBase
 {
-	public class CycleSyncModule : MicroHidModuleBase
+	private class SyncedCycleController
 	{
-		public static CycleController GetCycleController(ushort serial)
+		public readonly CycleController Controller;
+
+		public MicroHidPhase? LastSentPhase;
+
+		public bool NeedsResync => LastSentPhase != Controller.Phase;
+
+		public SyncedCycleController(ushort serial)
 		{
-			foreach (CycleSyncModule.SyncedCycleController syncedCycleController in CycleSyncModule.SyncControllers)
-			{
-				if (syncedCycleController.Controller.Serial == serial)
-				{
-					return syncedCycleController.Controller;
-				}
-			}
-			CycleSyncModule.SyncedCycleController syncedCycleController2 = new CycleSyncModule.SyncedCycleController(serial);
-			CycleSyncModule.SyncControllers.Add(syncedCycleController2);
-			return syncedCycleController2.Controller;
+			Controller = new CycleController(serial);
+			LastSentPhase = null;
 		}
 
-		public static MicroHidPhase GetPhase(ushort serial)
+		public void WriteSelf(NetworkWriter writer)
 		{
-			return CycleSyncModule.GetCycleController(serial).Phase;
-		}
-
-		public static MicroHidFiringMode GetFiringMode(ushort serial)
-		{
-			return CycleSyncModule.GetCycleController(serial).LastFiringMode;
-		}
-
-		public static void ForEachController(Action<CycleController> action)
-		{
-			foreach (CycleSyncModule.SyncedCycleController syncedCycleController in CycleSyncModule.SyncControllers)
+			writer.WriteUShort(Controller.Serial);
+			writer.WriteByte((byte)Controller.Phase);
+			if (Controller.Phase != 0)
 			{
-				action(syncedCycleController.Controller);
+				writer.WriteByte((byte)Controller.LastFiringMode);
 			}
 		}
+	}
 
-		internal override void OnClientReady()
-		{
-			base.OnClientReady();
-			CycleSyncModule.SyncControllers.Clear();
-		}
+	private static readonly List<SyncedCycleController> SyncControllers = new List<SyncedCycleController>();
 
-		internal override void TemplateUpdate()
+	private CycleController _instCycleController;
+
+	public static CycleController GetCycleController(ushort serial)
+	{
+		foreach (SyncedCycleController syncController in SyncControllers)
 		{
-			base.TemplateUpdate();
-			if (!NetworkServer.active)
+			if (syncController.Controller.Serial == serial)
 			{
-				return;
-			}
-			using (List<CycleSyncModule.SyncedCycleController>.Enumerator enumerator = CycleSyncModule.SyncControllers.GetEnumerator())
-			{
-				while (enumerator.MoveNext())
-				{
-					if (enumerator.Current.NeedsResync)
-					{
-						this.SendRpc(new Action<NetworkWriter>(this.ServerWriteAllDelta), true);
-						break;
-					}
-				}
+				return syncController.Controller;
 			}
 		}
+		SyncedCycleController syncedCycleController = new SyncedCycleController(serial);
+		SyncControllers.Add(syncedCycleController);
+		return syncedCycleController.Controller;
+	}
 
-		internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstSubcomponent)
+	public static MicroHidPhase GetPhase(ushort serial)
+	{
+		return GetCycleController(serial).Phase;
+	}
+
+	public static MicroHidFiringMode GetFiringMode(ushort serial)
+	{
+		return GetCycleController(serial).LastFiringMode;
+	}
+
+	public static void ForEachController(Action<CycleController> action)
+	{
+		foreach (SyncedCycleController syncController in SyncControllers)
 		{
-			base.ServerOnPlayerConnected(hub, firstSubcomponent);
-			this.SendRpc(hub, new Action<NetworkWriter>(this.ServerWriteAllActive));
+			action(syncController.Controller);
 		}
+	}
 
-		public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	internal override void OnClientReady()
+	{
+		base.OnClientReady();
+		SyncControllers.Clear();
+	}
+
+	internal override void TemplateUpdate()
+	{
+		base.TemplateUpdate();
+		if (!NetworkServer.active)
 		{
-			base.ClientProcessRpcTemplate(reader, serial);
-			if (NetworkServer.active)
-			{
-				return;
-			}
-			while (reader.Remaining > 0)
-			{
-				CycleController cycleController = CycleSyncModule.GetCycleController(reader.ReadUShort());
-				cycleController.Phase = (MicroHidPhase)reader.ReadByte();
-				if (cycleController.Phase != MicroHidPhase.Standby)
-				{
-					cycleController.LastFiringMode = (MicroHidFiringMode)reader.ReadByte();
-				}
-			}
+			return;
 		}
-
-		private void Update()
+		foreach (SyncedCycleController syncController in SyncControllers)
 		{
-			if (!base.IsServer)
+			if (syncController.NeedsResync)
 			{
-				return;
-			}
-			if (this._instCycleController == null)
-			{
-				this._instCycleController = CycleSyncModule.GetCycleController(base.ItemSerial);
-			}
-			this._instCycleController.ServerUpdateHeldItem(base.MicroHid);
-		}
-
-		private void ServerWriteAllDelta(NetworkWriter writer)
-		{
-			foreach (CycleSyncModule.SyncedCycleController syncedCycleController in CycleSyncModule.SyncControllers)
-			{
-				if (syncedCycleController.NeedsResync)
-				{
-					syncedCycleController.WriteSelf(writer);
-					syncedCycleController.LastSentPhase = new MicroHidPhase?(syncedCycleController.Controller.Phase);
-				}
+				SendRpc(ServerWriteAllDelta);
+				break;
 			}
 		}
+	}
 
-		private void ServerWriteAllActive(NetworkWriter writer)
+	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstSubcomponent)
+	{
+		base.ServerOnPlayerConnected(hub, firstSubcomponent);
+		SendRpc(hub, ServerWriteAllActive);
+	}
+
+	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	{
+		base.ClientProcessRpcTemplate(reader, serial);
+		if (NetworkServer.active)
 		{
-			foreach (CycleSyncModule.SyncedCycleController syncedCycleController in CycleSyncModule.SyncControllers)
+			return;
+		}
+		while (reader.Remaining > 0)
+		{
+			CycleController cycleController = GetCycleController(reader.ReadUShort());
+			cycleController.Phase = (MicroHidPhase)reader.ReadByte();
+			if (cycleController.Phase != 0)
 			{
-				if (syncedCycleController.Controller.Phase != MicroHidPhase.Standby)
-				{
-					syncedCycleController.WriteSelf(writer);
-				}
+				cycleController.LastFiringMode = (MicroHidFiringMode)reader.ReadByte();
 			}
 		}
+	}
 
-		private static readonly List<CycleSyncModule.SyncedCycleController> SyncControllers = new List<CycleSyncModule.SyncedCycleController>();
-
-		private CycleController _instCycleController;
-
-		private class SyncedCycleController
+	private void Update()
+	{
+		if (base.IsServer)
 		{
-			public bool NeedsResync
+			if (_instCycleController == null)
 			{
-				get
-				{
-					MicroHidPhase? lastSentPhase = this.LastSentPhase;
-					MicroHidPhase phase = this.Controller.Phase;
-					return !((lastSentPhase.GetValueOrDefault() == phase) & (lastSentPhase != null));
-				}
+				_instCycleController = GetCycleController(base.ItemSerial);
 			}
+			_instCycleController.ServerUpdateHeldItem(base.MicroHid);
+		}
+	}
 
-			public SyncedCycleController(ushort serial)
+	private void ServerWriteAllDelta(NetworkWriter writer)
+	{
+		foreach (SyncedCycleController syncController in SyncControllers)
+		{
+			if (syncController.NeedsResync)
 			{
-				this.Controller = new CycleController(serial);
-				this.LastSentPhase = null;
+				syncController.WriteSelf(writer);
+				syncController.LastSentPhase = syncController.Controller.Phase;
 			}
+		}
+	}
 
-			public void WriteSelf(NetworkWriter writer)
+	private void ServerWriteAllActive(NetworkWriter writer)
+	{
+		foreach (SyncedCycleController syncController in SyncControllers)
+		{
+			if (syncController.Controller.Phase != 0)
 			{
-				writer.WriteUShort(this.Controller.Serial);
-				writer.WriteByte((byte)this.Controller.Phase);
-				if (this.Controller.Phase != MicroHidPhase.Standby)
-				{
-					writer.WriteByte((byte)this.Controller.LastFiringMode);
-				}
+				syncController.WriteSelf(writer);
 			}
-
-			public readonly CycleController Controller;
-
-			public MicroHidPhase? LastSentPhase;
 		}
 	}
 }

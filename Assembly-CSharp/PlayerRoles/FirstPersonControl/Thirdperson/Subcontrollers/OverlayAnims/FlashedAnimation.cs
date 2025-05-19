@@ -1,85 +1,86 @@
-﻿using System;
 using CustomPlayerEffects;
+using InventorySystem.Disarming;
 using InventorySystem.Items.Thirdperson;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers.OverlayAnims
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers.OverlayAnims;
+
+public class FlashedAnimation : OverlayAnimationsBase
 {
-	public class FlashedAnimation : OverlayAnimationsBase
+	private const float DecayDuration = 1.7f;
+
+	private bool _hasEffect;
+
+	private float _remainingSustain;
+
+	private Flashed _effect;
+
+	private bool EffectEnabled
 	{
-		private bool EffectEnabled
+		get
 		{
-			get
+			if (_hasEffect)
 			{
-				return this._hasEffect && this._effect.IsEnabled;
+				return _effect.IsEnabled;
 			}
+			return false;
 		}
+	}
 
-		public override bool WantsToPlay
+	public override bool WantsToPlay
+	{
+		get
 		{
-			get
+			if (!(_remainingSustain > 0f))
 			{
-				return this._remainingSustain > 0f || this.EffectEnabled;
+				return EffectEnabled;
 			}
+			return true;
 		}
+	}
 
-		public override bool Bypassable
+	public override bool Bypassable => !EffectEnabled;
+
+	public override AnimationClip Clip => base.Controller.FlashedLoopClip;
+
+	public override float GetLayerWeight(AnimItemLayer3p layer)
+	{
+		return Mathf.Clamp01(_remainingSustain / 1.7f);
+	}
+
+	public override void UpdateActive()
+	{
+		base.UpdateActive();
+		if (base.Model.OwnerHub.inventory.IsDisarmed())
 		{
-			get
-			{
-				return !this.EffectEnabled;
-			}
+			_remainingSustain = 0f;
 		}
-
-		public override AnimationClip Clip
+		else if (EffectEnabled)
 		{
-			get
-			{
-				return base.Controller.FlashedLoopClip;
-			}
+			_remainingSustain = 1.7f;
 		}
-
-		public override float GetLayerWeight(AnimItemLayer3p layer)
+		else
 		{
-			return Mathf.Clamp01(this._remainingSustain / 1.7f);
+			_remainingSustain -= Time.deltaTime;
 		}
+	}
 
-		public override void UpdateActive()
-		{
-			base.UpdateActive();
-			if (this.EffectEnabled)
-			{
-				this._remainingSustain = 1.7f;
-				return;
-			}
-			this._remainingSustain -= Time.deltaTime;
-		}
+	public override void OnStopped()
+	{
+		base.OnStopped();
+		_remainingSustain = 0f;
+	}
 
-		public override void OnStopped()
-		{
-			base.OnStopped();
-			this._remainingSustain = 0f;
-		}
+	public override void OnReassigned()
+	{
+		base.OnReassigned();
+		_hasEffect = base.Model.OwnerHub.playerEffectsController.TryGetEffect<Flashed>(out _effect);
+	}
 
-		public override void OnReassigned()
-		{
-			base.OnReassigned();
-			this._hasEffect = base.Model.OwnerHub.playerEffectsController.TryGetEffect<Flashed>(out this._effect);
-		}
-
-		public override void OnReset()
-		{
-			base.OnReset();
-			this._hasEffect = false;
-			this._remainingSustain = 0f;
-		}
-
-		private const float DecayDuration = 1.7f;
-
-		private bool _hasEffect;
-
-		private float _remainingSustain;
-
-		private Flashed _effect;
+	public override void OnReset()
+	{
+		base.OnReset();
+		_hasEffect = false;
+		_remainingSustain = 0f;
 	}
 }

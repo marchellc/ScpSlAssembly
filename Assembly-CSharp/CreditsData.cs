@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,15 +6,24 @@ using UnityEngine;
 
 public static class CreditsData
 {
+	public static bool RemoteLoaded;
+
+	internal const string CurrentNicknamePlaceholder = "<current nickname>";
+
+	private static readonly string CachePath;
+
+	internal static CreditsCategory[] Data;
+
 	static CreditsData()
 	{
+		CachePath = FileManager.GetAppFolder() + "CreditsCache.json";
 		try
 		{
-			CreditsData.SetCredits(File.ReadAllText(CreditsData.CachePath));
+			SetCredits(File.ReadAllText(CachePath));
 		}
 		catch
 		{
-			CreditsData.LoadData(File.ReadAllText("CreditsCache.json"));
+			LoadData(File.ReadAllText("CreditsCache.json"));
 		}
 	}
 
@@ -22,12 +31,12 @@ public static class CreditsData
 	{
 		try
 		{
-			CreditsData.SetCredits(text);
-			File.WriteAllText(CreditsData.CachePath, text);
+			SetCredits(text);
+			File.WriteAllText(CachePath, text);
 		}
-		catch (Exception ex)
+		catch (Exception exception)
 		{
-			Debug.LogException(ex);
+			Debug.LogException(exception);
 		}
 	}
 
@@ -40,14 +49,14 @@ public static class CreditsData
 		CreditsList creditsList = JsonSerialize.FromJson<CreditsList>(text);
 		List<CreditsCategory> list = new List<CreditsCategory>();
 		TranslationManifest[] array = (from s in Directory.EnumerateFiles("Translations/", "manifest.json", SearchOption.AllDirectories)
-			select JsonSerialize.FromFile<TranslationManifest>(s)).ToArray<TranslationManifest>();
+			select JsonSerialize.FromFile<TranslationManifest>(s)).ToArray();
 		for (int i = 0; i < creditsList.credits.Length; i++)
 		{
 			CreditsListCategory creditsListCategory = creditsList.credits[i];
 			List<CreditsEntry> list2 = new List<CreditsEntry>();
 			for (int j = 0; j < creditsListCategory.members.Length; j++)
 			{
-				list2.Add(CreditsData.ProcessEntry(creditsListCategory.members[j]));
+				list2.Add(ProcessEntry(creditsListCategory.members[j]));
 			}
 			if (creditsListCategory.category.Equals("SPECIAL THANKS", StringComparison.OrdinalIgnoreCase))
 			{
@@ -58,8 +67,10 @@ public static class CreditsData
 					Records = list2.ToArray()
 				});
 				list2.Clear();
-				foreach (TranslationManifest translationManifest in array)
+				TranslationManifest[] array2 = array;
+				for (int k = 0; k < array2.Length; k++)
 				{
+					TranslationManifest translationManifest = array2[k];
 					string text2 = translationManifest.Name;
 					if (!text2.Equals("en", StringComparison.OrdinalIgnoreCase))
 					{
@@ -68,9 +79,10 @@ public static class CreditsData
 						{
 							text2 = translationManifest.Name.Substring(num + 2);
 						}
-						foreach (string text3 in translationManifest.Authors)
+						string[] authors = translationManifest.Authors;
+						foreach (string name in authors)
 						{
-							list2.Add(new CreditsEntry(text2, text3));
+							list2.Add(new CreditsEntry(text2, name));
 						}
 						list2.Add(new CreditsEntry("", ""));
 					}
@@ -90,8 +102,8 @@ public static class CreditsData
 				});
 			}
 		}
-		CreditsData.Data = list.ToArray();
-		CreditsData.RemoteLoaded = true;
+		Data = list.ToArray();
+		RemoteLoaded = true;
 	}
 
 	private static CreditsEntry ProcessEntry(CreditsListMember member)
@@ -102,7 +114,7 @@ public static class CreditsData
 		}
 		if (!string.IsNullOrEmpty(member.title))
 		{
-			return new CreditsEntry(member.title, member.name, CreditsData.HexToColor(member));
+			return new CreditsEntry(member.title, member.name, HexToColor(member));
 		}
 		return new CreditsEntry(member.name);
 	}
@@ -113,20 +125,11 @@ public static class CreditsData
 		{
 			return Color.white;
 		}
-		Color32 color;
-		if (Misc.TryParseColor(member.color, out color))
+		if (Misc.TryParseColor(member.color, out var color))
 		{
 			return color;
 		}
-		Debug.LogError(string.Concat(new string[] { "Error during processing credits color (", member.name, " - ", member.title, " - ", member.color, ")." }));
+		Debug.LogError("Error during processing credits color (" + member.name + " - " + member.title + " - " + member.color + ").");
 		return Color.white;
 	}
-
-	public static bool RemoteLoaded;
-
-	internal const string CurrentNicknamePlaceholder = "<current nickname>";
-
-	private static readonly string CachePath = FileManager.GetAppFolder(true, false, "") + "CreditsCache.json";
-
-	internal static CreditsCategory[] Data;
 }

@@ -1,202 +1,97 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Text;
 using UnityEngine;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public class StatSliderManager : MonoBehaviour
 {
-	public class StatSliderManager : MonoBehaviour
+	private record SliderTypePair(StatSlider StatSlider, Type Type);
+
+	private readonly List<SliderTypePair> _instances = new List<SliderTypePair>();
+
+	private static StatSliderManager _singleton;
+
+	private void Awake()
 	{
-		private void Awake()
-		{
-			StatSliderManager._singleton = this;
-			base.gameObject.ForEachComponentInChildren(new Action<StatSlider>(this.RegisterInstance), true);
-		}
+		_singleton = this;
+		base.gameObject.ForEachComponentInChildren<StatSlider>(RegisterInstance, includeInactive: true);
+	}
 
-		private void RefreshRelations()
+	private void RefreshRelations()
+	{
+		StatusBar masterBar = null;
+		foreach (SliderTypePair instance in _instances)
 		{
-			StatusBar statusBar = null;
-			using (List<StatSliderManager.SliderTypePair>.Enumerator enumerator = this._instances.GetEnumerator())
+			if (instance.StatSlider.TryGetComponent<StatusBar>(out var component))
 			{
-				while (enumerator.MoveNext())
-				{
-					StatusBar statusBar2;
-					if (enumerator.Current.StatSlider.TryGetComponent<StatusBar>(out statusBar2))
-					{
-						statusBar2.MasterBar = statusBar;
-						statusBar = statusBar2;
-					}
-				}
+				component.MasterBar = masterBar;
+				masterBar = component;
 			}
 		}
+	}
 
-		private void RegisterInstance(StatSlider inst)
+	private void RegisterInstance(StatSlider inst)
+	{
+		if (!inst.TryGetTypeId(out var val))
 		{
-			int num;
-			if (!inst.TryGetTypeId(out num))
-			{
-				throw new InvalidOperationException("Attempting to register stat without a valid module.");
-			}
-			this._instances.Add(new StatSliderManager.SliderTypePair(inst, PlayerStats.DefinedModules[num]));
+			throw new InvalidOperationException("Attempting to register stat without a valid module.");
 		}
+		_instances.Add(new SliderTypePair(inst, PlayerStats.DefinedModules[val]));
+	}
 
-		public static bool TryAdd(StatSlider template, out StatSlider instance)
+	public static bool TryAdd(StatSlider template, out StatSlider instance)
+	{
+		if (_singleton == null || template == null)
 		{
-			if (StatSliderManager._singleton == null || template == null)
-			{
-				instance = null;
-				return false;
-			}
-			instance = global::UnityEngine.Object.Instantiate<StatSlider>(template, StatSliderManager._singleton.transform);
-			StatSliderManager._singleton.RegisterInstance(instance);
-			Transform transform = instance.transform;
-			transform.localScale = Vector3.one;
-			transform.localRotation = Quaternion.identity;
-			StatSliderManager._singleton.RefreshRelations();
-			StatusBar statusBar;
-			if (instance.TryGetComponent<StatusBar>(out statusBar))
-			{
-				statusBar.UpdateBar(true);
-			}
-			return true;
-		}
-
-		public static bool TryRemove<T>() where T : StatBase
-		{
-			Type typeFromHandle = typeof(T);
-			if (StatSliderManager._singleton == null || typeof(T).IsAbstract)
-			{
-				return false;
-			}
-			List<StatSliderManager.SliderTypePair> instances = StatSliderManager._singleton._instances;
-			for (int i = 0; i < instances.Count; i++)
-			{
-				StatSliderManager.SliderTypePair sliderTypePair = instances[i];
-				if (!(sliderTypePair.Type != typeFromHandle))
-				{
-					global::UnityEngine.Object.Destroy(sliderTypePair.StatSlider.gameObject);
-					instances.RemoveAt(i--);
-					StatSliderManager._singleton.RefreshRelations();
-					return true;
-				}
-			}
+			instance = null;
 			return false;
 		}
-
-		public static bool TryForEach(Action<StatSlider> action)
+		instance = UnityEngine.Object.Instantiate(template, _singleton.transform);
+		_singleton.RegisterInstance(instance);
+		Transform obj = instance.transform;
+		obj.localScale = Vector3.one;
+		obj.localRotation = Quaternion.identity;
+		_singleton.RefreshRelations();
+		if (instance.TryGetComponent<StatusBar>(out var component))
 		{
-			if (StatSliderManager._singleton == null)
-			{
-				return false;
-			}
-			StatSliderManager._singleton._instances.ForEach(delegate(StatSliderManager.SliderTypePair x)
-			{
-				action(x.StatSlider);
-			});
-			return true;
+			component.UpdateBar(bypassAnims: true);
 		}
+		return true;
+	}
 
-		private readonly List<StatSliderManager.SliderTypePair> _instances = new List<StatSliderManager.SliderTypePair>();
-
-		private static StatSliderManager _singleton;
-
-		private class SliderTypePair : IEquatable<StatSliderManager.SliderTypePair>
+	public static bool TryRemove<T>() where T : StatBase
+	{
+		Type typeFromHandle = typeof(T);
+		if (_singleton == null || typeof(T).IsAbstract)
 		{
-			public SliderTypePair(StatSlider StatSlider, Type Type)
+			return false;
+		}
+		List<SliderTypePair> instances = _singleton._instances;
+		for (int i = 0; i < instances.Count; i++)
+		{
+			SliderTypePair sliderTypePair = instances[i];
+			if (!(sliderTypePair.Type != typeFromHandle))
 			{
-				this.StatSlider = StatSlider;
-				this.Type = Type;
-				base..ctor();
-			}
-
-			[Nullable(1)]
-			protected virtual Type EqualityContract
-			{
-				[NullableContext(1)]
-				[CompilerGenerated]
-				get
-				{
-					return typeof(StatSliderManager.SliderTypePair);
-				}
-			}
-
-			public StatSlider StatSlider { get; set; }
-
-			public Type Type { get; set; }
-
-			public override string ToString()
-			{
-				StringBuilder stringBuilder = new StringBuilder();
-				stringBuilder.Append("SliderTypePair");
-				stringBuilder.Append(" { ");
-				if (this.PrintMembers(stringBuilder))
-				{
-					stringBuilder.Append(" ");
-				}
-				stringBuilder.Append("}");
-				return stringBuilder.ToString();
-			}
-
-			[NullableContext(1)]
-			protected virtual bool PrintMembers(StringBuilder builder)
-			{
-				builder.Append("StatSlider");
-				builder.Append(" = ");
-				builder.Append(this.StatSlider);
-				builder.Append(", ");
-				builder.Append("Type");
-				builder.Append(" = ");
-				builder.Append(this.Type);
+				UnityEngine.Object.Destroy(sliderTypePair.StatSlider.gameObject);
+				instances.RemoveAt(i--);
+				_singleton.RefreshRelations();
 				return true;
 			}
-
-			[NullableContext(2)]
-			public static bool operator !=(StatSliderManager.SliderTypePair r1, StatSliderManager.SliderTypePair r2)
-			{
-				return !(r1 == r2);
-			}
-
-			[NullableContext(2)]
-			public static bool operator ==(StatSliderManager.SliderTypePair r1, StatSliderManager.SliderTypePair r2)
-			{
-				return r1 == r2 || (r1 != null && r1.Equals(r2));
-			}
-
-			public override int GetHashCode()
-			{
-				return (EqualityComparer<Type>.Default.GetHashCode(this.EqualityContract) * -1521134295 + EqualityComparer<StatSlider>.Default.GetHashCode(this.<StatSlider>k__BackingField)) * -1521134295 + EqualityComparer<Type>.Default.GetHashCode(this.<Type>k__BackingField);
-			}
-
-			[NullableContext(2)]
-			public override bool Equals(object obj)
-			{
-				return this.Equals(obj as StatSliderManager.SliderTypePair);
-			}
-
-			[NullableContext(2)]
-			public virtual bool Equals(StatSliderManager.SliderTypePair other)
-			{
-				return other != null && this.EqualityContract == other.EqualityContract && EqualityComparer<StatSlider>.Default.Equals(this.<StatSlider>k__BackingField, other.<StatSlider>k__BackingField) && EqualityComparer<Type>.Default.Equals(this.<Type>k__BackingField, other.<Type>k__BackingField);
-			}
-
-			[NullableContext(1)]
-			public virtual StatSliderManager.SliderTypePair <Clone>$()
-			{
-				return new StatSliderManager.SliderTypePair(this);
-			}
-
-			protected SliderTypePair([Nullable(1)] StatSliderManager.SliderTypePair original)
-			{
-				this.StatSlider = original.<StatSlider>k__BackingField;
-				this.Type = original.<Type>k__BackingField;
-			}
-
-			public void Deconstruct(out StatSlider StatSlider, out Type Type)
-			{
-				StatSlider = this.StatSlider;
-				Type = this.Type;
-			}
 		}
+		return false;
+	}
+
+	public static bool TryForEach(Action<StatSlider> action)
+	{
+		if (_singleton == null)
+		{
+			return false;
+		}
+		_singleton._instances.ForEach(delegate(SliderTypePair x)
+		{
+			action(x.StatSlider);
+		});
+		return true;
 	}
 }

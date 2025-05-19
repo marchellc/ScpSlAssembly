@@ -1,117 +1,108 @@
-﻿using System;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.ThrowableProjectiles
+namespace InventorySystem.Items.ThrowableProjectiles;
+
+public class PhantomProjectile : MonoBehaviour
 {
-	public class PhantomProjectile : MonoBehaviour
+	public Rigidbody Rigidbody;
+
+	[SerializeField]
+	private float _minimalExistenceTime;
+
+	[SerializeField]
+	private float _transitionTime;
+
+	[SerializeField]
+	private Vector3 _startScale;
+
+	[SerializeField]
+	private Vector3 _targetScale;
+
+	private const float AutoDestroyTime = 0.5f;
+
+	private ushort _projectileSerial;
+
+	private float _scaleFactor;
+
+	private float _transitionFactor;
+
+	private float _replaceTime;
+
+	private bool _hasPickup;
+
+	private ThrownProjectile _pickupToReplace;
+
+	private float CurTime => Time.timeSinceLevelLoad;
+
+	public void Init(ushort serial)
 	{
-		private float CurTime
+		ThrownProjectile.OnProjectileSpawned += OnSpawned;
+		_projectileSerial = serial;
+		base.gameObject.SetActive(value: false);
+	}
+
+	public void Activate(Transform cam, Vector3 relativePosition)
+	{
+		base.gameObject.SetActive(value: true);
+		_replaceTime = CurTime + _minimalExistenceTime;
+		_scaleFactor = -1f;
+		_transitionFactor = -1f;
+		Object.Destroy(base.gameObject, _minimalExistenceTime + _transitionTime + 0.5f);
+		base.transform.SetParent(null);
+		base.transform.position = cam.TransformPoint(relativePosition);
+		base.transform.localScale = _startScale;
+	}
+
+	public void Replace()
+	{
+		if (_pickupToReplace != null)
 		{
-			get
+			if (_transitionFactor < 1f && _pickupToReplace.TryGetComponent<Rigidbody>(out var component))
 			{
-				return Time.timeSinceLevelLoad;
-			}
-		}
-
-		public void Init(ushort serial)
-		{
-			ThrownProjectile.OnProjectileSpawned += this.OnSpawned;
-			this._projectileSerial = serial;
-			base.gameObject.SetActive(false);
-		}
-
-		public void Activate(Transform cam, Vector3 relativePosition)
-		{
-			base.gameObject.SetActive(true);
-			this._replaceTime = this.CurTime + this._minimalExistenceTime;
-			this._scaleFactor = -1f;
-			this._transitionFactor = -1f;
-			global::UnityEngine.Object.Destroy(base.gameObject, this._minimalExistenceTime + this._transitionTime + 0.5f);
-			base.transform.SetParent(null);
-			base.transform.position = cam.TransformPoint(relativePosition);
-			base.transform.localScale = this._startScale;
-		}
-
-		private void OnDestroy()
-		{
-			ThrownProjectile.OnProjectileSpawned -= this.OnSpawned;
-		}
-
-		private void Update()
-		{
-			if (this._scaleFactor < 1f)
-			{
-				this._scaleFactor = Mathf.Clamp01(this._scaleFactor + Time.deltaTime / this._minimalExistenceTime);
-				base.transform.localScale = Vector3.Lerp(this._startScale, this._targetScale, this._scaleFactor);
-			}
-			if (!this._hasPickup || this.CurTime < this._replaceTime)
-			{
+				_transitionFactor = Mathf.Clamp01(_transitionFactor + Time.deltaTime / _transitionTime);
+				Rigidbody.MovePosition(Vector3.Lerp(Rigidbody.position, component.position, _transitionFactor));
+				Rigidbody.linearVelocity = Vector3.Lerp(Rigidbody.linearVelocity, component.linearVelocity, _transitionFactor);
+				Rigidbody.rotation = Quaternion.Lerp(Rigidbody.rotation, component.rotation, _transitionFactor);
 				return;
 			}
-			this.Replace();
+			_pickupToReplace.ToggleRenderers(state: true);
 		}
+		Object.Destroy(base.gameObject);
+	}
 
-		private void Replace()
+	private void OnDestroy()
+	{
+		ThrownProjectile.OnProjectileSpawned -= OnSpawned;
+	}
+
+	private void Update()
+	{
+		if (_scaleFactor < 1f)
 		{
-			if (this._pickupToReplace != null)
-			{
-				Rigidbody rigidbody;
-				if (this._transitionFactor < 1f && this._pickupToReplace.TryGetComponent<Rigidbody>(out rigidbody))
-				{
-					this._transitionFactor = Mathf.Clamp01(this._transitionFactor + Time.deltaTime / this._transitionTime);
-					this.Rigidbody.MovePosition(Vector3.Lerp(this.Rigidbody.position, rigidbody.position, this._transitionFactor));
-					this.Rigidbody.velocity = Vector3.Lerp(this.Rigidbody.velocity, rigidbody.velocity, this._transitionFactor);
-					this.Rigidbody.rotation = Quaternion.Lerp(this.Rigidbody.rotation, rigidbody.rotation, this._transitionFactor);
-					return;
-				}
-				this._pickupToReplace.ToggleRenderers(true);
-			}
-			global::UnityEngine.Object.Destroy(base.gameObject);
+			_scaleFactor = Mathf.Clamp01(_scaleFactor + Time.deltaTime / _minimalExistenceTime);
+			base.transform.localScale = Vector3.Lerp(_startScale, _targetScale, _scaleFactor);
 		}
-
-		private void OnSpawned(ThrownProjectile projectile)
+		if (_hasPickup && !(CurTime < _replaceTime))
 		{
-			if (projectile.Info.Serial != this._projectileSerial)
-			{
-				return;
-			}
-			this._hasPickup = true;
-			this._pickupToReplace = projectile;
+			Replace();
+		}
+	}
+
+	private void OnSpawned(ThrownProjectile projectile)
+	{
+		if (projectile.Info.Serial == _projectileSerial)
+		{
+			_hasPickup = true;
+			_pickupToReplace = projectile;
 			if (!NetworkServer.active)
 			{
-				projectile.ToggleRenderers(false);
-				return;
+				projectile.ToggleRenderers(state: false);
 			}
-			this.Replace();
+			else
+			{
+				Replace();
+			}
 		}
-
-		public Rigidbody Rigidbody;
-
-		[SerializeField]
-		private float _minimalExistenceTime;
-
-		[SerializeField]
-		private float _transitionTime;
-
-		[SerializeField]
-		private Vector3 _startScale;
-
-		[SerializeField]
-		private Vector3 _targetScale;
-
-		private const float AutoDestroyTime = 0.5f;
-
-		private ushort _projectileSerial;
-
-		private float _scaleFactor;
-
-		private float _transitionFactor;
-
-		private float _replaceTime;
-
-		private bool _hasPickup;
-
-		private ThrownProjectile _pickupToReplace;
 	}
 }

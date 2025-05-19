@@ -1,4 +1,3 @@
-﻿using System;
 using System.Diagnostics;
 using Mirror;
 using PlayerRoles.PlayableScps.HumeShield;
@@ -6,109 +5,104 @@ using PlayerRoles.Subroutines;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp939
+namespace PlayerRoles.PlayableScps.Scp939;
+
+public class Scp939DamagedEffect : StandardSubroutine<Scp939Role>
 {
-	public class Scp939DamagedEffect : StandardSubroutine<Scp939Role>
+	private bool _eventAssigned;
+
+	private HealthStat _hpStat;
+
+	private DynamicHumeShieldController _hume;
+
+	private readonly Stopwatch _lastTriggered = new Stopwatch();
+
+	private float _totalDamageReceived;
+
+	private const float AbsoluteCooldown = 3f;
+
+	private const float HighDamageCooldown = 10f;
+
+	private const float HighDamageThreshold = 90f;
+
+	private const float HighDamageDecay = 80f;
+
+	public override void SpawnObject()
 	{
-		public override void SpawnObject()
+		base.SpawnObject();
+		if (NetworkServer.active)
 		{
-			base.SpawnObject();
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this._lastTriggered.Restart();
-			this._hpStat = base.Owner.playerStats.GetModule<HealthStat>();
-			this._hume = base.CastRole.HumeShieldModule as DynamicHumeShieldController;
-			this._eventAssigned = true;
-			base.Owner.playerStats.OnThisPlayerDamaged += this.OnDamaged;
+			_lastTriggered.Restart();
+			_hpStat = base.Owner.playerStats.GetModule<HealthStat>();
+			_hume = base.CastRole.HumeShieldModule as DynamicHumeShieldController;
+			_eventAssigned = true;
+			base.Owner.playerStats.OnThisPlayerDamaged += OnDamaged;
 		}
+	}
 
-		public override void ResetObject()
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		if (_eventAssigned)
 		{
-			base.ResetObject();
-			if (!this._eventAssigned)
-			{
-				return;
-			}
-			this._eventAssigned = false;
-			base.Owner.playerStats.OnThisPlayerDamaged -= this.OnDamaged;
+			_eventAssigned = false;
+			base.Owner.playerStats.OnThisPlayerDamaged -= OnDamaged;
 		}
+	}
 
-		private void Update()
+	private void Update()
+	{
+		if (!(_totalDamageReceived <= 0f))
 		{
-			if (this._totalDamageReceived <= 0f)
-			{
-				return;
-			}
-			this._totalDamageReceived = Mathf.Clamp(this._totalDamageReceived - Time.deltaTime * 80f, 0f, 90f);
+			_totalDamageReceived = Mathf.Clamp(_totalDamageReceived - Time.deltaTime * 80f, 0f, 90f);
 		}
+	}
 
-		private void OnDamaged(DamageHandlerBase dhb)
+	private void OnDamaged(DamageHandlerBase dhb)
+	{
+		if (dhb is AttackerDamageHandler attackerDamageHandler && !(_hpStat.CurValue <= 0f))
 		{
-			AttackerDamageHandler attackerDamageHandler = dhb as AttackerDamageHandler;
-			if (attackerDamageHandler == null)
+			_totalDamageReceived += attackerDamageHandler.TotalDamageDealt;
+			if (!(_lastTriggered.Elapsed.TotalSeconds < 3.0) && CheckDamagedConditions(attackerDamageHandler))
 			{
-				return;
+				ServerSendRpc(toAll: true);
+				_lastTriggered.Restart();
 			}
-			if (this._hpStat.CurValue <= 0f)
-			{
-				return;
-			}
-			this._totalDamageReceived += attackerDamageHandler.AbsorbedHumeDamage + attackerDamageHandler.DealtHealthDamage;
-			if (this._lastTriggered.Elapsed.TotalSeconds < 3.0)
-			{
-				return;
-			}
-			if (!this.CheckDamagedConditions(attackerDamageHandler))
-			{
-				return;
-			}
-			base.ServerSendRpc(true);
-			this._lastTriggered.Restart();
 		}
+	}
 
-		private bool CheckDamagedConditions(AttackerDamageHandler adh)
+	private bool CheckDamagedConditions(AttackerDamageHandler adh)
+	{
+		float time = _hpStat.CurValue + adh.DealtHealthDamage;
+		float a = _hume.HsCurrent + adh.AbsorbedHumeDamage;
+		float b = _hume.ShieldOverHealth.Evaluate(time);
+		if (Mathf.Approximately(a, b))
 		{
-			float num = this._hpStat.CurValue + adh.DealtHealthDamage;
-			float num2 = this._hume.HsCurrent + adh.AbsorbedHumeDamage;
-			float num3 = this._hume.ShieldOverHealth.Evaluate(num);
-			return Mathf.Approximately(num2, num3) || (adh.AbsorbedHumeDamage > 0f && this._hume.HsCurrent == 0f) || (this._lastTriggered.Elapsed.TotalSeconds > 10.0 && this._totalDamageReceived >= 90f);
+			return true;
 		}
-
-		public override void ServerWriteRpc(NetworkWriter writer)
+		if (adh.AbsorbedHumeDamage > 0f && _hume.HsCurrent == 0f)
 		{
-			base.ServerWriteRpc(writer);
-			writer.WriteByte((byte)global::UnityEngine.Random.Range(0, 255));
+			return true;
 		}
-
-		public override void ClientProcessRpc(NetworkReader reader)
+		if (_lastTriggered.Elapsed.TotalSeconds > 10.0 && _totalDamageReceived >= 90f)
 		{
-			base.ClientProcessRpc(reader);
-			Scp939Model scp939Model = base.CastRole.FpcModule.CharacterModelInstance as Scp939Model;
-			if (scp939Model == null)
-			{
-				return;
-			}
-			scp939Model.PlayDamagedEffect((int)reader.ReadByte());
+			return true;
 		}
+		return false;
+	}
 
-		private bool _eventAssigned;
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteByte((byte)Random.Range(0, 255));
+	}
 
-		private HealthStat _hpStat;
-
-		private DynamicHumeShieldController _hume;
-
-		private readonly Stopwatch _lastTriggered = new Stopwatch();
-
-		private float _totalDamageReceived;
-
-		private const float AbsoluteCooldown = 3f;
-
-		private const float HighDamageCooldown = 10f;
-
-		private const float HighDamageThreshold = 90f;
-
-		private const float HighDamageDecay = 80f;
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		if (base.CastRole.FpcModule.CharacterModelInstance is Scp939Model scp939Model)
+		{
+			scp939Model.PlayDamagedEffect(reader.ReadByte());
+		}
 	}
 }

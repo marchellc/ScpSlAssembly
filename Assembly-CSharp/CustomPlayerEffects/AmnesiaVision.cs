@@ -1,32 +1,18 @@
-﻿using System;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class AmnesiaVision : StatusEffectBase, ISoundtrackMutingEffect
 {
-	public class AmnesiaVision : StatusEffectBase, ISoundtrackMutingEffect
+	private float _lastTime;
+
+	public bool MuteSoundtrack => false;
+
+	public float LastActive => Time.timeSinceLevelLoad - _lastTime;
+
+	protected override void Enabled()
 	{
-		public bool MuteSoundtrack
-		{
-			get
-			{
-				return false;
-			}
-		}
-
-		public float LastActive
-		{
-			get
-			{
-				return Time.timeSinceLevelLoad - this._lastTime;
-			}
-		}
-
-		protected override void Enabled()
-		{
-			base.Enabled();
-			this._lastTime = Time.timeSinceLevelLoad;
-		}
-
-		private float _lastTime;
+		base.Enabled();
+		_lastTime = Time.timeSinceLevelLoad;
 	}
 }

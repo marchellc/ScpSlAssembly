@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using DeathAnimations;
 using Mirror;
@@ -7,219 +7,204 @@ using ProgressiveCulling;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace PlayerRoles.Ragdolls
+namespace PlayerRoles.Ragdolls;
+
+public class AutoHumanRagdoll : DynamicRagdoll
 {
-	public class AutoHumanRagdoll : DynamicRagdoll
+	[Serializable]
+	private struct TrackedBone
 	{
-		private static Transform TemplateParent
+		public Transform OriginalTransform;
+
+		public Rigidbody OriginalRigidbody;
+
+		public List<Transform> Targets;
+	}
+
+	[SerializeField]
+	[HideInInspector]
+	private List<TrackedBone> _trackedBones;
+
+	[SerializeField]
+	private string _finderTempBoneName;
+
+	[SerializeField]
+	private Rigidbody _rootRigidbody;
+
+	private bool _hasCuller;
+
+	private CullableRig _culler;
+
+	private readonly Dictionary<GameObject, AutoHumanRagdoll> _templates = new Dictionary<GameObject, AutoHumanRagdoll>();
+
+	private static Transform _templateParent;
+
+	private static Transform TemplateParent
+	{
+		get
 		{
-			get
+			if (_templateParent == null)
 			{
-				if (AutoHumanRagdoll._templateParent == null)
+				GameObject obj = new GameObject("AutoHumanRagdoll Template Parent");
+				obj.SetActive(value: false);
+				UnityEngine.Object.DontDestroyOnLoad(obj);
+				_templateParent = obj.transform;
+			}
+			return _templateParent;
+		}
+	}
+
+	public bool PauseBoneMatching { get; set; }
+
+	protected override void Start()
+	{
+		base.Start();
+		if (TryGetComponent<CullableRig>(out _culler))
+		{
+			_hasCuller = true;
+			_culler.OnVisibleAgain += MatchBones;
+		}
+	}
+
+	public override GameObject ClientHandleSpawn(SpawnMessage msg)
+	{
+		using NetworkReaderPooled networkReaderPooled = NetworkReaderPool.Get(msg.payload);
+		Compression.DecompressVarUInt(networkReaderPooled);
+		networkReaderPooled.ReadByte();
+		if (!PlayerRoleLoader.TryGetRoleTemplate<IFpcRole>((RoleTypeId)networkReaderPooled.ReadSByte(), out var result))
+		{
+			throw new InvalidOperationException("Serialization error in AutoHumanRagdoll. The component is not the first NetworkBehaviour in hierarchy or RoleId is not the first syncvar.");
+		}
+		return UnityEngine.Object.Instantiate(GetOrAddTemplate(result.FpcModule.CharacterModelTemplate).gameObject, msg.position, msg.rotation);
+	}
+
+	public override BasicRagdoll ServerInstantiateSelf(ReferenceHub owner, RoleTypeId targetRole)
+	{
+		if (!PlayerRoleLoader.TryGetRoleTemplate<IFpcRole>(targetRole, out var result))
+		{
+			throw new InvalidOperationException("AutoHumanRagdoll is only available for FPC roles.");
+		}
+		GameObject characterModelTemplate = result.FpcModule.CharacterModelTemplate;
+		AutoHumanRagdoll autoHumanRagdoll = UnityEngine.Object.Instantiate(GetOrAddTemplate(characterModelTemplate));
+		SceneManager.MoveGameObjectToScene(autoHumanRagdoll.gameObject, SceneManager.GetActiveScene());
+		return autoHumanRagdoll;
+	}
+
+	private AutoHumanRagdoll GetOrAddTemplate(GameObject sourceModel)
+	{
+		return _templates.GetOrAdd(sourceModel, () => CreateNewTemplate(sourceModel));
+	}
+
+	private AutoHumanRagdoll CreateNewTemplate(GameObject sourceModel)
+	{
+		AutoHumanRagdoll autoHumanRagdoll = UnityEngine.Object.Instantiate(this, TemplateParent);
+		autoHumanRagdoll.CreateNewFromSourceModel(sourceModel);
+		return autoHumanRagdoll;
+	}
+
+	private void LateUpdate()
+	{
+		if (!base.Frozen && !_rootRigidbody.IsSleeping() && (!_hasCuller || !_culler.IsCulled))
+		{
+			MatchBones();
+		}
+	}
+
+	private void MatchBones()
+	{
+		if (PauseBoneMatching)
+		{
+			return;
+		}
+		foreach (TrackedBone trackedBone in _trackedBones)
+		{
+			trackedBone.OriginalTransform.GetPositionAndRotation(out var position, out var rotation);
+			foreach (Transform target in trackedBone.Targets)
+			{
+				target.SetPositionAndRotation(position, rotation);
+			}
+		}
+	}
+
+	private void CreateNewFromSourceModel(GameObject source)
+	{
+		FindTrackedBoneOriginals();
+		GameObject obj = UnityEngine.Object.Instantiate(source);
+		Transform transform = obj.transform;
+		transform.SetParent(base.transform, worldPositionStays: false);
+		transform.ResetLocalPose();
+		Component[] componentsInChildren = obj.GetComponentsInChildren<Component>();
+		foreach (Component component in componentsInChildren)
+		{
+			if (!(component is Transform) && !(component is Renderer) && !(component is LODGroup) && !(component is MeshFilter))
+			{
+				UnityEngine.Object.Destroy(component);
+			}
+		}
+		PostprocessModel(transform);
+		MatchBones();
+	}
+
+	private void FindTrackedBoneOriginals()
+	{
+		_trackedBones.Clear();
+		Rigidbody[] linkedRigidbodies = LinkedRigidbodies;
+		foreach (Rigidbody rigidbody in linkedRigidbodies)
+		{
+			_trackedBones.Add(new TrackedBone
+			{
+				OriginalRigidbody = rigidbody,
+				OriginalTransform = rigidbody.transform,
+				Targets = new List<Transform>()
+			});
+		}
+	}
+
+	private void PostprocessModel(Transform root)
+	{
+		AllDeathAnimations = GetComponentsInChildren<DeathAnimation>(includeInactive: true);
+		if (TryGetComponent<CullableRig>(out var component))
+		{
+			component.SetTargetRenderers(new GameObject[1] { root.gameObject });
+		}
+		string text = base.name;
+		base.name = _finderTempBoneName;
+		int layer = root.gameObject.layer;
+		Transform[] componentsInChildren = root.GetComponentsInChildren<Transform>();
+		foreach (Transform transform in componentsInChildren)
+		{
+			transform.gameObject.layer = layer;
+			foreach (TrackedBone trackedBone in _trackedBones)
+			{
+				if (!(trackedBone.OriginalTransform.name != transform.name))
 				{
-					GameObject gameObject = new GameObject("AutoHumanRagdoll Template Parent");
-					gameObject.SetActive(false);
-					global::UnityEngine.Object.DontDestroyOnLoad(gameObject);
-					AutoHumanRagdoll._templateParent = gameObject.transform;
-				}
-				return AutoHumanRagdoll._templateParent;
-			}
-		}
-
-		protected override void Start()
-		{
-			base.Start();
-			if (base.TryGetComponent<CullableRig>(out this._culler))
-			{
-				this._hasCuller = true;
-				this._culler.OnVisibleAgain += this.MatchBones;
-			}
-		}
-
-		public override GameObject ClientHandleSpawn(SpawnMessage msg)
-		{
-			GameObject gameObject;
-			using (NetworkReaderPooled networkReaderPooled = NetworkReaderPool.Get(msg.payload))
-			{
-				Compression.DecompressVarUInt(networkReaderPooled);
-				networkReaderPooled.ReadByte();
-				IFpcRole fpcRole;
-				if (!PlayerRoleLoader.TryGetRoleTemplate<IFpcRole>((RoleTypeId)networkReaderPooled.ReadSByte(), out fpcRole))
-				{
-					throw new InvalidOperationException("Serialization error in AutoHumanRagdoll. The component is not the first NetworkBehaviour in hierarchy or RoleId is not the first syncvar.");
-				}
-				gameObject = global::UnityEngine.Object.Instantiate<GameObject>(this.GetOrAddTemplate(fpcRole.FpcModule.CharacterModelTemplate).gameObject, msg.position, msg.rotation);
-			}
-			return gameObject;
-		}
-
-		public override BasicRagdoll ServerInstantiateSelf(ReferenceHub owner, RoleTypeId targetRole)
-		{
-			IFpcRole fpcRole;
-			if (!PlayerRoleLoader.TryGetRoleTemplate<IFpcRole>(targetRole, out fpcRole))
-			{
-				throw new InvalidOperationException("AutoHumanRagdoll is only available for FPC roles.");
-			}
-			GameObject characterModelTemplate = fpcRole.FpcModule.CharacterModelTemplate;
-			AutoHumanRagdoll autoHumanRagdoll = global::UnityEngine.Object.Instantiate<AutoHumanRagdoll>(this.GetOrAddTemplate(characterModelTemplate));
-			SceneManager.MoveGameObjectToScene(autoHumanRagdoll.gameObject, SceneManager.GetActiveScene());
-			return autoHumanRagdoll;
-		}
-
-		private AutoHumanRagdoll GetOrAddTemplate(GameObject sourceModel)
-		{
-			return this._templates.GetOrAdd(sourceModel, () => this.CreateNewTemplate(sourceModel));
-		}
-
-		private AutoHumanRagdoll CreateNewTemplate(GameObject sourceModel)
-		{
-			AutoHumanRagdoll autoHumanRagdoll = global::UnityEngine.Object.Instantiate<AutoHumanRagdoll>(this, AutoHumanRagdoll.TemplateParent);
-			autoHumanRagdoll.CreateNewFromSourceModel(sourceModel);
-			return autoHumanRagdoll;
-		}
-
-		private void LateUpdate()
-		{
-			if (base.Frozen || this._rootRigidbody.IsSleeping())
-			{
-				return;
-			}
-			if (this._hasCuller && this._culler.IsCulled)
-			{
-				return;
-			}
-			this.MatchBones();
-		}
-
-		private void MatchBones()
-		{
-			foreach (AutoHumanRagdoll.TrackedBone trackedBone in this._trackedBones)
-			{
-				Vector3 vector;
-				Quaternion quaternion;
-				trackedBone.OriginalTransform.GetPositionAndRotation(out vector, out quaternion);
-				foreach (Transform transform in trackedBone.Targets)
-				{
-					transform.SetPositionAndRotation(vector, quaternion);
-				}
-			}
-		}
-
-		private void CreateNewFromSourceModel(GameObject source)
-		{
-			this.FindTrackedBoneOriginals();
-			GameObject gameObject = global::UnityEngine.Object.Instantiate<GameObject>(source);
-			Transform transform = gameObject.transform;
-			transform.SetParent(base.transform, false);
-			transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-			foreach (Component component in gameObject.GetComponentsInChildren<Component>())
-			{
-				if (!(component is Transform) && !(component is Renderer) && !(component is LODGroup) && !(component is MeshFilter))
-				{
-					global::UnityEngine.Object.Destroy(component);
-				}
-			}
-			this.PostprocessModel(transform);
-			this.MatchBones();
-		}
-
-		private void FindTrackedBoneOriginals()
-		{
-			this._trackedBones.Clear();
-			foreach (Rigidbody rigidbody in this.LinkedRigidbodies)
-			{
-				this._trackedBones.Add(new AutoHumanRagdoll.TrackedBone
-				{
-					OriginalRigidbody = rigidbody,
-					OriginalTransform = rigidbody.transform,
-					Targets = new List<Transform>()
-				});
-			}
-		}
-
-		private void PostprocessModel(Transform root)
-		{
-			this.AllDeathAnimations = base.GetComponentsInChildren<DeathAnimation>(true);
-			CullableRig cullableRig;
-			if (base.TryGetComponent<CullableRig>(out cullableRig))
-			{
-				cullableRig.SetTargetRenderers(new GameObject[] { root.gameObject });
-			}
-			string name = base.name;
-			base.name = this._finderTempBoneName;
-			int layer = root.gameObject.layer;
-			foreach (Transform transform in root.GetComponentsInChildren<Transform>())
-			{
-				transform.gameObject.layer = layer;
-				foreach (AutoHumanRagdoll.TrackedBone trackedBone in this._trackedBones)
-				{
-					if (!(trackedBone.OriginalTransform.name != transform.name))
-					{
-						trackedBone.Targets.Add(transform);
-					}
-				}
-			}
-			base.name = name;
-		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			PlayerRoleLoader.OnLoaded = (Action)Delegate.Combine(PlayerRoleLoader.OnLoaded, new Action(AutoHumanRagdoll.OnRolesLoaded));
-		}
-
-		private static void OnRolesLoaded()
-		{
-			foreach (KeyValuePair<RoleTypeId, PlayerRoleBase> keyValuePair in PlayerRoleLoader.AllRoles)
-			{
-				IRagdollRole ragdollRole = keyValuePair.Value as IRagdollRole;
-				if (ragdollRole != null)
-				{
-					AutoHumanRagdoll autoHumanRagdoll = ragdollRole.Ragdoll as AutoHumanRagdoll;
-					if (autoHumanRagdoll != null)
-					{
-						IFpcRole fpcRole = keyValuePair.Value as IFpcRole;
-						if (fpcRole != null)
-						{
-							GameObject characterModelTemplate = fpcRole.FpcModule.CharacterModelTemplate;
-							autoHumanRagdoll.GetOrAddTemplate(characterModelTemplate);
-						}
-					}
+					trackedBone.Targets.Add(transform);
 				}
 			}
 		}
+		base.name = text;
+	}
 
-		public override bool Weaved()
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		PlayerRoleLoader.OnLoaded = (Action)Delegate.Combine(PlayerRoleLoader.OnLoaded, new Action(OnRolesLoaded));
+	}
+
+	private static void OnRolesLoaded()
+	{
+		foreach (KeyValuePair<RoleTypeId, PlayerRoleBase> allRole in PlayerRoleLoader.AllRoles)
 		{
-			return true;
+			if (allRole.Value is IRagdollRole { Ragdoll: AutoHumanRagdoll ragdoll } && allRole.Value is IFpcRole fpcRole)
+			{
+				GameObject characterModelTemplate = fpcRole.FpcModule.CharacterModelTemplate;
+				ragdoll.GetOrAddTemplate(characterModelTemplate);
+			}
 		}
+	}
 
-		[SerializeField]
-		[HideInInspector]
-		private List<AutoHumanRagdoll.TrackedBone> _trackedBones;
-
-		[SerializeField]
-		private string _finderTempBoneName;
-
-		[SerializeField]
-		private Rigidbody _rootRigidbody;
-
-		private bool _hasCuller;
-
-		private CullableRig _culler;
-
-		private readonly Dictionary<GameObject, AutoHumanRagdoll> _templates = new Dictionary<GameObject, AutoHumanRagdoll>();
-
-		private static Transform _templateParent;
-
-		[Serializable]
-		private struct TrackedBone
-		{
-			public Transform OriginalTransform;
-
-			public Rigidbody OriginalRigidbody;
-
-			public List<Transform> Targets;
-		}
+	public override bool Weaved()
+	{
+		return true;
 	}
 }

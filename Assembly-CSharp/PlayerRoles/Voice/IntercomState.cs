@@ -1,13 +1,10 @@
-﻿using System;
+namespace PlayerRoles.Voice;
 
-namespace PlayerRoles.Voice
+public enum IntercomState
 {
-	public enum IntercomState
-	{
-		Ready,
-		Starting,
-		InUse,
-		Cooldown,
-		NotFound
-	}
+	Ready,
+	Starting,
+	InUse,
+	Cooldown,
+	NotFound
 }

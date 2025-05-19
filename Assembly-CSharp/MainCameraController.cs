@@ -1,11 +1,19 @@
-﻿using System;
-using MapGeneration;
+using System;
 using PlayerRoles;
 using UnityEngine;
 
 public class MainCameraController : MonoBehaviour
 {
-	public static event Action OnUpdated;
+	public const float DefaultVerticalFOV = 70f;
+
+	private static Transform _currentCamera;
+
+	private static MainCameraController _singleton;
+
+	private static Vector3 _defaultPos;
+
+	[SerializeField]
+	private Transform _defaultCamera;
 
 	public static bool InstanceActive { get; private set; }
 
@@ -17,107 +25,77 @@ public class MainCameraController : MonoBehaviour
 	{
 		get
 		{
-			return MainCameraController._currentCamera;
+			return _currentCamera;
 		}
 		set
 		{
-			if (MainCameraController._currentCamera == value)
+			if (!(_currentCamera == value))
 			{
-				return;
-			}
-			Transform transform = value;
-			if (transform == null)
-			{
-				transform = MainCameraController._singleton._defaultCamera;
-			}
-			if (MainCameraController._currentCamera != null)
-			{
-				MainCameraController._currentCamera.gameObject.SetActive(false);
-			}
-			MainCameraController._currentCamera = transform;
-			if (transform != null)
-			{
-				transform.gameObject.SetActive(true);
+				Transform transform = value;
+				if (transform == null)
+				{
+					transform = _singleton._defaultCamera;
+				}
+				if (_currentCamera != null)
+				{
+					_currentCamera.gameObject.SetActive(value: false);
+				}
+				_currentCamera = transform;
+				if (transform != null)
+				{
+					transform.gameObject.SetActive(value: true);
+				}
 			}
 		}
 	}
 
+	public static event Action OnUpdated;
+
+	public static event Action OnBeforeUpdated;
+
 	private void Awake()
 	{
-		MainCameraController.InstanceActive = true;
-		MainCameraController._singleton = this;
-		MainCameraController._defaultPos = this._defaultCamera.position;
-		MainCameraController.CurrentCamera = this._defaultCamera;
+		InstanceActive = true;
+		_singleton = this;
+		_defaultPos = _defaultCamera.position;
+		CurrentCamera = _defaultCamera;
 	}
 
 	private void OnDestroy()
 	{
-		MainCameraController.InstanceActive = false;
+		InstanceActive = false;
 	}
 
 	private void LateUpdate()
 	{
-		MainCameraController.ForceUpdatePosition();
+		ForceUpdatePosition();
 	}
 
 	private static void GetPositionAndRotation(out Vector3 pos, out Quaternion rot)
 	{
-		ReferenceHub referenceHub;
-		if (ReferenceHub.TryGetLocalHub(out referenceHub))
+		if (ReferenceHub.TryGetLocalHub(out var hub) && hub.roleManager.CurrentRole is ICameraController cameraController)
 		{
-			ICameraController cameraController = referenceHub.roleManager.CurrentRole as ICameraController;
-			if (cameraController != null)
-			{
-				pos = cameraController.CameraPosition;
-				IAdvancedCameraController advancedCameraController = cameraController as IAdvancedCameraController;
-				float num = ((advancedCameraController != null) ? advancedCameraController.RollRotation : 0f);
-				rot = Quaternion.Euler(cameraController.VerticalRotation, cameraController.HorizontalRotation, num);
-				return;
-			}
+			pos = cameraController.CameraPosition;
+			float z = ((cameraController is IAdvancedCameraController advancedCameraController) ? advancedCameraController.RollRotation : 0f);
+			rot = Quaternion.Euler(cameraController.VerticalRotation, cameraController.HorizontalRotation, z);
 		}
-		pos = MainCameraController._defaultPos;
-		rot = Quaternion.identity;
+		else
+		{
+			pos = _defaultPos;
+			rot = Quaternion.identity;
+		}
 	}
 
 	public static void ForceUpdatePosition()
 	{
-		if (!MainCameraController.InstanceActive)
+		if (InstanceActive)
 		{
-			return;
+			MainCameraController.OnBeforeUpdated?.Invoke();
+			GetPositionAndRotation(out var pos, out var rot);
+			CurrentCamera.SetPositionAndRotation(pos, rot);
+			LastPosition = pos;
+			LastRotation = rot;
+			MainCameraController.OnUpdated?.Invoke();
 		}
-		Vector3 vector;
-		Quaternion quaternion;
-		MainCameraController.GetPositionAndRotation(out vector, out quaternion);
-		MainCameraController.CurrentCamera.SetPositionAndRotation(vector, quaternion);
-		MainCameraController.LastPosition = vector;
-		MainCameraController.LastRotation = quaternion;
-		Action onUpdated = MainCameraController.OnUpdated;
-		if (onUpdated == null)
-		{
-			return;
-		}
-		onUpdated();
 	}
-
-	public static bool TryGetCurrentRoom(out RoomIdentifier rid)
-	{
-		if (MainCameraController.CurrentCamera == null)
-		{
-			rid = null;
-			return false;
-		}
-		Vector3Int vector3Int = RoomUtils.PositionToCoords(MainCameraController.CurrentCamera.position);
-		return RoomIdentifier.RoomsByCoordinates.TryGetValue(vector3Int, out rid);
-	}
-
-	public const float DefaultVerticalFOV = 70f;
-
-	private static Transform _currentCamera;
-
-	private static MainCameraController _singleton;
-
-	private static Vector3 _defaultPos;
-
-	[SerializeField]
-	private Transform _defaultCamera;
 }

@@ -1,22 +1,14 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079.GUI
+namespace PlayerRoles.PlayableScps.Scp079.GUI;
+
+public class Scp079NotificationEntry : Scp079GuiElementBase
 {
-	public class Scp079NotificationEntry : Scp079GuiElementBase
-	{
-		public IScp079Notification Content { get; internal set; }
+	[SerializeField]
+	private TextMeshProUGUI _text;
 
-		public TextMeshProUGUI Text
-		{
-			get
-			{
-				return this._text;
-			}
-		}
+	public IScp079Notification Content { get; internal set; }
 
-		[SerializeField]
-		private TextMeshProUGUI _text;
-	}
+	public TextMeshProUGUI Text => _text;
 }

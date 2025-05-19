@@ -1,9 +1,6 @@
-﻿using System;
+namespace ToggleableMenus;
 
-namespace ToggleableMenus
+public interface IRegisterableMenu
 {
-	public interface IRegisterableMenu
-	{
-		bool IsEnabled { get; set; }
-	}
+	bool IsEnabled { get; set; }
 }

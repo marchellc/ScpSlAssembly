@@ -1,487 +1,443 @@
-﻿using System;
 using CustomPlayerEffects;
 using InventorySystem.Disarming;
 using InventorySystem.Drawers;
 using InventorySystem.Items.Pickups;
 using Mirror;
-using PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
+using PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers.Wearables;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace InventorySystem.Items.Usables.Scp1344
+namespace InventorySystem.Items.Usables.Scp1344;
+
+public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, IItemDrawer
 {
-	public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, IItemDrawer
+	private const ActionName InspectKey = ActionName.InspectItem;
+
+	private const float EquipTime = 1.3f;
+
+	private const float DeactivationTime = 5.1f;
+
+	private const float DeactivationTransitionTime = 0.5f;
+
+	private const float StabTime = 0.065f;
+
+	private const float ActivationTime = 5f;
+
+	private const float ActivationTransitionTime = 1f;
+
+	private const float ActivationItemDeselectionTime = 0.75f;
+
+	private const float InspectionCooldown = 4f;
+
+	private const byte ActivationBlindnessIntensity = 100;
+
+	private const byte LockedBlindnessIntensity = 101;
+
+	private const byte MinBlindnessIntensity = 15;
+
+	private const float BarWidth = 650f;
+
+	private Scp1344Status _status;
+
+	private float _useTime;
+
+	private float _cancelationTime;
+
+	private byte _savedIntensity;
+
+	private double _nextInspectTime;
+
+	private int _lastLifeId;
+
+	public CustomPlayerEffects.Scp1344 Scp1344Effect => base.Owner.playerEffectsController.GetEffect<CustomPlayerEffects.Scp1344>();
+
+	public Blindness BlindnessEffect => base.Owner.playerEffectsController.GetEffect<Blindness>();
+
+	public SeveredEyes SeveredEyesEffect => base.Owner.playerEffectsController.GetEffect<SeveredEyes>();
+
+	public bool IsWorn
 	{
-		public Scp1344 Scp1344Effect
+		get
 		{
-			get
-			{
-				return base.Owner.playerEffectsController.GetEffect<Scp1344>();
-			}
+			Scp1344Status status = Status;
+			return status == Scp1344Status.Active || status == Scp1344Status.Deactivating;
 		}
+	}
 
-		public Blindness BlindnessEffect
-		{
-			get
-			{
-				return base.Owner.playerEffectsController.GetEffect<Blindness>();
-			}
-		}
+	public WearableSlot Slot => WearableSlot.Eyes;
 
-		public SeveredEyes SeveredEyesEffect
+	public override bool CanStartUsing
+	{
+		get
 		{
-			get
+			if (!base.Owner.HasBlock(BlockedInteraction.ItemPrimaryAction))
 			{
-				return base.Owner.playerEffectsController.GetEffect<SeveredEyes>();
-			}
-		}
-
-		public bool IsWorn
-		{
-			get
-			{
-				Scp1344Status status = this.Status;
-				return status == Scp1344Status.Active || status == Scp1344Status.Deactivating;
-			}
-		}
-
-		public WearableSlot Slot
-		{
-			get
-			{
-				return WearableSlot.Eyes;
-			}
-		}
-
-		public override bool CanStartUsing
-		{
-			get
-			{
-				return !base.Owner.HasBlock(BlockedInteraction.ItemPrimaryAction) && (this.Status == Scp1344Status.Deactivating || (this.Status == Scp1344Status.Idle && !this.Scp1344Effect.IsEnabled && this.BlindnessEffect.Intensity <= 100));
-			}
-		}
-
-		public override bool AllowEquip
-		{
-			get
-			{
-				return this.Status != Scp1344Status.Active;
-			}
-		}
-
-		public override bool AllowHolster
-		{
-			get
-			{
-				return this.Status != Scp1344Status.Deactivating || !base.IsEquipped;
-			}
-		}
-
-		public bool AllowInspect
-		{
-			get
-			{
-				return this.Status == Scp1344Status.Idle && this._nextInspectTime < NetworkTime.time;
-			}
-		}
-
-		public bool ProgressbarEnabled
-		{
-			get
-			{
-				return this.Status == Scp1344Status.Deactivating;
-			}
-		}
-
-		public float ProgressbarMin
-		{
-			get
-			{
-				return 0f;
-			}
-		}
-
-		public float ProgressbarMax
-		{
-			get
-			{
-				return 5.1f;
-			}
-		}
-
-		public float ProgressbarValue
-		{
-			get
-			{
-				if (!NetworkServer.active)
+				if (Status != Scp1344Status.Deactivating)
 				{
-					return Time.time - this._useTime;
+					if (Status == Scp1344Status.Idle && !Scp1344Effect.IsEnabled)
+					{
+						return BlindnessEffect.Intensity <= 100;
+					}
+					return false;
 				}
-				return this._useTime;
+				return true;
 			}
+			return false;
 		}
+	}
 
-		public float ProgressbarWidth
+	public override bool AllowEquip => Status != Scp1344Status.Active;
+
+	public override bool AllowHolster
+	{
+		get
 		{
-			get
+			if (Status == Scp1344Status.Deactivating)
 			{
-				return 650f;
+				return !base.IsEquipped;
 			}
+			return true;
 		}
+	}
 
-		public Scp1344Status Status
+	public bool AllowInspect
+	{
+		get
 		{
-			get
+			if (Status == Scp1344Status.Idle)
 			{
-				return this._status;
+				return _nextInspectTime < NetworkTime.time;
 			}
-			set
-			{
-				this._status = value;
-				if (NetworkServer.active)
-				{
-					this.ServerChangeStatus(value);
-					return;
-				}
-				this.ClientChangeStatus(value);
-			}
+			return false;
 		}
+	}
 
-		public override void ServerOnUsingCompleted()
-		{
-			if (this.Status != Scp1344Status.Idle)
-			{
-				return;
-			}
-			this.ServerSetStatus(Scp1344Status.Equipping);
-		}
+	public bool ProgressbarEnabled => Status == Scp1344Status.Deactivating;
 
-		public override void OnHolstered()
+	public float ProgressbarMin => 0f;
+
+	public float ProgressbarMax => 5.1f;
+
+	public float ProgressbarValue
+	{
+		get
 		{
-			base.OnHolstered();
 			if (!NetworkServer.active)
 			{
-				return;
+				return Time.time - _useTime;
 			}
-			Scp1344Status status = this.Status;
-			if (status == Scp1344Status.Stabbing || status == Scp1344Status.Active || status == Scp1344Status.Dropping || status == Scp1344Status.CancelingDeactivation)
-			{
-				return;
-			}
-			this.ServerSetStatus(Scp1344Status.Idle);
+			return _useTime;
 		}
+	}
 
-		public override ItemPickupBase ServerDropItem(bool spawn)
+	public float ProgressbarWidth => 650f;
+
+	public Scp1344Status Status
+	{
+		get
 		{
-			Scp1344Status status = this.Status;
-			if (status == Scp1344Status.Deactivating || status == Scp1344Status.CancelingDeactivation)
+			if (CurLifeId != _lastLifeId)
 			{
-				return null;
+				_status = Scp1344Status.Idle;
+				_lastLifeId = CurLifeId;
 			}
-			if (this.Status != Scp1344Status.Active)
+			return _status;
+		}
+		set
+		{
+			_status = value;
+			_lastLifeId = CurLifeId;
+			if (NetworkServer.active)
 			{
-				return base.ServerDropItem(spawn);
+				ServerChangeStatus(value);
 			}
-			this.ServerSetStatus(Scp1344Status.Dropping);
+			else
+			{
+				ClientChangeStatus(value);
+			}
+		}
+	}
+
+	private int CurLifeId => base.Owner.roleManager.CurrentRole.UniqueLifeIdentifier;
+
+	public override void ServerOnUsingCompleted()
+	{
+		if (Status == Scp1344Status.Idle)
+		{
+			ServerSetStatus(Scp1344Status.Equipping);
+		}
+	}
+
+	public override void OnHolstered()
+	{
+		base.OnHolstered();
+		if (NetworkServer.active)
+		{
+			Scp1344Status status = Status;
+			if (status != Scp1344Status.Stabbing && status != Scp1344Status.Active && status != Scp1344Status.Dropping && status != Scp1344Status.CancelingDeactivation)
+			{
+				ServerSetStatus(Scp1344Status.Idle);
+			}
+		}
+	}
+
+	public override ItemPickupBase ServerDropItem(bool spawn)
+	{
+		Scp1344Status status = Status;
+		if (status == Scp1344Status.Deactivating || status == Scp1344Status.CancelingDeactivation)
+		{
 			return null;
 		}
-
-		public override void OnEquipped()
+		if (Status != Scp1344Status.Active)
 		{
-			base.OnEquipped();
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			if (this.Status != Scp1344Status.Dropping)
-			{
-				return;
-			}
-			this.ServerSetStatus(Scp1344Status.Deactivating);
+			return base.ServerDropItem(spawn);
 		}
+		ServerSetStatus(Scp1344Status.Dropping);
+		return null;
+	}
 
-		public override void OnUsingStarted()
+	public override void OnEquipped()
+	{
+		base.OnEquipped();
+		if (NetworkServer.active && Status == Scp1344Status.Dropping)
 		{
-			if (NetworkServer.active && this.Status == Scp1344Status.Deactivating)
-			{
-				this.ServerSetStatus(Scp1344Status.CancelingDeactivation);
-				return;
-			}
+			ServerSetStatus(Scp1344Status.Deactivating);
+		}
+	}
+
+	public override void OnUsingStarted()
+	{
+		if (NetworkServer.active && Status == Scp1344Status.Deactivating)
+		{
+			ServerSetStatus(Scp1344Status.CancelingDeactivation);
+		}
+		else
+		{
 			base.OnUsingStarted();
 		}
+	}
 
-		public override void EquipUpdate()
+	public override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		if (Input.GetKeyDown(NewInput.GetKey(ActionName.InspectItem)) && AllowInspect)
 		{
-			base.EquipUpdate();
-			if (!Input.GetKeyDown(NewInput.GetKey(ActionName.InspectItem, KeyCode.None)) || !this.AllowInspect)
-			{
-				return;
-			}
-			NetworkClient.Send<Scp1344StatusMessage>(new Scp1344StatusMessage(base.ItemSerial, Scp1344Status.Inspecting), 0);
+			NetworkClient.Send(new Scp1344StatusMessage(base.ItemSerial, Scp1344Status.Inspecting));
 		}
+	}
 
-		private void OnPlayerDisarmed(ReferenceHub disarmerHub, ReferenceHub targetHub)
+	private void OnPlayerDisarmed(ReferenceHub disarmerHub, ReferenceHub targetHub)
+	{
+		if (!(targetHub != base.Owner))
 		{
-			if (targetHub != base.Owner)
+			base.ServerDropItem(spawn: true);
+			Scp1344Status status = Status;
+			if (status != 0 && status != Scp1344Status.Inspecting && status != Scp1344Status.Equipping)
 			{
-				return;
-			}
-			base.ServerDropItem(true);
-			Scp1344Status status = this.Status;
-			if (status != Scp1344Status.Idle && status != Scp1344Status.Inspecting && status != Scp1344Status.Equipping)
-			{
-				this.ActivateFinalEffects();
+				ActivateFinalEffects();
 			}
 		}
+	}
 
-		private void OnAnyPlayerDied(ReferenceHub hub, DamageHandlerBase _)
+	private void OnAnyPlayerDied(ReferenceHub hub, DamageHandlerBase _)
+	{
+		if (!(hub != base.Owner))
 		{
-			if (hub != base.Owner)
-			{
-				return;
-			}
-			this.Status = Scp1344Status.Idle;
+			Status = Scp1344Status.Idle;
 		}
+	}
 
-		private void Update()
+	private void Update()
+	{
+		if (NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			switch (this.Status)
+			switch (Status)
 			{
 			case Scp1344Status.Equipping:
-				this.ServerUpdateTimedStatus(1.3f, Scp1344Status.Activating);
-				return;
+				ServerUpdateTimedStatus(1.3f, Scp1344Status.Activating);
+				break;
 			case Scp1344Status.Activating:
-				this.ServerUpdateTimedStatus(5f, Scp1344Status.Stabbing);
-				return;
+				ServerUpdateTimedStatus(5f, Scp1344Status.Stabbing);
+				break;
 			case Scp1344Status.Stabbing:
-				this.ServerUpdateTimedStatus(0.065f, Scp1344Status.Active);
-				return;
+				ServerUpdateTimedStatus(0.065f, Scp1344Status.Active);
+				break;
 			case Scp1344Status.Active:
-				this.ServerUpdateActive();
-				return;
-			case Scp1344Status.Dropping:
+				ServerUpdateActive();
 				break;
 			case Scp1344Status.Deactivating:
-				this.ServerUpdateDeactivating();
-				return;
+				ServerUpdateDeactivating();
+				break;
 			case Scp1344Status.CancelingDeactivation:
-				this.ServerUpdateTimedStatus(0.5f, Scp1344Status.Active);
+				ServerUpdateTimedStatus(0.5f, Scp1344Status.Active);
 				break;
-			default:
-				return;
-			}
-		}
-
-		private void ServerUpdateTimedStatus(float time, Scp1344Status status)
-		{
-			this._useTime += Time.deltaTime;
-			if (this._useTime < time)
-			{
-				return;
-			}
-			Scp1344Status status2 = this.Status;
-			if (status2 != Scp1344Status.Stabbing)
-			{
-				if (status2 == Scp1344Status.CancelingDeactivation)
-				{
-					base.OwnerInventory.ServerSelectItem(0);
-				}
-			}
-			else
-			{
-				this._savedIntensity = 100;
-			}
-			this.ServerSetStatus(status);
-		}
-
-		private void ServerUpdateActive()
-		{
-			if (this.BlindnessEffect.Intensity <= 15)
-			{
-				return;
-			}
-			this._useTime += Time.deltaTime;
-			float useTime = this._useTime;
-			if (useTime >= 0.75f)
-			{
-				if (useTime >= 1f)
-				{
-					float num = 100f - 20f * Mathf.Pow(this._useTime, 0.385f);
-					this.BlindnessEffect.Intensity = (byte)num;
-					return;
-				}
-				if (base.IsEquipped)
-				{
-					base.OwnerInventory.ServerSelectItem(0);
-					return;
-				}
-			}
-		}
-
-		private void ServerUpdateDeactivating()
-		{
-			this._useTime += Time.deltaTime;
-			float useTime = this._useTime;
-			if (useTime < 0.5f)
-			{
-				return;
-			}
-			if (useTime >= 5.1f)
-			{
-				this.ActivateFinalEffects();
-				base.ServerDropItem(true);
-				return;
-			}
-			this.BlindnessEffect.Intensity = this._savedIntensity;
-		}
-
-		private void ActivateFinalEffects()
-		{
-			this.BlindnessEffect.Intensity = 101;
-			this.Scp1344Effect.IsEnabled = false;
-			this.SeveredEyesEffect.IsEnabled = true;
-		}
-
-		private void Awake()
-		{
-			Scp1344NetworkHandler.OnStatusChanged = (Action<ushort, Scp1344Status>)Delegate.Combine(Scp1344NetworkHandler.OnStatusChanged, new Action<ushort, Scp1344Status>(this.OnStatusChanged));
-			DisarmingHandlers.OnPlayerDisarmed += this.OnPlayerDisarmed;
-			PlayerStats.OnAnyPlayerDied += this.OnAnyPlayerDied;
-		}
-
-		private void OnDestroy()
-		{
-			Scp1344NetworkHandler.OnStatusChanged = (Action<ushort, Scp1344Status>)Delegate.Remove(Scp1344NetworkHandler.OnStatusChanged, new Action<ushort, Scp1344Status>(this.OnStatusChanged));
-			DisarmingHandlers.OnPlayerDisarmed -= this.OnPlayerDisarmed;
-			PlayerStats.OnAnyPlayerDied -= this.OnAnyPlayerDied;
-		}
-
-		private void OnStatusChanged(ushort serial, Scp1344Status status)
-		{
-			if (base.ItemSerial != serial)
-			{
-				return;
-			}
-			this.Status = status;
-			if (status != Scp1344Status.Dropping)
-			{
-				return;
-			}
-			this.Scp1344Effect.PlayBuildupSound();
-		}
-
-		private void ServerSetStatus(Scp1344Status status)
-		{
-			Scp1344NetworkHandler.ServerSendMessage(new Scp1344StatusMessage(base.ItemSerial, status));
-			if (status != Scp1344Status.Idle)
-			{
-				if (status == Scp1344Status.Activating)
-				{
-					base.Owner.EnableWearables(WearableElements.Scp1344Goggles);
-					return;
-				}
-			}
-			else
-			{
-				base.Owner.DisableWearables(WearableElements.Scp1344Goggles);
-			}
-		}
-
-		private void ClientChangeStatus(Scp1344Status status)
-		{
-			if (status == Scp1344Status.Deactivating)
-			{
-				this.IsUsing = false;
-				this._useTime = Time.time;
-				return;
-			}
-			if (status != Scp1344Status.Inspecting)
-			{
-				return;
-			}
-			this._nextInspectTime = NetworkTime.time + 4.0;
-		}
-
-		private void ServerChangeStatus(Scp1344Status status)
-		{
-			switch (status)
-			{
-			case Scp1344Status.Idle:
-			case Scp1344Status.Equipping:
-			case Scp1344Status.Activating:
-			case Scp1344Status.Stabbing:
-			case Scp1344Status.Deactivating:
-				this.IsUsing = false;
-				this._useTime = 0f;
-				return;
-			case Scp1344Status.Active:
-				this._useTime = this._cancelationTime;
-				this._cancelationTime = 0f;
-				this.Scp1344Effect.IsEnabled = true;
-				this.BlindnessEffect.Intensity = this._savedIntensity;
-				return;
 			case Scp1344Status.Dropping:
-				this._cancelationTime = this._useTime;
-				this._savedIntensity = this.BlindnessEffect.Intensity;
-				this.BlindnessEffect.Intensity = 101;
-				if (base.OwnerInventory.CurItem.SerialNumber == base.ItemSerial)
-				{
-					this.ServerSetStatus(Scp1344Status.Deactivating);
-					return;
-				}
+				break;
+			}
+		}
+	}
+
+	private void ServerUpdateTimedStatus(float time, Scp1344Status status)
+	{
+		_useTime += Time.deltaTime;
+		if (!(_useTime < time))
+		{
+			switch (Status)
+			{
+			case Scp1344Status.Stabbing:
+				_savedIntensity = 100;
+				break;
+			case Scp1344Status.CancelingDeactivation:
+				base.OwnerInventory.ServerSelectItem(0);
+				break;
+			}
+			ServerSetStatus(status);
+		}
+	}
+
+	private void ServerUpdateActive()
+	{
+		if (BlindnessEffect.Intensity <= 15)
+		{
+			return;
+		}
+		_useTime += Time.deltaTime;
+		float useTime = _useTime;
+		if (useTime < 0.75f)
+		{
+			return;
+		}
+		if (useTime < 1f)
+		{
+			if (base.IsEquipped)
+			{
+				base.OwnerInventory.ServerSelectItem(0);
+			}
+		}
+		else
+		{
+			float num = 100f - 20f * Mathf.Pow(_useTime, 0.385f);
+			BlindnessEffect.Intensity = (byte)num;
+		}
+	}
+
+	private void ServerUpdateDeactivating()
+	{
+		_useTime += Time.deltaTime;
+		float useTime = _useTime;
+		if (!(useTime < 0.5f))
+		{
+			if (useTime < 5.1f)
+			{
+				BlindnessEffect.Intensity = _savedIntensity;
+				return;
+			}
+			ActivateFinalEffects();
+			base.ServerDropItem(spawn: true);
+		}
+	}
+
+	private void ActivateFinalEffects()
+	{
+		BlindnessEffect.Intensity = 101;
+		Scp1344Effect.IsEnabled = false;
+		SeveredEyesEffect.IsEnabled = true;
+	}
+
+	private void Awake()
+	{
+		Scp1344NetworkHandler.OnStatusChanged += OnStatusChanged;
+		DisarmingHandlers.OnPlayerDisarmed += OnPlayerDisarmed;
+		PlayerStats.OnAnyPlayerDied += OnAnyPlayerDied;
+	}
+
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+		Scp1344NetworkHandler.OnStatusChanged -= OnStatusChanged;
+		DisarmingHandlers.OnPlayerDisarmed -= OnPlayerDisarmed;
+		PlayerStats.OnAnyPlayerDied -= OnAnyPlayerDied;
+	}
+
+	private void OnStatusChanged(ushort serial, Scp1344Status status)
+	{
+		if (base.ItemSerial == serial)
+		{
+			Status = status;
+			if (status == Scp1344Status.Dropping)
+			{
+				Scp1344Effect.PlayBuildupSound();
+			}
+		}
+	}
+
+	private void ServerSetStatus(Scp1344Status status)
+	{
+		Scp1344NetworkHandler.ServerSendMessage(new Scp1344StatusMessage(base.ItemSerial, status));
+		switch (status)
+		{
+		case Scp1344Status.Activating:
+			base.Owner.EnableWearables(WearableElements.Scp1344Goggles);
+			break;
+		case Scp1344Status.Idle:
+			base.Owner.DisableWearables(WearableElements.Scp1344Goggles);
+			break;
+		}
+	}
+
+	private void ClientChangeStatus(Scp1344Status status)
+	{
+		switch (status)
+		{
+		case Scp1344Status.Deactivating:
+			IsUsing = false;
+			_useTime = Time.time;
+			break;
+		case Scp1344Status.Inspecting:
+			_nextInspectTime = NetworkTime.time + 4.0;
+			break;
+		}
+	}
+
+	private void ServerChangeStatus(Scp1344Status status)
+	{
+		switch (status)
+		{
+		case Scp1344Status.Idle:
+		case Scp1344Status.Equipping:
+		case Scp1344Status.Activating:
+		case Scp1344Status.Stabbing:
+		case Scp1344Status.Deactivating:
+			IsUsing = false;
+			_useTime = 0f;
+			break;
+		case Scp1344Status.Active:
+			_useTime = _cancelationTime;
+			_cancelationTime = 0f;
+			Scp1344Effect.IsEnabled = true;
+			BlindnessEffect.Intensity = _savedIntensity;
+			break;
+		case Scp1344Status.Dropping:
+			_cancelationTime = _useTime;
+			_savedIntensity = BlindnessEffect.Intensity;
+			BlindnessEffect.Intensity = 101;
+			if (base.OwnerInventory.CurItem.SerialNumber == base.ItemSerial)
+			{
+				ServerSetStatus(Scp1344Status.Deactivating);
+			}
+			else
+			{
 				base.OwnerInventory.ServerSelectItem(base.ItemSerial);
-				return;
-			case Scp1344Status.CancelingDeactivation:
-				this._useTime = 0f;
-				this._savedIntensity = this.BlindnessEffect.Intensity;
-				this.BlindnessEffect.Intensity = 100;
-				return;
-			case Scp1344Status.Inspecting:
-				this._nextInspectTime = NetworkTime.time + 4.0;
-				return;
-			default:
-				return;
 			}
+			break;
+		case Scp1344Status.Inspecting:
+			_nextInspectTime = NetworkTime.time + 4.0;
+			break;
+		case Scp1344Status.CancelingDeactivation:
+			_useTime = 0f;
+			_savedIntensity = BlindnessEffect.Intensity;
+			BlindnessEffect.Intensity = 100;
+			break;
 		}
-
-		private const ActionName InspectKey = ActionName.InspectItem;
-
-		private const float EquipTime = 1.3f;
-
-		private const float DeactivationTime = 5.1f;
-
-		private const float DeactivationTransitionTime = 0.5f;
-
-		private const float StabTime = 0.065f;
-
-		private const float ActivationTime = 5f;
-
-		private const float ActivationTransitionTime = 1f;
-
-		private const float ActivationItemDeselectionTime = 0.75f;
-
-		private const float InspectionCooldown = 4f;
-
-		private const byte ActivationBlindnessIntensity = 100;
-
-		private const byte LockedBlindnessIntensity = 101;
-
-		private const byte MinBlindnessIntensity = 15;
-
-		private const float BarWidth = 650f;
-
-		private Scp1344Status _status;
-
-		private float _useTime;
-
-		private float _cancelationTime;
-
-		private byte _savedIntensity;
-
-		private double _nextInspectTime;
 	}
 }

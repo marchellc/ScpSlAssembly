@@ -1,17 +1,14 @@
-﻿using System;
+namespace UserSettings;
 
-namespace UserSettings
+public class FloatReaderWriter : IPrefsReaderWriter<float>
 {
-	public class FloatReaderWriter : IPrefsReaderWriter<float>
+	public float Load(string key, float defValue)
 	{
-		public float Load(string key, float defValue)
-		{
-			return PlayerPrefsSl.Get(key, defValue);
-		}
+		return PlayerPrefsSl.Get(key, defValue);
+	}
 
-		public void Save(string key, float val)
-		{
-			PlayerPrefsSl.Set(key, val);
-		}
+	public void Save(string key, float val)
+	{
+		PlayerPrefsSl.Set(key, val);
 	}
 }

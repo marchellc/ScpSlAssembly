@@ -1,16 +1,14 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 
-namespace LiteNetLib4Mirror.Open.Nat
+namespace LiteNetLib4Mirror.Open.Nat;
+
+internal interface ISearcher
 {
-	internal interface ISearcher
-	{
-		void Search(CancellationToken cancellationToken);
+	void Search(CancellationToken cancellationToken);
 
-		IEnumerable<NatDevice> Receive();
+	IEnumerable<NatDevice> Receive();
 
-		NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
-	}
+	NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint);
 }

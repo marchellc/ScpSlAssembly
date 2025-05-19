@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace UserSettings.UserInterfaceSettings
+namespace UserSettings.UserInterfaceSettings;
+
+public class LanguageDropdown : MonoBehaviour
 {
-	public class LanguageDropdown : MonoBehaviour
-	{
-	}
 }

@@ -1,393 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using GameCore;
 
 public class PermissionsHandler
 {
-	public PermissionsHandler(ref YamlConfig configuration, ref YamlConfig sharedGroups, ref YamlConfig sharedGroupsMembers)
-	{
-		this._config = new YamlConfig(configuration.Path);
-		this._sharedGroups = sharedGroups;
-		this.OverridePassword = configuration.GetString("override_password", "none");
-		this._overrideRole = configuration.GetString("override_password_role", "owner");
-		this.StaffAccess = configuration.GetBool("enable_staff_access", false);
-		this._managerAccess = configuration.GetBool("enable_manager_access", true);
-		this._banTeamAccess = configuration.GetBool("enable_banteam_access", true);
-		this._banTeamSlots = configuration.GetBool("enable_banteam_reserved_slots", true);
-		this._banTeamGeoBypass = configuration.GetBool("enable_banteam_bypass_geoblocking", true);
-		this.NorthwoodAccess = configuration.GetBool("enable_northwood_access", false);
-		if (this.NorthwoodAccess)
-		{
-			ServerConsole.AddLog("WARNING - Northwood staff access is enabled! All NW Studios staff members will have FULL Remote Admin access (this should only be used on testing servers)! You can disable this by setting 'enable_northwood_access' to false in your remote admin config file.", ConsoleColor.Yellow, false);
-		}
-		this.Groups = new Dictionary<string, UserGroup>();
-		this._raPermissions = new HashSet<ulong>();
-		List<string> stringList = configuration.GetStringList("Roles");
-		List<string> stringList2 = configuration.GetStringList("Roles");
-		if (sharedGroups != null)
-		{
-			List<string> stringList3 = sharedGroups.GetStringList("SharedRoles");
-			string text = ConfigFile.SharingConfig.GetString("groups_sharing_mode", "").ToLowerInvariant();
-			if (!(text == "all"))
-			{
-				if (!(text == "opt-in"))
-				{
-					if (!(text == "opt-out"))
-					{
-						ServerConsole.AddLog("Invalid group sharing mode set!", ConsoleColor.Gray, false);
-					}
-					else
-					{
-						List<string> optOut = ConfigFile.SharingConfig.GetStringList("groups_opt_out_list");
-						stringList.AddRange(stringList3.Where((string group) => !optOut.Contains(group)));
-					}
-				}
-				else
-				{
-					List<string> optIn = ConfigFile.SharingConfig.GetStringList("groups_opt_in_list");
-					stringList.AddRange(stringList3.Where((string group) => optIn.Contains(group)));
-				}
-			}
-			else
-			{
-				stringList.AddRange(stringList3);
-			}
-		}
-		string[] array = configuration.GetKeys().ToArray<string>();
-		foreach (string text2 in stringList)
-		{
-			string text3 = ((array.Contains(text2 + "_badge") || sharedGroups == null) ? configuration.GetString(text2 + "_badge", "") : sharedGroups.GetString(text2 + "_badge", ""));
-			string text4 = ((array.Contains(text2 + "_color") || sharedGroups == null) ? configuration.GetString(text2 + "_color", "") : sharedGroups.GetString(text2 + "_color", ""));
-			bool flag = ((array.Contains(text2 + "_cover") || sharedGroups == null) ? configuration.GetBool(text2 + "_cover", true) : sharedGroups.GetBool(text2 + "_cover", true));
-			bool flag2 = ((array.Contains(text2 + "_hidden") || sharedGroups == null) ? configuration.GetBool(text2 + "_hidden", false) : sharedGroups.GetBool(text2 + "_hidden", false));
-			byte b = ((array.Contains(text2 + "_kick_power") || sharedGroups == null) ? configuration.GetByte(text2 + "_kick_power", 0) : sharedGroups.GetByte(text2 + "_kick_power", 0));
-			byte b2 = ((array.Contains(text2 + "_required_kick_power") || sharedGroups == null) ? configuration.GetByte(text2 + "_required_kick_power", 0) : sharedGroups.GetByte(text2 + "_required_kick_power", 0));
-			if (!(text3 == "") && !(text4 == ""))
-			{
-				if (this.Groups.ContainsKey(text2))
-				{
-					ServerConsole.AddLog("Duplicated group definition: " + text2 + ".", ConsoleColor.Gray, false);
-				}
-				else
-				{
-					this.Groups.Add(text2, new UserGroup
-					{
-						Name = text2,
-						BadgeColor = text4,
-						BadgeText = text3,
-						Permissions = 0UL,
-						Cover = flag,
-						HiddenByDefault = flag2,
-						Shared = !stringList2.Contains(text2),
-						KickPower = b,
-						RequiredKickPower = b2
-					});
-				}
-			}
-		}
-		this.Members = configuration.GetStringDictionary("Members");
-		YamlConfig yamlConfig = sharedGroupsMembers;
-		Dictionary<string, string> dictionary = ((yamlConfig != null) ? yamlConfig.GetStringDictionary("SharedMembers") : null);
-		if (dictionary != null)
-		{
-			foreach (KeyValuePair<string, string> keyValuePair in dictionary)
-			{
-				string text5;
-				if (this.Members.TryGetValue(keyValuePair.Key, out text5))
-				{
-					ServerConsole.AddLog(string.Concat(new string[] { "Duplicated group member: ", keyValuePair.Key, ". Is member of ", text5, " and ", keyValuePair.Value, "." }), ConsoleColor.Gray, false);
-				}
-				else
-				{
-					this.Members.Add(keyValuePair.Key, keyValuePair.Value);
-				}
-			}
-		}
-		this._lastPerm = 1UL;
-		HashSet<string> hashSet = new HashSet<string>();
-		if (this.Members != null)
-		{
-			foreach (KeyValuePair<string, string> keyValuePair2 in this.Members)
-			{
-				if (!this.Groups.ContainsKey(keyValuePair2.Value))
-				{
-					hashSet.Add(keyValuePair2.Key);
-				}
-			}
-		}
-		if (hashSet.Count > 0 && this.Members != null)
-		{
-			foreach (string text6 in hashSet)
-			{
-				this.Members.Remove(text6);
-			}
-		}
-		hashSet.Clear();
-		this.Permissions = new Dictionary<string, ulong>();
-		foreach (string text7 in EnumUtils<PlayerPermissions>.Names)
-		{
-			ulong num = (ulong)Enum.Parse(typeof(PlayerPermissions), text7);
-			this.FullPerm |= num;
-			this.Permissions.Add(text7, num);
-			if (num != 4096UL && num != 131072UL && num != 2097152UL && num != 4194304UL && num != 16777216UL && num != 134217728UL && num != 8388608UL)
-			{
-				this._raPermissions.Add(num);
-			}
-			if (num > this._lastPerm)
-			{
-				this._lastPerm = num;
-			}
-		}
-		this.RefreshPermissions();
-	}
-
-	public ulong RegisterPermission(string name, bool remoteAdmin, bool refresh = true)
-	{
-		this._lastPerm = (ulong)Math.Pow(2.0, Math.Log(this._lastPerm, 2.0) + 1.0);
-		this.FullPerm |= this._lastPerm;
-		this.Permissions.Add(name, this._lastPerm);
-		if (remoteAdmin)
-		{
-			this._raPermissions.Add(this._lastPerm);
-		}
-		if (refresh)
-		{
-			this.RefreshPermissions();
-		}
-		return this._lastPerm;
-	}
-
-	public void RefreshPermissions()
-	{
-		foreach (KeyValuePair<string, UserGroup> keyValuePair in this.Groups)
-		{
-			keyValuePair.Value.Permissions = 0UL;
-		}
-		Dictionary<string, string> stringDictionary = this._config.GetStringDictionary("Permissions");
-		YamlConfig sharedGroups = this._sharedGroups;
-		Dictionary<string, string> dictionary = ((sharedGroups != null) ? sharedGroups.GetStringDictionary("SharedPermissions") : null);
-		foreach (string text in this.Permissions.Keys)
-		{
-			ulong num = this.Permissions[text];
-			string text2;
-			if (stringDictionary.TryGetValue(text, out text2))
-			{
-				string[] array = YamlConfig.ParseCommaSeparatedString(text2);
-				if (array == null)
-				{
-					ServerConsole.AddLog("Failed to process group permissions in remote admin config! Make sure there is no typo.", ConsoleColor.Gray, false);
-				}
-				else
-				{
-					foreach (string text3 in array)
-					{
-						UserGroup userGroup;
-						if (this.Groups.TryGetValue(text3, out userGroup))
-						{
-							userGroup.Permissions |= num;
-						}
-					}
-				}
-			}
-			else
-			{
-				ServerConsole.AddLog("RemoteAdmin config is missing permission definition: " + text, ConsoleColor.Gray, false);
-			}
-			if (dictionary != null)
-			{
-				string text4;
-				if (dictionary.TryGetValue(text, out text4))
-				{
-					string[] array3 = YamlConfig.ParseCommaSeparatedString(text4);
-					if (array3 != null)
-					{
-						foreach (string text5 in array3)
-						{
-							UserGroup userGroup2;
-							if (this.Groups.TryGetValue(text5, out userGroup2))
-							{
-								userGroup2.Permissions |= num;
-							}
-						}
-					}
-				}
-				else
-				{
-					ServerConsole.AddLog("Shared groups config is missing permission definition: " + text, ConsoleColor.Gray, false);
-				}
-			}
-		}
-	}
-
-	public bool IsRaPermitted(ulong permissions)
-	{
-		return this._raPermissions.Any((ulong perm) => PermissionsHandler.IsPermitted(permissions, perm));
-	}
-
-	public UserGroup GetGroup(string name)
-	{
-		if (this.Groups.ContainsKey(name))
-		{
-			return this.Groups[name].Clone();
-		}
-		return null;
-	}
-
-	public List<string> GetAllGroupsNames()
-	{
-		return this.Groups.Keys.ToList<string>();
-	}
-
-	public Dictionary<string, UserGroup> GetAllGroups()
-	{
-		return this.Groups.Keys.ToDictionary((string gr) => gr, (string gr) => this.Groups[gr]);
-	}
-
-	public string GetPermissionName(ulong value)
-	{
-		return this.Permissions.FirstOrDefault((KeyValuePair<string, ulong> x) => x.Value == value).Key;
-	}
-
-	public ulong GetPermissionValue(string name)
-	{
-		return this.Permissions.FirstOrDefault((KeyValuePair<string, ulong> x) => x.Key == name).Value;
-	}
-
-	public List<string> GetAllPermissions()
-	{
-		return this.Permissions.Keys.ToList<string>();
-	}
-
-	public bool BanTeamSlots
-	{
-		get
-		{
-			return this._banTeamSlots || CustomNetworkManager.IsVerified;
-		}
-	}
-
-	public bool BanTeamBypassGeo
-	{
-		get
-		{
-			return this._banTeamGeoBypass || CustomNetworkManager.IsVerified;
-		}
-	}
-
-	public static bool IsPermitted(ulong permissions, PlayerPermissions check)
-	{
-		return PermissionsHandler.IsPermitted(permissions, (ulong)check);
-	}
-
-	public static bool IsPermitted(ulong permissions, PlayerPermissions[] check)
-	{
-		if (check.Length == 0)
-		{
-			return true;
-		}
-		ulong num = check.Aggregate(0UL, (ulong current, PlayerPermissions c) => current | (ulong)c);
-		return PermissionsHandler.IsPermitted(permissions, num);
-	}
-
-	public bool IsPermitted(ulong permissions, string check)
-	{
-		return this.Permissions.ContainsKey(check) && PermissionsHandler.IsPermitted(permissions, this.Permissions[check]);
-	}
-
-	public bool IsPermitted(ulong permissions, string[] check)
-	{
-		if (check.Length == 0)
-		{
-			return true;
-		}
-		ulong num = check.Where((string c) => this.Permissions.ContainsKey(c)).Aggregate(0UL, (ulong current, string c) => current | this.Permissions[c]);
-		return PermissionsHandler.IsPermitted(permissions, num);
-	}
-
-	public static bool IsPermitted(ulong permissions, ulong check)
-	{
-		return (permissions & check) > 0UL;
-	}
-
-	public UserGroup OverrideGroup
-	{
-		get
-		{
-			if (!this.OverrideEnabled)
-			{
-				return null;
-			}
-			if (this.Groups.ContainsKey(this._overrideRole))
-			{
-				return this.Groups[this._overrideRole];
-			}
-			return null;
-		}
-	}
-
-	public bool OverrideEnabled
-	{
-		get
-		{
-			if (string.IsNullOrEmpty(this.OverridePassword) || this.OverridePassword == "none")
-			{
-				return false;
-			}
-			if (!CustomNetworkManager.IsVerified)
-			{
-				return true;
-			}
-			if (this.OverridePassword.Length < 8)
-			{
-				ServerConsole.AddLog("Override password refused, because it's too short (requirement for verified servers only).", ConsoleColor.Gray, false);
-				return false;
-			}
-			if (this.OverridePassword.ToLower() == this.OverridePassword || this.OverridePassword.ToUpper() == this.OverridePassword)
-			{
-				ServerConsole.AddLog("Override password refused, because it must contain mixed case chars (requirement for verified servers only).", ConsoleColor.Gray, false);
-				return false;
-			}
-			if (this.OverridePassword.Any((char c) => !char.IsLetter(c)))
-			{
-				return true;
-			}
-			ServerConsole.AddLog("Override password refused, because it must contain digit or special symbol (requirement for verified servers only).", ConsoleColor.Gray, false);
-			return false;
-		}
-	}
-
-	public UserGroup GetUserGroup(string userId)
-	{
-		if (!string.IsNullOrEmpty(userId) && this.Members.ContainsKey(userId))
-		{
-			return this.Groups[this.Members[userId]];
-		}
-		return null;
-	}
-
-	public ulong FullPerm { get; private set; }
-
-	public bool StaffAccess { get; }
-
-	public bool ManagersAccess
-	{
-		get
-		{
-			return this._managerAccess || this.StaffAccess || CustomNetworkManager.IsVerified;
-		}
-	}
-
-	public bool BanningTeamAccess
-	{
-		get
-		{
-			return this._banTeamAccess || this.StaffAccess || CustomNetworkManager.IsVerified;
-		}
-	}
-
-	public bool NorthwoodAccess { get; }
-
 	public readonly Dictionary<string, UserGroup> Groups;
 
 	public readonly Dictionary<string, string> Members;
@@ -537,4 +154,401 @@ public class PermissionsHandler
 			"LLF"
 		}
 	};
+
+	public bool BanTeamSlots
+	{
+		get
+		{
+			if (!_banTeamSlots)
+			{
+				return CustomNetworkManager.IsVerified;
+			}
+			return true;
+		}
+	}
+
+	public bool BanTeamBypassGeo
+	{
+		get
+		{
+			if (!_banTeamGeoBypass)
+			{
+				return CustomNetworkManager.IsVerified;
+			}
+			return true;
+		}
+	}
+
+	public UserGroup OverrideGroup
+	{
+		get
+		{
+			if (!OverrideEnabled)
+			{
+				return null;
+			}
+			if (Groups.ContainsKey(_overrideRole))
+			{
+				return Groups[_overrideRole];
+			}
+			return null;
+		}
+	}
+
+	public bool OverrideEnabled
+	{
+		get
+		{
+			if (string.IsNullOrEmpty(OverridePassword) || OverridePassword == "none")
+			{
+				return false;
+			}
+			if (!CustomNetworkManager.IsVerified)
+			{
+				return true;
+			}
+			if (OverridePassword.Length < 8)
+			{
+				ServerConsole.AddLog("Override password refused, because it's too short (requirement for verified servers only).");
+				return false;
+			}
+			if (OverridePassword.ToLower() == OverridePassword || OverridePassword.ToUpper() == OverridePassword)
+			{
+				ServerConsole.AddLog("Override password refused, because it must contain mixed case chars (requirement for verified servers only).");
+				return false;
+			}
+			if (OverridePassword.Any((char c) => !char.IsLetter(c)))
+			{
+				return true;
+			}
+			ServerConsole.AddLog("Override password refused, because it must contain digit or special symbol (requirement for verified servers only).");
+			return false;
+		}
+	}
+
+	public ulong FullPerm { get; private set; }
+
+	public bool StaffAccess { get; }
+
+	public bool ManagersAccess
+	{
+		get
+		{
+			if (!_managerAccess && !StaffAccess)
+			{
+				return CustomNetworkManager.IsVerified;
+			}
+			return true;
+		}
+	}
+
+	public bool BanningTeamAccess
+	{
+		get
+		{
+			if (!_banTeamAccess && !StaffAccess)
+			{
+				return CustomNetworkManager.IsVerified;
+			}
+			return true;
+		}
+	}
+
+	public bool NorthwoodAccess { get; }
+
+	public PermissionsHandler(ref YamlConfig configuration, ref YamlConfig sharedGroups, ref YamlConfig sharedGroupsMembers)
+	{
+		_config = new YamlConfig(configuration.Path);
+		_sharedGroups = sharedGroups;
+		OverridePassword = configuration.GetString("override_password", "none");
+		_overrideRole = configuration.GetString("override_password_role", "owner");
+		StaffAccess = configuration.GetBool("enable_staff_access");
+		_managerAccess = configuration.GetBool("enable_manager_access", def: true);
+		_banTeamAccess = configuration.GetBool("enable_banteam_access", def: true);
+		_banTeamSlots = configuration.GetBool("enable_banteam_reserved_slots", def: true);
+		_banTeamGeoBypass = configuration.GetBool("enable_banteam_bypass_geoblocking", def: true);
+		NorthwoodAccess = configuration.GetBool("enable_northwood_access");
+		if (NorthwoodAccess)
+		{
+			ServerConsole.AddLog("WARNING - Northwood staff access is enabled! All NW Studios staff members will have FULL Remote Admin access (this should only be used on testing servers)! You can disable this by setting 'enable_northwood_access' to false in your remote admin config file.", ConsoleColor.Yellow);
+		}
+		Groups = new Dictionary<string, UserGroup>();
+		_raPermissions = new HashSet<ulong>();
+		List<string> stringList = configuration.GetStringList("Roles");
+		List<string> stringList2 = configuration.GetStringList("Roles");
+		if (sharedGroups != null)
+		{
+			List<string> stringList3 = sharedGroups.GetStringList("SharedRoles");
+			string text = ConfigFile.SharingConfig.GetString("groups_sharing_mode").ToLowerInvariant();
+			switch (text)
+			{
+			case "all":
+				stringList.AddRange(stringList3);
+				break;
+			case "opt-in":
+			{
+				List<string> optIn = ConfigFile.SharingConfig.GetStringList("groups_opt_in_list");
+				stringList.AddRange(stringList3.Where((string group) => optIn.Contains(group)));
+				break;
+			}
+			case "opt-out":
+			{
+				List<string> optOut = ConfigFile.SharingConfig.GetStringList("groups_opt_out_list");
+				stringList.AddRange(stringList3.Where((string group) => !optOut.Contains(group)));
+				break;
+			}
+			default:
+				ServerConsole.AddLog("Invalid group sharing mode set!");
+				break;
+			}
+		}
+		string[] array = configuration.GetKeys().ToArray();
+		foreach (string item in stringList)
+		{
+			string text2 = ((array.Contains<string>(item + "_badge") || sharedGroups == null) ? configuration.GetString(item + "_badge") : sharedGroups.GetString(item + "_badge"));
+			string text3 = ((array.Contains<string>(item + "_color") || sharedGroups == null) ? configuration.GetString(item + "_color") : sharedGroups.GetString(item + "_color"));
+			bool cover = ((array.Contains<string>(item + "_cover") || sharedGroups == null) ? configuration.GetBool(item + "_cover", def: true) : sharedGroups.GetBool(item + "_cover", def: true));
+			bool hiddenByDefault = ((array.Contains<string>(item + "_hidden") || sharedGroups == null) ? configuration.GetBool(item + "_hidden") : sharedGroups.GetBool(item + "_hidden"));
+			byte kickPower = ((array.Contains<string>(item + "_kick_power") || sharedGroups == null) ? configuration.GetByte(item + "_kick_power", 0) : sharedGroups.GetByte(item + "_kick_power", 0));
+			byte requiredKickPower = ((array.Contains<string>(item + "_required_kick_power") || sharedGroups == null) ? configuration.GetByte(item + "_required_kick_power", 0) : sharedGroups.GetByte(item + "_required_kick_power", 0));
+			if (!(text2 == "") && !(text3 == ""))
+			{
+				if (Groups.ContainsKey(item))
+				{
+					ServerConsole.AddLog("Duplicated group definition: " + item + ".");
+					continue;
+				}
+				Groups.Add(item, new UserGroup
+				{
+					Name = item,
+					BadgeColor = text3,
+					BadgeText = text2,
+					Permissions = 0uL,
+					Cover = cover,
+					HiddenByDefault = hiddenByDefault,
+					Shared = !stringList2.Contains(item),
+					KickPower = kickPower,
+					RequiredKickPower = requiredKickPower
+				});
+			}
+		}
+		Members = configuration.GetStringDictionary("Members");
+		Dictionary<string, string> dictionary = sharedGroupsMembers?.GetStringDictionary("SharedMembers");
+		if (dictionary != null)
+		{
+			foreach (KeyValuePair<string, string> item2 in dictionary)
+			{
+				if (Members.TryGetValue(item2.Key, out var value))
+				{
+					ServerConsole.AddLog("Duplicated group member: " + item2.Key + ". Is member of " + value + " and " + item2.Value + ".");
+				}
+				else
+				{
+					Members.Add(item2.Key, item2.Value);
+				}
+			}
+		}
+		_lastPerm = 1uL;
+		HashSet<string> hashSet = new HashSet<string>();
+		if (Members != null)
+		{
+			foreach (KeyValuePair<string, string> member in Members)
+			{
+				if (!Groups.ContainsKey(member.Value))
+				{
+					hashSet.Add(member.Key);
+				}
+			}
+		}
+		if (hashSet.Count > 0 && Members != null)
+		{
+			foreach (string item3 in hashSet)
+			{
+				Members.Remove(item3);
+			}
+		}
+		hashSet.Clear();
+		Permissions = new Dictionary<string, ulong>();
+		string[] names = EnumUtils<PlayerPermissions>.Names;
+		foreach (string text4 in names)
+		{
+			ulong num = (ulong)Enum.Parse(typeof(PlayerPermissions), text4);
+			FullPerm |= num;
+			Permissions.Add(text4, num);
+			if (num != 4096 && num != 131072 && num != 2097152 && num != 4194304 && num != 16777216 && num != 134217728 && num != 8388608)
+			{
+				_raPermissions.Add(num);
+			}
+			if (num > _lastPerm)
+			{
+				_lastPerm = num;
+			}
+		}
+		RefreshPermissions();
+	}
+
+	public ulong RegisterPermission(string name, bool remoteAdmin, bool refresh = true)
+	{
+		_lastPerm = (ulong)Math.Pow(2.0, Math.Log(_lastPerm, 2.0) + 1.0);
+		FullPerm |= _lastPerm;
+		Permissions.Add(name, _lastPerm);
+		if (remoteAdmin)
+		{
+			_raPermissions.Add(_lastPerm);
+		}
+		if (refresh)
+		{
+			RefreshPermissions();
+		}
+		return _lastPerm;
+	}
+
+	public void RefreshPermissions()
+	{
+		foreach (KeyValuePair<string, UserGroup> group in Groups)
+		{
+			group.Value.Permissions = 0uL;
+		}
+		Dictionary<string, string> stringDictionary = _config.GetStringDictionary("Permissions");
+		Dictionary<string, string> dictionary = _sharedGroups?.GetStringDictionary("SharedPermissions");
+		foreach (string key3 in Permissions.Keys)
+		{
+			ulong num = Permissions[key3];
+			if (stringDictionary.TryGetValue(key3, out var value))
+			{
+				string[] array = YamlConfig.ParseCommaSeparatedString(value);
+				if (array == null)
+				{
+					ServerConsole.AddLog("Failed to process group permissions in remote admin config! Make sure there is no typo.");
+				}
+				else
+				{
+					string[] array2 = array;
+					foreach (string key in array2)
+					{
+						if (Groups.TryGetValue(key, out var value2))
+						{
+							value2.Permissions |= num;
+						}
+					}
+				}
+			}
+			else
+			{
+				ServerConsole.AddLog("RemoteAdmin config is missing permission definition: " + key3);
+			}
+			if (dictionary == null)
+			{
+				continue;
+			}
+			if (dictionary.TryGetValue(key3, out var value3))
+			{
+				string[] array3 = YamlConfig.ParseCommaSeparatedString(value3);
+				if (array3 == null)
+				{
+					continue;
+				}
+				string[] array2 = array3;
+				foreach (string key2 in array2)
+				{
+					if (Groups.TryGetValue(key2, out var value4))
+					{
+						value4.Permissions |= num;
+					}
+				}
+			}
+			else
+			{
+				ServerConsole.AddLog("Shared groups config is missing permission definition: " + key3);
+			}
+		}
+	}
+
+	public bool IsRaPermitted(ulong permissions)
+	{
+		return _raPermissions.Any((ulong perm) => IsPermitted(permissions, perm));
+	}
+
+	public UserGroup GetGroup(string name)
+	{
+		if (Groups.ContainsKey(name))
+		{
+			return Groups[name].Clone();
+		}
+		return null;
+	}
+
+	public List<string> GetAllGroupsNames()
+	{
+		return Groups.Keys.ToList();
+	}
+
+	public Dictionary<string, UserGroup> GetAllGroups()
+	{
+		return Groups.Keys.ToDictionary((string gr) => gr, (string gr) => Groups[gr]);
+	}
+
+	public string GetPermissionName(ulong value)
+	{
+		return Permissions.FirstOrDefault((KeyValuePair<string, ulong> x) => x.Value == value).Key;
+	}
+
+	public ulong GetPermissionValue(string name)
+	{
+		return Permissions.FirstOrDefault((KeyValuePair<string, ulong> x) => x.Key == name).Value;
+	}
+
+	public List<string> GetAllPermissions()
+	{
+		return Permissions.Keys.ToList();
+	}
+
+	public static bool IsPermitted(ulong permissions, PlayerPermissions check)
+	{
+		return IsPermitted(permissions, (ulong)check);
+	}
+
+	public static bool IsPermitted(ulong permissions, PlayerPermissions[] check)
+	{
+		if (check.Length == 0)
+		{
+			return true;
+		}
+		ulong num = 0uL;
+		num = check.Aggregate(0uL, (ulong current, PlayerPermissions c) => current | (ulong)c);
+		return IsPermitted(permissions, num);
+	}
+
+	public bool IsPermitted(ulong permissions, string check)
+	{
+		if (Permissions.ContainsKey(check))
+		{
+			return IsPermitted(permissions, Permissions[check]);
+		}
+		return false;
+	}
+
+	public bool IsPermitted(ulong permissions, string[] check)
+	{
+		if (check.Length == 0)
+		{
+			return true;
+		}
+		ulong check2 = check.Where((string c) => Permissions.ContainsKey(c)).Aggregate(0uL, (ulong current, string c) => current | Permissions[c]);
+		return IsPermitted(permissions, check2);
+	}
+
+	public static bool IsPermitted(ulong permissions, ulong check)
+	{
+		return (permissions & check) != 0;
+	}
+
+	public UserGroup GetUserGroup(string userId)
+	{
+		if (!string.IsNullOrEmpty(userId) && Members.ContainsKey(userId))
+		{
+			return Groups[Members[userId]];
+		}
+		return null;
+	}
 }

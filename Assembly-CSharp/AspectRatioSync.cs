@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Mirror;
@@ -7,45 +7,67 @@ using UnityEngine;
 
 public class AspectRatioSync : NetworkBehaviour
 {
-	public static event Action OnAspectRatioChanged;
+	private static float _defaultCameraFieldOfView;
 
-	public static float YScreenEdge { get; private set; } = 35f;
+	[CompilerGenerated]
+	[SyncVar]
+	private float _003CXScreenEdge_003Ek__BackingField;
+
+	private int _savedWidth;
+
+	private int _savedHeight;
+
+	public static float YScreenEdge { get; private set; }
 
 	public float XScreenEdge
 	{
 		[CompilerGenerated]
 		get
 		{
-			return this.<XScreenEdge>k__BackingField;
+			return _003CXScreenEdge_003Ek__BackingField;
 		}
 		[CompilerGenerated]
 		private set
 		{
-			this.Network<XScreenEdge>k__BackingField = value;
+			Network_003CXScreenEdge_003Ek__BackingField = value;
+		}
+	} = 35f;
+
+	public float XplusY { get; private set; } = 70f;
+
+	public float AspectRatio { get; private set; } = 1f;
+
+	public float Network_003CXScreenEdge_003Ek__BackingField
+	{
+		get
+		{
+			return XScreenEdge;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref XScreenEdge, 1uL, null);
 		}
 	}
 
-	public float XplusY { get; private set; }
-
-	public float AspectRatio { get; private set; }
+	public static event Action OnAspectRatioChanged;
 
 	private void Start()
 	{
-		if (!base.isLocalPlayer)
+		if (base.isLocalPlayer)
 		{
-			return;
+			Camera component = GetComponent<ReferenceHub>().PlayerCameraReference.GetComponent<Camera>();
+			_defaultCameraFieldOfView = ((component == null) ? 70f : component.fieldOfView);
+			YScreenEdge = _defaultCameraFieldOfView / 2f;
 		}
-		Camera component = base.GetComponent<ReferenceHub>().PlayerCameraReference.GetComponent<Camera>();
-		AspectRatioSync._defaultCameraFieldOfView = ((component == null) ? 70f : component.fieldOfView);
-		AspectRatioSync.YScreenEdge = AspectRatioSync._defaultCameraFieldOfView / 2f;
 	}
 
 	private void UpdateAspectRatio()
 	{
-		this._savedWidth = Screen.width;
-		this._savedHeight = Screen.height;
-		float num = (float)Screen.width / (float)Screen.height;
-		this.CmdSetAspectRatio(num);
+		_savedWidth = Screen.width;
+		_savedHeight = Screen.height;
+		float aspectRatio = (float)Screen.width / (float)Screen.height;
+		CmdSetAspectRatio(aspectRatio);
 	}
 
 	private void FixedUpdate()
@@ -55,41 +77,21 @@ public class AspectRatioSync : NetworkBehaviour
 	[Command(channel = 4)]
 	private void CmdSetAspectRatio(float aspectRatio)
 	{
-		NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-		networkWriterPooled.WriteFloat(aspectRatio);
-		base.SendCommandInternal("System.Void AspectRatioSync::CmdSetAspectRatio(System.Single)", -837572567, networkWriterPooled, 4, true);
-		NetworkWriterPool.Return(networkWriterPooled);
-	}
-
-	public AspectRatioSync()
-	{
-		this.<XScreenEdge>k__BackingField = 35f;
-		this.XplusY = 70f;
-		this.AspectRatio = 1f;
-		base..ctor();
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteFloat(aspectRatio);
+		SendCommandInternal("System.Void AspectRatioSync::CmdSetAspectRatio(System.Single)", -837572567, writer, 4);
+		NetworkWriterPool.Return(writer);
 	}
 
 	static AspectRatioSync()
 	{
-		RemoteProcedureCalls.RegisterCommand(typeof(AspectRatioSync), "System.Void AspectRatioSync::CmdSetAspectRatio(System.Single)", new RemoteCallDelegate(AspectRatioSync.InvokeUserCode_CmdSetAspectRatio__Single), true);
+		YScreenEdge = 35f;
+		RemoteProcedureCalls.RegisterCommand(typeof(AspectRatioSync), "System.Void AspectRatioSync::CmdSetAspectRatio(System.Single)", InvokeUserCode_CmdSetAspectRatio__Single, requiresAuthority: true);
 	}
 
 	public override bool Weaved()
 	{
 		return true;
-	}
-
-	public float Network<XScreenEdge>k__BackingField
-	{
-		get
-		{
-			return this.<XScreenEdge>k__BackingField;
-		}
-		[param: In]
-		set
-		{
-			base.GeneratedSyncVarSetter<float>(value, ref this.<XScreenEdge>k__BackingField, 1UL, null);
-		}
 	}
 
 	protected void UserCode_CmdSetAspectRatio__Single(float aspectRatio)
@@ -98,10 +100,10 @@ public class AspectRatioSync : NetworkBehaviour
 		{
 			aspectRatio = 1f;
 		}
-		this.AspectRatio = aspectRatio;
-		float num = Mathf.Tan(AspectRatioSync._defaultCameraFieldOfView * 0.017453292f * 0.5f);
-		this.XScreenEdge = Mathf.Atan(num * aspectRatio) * 57.29578f;
-		this.XplusY = this.XScreenEdge + AspectRatioSync.YScreenEdge;
+		AspectRatio = aspectRatio;
+		float num = Mathf.Tan(_defaultCameraFieldOfView * (MathF.PI / 180f) * 0.5f);
+		Network_003CXScreenEdge_003Ek__BackingField = Mathf.Atan(num * aspectRatio) * 57.29578f;
+		XplusY = XScreenEdge + YScreenEdge;
 	}
 
 	protected static void InvokeUserCode_CmdSetAspectRatio__Single(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -109,9 +111,11 @@ public class AspectRatioSync : NetworkBehaviour
 		if (!NetworkServer.active)
 		{
 			Debug.LogError("Command CmdSetAspectRatio called on client.");
-			return;
 		}
-		((AspectRatioSync)obj).UserCode_CmdSetAspectRatio__Single(reader.ReadFloat());
+		else
+		{
+			((AspectRatioSync)obj).UserCode_CmdSetAspectRatio__Single(reader.ReadFloat());
+		}
 	}
 
 	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
@@ -119,13 +123,13 @@ public class AspectRatioSync : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteFloat(this.<XScreenEdge>k__BackingField);
+			writer.WriteFloat(XScreenEdge);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
-		if ((base.syncVarDirtyBits & 1UL) != 0UL)
+		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteFloat(this.<XScreenEdge>k__BackingField);
+			writer.WriteFloat(XScreenEdge);
 		}
 	}
 
@@ -134,19 +138,13 @@ public class AspectRatioSync : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			base.GeneratedSyncVarDeserialize<float>(ref this.<XScreenEdge>k__BackingField, null, reader.ReadFloat());
+			GeneratedSyncVarDeserialize(ref XScreenEdge, null, reader.ReadFloat());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			base.GeneratedSyncVarDeserialize<float>(ref this.<XScreenEdge>k__BackingField, null, reader.ReadFloat());
+			GeneratedSyncVarDeserialize(ref XScreenEdge, null, reader.ReadFloat());
 		}
 	}
-
-	private static float _defaultCameraFieldOfView;
-
-	private int _savedWidth;
-
-	private int _savedHeight;
 }

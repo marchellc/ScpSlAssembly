@@ -1,15 +1,12 @@
-﻿using System;
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers
+public enum EmotionPresetType : byte
 {
-	public enum EmotionPresetType : byte
-	{
-		Neutral,
-		Happy,
-		AwkwardSmile,
-		Scared,
-		Angry,
-		Chad,
-		Ogre
-	}
+	Neutral,
+	Happy,
+	AwkwardSmile,
+	Scared,
+	Angry,
+	Chad,
+	Ogre
 }

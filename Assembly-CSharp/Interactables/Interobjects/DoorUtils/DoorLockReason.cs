@@ -1,20 +1,19 @@
-﻿using System;
+using System;
 
-namespace Interactables.Interobjects.DoorUtils
+namespace Interactables.Interobjects.DoorUtils;
+
+[Flags]
+public enum DoorLockReason : ushort
 {
-	[Flags]
-	public enum DoorLockReason : ushort
-	{
-		None = 0,
-		Regular079 = 1,
-		Lockdown079 = 2,
-		Warhead = 4,
-		AdminCommand = 8,
-		DecontLockdown = 16,
-		DecontEvacuate = 32,
-		SpecialDoorFeature = 64,
-		NoPower = 128,
-		Isolation = 256,
-		Lockdown2176 = 512
-	}
+	None = 0,
+	Regular079 = 1,
+	Lockdown079 = 2,
+	Warhead = 4,
+	AdminCommand = 8,
+	DecontLockdown = 0x10,
+	DecontEvacuate = 0x20,
+	SpecialDoorFeature = 0x40,
+	NoPower = 0x80,
+	Isolation = 0x100,
+	Lockdown2176 = 0x200
 }

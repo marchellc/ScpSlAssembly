@@ -1,21 +1,19 @@
-﻿using System;
 using MapGeneration;
 
-namespace Interactables.Interobjects.DoorUtils
+namespace Interactables.Interobjects.DoorUtils;
+
+public static class DoorVariantUtils
 {
-	public static class DoorVariantUtils
+	public static bool IsInZone(this DoorVariant door, FacilityZone facilityZone)
 	{
-		public static bool IsInZone(this DoorVariant door, FacilityZone facilityZone)
+		RoomIdentifier[] rooms = door.Rooms;
+		for (int i = 0; i < rooms.Length; i++)
 		{
-			RoomIdentifier[] rooms = door.Rooms;
-			for (int i = 0; i < rooms.Length; i++)
+			if (rooms[i].Zone == facilityZone)
 			{
-				if (rooms[i].Zone == facilityZone)
-				{
-					return true;
-				}
+				return true;
 			}
-			return false;
 		}
+		return false;
 	}
 }

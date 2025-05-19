@@ -1,7 +1,7 @@
-﻿using System;
-
 internal class RoundFriendlyFireDetector : FriendlyFireDetector
 {
+	private const string Detector = "Round";
+
 	internal RoundFriendlyFireDetector(ReferenceHub hub)
 		: base(hub)
 	{
@@ -9,14 +9,14 @@ internal class RoundFriendlyFireDetector : FriendlyFireDetector
 
 	public override bool RegisterDamage(float damage)
 	{
-		if (!FriendlyFireConfig.RoundEnabled || this._triggered)
+		if (!FriendlyFireConfig.RoundEnabled || _triggered)
 		{
 			return false;
 		}
 		base.RegisterDamage(damage);
-		if (FriendlyFireConfig.RoundDamageThreshold > 0U && base.Damage >= FriendlyFireConfig.RoundDamageThreshold)
+		if (FriendlyFireConfig.RoundDamageThreshold != 0 && base.Damage >= (float)FriendlyFireConfig.RoundDamageThreshold)
 		{
-			base.TakeAction(ref FriendlyFireConfig.RoundAction, "Round", ref FriendlyFireConfig.RoundBanTime, ref FriendlyFireConfig.RoundBanReason, ref FriendlyFireConfig.RoundKillReason, ref FriendlyFireConfig.RoundAdminMessage, ref FriendlyFireConfig.RoundBroadcastMessage, ref FriendlyFireConfig.RoundWebhook);
+			TakeAction(ref FriendlyFireConfig.RoundAction, "Round", ref FriendlyFireConfig.RoundBanTime, ref FriendlyFireConfig.RoundBanReason, ref FriendlyFireConfig.RoundKillReason, ref FriendlyFireConfig.RoundAdminMessage, ref FriendlyFireConfig.RoundBroadcastMessage, ref FriendlyFireConfig.RoundWebhook);
 			return true;
 		}
 		return false;
@@ -24,18 +24,16 @@ internal class RoundFriendlyFireDetector : FriendlyFireDetector
 
 	public override bool RegisterKill()
 	{
-		if (!FriendlyFireConfig.RoundEnabled || this._triggered)
+		if (!FriendlyFireConfig.RoundEnabled || _triggered)
 		{
 			return false;
 		}
 		base.RegisterKill();
-		if (FriendlyFireConfig.RoundKillThreshold > 0U && base.Kills >= FriendlyFireConfig.RoundKillThreshold)
+		if (FriendlyFireConfig.RoundKillThreshold != 0 && base.Kills >= FriendlyFireConfig.RoundKillThreshold)
 		{
-			base.TakeAction(ref FriendlyFireConfig.RoundAction, "Round", ref FriendlyFireConfig.RoundBanTime, ref FriendlyFireConfig.RoundBanReason, ref FriendlyFireConfig.RoundKillReason, ref FriendlyFireConfig.RoundAdminMessage, ref FriendlyFireConfig.RoundBroadcastMessage, ref FriendlyFireConfig.RoundWebhook);
+			TakeAction(ref FriendlyFireConfig.RoundAction, "Round", ref FriendlyFireConfig.RoundBanTime, ref FriendlyFireConfig.RoundBanReason, ref FriendlyFireConfig.RoundKillReason, ref FriendlyFireConfig.RoundAdminMessage, ref FriendlyFireConfig.RoundBroadcastMessage, ref FriendlyFireConfig.RoundWebhook);
 			return true;
 		}
 		return false;
 	}
-
-	private const string Detector = "Round";
 }

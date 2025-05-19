@@ -1,13 +1,11 @@
-﻿using System;
+namespace AudioPooling;
 
-namespace AudioPooling
+public enum MixerChannel
 {
-	public enum MixerChannel
-	{
-		DefaultSfx,
-		Interface,
-		Weapons,
-		VoiceChat,
-		NoDucking
-	}
+	DefaultSfx,
+	Interface,
+	Weapons,
+	VoiceChat,
+	NoDucking,
+	Scp127VoiceViewmodel
 }

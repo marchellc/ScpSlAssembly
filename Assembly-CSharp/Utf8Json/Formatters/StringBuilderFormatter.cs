@@ -1,29 +1,29 @@
-﻿using System;
 using System.Text;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class StringBuilderFormatter : IJsonFormatter<StringBuilder>, IJsonFormatter
 {
-	public sealed class StringBuilderFormatter : IJsonFormatter<StringBuilder>, IJsonFormatter
+	public static readonly IJsonFormatter<StringBuilder> Default = new StringBuilderFormatter();
+
+	public void Serialize(ref JsonWriter writer, StringBuilder value, IJsonFormatterResolver formatterResolver)
 	{
-		public void Serialize(ref JsonWriter writer, StringBuilder value, IJsonFormatterResolver formatterResolver)
+		if (value == null)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
+			writer.WriteNull();
+		}
+		else
+		{
 			writer.WriteString(value.ToString());
 		}
+	}
 
-		public StringBuilder Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public StringBuilder Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			return new StringBuilder(reader.ReadString());
+			return null;
 		}
-
-		public static readonly IJsonFormatter<StringBuilder> Default = new StringBuilderFormatter();
+		return new StringBuilder(reader.ReadString());
 	}
 }

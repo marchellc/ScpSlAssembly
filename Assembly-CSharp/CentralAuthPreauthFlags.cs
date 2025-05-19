@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 [Flags]
 public enum CentralAuthPreauthFlags : byte
@@ -8,7 +8,7 @@ public enum CentralAuthPreauthFlags : byte
 	IgnoreBans = 2,
 	IgnoreWhitelist = 4,
 	IgnoreGeoblock = 8,
-	GloballyBanned = 16,
-	NorthwoodStaff = 32,
-	AuthRejected = 64
+	GloballyBanned = 0x10,
+	NorthwoodStaff = 0x20,
+	AuthRejected = 0x40
 }

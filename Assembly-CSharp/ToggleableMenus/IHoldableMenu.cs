@@ -1,9 +1,6 @@
-﻿using System;
+namespace ToggleableMenus;
 
-namespace ToggleableMenus
+public interface IHoldableMenu
 {
-	public interface IHoldableMenu
-	{
-		bool IsHoldable { get; }
-	}
+	bool IsHoldable { get; }
 }

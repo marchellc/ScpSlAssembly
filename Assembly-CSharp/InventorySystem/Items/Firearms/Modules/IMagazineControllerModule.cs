@@ -1,10 +1,7 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+[UniqueModule]
+public interface IMagazineControllerModule
 {
-	[UniqueModule]
-	public interface IMagazineControllerModule
-	{
-		bool MagazineInserted { get; }
-	}
+	bool MagazineInserted { get; }
 }

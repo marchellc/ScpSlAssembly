@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using CustomPlayerEffects;
 using Mirror;
@@ -7,320 +6,262 @@ using PlayerRoles.FirstPersonControl.Thirdperson;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace InventorySystem.Items.MarshmallowMan
+namespace InventorySystem.Items.MarshmallowMan;
+
+public class MarshmallowEffect : StatusEffectBase, IDamageModifierEffect, IMovementSpeedModifier, IStaminaModifier, IFriendlyFireModifier
 {
-	public class MarshmallowEffect : StatusEffectBase, IDamageModifierEffect, IMovementSpeedModifier, IStaminaModifier, IFriendlyFireModifier
+	private static readonly int DeployAnimHash = Shader.PropertyToID("_DeployStatus");
+
+	private static readonly int FadeHash = Shader.PropertyToID("_Fade");
+
+	private static readonly int AttackTriggerHash = Animator.StringToHash("Attack");
+
+	private static readonly int AttackMirrorHash = Animator.StringToHash("AttackMirror");
+
+	[SerializeField]
+	private AnimatedCharacterModel _marshmallowModelTemplate;
+
+	[SerializeField]
+	private float _deployTime;
+
+	[SerializeField]
+	private float _turnBackTime;
+
+	[SerializeField]
+	private AnimationCurve _originalFadeOverProgress;
+
+	private bool _turningBack;
+
+	private bool _mirrorAttack;
+
+	private float _progress;
+
+	private bool _instanceSet;
+
+	private Transform _parent;
+
+	private AnimatedCharacterModel _marshmallowModelInstance;
+
+	private AnimatedCharacterModel _originalCharacterModel;
+
+	private MarshmallowAudio _marshmallowAudio;
+
+	private const float DamageReduction = 0.25f;
+
+	private const float TurnBackTime = 1.1f;
+
+	private const byte TurnBackIntensityCode = byte.MaxValue;
+
+	private float DeployProgress
 	{
-		private float DeployProgress
+		get
 		{
-			get
+			return _progress;
+		}
+		set
+		{
+			float num = Mathf.Clamp01(value);
+			if (num != _progress)
 			{
-				return this._progress;
-			}
-			set
-			{
-				float num = Mathf.Clamp01(value);
-				if (num == this._progress)
-				{
-					return;
-				}
-				this._progress = num;
-				this.UpdateMaterials();
+				_progress = num;
+				UpdateMaterials();
 			}
 		}
+	}
 
-		public bool DamageModifierActive
+	public bool DamageModifierActive => base.IsEnabled;
+
+	public bool MovementModifierActive => base.IsEnabled;
+
+	public float MovementSpeedMultiplier => 1.55f;
+
+	public float MovementSpeedLimit
+	{
+		get
 		{
-			get
+			if (base.Intensity != byte.MaxValue || !base.IsLocalPlayer)
 			{
-				return base.IsEnabled;
+				return float.MaxValue;
+			}
+			return 0.5f;
+		}
+	}
+
+	public bool StaminaModifierActive => base.IsEnabled;
+
+	public bool SprintingDisabled => true;
+
+	public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
+	{
+		return 0.75f;
+	}
+
+	public bool AllowFriendlyFire(float baseDamage, AttackerDamageHandler handler, HitboxType hitboxType)
+	{
+		return true;
+	}
+
+	protected override void Enabled()
+	{
+		base.Enabled();
+		SetupLink();
+		MarshmallowItem.OnSwing += OnSwing;
+		MarshmallowItem.OnHolsterRequested += OnHolsterRequested;
+		if (!NetworkServer.active)
+		{
+			return;
+		}
+		base.Hub.inventory.ServerDropEverything();
+		foreach (KeyValuePair<ItemType, ItemBase> availableItem in InventoryItemLoader.AvailableItems)
+		{
+			if (availableItem.Value is MarshmallowItem)
+			{
+				base.Hub.inventory.ServerAddItem(availableItem.Key, ItemAddReason.StatusEffect, 0);
+				break;
 			}
 		}
+	}
 
-		public bool MovementModifierActive
+	protected override void Disabled()
+	{
+		base.Disabled();
+		MarshmallowItem.OnSwing -= OnSwing;
+		MarshmallowItem.OnHolsterRequested -= OnHolsterRequested;
+		Unlink();
+		_progress = 0f;
+		_turningBack = false;
+		_mirrorAttack = false;
+		if (NetworkServer.active)
 		{
-			get
-			{
-				return base.IsEnabled;
-			}
-		}
-
-		public float MovementSpeedMultiplier
-		{
-			get
-			{
-				return 1.55f;
-			}
-		}
-
-		public float MovementSpeedLimit
-		{
-			get
-			{
-				if (base.Intensity != 255 || !base.IsLocalPlayer)
-				{
-					return float.MaxValue;
-				}
-				return 0.5f;
-			}
-		}
-
-		public bool StaminaModifierActive
-		{
-			get
-			{
-				return base.IsEnabled;
-			}
-		}
-
-		public bool SprintingDisabled
-		{
-			get
-			{
-				return true;
-			}
-		}
-
-		public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
-		{
-			return 0.75f;
-		}
-
-		public bool AllowFriendlyFire(float baseDamage, AttackerDamageHandler handler, HitboxType hitboxType)
-		{
-			return true;
-		}
-
-		protected override void Enabled()
-		{
-			base.Enabled();
-			this.SetupLink();
-			MarshmallowItem.OnSwing += this.OnSwing;
-			MarshmallowItem.OnHolsterRequested += this.OnHolsterRequested;
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			base.Hub.inventory.ServerDropEverything();
-			foreach (KeyValuePair<ItemType, ItemBase> keyValuePair in InventoryItemLoader.AvailableItems)
-			{
-				if (keyValuePair.Value is MarshmallowItem)
-				{
-					base.Hub.inventory.ServerAddItem(keyValuePair.Key, ItemAddReason.StatusEffect, 0, null);
-					break;
-				}
-			}
-		}
-
-		protected override void Disabled()
-		{
-			base.Disabled();
-			MarshmallowItem.OnSwing -= this.OnSwing;
-			MarshmallowItem.OnHolsterRequested -= this.OnHolsterRequested;
-			this.Unlink();
-			this._progress = 0f;
-			this._turningBack = false;
-			this._mirrorAttack = false;
-			if (!NetworkServer.active)
-			{
-				return;
-			}
 			Inventory inventory = base.Hub.inventory;
-			if (!(inventory.CurInstance is MarshmallowItem))
+			if (inventory.CurInstance is MarshmallowItem)
 			{
-				return;
+				inventory.ServerDropItem(inventory.CurItem.SerialNumber);
 			}
-			inventory.ServerDropItem(inventory.CurItem.SerialNumber);
 		}
+	}
 
-		protected override void OnEffectUpdate()
+	protected override void OnEffectUpdate()
+	{
+		base.OnEffectUpdate();
+		if (_instanceSet)
 		{
-			base.OnEffectUpdate();
-			if (this._instanceSet)
-			{
-				this._marshmallowAudio.Setup(base.Hub.inventory.CurItem.SerialNumber, this._parent);
-			}
-			else
-			{
-				this.SetupLink();
-			}
-			if (this._turningBack)
-			{
-				this.DeployProgress -= Time.deltaTime / this._turnBackTime;
-			}
-			else
-			{
-				this.DeployProgress += Time.deltaTime / this._deployTime;
-			}
-			if (!NetworkServer.active || base.Duration == 0f || base.TimeLeft > 1.1f || !base.IsEnabled)
-			{
-				return;
-			}
+			_marshmallowAudio.Setup(base.Hub.inventory.CurItem.SerialNumber, _parent);
+		}
+		else
+		{
+			SetupLink();
+		}
+		if (_turningBack)
+		{
+			DeployProgress -= Time.deltaTime / _turnBackTime;
+		}
+		else
+		{
+			DeployProgress += Time.deltaTime / _deployTime;
+		}
+		if (NetworkServer.active && base.Duration != 0f && !(base.TimeLeft > 1.1f) && base.IsEnabled)
+		{
 			base.Intensity = byte.MaxValue;
 		}
+	}
 
-		protected override void IntensityChanged(byte prevState, byte newState)
+	protected override void IntensityChanged(byte prevState, byte newState)
+	{
+		base.IntensityChanged(prevState, newState);
+		if (NetworkServer.active && newState == byte.MaxValue && prevState != 0 && base.Hub.inventory.CurInstance is MarshmallowItem marshmallowItem && !(marshmallowItem == null))
 		{
-			base.IntensityChanged(prevState, newState);
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			if (newState != 255 || prevState == 0)
-			{
-				return;
-			}
-			MarshmallowItem marshmallowItem = base.Hub.inventory.CurInstance as MarshmallowItem;
-			if (marshmallowItem == null || marshmallowItem == null)
-			{
-				return;
-			}
 			marshmallowItem.ServerRequestHolster();
 		}
+	}
 
-		private void OnDestroy()
+	private void OnDestroy()
+	{
+		Unlink();
+	}
+
+	private void SetupLink()
+	{
+		if (base.Hub.roleManager.CurrentRole is IFpcRole fpcRole && fpcRole.FpcModule.CharacterModelInstance is AnimatedCharacterModel originalCharacterModel)
 		{
-			this.Unlink();
+			_instanceSet = true;
+			_originalCharacterModel = originalCharacterModel;
+			_parent = base.Hub.transform;
+			_marshmallowModelInstance = Object.Instantiate(_marshmallowModelTemplate, _parent);
+			_marshmallowAudio = _marshmallowModelInstance.GetComponent<MarshmallowAudio>();
+			_marshmallowModelInstance.Pooled = false;
+			_marshmallowModelInstance.Setup(base.Hub, fpcRole, _marshmallowModelTemplate.transform.position, _marshmallowModelTemplate.transform.rotation);
+			_originalCharacterModel.OnVisibilityChanged += OnVisibilityChanged;
+			_originalCharacterModel.OnFadeChanged += OnFadeChanged;
+			UpdateMaterials();
+			OnVisibilityChanged();
 		}
+	}
 
-		private void SetupLink()
+	private void Unlink()
+	{
+		if (_instanceSet)
 		{
-			IFpcRole fpcRole = base.Hub.roleManager.CurrentRole as IFpcRole;
-			if (fpcRole == null)
-			{
-				return;
-			}
-			AnimatedCharacterModel animatedCharacterModel = fpcRole.FpcModule.CharacterModelInstance as AnimatedCharacterModel;
-			if (animatedCharacterModel == null)
-			{
-				return;
-			}
-			this._instanceSet = true;
-			this._originalCharacterModel = animatedCharacterModel;
-			this._parent = base.Hub.transform;
-			this._marshmallowModelInstance = global::UnityEngine.Object.Instantiate<AnimatedCharacterModel>(this._marshmallowModelTemplate, this._parent);
-			this._marshmallowAudio = this._marshmallowModelInstance.GetComponent<MarshmallowAudio>();
-			this._marshmallowModelInstance.Pooled = false;
-			this._marshmallowModelInstance.Setup(base.Hub, fpcRole, this._marshmallowModelTemplate.transform.position, this._marshmallowModelTemplate.transform.rotation);
-			this._originalCharacterModel.OnVisibilityChanged += this.OnVisibilityChanged;
-			this._originalCharacterModel.OnFadeChanged += this.OnFadeChanged;
-			this.UpdateMaterials();
-			this.OnVisibilityChanged();
+			_originalCharacterModel.OnVisibilityChanged -= OnVisibilityChanged;
+			_originalCharacterModel.OnFadeChanged -= OnFadeChanged;
+			SetShaderFloat(_originalCharacterModel, FadeHash, _originalCharacterModel.Fade);
+			_marshmallowModelInstance.Pooled = true;
+			_marshmallowModelInstance.ResetObject();
+			Object.Destroy(_marshmallowModelInstance.gameObject);
+			_instanceSet = false;
 		}
+	}
 
-		private void Unlink()
+	private void UpdateMaterials()
+	{
+		if (_instanceSet)
 		{
-			if (!this._instanceSet)
-			{
-				return;
-			}
-			this._originalCharacterModel.OnVisibilityChanged -= this.OnVisibilityChanged;
-			this._originalCharacterModel.OnFadeChanged -= this.OnFadeChanged;
-			this.SetShaderFloat(this._originalCharacterModel, MarshmallowEffect.FadeHash, this._originalCharacterModel.Fade);
-			this._marshmallowModelInstance.Pooled = true;
-			this._marshmallowModelInstance.ResetObject();
-			global::UnityEngine.Object.Destroy(this._marshmallowModelInstance.gameObject);
-			this._instanceSet = false;
+			float deployProgress = DeployProgress;
+			SetShaderFloat(_marshmallowModelInstance, DeployAnimHash, deployProgress);
+			SetShaderFloat(_originalCharacterModel, FadeHash, _originalFadeOverProgress.Evaluate(deployProgress));
 		}
+	}
 
-		private void UpdateMaterials()
+	private void SetShaderFloat(AnimatedCharacterModel model, int hash, float fade)
+	{
+		model.FadeableMaterials.ForEach(delegate(Material x)
 		{
-			if (!this._instanceSet)
-			{
-				return;
-			}
-			float deployProgress = this.DeployProgress;
-			this.SetShaderFloat(this._marshmallowModelInstance, MarshmallowEffect.DeployAnimHash, deployProgress);
-			this.SetShaderFloat(this._originalCharacterModel, MarshmallowEffect.FadeHash, this._originalFadeOverProgress.Evaluate(deployProgress));
-		}
+			x.SetFloat(hash, fade);
+		});
+	}
 
-		private void SetShaderFloat(AnimatedCharacterModel model, int hash, float fade)
+	private void OnHolsterRequested(ushort serial)
+	{
+		if (serial == base.Hub.inventory.CurItem.SerialNumber)
 		{
-			model.FadeableMaterials.ForEach(delegate(Material x)
-			{
-				x.SetFloat(hash, fade);
-			});
+			_turningBack = true;
 		}
+	}
 
-		private void OnHolsterRequested(ushort serial)
+	private void OnSwing(ushort serial)
+	{
+		if (serial == base.Hub.inventory.CurItem.SerialNumber)
 		{
-			if (serial != base.Hub.inventory.CurItem.SerialNumber)
-			{
-				return;
-			}
-			this._turningBack = true;
+			_marshmallowModelInstance.Animator.SetBool(AttackMirrorHash, _mirrorAttack);
+			_marshmallowModelInstance.Animator.SetTrigger(AttackTriggerHash);
+			_mirrorAttack = !_mirrorAttack;
 		}
+	}
 
-		private void OnSwing(ushort serial)
+	private void OnVisibilityChanged()
+	{
+		if (_instanceSet)
 		{
-			if (serial != base.Hub.inventory.CurItem.SerialNumber)
-			{
-				return;
-			}
-			this._marshmallowModelInstance.Animator.SetBool(MarshmallowEffect.AttackMirrorHash, this._mirrorAttack);
-			this._marshmallowModelInstance.Animator.SetTrigger(MarshmallowEffect.AttackTriggerHash);
-			this._mirrorAttack = !this._mirrorAttack;
+			_marshmallowModelInstance.SetVisibility(_originalCharacterModel.IsVisible);
 		}
+	}
 
-		private void OnVisibilityChanged()
+	private void OnFadeChanged()
+	{
+		if (_instanceSet)
 		{
-			if (!this._instanceSet)
-			{
-				return;
-			}
-			this._marshmallowModelInstance.SetVisibility(this._originalCharacterModel.IsVisible);
+			_marshmallowModelInstance.Fade = _originalCharacterModel.Fade;
+			UpdateMaterials();
 		}
-
-		private void OnFadeChanged()
-		{
-			if (!this._instanceSet)
-			{
-				return;
-			}
-			this._marshmallowModelInstance.Fade = this._originalCharacterModel.Fade;
-			this.UpdateMaterials();
-		}
-
-		private static readonly int DeployAnimHash = Shader.PropertyToID("_DeployStatus");
-
-		private static readonly int FadeHash = Shader.PropertyToID("_Fade");
-
-		private static readonly int AttackTriggerHash = Animator.StringToHash("Attack");
-
-		private static readonly int AttackMirrorHash = Animator.StringToHash("AttackMirror");
-
-		[SerializeField]
-		private AnimatedCharacterModel _marshmallowModelTemplate;
-
-		[SerializeField]
-		private float _deployTime;
-
-		[SerializeField]
-		private float _turnBackTime;
-
-		[SerializeField]
-		private AnimationCurve _originalFadeOverProgress;
-
-		private bool _turningBack;
-
-		private bool _mirrorAttack;
-
-		private float _progress;
-
-		private bool _instanceSet;
-
-		private Transform _parent;
-
-		private AnimatedCharacterModel _marshmallowModelInstance;
-
-		private AnimatedCharacterModel _originalCharacterModel;
-
-		private MarshmallowAudio _marshmallowAudio;
-
-		private const float DamageReduction = 0.25f;
-
-		private const float TurnBackTime = 1.1f;
-
-		private const byte TurnBackIntensityCode = 255;
 	}
 }

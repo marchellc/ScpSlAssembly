@@ -1,87 +1,76 @@
-﻿using System;
 using Interactables.Verification;
 using Mirror;
 using Mirror.RemoteCalls;
 using TMPro;
 using UnityEngine;
 
-namespace Interactables.Interobjects
+namespace Interactables.Interobjects;
+
+public class TestInterobject : NetworkBehaviour, IClientInteractable, IInteractable, IServerInteractable
 {
-	public class TestInterobject : NetworkBehaviour, IClientInteractable, IInteractable, IServerInteractable
+	public TextMeshProUGUI ClientText;
+
+	public TextMeshProUGUI GlobalText;
+
+	public IVerificationRule VerificationRule => StandardDistanceVerification.Default;
+
+	[Client]
+	public void ClientInteract(InteractableCollider collider)
 	{
-		public IVerificationRule VerificationRule
+		if (!NetworkClient.active)
 		{
-			get
-			{
-				return StandardDistanceVerification.Default;
-			}
+			Debug.LogWarning("[Client] function 'System.Void Interactables.Interobjects.TestInterobject::ClientInteract(Interactables.InteractableCollider)' called when client was not active");
+			return;
 		}
+		ClientText.text = "Local player collider ID: " + collider.ColliderId + " (rand " + Random.value + ")";
+	}
 
-		[Client]
-		public void ClientInteract(InteractableCollider collider)
+	[Server]
+	public void ServerInteract(ReferenceHub ply, byte colliderId)
+	{
+		if (!NetworkServer.active)
 		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogWarning("[Client] function 'System.Void Interactables.Interobjects.TestInterobject::ClientInteract(Interactables.InteractableCollider)' called when client was not active");
-				return;
-			}
-			this.ClientText.text = string.Concat(new string[]
-			{
-				"Local player collider ID: ",
-				collider.ColliderId.ToString(),
-				" (rand ",
-				global::UnityEngine.Random.value.ToString(),
-				")"
-			});
+			Debug.LogWarning("[Server] function 'System.Void Interactables.Interobjects.TestInterobject::ServerInteract(ReferenceHub,System.Byte)' called when server was not active");
 		}
-
-		[Server]
-		public void ServerInteract(ReferenceHub ply, byte colliderId)
+		else
 		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void Interactables.Interobjects.TestInterobject::ServerInteract(ReferenceHub,System.Byte)' called when server was not active");
-				return;
-			}
-			this.RpcSendText("Player " + ply.LoggedNameFromRefHub() + " interacted using collider " + colliderId.ToString());
+			RpcSendText("Player " + ply.LoggedNameFromRefHub() + " interacted using collider " + colliderId);
 		}
+	}
 
-		[ClientRpc]
-		private void RpcSendText(string s)
+	[ClientRpc]
+	private void RpcSendText(string s)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteString(s);
+		SendRPCInternal("System.Void Interactables.Interobjects.TestInterobject::RpcSendText(System.String)", 314358345, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	protected void UserCode_RpcSendText__String(string s)
+	{
+		GlobalText.text = s;
+	}
+
+	protected static void InvokeUserCode_RpcSendText__String(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteString(s);
-			this.SendRPCInternal("System.Void Interactables.Interobjects.TestInterobject::RpcSendText(System.String)", 314358345, networkWriterPooled, 0, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			Debug.LogError("RPC RpcSendText called on server.");
 		}
-
-		public override bool Weaved()
+		else
 		{
-			return true;
-		}
-
-		protected void UserCode_RpcSendText__String(string s)
-		{
-			this.GlobalText.text = s;
-		}
-
-		protected static void InvokeUserCode_RpcSendText__String(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
-		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogError("RPC RpcSendText called on server.");
-				return;
-			}
 			((TestInterobject)obj).UserCode_RpcSendText__String(reader.ReadString());
 		}
+	}
 
-		static TestInterobject()
-		{
-			RemoteProcedureCalls.RegisterRpc(typeof(TestInterobject), "System.Void Interactables.Interobjects.TestInterobject::RpcSendText(System.String)", new RemoteCallDelegate(TestInterobject.InvokeUserCode_RpcSendText__String));
-		}
-
-		public TextMeshProUGUI ClientText;
-
-		public TextMeshProUGUI GlobalText;
+	static TestInterobject()
+	{
+		RemoteProcedureCalls.RegisterRpc(typeof(TestInterobject), "System.Void Interactables.Interobjects.TestInterobject::RpcSendText(System.String)", InvokeUserCode_RpcSendText__String);
 	}
 }

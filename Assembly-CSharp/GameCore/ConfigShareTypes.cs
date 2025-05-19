@@ -1,15 +1,12 @@
-﻿using System;
+namespace GameCore;
 
-namespace GameCore
+public enum ConfigShareTypes : byte
 {
-	public enum ConfigShareTypes : byte
-	{
-		Bans,
-		Mutes,
-		Whitelist,
-		ReservedSlots,
-		Groups,
-		GroupsMembers,
-		GameplayDatabase
-	}
+	Bans,
+	Mutes,
+	Whitelist,
+	ReservedSlots,
+	Groups,
+	GroupsMembers,
+	GameplayDatabase
 }

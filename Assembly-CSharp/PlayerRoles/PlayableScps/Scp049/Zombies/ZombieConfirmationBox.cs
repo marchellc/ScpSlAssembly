@@ -1,43 +1,33 @@
-﻿using System;
+using System.Runtime.InteropServices;
 using Mirror;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp049.Zombies
+namespace PlayerRoles.PlayableScps.Scp049.Zombies;
+
+public class ZombieConfirmationBox : MonoBehaviour
 {
-	public class ZombieConfirmationBox : MonoBehaviour
+	[StructLayout(LayoutKind.Sequential, Size = 1)]
+	public struct ScpReviveBlockMessage : NetworkMessage
 	{
-		private static void ServerReceiveMessage(NetworkConnection conn)
-		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(conn.identity.netId, out referenceHub))
-			{
-				return;
-			}
-			if (Scp049ResurrectAbility.GetResurrectionsNumber(referenceHub) == 0)
-			{
-				return;
-			}
-			Scp049ResurrectAbility.RegisterPlayerResurrection(referenceHub, 2);
-		}
+	}
 
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
+	private static void ServerReceiveMessage(NetworkConnection conn)
+	{
+		if (NetworkServer.active && ReferenceHub.TryGetHubNetID(conn.identity.netId, out var hub) && Scp049ResurrectAbility.GetResurrectionsNumber(hub) != 0)
 		{
-			CustomNetworkManager.OnClientReady += delegate
-			{
-				NetworkServer.ReplaceHandler<ZombieConfirmationBox.ScpReviveBlockMessage>(delegate(NetworkConnectionToClient conn, ZombieConfirmationBox.ScpReviveBlockMessage msg)
-				{
-					ZombieConfirmationBox.ServerReceiveMessage(conn);
-				}, true);
-			};
+			Scp049ResurrectAbility.RegisterPlayerResurrection(hub, 2);
 		}
+	}
 
-		public struct ScpReviveBlockMessage : NetworkMessage
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += delegate
 		{
-		}
+			NetworkServer.ReplaceHandler(delegate(NetworkConnectionToClient conn, ScpReviveBlockMessage msg)
+			{
+				ServerReceiveMessage(conn);
+			});
+		};
 	}
 }

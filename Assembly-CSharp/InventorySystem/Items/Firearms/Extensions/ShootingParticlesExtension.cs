@@ -1,36 +1,28 @@
-﻿using System;
 using InventorySystem.Items.Firearms.ShotEvents;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Extensions
+namespace InventorySystem.Items.Firearms.Extensions;
+
+public class ShootingParticlesExtension : ShootingEffectsExtensionBase
 {
-	public class ShootingParticlesExtension : ShootingEffectsExtensionBase
+	[SerializeField]
+	private ParticleCollection[] _systemsPerBarrel;
+
+	protected override void Awake()
 	{
-		protected override void Awake()
+		base.Awake();
+		ParticleCollection[] systemsPerBarrel = _systemsPerBarrel;
+		foreach (ParticleCollection particleCollection in systemsPerBarrel)
 		{
-			base.Awake();
-			foreach (ShootingEffectsExtensionBase.ParticleCollection particleCollection in this._systemsPerBarrel)
-			{
-				particleCollection.ConvertLights();
-			}
+			particleCollection.ConvertLights();
 		}
+	}
 
-		protected override void PlayEffects(ShotEvent ev)
+	protected override void PlayEffects(ShotEvent ev)
+	{
+		if (ev is IMultiBarreledShot multiBarreledShot && _systemsPerBarrel.TryGet(multiBarreledShot.BarrelId, out var element))
 		{
-			IMultiBarreledShot multiBarreledShot = ev as IMultiBarreledShot;
-			if (multiBarreledShot == null)
-			{
-				return;
-			}
-			ShootingEffectsExtensionBase.ParticleCollection particleCollection;
-			if (!this._systemsPerBarrel.TryGet(multiBarreledShot.BarrelId, out particleCollection))
-			{
-				return;
-			}
-			particleCollection.Play();
+			element.Play();
 		}
-
-		[SerializeField]
-		private ShootingEffectsExtensionBase.ParticleCollection[] _systemsPerBarrel;
 	}
 }

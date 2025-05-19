@@ -1,5 +1,3 @@
-﻿using System;
-using System.Runtime.CompilerServices;
 using CustomPlayerEffects;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
@@ -12,205 +10,197 @@ using RoundRestarting;
 using UnityEngine;
 using Utils.NonAllocLINQ;
 
-namespace PlayerRoles.PlayableScps.Scp1507
+namespace PlayerRoles.PlayableScps.Scp1507;
+
+public static class Scp1507Spawner
 {
-	public static class Scp1507Spawner
+	public enum State
 	{
-		public static Scp1507Spawner.State CurState { get; private set; }
+		Idle,
+		WaitForRespawnCycle,
+		WaitForSpectators,
+		Spawning,
+		Spawned
+	}
 
-		private static bool Inactive
+	private static ReferenceHub _alpha;
+
+	private static float _elapsed;
+
+	private const int SpawnWaveSetTimeSeconds = 240;
+
+	private const float MiniwaveTimerMultiplier = 0.5f;
+
+	private const float SpawnAnimDelaySeconds = 5f;
+
+	private const float MinSpectatorsPercent = 0.3f;
+
+	private const float MinSpawnDelaySeconds = 7f;
+
+	private const float MaxSpawnDelaySeconds = 180f;
+
+	private static readonly Vector3 PostDetonationSpawnpoint = new Vector3(124f, 988.85f, 27f);
+
+	public static State CurState { get; private set; }
+
+	private static bool Inactive
+	{
+		get
 		{
-			get
+			if (CurState != 0)
 			{
-				return Scp1507Spawner.CurState == Scp1507Spawner.State.Idle || Scp1507Spawner.CurState == Scp1507Spawner.State.Spawned;
+				return CurState == State.Spawned;
+			}
+			return true;
+		}
+	}
+
+	public static void StartSpawning(ReferenceHub newAlpha)
+	{
+		_alpha = newAlpha;
+		if (Inactive)
+		{
+			_elapsed = 0f;
+			StaticUnityMethods.OnUpdate += Update;
+			ReferenceHub.OnPlayerRemoved += OnPlayerRemoved;
+			CurState = State.WaitForRespawnCycle;
+		}
+	}
+
+	public static void Restore()
+	{
+		if (!Inactive)
+		{
+			StaticUnityMethods.OnUpdate -= Update;
+			ReferenceHub.OnPlayerRemoved -= OnPlayerRemoved;
+		}
+		CurState = State.Idle;
+	}
+
+	private static void Spawn()
+	{
+		Restore();
+		CurState = State.Spawned;
+		_alpha.inventory.ServerDropEverything();
+		SpawnPlayer(_alpha, RoleTypeId.AlphaFlamingo);
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (ValidatePlayer(allHub))
+			{
+				SpawnPlayer(allHub, RoleTypeId.Flamingo);
 			}
 		}
-
-		public static void StartSpawning(ReferenceHub newAlpha)
+		if (ElevatorChamber.TryGetChamber(ElevatorGroup.Nuke01, out var chamber))
 		{
-			Scp1507Spawner._alpha = newAlpha;
-			if (!Scp1507Spawner.Inactive)
+			chamber.ServerSetDestination(1, allowQueueing: true);
+			if (ElevatorChamber.TryGetChamber(ElevatorGroup.Nuke02, out var chamber2))
 			{
-				return;
-			}
-			Scp1507Spawner._elapsed = 0f;
-			StaticUnityMethods.OnUpdate += Scp1507Spawner.Update;
-			ReferenceHub.OnPlayerRemoved = (Action<ReferenceHub>)Delegate.Combine(ReferenceHub.OnPlayerRemoved, new Action<ReferenceHub>(Scp1507Spawner.OnPlayerRemoved));
-			Scp1507Spawner.CurState = Scp1507Spawner.State.WaitForRespawnCycle;
-		}
-
-		public static void Restore()
-		{
-			if (!Scp1507Spawner.Inactive)
-			{
-				StaticUnityMethods.OnUpdate -= Scp1507Spawner.Update;
-				ReferenceHub.OnPlayerRemoved = (Action<ReferenceHub>)Delegate.Remove(ReferenceHub.OnPlayerRemoved, new Action<ReferenceHub>(Scp1507Spawner.OnPlayerRemoved));
-			}
-			Scp1507Spawner.CurState = Scp1507Spawner.State.Idle;
-		}
-
-		private static void Spawn()
-		{
-			Scp1507Spawner.Restore();
-			Scp1507Spawner.CurState = Scp1507Spawner.State.Spawned;
-			Scp1507Spawner._alpha.inventory.ServerDropEverything();
-			Scp1507Spawner.<Spawn>g__SpawnPlayer|17_0(Scp1507Spawner._alpha, RoleTypeId.AlphaFlamingo);
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				if (Scp1507Spawner.ValidatePlayer(referenceHub))
-				{
-					Scp1507Spawner.<Spawn>g__SpawnPlayer|17_0(referenceHub, RoleTypeId.Flamingo);
-				}
-			}
-			ElevatorChamber elevatorChamber;
-			if (!ElevatorChamber.TryGetChamber(ElevatorGroup.Nuke01, out elevatorChamber))
-			{
-				return;
-			}
-			elevatorChamber.ServerSetDestination(1, true);
-			ElevatorChamber elevatorChamber2;
-			if (!ElevatorChamber.TryGetChamber(ElevatorGroup.Nuke02, out elevatorChamber2))
-			{
-				return;
-			}
-			elevatorChamber2.ServerSetDestination(1, true);
-		}
-
-		private static void HandleEscapeDoor()
-		{
-			DoorNametagExtension doorNametagExtension;
-			if (!DoorNametagExtension.NamedDoors.TryGetValue("ESCAPE_FINAL", out doorNametagExtension))
-			{
-				return;
-			}
-			doorNametagExtension.TargetDoor.NetworkTargetState = true;
-		}
-
-		private static bool ValidatePlayer(ReferenceHub candidate)
-		{
-			SpectatorRole spectatorRole = candidate.roleManager.CurrentRole as SpectatorRole;
-			return spectatorRole != null && spectatorRole.ReadyToRespawn && candidate != Scp1507Spawner._alpha;
-		}
-
-		private static void OnPlayerRemoved(ReferenceHub hub)
-		{
-			if (hub != Scp1507Spawner._alpha)
-			{
-				return;
-			}
-			Scp1507Spawner.Restore();
-		}
-
-		private static void Update()
-		{
-			Scp1507Spawner._elapsed += Time.deltaTime;
-			switch (Scp1507Spawner.CurState)
-			{
-			case Scp1507Spawner.State.WaitForRespawnCycle:
-				Scp1507Spawner.UpdateWaitForRespawnCycle();
-				return;
-			case Scp1507Spawner.State.WaitForSpectators:
-				Scp1507Spawner.UpdateWaitForSpectators();
-				return;
-			case Scp1507Spawner.State.Spawning:
-				Scp1507Spawner.UpdateSpawning();
-				return;
-			default:
-				return;
+				chamber2.ServerSetDestination(1, allowQueueing: true);
 			}
 		}
-
-		private static void UpdateWaitForRespawnCycle()
-		{
-			if (WaveManager.State != WaveQueueState.Idle)
-			{
-				return;
-			}
-			Scp1507Spawner.CurState = Scp1507Spawner.State.WaitForSpectators;
-			foreach (SpawnableWaveBase spawnableWaveBase in WaveManager.Waves)
-			{
-				TimeBasedWave timeBasedWave = (TimeBasedWave)spawnableWaveBase;
-				float num = 240f;
-				if (timeBasedWave is IMiniWave)
-				{
-					num *= 0.5f;
-				}
-				timeBasedWave.Timer.SpawnIntervalSeconds = num;
-				timeBasedWave.Timer.Reset(true);
-			}
-		}
-
-		private static void UpdateWaitForSpectators()
-		{
-			if (Scp1507Spawner._elapsed < 7f)
-			{
-				return;
-			}
-			float num = (float)ReferenceHub.AllHubs.Count(new Func<ReferenceHub, bool>(Scp1507Spawner.ValidatePlayer));
-			float num2 = (float)(ReferenceHub.AllHubs.Count - 2);
-			if (((num2 <= 0f) ? 1f : (num / num2)) < 0.3f && Scp1507Spawner._elapsed < 180f)
-			{
-				return;
-			}
-			Scp1507Spawner._elapsed = 0f;
-			Scp1507Spawner.CurState = Scp1507Spawner.State.Spawning;
-			Scp1507Spawner._alpha.playerEffectsController.EnableEffect<BecomingFlamingo>(0f, false);
-		}
-
-		private static void UpdateSpawning()
-		{
-			if (Scp1507Spawner._elapsed < 5f)
-			{
-				return;
-			}
-			Scp1507Spawner.Spawn();
-		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			RoundRestart.OnRestartTriggered += Scp1507Spawner.Restore;
-		}
-
-		[CompilerGenerated]
-		internal static void <Spawn>g__SpawnPlayer|17_0(ReferenceHub hub, RoleTypeId role)
+		static void SpawnPlayer(ReferenceHub hub, RoleTypeId role)
 		{
 			if (AlphaWarheadController.Detonated)
 			{
 				hub.roleManager.ServerSetRole(role, RoleChangeReason.ItemUsage, ~RoleSpawnFlags.UseSpawnpoint);
-				hub.TryOverridePosition(Scp1507Spawner.PostDetonationSpawnpoint);
+				hub.TryOverridePosition(PostDetonationSpawnpoint);
 				hub.TryOverrideRotation(Vector3.zero);
-				Scp1507Spawner.HandleEscapeDoor();
-				return;
+				HandleEscapeDoor();
 			}
-			hub.roleManager.ServerSetRole(role, RoleChangeReason.ItemUsage, RoleSpawnFlags.All);
+			else
+			{
+				hub.roleManager.ServerSetRole(role, RoleChangeReason.ItemUsage);
+			}
 		}
+	}
 
-		private static ReferenceHub _alpha;
-
-		private static float _elapsed;
-
-		private const int SpawnWaveSetTimeSeconds = 240;
-
-		private const float MiniwaveTimerMultiplier = 0.5f;
-
-		private const float SpawnAnimDelaySeconds = 5f;
-
-		private const float MinSpectatorsPercent = 0.3f;
-
-		private const float MinSpawnDelaySeconds = 7f;
-
-		private const float MaxSpawnDelaySeconds = 180f;
-
-		private static readonly Vector3 PostDetonationSpawnpoint = new Vector3(124f, 988.85f, 27f);
-
-		public enum State
+	private static void HandleEscapeDoor()
+	{
+		if (DoorNametagExtension.NamedDoors.TryGetValue("ESCAPE_FINAL", out var value))
 		{
-			Idle,
-			WaitForRespawnCycle,
-			WaitForSpectators,
-			Spawning,
-			Spawned
+			value.TargetDoor.NetworkTargetState = true;
 		}
+	}
+
+	private static bool ValidatePlayer(ReferenceHub candidate)
+	{
+		if (candidate.roleManager.CurrentRole is SpectatorRole { ReadyToRespawn: not false })
+		{
+			return candidate != _alpha;
+		}
+		return false;
+	}
+
+	private static void OnPlayerRemoved(ReferenceHub hub)
+	{
+		if (!(hub != _alpha))
+		{
+			Restore();
+		}
+	}
+
+	private static void Update()
+	{
+		_elapsed += Time.deltaTime;
+		switch (CurState)
+		{
+		case State.WaitForRespawnCycle:
+			UpdateWaitForRespawnCycle();
+			break;
+		case State.WaitForSpectators:
+			UpdateWaitForSpectators();
+			break;
+		case State.Spawning:
+			UpdateSpawning();
+			break;
+		}
+	}
+
+	private static void UpdateWaitForRespawnCycle()
+	{
+		if (WaveManager.State != 0)
+		{
+			return;
+		}
+		CurState = State.WaitForSpectators;
+		foreach (TimeBasedWave wave in WaveManager.Waves)
+		{
+			float num = 240f;
+			if (wave is IMiniWave)
+			{
+				num *= 0.5f;
+			}
+			wave.Timer.SpawnIntervalSeconds = num;
+			wave.Timer.Reset();
+		}
+	}
+
+	private static void UpdateWaitForSpectators()
+	{
+		if (!(_elapsed < 7f))
+		{
+			float num = ReferenceHub.AllHubs.Count(ValidatePlayer);
+			float num2 = ReferenceHub.AllHubs.Count - 2;
+			if (!(((num2 <= 0f) ? 1f : (num / num2)) < 0.3f) || !(_elapsed < 180f))
+			{
+				_elapsed = 0f;
+				CurState = State.Spawning;
+				_alpha.playerEffectsController.EnableEffect<BecomingFlamingo>();
+			}
+		}
+	}
+
+	private static void UpdateSpawning()
+	{
+		if (!(_elapsed < 5f))
+		{
+			Spawn();
+		}
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		RoundRestart.OnRestartTriggered += Restore;
 	}
 }

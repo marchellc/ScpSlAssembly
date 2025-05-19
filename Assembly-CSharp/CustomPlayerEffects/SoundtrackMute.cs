@@ -1,28 +1,14 @@
-﻿using System;
 using RemoteAdmin.Interfaces;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class SoundtrackMute : StatusEffectBase, ISoundtrackMutingEffect, ICustomRADisplay
 {
-	public class SoundtrackMute : StatusEffectBase, ISoundtrackMutingEffect, ICustomRADisplay
-	{
-		public override StatusEffectBase.EffectClassification Classification
-		{
-			get
-			{
-				return StatusEffectBase.EffectClassification.Technical;
-			}
-		}
+	public override EffectClassification Classification => EffectClassification.Technical;
 
-		public string DisplayName { get; }
+	public string DisplayName { get; }
 
-		public bool CanBeDisplayed { get; }
+	public bool CanBeDisplayed { get; }
 
-		public bool MuteSoundtrack
-		{
-			get
-			{
-				return base.IsEnabled;
-			}
-		}
-	}
+	public bool MuteSoundtrack => base.IsEnabled;
 }

@@ -1,12 +1,10 @@
-﻿using System;
 using UnityEngine;
 
-namespace Interactables.Verification
-{
-	public interface IVerificationRule
-	{
-		bool ClientCanInteract(InteractableCollider collider, RaycastHit hit);
+namespace Interactables.Verification;
 
-		bool ServerCanInteract(ReferenceHub hub, InteractableCollider collider);
-	}
+public interface IVerificationRule
+{
+	bool ClientCanInteract(InteractableCollider collider, RaycastHit hit);
+
+	bool ServerCanInteract(ReferenceHub hub, InteractableCollider collider);
 }

@@ -1,11 +1,8 @@
-﻿using System;
+namespace RemoteAdmin.Interfaces;
 
-namespace RemoteAdmin.Interfaces
+public interface IServerCommunication
 {
-	public interface IServerCommunication
-	{
-		int DataId { get; }
+	int DataId { get; }
 
-		void ReceiveData(CommandSender sender, string data);
-	}
+	void ReceiveData(CommandSender sender, string data);
 }

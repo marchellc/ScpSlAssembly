@@ -1,89 +1,50 @@
-﻿using System;
+namespace RemoteAdmin;
 
-namespace RemoteAdmin
+public class PlayerCommandSender : CommandSender
 {
-	public class PlayerCommandSender : CommandSender
+	public readonly ReferenceHub ReferenceHub;
+
+	public override string SenderId => ReferenceHub.authManager.UserId;
+
+	public int PlayerId => ReferenceHub.PlayerId;
+
+	public override string Nickname => ReferenceHub.nicknameSync.MyNick;
+
+	public override ulong Permissions => ReferenceHub.serverRoles.Permissions;
+
+	public override byte KickPower
 	{
-		public PlayerCommandSender(ReferenceHub hub)
+		get
 		{
-			this.ReferenceHub = hub;
-		}
-
-		public override string SenderId
-		{
-			get
+			if (!ReferenceHub.authManager.RemoteAdminGlobalAccess)
 			{
-				return this.ReferenceHub.authManager.UserId;
+				return ReferenceHub.serverRoles.KickPower;
 			}
+			return byte.MaxValue;
 		}
+	}
 
-		public int PlayerId
-		{
-			get
-			{
-				return this.ReferenceHub.PlayerId;
-			}
-		}
+	public override bool FullPermissions => false;
 
-		public override string Nickname
-		{
-			get
-			{
-				return this.ReferenceHub.nicknameSync.MyNick;
-			}
-		}
+	public override string LogName => Nickname + " (" + ReferenceHub.authManager.UserId + ")";
 
-		public override ulong Permissions
-		{
-			get
-			{
-				return this.ReferenceHub.serverRoles.Permissions;
-			}
-		}
+	public PlayerCommandSender(ReferenceHub hub)
+	{
+		ReferenceHub = hub;
+	}
 
-		public override byte KickPower
-		{
-			get
-			{
-				if (!this.ReferenceHub.authManager.RemoteAdminGlobalAccess)
-				{
-					return this.ReferenceHub.serverRoles.KickPower;
-				}
-				return byte.MaxValue;
-			}
-		}
+	public override void RaReply(string text, bool success, bool logToConsole, string overrideDisplay)
+	{
+		ReferenceHub.queryProcessor.SendToClient(text, success, logToConsole, overrideDisplay);
+	}
 
-		public override bool FullPermissions
-		{
-			get
-			{
-				return false;
-			}
-		}
+	public override void Print(string text)
+	{
+		ReferenceHub.queryProcessor.SendToClient(text, isSuccess: true, logInConsole: true, "");
+	}
 
-		public override void RaReply(string text, bool success, bool logToConsole, string overrideDisplay)
-		{
-			this.ReferenceHub.queryProcessor.SendToClient(text, success, logToConsole, overrideDisplay);
-		}
-
-		public override void Print(string text)
-		{
-			this.ReferenceHub.queryProcessor.SendToClient(text, true, true, "");
-		}
-
-		public override bool Available()
-		{
-			return true;
-		}
-
-		public override string LogName
-		{
-			get
-			{
-				return this.Nickname + " (" + this.ReferenceHub.authManager.UserId + ")";
-			}
-		}
-
-		public readonly ReferenceHub ReferenceHub;
+	public override bool Available()
+	{
+		return true;
 	}
 }

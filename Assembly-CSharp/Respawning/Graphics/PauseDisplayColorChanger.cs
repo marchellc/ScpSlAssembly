@@ -1,89 +1,80 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using Respawning.Waves;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Respawning.Graphics
+namespace Respawning.Graphics;
+
+public class PauseDisplayColorChanger : SerializedWaveInterface
 {
-	public class PauseDisplayColorChanger : SerializedWaveInterface
+	public Graphic[] TargetGraphics;
+
+	public Color DefaultColor;
+
+	public Color PausedColor;
+
+	public AnimationCurve BlinkingAnimation;
+
+	private TimeBasedWave _timeBasedWave;
+
+	private bool _isTimeBased;
+
+	private bool _blinkTimer;
+
+	protected override void Awake()
 	{
-		private bool IsWavePaused
+		base.Awake();
+		if (!(base.Wave is TimeBasedWave timeBasedWave))
 		{
-			get
+			throw new NullReferenceException("Unable to convert " + base.Wave.GetType().Name + " to TimeBasedWave.");
+		}
+		_timeBasedWave = timeBasedWave;
+		_isTimeBased = true;
+		WaveManager.OnWaveUpdateMsgReceived += OnWaveUpdateMsgReceived;
+	}
+
+	private void OnWaveUpdateMsgReceived(WaveUpdateMessage msg)
+	{
+		if (_timeBasedWave == msg.Wave)
+		{
+			if (msg.IsTrigger)
 			{
-				return this._cachedState;
+				_blinkTimer = true;
 			}
-			set
+			else if (msg.IsSpawn)
 			{
-				if (value == this._cachedState)
-				{
-					return;
-				}
-				this._cachedState = value;
-				if (!value)
-				{
-					this.RevertGraphicColors();
-					return;
-				}
-				this.ModifyGraphicColors();
+				_blinkTimer = false;
 			}
 		}
+	}
 
-		protected override void Awake()
+	private void Update()
+	{
+		if (_isTimeBased)
 		{
-			base.Awake();
-			TimeBasedWave timeBasedWave = base.Wave as TimeBasedWave;
-			if (timeBasedWave == null)
+			if (_blinkTimer)
 			{
-				throw new NullReferenceException("Unable to convert " + base.Wave.GetType().Name + " to TimeBasedWave.");
+				float t = BlinkingAnimation.Evaluate(Time.time);
+				Color color = Color.Lerp(PausedColor, DefaultColor, t);
+				ModifyGraphicColors(color);
 			}
-			this._timeBasedWave = timeBasedWave;
-			this._isTimeBased = true;
-		}
-
-		private void Update()
-		{
-			if (!this._isTimeBased)
+			else if (_timeBasedWave.Timer.IsPaused)
 			{
-				return;
+				ModifyGraphicColors(PausedColor);
 			}
-			this.IsWavePaused = this._timeBasedWave.Timer.IsPaused;
-		}
-
-		private void ModifyGraphicColors()
-		{
-			foreach (Graphic graphic in this.TargetGraphics)
+			else
 			{
-				Color color = graphic.color;
-				this._colorCache[graphic] = color;
-				graphic.color = this.PausedColor;
+				ModifyGraphicColors(DefaultColor);
 			}
 		}
+	}
 
-		private void RevertGraphicColors()
+	private void ModifyGraphicColors(Color color)
+	{
+		Graphic[] targetGraphics = TargetGraphics;
+		for (int i = 0; i < targetGraphics.Length; i++)
 		{
-			foreach (Graphic graphic in this.TargetGraphics)
-			{
-				Color color;
-				if (this._colorCache.TryGetValue(graphic, out color))
-				{
-					graphic.color = color;
-				}
-			}
-			this._colorCache.Clear();
+			targetGraphics[i].color = color;
 		}
-
-		public Graphic[] TargetGraphics;
-
-		public Color PausedColor;
-
-		private readonly Dictionary<Graphic, Color> _colorCache = new Dictionary<Graphic, Color>();
-
-		private TimeBasedWave _timeBasedWave;
-
-		private bool _isTimeBased;
-
-		private bool _cachedState;
 	}
 }

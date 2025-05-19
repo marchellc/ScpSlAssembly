@@ -1,13 +1,12 @@
-﻿using System;
+using System;
 
-namespace InventorySystem.Items.Firearms.Attachments
+namespace InventorySystem.Items.Firearms.Attachments;
+
+[Flags]
+public enum AttachmentParamState
 {
-	[Flags]
-	public enum AttachmentParamState
-	{
-		Disabled = 0,
-		UserInterface = 2,
-		SilentlyActive = 4,
-		ActiveAndDisplayed = 6
-	}
+	Disabled = 0,
+	UserInterface = 2,
+	SilentlyActive = 4,
+	ActiveAndDisplayed = 6
 }

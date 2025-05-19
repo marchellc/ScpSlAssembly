@@ -1,256 +1,225 @@
-﻿using System;
+using System;
 using Footprinting;
 using InventorySystem.Crosshairs;
-using InventorySystem.Items.Armor;
 using InventorySystem.Items.Autosync;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Attachments.Components;
 using InventorySystem.Items.Firearms.Modules;
-using InventorySystem.Items.Pickups;
-using InventorySystem.Searching;
 using Mirror;
+using PlayerRoles;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms
+namespace InventorySystem.Items.Firearms;
+
+public class Firearm : ModularAutosyncItem, IItemNametag, ICustomCrosshairItem, IDisarmingItem
 {
-	public class Firearm : ModularAutosyncItem, IItemNametag, ICustomCrosshairItem, IDisarmingItem, ICustomSearchCompletorItem
+	private Footprint _cachedFootprint;
+
+	private bool _footprintCacheSet;
+
+	private ModuleBase[] _modules;
+
+	private Attachment[] _attachments;
+
+	public override ItemDescriptionType DescriptionType => ItemDescriptionType.Firearm;
+
+	public override float Weight => this.TotalWeightKg();
+
+	public float Length => this.TotalLengthInches();
+
+	[field: SerializeField]
+	public FirearmWorldmodel WorldModel { get; set; }
+
+	[field: SerializeField]
+	public FirearmCategory FirearmCategory { get; private set; }
+
+	[field: SerializeField]
+	public float BaseWeight { get; private set; }
+
+	[field: SerializeField]
+	public float BaseLength { get; private set; }
+
+	[field: SerializeField]
+	public Texture BodyIconTexture { get; set; }
+
+	public Animator ServerSideAnimator { get; private set; }
+
+	public string Name => ItemTypeId.GetName();
+
+	public AnimatedFirearmViewmodel ClientViewmodelInstance
 	{
-		public event Action OnServerAnimatorMove;
-
-		public override ItemDescriptionType DescriptionType
+		get
 		{
-			get
+			if (!HasViewmodel)
 			{
-				return ItemDescriptionType.Firearm;
-			}
-		}
-
-		public override float Weight
-		{
-			get
-			{
-				return this.TotalWeightKg();
-			}
-		}
-
-		public float Length
-		{
-			get
-			{
-				return this.TotalLengthInches();
-			}
-		}
-
-		public FirearmWorldmodel WorldModel { get; set; }
-
-		public FirearmCategory FirearmCategory { get; private set; }
-
-		public float BaseWeight { get; private set; }
-
-		public float BaseLength { get; private set; }
-
-		public Texture BodyIconTexture { get; set; }
-
-		public Animator ServerSideAnimator { get; private set; }
-
-		public string Name
-		{
-			get
-			{
-				return this.ItemTypeId.GetName();
-			}
-		}
-
-		public AnimatedFirearmViewmodel ClientViewmodelInstance
-		{
-			get
-			{
-				if (!this.HasViewmodel)
-				{
-					return null;
-				}
-				return this.ViewModel as AnimatedFirearmViewmodel;
-			}
-		}
-
-		public override bool HasViewmodel
-		{
-			get
-			{
-				AnimatedFirearmViewmodel animatedFirearmViewmodel = this.ViewModel as AnimatedFirearmViewmodel;
-				return animatedFirearmViewmodel != null && animatedFirearmViewmodel != null && animatedFirearmViewmodel.Initialized;
-			}
-		}
-
-		public Footprint Footprint
-		{
-			get
-			{
-				if (!this._footprintCacheSet)
-				{
-					this._footprintCacheSet = true;
-					this._cachedFootprint = new Footprint(base.Owner);
-				}
-				return this._cachedFootprint;
-			}
-		}
-
-		public ModuleBase[] Modules
-		{
-			get
-			{
-				if (this._modules == null)
-				{
-					this._modules = base.AllSubcomponents.OfType<SubcomponentBase, ModuleBase>();
-				}
-				return this._modules;
-			}
-		}
-
-		public Attachment[] Attachments
-		{
-			get
-			{
-				if (this._attachments == null)
-				{
-					this._attachments = base.AllSubcomponents.OfType<SubcomponentBase, Attachment>();
-				}
-				return this._attachments;
-			}
-		}
-
-		public bool ServerIsPersonal
-		{
-			get
-			{
-				ItemAddReason serverAddReason = base.ServerAddReason;
-				return serverAddReason == ItemAddReason.StartingItem || serverAddReason == ItemAddReason.AdminCommand || serverAddReason == ItemAddReason.Scp2536;
-			}
-		}
-
-		internal override bool IsLocalPlayer
-		{
-			get
-			{
-				return base.HasOwner && base.IsLocalPlayer;
-			}
-		}
-
-		public Type CrosshairType
-		{
-			get
-			{
-				if (DebugStatsCrosshair.Enabled)
-				{
-					return typeof(DebugStatsCrosshair);
-				}
-				ICustomCrosshairItem customCrosshairItem;
-				if (this.TryGetModule(out customCrosshairItem, true))
-				{
-					return customCrosshairItem.CrosshairType;
-				}
 				return null;
 			}
+			return ViewModel as AnimatedFirearmViewmodel;
 		}
+	}
 
-		public bool AllowDisarming
+	public override bool HasViewmodel
+	{
+		get
 		{
-			get
+			if (ViewModel is AnimatedFirearmViewmodel animatedFirearmViewmodel && animatedFirearmViewmodel != null)
 			{
-				return true;
+				return animatedFirearmViewmodel.Initialized;
 			}
+			return false;
 		}
+	}
 
-		public override void InitializeSubcomponents()
+	public Footprint Footprint
+	{
+		get
 		{
-			this.ServerSideAnimator = base.GetComponent<Animator>();
-			this.ServerSideAnimator.enabled = false;
-			base.InitializeSubcomponents();
-			uint num;
-			AttachmentCodeSync.TryGet(base.ItemSerial, out num);
-			if (base.IsServer)
+			if (!_footprintCacheSet)
 			{
-				if (this.ServerIsPersonal)
-				{
-					num = AttachmentsServerHandler.ServerGetReceivedPlayerPreference(this);
-				}
-				this.ApplyAttachmentsCode(num, true);
-				this.ServerResendAttachmentCode();
-				return;
+				_footprintCacheSet = true;
+				_cachedFootprint = new Footprint(base.Owner);
 			}
-			this.ApplyAttachmentsCode(num, true);
+			return _cachedFootprint;
 		}
+	}
 
-		public override void ServerConfirmAcqusition()
+	public ModuleBase[] Modules
+	{
+		get
 		{
-			base.ServerConfirmAcqusition();
+			if (_modules == null)
+			{
+				_modules = base.AllSubcomponents.OfType<SubcomponentBase, ModuleBase>();
+			}
+			return _modules;
+		}
+	}
+
+	public Attachment[] Attachments
+	{
+		get
+		{
+			if (_attachments == null)
+			{
+				_attachments = base.AllSubcomponents.OfType<SubcomponentBase, Attachment>();
+			}
+			return _attachments;
+		}
+	}
+
+	public bool ServerIsPersonal
+	{
+		get
+		{
+			ItemAddReason serverAddReason = base.ServerAddReason;
+			return serverAddReason == ItemAddReason.StartingItem || serverAddReason == ItemAddReason.AdminCommand || serverAddReason == ItemAddReason.Scp2536;
+		}
+	}
+
+	internal override bool IsLocalPlayer
+	{
+		get
+		{
+			if (base.HasOwner)
+			{
+				return base.IsLocalPlayer;
+			}
+			return false;
+		}
+	}
+
+	public Type CrosshairType
+	{
+		get
+		{
+			if (DebugStatsCrosshair.Enabled)
+			{
+				return typeof(DebugStatsCrosshair);
+			}
+			if (this.TryGetModule<ICustomCrosshairItem>(out var module))
+			{
+				return module.CrosshairType;
+			}
+			return null;
+		}
+	}
+
+	public bool AllowDisarming => true;
+
+	public override void InitializeSubcomponents()
+	{
+		ServerSideAnimator = GetComponent<Animator>();
+		ServerSideAnimator.enabled = false;
+		base.InitializeSubcomponents();
+		AttachmentCodeSync.TryGet(base.ItemSerial, out var code);
+		if (base.IsServer)
+		{
+			if (ServerIsPersonal)
+			{
+				code = AttachmentsServerHandler.ServerGetReceivedPlayerPreference(this);
+			}
+			this.ApplyAttachmentsCode(code, reValidate: true);
 			this.ServerResendAttachmentCode();
 		}
-
-		public override void OnEquipped()
+		else
 		{
-			base.OnEquipped();
-			this.ServerSideAnimator.enabled = base.IsServer;
-			if (base.IsServer)
-			{
-				this.ServerResendAttachmentCode();
-			}
+			this.ApplyAttachmentsCode(code, reValidate: true);
 		}
+	}
 
-		public override void OnHolstered()
+	public override void ServerConfirmAcqusition()
+	{
+		base.ServerConfirmAcqusition();
+		this.ServerResendAttachmentCode();
+	}
+
+	public override void OnEquipped()
+	{
+		base.OnEquipped();
+		ServerSideAnimator.enabled = base.IsServer;
+		if (base.IsServer)
 		{
-			base.OnHolstered();
-			if (!base.IsServer)
-			{
-				return;
-			}
-			this.ServerSideAnimator.Rebind();
-			this.ServerSideAnimator.enabled = false;
-			base.OwnerInventory.RemoveEverythingExceedingLimits(false, true);
+			this.ServerResendAttachmentCode();
 		}
+	}
 
-		protected virtual void OnAnimatorMove()
+	public override void OnHolstered()
+	{
+		base.OnHolstered();
+		if (base.IsServer)
 		{
-			Action onServerAnimatorMove = this.OnServerAnimatorMove;
-			if (onServerAnimatorMove == null)
-			{
-				return;
-			}
-			onServerAnimatorMove();
+			ServerSideAnimator.Rebind();
+			ServerSideAnimator.enabled = false;
 		}
+	}
 
-		public SearchCompletor GetCustomSearchCompletor(ReferenceHub hub, ItemPickupBase ipb, ItemBase ib, double disSqrt)
+	protected override void Awake()
+	{
+		base.Awake();
+		AttachmentCodeSync.OnReceived += OnAttachmentCodeReceived;
+		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
+	}
+
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+		AttachmentCodeSync.OnReceived -= OnAttachmentCodeReceived;
+		PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
+	}
+
+	private void OnAttachmentCodeReceived(ushort serial, uint attCode)
+	{
+		if (serial == base.ItemSerial && !NetworkServer.active)
 		{
-			return new FirearmSearchCompletor(hub, ipb as FirearmPickup, ib, disSqrt);
+			this.ApplyAttachmentsCode(attCode, reValidate: false);
 		}
+	}
 
-		protected override void Awake()
+	private void OnRoleChanged(ReferenceHub hub, PlayerRoleBase prevrole, PlayerRoleBase newrole)
+	{
+		if (NetworkServer.active && !(base.Owner != hub) && hub.IsAlive())
 		{
-			base.Awake();
-			AttachmentCodeSync.OnReceived += this.OnAttachmentCodeReceived;
+			_cachedFootprint = new Footprint(base.Owner);
 		}
-
-		protected override void OnDestroy()
-		{
-			base.OnDestroy();
-			AttachmentCodeSync.OnReceived -= this.OnAttachmentCodeReceived;
-		}
-
-		private void OnAttachmentCodeReceived(ushort serial, uint attCode)
-		{
-			if (serial != base.ItemSerial || NetworkServer.active)
-			{
-				return;
-			}
-			this.ApplyAttachmentsCode(attCode, false);
-		}
-
-		private Footprint _cachedFootprint;
-
-		private bool _footprintCacheSet;
-
-		private ModuleBase[] _modules;
-
-		private Attachment[] _attachments;
 	}
 }

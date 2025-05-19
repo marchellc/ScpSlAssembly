@@ -1,10 +1,8 @@
-﻿using System;
 using PlayerStatsSystem;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public interface IFriendlyFireModifier
 {
-	public interface IFriendlyFireModifier
-	{
-		bool AllowFriendlyFire(float baseDamage, AttackerDamageHandler handler, HitboxType hitboxType);
-	}
+	bool AllowFriendlyFire(float baseDamage, AttackerDamageHandler handler, HitboxType hitboxType);
 }

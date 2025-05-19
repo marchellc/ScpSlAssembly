@@ -1,241 +1,221 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using CursorManagement;
-using LabApi.Events.Arguments.PlayerEvents;
-using LabApi.Events.Handlers;
 using Mirror;
 using Mirror.LiteNetLib4Mirror;
 using UnityEngine;
 using UserSettings;
 using UserSettings.ControlsSettings;
 
-namespace InventorySystem.Searching
+namespace InventorySystem.Searching;
+
+[RequireComponent(typeof(ReferenceHub))]
+public class SearchCoordinator : NetworkBehaviour, ICursorOverride
 {
-	[RequireComponent(typeof(ReferenceHub))]
-	public class SearchCoordinator : NetworkBehaviour, ICursorOverride
+	public const string DebugKey = "SEARCH";
+
+	[Header("Network Shared")]
+	[SerializeField]
+	[SyncVar(hook = "SetRayDistance")]
+	private float rayDistance = 3f;
+
+	[Header("Server only")]
+	[SerializeField]
+	private float serverRayDistanceThreshold = 1.2f;
+
+	[SerializeField]
+	private double serverDelayThreshold = 1.399999976158142;
+
+	private static readonly CachedUserSetting<bool> ToggleSearch = new CachedUserSetting<bool>(MiscControlsSetting.SearchToggle);
+
+	public ReferenceHub Hub { get; private set; }
+
+	public CursorOverrideMode CursorOverride => CursorOverrideMode.NoOverride;
+
+	public bool LockMovement => false;
+
+	public float ServerMaxRayDistanceSqr { get; private set; }
+
+	public float RayDistance
 	{
-		public event Action<SearchCompletor> OnCompleted;
-
-		public ReferenceHub Hub { get; private set; }
-
-		public CursorOverrideMode CursorOverride
+		get
 		{
-			get
+			return rayDistance;
+		}
+		set
+		{
+			if (!NetworkServer.active)
 			{
-				return CursorOverrideMode.NoOverride;
+				throw new InvalidOperationException("The ray distance can only be set by the server.");
+			}
+			NetworkrayDistance = value;
+			UpdateMaxDistanceSqr();
+		}
+	}
+
+	public SearchSessionPipe SessionPipe { get; private set; }
+
+	public ISearchCompletor Completor { get; private set; }
+
+	public float NetworkrayDistance
+	{
+		get
+		{
+			return rayDistance;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref rayDistance, 1uL, SetRayDistance);
+		}
+	}
+
+	public event Action<ISearchCompletor> OnCompleted;
+
+	private void SetRayDistance(float oldValue, float newValue)
+	{
+		UpdateMaxDistanceSqr();
+	}
+
+	private void UpdateMaxDistanceSqr()
+	{
+		ServerMaxRayDistanceSqr = rayDistance * rayDistance * serverRayDistanceThreshold;
+	}
+
+	private void Start()
+	{
+		UpdateMaxDistanceSqr();
+		Hub = ReferenceHub.GetHub(base.gameObject);
+		SessionPipe = new SearchSessionPipe(this, NetworkServer.active ? Hub.playerRateLimitHandler.RateLimits[0] : null);
+		SessionPipe.RequestUpdated += HandleRequest;
+		SessionPipe.RegisterHandlers();
+		if (base.isLocalPlayer)
+		{
+			CursorManager.Register(this);
+		}
+	}
+
+	private void OnDestroy()
+	{
+		CursorManager.Unregister(this);
+	}
+
+	private void Update()
+	{
+		if (NetworkServer.active && SessionPipe.Status == SearchSessionPipe.Activity.Promised)
+		{
+			ContinuePickupServer();
+		}
+		SessionPipe.Update();
+	}
+
+	private void HandleRequest()
+	{
+		bool flag;
+		SearchSession? session;
+		ISearchCompletor completor;
+		try
+		{
+			flag = ReceiveRequestUnsafe(out session, out completor);
+		}
+		catch (Exception exception)
+		{
+			SessionPipe.Invalidate();
+			DebugLog.LogException(exception);
+			return;
+		}
+		if (flag)
+		{
+			if (session.HasValue)
+			{
+				SessionPipe.Session = session.Value;
+			}
+			else
+			{
+				SessionPipe.Invalidate();
 			}
 		}
+		Completor = completor;
+	}
 
-		public bool LockMovement
+	private bool ReceiveRequestUnsafe(out SearchSession? session, out ISearchCompletor completor)
+	{
+		SearchRequest request = SessionPipe.Request;
+		completor = request.Target.GetSearchCompletor(this, ServerMaxRayDistanceSqr);
+		if (completor == null || !completor.ValidateStart())
 		{
-			get
-			{
-				return false;
-			}
-		}
-
-		public float ServerMaxRayDistanceSqr { get; private set; }
-
-		public float RayDistance
-		{
-			get
-			{
-				return this.rayDistance;
-			}
-			set
-			{
-				if (!NetworkServer.active)
-				{
-					throw new InvalidOperationException("The ray distance can only be set by the server.");
-				}
-				this.NetworkrayDistance = value;
-				this.UpdateMaxDistanceSqr();
-			}
-		}
-
-		public SearchSessionPipe SessionPipe { get; private set; }
-
-		public SearchCompletor Completor { get; private set; }
-
-		private void SetRayDistance(float oldValue, float newValue)
-		{
-			this.UpdateMaxDistanceSqr();
-		}
-
-		private void UpdateMaxDistanceSqr()
-		{
-			this.ServerMaxRayDistanceSqr = this.rayDistance * this.rayDistance * this.serverRayDistanceThreshold;
-		}
-
-		private void Start()
-		{
-			this.UpdateMaxDistanceSqr();
-			this.Hub = ReferenceHub.GetHub(base.gameObject);
-			this.SessionPipe = new SearchSessionPipe(this, NetworkServer.active ? this.Hub.playerRateLimitHandler.RateLimits[0] : null);
-			this.SessionPipe.RequestUpdated += this.HandleRequest;
-			this.SessionPipe.RegisterHandlers();
-			if (base.isLocalPlayer)
-			{
-				CursorManager.Register(this);
-			}
-		}
-
-		private void OnDestroy()
-		{
-			CursorManager.Unregister(this);
-		}
-
-		private void Update()
-		{
-			if (NetworkServer.active && this.SessionPipe.Status == SearchSessionPipe.Activity.Promised)
-			{
-				this.ContinuePickupServer();
-			}
-			this.SessionPipe.Update();
-		}
-
-		private void HandleRequest()
-		{
-			SearchSession? searchSession;
-			SearchCompletor searchCompletor;
-			bool flag;
-			try
-			{
-				flag = this.ReceiveRequestUnsafe(out searchSession, out searchCompletor);
-			}
-			catch (Exception ex)
-			{
-				this.SessionPipe.Invalidate();
-				DebugLog.LogException(ex);
-				return;
-			}
-			if (flag)
-			{
-				if (searchSession != null)
-				{
-					this.SessionPipe.Session = searchSession.Value;
-				}
-				else
-				{
-					this.SessionPipe.Invalidate();
-				}
-			}
-			this.Completor = searchCompletor;
-		}
-
-		private bool ReceiveRequestUnsafe(out SearchSession? session, out SearchCompletor completor)
-		{
-			SearchRequest request = this.SessionPipe.Request;
-			completor = SearchCompletor.FromPickup(this, request.Target, (double)this.ServerMaxRayDistanceSqr);
-			if (!completor.ValidateStart())
-			{
-				session = null;
-				completor = null;
-				return true;
-			}
-			SearchSession body = request.Body;
-			if (!base.isLocalPlayer)
-			{
-				double num = NetworkTime.time - request.InitialTime;
-				double num2 = (double)LiteNetLib4MirrorServer.Peers[base.connectionToClient.connectionId].Ping * 0.001 * this.serverDelayThreshold;
-				float num3 = request.Target.SearchTimeForPlayer(this.Hub);
-				if (num < 0.0 || num2 < num)
-				{
-					body.InitialTime = NetworkTime.time - num2;
-					body.FinishTime = body.InitialTime + (double)num3;
-				}
-				else if (Math.Abs(body.FinishTime - body.InitialTime - (double)num3) > 0.001)
-				{
-					body.FinishTime = body.InitialTime + (double)num3;
-				}
-			}
-			session = new SearchSession?(body);
+			session = null;
+			completor = null;
 			return true;
 		}
-
-		private void ContinuePickupServer()
+		SearchSession body = request.Body;
+		if (!base.isLocalPlayer)
 		{
-			if (!this.Completor.ValidateUpdate())
+			double num = NetworkTime.time - request.InitialTime;
+			double num2 = (double)LiteNetLib4MirrorServer.Peers[base.connectionToClient.connectionId].Ping * 0.001 * serverDelayThreshold;
+			float num3 = request.Target.SearchTimeForPlayer(Hub);
+			if (num < 0.0 || num2 < num)
 			{
-				this.SessionPipe.Invalidate();
-				return;
+				body.InitialTime = NetworkTime.time - num2;
+				body.FinishTime = body.InitialTime + (double)num3;
 			}
-			if (NetworkTime.time < this.SessionPipe.Session.FinishTime)
+			else if (Math.Abs(body.FinishTime - body.InitialTime - (double)num3) > 0.001)
 			{
-				return;
-			}
-			PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(this.Completor.Hub, this.Completor.TargetPickup));
-			this.Completor.Complete();
-			Action<SearchCompletor> onCompleted = this.OnCompleted;
-			if (onCompleted == null)
-			{
-				return;
-			}
-			onCompleted(this.Completor);
-		}
-
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		public float NetworkrayDistance
-		{
-			get
-			{
-				return this.rayDistance;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<float>(value, ref this.rayDistance, 1UL, new Action<float, float>(this.SetRayDistance));
+				body.FinishTime = body.InitialTime + (double)num3;
 			}
 		}
+		session = body;
+		return true;
+	}
 
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	private void ContinuePickupServer()
+	{
+		if (Completor.ValidateUpdate())
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
+			if (!(NetworkTime.time < SessionPipe.Session.FinishTime))
 			{
-				writer.WriteFloat(this.rayDistance);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 1UL) != 0UL)
-			{
-				writer.WriteFloat(this.rayDistance);
+				Completor.Complete();
+				this.OnCompleted?.Invoke(Completor);
 			}
 		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+		else
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this.rayDistance, new Action<float, float>(this.SetRayDistance), reader.ReadFloat());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 1L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this.rayDistance, new Action<float, float>(this.SetRayDistance), reader.ReadFloat());
-			}
+			SessionPipe.Invalidate();
 		}
+	}
 
-		public const string DebugKey = "SEARCH";
+	public override bool Weaved()
+	{
+		return true;
+	}
 
-		[Header("Network Shared")]
-		[SerializeField]
-		[SyncVar(hook = "SetRayDistance")]
-		private float rayDistance = 3f;
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
+		{
+			writer.WriteFloat(rayDistance);
+			return;
+		}
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 1L) != 0L)
+		{
+			writer.WriteFloat(rayDistance);
+		}
+	}
 
-		[Header("Server only")]
-		[SerializeField]
-		private float serverRayDistanceThreshold = 1.2f;
-
-		[SerializeField]
-		private double serverDelayThreshold = 1.399999976158142;
-
-		private static readonly CachedUserSetting<bool> ToggleSearch = new CachedUserSetting<bool>(MiscControlsSetting.SearchToggle);
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref rayDistance, SetRayDistance, reader.ReadFloat());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 1L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref rayDistance, SetRayDistance, reader.ReadFloat());
+		}
 	}
 }

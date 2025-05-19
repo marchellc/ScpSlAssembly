@@ -1,20 +1,32 @@
-﻿using System;
+using System;
 using Mirror;
 using Mirror.RemoteCalls;
 using UnityEngine;
 
 public class Broadcast : NetworkBehaviour
 {
+	[Flags]
+	public enum BroadcastFlags : byte
+	{
+		Normal = 0,
+		Truncated = 1,
+		AdminChat = 2
+	}
+
+	private static Broadcast _broadcast;
+
+	private static bool _broadcastSet;
+
 	public static Broadcast Singleton
 	{
 		get
 		{
-			if (!Broadcast._broadcastSet)
+			if (!_broadcastSet)
 			{
-				Broadcast._broadcastSet = true;
-				Broadcast._broadcast = ReferenceHub.LocalHub.GetComponent<Broadcast>();
+				_broadcastSet = true;
+				_broadcast = ReferenceHub.LocalHub.GetComponent<Broadcast>();
 			}
-			return Broadcast._broadcast;
+			return _broadcast;
 		}
 	}
 
@@ -24,48 +36,48 @@ public class Broadcast : NetworkBehaviour
 
 	private void OnDestroy()
 	{
-		if (this == Broadcast._broadcast)
+		if (this == _broadcast)
 		{
-			Broadcast._broadcastSet = false;
+			_broadcastSet = false;
 		}
 	}
 
 	[TargetRpc]
-	public void TargetAddElement(NetworkConnection conn, string data, ushort time, Broadcast.BroadcastFlags flags)
+	public void TargetAddElement(NetworkConnection conn, string data, ushort time, BroadcastFlags flags)
 	{
-		NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-		networkWriterPooled.WriteString(data);
-		networkWriterPooled.WriteUShort(time);
-		global::Mirror.GeneratedNetworkCode._Write_Broadcast/BroadcastFlags(networkWriterPooled, flags);
-		this.SendTargetRPCInternal(conn, "System.Void Broadcast::TargetAddElement(Mirror.NetworkConnection,System.String,System.UInt16,Broadcast/BroadcastFlags)", 624805019, networkWriterPooled, 0);
-		NetworkWriterPool.Return(networkWriterPooled);
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteString(data);
+		writer.WriteUShort(time);
+		GeneratedNetworkCode._Write_Broadcast_002FBroadcastFlags(writer, flags);
+		SendTargetRPCInternal(conn, "System.Void Broadcast::TargetAddElement(Mirror.NetworkConnection,System.String,System.UInt16,Broadcast/BroadcastFlags)", 624805019, writer, 0);
+		NetworkWriterPool.Return(writer);
 	}
 
 	[ClientRpc]
-	public void RpcAddElement(string data, ushort time, Broadcast.BroadcastFlags flags)
+	public void RpcAddElement(string data, ushort time, BroadcastFlags flags)
 	{
-		NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-		networkWriterPooled.WriteString(data);
-		networkWriterPooled.WriteUShort(time);
-		global::Mirror.GeneratedNetworkCode._Write_Broadcast/BroadcastFlags(networkWriterPooled, flags);
-		this.SendRPCInternal("System.Void Broadcast::RpcAddElement(System.String,System.UInt16,Broadcast/BroadcastFlags)", -775219482, networkWriterPooled, 0, true);
-		NetworkWriterPool.Return(networkWriterPooled);
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteString(data);
+		writer.WriteUShort(time);
+		GeneratedNetworkCode._Write_Broadcast_002FBroadcastFlags(writer, flags);
+		SendRPCInternal("System.Void Broadcast::RpcAddElement(System.String,System.UInt16,Broadcast/BroadcastFlags)", -775219482, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
 	}
 
 	[TargetRpc]
 	public void TargetClearElements(NetworkConnection conn)
 	{
-		NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-		this.SendTargetRPCInternal(conn, "System.Void Broadcast::TargetClearElements(Mirror.NetworkConnection)", -1104952326, networkWriterPooled, 0);
-		NetworkWriterPool.Return(networkWriterPooled);
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		SendTargetRPCInternal(conn, "System.Void Broadcast::TargetClearElements(Mirror.NetworkConnection)", -1104952326, writer, 0);
+		NetworkWriterPool.Return(writer);
 	}
 
 	[ClientRpc]
 	public void RpcClearElements()
 	{
-		NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-		this.SendRPCInternal("System.Void Broadcast::RpcClearElements()", -701809763, networkWriterPooled, 0, true);
-		NetworkWriterPool.Return(networkWriterPooled);
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		SendRPCInternal("System.Void Broadcast::RpcClearElements()", -701809763, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
 	}
 
 	public override bool Weaved()
@@ -73,7 +85,7 @@ public class Broadcast : NetworkBehaviour
 		return true;
 	}
 
-	protected void UserCode_TargetAddElement__NetworkConnection__String__UInt16__BroadcastFlags(NetworkConnection conn, string data, ushort time, Broadcast.BroadcastFlags flags)
+	protected void UserCode_TargetAddElement__NetworkConnection__String__UInt16__BroadcastFlags(NetworkConnection conn, string data, ushort time, BroadcastFlags flags)
 	{
 	}
 
@@ -82,12 +94,14 @@ public class Broadcast : NetworkBehaviour
 		if (!NetworkClient.active)
 		{
 			Debug.LogError("TargetRPC TargetAddElement called on server.");
-			return;
 		}
-		((Broadcast)obj).UserCode_TargetAddElement__NetworkConnection__String__UInt16__BroadcastFlags(null, reader.ReadString(), reader.ReadUShort(), global::Mirror.GeneratedNetworkCode._Read_Broadcast/BroadcastFlags(reader));
+		else
+		{
+			((Broadcast)obj).UserCode_TargetAddElement__NetworkConnection__String__UInt16__BroadcastFlags(null, reader.ReadString(), reader.ReadUShort(), GeneratedNetworkCode._Read_Broadcast_002FBroadcastFlags(reader));
+		}
 	}
 
-	protected void UserCode_RpcAddElement__String__UInt16__BroadcastFlags(string data, ushort time, Broadcast.BroadcastFlags flags)
+	protected void UserCode_RpcAddElement__String__UInt16__BroadcastFlags(string data, ushort time, BroadcastFlags flags)
 	{
 	}
 
@@ -96,9 +110,11 @@ public class Broadcast : NetworkBehaviour
 		if (!NetworkClient.active)
 		{
 			Debug.LogError("RPC RpcAddElement called on server.");
-			return;
 		}
-		((Broadcast)obj).UserCode_RpcAddElement__String__UInt16__BroadcastFlags(reader.ReadString(), reader.ReadUShort(), global::Mirror.GeneratedNetworkCode._Read_Broadcast/BroadcastFlags(reader));
+		else
+		{
+			((Broadcast)obj).UserCode_RpcAddElement__String__UInt16__BroadcastFlags(reader.ReadString(), reader.ReadUShort(), GeneratedNetworkCode._Read_Broadcast_002FBroadcastFlags(reader));
+		}
 	}
 
 	protected void UserCode_TargetClearElements__NetworkConnection(NetworkConnection conn)
@@ -110,9 +126,11 @@ public class Broadcast : NetworkBehaviour
 		if (!NetworkClient.active)
 		{
 			Debug.LogError("TargetRPC TargetClearElements called on server.");
-			return;
 		}
-		((Broadcast)obj).UserCode_TargetClearElements__NetworkConnection(null);
+		else
+		{
+			((Broadcast)obj).UserCode_TargetClearElements__NetworkConnection(null);
+		}
 	}
 
 	protected void UserCode_RpcClearElements()
@@ -124,28 +142,18 @@ public class Broadcast : NetworkBehaviour
 		if (!NetworkClient.active)
 		{
 			Debug.LogError("RPC RpcClearElements called on server.");
-			return;
 		}
-		((Broadcast)obj).UserCode_RpcClearElements();
+		else
+		{
+			((Broadcast)obj).UserCode_RpcClearElements();
+		}
 	}
 
 	static Broadcast()
 	{
-		RemoteProcedureCalls.RegisterRpc(typeof(Broadcast), "System.Void Broadcast::RpcAddElement(System.String,System.UInt16,Broadcast/BroadcastFlags)", new RemoteCallDelegate(Broadcast.InvokeUserCode_RpcAddElement__String__UInt16__BroadcastFlags));
-		RemoteProcedureCalls.RegisterRpc(typeof(Broadcast), "System.Void Broadcast::RpcClearElements()", new RemoteCallDelegate(Broadcast.InvokeUserCode_RpcClearElements));
-		RemoteProcedureCalls.RegisterRpc(typeof(Broadcast), "System.Void Broadcast::TargetAddElement(Mirror.NetworkConnection,System.String,System.UInt16,Broadcast/BroadcastFlags)", new RemoteCallDelegate(Broadcast.InvokeUserCode_TargetAddElement__NetworkConnection__String__UInt16__BroadcastFlags));
-		RemoteProcedureCalls.RegisterRpc(typeof(Broadcast), "System.Void Broadcast::TargetClearElements(Mirror.NetworkConnection)", new RemoteCallDelegate(Broadcast.InvokeUserCode_TargetClearElements__NetworkConnection));
-	}
-
-	private static Broadcast _broadcast;
-
-	private static bool _broadcastSet;
-
-	[Flags]
-	public enum BroadcastFlags : byte
-	{
-		Normal = 0,
-		Truncated = 1,
-		AdminChat = 2
+		RemoteProcedureCalls.RegisterRpc(typeof(Broadcast), "System.Void Broadcast::RpcAddElement(System.String,System.UInt16,Broadcast/BroadcastFlags)", InvokeUserCode_RpcAddElement__String__UInt16__BroadcastFlags);
+		RemoteProcedureCalls.RegisterRpc(typeof(Broadcast), "System.Void Broadcast::RpcClearElements()", InvokeUserCode_RpcClearElements);
+		RemoteProcedureCalls.RegisterRpc(typeof(Broadcast), "System.Void Broadcast::TargetAddElement(Mirror.NetworkConnection,System.String,System.UInt16,Broadcast/BroadcastFlags)", InvokeUserCode_TargetAddElement__NetworkConnection__String__UInt16__BroadcastFlags);
+		RemoteProcedureCalls.RegisterRpc(typeof(Broadcast), "System.Void Broadcast::TargetClearElements(Mirror.NetworkConnection)", InvokeUserCode_TargetClearElements__NetworkConnection);
 	}
 }

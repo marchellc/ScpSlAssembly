@@ -1,9 +1,7 @@
-﻿using System;
 using UnityEngine;
 
-namespace Utils
+namespace Utils;
+
+public class SettingsBasedObjectEnabler : MonoBehaviour
 {
-	public class SettingsBasedObjectEnabler : MonoBehaviour
-	{
-	}
 }

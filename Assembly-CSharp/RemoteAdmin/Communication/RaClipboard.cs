@@ -1,32 +1,24 @@
-﻿using System;
 using RemoteAdmin.Interfaces;
 
-namespace RemoteAdmin.Communication
+namespace RemoteAdmin.Communication;
+
+public class RaClipboard : IClientCommunication
 {
-	public class RaClipboard : IClientCommunication
+	public enum RaClipBoardType
 	{
-		public int DataId
-		{
-			get
-			{
-				return 6;
-			}
-		}
+		Ip,
+		UserId,
+		PlayerId
+	}
 
-		public void ReceiveData(string data, bool secure = true)
-		{
-		}
+	public int DataId => 6;
 
-		public static void Send(CommandSender sender, RaClipboard.RaClipBoardType type, string data)
-		{
-			sender.RaReply(string.Format("$6 {0} {1}", (int)type, data), true, false, string.Empty);
-		}
+	public void ReceiveData(string data, bool secure = true)
+	{
+	}
 
-		public enum RaClipBoardType
-		{
-			Ip,
-			UserId,
-			PlayerId
-		}
+	public static void Send(CommandSender sender, RaClipBoardType type, string data)
+	{
+		sender.RaReply($"$6 {(int)type} {data}", success: true, logToConsole: false, string.Empty);
 	}
 }

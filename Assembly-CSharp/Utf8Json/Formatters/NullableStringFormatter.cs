@@ -1,29 +1,26 @@
-﻿using System;
+namespace Utf8Json.Formatters;
 
-namespace Utf8Json.Formatters
+public sealed class NullableStringFormatter : IJsonFormatter<string>, IJsonFormatter, IObjectPropertyNameFormatter<string>
 {
-	public sealed class NullableStringFormatter : IJsonFormatter<string>, IJsonFormatter, IObjectPropertyNameFormatter<string>
+	public static readonly IJsonFormatter<string> Default = new NullableStringFormatter();
+
+	public void Serialize(ref JsonWriter writer, string value, IJsonFormatterResolver formatterResolver)
 	{
-		public void Serialize(ref JsonWriter writer, string value, IJsonFormatterResolver formatterResolver)
-		{
-			writer.WriteString(value);
-		}
+		writer.WriteString(value);
+	}
 
-		public string Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
-		{
-			return reader.ReadString();
-		}
+	public string Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		return reader.ReadString();
+	}
 
-		public void SerializeToPropertyName(ref JsonWriter writer, string value, IJsonFormatterResolver formatterResolver)
-		{
-			writer.WriteString(value);
-		}
+	public void SerializeToPropertyName(ref JsonWriter writer, string value, IJsonFormatterResolver formatterResolver)
+	{
+		writer.WriteString(value);
+	}
 
-		public string DeserializeFromPropertyName(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
-		{
-			return reader.ReadString();
-		}
-
-		public static readonly IJsonFormatter<string> Default = new NullableStringFormatter();
+	public string DeserializeFromPropertyName(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		return reader.ReadString();
 	}
 }

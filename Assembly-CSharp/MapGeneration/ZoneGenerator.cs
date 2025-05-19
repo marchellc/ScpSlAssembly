@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace MapGeneration
-{
-	public abstract class ZoneGenerator : MonoBehaviour
-	{
-		public abstract void Generate(global::System.Random rng);
+namespace MapGeneration;
 
-		public FacilityZone TargetZone;
-	}
+public abstract class ZoneGenerator : MonoBehaviour
+{
+	public FacilityZone TargetZone;
+
+	public abstract void Generate(System.Random rng);
 }

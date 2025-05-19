@@ -1,68 +1,69 @@
-﻿using System;
 using UnityEngine;
 
-namespace AudioPooling
+namespace AudioPooling;
+
+public class PooledAudioSource : MonoBehaviour
 {
-	public class PooledAudioSource : MonoBehaviour
+	private AudioSource _audioSource;
+
+	private bool _sourceCached;
+
+	private Transform _transform;
+
+	private bool _transformCached;
+
+	public bool Locked { get; set; }
+
+	public ulong TotalRecycles { get; private set; }
+
+	public bool Pooled { get; private set; }
+
+	public AudioSource Source
 	{
-		public bool Locked { get; set; }
-
-		public ulong TotalRecycles { get; private set; }
-
-		public bool Pooled { get; private set; }
-
-		public AudioSource Source
+		get
 		{
-			get
+			if (!_sourceCached)
 			{
-				if (!this._sourceCached)
-				{
-					this._audioSource = base.GetComponent<AudioSource>();
-					this._sourceCached = true;
-				}
-				return this._audioSource;
+				_audioSource = GetComponent<AudioSource>();
+				_sourceCached = true;
 			}
+			return _audioSource;
 		}
+	}
 
-		public Transform FastTransform
+	public Transform FastTransform
+	{
+		get
 		{
-			get
+			if (!_transformCached)
 			{
-				if (!this._transformCached)
-				{
-					this._transform = base.transform;
-					this._transformCached = true;
-				}
-				return this._transform;
+				_transform = base.transform;
+				_transformCached = true;
 			}
+			return _transform;
 		}
+	}
 
-		public bool AllowRecycling
+	public bool AllowRecycling
+	{
+		get
 		{
-			get
+			if (!Locked)
 			{
-				return !this.Locked && !this.Source.isPlaying;
+				return !Source.isPlaying;
 			}
+			return false;
 		}
+	}
 
-		internal void OnRecycled()
-		{
-			this.Pooled = false;
-			ulong totalRecycles = this.TotalRecycles;
-			this.TotalRecycles = totalRecycles + 1UL;
-		}
+	internal void OnRecycled()
+	{
+		Pooled = false;
+		TotalRecycles++;
+	}
 
-		internal void OnPooled()
-		{
-			this.Pooled = true;
-		}
-
-		private AudioSource _audioSource;
-
-		private bool _sourceCached;
-
-		private Transform _transform;
-
-		private bool _transformCached;
+	internal void OnPooled()
+	{
+		Pooled = true;
 	}
 }

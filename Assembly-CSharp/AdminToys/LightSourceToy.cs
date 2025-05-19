@@ -1,356 +1,354 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using Mirror;
 using UnityEngine;
 using UserSettings;
 using UserSettings.VideoSettings;
 
-namespace AdminToys
+namespace AdminToys;
+
+public class LightSourceToy : AdminToyBase
 {
-	public class LightSourceToy : AdminToyBase
+	[SerializeField]
+	private Light _light;
+
+	[SyncVar(hook = "SetIntensity")]
+	public float LightIntensity;
+
+	[SyncVar(hook = "SetRange")]
+	public float LightRange;
+
+	[SyncVar(hook = "SetColor")]
+	public Color LightColor;
+
+	[SyncVar(hook = "SetShadows")]
+	public LightShadows ShadowType;
+
+	[SyncVar(hook = "SetShadowStrength")]
+	public float ShadowStrength;
+
+	[SyncVar(hook = "SetType")]
+	public LightType LightType;
+
+	[SyncVar(hook = "SetShape")]
+	public LightShape LightShape;
+
+	[SyncVar(hook = "SetSpotAngle")]
+	public float SpotAngle;
+
+	[SyncVar(hook = "SetInnerSpotAngle")]
+	public float InnerSpotAngle;
+
+	public override string CommandName => "LightSource";
+
+	public float NetworkLightIntensity
 	{
-		public override string CommandName
+		get
 		{
-			get
-			{
-				return "LightSource";
-			}
+			return LightIntensity;
 		}
-
-		public override void OnSpawned(ReferenceHub admin, ArraySegment<string> arguments)
+		[param: In]
+		set
 		{
-			base.OnSpawned(admin, arguments);
-			base.transform.position = admin.PlayerCameraReference.position;
-			base.transform.localScale = Vector3.one;
+			GeneratedSyncVarSetter(value, ref LightIntensity, 32uL, SetIntensity);
 		}
+	}
 
-		private void Start()
+	public float NetworkLightRange
+	{
+		get
 		{
-			if (!UserSetting<bool>.Get<LightingVideoSetting>(LightingVideoSetting.RenderShadows))
-			{
-				this._light.shadows = LightShadows.None;
-			}
+			return LightRange;
 		}
-
-		private void SetIntensity(float oldIntensity, float newIntensity)
+		[param: In]
+		set
 		{
-			this._light.intensity = newIntensity;
+			GeneratedSyncVarSetter(value, ref LightRange, 64uL, SetRange);
 		}
+	}
 
-		private void SetRange(float oldRange, float newRange)
+	public Color NetworkLightColor
+	{
+		get
 		{
-			this._light.range = newRange;
+			return LightColor;
 		}
-
-		private void SetColor(Color oldColor, Color newColor)
+		[param: In]
+		set
 		{
-			this._light.color = newColor;
+			GeneratedSyncVarSetter(value, ref LightColor, 128uL, SetColor);
 		}
+	}
 
-		private void SetShadows(LightShadows oldShadows, LightShadows newShadows)
+	public LightShadows NetworkShadowType
+	{
+		get
 		{
-			if (!UserSetting<bool>.Get<LightingVideoSetting>(LightingVideoSetting.RenderShadows))
-			{
-				this._light.shadows = LightShadows.None;
-				return;
-			}
-			this._light.shadows = ((this.LightType == LightType.Directional) ? LightShadows.None : newShadows);
+			return ShadowType;
 		}
-
-		private void SetShadowStrength(float oldStrength, float newStrength)
+		[param: In]
+		set
 		{
-			this._light.shadowStrength = newStrength;
+			GeneratedSyncVarSetter(value, ref ShadowType, 256uL, SetShadows);
 		}
+	}
 
-		private void SetType(LightType oldType, LightType newType)
+	public float NetworkShadowStrength
+	{
+		get
 		{
-			if (newType == LightType.Directional)
-			{
-				this.NetworkShadowType = LightShadows.None;
-			}
-			if (newType > LightType.Point)
-			{
-				this.NetworkLightType = LightType.Point;
-				return;
-			}
-			this._light.type = newType;
+			return ShadowStrength;
 		}
-
-		private void SetShape(LightShape oldShape, LightShape newShape)
+		[param: In]
+		set
 		{
-			this._light.shape = newShape;
+			GeneratedSyncVarSetter(value, ref ShadowStrength, 512uL, SetShadowStrength);
 		}
+	}
 
-		private void SetSpotAngle(float oldAngle, float newAngle)
+	public LightType NetworkLightType
+	{
+		get
 		{
-			this._light.spotAngle = newAngle;
+			return LightType;
 		}
-
-		private void SetInnerSpotAngle(float oldAngle, float newAngle)
+		[param: In]
+		set
 		{
-			this._light.innerSpotAngle = newAngle;
+			GeneratedSyncVarSetter(value, ref LightType, 1024uL, SetType);
 		}
+	}
 
-		public override bool Weaved()
+	public LightShape NetworkLightShape
+	{
+		get
 		{
-			return true;
+			return LightShape;
 		}
-
-		public float NetworkLightIntensity
+		[param: In]
+		set
 		{
-			get
-			{
-				return this.LightIntensity;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<float>(value, ref this.LightIntensity, 32UL, new Action<float, float>(this.SetIntensity));
-			}
+			GeneratedSyncVarSetter(value, ref LightShape, 2048uL, SetShape);
 		}
+	}
 
-		public float NetworkLightRange
+	public float NetworkSpotAngle
+	{
+		get
 		{
-			get
-			{
-				return this.LightRange;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<float>(value, ref this.LightRange, 64UL, new Action<float, float>(this.SetRange));
-			}
+			return SpotAngle;
 		}
-
-		public Color NetworkLightColor
+		[param: In]
+		set
 		{
-			get
-			{
-				return this.LightColor;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<Color>(value, ref this.LightColor, 128UL, new Action<Color, Color>(this.SetColor));
-			}
+			GeneratedSyncVarSetter(value, ref SpotAngle, 4096uL, SetSpotAngle);
 		}
+	}
 
-		public LightShadows NetworkShadowType
+	public float NetworkInnerSpotAngle
+	{
+		get
 		{
-			get
-			{
-				return this.ShadowType;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<LightShadows>(value, ref this.ShadowType, 256UL, new Action<LightShadows, LightShadows>(this.SetShadows));
-			}
+			return InnerSpotAngle;
 		}
-
-		public float NetworkShadowStrength
+		[param: In]
+		set
 		{
-			get
-			{
-				return this.ShadowStrength;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<float>(value, ref this.ShadowStrength, 512UL, new Action<float, float>(this.SetShadowStrength));
-			}
+			GeneratedSyncVarSetter(value, ref InnerSpotAngle, 8192uL, SetInnerSpotAngle);
 		}
+	}
 
-		public LightType NetworkLightType
+	public override void OnSpawned(ReferenceHub admin, ArraySegment<string> arguments)
+	{
+		base.OnSpawned(admin, arguments);
+		base.transform.position = admin.PlayerCameraReference.position;
+		base.transform.localScale = Vector3.one;
+	}
+
+	protected override void Start()
+	{
+		base.Start();
+		if (!UserSetting<bool>.Get(LightingVideoSetting.RenderShadows))
 		{
-			get
-			{
-				return this.LightType;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<LightType>(value, ref this.LightType, 1024UL, new Action<LightType, LightType>(this.SetType));
-			}
+			_light.shadows = LightShadows.None;
 		}
+	}
 
-		public LightShape NetworkLightShape
+	private void SetIntensity(float oldIntensity, float newIntensity)
+	{
+		_light.intensity = newIntensity;
+	}
+
+	private void SetRange(float oldRange, float newRange)
+	{
+		_light.range = newRange;
+	}
+
+	private void SetColor(Color oldColor, Color newColor)
+	{
+		_light.color = newColor;
+	}
+
+	private void SetShadows(LightShadows oldShadows, LightShadows newShadows)
+	{
+		if (!UserSetting<bool>.Get(LightingVideoSetting.RenderShadows))
 		{
-			get
-			{
-				return this.LightShape;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<LightShape>(value, ref this.LightShape, 2048UL, new Action<LightShape, LightShape>(this.SetShape));
-			}
+			_light.shadows = LightShadows.None;
 		}
-
-		public float NetworkSpotAngle
+		else
 		{
-			get
-			{
-				return this.SpotAngle;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<float>(value, ref this.SpotAngle, 4096UL, new Action<float, float>(this.SetSpotAngle));
-			}
+			_light.shadows = ((LightType != LightType.Directional) ? newShadows : LightShadows.None);
 		}
+	}
 
-		public float NetworkInnerSpotAngle
+	private void SetShadowStrength(float oldStrength, float newStrength)
+	{
+		_light.shadowStrength = newStrength;
+	}
+
+	private void SetType(LightType oldType, LightType newType)
+	{
+		if (newType == LightType.Directional)
 		{
-			get
-			{
-				return this.InnerSpotAngle;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<float>(value, ref this.InnerSpotAngle, 8192UL, new Action<float, float>(this.SetInnerSpotAngle));
-			}
+			NetworkShadowType = LightShadows.None;
 		}
-
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+		if (newType > LightType.Point)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteFloat(this.LightIntensity);
-				writer.WriteFloat(this.LightRange);
-				writer.WriteColor(this.LightColor);
-				global::Mirror.GeneratedNetworkCode._Write_UnityEngine.LightShadows(writer, this.ShadowType);
-				writer.WriteFloat(this.ShadowStrength);
-				global::Mirror.GeneratedNetworkCode._Write_UnityEngine.LightType(writer, this.LightType);
-				global::Mirror.GeneratedNetworkCode._Write_UnityEngine.LightShape(writer, this.LightShape);
-				writer.WriteFloat(this.SpotAngle);
-				writer.WriteFloat(this.InnerSpotAngle);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 32UL) != 0UL)
-			{
-				writer.WriteFloat(this.LightIntensity);
-			}
-			if ((base.syncVarDirtyBits & 64UL) != 0UL)
-			{
-				writer.WriteFloat(this.LightRange);
-			}
-			if ((base.syncVarDirtyBits & 128UL) != 0UL)
-			{
-				writer.WriteColor(this.LightColor);
-			}
-			if ((base.syncVarDirtyBits & 256UL) != 0UL)
-			{
-				global::Mirror.GeneratedNetworkCode._Write_UnityEngine.LightShadows(writer, this.ShadowType);
-			}
-			if ((base.syncVarDirtyBits & 512UL) != 0UL)
-			{
-				writer.WriteFloat(this.ShadowStrength);
-			}
-			if ((base.syncVarDirtyBits & 1024UL) != 0UL)
-			{
-				global::Mirror.GeneratedNetworkCode._Write_UnityEngine.LightType(writer, this.LightType);
-			}
-			if ((base.syncVarDirtyBits & 2048UL) != 0UL)
-			{
-				global::Mirror.GeneratedNetworkCode._Write_UnityEngine.LightShape(writer, this.LightShape);
-			}
-			if ((base.syncVarDirtyBits & 4096UL) != 0UL)
-			{
-				writer.WriteFloat(this.SpotAngle);
-			}
-			if ((base.syncVarDirtyBits & 8192UL) != 0UL)
-			{
-				writer.WriteFloat(this.InnerSpotAngle);
-			}
+			NetworkLightType = LightType.Point;
 		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+		else
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this.LightIntensity, new Action<float, float>(this.SetIntensity), reader.ReadFloat());
-				base.GeneratedSyncVarDeserialize<float>(ref this.LightRange, new Action<float, float>(this.SetRange), reader.ReadFloat());
-				base.GeneratedSyncVarDeserialize<Color>(ref this.LightColor, new Action<Color, Color>(this.SetColor), reader.ReadColor());
-				base.GeneratedSyncVarDeserialize<LightShadows>(ref this.ShadowType, new Action<LightShadows, LightShadows>(this.SetShadows), global::Mirror.GeneratedNetworkCode._Read_UnityEngine.LightShadows(reader));
-				base.GeneratedSyncVarDeserialize<float>(ref this.ShadowStrength, new Action<float, float>(this.SetShadowStrength), reader.ReadFloat());
-				base.GeneratedSyncVarDeserialize<LightType>(ref this.LightType, new Action<LightType, LightType>(this.SetType), global::Mirror.GeneratedNetworkCode._Read_UnityEngine.LightType(reader));
-				base.GeneratedSyncVarDeserialize<LightShape>(ref this.LightShape, new Action<LightShape, LightShape>(this.SetShape), global::Mirror.GeneratedNetworkCode._Read_UnityEngine.LightShape(reader));
-				base.GeneratedSyncVarDeserialize<float>(ref this.SpotAngle, new Action<float, float>(this.SetSpotAngle), reader.ReadFloat());
-				base.GeneratedSyncVarDeserialize<float>(ref this.InnerSpotAngle, new Action<float, float>(this.SetInnerSpotAngle), reader.ReadFloat());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 32L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this.LightIntensity, new Action<float, float>(this.SetIntensity), reader.ReadFloat());
-			}
-			if ((num & 64L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this.LightRange, new Action<float, float>(this.SetRange), reader.ReadFloat());
-			}
-			if ((num & 128L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<Color>(ref this.LightColor, new Action<Color, Color>(this.SetColor), reader.ReadColor());
-			}
-			if ((num & 256L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<LightShadows>(ref this.ShadowType, new Action<LightShadows, LightShadows>(this.SetShadows), global::Mirror.GeneratedNetworkCode._Read_UnityEngine.LightShadows(reader));
-			}
-			if ((num & 512L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this.ShadowStrength, new Action<float, float>(this.SetShadowStrength), reader.ReadFloat());
-			}
-			if ((num & 1024L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<LightType>(ref this.LightType, new Action<LightType, LightType>(this.SetType), global::Mirror.GeneratedNetworkCode._Read_UnityEngine.LightType(reader));
-			}
-			if ((num & 2048L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<LightShape>(ref this.LightShape, new Action<LightShape, LightShape>(this.SetShape), global::Mirror.GeneratedNetworkCode._Read_UnityEngine.LightShape(reader));
-			}
-			if ((num & 4096L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this.SpotAngle, new Action<float, float>(this.SetSpotAngle), reader.ReadFloat());
-			}
-			if ((num & 8192L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this.InnerSpotAngle, new Action<float, float>(this.SetInnerSpotAngle), reader.ReadFloat());
-			}
+			_light.type = newType;
 		}
+	}
 
-		[SerializeField]
-		private Light _light;
+	private void SetShape(LightShape oldShape, LightShape newShape)
+	{
+		_light.shape = newShape;
+	}
 
-		[SyncVar(hook = "SetIntensity")]
-		public float LightIntensity;
+	private void SetSpotAngle(float oldAngle, float newAngle)
+	{
+		_light.spotAngle = newAngle;
+	}
 
-		[SyncVar(hook = "SetRange")]
-		public float LightRange;
+	private void SetInnerSpotAngle(float oldAngle, float newAngle)
+	{
+		_light.innerSpotAngle = newAngle;
+	}
 
-		[SyncVar(hook = "SetColor")]
-		public Color LightColor;
+	public override bool Weaved()
+	{
+		return true;
+	}
 
-		[SyncVar(hook = "SetShadows")]
-		public LightShadows ShadowType;
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
+		{
+			writer.WriteFloat(LightIntensity);
+			writer.WriteFloat(LightRange);
+			writer.WriteColor(LightColor);
+			GeneratedNetworkCode._Write_UnityEngine_002ELightShadows(writer, ShadowType);
+			writer.WriteFloat(ShadowStrength);
+			GeneratedNetworkCode._Write_UnityEngine_002ELightType(writer, LightType);
+			GeneratedNetworkCode._Write_UnityEngine_002ELightShape(writer, LightShape);
+			writer.WriteFloat(SpotAngle);
+			writer.WriteFloat(InnerSpotAngle);
+			return;
+		}
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 0x20L) != 0L)
+		{
+			writer.WriteFloat(LightIntensity);
+		}
+		if ((base.syncVarDirtyBits & 0x40L) != 0L)
+		{
+			writer.WriteFloat(LightRange);
+		}
+		if ((base.syncVarDirtyBits & 0x80L) != 0L)
+		{
+			writer.WriteColor(LightColor);
+		}
+		if ((base.syncVarDirtyBits & 0x100L) != 0L)
+		{
+			GeneratedNetworkCode._Write_UnityEngine_002ELightShadows(writer, ShadowType);
+		}
+		if ((base.syncVarDirtyBits & 0x200L) != 0L)
+		{
+			writer.WriteFloat(ShadowStrength);
+		}
+		if ((base.syncVarDirtyBits & 0x400L) != 0L)
+		{
+			GeneratedNetworkCode._Write_UnityEngine_002ELightType(writer, LightType);
+		}
+		if ((base.syncVarDirtyBits & 0x800L) != 0L)
+		{
+			GeneratedNetworkCode._Write_UnityEngine_002ELightShape(writer, LightShape);
+		}
+		if ((base.syncVarDirtyBits & 0x1000L) != 0L)
+		{
+			writer.WriteFloat(SpotAngle);
+		}
+		if ((base.syncVarDirtyBits & 0x2000L) != 0L)
+		{
+			writer.WriteFloat(InnerSpotAngle);
+		}
+	}
 
-		[SyncVar(hook = "SetShadowStrength")]
-		public float ShadowStrength;
-
-		[SyncVar(hook = "SetType")]
-		public LightType LightType;
-
-		[SyncVar(hook = "SetShape")]
-		public LightShape LightShape;
-
-		[SyncVar(hook = "SetSpotAngle")]
-		public float SpotAngle;
-
-		[SyncVar(hook = "SetInnerSpotAngle")]
-		public float InnerSpotAngle;
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref LightIntensity, SetIntensity, reader.ReadFloat());
+			GeneratedSyncVarDeserialize(ref LightRange, SetRange, reader.ReadFloat());
+			GeneratedSyncVarDeserialize(ref LightColor, SetColor, reader.ReadColor());
+			GeneratedSyncVarDeserialize(ref ShadowType, SetShadows, GeneratedNetworkCode._Read_UnityEngine_002ELightShadows(reader));
+			GeneratedSyncVarDeserialize(ref ShadowStrength, SetShadowStrength, reader.ReadFloat());
+			GeneratedSyncVarDeserialize(ref LightType, SetType, GeneratedNetworkCode._Read_UnityEngine_002ELightType(reader));
+			GeneratedSyncVarDeserialize(ref LightShape, SetShape, GeneratedNetworkCode._Read_UnityEngine_002ELightShape(reader));
+			GeneratedSyncVarDeserialize(ref SpotAngle, SetSpotAngle, reader.ReadFloat());
+			GeneratedSyncVarDeserialize(ref InnerSpotAngle, SetInnerSpotAngle, reader.ReadFloat());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 0x20L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref LightIntensity, SetIntensity, reader.ReadFloat());
+		}
+		if ((num & 0x40L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref LightRange, SetRange, reader.ReadFloat());
+		}
+		if ((num & 0x80L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref LightColor, SetColor, reader.ReadColor());
+		}
+		if ((num & 0x100L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref ShadowType, SetShadows, GeneratedNetworkCode._Read_UnityEngine_002ELightShadows(reader));
+		}
+		if ((num & 0x200L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref ShadowStrength, SetShadowStrength, reader.ReadFloat());
+		}
+		if ((num & 0x400L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref LightType, SetType, GeneratedNetworkCode._Read_UnityEngine_002ELightType(reader));
+		}
+		if ((num & 0x800L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref LightShape, SetShape, GeneratedNetworkCode._Read_UnityEngine_002ELightShape(reader));
+		}
+		if ((num & 0x1000L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref SpotAngle, SetSpotAngle, reader.ReadFloat());
+		}
+		if ((num & 0x2000L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref InnerSpotAngle, SetInnerSpotAngle, reader.ReadFloat());
+		}
 	}
 }

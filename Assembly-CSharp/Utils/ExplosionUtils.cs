@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Footprinting;
 using InventorySystem;
 using InventorySystem.Items.ThrowableProjectiles;
@@ -7,58 +7,49 @@ using RelativePositioning;
 using UnityEngine;
 using Utils.Networking;
 
-namespace Utils
+namespace Utils;
+
+public static class ExplosionUtils
 {
-	public static class ExplosionUtils
+	public struct GrenadeExplosionMessage : NetworkMessage
 	{
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			CustomNetworkManager.OnClientReady += ExplosionUtils.ReplaceHandler;
-		}
+		public byte GrenadeType;
 
-		private static void ReplaceHandler()
-		{
-			NetworkClient.ReplaceHandler<ExplosionUtils.GrenadeExplosionMessage>(delegate(ExplosionUtils.GrenadeExplosionMessage msg)
-			{
-			}, true);
-		}
+		public RelativePosition Pos;
+	}
 
-		public static void ServerExplode(ReferenceHub hub, ExplosionType explosionType)
-		{
-			ExplosionUtils.ServerExplode(hub.transform.position, new Footprint(hub), explosionType);
-		}
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		CustomNetworkManager.OnClientReady += ReplaceHandler;
+	}
 
-		public static void ServerExplode(Vector3 position, Footprint footprint, ExplosionType explosionType)
+	private static void ReplaceHandler()
+	{
+		NetworkClient.ReplaceHandler((Action<GrenadeExplosionMessage>)delegate
 		{
-			ThrowableItem throwableItem;
-			if (!InventoryItemLoader.TryGetItem<ThrowableItem>(ItemType.GrenadeHE, out throwableItem))
-			{
-				return;
-			}
-			ExplosionGrenade explosionGrenade = throwableItem.Projectile as ExplosionGrenade;
-			if (explosionGrenade == null)
-			{
-				return;
-			}
-			ExplosionUtils.ServerSpawnEffect(position, ItemType.GrenadeHE);
-			ExplosionGrenade.Explode(footprint, position, explosionGrenade, explosionType);
-		}
+		}, requireAuthentication: true);
+	}
 
-		public static void ServerSpawnEffect(Vector3 pos, ItemType targetEffectGrenade)
+	public static void ServerExplode(ReferenceHub hub, ExplosionType explosionType)
+	{
+		ServerExplode(hub.transform.position, new Footprint(hub), explosionType);
+	}
+
+	public static void ServerExplode(Vector3 position, Footprint footprint, ExplosionType explosionType)
+	{
+		if (InventoryItemLoader.TryGetItem<ThrowableItem>(ItemType.GrenadeHE, out var result) && result.Projectile is ExplosionGrenade settingsReference)
 		{
-			new ExplosionUtils.GrenadeExplosionMessage
-			{
-				GrenadeType = (byte)targetEffectGrenade,
-				Pos = new RelativePosition(pos)
-			}.SendToAuthenticated(0);
+			ServerSpawnEffect(position, ItemType.GrenadeHE);
+			ExplosionGrenade.Explode(footprint, position, settingsReference, explosionType);
 		}
+	}
 
-		public struct GrenadeExplosionMessage : NetworkMessage
-		{
-			public byte GrenadeType;
-
-			public RelativePosition Pos;
-		}
+	public static void ServerSpawnEffect(Vector3 pos, ItemType targetEffectGrenade)
+	{
+		GrenadeExplosionMessage message = default(GrenadeExplosionMessage);
+		message.GrenadeType = (byte)targetEffectGrenade;
+		message.Pos = new RelativePosition(pos);
+		message.SendToAuthenticated();
 	}
 }

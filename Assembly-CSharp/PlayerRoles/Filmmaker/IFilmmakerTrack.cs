@@ -1,21 +1,18 @@
-﻿using System;
+namespace PlayerRoles.Filmmaker;
 
-namespace PlayerRoles.Filmmaker
+public interface IFilmmakerTrack
 {
-	public interface IFilmmakerTrack
-	{
-		int FirstFrame { get; }
+	int FirstFrame { get; }
 
-		int LastFrame { get; }
+	int LastFrame { get; }
 
-		bool TryGetNextFrame(int startTime, out int next);
+	bool TryGetNextFrame(int startTime, out int next);
 
-		bool TryGetPrevFrame(int startTime, out int prev);
+	bool TryGetPrevFrame(int startTime, out int prev);
 
-		void ClearAll();
+	void ClearAll();
 
-		void ClearFrame();
+	void ClearFrame();
 
-		void ClearFrame(int timeFrames);
-	}
+	void ClearFrame(int timeFrames);
 }

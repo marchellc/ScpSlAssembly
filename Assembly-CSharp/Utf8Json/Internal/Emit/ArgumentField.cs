@@ -1,43 +1,44 @@
-﻿using System;
+using System;
 using System.Reflection.Emit;
 
-namespace Utf8Json.Internal.Emit
+namespace Utf8Json.Internal.Emit;
+
+internal struct ArgumentField
 {
-	internal struct ArgumentField
+	private readonly int i;
+
+	private readonly bool @ref;
+
+	private readonly ILGenerator il;
+
+	public ArgumentField(ILGenerator il, int i, bool @ref = false)
 	{
-		public ArgumentField(ILGenerator il, int i, bool @ref = false)
+		this.il = il;
+		this.i = i;
+		this.@ref = @ref;
+	}
+
+	public ArgumentField(ILGenerator il, int i, Type type)
+	{
+		this.il = il;
+		this.i = i;
+		@ref = ((!type.IsClass && !type.IsInterface && !type.IsAbstract) ? true : false);
+	}
+
+	public void EmitLoad()
+	{
+		if (@ref)
 		{
-			this.il = il;
-			this.i = i;
-			this.@ref = @ref;
+			il.EmitLdarga(i);
 		}
-
-		public ArgumentField(ILGenerator il, int i, Type type)
+		else
 		{
-			this.il = il;
-			this.i = i;
-			this.@ref = !type.IsClass && !type.IsInterface && !type.IsAbstract;
+			il.EmitLdarg(i);
 		}
+	}
 
-		public void EmitLoad()
-		{
-			if (this.@ref)
-			{
-				this.il.EmitLdarga(this.i);
-				return;
-			}
-			this.il.EmitLdarg(this.i);
-		}
-
-		public void EmitStore()
-		{
-			this.il.EmitStarg(this.i);
-		}
-
-		private readonly int i;
-
-		private readonly bool @ref;
-
-		private readonly ILGenerator il;
+	public void EmitStore()
+	{
+		il.EmitStarg(i);
 	}
 }

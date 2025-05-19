@@ -1,9 +1,6 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Modules;
 
-namespace InventorySystem.Items.Firearms.Modules
+public interface IRecoilScalingModule
 {
-	public interface IRecoilScalingModule
-	{
-		float RecoilMultiplier { get; }
-	}
+	float RecoilMultiplier { get; }
 }

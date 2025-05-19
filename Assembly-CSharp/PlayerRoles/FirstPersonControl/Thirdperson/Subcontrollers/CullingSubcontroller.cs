@@ -1,79 +1,102 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using ProgressiveCulling;
 using UnityEngine;
 
-namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers
+namespace PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
+
+public class CullingSubcontroller : CullableSimpleDynamic, IAnimatedModelSubcontroller
 {
-	public class CullingSubcontroller : CullableSimpleDynamic, IAnimatedModelSubcontroller
+	private AnimatedCharacterModel _model;
+
+	private readonly Stopwatch _culledElapsed = new Stopwatch();
+
+	private const float MaxDeltaTime = 5f;
+
+	public override bool ShouldBeVisible
 	{
-		public event Action OnAnimatorUpdated;
-
-		public event Action OnBeforeAnimatorUpdated;
-
-		public bool AnimCulled { get; private set; }
-
-		public void Init(AnimatedCharacterModel model, int index)
+		get
 		{
-			if (model.ThreadmillEnabled)
+			if (_model.HasOwner)
 			{
-				return;
+				return CullingCamera.CheckBoundsVisibility(base.WorldspaceBounds);
 			}
-			this._model = model;
-			model.OnPlayerMoved += this.OnPlyMoved;
-			model.Animator.enabled = false;
+			return true;
 		}
+	}
 
-		private void EvaluateCulling(out bool allowCulling)
+	public bool AnimCulled { get; private set; }
+
+	public event Action OnAnimatorUpdated;
+
+	public event Action OnBeforeAnimatorUpdated;
+
+	public void Init(AnimatedCharacterModel model, int index)
+	{
+		_model = model;
+	}
+
+	public void OnReassigned()
+	{
+		_model.Animator.enabled = false;
+	}
+
+	protected override bool AllowDeactivationFilter(GameObject go)
+	{
+		if (go != base.gameObject)
 		{
-			float footstepLoudnessDistance = this._model.FootstepLoudnessDistance;
-			float num = footstepLoudnessDistance * footstepLoudnessDistance;
-			Vector3 position = this._model.CachedTransform.position;
-			Vector3 lastCamPosition = CullingCamera.LastCamPosition;
-			allowCulling = (position - lastCamPosition).sqrMagnitude > num;
+			return go.activeInHierarchy;
 		}
+		return false;
+	}
 
-		private void OnPlyMoved()
+	protected override bool AllowCullingFilter(GameObject go)
+	{
+		if (base.AllowCullingFilter(go))
 		{
-			bool flag;
-			this.EvaluateCulling(out flag);
-			bool flag2 = base.IsCulled && flag;
-			double num = (double)this._model.LastMovedDeltaT;
-			if (flag2 != this.AnimCulled)
+			return go.activeInHierarchy;
+		}
+		return false;
+	}
+
+	private void EvaluateCulling(out bool allowCulling)
+	{
+		if (!_model.HasOwner)
+		{
+			allowCulling = false;
+			return;
+		}
+		float footstepLoudnessDistance = _model.FootstepLoudnessDistance;
+		float num = footstepLoudnessDistance * footstepLoudnessDistance;
+		Vector3 position = _model.CachedTransform.position;
+		Vector3 lastCamPosition = CullingCamera.LastCamPosition;
+		allowCulling = (position - lastCamPosition).sqrMagnitude > num;
+	}
+
+	private void LateUpdate()
+	{
+		EvaluateCulling(out var allowCulling);
+		bool flag = base.IsCulled && allowCulling;
+		double num = _model.LastMovedDeltaT;
+		if (flag != AnimCulled)
+		{
+			AnimCulled = flag;
+			if (flag)
 			{
-				this.AnimCulled = flag2;
-				if (flag2)
-				{
-					this._culledElapsed.Restart();
-				}
-				else
-				{
-					num += this._culledElapsed.Elapsed.TotalSeconds;
-					this._culledElapsed.Reset();
-				}
+				_culledElapsed.Restart();
 			}
-			if (!this.AnimCulled)
+			else
 			{
-				Action onBeforeAnimatorUpdated = this.OnBeforeAnimatorUpdated;
-				if (onBeforeAnimatorUpdated != null)
-				{
-					onBeforeAnimatorUpdated();
-				}
-				num = Math.Min(num, 5.0);
-				this._model.Animator.Update((float)num);
-				Action onAnimatorUpdated = this.OnAnimatorUpdated;
-				if (onAnimatorUpdated == null)
-				{
-					return;
-				}
-				onAnimatorUpdated();
+				num += _culledElapsed.Elapsed.TotalSeconds;
+				_culledElapsed.Reset();
 			}
 		}
-
-		private AnimatedCharacterModel _model;
-
-		private readonly Stopwatch _culledElapsed = new Stopwatch();
-
-		private const float MaxDeltaTime = 5f;
+		if (!AnimCulled)
+		{
+			this.OnBeforeAnimatorUpdated?.Invoke();
+			num = Math.Min(num, 5.0);
+			_model.Animator.Update((float)num);
+			this.OnAnimatorUpdated?.Invoke();
+		}
 	}
 }

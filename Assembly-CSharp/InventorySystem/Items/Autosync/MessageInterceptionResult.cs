@@ -1,11 +1,8 @@
-﻿using System;
+namespace InventorySystem.Items.Autosync;
 
-namespace InventorySystem.Items.Autosync
+public enum MessageInterceptionResult
 {
-	public enum MessageInterceptionResult
-	{
-		Continue,
-		ResetAndContinue,
-		Stop
-	}
+	Continue,
+	ResetAndContinue,
+	Stop
 }

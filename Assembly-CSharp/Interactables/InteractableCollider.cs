@@ -1,62 +1,54 @@
-﻿using System;
 using System.Collections.Generic;
+using MapGeneration.StaticHelpers;
 using UnityEngine;
 
-namespace Interactables
+namespace Interactables;
+
+public class InteractableCollider : MonoBehaviour, IBlockStaticBatching
 {
-	public class InteractableCollider : MonoBehaviour
+	public MonoBehaviour Target;
+
+	public byte ColliderId;
+
+	public Vector3 VerificationOffset;
+
+	public static readonly Dictionary<IInteractable, Dictionary<byte, InteractableCollider>> AllInstances = new Dictionary<IInteractable, Dictionary<byte, InteractableCollider>>();
+
+	protected virtual void Awake()
 	{
-		protected virtual void Awake()
+		if (Target is IInteractable key)
 		{
-			IInteractable interactable = this.Target as IInteractable;
-			if (interactable != null)
+			if (!AllInstances.ContainsKey(key))
 			{
-				if (!InteractableCollider.AllInstances.ContainsKey(interactable))
-				{
-					InteractableCollider.AllInstances[interactable] = new Dictionary<byte, InteractableCollider>();
-				}
-				InteractableCollider.AllInstances[interactable][this.ColliderId] = this;
-				return;
+				AllInstances[key] = new Dictionary<byte, InteractableCollider>();
 			}
-			Debug.LogError("Fatal error: '" + this.Target.name + "' is not IInteractable.");
+			AllInstances[key][ColliderId] = this;
 		}
-
-		public static bool TryGetCollider(IInteractable target, byte colliderId, out InteractableCollider res)
+		else
 		{
-			Dictionary<byte, InteractableCollider> dictionary;
-			if (InteractableCollider.AllInstances.TryGetValue(target, out dictionary) && dictionary.TryGetValue(colliderId, out res))
-			{
-				return true;
-			}
-			res = null;
-			return false;
+			Debug.LogError("Fatal error: '" + Target.name + "' is not IInteractable.");
 		}
+	}
 
-		protected virtual void OnDestroy()
+	public static bool TryGetCollider(IInteractable target, byte colliderId, out InteractableCollider res)
+	{
+		if (AllInstances.TryGetValue(target, out var value) && value.TryGetValue(colliderId, out res))
 		{
-			IInteractable interactable = this.Target as IInteractable;
-			if (interactable == null)
+			return true;
+		}
+		res = null;
+		return false;
+	}
+
+	protected virtual void OnDestroy()
+	{
+		if (Target is IInteractable key && AllInstances.TryGetValue(key, out var value))
+		{
+			value.Remove(ColliderId);
+			if (value.Count == 0)
 			{
-				return;
-			}
-			Dictionary<byte, InteractableCollider> dictionary;
-			if (!InteractableCollider.AllInstances.TryGetValue(interactable, out dictionary))
-			{
-				return;
-			}
-			dictionary.Remove(this.ColliderId);
-			if (dictionary.Count == 0)
-			{
-				InteractableCollider.AllInstances.Remove(interactable);
+				AllInstances.Remove(key);
 			}
 		}
-
-		public MonoBehaviour Target;
-
-		public byte ColliderId;
-
-		public Vector3 VerificationOffset;
-
-		public static readonly Dictionary<IInteractable, Dictionary<byte, InteractableCollider>> AllInstances = new Dictionary<IInteractable, Dictionary<byte, InteractableCollider>>();
 	}
 }

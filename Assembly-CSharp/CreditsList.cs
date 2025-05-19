@@ -1,8 +1,10 @@
-﻿using System;
+using System;
 using Utf8Json;
 
 public readonly struct CreditsList : IEquatable<CreditsList>, IJsonSerializable
 {
+	public readonly CreditsListCategory[] credits;
+
 	[SerializationConstructor]
 	public CreditsList(CreditsListCategory[] credits)
 	{
@@ -11,26 +13,25 @@ public readonly struct CreditsList : IEquatable<CreditsList>, IJsonSerializable
 
 	public bool Equals(CreditsList other)
 	{
-		return this.credits == other.credits;
+		return credits == other.credits;
 	}
 
 	public override bool Equals(object obj)
 	{
-		if (obj is CreditsList)
+		if (obj is CreditsList other)
 		{
-			CreditsList creditsList = (CreditsList)obj;
-			return this.Equals(creditsList);
+			return Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		if (this.credits == null)
+		if (credits == null)
 		{
 			return 0;
 		}
-		return this.credits.GetHashCode();
+		return credits.GetHashCode();
 	}
 
 	public static bool operator ==(CreditsList left, CreditsList right)
@@ -42,6 +43,4 @@ public readonly struct CreditsList : IEquatable<CreditsList>, IJsonSerializable
 	{
 		return !left.Equals(right);
 	}
-
-	public readonly CreditsListCategory[] credits;
 }

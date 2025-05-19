@@ -1,15 +1,13 @@
-﻿using System;
 using UnityEngine;
 
-namespace Waits
-{
-	public class ParticleSystemUntilWait : UntilWait
-	{
-		protected override bool Predicate()
-		{
-			return !this.particleSystem.IsAlive();
-		}
+namespace Waits;
 
-		public ParticleSystem particleSystem;
+public class ParticleSystemUntilWait : UntilWait
+{
+	public ParticleSystem particleSystem;
+
+	protected override bool Predicate()
+	{
+		return !particleSystem.IsAlive();
 	}
 }

@@ -1,65 +1,61 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 
-namespace UserSettings.GUIElements
+namespace UserSettings.GUIElements;
+
+public class UserSettingsDescriptionText : MonoBehaviour
 {
-	public class UserSettingsDescriptionText : MonoBehaviour
+	private TMP_Text _text;
+
+	private UserSettingsEntryDescription _prev;
+
+	[SerializeField]
+	private float _transitionSpeed;
+
+	private UserSettingsEntryDescription Current => UserSettingsEntryDescription.CurrentDescription;
+
+	private void Awake()
 	{
-		private UserSettingsEntryDescription Current
+		_text = GetComponent<TMP_Text>();
+	}
+
+	private void OnEnable()
+	{
+		_text.alpha = 0f;
+	}
+
+	private void Update()
+	{
+		if (_prev == Current)
 		{
-			get
-			{
-				return UserSettingsEntryDescription.CurrentDescription;
-			}
+			UpdateCurrent();
 		}
-
-		private void Awake()
+		else
 		{
-			this._text = base.GetComponent<TMP_Text>();
+			DisablePrevious();
 		}
+	}
 
-		private void OnEnable()
+	private void DisablePrevious()
+	{
+		if (_text.alpha > 0f)
 		{
-			this._text.alpha = 0f;
+			_text.alpha -= _transitionSpeed * Time.deltaTime;
 		}
-
-		private void Update()
+		else
 		{
-			if (this._prev == this.Current)
-			{
-				this.UpdateCurrent();
-				return;
-			}
-			this.DisablePrevious();
+			_prev = UserSettingsEntryDescription.CurrentDescription;
 		}
+	}
 
-		private void DisablePrevious()
+	private void UpdateCurrent()
+	{
+		if (Current == null)
 		{
-			if (this._text.alpha > 0f)
-			{
-				this._text.alpha -= this._transitionSpeed * Time.deltaTime;
-				return;
-			}
-			this._prev = UserSettingsEntryDescription.CurrentDescription;
+			_text.alpha = 0f;
+			return;
 		}
-
-		private void UpdateCurrent()
-		{
-			if (this.Current == null)
-			{
-				this._text.alpha = 0f;
-				return;
-			}
-			this._text.text = this.Current.Text;
-			this._text.alpha = Mathf.MoveTowards(this._text.alpha, 1f, Time.deltaTime * this._transitionSpeed);
-		}
-
-		private TMP_Text _text;
-
-		private UserSettingsEntryDescription _prev;
-
-		[SerializeField]
-		private float _transitionSpeed;
+		_text.text = Current.Text;
+		_text.alpha = Mathf.MoveTowards(_text.alpha, 1f, Time.deltaTime * _transitionSpeed);
 	}
 }

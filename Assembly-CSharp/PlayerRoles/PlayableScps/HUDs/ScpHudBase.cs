@@ -1,88 +1,80 @@
-﻿using System;
+using System;
 using TMPro;
 using UnityEngine;
 using Utils.NonAllocLINQ;
 
-namespace PlayerRoles.PlayableScps.HUDs
+namespace PlayerRoles.PlayableScps.HUDs;
+
+public abstract class ScpHudBase : MonoBehaviour
 {
-	public abstract class ScpHudBase : MonoBehaviour
+	private float _updateCounterTimer;
+
+	private bool _eventAssigned;
+
+	private bool _useCounter;
+
+	public ReferenceHub Hub { get; private set; }
+
+	[field: SerializeField]
+	public TMP_Text TargetCounter { get; private set; }
+
+	public event Action OnDestroyed;
+
+	protected virtual void ToggleHud(bool b)
 	{
-		public ReferenceHub Hub { get; private set; }
-
-		public TMP_Text TargetCounter { get; private set; }
-
-		public event Action OnDestroyed;
-
-		protected virtual void ToggleHud(bool b)
+		Canvas[] componentsInChildren = GetComponentsInChildren<Canvas>();
+		for (int i = 0; i < componentsInChildren.Length; i++)
 		{
-			Canvas[] componentsInChildren = base.GetComponentsInChildren<Canvas>();
-			for (int i = 0; i < componentsInChildren.Length; i++)
-			{
-				componentsInChildren[i].enabled = b;
-			}
+			componentsInChildren[i].enabled = b;
 		}
+	}
 
-		protected virtual void Update()
+	protected virtual void Update()
+	{
+		if (_useCounter && !((_updateCounterTimer -= Time.deltaTime) > 0f))
 		{
-			if (!this._useCounter || (this._updateCounterTimer -= Time.deltaTime) > 0f)
-			{
-				return;
-			}
-			this.UpdateCounter();
+			UpdateCounter();
 		}
+	}
 
-		protected virtual void OnDestroy()
+	protected virtual void OnDestroy()
+	{
+		if (_eventAssigned)
 		{
-			if (!this._eventAssigned)
-			{
-				return;
-			}
-			HideHUDController.ToggleHUD -= this.ToggleHud;
-			Action onDestroyed = this.OnDestroyed;
-			if (onDestroyed == null)
-			{
-				return;
-			}
-			onDestroyed();
+			HideHUDController.ToggleHUD -= ToggleHud;
+			this.OnDestroyed?.Invoke();
 		}
+	}
 
-		protected virtual void UpdateCounter()
+	protected virtual void UpdateCounter()
+	{
+		int num = ReferenceHub.AllHubs.Count(delegate(ReferenceHub hub)
 		{
-			int num = ReferenceHub.AllHubs.Count(delegate(ReferenceHub hub)
-			{
-				Faction faction = hub.GetFaction();
-				return faction == Faction.FoundationStaff || faction == Faction.FoundationEnemy || faction == Faction.Flamingos;
-			});
-			int extraTargets = RoundSummary.singleton.ExtraTargets;
-			this.ResetTimer(1f);
-			this.TargetCounter.text = (num + extraTargets).ToString();
-		}
+			Faction faction = hub.GetFaction();
+			return faction == Faction.FoundationStaff || faction == Faction.FoundationEnemy || faction == Faction.Flamingos;
+		});
+		int extraTargets = RoundSummary.singleton.ExtraTargets;
+		ResetTimer();
+		TargetCounter.text = (num + extraTargets).ToString();
+	}
 
-		internal virtual void OnDied()
+	internal virtual void OnDied()
+	{
+	}
+
+	internal virtual void Init(ReferenceHub hub)
+	{
+		Hub = hub;
+		_eventAssigned = true;
+		_useCounter = TargetCounter != null;
+		HideHUDController.ToggleHUD += ToggleHud;
+		if (!HideHUDController.IsHUDVisible)
 		{
+			ToggleHud(b: false);
 		}
+	}
 
-		internal virtual void Init(ReferenceHub hub)
-		{
-			this.Hub = hub;
-			this._eventAssigned = true;
-			this._useCounter = this.TargetCounter != null;
-			HideHUDController.ToggleHUD += this.ToggleHud;
-			if (HideHUDController.IsHUDVisible)
-			{
-				return;
-			}
-			this.ToggleHud(false);
-		}
-
-		protected void ResetTimer(float delayInSeconds = 1f)
-		{
-		}
-
-		private float _updateCounterTimer;
-
-		private bool _eventAssigned;
-
-		private bool _useCounter;
+	protected void ResetTimer(float delayInSeconds = 1f)
+	{
 	}
 }

@@ -1,31 +1,30 @@
-﻿using System;
+using System;
 using Mirror;
 
-namespace Hints
+namespace Hints;
+
+public class ULongHintParameter : PrimitiveHintParameter<ulong>
 {
-	public class ULongHintParameter : PrimitiveHintParameter<ulong>
+	public static ULongHintParameter FromNetwork(NetworkReader reader)
 	{
-		public static ULongHintParameter FromNetwork(NetworkReader reader)
-		{
-			ULongHintParameter ulongHintParameter = new ULongHintParameter();
-			ulongHintParameter.Deserialize(reader);
-			return ulongHintParameter;
-		}
+		ULongHintParameter uLongHintParameter = new ULongHintParameter();
+		uLongHintParameter.Deserialize(reader);
+		return uLongHintParameter;
+	}
 
-		protected ULongHintParameter()
-			: base(new Func<NetworkReader, ulong>(NetworkReaderExtensions.ReadULong), delegate(NetworkWriter writer, ulong writerValue)
-			{
-				writer.WriteULong(writerValue);
-			})
+	protected ULongHintParameter()
+		: base((Func<NetworkReader, ulong>)NetworkReaderExtensions.ReadULong, (Action<NetworkWriter, ulong>)delegate(NetworkWriter writer, ulong writerValue)
 		{
-		}
+			writer.WriteULong(writerValue);
+		})
+	{
+	}
 
-		public ULongHintParameter(ulong value)
-			: base(value, new Func<NetworkReader, ulong>(NetworkReaderExtensions.ReadULong), delegate(NetworkWriter writer, ulong writerValue)
-			{
-				writer.WriteULong(writerValue);
-			})
+	public ULongHintParameter(ulong value)
+		: base(value, (Func<NetworkReader, ulong>)NetworkReaderExtensions.ReadULong, (Action<NetworkWriter, ulong>)delegate(NetworkWriter writer, ulong writerValue)
 		{
-		}
+			writer.WriteULong(writerValue);
+		})
+	{
 	}
 }

@@ -1,13 +1,10 @@
-﻿using System;
+namespace LiteNetLib;
 
-namespace LiteNetLib
+public enum DeliveryMethod : byte
 {
-	public enum DeliveryMethod : byte
-	{
-		Unreliable = 4,
-		ReliableUnordered = 0,
-		Sequenced,
-		ReliableOrdered,
-		ReliableSequenced
-	}
+	Unreliable = 4,
+	ReliableUnordered = 0,
+	Sequenced = 1,
+	ReliableOrdered = 2,
+	ReliableSequenced = 3
 }

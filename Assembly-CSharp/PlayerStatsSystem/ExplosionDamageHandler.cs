@@ -1,64 +1,53 @@
-﻿using System;
 using Footprinting;
 using InventorySystem.Items.Armor;
 using UnityEngine;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public class ExplosionDamageHandler : AttackerDamageHandler
 {
-	public class ExplosionDamageHandler : AttackerDamageHandler
+	private readonly string _deathScreenText;
+
+	private readonly string _serverLogsText;
+
+	private readonly string _ragdollInspectText;
+
+	private readonly Vector3 _force;
+
+	private const float ForceMultiplier = 1.3f;
+
+	public override float Damage { get; internal set; }
+
+	public override Footprint Attacker { get; protected set; }
+
+	public override bool AllowSelfDamage => true;
+
+	public override string ServerLogsText => _serverLogsText;
+
+	public override string RagdollInspectText => _ragdollInspectText;
+
+	public override string DeathScreenText => _deathScreenText;
+
+	public ExplosionType ExplosionType { get; private set; }
+
+	public override string ServerMetricsText => base.ServerMetricsText + "," + ExplosionType;
+
+	public override HandlerOutput ApplyDamage(ReferenceHub ply)
 	{
-		public override float Damage { get; internal set; }
+		HandlerOutput result = base.ApplyDamage(ply);
+		StartVelocity += _force * 1.3f;
+		return result;
+	}
 
-		public override Footprint Attacker { get; protected set; }
-
-		public override bool AllowSelfDamage
+	public ExplosionDamageHandler(Footprint attacker, Vector3 force, float damage, int armorPenetration, ExplosionType explosionType)
+	{
+		if (armorPenetration != 0)
 		{
-			get
-			{
-				return true;
-			}
+			Attacker = attacker;
+			ExplosionType = explosionType;
+			_force = force;
+			_serverLogsText = DeathTranslations.Explosion.LogLabel + " caused by " + attacker.Nickname;
+			Damage = BodyArmorUtils.ProcessDamage((attacker.Hub != null && attacker.Hub.inventory.TryGetBodyArmor(out var bodyArmor)) ? bodyArmor.VestEfficacy : 0, damage, armorPenetration);
 		}
-
-		public override string ServerLogsText
-		{
-			get
-			{
-				return this._serverLogsText;
-			}
-		}
-
-		public ExplosionType ExplosionType { get; private set; }
-
-		public override DamageHandlerBase.HandlerOutput ApplyDamage(ReferenceHub ply)
-		{
-			DamageHandlerBase.HandlerOutput handlerOutput = base.ApplyDamage(ply);
-			this.StartVelocity += this._force * 1.3f;
-			return handlerOutput;
-		}
-
-		public ExplosionDamageHandler(Footprint attacker, Vector3 force, float damage, int armorPenetration, ExplosionType explosionType)
-		{
-			if (armorPenetration == 0)
-			{
-				return;
-			}
-			this.Attacker = attacker;
-			this.ExplosionType = explosionType;
-			this._force = force;
-			this._serverLogsText = DeathTranslations.Explosion.LogLabel + " caused by " + attacker.Nickname;
-			BodyArmor bodyArmor;
-			int num = ((attacker.Hub != null && attacker.Hub.inventory.TryGetBodyArmor(out bodyArmor)) ? bodyArmor.VestEfficacy : 0);
-			this.Damage = BodyArmorUtils.ProcessDamage(num, damage, armorPenetration);
-		}
-
-		private readonly string _deathScreenText;
-
-		private readonly string _serverLogsText;
-
-		private readonly string _ragdollInspectText;
-
-		private readonly Vector3 _force;
-
-		private const float ForceMultiplier = 1.3f;
 	}
 }

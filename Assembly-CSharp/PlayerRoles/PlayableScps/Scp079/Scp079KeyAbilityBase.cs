@@ -1,95 +1,101 @@
-﻿using System;
+using System;
+using NetworkManagerUtils.Dummies;
 using PlayerRoles.PlayableScps.Scp079.GUI;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public abstract class Scp079KeyAbilityBase : Scp079AbilityBase, IScp079FailMessageProvider
 {
-	public abstract class Scp079KeyAbilityBase : Scp079AbilityBase, IScp079FailMessageProvider
+	private enum Category
 	{
-		private static global::UnityEngine.Object TrackedFailMessage
+		Movement,
+		SpecialAbility,
+		OverconInteraction
+	}
+
+	[SerializeField]
+	private Category _category;
+
+	private static string _translationNoAux;
+
+	private static UnityEngine.Object TrackedFailMessage
+	{
+		get
 		{
-			get
+			if (!Scp079AbilityList.TryGetSingleton(out var singleton))
 			{
-				return Scp079AbilityList.Singleton.TrackedFailMessage as global::UnityEngine.Object;
+				return null;
 			}
-			set
+			return singleton.TrackedFailMessage as UnityEngine.Object;
+		}
+		set
+		{
+			if (Scp079AbilityList.TryGetSingleton(out var singleton))
 			{
-				Scp079AbilityList.Singleton.TrackedFailMessage = value as IScp079FailMessageProvider;
+				singleton.TrackedFailMessage = value as IScp079FailMessageProvider;
 			}
 		}
+	}
 
-		public abstract ActionName ActivationKey { get; }
+	public abstract ActionName ActivationKey { get; }
 
-		public abstract bool IsReady { get; }
+	public abstract bool IsReady { get; }
 
-		public abstract bool IsVisible { get; }
+	public abstract bool IsVisible { get; }
 
-		public abstract string AbilityName { get; }
+	public abstract string AbilityName { get; }
 
-		public abstract string FailMessage { get; }
+	public abstract string FailMessage { get; }
 
-		public int CategoryId
+	public virtual bool DummyEmulationSupport => false;
+
+	public int CategoryId => (int)_category;
+
+	[field: SerializeField]
+	public bool UseLeftMenu { get; private set; }
+
+	protected string GetNoAuxMessage(float cost)
+	{
+		return _translationNoAux + "\n" + base.AuxManager.GenerateETA(cost);
+	}
+
+	protected virtual void Start()
+	{
+		_translationNoAux = Translations.Get(Scp079HudTranslation.NotEnoughAux);
+	}
+
+	protected virtual void Update()
+	{
+		if (((!base.Role.IsLocalPlayer || !IsVisible) && !base.Role.IsEmulatedDummy) || !GetActionDown(ActivationKey) || base.LostSignalHandler.Lost || Scp079IntroCutscene.IsPlaying)
 		{
-			get
-			{
-				return (int)this._category;
-			}
+			return;
 		}
-
-		public bool UseLeftMenu { get; private set; }
-
-		protected string GetNoAuxMessage(float cost)
+		if (IsReady)
 		{
-			return Scp079KeyAbilityBase._translationNoAux + "\n" + base.AuxManager.GenerateETA(cost);
-		}
-
-		protected virtual void Start()
-		{
-			Scp079KeyAbilityBase._translationNoAux = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.NotEnoughAux);
-		}
-
-		protected virtual void Update()
-		{
-			if (!base.Role.IsLocalPlayer || !this.IsVisible)
+			if (TrackedFailMessage == this)
 			{
-				return;
+				TrackedFailMessage = null;
 			}
-			if (!Input.GetKeyDown(NewInput.GetKey(this.ActivationKey, KeyCode.None)))
-			{
-				return;
-			}
-			if (base.LostSignalHandler.Lost || Scp079IntroCutscene.IsPlaying)
-			{
-				return;
-			}
-			if (this.IsReady)
-			{
-				if (Scp079KeyAbilityBase.TrackedFailMessage == this)
-				{
-					Scp079KeyAbilityBase.TrackedFailMessage = null;
-				}
-				this.Trigger();
-				return;
-			}
-			Scp079KeyAbilityBase.TrackedFailMessage = this;
+			Trigger();
 		}
-
-		protected abstract void Trigger();
-
-		public virtual void OnFailMessageAssigned()
+		else
 		{
+			TrackedFailMessage = this;
 		}
+	}
 
-		[SerializeField]
-		private Scp079KeyAbilityBase.Category _category;
+	protected abstract void Trigger();
 
-		private static string _translationNoAux;
+	public virtual void OnFailMessageAssigned()
+	{
+	}
 
-		private enum Category
+	public override void PopulateDummyActions(Action<DummyAction> actionAdder, Action<string> categoryAdder)
+	{
+		if (DummyEmulationSupport)
 		{
-			Movement,
-			SpecialAbility,
-			OverconInteraction
+			base.PopulateDummyActions(actionAdder, categoryAdder);
 		}
 	}
 }

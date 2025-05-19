@@ -1,35 +1,34 @@
-﻿using System;
+using System;
 
-namespace LiteNetLib4Mirror.Open.Nat
+namespace LiteNetLib4Mirror.Open.Nat;
+
+internal class Guard
 {
-	internal class Guard
+	private Guard()
 	{
-		private Guard()
-		{
-		}
+	}
 
-		internal static void IsInRange(int paramValue, int lowerBound, int upperBound, string paramName)
+	internal static void IsInRange(int paramValue, int lowerBound, int upperBound, string paramName)
+	{
+		if (paramValue < lowerBound || paramValue > upperBound)
 		{
-			if (paramValue < lowerBound || paramValue > upperBound)
-			{
-				throw new ArgumentOutOfRangeException(paramName);
-			}
+			throw new ArgumentOutOfRangeException(paramName);
 		}
+	}
 
-		internal static void IsTrue(bool exp, string paramName)
+	internal static void IsTrue(bool exp, string paramName)
+	{
+		if (!exp)
 		{
-			if (!exp)
-			{
-				throw new ArgumentOutOfRangeException(paramName);
-			}
+			throw new ArgumentOutOfRangeException(paramName);
 		}
+	}
 
-		internal static void IsNotNull(object obj, string paramName)
+	internal static void IsNotNull(object obj, string paramName)
+	{
+		if (obj == null)
 		{
-			if (obj == null)
-			{
-				throw new ArgumentNullException(paramName);
-			}
+			throw new ArgumentNullException(paramName);
 		}
 	}
 }

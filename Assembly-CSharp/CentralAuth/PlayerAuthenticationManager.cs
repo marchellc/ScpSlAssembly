@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -10,984 +10,929 @@ using LabApi.Events.Handlers;
 using Mirror;
 using Mirror.LiteNetLib4Mirror;
 using Mirror.RemoteCalls;
-using NetworkManagerUtils;
+using NetworkManagerUtils.Dummies;
 using NorthwoodLib;
 using UnityEngine;
 using VoiceChat;
 
-namespace CentralAuth
+namespace CentralAuth;
+
+public class PlayerAuthenticationManager : NetworkBehaviour
 {
-	public class PlayerAuthenticationManager : NetworkBehaviour
+	[SyncVar(hook = "UserIdHook")]
+	public string SyncedUserId;
+
+	public static bool OnlineMode;
+
+	internal static bool AllowSameAccountJoining;
+
+	public static uint AuthenticationTimeout;
+
+	private static readonly Regex _saltRegex;
+
+	private bool _authenticationRequested;
+
+	private float _timeoutTimer;
+
+	private float _passwordCooldown;
+
+	private string _privUserId;
+
+	private string _challenge;
+
+	private string _clientSalt;
+
+	private uint _passwordAttempts;
+
+	private ReferenceHub _hub;
+
+	private ClientInstanceMode _targetInstanceMode;
+
+	private const int HashIterations = 1600;
+
+	private const string HostId = "ID_Host";
+
+	private const string DedicatedId = "ID_Dedicated";
+
+	private const string OfflineModeIdPrefix = "ID_Offline_";
+
+	private const string DummyId = "ID_Dummy";
+
+	public AuthenticationResponse AuthenticationResponse { get; private set; }
+
+	public bool DoNotTrack { get; private set; }
+
+	public string UserId
 	{
-		public AuthenticationResponse AuthenticationResponse { get; private set; }
-
-		public bool DoNotTrack { get; private set; }
-
-		public string UserId
-		{
-			get
-			{
-				if (!NetworkServer.active)
-				{
-					return this.SyncedUserId;
-				}
-				if (this._privUserId == null)
-				{
-					return null;
-				}
-				if (this._privUserId.Contains("$"))
-				{
-					string privUserId = this._privUserId;
-					int num = this._privUserId.IndexOf("$", StringComparison.Ordinal) - 0;
-					return privUserId.Substring(0, num);
-				}
-				return this._privUserId;
-			}
-			set
-			{
-				if (!NetworkServer.active)
-				{
-					return;
-				}
-				this._privUserId = value;
-				this.UserIdHook(null, value);
-				this.RefreshSyncedId();
-				this._hub.serverRoles.RefreshRealId();
-			}
-		}
-
-		public string SaltedUserId
-		{
-			get
-			{
-				if (!NetworkServer.active)
-				{
-					return this.SyncedUserId;
-				}
-				return this._privUserId;
-			}
-		}
-
-		[Server]
-		private void RefreshSyncedId()
+		get
 		{
 			if (!NetworkServer.active)
 			{
-				Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::RefreshSyncedId()' called when server was not active");
-				return;
+				return SyncedUserId;
 			}
-			if (this._privUserId == null)
+			if (_privUserId == null)
 			{
-				this.NetworkSyncedUserId = null;
-				return;
+				return null;
 			}
-			this.NetworkSyncedUserId = ((base.isLocalPlayer || this._hub.IsDummy || (this._privUserId.EndsWith("@steam", StringComparison.Ordinal) && !this.DoNotTrack && !this.AuthenticationResponse.AuthToken.SyncHashed)) ? this._privUserId : Sha.HashToString(Sha.Sha512(this._privUserId)));
+			if (_privUserId.Contains("$"))
+			{
+				return _privUserId.Substring(0, _privUserId.IndexOf("$", StringComparison.Ordinal));
+			}
+			return _privUserId;
 		}
-
-		public ClientInstanceMode InstanceMode
+		set
 		{
-			get
+			if (NetworkServer.active)
 			{
-				return this._targetInstanceMode;
-			}
-			private set
-			{
-				if (value == this._targetInstanceMode)
-				{
-					return;
-				}
-				this._targetInstanceMode = value;
-				Action<ReferenceHub, ClientInstanceMode> onInstanceModeChanged = PlayerAuthenticationManager.OnInstanceModeChanged;
-				if (onInstanceModeChanged == null)
-				{
-					return;
-				}
-				onInstanceModeChanged(this._hub, this._targetInstanceMode);
+				_privUserId = value;
+				UserIdHook(null, value);
+				RefreshSyncedId();
+				_hub.serverRoles.RefreshRealId();
 			}
 		}
+	}
 
-		public static event Action<ReferenceHub> OnSyncedUserIdAssigned;
-
-		public static event Action<ReferenceHub, ClientInstanceMode> OnInstanceModeChanged;
-
-		public bool NorthwoodStaff
-		{
-			get
-			{
-				BadgeToken badgeToken = this.AuthenticationResponse.BadgeToken;
-				return badgeToken != null && badgeToken.Staff;
-			}
-		}
-
-		public bool BypassBansFlagSet
-		{
-			get
-			{
-				AuthenticationToken authToken = this.AuthenticationResponse.AuthToken;
-				return authToken != null && authToken.BypassBans;
-			}
-		}
-
-		public bool RemoteAdminGlobalAccess
-		{
-			get
-			{
-				BadgeToken badgeToken = this.AuthenticationResponse.BadgeToken;
-				return badgeToken != null && (badgeToken.Management || badgeToken.GlobalBanning);
-			}
-		}
-
-		private void Awake()
-		{
-			this._hub = ReferenceHub.GetHub(this);
-		}
-
-		private void FixedUpdate()
-		{
-			if (this._passwordCooldown > 0f)
-			{
-				this._passwordCooldown -= Time.fixedDeltaTime;
-			}
-			if (this.InstanceMode != ClientInstanceMode.Unverified || !NetworkServer.active || !PlayerAuthenticationManager.OnlineMode || base.isLocalPlayer || this._timeoutTimer < 0f)
-			{
-				return;
-			}
-			if (!this._authenticationRequested && base.connectionToClient.isReady)
-			{
-				this.RequestAuthentication();
-			}
-			this._timeoutTimer += Time.fixedDeltaTime;
-			if (this._timeoutTimer <= PlayerAuthenticationManager.AuthenticationTimeout)
-			{
-				return;
-			}
-			this._timeoutTimer = -1f;
-			this.RejectAuthentication("authentication timeout exceeded.", null, false);
-		}
-
-		private void Start()
+	public string SaltedUserId
+	{
+		get
 		{
 			if (!NetworkServer.active)
 			{
+				return SyncedUserId;
+			}
+			return _privUserId;
+		}
+	}
+
+	public ClientInstanceMode InstanceMode
+	{
+		get
+		{
+			return _targetInstanceMode;
+		}
+		private set
+		{
+			if (value != _targetInstanceMode)
+			{
+				_targetInstanceMode = value;
+				PlayerAuthenticationManager.OnInstanceModeChanged?.Invoke(_hub, _targetInstanceMode);
+			}
+		}
+	}
+
+	public bool NorthwoodStaff => AuthenticationResponse.BadgeToken?.Staff ?? false;
+
+	public bool BypassBansFlagSet => AuthenticationResponse.AuthToken?.BypassBans ?? false;
+
+	public bool RemoteAdminGlobalAccess
+	{
+		get
+		{
+			BadgeToken badgeToken = AuthenticationResponse.BadgeToken;
+			if (badgeToken != null && (badgeToken.Management || badgeToken.GlobalBanning))
+			{
+				return true;
+			}
+			return false;
+		}
+	}
+
+	public string NetworkSyncedUserId
+	{
+		get
+		{
+			return SyncedUserId;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref SyncedUserId, 1uL, UserIdHook);
+		}
+	}
+
+	public static event Action<ReferenceHub> OnSyncedUserIdAssigned;
+
+	public static event Action<ReferenceHub, ClientInstanceMode> OnInstanceModeChanged;
+
+	[Server]
+	private void RefreshSyncedId()
+	{
+		if (!NetworkServer.active)
+		{
+			Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::RefreshSyncedId()' called when server was not active");
+			return;
+		}
+		if (_privUserId == null)
+		{
+			NetworkSyncedUserId = null;
+			return;
+		}
+		bool flag = base.isLocalPlayer || _hub.IsDummy || (_privUserId.EndsWith("@steam", StringComparison.Ordinal) && !DoNotTrack && !AuthenticationResponse.AuthToken.SyncHashed);
+		NetworkSyncedUserId = (flag ? _privUserId : Sha.HashToString(Sha.Sha512(_privUserId)));
+	}
+
+	private void Awake()
+	{
+		_hub = ReferenceHub.GetHub(this);
+	}
+
+	private void FixedUpdate()
+	{
+		if (_passwordCooldown > 0f)
+		{
+			_passwordCooldown -= Time.fixedDeltaTime;
+		}
+		if (InstanceMode == ClientInstanceMode.Unverified && NetworkServer.active && OnlineMode && !base.isLocalPlayer && !(_timeoutTimer < 0f))
+		{
+			if (!_authenticationRequested && base.connectionToClient.isReady)
+			{
+				RequestAuthentication();
+			}
+			_timeoutTimer += Time.fixedDeltaTime;
+			if (!(_timeoutTimer <= (float)AuthenticationTimeout))
+			{
+				_timeoutTimer = -1f;
+				RejectAuthentication("authentication timeout exceeded.");
+			}
+		}
+	}
+
+	private void Start()
+	{
+		if (!NetworkServer.active)
+		{
+			return;
+		}
+		if (base.isLocalPlayer)
+		{
+			NetworkServer.ReplaceHandler<AuthenticationResponse>(ServerReceiveAuthenticationResponse);
+		}
+		if (base.connectionToClient is DummyNetworkConnection)
+		{
+			UserId = "ID_Dummy";
+		}
+		else if (base.isLocalPlayer && ServerStatic.IsDedicated)
+		{
+			UserId = "ID_Dedicated";
+		}
+		else if (base.isLocalPlayer)
+		{
+			UserId = "ID_Host";
+			if (OnlineMode)
+			{
+				RequestAuthentication();
+			}
+		}
+		else if (!OnlineMode)
+		{
+			UserId = "ID_Offline_" + base.netId + "_" + DateTimeOffset.Now.ToUnixTimeSeconds();
+		}
+	}
+
+	private static void ServerReceiveAuthenticationResponse(NetworkConnection conn, AuthenticationResponse msg)
+	{
+		if (NetworkServer.active && OnlineMode && ReferenceHub.TryGetHub(conn, out var hub))
+		{
+			hub.authManager.ProcessAuthenticationResponse(msg);
+		}
+	}
+
+	public string GetAuthToken()
+	{
+		if (AuthenticationResponse.SignedAuthToken != null)
+		{
+			return JsonSerialize.ToJson(AuthenticationResponse.SignedAuthToken);
+		}
+		return null;
+	}
+
+	[Server]
+	private void RequestAuthentication()
+	{
+		if (!NetworkServer.active)
+		{
+			Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::RequestAuthentication()' called when server was not active");
+			return;
+		}
+		if (!base.isLocalPlayer)
+		{
+			_authenticationRequested = true;
+			_hub.encryptedChannelManager.PrepareExchange();
+		}
+		_challenge = RandomGenerator.GetStringSecure(24);
+		RpcRequestAuthentication(_challenge, (_hub.encryptedChannelManager.EcdhKeys == null) ? null : ECDSA.KeyToString(_hub.encryptedChannelManager.EcdhKeys.Public));
+	}
+
+	[TargetRpc]
+	private void RpcRequestAuthentication(string challenge, string ecdhPublicKey)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteString(challenge);
+		writer.WriteString(ecdhPublicKey);
+		SendTargetRPCInternal(null, "System.Void CentralAuth.PlayerAuthenticationManager::RpcRequestAuthentication(System.String,System.String)", -1619731460, writer, 0);
+		NetworkWriterPool.Return(writer);
+	}
+
+	[TargetRpc]
+	internal void TargetSetRealId(NetworkConnection conn, string userId)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteString(userId);
+		SendTargetRPCInternal(conn, "System.Void CentralAuth.PlayerAuthenticationManager::TargetSetRealId(Mirror.NetworkConnection,System.String)", 295172299, writer, 0);
+		NetworkWriterPool.Return(writer);
+	}
+
+	private void ProcessAuthenticationResponse(AuthenticationResponse msg)
+	{
+		try
+		{
+			if (!_authenticationRequested)
+			{
+				_hub.gameConsoleTransmission.SendToClient("Authentication token was not requested by the server.", "yellow");
 				return;
 			}
-			if (base.isLocalPlayer)
+			if (_challenge == null)
 			{
-				NetworkServer.ReplaceHandler<AuthenticationResponse>(new Action<NetworkConnectionToClient, AuthenticationResponse>(PlayerAuthenticationManager.ServerReceiveAuthenticationResponse), true);
-			}
-			if (base.connectionToClient is DummyNetworkConnection)
-			{
-				this.UserId = "ID_Dummy";
+				_hub.gameConsoleTransmission.SendToClient("Authentication token has already been sent.", "yellow");
 				return;
 			}
-			if (base.isLocalPlayer && ServerStatic.IsDedicated)
+			AuthenticationResponse = msg;
+			if (msg.SignedAuthToken != null)
 			{
-				this.UserId = "ID_Dedicated";
-				return;
-			}
-			if (base.isLocalPlayer)
-			{
-				this.UserId = "ID_Host";
-				if (PlayerAuthenticationManager.OnlineMode)
+				AuthenticationToken token;
+				string error;
+				string userId;
+				if ((msg.EcdhPublicKey == null || msg.EcdhPublicKeySignature == null) && !base.isLocalPlayer)
 				{
-					this.RequestAuthentication();
-					return;
+					RejectAuthentication("null ECDH public key or public key signature.");
 				}
-			}
-			else if (!PlayerAuthenticationManager.OnlineMode)
-			{
-				this.UserId = "ID_Offline_" + base.netId.ToString() + "_" + DateTimeOffset.Now.ToUnixTimeSeconds().ToString();
-			}
-		}
-
-		private static void ServerReceiveAuthenticationResponse(NetworkConnection conn, AuthenticationResponse msg)
-		{
-			ReferenceHub referenceHub;
-			if (!NetworkServer.active || !PlayerAuthenticationManager.OnlineMode || !ReferenceHub.TryGetHub(conn, out referenceHub))
-			{
-				return;
-			}
-			referenceHub.authManager.ProcessAuthenticationResponse(msg);
-		}
-
-		public string GetAuthToken()
-		{
-			if (this.AuthenticationResponse.SignedAuthToken != null)
-			{
-				return JsonSerialize.ToJson<SignedToken>(this.AuthenticationResponse.SignedAuthToken);
-			}
-			return null;
-		}
-
-		[Server]
-		private void RequestAuthentication()
-		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::RequestAuthentication()' called when server was not active");
-				return;
-			}
-			if (!base.isLocalPlayer)
-			{
-				this._authenticationRequested = true;
-				this._hub.encryptedChannelManager.PrepareExchange();
-			}
-			this._challenge = RandomGenerator.GetStringSecure(24);
-			this.RpcRequestAuthentication(this._challenge, (this._hub.encryptedChannelManager.EcdhKeys == null) ? null : ECDSA.KeyToString(this._hub.encryptedChannelManager.EcdhKeys.Public));
-		}
-
-		[TargetRpc]
-		private void RpcRequestAuthentication(string challenge, string ecdhPublicKey)
-		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteString(challenge);
-			networkWriterPooled.WriteString(ecdhPublicKey);
-			this.SendTargetRPCInternal(null, "System.Void CentralAuth.PlayerAuthenticationManager::RpcRequestAuthentication(System.String,System.String)", -1619731460, networkWriterPooled, 0);
-			NetworkWriterPool.Return(networkWriterPooled);
-		}
-
-		[TargetRpc]
-		internal void TargetSetRealId(NetworkConnection conn, string userId)
-		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteString(userId);
-			this.SendTargetRPCInternal(conn, "System.Void CentralAuth.PlayerAuthenticationManager::TargetSetRealId(Mirror.NetworkConnection,System.String)", 295172299, networkWriterPooled, 0);
-			NetworkWriterPool.Return(networkWriterPooled);
-		}
-
-		private void ProcessAuthenticationResponse(AuthenticationResponse msg)
-		{
-			try
-			{
-				this.AuthenticationResponse = msg;
-				if (msg.SignedAuthToken != null)
+				else if (msg.SignedAuthToken.TryGetToken<AuthenticationToken>("Authentication", out token, out error, out userId))
 				{
-					AuthenticationToken authenticationToken;
-					string text;
-					string text2;
-					if ((msg.EcdhPublicKey == null || msg.EcdhPublicKeySignature == null) && !base.isLocalPlayer)
+					string text = RemoveSalt(token.UserId);
+					if (_challenge != token.Challenge)
 					{
-						this.RejectAuthentication("null ECDH public key or public key signature.", null, false);
+						RejectAuthentication("invalid authentication challenge.", userId);
+						return;
 					}
-					else if (msg.SignedAuthToken.TryGetToken<AuthenticationToken>("Authentication", out authenticationToken, out text, out text2, 0))
+					_challenge = null;
+					if (token.PublicKey != msg.PublicKeyHash)
 					{
-						string text3 = PlayerAuthenticationManager.RemoveSalt(authenticationToken.UserId);
-						if (this._challenge != authenticationToken.Challenge)
+						RejectAuthentication("public key hash mismatch.", userId);
+						return;
+					}
+					if (GameCore.Version.PrivateBeta && !token.PrivateBetaOwnership)
+					{
+						RejectAuthentication("you don't own the Private Beta Access Pass DLC.", userId);
+						return;
+					}
+					IPEndPoint iPEndPoint = null;
+					if (!base.isLocalPlayer)
+					{
+						iPEndPoint = LiteNetLib4MirrorServer.Peers[base.connectionToClient.connectionId].EndPoint;
+						if (iPEndPoint != null && (!CustomLiteNetLib4MirrorTransport.UserIds.ContainsKey(iPEndPoint) || !CustomLiteNetLib4MirrorTransport.UserIds[iPEndPoint].UserId.Equals(text, StringComparison.Ordinal)) && !CustomLiteNetLib4MirrorTransport.UserIdFastReload.Contains(text))
 						{
-							this.RejectAuthentication("invalid authentication challenge.", text2, false);
+							_hub.gameConsoleTransmission.SendToClient("UserID mismatch between authentication and preauthentication token.", "red");
+							_hub.gameConsoleTransmission.SendToClient("Preauth: " + (CustomLiteNetLib4MirrorTransport.UserIds.TryGetValue(iPEndPoint, out var value) ? value.UserId : "(null)"), "red");
+							_hub.gameConsoleTransmission.SendToClient("Auth: " + text, "red");
+							RejectAuthentication("UserID mismatch between authentication and preauthentication token. Check the game console for more details.", text);
+							return;
 						}
-						else
+						if (iPEndPoint != null && CustomLiteNetLib4MirrorTransport.UserIds.ContainsKey(iPEndPoint))
 						{
-							this._challenge = null;
-							if (authenticationToken.PublicKey != msg.PublicKeyHash)
-							{
-								this.RejectAuthentication("public key hash mismatch.", text2, false);
-							}
-							else if (global::GameCore.Version.PrivateBeta && !authenticationToken.PrivateBetaOwnership)
-							{
-								this.RejectAuthentication("you don't own the Private Beta Access Pass DLC.", text2, false);
-							}
-							else
-							{
-								IPEndPoint ipendPoint = null;
-								if (!base.isLocalPlayer)
-								{
-									ipendPoint = LiteNetLib4MirrorServer.Peers[base.connectionToClient.connectionId].EndPoint;
-									if (ipendPoint != null && (!CustomLiteNetLib4MirrorTransport.UserIds.ContainsKey(ipendPoint) || !CustomLiteNetLib4MirrorTransport.UserIds[ipendPoint].UserId.Equals(text3, StringComparison.Ordinal)) && !CustomLiteNetLib4MirrorTransport.UserIdFastReload.Contains(text3))
-									{
-										this._hub.gameConsoleTransmission.SendToClient("UserID mismatch between authentication and preauthentication token.", "red");
-										PreauthItem preauthItem;
-										this._hub.gameConsoleTransmission.SendToClient("Preauth: " + (CustomLiteNetLib4MirrorTransport.UserIds.TryGetValue(ipendPoint, out preauthItem) ? preauthItem.UserId : "(null)"), "red");
-										this._hub.gameConsoleTransmission.SendToClient("Auth: " + text3, "red");
-										this.RejectAuthentication("UserID mismatch between authentication and preauthentication token. Check the game console for more details.", text3, false);
-										return;
-									}
-									if (ipendPoint != null && CustomLiteNetLib4MirrorTransport.UserIds.ContainsKey(ipendPoint))
-									{
-										CustomLiteNetLib4MirrorTransport.UserIds.Remove(ipendPoint);
-									}
-								}
-								if (CustomLiteNetLib4MirrorTransport.UserIdFastReload.Contains(text3))
-								{
-									CustomLiteNetLib4MirrorTransport.UserIdFastReload.Remove(text3);
-								}
-								if (msg.EcdhPublicKey != null && !ECDSA.VerifyBytes(msg.EcdhPublicKey, msg.EcdhPublicKeySignature, msg.PublicKey))
-								{
-									this.RejectAuthentication("invalid ECDH exchange public key signature.", text2, false);
-								}
-								else if (this.CheckBans(authenticationToken, text3))
-								{
-									if (msg.EcdhPublicKey != null)
-									{
-										this._hub.encryptedChannelManager.ServerProcessExchange(msg.EcdhPublicKey);
-									}
-									msg.AuthToken = authenticationToken;
-									this.AuthenticationResponse = msg;
-									string text4 = string.Format("{0} authenticated from endpoint {1}. Player ID assigned: {2}. Auth token serial number: {3}.", new object[]
-									{
-										PlayerAuthenticationManager.RemoveSalt(msg.AuthToken.UserId),
-										(ipendPoint == null) ? "(null)" : ipendPoint.ToString(),
-										this._hub.PlayerId,
-										msg.AuthToken.Serial
-									});
-									ServerConsole.AddLog(text4, ConsoleColor.Gray, false);
-									ServerLogs.AddLog(ServerLogs.Modules.Networking, text4, ServerLogs.ServerLogType.ConnectionUpdate, false);
-									this.FinalizeAuthentication();
-									if (msg.SignedBadgeToken != null)
-									{
-										BadgeToken badgeToken;
-										string text5;
-										string text6;
-										if (msg.SignedBadgeToken.TryGetToken<BadgeToken>("Badge request", out badgeToken, out text5, out text6, 0))
-										{
-											if (badgeToken.Serial != this.AuthenticationResponse.AuthToken.Serial)
-											{
-												this.RejectAuthentication("token serial number mismatch.", null, false);
-												return;
-											}
-											if (badgeToken.UserId != Sha.HashToString(Sha.Sha512(this.SaltedUserId)))
-											{
-												this.RejectBadgeToken("badge token UserID mismatch.");
-												return;
-											}
-											if (StringUtils.Base64Decode(badgeToken.Nickname) != this._hub.nicknameSync.MyNick)
-											{
-												this.RejectBadgeToken("badge token nickname mismatch.");
-												return;
-											}
-											msg.BadgeToken = badgeToken;
-											this.AuthenticationResponse = msg;
-											ulong num = ((badgeToken.RaPermissions == 0UL || ServerStatic.PermissionsHandler.NorthwoodAccess) ? ServerStatic.PermissionsHandler.FullPerm : badgeToken.RaPermissions);
-											if ((badgeToken.Management || badgeToken.GlobalBanning) && CustomNetworkManager.IsVerified)
-											{
-												this._hub.serverRoles.GlobalPerms |= 8388608UL;
-												this._hub.serverRoles.GlobalPerms |= 1048576UL;
-											}
-											if (this.AuthenticationResponse.BadgeToken.OverwatchMode)
-											{
-												this._hub.serverRoles.GlobalPerms |= 4096UL;
-											}
-											if (badgeToken.Staff || badgeToken.Management || badgeToken.GlobalBanning)
-											{
-												this._hub.serverRoles.GlobalPerms |= 16908288UL;
-											}
-											if ((badgeToken.Staff && ServerStatic.PermissionsHandler.NorthwoodAccess) || (badgeToken.RemoteAdmin && ServerStatic.PermissionsHandler.StaffAccess) || (badgeToken.Management && ServerStatic.PermissionsHandler.ManagersAccess) || (badgeToken.GlobalBanning && ServerStatic.PermissionsHandler.BanningTeamAccess))
-											{
-												this._hub.serverRoles.GlobalPerms |= num;
-											}
-											if ((badgeToken.BadgeText != null && badgeToken.BadgeText != "(none)") || (badgeToken.BadgeColor != null && badgeToken.BadgeColor != "(none)"))
-											{
-												if (this._hub.serverRoles.UserBadgePreferences == ServerRoles.BadgePreferences.PreferGlobal || !this._hub.serverRoles.BadgeCover || this._hub.serverRoles.Group == null)
-												{
-													bool flag = msg.HideBadge;
-													switch (badgeToken.BadgeType)
-													{
-													case 0:
-														if (!ConfigFile.ServerConfig.GetBool("hide_patreon_badges_by_default", false) || CustomNetworkManager.IsVerified)
-														{
-															goto IL_0611;
-														}
-														break;
-													case 1:
-														if (!ConfigFile.ServerConfig.GetBool("hide_staff_badges_by_default", false))
-														{
-															goto IL_0611;
-														}
-														break;
-													case 2:
-														if (!ConfigFile.ServerConfig.GetBool("hide_management_badges_by_default", false))
-														{
-															goto IL_0611;
-														}
-														break;
-													case 3:
-														break;
-													default:
-														goto IL_0611;
-													}
-													flag = true;
-													IL_0611:
-													if (flag)
-													{
-														this._hub.serverRoles.HiddenBadge = badgeToken.BadgeText;
-														this._hub.serverRoles.GlobalHidden = true;
-														this._hub.serverRoles.RefreshHiddenTag();
-														this._hub.gameConsoleTransmission.SendToClient("Your global badge has been granted, but it's hidden. Use \".gtag\" command in the game console to show your global badge.", "yellow");
-													}
-													else
-													{
-														this._hub.serverRoles.HiddenBadge = null;
-														this._hub.serverRoles.RpcResetFixed();
-														this._hub.serverRoles.NetworkGlobalBadge = this.AuthenticationResponse.SignedBadgeToken.token;
-														this._hub.serverRoles.NetworkGlobalBadgeSignature = this.AuthenticationResponse.SignedBadgeToken.signature;
-														this._hub.gameConsoleTransmission.SendToClient("Your global badge has been granted.", "cyan");
-													}
-												}
-												else
-												{
-													this._hub.gameConsoleTransmission.SendToClient("Your global badge is covered by server badge. Use \".gtag\" command in the game console to show your global badge.", "yellow");
-												}
-											}
-											this._hub.serverRoles.FinalizeSetGroup();
-										}
-										else
-										{
-											this.RejectBadgeToken(text5);
-										}
-									}
-									PlayerEvents.OnJoined(new PlayerJoinedEventArgs(this._hub));
-								}
-							}
+							CustomLiteNetLib4MirrorTransport.UserIds.Remove(iPEndPoint);
 						}
+					}
+					if (CustomLiteNetLib4MirrorTransport.UserIdFastReload.Contains(text))
+					{
+						CustomLiteNetLib4MirrorTransport.UserIdFastReload.Remove(text);
+					}
+					if (msg.EcdhPublicKey != null && !ECDSA.VerifyBytes(msg.EcdhPublicKey, msg.EcdhPublicKeySignature, msg.PublicKey))
+					{
+						RejectAuthentication("invalid ECDH exchange public key signature.", userId);
 					}
 					else
 					{
-						this.RejectAuthentication(text, text2, true);
+						if (!CheckBans(token, text))
+						{
+							return;
+						}
+						if (msg.EcdhPublicKey != null)
+						{
+							_hub.encryptedChannelManager.ServerProcessExchange(msg.EcdhPublicKey);
+						}
+						msg.AuthToken = token;
+						AuthenticationResponse = msg;
+						string text2 = string.Format("{0} authenticated from endpoint {1}. Player ID assigned: {2}. Auth token serial number: {3}.", RemoveSalt(msg.AuthToken.UserId), (iPEndPoint == null) ? "(null)" : iPEndPoint.ToString(), _hub.PlayerId, msg.AuthToken.Serial);
+						ServerConsole.AddLog(text2);
+						ServerLogs.AddLog(ServerLogs.Modules.Networking, text2, ServerLogs.ServerLogType.ConnectionUpdate);
+						FinalizeAuthentication();
+						if (msg.SignedBadgeToken != null)
+						{
+							if (msg.SignedBadgeToken.TryGetToken<BadgeToken>("Badge request", out var token2, out var error2, out var _))
+							{
+								if (token2.Serial != AuthenticationResponse.AuthToken.Serial)
+								{
+									RejectAuthentication("token serial number mismatch.");
+									return;
+								}
+								if (token2.UserId != Sha.HashToString(Sha.Sha512(SaltedUserId)))
+								{
+									RejectBadgeToken("badge token UserID mismatch.");
+									return;
+								}
+								if (StringUtils.Base64Decode(token2.Nickname) != _hub.nicknameSync.MyNick)
+								{
+									RejectBadgeToken("badge token nickname mismatch.");
+									return;
+								}
+								msg.BadgeToken = token2;
+								AuthenticationResponse = msg;
+								ulong num = ((token2.RaPermissions == 0L || ServerStatic.PermissionsHandler.NorthwoodAccess) ? ServerStatic.PermissionsHandler.FullPerm : token2.RaPermissions);
+								if ((token2.Management || token2.GlobalBanning) && CustomNetworkManager.IsVerified)
+								{
+									_hub.serverRoles.GlobalPerms |= 8388608uL;
+									_hub.serverRoles.GlobalPerms |= 1048576uL;
+								}
+								if (AuthenticationResponse.BadgeToken.OverwatchMode)
+								{
+									_hub.serverRoles.GlobalPerms |= 4096uL;
+								}
+								if (token2.Staff || token2.Management || token2.GlobalBanning)
+								{
+									_hub.serverRoles.GlobalPerms |= 16908288uL;
+								}
+								if ((token2.Staff && ServerStatic.PermissionsHandler.NorthwoodAccess) || (token2.RemoteAdmin && ServerStatic.PermissionsHandler.StaffAccess) || (token2.Management && ServerStatic.PermissionsHandler.ManagersAccess) || (token2.GlobalBanning && ServerStatic.PermissionsHandler.BanningTeamAccess))
+								{
+									_hub.serverRoles.GlobalPerms |= num;
+								}
+								if ((token2.BadgeText != null && token2.BadgeText != "(none)") || (token2.BadgeColor != null && token2.BadgeColor != "(none)"))
+								{
+									if (_hub.serverRoles.UserBadgePreferences == ServerRoles.BadgePreferences.PreferGlobal || !_hub.serverRoles.BadgeCover || _hub.serverRoles.Group == null)
+									{
+										bool flag = msg.HideBadge;
+										switch (token2.BadgeType)
+										{
+										case 1:
+											if (!ConfigFile.ServerConfig.GetBool("hide_staff_badges_by_default"))
+											{
+												break;
+											}
+											goto case 3;
+										case 2:
+											if (!ConfigFile.ServerConfig.GetBool("hide_management_badges_by_default"))
+											{
+												break;
+											}
+											goto case 3;
+										case 0:
+											if (!ConfigFile.ServerConfig.GetBool("hide_patreon_badges_by_default") || CustomNetworkManager.IsVerified)
+											{
+												break;
+											}
+											goto case 3;
+										case 3:
+											flag = true;
+											break;
+										}
+										if (flag)
+										{
+											_hub.serverRoles.HiddenBadge = token2.BadgeText;
+											_hub.serverRoles.GlobalHidden = true;
+											_hub.serverRoles.RefreshHiddenTag();
+											_hub.gameConsoleTransmission.SendToClient("Your global badge has been granted, but it's hidden. Use \".gtag\" command in the game console to show your global badge.", "yellow");
+										}
+										else
+										{
+											_hub.serverRoles.HiddenBadge = null;
+											_hub.serverRoles.RpcResetFixed();
+											_hub.serverRoles.NetworkGlobalBadge = AuthenticationResponse.SignedBadgeToken.token;
+											_hub.serverRoles.NetworkGlobalBadgeSignature = AuthenticationResponse.SignedBadgeToken.signature;
+											_hub.gameConsoleTransmission.SendToClient("Your global badge has been granted.", "cyan");
+										}
+									}
+									else
+									{
+										_hub.gameConsoleTransmission.SendToClient("Your global badge is covered by server badge. Use \".gtag\" command in the game console to show your global badge.", "yellow");
+									}
+								}
+								_hub.serverRoles.FinalizeSetGroup();
+							}
+							else
+							{
+								RejectBadgeToken(error2);
+							}
+						}
+						PlayerEvents.OnJoined(new PlayerJoinedEventArgs(_hub));
 					}
 				}
 				else
 				{
-					this.RejectAuthentication("authentication token not provided.", null, false);
+					RejectAuthentication(error, userId, removeSalt: true);
 				}
 			}
-			catch (Exception ex)
+			else
 			{
-				ServerConsole.AddLog("Exception during authentication (client address: " + base.connectionToClient.address + "): " + ex.Message, ConsoleColor.Magenta, false);
-				ServerConsole.AddLog(ex.StackTrace, ConsoleColor.Magenta, false);
-				this.RejectAuthentication("server exception during authentication!", null, false);
+				RejectAuthentication("authentication token not provided.");
 			}
 		}
-
-		[Server]
-		private void RejectAuthentication(string reason, string userId = null, bool removeSalt = false)
+		catch (Exception ex)
 		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::RejectAuthentication(System.String,System.String,System.Boolean)' called when server was not active");
-				return;
-			}
-			if (userId != null && removeSalt)
-			{
-				userId = PlayerAuthenticationManager.RemoveSalt(userId);
-			}
-			ServerConsole.AddLog(string.Concat(new string[]
-			{
-				"Player ",
-				userId ?? "(unknown)",
-				" (",
-				base.connectionToClient.address,
-				") failed to authenticate: ",
-				reason
-			}), ConsoleColor.Gray, false);
-			this._hub.gameConsoleTransmission.SendToClient("Authentication failure: " + reason, "red");
-			ServerConsole.Disconnect(this._hub.connectionToClient, "Authentication failure: " + reason);
+			ServerConsole.AddLog("Exception during authentication (client address: " + base.connectionToClient.address + "): " + ex.Message, ConsoleColor.Magenta);
+			ServerConsole.AddLog(ex.StackTrace, ConsoleColor.Magenta);
+			RejectAuthentication("server exception during authentication!");
 		}
+	}
 
-		[Server]
-		private void RejectBadgeToken(string reason)
+	[Server]
+	private void RejectAuthentication(string reason, string userId = null, bool removeSalt = false)
+	{
+		if (!NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::RejectBadgeToken(System.String)' called when server was not active");
-				return;
-			}
-			this._hub.gameConsoleTransmission.SendToClient("Your global badge token is invalid. Reason: " + reason, "red");
+			Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::RejectAuthentication(System.String,System.String,System.Boolean)' called when server was not active");
+			return;
 		}
-
-		[Server]
-		private void FinalizeAuthentication()
+		if (userId != null && removeSalt)
 		{
-			if (!NetworkServer.active)
+			userId = RemoveSalt(userId);
+		}
+		ServerConsole.AddLog("Player " + (userId ?? "(unknown)") + " (" + base.connectionToClient.address + ") failed to authenticate: " + reason);
+		_hub.gameConsoleTransmission.SendToClient("Authentication failure: " + reason, "red");
+		ServerConsole.Disconnect(_hub.connectionToClient, "Authentication failure: " + reason);
+	}
+
+	[Server]
+	private void RejectBadgeToken(string reason)
+	{
+		if (!NetworkServer.active)
+		{
+			Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::RejectBadgeToken(System.String)' called when server was not active");
+		}
+		else
+		{
+			_hub.gameConsoleTransmission.SendToClient("Your global badge token is invalid. Reason: " + reason, "red");
+		}
+	}
+
+	[Server]
+	private void FinalizeAuthentication()
+	{
+		if (!NetworkServer.active)
+		{
+			Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::FinalizeAuthentication()' called when server was not active");
+			return;
+		}
+		UserId = AuthenticationResponse.AuthToken.UserId;
+		DoNotTrack = AuthenticationResponse.DoNotTrack || AuthenticationResponse.AuthToken.DoNotTrack;
+		_hub.nicknameSync.UpdateNickname(StringUtils.Base64Decode(AuthenticationResponse.AuthToken.Nickname));
+		if (DoNotTrack)
+		{
+			ServerLogs.AddLog(ServerLogs.Modules.Networking, _hub.LoggedNameFromRefHub() + " connected from IP address " + base.connectionToClient.address + " sent Do Not Track signal.", ServerLogs.ServerLogType.ConnectionUpdate);
+		}
+		_hub.gameConsoleTransmission.SendToClient("Hi " + _hub.nicknameSync.MyNick + "! You have been authenticated on this server.", "green");
+		_hub.serverRoles.RefreshPermissions();
+		if (AllowSameAccountJoining)
+		{
+			return;
+		}
+		int playerId = ReferenceHub.GetHub(base.gameObject).PlayerId;
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (allHub.authManager.UserId == UserId && allHub.PlayerId != playerId && !allHub.isLocalPlayer)
 			{
-				Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::FinalizeAuthentication()' called when server was not active");
-				return;
-			}
-			this.UserId = this.AuthenticationResponse.AuthToken.UserId;
-			this.DoNotTrack = this.AuthenticationResponse.DoNotTrack || this.AuthenticationResponse.AuthToken.DoNotTrack;
-			this._hub.nicknameSync.UpdateNickname(StringUtils.Base64Decode(this.AuthenticationResponse.AuthToken.Nickname));
-			if (this.DoNotTrack)
-			{
-				ServerLogs.AddLog(ServerLogs.Modules.Networking, this._hub.LoggedNameFromRefHub() + " connected from IP address " + base.connectionToClient.address + " sent Do Not Track signal.", ServerLogs.ServerLogType.ConnectionUpdate, false);
-			}
-			this._hub.gameConsoleTransmission.SendToClient("Hi " + this._hub.nicknameSync.MyNick + "! You have been authenticated on this server.", "green");
-			this._hub.serverRoles.RefreshPermissions(false);
-			if (PlayerAuthenticationManager.AllowSameAccountJoining)
-			{
-				return;
-			}
-			int playerId = ReferenceHub.GetHub(base.gameObject).PlayerId;
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				if (referenceHub.authManager.UserId == this.UserId && referenceHub.PlayerId != playerId && !referenceHub.isLocalPlayer)
-				{
-					ServerConsole.AddLog(string.Format("Player {0} ({1}, {2}) has been kicked from the server, because he has just joined the server again from IP address {3}.", new object[]
-					{
-						this.UserId,
-						referenceHub.PlayerId,
-						base.connectionToClient.address,
-						base.connectionToClient.address
-					}), ConsoleColor.Gray, false);
-					ServerConsole.Disconnect(referenceHub.gameObject, "Only one player instance of the same player is allowed.");
-				}
+				ServerConsole.AddLog($"Player {UserId} ({allHub.PlayerId}, {base.connectionToClient.address}) has been kicked from the server, because he has just joined the server again from IP address {base.connectionToClient.address}.");
+				ServerConsole.Disconnect(allHub.gameObject, "Only one player instance of the same player is allowed.");
 			}
 		}
+	}
 
-		[Server]
-		private bool CheckBans(AuthenticationToken token, string unsalted)
+	[Server]
+	private bool CheckBans(AuthenticationToken token, string unsalted)
+	{
+		if (!NetworkServer.active)
 		{
-			if (!NetworkServer.active)
+			Debug.LogWarning("[Server] function 'System.Boolean CentralAuth.PlayerAuthenticationManager::CheckBans(AuthenticationToken,System.String)' called when server was not active");
+			return default(bool);
+		}
+		if ((!token.BypassBans || !CustomNetworkManager.IsVerified) && BanHandler.QueryBan(unsalted, null).Key != null)
+		{
+			_hub.gameConsoleTransmission.SendToClient("You are banned from this server.", "red");
+			ServerConsole.AddLog("Player kicked due to local UserID ban.");
+			ServerConsole.Disconnect(_hub.connectionToClient, "You are banned from this server.");
+			return false;
+		}
+		if (CustomNetworkManager.IsVerified || CustomLiteNetLib4MirrorTransport.UseGlobalBans)
+		{
+			switch (token.GlobalBan)
 			{
-				Debug.LogWarning("[Server] function 'System.Boolean CentralAuth.PlayerAuthenticationManager::CheckBans(AuthenticationToken,System.String)' called when server was not active");
-				return default(bool);
-			}
-			if ((!token.BypassBans || !CustomNetworkManager.IsVerified) && BanHandler.QueryBan(unsalted, null).Key != null)
-			{
-				this._hub.gameConsoleTransmission.SendToClient("You are banned from this server.", "red");
-				ServerConsole.AddLog("Player kicked due to local UserID ban.", ConsoleColor.Gray, false);
-				ServerConsole.Disconnect(this._hub.connectionToClient, "You are banned from this server.");
+			case "M1":
+				ServerConsole.AddLog("Player " + token.UserId + " is globally muted.");
+				break;
+			case "M2":
+				ServerConsole.AddLog("Player " + token.UserId + " is globally muted on intercom.");
+				break;
+			default:
+				_hub.gameConsoleTransmission.SendToClient(token.GlobalBan, "red");
+				ServerConsole.AddLog("Player " + token.UserId + " has been kicked due to an active global ban: " + token.GlobalBan);
+				ServerConsole.Disconnect(_hub.connectionToClient, token.GlobalBan);
 				return false;
+			case "NO":
+				break;
 			}
-			if (CustomNetworkManager.IsVerified || CustomLiteNetLib4MirrorTransport.UseGlobalBans)
-			{
-				string globalBan = token.GlobalBan;
-				if (!(globalBan == "NO"))
-				{
-					if (!(globalBan == "M1"))
-					{
-						if (!(globalBan == "M2"))
-						{
-							this._hub.gameConsoleTransmission.SendToClient(token.GlobalBan, "red");
-							ServerConsole.AddLog("Player " + token.UserId + " has been kicked due to an active global ban: " + token.GlobalBan, ConsoleColor.Gray, false);
-							ServerConsole.Disconnect(this._hub.connectionToClient, token.GlobalBan);
-							return false;
-						}
-						ServerConsole.AddLog("Player " + token.UserId + " is globally muted on intercom.", ConsoleColor.Gray, false);
-					}
-					else
-					{
-						ServerConsole.AddLog("Player " + token.UserId + " is globally muted.", ConsoleColor.Gray, false);
-					}
-				}
-			}
-			if (!token.SkipIpCheck && !token.RequestIp.Equals("N/A", StringComparison.Ordinal) && ServerConsole.EnforceSameIp)
-			{
-				string address = this._hub.connectionToClient.address;
-				if ((address.Contains(".", StringComparison.Ordinal) && token.RequestIp.Contains(".", StringComparison.Ordinal)) || (address.Contains(":", StringComparison.Ordinal) && token.RequestIp.Contains(":", StringComparison.Ordinal)))
-				{
-					bool flag = false;
-					if (ServerConsole.SkipEnforcementForLocalAddresses)
-					{
-						flag = address == "127.0.0.1" || address.StartsWith("10.", StringComparison.Ordinal) || address.StartsWith("192.168.", StringComparison.Ordinal);
-						if (!flag && address.StartsWith("172.", StringComparison.Ordinal))
-						{
-							string[] array = address.Split('.', StringSplitOptions.None);
-							byte b;
-							if (array.Length == 4 && byte.TryParse(array[1], out b) && b >= 16 && b <= 31)
-							{
-								flag = true;
-							}
-						}
-					}
-					if (!flag && address != token.RequestIp)
-					{
-						this._hub.gameConsoleTransmission.SendToClient("Authentication token has been issued to a different IP address.", "red");
-						this._hub.gameConsoleTransmission.SendToClient("Your IP address: " + address, "red");
-						this._hub.gameConsoleTransmission.SendToClient("Issued to: " + token.RequestIp, "red");
-						ServerConsole.AddLog("Player kicked due to IP addresses mismatch.", ConsoleColor.Gray, false);
-						ServerConsole.Disconnect(this._hub.connectionToClient, "Authentication token has been issued to a different IP address. You can find details in the game console.");
-						return false;
-					}
-				}
-			}
-			VcMuteFlags vcMuteFlags = VcMuteFlags.None;
-			if (VoiceChatMutes.QueryLocalMute(unsalted, false))
-			{
-				vcMuteFlags |= VcMuteFlags.LocalRegular;
-				this._hub.gameConsoleTransmission.SendToClient("You are muted on the voice chat by the server administrator.", "red");
-			}
-			if ((ConfigFile.ServerConfig.GetBool("global_mutes_voicechat", true) || CustomNetworkManager.IsVerified) && token.GlobalBan == "M1")
-			{
-				vcMuteFlags |= VcMuteFlags.GlobalRegular;
-				this._hub.gameConsoleTransmission.SendToClient("You are globally muted on the voice chat.", "red");
-			}
-			if (VoiceChatMutes.QueryLocalMute(unsalted, true))
-			{
-				vcMuteFlags |= VcMuteFlags.LocalIntercom;
-				this._hub.gameConsoleTransmission.SendToClient("You are muted on the intercom by the server administrator.", "red");
-			}
-			else if ((ConfigFile.ServerConfig.GetBool("global_mutes_intercom", true) || CustomNetworkManager.IsVerified) && token.GlobalBan == "M2")
-			{
-				vcMuteFlags |= VcMuteFlags.GlobalIntercom;
-				this._hub.gameConsoleTransmission.SendToClient("You are globally muted on the intercom.", "red");
-			}
-			if (token.BypassBans)
-			{
-				vcMuteFlags = VcMuteFlags.None;
-			}
-			VoiceChatMutes.SetFlags(this._hub, vcMuteFlags);
-			return true;
 		}
-
-		private static string RemoveSalt(string userId)
+		if (!token.SkipIpCheck && !token.RequestIp.Equals("N/A", StringComparison.Ordinal) && ServerConsole.EnforceSameIp)
 		{
-			if (userId == null)
+			string address = _hub.connectionToClient.address;
+			if ((address.Contains(".", StringComparison.Ordinal) && token.RequestIp.Contains(".", StringComparison.Ordinal)) || (address.Contains(":", StringComparison.Ordinal) && token.RequestIp.Contains(":", StringComparison.Ordinal)))
 			{
-				return null;
+				bool flag = false;
+				if (ServerConsole.SkipEnforcementForLocalAddresses)
+				{
+					flag = address == "127.0.0.1" || address.StartsWith("10.", StringComparison.Ordinal) || address.StartsWith("192.168.", StringComparison.Ordinal);
+					if (!flag && address.StartsWith("172.", StringComparison.Ordinal))
+					{
+						string[] array = address.Split('.');
+						if (array.Length == 4 && byte.TryParse(array[1], out var result) && result >= 16 && result <= 31)
+						{
+							flag = true;
+						}
+					}
+				}
+				if (!flag && address != token.RequestIp)
+				{
+					_hub.gameConsoleTransmission.SendToClient("Authentication token has been issued to a different IP address.", "red");
+					_hub.gameConsoleTransmission.SendToClient("Your IP address: " + address, "red");
+					_hub.gameConsoleTransmission.SendToClient("Issued to: " + token.RequestIp, "red");
+					ServerConsole.AddLog("Player kicked due to IP addresses mismatch.");
+					ServerConsole.Disconnect(_hub.connectionToClient, "Authentication token has been issued to a different IP address. You can find details in the game console.");
+					return false;
+				}
 			}
+		}
+		VcMuteFlags vcMuteFlags = VcMuteFlags.None;
+		if (VoiceChatMutes.QueryLocalMute(unsalted))
+		{
+			vcMuteFlags |= VcMuteFlags.LocalRegular;
+			_hub.gameConsoleTransmission.SendToClient("You are muted on the voice chat by the server administrator.", "red");
+		}
+		if ((ConfigFile.ServerConfig.GetBool("global_mutes_voicechat", def: true) || CustomNetworkManager.IsVerified) && token.GlobalBan == "M1")
+		{
+			vcMuteFlags |= VcMuteFlags.GlobalRegular;
+			_hub.gameConsoleTransmission.SendToClient("You are globally muted on the voice chat.", "red");
+		}
+		if (VoiceChatMutes.QueryLocalMute(unsalted, intercom: true))
+		{
+			vcMuteFlags |= VcMuteFlags.LocalIntercom;
+			_hub.gameConsoleTransmission.SendToClient("You are muted on the intercom by the server administrator.", "red");
+		}
+		else if ((ConfigFile.ServerConfig.GetBool("global_mutes_intercom", def: true) || CustomNetworkManager.IsVerified) && token.GlobalBan == "M2")
+		{
+			vcMuteFlags |= VcMuteFlags.GlobalIntercom;
+			_hub.gameConsoleTransmission.SendToClient("You are globally muted on the intercom.", "red");
+		}
+		if (token.BypassBans)
+		{
+			vcMuteFlags = VcMuteFlags.None;
+		}
+		VoiceChatMutes.SetFlags(_hub, vcMuteFlags);
+		return true;
+	}
+
+	private static string RemoveSalt(string userId)
+	{
+		if (userId != null)
+		{
 			if (userId.Contains("$"))
 			{
 				return userId.Substring(0, userId.IndexOf("$", StringComparison.Ordinal));
 			}
 			return userId;
 		}
+		return null;
+	}
 
-		[Command]
-		private void CmdHandlePasswordAuthentication(string clientSalt, byte[] signature, string ecdhPublicKey)
+	[Command]
+	private void CmdHandlePasswordAuthentication(string clientSalt, byte[] signature, string ecdhPublicKey)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteString(clientSalt);
+		writer.WriteBytesAndSize(signature);
+		writer.WriteString(ecdhPublicKey);
+		SendCommandInternal("System.Void CentralAuth.PlayerAuthenticationManager::CmdHandlePasswordAuthentication(System.String,System.Byte[],System.String)", 1988415082, writer, 0);
+		NetworkWriterPool.Return(writer);
+	}
+
+	[TargetRpc]
+	private void RpcFinishExchange(string publicKey, byte[] signature)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteString(publicKey);
+		writer.WriteBytesAndSize(signature);
+		SendTargetRPCInternal(null, "System.Void CentralAuth.PlayerAuthenticationManager::RpcFinishExchange(System.String,System.Byte[])", 112993832, writer, 0);
+		NetworkWriterPool.Return(writer);
+	}
+
+	[TargetRpc]
+	private void RpcAnimateInvalidPassword()
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		SendTargetRPCInternal(null, "System.Void CentralAuth.PlayerAuthenticationManager::RpcAnimateInvalidPassword()", 2027815992, writer, 0);
+		NetworkWriterPool.Return(writer);
+	}
+
+	[Server]
+	public void ResetPasswordAttempts()
+	{
+		if (!NetworkServer.active)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteString(clientSalt);
-			networkWriterPooled.WriteBytesAndSize(signature);
-			networkWriterPooled.WriteString(ecdhPublicKey);
-			base.SendCommandInternal("System.Void CentralAuth.PlayerAuthenticationManager::CmdHandlePasswordAuthentication(System.String,System.Byte[],System.String)", 1988415082, networkWriterPooled, 0, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::ResetPasswordAttempts()' called when server was not active");
 		}
-
-		[TargetRpc]
-		private void RpcFinishExchange(string publicKey, byte[] signature)
+		else
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteString(publicKey);
-			networkWriterPooled.WriteBytesAndSize(signature);
-			this.SendTargetRPCInternal(null, "System.Void CentralAuth.PlayerAuthenticationManager::RpcFinishExchange(System.String,System.Byte[])", 112993832, networkWriterPooled, 0);
-			NetworkWriterPool.Return(networkWriterPooled);
+			_passwordAttempts = 0u;
 		}
+	}
 
-		[TargetRpc]
-		private void RpcAnimateInvalidPassword()
+	[Server]
+	private void AssignPasswordOverrideGroup()
+	{
+		if (!NetworkServer.active)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			this.SendTargetRPCInternal(null, "System.Void CentralAuth.PlayerAuthenticationManager::RpcAnimateInvalidPassword()", 2027815992, networkWriterPooled, 0);
-			NetworkWriterPool.Return(networkWriterPooled);
+			Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::AssignPasswordOverrideGroup()' called when server was not active");
+			return;
 		}
-
-		[Server]
-		public void ResetPasswordAttempts()
+		UserGroup overrideGroup = ServerStatic.PermissionsHandler.OverrideGroup;
+		if (overrideGroup != null)
 		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::ResetPasswordAttempts()' called when server was not active");
-				return;
-			}
-			this._passwordAttempts = 0U;
+			string text = _hub.LoggedNameFromRefHub() + " used a valid RemoteAdmin override password.";
+			ServerConsole.AddLog(text, ConsoleColor.DarkYellow);
+			ServerLogs.AddLog(ServerLogs.Modules.Permissions, text, ServerLogs.ServerLogType.ConnectionUpdate);
+			_hub.serverRoles.SetGroup(overrideGroup, byAdmin: true);
 		}
-
-		[Server]
-		private void AssignPasswordOverrideGroup()
+		else
 		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void CentralAuth.PlayerAuthenticationManager::AssignPasswordOverrideGroup()' called when server was not active");
-				return;
-			}
-			UserGroup overrideGroup = ServerStatic.PermissionsHandler.OverrideGroup;
-			if (overrideGroup != null)
-			{
-				string text = this._hub.LoggedNameFromRefHub() + " used a valid RemoteAdmin override password.";
-				ServerConsole.AddLog(text, ConsoleColor.DarkYellow, false);
-				ServerLogs.AddLog(ServerLogs.Modules.Permissions, text, ServerLogs.ServerLogType.ConnectionUpdate, false);
-				this._hub.serverRoles.SetGroup(overrideGroup, true, false);
-				return;
-			}
-			ServerConsole.AddLog("Non-existing group is assigned for override password!", ConsoleColor.Red, false);
-			this._hub.gameConsoleTransmission.SendToClient("Non-existing group is assigned for override password!", "red");
+			ServerConsole.AddLog("Non-existing group is assigned for override password!", ConsoleColor.Red);
+			_hub.gameConsoleTransmission.SendToClient("Non-existing group is assigned for override password!", "red");
 		}
+	}
 
-		private static byte[] DerivePassword(string password, string serversalt, string clientsalt)
+	private static byte[] DerivePassword(string password, string serversalt, string clientsalt)
+	{
+		byte[] salt = Sha.Sha512(serversalt + "/" + clientsalt);
+		return PBKDF2.Pbkdf2HashBytes(password, salt, 1600, 512);
+	}
+
+	private void UserIdHook(string p, string i)
+	{
+		PlayerAuthenticationManager.OnSyncedUserIdAssigned?.Invoke(_hub);
+		if (string.IsNullOrEmpty(i))
 		{
-			byte[] array = Sha.Sha512(serversalt + "/" + clientsalt);
-			return PBKDF2.Pbkdf2HashBytes(password, array, 1600, 512);
+			InstanceMode = ClientInstanceMode.Unverified;
+			return;
 		}
-
-		private void UserIdHook(string p, string i)
+		InstanceMode = i switch
 		{
-			Action<ReferenceHub> onSyncedUserIdAssigned = PlayerAuthenticationManager.OnSyncedUserIdAssigned;
-			if (onSyncedUserIdAssigned != null)
-			{
-				onSyncedUserIdAssigned(this._hub);
-			}
-			if (string.IsNullOrEmpty(i))
-			{
-				this.InstanceMode = ClientInstanceMode.Unverified;
-				return;
-			}
-			ClientInstanceMode clientInstanceMode;
-			if (!(i == "ID_Dedicated"))
-			{
-				if (!(i == "ID_Host"))
-				{
-					if (!(i == "ID_Dummy"))
-					{
-						clientInstanceMode = ClientInstanceMode.ReadyClient;
-					}
-					else
-					{
-						clientInstanceMode = ClientInstanceMode.Dummy;
-					}
-				}
-				else
-				{
-					clientInstanceMode = ClientInstanceMode.Host;
-				}
-			}
-			else
-			{
-				clientInstanceMode = ClientInstanceMode.DedicatedServer;
-			}
-			this.InstanceMode = clientInstanceMode;
+			"ID_Dedicated" => ClientInstanceMode.DedicatedServer, 
+			"ID_Host" => ClientInstanceMode.Host, 
+			"ID_Dummy" => ClientInstanceMode.Dummy, 
+			_ => ClientInstanceMode.ReadyClient, 
+		};
+	}
+
+	static PlayerAuthenticationManager()
+	{
+		_saltRegex = new Regex("^[a-zA-Z0-9]{32}$", RegexOptions.Compiled);
+		RemoteProcedureCalls.RegisterCommand(typeof(PlayerAuthenticationManager), "System.Void CentralAuth.PlayerAuthenticationManager::CmdHandlePasswordAuthentication(System.String,System.Byte[],System.String)", InvokeUserCode_CmdHandlePasswordAuthentication__String__Byte_005B_005D__String, requiresAuthority: true);
+		RemoteProcedureCalls.RegisterRpc(typeof(PlayerAuthenticationManager), "System.Void CentralAuth.PlayerAuthenticationManager::RpcRequestAuthentication(System.String,System.String)", InvokeUserCode_RpcRequestAuthentication__String__String);
+		RemoteProcedureCalls.RegisterRpc(typeof(PlayerAuthenticationManager), "System.Void CentralAuth.PlayerAuthenticationManager::TargetSetRealId(Mirror.NetworkConnection,System.String)", InvokeUserCode_TargetSetRealId__NetworkConnection__String);
+		RemoteProcedureCalls.RegisterRpc(typeof(PlayerAuthenticationManager), "System.Void CentralAuth.PlayerAuthenticationManager::RpcFinishExchange(System.String,System.Byte[])", InvokeUserCode_RpcFinishExchange__String__Byte_005B_005D);
+		RemoteProcedureCalls.RegisterRpc(typeof(PlayerAuthenticationManager), "System.Void CentralAuth.PlayerAuthenticationManager::RpcAnimateInvalidPassword()", InvokeUserCode_RpcAnimateInvalidPassword);
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	protected void UserCode_RpcRequestAuthentication__String__String(string challenge, string ecdhPublicKey)
+	{
+	}
+
+	protected static void InvokeUserCode_RpcRequestAuthentication__String__String(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
+		{
+			Debug.LogError("TargetRPC RpcRequestAuthentication called on server.");
 		}
-
-		static PlayerAuthenticationManager()
+		else
 		{
-			RemoteProcedureCalls.RegisterCommand(typeof(PlayerAuthenticationManager), "System.Void CentralAuth.PlayerAuthenticationManager::CmdHandlePasswordAuthentication(System.String,System.Byte[],System.String)", new RemoteCallDelegate(PlayerAuthenticationManager.InvokeUserCode_CmdHandlePasswordAuthentication__String__Byte[]__String), true);
-			RemoteProcedureCalls.RegisterRpc(typeof(PlayerAuthenticationManager), "System.Void CentralAuth.PlayerAuthenticationManager::RpcRequestAuthentication(System.String,System.String)", new RemoteCallDelegate(PlayerAuthenticationManager.InvokeUserCode_RpcRequestAuthentication__String__String));
-			RemoteProcedureCalls.RegisterRpc(typeof(PlayerAuthenticationManager), "System.Void CentralAuth.PlayerAuthenticationManager::TargetSetRealId(Mirror.NetworkConnection,System.String)", new RemoteCallDelegate(PlayerAuthenticationManager.InvokeUserCode_TargetSetRealId__NetworkConnection__String));
-			RemoteProcedureCalls.RegisterRpc(typeof(PlayerAuthenticationManager), "System.Void CentralAuth.PlayerAuthenticationManager::RpcFinishExchange(System.String,System.Byte[])", new RemoteCallDelegate(PlayerAuthenticationManager.InvokeUserCode_RpcFinishExchange__String__Byte[]));
-			RemoteProcedureCalls.RegisterRpc(typeof(PlayerAuthenticationManager), "System.Void CentralAuth.PlayerAuthenticationManager::RpcAnimateInvalidPassword()", new RemoteCallDelegate(PlayerAuthenticationManager.InvokeUserCode_RpcAnimateInvalidPassword));
-		}
-
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		public string NetworkSyncedUserId
-		{
-			get
-			{
-				return this.SyncedUserId;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<string>(value, ref this.SyncedUserId, 1UL, new Action<string, string>(this.UserIdHook));
-			}
-		}
-
-		protected void UserCode_RpcRequestAuthentication__String__String(string challenge, string ecdhPublicKey)
-		{
-		}
-
-		protected static void InvokeUserCode_RpcRequestAuthentication__String__String(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
-		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogError("TargetRPC RpcRequestAuthentication called on server.");
-				return;
-			}
 			((PlayerAuthenticationManager)obj).UserCode_RpcRequestAuthentication__String__String(reader.ReadString(), reader.ReadString());
 		}
+	}
 
-		protected void UserCode_TargetSetRealId__NetworkConnection__String(NetworkConnection conn, string userId)
+	protected void UserCode_TargetSetRealId__NetworkConnection__String(NetworkConnection conn, string userId)
+	{
+	}
+
+	protected static void InvokeUserCode_TargetSetRealId__NetworkConnection__String(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
 		{
+			Debug.LogError("TargetRPC TargetSetRealId called on server.");
 		}
-
-		protected static void InvokeUserCode_TargetSetRealId__NetworkConnection__String(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+		else
 		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogError("TargetRPC TargetSetRealId called on server.");
-				return;
-			}
 			((PlayerAuthenticationManager)obj).UserCode_TargetSetRealId__NetworkConnection__String(null, reader.ReadString());
 		}
+	}
 
-		protected void UserCode_CmdHandlePasswordAuthentication__String__Byte[]__String(string clientSalt, byte[] signature, string ecdhPublicKey)
+	protected void UserCode_CmdHandlePasswordAuthentication__String__Byte_005B_005D__String(string clientSalt, byte[] signature, string ecdhPublicKey)
+	{
+		if (_passwordAttempts > 2)
 		{
-			if (this._passwordAttempts > 2U)
+			_hub.gameConsoleTransmission.SendToClient("Limit of RA password auth attempts exceeded.", "red");
+			return;
+		}
+		if (_passwordCooldown > 0f)
+		{
+			_hub.gameConsoleTransmission.SendToClient("Please wait before trying to use password again!", "red");
+			return;
+		}
+		_passwordCooldown = 1.8f;
+		if (base.isLocalPlayer)
+		{
+			_hub.gameConsoleTransmission.SendToClient("Password authentication is not available for the host.", "red");
+			return;
+		}
+		ReferenceHub hostHub = ReferenceHub.HostHub;
+		if (!hostHub.queryProcessor.OverridePasswordEnabled)
+		{
+			_hub.gameConsoleTransmission.SendToClient("Password authentication is disabled on this server!", "red");
+			return;
+		}
+		if (clientSalt == null || signature == null)
+		{
+			_hub.gameConsoleTransmission.SendToClient("Invalid password auth request - null parameters.", "red");
+			return;
+		}
+		if (!_saltRegex.IsMatch(clientSalt))
+		{
+			_hub.gameConsoleTransmission.SendToClient("Invalid password auth request - invalid client salt.", "red");
+			return;
+		}
+		byte[] key = DerivePassword(ServerStatic.PermissionsHandler.OverridePassword, hostHub.encryptedChannelManager.ServerRandom, clientSalt);
+		if (OnlineMode)
+		{
+			if (SyncedUserId == null)
 			{
-				this._hub.gameConsoleTransmission.SendToClient("Limit of RA password auth attempts exceeded.", "red");
-				return;
+				_hub.gameConsoleTransmission.SendToClient("Can't process password auth request - not authenticated while server is in online mode.", "red");
 			}
-			if (this._passwordCooldown > 0f)
+			else if (!Sha.Sha512Hmac(key, SyncedUserId).SequenceEqual(signature))
 			{
-				this._hub.gameConsoleTransmission.SendToClient("Please wait before trying to use password again!", "red");
-				return;
-			}
-			this._passwordCooldown = 1.8f;
-			if (base.isLocalPlayer)
-			{
-				this._hub.gameConsoleTransmission.SendToClient("Password authentication is not available for the host.", "red");
-				return;
-			}
-			ReferenceHub hostHub = ReferenceHub.HostHub;
-			if (!hostHub.queryProcessor.OverridePasswordEnabled)
-			{
-				this._hub.gameConsoleTransmission.SendToClient("Password authentication is disabled on this server!", "red");
-				return;
-			}
-			if (clientSalt == null || signature == null)
-			{
-				this._hub.gameConsoleTransmission.SendToClient("Invalid password auth request - null parameters.", "red");
-				return;
-			}
-			if (!PlayerAuthenticationManager._saltRegex.IsMatch(clientSalt))
-			{
-				this._hub.gameConsoleTransmission.SendToClient("Invalid password auth request - invalid client salt.", "red");
-				return;
-			}
-			byte[] array = PlayerAuthenticationManager.DerivePassword(ServerStatic.PermissionsHandler.OverridePassword, hostHub.encryptedChannelManager.ServerRandom, clientSalt);
-			if (PlayerAuthenticationManager.OnlineMode)
-			{
-				if (this.SyncedUserId == null)
-				{
-					this._hub.gameConsoleTransmission.SendToClient("Can't process password auth request - not authenticated while server is in online mode.", "red");
-					return;
-				}
-				if (!Sha.Sha512Hmac(array, this.SyncedUserId).SequenceEqual(signature))
-				{
-					this._passwordAttempts += 1U;
-					string text = this._hub.LoggedNameFromRefHub() + " attempted to use an invalid RemoteAdmin override password.";
-					ServerConsole.AddLog(text, ConsoleColor.Magenta, false);
-					ServerLogs.AddLog(ServerLogs.Modules.Permissions, text, ServerLogs.ServerLogType.ConnectionUpdate, false);
-					this.RpcAnimateInvalidPassword();
-					return;
-				}
-				this.AssignPasswordOverrideGroup();
-				return;
+				_passwordAttempts++;
+				string text = _hub.LoggedNameFromRefHub() + " attempted to use an invalid RemoteAdmin override password.";
+				ServerConsole.AddLog(text, ConsoleColor.Magenta);
+				ServerLogs.AddLog(ServerLogs.Modules.Permissions, text, ServerLogs.ServerLogType.ConnectionUpdate);
+				RpcAnimateInvalidPassword();
 			}
 			else
 			{
-				if (ecdhPublicKey == null)
-				{
-					this._hub.gameConsoleTransmission.SendToClient("Can't process password auth request - ecdhPublicKey is null in offline mode.", "red");
-					return;
-				}
-				if (!Sha.Sha512Hmac(array, ecdhPublicKey).SequenceEqual(signature))
-				{
-					this._passwordAttempts += 1U;
-					string text2 = this._hub.LoggedNameFromRefHub() + " attempted to use an invalid RemoteAdmin override password.";
-					ServerConsole.AddLog(text2, ConsoleColor.Magenta, false);
-					ServerLogs.AddLog(ServerLogs.Modules.Permissions, text2, ServerLogs.ServerLogType.ConnectionUpdate, false);
-					this.RpcAnimateInvalidPassword();
-					return;
-				}
-				this._hub.encryptedChannelManager.PrepareExchange();
-				this._hub.encryptedChannelManager.ServerProcessExchange(ecdhPublicKey);
-				string text3 = ECDSA.KeyToString(this._hub.encryptedChannelManager.EcdhKeys.Public);
-				byte[] array2 = Sha.Sha512Hmac(array, text3);
-				this.RpcFinishExchange(text3, array2);
-				this.AssignPasswordOverrideGroup();
-				return;
+				AssignPasswordOverrideGroup();
 			}
 		}
-
-		protected static void InvokeUserCode_CmdHandlePasswordAuthentication__String__Byte[]__String(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+		else if (ecdhPublicKey == null)
 		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogError("Command CmdHandlePasswordAuthentication called on client.");
-				return;
-			}
-			((PlayerAuthenticationManager)obj).UserCode_CmdHandlePasswordAuthentication__String__Byte[]__String(reader.ReadString(), reader.ReadBytesAndSize(), reader.ReadString());
+			_hub.gameConsoleTransmission.SendToClient("Can't process password auth request - ecdhPublicKey is null in offline mode.", "red");
 		}
-
-		protected void UserCode_RpcFinishExchange__String__Byte[](string publicKey, byte[] signature)
+		else if (!Sha.Sha512Hmac(key, ecdhPublicKey).SequenceEqual(signature))
 		{
+			_passwordAttempts++;
+			string text2 = _hub.LoggedNameFromRefHub() + " attempted to use an invalid RemoteAdmin override password.";
+			ServerConsole.AddLog(text2, ConsoleColor.Magenta);
+			ServerLogs.AddLog(ServerLogs.Modules.Permissions, text2, ServerLogs.ServerLogType.ConnectionUpdate);
+			RpcAnimateInvalidPassword();
 		}
-
-		protected static void InvokeUserCode_RpcFinishExchange__String__Byte[](NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+		else
 		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogError("TargetRPC RpcFinishExchange called on server.");
-				return;
-			}
-			((PlayerAuthenticationManager)obj).UserCode_RpcFinishExchange__String__Byte[](reader.ReadString(), reader.ReadBytesAndSize());
+			_hub.encryptedChannelManager.PrepareExchange();
+			_hub.encryptedChannelManager.ServerProcessExchange(ecdhPublicKey);
+			string text3 = ECDSA.KeyToString(_hub.encryptedChannelManager.EcdhKeys.Public);
+			byte[] signature2 = Sha.Sha512Hmac(key, text3);
+			RpcFinishExchange(text3, signature2);
+			AssignPasswordOverrideGroup();
 		}
+	}
 
-		protected void UserCode_RpcAnimateInvalidPassword()
+	protected static void InvokeUserCode_CmdHandlePasswordAuthentication__String__Byte_005B_005D__String(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkServer.active)
 		{
+			Debug.LogError("Command CmdHandlePasswordAuthentication called on client.");
 		}
-
-		protected static void InvokeUserCode_RpcAnimateInvalidPassword(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+		else
 		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogError("TargetRPC RpcAnimateInvalidPassword called on server.");
-				return;
-			}
+			((PlayerAuthenticationManager)obj).UserCode_CmdHandlePasswordAuthentication__String__Byte_005B_005D__String(reader.ReadString(), reader.ReadBytesAndSize(), reader.ReadString());
+		}
+	}
+
+	protected void UserCode_RpcFinishExchange__String__Byte_005B_005D(string publicKey, byte[] signature)
+	{
+	}
+
+	protected static void InvokeUserCode_RpcFinishExchange__String__Byte_005B_005D(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
+		{
+			Debug.LogError("TargetRPC RpcFinishExchange called on server.");
+		}
+		else
+		{
+			((PlayerAuthenticationManager)obj).UserCode_RpcFinishExchange__String__Byte_005B_005D(reader.ReadString(), reader.ReadBytesAndSize());
+		}
+	}
+
+	protected void UserCode_RpcAnimateInvalidPassword()
+	{
+	}
+
+	protected static void InvokeUserCode_RpcAnimateInvalidPassword(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
+		{
+			Debug.LogError("TargetRPC RpcAnimateInvalidPassword called on server.");
+		}
+		else
+		{
 			((PlayerAuthenticationManager)obj).UserCode_RpcAnimateInvalidPassword();
 		}
+	}
 
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteString(this.SyncedUserId);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 1UL) != 0UL)
-			{
-				writer.WriteString(this.SyncedUserId);
-			}
+			writer.WriteString(SyncedUserId);
+			return;
 		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<string>(ref this.SyncedUserId, new Action<string, string>(this.UserIdHook), reader.ReadString());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 1L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<string>(ref this.SyncedUserId, new Action<string, string>(this.UserIdHook), reader.ReadString());
-			}
+			writer.WriteString(SyncedUserId);
 		}
+	}
 
-		[SyncVar(hook = "UserIdHook")]
-		public string SyncedUserId;
-
-		public static bool OnlineMode;
-
-		internal static bool AllowSameAccountJoining;
-
-		public static uint AuthenticationTimeout;
-
-		private static readonly Regex _saltRegex = new Regex("^[a-zA-Z0-9]{32}$", RegexOptions.Compiled);
-
-		private bool _hubSet;
-
-		private bool _authenticationRequested;
-
-		private float _timeoutTimer;
-
-		private float _passwordCooldown;
-
-		private string _privUserId;
-
-		private string _challenge;
-
-		private string _clientSalt;
-
-		private uint _passwordAttempts;
-
-		private ReferenceHub _hub;
-
-		private ClientInstanceMode _targetInstanceMode;
-
-		private const int HashIterations = 1600;
-
-		private const string HostId = "ID_Host";
-
-		private const string DedicatedId = "ID_Dedicated";
-
-		private const string OfflineModeIdPrefix = "ID_Offline_";
-
-		private const string DummyId = "ID_Dummy";
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref SyncedUserId, UserIdHook, reader.ReadString());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 1L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref SyncedUserId, UserIdHook, reader.ReadString());
+		}
 	}
 }

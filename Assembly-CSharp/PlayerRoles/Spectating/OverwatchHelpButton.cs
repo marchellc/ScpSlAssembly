@@ -1,27 +1,25 @@
-﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace PlayerRoles.Spectating
+namespace PlayerRoles.Spectating;
+
+public class OverwatchHelpButton : MonoBehaviour, IPointerEnterHandler, IEventSystemHandler, IPointerExitHandler
 {
-	public class OverwatchHelpButton : MonoBehaviour, IPointerEnterHandler, IEventSystemHandler, IPointerExitHandler
+	public GameObject HelpDialog;
+
+	public TextMeshProUGUI HelpText;
+
+	public TextLanguageReplacer HelpTextReplacer;
+
+	public void OnPointerEnter(PointerEventData eventData)
 	{
-		public void OnPointerEnter(PointerEventData eventData)
-		{
-			this.HelpDialog.SetActive(true);
-			this.HelpText.text = this.HelpTextReplacer.DisplayText;
-		}
+		HelpDialog.SetActive(value: true);
+		HelpText.text = HelpTextReplacer.DisplayText;
+	}
 
-		public void OnPointerExit(PointerEventData eventData)
-		{
-			this.HelpDialog.SetActive(false);
-		}
-
-		public GameObject HelpDialog;
-
-		public TextMeshProUGUI HelpText;
-
-		public TextLanguageReplacer HelpTextReplacer;
+	public void OnPointerExit(PointerEventData eventData)
+	{
+		HelpDialog.SetActive(value: false);
 	}
 }

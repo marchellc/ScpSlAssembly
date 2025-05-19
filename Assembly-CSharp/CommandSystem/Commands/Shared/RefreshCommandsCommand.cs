@@ -1,34 +1,33 @@
-﻿using System;
+using System;
 
-namespace CommandSystem.Commands.Shared
+namespace CommandSystem.Commands.Shared;
+
+[CommandHandler(typeof(RemoteAdminCommandHandler))]
+[CommandHandler(typeof(GameConsoleCommandHandler))]
+public class RefreshCommandsCommand : ICommand
 {
-	[CommandHandler(typeof(RemoteAdminCommandHandler))]
-	[CommandHandler(typeof(GameConsoleCommandHandler))]
-	public class RefreshCommandsCommand : ICommand
+	private readonly ICommandHandler _commandHandler;
+
+	public string Command { get; } = "refreshcommands";
+
+	public string[] Aliases { get; }
+
+	public string Description { get; } = "Reloads all commands.";
+
+	public RefreshCommandsCommand(ICommandHandler commandHandler)
 	{
-		public string Command { get; } = "refreshcommands";
+		_commandHandler = commandHandler;
+	}
 
-		public string[] Aliases { get; }
-
-		public string Description { get; } = "Reloads all commands.";
-
-		public RefreshCommandsCommand(ICommandHandler commandHandler)
+	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
+	{
+		if (!sender.CheckPermission(PlayerPermissions.ServerConsoleCommands, out response))
 		{
-			this._commandHandler = commandHandler;
+			return false;
 		}
-
-		public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
-		{
-			if (!sender.CheckPermission(PlayerPermissions.ServerConsoleCommands, out response))
-			{
-				return false;
-			}
-			this._commandHandler.ClearCommands();
-			this._commandHandler.LoadGeneratedCommands();
-			response = "Successfully reloaded all commands!";
-			return true;
-		}
-
-		private readonly ICommandHandler _commandHandler;
+		_commandHandler.ClearCommands();
+		_commandHandler.LoadGeneratedCommands();
+		response = "Successfully reloaded all commands!";
+		return true;
 	}
 }

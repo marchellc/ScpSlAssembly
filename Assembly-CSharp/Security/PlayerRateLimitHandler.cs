@@ -1,20 +1,18 @@
-﻿using System;
 using Mirror;
 
-namespace Security
+namespace Security;
+
+public class PlayerRateLimitHandler : NetworkBehaviour
 {
-	public class PlayerRateLimitHandler : NetworkBehaviour
+	public RateLimit[] RateLimits;
+
+	private void Awake()
 	{
-		private void Awake()
-		{
-			this.RateLimits = RateLimitCreator.CreateRateLimit(base.connectionToClient, base.isServer && base.isLocalPlayer);
-		}
+		RateLimits = RateLimitCreator.CreateRateLimit(base.connectionToClient, base.isServer && base.isLocalPlayer);
+	}
 
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		public RateLimit[] RateLimits;
+	public override bool Weaved()
+	{
+		return true;
 	}
 }

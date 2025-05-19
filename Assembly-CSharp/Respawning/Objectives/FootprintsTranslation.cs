@@ -1,17 +1,14 @@
-﻿using System;
+namespace Respawning.Objectives;
 
-namespace Respawning.Objectives
+public enum FootprintsTranslation
 {
-	public enum FootprintsTranslation
-	{
-		TimerRewardDisplay,
-		InfluenceRewardDisplay,
-		GenericRewardsDisplay,
-		ObjectiveFeedExample,
-		KillObjective,
-		DamageObjective,
-		EscapeObjective,
-		GeneratorObjective,
-		ItemPickupObjective
-	}
+	TimerRewardDisplay,
+	InfluenceRewardDisplay,
+	GenericRewardsDisplay,
+	ObjectiveFeedExample,
+	KillObjective,
+	DamageObjective,
+	EscapeObjective,
+	GeneratorObjective,
+	ItemPickupObjective
 }

@@ -1,10 +1,8 @@
-﻿using System;
 using UnityEngine;
 
-namespace PlayerRoles
+namespace PlayerRoles;
+
+public interface IAvatarRole
 {
-	public interface IAvatarRole
-	{
-		Texture RoleAvatar { get; }
-	}
+	Texture RoleAvatar { get; }
 }

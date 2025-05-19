@@ -1,184 +1,182 @@
-﻿using System;
+using System;
 using Mirror;
 using PlayerRoles.Spectating;
 using PlayerRoles.Subroutines;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp939
+namespace PlayerRoles.PlayableScps.Scp939;
+
+public class Scp939BreathController : StandardSubroutine<Scp939Role>
 {
-	public class Scp939BreathController : StandardSubroutine<Scp939Role>
+	[Serializable]
+	private class IdleLoop939
 	{
-		public override void SpawnObject()
+		[SerializeField]
+		private AudioSource _thirdperson;
+
+		[SerializeField]
+		[Range(0f, 1f)]
+		private float _thirdpersonVolume = 1f;
+
+		[SerializeField]
+		private AudioSource _firstperson;
+
+		[SerializeField]
+		[Range(0f, 1f)]
+		private float _firstPersonVolume = 1f;
+
+		private bool _cacheSet;
+
+		private bool _has3rd;
+
+		private bool _has1st;
+
+		private bool _local;
+
+		public float CurVolume { get; private set; }
+
+		public void SetVolume(bool isOn, float lerp)
 		{
-			base.SpawnObject();
-			this.RefreshPerspective();
-			this.ForEachLoop(delegate(Scp939BreathController.IdleLoop939 x)
-			{
-				x.SetVolume(0f, 1f);
-			});
-			this._stamina = base.Owner.playerStats.GetModule<StaminaStat>();
-			SpectatorTargetTracker.OnTargetChanged += this.RefreshPerspective;
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this._stamina.ChangeSyncMode(SyncedStatBase.SyncMode.Public);
+			SetVolume(isOn ? 1 : 0, lerp);
 		}
 
-		public override void ResetObject()
+		public void SetOwner(bool isLocalPlayer)
 		{
-			base.ResetObject();
-			this._curExhaustion = 0f;
-			SpectatorTargetTracker.OnTargetChanged -= this.RefreshPerspective;
+			_local = isLocalPlayer;
+			SetVolume(CurVolume);
 		}
 
-		protected override void Awake()
+		public void SetVolume(float vol, float lerp = 1f)
 		{
-			base.Awake();
-			base.GetSubroutine<Scp939FocusAbility>(out this._focus);
+			if (!_cacheSet)
+			{
+				_has3rd = _thirdperson != null;
+				_has1st = _firstperson != null;
+				_cacheSet = true;
+			}
+			CurVolume = Mathf.Lerp(CurVolume, vol, lerp);
+			if (_has3rd)
+			{
+				_thirdperson.volume = (_local ? 0f : (CurVolume * _thirdpersonVolume));
+			}
+			if (_has1st)
+			{
+				_firstperson.volume = (_local ? (CurVolume * _firstPersonVolume) : 0f);
+			}
 		}
+	}
 
-		private void RefreshPerspective()
+	[SerializeField]
+	private float _exhaustionGainLerp;
+
+	[SerializeField]
+	private float _exhaustionDropLerp;
+
+	[SerializeField]
+	private float _exhaustionMuteLoopsThreshold;
+
+	[SerializeField]
+	private AnimationCurve _exhaustionVolume;
+
+	[SerializeField]
+	private float _breathLerp;
+
+	[SerializeField]
+	private float _focusGrowlGainLerp;
+
+	[SerializeField]
+	private float _focusGrowlDropLerp;
+
+	private float _timeFromLastFocus;
+
+	[SerializeField]
+	private float _dropFocusAfter = 5f;
+
+	[SerializeField]
+	private IdleLoop939 _focusLoop;
+
+	[SerializeField]
+	private IdleLoop939 _breathLoop;
+
+	[SerializeField]
+	private IdleLoop939 _exhaustionLoop;
+
+	[SerializeField]
+	private IdleLoop939 _focusGrowlLoop;
+
+	private float _curExhaustion;
+
+	private StaminaStat _stamina;
+
+	private Scp939FocusAbility _focus;
+
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		RefreshPerspective();
+		ForEachLoop(delegate(IdleLoop939 x)
 		{
-			bool isLocal = base.Owner.IsLocallySpectated() || base.Owner.isLocalPlayer;
-			this.ForEachLoop(delegate(Scp939BreathController.IdleLoop939 x)
-			{
-				x.SetOwner(isLocal);
-			});
-		}
-
-		private void ForEachLoop(Action<Scp939BreathController.IdleLoop939> action)
+			x.SetVolume(0f);
+		});
+		_stamina = base.Owner.playerStats.GetModule<StaminaStat>();
+		SpectatorTargetTracker.OnTargetChanged += RefreshPerspective;
+		if (NetworkServer.active)
 		{
-			action(this._focusLoop);
-			action(this._breathLoop);
-			action(this._exhaustionLoop);
-			action(this._focusGrowlLoop);
+			_stamina.ChangeSyncMode(SyncedStatBase.SyncMode.Public);
 		}
+	}
 
-		private void Update()
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		_curExhaustion = 0f;
+		SpectatorTargetTracker.OnTargetChanged -= RefreshPerspective;
+	}
+
+	protected override void Awake()
+	{
+		base.Awake();
+		GetSubroutine<Scp939FocusAbility>(out _focus);
+	}
+
+	private void RefreshPerspective()
+	{
+		bool isLocal = base.Owner.IsLocallySpectated() || base.Owner.isLocalPlayer;
+		ForEachLoop(delegate(IdleLoop939 x)
 		{
-			float num = Mathf.Clamp01(1f - this._stamina.CurValue);
-			this._curExhaustion = Mathf.Lerp(this._curExhaustion, num, Time.deltaTime * ((num > this._curExhaustion) ? this._exhaustionGainLerp : this._exhaustionDropLerp));
-			this._exhaustionLoop.SetVolume(this._exhaustionVolume.Evaluate(this._curExhaustion), 1f);
-			bool flag = this._curExhaustion > this._exhaustionMuteLoopsThreshold;
-			bool flag2 = !flag && this._focus.TargetState;
-			if (this._focus.TargetState)
-			{
-				this._timeFromLastFocus = 0f;
-			}
-			else
-			{
-				this._timeFromLastFocus += Time.deltaTime;
-			}
-			if (this._timeFromLastFocus == 0f || this._timeFromLastFocus > this._dropFocusAfter)
-			{
-				this._focusGrowlLoop.SetVolume(flag2, Time.deltaTime * (flag2 ? this._focusGrowlGainLerp : this._focusGrowlDropLerp));
-			}
-			this._focusLoop.SetVolume(flag2, Time.deltaTime * this._breathLerp);
-			this._breathLoop.SetVolume(!flag && !this._focus.TargetState, Time.deltaTime * this._breathLerp);
-		}
+			x.SetOwner(isLocal);
+		});
+	}
 
-		[SerializeField]
-		private float _exhaustionGainLerp;
+	private void ForEachLoop(Action<IdleLoop939> action)
+	{
+		action(_focusLoop);
+		action(_breathLoop);
+		action(_exhaustionLoop);
+		action(_focusGrowlLoop);
+	}
 
-		[SerializeField]
-		private float _exhaustionDropLerp;
-
-		[SerializeField]
-		private float _exhaustionMuteLoopsThreshold;
-
-		[SerializeField]
-		private AnimationCurve _exhaustionVolume;
-
-		[SerializeField]
-		private float _breathLerp;
-
-		[SerializeField]
-		private float _focusGrowlGainLerp;
-
-		[SerializeField]
-		private float _focusGrowlDropLerp;
-
-		private float _timeFromLastFocus;
-
-		[SerializeField]
-		private float _dropFocusAfter = 5f;
-
-		[SerializeField]
-		private Scp939BreathController.IdleLoop939 _focusLoop;
-
-		[SerializeField]
-		private Scp939BreathController.IdleLoop939 _breathLoop;
-
-		[SerializeField]
-		private Scp939BreathController.IdleLoop939 _exhaustionLoop;
-
-		[SerializeField]
-		private Scp939BreathController.IdleLoop939 _focusGrowlLoop;
-
-		private float _curExhaustion;
-
-		private StaminaStat _stamina;
-
-		private Scp939FocusAbility _focus;
-
-		[Serializable]
-		private class IdleLoop939
+	private void Update()
+	{
+		float num = Mathf.Clamp01(1f - _stamina.CurValue);
+		_curExhaustion = Mathf.Lerp(_curExhaustion, num, Time.deltaTime * ((num > _curExhaustion) ? _exhaustionGainLerp : _exhaustionDropLerp));
+		_exhaustionLoop.SetVolume(_exhaustionVolume.Evaluate(_curExhaustion));
+		bool flag = _curExhaustion > _exhaustionMuteLoopsThreshold;
+		bool flag2 = !flag && _focus.TargetState;
+		if (_focus.TargetState)
 		{
-			public float CurVolume { get; private set; }
-
-			public void SetVolume(bool isOn, float lerp)
-			{
-				this.SetVolume((float)(isOn ? 1 : 0), lerp);
-			}
-
-			public void SetOwner(bool isLocalPlayer)
-			{
-				this._local = isLocalPlayer;
-				this.SetVolume(this.CurVolume, 1f);
-			}
-
-			public void SetVolume(float vol, float lerp = 1f)
-			{
-				if (!this._cacheSet)
-				{
-					this._has3rd = this._thirdperson != null;
-					this._has1st = this._firstperson != null;
-					this._cacheSet = true;
-				}
-				this.CurVolume = Mathf.Lerp(this.CurVolume, vol, lerp);
-				if (this._has3rd)
-				{
-					this._thirdperson.volume = (this._local ? 0f : (this.CurVolume * this._thirdpersonVolume));
-				}
-				if (this._has1st)
-				{
-					this._firstperson.volume = (this._local ? (this.CurVolume * this._firstPersonVolume) : 0f);
-				}
-			}
-
-			[SerializeField]
-			private AudioSource _thirdperson;
-
-			[SerializeField]
-			[Range(0f, 1f)]
-			private float _thirdpersonVolume = 1f;
-
-			[SerializeField]
-			private AudioSource _firstperson;
-
-			[SerializeField]
-			[Range(0f, 1f)]
-			private float _firstPersonVolume = 1f;
-
-			private bool _cacheSet;
-
-			private bool _has3rd;
-
-			private bool _has1st;
-
-			private bool _local;
+			_timeFromLastFocus = 0f;
 		}
+		else
+		{
+			_timeFromLastFocus += Time.deltaTime;
+		}
+		if (_timeFromLastFocus == 0f || _timeFromLastFocus > _dropFocusAfter)
+		{
+			_focusGrowlLoop.SetVolume(flag2, Time.deltaTime * (flag2 ? _focusGrowlGainLerp : _focusGrowlDropLerp));
+		}
+		_focusLoop.SetVolume(flag2, Time.deltaTime * _breathLerp);
+		_breathLoop.SetVolume(!flag && !_focus.TargetState, Time.deltaTime * _breathLerp);
 	}
 }

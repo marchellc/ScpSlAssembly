@@ -1,19 +1,29 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class UiCircle : MaskableGraphic
 {
+	[Range(3f, 180f)]
+	[SerializeField]
+	private int _vertsCount = 64;
+
+	[SerializeField]
+	private float _radius;
+
+	[SerializeField]
+	private float _width;
+
 	public float Radius
 	{
 		get
 		{
-			return this._radius;
+			return _radius;
 		}
 		set
 		{
-			this._radius = value;
-			this.SetVerticesDirty();
+			_radius = value;
+			SetVerticesDirty();
 		}
 	}
 
@@ -21,12 +31,12 @@ public class UiCircle : MaskableGraphic
 	{
 		get
 		{
-			return this._width;
+			return _width;
 		}
 		set
 		{
-			this._width = value;
-			this.SetVerticesDirty();
+			_width = value;
+			SetVerticesDirty();
 		}
 	}
 
@@ -34,31 +44,31 @@ public class UiCircle : MaskableGraphic
 	{
 		vh.Clear();
 		UIVertex simpleVert = UIVertex.simpleVert;
-		simpleVert.color = this.color;
-		float radius = this.Radius;
-		float num = this.Radius - this.Width;
-		this.DrawVertCircle(vh, simpleVert, radius);
+		simpleVert.color = color;
+		float radius = Radius;
+		float num = Radius - Width;
+		DrawVertCircle(vh, simpleVert, radius);
 		if (num <= 0f)
 		{
-			this.RenderFullCircle(vh, simpleVert);
+			RenderFullCircle(vh, simpleVert);
 			return;
 		}
-		this.DrawVertCircle(vh, simpleVert, num);
-		for (int i = 0; i < this._vertsCount; i++)
+		DrawVertCircle(vh, simpleVert, num);
+		for (int i = 0; i < _vertsCount; i++)
 		{
-			vh.AddTriangle(i, (i + 1) % this._vertsCount, i + this._vertsCount);
-			vh.AddTriangle(i, i + this._vertsCount, (i - 1 + this._vertsCount) % this._vertsCount + this._vertsCount);
+			vh.AddTriangle(i, (i + 1) % _vertsCount, i + _vertsCount);
+			vh.AddTriangle(i, i + _vertsCount, (i - 1 + _vertsCount) % _vertsCount + _vertsCount);
 		}
 	}
 
 	private void DrawVertCircle(VertexHelper vh, UIVertex vert, float radius)
 	{
-		float num = 6.2831855f / (float)this._vertsCount;
+		float num = MathF.PI * 2f / (float)_vertsCount;
 		float num2 = 0f;
-		for (int i = 0; i < this._vertsCount; i++)
+		for (int i = 0; i < _vertsCount; i++)
 		{
 			float num3 = Mathf.Sin(num2);
-			float num4 = Mathf.Sin(num2 + 1.5707964f);
+			float num4 = Mathf.Sin(num2 + MathF.PI / 2f);
 			vert.position = new Vector2(num3 * radius, num4 * radius);
 			vh.AddVert(vert);
 			num2 += num;
@@ -69,19 +79,9 @@ public class UiCircle : MaskableGraphic
 	{
 		vert.position = Vector2.zero;
 		vh.AddVert(vert);
-		for (int i = 0; i < this._vertsCount; i++)
+		for (int i = 0; i < _vertsCount; i++)
 		{
-			vh.AddTriangle(i, (i + 1) % this._vertsCount, this._vertsCount);
+			vh.AddTriangle(i, (i + 1) % _vertsCount, _vertsCount);
 		}
 	}
-
-	[Range(3f, 180f)]
-	[SerializeField]
-	private int _vertsCount = 64;
-
-	[SerializeField]
-	private float _radius;
-
-	[SerializeField]
-	private float _width;
 }

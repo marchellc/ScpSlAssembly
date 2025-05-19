@@ -1,4 +1,3 @@
-﻿using System;
 using System.Diagnostics;
 using GameObjectPools;
 using Mirror;
@@ -7,176 +6,149 @@ using VoiceChat;
 using VoiceChat.Codec;
 using VoiceChat.Networking;
 
-namespace PlayerRoles.Voice
+namespace PlayerRoles.Voice;
+
+public abstract class VoiceModuleBase : MonoBehaviour, IPoolResettable, IPoolSpawnable
 {
-	public abstract class VoiceModuleBase : MonoBehaviour, IPoolResettable, IPoolSpawnable
+	public delegate void SamplesReceived(float[] samples, int len);
+
+	private VoiceChatChannel _lastChannel;
+
+	private OpusDecoder _defaultDecoder;
+
+	private ReferenceHub _owner;
+
+	private int _sentPackets;
+
+	private int _prevSent;
+
+	private const float SilenceTolerance = 0.1f;
+
+	private const float RateLimiterTimeframe = 0.5f;
+
+	private const int RateLimiterTolerance = 128;
+
+	private readonly Stopwatch _rateStopwatch = Stopwatch.StartNew();
+
+	private readonly Stopwatch _silenceStopwatch = Stopwatch.StartNew();
+
+	private static float[] _receiveBuffer;
+
+	private static bool _receiveBufferSet;
+
+	protected ReferenceHub Owner => _owner;
+
+	protected virtual OpusDecoder Decoder => _defaultDecoder;
+
+	public PlayerRoleBase Role { get; private set; }
+
+	public bool ServerIsSending { get; private set; }
+
+	public GroupMuteFlags ReceiveFlags { get; set; }
+
+	public VoiceChatChannel CurrentChannel
 	{
-		public event VoiceModuleBase.SamplesReceived OnSamplesReceived;
-
-		protected ReferenceHub Owner
+		get
 		{
-			get
+			return _lastChannel;
+		}
+		internal set
+		{
+			if (_lastChannel != value)
 			{
-				return this._owner;
+				_lastChannel = value;
+				OnChannelChanged();
 			}
 		}
+	}
 
-		protected virtual OpusDecoder Decoder
+	public abstract bool IsSpeaking { get; }
+
+	public event SamplesReceived OnSamplesReceived;
+
+	protected virtual void Awake()
+	{
+		Role = GetComponent<PlayerRoleBase>();
+	}
+
+	protected virtual void Update()
+	{
+		if (_sentPackets > _prevSent)
 		{
-			get
-			{
-				return this._defaultDecoder;
-			}
+			ServerIsSending = true;
+			_silenceStopwatch.Restart();
 		}
-
-		public PlayerRoleBase Role { get; private set; }
-
-		public bool ServerIsSending { get; private set; }
-
-		public GroupMuteFlags ReceiveFlags { get; set; }
-
-		public VoiceChatChannel CurrentChannel
+		else if (ServerIsSending && _silenceStopwatch.Elapsed.TotalSeconds > 0.10000000149011612)
 		{
-			get
-			{
-				return this._lastChannel;
-			}
-			internal set
-			{
-				if (this._lastChannel == value)
-				{
-					return;
-				}
-				this._lastChannel = value;
-				this.OnChannelChanged();
-			}
+			ServerIsSending = false;
 		}
-
-		public abstract bool IsSpeaking { get; }
-
-		protected virtual void Awake()
+		if (_rateStopwatch.Elapsed.TotalSeconds >= 0.5)
 		{
-			this.Role = base.GetComponent<PlayerRoleBase>();
+			_sentPackets = 0;
+			_rateStopwatch.Restart();
 		}
+		_prevSent = _sentPackets;
+	}
 
-		protected virtual void Update()
+	protected virtual void OnChannelChanged()
+	{
+	}
+
+	protected abstract void ProcessSamples(float[] data, int len);
+
+	public abstract VoiceChatChannel GetUserInput();
+
+	public virtual VoiceChatChannel ValidateSend(VoiceChatChannel channel)
+	{
+		return channel;
+	}
+
+	public virtual VoiceChatChannel ValidateReceive(ReferenceHub speaker, VoiceChatChannel channel)
+	{
+		return channel;
+	}
+
+	public virtual void ResetObject()
+	{
+		_lastChannel = VoiceChatChannel.None;
+		_defaultDecoder?.Dispose();
+		ReceiveFlags = GroupMuteFlags.None;
+	}
+
+	public virtual void SpawnObject()
+	{
+		if (Role.TryGetOwner(out _owner))
 		{
-			if (this._sentPackets > this._prevSent)
-			{
-				this.ServerIsSending = true;
-				this._silenceStopwatch.Restart();
-			}
-			else if (this.ServerIsSending && this._silenceStopwatch.Elapsed.TotalSeconds > 0.10000000149011612)
-			{
-				this.ServerIsSending = false;
-			}
-			if (this._rateStopwatch.Elapsed.TotalSeconds >= 0.5)
-			{
-				this._sentPackets = 0;
-				this._rateStopwatch.Restart();
-			}
-			this._prevSent = this._sentPackets;
-		}
-
-		protected virtual void OnChannelChanged()
-		{
-		}
-
-		protected abstract void ProcessSamples(float[] data, int len);
-
-		public abstract VoiceChatChannel GetUserInput();
-
-		public virtual VoiceChatChannel ValidateSend(VoiceChatChannel channel)
-		{
-			return channel;
-		}
-
-		public virtual VoiceChatChannel ValidateReceive(ReferenceHub speaker, VoiceChatChannel channel)
-		{
-			return channel;
-		}
-
-		public virtual void ResetObject()
-		{
-			this._lastChannel = VoiceChatChannel.None;
-			OpusDecoder defaultDecoder = this._defaultDecoder;
-			if (defaultDecoder != null)
-			{
-				defaultDecoder.Dispose();
-			}
-			this.ReceiveFlags = GroupMuteFlags.None;
-		}
-
-		public virtual void SpawnObject()
-		{
-			if (!this.Role.TryGetOwner(out this._owner))
-			{
-				return;
-			}
-			this._defaultDecoder = new OpusDecoder();
-			if (this.Owner.isLocalPlayer)
+			_defaultDecoder = new OpusDecoder();
+			if (Owner.isLocalPlayer)
 			{
 				VoiceChatMicCapture.StartRecording();
 			}
 			if (NetworkServer.active)
 			{
-				this.ReceiveFlags = VoiceChatReceivePrefs.GetFlagsForUser(this.Owner);
+				ReceiveFlags = VoiceChatReceivePrefs.GetFlagsForUser(Owner);
 			}
 		}
+	}
 
-		public bool CheckRateLimit()
+	public bool CheckRateLimit()
+	{
+		return _sentPackets++ < 128;
+	}
+
+	public void ProcessMessage(VoiceMessage msg)
+	{
+		CurrentChannel = msg.Channel;
+		if (!_receiveBufferSet)
 		{
-			int sentPackets = this._sentPackets;
-			this._sentPackets = sentPackets + 1;
-			return sentPackets < 128;
+			_receiveBufferSet = true;
+			_receiveBuffer = new float[24000];
 		}
-
-		public void ProcessMessage(VoiceMessage msg)
+		int len = Decoder.Decode(msg.Data, msg.DataLength, _receiveBuffer);
+		if (Owner.isLocalPlayer || VoiceChatMutes.GetFlags(Owner) == VcMuteFlags.None)
 		{
-			this.CurrentChannel = msg.Channel;
-			if (!VoiceModuleBase._receiveBufferSet)
-			{
-				VoiceModuleBase._receiveBufferSet = true;
-				VoiceModuleBase._receiveBuffer = new float[24000];
-			}
-			int num = this.Decoder.Decode(msg.Data, msg.DataLength, VoiceModuleBase._receiveBuffer);
-			if (!this.Owner.isLocalPlayer && VoiceChatMutes.GetFlags(this.Owner) != VcMuteFlags.None)
-			{
-				return;
-			}
-			this.ProcessSamples(VoiceModuleBase._receiveBuffer, num);
-			VoiceModuleBase.SamplesReceived onSamplesReceived = this.OnSamplesReceived;
-			if (onSamplesReceived == null)
-			{
-				return;
-			}
-			onSamplesReceived(VoiceModuleBase._receiveBuffer, num);
+			ProcessSamples(_receiveBuffer, len);
+			this.OnSamplesReceived?.Invoke(_receiveBuffer, len);
 		}
-
-		private VoiceChatChannel _lastChannel;
-
-		private OpusDecoder _defaultDecoder;
-
-		private ReferenceHub _owner;
-
-		private int _sentPackets;
-
-		private int _prevSent;
-
-		private const float SilenceTolerance = 0.1f;
-
-		private const float RateLimiterTimeframe = 0.5f;
-
-		private const int RateLimiterTolerance = 128;
-
-		private readonly Stopwatch _rateStopwatch = Stopwatch.StartNew();
-
-		private readonly Stopwatch _silenceStopwatch = Stopwatch.StartNew();
-
-		private static float[] _receiveBuffer;
-
-		private static bool _receiveBufferSet;
-
-		public delegate void SamplesReceived(float[] samples, int len);
 	}
 }

@@ -1,213 +1,206 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using Mirror;
 using UnityEngine;
 using VoiceChat.Playbacks;
 
-namespace AdminToys
+namespace AdminToys;
+
+public class SpeakerToy : AdminToyBase
 {
-	public class SpeakerToy : AdminToyBase
+	public SpeakerToyPlaybackBase Playback;
+
+	[SyncVar(hook = "OnControllerIdChanged")]
+	public byte ControllerId;
+
+	[SyncVar(hook = "OnIsSpatialChanged")]
+	public bool IsSpatial = true;
+
+	[SyncVar(hook = "OnVolumeChanged")]
+	public float Volume = 1f;
+
+	[SyncVar(hook = "OnMinDistanceChanged")]
+	public float MinDistance = 1f;
+
+	[SyncVar(hook = "OnMaxDistanceChanged")]
+	public float MaxDistance = 15f;
+
+	public override string CommandName => "Speaker";
+
+	public byte NetworkControllerId
 	{
-		public override string CommandName
+		get
 		{
-			get
-			{
-				return "Speaker";
-			}
+			return ControllerId;
 		}
-
-		public override void OnSpawned(ReferenceHub admin, ArraySegment<string> arguments)
+		[param: In]
+		set
 		{
-			base.OnSpawned(admin, arguments);
-			base.transform.position = admin.PlayerCameraReference.position;
-			base.transform.localScale = Vector3.one;
-			this.Playback.ControllerId = this.ControllerId;
-			this.Playback.Source.spatialBlend = (this.IsSpatial ? 1f : 0f);
-			this.Playback.Source.volume = Math.Clamp(this.Volume, 0f, 1f);
-			this.Playback.Source.minDistance = this.MinDistance;
-			this.Playback.Source.maxDistance = this.MaxDistance;
+			GeneratedSyncVarSetter(value, ref ControllerId, 32uL, OnControllerIdChanged);
 		}
+	}
 
-		private void OnControllerIdChanged(byte _, byte id)
+	public bool NetworkIsSpatial
+	{
+		get
 		{
-			this.Playback.ControllerId = id;
+			return IsSpatial;
 		}
-
-		private void OnIsSpatialChanged(bool _, bool isSpatial)
+		[param: In]
+		set
 		{
-			this.Playback.Source.spatialBlend = (isSpatial ? 1f : 0f);
+			GeneratedSyncVarSetter(value, ref IsSpatial, 64uL, OnIsSpatialChanged);
 		}
+	}
 
-		private void OnVolumeChanged(float _, float volume)
+	public float NetworkVolume
+	{
+		get
 		{
-			this.Playback.Source.volume = Math.Clamp(volume, 0f, 1f);
+			return Volume;
 		}
-
-		private void OnMinDistanceChanged(float _, float distance)
+		[param: In]
+		set
 		{
-			this.Playback.Source.minDistance = distance;
+			GeneratedSyncVarSetter(value, ref Volume, 128uL, OnVolumeChanged);
 		}
+	}
 
-		private void OnMaxDistanceChanged(float _, float distance)
+	public float NetworkMinDistance
+	{
+		get
 		{
-			this.Playback.Source.maxDistance = distance;
+			return MinDistance;
 		}
-
-		public override bool Weaved()
+		[param: In]
+		set
 		{
-			return true;
+			GeneratedSyncVarSetter(value, ref MinDistance, 256uL, OnMinDistanceChanged);
 		}
+	}
 
-		public byte NetworkControllerId
+	public float NetworkMaxDistance
+	{
+		get
 		{
-			get
-			{
-				return this.ControllerId;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<byte>(value, ref this.ControllerId, 32UL, new Action<byte, byte>(this.OnControllerIdChanged));
-			}
+			return MaxDistance;
 		}
-
-		public bool NetworkIsSpatial
+		[param: In]
+		set
 		{
-			get
-			{
-				return this.IsSpatial;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<bool>(value, ref this.IsSpatial, 64UL, new Action<bool, bool>(this.OnIsSpatialChanged));
-			}
+			GeneratedSyncVarSetter(value, ref MaxDistance, 512uL, OnMaxDistanceChanged);
 		}
+	}
 
-		public float NetworkVolume
+	public override void OnSpawned(ReferenceHub admin, ArraySegment<string> arguments)
+	{
+		base.OnSpawned(admin, arguments);
+		base.transform.position = admin.PlayerCameraReference.position;
+		base.transform.localScale = Vector3.one;
+		Playback.ControllerId = ControllerId;
+		Playback.Source.spatialBlend = (IsSpatial ? 1f : 0f);
+		Playback.Source.volume = Math.Clamp(Volume, 0f, 1f);
+		Playback.Source.minDistance = MinDistance;
+		Playback.Source.maxDistance = MaxDistance;
+	}
+
+	private void OnControllerIdChanged(byte _, byte id)
+	{
+		Playback.ControllerId = id;
+	}
+
+	private void OnIsSpatialChanged(bool _, bool isSpatial)
+	{
+		Playback.Source.spatialBlend = (isSpatial ? 1f : 0f);
+	}
+
+	private void OnVolumeChanged(float _, float volume)
+	{
+		Playback.Source.volume = Math.Clamp(volume, 0f, 1f);
+	}
+
+	private void OnMinDistanceChanged(float _, float distance)
+	{
+		Playback.Source.minDistance = distance;
+	}
+
+	private void OnMaxDistanceChanged(float _, float distance)
+	{
+		Playback.Source.maxDistance = distance;
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			get
-			{
-				return this.Volume;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<float>(value, ref this.Volume, 128UL, new Action<float, float>(this.OnVolumeChanged));
-			}
+			NetworkWriterExtensions.WriteByte(writer, ControllerId);
+			writer.WriteBool(IsSpatial);
+			writer.WriteFloat(Volume);
+			writer.WriteFloat(MinDistance);
+			writer.WriteFloat(MaxDistance);
+			return;
 		}
-
-		public float NetworkMinDistance
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 0x20L) != 0L)
 		{
-			get
-			{
-				return this.MinDistance;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<float>(value, ref this.MinDistance, 256UL, new Action<float, float>(this.OnMinDistanceChanged));
-			}
+			NetworkWriterExtensions.WriteByte(writer, ControllerId);
 		}
-
-		public float NetworkMaxDistance
+		if ((base.syncVarDirtyBits & 0x40L) != 0L)
 		{
-			get
-			{
-				return this.MaxDistance;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<float>(value, ref this.MaxDistance, 512UL, new Action<float, float>(this.OnMaxDistanceChanged));
-			}
+			writer.WriteBool(IsSpatial);
 		}
-
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+		if ((base.syncVarDirtyBits & 0x80L) != 0L)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteByte(this.ControllerId);
-				writer.WriteBool(this.IsSpatial);
-				writer.WriteFloat(this.Volume);
-				writer.WriteFloat(this.MinDistance);
-				writer.WriteFloat(this.MaxDistance);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 32UL) != 0UL)
-			{
-				writer.WriteByte(this.ControllerId);
-			}
-			if ((base.syncVarDirtyBits & 64UL) != 0UL)
-			{
-				writer.WriteBool(this.IsSpatial);
-			}
-			if ((base.syncVarDirtyBits & 128UL) != 0UL)
-			{
-				writer.WriteFloat(this.Volume);
-			}
-			if ((base.syncVarDirtyBits & 256UL) != 0UL)
-			{
-				writer.WriteFloat(this.MinDistance);
-			}
-			if ((base.syncVarDirtyBits & 512UL) != 0UL)
-			{
-				writer.WriteFloat(this.MaxDistance);
-			}
+			writer.WriteFloat(Volume);
 		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+		if ((base.syncVarDirtyBits & 0x100L) != 0L)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<byte>(ref this.ControllerId, new Action<byte, byte>(this.OnControllerIdChanged), reader.ReadByte());
-				base.GeneratedSyncVarDeserialize<bool>(ref this.IsSpatial, new Action<bool, bool>(this.OnIsSpatialChanged), reader.ReadBool());
-				base.GeneratedSyncVarDeserialize<float>(ref this.Volume, new Action<float, float>(this.OnVolumeChanged), reader.ReadFloat());
-				base.GeneratedSyncVarDeserialize<float>(ref this.MinDistance, new Action<float, float>(this.OnMinDistanceChanged), reader.ReadFloat());
-				base.GeneratedSyncVarDeserialize<float>(ref this.MaxDistance, new Action<float, float>(this.OnMaxDistanceChanged), reader.ReadFloat());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 32L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<byte>(ref this.ControllerId, new Action<byte, byte>(this.OnControllerIdChanged), reader.ReadByte());
-			}
-			if ((num & 64L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<bool>(ref this.IsSpatial, new Action<bool, bool>(this.OnIsSpatialChanged), reader.ReadBool());
-			}
-			if ((num & 128L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this.Volume, new Action<float, float>(this.OnVolumeChanged), reader.ReadFloat());
-			}
-			if ((num & 256L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this.MinDistance, new Action<float, float>(this.OnMinDistanceChanged), reader.ReadFloat());
-			}
-			if ((num & 512L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<float>(ref this.MaxDistance, new Action<float, float>(this.OnMaxDistanceChanged), reader.ReadFloat());
-			}
+			writer.WriteFloat(MinDistance);
 		}
+		if ((base.syncVarDirtyBits & 0x200L) != 0L)
+		{
+			writer.WriteFloat(MaxDistance);
+		}
+	}
 
-		public SpeakerToyPlaybackBase Playback;
-
-		[SyncVar(hook = "OnControllerIdChanged")]
-		public byte ControllerId;
-
-		[SyncVar(hook = "OnIsSpatialChanged")]
-		public bool IsSpatial = true;
-
-		[SyncVar(hook = "OnVolumeChanged")]
-		public float Volume = 1f;
-
-		[SyncVar(hook = "OnMinDistanceChanged")]
-		public float MinDistance = 1f;
-
-		[SyncVar(hook = "OnMaxDistanceChanged")]
-		public float MaxDistance = 15f;
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref ControllerId, OnControllerIdChanged, NetworkReaderExtensions.ReadByte(reader));
+			GeneratedSyncVarDeserialize(ref IsSpatial, OnIsSpatialChanged, reader.ReadBool());
+			GeneratedSyncVarDeserialize(ref Volume, OnVolumeChanged, reader.ReadFloat());
+			GeneratedSyncVarDeserialize(ref MinDistance, OnMinDistanceChanged, reader.ReadFloat());
+			GeneratedSyncVarDeserialize(ref MaxDistance, OnMaxDistanceChanged, reader.ReadFloat());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 0x20L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref ControllerId, OnControllerIdChanged, NetworkReaderExtensions.ReadByte(reader));
+		}
+		if ((num & 0x40L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref IsSpatial, OnIsSpatialChanged, reader.ReadBool());
+		}
+		if ((num & 0x80L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref Volume, OnVolumeChanged, reader.ReadFloat());
+		}
+		if ((num & 0x100L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref MinDistance, OnMinDistanceChanged, reader.ReadFloat());
+		}
+		if ((num & 0x200L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref MaxDistance, OnMaxDistanceChanged, reader.ReadFloat());
+		}
 	}
 }

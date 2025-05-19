@@ -1,57 +1,52 @@
-﻿using System;
+namespace InventorySystem.Items.Firearms.Attachments;
 
-namespace InventorySystem.Items.Firearms.Attachments
+public static class AttachmentPreferences
 {
-	public static class AttachmentPreferences
+	private const string PrefKey = "_AttachmentsSetupPreference_";
+
+	private const string PresetKey = "Preset_";
+
+	private static string PreferencesPath(ItemType weaponId)
 	{
-		private static string PreferencesPath(ItemType weaponId)
-		{
-			int num = (int)weaponId;
-			return num.ToString() + "_AttachmentsSetupPreference_" + AttachmentPreferences.GetPreset(weaponId).ToString();
-		}
+		int num = (int)weaponId;
+		return num + "_AttachmentsSetupPreference_" + GetPreset(weaponId);
+	}
 
-		public static uint GetPreferenceCodeOfPreset(ItemType weapon, int preset)
-		{
-			int num = (int)weapon;
-			return PlayerPrefsSl.Get(num.ToString() + "_AttachmentsSetupPreference_" + preset.ToString(), 0U);
-		}
+	public static uint GetPreferenceCodeOfPreset(ItemType weapon, int preset)
+	{
+		int num = (int)weapon;
+		return PlayerPrefsSl.Get(num + "_AttachmentsSetupPreference_" + preset, 0u);
+	}
 
-		public static int GetPreset(ItemType weapon)
-		{
-			string text = "Preset_";
-			int num = (int)weapon;
-			return PlayerPrefsSl.Get(text + num.ToString(), 0);
-		}
+	public static int GetPreset(ItemType weapon)
+	{
+		int num = (int)weapon;
+		return PlayerPrefsSl.Get("Preset_" + num, 0);
+	}
 
-		public static void SetPreset(ItemType weapon, int presetId)
-		{
-			string text = "Preset_";
-			int num = (int)weapon;
-			PlayerPrefsSl.Set(text + num.ToString(), presetId);
-		}
+	public static void SetPreset(ItemType weapon, int presetId)
+	{
+		int num = (int)weapon;
+		PlayerPrefsSl.Set("Preset_" + num, presetId);
+	}
 
-		public static uint GetSavedPreferenceCode(ItemType weapon)
-		{
-			return (InventoryItemLoader.AvailableItems[weapon] as Firearm).GetSavedPreferenceCode();
-		}
+	public static uint GetSavedPreferenceCode(ItemType weapon)
+	{
+		return (InventoryItemLoader.AvailableItems[weapon] as Firearm).GetSavedPreferenceCode();
+	}
 
-		public static uint GetSavedPreferenceCode(this Firearm weapon)
-		{
-			return PlayerPrefsSl.Get(AttachmentPreferences.PreferencesPath(weapon.ItemTypeId), weapon.ValidateAttachmentsCode(0U));
-		}
+	public static uint GetSavedPreferenceCode(this Firearm weapon)
+	{
+		return PlayerPrefsSl.Get(PreferencesPath(weapon.ItemTypeId), weapon.ValidateAttachmentsCode(0u));
+	}
 
-		public static void SavePreferenceCode(ItemType weapon, uint code)
-		{
-			PlayerPrefsSl.Set(AttachmentPreferences.PreferencesPath(weapon), code);
-		}
+	public static void SavePreferenceCode(ItemType weapon, uint code)
+	{
+		PlayerPrefsSl.Set(PreferencesPath(weapon), code);
+	}
 
-		public static void SavePreferenceCode(this Firearm weapon)
-		{
-			AttachmentPreferences.SavePreferenceCode(weapon.ItemTypeId, weapon.GetCurrentAttachmentsCode());
-		}
-
-		private const string PrefKey = "_AttachmentsSetupPreference_";
-
-		private const string PresetKey = "Preset_";
+	public static void SavePreferenceCode(this Firearm weapon)
+	{
+		SavePreferenceCode(weapon.ItemTypeId, weapon.GetCurrentAttachmentsCode());
 	}
 }

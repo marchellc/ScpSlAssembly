@@ -1,54 +1,40 @@
-﻿using System;
 using PlayerRoles;
 using UnityEngine.Rendering;
 using Utils.NonAllocLINQ;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class Traumatized : StatusEffectBase
 {
-	public class Traumatized : StatusEffectBase
+	public Volume PPVolume;
+
+	public override bool AllowEnabling => !SpawnProtected.CheckPlayer(base.Hub);
+
+	protected override void Start()
 	{
-		public override bool AllowEnabling
-		{
-			get
-			{
-				return !SpawnProtected.CheckPlayer(base.Hub);
-			}
-		}
+		base.Start();
+		PlayerRoleManager.OnServerRoleSet += OnServerRoleChanged;
+	}
 
-		protected override void Start()
-		{
-			base.Start();
-			PlayerRoleManager.OnServerRoleSet += this.OnServerRoleChanged;
-		}
+	private void OnDestroy()
+	{
+		PlayerRoleManager.OnServerRoleSet -= OnServerRoleChanged;
+	}
 
-		private void OnDestroy()
+	private void OnServerRoleChanged(ReferenceHub hub, RoleTypeId newRole, RoleChangeReason reason)
+	{
+		if (reason == RoleChangeReason.Died && newRole == RoleTypeId.Spectator && hub.GetRoleId() == RoleTypeId.Scp106 && !ReferenceHub.AllHubs.Any((ReferenceHub x) => x != hub && x.GetRoleId() == RoleTypeId.Scp106))
 		{
-			PlayerRoleManager.OnServerRoleSet -= this.OnServerRoleChanged;
+			ServerSetState(0);
 		}
+	}
 
-		private void OnServerRoleChanged(ReferenceHub hub, RoleTypeId newRole, RoleChangeReason reason)
+	protected override void Enabled()
+	{
+		base.Enabled();
+		if (!ReferenceHub.AllHubs.Any((ReferenceHub x) => x.GetRoleId() == RoleTypeId.Scp106))
 		{
-			if (reason != RoleChangeReason.Died || newRole != RoleTypeId.Spectator || hub.GetRoleId() != RoleTypeId.Scp106)
-			{
-				return;
-			}
-			if (ReferenceHub.AllHubs.Any((ReferenceHub x) => x != hub && x.GetRoleId() == RoleTypeId.Scp106))
-			{
-				return;
-			}
-			base.ServerSetState(0, 0f, false);
+			ServerSetState(0);
 		}
-
-		protected override void Enabled()
-		{
-			base.Enabled();
-			if (ReferenceHub.AllHubs.Any((ReferenceHub x) => x.GetRoleId() == RoleTypeId.Scp106))
-			{
-				return;
-			}
-			base.ServerSetState(0, 0f, false);
-		}
-
-		public Volume PPVolume;
 	}
 }

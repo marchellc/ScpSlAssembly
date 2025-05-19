@@ -1,27 +1,25 @@
-﻿using System;
 using MapGeneration;
 using PlayerRoles.PlayableScps.Scp079.Cameras;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079.Overcons
+namespace PlayerRoles.PlayableScps.Scp079.Overcons;
+
+public class TeslaOverconRenderer : PooledOverconRenderer
 {
-	public class TeslaOverconRenderer : PooledOverconRenderer
+	private static readonly Vector3 Offset = new Vector3(0f, 2.2f, 0f);
+
+	internal override void SpawnOvercons(Scp079Camera newCamera)
 	{
-		internal override void SpawnOvercons(Scp079Camera newCamera)
+		ReturnAll();
+		foreach (TeslaGate allGate in TeslaGate.AllGates)
 		{
-			base.ReturnAll();
-			foreach (TeslaGate teslaGate in TeslaGate.AllGates)
+			Vector3 position = allGate.transform.position;
+			if (newCamera.Position.CompareCoords(position))
 			{
-				Vector3 position = teslaGate.transform.position;
-				if (RoomUtils.IsTheSameRoom(newCamera.Position, position))
-				{
-					TeslaOvercon fromPool = base.GetFromPool<TeslaOvercon>();
-					fromPool.transform.position = position + TeslaOverconRenderer.Offset;
-					fromPool.Rescale(newCamera);
-				}
+				TeslaOvercon fromPool = GetFromPool<TeslaOvercon>();
+				fromPool.transform.position = position + Offset;
+				fromPool.Rescale(newCamera);
 			}
 		}
-
-		private static readonly Vector3 Offset = new Vector3(0f, 2.2f, 0f);
 	}
 }

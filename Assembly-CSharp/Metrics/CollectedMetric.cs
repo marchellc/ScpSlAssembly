@@ -1,21 +1,20 @@
-﻿using System;
+using System;
 using GameCore;
 
-namespace Metrics
+namespace Metrics;
+
+public struct CollectedMetric : IJsonSerializable
 {
-	public struct CollectedMetric : IJsonSerializable
+	public string Type;
+
+	public string Data;
+
+	public float RoundTime;
+
+	public CollectedMetric(Type type, string jsonData)
 	{
-		public CollectedMetric(Type type, string jsonData)
-		{
-			this.Type = type.Name;
-			this.Data = jsonData;
-			this.RoundTime = (float)RoundStart.RoundLength.TotalSeconds;
-		}
-
-		public string Type;
-
-		public string Data;
-
-		public float RoundTime;
+		Type = type.Name;
+		Data = jsonData;
+		RoundTime = (float)RoundStart.RoundLength.TotalSeconds;
 	}
 }

@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using CustomPlayerEffects;
@@ -15,781 +14,700 @@ using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 using Utils.NonAllocLINQ;
 
-namespace PlayerRoles.PlayableScps.Scp939
+namespace PlayerRoles.PlayableScps.Scp939;
+
+public class Scp939AmnesticCloudInstance : TemporaryHazard
 {
-	public class Scp939AmnesticCloudInstance : TemporaryHazard
+	public enum CloudState
 	{
-		public float NormalizedHoldTime
-		{
-			get
-			{
-				return Mathf.Clamp01(this._cloud.HoldDuration / this._maxHoldTime);
-			}
-		}
+		Spawning,
+		Created,
+		Destroyed
+	}
 
-		public ReferenceHub Owner
-		{
-			get
-			{
-				ReferenceHub referenceHub;
-				if (!ReferenceHub.TryGetHubNetID(this._syncOwner, out referenceHub))
-				{
-					return null;
-				}
-				return referenceHub;
-			}
-			set
-			{
-				this.Network_syncOwner = value.netId;
-			}
-		}
+	public static readonly List<Scp939AmnesticCloudInstance> ActiveInstances;
 
-		public RelativePosition SyncedPosition
-		{
-			get
-			{
-				return this._syncPos;
-			}
-			set
-			{
-				this.Network_syncPos = value;
-			}
-		}
+	private static readonly int HashRadiusPercent;
 
-		public byte HoldDuration
-		{
-			get
-			{
-				return this._syncHoldTime;
-			}
-			set
-			{
-				this.Network_syncHoldTime = value;
-			}
-		}
+	private static readonly int HashStatusPercent;
 
-		public float PauseDuration
-		{
-			get
-			{
-				return this._pauseDuration;
-			}
-			set
-			{
-				this._pauseDuration = value;
-			}
-		}
+	private readonly AbilityCooldown _overallCooldown = new AbilityCooldown();
 
-		public float AmnesiaDuration
-		{
-			get
-			{
-				return this._amnesiaDuration;
-			}
-			set
-			{
-				this._amnesiaDuration = value;
-			}
-		}
+	private readonly Dictionary<uint, AbilityCooldown> _individualCooldown = new Dictionary<uint, AbilityCooldown>();
 
-		public Scp939AmnesticCloudInstance.CloudState State
-		{
-			get
-			{
-				return (Scp939AmnesticCloudInstance.CloudState)this._syncState;
-			}
-			set
-			{
-				this.Network_syncState = (byte)value;
-			}
-		}
+	private Scp939AmnesticCloudAbility _cloud;
 
-		public override float HazardDuration
-		{
-			get
-			{
-				return this._targetDuration;
-			}
-			set
-			{
-				this._targetDuration = value;
-			}
-		}
+	private Scp939LungeAbility _lunge;
 
-		public override float DecaySpeed
-		{
-			get
-			{
-				if (this._decaySpeedOverride >= 0f)
-				{
-					return this._decaySpeedOverride;
-				}
-				if (this.State != Scp939AmnesticCloudInstance.CloudState.Created)
-				{
-					return 0f;
-				}
-				return 1f;
-			}
-			set
-			{
-				this._decaySpeedOverride = value;
-			}
-		}
+	private Scp939ClawAbility _claw;
 
-		public Vector2 MinMaxTime
-		{
-			get
-			{
-				return new Vector2(this._minHoldTime, this._maxHoldTime);
-			}
-		}
+	private Scp939Role _scpRole;
 
-		[Server]
-		public override void ServerDestroy()
-		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void PlayerRoles.PlayableScps.Scp939.Scp939AmnesticCloudInstance::ServerDestroy()' called when server was not active");
-				return;
-			}
-			base.ServerDestroy();
-			this._abilitiesSet = false;
-			this.State = Scp939AmnesticCloudInstance.CloudState.Destroyed;
-		}
+	private Transform _t;
 
-		public override bool OnEnter(ReferenceHub player)
-		{
-			if (!HitboxIdentity.IsEnemy(Team.SCPs, player.GetTeam()) || player.IsFlamingo(true))
-			{
-				return false;
-			}
-			if (!base.OnEnter(player))
-			{
-				return false;
-			}
-			PlayerEvents.OnEnteredHazard(new PlayerEnteredHazardEventArgs(player, this));
-			return true;
-		}
+	private Material _mat;
 
-		public override void OnStay(ReferenceHub player)
+	private bool _abilitiesSet;
+
+	private float _targetDuration;
+
+	private float _lastHoldTime;
+
+	private float _prevRange;
+
+	private bool _localOwner;
+
+	private bool _alreadyCreated;
+
+	[SyncVar]
+	private byte _syncHoldTime;
+
+	[SyncVar]
+	private byte _syncState;
+
+	[SyncVar]
+	private uint _syncOwner;
+
+	[SyncVar]
+	private RelativePosition _syncPos;
+
+	[Header("Balance")]
+	[SerializeField]
+	private float _minHoldTime;
+
+	[SerializeField]
+	private float _maxHoldTime;
+
+	[SerializeField]
+	private AnimationCurve _rangeOverHeldTime;
+
+	[SerializeField]
+	private AnimationCurve _durationOverHeldTime;
+
+	[SerializeField]
+	private float _amnesiaDuration;
+
+	[SerializeField]
+	private float _pauseDuration;
+
+	[Header("Audiovisual")]
+	[SerializeField]
+	private float _destroyTime;
+
+	[SerializeField]
+	private float _soundDropRate;
+
+	[SerializeField]
+	private float _sizeLerpTime;
+
+	[SerializeField]
+	private float _colorLerpTime;
+
+	[SerializeField]
+	private AudioSource _deploySound;
+
+	[SerializeField]
+	private AudioSource _chargeupSound;
+
+	[SerializeField]
+	private AnimationCurve _chargeupVolumeOverSize;
+
+	[SerializeField]
+	private DecalProjector _decalProjector;
+
+	private float _decaySpeedOverride = -1f;
+
+	public float NormalizedHoldTime => Mathf.Clamp01(_cloud.HoldDuration / _maxHoldTime);
+
+	public ReferenceHub Owner
+	{
+		get
 		{
-			base.OnStay(player);
-			if (this.State != Scp939AmnesticCloudInstance.CloudState.Created)
+			if (!ReferenceHub.TryGetHubNetID(_syncOwner, out var hub))
 			{
-				return;
+				return null;
 			}
-			if (!this.IsActive)
+			return hub;
+		}
+		set
+		{
+			Network_syncOwner = value.netId;
+		}
+	}
+
+	public RelativePosition SyncedPosition
+	{
+		get
+		{
+			return _syncPos;
+		}
+		set
+		{
+			Network_syncPos = value;
+		}
+	}
+
+	public byte HoldDuration
+	{
+		get
+		{
+			return _syncHoldTime;
+		}
+		set
+		{
+			Network_syncHoldTime = value;
+		}
+	}
+
+	public float PauseDuration
+	{
+		get
+		{
+			return _pauseDuration;
+		}
+		set
+		{
+			_pauseDuration = value;
+		}
+	}
+
+	public float AmnesiaDuration
+	{
+		get
+		{
+			return _amnesiaDuration;
+		}
+		set
+		{
+			_amnesiaDuration = value;
+		}
+	}
+
+	public CloudState State
+	{
+		get
+		{
+			return (CloudState)_syncState;
+		}
+		set
+		{
+			Network_syncState = (byte)value;
+		}
+	}
+
+	public override float HazardDuration
+	{
+		get
+		{
+			return _targetDuration;
+		}
+		set
+		{
+			_targetDuration = value;
+		}
+	}
+
+	public override float DecaySpeed
+	{
+		get
+		{
+			if (_decaySpeedOverride >= 0f)
 			{
-				return;
+				return _decaySpeedOverride;
 			}
-			if (!this._overallCooldown.IsReady)
+			if (State != CloudState.Created)
 			{
-				return;
+				return 0f;
 			}
-			AbilityCooldown abilityCooldown;
-			if (this._individualCooldown.TryGetValue(player.netId, out abilityCooldown) && !abilityCooldown.IsReady)
-			{
-				return;
-			}
+			return 1f;
+		}
+		set
+		{
+			_decaySpeedOverride = value;
+		}
+	}
+
+	public Vector2 MinMaxTime => new Vector2(_minHoldTime, _maxHoldTime);
+
+	public byte Network_syncHoldTime
+	{
+		get
+		{
+			return _syncHoldTime;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref _syncHoldTime, 1uL, null);
+		}
+	}
+
+	public byte Network_syncState
+	{
+		get
+		{
+			return _syncState;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref _syncState, 2uL, null);
+		}
+	}
+
+	public uint Network_syncOwner
+	{
+		get
+		{
+			return _syncOwner;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref _syncOwner, 4uL, null);
+		}
+	}
+
+	public RelativePosition Network_syncPos
+	{
+		get
+		{
+			return _syncPos;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref _syncPos, 8uL, null);
+		}
+	}
+
+	[Server]
+	public override void ServerDestroy()
+	{
+		if (!NetworkServer.active)
+		{
+			Debug.LogWarning("[Server] function 'System.Void PlayerRoles.PlayableScps.Scp939.Scp939AmnesticCloudInstance::ServerDestroy()' called when server was not active");
+			return;
+		}
+		base.ServerDestroy();
+		_abilitiesSet = false;
+		State = CloudState.Destroyed;
+	}
+
+	public override bool OnEnter(ReferenceHub player)
+	{
+		if (!HitboxIdentity.IsEnemy(Team.SCPs, player.GetTeam()) || player.IsFlamingo())
+		{
+			return false;
+		}
+		if (!base.OnEnter(player))
+		{
+			return false;
+		}
+		PlayerEvents.OnEnteredHazard(new PlayerEnteredHazardEventArgs(player, this));
+		return true;
+	}
+
+	public override void OnStay(ReferenceHub player)
+	{
+		base.OnStay(player);
+		if (State == CloudState.Created && IsActive && _overallCooldown.IsReady && (!_individualCooldown.TryGetValue(player.netId, out var value) || value.IsReady))
+		{
 			PlayerEffectsController playerEffectsController = player.playerEffectsController;
-			Invigorated invigorated;
-			if (playerEffectsController.TryGetEffect<Invigorated>(out invigorated) && invigorated.IsEnabled)
+			if (!playerEffectsController.TryGetEffect<Invigorated>(out var playerEffect) || !playerEffect.IsEnabled)
+			{
+				playerEffectsController.EnableEffect<AmnesiaVision>(_amnesiaDuration);
+			}
+		}
+	}
+
+	public override bool OnExit(ReferenceHub player)
+	{
+		if (!base.OnExit(player))
+		{
+			return false;
+		}
+		PlayerEvents.OnLeftHazard(new PlayerLeftHazardEventArgs(player, this));
+		return true;
+	}
+
+	public void PauseAll()
+	{
+		foreach (ReferenceHub affectedPlayer in base.AffectedPlayers)
+		{
+			if (!affectedPlayer.playerEffectsController.TryGetEffect<AmnesiaVision>(out var playerEffect))
 			{
 				return;
 			}
-			playerEffectsController.EnableEffect<AmnesiaVision>(this._amnesiaDuration, false);
+			playerEffect.IsEnabled = false;
 		}
+		_overallCooldown.Trigger(_pauseDuration);
+	}
 
-		public override bool OnExit(ReferenceHub player)
+	protected override void ClientApplyDecalSize()
+	{
+	}
+
+	protected override void Start()
+	{
+		_t = base.transform;
+		_mat = new Material(_decalProjector.material);
+		_decalProjector.material = _mat;
+		ActiveInstances.Add(this);
+		if (ReferenceHub.TryGetHubNetID(_syncOwner, out var hub) && hub.isLocalPlayer)
 		{
-			if (!base.OnExit(player))
-			{
-				return false;
-			}
-			PlayerEvents.OnLeftHazard(new PlayerLeftHazardEventArgs(player, this));
-			return true;
+			_localOwner = true;
+			SetAbilityCache();
 		}
-
-		public void PauseAll()
+		if (Owner == null || (ReferenceHub.TryGetPovHub(out var hub2) && !(hub2.roleManager.CurrentRole is Scp939Role)))
 		{
-			using (List<ReferenceHub>.Enumerator enumerator = base.AffectedPlayers.GetEnumerator())
-			{
-				while (enumerator.MoveNext())
-				{
-					AmnesiaVision amnesiaVision;
-					if (!enumerator.Current.playerEffectsController.TryGetEffect<AmnesiaVision>(out amnesiaVision))
-					{
-						return;
-					}
-					amnesiaVision.IsEnabled = false;
-				}
-			}
-			this._overallCooldown.Trigger((double)this._pauseDuration);
+			_chargeupSound.mute = true;
 		}
+		ClientApplyDecalSize();
+		base.Start();
+	}
 
-		protected override void ClientApplyDecalSize()
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+		ActiveInstances.Remove(this);
+		PlayerStats.OnAnyPlayerDamaged -= OnAnyPlayerDamaged;
+		if (_lunge != null)
 		{
+			_lunge.OnStateChanged -= OnLungeStateChanged;
 		}
-
-		protected override void Start()
+		if (_claw != null)
 		{
-			this._t = base.transform;
-			this._mat = new Material(this._decalProjector.material);
-			this._decalProjector.material = this._mat;
-			Scp939AmnesticCloudInstance.ActiveInstances.Add(this);
-			ReferenceHub referenceHub;
-			if (ReferenceHub.TryGetHubNetID(this._syncOwner, out referenceHub) && referenceHub.isLocalPlayer)
-			{
-				this._localOwner = true;
-				this.SetAbilityCache();
-			}
-			ReferenceHub referenceHub2;
-			if (this.Owner == null || (ReferenceHub.TryGetPovHub(out referenceHub2) && !(referenceHub2.roleManager.CurrentRole is Scp939Role)))
-			{
-				this._chargeupSound.mute = true;
-			}
-			this.ClientApplyDecalSize();
-			base.Start();
+			_claw.OnAttacked -= OnAttacked;
 		}
+	}
 
-		protected override void OnDestroy()
+	protected override void Update()
+	{
+		base.Update();
+		if (_localOwner)
 		{
-			base.OnDestroy();
-			Scp939AmnesticCloudInstance.ActiveInstances.Remove(this);
-			PlayerStats.OnAnyPlayerDamaged -= this.OnAnyPlayerDamaged;
-			if (this._lunge != null)
+			UpdateLocal();
+		}
+		else
+		{
+			UpdateVisuals((float)(int)_syncHoldTime / 255f, Time.deltaTime * _sizeLerpTime);
+		}
+		if (NetworkServer.active)
+		{
+			switch (State)
 			{
-				this._lunge.OnStateChanged -= this.OnLungeStateChanged;
-			}
-			if (this._claw != null)
-			{
-				this._claw.OnAttacked -= this.OnAttacked;
+			case CloudState.Spawning:
+				ServerUpdateSpawning();
+				break;
+			case CloudState.Destroyed:
+				ServerUpdateDestroyed();
+				break;
 			}
 		}
+	}
 
-		protected override void Update()
+	private void TryGetPlayer(out bool is939, out bool isOwner)
+	{
+		is939 = false;
+		isOwner = false;
+		if (ReferenceHub.TryGetPovHub(out var hub))
 		{
-			base.Update();
-			if (this._localOwner)
+			is939 = hub.roleManager.CurrentRole is Scp939Role;
+			isOwner = hub.netId == _syncOwner;
+		}
+	}
+
+	private void OnAttacked(AttackResult attackResult)
+	{
+		if (attackResult != 0)
+		{
+			PauseAll();
+		}
+	}
+
+	private void OnAnyPlayerDamaged(ReferenceHub hub, DamageHandlerBase dhb)
+	{
+		if (hub.netId == _syncOwner && dhb is AttackerDamageHandler attackerDamageHandler)
+		{
+			AbilityCooldown abilityCooldown = new AbilityCooldown();
+			abilityCooldown.Trigger(_pauseDuration);
+			uint attackerId = attackerDamageHandler.Attacker.NetId;
+			_individualCooldown[attackerId] = abilityCooldown;
+			if (base.AffectedPlayers.TryGetFirst((ReferenceHub x) => x.netId == attackerId, out var first) && first.playerEffectsController.TryGetEffect<AmnesiaVision>(out var playerEffect))
 			{
-				this.UpdateLocal();
+				playerEffect.IsEnabled = false;
 			}
-			else
+		}
+	}
+
+	private void OnLungeStateChanged(Scp939LungeState state)
+	{
+		if (state == Scp939LungeState.LandHit)
+		{
+			PauseAll();
+		}
+	}
+
+	private void SetAbilityCache()
+	{
+		_abilitiesSet = false;
+		if (ReferenceHub.TryGetHubNetID(_syncOwner, out var hub) && hub.roleManager.CurrentRole is Scp939Role scpRole)
+		{
+			_scpRole = scpRole;
+			_abilitiesSet = _scpRole.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out _cloud) && _scpRole.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out _lunge) && _scpRole.SubroutineModule.TryGetSubroutine<Scp939ClawAbility>(out _claw);
+		}
+	}
+
+	private void RefreshPosition(ReferenceHub owner)
+	{
+		_t.position = owner.PlayerCameraReference.position;
+	}
+
+	private void UpdateLocal()
+	{
+		if (_abilitiesSet && ReferenceHub.TryGetLocalHub(out var hub))
+		{
+			switch (State)
 			{
-				this.UpdateVisuals((float)this._syncHoldTime / 255f, Time.deltaTime * this._sizeLerpTime);
+			case CloudState.Destroyed:
+				_cloud.ClientCancel(Scp939HudTranslation.CloudFailedSizeInsufficient);
+				break;
+			case CloudState.Created:
+				_cloud.ClientCancel(Scp939HudTranslation.PressKeyToLunge);
+				break;
 			}
-			if (!NetworkServer.active)
+			if (!_cloud.ValidateFloor())
+			{
+				_cloud.ClientCancel((_cloud.HoldDuration < _minHoldTime) ? Scp939HudTranslation.CloudFailedSizeInsufficient : Scp939HudTranslation.PressKeyToLunge);
+			}
+			if (_cloud.TargetState)
+			{
+				UpdateVisuals(NormalizedHoldTime, 1f);
+				RefreshPosition(hub);
+			}
+			else if (State != 0)
+			{
+				_localOwner = false;
+			}
+		}
+	}
+
+	private void UpdateVisuals(float normalizedSize, float lerpTime)
+	{
+		_deploySound.mute = ReferenceHub.TryGetPovHub(out var hub) && HitboxIdentity.IsEnemy(Team.SCPs, hub.GetTeam());
+		TryGetPlayer(out var @is, out var isOwner);
+		_decalProjector.enabled = @is;
+		_t.position = _syncPos.Position;
+		UpdateFade(State != CloudState.Destroyed);
+		UpdateRadius(normalizedSize, lerpTime);
+		UpdateChargeup(normalizedSize, isOwner);
+	}
+
+	private void UpdateChargeup(float normalizedSize, bool isOwner)
+	{
+		_chargeupSound.mute = !isOwner;
+		if (State == CloudState.Spawning)
+		{
+			_chargeupSound.volume = _chargeupVolumeOverSize.Evaluate(normalizedSize);
+		}
+		else
+		{
+			_chargeupSound.volume -= Time.deltaTime;
+		}
+	}
+
+	private void UpdateFade(bool isVisible)
+	{
+		float b = (isVisible ? 1 : 0);
+		DecalProjector decalProjector = _decalProjector;
+		decalProjector.fadeFactor = Mathf.Lerp(t: Time.deltaTime * _colorLerpTime, a: decalProjector.fadeFactor, b: b);
+	}
+
+	private void UpdateRadius(float normSize, float lerpTime)
+	{
+		float time = normSize * _maxHoldTime;
+		_prevRange = Mathf.Lerp(_prevRange, _rangeOverHeldTime.Evaluate(time), lerpTime);
+		_mat.SetFloat(HashRadiusPercent, _prevRange * 2f / _decalProjector.size.x);
+		if (State == CloudState.Created)
+		{
+			float @float = _mat.GetFloat(HashStatusPercent);
+			float t = Time.deltaTime * _colorLerpTime;
+			float value = Mathf.Lerp(@float, 1f, t);
+			_mat.SetFloat(HashStatusPercent, value);
+		}
+	}
+
+	[Server]
+	private void ServerUpdateSpawning()
+	{
+		if (!NetworkServer.active)
+		{
+			Debug.LogWarning("[Server] function 'System.Void PlayerRoles.PlayableScps.Scp939.Scp939AmnesticCloudInstance::ServerUpdateSpawning()' called when server was not active");
+			return;
+		}
+		if (!_abilitiesSet || !ReferenceHub.TryGetHubNetID(_syncOwner, out var hub) || _scpRole == null || _scpRole.Pooled)
+		{
+			ServerDestroy();
+			return;
+		}
+		RefreshPosition(hub);
+		Network_syncPos = new RelativePosition(_t.position);
+		if (_cloud.TargetState)
+		{
+			_lastHoldTime = _cloud.HoldDuration;
+			Network_syncHoldTime = (byte)Mathf.RoundToInt(NormalizedHoldTime * 255f);
+			if (_lastHoldTime < _maxHoldTime)
 			{
 				return;
 			}
-			Scp939AmnesticCloudInstance.CloudState state = this.State;
-			if (state == Scp939AmnesticCloudInstance.CloudState.Spawning)
-			{
-				this.ServerUpdateSpawning();
-				return;
-			}
-			if (state != Scp939AmnesticCloudInstance.CloudState.Destroyed)
-			{
-				return;
-			}
-			this.ServerUpdateDestroyed();
 		}
-
-		private void TryGetPlayer(out bool is939, out bool isOwner)
+		if (_lastHoldTime < _minHoldTime && !_cloud.Cooldown.IsReady)
 		{
-			is939 = false;
-			isOwner = false;
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetPovHub(out referenceHub))
-			{
-				return;
-			}
-			is939 = referenceHub.roleManager.CurrentRole is Scp939Role;
-			isOwner = referenceHub.netId == this._syncOwner;
+			_cloud.ServerFailPlacement();
+			ServerDestroy();
+			return;
 		}
+		_targetDuration = _durationOverHeldTime.Evaluate(_lastHoldTime);
+		_cloud.ServerConfirmPlacement(_targetDuration);
+		MaxDistance = _rangeOverHeldTime.Evaluate(_lastHoldTime);
+		State = CloudState.Created;
+		RpcPlayCreateSound();
+	}
 
-		private void OnAttacked(AttackResult attackResult)
+	[Server]
+	private void ServerUpdateDestroyed()
+	{
+		if (!NetworkServer.active)
 		{
-			if (attackResult == AttackResult.None)
-			{
-				return;
-			}
-			this.PauseAll();
+			Debug.LogWarning("[Server] function 'System.Void PlayerRoles.PlayableScps.Scp939.Scp939AmnesticCloudInstance::ServerUpdateDestroyed()' called when server was not active");
+			return;
 		}
-
-		private void OnAnyPlayerDamaged(ReferenceHub hub, DamageHandlerBase dhb)
+		_destroyTime -= Time.deltaTime;
+		if (!(_destroyTime > 0f))
 		{
-			if (hub.netId == this._syncOwner)
-			{
-				AttackerDamageHandler attackerDamageHandler = dhb as AttackerDamageHandler;
-				if (attackerDamageHandler != null)
-				{
-					AbilityCooldown abilityCooldown = new AbilityCooldown();
-					abilityCooldown.Trigger((double)this._pauseDuration);
-					uint attackerId = attackerDamageHandler.Attacker.NetId;
-					this._individualCooldown[attackerId] = abilityCooldown;
-					ReferenceHub referenceHub;
-					if (!base.AffectedPlayers.TryGetFirst((ReferenceHub x) => x.netId == attackerId, out referenceHub))
-					{
-						return;
-					}
-					AmnesiaVision amnesiaVision;
-					if (!referenceHub.playerEffectsController.TryGetEffect<AmnesiaVision>(out amnesiaVision))
-					{
-						return;
-					}
-					amnesiaVision.IsEnabled = false;
-					return;
-				}
-			}
-		}
-
-		private void OnLungeStateChanged(Scp939LungeState state)
-		{
-			if (state != Scp939LungeState.LandHit)
-			{
-				return;
-			}
-			this.PauseAll();
-		}
-
-		private void SetAbilityCache()
-		{
-			this._abilitiesSet = false;
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(this._syncOwner, out referenceHub))
-			{
-				return;
-			}
-			Scp939Role scp939Role = referenceHub.roleManager.CurrentRole as Scp939Role;
-			if (scp939Role == null)
-			{
-				return;
-			}
-			this._scpRole = scp939Role;
-			this._abilitiesSet = this._scpRole.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out this._cloud) && this._scpRole.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out this._lunge) && this._scpRole.SubroutineModule.TryGetSubroutine<Scp939ClawAbility>(out this._claw);
-		}
-
-		private void RefreshPosition(ReferenceHub owner)
-		{
-			this._t.position = owner.PlayerCameraReference.position;
-		}
-
-		private void UpdateLocal()
-		{
-			ReferenceHub referenceHub;
-			if (!this._abilitiesSet || !ReferenceHub.TryGetLocalHub(out referenceHub))
-			{
-				return;
-			}
-			Scp939AmnesticCloudInstance.CloudState state = this.State;
-			if (state != Scp939AmnesticCloudInstance.CloudState.Created)
-			{
-				if (state == Scp939AmnesticCloudInstance.CloudState.Destroyed)
-				{
-					this._cloud.ClientCancel(Scp939HudTranslation.CloudFailedSizeInsufficient);
-				}
-			}
-			else
-			{
-				this._cloud.ClientCancel(Scp939HudTranslation.PressKeyToLunge);
-			}
-			if (!this._cloud.ValidateFloor())
-			{
-				this._cloud.ClientCancel((this._cloud.HoldDuration < this._minHoldTime) ? Scp939HudTranslation.CloudFailedSizeInsufficient : Scp939HudTranslation.PressKeyToLunge);
-			}
-			if (this._cloud.TargetState)
-			{
-				this.UpdateVisuals(this.NormalizedHoldTime, 1f);
-				this.RefreshPosition(referenceHub);
-				return;
-			}
-			if (this.State != Scp939AmnesticCloudInstance.CloudState.Spawning)
-			{
-				this._localOwner = false;
-			}
-		}
-
-		private void UpdateVisuals(float normalizedSize, float lerpTime)
-		{
-			ReferenceHub referenceHub;
-			this._deploySound.mute = ReferenceHub.TryGetPovHub(out referenceHub) && HitboxIdentity.IsEnemy(Team.SCPs, referenceHub.GetTeam());
-			bool flag;
-			bool flag2;
-			this.TryGetPlayer(out flag, out flag2);
-			this._decalProjector.enabled = flag;
-			this._t.position = this._syncPos.Position;
-			this.UpdateFade(this.State != Scp939AmnesticCloudInstance.CloudState.Destroyed);
-			this.UpdateRadius(normalizedSize, lerpTime);
-			this.UpdateChargeup(normalizedSize, flag2);
-		}
-
-		private void UpdateChargeup(float normalizedSize, bool isOwner)
-		{
-			this._chargeupSound.mute = !isOwner;
-			if (this.State == Scp939AmnesticCloudInstance.CloudState.Spawning)
-			{
-				this._chargeupSound.volume = this._chargeupVolumeOverSize.Evaluate(normalizedSize);
-				return;
-			}
-			this._chargeupSound.volume -= Time.deltaTime;
-		}
-
-		private void UpdateFade(bool isVisible)
-		{
-			float num = (float)(isVisible ? 1 : 0);
-			DecalProjector decalProjector = this._decalProjector;
-			float num2 = Time.deltaTime * this._colorLerpTime;
-			decalProjector.fadeFactor = Mathf.Lerp(decalProjector.fadeFactor, num, num2);
-		}
-
-		private void UpdateRadius(float normSize, float lerpTime)
-		{
-			float num = normSize * this._maxHoldTime;
-			this._prevRange = Mathf.Lerp(this._prevRange, this._rangeOverHeldTime.Evaluate(num), lerpTime);
-			this._mat.SetFloat(Scp939AmnesticCloudInstance.HashRadiusPercent, this._prevRange * 2f / this._decalProjector.size.x);
-			if (this.State != Scp939AmnesticCloudInstance.CloudState.Created)
-			{
-				return;
-			}
-			float @float = this._mat.GetFloat(Scp939AmnesticCloudInstance.HashStatusPercent);
-			float num2 = Time.deltaTime * this._colorLerpTime;
-			float num3 = Mathf.Lerp(@float, 1f, num2);
-			this._mat.SetFloat(Scp939AmnesticCloudInstance.HashStatusPercent, num3);
-		}
-
-		[Server]
-		private void ServerUpdateSpawning()
-		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void PlayerRoles.PlayableScps.Scp939.Scp939AmnesticCloudInstance::ServerUpdateSpawning()' called when server was not active");
-				return;
-			}
-			ReferenceHub referenceHub;
-			if (!this._abilitiesSet || !ReferenceHub.TryGetHubNetID(this._syncOwner, out referenceHub) || this._scpRole == null || this._scpRole.Pooled)
-			{
-				this.ServerDestroy();
-				return;
-			}
-			this.RefreshPosition(referenceHub);
-			this.Network_syncPos = new RelativePosition(this._t.position);
-			if (this._cloud.TargetState)
-			{
-				this._lastHoldTime = this._cloud.HoldDuration;
-				this.Network_syncHoldTime = (byte)Mathf.RoundToInt(this.NormalizedHoldTime * 255f);
-				if (this._lastHoldTime < this._maxHoldTime)
-				{
-					return;
-				}
-			}
-			if (this._lastHoldTime < this._minHoldTime && !this._cloud.Cooldown.IsReady)
-			{
-				this._cloud.ServerFailPlacement();
-				this.ServerDestroy();
-				return;
-			}
-			this._targetDuration = this._durationOverHeldTime.Evaluate(this._lastHoldTime);
-			this._cloud.ServerConfirmPlacement(this._targetDuration);
-			this.MaxDistance = this._rangeOverHeldTime.Evaluate(this._lastHoldTime);
-			this.State = Scp939AmnesticCloudInstance.CloudState.Created;
-			this.RpcPlayCreateSound();
-		}
-
-		[Server]
-		private void ServerUpdateDestroyed()
-		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void PlayerRoles.PlayableScps.Scp939.Scp939AmnesticCloudInstance::ServerUpdateDestroyed()' called when server was not active");
-				return;
-			}
-			this._destroyTime -= Time.deltaTime;
-			if (this._destroyTime > 0f)
-			{
-				return;
-			}
 			NetworkServer.Destroy(base.gameObject);
 		}
+	}
 
-		[ClientRpc]
-		private void RpcPlayCreateSound()
+	[ClientRpc]
+	private void RpcPlayCreateSound()
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		SendRPCInternal("System.Void PlayerRoles.PlayableScps.Scp939.Scp939AmnesticCloudInstance::RpcPlayCreateSound()", -193115792, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
+	}
+
+	[Server]
+	public void ServerSetup(ReferenceHub owner)
+	{
+		if (!NetworkServer.active)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			this.SendRPCInternal("System.Void PlayerRoles.PlayableScps.Scp939.Scp939AmnesticCloudInstance::RpcPlayCreateSound()", -193115792, networkWriterPooled, 0, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			Debug.LogWarning("[Server] function 'System.Void PlayerRoles.PlayableScps.Scp939.Scp939AmnesticCloudInstance::ServerSetup(ReferenceHub)' called when server was not active");
+			return;
 		}
+		Network_syncOwner = owner.netId;
+		SetAbilityCache();
+		_lunge.OnStateChanged += OnLungeStateChanged;
+		PlayerStats.OnAnyPlayerDamaged += OnAnyPlayerDamaged;
+		_claw.OnAttacked += OnAttacked;
+	}
 
-		[Server]
-		public void ServerSetup(ReferenceHub owner)
-		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void PlayerRoles.PlayableScps.Scp939.Scp939AmnesticCloudInstance::ServerSetup(ReferenceHub)' called when server was not active");
-				return;
-			}
-			this.Network_syncOwner = owner.netId;
-			this.SetAbilityCache();
-			this._lunge.OnStateChanged += this.OnLungeStateChanged;
-			PlayerStats.OnAnyPlayerDamaged += this.OnAnyPlayerDamaged;
-			this._claw.OnAttacked += this.OnAttacked;
-		}
+	static Scp939AmnesticCloudInstance()
+	{
+		ActiveInstances = new List<Scp939AmnesticCloudInstance>();
+		HashRadiusPercent = Shader.PropertyToID("_RadiusPercent");
+		HashStatusPercent = Shader.PropertyToID("_StatusPercent");
+		RemoteProcedureCalls.RegisterRpc(typeof(Scp939AmnesticCloudInstance), "System.Void PlayerRoles.PlayableScps.Scp939.Scp939AmnesticCloudInstance::RpcPlayCreateSound()", InvokeUserCode_RpcPlayCreateSound);
+	}
 
-		static Scp939AmnesticCloudInstance()
-		{
-			RemoteProcedureCalls.RegisterRpc(typeof(Scp939AmnesticCloudInstance), "System.Void PlayerRoles.PlayableScps.Scp939.Scp939AmnesticCloudInstance::RpcPlayCreateSound()", new RemoteCallDelegate(Scp939AmnesticCloudInstance.InvokeUserCode_RpcPlayCreateSound));
-		}
+	public override bool Weaved()
+	{
+		return true;
+	}
 
-		public override bool Weaved()
+	protected void UserCode_RpcPlayCreateSound()
+	{
+		if (!_alreadyCreated)
 		{
-			return true;
-		}
-
-		public byte Network_syncHoldTime
-		{
-			get
+			_deploySound.Play();
+			if (ReferenceHub.TryGetHubNetID(_syncOwner, out var hub) && hub.roleManager.CurrentRole is Scp939Role scp939Role && scp939Role.FpcModule.CharacterModelInstance is Scp939Model scp939Model)
 			{
-				return this._syncHoldTime;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<byte>(value, ref this._syncHoldTime, 1UL, null);
-			}
-		}
-
-		public byte Network_syncState
-		{
-			get
-			{
-				return this._syncState;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<byte>(value, ref this._syncState, 2UL, null);
+				_alreadyCreated = true;
+				scp939Model.PlayCloudRelease();
 			}
 		}
+	}
 
-		public uint Network_syncOwner
+	protected static void InvokeUserCode_RpcPlayCreateSound(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
 		{
-			get
-			{
-				return this._syncOwner;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<uint>(value, ref this._syncOwner, 4UL, null);
-			}
+			Debug.LogError("RPC RpcPlayCreateSound called on server.");
 		}
-
-		public RelativePosition Network_syncPos
+		else
 		{
-			get
-			{
-				return this._syncPos;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<RelativePosition>(value, ref this._syncPos, 8UL, null);
-			}
-		}
-
-		protected void UserCode_RpcPlayCreateSound()
-		{
-			if (this._alreadyCreated)
-			{
-				return;
-			}
-			this._deploySound.Play();
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(this._syncOwner, out referenceHub))
-			{
-				return;
-			}
-			Scp939Role scp939Role = referenceHub.roleManager.CurrentRole as Scp939Role;
-			if (scp939Role == null)
-			{
-				return;
-			}
-			Scp939Model scp939Model = scp939Role.FpcModule.CharacterModelInstance as Scp939Model;
-			if (scp939Model == null)
-			{
-				return;
-			}
-			this._alreadyCreated = true;
-			scp939Model.PlayCloudRelease();
-		}
-
-		protected static void InvokeUserCode_RpcPlayCreateSound(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
-		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogError("RPC RpcPlayCreateSound called on server.");
-				return;
-			}
 			((Scp939AmnesticCloudInstance)obj).UserCode_RpcPlayCreateSound();
 		}
+	}
 
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteByte(this._syncHoldTime);
-				writer.WriteByte(this._syncState);
-				writer.WriteUInt(this._syncOwner);
-				writer.WriteRelativePosition(this._syncPos);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 1UL) != 0UL)
-			{
-				writer.WriteByte(this._syncHoldTime);
-			}
-			if ((base.syncVarDirtyBits & 2UL) != 0UL)
-			{
-				writer.WriteByte(this._syncState);
-			}
-			if ((base.syncVarDirtyBits & 4UL) != 0UL)
-			{
-				writer.WriteUInt(this._syncOwner);
-			}
-			if ((base.syncVarDirtyBits & 8UL) != 0UL)
-			{
-				writer.WriteRelativePosition(this._syncPos);
-			}
+			NetworkWriterExtensions.WriteByte(writer, _syncHoldTime);
+			NetworkWriterExtensions.WriteByte(writer, _syncState);
+			writer.WriteUInt(_syncOwner);
+			writer.WriteRelativePosition(_syncPos);
+			return;
 		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<byte>(ref this._syncHoldTime, null, reader.ReadByte());
-				base.GeneratedSyncVarDeserialize<byte>(ref this._syncState, null, reader.ReadByte());
-				base.GeneratedSyncVarDeserialize<uint>(ref this._syncOwner, null, reader.ReadUInt());
-				base.GeneratedSyncVarDeserialize<RelativePosition>(ref this._syncPos, null, reader.ReadRelativePosition());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 1L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<byte>(ref this._syncHoldTime, null, reader.ReadByte());
-			}
-			if ((num & 2L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<byte>(ref this._syncState, null, reader.ReadByte());
-			}
-			if ((num & 4L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<uint>(ref this._syncOwner, null, reader.ReadUInt());
-			}
-			if ((num & 8L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<RelativePosition>(ref this._syncPos, null, reader.ReadRelativePosition());
-			}
+			NetworkWriterExtensions.WriteByte(writer, _syncHoldTime);
 		}
-
-		public static readonly List<Scp939AmnesticCloudInstance> ActiveInstances = new List<Scp939AmnesticCloudInstance>();
-
-		private static readonly int HashRadiusPercent = Shader.PropertyToID("_RadiusPercent");
-
-		private static readonly int HashStatusPercent = Shader.PropertyToID("_StatusPercent");
-
-		private readonly AbilityCooldown _overallCooldown = new AbilityCooldown();
-
-		private readonly Dictionary<uint, AbilityCooldown> _individualCooldown = new Dictionary<uint, AbilityCooldown>();
-
-		private Scp939AmnesticCloudAbility _cloud;
-
-		private Scp939LungeAbility _lunge;
-
-		private Scp939ClawAbility _claw;
-
-		private Scp939Role _scpRole;
-
-		private Transform _t;
-
-		private Material _mat;
-
-		private bool _abilitiesSet;
-
-		private float _targetDuration;
-
-		private float _lastHoldTime;
-
-		private float _prevRange;
-
-		private bool _localOwner;
-
-		private bool _alreadyCreated;
-
-		[SyncVar]
-		private byte _syncHoldTime;
-
-		[SyncVar]
-		private byte _syncState;
-
-		[SyncVar]
-		private uint _syncOwner;
-
-		[SyncVar]
-		private RelativePosition _syncPos;
-
-		[Header("Balance")]
-		[SerializeField]
-		private float _minHoldTime;
-
-		[SerializeField]
-		private float _maxHoldTime;
-
-		[SerializeField]
-		private AnimationCurve _rangeOverHeldTime;
-
-		[SerializeField]
-		private AnimationCurve _durationOverHeldTime;
-
-		[SerializeField]
-		private float _amnesiaDuration;
-
-		[SerializeField]
-		private float _pauseDuration;
-
-		[Header("Audiovisual")]
-		[SerializeField]
-		private float _destroyTime;
-
-		[SerializeField]
-		private float _soundDropRate;
-
-		[SerializeField]
-		private float _sizeLerpTime;
-
-		[SerializeField]
-		private float _colorLerpTime;
-
-		[SerializeField]
-		private AudioSource _deploySound;
-
-		[SerializeField]
-		private AudioSource _chargeupSound;
-
-		[SerializeField]
-		private AnimationCurve _chargeupVolumeOverSize;
-
-		[SerializeField]
-		private DecalProjector _decalProjector;
-
-		private float _decaySpeedOverride = -1f;
-
-		public enum CloudState
+		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			Spawning,
-			Created,
-			Destroyed
+			NetworkWriterExtensions.WriteByte(writer, _syncState);
+		}
+		if ((base.syncVarDirtyBits & 4L) != 0L)
+		{
+			writer.WriteUInt(_syncOwner);
+		}
+		if ((base.syncVarDirtyBits & 8L) != 0L)
+		{
+			writer.WriteRelativePosition(_syncPos);
+		}
+	}
+
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
+		{
+			GeneratedSyncVarDeserialize(ref _syncHoldTime, null, NetworkReaderExtensions.ReadByte(reader));
+			GeneratedSyncVarDeserialize(ref _syncState, null, NetworkReaderExtensions.ReadByte(reader));
+			GeneratedSyncVarDeserialize(ref _syncOwner, null, reader.ReadUInt());
+			GeneratedSyncVarDeserialize(ref _syncPos, null, reader.ReadRelativePosition());
+			return;
+		}
+		long num = (long)reader.ReadULong();
+		if ((num & 1L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _syncHoldTime, null, NetworkReaderExtensions.ReadByte(reader));
+		}
+		if ((num & 2L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _syncState, null, NetworkReaderExtensions.ReadByte(reader));
+		}
+		if ((num & 4L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _syncOwner, null, reader.ReadUInt());
+		}
+		if ((num & 8L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref _syncPos, null, reader.ReadRelativePosition());
 		}
 	}
 }

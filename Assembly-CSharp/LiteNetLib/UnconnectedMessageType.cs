@@ -1,10 +1,7 @@
-﻿using System;
+namespace LiteNetLib;
 
-namespace LiteNetLib
+public enum UnconnectedMessageType
 {
-	public enum UnconnectedMessageType
-	{
-		BasicMessage,
-		Broadcast
-	}
+	BasicMessage,
+	Broadcast
 }

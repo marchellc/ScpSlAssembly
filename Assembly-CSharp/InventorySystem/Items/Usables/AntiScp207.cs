@@ -1,25 +1,20 @@
-﻿using System;
 using CustomPlayerEffects;
 
-namespace InventorySystem.Items.Usables
-{
-	public class AntiScp207 : Consumable
-	{
-		protected override void OnEffectsActivated()
-		{
-			AntiScp207 antiScp;
-			if (!base.Owner.playerEffectsController.TryGetEffect<AntiScp207>(out antiScp))
-			{
-				return;
-			}
-			byte intensity = antiScp.Intensity;
-			if (intensity >= 4)
-			{
-				return;
-			}
-			base.Owner.playerEffectsController.ChangeState<AntiScp207>(intensity + 1, 0f, false);
-		}
+namespace InventorySystem.Items.Usables;
 
-		private const byte MaxColas = 4;
+public class AntiScp207 : Consumable
+{
+	private const byte MaxColas = 4;
+
+	protected override void OnEffectsActivated()
+	{
+		if (base.Owner.playerEffectsController.TryGetEffect<CustomPlayerEffects.AntiScp207>(out var playerEffect))
+		{
+			byte intensity = playerEffect.Intensity;
+			if (intensity < 4)
+			{
+				base.Owner.playerEffectsController.ChangeState<CustomPlayerEffects.AntiScp207>(++intensity);
+			}
+		}
 	}
 }

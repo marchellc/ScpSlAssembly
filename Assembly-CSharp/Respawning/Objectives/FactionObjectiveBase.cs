@@ -1,63 +1,61 @@
-﻿using System;
 using Mirror;
 using PlayerRoles;
 using Utils.Networking;
 
-namespace Respawning.Objectives
+namespace Respawning.Objectives;
+
+public abstract class FactionObjectiveBase
 {
-	public abstract class FactionObjectiveBase
+	public FactionObjectiveBase()
 	{
-		public FactionObjectiveBase()
-		{
-			this.OnInstanceCreated();
-			CustomNetworkManager.OnClientReady += this.OnInstanceReset;
-		}
+		OnInstanceCreated();
+		CustomNetworkManager.OnClientReady += OnInstanceReset;
+	}
 
-		public void Destroy()
-		{
-			CustomNetworkManager.OnClientReady -= this.OnInstanceReset;
-		}
+	public void Destroy()
+	{
+		CustomNetworkManager.OnClientReady -= OnInstanceReset;
+	}
 
-		public virtual void ServerWriteRpc(NetworkWriter writer)
-		{
-		}
+	public virtual void ServerWriteRpc(NetworkWriter writer)
+	{
+	}
 
-		public virtual void ClientReadRpc(NetworkReader reader)
-		{
-		}
+	public virtual void ClientReadRpc(NetworkReader reader)
+	{
+	}
 
-		protected void ServerSendUpdate()
-		{
-			new ObjectiveCompletionMessage(this).SendToHubsConditionally((ReferenceHub hub) => !hub.IsHost, 0);
-		}
+	protected void ServerSendUpdate()
+	{
+		new ObjectiveCompletionMessage(this).SendToHubsConditionally((ReferenceHub hub) => !hub.IsHost);
+	}
 
-		protected abstract bool IsValidFaction(Faction faction);
+	protected abstract bool IsValidFaction(Faction faction);
 
-		protected virtual bool IsValidFaction(ReferenceHub hub)
-		{
-			return this.IsValidFaction(hub.GetFaction());
-		}
+	protected virtual bool IsValidFaction(ReferenceHub hub)
+	{
+		return IsValidFaction(hub.GetFaction());
+	}
 
-		protected virtual void OnInstanceCreated()
-		{
-		}
+	protected virtual void OnInstanceCreated()
+	{
+	}
 
-		protected virtual void OnInstanceReset()
-		{
-		}
+	protected virtual void OnInstanceReset()
+	{
+	}
 
-		protected virtual void OnInstanceDestroyed()
-		{
-		}
+	protected virtual void OnInstanceDestroyed()
+	{
+	}
 
-		protected void GrantInfluence(Faction faction, float influence)
-		{
-			FactionInfluenceManager.Add(faction, influence);
-		}
+	protected void GrantInfluence(Faction faction, float influence)
+	{
+		FactionInfluenceManager.Add(faction, influence);
+	}
 
-		protected void ReduceTimer(Faction faction, float seconds)
-		{
-			WaveManager.AdvanceTimer(faction, seconds);
-		}
+	protected void ReduceTimer(Faction faction, float seconds)
+	{
+		WaveManager.AdvanceTimer(faction, seconds);
 	}
 }

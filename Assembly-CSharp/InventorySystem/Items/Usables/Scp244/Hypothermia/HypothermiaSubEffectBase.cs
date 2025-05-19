@@ -1,12 +1,10 @@
-﻿using System;
 using CustomPlayerEffects;
 
-namespace InventorySystem.Items.Usables.Scp244.Hypothermia
+namespace InventorySystem.Items.Usables.Scp244.Hypothermia;
+
+public abstract class HypothermiaSubEffectBase : SubEffectBase
 {
-	public abstract class HypothermiaSubEffectBase : SubEffectBase
+	internal virtual void UpdateEffect(float curExposure)
 	{
-		internal virtual void UpdateEffect(float curExposure)
-		{
-		}
 	}
 }

@@ -1,71 +1,71 @@
-﻿using System;
 using Mirror;
 
-namespace PlayerStatsSystem
+namespace PlayerStatsSystem;
+
+public class UniversalDamageHandler : StandardDamageHandler
 {
-	public class UniversalDamageHandler : StandardDamageHandler
+	private string _ragdollInspectText;
+
+	private string _deathscreenText;
+
+	private string _logsText;
+
+	private readonly CassieAnnouncement _cassieAnnouncement;
+
+	public readonly byte TranslationId;
+
+	public override float Damage { get; internal set; }
+
+	public override string RagdollInspectText => _ragdollInspectText;
+
+	public override string DeathScreenText => _deathscreenText;
+
+	public override CassieAnnouncement CassieDeathAnnouncement => _cassieAnnouncement;
+
+	public override string ServerLogsText => _logsText;
+
+	public override string ServerMetricsText
 	{
-		public override float Damage { get; internal set; }
-
-		public override DamageHandlerBase.CassieAnnouncement CassieDeathAnnouncement
+		get
 		{
-			get
-			{
-				return this._cassieAnnouncement;
-			}
+			byte translationId = TranslationId;
+			return translationId.ToString();
 		}
+	}
 
-		public override string ServerLogsText
+	public UniversalDamageHandler()
+	{
+		TranslationId = 0;
+		_cassieAnnouncement = CassieAnnouncement.Default;
+	}
+
+	public UniversalDamageHandler(float damage, DeathTranslation deathReason, CassieAnnouncement cassieAnnouncement = null)
+	{
+		Damage = damage;
+		ApplyTranslation(deathReason);
+		TranslationId = deathReason.Id;
+		_cassieAnnouncement = cassieAnnouncement ?? CassieAnnouncement.Default;
+	}
+
+	public override void WriteAdditionalData(NetworkWriter writer)
+	{
+		base.WriteAdditionalData(writer);
+		writer.WriteByte(TranslationId);
+	}
+
+	public override void ReadAdditionalData(NetworkReader reader)
+	{
+		base.ReadAdditionalData(reader);
+		if (DeathTranslations.TranslationsById.TryGetValue(reader.ReadByte(), out var value))
 		{
-			get
-			{
-				return this._logsText;
-			}
+			ApplyTranslation(value);
 		}
+	}
 
-		public UniversalDamageHandler()
-		{
-			this.TranslationId = 0;
-			this._cassieAnnouncement = DamageHandlerBase.CassieAnnouncement.Default;
-		}
-
-		public UniversalDamageHandler(float damage, DeathTranslation deathReason, DamageHandlerBase.CassieAnnouncement cassieAnnouncement = null)
-		{
-			this.Damage = damage;
-			this.ApplyTranslation(deathReason);
-			this.TranslationId = deathReason.Id;
-			this._cassieAnnouncement = cassieAnnouncement ?? DamageHandlerBase.CassieAnnouncement.Default;
-		}
-
-		public override void WriteAdditionalData(NetworkWriter writer)
-		{
-			base.WriteAdditionalData(writer);
-			writer.WriteByte(this.TranslationId);
-		}
-
-		public override void ReadAdditionalData(NetworkReader reader)
-		{
-			base.ReadAdditionalData(reader);
-			DeathTranslation deathTranslation;
-			if (DeathTranslations.TranslationsById.TryGetValue(reader.ReadByte(), out deathTranslation))
-			{
-				this.ApplyTranslation(deathTranslation);
-			}
-		}
-
-		private void ApplyTranslation(DeathTranslation translation)
-		{
-			this._logsText = translation.LogLabel;
-		}
-
-		private string _ragdollInspectText;
-
-		private string _deathscreenText;
-
-		private string _logsText;
-
-		private readonly DamageHandlerBase.CassieAnnouncement _cassieAnnouncement;
-
-		public readonly byte TranslationId;
+	private void ApplyTranslation(DeathTranslation translation)
+	{
+		_ragdollInspectText = translation.RagdollTranslation;
+		_deathscreenText = translation.DeathscreenTranslation;
+		_logsText = translation.LogLabel;
 	}
 }

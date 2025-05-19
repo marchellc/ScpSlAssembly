@@ -1,164 +1,127 @@
-﻿using System;
 using Mirror;
-using PlayerRoles.PlayableScps.Scp079.Cameras;
 using PlayerRoles.PlayableScps.Scp079.Map;
 using UnityEngine;
 using VoiceChat;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public class Scp079SpeakerAbility : Scp079KeyAbilityBase, IScp079AuxRegenModifier
 {
-	public class Scp079SpeakerAbility : Scp079KeyAbilityBase, IScp079AuxRegenModifier
+	[SerializeField]
+	private float _regenMultiplier;
+
+	private bool _syncUsing;
+
+	private string _abilityName;
+
+	private Scp079VoiceModule _voiceModule;
+
+	public float AuxRegenMultiplier
 	{
-		public float AuxRegenMultiplier
+		get
 		{
-			get
+			if (!IsUsingSpeaker)
 			{
-				if (!this.IsUsingSpeaker)
-				{
-					return 1f;
-				}
-				return this._regenMultiplier;
+				return 1f;
 			}
+			return _regenMultiplier;
 		}
+	}
 
-		public string AuxReductionMessage { get; private set; }
+	public string AuxReductionMessage { get; private set; }
 
-		public bool CanTransmit
+	public bool CanTransmit => !base.LostSignalHandler.Lost;
+
+	public override ActionName ActivationKey => ActionName.AltVoiceChat;
+
+	public override bool IsReady => true;
+
+	public override bool IsVisible
+	{
+		get
 		{
-			get
+			if (!Scp079ToggleMenuAbilityBase<Scp079MapToggler>.Visible)
 			{
-				return !base.LostSignalHandler.Lost;
+				return CanTransmit;
 			}
+			return false;
 		}
+	}
 
-		public override ActionName ActivationKey
-		{
-			get
-			{
-				return ActionName.AltVoiceChat;
-			}
-		}
+	public override string AbilityName => _abilityName;
 
-		public override bool IsReady
-		{
-			get
-			{
-				return true;
-			}
-		}
+	public override string FailMessage => null;
 
-		public override bool IsVisible
+	private bool IsUsingSpeaker
+	{
+		get
 		{
-			get
-			{
-				return !Scp079ToggleMenuAbilityBase<Scp079MapToggler>.Visible && this.CanTransmit;
-			}
-		}
-
-		public override string AbilityName
-		{
-			get
-			{
-				return this._abilityName;
-			}
-		}
-
-		public override string FailMessage
-		{
-			get
-			{
-				return null;
-			}
-		}
-
-		protected override void Trigger()
-		{
-		}
-
-		private bool IsUsingSpeaker
-		{
-			get
-			{
-				if (!NetworkServer.active)
-				{
-					return this._syncUsing;
-				}
-				bool serverIsSending = this._voiceModule.ServerIsSending;
-				bool flag = VoiceChatMutes.IsMuted(base.Owner, false);
-				VoiceChatChannel currentChannel = this._voiceModule.CurrentChannel;
-				return serverIsSending && !flag && currentChannel == VoiceChatChannel.Proximity;
-			}
-		}
-
-		private void RefreshNearestSpeaker()
-		{
-			Scp079Camera scp079Camera;
-			if (!base.CurrentCamSync.TryGetCurrentCamera(out scp079Camera))
-			{
-				return;
-			}
-			Scp079Speaker scp079Speaker;
-			if (!Scp079Speaker.TryGetSpeaker(scp079Camera, out scp079Speaker))
-			{
-				return;
-			}
-			this._voiceModule.ProximityPlayback.transform.position = scp079Speaker.Position;
-		}
-
-		protected override void Awake()
-		{
-			base.Awake();
-			this._abilityName = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.UseSpeaker);
-			this.AuxReductionMessage = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.SpeakerAuxPause);
-			base.CurrentCamSync.OnCameraChanged += this.RefreshNearestSpeaker;
-		}
-
-		protected override void Update()
-		{
-			base.Update();
 			if (!NetworkServer.active)
 			{
-				return;
+				return _syncUsing;
 			}
-			if (this._syncUsing == this.IsUsingSpeaker)
+			bool serverIsSending = _voiceModule.ServerIsSending;
+			bool flag = VoiceChatMutes.IsMuted(base.Owner);
+			VoiceChatChannel currentChannel = _voiceModule.CurrentChannel;
+			if (serverIsSending && !flag)
 			{
-				return;
+				return currentChannel == VoiceChatChannel.Proximity;
 			}
-			base.ServerSendRpc(true);
+			return false;
 		}
+	}
 
-		public override void SpawnObject()
+	protected override void Trigger()
+	{
+	}
+
+	private void RefreshNearestSpeaker()
+	{
+		if (base.CurrentCamSync.TryGetCurrentCamera(out var cam) && Scp079Speaker.TryGetSpeaker(cam, out var best))
 		{
-			base.SpawnObject();
-			this._voiceModule = base.CastRole.VoiceModule as Scp079VoiceModule;
-			this.RefreshNearestSpeaker();
+			_voiceModule.ProximityPlayback.transform.position = best.Position;
 		}
+	}
 
-		public override void ResetObject()
+	protected override void Awake()
+	{
+		base.Awake();
+		_abilityName = Translations.Get(Scp079HudTranslation.UseSpeaker);
+		AuxReductionMessage = Translations.Get(Scp079HudTranslation.SpeakerAuxPause);
+		base.CurrentCamSync.OnCameraChanged += RefreshNearestSpeaker;
+	}
+
+	protected override void Update()
+	{
+		base.Update();
+		if (NetworkServer.active && _syncUsing != IsUsingSpeaker)
 		{
-			base.ResetObject();
-			this._syncUsing = false;
+			ServerSendRpc(toAll: true);
 		}
+	}
 
-		public override void ServerWriteRpc(NetworkWriter writer)
-		{
-			base.ServerWriteRpc(writer);
-			writer.WriteBool(this.IsUsingSpeaker);
-		}
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		_voiceModule = base.CastRole.VoiceModule as Scp079VoiceModule;
+		RefreshNearestSpeaker();
+	}
 
-		public override void ClientProcessRpc(NetworkReader reader)
-		{
-			base.ClientProcessRpc(reader);
-			this._syncUsing = reader.ReadBool();
-		}
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		_syncUsing = false;
+	}
 
-		[SerializeField]
-		private float _regenMultiplier;
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteBool(IsUsingSpeaker);
+	}
 
-		private bool _syncUsing;
-
-		private string _abilityName;
-
-		private Scp079VoiceModule _voiceModule;
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		_syncUsing = reader.ReadBool();
 	}
 }

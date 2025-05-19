@@ -1,17 +1,14 @@
-﻿using System;
+namespace Achievements.Handlers;
 
-namespace Achievements.Handlers
+public class HeWillBeBackHandler : AchievementHandlerBase
 {
-	public class HeWillBeBackHandler : AchievementHandlerBase
+	internal override void OnInitialize()
 	{
-		internal override void OnInitialize()
-		{
-			PocketDimensionTeleport.OnPlayerEscapePocketDimension += this.OnPlayerEscapePocketDimension;
-		}
+		PocketDimensionTeleport.OnPlayerEscapePocketDimension += OnPlayerEscapePocketDimension;
+	}
 
-		private void OnPlayerEscapePocketDimension(ReferenceHub hub)
-		{
-			AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.HeWillBeBack);
-		}
+	private void OnPlayerEscapePocketDimension(ReferenceHub hub)
+	{
+		AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.HeWillBeBack);
 	}
 }

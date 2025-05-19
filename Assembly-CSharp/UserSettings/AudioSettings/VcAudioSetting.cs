@@ -1,9 +1,6 @@
-﻿using System;
+namespace UserSettings.AudioSettings;
 
-namespace UserSettings.AudioSettings
+public enum VcAudioSetting
 {
-	public enum VcAudioSetting
-	{
-		NoiseReduction
-	}
+	NoiseReduction
 }

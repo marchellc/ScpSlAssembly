@@ -1,12 +1,10 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl.Spawnpoints;
 
-namespace PlayerRoles.FirstPersonControl
-{
-	public interface IFpcRole
-	{
-		FirstPersonMovementModule FpcModule { get; }
+namespace PlayerRoles.FirstPersonControl;
 
-		ISpawnpointHandler SpawnpointHandler { get; }
-	}
+public interface IFpcRole
+{
+	FirstPersonMovementModule FpcModule { get; }
+
+	ISpawnpointHandler SpawnpointHandler { get; }
 }

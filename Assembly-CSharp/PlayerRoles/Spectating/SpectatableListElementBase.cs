@@ -1,75 +1,72 @@
-﻿using System;
+using System;
 using GameObjectPools;
 using UnityEngine;
 
-namespace PlayerRoles.Spectating
+namespace PlayerRoles.Spectating;
+
+public class SpectatableListElementBase : PoolObject
 {
-	public class SpectatableListElementBase : PoolObject
+	private RectTransform _cachedTransform;
+
+	private SpectatableModuleBase _target;
+
+	private bool _transformCacheSet;
+
+	protected RectTransform CachedRectTransform
 	{
-		protected RectTransform CachedRectTransform
+		get
 		{
-			get
+			if (!_transformCacheSet)
 			{
-				if (!this._transformCacheSet)
+				if (!TryGetComponent<RectTransform>(out _cachedTransform))
 				{
-					if (!base.TryGetComponent<RectTransform>(out this._cachedTransform))
-					{
-						throw new InvalidOperationException("SpectatableListElementBase of name '" + base.name + "' does not have a rect transform!");
-					}
-					this._transformCacheSet = true;
+					throw new InvalidOperationException("SpectatableListElementBase of name '" + base.name + "' does not have a rect transform!");
 				}
-				return this._cachedTransform;
+				_transformCacheSet = true;
 			}
+			return _cachedTransform;
 		}
+	}
 
-		public SpectatableModuleBase Target
+	public SpectatableModuleBase Target
+	{
+		get
 		{
-			get
+			return _target;
+		}
+		internal set
+		{
+			SpectatableModuleBase target = _target;
+			if (value != target)
 			{
-				return this._target;
+				_target = value;
+				OnTargetChanged(target, value);
 			}
-			internal set
+		}
+	}
+
+	public int Index { get; internal set; }
+
+	public float Height => CachedRectTransform.sizeDelta.y;
+
+	public bool IsCurrent
+	{
+		get
+		{
+			if (!base.Pooled)
 			{
-				SpectatableModuleBase target = this._target;
-				if (value != target)
-				{
-					this._target = value;
-					this.OnTargetChanged(target, value);
-				}
+				return Target == SpectatorTargetTracker.CurrentTarget;
 			}
+			return false;
 		}
+	}
 
-		public int Index { get; internal set; }
+	protected virtual void OnTargetChanged(SpectatableModuleBase prevTarget, SpectatableModuleBase newTarget)
+	{
+	}
 
-		public float Height
-		{
-			get
-			{
-				return this.CachedRectTransform.sizeDelta.y;
-			}
-		}
-
-		public bool IsCurrent
-		{
-			get
-			{
-				return !base.Pooled && this.Target == SpectatorTargetTracker.CurrentTarget;
-			}
-		}
-
-		protected virtual void OnTargetChanged(SpectatableModuleBase prevTarget, SpectatableModuleBase newTarget)
-		{
-		}
-
-		public void BeginSpectating()
-		{
-			SpectatorTargetTracker.CurrentTarget = this.Target;
-		}
-
-		private RectTransform _cachedTransform;
-
-		private SpectatableModuleBase _target;
-
-		private bool _transformCacheSet;
+	public void BeginSpectating()
+	{
+		SpectatorTargetTracker.CurrentTarget = Target;
 	}
 }

@@ -1,38 +1,38 @@
-﻿using System;
+using System.Runtime.InteropServices;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 using Mirror;
 using PlayerStatsSystem;
 
-namespace PlayerRoles.FirstPersonControl.NetworkMessages
+namespace PlayerRoles.FirstPersonControl.NetworkMessages;
+
+[StructLayout(LayoutKind.Sequential, Size = 1)]
+public struct FpcNoclipToggleMessage : NetworkMessage
 {
-	public struct FpcNoclipToggleMessage : NetworkMessage
+	public void ProcessMessage(NetworkConnection sender)
 	{
-		public void ProcessMessage(NetworkConnection sender)
+		if (!ReferenceHub.TryGetHubNetID(sender.identity.netId, out var hub))
 		{
-			ReferenceHub referenceHub;
-			if (!ReferenceHub.TryGetHubNetID(sender.identity.netId, out referenceHub))
-			{
-				return;
-			}
-			bool flag = FpcNoclip.IsPermitted(referenceHub);
-			AdminFlagsStat module = referenceHub.playerStats.GetModule<AdminFlagsStat>();
-			PlayerTogglingNoclipEventArgs playerTogglingNoclipEventArgs = new PlayerTogglingNoclipEventArgs(referenceHub, !module.HasFlag(AdminFlags.Noclip));
-			playerTogglingNoclipEventArgs.IsAllowed = flag;
-			PlayerEvents.OnTogglingNoclip(playerTogglingNoclipEventArgs);
-			if (!playerTogglingNoclipEventArgs.IsAllowed)
-			{
-				return;
-			}
-			if (referenceHub.roleManager.CurrentRole is IFpcRole)
+			return;
+		}
+		bool isAllowed = FpcNoclip.IsPermitted(hub);
+		AdminFlagsStat module = hub.playerStats.GetModule<AdminFlagsStat>();
+		PlayerTogglingNoclipEventArgs obj = new PlayerTogglingNoclipEventArgs(hub, !module.HasFlag(AdminFlags.Noclip))
+		{
+			IsAllowed = isAllowed
+		};
+		PlayerEvents.OnTogglingNoclip(obj);
+		if (obj.IsAllowed)
+		{
+			if (hub.roleManager.CurrentRole is IFpcRole)
 			{
 				module.InvertFlag(AdminFlags.Noclip);
 			}
 			else
 			{
-				referenceHub.gameConsoleTransmission.SendToClient("Noclip is not supported for this class.", "yellow");
+				hub.gameConsoleTransmission.SendToClient("Noclip is not supported for this class.", "yellow");
 			}
-			PlayerEvents.OnToggledNoclip(new PlayerToggledNoclipEventArgs(referenceHub, module.HasFlag(AdminFlags.Noclip)));
+			PlayerEvents.OnToggledNoclip(new PlayerToggledNoclipEventArgs(hub, module.HasFlag(AdminFlags.Noclip)));
 		}
 	}
 }

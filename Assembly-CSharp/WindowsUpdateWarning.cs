@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -8,35 +8,51 @@ using UnityEngine.SceneManagement;
 
 public class WindowsUpdateWarning : MonoBehaviour
 {
+	public GameObject warning;
+
+	public GameObject menu;
+
 	private void Start()
 	{
-		this.warning.SetActive(WindowsUpdateWarning.UpdateRequired());
-		this.menu.SetActive(SceneManager.GetActiveScene().buildIndex == 3 || !this.warning.activeSelf);
+		warning.SetActive(UpdateRequired());
+		menu.SetActive(SceneManager.GetActiveScene().buildIndex == 3 || !warning.activeSelf);
 	}
 
 	public static bool UpdateRequired()
 	{
-		bool flag;
 		try
 		{
-			flag = SystemInfo.operatingSystemFamily == OperatingSystemFamily.Windows && global::NorthwoodLib.OperatingSystem.Version.Major < 10 && !File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.System) + Path.DirectorySeparatorChar.ToString() + "API-MS-WIN-CRT-MATH-L1-1-0.dll") && !WindowsUpdateWarning.CheckDll("API-MS-WIN-CRT-MATH-L1-1-0.dll");
+			int result;
+			if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.Windows && NorthwoodLib.OperatingSystem.Version.Major < 10)
+			{
+				string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.System);
+				char directorySeparatorChar = Path.DirectorySeparatorChar;
+				if (!File.Exists(folderPath + directorySeparatorChar + "API-MS-WIN-CRT-MATH-L1-1-0.dll"))
+				{
+					result = ((!CheckDll("API-MS-WIN-CRT-MATH-L1-1-0.dll")) ? 1 : 0);
+					goto IL_004b;
+				}
+			}
+			result = 0;
+			goto IL_004b;
+			IL_004b:
+			return (byte)result != 0;
 		}
-		catch (Exception ex)
+		catch (Exception exception)
 		{
-			Debug.LogException(ex);
-			flag = true;
+			Debug.LogException(exception);
+			return true;
 		}
-		return flag;
 	}
 
 	private static bool CheckDll(string name)
 	{
-		IntPtr intPtr = WindowsUpdateWarning.LoadLibrary(name);
+		IntPtr intPtr = LoadLibrary(name);
 		if (intPtr == IntPtr.Zero)
 		{
 			throw new Win32Exception();
 		}
-		if (!WindowsUpdateWarning.FreeLibrary(intPtr))
+		if (!FreeLibrary(intPtr))
 		{
 			throw new Win32Exception();
 		}
@@ -48,8 +64,4 @@ public class WindowsUpdateWarning : MonoBehaviour
 
 	[DllImport("Kernel32.dll", SetLastError = true)]
 	private static extern bool FreeLibrary(IntPtr library);
-
-	public GameObject warning;
-
-	public GameObject menu;
 }

@@ -1,12 +1,10 @@
-﻿using System;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public abstract class PostProcessEffectPulse : MonoBehaviour
 {
-	public abstract class PostProcessEffectPulse : MonoBehaviour
+	public void Pulse()
 	{
-		public void Pulse()
-		{
-		}
 	}
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using GameObjectPools;
 using Interactables.Interobjects.DoorUtils;
@@ -9,349 +9,332 @@ using PlayerRoles.PlayableScps.Scp079.GUI;
 using PlayerRoles.Subroutines;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079AuxRegenModifier, IScp079LevelUpNotifier
 {
-	public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079AuxRegenModifier, IScp079LevelUpNotifier
+	[SerializeField]
+	private AudioClip _lockSound;
+
+	[SerializeField]
+	private AudioClip _unlockSound;
+
+	[SerializeField]
+	private float _costMaxAuxPercent;
+
+	[SerializeField]
+	private int _costRounding;
+
+	[SerializeField]
+	private float _cooldownBaseline;
+
+	[SerializeField]
+	private float _cooldownPerTimeLocked;
+
+	[SerializeField]
+	private float _lockCostPerSec;
+
+	[SerializeField]
+	private float _lockCostPow;
+
+	[SerializeField]
+	private AudioClip _whirSound;
+
+	[SerializeField]
+	private int _minTierIndex;
+
+	private static string _lockText;
+
+	private static string _unlockText;
+
+	private static string _cooldownText;
+
+	private static string _alreadyLockedText;
+
+	private static string _abilityUnlockText;
+
+	private readonly AbilityCooldown _cooldown = new AbilityCooldown();
+
+	private DoorVariant _failedDoor;
+
+	private double _lockTime;
+
+	private const DoorLockReason LockReason = DoorLockReason.Regular079;
+
+	public override ActionName ActivationKey => ActionName.Scp079LockDoor;
+
+	public float AuxRegenMultiplier
 	{
-		public static event Action<Scp079Role, DoorVariant> OnServerDoorLocked;
-
-		public override ActionName ActivationKey
+		get
 		{
-			get
+			if (!(LockedDoor != null))
 			{
-				return ActionName.Scp079LockDoor;
+				return 1f;
 			}
+			return 0f;
 		}
+	}
 
-		public float AuxRegenMultiplier
+	public string AuxReductionMessage { get; private set; }
+
+	public DoorVariant LockedDoor { get; private set; }
+
+	public override string AbilityName => string.Format(IsHighlightLockedBy079 ? _unlockText : _lockText, GetCostForDoor(TargetAction, LastDoor));
+
+	public override bool IsReady
+	{
+		get
 		{
-			get
-			{
-				if (!(this.LockedDoor != null))
-				{
-					return 1f;
-				}
-				return 0f;
-			}
-		}
-
-		public string AuxReductionMessage { get; private set; }
-
-		public DoorVariant LockedDoor { get; private set; }
-
-		public override string AbilityName
-		{
-			get
-			{
-				return string.Format(this.IsHighlightLockedBy079 ? Scp079DoorLockChanger._unlockText : Scp079DoorLockChanger._lockText, this.GetCostForDoor(this.TargetAction, this.LastDoor));
-			}
-		}
-
-		public override bool IsReady
-		{
-			get
-			{
-				return base.TierManager.AccessTierIndex >= this._minTierIndex && base.IsReady && (this.TargetAction == DoorAction.Unlocked || (this.LockedDoor == null && !Scp079LockdownRoomAbility.IsLockedDown(this.LastDoor) && this._cooldown.IsReady));
-			}
-		}
-
-		public override bool IsVisible
-		{
-			get
-			{
-				return base.IsVisible && base.TierManager.AccessTierIndex >= this._minTierIndex;
-			}
-		}
-
-		public override string FailMessage
-		{
-			get
-			{
-				if (this._failedDoor == null)
-				{
-					return null;
-				}
-				if (this.LockedDoor != null && this._failedDoor != this.LockedDoor)
-				{
-					return Scp079DoorLockChanger._alreadyLockedText;
-				}
-				if (Scp079LockdownRoomAbility.IsLockedDown(this._failedDoor))
-				{
-					return Scp079DoorLockChanger._alreadyLockedText;
-				}
-				if (this._cooldown.Remaining == 0f)
-				{
-					return base.FailMessage;
-				}
-				int num = Mathf.CeilToInt(this._cooldown.Remaining);
-				return Scp079DoorLockChanger._cooldownText + "\n" + base.AuxManager.GenerateCustomETA(num);
-			}
-		}
-
-		public int LockClosedDoorCost
-		{
-			get
-			{
-				int num = (int)(base.AuxManager.MaxAux * this._costMaxAuxPercent);
-				int num2 = num % this._costRounding;
-				return num + num2;
-			}
-		}
-
-		public int LockOpenDoorCost { get; private set; }
-
-		protected override DoorAction TargetAction
-		{
-			get
-			{
-				if (!this.IsHighlightLockedBy079)
-				{
-					return DoorAction.Locked;
-				}
-				return DoorAction.Unlocked;
-			}
-		}
-
-		private bool IsHighlightLockedBy079
-		{
-			get
-			{
-				return ((DoorLockReason)this.LastDoor.ActiveLocks).HasFlagFast(DoorLockReason.Regular079);
-			}
-		}
-
-		protected override int GetCostForDoor(DoorAction action, DoorVariant door)
-		{
-			if (action != DoorAction.Locked)
-			{
-				return 0;
-			}
-			if (!door.TargetState)
-			{
-				return this.LockClosedDoorCost;
-			}
-			return this.LockOpenDoorCost;
-		}
-
-		protected virtual void OnDestroy()
-		{
-			this.ServerUnlock();
-		}
-
-		protected override void Start()
-		{
-			base.Start();
-			Scp079DoorLockChanger._lockText = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.LockDoor);
-			Scp079DoorLockChanger._unlockText = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.UnlockDoor);
-			Scp079DoorLockChanger._cooldownText = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.DoorLockCooldown);
-			Scp079DoorLockChanger._alreadyLockedText = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.DoorLockAlreadyActive);
-			this.AuxReductionMessage = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.DoorLockAuxPause);
-			Scp079DoorLockChanger._abilityUnlockText = Translations.Get<Scp079HudTranslation>(Scp079HudTranslation.DoorLockAbilityAvailable);
-			base.LostSignalHandler.OnStatusChanged += delegate
-			{
-				if (!NetworkServer.active || !base.LostSignalHandler.Lost)
-				{
-					return;
-				}
-				this.ServerUnlock();
-			};
-		}
-
-		protected override void Update()
-		{
-			base.Update();
-			if (!NetworkServer.active || this.LockedDoor == null)
-			{
-				return;
-			}
-			float num = base.AuxManager.CurrentAux;
-			if (this.LockedDoor.TargetState)
-			{
-				this._lockTime = NetworkTime.time;
-			}
-			else
-			{
-				float num2 = (float)(NetworkTime.time - this._lockTime);
-				num -= Mathf.Pow(num2 * this._lockCostPerSec, this._lockCostPow) * Time.deltaTime;
-				base.AuxManager.CurrentAux = num;
-			}
-			if (num > 0f && Scp079DoorAbility.ValidateAction(DoorAction.Locked, this.LockedDoor, base.CurrentCamSync.CurrentCamera))
-			{
-				return;
-			}
-			this.ServerUnlock();
-		}
-
-		public void ServerUnlock()
-		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			if (this.LockedDoor == null)
-			{
-				return;
-			}
-			Scp079UnlockingDoorEventArgs scp079UnlockingDoorEventArgs = new Scp079UnlockingDoorEventArgs(base.Owner, this.LockedDoor);
-			Scp079Events.OnUnlockingDoor(scp079UnlockingDoorEventArgs);
-			if (!scp079UnlockingDoorEventArgs.IsAllowed)
-			{
-				return;
-			}
-			double num = (NetworkTime.time - this._lockTime) * (double)this._cooldownPerTimeLocked;
-			this._cooldown.Trigger(num + (double)this._cooldownBaseline);
-			this.LockedDoor.ServerChangeLock(DoorLockReason.Regular079, false);
-			Scp079Events.OnUnlockedDoor(new Scp079UnlockedDoorEventArgs(base.Owner, this.LockedDoor));
-			this.LockedDoor = null;
-			base.ServerSendRpc(true);
-		}
-
-		public override void OnFailMessageAssigned()
-		{
-			base.OnFailMessageAssigned();
-			this._failedDoor = this.LastDoor;
-		}
-
-		public override void ClientWriteCmd(NetworkWriter writer)
-		{
-			base.ClientWriteCmd(writer);
-			writer.WriteUInt(this.LastDoor.netId);
-		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			NetworkIdentity networkIdentity;
-			if (!NetworkServer.spawned.TryGetValue(reader.ReadUInt(), out networkIdentity))
-			{
-				return;
-			}
-			if (!networkIdentity.TryGetComponent<DoorVariant>(out this.LastDoor) || !this.IsReady)
-			{
-				return;
-			}
-			if (this.TargetAction == DoorAction.Locked)
-			{
-				if (base.LostSignalHandler.Lost)
-				{
-					return;
-				}
-				Scp079LockingDoorEventArgs scp079LockingDoorEventArgs = new Scp079LockingDoorEventArgs(base.Owner, this.LastDoor);
-				Scp079Events.OnLockingDoor(scp079LockingDoorEventArgs);
-				if (!scp079LockingDoorEventArgs.IsAllowed)
-				{
-					return;
-				}
-				this._lockTime = NetworkTime.time;
-				this.LockedDoor = this.LastDoor;
-				this.LockedDoor.ServerChangeLock(DoorLockReason.Regular079, true);
-				base.RewardManager.MarkRooms(this.LastDoor.Rooms);
-				Action<Scp079Role, DoorVariant> onServerDoorLocked = Scp079DoorLockChanger.OnServerDoorLocked;
-				if (onServerDoorLocked != null)
-				{
-					onServerDoorLocked(base.CastRole, this.LastDoor);
-				}
-				base.AuxManager.CurrentAux -= (float)this.GetCostForDoor(DoorAction.Locked, this.LastDoor);
-				Scp079Events.OnLockedDoor(new Scp079LockedDoorEventArgs(base.Owner, this.LastDoor));
-			}
-			else if (this.LastDoor == this.LockedDoor)
-			{
-				this.ServerUnlock();
-			}
-			base.ServerSendRpc(true);
-		}
-
-		public override void ServerWriteRpc(NetworkWriter writer)
-		{
-			base.ServerWriteRpc(writer);
-			this._cooldown.WriteCooldown(writer);
-			writer.WriteNetworkBehaviour(this.LockedDoor);
-		}
-
-		public override void ClientProcessRpc(NetworkReader reader)
-		{
-			base.ClientProcessRpc(reader);
-			this._failedDoor = null;
-			this._cooldown.ReadCooldown(reader);
-			DoorVariant lockedDoor = this.LockedDoor;
-			DoorVariant doorVariant = reader.ReadNetworkBehaviour<DoorVariant>();
-			if (doorVariant == lockedDoor && !NetworkServer.active)
-			{
-				return;
-			}
-			this.LockedDoor = doorVariant;
-			if (doorVariant == null)
-			{
-				base.PlayConfirmationSound(this._unlockSound);
-				return;
-			}
-			new Scp079DoorWhir(base.CastRole, this._whirSound);
-			base.PlayConfirmationSound(this._lockSound);
-		}
-
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			this.ServerUnlock();
-			this._cooldown.Clear();
-		}
-
-		public bool WriteLevelUpNotification(StringBuilder sb, int newLevel)
-		{
-			if (newLevel != this._minTierIndex)
+			if (base.TierManager.AccessTierIndex < _minTierIndex)
 			{
 				return false;
 			}
-			sb.Append(Scp079DoorLockChanger._abilityUnlockText);
-			return true;
+			if (!base.IsReady)
+			{
+				return false;
+			}
+			if (TargetAction == DoorAction.Unlocked)
+			{
+				return true;
+			}
+			if (LockedDoor == null && !Scp079LockdownRoomAbility.IsLockedDown(LastDoor))
+			{
+				return _cooldown.IsReady;
+			}
+			return false;
 		}
+	}
 
-		[SerializeField]
-		private AudioClip _lockSound;
+	public override bool IsVisible
+	{
+		get
+		{
+			if (base.IsVisible)
+			{
+				return base.TierManager.AccessTierIndex >= _minTierIndex;
+			}
+			return false;
+		}
+	}
 
-		[SerializeField]
-		private AudioClip _unlockSound;
+	public override string FailMessage
+	{
+		get
+		{
+			if (_failedDoor == null)
+			{
+				return null;
+			}
+			if (LockedDoor != null && _failedDoor != LockedDoor)
+			{
+				return _alreadyLockedText;
+			}
+			if (Scp079LockdownRoomAbility.IsLockedDown(_failedDoor))
+			{
+				return _alreadyLockedText;
+			}
+			if (_cooldown.Remaining == 0f)
+			{
+				return base.FailMessage;
+			}
+			int secondsRemaining = Mathf.CeilToInt(_cooldown.Remaining);
+			return _cooldownText + "\n" + base.AuxManager.GenerateCustomETA(secondsRemaining);
+		}
+	}
 
-		[SerializeField]
-		private float _costMaxAuxPercent;
+	public int LockClosedDoorCost
+	{
+		get
+		{
+			int num = (int)(base.AuxManager.MaxAux * _costMaxAuxPercent);
+			int num2 = num % _costRounding;
+			return num + num2;
+		}
+	}
 
-		[SerializeField]
-		private int _costRounding;
+	[field: SerializeField]
+	public int LockOpenDoorCost { get; private set; }
 
-		[SerializeField]
-		private float _cooldownBaseline;
+	protected override DoorAction TargetAction
+	{
+		get
+		{
+			if (!IsHighlightLockedBy079)
+			{
+				return DoorAction.Locked;
+			}
+			return DoorAction.Unlocked;
+		}
+	}
 
-		[SerializeField]
-		private float _cooldownPerTimeLocked;
+	private bool IsHighlightLockedBy079 => ((DoorLockReason)LastDoor.ActiveLocks).HasFlagFast(DoorLockReason.Regular079);
 
-		[SerializeField]
-		private float _lockCostPerSec;
+	public static event Action<Scp079Role, DoorVariant> OnServerDoorLocked;
 
-		[SerializeField]
-		private float _lockCostPow;
+	protected override int GetCostForDoor(DoorAction action, DoorVariant door)
+	{
+		if (action != DoorAction.Locked)
+		{
+			return 0;
+		}
+		if (!door.TargetState)
+		{
+			return LockClosedDoorCost;
+		}
+		return LockOpenDoorCost;
+	}
 
-		[SerializeField]
-		private AudioClip _whirSound;
+	protected virtual void OnDestroy()
+	{
+		ServerUnlock();
+	}
 
-		[SerializeField]
-		private int _minTierIndex;
+	protected override void Start()
+	{
+		base.Start();
+		_lockText = Translations.Get(Scp079HudTranslation.LockDoor);
+		_unlockText = Translations.Get(Scp079HudTranslation.UnlockDoor);
+		_cooldownText = Translations.Get(Scp079HudTranslation.DoorLockCooldown);
+		_alreadyLockedText = Translations.Get(Scp079HudTranslation.DoorLockAlreadyActive);
+		AuxReductionMessage = Translations.Get(Scp079HudTranslation.DoorLockAuxPause);
+		_abilityUnlockText = Translations.Get(Scp079HudTranslation.DoorLockAbilityAvailable);
+		base.LostSignalHandler.OnStatusChanged += delegate
+		{
+			if (NetworkServer.active && base.LostSignalHandler.Lost)
+			{
+				ServerUnlock();
+			}
+		};
+	}
 
-		private static string _lockText;
+	protected override void Update()
+	{
+		base.Update();
+		if (NetworkServer.active && !(LockedDoor == null))
+		{
+			float num = base.AuxManager.CurrentAux;
+			if (LockedDoor.TargetState)
+			{
+				_lockTime = NetworkTime.time;
+			}
+			else
+			{
+				float num2 = (float)(NetworkTime.time - _lockTime);
+				num -= Mathf.Pow(num2 * _lockCostPerSec, _lockCostPow) * Time.deltaTime;
+				base.AuxManager.CurrentAux = num;
+			}
+			if (!(num > 0f) || !Scp079DoorAbility.ValidateAction(DoorAction.Locked, LockedDoor, base.CurrentCamSync.CurrentCamera))
+			{
+				ServerUnlock();
+			}
+		}
+	}
 
-		private static string _unlockText;
+	public void ServerUnlock()
+	{
+		if (NetworkServer.active && !(LockedDoor == null))
+		{
+			Scp079UnlockingDoorEventArgs scp079UnlockingDoorEventArgs = new Scp079UnlockingDoorEventArgs(base.Owner, LockedDoor);
+			Scp079Events.OnUnlockingDoor(scp079UnlockingDoorEventArgs);
+			if (scp079UnlockingDoorEventArgs.IsAllowed)
+			{
+				double num = (NetworkTime.time - _lockTime) * (double)_cooldownPerTimeLocked;
+				_cooldown.Trigger(num + (double)_cooldownBaseline);
+				LockedDoor.ServerChangeLock(DoorLockReason.Regular079, newState: false);
+				Scp079Events.OnUnlockedDoor(new Scp079UnlockedDoorEventArgs(base.Owner, LockedDoor));
+				LockedDoor = null;
+				ServerSendRpc(toAll: true);
+			}
+		}
+	}
 
-		private static string _cooldownText;
+	public override void OnFailMessageAssigned()
+	{
+		base.OnFailMessageAssigned();
+		_failedDoor = LastDoor;
+	}
 
-		private static string _alreadyLockedText;
+	public override void ClientWriteCmd(NetworkWriter writer)
+	{
+		base.ClientWriteCmd(writer);
+		writer.WriteUInt(LastDoor.netId);
+	}
 
-		private static string _abilityUnlockText;
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (!NetworkServer.spawned.TryGetValue(reader.ReadUInt(), out var value) || !value.TryGetComponent<DoorVariant>(out LastDoor) || !IsReady)
+		{
+			return;
+		}
+		if (TargetAction == DoorAction.Locked)
+		{
+			if (base.LostSignalHandler.Lost)
+			{
+				return;
+			}
+			Scp079LockingDoorEventArgs scp079LockingDoorEventArgs = new Scp079LockingDoorEventArgs(base.Owner, LastDoor);
+			Scp079Events.OnLockingDoor(scp079LockingDoorEventArgs);
+			if (!scp079LockingDoorEventArgs.IsAllowed)
+			{
+				return;
+			}
+			_lockTime = NetworkTime.time;
+			LockedDoor = LastDoor;
+			LockedDoor.ServerChangeLock(DoorLockReason.Regular079, newState: true);
+			base.RewardManager.MarkRooms(LastDoor.Rooms);
+			Scp079DoorLockChanger.OnServerDoorLocked?.Invoke(base.CastRole, LastDoor);
+			base.AuxManager.CurrentAux -= GetCostForDoor(DoorAction.Locked, LastDoor);
+			Scp079Events.OnLockedDoor(new Scp079LockedDoorEventArgs(base.Owner, LastDoor));
+		}
+		else if (LastDoor == LockedDoor)
+		{
+			ServerUnlock();
+		}
+		ServerSendRpc(toAll: true);
+	}
 
-		private readonly AbilityCooldown _cooldown = new AbilityCooldown();
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		_cooldown.WriteCooldown(writer);
+		writer.WriteNetworkBehaviour(LockedDoor);
+	}
 
-		private DoorVariant _failedDoor;
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		_failedDoor = null;
+		_cooldown.ReadCooldown(reader);
+		DoorVariant lockedDoor = LockedDoor;
+		DoorVariant doorVariant = reader.ReadNetworkBehaviour<DoorVariant>();
+		if (!(doorVariant == lockedDoor) || NetworkServer.active)
+		{
+			LockedDoor = doorVariant;
+			if (doorVariant == null)
+			{
+				PlayConfirmationSound(_unlockSound);
+				return;
+			}
+			new Scp079DoorWhir(base.CastRole, _whirSound);
+			PlayConfirmationSound(_lockSound);
+		}
+	}
 
-		private double _lockTime;
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		ServerUnlock();
+		_cooldown.Clear();
+	}
 
-		private const DoorLockReason LockReason = DoorLockReason.Regular079;
+	public bool WriteLevelUpNotification(StringBuilder sb, int newLevel)
+	{
+		if (newLevel != _minTierIndex)
+		{
+			return false;
+		}
+		sb.AppendFormat(_abilityUnlockText, $"[{new ReadableKeyCode(ActivationKey)}]");
+		return true;
 	}
 }

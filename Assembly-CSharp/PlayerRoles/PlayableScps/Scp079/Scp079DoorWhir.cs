@@ -1,130 +1,132 @@
-﻿using System;
+using System;
 using AudioPooling;
 using Interactables.Interobjects.DoorUtils;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public class Scp079DoorWhir
 {
-	public class Scp079DoorWhir
+	private readonly Scp079DoorLockChanger _lockChanger;
+
+	private readonly Scp079AuxManager _auxManager;
+
+	private readonly DoorVariant _door;
+
+	private readonly AudioSource _whirSrc;
+
+	private bool _active;
+
+	private bool _deactivating;
+
+	private float _startAux;
+
+	private const float WhirDist = 15f;
+
+	private const float VolumeAdjustSpeed = 0.7f;
+
+	private const float PitchLerpSpeed = 2f;
+
+	private const float ShutdownPitch = 0.5f;
+
+	private const float StartPitch = 0.9f;
+
+	private const float FinalPitch = 1.8f;
+
+	private const float MinStartAux = 5f;
+
+	private bool Valid
 	{
-		private bool Valid
+		get
 		{
-			get
+			if (_door != null && _lockChanger.LockedDoor == _door)
 			{
-				return this._door != null && this._lockChanger.LockedDoor == this._door && !this._lockChanger.Role.Pooled;
+				return !_lockChanger.Role.Pooled;
+			}
+			return false;
+		}
+	}
+
+	public Scp079DoorWhir(Scp079Role scp079, AudioClip whirSound)
+	{
+		scp079.SubroutineModule.TryGetSubroutine<Scp079DoorLockChanger>(out _lockChanger);
+		scp079.SubroutineModule.TryGetSubroutine<Scp079AuxManager>(out _auxManager);
+		_door = _lockChanger.LockedDoor;
+		StaticUnityMethods.OnUpdate += OnUpdate;
+		_whirSrc = AudioSourcePoolManager.CreateNewSource().Source;
+		AudioSourcePoolManager.ApplyStandardSettings(_whirSrc, whirSound, FalloffType.Exponential, MixerChannel.NoDucking, 1f, 15f);
+		_whirSrc.transform.position = _door.transform.position;
+		_whirSrc.loop = true;
+		_whirSrc.volume = 0f;
+		_whirSrc.Play();
+		_active = true;
+		_startAux = 5f;
+	}
+
+	private void OnUpdate()
+	{
+		try
+		{
+			UpdateAudioSource();
+		}
+		catch (Exception exception)
+		{
+			Debug.LogException(exception);
+		}
+	}
+
+	private void UpdateAudioSource()
+	{
+		if (_deactivating || !Valid)
+		{
+			_deactivating = true;
+			MuteSource();
+			return;
+		}
+		if (_door.TargetState)
+		{
+			MuteSource();
+			return;
+		}
+		if (_whirSrc.volume == 0f)
+		{
+			_startAux = Mathf.Max(_auxManager.CurrentAuxFloored, 5f);
+		}
+		float b = Mathf.Lerp(1.8f, 0.9f, (float)_auxManager.CurrentAuxFloored / _startAux);
+		_whirSrc.pitch = Mathf.Lerp(_whirSrc.pitch, b, Time.deltaTime * 2f);
+		_whirSrc.volume += 0.7f * Time.deltaTime;
+	}
+
+	private void MuteSource()
+	{
+		if (_whirSrc == null)
+		{
+			Destruct();
+			return;
+		}
+		_whirSrc.volume -= 0.7f * Time.deltaTime;
+		_whirSrc.pitch = Mathf.Lerp(_whirSrc.pitch, 0.5f, Time.deltaTime * 2f);
+		if (_deactivating && _whirSrc.volume <= 0f)
+		{
+			Destruct();
+		}
+	}
+
+	private void Destruct()
+	{
+		if (_active)
+		{
+			_active = false;
+			StaticUnityMethods.OnUpdate -= OnUpdate;
+			if (!(_whirSrc == null) && !(_whirSrc.gameObject == null))
+			{
+				UnityEngine.Object.Destroy(_whirSrc.gameObject);
 			}
 		}
+	}
 
-		public Scp079DoorWhir(Scp079Role scp079, AudioClip whirSound)
-		{
-			scp079.SubroutineModule.TryGetSubroutine<Scp079DoorLockChanger>(out this._lockChanger);
-			scp079.SubroutineModule.TryGetSubroutine<Scp079AuxManager>(out this._auxManager);
-			this._door = this._lockChanger.LockedDoor;
-			StaticUnityMethods.OnUpdate += this.OnUpdate;
-			this._whirSrc = AudioSourcePoolManager.CreateNewSource().Source;
-			AudioSourcePoolManager.ApplyStandardSettings(this._whirSrc, whirSound, FalloffType.Exponential, MixerChannel.NoDucking, 1f, 15f);
-			this._whirSrc.loop = true;
-			this._whirSrc.volume = 0f;
-			this._whirSrc.Play();
-			this._active = true;
-			this._startAux = 5f;
-		}
-
-		private void OnUpdate()
-		{
-			try
-			{
-				this.UpdateAudioSource();
-			}
-			catch (Exception ex)
-			{
-				Debug.LogException(ex);
-			}
-		}
-
-		private void UpdateAudioSource()
-		{
-			if (this._deactivating || !this.Valid)
-			{
-				this._deactivating = true;
-				this.MuteSource();
-				return;
-			}
-			if (this._door.TargetState)
-			{
-				this.MuteSource();
-				return;
-			}
-			if (this._whirSrc.volume == 0f)
-			{
-				this._startAux = Mathf.Max((float)this._auxManager.CurrentAuxFloored, 5f);
-			}
-			float num = Mathf.Lerp(1.8f, 0.9f, (float)this._auxManager.CurrentAuxFloored / this._startAux);
-			this._whirSrc.pitch = Mathf.Lerp(this._whirSrc.pitch, num, Time.deltaTime * 2f);
-			this._whirSrc.volume += 0.7f * Time.deltaTime;
-		}
-
-		private void MuteSource()
-		{
-			if (this._whirSrc == null)
-			{
-				this.Destruct();
-				return;
-			}
-			this._whirSrc.volume -= 0.7f * Time.deltaTime;
-			this._whirSrc.pitch = Mathf.Lerp(this._whirSrc.pitch, 0.5f, Time.deltaTime * 2f);
-			if (this._deactivating && this._whirSrc.volume <= 0f)
-			{
-				this.Destruct();
-			}
-		}
-
-		private void Destruct()
-		{
-			if (!this._active)
-			{
-				return;
-			}
-			this._active = false;
-			StaticUnityMethods.OnUpdate -= this.OnUpdate;
-			if (this._whirSrc == null || this._whirSrc.gameObject == null)
-			{
-				return;
-			}
-			global::UnityEngine.Object.Destroy(this._whirSrc.gameObject);
-		}
-
-		~Scp079DoorWhir()
-		{
-			this.Destruct();
-		}
-
-		private readonly Scp079DoorLockChanger _lockChanger;
-
-		private readonly Scp079AuxManager _auxManager;
-
-		private readonly DoorVariant _door;
-
-		private readonly AudioSource _whirSrc;
-
-		private bool _active;
-
-		private bool _deactivating;
-
-		private float _startAux;
-
-		private const float WhirDist = 15f;
-
-		private const float VolumeAdjustSpeed = 0.7f;
-
-		private const float PitchLerpSpeed = 2f;
-
-		private const float ShutdownPitch = 0.5f;
-
-		private const float StartPitch = 0.9f;
-
-		private const float FinalPitch = 1.8f;
-
-		private const float MinStartAux = 5f;
+	~Scp079DoorWhir()
+	{
+		Destruct();
 	}
 }

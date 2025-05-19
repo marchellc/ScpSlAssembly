@@ -1,15 +1,6 @@
-﻿using System;
+namespace Respawning.Objectives;
 
-namespace Respawning.Objectives
+public class KillObjectiveFootprint : AttackerObjectiveFootprint
 {
-	public class KillObjectiveFootprint : AttackerObjectiveFootprint
-	{
-		protected override FootprintsTranslation TargetTranslation
-		{
-			get
-			{
-				return FootprintsTranslation.KillObjective;
-			}
-		}
-	}
+	protected override FootprintsTranslation TargetTranslation => FootprintsTranslation.KillObjective;
 }

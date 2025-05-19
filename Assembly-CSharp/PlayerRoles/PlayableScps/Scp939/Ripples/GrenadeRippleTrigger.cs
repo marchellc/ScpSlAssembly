@@ -1,100 +1,95 @@
-﻿using System;
 using System.Collections.Generic;
 using InventorySystem.Items.Pickups;
 using InventorySystem.Items.ThrowableProjectiles;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp939.Ripples
+namespace PlayerRoles.PlayableScps.Scp939.Ripples;
+
+public class GrenadeRippleTrigger : RippleTriggerBase
 {
-	public class GrenadeRippleTrigger : RippleTriggerBase
+	private class ThrownGrenadeHandler
 	{
-		public override void SpawnObject()
+		private readonly GrenadeRippleTrigger _tr;
+
+		private readonly float _startTime;
+
+		private int _nextTime;
+
+		public ThrownGrenadeHandler(GrenadeRippleTrigger trigger)
 		{
-			base.SpawnObject();
-			ThrownProjectile.OnProjectileSpawned += this.OnProjectileSpawned;
-			ItemPickupBase.OnPickupDestroyed += this.OnPickupDestroyed;
+			_tr = trigger;
+			_startTime = Time.timeSinceLevelLoad;
 		}
 
-		public override void ResetObject()
+		public bool UpdateSound()
 		{
-			base.ResetObject();
-			ThrownProjectile.OnProjectileSpawned -= this.OnProjectileSpawned;
-			ItemPickupBase.OnPickupDestroyed -= this.OnPickupDestroyed;
+			if (_nextTime >= _tr._rippleTimes.Length)
+			{
+				return false;
+			}
+			float num = Time.timeSinceLevelLoad - _startTime;
+			if (_tr._rippleTimes[_nextTime] > num)
+			{
+				return false;
+			}
+			_nextTime++;
+			while (UpdateSound())
+			{
+			}
+			return true;
 		}
+	}
 
-		private void OnProjectileSpawned(ThrownProjectile tp)
+	[SerializeField]
+	private float[] _rippleTimes;
+
+	[SerializeField]
+	private float _audibleRangeSqr;
+
+	private readonly Dictionary<ThrownProjectile, ThrownGrenadeHandler> _trackedGrenades = new Dictionary<ThrownProjectile, ThrownGrenadeHandler>();
+
+	public override void SpawnObject()
+	{
+		base.SpawnObject();
+		ThrownProjectile.OnProjectileSpawned += OnProjectileSpawned;
+		ItemPickupBase.OnPickupDestroyed += OnPickupDestroyed;
+	}
+
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		ThrownProjectile.OnProjectileSpawned -= OnProjectileSpawned;
+		ItemPickupBase.OnPickupDestroyed -= OnPickupDestroyed;
+	}
+
+	private void OnProjectileSpawned(ThrownProjectile tp)
+	{
+		if (tp.Info.ItemId == ItemType.GrenadeHE)
 		{
-			if (tp.Info.ItemId != ItemType.GrenadeHE)
-			{
-				return;
-			}
-			this._trackedGrenades.Add(tp, new GrenadeRippleTrigger.ThrownGrenadeHandler(this));
+			_trackedGrenades.Add(tp, new ThrownGrenadeHandler(this));
 		}
+	}
 
-		private void OnPickupDestroyed(ItemPickupBase ipb)
+	private void OnPickupDestroyed(ItemPickupBase ipb)
+	{
+		if (ipb is ThrownProjectile key)
 		{
-			ThrownProjectile thrownProjectile = ipb as ThrownProjectile;
-			if (thrownProjectile == null)
-			{
-				return;
-			}
-			this._trackedGrenades.Remove(thrownProjectile);
+			_trackedGrenades.Remove(key);
 		}
+	}
 
-		private void Update()
+	private void Update()
+	{
+		if (!base.IsLocalOrSpectated)
 		{
-			if (!base.IsLocalOrSpectated)
-			{
-				return;
-			}
-			foreach (KeyValuePair<ThrownProjectile, GrenadeRippleTrigger.ThrownGrenadeHandler> keyValuePair in this._trackedGrenades)
-			{
-				if (keyValuePair.Value.UpdateSound())
-				{
-					base.PlayInRangeSqr(keyValuePair.Key.Position, this._audibleRangeSqr, Color.red);
-				}
-			}
+			return;
 		}
-
-		[SerializeField]
-		private float[] _rippleTimes;
-
-		[SerializeField]
-		private float _audibleRangeSqr;
-
-		private readonly Dictionary<ThrownProjectile, GrenadeRippleTrigger.ThrownGrenadeHandler> _trackedGrenades = new Dictionary<ThrownProjectile, GrenadeRippleTrigger.ThrownGrenadeHandler>();
-
-		private class ThrownGrenadeHandler
+		foreach (KeyValuePair<ThrownProjectile, ThrownGrenadeHandler> trackedGrenade in _trackedGrenades)
 		{
-			public ThrownGrenadeHandler(GrenadeRippleTrigger trigger)
+			if (trackedGrenade.Value.UpdateSound())
 			{
-				this._tr = trigger;
-				this._startTime = Time.timeSinceLevelLoad;
+				PlayInRangeSqr(trackedGrenade.Key.Position, _audibleRangeSqr, Color.red);
 			}
-
-			public bool UpdateSound()
-			{
-				if (this._nextTime >= this._tr._rippleTimes.Length)
-				{
-					return false;
-				}
-				float num = Time.timeSinceLevelLoad - this._startTime;
-				if (this._tr._rippleTimes[this._nextTime] > num)
-				{
-					return false;
-				}
-				this._nextTime++;
-				while (this.UpdateSound())
-				{
-				}
-				return true;
-			}
-
-			private readonly GrenadeRippleTrigger _tr;
-
-			private readonly float _startTime;
-
-			private int _nextTime;
 		}
 	}
 }

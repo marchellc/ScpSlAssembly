@@ -1,4 +1,3 @@
-﻿using System;
 using DeathAnimations;
 
 public class DisintegrateDeathAnimation : DeathAnimation

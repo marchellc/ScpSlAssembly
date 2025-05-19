@@ -1,10 +1,7 @@
-﻿using System;
+namespace Respawning.Graphics;
 
-namespace Respawning.Graphics
+public enum RespawnSetting
 {
-	public enum RespawnSetting
-	{
-		RespawnInterfaceVisible,
-		ObjectiveFeedVisible
-	}
+	RespawnInterfaceVisible,
+	ObjectiveFeedVisible
 }

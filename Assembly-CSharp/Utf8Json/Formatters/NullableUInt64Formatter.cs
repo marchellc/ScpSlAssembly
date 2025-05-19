@@ -1,52 +1,53 @@
-﻿using System;
+using System;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class NullableUInt64Formatter : IJsonFormatter<ulong?>, IJsonFormatter, IObjectPropertyNameFormatter<ulong?>
 {
-	public sealed class NullableUInt64Formatter : IJsonFormatter<ulong?>, IJsonFormatter, IObjectPropertyNameFormatter<ulong?>
+	public static readonly NullableUInt64Formatter Default = new NullableUInt64Formatter();
+
+	public void Serialize(ref JsonWriter writer, ulong? value, IJsonFormatterResolver formatterResolver)
 	{
-		public void Serialize(ref JsonWriter writer, ulong? value, IJsonFormatterResolver formatterResolver)
+		if (!value.HasValue)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
+			writer.WriteNull();
+		}
+		else
+		{
 			writer.WriteUInt64(value.Value);
 		}
+	}
 
-		public ulong? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public ulong? Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			return new ulong?(reader.ReadUInt64());
+			return null;
 		}
+		return reader.ReadUInt64();
+	}
 
-		public void SerializeToPropertyName(ref JsonWriter writer, ulong? value, IJsonFormatterResolver formatterResolver)
+	public void SerializeToPropertyName(ref JsonWriter writer, ulong? value, IJsonFormatterResolver formatterResolver)
+	{
+		if (!value.HasValue)
 		{
-			if (value == null)
-			{
-				writer.WriteNull();
-				return;
-			}
-			writer.WriteQuotation();
-			writer.WriteUInt64(value.Value);
-			writer.WriteQuotation();
+			writer.WriteNull();
+			return;
 		}
+		writer.WriteQuotation();
+		writer.WriteUInt64(value.Value);
+		writer.WriteQuotation();
+	}
 
-		public ulong? DeserializeFromPropertyName(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	public ulong? DeserializeFromPropertyName(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
 		{
-			if (reader.ReadIsNull())
-			{
-				return null;
-			}
-			ArraySegment<byte> arraySegment = reader.ReadStringSegmentRaw();
-			int num;
-			return new ulong?(NumberConverter.ReadUInt64(arraySegment.Array, arraySegment.Offset, out num));
+			return null;
 		}
-
-		public static readonly NullableUInt64Formatter Default = new NullableUInt64Formatter();
+		ArraySegment<byte> arraySegment = reader.ReadStringSegmentRaw();
+		int readCount;
+		return NumberConverter.ReadUInt64(arraySegment.Array, arraySegment.Offset, out readCount);
 	}
 }

@@ -1,8 +1,14 @@
-﻿using System;
+using System;
 using Utf8Json;
 
 public readonly struct CreditsListMember : IEquatable<CreditsListMember>, IJsonSerializable
 {
+	public readonly string name;
+
+	public readonly string title;
+
+	public readonly string color;
+
 	[SerializationConstructor]
 	public CreditsListMember(string name, string title, string color)
 	{
@@ -13,26 +19,29 @@ public readonly struct CreditsListMember : IEquatable<CreditsListMember>, IJsonS
 
 	public bool Equals(CreditsListMember other)
 	{
-		return this.name == other.name && this.title == other.title && this.color == other.color;
+		if (name == other.name && title == other.title)
+		{
+			return color == other.color;
+		}
+		return false;
 	}
 
 	public override bool Equals(object obj)
 	{
-		if (obj is CreditsListMember)
+		if (obj is CreditsListMember other)
 		{
-			CreditsListMember creditsListMember = (CreditsListMember)obj;
-			return this.Equals(creditsListMember);
+			return Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		if (this.name == null)
+		if (name == null)
 		{
 			return 0;
 		}
-		return this.name.GetHashCode();
+		return name.GetHashCode();
 	}
 
 	public static bool operator ==(CreditsListMember left, CreditsListMember right)
@@ -44,10 +53,4 @@ public readonly struct CreditsListMember : IEquatable<CreditsListMember>, IJsonS
 	{
 		return !left.Equals(right);
 	}
-
-	public readonly string name;
-
-	public readonly string title;
-
-	public readonly string color;
 }

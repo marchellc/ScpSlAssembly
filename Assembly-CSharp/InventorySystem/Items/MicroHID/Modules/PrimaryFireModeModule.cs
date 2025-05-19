@@ -1,153 +1,92 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace InventorySystem.Items.MicroHID.Modules
+namespace InventorySystem.Items.MicroHID.Modules;
+
+public class PrimaryFireModeModule : FiringModeControllerModule
 {
-	public class PrimaryFireModeModule : FiringModeControllerModule
+	private const float RaycastThickness = 0.2f;
+
+	private const float DamagePerSec = 400f;
+
+	public override MicroHidFiringMode AssignedMode => MicroHidFiringMode.PrimaryFire;
+
+	public override float WindUpRate => 1f / 3f;
+
+	public override float WindDownRate => 1f;
+
+	public override float DrainRateWindUp => 0f;
+
+	public override float DrainRateSustain => 0f;
+
+	public override float DrainRateFiring => 0.04f;
+
+	public override bool ValidateStart
 	{
-		public override MicroHidFiringMode AssignedMode
+		get
 		{
-			get
+			if (base.InputSync.Primary)
 			{
-				return MicroHidFiringMode.PrimaryFire;
+				return !base.Broken;
 			}
+			return false;
 		}
+	}
 
-		public override float WindUpRate
+	public override bool ValidateEnterFire => base.InputSync.Primary;
+
+	public override bool ValidateUpdate
+	{
+		get
 		{
-			get
+			if (base.InputSync.Primary)
 			{
-				return 0.33333334f;
+				return base.Energy > 0f;
 			}
+			return false;
 		}
+	}
 
-		public override float WindDownRate
+	public override float FiringRange => 6f;
+
+	public override float BacktrackerDot => 0.9f;
+
+	private float FrameDamage => 400f * Time.deltaTime;
+
+	public override void ServerUpdateSelected(MicroHidPhase status)
+	{
+		base.ServerUpdateSelected(status);
+		if (status == MicroHidPhase.Firing)
 		{
-			get
+			ServerRequestBacktrack(ServerFire);
+		}
+	}
+
+	private void ServerFire()
+	{
+		ReferenceHub owner = base.Item.Owner;
+		HitregUtils.Raycast(owner.PlayerCameraReference, 0.2f, FiringRange, out var _);
+		HitboxIdentity hitboxIdentity = null;
+		float num = float.MaxValue;
+		foreach (IDestructible detectedDestructible in HitregUtils.DetectedDestructibles)
+		{
+			if (!(detectedDestructible is HitboxIdentity hitboxIdentity2))
 			{
-				return 1f;
+				detectedDestructible.ServerDealDamage(this, FrameDamage);
 			}
-		}
-
-		public override float DrainRateWindUp
-		{
-			get
+			else if (!(hitboxIdentity2.TargetHub == owner) && hitboxIdentity2.TargetHub.roleManager.CurrentRole is IFpcRole target)
 			{
-				return 0f;
-			}
-		}
-
-		public override float DrainRateSustain
-		{
-			get
-			{
-				return 0f;
-			}
-		}
-
-		public override float DrainRateFiring
-		{
-			get
-			{
-				return 0.05f;
-			}
-		}
-
-		public override bool ValidateStart
-		{
-			get
-			{
-				return base.InputSync.Primary && !base.Broken;
-			}
-		}
-
-		public override bool ValidateEnterFire
-		{
-			get
-			{
-				return base.InputSync.Primary;
-			}
-		}
-
-		public override bool ValidateUpdate
-		{
-			get
-			{
-				return base.InputSync.Primary && base.Energy > 0f;
-			}
-		}
-
-		public override float FiringRange
-		{
-			get
-			{
-				return 6f;
-			}
-		}
-
-		public override float BacktrackerDot
-		{
-			get
-			{
-				return 0.9f;
-			}
-		}
-
-		private float FrameDamage
-		{
-			get
-			{
-				return 400f * Time.deltaTime;
-			}
-		}
-
-		public override void ServerUpdateSelected(MicroHidPhase status)
-		{
-			base.ServerUpdateSelected(status);
-			if (status != MicroHidPhase.Firing)
-			{
-				return;
-			}
-			base.ServerRequestBacktrack(new Action(this.ServerFire));
-		}
-
-		private void ServerFire()
-		{
-			ReferenceHub owner = base.Item.Owner;
-			int num;
-			HitregUtils.Raycast(owner.PlayerCameraReference, 0.2f, this.FiringRange, out num);
-			HitboxIdentity hitboxIdentity = null;
-			float num2 = float.MaxValue;
-			foreach (IDestructible destructible in HitregUtils.DetectedDestructibles)
-			{
-				HitboxIdentity hitboxIdentity2 = destructible as HitboxIdentity;
-				if (hitboxIdentity2 == null)
+				float num2 = target.SqrDistanceTo(owner);
+				if (!(num2 > num))
 				{
-					destructible.ServerDealDamage(this, this.FrameDamage);
-				}
-				else if (!(hitboxIdentity2.TargetHub == owner))
-				{
-					IFpcRole fpcRole = hitboxIdentity2.TargetHub.roleManager.CurrentRole as IFpcRole;
-					if (fpcRole != null)
-					{
-						float num3 = fpcRole.SqrDistanceTo(owner);
-						if (num3 <= num2)
-						{
-							hitboxIdentity = hitboxIdentity2;
-							num2 = num3;
-						}
-					}
+					hitboxIdentity = hitboxIdentity2;
+					num = num2;
 				}
 			}
-			if (hitboxIdentity != null)
-			{
-				hitboxIdentity.ServerDealDamage(this, this.FrameDamage);
-			}
 		}
-
-		private const float RaycastThickness = 0.2f;
-
-		private const float DamagePerSec = 400f;
+		if (hitboxIdentity != null)
+		{
+			hitboxIdentity.ServerDealDamage(this, FrameDamage);
+		}
 	}
 }

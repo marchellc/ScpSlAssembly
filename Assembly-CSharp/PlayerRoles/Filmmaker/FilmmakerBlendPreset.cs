@@ -1,12 +1,9 @@
-﻿using System;
+namespace PlayerRoles.Filmmaker;
 
-namespace PlayerRoles.Filmmaker
+public enum FilmmakerBlendPreset
 {
-	public enum FilmmakerBlendPreset
-	{
-		Linear,
-		Smooth,
-		FetchNext,
-		Hold
-	}
+	Linear,
+	Smooth,
+	FetchNext,
+	Hold
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using CustomPlayerEffects;
 using Footprinting;
@@ -8,278 +8,289 @@ using Mirror.RemoteCalls;
 using RoundRestarting;
 using UnityEngine;
 
-namespace InventorySystem.Items.Pickups
+namespace InventorySystem.Items.Pickups;
+
+[RequireComponent(typeof(Rigidbody))]
+public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, ISearchable
 {
-	[RequireComponent(typeof(Rigidbody))]
-	public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider
+	private const float MinimalPickupTime = 0.245f;
+
+	private const float WeightToTime = 0.175f;
+
+	[SyncVar(hook = "InfoReceivedHook")]
+	public PickupSyncInfo Info = PickupSyncInfo.None;
+
+	public SyncList<byte> PhysicsModuleSyncData = new SyncList<byte>();
+
+	public Footprint PreviousOwner;
+
+	private Transform _transform;
+
+	private bool _transformCacheSet;
+
+	private bool _wasServer;
+
+	protected virtual PickupPhysicsModule DefaultPhysicsModule => new PickupStandardPhysics(this);
+
+	public PickupPhysicsModule PhysicsModule { get; protected set; }
+
+	public ItemIdentifier ItemId => new ItemIdentifier(Info.ItemId, Info.Serial);
+
+	public bool CanSearch
 	{
-		public static event Action<ItemPickupBase> OnPickupAdded;
-
-		public static event Action<ItemPickupBase> OnPickupDestroyed;
-
-		public static event Action<ItemPickupBase> OnBeforePickupDestroyed;
-
-		public event Action OnInfoChanged;
-
-		public event Action<PickupSyncInfo, PickupSyncInfo> OnInfoChangedPrevNew;
-
-		protected virtual PickupPhysicsModule DefaultPhysicsModule
+		get
 		{
-			get
+			if (!Info.Locked)
 			{
-				return new PickupStandardPhysics(this, PickupStandardPhysics.FreezingMode.Default);
+				return !Info.InUse;
+			}
+			return false;
+		}
+	}
+
+	public Vector3 Position
+	{
+		get
+		{
+			return CachedTransform.position;
+		}
+		set
+		{
+			CachedTransform.position = value;
+		}
+	}
+
+	public Quaternion Rotation
+	{
+		get
+		{
+			return CachedTransform.rotation;
+		}
+		set
+		{
+			CachedTransform.rotation = value;
+		}
+	}
+
+	private Transform CachedTransform
+	{
+		get
+		{
+			if (!_transformCacheSet)
+			{
+				_transformCacheSet = true;
+				_transform = base.transform;
+			}
+			return _transform;
+		}
+	}
+
+	public PickupSyncInfo NetworkInfo
+	{
+		get
+		{
+			return Info;
+		}
+		[param: In]
+		set
+		{
+			GeneratedSyncVarSetter(value, ref Info, 1uL, InfoReceivedHook);
+		}
+	}
+
+	public static event Action<ItemPickupBase> OnPickupAdded;
+
+	public static event Action<ItemPickupBase> OnPickupDestroyed;
+
+	public static event Action<ItemPickupBase> OnBeforePickupDestroyed;
+
+	public event Action OnInfoChanged;
+
+	public event Action<PickupSyncInfo, PickupSyncInfo> OnInfoChangedPrevNew;
+
+	private void InfoReceivedHook(PickupSyncInfo oldInfo, PickupSyncInfo newInfo)
+	{
+		this.OnInfoChanged?.Invoke();
+		this.OnInfoChangedPrevNew?.Invoke(oldInfo, newInfo);
+	}
+
+	public virtual float SearchTimeForPlayer(ReferenceHub hub)
+	{
+		float num = 0.245f + 0.175f * Info.WeightKg;
+		StatusEffectBase[] allEffects = hub.playerEffectsController.AllEffects;
+		foreach (StatusEffectBase statusEffectBase in allEffects)
+		{
+			if (statusEffectBase.IsEnabled && statusEffectBase is ISearchTimeModifier searchTimeModifier)
+			{
+				num = searchTimeModifier.ProcessSearchTime(num);
 			}
 		}
-
-		public PickupPhysicsModule PhysicsModule { get; protected set; }
-
-		public ItemIdentifier ItemId
+		if (hub.inventory.CurInstance is ISearchTimeModifier searchTimeModifier2 && searchTimeModifier2 != null)
 		{
-			get
-			{
-				return new ItemIdentifier(this.Info.ItemId, this.Info.Serial);
-			}
+			num = searchTimeModifier2.ProcessSearchTime(num);
 		}
+		return num;
+	}
 
-		public Vector3 Position
+	public ISearchCompletor GetSearchCompletor(SearchCoordinator coordinator, float sqrDistance)
+	{
+		return GetPickupSearchCompletor(coordinator, sqrDistance);
+	}
+
+	public virtual PickupSearchCompletor GetPickupSearchCompletor(SearchCoordinator coordinator, float sqrDistance)
+	{
+		if (!InventoryItemLoader.TryGetItem<ItemBase>(Info.ItemId, out var result))
 		{
-			get
-			{
-				return this.CachedTransform.position;
-			}
-			set
-			{
-				this.CachedTransform.position = value;
-			}
+			return null;
 		}
+		return new ItemSearchCompletor(coordinator.Hub, this, result, sqrDistance);
+	}
 
-		public Quaternion Rotation
+	public bool ServerValidateRequest(NetworkConnection source, SearchSessionPipe session)
+	{
+		if (Info.Locked)
 		{
-			get
-			{
-				return this.CachedTransform.rotation;
-			}
-			set
-			{
-				this.CachedTransform.rotation = value;
-			}
+			session.Invalidate();
+			source?.identity.GetComponent<GameConsoleTransmission>().SendToClient("Pickup request rejected - target is locked.", "red");
+			return false;
 		}
-
-		private Transform CachedTransform
+		if (Info.InUse)
 		{
-			get
-			{
-				if (!this._transformCacheSet)
-				{
-					this._transformCacheSet = true;
-					this._transform = base.transform;
-				}
-				return this._transform;
-			}
+			session.Invalidate();
+			source?.identity.GetComponent<GameConsoleTransmission>().SendToClient("Pickup request rejected - target is in use.", "red");
+			return false;
 		}
+		PickupSyncInfo info = Info;
+		info.InUse = true;
+		NetworkInfo = info;
+		return true;
+	}
 
-		private void InfoReceivedHook(PickupSyncInfo oldInfo, PickupSyncInfo newInfo)
+	public void ServerHandleAbort(ReferenceHub hub)
+	{
+		PickupSyncInfo info = Info;
+		info.InUse = false;
+		NetworkInfo = info;
+	}
+
+	[Server]
+	public void DestroySelf()
+	{
+		if (!NetworkServer.active)
 		{
-			Action onInfoChanged = this.OnInfoChanged;
-			if (onInfoChanged != null)
-			{
-				onInfoChanged();
-			}
-			Action<PickupSyncInfo, PickupSyncInfo> onInfoChangedPrevNew = this.OnInfoChangedPrevNew;
-			if (onInfoChangedPrevNew == null)
-			{
-				return;
-			}
-			onInfoChangedPrevNew(oldInfo, newInfo);
+			Debug.LogWarning("[Server] function 'System.Void InventorySystem.Items.Pickups.ItemPickupBase::DestroySelf()' called when server was not active");
 		}
-
-		public virtual float SearchTimeForPlayer(ReferenceHub hub)
+		else
 		{
-			float num = 0.245f + 0.175f * this.Info.WeightKg;
-			foreach (StatusEffectBase statusEffectBase in hub.playerEffectsController.AllEffects)
-			{
-				if (statusEffectBase.IsEnabled)
-				{
-					ISearchTimeModifier searchTimeModifier = statusEffectBase as ISearchTimeModifier;
-					if (searchTimeModifier != null)
-					{
-						num = searchTimeModifier.ProcessSearchTime(num);
-					}
-				}
-			}
-			ISearchTimeModifier searchTimeModifier2 = hub.inventory.CurInstance as ISearchTimeModifier;
-			if (searchTimeModifier2 != null && searchTimeModifier2 != null)
-			{
-				num = searchTimeModifier2.ProcessSearchTime(num);
-			}
-			return num;
-		}
-
-		[Server]
-		public void DestroySelf()
-		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void InventorySystem.Items.Pickups.ItemPickupBase::DestroySelf()' called when server was not active");
-				return;
-			}
 			NetworkServer.Destroy(base.gameObject);
 		}
+	}
 
-		public override void OnStopClient()
+	[ClientRpc]
+	internal virtual void SendPhysicsModuleRpc(ArraySegment<byte> arrSeg)
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		writer.WriteArraySegmentAndSize(arrSeg);
+		SendRPCInternal("System.Void InventorySystem.Items.Pickups.ItemPickupBase::SendPhysicsModuleRpc(System.ArraySegment`1<System.Byte>)", 254399230, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
+	}
+
+	protected virtual void Awake()
+	{
+		PhysicsModule = DefaultPhysicsModule;
+	}
+
+	protected virtual void Start()
+	{
+		ItemPickupBase.OnPickupAdded?.Invoke(this);
+		if (NetworkServer.active)
 		{
-			base.OnStopClient();
-			Action<ItemPickupBase> onBeforePickupDestroyed = ItemPickupBase.OnBeforePickupDestroyed;
-			if (onBeforePickupDestroyed == null)
-			{
-				return;
-			}
-			onBeforePickupDestroyed(this);
+			_wasServer = true;
+			RoundRestart.OnRestartTriggered += DestroySelf;
 		}
+	}
 
-		[ClientRpc]
-		internal virtual void SendPhysicsModuleRpc(ArraySegment<byte> arrSeg)
+	protected virtual void OnDestroy()
+	{
+		PhysicsModule?.DestroyModule();
+		ItemPickupBase.OnPickupDestroyed?.Invoke(this);
+		if (_wasServer)
 		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			networkWriterPooled.WriteArraySegmentAndSize(arrSeg);
-			this.SendRPCInternal("System.Void InventorySystem.Items.Pickups.ItemPickupBase::SendPhysicsModuleRpc(System.ArraySegment`1<System.Byte>)", 254399230, networkWriterPooled, 0, true);
-			NetworkWriterPool.Return(networkWriterPooled);
+			RoundRestart.OnRestartTriggered -= DestroySelf;
 		}
+	}
 
-		protected virtual void Awake()
+	public override void OnStopClient()
+	{
+		base.OnStopClient();
+		ItemPickupBase.OnBeforePickupDestroyed?.Invoke(this);
+	}
+
+	protected ItemPickupBase()
+	{
+		InitSyncObject(PhysicsModuleSyncData);
+	}
+
+	NetworkIdentity ISearchable.get_netIdentity()
+	{
+		return base.netIdentity;
+	}
+
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	protected virtual void UserCode_SendPhysicsModuleRpc__ArraySegment_00601(ArraySegment<byte> arrSeg)
+	{
+		using NetworkReaderPooled rpcData = NetworkReaderPool.Get(arrSeg);
+		PhysicsModule?.ClientProcessRpc(rpcData);
+	}
+
+	protected static void InvokeUserCode_SendPhysicsModuleRpc__ArraySegment_00601(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
 		{
-			this.PhysicsModule = this.DefaultPhysicsModule;
+			Debug.LogError("RPC SendPhysicsModuleRpc called on server.");
 		}
-
-		protected virtual void Start()
+		else
 		{
-			Action<ItemPickupBase> onPickupAdded = ItemPickupBase.OnPickupAdded;
-			if (onPickupAdded != null)
-			{
-				onPickupAdded(this);
-			}
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this._wasServer = true;
-			RoundRestart.OnRestartTriggered += this.DestroySelf;
+			((ItemPickupBase)obj).UserCode_SendPhysicsModuleRpc__ArraySegment_00601(reader.ReadArraySegmentAndSize());
 		}
+	}
 
-		protected virtual void OnDestroy()
+	static ItemPickupBase()
+	{
+		RemoteProcedureCalls.RegisterRpc(typeof(ItemPickupBase), "System.Void InventorySystem.Items.Pickups.ItemPickupBase::SendPhysicsModuleRpc(System.ArraySegment`1<System.Byte>)", InvokeUserCode_SendPhysicsModuleRpc__ArraySegment_00601);
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			PickupPhysicsModule physicsModule = this.PhysicsModule;
-			if (physicsModule != null)
-			{
-				physicsModule.DestroyModule();
-			}
-			Action<ItemPickupBase> onPickupDestroyed = ItemPickupBase.OnPickupDestroyed;
-			if (onPickupDestroyed != null)
-			{
-				onPickupDestroyed(this);
-			}
-			if (!this._wasServer)
-			{
-				return;
-			}
-			RoundRestart.OnRestartTriggered -= this.DestroySelf;
+			writer.WritePickupSyncInfo(Info);
+			return;
 		}
-
-		protected ItemPickupBase()
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			base.InitSyncObject(this.PhysicsModuleSyncData);
+			writer.WritePickupSyncInfo(Info);
 		}
+	}
 
-		public override bool Weaved()
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
 		{
-			return true;
+			GeneratedSyncVarDeserialize(ref Info, InfoReceivedHook, reader.ReadPickupSyncInfo());
+			return;
 		}
-
-		public PickupSyncInfo NetworkInfo
+		long num = (long)reader.ReadULong();
+		if ((num & 1L) != 0L)
 		{
-			get
-			{
-				return this.Info;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<PickupSyncInfo>(value, ref this.Info, 1UL, new Action<PickupSyncInfo, PickupSyncInfo>(this.InfoReceivedHook));
-			}
+			GeneratedSyncVarDeserialize(ref Info, InfoReceivedHook, reader.ReadPickupSyncInfo());
 		}
-
-		protected virtual void UserCode_SendPhysicsModuleRpc__ArraySegment`1(ArraySegment<byte> arrSeg)
-		{
-			using (NetworkReaderPooled networkReaderPooled = NetworkReaderPool.Get(arrSeg))
-			{
-				PickupPhysicsModule physicsModule = this.PhysicsModule;
-				if (physicsModule != null)
-				{
-					physicsModule.ClientProcessRpc(networkReaderPooled);
-				}
-			}
-		}
-
-		protected static void InvokeUserCode_SendPhysicsModuleRpc__ArraySegment`1(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
-		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogError("RPC SendPhysicsModuleRpc called on server.");
-				return;
-			}
-			((ItemPickupBase)obj).UserCode_SendPhysicsModuleRpc__ArraySegment`1(reader.ReadArraySegmentAndSize());
-		}
-
-		static ItemPickupBase()
-		{
-			RemoteProcedureCalls.RegisterRpc(typeof(ItemPickupBase), "System.Void InventorySystem.Items.Pickups.ItemPickupBase::SendPhysicsModuleRpc(System.ArraySegment`1<System.Byte>)", new RemoteCallDelegate(ItemPickupBase.InvokeUserCode_SendPhysicsModuleRpc__ArraySegment`1));
-		}
-
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
-		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WritePickupSyncInfo(this.Info);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 1UL) != 0UL)
-			{
-				writer.WritePickupSyncInfo(this.Info);
-			}
-		}
-
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
-		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<PickupSyncInfo>(ref this.Info, new Action<PickupSyncInfo, PickupSyncInfo>(this.InfoReceivedHook), reader.ReadPickupSyncInfo());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 1L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<PickupSyncInfo>(ref this.Info, new Action<PickupSyncInfo, PickupSyncInfo>(this.InfoReceivedHook), reader.ReadPickupSyncInfo());
-			}
-		}
-
-		private const float MinimalPickupTime = 0.245f;
-
-		private const float WeightToTime = 0.175f;
-
-		[SyncVar(hook = "InfoReceivedHook")]
-		public PickupSyncInfo Info = PickupSyncInfo.None;
-
-		public SyncList<byte> PhysicsModuleSyncData = new SyncList<byte>();
-
-		public Footprint PreviousOwner;
-
-		private Transform _transform;
-
-		private bool _transformCacheSet;
-
-		private bool _wasServer;
 	}
 }

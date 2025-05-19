@@ -1,11 +1,8 @@
-﻿using System;
+namespace PlayerRoles.PlayableScps.Scp079.GUI;
 
-namespace PlayerRoles.PlayableScps.Scp079.GUI
+public interface IScp079FailMessageProvider
 {
-	public interface IScp079FailMessageProvider
-	{
-		string FailMessage { get; }
+	string FailMessage { get; }
 
-		void OnFailMessageAssigned();
-	}
+	void OnFailMessageAssigned();
 }

@@ -1,27 +1,31 @@
-﻿using System;
+using System;
 using Decals;
 using UnityEngine;
 
-namespace PlayerRoles.Blood
+namespace PlayerRoles.Blood;
+
+[Serializable]
+public class BloodSettings
 {
-	[Serializable]
-	public class BloodSettings
+	[field: SerializeField]
+	public DecalPoolType Decal { get; private set; }
+
+	[field: Range(0f, 1f)]
+	[field: SerializeField]
+	public float DecalSpawnChance { get; private set; }
+
+	public bool RandomDecalValidate => GetRandom(DecalSpawnChance);
+
+	private bool GetRandom(float chance)
 	{
-		public DecalPoolType Decal { get; private set; }
-
-		public float DecalSpawnChance { get; private set; }
-
-		public bool RandomDecalValidate
+		if (chance <= 0f)
 		{
-			get
-			{
-				return this.GetRandom(this.DecalSpawnChance);
-			}
+			return false;
 		}
-
-		private bool GetRandom(float chance)
+		if (chance >= 1f)
 		{
-			return chance > 0f && (chance >= 1f || global::UnityEngine.Random.value <= chance);
+			return true;
 		}
+		return UnityEngine.Random.value <= chance;
 	}
 }

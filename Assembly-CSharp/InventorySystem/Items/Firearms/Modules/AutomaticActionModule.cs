@@ -1,7 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using InventorySystem.Items.Autosync;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Modules.Misc;
@@ -11,757 +10,755 @@ using LabApi.Events.Handlers;
 using Mirror;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class AutomaticActionModule : ModuleBase, IActionModule, IAmmoContainerModule, IBusyIndicatorModule, IDisplayableAmmoProviderModule, IInspectPreventerModule
 {
-	public class AutomaticActionModule : ModuleBase, IActionModule, IAmmoContainerModule, IBusyIndicatorModule, IDisplayableAmmoProviderModule, IInspectPreventerModule
+	private enum MessageHeader
 	{
-		public float BaseFireRate { get; private set; }
+		CmdShoot,
+		RpcPublicSync,
+		RpcResponse,
+		RpcFire,
+		RpcDryFire,
+		RpcNewPlayerSync,
+		RpcRejectionReason
+	}
 
-		public float BoltTravelTime { get; private set; }
+	[Flags]
+	private enum SyncDataFlags : byte
+	{
+		None = 0,
+		AmmoChamberedBit0 = 1,
+		AmmoChamberedBit1 = 2,
+		AmmoChamberedBit2 = 4,
+		AmmoChamberedBit3 = 8,
+		Cocked = 0x10,
+		BoltLocked = 0x20,
+		AmmoChamberedFilter = 0xF
+	}
 
-		public bool MagLocksBolt { get; private set; }
+	private readonly struct ShotRequest
+	{
+		public readonly int PredictedReserve;
 
-		public bool OpenBolt { get; private set; }
+		public readonly byte CorrectionVersion;
 
-		public int ChamberSize { get; private set; }
+		public readonly ShotBacktrackData BacktrackData;
 
-		public static event Action<ushort> OnSyncDataReceived;
-
-		public bool Cocked
+		public ShotRequest(AutomaticActionModule mod)
 		{
-			get
-			{
-				if (!base.IsServer)
-				{
-					return this.SyncCocked;
-				}
-				return this._serverCocked;
-			}
-			private set
-			{
-				this._serverCocked = value;
-			}
+			PredictedReserve = mod._clientAmmo.Value;
+			CorrectionVersion = mod._clientCorrectionVersion;
+			BacktrackData = new ShotBacktrackData(mod.Firearm);
 		}
 
-		public bool BoltLocked
+		public ShotRequest(NetworkReader reader)
 		{
-			get
-			{
-				if (!base.IsServer)
-				{
-					return this.SyncBoltLocked;
-				}
-				return this._serverBoltLocked;
-			}
-			private set
-			{
-				this._serverBoltLocked = value;
-			}
+			PredictedReserve = reader.ReadByte();
+			CorrectionVersion = reader.ReadByte();
+			BacktrackData = new ShotBacktrackData(reader);
 		}
 
-		public int AmmoStored
+		public void Write(NetworkWriter writer)
 		{
-			get
-			{
-				if (!base.IsServer)
-				{
-					return this.SyncAmmoChambered;
-				}
-				return this._serverChambered;
-			}
-			private set
-			{
-				this._serverChambered = value;
-			}
+			writer.WriteSubheader(MessageHeader.CmdShoot);
+			writer.WriteByte((byte)PredictedReserve);
+			writer.WriteByte(CorrectionVersion);
+			writer.WriteBacktrackData(BacktrackData);
 		}
+	}
 
-		public bool IsBusy
-		{
-			get
-			{
-				return !this._serverQueuedRequests.Idle || !this._clientRateLimiter.Ready;
-			}
-		}
+	[Serializable]
+	private struct GunshotDefinition
+	{
+		public AudioClip[] RandomSounds;
 
-		public float DisplayCyclicRate
-		{
-			get
-			{
-				return this.BaseFireRate * base.Firearm.AttachmentsValue(AttachmentParam.FireRateMultiplier);
-			}
-		}
+		[Tooltip("Value provided in ShotClipIdOverride. Zero if no attachments.")]
+		public int ClipId;
 
-		public int AmmoMax
-		{
-			get
-			{
-				return this.AmmoStored;
-			}
-		}
+		[Tooltip("This gunshot sound will only be used if number of chambers fired is greater or equal to this amount.")]
+		[Range(1f, 16f)]
+		public int MinChamberedRounds;
 
-		public DisplayAmmoValues PredictedDisplayAmmo
-		{
-			get
-			{
-				return new DisplayAmmoValues(this._clientAmmo.Value, this._clientChambered.Value);
-			}
-		}
+		[Tooltip("This gunshot sound will only be used if number of chambers fired is less or equal to this amount.")]
+		[Range(1f, 16f)]
+		public int MaxChamberedRounds;
+	}
 
-		public bool InspectionAllowed
-		{
-			get
-			{
-				return !this.IsBusy || (this._clientChambered.Value == 0 && this._clientAmmo.Value == 0);
-			}
-		}
+	private enum RejectionReason
+	{
+		TimedOut = 1,
+		ModuleBusy,
+		NotCocked,
+		BoltLocked
+	}
 
-		public bool IsLoaded
-		{
-			get
-			{
-				if (!this.OpenBolt)
-				{
-					return this.AmmoStored > 0;
-				}
-				return this.PrimaryAmmoContainer.AmmoStored > 0;
-			}
-		}
+	private static readonly Dictionary<ushort, SyncDataFlags> ReceivedFlags = new Dictionary<ushort, SyncDataFlags>();
 
-		private float TimeBetweenShots
-		{
-			get
-			{
-				return 1f / this.DisplayCyclicRate;
-			}
-		}
+	private const int MaxChambers = 16;
 
-		private float CurTime
-		{
-			get
-			{
-				return (float)this._totalTimeStopwatch.Elapsed.TotalSeconds;
-			}
-		}
+	private readonly Stopwatch _totalTimeStopwatch = Stopwatch.StartNew();
 
-		private AutomaticActionModule.SyncDataFlags CurSyncFlags
-		{
-			get
-			{
-				AutomaticActionModule.SyncDataFlags syncDataFlags;
-				if (!AutomaticActionModule.ReceivedFlags.TryGetValue(base.ItemSerial, out syncDataFlags))
-				{
-					return AutomaticActionModule.SyncDataFlags.None;
-				}
-				return syncDataFlags;
-			}
-		}
+	private readonly FullAutoShotsQueue<ShotRequest> _serverQueuedRequests = new FullAutoShotsQueue<ShotRequest>((ShotRequest x) => x.BacktrackData);
 
-		private int SyncAmmoChambered
-		{
-			get
-			{
-				return (int)(this.CurSyncFlags & AutomaticActionModule.SyncDataFlags.AmmoChamberedFilter);
-			}
-		}
+	private readonly Queue<float> _clientQueuedShots = new Queue<float>();
 
-		private bool SyncBoltLocked
-		{
-			get
-			{
-				return (this.CurSyncFlags & AutomaticActionModule.SyncDataFlags.BoltLocked) > AutomaticActionModule.SyncDataFlags.None;
-			}
-		}
+	private readonly FullAutoRateLimiter _clientRateLimiter = new FullAutoRateLimiter();
 
-		private bool SyncCocked
-		{
-			get
-			{
-				return (this.CurSyncFlags & AutomaticActionModule.SyncDataFlags.Cocked) > AutomaticActionModule.SyncDataFlags.None;
-			}
-		}
+	private ClientPredictedValue<int> _clientChambered;
 
-		private bool MagInserted
-		{
-			get
-			{
-				IMagazineControllerModule magazineControllerModule;
-				return !base.Firearm.TryGetModule(out magazineControllerModule, true) || magazineControllerModule.MagazineInserted;
-			}
-		}
+	private ClientPredictedValue<int> _clientAmmo;
 
-		private IPrimaryAmmoContainerModule PrimaryAmmoContainer
-		{
-			get
-			{
-				IPrimaryAmmoContainerModule primaryAmmoContainerModule;
-				if (!base.Firearm.TryGetModule(out primaryAmmoContainerModule, true))
-				{
-					throw new InvalidOperationException("Automatic weapons must have a designated primary ammo container.");
-				}
-				return primaryAmmoContainerModule;
-			}
-		}
+	private ClientPredictedValue<bool> _clientCocked;
 
-		public static void DecodeSyncFlags(ushort serial, out int ammoChambered, out bool boltLocked, out bool cocked)
-		{
-			AutomaticActionModule.SyncDataFlags syncDataFlags;
-			if (!AutomaticActionModule.ReceivedFlags.TryGetValue(serial, out syncDataFlags))
-			{
-				syncDataFlags = AutomaticActionModule.SyncDataFlags.None;
-			}
-			ammoChambered = (int)(syncDataFlags & AutomaticActionModule.SyncDataFlags.AmmoChamberedFilter);
-			boltLocked = (syncDataFlags & AutomaticActionModule.SyncDataFlags.BoltLocked) > AutomaticActionModule.SyncDataFlags.None;
-			cocked = (syncDataFlags & AutomaticActionModule.SyncDataFlags.Cocked) > AutomaticActionModule.SyncDataFlags.None;
-		}
+	private ClientPredictedValue<bool> _clientBoltLock;
 
-		[ExposedFirearmEvent]
-		public void ServerCycleAction()
+	private byte _clientCorrectionVersion;
+
+	private int _serverChambered;
+
+	private bool _serverCocked;
+
+	private bool _serverBoltLocked;
+
+	[SerializeField]
+	private GunshotDefinition[] _gunshotSounds;
+
+	[SerializeField]
+	private AudioClip _dryfireSound;
+
+	[SerializeField]
+	private AnimatorConditionalOverride _boltLockOverrideLayers;
+
+	[field: SerializeField]
+	public virtual float BaseFireRate { get; private set; }
+
+	[field: SerializeField]
+	public float BoltTravelTime { get; private set; }
+
+	[field: SerializeField]
+	public bool MagLocksBolt { get; private set; }
+
+	[field: SerializeField]
+	public bool OpenBolt { get; private set; }
+
+	[field: SerializeField]
+	[field: Range(1f, 16f)]
+	public int ChamberSize { get; private set; }
+
+	public bool Cocked
+	{
+		get
 		{
 			if (!base.IsServer)
 			{
-				return;
+				return SyncCocked;
 			}
-			this.Cocked = true;
-			if (!this.OpenBolt)
+			return _serverCocked;
+		}
+		private set
+		{
+			_serverCocked = value;
+		}
+	}
+
+	public bool BoltLocked
+	{
+		get
+		{
+			if (!base.IsServer)
 			{
-				int num = Mathf.Min(this.PrimaryAmmoContainer.AmmoStored, this.ChamberSize - this.AmmoStored);
-				this.AmmoStored += num;
-				this.PrimaryAmmoContainer.ServerModifyAmmo(-num);
-				this.BoltLocked = this.AmmoStored == 0 && this.MagLocksBolt && this.MagInserted;
+				return SyncBoltLocked;
 			}
-			this.ServerResync();
+			return _serverBoltLocked;
 		}
-
-		[ExposedFirearmEvent]
-		public void ServerUnloadChambered()
+		private set
 		{
-			IPrimaryAmmoContainerModule primaryAmmoContainerModule;
-			if (!base.IsServer || !base.Firearm.TryGetModule(out primaryAmmoContainerModule, true))
+			_serverBoltLocked = value;
+		}
+	}
+
+	public int AmmoStored
+	{
+		get
+		{
+			if (!base.IsServer)
 			{
-				return;
+				return SyncAmmoChambered;
 			}
-			base.Firearm.OwnerInventory.ServerAddAmmo(primaryAmmoContainerModule.AmmoType, this.AmmoStored);
-			this.AmmoStored = 0;
-			this.ServerResync();
+			return _serverChambered;
 		}
-
-		public void ServerLockBolt()
+		private set
 		{
-			this.BoltLocked = true;
-			this.ServerResync();
+			_serverChambered = value;
 		}
+	}
 
-		public override void ServerProcessCmd(NetworkReader reader)
+	public bool IsBusy
+	{
+		get
 		{
-			base.ServerProcessCmd(reader);
-			if (reader.ReadByte() == 0)
+			if (_serverQueuedRequests.Idle)
 			{
-				this._serverQueuedRequests.Enqueue(new AutomaticActionModule.ShotRequest(reader));
+				return !_clientRateLimiter.Ready;
 			}
+			return true;
 		}
+	}
 
-		public override void ClientProcessRpcInstance(NetworkReader reader)
+	public float DisplayCyclicRate => BaseFireRate * base.Firearm.AttachmentsValue(AttachmentParam.FireRateMultiplier);
+
+	public int AmmoMax => AmmoStored;
+
+	public DisplayAmmoValues PredictedDisplayAmmo => new DisplayAmmoValues(_clientAmmo.Value, _clientChambered.Value);
+
+	public bool InspectionAllowed
+	{
+		get
 		{
-			base.ClientProcessRpcInstance(reader);
-			switch (reader.ReadByte())
+			if (IsBusy)
 			{
-			case 2:
-				this._clientCocked.Value &= reader.ReadBool();
-				this._clientAmmo.Value -= (int)reader.ReadShort();
-				return;
-			case 3:
-				if (base.IsSpectator)
+				if (_clientChambered.Value == 0)
 				{
-					this.PlayFireAnims(false);
-					return;
+					return _clientAmmo.Value == 0;
 				}
-				break;
-			case 4:
-				if (base.IsSpectator)
-				{
-					this.PlayFireAnims(true);
-				}
-				break;
-			default:
-				return;
+				return false;
+			}
+			return true;
+		}
+	}
+
+	public bool IsLoaded
+	{
+		get
+		{
+			if (!OpenBolt)
+			{
+				return AmmoStored > 0;
+			}
+			return PrimaryAmmoContainer.AmmoStored > 0;
+		}
+	}
+
+	private float TimeBetweenShots => 1f / DisplayCyclicRate;
+
+	private float CurTime => (float)_totalTimeStopwatch.Elapsed.TotalSeconds;
+
+	private SyncDataFlags CurSyncFlags
+	{
+		get
+		{
+			if (!ReceivedFlags.TryGetValue(base.ItemSerial, out var value))
+			{
+				return SyncDataFlags.None;
+			}
+			return value;
+		}
+	}
+
+	private int SyncAmmoChambered => (int)(CurSyncFlags & SyncDataFlags.AmmoChamberedFilter);
+
+	private bool SyncBoltLocked => (CurSyncFlags & SyncDataFlags.BoltLocked) != 0;
+
+	private bool SyncCocked => (CurSyncFlags & SyncDataFlags.Cocked) != 0;
+
+	private bool MagInserted
+	{
+		get
+		{
+			if (base.Firearm.TryGetModule<IMagazineControllerModule>(out var module))
+			{
+				return module.MagazineInserted;
+			}
+			return true;
+		}
+	}
+
+	private IPrimaryAmmoContainerModule PrimaryAmmoContainer
+	{
+		get
+		{
+			if (!base.Firearm.TryGetModule<IPrimaryAmmoContainerModule>(out var module))
+			{
+				throw new InvalidOperationException("Automatic weapons must have a designated primary ammo container.");
+			}
+			return module;
+		}
+	}
+
+	public static event Action<ushort> OnSyncDataReceived;
+
+	public static void DecodeSyncFlags(ushort serial, out int ammoChambered, out bool boltLocked, out bool cocked)
+	{
+		if (!ReceivedFlags.TryGetValue(serial, out var value))
+		{
+			value = SyncDataFlags.None;
+		}
+		ammoChambered = (int)(value & SyncDataFlags.AmmoChamberedFilter);
+		boltLocked = (value & SyncDataFlags.BoltLocked) != 0;
+		cocked = (value & SyncDataFlags.Cocked) != 0;
+	}
+
+	[ExposedFirearmEvent]
+	public void ServerCycleAction()
+	{
+		if (base.IsServer)
+		{
+			Cocked = true;
+			if (!OpenBolt)
+			{
+				int num = Mathf.Min(PrimaryAmmoContainer.AmmoStored, ChamberSize - AmmoStored);
+				AmmoStored += num;
+				PrimaryAmmoContainer.ServerModifyAmmo(-num);
+				BoltLocked = AmmoStored == 0 && MagLocksBolt && MagInserted;
+			}
+			ServerResync();
+		}
+	}
+
+	[ExposedFirearmEvent]
+	public void ServerUnloadChambered()
+	{
+		if (base.IsServer && base.Firearm.TryGetModule<IPrimaryAmmoContainerModule>(out var module))
+		{
+			base.Firearm.OwnerInventory.ServerAddAmmo(module.AmmoType, AmmoStored);
+			AmmoStored = 0;
+			ServerResync();
+		}
+	}
+
+	public void ServerLockBolt()
+	{
+		BoltLocked = true;
+		ServerResync();
+	}
+
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		if (reader.ReadByte() == 0)
+		{
+			_serverQueuedRequests.Enqueue(new ShotRequest(reader));
+		}
+	}
+
+	public override void ClientProcessRpcInstance(NetworkReader reader)
+	{
+		base.ClientProcessRpcInstance(reader);
+		switch ((MessageHeader)reader.ReadByte())
+		{
+		case MessageHeader.RpcResponse:
+			ClientApplyResponse(reader);
+			break;
+		case MessageHeader.RpcFire:
+			if (base.IsSpectator)
+			{
+				PlayFireAnims(dryFire: false);
+			}
+			break;
+		case MessageHeader.RpcDryFire:
+			if (base.IsSpectator)
+			{
+				PlayFireAnims(dryFire: true);
+			}
+			break;
+		}
+	}
+
+	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
+	{
+		base.ClientProcessRpcTemplate(reader, serial);
+		switch ((MessageHeader)reader.ReadByte())
+		{
+		case MessageHeader.RpcNewPlayerSync:
+			while (reader.Remaining > 0)
+			{
+				serial = reader.ReadUShort();
+				ReadSyncData();
+			}
+			break;
+		case MessageHeader.RpcPublicSync:
+			ReadSyncData();
+			break;
+		case MessageHeader.RpcFire:
+		{
+			int num = reader.ReadByte();
+			for (int i = 0; i < num; i++)
+			{
+				ShotEventManager.Trigger(new BulletShotEvent(new ItemIdentifier(base.Firearm.ItemTypeId, serial), i));
+			}
+			break;
+		}
+		case MessageHeader.RpcRejectionReason:
+		{
+			byte b = reader.ReadByte();
+			byte b2 = reader.ReadByte();
+			UnityEngine.Debug.Log("Shot has been rejected by server. Error code: " + b + "." + b2);
+			break;
+		}
+		case MessageHeader.RpcResponse:
+		case MessageHeader.RpcDryFire:
+			break;
+		}
+		void ReadSyncData()
+		{
+			if (reader.Remaining == 0)
+			{
+				UnityEngine.Debug.LogError(string.Format("Failed to deserialize {0} of {1} with serial {2}.", "AutomaticActionModule", base.Firearm.ItemTypeId, serial));
+			}
+			else
+			{
+				ReceivedFlags[serial] = (SyncDataFlags)reader.ReadByte();
+				AutomaticActionModule.OnSyncDataReceived?.Invoke(serial);
 			}
 		}
+	}
 
-		public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
-		{
-			AutomaticActionModule.<>c__DisplayClass82_0 CS$<>8__locals1;
-			CS$<>8__locals1.reader = reader;
-			CS$<>8__locals1.<>4__this = this;
-			CS$<>8__locals1.serial = serial;
-			base.ClientProcessRpcTemplate(CS$<>8__locals1.reader, CS$<>8__locals1.serial);
-			switch (CS$<>8__locals1.reader.ReadByte())
-			{
-			case 1:
-				this.<ClientProcessRpcTemplate>g__ReadSyncData|82_0(ref CS$<>8__locals1);
-				return;
-			case 2:
-			case 4:
-				break;
-			case 3:
-			{
-				int num = (int)CS$<>8__locals1.reader.ReadByte();
-				for (int i = 0; i < num; i++)
-				{
-					ShotEventManager.Trigger(new BulletShotEvent(new ItemIdentifier(base.Firearm.ItemTypeId, CS$<>8__locals1.serial), i));
-				}
-				break;
-			}
-			case 5:
-				while (CS$<>8__locals1.reader.Remaining > 0)
-				{
-					CS$<>8__locals1.serial = CS$<>8__locals1.reader.ReadUShort();
-					this.<ClientProcessRpcTemplate>g__ReadSyncData|82_0(ref CS$<>8__locals1);
-				}
-				return;
-			default:
-				return;
-			}
-		}
+	internal override void OnClientReady()
+	{
+		base.OnClientReady();
+		ReceivedFlags.Clear();
+	}
 
-		internal override void OnClientReady()
+	protected override void OnInit()
+	{
+		base.OnInit();
+		_clientChambered = new ClientPredictedValue<int>(() => SyncAmmoChambered);
+		_clientCocked = new ClientPredictedValue<bool>(() => SyncCocked);
+		_clientBoltLock = new ClientPredictedValue<bool>(() => SyncBoltLocked);
+		_clientAmmo = new ClientPredictedValue<int>(() => PrimaryAmmoContainer.AmmoStored);
+		if (base.Firearm.TryGetModule<AudioModule>(out var module))
 		{
-			base.OnClientReady();
-			AutomaticActionModule.ReceivedFlags.Clear();
-		}
-
-		protected override void OnInit()
-		{
-			base.OnInit();
-			this._clientChambered = new ClientPredictedValue<int>(() => this.SyncAmmoChambered);
-			this._clientCocked = new ClientPredictedValue<bool>(() => this.SyncCocked);
-			this._clientBoltLock = new ClientPredictedValue<bool>(() => this.SyncBoltLocked);
-			this._clientAmmo = new ClientPredictedValue<int>(() => this.PrimaryAmmoContainer.AmmoStored);
-			AudioModule audioModule;
-			if (!base.Firearm.TryGetModule(out audioModule, true))
-			{
-				return;
-			}
-			audioModule.RegisterClip(this._dryfireSound);
-			AutomaticActionModule.GunshotDefinition[] gunshotSounds = this._gunshotSounds;
+			module.RegisterClip(_dryfireSound);
+			GunshotDefinition[] gunshotSounds = _gunshotSounds;
 			for (int i = 0; i < gunshotSounds.Length; i++)
 			{
-				gunshotSounds[i].RandomSounds.ForEach(new Action<AudioClip>(audioModule.RegisterClip));
+				gunshotSounds[i].RandomSounds.ForEach(module.RegisterClip);
 			}
 		}
+	}
 
-		internal override void OnAdded()
+	internal override void OnAdded()
+	{
+		base.OnAdded();
+		if (base.IsServer)
 		{
-			base.OnAdded();
-			if (!base.IsServer)
-			{
-				return;
-			}
-			FullAutoShotsQueue<AutomaticActionModule.ShotRequest> serverQueuedRequests = this._serverQueuedRequests;
-			serverQueuedRequests.OnRequestRejected = (Action<AutomaticActionModule.ShotRequest>)Delegate.Combine(serverQueuedRequests.OnRequestRejected, new Action<AutomaticActionModule.ShotRequest>(this.ServerSendResponse));
-			this.BoltLocked = this.SyncBoltLocked;
-			this.Cocked = this.SyncCocked;
-			this.AmmoStored = this.SyncAmmoChambered;
-			this.ServerResync();
+			FullAutoShotsQueue<ShotRequest> serverQueuedRequests = _serverQueuedRequests;
+			serverQueuedRequests.OnRequestTimedOut = (Action<ShotRequest>)Delegate.Combine(serverQueuedRequests.OnRequestTimedOut, new Action<ShotRequest>(ServerOnRequestTimedOut));
+			BoltLocked = SyncBoltLocked;
+			Cocked = SyncCocked;
+			AmmoStored = SyncAmmoChambered;
+			ServerResync();
 		}
+	}
 
-		internal override void OnHolstered()
+	internal override void OnHolstered()
+	{
+		base.OnHolstered();
+		if (base.IsServer && !MagInserted)
 		{
-			base.OnHolstered();
-			if (!base.IsServer)
-			{
-				return;
-			}
-			if (!this.MagInserted)
-			{
-				this.BoltLocked = false;
-				this.ServerResync();
-			}
+			BoltLocked = false;
+			ServerResync();
 		}
+	}
 
-		internal override void EquipUpdate()
+	internal override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		if (base.IsControllable)
 		{
-			base.EquipUpdate();
-			if (base.IsLocalPlayer)
-			{
-				this.ProcessInput();
-				this.ProcessClientShots();
-			}
-			if (base.IsServer)
-			{
-				this.UpdateServer();
-			}
-			base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsCocked, base.IsLocalPlayer ? this._clientCocked.Value : this.Cocked, true);
-			base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsBoltLocked, base.IsLocalPlayer ? this._clientBoltLock.Value : this.BoltLocked, true);
-			base.Firearm.AnimSetInt(FirearmAnimatorHashes.ChamberedAmmo, base.IsLocalPlayer ? this._clientChambered.Value : this.AmmoStored, true);
-			base.Firearm.AnimSetInt(FirearmAnimatorHashes.PredictedActionAmmo, this._clientAmmo.Value, true);
-			this._boltLockOverrideLayers.Update(base.Firearm, this._clientBoltLock.Value || this.BoltLocked);
+			ProcessInput();
+			ProcessClientShots();
 		}
-
-		internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
+		if (base.IsServer)
 		{
-			base.ServerOnPlayerConnected(hub, firstModule);
-			if (!firstModule)
+			UpdateServer();
+		}
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsCocked, base.IsLocalPlayer ? _clientCocked.Value : Cocked, checkIfExists: true);
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsBoltLocked, base.IsLocalPlayer ? _clientBoltLock.Value : BoltLocked, checkIfExists: true);
+		base.Firearm.AnimSetInt(FirearmAnimatorHashes.ChamberedAmmo, base.IsLocalPlayer ? _clientChambered.Value : AmmoStored, checkIfExists: true);
+		base.Firearm.AnimSetInt(FirearmAnimatorHashes.PredictedActionAmmo, _clientAmmo.Value, checkIfExists: true);
+		_boltLockOverrideLayers.Update(base.Firearm, _clientBoltLock.Value || BoltLocked);
+	}
+
+	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
+	{
+		base.ServerOnPlayerConnected(hub, firstModule);
+		if (!firstModule)
+		{
+			return;
+		}
+		SendRpc(hub, delegate(NetworkWriter writer)
+		{
+			writer.WriteSubheader(MessageHeader.RpcNewPlayerSync);
+			foreach (KeyValuePair<ushort, SyncDataFlags> receivedFlag in ReceivedFlags)
 			{
-				return;
-			}
-			this.SendRpc(hub, delegate(NetworkWriter writer)
-			{
-				writer.WriteSubheader(AutomaticActionModule.MessageHeader.RpcNewPlayerSync);
-				foreach (KeyValuePair<ushort, AutomaticActionModule.SyncDataFlags> keyValuePair in AutomaticActionModule.ReceivedFlags)
+				if (receivedFlag.Value != 0)
 				{
-					if (keyValuePair.Value != AutomaticActionModule.SyncDataFlags.None)
-					{
-						writer.WriteUShort(keyValuePair.Key);
-						writer.WriteByte((byte)keyValuePair.Value);
-					}
+					writer.WriteUShort(receivedFlag.Key);
+					writer.WriteByte((byte)receivedFlag.Value);
 				}
+			}
+		});
+	}
+
+	protected virtual void OnTriggerHeld()
+	{
+		if (_clientCocked.Value && _clientRateLimiter.Ready)
+		{
+			_clientRateLimiter.Trigger(TimeBetweenShots);
+			_clientQueuedShots.Enqueue(CurTime + BoltTravelTime);
+		}
+	}
+
+	private void ProcessInput()
+	{
+		_clientRateLimiter.Update();
+		if (base.Firearm.TryGetModule<ITriggerControllerModule>(out var module) && module.TriggerHeld)
+		{
+			OnTriggerHeld();
+		}
+	}
+
+	private void ProcessClientShots()
+	{
+		if (_clientQueuedShots.Count == 0 || _clientQueuedShots.Peek() > CurTime)
+		{
+			return;
+		}
+		_clientQueuedShots.Dequeue();
+		if (!_clientCocked.Value || _clientBoltLock.Value)
+		{
+			return;
+		}
+		int num = Mathf.Min((OpenBolt ? _clientAmmo : _clientChambered).Value, ChamberSize);
+		if (num > 0)
+		{
+			for (int i = 0; i < num; i++)
+			{
+				ShotEventManager.Trigger(new BulletShotEvent(new ItemIdentifier(base.Firearm), i));
+			}
+			if (!NetworkServer.active)
+			{
+				PlayFire(num);
+			}
+			int num2 = Mathf.Min(_clientAmmo.Value, ChamberSize);
+			_clientChambered.Value = ((!OpenBolt) ? num2 : 0);
+			_clientAmmo.Value -= num2;
+			_clientCocked.Value = true;
+			if (num2 == 0 && MagLocksBolt && MagInserted)
+			{
+				_clientBoltLock.Value = true;
+			}
+		}
+		else
+		{
+			PlayDryFire();
+			_clientCocked.Value = false;
+		}
+		ShotRequest shotRequest = new ShotRequest(this);
+		SendCmd(((ShotRequest)shotRequest).Write);
+	}
+
+	private void UpdateServer()
+	{
+		_serverQueuedRequests.Update();
+		if (!_serverQueuedRequests.TryDequeue(out var dequeued))
+		{
+			return;
+		}
+		if (!Cocked)
+		{
+			ServerSendRejection(RejectionReason.NotCocked, 0);
+			return;
+		}
+		if (BoltLocked)
+		{
+			ServerSendRejection(RejectionReason.BoltLocked, 0);
+			return;
+		}
+		ModuleBase[] modules = base.Firearm.Modules;
+		foreach (ModuleBase moduleBase in modules)
+		{
+			if (moduleBase is IBusyIndicatorModule { IsBusy: not false } && !(moduleBase == this))
+			{
+				ServerSendRejection(RejectionReason.ModuleBusy, moduleBase.SyncId);
+				return;
+			}
+		}
+		if (AmmoStored > 0 || (OpenBolt && PrimaryAmmoContainer.AmmoStored > 0))
+		{
+			PlayerShootingWeaponEventArgs playerShootingWeaponEventArgs = new PlayerShootingWeaponEventArgs(base.Firearm.Owner, base.Firearm);
+			PlayerEvents.OnShootingWeapon(playerShootingWeaponEventArgs);
+			if (!playerShootingWeaponEventArgs.IsAllowed)
+			{
+				return;
+			}
+			dequeued.BacktrackData.ProcessShot(base.Firearm, ServerShoot);
+			PlayerEvents.OnShotWeapon(new PlayerShotWeaponEventArgs(base.Firearm.Owner, base.Firearm));
+		}
+		else
+		{
+			PlayerDryFiringWeaponEventArgs playerDryFiringWeaponEventArgs = new PlayerDryFiringWeaponEventArgs(base.Firearm.Owner, base.Firearm);
+			PlayerEvents.OnDryFiringWeapon(playerDryFiringWeaponEventArgs);
+			if (!playerDryFiringWeaponEventArgs.IsAllowed)
+			{
+				return;
+			}
+			Cocked = false;
+			PlayDryFire();
+			ServerResync();
+			SendRpc(delegate(NetworkWriter x)
+			{
+				x.WriteSubheader(MessageHeader.RpcDryFire);
 			});
+			PlayerEvents.OnDryFiredWeapon(new PlayerDryFiredWeaponEventArgs(base.Firearm.Owner, base.Firearm));
 		}
+		ServerSendResponse(dequeued);
+	}
 
-		private void ProcessInput()
+	private void ClientApplyResponse(NetworkReader reader)
+	{
+		byte b = reader.ReadByte();
+		bool flag = reader.ReadBool();
+		int num = reader.ReadShort();
+		_clientCocked.Value &= flag;
+		if (num != 0 && b == _clientCorrectionVersion)
 		{
-			if (!base.Firearm.IsLocalPlayer)
-			{
-				return;
-			}
-			this._clientRateLimiter.Update();
-			ITriggerControllerModule triggerControllerModule;
-			if (!base.Firearm.TryGetModule(out triggerControllerModule, true))
-			{
-				return;
-			}
-			if (!triggerControllerModule.TriggerHeld || !this._clientCocked.Value || !this._clientRateLimiter.Ready)
-			{
-				return;
-			}
-			this._clientRateLimiter.Trigger(this.TimeBetweenShots);
-			this._clientQueuedShots.Enqueue(this.CurTime + this.BoltTravelTime);
+			_clientCorrectionVersion++;
+			_clientAmmo.Value -= num;
 		}
+	}
 
-		private void ProcessClientShots()
+	private void ServerOnRequestTimedOut(ShotRequest request)
+	{
+		ServerSendResponse(request);
+		ServerSendRejection(RejectionReason.TimedOut, 0);
+	}
+
+	private void ServerSendResponse(ShotRequest request)
+	{
+		SendRpc(delegate(NetworkWriter writer)
 		{
-			if (this._clientQueuedShots.Count == 0 || this._clientQueuedShots.Peek() > this.CurTime)
-			{
-				return;
-			}
-			this._clientQueuedShots.Dequeue();
-			if (!this._clientCocked.Value || this._clientBoltLock.Value)
-			{
-				return;
-			}
-			int num = Mathf.Min((this.OpenBolt ? this._clientAmmo : this._clientChambered).Value, this.ChamberSize);
-			if (num > 0)
-			{
-				for (int i = 0; i < num; i++)
-				{
-					ShotEventManager.Trigger(new BulletShotEvent(new ItemIdentifier(base.Firearm), i));
-				}
-				if (!NetworkServer.active)
-				{
-					this.PlayFire(num);
-				}
-				int num2 = Mathf.Min(this._clientAmmo.Value, this.ChamberSize);
-				this._clientChambered.Value = (this.OpenBolt ? 0 : num2);
-				this._clientAmmo.Value -= num2;
-				this._clientCocked.Value = true;
-				if (num2 == 0 && this.MagLocksBolt && this.MagInserted)
-				{
-					this._clientBoltLock.Value = true;
-				}
-			}
-			else
-			{
-				this.PlayDryFire();
-				this._clientCocked.Value = false;
-			}
-			AutomaticActionModule.ShotRequest request = new AutomaticActionModule.ShotRequest(this);
-			this.SendCmd(delegate(NetworkWriter writer)
-			{
-				request.Write(writer);
-			});
+			writer.WriteSubheader(MessageHeader.RpcResponse);
+			int num = request.PredictedReserve - PrimaryAmmoContainer.AmmoStored;
+			writer.WriteByte(request.CorrectionVersion);
+			writer.WriteBool(Cocked);
+			writer.WriteShort((short)num);
+		}, toAll: false);
+	}
+
+	private void ServerSendRejection(RejectionReason reason, byte errorCode = 0)
+	{
+		SendRpc(delegate(NetworkWriter writer)
+		{
+			writer.WriteSubheader(MessageHeader.RpcRejectionReason);
+			writer.WriteSubheader(reason);
+			writer.WriteByte(errorCode);
+		}, toAll: false);
+	}
+
+	private void ServerShoot(ReferenceHub primaryTarget)
+	{
+		int ammoToFire;
+		if (OpenBolt)
+		{
+			ammoToFire = Mathf.Min(PrimaryAmmoContainer.AmmoStored, ChamberSize);
+			PrimaryAmmoContainer.ServerModifyAmmo(-ammoToFire);
 		}
-
-		private void UpdateServer()
+		else
 		{
-			this._serverQueuedRequests.Update();
-			if (base.Firearm.AnyModuleBusy(this))
-			{
-				return;
-			}
-			AutomaticActionModule.ShotRequest shotRequest;
-			if (!this._serverQueuedRequests.TryDequeue(out shotRequest))
-			{
-				return;
-			}
-			if (!this.Cocked || this.BoltLocked)
-			{
-				return;
-			}
-			if (this.AmmoStored > 0 || (this.OpenBolt && this.PrimaryAmmoContainer.AmmoStored > 0))
-			{
-				PlayerShootingWeaponEventArgs playerShootingWeaponEventArgs = new PlayerShootingWeaponEventArgs(base.Firearm.Owner, base.Firearm);
-				PlayerEvents.OnShootingWeapon(playerShootingWeaponEventArgs);
-				if (!playerShootingWeaponEventArgs.IsAllowed)
-				{
-					return;
-				}
-				shotRequest.BacktrackData.ProcessShot(base.Firearm, new Action<ReferenceHub>(this.ServerShoot));
-				PlayerEvents.OnShotWeapon(new PlayerShotWeaponEventArgs(base.Firearm.Owner, base.Firearm));
-			}
-			else
-			{
-				PlayerDryFiringWeaponEventArgs playerDryFiringWeaponEventArgs = new PlayerDryFiringWeaponEventArgs(base.Firearm.Owner, base.Firearm);
-				PlayerEvents.OnDryFiringWeapon(playerDryFiringWeaponEventArgs);
-				if (!playerDryFiringWeaponEventArgs.IsAllowed)
-				{
-					return;
-				}
-				this.Cocked = false;
-				this.PlayDryFire();
-				this.ServerResync();
-				this.SendRpc(delegate(NetworkWriter x)
-				{
-					x.WriteSubheader(AutomaticActionModule.MessageHeader.RpcDryFire);
-				}, true);
-				PlayerEvents.OnDryFiredWeapon(new PlayerDryFiredWeaponEventArgs(base.Firearm.Owner, base.Firearm));
-			}
-			this.ServerSendResponse(shotRequest);
+			ammoToFire = AmmoStored;
+			AmmoStored = 0;
 		}
-
-		private void ServerSendResponse(AutomaticActionModule.ShotRequest request)
+		_serverQueuedRequests.Trigger(TimeBetweenShots);
+		SendRpc((ReferenceHub ply) => ply != base.Firearm.Owner, delegate(NetworkWriter writer)
 		{
-			this.SendRpc(delegate(NetworkWriter writer)
-			{
-				writer.WriteSubheader(AutomaticActionModule.MessageHeader.RpcResponse);
-				int num = request.PredictedReserve - this.PrimaryAmmoContainer.AmmoStored;
-				writer.WriteBool(this.Cocked);
-				writer.WriteShort((short)num);
-			}, false);
-		}
-
-		private void ServerShoot(ReferenceHub primaryTarget)
+			writer.WriteSubheader(MessageHeader.RpcFire);
+			writer.WriteByte((byte)ammoToFire);
+		});
+		PlayFire(ammoToFire);
+		ServerCycleAction();
+		if (base.Firearm.TryGetModule<IHitregModule>(out var module))
 		{
-			int ammoToFire;
-			if (this.OpenBolt)
-			{
-				ammoToFire = Mathf.Min(this.PrimaryAmmoContainer.AmmoStored, this.ChamberSize);
-				this.PrimaryAmmoContainer.ServerModifyAmmo(-ammoToFire);
-			}
-			else
-			{
-				ammoToFire = this.AmmoStored;
-				this.AmmoStored = 0;
-			}
-			this._serverQueuedRequests.Trigger(this.TimeBetweenShots);
-			this.SendRpc((ReferenceHub ply) => ply != this.Firearm.Owner, delegate(NetworkWriter writer)
-			{
-				writer.WriteSubheader(AutomaticActionModule.MessageHeader.RpcFire);
-				writer.WriteByte((byte)ammoToFire);
-			});
-			this.PlayFire(ammoToFire);
-			this.ServerCycleAction();
-			IHitregModule hitregModule;
-			if (!base.Firearm.TryGetModule(out hitregModule, true))
-			{
-				return;
-			}
 			for (int i = 0; i < ammoToFire; i++)
 			{
-				hitregModule.Fire(primaryTarget, new BulletShotEvent(new ItemIdentifier(base.Firearm), i));
+				module.Fire(primaryTarget, new BulletShotEvent(new ItemIdentifier(base.Firearm), i));
 			}
 		}
+	}
 
-		private void ServerResync()
+	private void ServerResync()
+	{
+		SyncDataFlags syncData = (SyncDataFlags)AmmoStored;
+		if (Cocked)
 		{
-			AutomaticActionModule.SyncDataFlags syncData = (AutomaticActionModule.SyncDataFlags)this.AmmoStored;
-			if (this.Cocked)
-			{
-				syncData |= AutomaticActionModule.SyncDataFlags.Cocked;
-			}
-			if (this.BoltLocked)
-			{
-				syncData |= AutomaticActionModule.SyncDataFlags.BoltLocked;
-			}
-			this.SendRpc(delegate(NetworkWriter writer)
-			{
-				writer.WriteSubheader(AutomaticActionModule.MessageHeader.RpcPublicSync);
-				writer.WriteByte((byte)syncData);
-			}, true);
+			syncData |= SyncDataFlags.Cocked;
 		}
-
-		private void PlayDryFire()
+		if (BoltLocked)
 		{
-			this.PlayFireAnims(true);
-			AudioModule audioModule;
-			if (!base.Firearm.TryGetModule(out audioModule, true))
-			{
-				return;
-			}
-			audioModule.PlayNormal(this._dryfireSound);
+			syncData |= SyncDataFlags.BoltLocked;
 		}
-
-		private void PlayFire(int chambersFired)
+		SendRpc(delegate(NetworkWriter writer)
 		{
-			this.PlayFireAnims(false);
-			AudioModule audioModule;
-			if (!base.Firearm.TryGetModule(out audioModule, true))
-			{
-				return;
-			}
-			int num = (int)base.Firearm.AttachmentsValue(AttachmentParam.ShotClipIdOverride);
-			foreach (AutomaticActionModule.GunshotDefinition gunshotDefinition in this._gunshotSounds)
-			{
-				if (gunshotDefinition.ClipId == num && gunshotDefinition.MinChamberedRounds <= chambersFired && gunshotDefinition.MaxChamberedRounds >= chambersFired)
-				{
-					audioModule.PlayGunshot(gunshotDefinition.RandomSounds.RandomItem<AudioClip>());
-					return;
-				}
-			}
-		}
+			writer.WriteSubheader(MessageHeader.RpcPublicSync);
+			writer.WriteByte((byte)syncData);
+		});
+	}
 
-		private void PlayFireAnims(bool dryFire)
+	private void PlayDryFire()
+	{
+		PlayFireAnims(dryFire: true);
+		if (base.Firearm.TryGetModule<AudioModule>(out var module))
 		{
-			base.Firearm.AnimSetFloat(FirearmAnimatorHashes.Random, global::UnityEngine.Random.value, true);
-			if (dryFire)
-			{
-				base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.DryFire, true);
-				return;
-			}
-			base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.Fire, false);
-			base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.ReleaseHammer, true);
+			module.PlayNormal(_dryfireSound);
 		}
+	}
 
-		public int GetAmmoStoredForSerial(ushort serial)
+	private void PlayFire(int chambersFired)
+	{
+		PlayFireAnims(dryFire: false);
+		if (!base.Firearm.TryGetModule<AudioModule>(out var module))
 		{
-			AutomaticActionModule.SyncDataFlags syncDataFlags;
-			if (!AutomaticActionModule.ReceivedFlags.TryGetValue(serial, out syncDataFlags))
-			{
-				return 0;
-			}
-			return (int)(syncDataFlags & AutomaticActionModule.SyncDataFlags.AmmoChamberedFilter);
+			return;
 		}
-
-		public DisplayAmmoValues GetDisplayAmmoForSerial(ushort serial)
+		int num = (int)base.Firearm.AttachmentsValue(AttachmentParam.ShotClipIdOverride);
+		GunshotDefinition[] gunshotSounds = _gunshotSounds;
+		for (int i = 0; i < gunshotSounds.Length; i++)
 		{
-			return new DisplayAmmoValues(0, this.GetAmmoStoredForSerial(serial));
-		}
-
-		[CompilerGenerated]
-		private void <ClientProcessRpcTemplate>g__ReadSyncData|82_0(ref AutomaticActionModule.<>c__DisplayClass82_0 A_1)
-		{
-			if (A_1.reader.Remaining == 0)
+			GunshotDefinition gunshotDefinition = gunshotSounds[i];
+			if (gunshotDefinition.ClipId == num && gunshotDefinition.MinChamberedRounds <= chambersFired && gunshotDefinition.MaxChamberedRounds >= chambersFired)
 			{
-				global::UnityEngine.Debug.LogError(string.Format("Failed to deserialize {0} of {1} with serial {2}.", "AutomaticActionModule", base.Firearm.ItemTypeId, A_1.serial));
-				return;
+				module.PlayGunshot(gunshotDefinition.RandomSounds.RandomItem());
+				break;
 			}
-			AutomaticActionModule.ReceivedFlags[A_1.serial] = (AutomaticActionModule.SyncDataFlags)A_1.reader.ReadByte();
-			Action<ushort> onSyncDataReceived = AutomaticActionModule.OnSyncDataReceived;
-			if (onSyncDataReceived == null)
-			{
-				return;
-			}
-			onSyncDataReceived(A_1.serial);
 		}
+	}
 
-		private static readonly Dictionary<ushort, AutomaticActionModule.SyncDataFlags> ReceivedFlags = new Dictionary<ushort, AutomaticActionModule.SyncDataFlags>();
-
-		private const int MaxChambers = 16;
-
-		private readonly Stopwatch _totalTimeStopwatch = Stopwatch.StartNew();
-
-		private readonly FullAutoShotsQueue<AutomaticActionModule.ShotRequest> _serverQueuedRequests = new FullAutoShotsQueue<AutomaticActionModule.ShotRequest>((AutomaticActionModule.ShotRequest x) => x.BacktrackData);
-
-		private readonly Queue<float> _clientQueuedShots = new Queue<float>();
-
-		private readonly FullAutoRateLimiter _clientRateLimiter = new FullAutoRateLimiter();
-
-		private ClientPredictedValue<int> _clientChambered;
-
-		private ClientPredictedValue<int> _clientAmmo;
-
-		private ClientPredictedValue<bool> _clientCocked;
-
-		private ClientPredictedValue<bool> _clientBoltLock;
-
-		private int _serverChambered;
-
-		private bool _serverCocked;
-
-		private bool _serverBoltLocked;
-
-		[SerializeField]
-		private AutomaticActionModule.GunshotDefinition[] _gunshotSounds;
-
-		[SerializeField]
-		private AudioClip _dryfireSound;
-
-		[SerializeField]
-		private AnimatorConditionalOverride _boltLockOverrideLayers;
-
-		private enum MessageHeader
+	private void PlayFireAnims(bool dryFire)
+	{
+		base.Firearm.AnimSetFloat(FirearmAnimatorHashes.Random, UnityEngine.Random.value, checkIfExists: true);
+		if (dryFire)
 		{
-			CmdShoot,
-			RpcPublicSync,
-			RpcResponse,
-			RpcFire,
-			RpcDryFire,
-			RpcNewPlayerSync
+			base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.DryFire, checkIfExists: true);
+			return;
 		}
+		base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.Fire);
+		base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.ReleaseHammer, checkIfExists: true);
+	}
 
-		[Flags]
-		private enum SyncDataFlags : byte
+	public int GetAmmoStoredForSerial(ushort serial)
+	{
+		if (!ReceivedFlags.TryGetValue(serial, out var value))
 		{
-			None = 0,
-			AmmoChamberedBit0 = 1,
-			AmmoChamberedBit1 = 2,
-			AmmoChamberedBit2 = 4,
-			AmmoChamberedBit3 = 8,
-			Cocked = 16,
-			BoltLocked = 32,
-			AmmoChamberedFilter = 15
+			return 0;
 		}
+		return (int)(value & SyncDataFlags.AmmoChamberedFilter);
+	}
 
-		private readonly struct ShotRequest
-		{
-			public ShotRequest(AutomaticActionModule mod)
-			{
-				this.PredictedReserve = mod._clientAmmo.Value;
-				this.BacktrackData = new ShotBacktrackData(mod.Firearm);
-			}
-
-			public ShotRequest(NetworkReader reader)
-			{
-				this.PredictedReserve = (int)reader.ReadByte();
-				this.BacktrackData = new ShotBacktrackData(reader);
-			}
-
-			public void Write(NetworkWriter writer)
-			{
-				writer.WriteSubheader(AutomaticActionModule.MessageHeader.CmdShoot);
-				writer.WriteByte((byte)this.PredictedReserve);
-				writer.WriteBacktrackData(this.BacktrackData);
-			}
-
-			public readonly int PredictedReserve;
-
-			public readonly ShotBacktrackData BacktrackData;
-		}
-
-		[Serializable]
-		private struct GunshotDefinition
-		{
-			public AudioClip[] RandomSounds;
-
-			[Tooltip("Value provided in ShotClipIdOverride. Zero if no attachments.")]
-			public int ClipId;
-
-			[Tooltip("This gunshot sound will only be used if number of chambers fired is greater or equal to this amount.")]
-			[Range(1f, 16f)]
-			public int MinChamberedRounds;
-
-			[Tooltip("This gunshot sound will only be used if number of chambers fired is less or equal to this amount.")]
-			[Range(1f, 16f)]
-			public int MaxChamberedRounds;
-		}
+	public DisplayAmmoValues GetDisplayAmmoForSerial(ushort serial)
+	{
+		return new DisplayAmmoValues(0, GetAmmoStoredForSerial(serial));
 	}
 }

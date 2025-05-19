@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Hints;
 using InventorySystem.Items;
 using InventorySystem.Items.Armor;
@@ -6,85 +6,79 @@ using InventorySystem.Items.Pickups;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
-namespace InventorySystem.Searching
+namespace InventorySystem.Searching;
+
+public class ArmorSearchCompletor : PickupSearchCompletor
 {
-	public class ArmorSearchCompletor : SearchCompletor
+	private ItemCategory _category;
+
+	private BodyArmor _currentArmor;
+
+	public override bool AllowPickupUponEscape => false;
+
+	public ArmorSearchCompletor(ReferenceHub hub, ItemPickupBase targetPickup, ItemBase targetItem, double maxDistanceSquared)
+		: base(hub, targetPickup, maxDistanceSquared)
 	{
-		public override bool AllowPickupUponEscape
+		_category = targetItem.Category;
+	}
+
+	protected override bool ValidateAny()
+	{
+		if (!base.ValidateAny())
 		{
-			get
-			{
-				return false;
-			}
+			return false;
 		}
-
-		public ArmorSearchCompletor(ReferenceHub hub, ItemPickupBase targetPickup, ItemBase targetItem, double maxDistanceSquared)
-			: base(hub, targetPickup, targetItem, maxDistanceSquared)
+		bool num = 8 > base.Hub.inventory.UserInventory.Items.Count;
+		bool flag = base.Hub.inventory.TryGetBodyArmor(out _currentArmor);
+		if (!num && !flag)
 		{
-			this._armorType = targetItem.ItemTypeId;
+			base.Hub.hints.Show(new TranslationHint(HintTranslations.MaxItemsAlreadyReached, new HintParameter[1]
+			{
+				new ByteHintParameter(8)
+			}, new HintEffect[1] { HintEffectPresets.TrailingPulseAlpha(0.5f, 1f, 0.5f, 2f, 0f, 3) }, 2f));
+			return false;
 		}
+		return true;
+	}
 
-		protected override bool ValidateAny()
+	public override bool ValidateStart()
+	{
+		if (!base.ValidateStart())
 		{
-			if (!base.ValidateAny())
-			{
-				return false;
-			}
-			bool flag = 8 > this.Hub.inventory.UserInventory.Items.Count;
-			bool flag2 = this.Hub.inventory.TryGetBodyArmorAndItsSerial(out this._currentArmor, out this._currentArmorSerial);
-			if (!flag && !flag2)
-			{
-				this.Hub.hints.Show(new TranslationHint(HintTranslations.MaxItemsAlreadyReached, new HintParameter[]
-				{
-					new ByteHintParameter(8)
-				}, new HintEffect[] { HintEffectPresets.TrailingPulseAlpha(0.5f, 1f, 0.5f, 2f, 0f, 3) }, 2f));
-				return false;
-			}
-			return true;
+			return false;
 		}
-
-		public override bool ValidateStart()
+		if (TargetItemType == ItemType.None)
 		{
-			if (!base.ValidateStart())
-			{
-				return false;
-			}
-			if (this.TargetItem.ItemTypeId == ItemType.None)
-			{
-				throw new InvalidOperationException("Item has an invalid ItemType.");
-			}
-			if (this.TargetItem.Category == ItemCategory.Ammo)
-			{
-				throw new InvalidOperationException("Item is not equippable (can be held in inventory).");
-			}
-			PlayerSearchingArmorEventArgs playerSearchingArmorEventArgs = new PlayerSearchingArmorEventArgs(this.Hub, this.TargetPickup);
-			PlayerEvents.OnSearchingArmor(playerSearchingArmorEventArgs);
-			return playerSearchingArmorEventArgs.IsAllowed;
+			throw new InvalidOperationException("Item has an invalid ItemType.");
 		}
-
-		public override void Complete()
+		if (_category == ItemCategory.Ammo)
 		{
-			PlayerPickingUpArmorEventArgs playerPickingUpArmorEventArgs = new PlayerPickingUpArmorEventArgs(this.Hub, this.TargetPickup);
-			PlayerEvents.OnPickingUpArmor(playerPickingUpArmorEventArgs);
-			if (!playerPickingUpArmorEventArgs.IsAllowed)
-			{
-				return;
-			}
-			if (this._currentArmor != null)
-			{
-				this._currentArmor.DontRemoveExcessOnDrop = true;
-				this.Hub.inventory.ServerDropItem(this._currentArmorSerial);
-			}
-			BodyArmor bodyArmor = this.Hub.inventory.ServerAddItem(this.TargetPickup.Info.ItemId, ItemAddReason.PickedUp, this.TargetPickup.Info.Serial, this.TargetPickup) as BodyArmor;
-			this.Hub.inventory.RemoveEverythingExceedingLimits(bodyArmor, true, true);
-			this.TargetPickup.DestroySelf();
-			PlayerEvents.OnPickedUpArmor(new PlayerPickedUpArmorEventArgs(this.Hub, bodyArmor));
+			throw new InvalidOperationException("Item is not equippable (can be held in inventory).");
 		}
+		PlayerSearchingArmorEventArgs playerSearchingArmorEventArgs = new PlayerSearchingArmorEventArgs(base.Hub, TargetPickup as BodyArmorPickup);
+		PlayerEvents.OnSearchingArmor(playerSearchingArmorEventArgs);
+		if (!playerSearchingArmorEventArgs.IsAllowed)
+		{
+			return false;
+		}
+		return true;
+	}
 
-		private readonly ItemType _armorType;
-
-		private BodyArmor _currentArmor;
-
-		private ushort _currentArmorSerial;
+	public override void Complete()
+	{
+		PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(base.Hub, TargetPickup));
+		PlayerPickingUpArmorEventArgs playerPickingUpArmorEventArgs = new PlayerPickingUpArmorEventArgs(base.Hub, TargetPickup as BodyArmorPickup);
+		PlayerEvents.OnPickingUpArmor(playerPickingUpArmorEventArgs);
+		if (playerPickingUpArmorEventArgs.IsAllowed)
+		{
+			if (_currentArmor != null)
+			{
+				base.Hub.inventory.ServerDropItem(_currentArmor.ItemSerial);
+			}
+			BodyArmor armor = base.Hub.inventory.ServerAddItem(TargetPickup.Info.ItemId, ItemAddReason.PickedUp, TargetPickup.Info.Serial, TargetPickup) as BodyArmor;
+			BodyArmorUtils.SetPlayerDirty(base.Hub);
+			TargetPickup.DestroySelf();
+			PlayerEvents.OnPickedUpArmor(new PlayerPickedUpArmorEventArgs(base.Hub, armor));
+		}
 	}
 }

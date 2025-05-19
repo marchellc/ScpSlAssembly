@@ -1,18 +1,16 @@
-﻿using System;
 using UnityEngine;
 
-namespace VoiceChat.Playbacks
+namespace VoiceChat.Playbacks;
+
+public interface IGlobalPlayback
 {
-	public interface IGlobalPlayback
-	{
-		bool GlobalChatActive { get; }
+	bool GlobalChatActive { get; }
 
-		Color GlobalChatColor { get; }
+	Color GlobalChatColor { get; }
 
-		string GlobalChatName { get; }
+	string GlobalChatName { get; }
 
-		float GlobalChatLoudness { get; }
+	float GlobalChatLoudness { get; }
 
-		GlobalChatIconType GlobalChatIcon { get; }
-	}
+	GlobalChatIconType GlobalChatIcon { get; }
 }

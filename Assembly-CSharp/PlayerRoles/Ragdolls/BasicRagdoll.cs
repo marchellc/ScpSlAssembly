@@ -1,4 +1,3 @@
-﻿using System;
 using System.Runtime.InteropServices;
 using DeathAnimations;
 using Mirror;
@@ -6,63 +5,86 @@ using Mirror.RemoteCalls;
 using RoundRestarting;
 using UnityEngine;
 
-namespace PlayerRoles.Ragdolls
+namespace PlayerRoles.Ragdolls;
+
+public class BasicRagdoll : NetworkBehaviour
 {
-	public class BasicRagdoll : NetworkBehaviour
+	[SyncVar(hook = "OnSyncDataChanged")]
+	public RagdollData Info;
+
+	public DeathAnimation[] AllDeathAnimations;
+
+	private float _existenceTime;
+
+	private bool _roundRestartEventSet;
+
+	[SerializeField]
+	private Transform _originPoint;
+
+	public virtual Transform CenterPoint
 	{
-		public virtual Transform CenterPoint
+		get
 		{
-			get
+			if (!(_originPoint != null))
 			{
-				if (!(this._originPoint != null))
-				{
-					return base.transform;
-				}
-				return this._originPoint;
+				return base.transform;
 			}
+			return _originPoint;
 		}
+	}
 
-		public bool Frozen { get; private set; }
+	public bool Frozen { get; private set; }
 
-		public virtual void FreezeRagdoll()
+	public RagdollData NetworkInfo
+	{
+		get
 		{
-			this.Frozen = true;
+			return Info;
 		}
-
-		public virtual BasicRagdoll ServerInstantiateSelf(ReferenceHub owner, RoleTypeId targetRole)
+		[param: In]
+		set
 		{
-			return global::UnityEngine.Object.Instantiate<BasicRagdoll>(this);
+			GeneratedSyncVarSetter(value, ref Info, 1uL, OnSyncDataChanged);
 		}
+	}
 
-		public virtual GameObject ClientHandleSpawn(SpawnMessage msg)
-		{
-			return global::UnityEngine.Object.Instantiate<GameObject>(base.gameObject, msg.position, msg.rotation);
-		}
+	public virtual void FreezeRagdoll()
+	{
+		Frozen = true;
+	}
 
-		public virtual void ClientHandleDespawn(GameObject spawned)
-		{
-			global::UnityEngine.Object.Destroy(spawned);
-		}
+	public virtual BasicRagdoll ServerInstantiateSelf(ReferenceHub owner, RoleTypeId targetRole)
+	{
+		return Object.Instantiate(this);
+	}
 
-		[ClientRpc]
-		public void ClientFreezeRpc()
-		{
-			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			this.SendRPCInternal("System.Void PlayerRoles.Ragdolls.BasicRagdoll::ClientFreezeRpc()", 866326727, networkWriterPooled, 0, true);
-			NetworkWriterPool.Return(networkWriterPooled);
-		}
+	public virtual GameObject ClientHandleSpawn(SpawnMessage msg)
+	{
+		return Object.Instantiate(base.gameObject, msg.position, msg.rotation);
+	}
 
-		private void OnRestartTriggered()
-		{
-			NetworkServer.Destroy(base.gameObject);
-		}
+	public virtual void ClientHandleDespawn(GameObject spawned)
+	{
+		Object.Destroy(spawned);
+	}
 
-		private void OnSyncDataChanged(RagdollData old, RagdollData newer)
+	[ClientRpc]
+	public void ClientFreezeRpc()
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		SendRPCInternal("System.Void PlayerRoles.Ragdolls.BasicRagdoll::ClientFreezeRpc()", 866326727, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
+	}
+
+	private void OnRestartTriggered()
+	{
+		NetworkServer.Destroy(base.gameObject);
+	}
+
+	private void OnSyncDataChanged(RagdollData old, RagdollData newer)
+	{
+		if (!(base.gameObject == null))
 		{
-			if (base.gameObject == null)
-			{
-				return;
-			}
 			if (old.StartPosition != newer.StartPosition)
 			{
 				base.transform.position = newer.StartPosition;
@@ -73,127 +95,100 @@ namespace PlayerRoles.Ragdolls
 			}
 			base.transform.localScale = newer.Scale;
 		}
+	}
 
-		protected virtual void Start()
+	protected virtual void Start()
+	{
+		base.transform.SetPositionAndRotation(Info.StartPosition, Info.StartRotation);
+		Info.Handler.ProcessRagdoll(this);
+		RagdollManager.OnSpawnedRagdoll(this);
+		if (NetworkServer.active)
 		{
-			base.transform.SetPositionAndRotation(this.Info.StartPosition, this.Info.StartRotation);
-			this.Info.Handler.ProcessRagdoll(this);
-			RagdollManager.OnSpawnedRagdoll(this);
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this._roundRestartEventSet = true;
-			RoundRestart.OnRestartTriggered += this.OnRestartTriggered;
+			_roundRestartEventSet = true;
+			RoundRestart.OnRestartTriggered += OnRestartTriggered;
 		}
+	}
 
-		protected virtual void OnDestroy()
+	protected virtual void OnDestroy()
+	{
+		RagdollManager.OnRemovedRagdoll(this);
+		if (_roundRestartEventSet)
 		{
-			RagdollManager.OnRemovedRagdoll(this);
-			if (!this._roundRestartEventSet)
-			{
-				return;
-			}
-			RoundRestart.OnRestartTriggered -= this.OnRestartTriggered;
+			RoundRestart.OnRestartTriggered -= OnRestartTriggered;
 		}
+	}
 
-		protected virtual void Update()
-		{
-			this.UpdateFreeze();
-		}
+	protected virtual void Update()
+	{
+		UpdateFreeze();
+	}
 
-		private void UpdateFreeze()
+	private void UpdateFreeze()
+	{
+		if (!Frozen)
 		{
-			if (this.Frozen)
+			_existenceTime += Time.deltaTime;
+			if (!(_existenceTime < (float)RagdollManager.FreezeTime))
 			{
-				return;
-			}
-			this._existenceTime += Time.deltaTime;
-			if (this._existenceTime < (float)RagdollManager.FreezeTime)
-			{
-				return;
-			}
-			this.FreezeRagdoll();
-		}
-
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		public RagdollData NetworkInfo
-		{
-			get
-			{
-				return this.Info;
-			}
-			[param: In]
-			set
-			{
-				base.GeneratedSyncVarSetter<RagdollData>(value, ref this.Info, 1UL, new Action<RagdollData, RagdollData>(this.OnSyncDataChanged));
+				FreezeRagdoll();
 			}
 		}
+	}
 
-		protected void UserCode_ClientFreezeRpc()
+	public override bool Weaved()
+	{
+		return true;
+	}
+
+	protected void UserCode_ClientFreezeRpc()
+	{
+		FreezeRagdoll();
+	}
+
+	protected static void InvokeUserCode_ClientFreezeRpc(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
 		{
-			this.FreezeRagdoll();
+			Debug.LogError("RPC ClientFreezeRpc called on server.");
 		}
-
-		protected static void InvokeUserCode_ClientFreezeRpc(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+		else
 		{
-			if (!NetworkClient.active)
-			{
-				Debug.LogError("RPC ClientFreezeRpc called on server.");
-				return;
-			}
 			((BasicRagdoll)obj).UserCode_ClientFreezeRpc();
 		}
+	}
 
-		static BasicRagdoll()
+	static BasicRagdoll()
+	{
+		RemoteProcedureCalls.RegisterRpc(typeof(BasicRagdoll), "System.Void PlayerRoles.Ragdolls.BasicRagdoll::ClientFreezeRpc()", InvokeUserCode_ClientFreezeRpc);
+	}
+
+	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+	{
+		base.SerializeSyncVars(writer, forceAll);
+		if (forceAll)
 		{
-			RemoteProcedureCalls.RegisterRpc(typeof(BasicRagdoll), "System.Void PlayerRoles.Ragdolls.BasicRagdoll::ClientFreezeRpc()", new RemoteCallDelegate(BasicRagdoll.InvokeUserCode_ClientFreezeRpc));
+			writer.WriteRagdollData(Info);
+			return;
 		}
-
-		public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
+		writer.WriteULong(base.syncVarDirtyBits);
+		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			base.SerializeSyncVars(writer, forceAll);
-			if (forceAll)
-			{
-				writer.WriteRagdollData(this.Info);
-				return;
-			}
-			writer.WriteULong(base.syncVarDirtyBits);
-			if ((base.syncVarDirtyBits & 1UL) != 0UL)
-			{
-				writer.WriteRagdollData(this.Info);
-			}
+			writer.WriteRagdollData(Info);
 		}
+	}
 
-		public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	public override void DeserializeSyncVars(NetworkReader reader, bool initialState)
+	{
+		base.DeserializeSyncVars(reader, initialState);
+		if (initialState)
 		{
-			base.DeserializeSyncVars(reader, initialState);
-			if (initialState)
-			{
-				base.GeneratedSyncVarDeserialize<RagdollData>(ref this.Info, new Action<RagdollData, RagdollData>(this.OnSyncDataChanged), reader.ReadRagdollData());
-				return;
-			}
-			long num = (long)reader.ReadULong();
-			if ((num & 1L) != 0L)
-			{
-				base.GeneratedSyncVarDeserialize<RagdollData>(ref this.Info, new Action<RagdollData, RagdollData>(this.OnSyncDataChanged), reader.ReadRagdollData());
-			}
+			GeneratedSyncVarDeserialize(ref Info, OnSyncDataChanged, reader.ReadRagdollData());
+			return;
 		}
-
-		[SyncVar(hook = "OnSyncDataChanged")]
-		public RagdollData Info;
-
-		public DeathAnimation[] AllDeathAnimations;
-
-		private float _existenceTime;
-
-		private bool _roundRestartEventSet;
-
-		[SerializeField]
-		private Transform _originPoint;
+		long num = (long)reader.ReadULong();
+		if ((num & 1L) != 0L)
+		{
+			GeneratedSyncVarDeserialize(ref Info, OnSyncDataChanged, reader.ReadRagdollData());
+		}
 	}
 }

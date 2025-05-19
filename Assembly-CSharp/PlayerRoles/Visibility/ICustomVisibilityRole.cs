@@ -1,9 +1,6 @@
-﻿using System;
+namespace PlayerRoles.Visibility;
 
-namespace PlayerRoles.Visibility
+public interface ICustomVisibilityRole
 {
-	public interface ICustomVisibilityRole
-	{
-		VisibilityController VisibilityController { get; }
-	}
+	VisibilityController VisibilityController { get; }
 }

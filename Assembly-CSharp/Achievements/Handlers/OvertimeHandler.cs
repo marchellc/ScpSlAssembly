@@ -1,43 +1,38 @@
-﻿using System;
 using PlayerRoles;
 
-namespace Achievements.Handlers
-{
-	public class OvertimeHandler : AchievementHandlerBase
-	{
-		internal override void OnInitialize()
-		{
-			RoundSummary.OnRoundEnded += OvertimeHandler.OnRoundEnded;
-		}
+namespace Achievements.Handlers;
 
-		private static void OnRoundEnded(RoundSummary.LeadingTeam leading, RoundSummary.SumInfo_ClassList sumInfo)
+public class OvertimeHandler : AchievementHandlerBase
+{
+	private const RoleTypeId TargetRole = RoleTypeId.FacilityGuard;
+
+	internal override void OnInitialize()
+	{
+		RoundSummary.OnRoundEnded += OnRoundEnded;
+	}
+
+	private static void OnRoundEnded(RoundSummary.LeadingTeam leading, RoundSummary.SumInfo_ClassList sumInfo)
+	{
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
+			PlayerRoleBase currentRole = allHub.roleManager.CurrentRole;
+			bool flag;
+			if ((object)currentRole != null && currentRole.RoleTypeId == RoleTypeId.FacilityGuard)
 			{
-				PlayerRoleBase currentRole = referenceHub.roleManager.CurrentRole;
-				if (currentRole == null || currentRole.RoleTypeId != RoleTypeId.FacilityGuard)
-				{
-					goto IL_0040;
-				}
 				RoleChangeReason serverSpawnReason = currentRole.ServerSpawnReason;
-				if (serverSpawnReason - RoleChangeReason.RoundStart > 1)
+				if (serverSpawnReason - 1 <= RoleChangeReason.RoundStart)
 				{
-					goto IL_0040;
+					flag = true;
+					goto IL_0043;
 				}
-				bool flag = true;
-				IL_0043:
-				if (flag)
-				{
-					AchievementHandlerBase.ServerAchieve(referenceHub.connectionToClient, AchievementName.Overtime);
-					continue;
-				}
-				continue;
-				IL_0040:
-				flag = false;
-				goto IL_0043;
+			}
+			flag = false;
+			goto IL_0043;
+			IL_0043:
+			if (flag)
+			{
+				AchievementHandlerBase.ServerAchieve(allHub.connectionToClient, AchievementName.Overtime);
 			}
 		}
-
-		private const RoleTypeId TargetRole = RoleTypeId.FacilityGuard;
 	}
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using GameCore;
 using LabApi.Events.Arguments.PlayerEvents;
@@ -10,180 +10,172 @@ using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using UnityEngine;
 
-namespace Hazards
+namespace Hazards;
+
+public abstract class EnvironmentalHazard : NetworkBehaviour
 {
-	public abstract class EnvironmentalHazard : NetworkBehaviour
+	public static Action<EnvironmentalHazard> OnAdded;
+
+	public static Action<EnvironmentalHazard> OnRemoved;
+
+	public List<ReferenceHub> AffectedPlayers { get; } = new List<ReferenceHub>();
+
+	[field: SerializeField]
+	public virtual float MaxDistance { get; set; }
+
+	[field: SerializeField]
+	public virtual float MaxHeightDistance { get; set; }
+
+	[field: SerializeField]
+	public virtual Vector3 SourceOffset { get; set; }
+
+	public virtual bool IsActive { get; set; } = true;
+
+	public virtual Vector3 SourcePosition
 	{
-		public List<ReferenceHub> AffectedPlayers { get; } = new List<ReferenceHub>();
-
-		public virtual float MaxDistance { get; set; }
-
-		public virtual float MaxHeightDistance { get; set; }
-
-		public virtual Vector3 SourceOffset { get; set; }
-
-		public virtual bool IsActive { get; set; } = true;
-
-		public virtual Vector3 SourcePosition
+		get
 		{
-			get
+			return base.transform.position + SourceOffset;
+		}
+		set
+		{
+			base.transform.position = value;
+		}
+	}
+
+	public virtual bool OnEnter(ReferenceHub player)
+	{
+		PlayerEnteringHazardEventArgs playerEnteringHazardEventArgs = new PlayerEnteringHazardEventArgs(player, this);
+		PlayerEvents.OnEnteringHazard(playerEnteringHazardEventArgs);
+		if (!playerEnteringHazardEventArgs.IsAllowed)
+		{
+			return false;
+		}
+		AffectedPlayers.Add(player);
+		return true;
+	}
+
+	public virtual void OnStay(ReferenceHub player)
+	{
+	}
+
+	public virtual bool OnExit(ReferenceHub player)
+	{
+		PlayerLeavingHazardEventArgs playerLeavingHazardEventArgs = new PlayerLeavingHazardEventArgs(player, this);
+		PlayerEvents.OnLeavingHazard(playerLeavingHazardEventArgs);
+		if (!playerLeavingHazardEventArgs.IsAllowed)
+		{
+			return false;
+		}
+		AffectedPlayers.Remove(player);
+		return true;
+	}
+
+	public virtual bool IsInArea(Vector3 sourcePos, Vector3 targetPos)
+	{
+		if (Mathf.Abs(targetPos.y - sourcePos.y) > MaxHeightDistance)
+		{
+			return false;
+		}
+		return (sourcePos - targetPos).SqrMagnitudeIgnoreY() <= MaxDistance * MaxDistance;
+	}
+
+	protected virtual void UpdateTargets()
+	{
+		List<ReferenceHub> list = ListPool<ReferenceHub>.Shared.Rent();
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (!(allHub.roleManager.CurrentRole is IFpcRole fpcRole))
 			{
-				return base.transform.position + this.SourceOffset;
+				continue;
 			}
-			set
+			bool flag = AffectedPlayers.Contains(allHub);
+			if (IsInArea(SourcePosition, fpcRole.FpcModule.Position))
 			{
-				base.transform.position = value;
-			}
-		}
-
-		public virtual bool OnEnter(ReferenceHub player)
-		{
-			PlayerEnteringHazardEventArgs playerEnteringHazardEventArgs = new PlayerEnteringHazardEventArgs(player, this);
-			PlayerEvents.OnEnteringHazard(playerEnteringHazardEventArgs);
-			if (!playerEnteringHazardEventArgs.IsAllowed)
-			{
-				return false;
-			}
-			this.AffectedPlayers.Add(player);
-			return true;
-		}
-
-		public virtual void OnStay(ReferenceHub player)
-		{
-		}
-
-		public virtual bool OnExit(ReferenceHub player)
-		{
-			PlayerLeavingHazardEventArgs playerLeavingHazardEventArgs = new PlayerLeavingHazardEventArgs(player, this);
-			PlayerEvents.OnLeavingHazard(playerLeavingHazardEventArgs);
-			if (!playerLeavingHazardEventArgs.IsAllowed)
-			{
-				return false;
-			}
-			this.AffectedPlayers.Remove(player);
-			return true;
-		}
-
-		public virtual bool IsInArea(Vector3 sourcePos, Vector3 targetPos)
-		{
-			return Mathf.Abs(targetPos.y - sourcePos.y) <= this.MaxHeightDistance && (sourcePos - targetPos).SqrMagnitudeIgnoreY() <= this.MaxDistance * this.MaxDistance;
-		}
-
-		protected virtual void UpdateTargets()
-		{
-			List<ReferenceHub> list = ListPool<ReferenceHub>.Shared.Rent();
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				IFpcRole fpcRole = referenceHub.roleManager.CurrentRole as IFpcRole;
-				if (fpcRole != null)
+				if (!flag)
 				{
-					bool flag = this.AffectedPlayers.Contains(referenceHub);
-					if (this.IsInArea(this.SourcePosition, fpcRole.FpcModule.Position))
-					{
-						if (!flag)
-						{
-							this.OnEnter(referenceHub);
-						}
-						else
-						{
-							list.Add(referenceHub);
-						}
-					}
-					else if (flag)
-					{
-						this.OnExit(referenceHub);
-					}
+					OnEnter(allHub);
+				}
+				else
+				{
+					list.Add(allHub);
 				}
 			}
-			if (list.Count == 0)
+			else if (flag)
 			{
-				ListPool<ReferenceHub>.Shared.Return(list);
-				return;
+				OnExit(allHub);
 			}
-			PlayersStayingInHazardEventArgs playersStayingInHazardEventArgs = new PlayersStayingInHazardEventArgs(list, this);
-			PlayerEvents.OnStayingInHazard(playersStayingInHazardEventArgs);
-			list.Clear();
-			foreach (Player player in playersStayingInHazardEventArgs.AffectedPlayers)
-			{
-				list.Add(player.ReferenceHub);
-			}
-			ListPool<Player>.Shared.Return(playersStayingInHazardEventArgs.AffectedPlayers);
-			foreach (ReferenceHub referenceHub2 in list)
-			{
-				this.OnStay(referenceHub2);
-			}
+		}
+		if (list.Count == 0)
+		{
 			ListPool<ReferenceHub>.Shared.Return(list);
+			return;
 		}
-
-		private void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+		PlayersStayingInHazardEventArgs playersStayingInHazardEventArgs = new PlayersStayingInHazardEventArgs(list, this);
+		PlayerEvents.OnStayingInHazard(playersStayingInHazardEventArgs);
+		list.Clear();
+		foreach (Player affectedPlayer in playersStayingInHazardEventArgs.AffectedPlayers)
 		{
-			if (this.AffectedPlayers.Contains(userHub))
-			{
-				this.OnExit(userHub);
-			}
+			list.Add(affectedPlayer.ReferenceHub);
 		}
-
-		protected abstract void ClientApplyDecalSize();
-
-		protected virtual void Awake()
+		ListPool<Player>.Shared.Return(playersStayingInHazardEventArgs.AffectedPlayers);
+		foreach (ReferenceHub item in list)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			Action<EnvironmentalHazard> onAdded = EnvironmentalHazard.OnAdded;
-			if (onAdded == null)
-			{
-				return;
-			}
-			onAdded(this);
+			OnStay(item);
 		}
+		ListPool<ReferenceHub>.Shared.Return(list);
+	}
 
-		protected virtual void Start()
+	private void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
+	{
+		if (AffectedPlayers.Contains(userHub))
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			NetworkServer.Spawn(base.gameObject, null);
+			OnExit(userHub);
+		}
+	}
+
+	protected abstract void ClientApplyDecalSize();
+
+	protected virtual void Awake()
+	{
+		if (NetworkServer.active)
+		{
+			OnAdded?.Invoke(this);
+		}
+	}
+
+	protected virtual void Start()
+	{
+		if (NetworkServer.active)
+		{
+			NetworkServer.Spawn(base.gameObject);
 			if (!RoundStart.RoundStarted)
 			{
-				global::GameCore.Console.AddDebugLog("MAPGEN", "Spawning hazard: \"" + base.gameObject.name + "\"", MessageImportance.LessImportant, true);
+				GameCore.Console.AddDebugLog("MAPGEN", "Spawning hazard: \"" + base.gameObject.name + "\"", MessageImportance.LessImportant, nospace: true);
 			}
-			PlayerRoleManager.OnRoleChanged += this.OnRoleChanged;
+			PlayerRoleManager.OnRoleChanged += OnRoleChanged;
 		}
+	}
 
-		protected virtual void Update()
+	protected virtual void Update()
+	{
+		if (NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			this.UpdateTargets();
+			UpdateTargets();
 		}
+	}
 
-		protected virtual void OnDestroy()
+	protected virtual void OnDestroy()
+	{
+		if (NetworkServer.active)
 		{
-			if (!NetworkServer.active)
-			{
-				return;
-			}
-			PlayerRoleManager.OnRoleChanged -= this.OnRoleChanged;
-			Action<EnvironmentalHazard> onRemoved = EnvironmentalHazard.OnRemoved;
-			if (onRemoved == null)
-			{
-				return;
-			}
-			onRemoved(this);
+			PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
+			OnRemoved?.Invoke(this);
 		}
+	}
 
-		public override bool Weaved()
-		{
-			return true;
-		}
-
-		public static Action<EnvironmentalHazard> OnAdded;
-
-		public static Action<EnvironmentalHazard> OnRemoved;
+	public override bool Weaved()
+	{
+		return true;
 	}
 }

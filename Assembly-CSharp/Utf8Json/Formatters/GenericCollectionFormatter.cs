@@ -1,18 +1,16 @@
-﻿using System;
 using System.Collections.Generic;
 
-namespace Utf8Json.Formatters
-{
-	public sealed class GenericCollectionFormatter<TElement, TCollection> : CollectionFormatterBase<TElement, TCollection> where TCollection : class, ICollection<TElement>, new()
-	{
-		protected override TCollection Create()
-		{
-			return new TCollection();
-		}
+namespace Utf8Json.Formatters;
 
-		protected override void Add(ref TCollection collection, int index, TElement value)
-		{
-			collection.Add(value);
-		}
+public sealed class GenericCollectionFormatter<TElement, TCollection> : CollectionFormatterBase<TElement, TCollection> where TCollection : class, ICollection<TElement>, new()
+{
+	protected override TCollection Create()
+	{
+		return new TCollection();
+	}
+
+	protected override void Add(ref TCollection collection, int index, TElement value)
+	{
+		collection.Add(value);
 	}
 }

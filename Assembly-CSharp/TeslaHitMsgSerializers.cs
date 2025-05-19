@@ -1,4 +1,3 @@
-﻿using System;
 using Mirror;
 
 public static class TeslaHitMsgSerializers

@@ -1,9 +1,6 @@
-﻿using System;
+namespace ProgressiveCulling;
 
-namespace ProgressiveCulling
+public interface IAutoCullerOverrideComponent
 {
-	public interface IAutoCullerOverrideComponent
-	{
-		bool AllowAutoCulling { get; }
-	}
+	bool AllowAutoCulling { get; }
 }

@@ -1,93 +1,89 @@
-﻿using System;
 using CustomPlayerEffects;
 using UnityEngine;
 
-namespace InventorySystem.Items.Usables
+namespace InventorySystem.Items.Usables;
+
+public class UsableItemViewmodel : StandardAnimatedViemodel
 {
-	public class UsableItemViewmodel : StandardAnimatedViemodel
+	private static readonly int UseAnimHash = Animator.StringToHash("IsUsing");
+
+	private static readonly int SpeedModifierHash = Animator.StringToHash("SpeedModifier");
+
+	[SerializeField]
+	private AudioSource _equipSoundSource;
+
+	private float _originalPitch = 1f;
+
+	public override void InitAny()
 	{
-		public override void InitAny()
+		base.InitAny();
+		if (_equipSoundSource != null)
 		{
-			base.InitAny();
-			if (this._equipSoundSource != null)
+			_originalPitch = _equipSoundSource.pitch;
+		}
+	}
+
+	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
+	{
+		base.InitSpectator(ply, id, wasEquipped);
+		OnEquipped();
+		UsableItemsController.OnClientStatusReceived += HandleMessage;
+		if (wasEquipped)
+		{
+			if (_equipSoundSource != null)
 			{
-				this._originalPitch = this._equipSoundSource.pitch;
+				_equipSoundSource.Stop();
+			}
+			if (UsableItemsController.StartTimes.TryGetValue(id.SerialNumber, out var value))
+			{
+				AnimatorSetBool(UseAnimHash, val: true);
+				AnimatorForceUpdate(Time.timeSinceLevelLoad - value, fastMode: false);
+			}
+			else
+			{
+				AnimatorForceUpdate(base.SkipEquipTime);
 			}
 		}
+	}
 
-		public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
+	public virtual void OnUsingCancelled()
+	{
+		AnimatorSetBool(UseAnimHash, val: false);
+	}
+
+	public virtual void OnUsingStarted()
+	{
+		if (_equipSoundSource != null)
 		{
-			base.InitSpectator(ply, id, wasEquipped);
-			this.OnEquipped();
-			UsableItemsController.OnClientStatusReceived += this.HandleMessage;
-			if (!wasEquipped)
-			{
-				return;
-			}
-			if (this._equipSoundSource != null)
-			{
-				this._equipSoundSource.Stop();
-			}
-			float num;
-			if (UsableItemsController.StartTimes.TryGetValue(id.SerialNumber, out num))
-			{
-				this.AnimatorSetBool(UsableItemViewmodel.UseAnimHash, true);
-				this.AnimatorForceUpdate(Time.timeSinceLevelLoad - num, false);
-				return;
-			}
-			this.AnimatorForceUpdate(base.SkipEquipTime, true);
+			_equipSoundSource.Stop();
 		}
+		AnimatorSetBool(UseAnimHash, val: true);
+	}
 
-		public virtual void OnUsingCancelled()
+	internal override void OnEquipped()
+	{
+		base.OnEquipped();
+		float speedMultiplier = base.ItemId.TypeId.GetSpeedMultiplier(base.Hub);
+		AnimatorSetFloat(SpeedModifierHash, speedMultiplier);
+		if (_equipSoundSource != null)
 		{
-			this.AnimatorSetBool(UsableItemViewmodel.UseAnimHash, false);
+			_equipSoundSource.pitch = _originalPitch * speedMultiplier;
 		}
+	}
 
-		public virtual void OnUsingStarted()
+	private void HandleMessage(StatusMessage msg)
+	{
+		if (msg.ItemSerial == base.ItemId.SerialNumber)
 		{
-			if (this._equipSoundSource != null)
-			{
-				this._equipSoundSource.Stop();
-			}
-			this.AnimatorSetBool(UsableItemViewmodel.UseAnimHash, true);
+			AnimatorSetBool(UseAnimHash, msg.Status == StatusMessage.StatusType.Start);
 		}
+	}
 
-		internal override void OnEquipped()
+	protected virtual void OnDestroy()
+	{
+		if (base.IsSpectator)
 		{
-			base.OnEquipped();
-			float speedMultiplier = base.ItemId.TypeId.GetSpeedMultiplier(base.Hub);
-			this.AnimatorSetFloat(UsableItemViewmodel.SpeedModifierHash, speedMultiplier);
-			if (this._equipSoundSource != null)
-			{
-				this._equipSoundSource.pitch = this._originalPitch * speedMultiplier;
-			}
+			UsableItemsController.OnClientStatusReceived -= HandleMessage;
 		}
-
-		private void HandleMessage(StatusMessage msg)
-		{
-			if (msg.ItemSerial != base.ItemId.SerialNumber)
-			{
-				return;
-			}
-			this.AnimatorSetBool(UsableItemViewmodel.UseAnimHash, msg.Status == StatusMessage.StatusType.Start);
-		}
-
-		protected virtual void OnDestroy()
-		{
-			if (!base.IsSpectator)
-			{
-				return;
-			}
-			UsableItemsController.OnClientStatusReceived -= this.HandleMessage;
-		}
-
-		private static readonly int UseAnimHash = Animator.StringToHash("IsUsing");
-
-		private static readonly int SpeedModifierHash = Animator.StringToHash("SpeedModifier");
-
-		[SerializeField]
-		private AudioSource _equipSoundSource;
-
-		private float _originalPitch = 1f;
 	}
 }

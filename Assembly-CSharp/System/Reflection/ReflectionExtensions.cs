@@ -1,12 +1,9 @@
-﻿using System;
+namespace System.Reflection;
 
-namespace System.Reflection
+internal static class ReflectionExtensions
 {
-	internal static class ReflectionExtensions
+	public static bool IsConstructedGenericType(this TypeInfo type)
 	{
-		public static bool IsConstructedGenericType(this TypeInfo type)
-		{
-			return type.IsConstructedGenericType;
-		}
+		return type.IsConstructedGenericType;
 	}
 }

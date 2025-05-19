@@ -1,9 +1,6 @@
-﻿using System;
+namespace Respawning.Config;
 
-namespace Respawning.Config
+public interface IWaveConfig
 {
-	public interface IWaveConfig
-	{
-		bool IsEnabled { get; set; }
-	}
+	bool IsEnabled { get; set; }
 }

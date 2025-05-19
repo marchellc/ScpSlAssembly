@@ -1,149 +1,152 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using MapGeneration;
 using PlayerRoles;
 using UnityEngine;
 
-namespace ProgressiveCulling
+namespace ProgressiveCulling;
+
+public class CullingCamera : MonoBehaviour
 {
-	public class CullingCamera : MonoBehaviour
+	private Camera _camera;
+
+	[SerializeField]
+	private float _minFarClipPlane = 10f;
+
+	[SerializeField]
+	private float _farClipPlaneFogOffset = 1f;
+
+	private static float _lastFarPlaneSqr;
+
+	private static bool _pauseCulling;
+
+	private static readonly Plane[] LastPlanes = new Plane[6];
+
+	private static readonly HashSet<IRootCullable> RootCullables = new HashSet<IRootCullable>();
+
+	public static Vector3 LastCamPosition { get; private set; }
+
+	private static bool CullingPaused
 	{
-		public static event Action<RootCullablePriority, Camera> OnStageStarted;
-
-		public static Vector3 LastCamPosition { get; private set; }
-
-		private static bool CullingPaused
+		get
 		{
-			get
+			if (!_pauseCulling)
 			{
-				if (!CullingCamera._pauseCulling)
-				{
-					return false;
-				}
-				ReferenceHub referenceHub;
-				if (!ReferenceHub.TryGetLocalHub(out referenceHub) || !referenceHub.IsAlive())
-				{
-					return true;
-				}
-				foreach (ReferenceHub referenceHub2 in ReferenceHub.AllHubs)
-				{
-					if (referenceHub2.IsAlive() && HitboxIdentity.IsEnemy(referenceHub2, referenceHub))
-					{
-						return false;
-					}
-				}
+				return false;
+			}
+			if (!ReferenceHub.TryGetLocalHub(out var hub) || !hub.IsAlive())
+			{
 				return true;
 			}
-		}
-
-		private void Awake()
-		{
-			this._camera = base.GetComponent<Camera>();
-		}
-
-		private void OnEnable()
-		{
-			MainCameraController.OnUpdated += this.UpdateCulling;
-		}
-
-		private void OnDisable()
-		{
-			MainCameraController.OnUpdated -= this.UpdateCulling;
-		}
-
-		private void UpdateCulling()
-		{
-		}
-
-		[RuntimeInitializeOnLoadMethod]
-		private static void Init()
-		{
-			SeedSynchronizer.OnGenerationStage += CullingCamera.OnMapGenerationStage;
-		}
-
-		private static void OnMapGenerationStage(MapGenerationPhase stage)
-		{
-			if (stage != MapGenerationPhase.CullingCaching)
+			foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 			{
-				return;
-			}
-			foreach (IRootCullable rootCullable in CullingCamera.RootCullables)
-			{
-				rootCullable.SetupCache();
-			}
-		}
-
-		public static bool CheckBoundsVisibility(Plane[] planes, float maxDistanceSqr, Bounds bounds)
-		{
-			Vector3 min = bounds.min;
-			Vector3 max = bounds.max;
-			foreach (Plane plane in planes)
-			{
-				Vector3 normal = plane.normal;
-				Vector3 vector = min;
-				Vector3 vector2 = max;
-				if (normal.x >= 0f)
-				{
-					vector.x = max.x;
-					vector2.x = min.x;
-				}
-				if (normal.y >= 0f)
-				{
-					vector.y = max.y;
-					vector2.y = min.y;
-				}
-				if (normal.z >= 0f)
-				{
-					vector.z = max.z;
-					vector2.z = min.z;
-				}
-				if (Vector3.Dot(normal, vector) + plane.distance < 0f)
+				if (allHub.IsAlive() && HitboxIdentity.IsEnemy(allHub, hub))
 				{
 					return false;
 				}
 			}
-			return bounds.SqrDistance(CullingCamera.LastCamPosition) < maxDistanceSqr;
+			return true;
 		}
+	}
 
-		public static bool CheckBoundsVisibility(Bounds bounds)
+	public static event Action<RootCullablePriority, Camera> OnStageStarted;
+
+	private void Awake()
+	{
+		_camera = GetComponent<Camera>();
+	}
+
+	private void OnEnable()
+	{
+		MainCameraController.OnUpdated += UpdateCulling;
+	}
+
+	private void OnDisable()
+	{
+		MainCameraController.OnUpdated -= UpdateCulling;
+	}
+
+	private void UpdateCulling()
+	{
+	}
+
+	[RuntimeInitializeOnLoadMethod]
+	private static void Init()
+	{
+		SeedSynchronizer.OnGenerationStage += OnMapGenerationStage;
+	}
+
+	private static void OnMapGenerationStage(MapGenerationPhase stage)
+	{
+		if (stage != MapGenerationPhase.CullingCaching)
 		{
-			return CullingCamera.LastPlanes == null || CullingCamera.CheckBoundsVisibility(CullingCamera.LastPlanes, CullingCamera._lastFarPlaneSqr, bounds);
+			return;
 		}
-
-		public static void RegisterRootCullable(IRootCullable cullable)
+		foreach (IRootCullable rootCullable in RootCullables)
 		{
-			CullingCamera.RootCullables.Add(cullable);
-			if (SeedSynchronizer.MapGenerated)
+			rootCullable.SetupCache();
+		}
+	}
+
+	public static bool CheckBoundsVisibility(Plane[] planes, float maxDistanceSqr, Bounds bounds)
+	{
+		Vector3 min = bounds.min;
+		Vector3 max = bounds.max;
+		for (int i = 0; i < planes.Length; i++)
+		{
+			Plane plane = planes[i];
+			Vector3 normal = plane.normal;
+			Vector3 rhs = min;
+			Vector3 vector = max;
+			if (normal.x >= 0f)
 			{
-				cullable.SetupCache();
+				rhs.x = max.x;
+				vector.x = min.x;
+			}
+			if (normal.y >= 0f)
+			{
+				rhs.y = max.y;
+				vector.y = min.y;
+			}
+			if (normal.z >= 0f)
+			{
+				rhs.z = max.z;
+				vector.z = min.z;
+			}
+			if (!(Vector3.Dot(normal, rhs) + plane.distance >= 0f))
+			{
+				return false;
 			}
 		}
+		return bounds.SqrDistance(LastCamPosition) < maxDistanceSqr;
+	}
 
-		public static void UnregisterRootCullable(IRootCullable cullable)
+	public static bool CheckBoundsVisibility(Bounds bounds)
+	{
+		if (LastPlanes != null)
 		{
-			CullingCamera.RootCullables.Remove(cullable);
+			return CheckBoundsVisibility(LastPlanes, _lastFarPlaneSqr, bounds);
 		}
+		return true;
+	}
 
-		public static bool TogglePause()
+	public static void RegisterRootCullable(IRootCullable cullable)
+	{
+		RootCullables.Add(cullable);
+		if (SeedSynchronizer.MapGenerated)
 		{
-			CullingCamera._pauseCulling = !CullingCamera._pauseCulling;
-			return CullingCamera.CullingPaused;
+			cullable.SetupCache();
 		}
+	}
 
-		private Camera _camera;
+	public static void UnregisterRootCullable(IRootCullable cullable)
+	{
+		RootCullables.Remove(cullable);
+	}
 
-		[SerializeField]
-		private float _minFarClipPlane = 10f;
-
-		[SerializeField]
-		private float _farClipPlaneFogOffset = 1f;
-
-		private static float _lastFarPlaneSqr;
-
-		private static bool _pauseCulling;
-
-		private static readonly Plane[] LastPlanes = new Plane[6];
-
-		private static readonly HashSet<IRootCullable> RootCullables = new HashSet<IRootCullable>();
+	public static bool TogglePause()
+	{
+		_pauseCulling = !_pauseCulling;
+		return CullingPaused;
 	}
 }

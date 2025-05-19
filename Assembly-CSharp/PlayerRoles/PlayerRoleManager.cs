@@ -1,206 +1,209 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CustomPlayerEffects;
 using GameObjectPools;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 using Mirror;
+using NetworkManagerUtils.Dummies;
 using PlayerRoles.FirstPersonControl.Spawnpoints;
 using PlayerRoles.SpawnData;
 using UnityEngine;
 
-namespace PlayerRoles
+namespace PlayerRoles;
+
+public sealed class PlayerRoleManager : NetworkBehaviour, IRootDummyActionProvider
 {
-	public sealed class PlayerRoleManager : NetworkBehaviour
+	public delegate void ServerRoleSet(ReferenceHub userHub, RoleTypeId newRole, RoleChangeReason reason);
+
+	public delegate void RoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole);
+
+	public readonly Dictionary<uint, RoleTypeId> PreviouslySentRole = new Dictionary<uint, RoleTypeId>();
+
+	private ReferenceHub _hub;
+
+	private bool _hubSet;
+
+	private bool _anySet;
+
+	private bool _sendNextFrame;
+
+	private PlayerRoleBase _curRole;
+
+	private IRootDummyActionProvider[] _dummyProviders;
+
+	private const RoleTypeId DefaultRole = RoleTypeId.None;
+
+	public PlayerRoleBase CurrentRole
 	{
-		public static event PlayerRoleManager.ServerRoleSet OnServerRoleSet;
-
-		public static event PlayerRoleManager.RoleChanged OnRoleChanged;
-
-		public PlayerRoleBase CurrentRole
+		get
 		{
-			get
+			if (!_anySet)
 			{
-				if (!this._anySet)
-				{
-					this.InitializeNewRole(RoleTypeId.None, RoleChangeReason.None, RoleSpawnFlags.All, null);
-				}
-				return this._curRole;
+				InitializeNewRole(RoleTypeId.None, RoleChangeReason.None);
 			}
-			set
-			{
-				this._curRole = value;
-				this._anySet = true;
-			}
+			return _curRole;
 		}
-
-		private ReferenceHub Hub
+		set
 		{
-			get
-			{
-				if (!this._hubSet && ReferenceHub.TryGetHub(base.gameObject, out this._hub))
-				{
-					this._hubSet = true;
-				}
-				return this._hub;
-			}
+			_curRole = value;
+			_anySet = true;
 		}
+	}
 
-		private void Update()
+	public bool DummyActionsDirty { get; set; }
+
+	private ReferenceHub Hub
+	{
+		get
 		{
-			if (!NetworkServer.active || !this._sendNextFrame)
+			if (!_hubSet && ReferenceHub.TryGetHub(base.gameObject, out _hub))
 			{
-				return;
+				_hubSet = true;
 			}
-			this._sendNextFrame = false;
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
+			return _hub;
+		}
+	}
+
+	public static event ServerRoleSet OnServerRoleSet;
+
+	public static event RoleChanged OnRoleChanged;
+
+	private void Update()
+	{
+		if (!NetworkServer.active || !_sendNextFrame)
+		{
+			return;
+		}
+		_sendNextFrame = false;
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
+		{
+			if (allHub.isLocalPlayer)
 			{
-				if (!referenceHub.isLocalPlayer)
+				continue;
+			}
+			RoleTypeId roleTypeId = CurrentRole.RoleTypeId;
+			if (CurrentRole is IObfuscatedRole obfuscatedRole)
+			{
+				roleTypeId = obfuscatedRole.GetRoleForUser(allHub);
+				if (PreviouslySentRole.TryGetValue(allHub.netId, out var value) && value == roleTypeId)
 				{
-					RoleTypeId roleTypeId = this.CurrentRole.RoleTypeId;
-					IObfuscatedRole obfuscatedRole = this.CurrentRole as IObfuscatedRole;
-					if (obfuscatedRole != null)
-					{
-						roleTypeId = obfuscatedRole.GetRoleForUser(referenceHub);
-						RoleTypeId roleTypeId2;
-						if (this.PreviouslySentRole.TryGetValue(referenceHub.netId, out roleTypeId2) && roleTypeId2 == roleTypeId)
-						{
-							continue;
-						}
-					}
-					referenceHub.connectionToClient.Send<RoleSyncInfo>(new RoleSyncInfo(this.Hub, roleTypeId, referenceHub), 0);
-					this.PreviouslySentRole[referenceHub.netId] = roleTypeId;
+					continue;
 				}
 			}
+			allHub.connectionToClient.Send(new RoleSyncInfo(Hub, roleTypeId, allHub));
+			PreviouslySentRole[allHub.netId] = roleTypeId;
 		}
+	}
 
-		private void OnDestroy()
+	private void OnDestroy()
+	{
+		if (CurrentRole is DestroyedRole destroyedRole && destroyedRole != null)
 		{
-			DestroyedRole destroyedRole = this.CurrentRole as DestroyedRole;
-			if (destroyedRole != null && destroyedRole != null)
+			destroyedRole.DisableRole(RoleTypeId.Destroyed);
+		}
+	}
+
+	public override void OnStopClient()
+	{
+		base.OnStopClient();
+		InitializeNewRole(RoleTypeId.Destroyed, RoleChangeReason.Destroyed);
+	}
+
+	private PlayerRoleBase GetRoleBase(RoleTypeId targetId)
+	{
+		if (!PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(targetId, out var result))
+		{
+			Debug.LogError($"Role #{targetId} could not be found. Player with ID {Hub.PlayerId} will receive the default role ({RoleTypeId.None}).");
+			if (!PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(RoleTypeId.None, out result))
 			{
-				destroyedRole.DisableRole(RoleTypeId.Destroyed);
+				throw new NotImplementedException("Role change failed. Default role is not correctly implemented.");
 			}
 		}
-
-		public override void OnStopClient()
+		if (!PoolManager.Singleton.TryGetPoolObject(result.gameObject, out var poolObject, autoSetup: false) || !(poolObject is PlayerRoleBase result2))
 		{
-			base.OnStopClient();
-			this.InitializeNewRole(RoleTypeId.Destroyed, RoleChangeReason.Destroyed, RoleSpawnFlags.All, null);
+			throw new InvalidOperationException($"Role {targetId} failed to initialize, pool was not found or dequed object was of incorrect type.");
 		}
+		return result2;
+	}
 
-		private PlayerRoleBase GetRoleBase(RoleTypeId targetId)
+	public void InitializeNewRole(RoleTypeId targetId, RoleChangeReason reason, RoleSpawnFlags spawnFlags = RoleSpawnFlags.All, NetworkReader data = null)
+	{
+		PlayerRoleBase playerRoleBase;
+		bool flag;
+		if (_anySet)
 		{
-			PlayerRoleBase playerRoleBase;
-			if (!PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(targetId, out playerRoleBase))
-			{
-				Debug.LogError(string.Format("Role #{0} could not be found. Player with ID {1} will receive the default role ({2}).", targetId, this.Hub.PlayerId, RoleTypeId.None));
-				if (!PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(RoleTypeId.None, out playerRoleBase))
-				{
-					throw new NotImplementedException("Role change failed. Default role is not correctly implemented.");
-				}
-			}
-			PoolObject poolObject;
-			if (PoolManager.Singleton.TryGetPoolObject(playerRoleBase.gameObject, out poolObject, false))
-			{
-				PlayerRoleBase playerRoleBase2 = poolObject as PlayerRoleBase;
-				if (playerRoleBase2 != null)
-				{
-					return playerRoleBase2;
-				}
-			}
-			throw new InvalidOperationException(string.Format("Role {0} failed to initialize, pool was not found or dequed object was of incorrect type.", targetId));
+			playerRoleBase = CurrentRole;
+			playerRoleBase.DisableRole(targetId);
+			flag = true;
 		}
-
-		public void InitializeNewRole(RoleTypeId targetId, RoleChangeReason reason, RoleSpawnFlags spawnFlags = RoleSpawnFlags.All, NetworkReader data = null)
+		else
 		{
-			PlayerRoleBase playerRoleBase;
-			bool flag;
-			if (this._anySet)
-			{
-				playerRoleBase = this.CurrentRole;
-				playerRoleBase.DisableRole(targetId);
-				flag = true;
-			}
-			else
-			{
-				playerRoleBase = null;
-				flag = false;
-			}
-			PlayerRoleBase roleBase = this.GetRoleBase(targetId);
-			Transform transform = roleBase.transform;
-			if (targetId != RoleTypeId.Destroyed || reason != RoleChangeReason.Destroyed)
-			{
-				transform.parent = base.transform;
-				transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-			}
-			this.CurrentRole = roleBase;
-			roleBase.Init(this.Hub, reason, spawnFlags);
-			RoleSpawnpointManager.SetPosition(this.Hub, this.CurrentRole);
-			roleBase.SetupPoolObject();
-			ISpawnDataReader spawnDataReader = this.CurrentRole as ISpawnDataReader;
-			if (spawnDataReader != null && data != null && targetId != RoleTypeId.Spectator && !base.isLocalPlayer)
-			{
-				spawnDataReader.ReadSpawnData(data);
-			}
-			if (flag)
-			{
-				PlayerRoleManager.RoleChanged onRoleChanged = PlayerRoleManager.OnRoleChanged;
-				if (onRoleChanged != null)
-				{
-					onRoleChanged(this.Hub, playerRoleBase, this.CurrentRole);
-				}
-			}
-			SpawnProtected.TryGiveProtection(this.Hub);
+			playerRoleBase = null;
+			flag = false;
 		}
-
-		[Server]
-		public void ServerSetRole(RoleTypeId newRole, RoleChangeReason reason, RoleSpawnFlags spawnFlags = RoleSpawnFlags.All)
+		PlayerRoleBase roleBase = GetRoleBase(targetId);
+		Transform transform = roleBase.transform;
+		if (targetId != RoleTypeId.Destroyed || reason != RoleChangeReason.Destroyed)
 		{
-			if (!NetworkServer.active)
-			{
-				Debug.LogWarning("[Server] function 'System.Void PlayerRoles.PlayerRoleManager::ServerSetRole(PlayerRoles.RoleTypeId,PlayerRoles.RoleChangeReason,PlayerRoles.RoleSpawnFlags)' called when server was not active");
-				return;
-			}
-			PlayerChangingRoleEventArgs playerChangingRoleEventArgs = new PlayerChangingRoleEventArgs(this.Hub, this.CurrentRole, newRole, reason);
-			PlayerEvents.OnChangingRole(playerChangingRoleEventArgs);
-			if (!playerChangingRoleEventArgs.IsAllowed)
-			{
-				return;
-			}
+			transform.parent = base.transform;
+			transform.ResetLocalPose();
+		}
+		CurrentRole = roleBase;
+		roleBase.Init(Hub, reason, spawnFlags);
+		RoleSpawnpointManager.SetPosition(Hub, CurrentRole);
+		roleBase.SetupPoolObject();
+		if (CurrentRole is ISpawnDataReader spawnDataReader && data != null && targetId != RoleTypeId.Spectator && !base.isLocalPlayer)
+		{
+			spawnDataReader.ReadSpawnData(data);
+		}
+		if (flag)
+		{
+			PlayerRoleManager.OnRoleChanged?.Invoke(Hub, playerRoleBase, CurrentRole);
+		}
+		SpawnProtected.TryGiveProtection(Hub);
+		if (Hub.IsDummy)
+		{
+			_dummyProviders = roleBase.GetComponentsInChildren<IRootDummyActionProvider>();
+			DummyActionsDirty = true;
+		}
+	}
+
+	[Server]
+	public void ServerSetRole(RoleTypeId newRole, RoleChangeReason reason, RoleSpawnFlags spawnFlags = RoleSpawnFlags.All)
+	{
+		if (!NetworkServer.active)
+		{
+			Debug.LogWarning("[Server] function 'System.Void PlayerRoles.PlayerRoleManager::ServerSetRole(PlayerRoles.RoleTypeId,PlayerRoles.RoleChangeReason,PlayerRoles.RoleSpawnFlags)' called when server was not active");
+			return;
+		}
+		PlayerChangingRoleEventArgs playerChangingRoleEventArgs = new PlayerChangingRoleEventArgs(Hub, CurrentRole, newRole, reason, spawnFlags);
+		PlayerEvents.OnChangingRole(playerChangingRoleEventArgs);
+		if (playerChangingRoleEventArgs.IsAllowed)
+		{
 			newRole = playerChangingRoleEventArgs.NewRole;
 			reason = playerChangingRoleEventArgs.ChangeReason;
-			PlayerRoleManager.ServerRoleSet onServerRoleSet = PlayerRoleManager.OnServerRoleSet;
-			if (onServerRoleSet != null)
-			{
-				onServerRoleSet(this.Hub, newRole, reason);
-			}
-			this.InitializeNewRole(newRole, reason, spawnFlags, null);
-			this._sendNextFrame = true;
-			PlayerEvents.OnChangedRole(new PlayerChangedRoleEventArgs(this._hub, this.CurrentRole, newRole, reason));
+			spawnFlags = playerChangingRoleEventArgs.SpawnFlags;
+			RoleTypeId roleTypeId = CurrentRole.RoleTypeId;
+			PlayerRoleManager.OnServerRoleSet?.Invoke(Hub, newRole, reason);
+			InitializeNewRole(newRole, reason, spawnFlags);
+			_sendNextFrame = true;
+			PlayerEvents.OnChangedRole(new PlayerChangedRoleEventArgs(_hub, roleTypeId, CurrentRole, reason, spawnFlags));
 		}
+	}
 
-		public override bool Weaved()
+	public void PopulateDummyActions(Action<DummyAction> actionAdder, Action<string> categoryAdder)
+	{
+		IRootDummyActionProvider[] dummyProviders = _dummyProviders;
+		for (int i = 0; i < dummyProviders.Length; i++)
 		{
-			return true;
+			dummyProviders[i].PopulateDummyActions(actionAdder, categoryAdder);
 		}
+		DummyActionsDirty = false;
+	}
 
-		public readonly Dictionary<uint, RoleTypeId> PreviouslySentRole = new Dictionary<uint, RoleTypeId>();
-
-		private ReferenceHub _hub;
-
-		private bool _hubSet;
-
-		private bool _anySet;
-
-		private bool _sendNextFrame;
-
-		private PlayerRoleBase _curRole;
-
-		private const RoleTypeId DefaultRole = RoleTypeId.None;
-
-		public delegate void ServerRoleSet(ReferenceHub userHub, RoleTypeId newRole, RoleChangeReason reason);
-
-		public delegate void RoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole);
+	public override bool Weaved()
+	{
+		return true;
 	}
 }

@@ -1,65 +1,66 @@
-﻿using System;
+using System;
 using InventorySystem.Items.Firearms.ShotEvents;
 using UnityEngine;
 
-namespace InventorySystem.Items.Firearms.Modules
+namespace InventorySystem.Items.Firearms.Modules;
+
+public class MultiBarrelHitscan : HitscanHitregModuleBase
 {
-	public class MultiBarrelHitscan : HitscanHitregModuleBase
+	[Serializable]
+	private struct BarrelOffset
 	{
-		internal override void EquipUpdate()
+		public float RightPosition;
+
+		public float TopPosition;
+
+		public float RightDirection;
+
+		public float TopDirection;
+	}
+
+	private Ray? _lastRay;
+
+	[SerializeField]
+	private BarrelOffset[] _barrels;
+
+	internal override void EquipUpdate()
+	{
+		base.EquipUpdate();
+		_lastRay = null;
+	}
+
+	protected override float HitmarkerSizeAtDamage(float damage)
+	{
+		return Mathf.Clamp01(base.HitmarkerSizeAtDamage(damage));
+	}
+
+	protected override void Fire()
+	{
+		Ray valueOrDefault = _lastRay.GetValueOrDefault();
+		if (!_lastRay.HasValue)
 		{
-			base.EquipUpdate();
-			this._lastRay = null;
+			valueOrDefault = RandomizeRay(base.ForwardRay, base.CurrentInaccuracy);
+			_lastRay = valueOrDefault;
 		}
-
-		protected override void Fire()
+		if (!(base.LastShotEvent is BulletShotEvent bulletShotEvent) || !_barrels.TryGet(bulletShotEvent.BarrelId, out var element))
 		{
-			Ray ray = this._lastRay.GetValueOrDefault();
-			if (this._lastRay == null)
-			{
-				ray = base.RandomizeRay(base.ForwardRay, base.CurrentInaccuracy);
-				this._lastRay = new Ray?(ray);
-			}
-			BulletShotEvent bulletShotEvent = base.LastShotEvent as BulletShotEvent;
-			MultiBarrelHitscan.BarrelOffset barrelOffset;
-			float num;
-			if (bulletShotEvent == null || !this._barrels.TryGet(bulletShotEvent.BarrelId, out barrelOffset))
-			{
-				base.ServerPerformHitscan(this._lastRay.Value, out num);
-			}
-			else
-			{
-				this.ShootOffset(barrelOffset, out num);
-			}
-			this.SendHitmarker(num);
+			ServerApplyDamage(ServerPrescan(_lastRay.Value));
 		}
-
-		private void ShootOffset(MultiBarrelHitscan.BarrelOffset offset, out float dmgDealt)
+		else
 		{
-			Transform playerCameraReference = base.Firearm.Owner.PlayerCameraReference;
-			Vector3 vector = this._lastRay.Value.origin;
-			vector += playerCameraReference.up * offset.TopPosition;
-			vector += playerCameraReference.right * offset.RightPosition;
-			Vector3 vector2 = this._lastRay.Value.direction;
-			vector2 += Vector3.up * offset.TopDirection;
-			base.ServerPerformHitscan(new Ray(vector, (vector2 + Vector3.right * offset.RightDirection).normalized), out dmgDealt);
+			ShootOffset(element);
 		}
+	}
 
-		private Ray? _lastRay;
-
-		[SerializeField]
-		private MultiBarrelHitscan.BarrelOffset[] _barrels;
-
-		[Serializable]
-		private struct BarrelOffset
-		{
-			public float RightPosition;
-
-			public float TopPosition;
-
-			public float RightDirection;
-
-			public float TopDirection;
-		}
+	private void ShootOffset(BarrelOffset offset)
+	{
+		Transform playerCameraReference = base.Firearm.Owner.PlayerCameraReference;
+		Vector3 origin = _lastRay.Value.origin;
+		origin += playerCameraReference.up * offset.TopPosition;
+		origin += playerCameraReference.right * offset.RightPosition;
+		Vector3 direction = _lastRay.Value.direction;
+		direction += Vector3.up * offset.TopDirection;
+		Ray targetRay = new Ray(origin, (direction + Vector3.right * offset.RightDirection).normalized);
+		ServerApplyDamage(ServerPrescan(targetRay));
 	}
 }

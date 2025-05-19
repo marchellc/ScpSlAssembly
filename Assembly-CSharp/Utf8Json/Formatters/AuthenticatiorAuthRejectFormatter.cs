@@ -1,78 +1,74 @@
-﻿using System;
+using System;
 using Utf8Json.Internal;
 
-namespace Utf8Json.Formatters
+namespace Utf8Json.Formatters;
+
+public sealed class AuthenticatiorAuthRejectFormatter : IJsonFormatter<AuthenticatiorAuthReject>, IJsonFormatter
 {
-	public sealed class AuthenticatiorAuthRejectFormatter : IJsonFormatter<AuthenticatiorAuthReject>, IJsonFormatter
+	private readonly AutomataDictionary ____keyMapping;
+
+	private readonly byte[][] ____stringByteKeys;
+
+	public AuthenticatiorAuthRejectFormatter()
 	{
-		public AuthenticatiorAuthRejectFormatter()
+		____keyMapping = new AutomataDictionary
 		{
-			this.____keyMapping = new AutomataDictionary
 			{
-				{
-					JsonWriter.GetEncodedPropertyNameWithoutQuotation("Id"),
-					0
-				},
-				{
-					JsonWriter.GetEncodedPropertyNameWithoutQuotation("Reason"),
-					1
-				}
-			};
-			this.____stringByteKeys = new byte[][]
+				JsonWriter.GetEncodedPropertyNameWithoutQuotation("Id"),
+				0
+			},
 			{
-				JsonWriter.GetEncodedPropertyNameWithBeginObject("Id"),
-				JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("Reason")
-			};
-		}
-
-		public void Serialize(ref JsonWriter writer, AuthenticatiorAuthReject value, IJsonFormatterResolver formatterResolver)
-		{
-			writer.WriteRaw(this.____stringByteKeys[0]);
-			writer.WriteString(value.Id);
-			writer.WriteRaw(this.____stringByteKeys[1]);
-			writer.WriteString(value.Reason);
-			writer.WriteEndObject();
-		}
-
-		public AuthenticatiorAuthReject Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
-		{
-			if (reader.ReadIsNull())
-			{
-				throw new InvalidOperationException("typecode is null, struct not supported");
+				JsonWriter.GetEncodedPropertyNameWithoutQuotation("Reason"),
+				1
 			}
-			string text = null;
-			string text2 = null;
-			int num = 0;
-			reader.ReadIsBeginObjectWithVerify();
-			while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref num))
-			{
-				ArraySegment<byte> arraySegment = reader.ReadPropertyNameSegmentRaw();
-				int num2;
-				if (!this.____keyMapping.TryGetValueSafe(arraySegment, out num2))
-				{
-					reader.ReadNextBlock();
-				}
-				else if (num2 != 0)
-				{
-					if (num2 != 1)
-					{
-						reader.ReadNextBlock();
-					}
-					else
-					{
-						text2 = reader.ReadString();
-					}
-				}
-				else
-				{
-					text = reader.ReadString();
-				}
-			}
-			return new AuthenticatiorAuthReject(text, text2);
+		};
+		____stringByteKeys = new byte[2][]
+		{
+			JsonWriter.GetEncodedPropertyNameWithBeginObject("Id"),
+			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("Reason")
+		};
+	}
+
+	public void Serialize(ref JsonWriter writer, AuthenticatiorAuthReject value, IJsonFormatterResolver formatterResolver)
+	{
+		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteString(value.Id);
+		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteString(value.Reason);
+		writer.WriteEndObject();
+	}
+
+	public AuthenticatiorAuthReject Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
+	{
+		if (reader.ReadIsNull())
+		{
+			throw new InvalidOperationException("typecode is null, struct not supported");
 		}
-
-		private readonly AutomataDictionary ____keyMapping;
-
-		private readonly byte[][] ____stringByteKeys;
+		string id = null;
+		string reason = null;
+		int count = 0;
+		reader.ReadIsBeginObjectWithVerify();
+		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
+		{
+			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
+			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			{
+				reader.ReadNextBlock();
+				continue;
+			}
+			switch (value)
+			{
+			case 0:
+				id = reader.ReadString();
+				break;
+			case 1:
+				reason = reader.ReadString();
+				break;
+			default:
+				reader.ReadNextBlock();
+				break;
+			}
+		}
+		return new AuthenticatiorAuthReject(id, reason);
 	}
 }

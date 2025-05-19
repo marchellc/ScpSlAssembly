@@ -1,15 +1,6 @@
-﻿using System;
+namespace Respawning.Objectives;
 
-namespace Respawning.Objectives
+public class EscapeObjectiveFootprint : ObjectiveFootprintBase
 {
-	public class EscapeObjectiveFootprint : ObjectiveFootprintBase
-	{
-		protected override FootprintsTranslation TargetTranslation
-		{
-			get
-			{
-				return FootprintsTranslation.EscapeObjective;
-			}
-		}
-	}
+	protected override FootprintsTranslation TargetTranslation => FootprintsTranslation.EscapeObjective;
 }

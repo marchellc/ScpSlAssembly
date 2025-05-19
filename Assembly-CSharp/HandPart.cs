@@ -1,4 +1,3 @@
-﻿using System;
 using GameObjectPools;
 using InventorySystem.Items;
 using InventorySystem.Items.Thirdperson;
@@ -6,35 +5,42 @@ using UnityEngine;
 
 public class HandPart : ThirdpersonItemBase
 {
+	public GameObject TargetPart;
+
+	public ItemType TargetItemId;
+
+	public bool UseUniversalAnimations;
+
+	[SerializeField]
+	private GameObject optionalPrefab;
+
 	protected bool CurrentlyEnabled { get; set; }
 
 	protected GameObject SpawnedObject { get; set; }
 
 	public void UpdateItem()
 	{
-		bool flag = base.OwnerHub.inventory.CurItem.TypeId == this.TargetItemId;
-		if (flag == this.CurrentlyEnabled)
+		bool flag = base.OwnerHub.inventory.CurItem.TypeId == TargetItemId;
+		if (flag == CurrentlyEnabled)
 		{
 			return;
 		}
-		this.CurrentlyEnabled = flag;
-		this.TargetPart.SetActive(flag);
-		if (flag && this.optionalPrefab != null)
+		CurrentlyEnabled = flag;
+		TargetPart.SetActive(flag);
+		if (flag && optionalPrefab != null)
 		{
-			PoolObject poolObject;
-			this.SpawnedObject = (PoolManager.Singleton.TryGetPoolObject(this.optionalPrefab, this.TargetPart.transform, out poolObject, true) ? poolObject.gameObject : global::UnityEngine.Object.Instantiate<GameObject>(this.optionalPrefab, this.TargetPart.transform));
-			this.SpawnedObject.transform.localScale = Vector3.one;
-			this.SpawnedObject.transform.localPosition = Vector3.zero;
-			this.SpawnedObject.transform.localRotation = Quaternion.identity;
-			this.OnActiveStateChange(true);
-			return;
+			SpawnedObject = (PoolManager.Singleton.TryGetPoolObject(optionalPrefab, TargetPart.transform, out var poolObject) ? poolObject.gameObject : Object.Instantiate(optionalPrefab, TargetPart.transform));
+			SpawnedObject.transform.localScale = Vector3.one;
+			SpawnedObject.transform.localPosition = Vector3.zero;
+			SpawnedObject.transform.localRotation = Quaternion.identity;
+			OnActiveStateChange(isEnabled: true);
 		}
-		if (this.SpawnedObject != null)
+		else if (SpawnedObject != null)
 		{
-			this.OnActiveStateChange(false);
-			if (!PoolManager.Singleton.TryReturnPoolObject(this.SpawnedObject))
+			OnActiveStateChange(isEnabled: false);
+			if (!PoolManager.Singleton.TryReturnPoolObject(SpawnedObject))
 			{
-				global::UnityEngine.Object.Destroy(this.SpawnedObject);
+				Object.Destroy(SpawnedObject);
 			}
 		}
 	}
@@ -42,9 +48,9 @@ public class HandPart : ThirdpersonItemBase
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		this.TargetPart.SetActive(false);
-		this.CurrentlyEnabled = false;
-		this.OnActiveStateChange(false);
+		TargetPart.SetActive(value: false);
+		CurrentlyEnabled = false;
+		OnActiveStateChange(isEnabled: false);
 	}
 
 	protected virtual void OnActiveStateChange(bool isEnabled)
@@ -58,15 +64,6 @@ public class HandPart : ThirdpersonItemBase
 
 	public override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
 	{
-		return new ThirdpersonLayerWeight(1f, false);
+		return new ThirdpersonLayerWeight(1f, allowOther: false);
 	}
-
-	public GameObject TargetPart;
-
-	public ItemType TargetItemId;
-
-	public bool UseUniversalAnimations;
-
-	[SerializeField]
-	private GameObject optionalPrefab;
 }

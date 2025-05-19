@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Footprinting;
 using InventorySystem;
 using InventorySystem.Items;
@@ -8,111 +8,96 @@ using Mirror;
 using UnityEngine;
 using Utils.NonAllocLINQ;
 
-namespace Christmas.Scp2536.Gifts
+namespace Christmas.Scp2536.Gifts;
+
+public class Naughty : Scp2536ItemGift
 {
-	public class Naughty : Scp2536ItemGift
+	private const float GiftReplacementChance = 50f;
+
+	private const int MaxGiftOpenings = 3;
+
+	public override UrgencyLevel Urgency => UrgencyLevel.Exclusive;
+
+	internal override bool IgnoredByRandomness => true;
+
+	protected override Scp2536Reward[] Rewards => new Scp2536Reward[6]
 	{
-		public override UrgencyLevel Urgency
-		{
-			get
-			{
-				return UrgencyLevel.Exclusive;
-			}
-		}
+		new Scp2536Reward(ItemType.Coal, 65f),
+		new Scp2536Reward(ItemType.SpecialCoal, 5f),
+		new Scp2536Reward(ItemType.GrenadeFlash, 65f),
+		new Scp2536Reward(ItemType.GrenadeHE, 65f),
+		new Scp2536Reward(ItemType.SCP018, 65f),
+		new Scp2536Reward(ItemType.Coal, 65f)
+	};
 
-		internal override bool IgnoredByRandomness
+	public override bool CanBeGranted(ReferenceHub hub)
+	{
+		if (!(UnityEngine.Random.Range(0f, 100f) <= 50f))
 		{
-			get
-			{
-				return true;
-			}
+			return false;
 		}
+		return Scp2536GiftController.Gifts.Count((Scp2536GiftBase g) => g.ObtainedBy.Contains(hub)) > 3;
+	}
 
-		protected override Scp2536Reward[] Rewards
+	public override void ServerGrant(ReferenceHub hub)
+	{
+		ItemType itemType = GenerateRandomReward();
+		switch (itemType)
 		{
-			get
+		case ItemType.GrenadeHE:
+		case ItemType.GrenadeFlash:
+			SpawnProjectile(itemType, hub, SetupEffectGrenade);
+			break;
+		case ItemType.SCP018:
+		{
+			for (int i = 0; i < 3; i++)
 			{
-				return new Scp2536Reward[]
-				{
-					new Scp2536Reward(ItemType.Coal, 65f),
-					new Scp2536Reward(ItemType.SpecialCoal, 5f),
-					new Scp2536Reward(ItemType.GrenadeFlash, 65f),
-					new Scp2536Reward(ItemType.GrenadeHE, 65f),
-					new Scp2536Reward(ItemType.SCP018, 65f),
-					new Scp2536Reward(ItemType.Coal, 65f)
-				};
+				SpawnProjectile(itemType, hub, SetupScp018);
 			}
+			break;
 		}
-
-		public override bool CanBeGranted(ReferenceHub hub)
+		case ItemType.None:
 		{
-			return global::UnityEngine.Random.Range(0f, 100f) <= 50f && Scp2536GiftController.Gifts.Count((Scp2536GiftBase g) => g.ObtainedBy.Contains(hub)) > 3;
-		}
-
-		public override void ServerGrant(ReferenceHub hub)
-		{
-			ItemType itemType = base.GenerateRandomReward();
-			if (itemType == ItemType.GrenadeFlash || itemType == ItemType.GrenadeHE)
+			if (!Scp956Pinata.TryGetInstance(out var instance))
 			{
-				this.SpawnProjectile(itemType, hub, new Action<ThrownProjectile>(this.SetupEffectGrenade));
-				return;
+				break;
 			}
-			if (itemType == ItemType.SCP018)
+			foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 			{
-				for (int i = 0; i < 3; i++)
-				{
-					this.SpawnProjectile(itemType, hub, new Action<ThrownProjectile>(this.SetupScp018));
-				}
-				return;
-			}
-			if (itemType != ItemType.None)
-			{
-				hub.inventory.ServerAddItem(itemType, ItemAddReason.Scp2536, 0, null).GrantAmmoReward();
-				return;
-			}
-			Scp956Pinata scp956Pinata;
-			if (!Scp956Pinata.TryGetInstance(out scp956Pinata))
-			{
-				return;
-			}
-			foreach (ReferenceHub referenceHub in ReferenceHub.AllHubs)
-			{
-				referenceHub.playerEffectsController.DisableEffect<Scp956Target>();
+				allHub.playerEffectsController.DisableEffect<Scp956Target>();
 			}
 			Scp956Pinata.ActiveTargets.Clear();
-			scp956Pinata.SpawnBehindTarget(hub);
+			instance.SpawnBehindTarget(hub);
+			break;
 		}
-
-		private void SetupEffectGrenade(ThrownProjectile projectile)
-		{
-			projectile.ServerActivate();
+		default:
+			hub.inventory.ServerAddItem(itemType, ItemAddReason.Scp2536, 0).GrantAmmoReward();
+			break;
 		}
+	}
 
-		private void SetupScp018(ThrownProjectile projectile)
-		{
-			projectile.GetComponent<Rigidbody>().velocity = global::UnityEngine.Random.onUnitSphere * 15f;
-		}
+	private void SetupEffectGrenade(ThrownProjectile projectile)
+	{
+		projectile.ServerActivate();
+	}
 
-		private void SpawnProjectile(ItemType id, ReferenceHub hub, Action<ThrownProjectile> setupMethod)
+	private void SetupScp018(ThrownProjectile projectile)
+	{
+		projectile.GetComponent<Rigidbody>().linearVelocity = UnityEngine.Random.onUnitSphere * 15f;
+	}
+
+	private void SpawnProjectile(ItemType id, ReferenceHub hub, Action<ThrownProjectile> setupMethod)
+	{
+		if (InventoryItemLoader.TryGetItem<ThrowableItem>(id, out var result))
 		{
-			ThrowableItem throwableItem;
-			if (!InventoryItemLoader.TryGetItem<ThrowableItem>(id, out throwableItem))
-			{
-				return;
-			}
-			ThrownProjectile thrownProjectile = global::UnityEngine.Object.Instantiate<ThrownProjectile>(throwableItem.Projectile, hub.transform.position, Quaternion.identity);
-			PickupSyncInfo pickupSyncInfo = new PickupSyncInfo(id, throwableItem.Weight, ItemSerialGenerator.GenerateNext(), false)
-			{
-				Locked = true
-			};
-			thrownProjectile.NetworkInfo = pickupSyncInfo;
+			ThrownProjectile thrownProjectile = UnityEngine.Object.Instantiate(result.Projectile, hub.transform.position, Quaternion.identity);
+			PickupSyncInfo pickupSyncInfo = new PickupSyncInfo(id, result.Weight, ItemSerialGenerator.GenerateNext());
+			pickupSyncInfo.Locked = true;
+			PickupSyncInfo networkInfo = pickupSyncInfo;
+			thrownProjectile.NetworkInfo = networkInfo;
 			thrownProjectile.PreviousOwner = new Footprint(hub);
 			setupMethod(thrownProjectile);
-			NetworkServer.Spawn(thrownProjectile.gameObject, null);
+			NetworkServer.Spawn(thrownProjectile.gameObject);
 		}
-
-		private const float GiftReplacementChance = 50f;
-
-		private const int MaxGiftOpenings = 3;
 	}
 }

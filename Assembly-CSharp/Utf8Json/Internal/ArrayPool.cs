@@ -1,63 +1,55 @@
-﻿using System;
+using System;
 
-namespace Utf8Json.Internal
+namespace Utf8Json.Internal;
+
+internal class ArrayPool<T>
 {
-	internal class ArrayPool<T>
+	private readonly int bufferLength;
+
+	private readonly object gate;
+
+	private int index;
+
+	private T[][] buffers;
+
+	public ArrayPool(int bufferLength)
 	{
-		public ArrayPool(int bufferLength)
-		{
-			this.bufferLength = bufferLength;
-			this.buffers = new T[4][];
-			this.gate = new object();
-		}
+		this.bufferLength = bufferLength;
+		buffers = new T[4][];
+		gate = new object();
+	}
 
-		public T[] Rent()
+	public T[] Rent()
+	{
+		lock (gate)
 		{
-			object obj = this.gate;
-			T[] array2;
-			lock (obj)
+			if (index >= buffers.Length)
 			{
-				if (this.index >= this.buffers.Length)
-				{
-					Array.Resize<T[]>(ref this.buffers, this.buffers.Length * 2);
-				}
-				if (this.buffers[this.index] == null)
-				{
-					this.buffers[this.index] = new T[this.bufferLength];
-				}
-				T[] array = this.buffers[this.index];
-				this.buffers[this.index] = null;
-				this.index++;
-				array2 = array;
+				Array.Resize(ref buffers, buffers.Length * 2);
 			}
-			return array2;
+			if (buffers[index] == null)
+			{
+				buffers[index] = new T[bufferLength];
+			}
+			T[] result = buffers[index];
+			buffers[index] = null;
+			index++;
+			return result;
 		}
+	}
 
-		public void Return(T[] array)
+	public void Return(T[] array)
+	{
+		if (array.Length != bufferLength)
 		{
-			if (array.Length != this.bufferLength)
+			throw new InvalidOperationException("return buffer is not from pool");
+		}
+		lock (gate)
+		{
+			if (index != 0)
 			{
-				throw new InvalidOperationException("return buffer is not from pool");
-			}
-			object obj = this.gate;
-			lock (obj)
-			{
-				if (this.index != 0)
-				{
-					T[][] array2 = this.buffers;
-					int num = this.index - 1;
-					this.index = num;
-					array2[num] = array;
-				}
+				buffers[--index] = array;
 			}
 		}
-
-		private readonly int bufferLength;
-
-		private readonly object gate;
-
-		private int index;
-
-		private T[][] buffers;
 	}
 }

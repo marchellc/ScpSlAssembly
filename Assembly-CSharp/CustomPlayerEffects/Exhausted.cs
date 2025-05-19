@@ -1,84 +1,63 @@
-﻿using System;
 using PlayerRoles.FirstPersonControl;
 using PlayerStatsSystem;
 using UnityEngine;
 
-namespace CustomPlayerEffects
+namespace CustomPlayerEffects;
+
+public class Exhausted : StatusEffectBase, IStaminaModifier
 {
-	public class Exhausted : StatusEffectBase, IStaminaModifier
+	private const float MaxStamina = 0.5f;
+
+	private const float StaminaRegenSpeed = 0.5f;
+
+	private StaminaStat _staminaCache;
+
+	private bool _cacheSet;
+
+	public bool StaminaModifierActive => base.IsEnabled;
+
+	public float StaminaUsageMultiplier => 1f;
+
+	public bool SprintingDisabled => false;
+
+	public float StaminaRegenMultiplier
 	{
-		public bool StaminaModifierActive
+		get
 		{
-			get
+			if (!(CurStamina < 0.5f))
 			{
-				return base.IsEnabled;
+				return 0f;
 			}
+			return 0.5f;
 		}
+	}
 
-		public float StaminaUsageMultiplier
+	private float CurStamina
+	{
+		get
 		{
-			get
-			{
-				return 1f;
-			}
+			PrepCache();
+			return _staminaCache.CurValue;
 		}
-
-		public bool SprintingDisabled
+		set
 		{
-			get
-			{
-				return false;
-			}
+			PrepCache();
+			_staminaCache.CurValue = value;
 		}
+	}
 
-		public float StaminaRegenMultiplier
+	private void PrepCache()
+	{
+		if (!_cacheSet)
 		{
-			get
-			{
-				if (this.CurStamina >= 0.5f)
-				{
-					return 0f;
-				}
-				return 0.5f;
-			}
+			_cacheSet = true;
+			_staminaCache = base.Hub.playerStats.GetModule<StaminaStat>();
 		}
+	}
 
-		private float CurStamina
-		{
-			get
-			{
-				this.PrepCache();
-				return this._staminaCache.CurValue;
-			}
-			set
-			{
-				this.PrepCache();
-				this._staminaCache.CurValue = value;
-			}
-		}
-
-		private void PrepCache()
-		{
-			if (this._cacheSet)
-			{
-				return;
-			}
-			this._cacheSet = true;
-			this._staminaCache = base.Hub.playerStats.GetModule<StaminaStat>();
-		}
-
-		protected override void Enabled()
-		{
-			base.Enabled();
-			this.CurStamina = Mathf.Min(this.CurStamina, 0.5f);
-		}
-
-		private const float MaxStamina = 0.5f;
-
-		private const float StaminaRegenSpeed = 0.5f;
-
-		private StaminaStat _staminaCache;
-
-		private bool _cacheSet;
+	protected override void Enabled()
+	{
+		base.Enabled();
+		CurStamina = Mathf.Min(CurStamina, 0.5f);
 	}
 }

@@ -1,39 +1,37 @@
-﻿using System;
+using System;
 using GameObjectPools;
 using UnityEngine;
 
-namespace PlayerRoles.Spectating
+namespace PlayerRoles.Spectating;
+
+[Serializable]
+public struct SpectatableListElementDefinition
 {
-	[Serializable]
-	public struct SpectatableListElementDefinition
+	public SpectatableListElementType Type;
+
+	public SpectatableListElementBase FullSize;
+
+	public SpectatableListElementBase Compact;
+
+	public bool TryGetFromPools(Transform parent, out SpectatableListElementBase full, out SpectatableListElementBase compact)
 	{
-		public bool TryGetFromPools(Transform parent, out SpectatableListElementBase full, out SpectatableListElementBase compact)
+		if (TrySpawn(parent, FullSize, out full) && TrySpawn(parent, Compact, out compact))
 		{
-			if (this.TrySpawn(parent, this.FullSize, out full) && this.TrySpawn(parent, this.Compact, out compact))
-			{
-				return true;
-			}
-			full = null;
-			compact = null;
-			return false;
+			return true;
 		}
+		full = null;
+		compact = null;
+		return false;
+	}
 
-		private bool TrySpawn(Transform parent, SpectatableListElementBase template, out SpectatableListElementBase instance)
+	private bool TrySpawn(Transform parent, SpectatableListElementBase template, out SpectatableListElementBase instance)
+	{
+		if (PoolManager.Singleton.TryGetPoolObject(template.gameObject, parent, out var poolObject))
 		{
-			PoolObject poolObject;
-			if (PoolManager.Singleton.TryGetPoolObject(template.gameObject, parent, out poolObject, true))
-			{
-				instance = poolObject as SpectatableListElementBase;
-				return true;
-			}
-			instance = null;
-			return false;
+			instance = poolObject as SpectatableListElementBase;
+			return true;
 		}
-
-		public SpectatableListElementType Type;
-
-		public SpectatableListElementBase FullSize;
-
-		public SpectatableListElementBase Compact;
+		instance = null;
+		return false;
 	}
 }

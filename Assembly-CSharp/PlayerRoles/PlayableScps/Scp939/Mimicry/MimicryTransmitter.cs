@@ -1,127 +1,110 @@
-﻿using System;
 using Mirror;
 using PlayerRoles.Subroutines;
 using UnityEngine;
 using VoiceChat;
 using VoiceChat.Networking;
 
-namespace PlayerRoles.PlayableScps.Scp939.Mimicry
+namespace PlayerRoles.PlayableScps.Scp939.Mimicry;
+
+public class MimicryTransmitter : StandardSubroutine<Scp939Role>
 {
-	public class MimicryTransmitter : StandardSubroutine<Scp939Role>
+	private PlaybackBuffer _copierPlayback;
+
+	private PlaybackBuffer _senderPlayback;
+
+	private int _playbackSize;
+
+	private int _allowedSamples;
+
+	private int _samplesPerSecond;
+
+	private const int HeadSamples = 1920;
+
+	public bool IsTransmitting
 	{
-		public bool IsTransmitting
+		get
 		{
-			get
+			PlaybackBuffer copierPlayback = _copierPlayback;
+			if (copierPlayback == null || copierPlayback.Length <= 0)
 			{
-				PlaybackBuffer copierPlayback = this._copierPlayback;
-				if (copierPlayback == null || copierPlayback.Length <= 0)
+				PlaybackBuffer senderPlayback = _senderPlayback;
+				if (senderPlayback == null)
 				{
-					PlaybackBuffer senderPlayback = this._senderPlayback;
-					return senderPlayback != null && senderPlayback.Length > 0;
+					return false;
 				}
-				return true;
+				return senderPlayback.Length > 0;
 			}
+			return true;
 		}
+	}
 
-		protected override void Awake()
+	protected override void Awake()
+	{
+		base.Awake();
+		_samplesPerSecond = 48000;
+	}
+
+	public void SendVoice(PlaybackBuffer pb, int startSample, int maxLength)
+	{
+		pb.Reorganize();
+		int num = pb.Buffer.Length;
+		if (_playbackSize < num)
 		{
-			base.Awake();
-			this._samplesPerSecond = 48000;
+			_copierPlayback = new PlaybackBuffer(num);
+			_senderPlayback = new PlaybackBuffer(num);
+			_playbackSize = num;
 		}
-
-		public void SendVoice(PlaybackBuffer pb, int startSample, int maxLength)
+		else
 		{
-			pb.Reorganize();
-			int num = pb.Buffer.Length;
-			if (this._playbackSize < num)
-			{
-				this._copierPlayback = new PlaybackBuffer(num, false);
-				this._senderPlayback = new PlaybackBuffer(num, false);
-				this._playbackSize = num;
-			}
-			else
-			{
-				this._copierPlayback.Clear();
-				this._senderPlayback.Clear();
-			}
-			this._allowedSamples = 1920;
-			this._copierPlayback.Write(pb.Buffer, Mathf.Min(maxLength, pb.Length), startSample);
+			_copierPlayback.Clear();
+			_senderPlayback.Clear();
 		}
+		_allowedSamples = 1920;
+		_copierPlayback.Write(pb.Buffer, Mathf.Min(maxLength, pb.Length), startSample);
+	}
 
-		public void StopTransmission()
+	public void StopTransmission()
+	{
+		if (IsTransmitting)
 		{
-			if (!this.IsTransmitting)
-			{
-				return;
-			}
-			PlaybackBuffer copierPlayback = this._copierPlayback;
-			if (copierPlayback != null)
-			{
-				copierPlayback.Clear();
-			}
-			PlaybackBuffer senderPlayback = this._senderPlayback;
-			if (senderPlayback != null)
-			{
-				senderPlayback.Clear();
-			}
-			base.ClientSendCmd();
+			_copierPlayback?.Clear();
+			_senderPlayback?.Clear();
+			ClientSendCmd();
 		}
+	}
 
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			base.ServerSendRpc(true);
-		}
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		ServerSendRpc(toAll: true);
+	}
 
-		public override void ClientProcessRpc(NetworkReader reader)
-		{
-			base.ClientProcessRpc(reader);
-			(base.CastRole.VoiceModule as Scp939VoiceModule).ClearMimicryPlayback();
-		}
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		(base.CastRole.VoiceModule as Scp939VoiceModule).ClearMimicryPlayback();
+	}
 
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			PlaybackBuffer copierPlayback = this._copierPlayback;
-			if (copierPlayback != null)
-			{
-				copierPlayback.Clear();
-			}
-			PlaybackBuffer senderPlayback = this._senderPlayback;
-			if (senderPlayback == null)
-			{
-				return;
-			}
-			senderPlayback.Clear();
-		}
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		_copierPlayback?.Clear();
+		_senderPlayback?.Clear();
+	}
 
-		private void Update()
+	private void Update()
+	{
+		if (base.Owner.isLocalPlayer && _playbackSize != 0)
 		{
-			if (!base.Owner.isLocalPlayer || this._playbackSize == 0)
-			{
-				return;
-			}
-			this._allowedSamples += Mathf.CeilToInt(Time.deltaTime * (float)this._samplesPerSecond);
-			int num = Mathf.Min(this._allowedSamples, this._copierPlayback.Length);
+			_allowedSamples += Mathf.CeilToInt(Time.deltaTime * (float)_samplesPerSecond);
+			int num = Mathf.Min(_allowedSamples, _copierPlayback.Length);
 			if (num > 0)
 			{
-				this._copierPlayback.ReadTo(this._senderPlayback.Buffer, (long)num, this._senderPlayback.WriteHead);
-				this._senderPlayback.WriteHead += (long)num;
+				_copierPlayback.ReadTo(_senderPlayback.Buffer, num, _senderPlayback.WriteHead);
+				_senderPlayback.WriteHead += num;
 			}
-			this._allowedSamples = 0;
-			VoiceTransceiver.ClientSendData(this._senderPlayback, VoiceChatChannel.Mimicry, 1);
+			_allowedSamples = 0;
+			VoiceTransceiver.ClientSendData(_senderPlayback, VoiceChatChannel.Mimicry, 1);
 		}
-
-		private PlaybackBuffer _copierPlayback;
-
-		private PlaybackBuffer _senderPlayback;
-
-		private int _playbackSize;
-
-		private int _allowedSamples;
-
-		private int _samplesPerSecond;
-
-		private const int HeadSamples = 1920;
 	}
 }

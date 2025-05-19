@@ -1,13 +1,11 @@
-﻿using System;
 using UnityEngine;
 
-namespace CustomRendering
+namespace CustomRendering;
+
+public class PostProcessingVolumes : MonoBehaviour
 {
-	public class PostProcessingVolumes : MonoBehaviour
+	private void Awake()
 	{
-		private void Awake()
-		{
-			global::UnityEngine.Object.Destroy(base.gameObject);
-		}
+		Object.Destroy(base.gameObject);
 	}
 }

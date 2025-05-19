@@ -1,131 +1,129 @@
-﻿using System;
+using System;
 using Mirror;
 using UnityEngine;
 
-namespace PlayerRoles.PlayableScps.Scp079
+namespace PlayerRoles.PlayableScps.Scp079;
+
+public class Scp079ScannerTeamFilterSelector : Scp079AbilityBase
 {
-	public class Scp079ScannerTeamFilterSelector : Scp079AbilityBase
+	[SerializeField]
+	private Team[] _availableFilters;
+
+	private bool[] _selectedTeams;
+
+	private Team[] _tempTeams;
+
+	public Team[] SelectedTeams
 	{
-		public Team[] SelectedTeams
+		get
 		{
-			get
+			if (_tempTeams == null)
 			{
-				if (this._tempTeams == null)
-				{
-					this._tempTeams = new Team[this._availableFilters.Length];
-				}
-				int num = 0;
-				for (int i = 0; i < this._availableFilters.Length; i++)
-				{
-					if (this._selectedTeams[i])
-					{
-						this._tempTeams[num++] = this._availableFilters[i];
-					}
-				}
-				Team[] array = new Team[num];
-				Array.Copy(this._tempTeams, array, num);
-				return array;
+				_tempTeams = new Team[_availableFilters.Length];
 			}
-		}
-
-		public bool AnySelected
-		{
-			get
+			int num = 0;
+			for (int i = 0; i < _availableFilters.Length; i++)
 			{
-				bool[] selectedTeams = this._selectedTeams;
-				for (int i = 0; i < selectedTeams.Length; i++)
+				if (_selectedTeams[i])
 				{
-					if (selectedTeams[i])
-					{
-						return true;
-					}
-				}
-				return false;
-			}
-		}
-
-		private int GetTeamIndex(Team team)
-		{
-			for (int i = 0; i < this._availableFilters.Length; i++)
-			{
-				if (this._availableFilters[i] == team)
-				{
-					return i;
+					_tempTeams[num++] = _availableFilters[i];
 				}
 			}
-			throw new ArgumentOutOfRangeException(string.Format("Team {0} is not a whitelisted breach scanner team", team));
+			Team[] array = new Team[num];
+			Array.Copy(_tempTeams, array, num);
+			return array;
 		}
+	}
 
-		private void ResetArray()
+	public bool AnySelected
+	{
+		get
 		{
-			int num = this._availableFilters.Length;
-			if (this._selectedTeams == null)
+			bool[] selectedTeams = _selectedTeams;
+			for (int i = 0; i < selectedTeams.Length; i++)
 			{
-				this._selectedTeams = new bool[num];
+				if (selectedTeams[i])
+				{
+					return true;
+				}
 			}
-			for (int i = 0; i < num; i++)
+			return false;
+		}
+	}
+
+	private int GetTeamIndex(Team team)
+	{
+		for (int i = 0; i < _availableFilters.Length; i++)
+		{
+			if (_availableFilters[i] == team)
 			{
-				this._selectedTeams[i] = true;
+				return i;
 			}
 		}
+		throw new ArgumentOutOfRangeException($"Team {team} is not a whitelisted breach scanner team");
+	}
 
-		protected override void Awake()
+	private void ResetArray()
+	{
+		int num = _availableFilters.Length;
+		if (_selectedTeams == null)
 		{
-			base.Awake();
-			this.ResetArray();
+			_selectedTeams = new bool[num];
 		}
-
-		public bool GetTeamStatus(Team team)
+		for (int i = 0; i < num; i++)
 		{
-			return this._selectedTeams[this.GetTeamIndex(team)];
+			_selectedTeams[i] = true;
 		}
+	}
 
-		public void SetTeamStatus(Team team, bool status)
+	protected override void Awake()
+	{
+		base.Awake();
+		ResetArray();
+	}
+
+	public bool GetTeamStatus(Team team)
+	{
+		return _selectedTeams[GetTeamIndex(team)];
+	}
+
+	public void SetTeamStatus(Team team, bool status)
+	{
+		_selectedTeams[GetTeamIndex(team)] = status;
+		ClientSendCmd();
+	}
+
+	public override void ClientWriteCmd(NetworkWriter writer)
+	{
+		base.ClientWriteCmd(writer);
+		writer.WriteBoolArray(_selectedTeams);
+	}
+
+	public override void ServerProcessCmd(NetworkReader reader)
+	{
+		base.ServerProcessCmd(reader);
+		reader.ReadBoolArray(_selectedTeams);
+		ServerSendRpc(toAll: true);
+	}
+
+	public override void ServerWriteRpc(NetworkWriter writer)
+	{
+		base.ServerWriteRpc(writer);
+		writer.WriteBoolArray(_selectedTeams);
+	}
+
+	public override void ClientProcessRpc(NetworkReader reader)
+	{
+		base.ClientProcessRpc(reader);
+		if (!base.Role.IsLocalPlayer)
 		{
-			this._selectedTeams[this.GetTeamIndex(team)] = status;
-			base.ClientSendCmd();
+			reader.ReadBoolArray(_selectedTeams);
 		}
+	}
 
-		public override void ClientWriteCmd(NetworkWriter writer)
-		{
-			base.ClientWriteCmd(writer);
-			writer.WriteBoolArray(this._selectedTeams);
-		}
-
-		public override void ServerProcessCmd(NetworkReader reader)
-		{
-			base.ServerProcessCmd(reader);
-			reader.ReadBoolArray(this._selectedTeams);
-			base.ServerSendRpc(true);
-		}
-
-		public override void ServerWriteRpc(NetworkWriter writer)
-		{
-			base.ServerWriteRpc(writer);
-			writer.WriteBoolArray(this._selectedTeams);
-		}
-
-		public override void ClientProcessRpc(NetworkReader reader)
-		{
-			base.ClientProcessRpc(reader);
-			if (base.Role.IsLocalPlayer)
-			{
-				return;
-			}
-			reader.ReadBoolArray(this._selectedTeams);
-		}
-
-		public override void ResetObject()
-		{
-			base.ResetObject();
-			this.ResetArray();
-		}
-
-		[SerializeField]
-		private Team[] _availableFilters;
-
-		private bool[] _selectedTeams;
-
-		private Team[] _tempTeams;
+	public override void ResetObject()
+	{
+		base.ResetObject();
+		ResetArray();
 	}
 }
