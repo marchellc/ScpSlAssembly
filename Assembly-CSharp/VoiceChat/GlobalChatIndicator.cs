@@ -45,59 +45,59 @@ public class GlobalChatIndicator : MonoBehaviour
 
 	public void Setup(IGlobalPlayback igp, ReferenceHub owner)
 	{
-		_playback = igp;
-		_owner = owner;
-		_t = base.transform;
-		_noSpeakTime = 0f;
+		this._playback = igp;
+		this._owner = owner;
+		this._t = base.transform;
+		this._noSpeakTime = 0f;
 	}
 
 	public void Refresh()
 	{
-		if (!_playback.GlobalChatActive)
+		if (!this._playback.GlobalChatActive)
 		{
-			if (_wasSpeaking)
+			if (this._wasSpeaking)
 			{
-				_noSpeakTime += Time.deltaTime;
-				SetColors(0f);
-				if (!(_noSpeakTime < 0.3f))
+				this._noSpeakTime += Time.deltaTime;
+				this.SetColors(0f);
+				if (!(this._noSpeakTime < 0.3f))
 				{
 					base.gameObject.SetActive(value: false);
-					_wasSpeaking = false;
+					this._wasSpeaking = false;
 				}
 			}
 			return;
 		}
-		if (!_wasSpeaking)
+		if (!this._wasSpeaking)
 		{
 			base.gameObject.SetActive(value: true);
-			_t.SetAsLastSibling();
-			_wasSpeaking = true;
+			this._t.SetAsLastSibling();
+			this._wasSpeaking = true;
 		}
-		_lastColor = _playback.GlobalChatColor;
-		SetColors(_playback.GlobalChatLoudness);
-		if (TryGetIcon(_playback.GlobalChatIcon, _owner, out var result))
+		this._lastColor = this._playback.GlobalChatColor;
+		this.SetColors(this._playback.GlobalChatLoudness);
+		if (this.TryGetIcon(this._playback.GlobalChatIcon, this._owner, out var result))
 		{
-			_icon.texture = result;
-			_iconRoot.SetActive(value: true);
+			this._icon.texture = result;
+			this._iconRoot.SetActive(value: true);
 		}
 		else
 		{
-			_iconRoot.SetActive(value: false);
+			this._iconRoot.SetActive(value: false);
 		}
-		_nickname.text = _playback.GlobalChatName;
+		this._nickname.text = this._playback.GlobalChatName;
 	}
 
 	private void SetColors(float loudness)
 	{
-		Graphic[] backgrounds = _backgrounds;
+		Graphic[] backgrounds = this._backgrounds;
 		for (int i = 0; i < backgrounds.Length; i++)
 		{
-			backgrounds[i].color = Color.Lerp(Color.black, _lastColor, loudness);
+			backgrounds[i].color = Color.Lerp(Color.black, this._lastColor, loudness);
 		}
-		Outline[] outlines = _outlines;
+		Outline[] outlines = this._outlines;
 		for (int i = 0; i < outlines.Length; i++)
 		{
-			outlines[i].effectColor = Color.Lerp(_lastColor, Color.white, loudness);
+			outlines[i].effectColor = Color.Lerp(this._lastColor, Color.white, loudness);
 		}
 	}
 
@@ -109,10 +109,10 @@ public class GlobalChatIndicator : MonoBehaviour
 		case GlobalChatIconType.None:
 			return false;
 		case GlobalChatIconType.Radio:
-			result = _radioIcon;
+			result = this._radioIcon;
 			return true;
 		case GlobalChatIconType.Intercom:
-			result = _intercomIcon;
+			result = this._intercomIcon;
 			return true;
 		case GlobalChatIconType.Avatar:
 			if (owner == null || !(owner.roleManager.CurrentRole is IAvatarRole avatarRole))

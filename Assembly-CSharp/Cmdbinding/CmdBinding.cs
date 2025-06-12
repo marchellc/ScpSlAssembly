@@ -18,35 +18,35 @@ public class CmdBinding : MonoBehaviour
 
 	static CmdBinding()
 	{
-		Bindings = new List<Bind>();
-		FilePath = GeneratePath();
-		LoadFile();
+		CmdBinding.Bindings = new List<Bind>();
+		CmdBinding.FilePath = CmdBinding.GeneratePath();
+		CmdBinding.LoadFile();
 	}
 
 	public static void AddBinding(KeyCode key, string command, bool allowReplacing = true)
 	{
 		Bind bind = new Bind(key, command);
-		for (int i = 0; i < Bindings.Count; i++)
+		for (int i = 0; i < CmdBinding.Bindings.Count; i++)
 		{
-			if (Bindings[i].Key == key)
+			if (CmdBinding.Bindings[i].Key == key)
 			{
 				if (allowReplacing)
 				{
-					Bindings[i] = bind;
+					CmdBinding.Bindings[i] = bind;
 				}
 				return;
 			}
 		}
-		Bindings.Add(bind);
+		CmdBinding.Bindings.Add(bind);
 	}
 
 	public static void RemoveBinding(KeyCode key)
 	{
-		for (int i = 0; i < Bindings.Count; i++)
+		for (int i = 0; i < CmdBinding.Bindings.Count; i++)
 		{
-			if (Bindings[i].Key == key)
+			if (CmdBinding.Bindings[i].Key == key)
 			{
-				Bindings.RemoveAt(i);
+				CmdBinding.Bindings.RemoveAt(i);
 				break;
 			}
 		}
@@ -54,15 +54,15 @@ public class CmdBinding : MonoBehaviour
 
 	public static void RemoveAllBindings()
 	{
-		Bindings.Clear();
-		SaveChanges();
+		CmdBinding.Bindings.Clear();
+		CmdBinding.SaveChanges();
 	}
 
 	public static bool TryGetBind(KeyCode key, out Bind bind)
 	{
-		for (int i = 0; i < Bindings.Count; i++)
+		for (int i = 0; i < CmdBinding.Bindings.Count; i++)
 		{
-			bind = Bindings[i];
+			bind = CmdBinding.Bindings[i];
 			if (bind.Key == key)
 			{
 				return true;
@@ -75,18 +75,18 @@ public class CmdBinding : MonoBehaviour
 	public static void SaveChanges()
 	{
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-		for (int i = 0; i < Bindings.Count; i++)
+		for (int i = 0; i < CmdBinding.Bindings.Count; i++)
 		{
-			Bind bind = Bindings[i];
+			Bind bind = CmdBinding.Bindings[i];
 			stringBuilder.Append((int)bind.Key);
 			stringBuilder.Append(':');
 			stringBuilder.Append(bind.Command);
-			if (i != Bindings.Count - 1)
+			if (i != CmdBinding.Bindings.Count - 1)
 			{
 				stringBuilder.AppendLine();
 			}
 		}
-		StreamWriter streamWriter = new StreamWriter(FilePath);
+		StreamWriter streamWriter = new StreamWriter(CmdBinding.FilePath);
 		streamWriter.WriteLine(StringBuilderPool.Shared.ToStringReturn(stringBuilder));
 		streamWriter.Close();
 	}
@@ -96,12 +96,12 @@ public class CmdBinding : MonoBehaviour
 		GameCore.Console.AddLog("Loading cmd bindings...", Color.grey);
 		try
 		{
-			Bindings.Clear();
-			if (!File.Exists(FilePath))
+			CmdBinding.Bindings.Clear();
+			if (!File.Exists(CmdBinding.FilePath))
 			{
-				ResetBindings();
+				CmdBinding.ResetBindings();
 			}
-			StreamReader streamReader = new StreamReader(FilePath);
+			StreamReader streamReader = new StreamReader(CmdBinding.FilePath);
 			string text;
 			while ((text = streamReader.ReadLine()) != null)
 			{
@@ -111,7 +111,7 @@ public class CmdBinding : MonoBehaviour
 					if (int.TryParse(array[0], out var result))
 					{
 						Bind item = new Bind((KeyCode)result, array[1]);
-						Bindings.Add(item);
+						CmdBinding.Bindings.Add(item);
 					}
 				}
 			}
@@ -131,7 +131,7 @@ public class CmdBinding : MonoBehaviour
 	private static void ResetBindings()
 	{
 		Debug.Log("Resetting Cmdbindings!");
-		new StreamWriter(FilePath).Close();
+		new StreamWriter(CmdBinding.FilePath).Close();
 	}
 
 	private static string GeneratePath()
@@ -141,11 +141,11 @@ public class CmdBinding : MonoBehaviour
 
 	private void Update()
 	{
-		if (Bindings.Count <= 0 || GameCore.Console.singleton == null)
+		if (CmdBinding.Bindings.Count <= 0 || GameCore.Console.singleton == null)
 		{
 			return;
 		}
-		foreach (Bind binding in Bindings)
+		foreach (Bind binding in CmdBinding.Bindings)
 		{
 			if (Input.GetKeyDown(binding.Key))
 			{

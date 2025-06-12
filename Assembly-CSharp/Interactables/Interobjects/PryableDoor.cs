@@ -32,21 +32,21 @@ public class PryableDoor : BasicDoor, IScp106PassableDoor
 
 	private bool _isBeingPried;
 
-	public bool IsBeingPried => _isBeingPried;
+	public bool IsBeingPried => this._isBeingPried;
 
 	public bool IsScp106Passable
 	{
 		get
 		{
-			if (_restrict106WhileLocked && ActiveLocks != 0)
+			if (this._restrict106WhileLocked && base.ActiveLocks != 0)
 			{
-				return TargetState;
+				return base.TargetState;
 			}
 			return true;
 		}
 		set
 		{
-			Network_restrict106WhileLocked = !value;
+			this.Network_restrict106WhileLocked = !value;
 		}
 	}
 
@@ -54,12 +54,12 @@ public class PryableDoor : BasicDoor, IScp106PassableDoor
 	{
 		get
 		{
-			return _restrict106WhileLocked;
+			return this._restrict106WhileLocked;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _restrict106WhileLocked, 8uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._restrict106WhileLocked, 8uL, null);
 		}
 	}
 
@@ -71,25 +71,25 @@ public class PryableDoor : BasicDoor, IScp106PassableDoor
 			Debug.LogWarning("[Server] function 'System.Boolean Interactables.Interobjects.PryableDoor::TryPryGate(ReferenceHub)' called when server was not active");
 			return default(bool);
 		}
-		if (_blockPryingMask != 0 && ((DoorLockReason)ActiveLocks).HasFlagFast(_blockPryingMask))
+		if (this._blockPryingMask != DoorLockReason.None && ((DoorLockReason)base.ActiveLocks).HasFlagFast(this._blockPryingMask))
 		{
 			return false;
 		}
-		if (AllowInteracting(null, 0))
+		if (this.AllowInteracting(null, 0))
 		{
-			Scp096PryingGateEventArgs scp096PryingGateEventArgs = new Scp096PryingGateEventArgs(player, this);
-			Scp096Events.OnPryingGate(scp096PryingGateEventArgs);
-			if (!scp096PryingGateEventArgs.IsAllowed)
+			Scp096PryingGateEventArgs e = new Scp096PryingGateEventArgs(player, this);
+			Scp096Events.OnPryingGate(e);
+			if (!e.IsAllowed)
 			{
 				return false;
 			}
-			if (DoorName != null)
+			if (base.DoorName != null)
 			{
-				ServerLogs.AddLog(ServerLogs.Modules.Door, ((player == null) ? "null" : player.LoggedNameFromRefHub()) + " pried " + DoorName + ".", ServerLogs.ServerLogType.GameEvent);
+				ServerLogs.AddLog(ServerLogs.Modules.Door, ((player == null) ? "null" : player.LoggedNameFromRefHub()) + " pried " + base.DoorName + ".", ServerLogs.ServerLogType.GameEvent);
 			}
-			RpcPryGate();
-			_remainingPryCooldown = _pryAnimDuration;
-			_isBeingPried = true;
+			this.RpcPryGate();
+			this._remainingPryCooldown = this._pryAnimDuration;
+			this._isBeingPried = true;
 			Scp096Events.OnPriedGate(new Scp096PriedGateEventArgs(player, this));
 			return true;
 		}
@@ -100,13 +100,13 @@ public class PryableDoor : BasicDoor, IScp106PassableDoor
 	public void RpcPryGate()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void Interactables.Interobjects.PryableDoor::RpcPryGate()", -166089162, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Interactables.Interobjects.PryableDoor::RpcPryGate()", -166089162, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	public override bool AllowInteracting(ReferenceHub ply, byte colliderId)
 	{
-		if (_remainingPryCooldown <= 0f)
+		if (this._remainingPryCooldown <= 0f)
 		{
 			return base.AllowInteracting(ply, colliderId);
 		}
@@ -116,20 +116,20 @@ public class PryableDoor : BasicDoor, IScp106PassableDoor
 	protected override void Update()
 	{
 		base.Update();
-		if (_remainingPryCooldown > 0f)
+		if (this._remainingPryCooldown > 0f)
 		{
-			_remainingPryCooldown -= Time.deltaTime;
-			if (_remainingPryCooldown <= 0f)
+			this._remainingPryCooldown -= Time.deltaTime;
+			if (this._remainingPryCooldown <= 0f)
 			{
-				MainAnimator.ResetTrigger(PryAnimHash);
-				_isBeingPried = false;
+				base.MainAnimator.ResetTrigger(PryableDoor.PryAnimHash);
+				this._isBeingPried = false;
 			}
 		}
 	}
 
 	static PryableDoor()
 	{
-		PryAnimHash = Animator.StringToHash("PryGate");
+		PryableDoor.PryAnimHash = Animator.StringToHash("PryGate");
 		RemoteProcedureCalls.RegisterRpc(typeof(PryableDoor), "System.Void Interactables.Interobjects.PryableDoor::RpcPryGate()", InvokeUserCode_RpcPryGate);
 	}
 
@@ -140,12 +140,12 @@ public class PryableDoor : BasicDoor, IScp106PassableDoor
 
 	protected void UserCode_RpcPryGate()
 	{
-		_isBeingPried = true;
-		MainAnimator.SetTrigger(PryAnimHash);
-		MainSource.PlayOneShot(_prySound);
-		Timing.CallDelayed(_pryAnimDuration, delegate
+		this._isBeingPried = true;
+		base.MainAnimator.SetTrigger(PryableDoor.PryAnimHash);
+		base.MainSource.PlayOneShot(this._prySound);
+		Timing.CallDelayed(this._pryAnimDuration, delegate
 		{
-			_isBeingPried = false;
+			this._isBeingPried = false;
 		}, base.gameObject);
 	}
 
@@ -166,13 +166,13 @@ public class PryableDoor : BasicDoor, IScp106PassableDoor
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(_restrict106WhileLocked);
+			writer.WriteBool(this._restrict106WhileLocked);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			writer.WriteBool(_restrict106WhileLocked);
+			writer.WriteBool(this._restrict106WhileLocked);
 		}
 	}
 
@@ -181,13 +181,13 @@ public class PryableDoor : BasicDoor, IScp106PassableDoor
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _restrict106WhileLocked, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._restrict106WhileLocked, null, reader.ReadBool());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 8L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _restrict106WhileLocked, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._restrict106WhileLocked, null, reader.ReadBool());
 		}
 	}
 }

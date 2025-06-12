@@ -12,33 +12,33 @@ public struct ObjectiveCompletionMessage : NetworkMessage
 
 	public ObjectiveCompletionMessage(FactionObjectiveBase objective)
 	{
-		_index = FactionInfluenceManager.Objectives.IndexOf(objective);
-		Objective = objective;
+		this._index = FactionInfluenceManager.Objectives.IndexOf(objective);
+		this.Objective = objective;
 	}
 
 	public ObjectiveCompletionMessage(int index)
 	{
-		_index = index;
-		Objective = FactionInfluenceManager.Objectives[_index];
+		this._index = index;
+		this.Objective = FactionInfluenceManager.Objectives[this._index];
 	}
 
 	public ObjectiveCompletionMessage(NetworkReader reader)
 	{
-		_index = reader.ReadInt();
-		if (!FactionInfluenceManager.Objectives.TryGet(_index, out var element))
+		this._index = reader.ReadInt();
+		if (!FactionInfluenceManager.Objectives.TryGet(this._index, out var element))
 		{
-			throw new KeyNotFoundException($"Failed to get objective of index: {_index}.");
+			throw new KeyNotFoundException($"Failed to get objective of index: {this._index}.");
 		}
-		Objective = element;
-		Objective.ClientReadRpc(reader);
+		this.Objective = element;
+		this.Objective.ClientReadRpc(reader);
 	}
 
 	public void Write(NetworkWriter writer)
 	{
-		writer.WriteInt(_index);
+		writer.WriteInt(this._index);
 		if (NetworkServer.active)
 		{
-			Objective.ServerWriteRpc(writer);
+			this.Objective.ServerWriteRpc(writer);
 		}
 	}
 }

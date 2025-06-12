@@ -26,11 +26,11 @@ public class Scp1576Pickup : CollisionDetectionPickup
 	{
 		get
 		{
-			return (float)(int)_syncHorn / 255f;
+			return (float)(int)this._syncHorn / 255f;
 		}
 		set
 		{
-			Network_syncHorn = (byte)Mathf.Clamp(Mathf.RoundToInt(value * 255f), 0, 255);
+			this.Network_syncHorn = (byte)Mathf.Clamp(Mathf.RoundToInt(value * 255f), 0, 255);
 		}
 	}
 
@@ -38,12 +38,12 @@ public class Scp1576Pickup : CollisionDetectionPickup
 	{
 		get
 		{
-			return _syncHorn;
+			return this._syncHorn;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _syncHorn, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._syncHorn, 2uL, null);
 		}
 	}
 
@@ -51,12 +51,12 @@ public class Scp1576Pickup : CollisionDetectionPickup
 
 	private void Update()
 	{
-		if (_prevSyncHorn != _syncHorn)
+		if (this._prevSyncHorn != this._syncHorn)
 		{
-			float hornPos = HornPos;
-			_horn.localPosition = Vector3.Lerp(_posZero, _posOne, hornPos);
-			Scp1576Pickup.OnHornPositionUpdated?.Invoke(Info.Serial, hornPos);
-			_prevSyncHorn = _syncHorn;
+			float hornPos = this.HornPos;
+			this._horn.localPosition = Vector3.Lerp(this._posZero, this._posOne, hornPos);
+			Scp1576Pickup.OnHornPositionUpdated?.Invoke(base.Info.Serial, hornPos);
+			this._prevSyncHorn = this._syncHorn;
 		}
 	}
 
@@ -70,13 +70,13 @@ public class Scp1576Pickup : CollisionDetectionPickup
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _syncHorn);
+			NetworkWriterExtensions.WriteByte(writer, this._syncHorn);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _syncHorn);
+			NetworkWriterExtensions.WriteByte(writer, this._syncHorn);
 		}
 	}
 
@@ -85,13 +85,13 @@ public class Scp1576Pickup : CollisionDetectionPickup
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _syncHorn, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._syncHorn, null, NetworkReaderExtensions.ReadByte(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _syncHorn, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._syncHorn, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 	}
 }

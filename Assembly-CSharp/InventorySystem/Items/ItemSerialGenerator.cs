@@ -6,16 +6,16 @@ public static class ItemSerialGenerator
 
 	public static void Reset()
 	{
-		_ai = 0;
+		ItemSerialGenerator._ai = 0;
 	}
 
 	public static ushort GenerateNext()
 	{
-		if (_ai > 65000)
+		if (ItemSerialGenerator._ai > 65000)
 		{
-			Reset();
+			ItemSerialGenerator.Reset();
 		}
-		_ai++;
-		return _ai;
+		ItemSerialGenerator._ai++;
+		return ItemSerialGenerator._ai;
 	}
 }

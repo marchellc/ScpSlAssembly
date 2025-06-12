@@ -13,11 +13,11 @@ internal sealed class DefaultStandardResolver : IJsonFormatterResolver
 		{
 			if (typeof(T) == typeof(object))
 			{
-				formatter = (IJsonFormatter<T>)fallbackFormatter;
+				FormatterCache<T>.formatter = (IJsonFormatter<T>)DefaultStandardResolver.fallbackFormatter;
 			}
 			else
 			{
-				formatter = InnerResolver.Instance.GetFormatter<T>();
+				FormatterCache<T>.formatter = InnerResolver.Instance.GetFormatter<T>();
 			}
 		}
 	}
@@ -36,7 +36,7 @@ internal sealed class DefaultStandardResolver : IJsonFormatterResolver
 					IJsonFormatter<T> jsonFormatter = resolvers[i].GetFormatter<T>();
 					if (jsonFormatter != null)
 					{
-						formatter = jsonFormatter;
+						FormatterCache<T>.formatter = jsonFormatter;
 						break;
 					}
 				}

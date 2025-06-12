@@ -32,10 +32,10 @@ public class Scp939DamagedEffect : StandardSubroutine<Scp939Role>
 		base.SpawnObject();
 		if (NetworkServer.active)
 		{
-			_lastTriggered.Restart();
-			_hpStat = base.Owner.playerStats.GetModule<HealthStat>();
-			_hume = base.CastRole.HumeShieldModule as DynamicHumeShieldController;
-			_eventAssigned = true;
+			this._lastTriggered.Restart();
+			this._hpStat = base.Owner.playerStats.GetModule<HealthStat>();
+			this._hume = base.CastRole.HumeShieldModule as DynamicHumeShieldController;
+			this._eventAssigned = true;
 			base.Owner.playerStats.OnThisPlayerDamaged += OnDamaged;
 		}
 	}
@@ -43,48 +43,48 @@ public class Scp939DamagedEffect : StandardSubroutine<Scp939Role>
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		if (_eventAssigned)
+		if (this._eventAssigned)
 		{
-			_eventAssigned = false;
+			this._eventAssigned = false;
 			base.Owner.playerStats.OnThisPlayerDamaged -= OnDamaged;
 		}
 	}
 
 	private void Update()
 	{
-		if (!(_totalDamageReceived <= 0f))
+		if (!(this._totalDamageReceived <= 0f))
 		{
-			_totalDamageReceived = Mathf.Clamp(_totalDamageReceived - Time.deltaTime * 80f, 0f, 90f);
+			this._totalDamageReceived = Mathf.Clamp(this._totalDamageReceived - Time.deltaTime * 80f, 0f, 90f);
 		}
 	}
 
 	private void OnDamaged(DamageHandlerBase dhb)
 	{
-		if (dhb is AttackerDamageHandler attackerDamageHandler && !(_hpStat.CurValue <= 0f))
+		if (dhb is AttackerDamageHandler attackerDamageHandler && !(this._hpStat.CurValue <= 0f))
 		{
-			_totalDamageReceived += attackerDamageHandler.TotalDamageDealt;
-			if (!(_lastTriggered.Elapsed.TotalSeconds < 3.0) && CheckDamagedConditions(attackerDamageHandler))
+			this._totalDamageReceived += attackerDamageHandler.TotalDamageDealt;
+			if (!(this._lastTriggered.Elapsed.TotalSeconds < 3.0) && this.CheckDamagedConditions(attackerDamageHandler))
 			{
-				ServerSendRpc(toAll: true);
-				_lastTriggered.Restart();
+				base.ServerSendRpc(toAll: true);
+				this._lastTriggered.Restart();
 			}
 		}
 	}
 
 	private bool CheckDamagedConditions(AttackerDamageHandler adh)
 	{
-		float time = _hpStat.CurValue + adh.DealtHealthDamage;
-		float a = _hume.HsCurrent + adh.AbsorbedHumeDamage;
-		float b = _hume.ShieldOverHealth.Evaluate(time);
+		float time = this._hpStat.CurValue + adh.DealtHealthDamage;
+		float a = this._hume.HsCurrent + adh.AbsorbedHumeDamage;
+		float b = this._hume.ShieldOverHealth.Evaluate(time);
 		if (Mathf.Approximately(a, b))
 		{
 			return true;
 		}
-		if (adh.AbsorbedHumeDamage > 0f && _hume.HsCurrent == 0f)
+		if (adh.AbsorbedHumeDamage > 0f && this._hume.HsCurrent == 0f)
 		{
 			return true;
 		}
-		if (_lastTriggered.Elapsed.TotalSeconds > 10.0 && _totalDamageReceived >= 90f)
+		if (this._lastTriggered.Elapsed.TotalSeconds > 10.0 && this._totalDamageReceived >= 90f)
 		{
 			return true;
 		}

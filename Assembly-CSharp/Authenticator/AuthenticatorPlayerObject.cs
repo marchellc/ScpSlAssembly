@@ -30,9 +30,9 @@ public readonly struct AuthenticatorPlayerObject : IEquatable<AuthenticatorPlaye
 
 	public bool Equals(AuthenticatorPlayerObject other)
 	{
-		if (Id == other.Id && Ip == other.Ip && RequestIp == other.RequestIp && Asn == other.Asn && AuthSerial == other.AuthSerial)
+		if (this.Id == other.Id && this.Ip == other.Ip && this.RequestIp == other.RequestIp && this.Asn == other.Asn && this.AuthSerial == other.AuthSerial)
 		{
-			return VacSession == other.VacSession;
+			return this.VacSession == other.VacSession;
 		}
 		return false;
 	}
@@ -41,14 +41,14 @@ public readonly struct AuthenticatorPlayerObject : IEquatable<AuthenticatorPlaye
 	{
 		if (obj is AuthenticatorPlayerObject other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((((((((((Id != null) ? Id.GetHashCode() : 0) * 397) ^ ((Ip != null) ? Ip.GetHashCode() : 0)) * 397) ^ ((RequestIp != null) ? RequestIp.GetHashCode() : 0)) * 397) ^ ((Asn != null) ? Asn.GetHashCode() : 0)) * 397) ^ ((AuthSerial != null) ? AuthSerial.GetHashCode() : 0)) * 397) ^ ((VacSession != null) ? VacSession.GetHashCode() : 0);
+		return (((((((((((this.Id != null) ? this.Id.GetHashCode() : 0) * 397) ^ ((this.Ip != null) ? this.Ip.GetHashCode() : 0)) * 397) ^ ((this.RequestIp != null) ? this.RequestIp.GetHashCode() : 0)) * 397) ^ ((this.Asn != null) ? this.Asn.GetHashCode() : 0)) * 397) ^ ((this.AuthSerial != null) ? this.AuthSerial.GetHashCode() : 0)) * 397) ^ ((this.VacSession != null) ? this.VacSession.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(AuthenticatorPlayerObject left, AuthenticatorPlayerObject right)

@@ -18,11 +18,11 @@ public static class DummyActionCollector
 		{
 			get
 			{
-				if (AnyDirty)
+				if (this.AnyDirty)
 				{
-					UpdateCache();
+					this.UpdateCache();
 				}
-				return _actions;
+				return this._actions;
 			}
 		}
 
@@ -30,11 +30,11 @@ public static class DummyActionCollector
 		{
 			get
 			{
-				if (!_everUpdated)
+				if (!this._everUpdated)
 				{
 					return true;
 				}
-				IRootDummyActionProvider[] providers = _providers;
+				IRootDummyActionProvider[] providers = this._providers;
 				for (int i = 0; i < providers.Length; i++)
 				{
 					if (providers[i].DummyActionsDirty)
@@ -48,25 +48,25 @@ public static class DummyActionCollector
 
 		public CachedActions(ReferenceHub hub)
 		{
-			_actions = new List<DummyAction>();
-			_providers = hub.GetComponents<IRootDummyActionProvider>();
-			_everUpdated = false;
+			this._actions = new List<DummyAction>();
+			this._providers = hub.GetComponents<IRootDummyActionProvider>();
+			this._everUpdated = false;
 		}
 
 		private void UpdateCache()
 		{
-			_actions.Clear();
-			IRootDummyActionProvider[] providers = _providers;
+			this._actions.Clear();
+			IRootDummyActionProvider[] providers = this._providers;
 			for (int i = 0; i < providers.Length; i++)
 			{
-				providers[i].PopulateDummyActions(_actions.Add, AddCategory);
+				providers[i].PopulateDummyActions(this._actions.Add, AddCategory);
 			}
-			_everUpdated = true;
+			this._everUpdated = true;
 		}
 
 		private void AddCategory(string categoryName)
 		{
-			_actions.Add(new DummyAction(categoryName, null));
+			this._actions.Add(new DummyAction(categoryName, null));
 		}
 	}
 
@@ -74,12 +74,12 @@ public static class DummyActionCollector
 
 	public static bool IsDirty(ReferenceHub hub)
 	{
-		return GetCache(hub).AnyDirty;
+		return DummyActionCollector.GetCache(hub).AnyDirty;
 	}
 
 	public static List<DummyAction> ServerGetActions(ReferenceHub hub)
 	{
-		return GetCache(hub).Actions;
+		return DummyActionCollector.GetCache(hub).Actions;
 	}
 
 	private static CachedActions GetCache(ReferenceHub hub)
@@ -88,10 +88,10 @@ public static class DummyActionCollector
 		{
 			throw new ArgumentException("Provided argument is not a dummy.", "hub");
 		}
-		if (!CollectionCache.TryGetValue(hub, out var value))
+		if (!DummyActionCollector.CollectionCache.TryGetValue(hub, out var value))
 		{
 			value = new CachedActions(hub);
-			CollectionCache[hub] = value;
+			DummyActionCollector.CollectionCache[hub] = value;
 		}
 		return value;
 	}
@@ -106,7 +106,7 @@ public static class DummyActionCollector
 	{
 		if (hub.IsDummy)
 		{
-			CollectionCache.Remove(hub);
+			DummyActionCollector.CollectionCache.Remove(hub);
 		}
 	}
 }

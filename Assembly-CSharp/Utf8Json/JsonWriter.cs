@@ -13,7 +13,7 @@ public struct JsonWriter
 
 	private int offset;
 
-	public int CurrentOffset => offset;
+	public int CurrentOffset => this.offset;
 
 	public void AdvanceOffset(int offset)
 	{
@@ -55,225 +55,225 @@ public struct JsonWriter
 
 	public JsonWriter(byte[] initialBuffer)
 	{
-		buffer = initialBuffer;
-		offset = 0;
+		this.buffer = initialBuffer;
+		this.offset = 0;
 	}
 
 	public ArraySegment<byte> GetBuffer()
 	{
-		if (buffer == null)
+		if (this.buffer == null)
 		{
-			return new ArraySegment<byte>(emptyBytes, 0, 0);
+			return new ArraySegment<byte>(JsonWriter.emptyBytes, 0, 0);
 		}
-		return new ArraySegment<byte>(buffer, 0, offset);
+		return new ArraySegment<byte>(this.buffer, 0, this.offset);
 	}
 
 	public byte[] ToUtf8ByteArray()
 	{
-		if (buffer == null)
+		if (this.buffer == null)
 		{
-			return emptyBytes;
+			return JsonWriter.emptyBytes;
 		}
-		return BinaryUtil.FastCloneWithResize(buffer, offset);
+		return BinaryUtil.FastCloneWithResize(this.buffer, this.offset);
 	}
 
 	public override string ToString()
 	{
-		if (buffer == null)
+		if (this.buffer == null)
 		{
 			return null;
 		}
-		return Encoding.UTF8.GetString(buffer, 0, offset);
+		return Encoding.UTF8.GetString(this.buffer, 0, this.offset);
 	}
 
 	public void EnsureCapacity(int appendLength)
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, appendLength);
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, appendLength);
 	}
 
 	public void WriteRaw(byte rawValue)
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, 1);
-		buffer[offset++] = rawValue;
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 1);
+		this.buffer[this.offset++] = rawValue;
 	}
 
 	public void WriteRaw(byte[] rawValue)
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, rawValue.Length);
-		Buffer.BlockCopy(rawValue, 0, buffer, offset, rawValue.Length);
-		offset += rawValue.Length;
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, rawValue.Length);
+		Buffer.BlockCopy(rawValue, 0, this.buffer, this.offset, rawValue.Length);
+		this.offset += rawValue.Length;
 	}
 
 	public void WriteRawUnsafe(byte rawValue)
 	{
-		buffer[offset++] = rawValue;
+		this.buffer[this.offset++] = rawValue;
 	}
 
 	public void WriteBeginArray()
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, 1);
-		buffer[offset++] = 91;
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 1);
+		this.buffer[this.offset++] = 91;
 	}
 
 	public void WriteEndArray()
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, 1);
-		buffer[offset++] = 93;
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 1);
+		this.buffer[this.offset++] = 93;
 	}
 
 	public void WriteBeginObject()
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, 1);
-		buffer[offset++] = 123;
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 1);
+		this.buffer[this.offset++] = 123;
 	}
 
 	public void WriteEndObject()
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, 1);
-		buffer[offset++] = 125;
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 1);
+		this.buffer[this.offset++] = 125;
 	}
 
 	public void WriteValueSeparator()
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, 1);
-		buffer[offset++] = 44;
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 1);
+		this.buffer[this.offset++] = 44;
 	}
 
 	public void WriteNameSeparator()
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, 1);
-		buffer[offset++] = 58;
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 1);
+		this.buffer[this.offset++] = 58;
 	}
 
 	public void WritePropertyName(string propertyName)
 	{
-		WriteString(propertyName);
-		WriteNameSeparator();
+		this.WriteString(propertyName);
+		this.WriteNameSeparator();
 	}
 
 	public void WriteQuotation()
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, 1);
-		buffer[offset++] = 34;
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 1);
+		this.buffer[this.offset++] = 34;
 	}
 
 	public void WriteNull()
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, 4);
-		buffer[offset] = 110;
-		buffer[offset + 1] = 117;
-		buffer[offset + 2] = 108;
-		buffer[offset + 3] = 108;
-		offset += 4;
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 4);
+		this.buffer[this.offset] = 110;
+		this.buffer[this.offset + 1] = 117;
+		this.buffer[this.offset + 2] = 108;
+		this.buffer[this.offset + 3] = 108;
+		this.offset += 4;
 	}
 
 	public void WriteBoolean(bool value)
 	{
 		if (value)
 		{
-			BinaryUtil.EnsureCapacity(ref buffer, offset, 4);
-			buffer[offset] = 116;
-			buffer[offset + 1] = 114;
-			buffer[offset + 2] = 117;
-			buffer[offset + 3] = 101;
-			offset += 4;
+			BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 4);
+			this.buffer[this.offset] = 116;
+			this.buffer[this.offset + 1] = 114;
+			this.buffer[this.offset + 2] = 117;
+			this.buffer[this.offset + 3] = 101;
+			this.offset += 4;
 		}
 		else
 		{
-			BinaryUtil.EnsureCapacity(ref buffer, offset, 5);
-			buffer[offset] = 102;
-			buffer[offset + 1] = 97;
-			buffer[offset + 2] = 108;
-			buffer[offset + 3] = 115;
-			buffer[offset + 4] = 101;
-			offset += 5;
+			BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 5);
+			this.buffer[this.offset] = 102;
+			this.buffer[this.offset + 1] = 97;
+			this.buffer[this.offset + 2] = 108;
+			this.buffer[this.offset + 3] = 115;
+			this.buffer[this.offset + 4] = 101;
+			this.offset += 5;
 		}
 	}
 
 	public void WriteTrue()
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, 4);
-		buffer[offset] = 116;
-		buffer[offset + 1] = 114;
-		buffer[offset + 2] = 117;
-		buffer[offset + 3] = 101;
-		offset += 4;
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 4);
+		this.buffer[this.offset] = 116;
+		this.buffer[this.offset + 1] = 114;
+		this.buffer[this.offset + 2] = 117;
+		this.buffer[this.offset + 3] = 101;
+		this.offset += 4;
 	}
 
 	public void WriteFalse()
 	{
-		BinaryUtil.EnsureCapacity(ref buffer, offset, 5);
-		buffer[offset] = 102;
-		buffer[offset + 1] = 97;
-		buffer[offset + 2] = 108;
-		buffer[offset + 3] = 115;
-		buffer[offset + 4] = 101;
-		offset += 5;
+		BinaryUtil.EnsureCapacity(ref this.buffer, this.offset, 5);
+		this.buffer[this.offset] = 102;
+		this.buffer[this.offset + 1] = 97;
+		this.buffer[this.offset + 2] = 108;
+		this.buffer[this.offset + 3] = 115;
+		this.buffer[this.offset + 4] = 101;
+		this.offset += 5;
 	}
 
 	public void WriteSingle(float value)
 	{
-		offset += DoubleToStringConverter.GetBytes(ref buffer, offset, value);
+		this.offset += DoubleToStringConverter.GetBytes(ref this.buffer, this.offset, value);
 	}
 
 	public void WriteDouble(double value)
 	{
-		offset += DoubleToStringConverter.GetBytes(ref buffer, offset, value);
+		this.offset += DoubleToStringConverter.GetBytes(ref this.buffer, this.offset, value);
 	}
 
 	public void WriteByte(byte value)
 	{
-		WriteUInt64(value);
+		this.WriteUInt64(value);
 	}
 
 	public void WriteUInt16(ushort value)
 	{
-		WriteUInt64(value);
+		this.WriteUInt64(value);
 	}
 
 	public void WriteUInt32(uint value)
 	{
-		WriteUInt64(value);
+		this.WriteUInt64(value);
 	}
 
 	public void WriteUInt64(ulong value)
 	{
-		offset += NumberConverter.WriteUInt64(ref buffer, offset, value);
+		this.offset += NumberConverter.WriteUInt64(ref this.buffer, this.offset, value);
 	}
 
 	public void WriteSByte(sbyte value)
 	{
-		WriteInt64(value);
+		this.WriteInt64(value);
 	}
 
 	public void WriteInt16(short value)
 	{
-		WriteInt64(value);
+		this.WriteInt64(value);
 	}
 
 	public void WriteInt32(int value)
 	{
-		WriteInt64(value);
+		this.WriteInt64(value);
 	}
 
 	public void WriteInt64(long value)
 	{
-		offset += NumberConverter.WriteInt64(ref buffer, offset, value);
+		this.offset += NumberConverter.WriteInt64(ref this.buffer, this.offset, value);
 	}
 
 	public void WriteString(string value)
 	{
 		if (value == null)
 		{
-			WriteNull();
+			this.WriteNull();
 			return;
 		}
-		int num = offset;
+		int num = this.offset;
 		int num2 = StringEncoding.UTF8.GetMaxByteCount(value.Length) + 2;
-		BinaryUtil.EnsureCapacity(ref buffer, num, num2);
+		BinaryUtil.EnsureCapacity(ref this.buffer, num, num2);
 		int num3 = 0;
 		_ = value.Length;
-		buffer[offset++] = 34;
+		this.buffer[this.offset++] = 34;
 		for (int i = 0; i < value.Length; i++)
 		{
 			byte b = 0;
@@ -304,16 +304,16 @@ public struct JsonWriter
 				continue;
 			}
 			num2 += 2;
-			BinaryUtil.EnsureCapacity(ref buffer, num, num2);
-			offset += StringEncoding.UTF8.GetBytes(value, num3, i - num3, buffer, offset);
+			BinaryUtil.EnsureCapacity(ref this.buffer, num, num2);
+			this.offset += StringEncoding.UTF8.GetBytes(value, num3, i - num3, this.buffer, this.offset);
 			num3 = i + 1;
-			buffer[offset++] = 92;
-			buffer[offset++] = b;
+			this.buffer[this.offset++] = 92;
+			this.buffer[this.offset++] = b;
 		}
 		if (num3 != value.Length)
 		{
-			offset += StringEncoding.UTF8.GetBytes(value, num3, value.Length - num3, buffer, offset);
+			this.offset += StringEncoding.UTF8.GetBytes(value, num3, value.Length - num3, this.buffer, this.offset);
 		}
-		buffer[offset++] = 34;
+		this.buffer[this.offset++] = 34;
 	}
 }

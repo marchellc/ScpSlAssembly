@@ -14,28 +14,28 @@ public struct DoorPermissionsPolicy
 
 	public DoorPermissionsPolicy(DoorPermissionFlags requiredPermissions, bool requireAll = false, bool bypass2176 = false)
 	{
-		RequiredPermissions = requiredPermissions;
-		RequireAll = requireAll;
-		Bypass2176 = bypass2176;
+		this.RequiredPermissions = requiredPermissions;
+		this.RequireAll = requireAll;
+		this.Bypass2176 = bypass2176;
 	}
 
 	public readonly bool CheckPermissions(IDoorPermissionProvider provider, IDoorPermissionRequester requester, out PermissionUsed callback)
 	{
-		if (RequiredPermissions == DoorPermissionFlags.None)
+		if (this.RequiredPermissions == DoorPermissionFlags.None)
 		{
 			callback = null;
 			return true;
 		}
 		callback = provider.PermissionsUsedCallback;
 		DoorPermissionFlags permissions = provider.GetPermissions(requester);
-		return CheckPermissions(permissions);
+		return this.CheckPermissions(permissions);
 	}
 
 	public readonly bool CheckPermissions(DoorPermissionFlags flags)
 	{
-		if (!(RequireAll ? flags.HasFlagAll(RequiredPermissions) : flags.HasFlagAny(RequiredPermissions)))
+		if (!(this.RequireAll ? flags.HasFlagAll(this.RequiredPermissions) : flags.HasFlagAny(this.RequiredPermissions)))
 		{
-			return RequiredPermissions == DoorPermissionFlags.None;
+			return this.RequiredPermissions == DoorPermissionFlags.None;
 		}
 		return true;
 	}
@@ -43,7 +43,7 @@ public struct DoorPermissionsPolicy
 	public readonly bool CheckPermissions(ReferenceHub hub, IDoorPermissionRequester requester, out PermissionUsed callback)
 	{
 		callback = null;
-		if (RequiredPermissions == DoorPermissionFlags.None)
+		if (this.RequiredPermissions == DoorPermissionFlags.None)
 		{
 			return true;
 		}
@@ -53,12 +53,12 @@ public struct DoorPermissionsPolicy
 		}
 		if (hub.roleManager.CurrentRole is IDoorPermissionProvider provider)
 		{
-			return CheckPermissions(provider, requester, out callback);
+			return this.CheckPermissions(provider, requester, out callback);
 		}
 		ItemBase curInstance = hub.inventory.CurInstance;
 		if (curInstance != null && curInstance is IDoorPermissionProvider provider2)
 		{
-			return CheckPermissions(provider2, requester, out callback);
+			return this.CheckPermissions(provider2, requester, out callback);
 		}
 		return false;
 	}

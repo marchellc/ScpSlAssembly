@@ -12,15 +12,15 @@ public abstract class WaitManager : MonoBehaviour
 
 	protected virtual void Awake()
 	{
-		waits = GetComponents<Wait>();
-		waitHandles = new CoroutineHandle[waits.Length];
+		this.waits = base.GetComponents<Wait>();
+		this.waitHandles = new CoroutineHandle[this.waits.Length];
 	}
 
 	protected void StartAll()
 	{
-		for (int i = 0; i < waits.Length; i++)
+		for (int i = 0; i < this.waits.Length; i++)
 		{
-			waitHandles[i] = Timing.RunCoroutine(waits[i]._Run());
+			this.waitHandles[i] = Timing.RunCoroutine(this.waits[i]._Run());
 		}
 	}
 

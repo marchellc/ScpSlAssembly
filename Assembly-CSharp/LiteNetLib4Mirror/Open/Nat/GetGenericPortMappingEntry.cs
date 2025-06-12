@@ -8,11 +8,11 @@ internal class GetGenericPortMappingEntry : RequestMessageBase
 
 	public GetGenericPortMappingEntry(int index)
 	{
-		_index = index;
+		this._index = index;
 	}
 
 	public override IDictionary<string, object> ToXml()
 	{
-		return new Dictionary<string, object> { { "NewPortMappingIndex", _index } };
+		return new Dictionary<string, object> { { "NewPortMappingIndex", this._index } };
 	}
 }

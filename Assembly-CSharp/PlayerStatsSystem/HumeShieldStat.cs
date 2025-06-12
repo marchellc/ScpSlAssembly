@@ -18,13 +18,13 @@ public class HumeShieldStat : SyncedStatBase
 	{
 		get
 		{
-			return _syncMax;
+			return this._syncMax;
 		}
 		set
 		{
-			_syncMax = value;
-			_maxValueOverride = value >= 0f;
-			MaxValueDirty = true;
+			this._syncMax = value;
+			this._maxValueOverride = value >= 0f;
+			base.MaxValueDirty = true;
 		}
 	}
 
@@ -47,7 +47,7 @@ public class HumeShieldStat : SyncedStatBase
 
 	public override float ReadValue(SyncedStatMessages.StatMessageType type, NetworkReader reader)
 	{
-		if (type != 0)
+		if (type != SyncedStatMessages.StatMessageType.CurrentValue)
 		{
 			return reader.ReadFloat();
 		}
@@ -60,12 +60,12 @@ public class HumeShieldStat : SyncedStatBase
 		{
 		case SyncedStatMessages.StatMessageType.CurrentValue:
 		{
-			int num = Mathf.Clamp(Mathf.CeilToInt(CurValue), 0, 65535);
+			int num = Mathf.Clamp(Mathf.CeilToInt(this.CurValue), 0, 65535);
 			writer.WriteUShort((ushort)num);
 			break;
 		}
 		case SyncedStatMessages.StatMessageType.MaxValue:
-			writer.WriteFloat(MaxValue);
+			writer.WriteFloat(this.MaxValue);
 			break;
 		}
 	}
@@ -78,30 +78,30 @@ public class HumeShieldStat : SyncedStatBase
 			return;
 		}
 		IHumeShieldProvider.GetForHub(base.Hub, out var _, out var hsMax, out var hsRegen, out var _);
-		float curValue = CurValue;
+		float curValue = this.CurValue;
 		float num = hsRegen * Time.deltaTime;
-		if (_syncMax != hsMax)
+		if (this._syncMax != hsMax)
 		{
-			if (_maxValueOverride)
+			if (this._maxValueOverride)
 			{
-				hsMax = MaxValue;
+				hsMax = this.MaxValue;
 			}
 			else
 			{
-				_syncMax = hsMax;
-				MaxValueDirty = true;
+				this._syncMax = hsMax;
+				base.MaxValueDirty = true;
 			}
 		}
 		if (num > 0f)
 		{
 			if (!(curValue >= hsMax))
 			{
-				CurValue = Mathf.MoveTowards(curValue, hsMax, num);
+				this.CurValue = Mathf.MoveTowards(curValue, hsMax, num);
 			}
 		}
 		else if (!(curValue <= 0f))
 		{
-			CurValue = curValue + num;
+			this.CurValue = curValue + num;
 		}
 	}
 
@@ -110,8 +110,8 @@ public class HumeShieldStat : SyncedStatBase
 		base.ClassChanged();
 		if (!(base.Hub.roleManager.CurrentRole is IHumeShieldedRole))
 		{
-			MaxValue = float.MinValue;
-			CurValue = 0f;
+			this.MaxValue = float.MinValue;
+			this.CurValue = 0f;
 		}
 	}
 

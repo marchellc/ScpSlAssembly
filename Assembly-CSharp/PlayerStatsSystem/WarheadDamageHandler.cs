@@ -22,18 +22,18 @@ public class WarheadDamageHandler : StandardDamageHandler
 		}
 	}
 
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
-	public override string RagdollInspectText => _ragdollinspectText;
+	public override string RagdollInspectText => this._ragdollinspectText;
 
-	public override string DeathScreenText => _deathscreenText;
+	public override string DeathScreenText => this._deathscreenText;
 
 	public override string ServerLogsText => "Died to alpha warhead.";
 
 	public WarheadDamageHandler()
 	{
-		Damage = -1f;
-		_ragdollinspectText = DeathTranslations.Warhead.RagdollTranslation;
-		_deathscreenText = DeathTranslations.Warhead.DeathscreenTranslation;
+		this.Damage = -1f;
+		this._ragdollinspectText = DeathTranslations.Warhead.RagdollTranslation;
+		this._deathscreenText = DeathTranslations.Warhead.DeathscreenTranslation;
 	}
 }

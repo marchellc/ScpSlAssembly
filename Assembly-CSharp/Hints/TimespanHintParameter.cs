@@ -12,7 +12,7 @@ public class TimespanHintParameter : DoubleHintParameter
 		get
 		{
 			TimeSpan result = TimeSpan.FromSeconds(base.Value - NetworkTime.time);
-			if (!Negate)
+			if (!this.Negate)
 			{
 				return result;
 			}
@@ -34,7 +34,7 @@ public class TimespanHintParameter : DoubleHintParameter
 
 	public static TimespanHintParameter FromOffset(TimeSpan offset, string format, bool negate)
 	{
-		return FromOffset(offset.TotalSeconds, format, negate);
+		return TimespanHintParameter.FromOffset(offset.TotalSeconds, format, negate);
 	}
 
 	protected TimespanHintParameter()
@@ -44,7 +44,7 @@ public class TimespanHintParameter : DoubleHintParameter
 	public TimespanHintParameter(double sourceTime, string format, bool negate)
 		: base(sourceTime, format)
 	{
-		Negate = negate;
+		this.Negate = negate;
 	}
 
 	public TimespanHintParameter(DateTimeOffset sourceTime, string format, bool negate)
@@ -55,17 +55,17 @@ public class TimespanHintParameter : DoubleHintParameter
 	public override void Deserialize(NetworkReader reader)
 	{
 		base.Deserialize(reader);
-		Negate = reader.ReadBool();
+		this.Negate = reader.ReadBool();
 	}
 
 	public override void Serialize(NetworkWriter writer)
 	{
 		base.Serialize(writer);
-		writer.WriteBool(Negate);
+		writer.WriteBool(this.Negate);
 	}
 
 	protected override string UpdateState(float progress)
 	{
-		return OffsetTime.ToString(base.Format);
+		return this.OffsetTime.ToString(base.Format);
 	}
 }

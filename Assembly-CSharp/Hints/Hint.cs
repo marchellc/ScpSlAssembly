@@ -13,21 +13,21 @@ public abstract class Hint : DisplayableObject<SharedHintData>
 	protected Hint(HintParameter[] parameters, HintEffect[] effects, float durationScalar = 1f)
 		: base(durationScalar)
 	{
-		_effects = effects;
-		Parameters = parameters;
+		this._effects = effects;
+		this.Parameters = parameters;
 	}
 
 	public override void Deserialize(NetworkReader reader)
 	{
 		base.Deserialize(reader);
-		_effects = reader.ReadHintEffectArray();
-		Parameters = reader.ReadHintParameterArray();
+		this._effects = reader.ReadHintEffectArray();
+		this.Parameters = reader.ReadHintParameterArray();
 	}
 
 	public override void Serialize(NetworkWriter writer)
 	{
 		base.Serialize(writer);
-		writer.WriteHintEffectArray((IReadOnlyCollection<HintEffect>)(object)_effects);
-		writer.WriteHintParameterArray((IReadOnlyCollection<HintParameter>)(object)Parameters);
+		writer.WriteHintEffectArray((IReadOnlyCollection<HintEffect>)(object)this._effects);
+		writer.WriteHintParameterArray((IReadOnlyCollection<HintParameter>)(object)this.Parameters);
 	}
 }

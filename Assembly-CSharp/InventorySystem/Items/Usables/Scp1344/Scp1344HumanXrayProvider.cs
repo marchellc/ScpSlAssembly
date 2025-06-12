@@ -37,64 +37,64 @@ public class Scp1344HumanXrayProvider : Scp1344XrayProviderBase
 
 		public OrbInstance(ReferenceHub player, Scp1344HumanXrayProvider parent)
 		{
-			Target = player;
-			_parent = parent;
-			_orbInstance = Object.Instantiate(parent._orbTemplate);
-			_invisiblePlayerColor = parent._invisiblePlayerColor;
-			_detectedFx = player.playerEffectsController.GetEffect<Scp1344Detected>();
-			_invisibleFx = player.playerEffectsController.GetEffect<Invisible>();
-			_orbInstance.OnDestroyCallback += delegate
+			this.Target = player;
+			this._parent = parent;
+			this._orbInstance = Object.Instantiate(parent._orbTemplate);
+			this._invisiblePlayerColor = parent._invisiblePlayerColor;
+			this._detectedFx = player.playerEffectsController.GetEffect<Scp1344Detected>();
+			this._invisibleFx = player.playerEffectsController.GetEffect<Invisible>();
+			this._orbInstance.OnDestroyCallback += delegate
 			{
-				_orbDestroyed = true;
+				this._orbDestroyed = true;
 			};
 		}
 
 		public void DestroySelf()
 		{
-			if (!_orbDestroyed)
+			if (!this._orbDestroyed)
 			{
-				Object.Destroy(_orbInstance.gameObject);
-				_orbDestroyed = true;
+				Object.Destroy(this._orbInstance.gameObject);
+				this._orbDestroyed = true;
 			}
 		}
 
 		public void UpdateTracking(ReferenceHub ownerHub, float normalizedHealth)
 		{
-			if (_orbDestroyed)
+			if (this._orbDestroyed)
 			{
 				return;
 			}
-			Tracked = TryUpdate(ownerHub, normalizedHealth, out _lastColor, out var position, out var scale);
+			this.Tracked = this.TryUpdate(ownerHub, normalizedHealth, out this._lastColor, out var position, out var scale);
 			double num = NetworkTime.time * 0.20000000298023224;
 			long num2 = (long)num;
 			float num3 = (float)(num - (double)num2) / 0.2f;
-			if (Tracked && ownerHub.IsPOV)
+			if (this.Tracked && ownerHub.IsPOV)
 			{
-				if (_prevCycleIndex != num2 || num3 < 1.1f)
+				if (this._prevCycleIndex != num2 || num3 < 1.1f)
 				{
-					_orbInstance.Position = position;
-					_orbInstance.Scale = scale;
+					this._orbInstance.Position = position;
+					this._orbInstance.Scale = scale;
 				}
 				float num4 = Mathf.InverseLerp(1.5f, 0.5f, num3);
-				_orbInstance.ParticleColor = _lastColor * new Color(1f, 1f, 1f, num4);
-				_orbInstance.ParticleEmissionEnabled = num4 > 0f;
+				this._orbInstance.ParticleColor = this._lastColor * new Color(1f, 1f, 1f, num4);
+				this._orbInstance.ParticleEmissionEnabled = num4 > 0f;
 			}
 			else
 			{
-				_orbInstance.ParticleEmissionEnabled = false;
+				this._orbInstance.ParticleEmissionEnabled = false;
 			}
-			if (Tracked && NetworkServer.active)
+			if (this.Tracked && NetworkServer.active)
 			{
-				_detectedFx.ServerRegisterObserver(_parent);
+				this._detectedFx.ServerRegisterObserver(this._parent);
 			}
-			_prevCycleIndex = num2;
+			this._prevCycleIndex = num2;
 		}
 
 		public void UpdatePositionPostProcessing()
 		{
-			if (!NetworkServer.active && _invisibleFx.IsEnabled && Target.roleManager.CurrentRole is FpcStandardRoleBase && !Target.IsPOV)
+			if (!NetworkServer.active && this._invisibleFx.IsEnabled && this.Target.roleManager.CurrentRole is FpcStandardRoleBase && !this.Target.IsPOV)
 			{
-				Target.transform.position = FpcMotor.InvisiblePosition;
+				this.Target.transform.position = FpcMotor.InvisiblePosition;
 			}
 		}
 
@@ -103,23 +103,23 @@ public class Scp1344HumanXrayProvider : Scp1344XrayProviderBase
 			color = default(Color);
 			position = default(Vector3);
 			scale = default(Vector3);
-			if ((object)Target == owner)
+			if ((object)this.Target == owner)
 			{
 				return false;
 			}
-			if (!(Target.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase))
+			if (!(this.Target.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase))
 			{
 				return false;
 			}
 			position = fpcStandardRoleBase.FpcModule.Position;
-			float num = ((Target.GetLastKnownZone() == FacilityZone.Surface) ? 36f : 18f);
-			if (!IsInVision(owner, fpcStandardRoleBase, position, num + 5f, out var inSight, out var targetDistance))
+			float num = ((this.Target.GetLastKnownZone() == FacilityZone.Surface) ? 36f : 18f);
+			if (!Scp1344HumanXrayProvider.IsInVision(owner, fpcStandardRoleBase, position, num + 5f, out var inSight, out var targetDistance))
 			{
 				return false;
 			}
-			position = GetParticlePosition(fpcStandardRoleBase, position);
-			scale = GetParticleScale(owner.GetTeam(), fpcStandardRoleBase) * Vector3.one;
-			color = Mathf.Clamp(normalizedHealth, 0.2f, 1f) * GetParticleColor(Target, fpcStandardRoleBase, _invisiblePlayerColor);
+			position = Scp1344HumanXrayProvider.GetParticlePosition(fpcStandardRoleBase, position);
+			scale = Scp1344HumanXrayProvider.GetParticleScale(owner.GetTeam(), fpcStandardRoleBase) * Vector3.one;
+			color = Mathf.Clamp(normalizedHealth, 0.2f, 1f) * Scp1344HumanXrayProvider.GetParticleColor(this.Target, fpcStandardRoleBase, this._invisiblePlayerColor);
 			if (!inSight && num < targetDistance)
 			{
 				color.a = Mathf.Clamp01((num + 5f - targetDistance) / 5f);
@@ -164,7 +164,7 @@ public class Scp1344HumanXrayProvider : Scp1344XrayProviderBase
 
 	public bool GetVisibilityForTarget(ReferenceHub target)
 	{
-		foreach (OrbInstance orbInstance in _orbInstances)
+		foreach (OrbInstance orbInstance in this._orbInstances)
 		{
 			if ((object)target == orbInstance.Target)
 			{
@@ -179,27 +179,27 @@ public class Scp1344HumanXrayProvider : Scp1344XrayProviderBase
 		base.OnVisionEnabled();
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			_orbInstances.Add(new OrbInstance(allHub, this));
+			this._orbInstances.Add(new OrbInstance(allHub, this));
 		}
-		SetEvents(newSet: true);
+		this.SetEvents(newSet: true);
 	}
 
 	public override void OnVisionDisabled()
 	{
 		base.OnVisionDisabled();
-		SetEvents(newSet: false);
-		foreach (OrbInstance orbInstance in _orbInstances)
+		this.SetEvents(newSet: false);
+		foreach (OrbInstance orbInstance in this._orbInstances)
 		{
 			orbInstance.DestroySelf();
 		}
-		_orbInstances.Clear();
+		this._orbInstances.Clear();
 	}
 
 	public override void OnUpdate()
 	{
 		base.OnUpdate();
 		float normalizedValue = base.Hub.playerStats.GetModule<HealthStat>().NormalizedValue;
-		foreach (OrbInstance orbInstance in _orbInstances)
+		foreach (OrbInstance orbInstance in this._orbInstances)
 		{
 			orbInstance.UpdateTracking(base.Hub, normalizedValue);
 		}
@@ -207,23 +207,23 @@ public class Scp1344HumanXrayProvider : Scp1344XrayProviderBase
 
 	private void OnDestroy()
 	{
-		SetEvents(newSet: false);
+		this.SetEvents(newSet: false);
 	}
 
 	private void SetEvents(bool newSet)
 	{
-		if (_eventsSet != newSet)
+		if (this._eventsSet != newSet)
 		{
 			if (newSet)
 			{
-				_eventsSet = true;
+				this._eventsSet = true;
 				ReferenceHub.OnPlayerAdded += OnPlayerAdded;
 				ReferenceHub.OnPlayerRemoved += OnPlayerRemoved;
 				FirstPersonMovementModule.OnPositionUpdated += OnPositionsSet;
 			}
 			else
 			{
-				_eventsSet = false;
+				this._eventsSet = false;
 				ReferenceHub.OnPlayerAdded -= OnPlayerAdded;
 				ReferenceHub.OnPlayerRemoved -= OnPlayerRemoved;
 				FirstPersonMovementModule.OnPositionUpdated -= OnPositionsSet;
@@ -233,23 +233,23 @@ public class Scp1344HumanXrayProvider : Scp1344XrayProviderBase
 
 	private void OnPlayerRemoved(ReferenceHub hub)
 	{
-		for (int num = _orbInstances.Count - 1; num >= 0; num--)
+		for (int num = this._orbInstances.Count - 1; num >= 0; num--)
 		{
-			if ((object)hub == _orbInstances[num].Target)
+			if ((object)hub == this._orbInstances[num].Target)
 			{
-				_orbInstances.RemoveAt(num);
+				this._orbInstances.RemoveAt(num);
 			}
 		}
 	}
 
 	private void OnPlayerAdded(ReferenceHub hub)
 	{
-		_orbInstances.Add(new OrbInstance(hub, this));
+		this._orbInstances.Add(new OrbInstance(hub, this));
 	}
 
 	private void OnPositionsSet()
 	{
-		_orbInstances.ForEach(delegate(OrbInstance x)
+		this._orbInstances.ForEach(delegate(OrbInstance x)
 		{
 			x.UpdatePositionPostProcessing();
 		});

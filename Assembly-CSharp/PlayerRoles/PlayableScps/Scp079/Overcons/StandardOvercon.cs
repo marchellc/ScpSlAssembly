@@ -26,25 +26,25 @@ public class StandardOvercon : OverconBase
 		}
 		internal set
 		{
-			TargetSprite.color = (value ? HighlightedColor : NormalColor);
+			this.TargetSprite.color = (value ? StandardOvercon.HighlightedColor : StandardOvercon.NormalColor);
 			base.IsHighlighted = value;
 		}
 	}
 
 	protected virtual void Awake()
 	{
-		TargetSprite.color = HighlightedColor;
+		this.TargetSprite.color = StandardOvercon.HighlightedColor;
 	}
 
 	public void Rescale(Scp079Camera cam)
 	{
-		Rescale(cam, Vector3.Distance(cam.Position, base.transform.position));
+		this.Rescale(cam, Vector3.Distance(cam.Position, base.transform.position));
 	}
 
 	public void Rescale(Scp079Camera cam, float dis)
 	{
 		base.transform.LookAt(cam.Position);
-		float num = _scaleOverDistance.Evaluate(dis);
+		float num = this._scaleOverDistance.Evaluate(dis);
 		if (cam.Room.Zone == FacilityZone.Surface)
 		{
 			num *= 2.5f;

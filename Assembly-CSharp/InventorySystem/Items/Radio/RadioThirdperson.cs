@@ -17,31 +17,31 @@ public class RadioThirdperson : IdleThirdpersonItem
 	protected override void Update()
 	{
 		base.Update();
-		if (!RadioMessages.SyncedRangeLevels.TryGetValue(_netId, out var value))
+		if (!RadioMessages.SyncedRangeLevels.TryGetValue(this._netId, out var value))
 		{
 			return;
 		}
 		sbyte range = (sbyte)value.Range;
-		if (range != _prevVal)
+		if (range != this._prevVal)
 		{
 			if (range < 0)
 			{
-				_playback.gameObject.SetActive(value: false);
+				this._playback.gameObject.SetActive(value: false);
 			}
 			else
 			{
-				_playback.gameObject.SetActive(value: true);
-				_playback.RangeId = range;
+				this._playback.gameObject.SetActive(value: true);
+				this._playback.RangeId = range;
 			}
-			_prevVal = range;
+			this._prevVal = range;
 		}
 	}
 
 	internal override void Initialize(InventorySubcontroller subcontroller, ItemIdentifier id)
 	{
 		base.Initialize(subcontroller, id);
-		_prevVal = sbyte.MinValue;
-		_netId = subcontroller.Model.OwnerHub.netId;
-		_playback.IgnoredNetId = _netId;
+		this._prevVal = sbyte.MinValue;
+		this._netId = subcontroller.Model.OwnerHub.netId;
+		this._playback.IgnoredNetId = this._netId;
 	}
 }

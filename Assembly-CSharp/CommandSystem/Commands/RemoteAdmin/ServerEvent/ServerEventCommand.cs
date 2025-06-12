@@ -28,10 +28,10 @@ public class ServerEventCommand : ParentCommand, IUsageProvider
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new DetonationCancelCommand());
-		RegisterCommand(new DetonationInstantCommand());
-		RegisterCommand(new DetonationStartCommand());
-		RegisterCommand(new RoundRestartCommand());
-		RegisterCommand(new TerminateUnconnectedCommand());
+		this.RegisterCommand(new DetonationCancelCommand());
+		this.RegisterCommand(new DetonationInstantCommand());
+		this.RegisterCommand(new DetonationStartCommand());
+		this.RegisterCommand(new RoundRestartCommand());
+		this.RegisterCommand(new TerminateUnconnectedCommand());
 	}
 }

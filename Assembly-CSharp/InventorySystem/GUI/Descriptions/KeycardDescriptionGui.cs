@@ -28,15 +28,15 @@ public class KeycardDescriptionGui : RadialDescriptionBase
 	{
 		KeycardItem keycardItem = targetItem as KeycardItem;
 		KeycardLevels keycardLevels = new KeycardLevels(keycardItem.GetPermissions(null));
-		SetLevel(_containmentIcons, keycardLevels.Containment, roleColor);
-		SetLevel(_armoryIcons, keycardLevels.Armory, roleColor);
-		SetLevel(_adminIcons, keycardLevels.Admin, roleColor);
-		Graphic[] otherColorable = _otherColorable;
+		this.SetLevel(this._containmentIcons, keycardLevels.Containment, roleColor);
+		this.SetLevel(this._armoryIcons, keycardLevels.Armory, roleColor);
+		this.SetLevel(this._adminIcons, keycardLevels.Admin, roleColor);
+		Graphic[] otherColorable = this._otherColorable;
 		for (int i = 0; i < otherColorable.Length; i++)
 		{
 			otherColorable[i].color = roleColor;
 		}
-		_title.text = keycardItem.Name;
+		this._title.text = keycardItem.Name;
 	}
 
 	private void SetLevel(Graphic[] arr, int level, Color roleColor)

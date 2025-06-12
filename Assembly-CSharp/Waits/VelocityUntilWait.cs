@@ -15,11 +15,11 @@ public class VelocityUntilWait : UntilWait
 	protected override void Awake()
 	{
 		base.Awake();
-		sqrThreshold = threshold * threshold;
+		this.sqrThreshold = this.threshold * this.threshold;
 	}
 
 	protected override bool Predicate()
 	{
-		return rigidbody.linearVelocity.sqrMagnitude < sqrThreshold;
+		return this.rigidbody.linearVelocity.sqrMagnitude < this.sqrThreshold;
 	}
 }

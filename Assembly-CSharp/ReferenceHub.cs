@@ -72,8 +72,6 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 
 	public NicknameSync nicknameSync;
 
-	public PlayerInteract playerInteract;
-
 	public InteractionCoordinator interCoordinator;
 
 	public PlayerEffectsController playerEffectsController;
@@ -101,7 +99,7 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 	{
 		get
 		{
-			if (!TryGetHostHub(out var hub))
+			if (!ReferenceHub.TryGetHostHub(out var hub))
 			{
 				return null;
 			}
@@ -114,7 +112,7 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 	{
 		get
 		{
-			if (!TryGetLocalHub(out var hub))
+			if (!ReferenceHub.TryGetLocalHub(out var hub))
 			{
 				return null;
 			}
@@ -122,20 +120,20 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 		}
 	}
 
-	public int PlayerId => _playerId.Value;
+	public int PlayerId => this._playerId.Value;
 
-	public ClientInstanceMode Mode => authManager.InstanceMode;
+	public ClientInstanceMode Mode => this.authManager.InstanceMode;
 
 	public bool IsHost
 	{
 		get
 		{
-			ClientInstanceMode mode = Mode;
+			ClientInstanceMode mode = this.Mode;
 			return mode == ClientInstanceMode.Host || mode == ClientInstanceMode.DedicatedServer;
 		}
 	}
 
-	public bool IsDummy => Mode == ClientInstanceMode.Dummy;
+	public bool IsDummy => this.Mode == ClientInstanceMode.Dummy;
 
 	public bool IsPOV
 	{
@@ -153,12 +151,12 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 	{
 		get
 		{
-			return _playerId;
+			return this._playerId;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _playerId, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._playerId, 1uL, null);
 		}
 	}
 
@@ -171,7 +169,7 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 	public static int GetPlayerCount(ClientInstanceMode allowedState)
 	{
 		int num = 0;
-		foreach (ReferenceHub allHub in AllHubs)
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allowedState == allHub.Mode)
 			{
@@ -184,7 +182,7 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 	public static int GetPlayerCount(ClientInstanceMode allowedState, ClientInstanceMode allowedState2)
 	{
 		int num = 0;
-		foreach (ReferenceHub allHub in AllHubs)
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allowedState == allHub.Mode || allowedState2 == allHub.Mode)
 			{
@@ -197,7 +195,7 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 	public static int GetPlayerCount(ClientInstanceMode allowedState, ClientInstanceMode allowedState2, ClientInstanceMode allowedState3)
 	{
 		int num = 0;
-		foreach (ReferenceHub allHub in AllHubs)
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allowedState == allHub.Mode || allowedState2 == allHub.Mode || allowedState3 == allHub.Mode)
 			{
@@ -209,12 +207,12 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 
 	private void Awake()
 	{
-		AllHubs.Add(this);
-		HubsByGameObjects[base.gameObject] = this;
+		ReferenceHub.AllHubs.Add(this);
+		ReferenceHub.HubsByGameObjects[base.gameObject] = this;
 		if (NetworkServer.active)
 		{
-			Network_playerId = new RecyclablePlayerId(useMinQueue: true);
-			FriendlyFireHandler = new FriendlyFireHandler(this);
+			this.Network_playerId = new RecyclablePlayerId(useMinQueue: true);
+			this.FriendlyFireHandler = new FriendlyFireHandler(this);
 		}
 	}
 
@@ -229,19 +227,19 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 		{
 			PlayerEvents.OnLeft(new PlayerLeftEventArgs(this));
 		}
-		AllHubs.Remove(this);
-		HubsByGameObjects.Remove(base.gameObject);
-		HubByPlayerIds.Remove(PlayerId);
-		_playerId.Destroy();
-		if (_hostHub == this)
+		ReferenceHub.AllHubs.Remove(this);
+		ReferenceHub.HubsByGameObjects.Remove(base.gameObject);
+		ReferenceHub.HubByPlayerIds.Remove(this.PlayerId);
+		this._playerId.Destroy();
+		if (ReferenceHub._hostHub == this)
 		{
-			_hostHub = null;
-			_hostHubSet = false;
+			ReferenceHub._hostHub = null;
+			ReferenceHub._hostHubSet = false;
 		}
-		if (_localHub == this)
+		if (ReferenceHub._localHub == this)
 		{
-			_localHub = null;
-			_localHubSet = false;
+			ReferenceHub._localHub = null;
+			ReferenceHub._localHubSet = false;
 		}
 		ReferenceHub.OnPlayerRemoved?.Invoke(this);
 	}
@@ -254,12 +252,12 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 
 	public override string ToString()
 	{
-		return string.Format("{0} (Name='{1}', NetID='{2}', PlayerID='{3}')", "ReferenceHub", base.name, base.netId, PlayerId);
+		return string.Format("{0} (Name='{1}', NetID='{2}', PlayerID='{3}')", "ReferenceHub", base.name, base.netId, this.PlayerId);
 	}
 
 	public static ReferenceHub GetHub(GameObject player)
 	{
-		if (!TryGetHub(player, out var hub))
+		if (!ReferenceHub.TryGetHub(player, out var hub))
 		{
 			return null;
 		}
@@ -268,7 +266,7 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 
 	public static ReferenceHub GetHub(MonoBehaviour player)
 	{
-		if (!TryGetHub(player.gameObject, out var hub))
+		if (!ReferenceHub.TryGetHub(player.gameObject, out var hub))
 		{
 			return null;
 		}
@@ -282,7 +280,7 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 			hub = null;
 			return false;
 		}
-		if (!HubsByGameObjects.TryGetValue(player, out hub))
+		if (!ReferenceHub.HubsByGameObjects.TryGetValue(player, out hub))
 		{
 			return player.TryGetComponent<ReferenceHub>(out hub);
 		}
@@ -297,7 +295,7 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 			hub = null;
 			return false;
 		}
-		if (!HubsByGameObjects.TryGetValue(identity.gameObject, out hub))
+		if (!ReferenceHub.HubsByGameObjects.TryGetValue(identity.gameObject, out hub))
 		{
 			return identity.TryGetComponent<ReferenceHub>(out hub);
 		}
@@ -306,7 +304,7 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 
 	public static bool TryGetHubNetID(uint netId, out ReferenceHub hub)
 	{
-		if (NetworkUtils.SpawnedNetIds.TryGetValue(netId, out var value) && TryGetHub(value.gameObject, out hub))
+		if (NetworkUtils.SpawnedNetIds.TryGetValue(netId, out var value) && ReferenceHub.TryGetHub(value.gameObject, out hub))
 		{
 			return true;
 		}
@@ -316,18 +314,18 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 
 	public static bool TryGetLocalHub(out ReferenceHub hub)
 	{
-		if (_localHubSet)
+		if (ReferenceHub._localHubSet)
 		{
-			hub = _localHub;
+			hub = ReferenceHub._localHub;
 			return true;
 		}
-		foreach (ReferenceHub allHub in AllHubs)
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allHub.isLocalPlayer)
 			{
 				hub = allHub;
-				_localHub = allHub;
-				_localHubSet = true;
+				ReferenceHub._localHub = allHub;
+				ReferenceHub._localHubSet = true;
 				return true;
 			}
 		}
@@ -342,23 +340,23 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 			hub = hub2;
 			return true;
 		}
-		return TryGetLocalHub(out hub);
+		return ReferenceHub.TryGetLocalHub(out hub);
 	}
 
 	public static bool TryGetHostHub(out ReferenceHub hub)
 	{
-		if (_hostHubSet)
+		if (ReferenceHub._hostHubSet)
 		{
-			hub = _hostHub;
+			hub = ReferenceHub._hostHub;
 			return true;
 		}
-		foreach (ReferenceHub allHub in AllHubs)
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allHub.IsHost)
 			{
 				hub = allHub;
-				_hostHub = allHub;
-				_hostHubSet = true;
+				ReferenceHub._hostHub = allHub;
+				ReferenceHub._hostHubSet = true;
 				return true;
 			}
 		}
@@ -368,7 +366,7 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 
 	public static ReferenceHub GetHub(int playerId)
 	{
-		if (!TryGetHub(playerId, out var hub))
+		if (!ReferenceHub.TryGetHub(playerId, out var hub))
 		{
 			return null;
 		}
@@ -379,15 +377,15 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 	{
 		if (playerId > 0)
 		{
-			if (HubByPlayerIds.TryGetValue(playerId, out hub))
+			if (ReferenceHub.HubByPlayerIds.TryGetValue(playerId, out hub))
 			{
 				return true;
 			}
-			foreach (ReferenceHub allHub in AllHubs)
+			foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 			{
 				if (allHub.PlayerId == playerId)
 				{
-					HubByPlayerIds[playerId] = allHub;
+					ReferenceHub.HubByPlayerIds[playerId] = allHub;
 					hub = allHub;
 					return true;
 				}
@@ -436,13 +434,13 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteRecyclablePlayerId(_playerId);
+			writer.WriteRecyclablePlayerId(this._playerId);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteRecyclablePlayerId(_playerId);
+			writer.WriteRecyclablePlayerId(this._playerId);
 		}
 	}
 
@@ -451,13 +449,13 @@ public sealed class ReferenceHub : NetworkBehaviour, IEquatable<ReferenceHub>
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _playerId, null, reader.ReadRecyclablePlayerId());
+			base.GeneratedSyncVarDeserialize(ref this._playerId, null, reader.ReadRecyclablePlayerId());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _playerId, null, reader.ReadRecyclablePlayerId());
+			base.GeneratedSyncVarDeserialize(ref this._playerId, null, reader.ReadRecyclablePlayerId());
 		}
 	}
 }

@@ -12,8 +12,8 @@ public class GameConsoleTransmission : NetworkBehaviour
 
 	private void Start()
 	{
-		_hub = ReferenceHub.GetHub(this);
-		_cmdRateLimit = _hub.playerRateLimitHandler.RateLimits[1];
+		this._hub = ReferenceHub.GetHub(this);
+		this._cmdRateLimit = this._hub.playerRateLimitHandler.RateLimits[1];
 		if (base.isLocalPlayer)
 		{
 			EncryptedChannelManager.ReplaceClientHandler(EncryptedChannelManager.EncryptedChannel.GameConsole, ClientHandleMessage);
@@ -33,7 +33,7 @@ public class GameConsoleTransmission : NetworkBehaviour
 		}
 		else
 		{
-			_hub?.encryptedChannelManager.TrySendMessageToClient(color + "#" + text, EncryptedChannelManager.EncryptedChannel.GameConsole);
+			this._hub?.encryptedChannelManager.TrySendMessageToClient(color + "#" + text, EncryptedChannelManager.EncryptedChannel.GameConsole);
 		}
 	}
 
@@ -43,7 +43,7 @@ public class GameConsoleTransmission : NetworkBehaviour
 		int num = text.IndexOf("#", StringComparison.Ordinal);
 		string text2 = text.Remove(num);
 		text = text.Remove(0, num + 1);
-		GameCore.Console.AddLog(((securityLevel == EncryptedChannelManager.SecurityLevel.EncryptedAndAuthenticated) ? "[FROM SERVER] " : "[UNENCRYPTED FROM SERVER] ") + text, ProcessColor(text2));
+		GameCore.Console.AddLog(((securityLevel == EncryptedChannelManager.SecurityLevel.EncryptedAndAuthenticated) ? "[FROM SERVER] " : "[UNENCRYPTED FROM SERVER] ") + text, GameConsoleTransmission.ProcessColor(text2));
 	}
 
 	[Client]
@@ -55,7 +55,7 @@ public class GameConsoleTransmission : NetworkBehaviour
 		}
 		else
 		{
-			_hub.encryptedChannelManager.TrySendMessageToServer(command, EncryptedChannelManager.EncryptedChannel.GameConsole);
+			this._hub.encryptedChannelManager.TrySendMessageToServer(command, EncryptedChannelManager.EncryptedChannel.GameConsole);
 		}
 	}
 

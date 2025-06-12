@@ -31,84 +31,84 @@ public class ItemHintAlertHelper
 	{
 		get
 		{
-			if (_forceHidden)
+			if (this._forceHidden)
 			{
 				return default(AlertContent);
 			}
-			if (_equipElapsed < _fadeInDelay)
+			if (this._equipElapsed < this._fadeInDelay)
 			{
 				return default(AlertContent);
 			}
-			if (_equipElapsed > _fadeOutDelay + _fadeTransitionDur)
+			if (this._equipElapsed > this._fadeOutDelay + this._fadeTransitionDur)
 			{
 				return default(AlertContent);
 			}
-			float num = Mathf.InverseLerp(_fadeInDelay, _fadeInDelay + _fadeTransitionDur, _equipElapsed);
-			float num2 = Mathf.InverseLerp(_fadeOutDelay + _fadeTransitionDur, _fadeOutDelay, _equipElapsed);
+			float num = Mathf.InverseLerp(this._fadeInDelay, this._fadeInDelay + this._fadeTransitionDur, this._equipElapsed);
+			float num2 = Mathf.InverseLerp(this._fadeOutDelay + this._fadeTransitionDur, this._fadeOutDelay, this._equipElapsed);
 			float alpha = num * num2;
-			return new AlertContent(_content, alpha);
+			return new AlertContent(this._content, alpha);
 		}
 	}
 
 	public void Update(ReferenceHub interactingUser)
 	{
-		Update(interactingUser.HasBlock(BlockedInteraction.ItemPrimaryAction));
+		this.Update(interactingUser.HasBlock(BlockedInteraction.ItemPrimaryAction));
 	}
 
 	public void Update(bool forceHide)
 	{
-		if (!_aborted)
+		if (!this._aborted)
 		{
-			_forceHidden = forceHide;
-			_equipElapsed += Time.deltaTime;
-			if (!(_equipElapsed < _fadeOutDelay + _fadeTransitionDur))
+			this._forceHidden = forceHide;
+			this._equipElapsed += Time.deltaTime;
+			if (!(this._equipElapsed < this._fadeOutDelay + this._fadeTransitionDur))
 			{
-				Hide();
+				this.Hide();
 			}
 		}
 	}
 
 	public void Hide()
 	{
-		_aborted = true;
-		_equipElapsed = _fadeOutDelay + _fadeTransitionDur + 1f;
+		this._aborted = true;
+		this._equipElapsed = this._fadeOutDelay + this._fadeTransitionDur + 1f;
 	}
 
 	public void Reset()
 	{
-		_aborted = false;
-		_equipElapsed = 0f;
+		this._aborted = false;
+		this._equipElapsed = 0f;
 	}
 
 	public ItemHintAlertHelper(InventoryGuiTranslation translation, ActionName? key, float fadeTransitionDuration = 0.3f, float fadeInDelay = 1f, float fadeOutDelay = 6f)
 	{
-		_content = ProcessTranslation(translation, key);
-		_fadeTransitionDur = fadeTransitionDuration;
-		_fadeInDelay = fadeInDelay;
-		_fadeOutDelay = fadeOutDelay;
+		this._content = ItemHintAlertHelper.ProcessTranslation(translation, key);
+		this._fadeTransitionDur = fadeTransitionDuration;
+		this._fadeInDelay = fadeInDelay;
+		this._fadeOutDelay = fadeOutDelay;
 	}
 
 	public ItemHintAlertHelper(InventoryGuiTranslation translation0, ActionName? key0, InventoryGuiTranslation translation1, ActionName? key1, float fadeTransitionDuration = 0.3f, float fadeInDelay = 1f, float fadeOutDelay = 8f)
 	{
-		SbNonAlloc.Clear();
-		SbNonAlloc.AppendLine(ProcessTranslation(translation0, key0));
-		SbNonAlloc.AppendLine(ProcessTranslation(translation1, key1));
-		_content = SbNonAlloc.ToString();
-		_fadeTransitionDur = fadeTransitionDuration;
-		_fadeInDelay = fadeInDelay;
-		_fadeOutDelay = fadeOutDelay;
+		ItemHintAlertHelper.SbNonAlloc.Clear();
+		ItemHintAlertHelper.SbNonAlloc.AppendLine(ItemHintAlertHelper.ProcessTranslation(translation0, key0));
+		ItemHintAlertHelper.SbNonAlloc.AppendLine(ItemHintAlertHelper.ProcessTranslation(translation1, key1));
+		this._content = ItemHintAlertHelper.SbNonAlloc.ToString();
+		this._fadeTransitionDur = fadeTransitionDuration;
+		this._fadeInDelay = fadeInDelay;
+		this._fadeOutDelay = fadeOutDelay;
 	}
 
 	public ItemHintAlertHelper(InventoryGuiTranslation translation0, ActionName? key0, InventoryGuiTranslation translation1, ActionName? key1, InventoryGuiTranslation translation2, ActionName? key2, float fadeTransitionDuration = 0.3f, float fadeInDelay = 1f, float fadeOutDelay = 10f)
 	{
-		SbNonAlloc.Clear();
-		SbNonAlloc.AppendLine(ProcessTranslation(translation0, key0));
-		SbNonAlloc.AppendLine(ProcessTranslation(translation1, key1));
-		SbNonAlloc.AppendLine(ProcessTranslation(translation2, key2));
-		_content = SbNonAlloc.ToString();
-		_fadeTransitionDur = fadeTransitionDuration;
-		_fadeInDelay = fadeInDelay;
-		_fadeOutDelay = fadeOutDelay;
+		ItemHintAlertHelper.SbNonAlloc.Clear();
+		ItemHintAlertHelper.SbNonAlloc.AppendLine(ItemHintAlertHelper.ProcessTranslation(translation0, key0));
+		ItemHintAlertHelper.SbNonAlloc.AppendLine(ItemHintAlertHelper.ProcessTranslation(translation1, key1));
+		ItemHintAlertHelper.SbNonAlloc.AppendLine(ItemHintAlertHelper.ProcessTranslation(translation2, key2));
+		this._content = ItemHintAlertHelper.SbNonAlloc.ToString();
+		this._fadeTransitionDur = fadeTransitionDuration;
+		this._fadeInDelay = fadeInDelay;
+		this._fadeOutDelay = fadeOutDelay;
 	}
 
 	private static string ProcessTranslation(InventoryGuiTranslation translation, ActionName? key)

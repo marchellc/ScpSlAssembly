@@ -14,28 +14,28 @@ public class ClientPredictedValue<T>
 	{
 		get
 		{
-			if (_predictionTimeout.Busy)
+			if (this._predictionTimeout.Busy)
 			{
-				return _predicted;
+				return this._predicted;
 			}
-			_predicted = _fetcher();
-			return _predicted;
+			this._predicted = this._fetcher();
+			return this._predicted;
 		}
 		set
 		{
-			_predicted = value;
-			_predictionTimeout.Trigger();
+			this._predicted = value;
+			this._predictionTimeout.Trigger();
 		}
 	}
 
 	public void ForceResync()
 	{
-		_predictionTimeout.Reset();
+		this._predictionTimeout.Reset();
 	}
 
 	public ClientPredictedValue(Func<T> serverSyncvarFetcher)
 	{
-		_fetcher = serverSyncvarFetcher;
-		_predictionTimeout = new ClientRequestTimer();
+		this._fetcher = serverSyncvarFetcher;
+		this._predictionTimeout = new ClientRequestTimer();
 	}
 }

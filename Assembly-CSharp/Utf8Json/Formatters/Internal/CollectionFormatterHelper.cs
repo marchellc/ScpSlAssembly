@@ -10,12 +10,12 @@ internal static class CollectionFormatterHelper
 
 	static CollectionFormatterHelper()
 	{
-		groupingName = new byte[2][]
+		CollectionFormatterHelper.groupingName = new byte[2][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("Key"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("Elements")
 		};
-		groupingAutomata = new AutomataDictionary
+		CollectionFormatterHelper.groupingAutomata = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("Key"),

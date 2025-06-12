@@ -24,13 +24,13 @@ public class Scp939DamageHandler : AttackerDamageHandler
 
 	public override bool AllowSelfDamage => false;
 
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
 	public override Footprint Attacker { get; protected set; }
 
-	public override string ServerLogsText => $"Killed by SCP-939 ({Attacker.Nickname}) with {Scp939DamageType}.";
+	public override string ServerLogsText => $"Killed by SCP-939 ({this.Attacker.Nickname}) with {this.Scp939DamageType}.";
 
-	public override string RagdollInspectText => _ragdollInspect;
+	public override string RagdollInspectText => this._ragdollInspect;
 
 	public override string DeathScreenText => string.Empty;
 
@@ -38,9 +38,9 @@ public class Scp939DamageHandler : AttackerDamageHandler
 	{
 		get
 		{
-			if (_lungeTemplateSet)
+			if (this._lungeTemplateSet)
 			{
-				return _lungeTemplate;
+				return this._lungeTemplate;
 			}
 			if (!PlayerRoleLoader.TryGetRoleTemplate<Scp939Role>(RoleTypeId.Scp939, out var result))
 			{
@@ -50,9 +50,9 @@ public class Scp939DamageHandler : AttackerDamageHandler
 			{
 				return null;
 			}
-			_lungeTemplate = subroutine.LungeDeathAnim;
-			_lungeTemplateSet = true;
-			return LungeTemplate;
+			this._lungeTemplate = subroutine.LungeDeathAnim;
+			this._lungeTemplateSet = true;
+			return this.LungeTemplate;
 		}
 	}
 
@@ -65,14 +65,14 @@ public class Scp939DamageHandler : AttackerDamageHandler
 		case Scp939DamageType.None:
 			return;
 		case Scp939DamageType.LungeSecondary:
-			_hitPos = new RelativePosition(scp939.FpcModule.Position);
+			this._hitPos = new RelativePosition(scp939.FpcModule.Position);
 			break;
 		}
 		if (scp939.TryGetOwner(out var hub))
 		{
-			Damage = damage;
-			Attacker = new Footprint(hub);
-			Scp939DamageType = type;
+			this.Damage = damage;
+			this.Attacker = new Footprint(hub);
+			this.Scp939DamageType = type;
 		}
 	}
 
@@ -83,11 +83,11 @@ public class Scp939DamageHandler : AttackerDamageHandler
 			base.ProcessDamage(ply);
 			return;
 		}
-		if (Scp939DamageType == Scp939DamageType.Claw)
+		if (this.Scp939DamageType == Scp939DamageType.Claw)
 		{
 			int armorEfficacy = humanRole.GetArmorEfficacy(HitboxType.Body);
 			int bulletPenetrationPercent = 75;
-			Damage = BodyArmorUtils.ProcessDamage(armorEfficacy, Damage, bulletPenetrationPercent);
+			this.Damage = BodyArmorUtils.ProcessDamage(armorEfficacy, this.Damage, bulletPenetrationPercent);
 		}
 		base.ProcessDamage(ply);
 	}
@@ -95,20 +95,20 @@ public class Scp939DamageHandler : AttackerDamageHandler
 	public override void WriteAdditionalData(NetworkWriter writer)
 	{
 		base.WriteAdditionalData(writer);
-		writer.WriteByte((byte)Scp939DamageType);
-		if (Scp939DamageType == Scp939DamageType.LungeSecondary)
+		writer.WriteByte((byte)this.Scp939DamageType);
+		if (this.Scp939DamageType == Scp939DamageType.LungeSecondary)
 		{
-			writer.WriteRelativePosition(_hitPos);
+			writer.WriteRelativePosition(this._hitPos);
 		}
 	}
 
 	public override void ReadAdditionalData(NetworkReader reader)
 	{
 		base.ReadAdditionalData(reader);
-		Scp939DamageType = (Scp939DamageType)reader.ReadByte();
-		if (Scp939DamageType == Scp939DamageType.LungeSecondary)
+		this.Scp939DamageType = (Scp939DamageType)reader.ReadByte();
+		if (this.Scp939DamageType == Scp939DamageType.LungeSecondary)
 		{
-			_hitPos = reader.ReadRelativePosition();
+			this._hitPos = reader.ReadRelativePosition();
 		}
 	}
 
@@ -118,14 +118,14 @@ public class Scp939DamageHandler : AttackerDamageHandler
 		{
 			return;
 		}
-		switch (Scp939DamageType)
+		switch (this.Scp939DamageType)
 		{
 		case Scp939DamageType.LungeTarget:
-			LungeTemplate.ProcessRagdoll(ragdoll);
+			this.LungeTemplate.ProcessRagdoll(ragdoll);
 			break;
 		case Scp939DamageType.LungeSecondary:
 		{
-			Vector3 vector = ragdoll.Info.StartPosition - _hitPos.Position;
+			Vector3 vector = ragdoll.Info.StartPosition - this._hitPos.Position;
 			vector.y = 3.5f;
 			vector = vector.normalized * 5.5f;
 			Rigidbody[] linkedRigidbodies = dynamicRagdoll.LinkedRigidbodies;

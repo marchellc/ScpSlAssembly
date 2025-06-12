@@ -16,7 +16,7 @@ public class ChaosWaveAnimation : WaveAnimationBase<ChaosSpawnWave>
 			Team team = hub.GetTeam();
 			if (team == Team.Dead || team.GetFaction() == Faction.FoundationEnemy)
 			{
-				_announcement.Play();
+				this._announcement.Play();
 			}
 		}
 	}

@@ -17,7 +17,7 @@ public class RainbowTaste : StatusEffectBase, ISpectatorDataPlayerEffect
 	public static float CurrentMultiplier(ReferenceHub ply)
 	{
 		byte intensity = ply.playerEffectsController.GetEffect<RainbowTaste>().Intensity;
-		return Multipliers[Mathf.Clamp(intensity, 0, Multipliers.Length - 1)];
+		return RainbowTaste.Multipliers[Mathf.Clamp(intensity, 0, RainbowTaste.Multipliers.Length - 1)];
 	}
 
 	public static bool CheckPlayer(ReferenceHub ply)

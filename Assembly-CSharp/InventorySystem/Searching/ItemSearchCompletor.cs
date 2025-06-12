@@ -20,7 +20,7 @@ public class ItemSearchCompletor : PickupSearchCompletor
 			sbyte b = 0;
 			foreach (ItemBase value in base.Hub.inventory.UserInventory.Items.Values)
 			{
-				if (value.Category == _category)
+				if (value.Category == this._category)
 				{
 					b++;
 				}
@@ -32,7 +32,7 @@ public class ItemSearchCompletor : PickupSearchCompletor
 	public ItemSearchCompletor(ReferenceHub hub, ItemPickupBase targetPickup, ItemBase targetItem, double maxDistanceSquared)
 		: base(hub, targetPickup, maxDistanceSquared)
 	{
-		_category = targetItem.Category;
+		this._category = targetItem.Category;
 	}
 
 	protected override bool ValidateAny()
@@ -49,14 +49,14 @@ public class ItemSearchCompletor : PickupSearchCompletor
 			}, new HintEffect[1] { HintEffectPresets.TrailingPulseAlpha(0.5f, 1f, 0.5f, 2f, 0f, 3) }, 2f));
 			return false;
 		}
-		if (_category != 0)
+		if (this._category != ItemCategory.None)
 		{
-			int num = Mathf.Abs(InventoryLimits.GetCategoryLimit(_category, base.Hub));
-			if (CategoryCount >= num)
+			int num = Mathf.Abs(InventoryLimits.GetCategoryLimit(this._category, base.Hub));
+			if (this.CategoryCount >= num)
 			{
 				base.Hub.hints.Show(new TranslationHint(HintTranslations.MaxItemCategoryAlreadyReached, new HintParameter[2]
 				{
-					new ItemCategoryHintParameter(_category),
+					new ItemCategoryHintParameter(this._category),
 					new ByteHintParameter((byte)num)
 				}, new HintEffect[1] { HintEffectPresets.TrailingPulseAlpha(0.5f, 1f, 0.5f, 2f, 0f, 2) }, 2f));
 				return false;
@@ -71,11 +71,11 @@ public class ItemSearchCompletor : PickupSearchCompletor
 		{
 			return false;
 		}
-		if (TargetItemType == ItemType.None)
+		if (base.TargetItemType == ItemType.None)
 		{
 			throw new InvalidOperationException("Item has an invalid ItemType.");
 		}
-		if (_category == ItemCategory.Ammo)
+		if (this._category == ItemCategory.Ammo)
 		{
 			throw new InvalidOperationException("Item is not equippable (can be held in inventory).");
 		}
@@ -85,26 +85,26 @@ public class ItemSearchCompletor : PickupSearchCompletor
 	public override void Complete()
 	{
 		base.Complete();
-		PlayerPickingUpItemEventArgs playerPickingUpItemEventArgs = new PlayerPickingUpItemEventArgs(base.Hub, TargetPickup);
-		PlayerEvents.OnPickingUpItem(playerPickingUpItemEventArgs);
-		if (playerPickingUpItemEventArgs.IsAllowed)
+		PlayerPickingUpItemEventArgs e = new PlayerPickingUpItemEventArgs(base.Hub, base.TargetPickup);
+		PlayerEvents.OnPickingUpItem(e);
+		if (e.IsAllowed)
 		{
-			ItemBase item = base.Hub.inventory.ServerAddItem(TargetPickup.Info.ItemId, ItemAddReason.PickedUp, TargetPickup.Info.Serial, TargetPickup);
-			TargetPickup.DestroySelf();
-			CheckCategoryLimitHint();
+			ItemBase item = base.Hub.inventory.ServerAddItem(base.TargetPickup.Info.ItemId, ItemAddReason.PickedUp, base.TargetPickup.Info.Serial, base.TargetPickup);
+			base.TargetPickup.DestroySelf();
+			this.CheckCategoryLimitHint();
 			PlayerEvents.OnPickedUpItem(new PlayerPickedUpItemEventArgs(base.Hub, item));
 		}
 	}
 
 	protected void CheckCategoryLimitHint()
 	{
-		sbyte categoryLimit = InventoryLimits.GetCategoryLimit(_category, base.Hub);
-		if (_category != 0 && categoryLimit >= 0 && CategoryCount >= categoryLimit)
+		sbyte categoryLimit = InventoryLimits.GetCategoryLimit(this._category, base.Hub);
+		if (this._category != ItemCategory.None && categoryLimit >= 0 && this.CategoryCount >= categoryLimit)
 		{
 			HintEffect[] effects = HintEffectPresets.FadeInAndOut(0.25f);
 			HintParameter[] parameters = new HintParameter[2]
 			{
-				new ItemCategoryHintParameter(_category),
+				new ItemCategoryHintParameter(this._category),
 				new ByteHintParameter((byte)categoryLimit)
 			};
 			base.Hub.hints.Show(new TranslationHint(HintTranslations.MaxItemCategoryReached, parameters, effects, 1.5f));

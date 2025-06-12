@@ -21,7 +21,7 @@ public class HatsOffToYouHandler : AchievementHandlerBase
 
 	internal override void OnRoundStarted()
 	{
-		Timers.Clear();
+		HatsOffToYouHandler.Timers.Clear();
 	}
 
 	private void HandleEffectDisabled(StatusEffectBase effectBase)
@@ -30,7 +30,7 @@ public class HatsOffToYouHandler : AchievementHandlerBase
 		{
 			return;
 		}
-		if (Timers.TryGetValue(invisible.Hub, out var value))
+		if (HatsOffToYouHandler.Timers.TryGetValue(invisible.Hub, out var value))
 		{
 			if (value.Elapsed.TotalSeconds >= 5.0)
 			{
@@ -39,7 +39,7 @@ public class HatsOffToYouHandler : AchievementHandlerBase
 		}
 		else
 		{
-			Timers[invisible.Hub] = Stopwatch.StartNew();
+			HatsOffToYouHandler.Timers[invisible.Hub] = Stopwatch.StartNew();
 		}
 	}
 
@@ -50,13 +50,13 @@ public class HatsOffToYouHandler : AchievementHandlerBase
 			return;
 		}
 		ReferenceHub hub = attackerDamageHandler.Attacker.Hub;
-		if (!hub.IsSCP() && HitboxIdentity.IsEnemy(hub, deadPlayer) && Timers.TryGetValue(hub, out var value))
+		if (!hub.IsSCP() && HitboxIdentity.IsEnemy(hub, deadPlayer) && HatsOffToYouHandler.Timers.TryGetValue(hub, out var value))
 		{
 			if (value.Elapsed.TotalSeconds <= 5.0)
 			{
 				AchievementHandlerBase.ServerAchieve(hub.networkIdentity.connectionToClient, AchievementName.HatsOffToYou);
 			}
-			Timers.Remove(hub);
+			HatsOffToYouHandler.Timers.Remove(hub);
 		}
 	}
 }

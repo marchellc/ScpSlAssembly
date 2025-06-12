@@ -24,24 +24,24 @@ public class SnowballItem : ThrowableItem, IHolidayItem
 	public override void OnAdded(ItemPickupBase pickup)
 	{
 		base.OnAdded(pickup);
-		_baseSettings = FullThrowSettings;
+		this._baseSettings = base.FullThrowSettings;
 	}
 
 	public override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (ThrowStopwatch.IsRunning)
+		if (base.ThrowStopwatch.IsRunning)
 		{
-			bool flag = ThrowStopwatch.Elapsed.TotalSeconds > 4.0;
-			FullThrowSettings = (flag ? _cookedSettings : _baseSettings);
+			bool flag = base.ThrowStopwatch.Elapsed.TotalSeconds > 4.0;
+			base.FullThrowSettings = (flag ? this._cookedSettings : this._baseSettings);
 		}
 	}
 
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		CustomNetworkManager.OnClientReady += ThrownCooked.Clear;
-		CustomNetworkManager.OnClientReady += StartCookingTimes.Clear;
+		CustomNetworkManager.OnClientReady += SnowballItem.ThrownCooked.Clear;
+		CustomNetworkManager.OnClientReady += SnowballItem.StartCookingTimes.Clear;
 		ThrowableNetworkHandler.OnAudioMessageReceived += OnMsgReceived;
 		ThrowableNetworkHandler.OnServerRequestReceived += OnMsgReceived;
 	}
@@ -51,16 +51,16 @@ public class SnowballItem : ThrowableItem, IHolidayItem
 		switch (request)
 		{
 		case ThrowableNetworkHandler.RequestType.BeginThrow:
-			StartCookingTimes[serial] = NetworkTime.time;
+			SnowballItem.StartCookingTimes[serial] = NetworkTime.time;
 			break;
 		case ThrowableNetworkHandler.RequestType.CancelThrow:
-			StartCookingTimes.Remove(serial);
+			SnowballItem.StartCookingTimes.Remove(serial);
 			break;
 		case ThrowableNetworkHandler.RequestType.ConfirmThrowWeak:
 		case ThrowableNetworkHandler.RequestType.ConfirmThrowFullForce:
-			if (IsCooked(serial, thrown: false))
+			if (SnowballItem.IsCooked(serial, thrown: false))
 			{
-				ThrownCooked.Add(serial);
+				SnowballItem.ThrownCooked.Add(serial);
 			}
 			break;
 		}
@@ -68,21 +68,21 @@ public class SnowballItem : ThrowableItem, IHolidayItem
 
 	private static void OnMsgReceived(ThrowableNetworkHandler.ThrowableItemAudioMessage msg)
 	{
-		ProcessRequest(msg.Serial, msg.Request);
+		SnowballItem.ProcessRequest(msg.Serial, msg.Request);
 	}
 
 	private static void OnMsgReceived(ThrowableNetworkHandler.ThrowableItemRequestMessage msg)
 	{
-		ProcessRequest(msg.Serial, msg.Request);
+		SnowballItem.ProcessRequest(msg.Serial, msg.Request);
 	}
 
 	public static bool IsCooked(ushort serial, bool thrown)
 	{
 		if (thrown)
 		{
-			return ThrownCooked.Contains(serial);
+			return SnowballItem.ThrownCooked.Contains(serial);
 		}
-		if (StartCookingTimes.TryGetValue(serial, out var value))
+		if (SnowballItem.StartCookingTimes.TryGetValue(serial, out var value))
 		{
 			return NetworkTime.time - value > 4.0;
 		}

@@ -84,11 +84,11 @@ public class TeslaGate : NetworkBehaviour
 	{
 		get
 		{
-			if (_position == Vector3.zero)
+			if (this._position == Vector3.zero)
 			{
-				_position = base.transform.position;
+				this._position = base.transform.position;
 			}
-			return _position;
+			return this._position;
 		}
 	}
 
@@ -96,12 +96,12 @@ public class TeslaGate : NetworkBehaviour
 	{
 		get
 		{
-			return InactiveTime;
+			return this.InactiveTime;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref InactiveTime, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.InactiveTime, 1uL, null);
 		}
 	}
 
@@ -115,20 +115,20 @@ public class TeslaGate : NetworkBehaviour
 
 	public void ServerSideCode()
 	{
-		if (!InProgress)
+		if (!this.InProgress)
 		{
-			Timing.RunCoroutine(ServerSideWaitForAnimation());
-			RpcPlayAnimation();
+			Timing.RunCoroutine(this.ServerSideWaitForAnimation());
+			this.RpcPlayAnimation();
 		}
 	}
 
 	private IEnumerator<float> ServerSideWaitForAnimation()
 	{
-		InProgress = true;
-		yield return Timing.WaitForSeconds(windupTime);
-		if (TantrumsToBeDestroyed.Count > 0)
+		this.InProgress = true;
+		yield return Timing.WaitForSeconds(this.windupTime);
+		if (this.TantrumsToBeDestroyed.Count > 0)
 		{
-			TantrumsToBeDestroyed.ForEach(delegate(TantrumEnvironmentalHazard tantrum)
+			this.TantrumsToBeDestroyed.ForEach(delegate(TantrumEnvironmentalHazard tantrum)
 			{
 				if (tantrum != null)
 				{
@@ -136,21 +136,21 @@ public class TeslaGate : NetworkBehaviour
 					tantrum.ServerDestroy();
 				}
 			});
-			TantrumsToBeDestroyed.Clear();
+			this.TantrumsToBeDestroyed.Clear();
 		}
-		yield return Timing.WaitForSeconds(cooldownTime);
-		InProgress = false;
+		yield return Timing.WaitForSeconds(this.cooldownTime);
+		this.InProgress = false;
 	}
 
 	public void ServerSideIdle(bool shouldIdle)
 	{
 		if (shouldIdle)
 		{
-			RpcDoIdle();
+			this.RpcDoIdle();
 		}
 		else
 		{
-			RpcDoneIdling();
+			this.RpcDoneIdling();
 		}
 	}
 
@@ -160,24 +160,24 @@ public class TeslaGate : NetworkBehaviour
 
 	private void Start()
 	{
-		AllGates.Add(this);
+		TeslaGate.AllGates.Add(this);
 		TeslaGate.OnAdded?.Invoke(this);
 	}
 
 	private void OnDestroy()
 	{
-		AllGates.Remove(this);
+		TeslaGate.AllGates.Remove(this);
 		TeslaGate.OnRemoved?.Invoke(this);
 	}
 
 	public void ClientSideCode()
 	{
-		base.transform.localPosition = localPosition;
-		base.transform.localRotation = Quaternion.Euler(localRotation);
-		if (ledLights != null)
+		base.transform.localPosition = this.localPosition;
+		base.transform.localRotation = Quaternion.Euler(this.localRotation);
+		if (this.ledLights != null)
 		{
-			ledLights.SetBool(_animatorShockHash, InProgress);
-			ledLights.SetBool(_animatorIdleHash, isIdling);
+			this.ledLights.SetBool(TeslaGate._animatorShockHash, this.InProgress);
+			this.ledLights.SetBool(TeslaGate._animatorIdleHash, this.isIdling);
 		}
 	}
 
@@ -185,7 +185,7 @@ public class TeslaGate : NetworkBehaviour
 	private void RpcDoIdle()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void TeslaGate::RpcDoIdle()", 482546151, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void TeslaGate::RpcDoIdle()", 482546151, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -193,7 +193,7 @@ public class TeslaGate : NetworkBehaviour
 	private void RpcDoneIdling()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void TeslaGate::RpcDoneIdling()", -243325925, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void TeslaGate::RpcDoneIdling()", -243325925, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -201,7 +201,7 @@ public class TeslaGate : NetworkBehaviour
 	private void RpcPlayAnimation()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void TeslaGate::RpcPlayAnimation()", 2031582250, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void TeslaGate::RpcPlayAnimation()", 2031582250, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -209,23 +209,23 @@ public class TeslaGate : NetworkBehaviour
 	public void RpcInstantBurst()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void TeslaGate::RpcInstantBurst()", -684941977, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void TeslaGate::RpcInstantBurst()", -684941977, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	private IEnumerator<float> _DoShock()
 	{
 		TeslaGate.OnBursted?.Invoke(this);
-		source.Stop();
-		AudioClip[] array = clipsShock;
+		this.source.Stop();
+		AudioClip[] array = this.clipsShock;
 		foreach (AudioClip audioClip in array)
 		{
 			if (audioClip != null)
 			{
-				source.PlayOneShot(audioClip);
+				this.source.PlayOneShot(audioClip);
 			}
 		}
-		ParticleSystem[] array2 = windupParticles;
+		ParticleSystem[] array2 = this.windupParticles;
 		foreach (ParticleSystem particleSystem in array2)
 		{
 			if (particleSystem != null)
@@ -233,7 +233,7 @@ public class TeslaGate : NetworkBehaviour
 				particleSystem.Play();
 			}
 		}
-		array2 = shockParticles;
+		array2 = this.shockParticles;
 		foreach (ParticleSystem particleSystem2 in array2)
 		{
 			if (particleSystem2 != null)
@@ -250,7 +250,7 @@ public class TeslaGate : NetworkBehaviour
 		yield return Timing.WaitForSeconds(0.25f);
 		yield return Timing.WaitForSeconds(0.25f);
 		float num = 0f;
-		array2 = smokeParticles;
+		array2 = this.smokeParticles;
 		foreach (ParticleSystem particleSystem3 in array2)
 		{
 			if (!(particleSystem3 == null))
@@ -262,9 +262,9 @@ public class TeslaGate : NetworkBehaviour
 				particleSystem3.Play();
 			}
 		}
-		if (!isIdling)
+		if (!this.isIdling)
 		{
-			array2 = windupParticles;
+			array2 = this.windupParticles;
 			foreach (ParticleSystem particleSystem4 in array2)
 			{
 				if (particleSystem4 != null)
@@ -278,24 +278,24 @@ public class TeslaGate : NetworkBehaviour
 
 	private IEnumerator<float> _PlayAnimation()
 	{
-		bool is079 = next079burst;
-		next079burst = false;
+		bool is079 = this.next079burst;
+		this.next079burst = false;
 		if (!is079)
 		{
-			AudioClip[] array = clipsWarmup;
+			AudioClip[] array = this.clipsWarmup;
 			foreach (AudioClip clip in array)
 			{
-				source.PlayOneShot(clip);
+				this.source.PlayOneShot(clip);
 			}
-			ParticleSystem[] array2 = windupParticles;
+			ParticleSystem[] array2 = this.windupParticles;
 			for (int i = 0; i < array2.Length; i++)
 			{
 				array2[i].Play();
 			}
-			yield return Timing.WaitForSeconds(windupTime);
+			yield return Timing.WaitForSeconds(this.windupTime);
 		}
-		Timing.RunCoroutine(_DoShock());
-		yield return Timing.WaitForSeconds(is079 ? 0.5f : cooldownTime);
+		Timing.RunCoroutine(this._DoShock());
+		yield return Timing.WaitForSeconds(is079 ? 0.5f : this.cooldownTime);
 	}
 
 	public bool PlayerInRange(ReferenceHub player)
@@ -308,12 +308,12 @@ public class TeslaGate : NetworkBehaviour
 		{
 			return false;
 		}
-		return InRange(fpcRole.FpcModule.Position);
+		return this.InRange(fpcRole.FpcModule.Position);
 	}
 
 	private bool InRange(Vector3 position)
 	{
-		return Vector3.Distance(Position, position) < sizeOfTrigger;
+		return Vector3.Distance(this.Position, position) < this.sizeOfTrigger;
 	}
 
 	public bool IsInIdleRange(ReferenceHub player)
@@ -330,34 +330,34 @@ public class TeslaGate : NetworkBehaviour
 		{
 			return false;
 		}
-		return IsInIdleRange(fpcRole.FpcModule.Position);
+		return this.IsInIdleRange(fpcRole.FpcModule.Position);
 	}
 
 	public bool IsInIdleRange(Vector3 position)
 	{
-		return Vector3.Distance(Position, position) < distanceToIdle;
+		return Vector3.Distance(this.Position, position) < this.distanceToIdle;
 	}
 
 	private void OnDrawGizmosSelected()
 	{
-		if (showGizmos)
+		if (this.showGizmos)
 		{
 			Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
-			GameObject[] array = killers;
+			GameObject[] array = this.killers;
 			for (int i = 0; i < array.Length; i++)
 			{
-				Gizmos.DrawCube(array[i].transform.position + Vector3.up * (sizeOfKiller.y / 2f), sizeOfKiller);
+				Gizmos.DrawCube(array[i].transform.position + Vector3.up * (this.sizeOfKiller.y / 2f), this.sizeOfKiller);
 			}
 			Gizmos.color = new Color(1f, 1f, 0f, 0.2f);
-			Gizmos.DrawSphere(Position, sizeOfTrigger);
+			Gizmos.DrawSphere(this.Position, this.sizeOfTrigger);
 		}
 	}
 
 	static TeslaGate()
 	{
-		AllGates = new HashSet<TeslaGate>();
-		_animatorShockHash = Animator.StringToHash("ShockActive");
-		_animatorIdleHash = Animator.StringToHash("IdleActive");
+		TeslaGate.AllGates = new HashSet<TeslaGate>();
+		TeslaGate._animatorShockHash = Animator.StringToHash("ShockActive");
+		TeslaGate._animatorIdleHash = Animator.StringToHash("IdleActive");
 		RemoteProcedureCalls.RegisterRpc(typeof(TeslaGate), "System.Void TeslaGate::RpcDoIdle()", InvokeUserCode_RpcDoIdle);
 		RemoteProcedureCalls.RegisterRpc(typeof(TeslaGate), "System.Void TeslaGate::RpcDoneIdling()", InvokeUserCode_RpcDoneIdling);
 		RemoteProcedureCalls.RegisterRpc(typeof(TeslaGate), "System.Void TeslaGate::RpcPlayAnimation()", InvokeUserCode_RpcPlayAnimation);
@@ -371,13 +371,13 @@ public class TeslaGate : NetworkBehaviour
 
 	protected void UserCode_RpcDoIdle()
 	{
-		if (!isIdling)
+		if (!this.isIdling)
 		{
-			isIdling = true;
-			loopSource.PlayOneShot(idleStart);
-			loopSource.PlayDelayed(idleStart.length);
+			this.isIdling = true;
+			this.loopSource.PlayOneShot(this.idleStart);
+			this.loopSource.PlayDelayed(this.idleStart.length);
 		}
-		ParticleSystem[] array = windupParticles;
+		ParticleSystem[] array = this.windupParticles;
 		foreach (ParticleSystem particleSystem in array)
 		{
 			if (!particleSystem.isPlaying)
@@ -401,12 +401,12 @@ public class TeslaGate : NetworkBehaviour
 
 	protected void UserCode_RpcDoneIdling()
 	{
-		if (isIdling)
+		if (this.isIdling)
 		{
-			isIdling = false;
-			loopSource.Stop();
-			loopSource.PlayOneShot(idleEnd);
-			ParticleSystem[] array = windupParticles;
+			this.isIdling = false;
+			this.loopSource.Stop();
+			this.loopSource.PlayOneShot(this.idleEnd);
+			ParticleSystem[] array = this.windupParticles;
 			for (int i = 0; i < array.Length; i++)
 			{
 				array[i].Stop();
@@ -428,7 +428,7 @@ public class TeslaGate : NetworkBehaviour
 
 	protected void UserCode_RpcPlayAnimation()
 	{
-		Timing.RunCoroutine(_PlayAnimation(), Segment.FixedUpdate);
+		Timing.RunCoroutine(this._PlayAnimation(), Segment.FixedUpdate);
 	}
 
 	protected static void InvokeUserCode_RpcPlayAnimation(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -445,8 +445,8 @@ public class TeslaGate : NetworkBehaviour
 
 	protected void UserCode_RpcInstantBurst()
 	{
-		next079burst = true;
-		Timing.RunCoroutine(_PlayAnimation(), Segment.FixedUpdate);
+		this.next079burst = true;
+		Timing.RunCoroutine(this._PlayAnimation(), Segment.FixedUpdate);
 	}
 
 	protected static void InvokeUserCode_RpcInstantBurst(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -466,13 +466,13 @@ public class TeslaGate : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteFloat(InactiveTime);
+			writer.WriteFloat(this.InactiveTime);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteFloat(InactiveTime);
+			writer.WriteFloat(this.InactiveTime);
 		}
 	}
 
@@ -481,13 +481,13 @@ public class TeslaGate : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref InactiveTime, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this.InactiveTime, null, reader.ReadFloat());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref InactiveTime, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this.InactiveTime, null, reader.ReadFloat());
 		}
 	}
 }

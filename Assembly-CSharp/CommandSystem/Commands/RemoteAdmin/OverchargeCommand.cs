@@ -38,7 +38,7 @@ public class OverchargeCommand : ICommand, IUsageProvider
 			return false;
 		}
 		ServerLogs.AddLog(ServerLogs.Modules.Administrative, string.Format("{0} has turned off lights in {1} for {2} seconds.", sender.LogName, (result == FacilityZone.None) ? "the facility" : result.ToString(), result2), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
-		Overcharge(result, result2, out response);
+		this.Overcharge(result, result2, out response);
 		return true;
 	}
 

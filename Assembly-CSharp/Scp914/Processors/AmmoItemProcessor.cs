@@ -34,20 +34,20 @@ public class AmmoItemProcessor : Scp914ItemProcessor
 		{
 		case Scp914KnobSetting.Rough:
 		case Scp914KnobSetting.Coarse:
-			itemType = _previousAmmo;
+			itemType = this._previousAmmo;
 			break;
 		case Scp914KnobSetting.OneToOne:
-			itemType = _oneToOne;
+			itemType = this._oneToOne;
 			break;
 		case Scp914KnobSetting.Fine:
 		case Scp914KnobSetting.VeryFine:
-			itemType = _nextAmmo;
+			itemType = this._nextAmmo;
 			break;
 		default:
 			throw new InvalidOperationException("Undefined knob setting: " + setting);
 		}
 		sourcePickup.Position += Scp914Controller.MoveVector;
-		ExchangeAmmo(ammoPickup.Info.ItemId, itemType, ammoPickup.SavedAmmo, out var exchangedAmmo, out var change);
+		AmmoItemProcessor.ExchangeAmmo(ammoPickup.Info.ItemId, itemType, ammoPickup.SavedAmmo, out var exchangedAmmo, out var change);
 		if (change == 0)
 		{
 			ammoPickup.DestroySelf();
@@ -56,7 +56,7 @@ public class AmmoItemProcessor : Scp914ItemProcessor
 		{
 			ammoPickup.NetworkSavedAmmo = (ushort)change;
 		}
-		ItemPickupBase resultingPickup = CreateAmmoPickup(itemType, exchangedAmmo, sourcePickup.Position);
+		ItemPickupBase resultingPickup = AmmoItemProcessor.CreateAmmoPickup(itemType, exchangedAmmo, sourcePickup.Position);
 		return new Scp914Result(sourcePickup, null, resultingPickup);
 	}
 
@@ -66,11 +66,12 @@ public class AmmoItemProcessor : Scp914ItemProcessor
 		{
 			return null;
 		}
-		PickupSyncInfo pickupSyncInfo = default(PickupSyncInfo);
-		pickupSyncInfo.ItemId = type;
-		pickupSyncInfo.Serial = ItemSerialGenerator.GenerateNext();
-		pickupSyncInfo.WeightKg = value.Weight;
-		PickupSyncInfo value2 = pickupSyncInfo;
+		PickupSyncInfo value2 = new PickupSyncInfo
+		{
+			ItemId = type,
+			Serial = ItemSerialGenerator.GenerateNext(),
+			WeightKg = value.Weight
+		};
 		if (InventoryExtensions.ServerCreatePickup(value, value2, pos) is AmmoPickup ammoPickup)
 		{
 			ammoPickup.NetworkSavedAmmo = (ushort)bullets;

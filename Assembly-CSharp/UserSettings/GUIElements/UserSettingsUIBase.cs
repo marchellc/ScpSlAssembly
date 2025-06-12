@@ -25,12 +25,12 @@ public abstract class UserSettingsUIBase<TBehaviour, TStoredValue> : MonoBehavio
 	{
 		get
 		{
-			if (!_cachedTargetSet)
+			if (!this._cachedTargetSet)
 			{
-				_cachedTargetUi = GetComponent<TBehaviour>();
-				_cachedTargetSet = true;
+				this._cachedTargetUi = base.GetComponent<TBehaviour>();
+				this._cachedTargetSet = true;
 			}
-			return _cachedTargetUi;
+			return this._cachedTargetUi;
 		}
 	}
 
@@ -40,39 +40,39 @@ public abstract class UserSettingsUIBase<TBehaviour, TStoredValue> : MonoBehavio
 	{
 		get
 		{
-			return ReadSavedValue();
+			return this.ReadSavedValue();
 		}
 		set
 		{
-			SaveValue(value);
+			this.SaveValue(value);
 		}
 	}
 
 	protected virtual void SaveValue(TStoredValue val)
 	{
-		UserSetting<TStoredValue>.Set(TargetEnum.TypeHash, TargetEnum.Value, val);
+		UserSetting<TStoredValue>.Set(this.TargetEnum.TypeHash, this.TargetEnum.Value, val);
 	}
 
 	protected virtual TStoredValue ReadSavedValue()
 	{
-		if (OverrideDefaultValue)
+		if (this.OverrideDefaultValue)
 		{
-			return UserSetting<TStoredValue>.Get(TargetEnum.TypeHash, TargetEnum.Value, DefaultValue);
+			return UserSetting<TStoredValue>.Get(this.TargetEnum.TypeHash, this.TargetEnum.Value, this.DefaultValue);
 		}
-		return UserSetting<TStoredValue>.Get(TargetEnum.TypeHash, TargetEnum.Value);
+		return UserSetting<TStoredValue>.Get(this.TargetEnum.TypeHash, this.TargetEnum.Value);
 	}
 
 	protected virtual void Awake()
 	{
-		if (_setupOnAwake)
+		if (this._setupOnAwake)
 		{
-			Setup();
+			this.Setup();
 		}
 	}
 
 	protected virtual void OnDestroy()
 	{
-		Unlink();
+		this.Unlink();
 	}
 
 	protected abstract void SetValueAndTriggerEvent(TStoredValue val);
@@ -81,32 +81,32 @@ public abstract class UserSettingsUIBase<TBehaviour, TStoredValue> : MonoBehavio
 
 	public void Setup()
 	{
-		if (!IsSetup)
+		if (!this.IsSetup)
 		{
-			IsSetup = true;
-			SetValueWithoutNotify(StoredValue);
-			OnValueChangedEvent?.AddListener(SaveValue);
-			UserSetting<TStoredValue>.AddListener(TargetEnum.TypeHash, TargetEnum.Value, SetValueWithoutNotify);
+			this.IsSetup = true;
+			this.SetValueWithoutNotify(this.StoredValue);
+			this.OnValueChangedEvent?.AddListener(SaveValue);
+			UserSetting<TStoredValue>.AddListener(this.TargetEnum.TypeHash, this.TargetEnum.Value, SetValueWithoutNotify);
 		}
 	}
 
 	public void Unlink()
 	{
-		if (IsSetup)
+		if (this.IsSetup)
 		{
-			IsSetup = false;
-			OnValueChangedEvent?.RemoveListener(SaveValue);
+			this.IsSetup = false;
+			this.OnValueChangedEvent?.RemoveListener(SaveValue);
 			UserSetting<TStoredValue>.RemoveListener(SetValueWithoutNotify);
 		}
 	}
 
 	public void ChangeTargetEnum(LinkableEnum newEnum, bool autoSetup = true)
 	{
-		Unlink();
-		TargetEnum = newEnum;
+		this.Unlink();
+		this.TargetEnum = newEnum;
 		if (autoSetup)
 		{
-			Setup();
+			this.Setup();
 		}
 	}
 }

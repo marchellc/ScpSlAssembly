@@ -8,10 +8,10 @@ public abstract class SingleTargetAttackAbility<T> : ScpAttackAbilityBase<T> whe
 	protected override void DamagePlayers()
 	{
 		Transform playerCameraReference = base.Owner.PlayerCameraReference;
-		ReferenceHub primaryTarget = DetectedPlayers.GetPrimaryTarget(playerCameraReference);
+		ReferenceHub primaryTarget = base.DetectedPlayers.GetPrimaryTarget(playerCameraReference);
 		if (!(primaryTarget == null))
 		{
-			DamagePlayer(primaryTarget, DamageAmount);
+			this.DamagePlayer(primaryTarget, this.DamageAmount);
 		}
 	}
 }

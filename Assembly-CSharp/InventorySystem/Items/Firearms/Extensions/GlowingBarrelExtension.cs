@@ -27,37 +27,37 @@ public class GlowingBarrelExtension : OverheatExtensionBase
 
 	protected override void OnTemperatureChanged(float temp)
 	{
-		for (int i = 0; i < _materialCount; i++)
+		for (int i = 0; i < this._materialCount; i++)
 		{
-			_materialInstances[i].SetFloat(TemperatureHash, temp);
+			this._materialInstances[i].SetFloat(GlowingBarrelExtension.TemperatureHash, temp);
 		}
 	}
 
 	public override void OnDestroyExtension()
 	{
 		base.OnDestroyExtension();
-		for (int i = 0; i < _materialCount; i++)
+		for (int i = 0; i < this._materialCount; i++)
 		{
-			Material key = _materialTemplates[i];
-			Material item = _materialInstances[i];
-			MaterialPool.GetOrAddNew(key).Enqueue(item);
+			Material key = this._materialTemplates[i];
+			Material item = this._materialInstances[i];
+			GlowingBarrelExtension.MaterialPool.GetOrAddNew(key).Enqueue(item);
 		}
 	}
 
 	private void Start()
 	{
-		_materialCount = _materialsToCopy.Length;
-		_materialTemplates = new Material[_materialCount];
-		_materialInstances = new Material[_materialCount];
-		for (int i = 0; i < _materialCount; i++)
+		this._materialCount = this._materialsToCopy.Length;
+		this._materialTemplates = new Material[this._materialCount];
+		this._materialInstances = new Material[this._materialCount];
+		for (int i = 0; i < this._materialCount; i++)
 		{
-			AffectedMaterial affectedMaterial = _materialsToCopy[i];
+			AffectedMaterial affectedMaterial = this._materialsToCopy[i];
 			Material sharedMaterial = affectedMaterial.Renderers[0].sharedMaterial;
 			Queue<Material> value;
 			Material result;
-			Material material = ((!MaterialPool.TryGetValue(sharedMaterial, out value) || !value.TryDequeue(out result)) ? new Material(sharedMaterial) : result);
-			_materialTemplates[i] = sharedMaterial;
-			_materialInstances[i] = material;
+			Material material = ((!GlowingBarrelExtension.MaterialPool.TryGetValue(sharedMaterial, out value) || !value.TryDequeue(out result)) ? new Material(sharedMaterial) : result);
+			this._materialTemplates[i] = sharedMaterial;
+			this._materialInstances[i] = material;
 			for (int j = 0; j < affectedMaterial.Renderers.Length; j++)
 			{
 				affectedMaterial.Renderers[j].sharedMaterial = material;

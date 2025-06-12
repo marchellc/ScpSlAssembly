@@ -30,7 +30,7 @@ public class CustomKeycardCommand : ICommand, IUsageProvider
 			response = "Please provide players to give the keycard to.";
 			return false;
 		}
-		if (!TryParseKeycard(arguments, out var keycard))
+		if (!CustomKeycardCommand.TryParseKeycard(arguments, out var keycard))
 		{
 			response = "Please choose one of the following options as your second argument:";
 			foreach (KeyValuePair<ItemType, ItemBase> availableItem in InventoryItemLoader.AvailableItems)
@@ -93,7 +93,7 @@ public class CustomKeycardCommand : ICommand, IUsageProvider
 		{
 			try
 			{
-				AddItem(item, sender, keycard.ItemTypeId);
+				CustomKeycardCommand.AddItem(item, sender, keycard.ItemTypeId);
 				num5++;
 			}
 			catch (Exception ex2)

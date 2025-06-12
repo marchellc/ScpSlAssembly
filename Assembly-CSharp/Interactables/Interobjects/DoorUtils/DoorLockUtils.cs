@@ -29,7 +29,7 @@ public static class DoorLockUtils
 
 	public static DoorLockMode GetMode(DoorVariant door)
 	{
-		return GetMode((DoorLockReason)door.ActiveLocks);
+		return DoorLockUtils.GetMode((DoorLockReason)door.ActiveLocks);
 	}
 
 	public static bool HasFlagFast(this DoorLockMode mode, DoorLockMode flag)

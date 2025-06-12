@@ -22,26 +22,26 @@ public class LockerAmbientSound : MonoBehaviour
 
 	private void Awake()
 	{
-		_chamber = GetComponent<LockerChamber>();
-		_chamber.OnDoorStatusSet += UpdateStatus;
-		_crossfadeDuration = _crossfadeOverTime.GetDuration();
-		UpdateStatus();
+		this._chamber = base.GetComponent<LockerChamber>();
+		this._chamber.OnDoorStatusSet += UpdateStatus;
+		this._crossfadeDuration = this._crossfadeOverTime.GetDuration();
+		this.UpdateStatus();
 	}
 
 	private void UpdateStatus()
 	{
 		base.enabled = true;
-		_animSw.Restart();
+		this._animSw.Restart();
 	}
 
 	private void Update()
 	{
-		float num = (float)_animSw.Elapsed.TotalSeconds;
-		float time = (_chamber.IsOpen ? num : (_crossfadeDuration - num));
-		float num2 = Mathf.Clamp01(_crossfadeOverTime.Evaluate(time));
-		_openAmbinetSource.volume = num2;
-		_closedAmbientSource.volume = 1f - num2;
-		if (num > _crossfadeDuration)
+		float num = (float)this._animSw.Elapsed.TotalSeconds;
+		float time = (this._chamber.IsOpen ? num : (this._crossfadeDuration - num));
+		float num2 = Mathf.Clamp01(this._crossfadeOverTime.Evaluate(time));
+		this._openAmbinetSource.volume = num2;
+		this._closedAmbientSource.volume = 1f - num2;
+		if (num > this._crossfadeDuration)
 		{
 			base.enabled = false;
 		}

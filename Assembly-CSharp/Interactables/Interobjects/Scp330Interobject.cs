@@ -37,7 +37,7 @@ public class Scp330Interobject : NetworkBehaviour, IServerInteractable, IInterac
 		int num2 = 0;
 		bool playSound = true;
 		bool allowPunishment = true;
-		foreach (Footprint previousUse in _previousUses)
+		foreach (Footprint previousUse in this._previousUses)
 		{
 			if (previousUse.LifeIdentifier == ply.roleManager.CurrentRole.UniqueLifeIdentifier)
 			{
@@ -51,30 +51,30 @@ public class Scp330Interobject : NetworkBehaviour, IServerInteractable, IInterac
 			return;
 		}
 		CandyKindID random = Scp330Candies.GetRandom();
-		PlayerInteractingScp330EventArgs playerInteractingScp330EventArgs = new PlayerInteractingScp330EventArgs(ply, num2, playSound, allowPunishment, random);
-		PlayerEvents.OnInteractingScp330(playerInteractingScp330EventArgs);
-		if (!playerInteractingScp330EventArgs.IsAllowed)
+		PlayerInteractingScp330EventArgs e = new PlayerInteractingScp330EventArgs(ply, num2, playSound, allowPunishment, random);
+		PlayerEvents.OnInteractingScp330(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
-		playSound = playerInteractingScp330EventArgs.PlaySound;
-		allowPunishment = playerInteractingScp330EventArgs.AllowPunishment;
-		num2 = playerInteractingScp330EventArgs.Uses;
-		random = playerInteractingScp330EventArgs.CandyType;
-		if (random != 0 && Scp330Bag.TryAddCandy(ply, random))
+		playSound = e.PlaySound;
+		allowPunishment = e.AllowPunishment;
+		num2 = e.Uses;
+		random = e.CandyType;
+		if (random != CandyKindID.None && Scp330Bag.TryAddCandy(ply, random))
 		{
 			if (playSound)
 			{
-				RpcMakeSound();
+				this.RpcMakeSound();
 			}
 			if (allowPunishment && num2 >= 2)
 			{
 				ply.playerEffectsController.EnableEffect<SeveredHands>();
-				ClearUsesForRole(ply.roleManager.CurrentRole);
+				this.ClearUsesForRole(ply.roleManager.CurrentRole);
 			}
 			else
 			{
-				_previousUses.Add(new Footprint(ply));
+				this._previousUses.Add(new Footprint(ply));
 			}
 			PlayerEvents.OnInteractedScp330(new PlayerInteractedScp330EventArgs(ply, num2, playSound, allowPunishment, random));
 		}
@@ -82,11 +82,11 @@ public class Scp330Interobject : NetworkBehaviour, IServerInteractable, IInterac
 
 	private void ClearUsesForRole(PlayerRoleBase prb)
 	{
-		for (int num = _previousUses.Count - 1; num >= 0; num--)
+		for (int num = this._previousUses.Count - 1; num >= 0; num--)
 		{
-			if (_previousUses[num].LifeIdentifier == prb.UniqueLifeIdentifier)
+			if (this._previousUses[num].LifeIdentifier == prb.UniqueLifeIdentifier)
 			{
-				_previousUses.RemoveAt(num);
+				this._previousUses.RemoveAt(num);
 			}
 		}
 	}
@@ -95,7 +95,7 @@ public class Scp330Interobject : NetworkBehaviour, IServerInteractable, IInterac
 	private void RpcMakeSound()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void Interactables.Interobjects.Scp330Interobject::RpcMakeSound()", 1231574529, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Interactables.Interobjects.Scp330Interobject::RpcMakeSound()", 1231574529, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -106,7 +106,7 @@ public class Scp330Interobject : NetworkBehaviour, IServerInteractable, IInterac
 
 	protected void UserCode_RpcMakeSound()
 	{
-		AudioSourcePoolManager.PlayOnTransform(_takeSound, base.transform);
+		AudioSourcePoolManager.PlayOnTransform(this._takeSound, base.transform);
 	}
 
 	protected static void InvokeUserCode_RpcMakeSound(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)

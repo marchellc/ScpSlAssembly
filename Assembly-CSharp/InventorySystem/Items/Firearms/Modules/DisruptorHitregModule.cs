@@ -56,10 +56,10 @@ public class DisruptorHitregModule : HitscanHitregModuleBase
 	{
 		get
 		{
-			return LastFiringState switch
+			return this.LastFiringState switch
 			{
-				DisruptorActionModule.FiringState.FiringSingle => _singleShotBaseDamage, 
-				DisruptorActionModule.FiringState.FiringRapid => _rapidFireBaseDamage, 
+				DisruptorActionModule.FiringState.FiringSingle => this._singleShotBaseDamage, 
+				DisruptorActionModule.FiringState.FiringRapid => this._rapidFireBaseDamage, 
 				_ => base.BaseDamage, 
 			};
 		}
@@ -73,10 +73,10 @@ public class DisruptorHitregModule : HitscanHitregModuleBase
 	{
 		get
 		{
-			return LastFiringState switch
+			return this.LastFiringState switch
 			{
-				DisruptorActionModule.FiringState.FiringSingle => _singleShotFalloffDistance, 
-				DisruptorActionModule.FiringState.FiringRapid => _rapidFireFalloffDistance, 
+				DisruptorActionModule.FiringState.FiringSingle => this._singleShotFalloffDistance, 
+				DisruptorActionModule.FiringState.FiringRapid => this._rapidFireFalloffDistance, 
 				_ => base.DamageFalloffDistance, 
 			};
 		}
@@ -88,15 +88,15 @@ public class DisruptorHitregModule : HitscanHitregModuleBase
 
 	public override bool UseHitboxMultipliers => false;
 
-	public DisruptorActionModule.FiringState LastFiringState => DisruptorShotData?.State ?? DisruptorActionModule.FiringState.None;
+	public DisruptorActionModule.FiringState LastFiringState => this.DisruptorShotData?.State ?? DisruptorActionModule.FiringState.None;
 
 	private DisruptorShotEvent DisruptorShotData
 	{
 		get
 		{
-			if (!_hasOwner)
+			if (!this._hasOwner)
 			{
-				return _templateShotData;
+				return this._templateShotData;
 			}
 			return base.LastShotEvent as DisruptorShotEvent;
 		}
@@ -105,7 +105,7 @@ public class DisruptorHitregModule : HitscanHitregModuleBase
 	internal override void OnAdded()
 	{
 		base.OnAdded();
-		_hasOwner = true;
+		this._hasOwner = true;
 	}
 
 	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
@@ -118,43 +118,43 @@ public class DisruptorHitregModule : HitscanHitregModuleBase
 
 	protected override void Fire()
 	{
-		Ray ray = (_lastShotRay = RandomizeRay(base.ForwardRay, base.CurrentInaccuracy));
+		Ray ray = (this._lastShotRay = base.RandomizeRay(base.ForwardRay, base.CurrentInaccuracy));
 		HitscanResult resultNonAlloc = base.ResultNonAlloc;
 		resultNonAlloc.Clear();
-		switch (LastFiringState)
+		switch (this.LastFiringState)
 		{
 		case DisruptorActionModule.FiringState.FiringSingle:
-			PrescanSingle(ray, resultNonAlloc);
+			this.PrescanSingle(ray, resultNonAlloc);
 			break;
 		case DisruptorActionModule.FiringState.FiringRapid:
-			ServerAppendPrescan(ray, resultNonAlloc);
+			base.ServerAppendPrescan(ray, resultNonAlloc);
 			break;
 		}
-		ServerApplyDamage(resultNonAlloc);
+		this.ServerApplyDamage(resultNonAlloc);
 	}
 
 	private void PrescanSingle(Ray ray, HitscanResult result)
 	{
-		_serverPenetrations = 0;
-		int count = Physics.SphereCastNonAlloc(ray, _singleShotThickness, NonAllocHits, DamageFalloffDistance + FullDamageDistance, HitscanHitregModuleBase.HitregMask);
-		SortedByDistanceHits.Clear();
-		SortedByDistanceHits.AddRange(new ArraySegment<RaycastHit>(NonAllocHits, 0, count));
-		SortedByDistanceHits.Sort((RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
+		this._serverPenetrations = 0;
+		int count = Physics.SphereCastNonAlloc(ray, this._singleShotThickness, DisruptorHitregModule.NonAllocHits, this.DamageFalloffDistance + this.FullDamageDistance, HitscanHitregModuleBase.HitregMask);
+		DisruptorHitregModule.SortedByDistanceHits.Clear();
+		DisruptorHitregModule.SortedByDistanceHits.AddRange(new ArraySegment<RaycastHit>(DisruptorHitregModule.NonAllocHits, 0, count));
+		DisruptorHitregModule.SortedByDistanceHits.Sort((RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
 		RaycastHit? raycastHit = null;
-		foreach (RaycastHit sortedByDistanceHit in SortedByDistanceHits)
+		foreach (RaycastHit sortedByDistanceHit in DisruptorHitregModule.SortedByDistanceHits)
 		{
 			raycastHit = sortedByDistanceHit;
 			if (sortedByDistanceHit.collider.TryGetComponent<IDestructible>(out var component))
 			{
-				if (ValidateTarget(component, result))
+				if (this.ValidateTarget(component, result))
 				{
 					result.Destructibles.Add(new DestructibleHitPair(component, sortedByDistanceHit, ray));
-					_serverPenetrations++;
+					this._serverPenetrations++;
 				}
 			}
 			else
 			{
-				if (!TryGetDoor(sortedByDistanceHit, out var _))
+				if (!this.TryGetDoor(sortedByDistanceHit, out var _))
 				{
 					break;
 				}
@@ -163,9 +163,9 @@ public class DisruptorHitregModule : HitscanHitregModuleBase
 		}
 		if (raycastHit.HasValue)
 		{
-			RestoreHitboxes();
+			base.RestoreHitboxes();
 			Vector3 position = raycastHit.Value.point + 0.15f * -ray.direction;
-			ExplosionGrenade.Explode(DisruptorShotData.HitregFootprint, position, _singleShotExplosionSettings, ExplosionType.Disruptor);
+			ExplosionGrenade.Explode(this.DisruptorShotData.HitregFootprint, position, this._singleShotExplosionSettings, ExplosionType.Disruptor);
 		}
 	}
 
@@ -183,21 +183,21 @@ public class DisruptorHitregModule : HitscanHitregModuleBase
 	protected override void ServerApplyObstacleDamage(HitRayPair hitInfo, HitscanResult result)
 	{
 		base.ServerApplyObstacleDamage(hitInfo, result);
-		if (TryGetDoor(hitInfo.Hit, out var ret) && ret.ServerDamage(BaseDamage, DoorDamageType.ParticleDisruptor))
+		if (this.TryGetDoor(hitInfo.Hit, out var ret) && ret.ServerDamage(this.BaseDamage, DoorDamageType.ParticleDisruptor))
 		{
-			result.OtherDamage += BaseDamage;
+			result.OtherDamage += this.BaseDamage;
 		}
 	}
 
 	protected override void ServerApplyDestructibleDamage(DestructibleHitPair target, HitscanResult result)
 	{
-		float num = DamageAtDistance(target.Hit.distance);
-		num *= Mathf.Pow(1f / _singleShotDivisionPerTarget, _serverPenetrations);
-		DisruptorDamageHandler handler = new DisruptorDamageHandler(DisruptorShotData, _lastShotRay.direction, num);
+		float num = this.DamageAtDistance(target.Hit.distance);
+		num *= Mathf.Pow(1f / this._singleShotDivisionPerTarget, this._serverPenetrations);
+		DisruptorDamageHandler handler = new DisruptorDamageHandler(this.DisruptorShotData, this._lastShotRay.direction, num);
 		if (target.Destructible.Damage(num, handler, target.Hit.point))
 		{
 			result.RegisterDamage(target.Destructible, num, handler);
-			ServerPlayImpactEffects(target.Raycast, num > 0f);
+			base.ServerPlayImpactEffects(target.Raycast, num > 0f);
 		}
 	}
 

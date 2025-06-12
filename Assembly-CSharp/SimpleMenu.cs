@@ -21,7 +21,7 @@ public class SimpleMenu : MonoBehaviour
 
 	private void Awake()
 	{
-		if (isPreloader)
+		if (this.isPreloader)
 		{
 			return;
 		}
@@ -39,25 +39,25 @@ public class SimpleMenu : MonoBehaviour
 				PlayerPrefsSl.Set("menumode", 1);
 				break;
 			case "-nographics":
-				_server = true;
+				SimpleMenu._server = true;
 				break;
 			case "-forcemenu":
-				_forceSettings = true;
+				SimpleMenu._forceSettings = true;
 				break;
 			}
 		}
-		Refresh();
+		SimpleMenu.Refresh();
 	}
 
 	private void Start()
 	{
-		Timing.RunCoroutine(StartLoad());
+		Timing.RunCoroutine(this.StartLoad());
 	}
 
 	private IEnumerator<float> StartLoad()
 	{
 		yield return float.NegativeInfinity;
-		if (isPreloader)
+		if (this.isPreloader)
 		{
 			AsyncOperation asyncOperation = SceneManager.LoadSceneAsync("Loader", LoadSceneMode.Single);
 			asyncOperation.allowSceneActivation = true;
@@ -75,25 +75,25 @@ public class SimpleMenu : MonoBehaviour
 	{
 		PlayerPrefsSl.Set("fastmenu", value: false);
 		PlayerPrefsSl.Set("menumode", 1);
-		Refresh();
-		LoadCorrectScene();
+		SimpleMenu.Refresh();
+		SimpleMenu.LoadCorrectScene();
 	}
 
 	public static void ChangeMode(int id)
 	{
 		PlayerPrefsSl.Set("menumode", id);
-		Refresh();
-		LoadCorrectScene();
+		SimpleMenu.Refresh();
+		SimpleMenu.LoadCorrectScene();
 	}
 
 	private static void Refresh()
 	{
-		_targetSceneName = (_server ? "FastMenu" : MenuSceneNames[(!_forceSettings) ? 1 : Mathf.Clamp(PlayerPrefsSl.Get("menumode", 1), 0, 2)]);
-		UnityEngine.Object.FindObjectOfType<CustomNetworkManager>().offlineScene = _targetSceneName;
+		SimpleMenu._targetSceneName = (SimpleMenu._server ? "FastMenu" : SimpleMenu.MenuSceneNames[(!SimpleMenu._forceSettings) ? 1 : Mathf.Clamp(PlayerPrefsSl.Get("menumode", 1), 0, 2)]);
+		UnityEngine.Object.FindObjectOfType<CustomNetworkManager>().offlineScene = SimpleMenu._targetSceneName;
 	}
 
 	public static void LoadCorrectScene()
 	{
-		SceneManager.LoadScene(_targetSceneName);
+		SceneManager.LoadScene(SimpleMenu._targetSceneName);
 	}
 }

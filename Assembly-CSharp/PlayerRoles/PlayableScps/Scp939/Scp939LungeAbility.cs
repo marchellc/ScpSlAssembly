@@ -58,9 +58,9 @@ public class Scp939LungeAbility : KeySubroutine<Scp939Role>
 	{
 		get
 		{
-			if (_focus.State == 1f && State == Scp939LungeState.None && (!base.Owner.isLocalPlayer || !Cursor.visible))
+			if (this._focus.State == 1f && this.State == Scp939LungeState.None && (!base.Owner.isLocalPlayer || !Cursor.visible))
 			{
-				return Mathf.Abs(_focus.AngularDeviation) < _lungeAngleLimit;
+				return Mathf.Abs(this._focus.AngularDeviation) < this._lungeAngleLimit;
 			}
 			return false;
 		}
@@ -70,9 +70,9 @@ public class Scp939LungeAbility : KeySubroutine<Scp939Role>
 
 	public RelativePosition TriggerPos { get; private set; }
 
-	public float LungeForwardSpeed => _forwardSpeedOverPitch.Evaluate(_lungePitch);
+	public float LungeForwardSpeed => this._forwardSpeedOverPitch.Evaluate(this._lungePitch);
 
-	public float LungeJumpSpeed => _jumpSpeedOverPitch.Evaluate(_lungePitch);
+	public float LungeJumpSpeed => this._jumpSpeedOverPitch.Evaluate(this._lungePitch);
 
 	[field: SerializeField]
 	public RagdollAnimationTemplate LungeDeathAnim { get; private set; }
@@ -81,27 +81,27 @@ public class Scp939LungeAbility : KeySubroutine<Scp939Role>
 	{
 		get
 		{
-			return _state;
+			return this._state;
 		}
 		private set
 		{
-			if (State == value)
+			if (this.State == value)
 			{
 				return;
 			}
-			Scp939LungingEventArgs scp939LungingEventArgs = new Scp939LungingEventArgs(base.Owner, value);
-			Scp939Events.OnLunging(scp939LungingEventArgs);
-			if (scp939LungingEventArgs.IsAllowed && scp939LungingEventArgs.LungeState != State)
+			Scp939LungingEventArgs e = new Scp939LungingEventArgs(base.Owner, value);
+			Scp939Events.OnLunging(e);
+			if (e.IsAllowed && e.LungeState != this.State)
 			{
-				value = scp939LungingEventArgs.LungeState;
-				_state = value;
+				value = e.LungeState;
+				this._state = value;
 				this.OnStateChanged?.Invoke(value);
 				if (!base.Owner.isLocalPlayer)
 				{
-					_movementModule.MouseLook.UpdateRotation();
+					this._movementModule.MouseLook.UpdateRotation();
 				}
-				_lungePitch = _movementModule.MouseLook.CurrentVertical;
-				ServerSendRpc(toAll: true);
+				this._lungePitch = this._movementModule.MouseLook.CurrentVertical;
+				base.ServerSendRpc(toAll: true);
 				Scp939Events.OnLunged(new Scp939LungedEventArgs(base.Owner, value));
 			}
 		}
@@ -127,76 +127,76 @@ public class Scp939LungeAbility : KeySubroutine<Scp939Role>
 
 	private void OnGrounded()
 	{
-		if (HasAuthority && State == Scp939LungeState.Triggered)
+		if (this.HasAuthority && this.State == Scp939LungeState.Triggered)
 		{
-			bool flag = CurPos.Position.y < TriggerPos.Position.y - _harshLandingHeight;
-			State = (flag ? Scp939LungeState.LandHarsh : Scp939LungeState.LandRegular);
+			bool flag = this.CurPos.Position.y < this.TriggerPos.Position.y - this._harshLandingHeight;
+			this.State = (flag ? Scp939LungeState.LandHarsh : Scp939LungeState.LandRegular);
 		}
 	}
 
 	private void OnFocusStateChanged()
 	{
-		if (!(_focus.State > 0f))
+		if (!(this._focus.State > 0f))
 		{
-			State = Scp939LungeState.None;
+			this.State = Scp939LungeState.None;
 		}
 	}
 
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		LungeRequested = true;
+		this.LungeRequested = true;
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp939FocusAbility>(out _focus);
-		_movementModule = base.CastRole.FpcModule as Scp939MovementModule;
-		_focus.OnStateChanged += OnFocusStateChanged;
-		_audio.Init(this);
+		base.GetSubroutine<Scp939FocusAbility>(out this._focus);
+		this._movementModule = base.CastRole.FpcModule as Scp939MovementModule;
+		this._focus.OnStateChanged += OnFocusStateChanged;
+		this._audio.Init(this);
 	}
 
 	protected override void Update()
 	{
-		LungeRequested = false;
+		this.LungeRequested = false;
 		base.Update();
 	}
 
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		Scp939MovementModule movementModule = _movementModule;
+		Scp939MovementModule movementModule = this._movementModule;
 		movementModule.OnGrounded = (Action)Delegate.Combine(movementModule.OnGrounded, new Action(OnGrounded));
 	}
 
 	public override void ResetObject()
 	{
-		LungeRequested = false;
-		State = Scp939LungeState.None;
-		Scp939MovementModule movementModule = _movementModule;
+		this.LungeRequested = false;
+		this.State = Scp939LungeState.None;
+		Scp939MovementModule movementModule = this._movementModule;
 		movementModule.OnGrounded = (Action)Delegate.Remove(movementModule.OnGrounded, new Action(OnGrounded));
 	}
 
 	public void TriggerLunge()
 	{
-		TriggerPos = CurPos;
-		State = Scp939LungeState.Triggered;
+		this.TriggerPos = this.CurPos;
+		this.State = Scp939LungeState.Triggered;
 	}
 
 	public void ClientSendHit(FpcStandardRoleBase targetRole)
 	{
-		_playerToHit = targetRole;
-		ClientSendCmd();
-		State = Scp939LungeState.LandHit;
+		this._playerToHit = targetRole;
+		base.ClientSendCmd();
+		this.State = Scp939LungeState.LandHit;
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
 		writer.WriteRelativePosition(new RelativePosition(base.CastRole.FpcModule.Position));
-		writer.WriteReferenceHub(_playerToHit.TryGetOwner(out var hub) ? hub : null);
-		writer.WriteRelativePosition(new RelativePosition(_playerToHit.FpcModule.Position));
+		writer.WriteReferenceHub(this._playerToHit.TryGetOwner(out var hub) ? hub : null);
+		writer.WriteRelativePosition(new RelativePosition(this._playerToHit.FpcModule.Position));
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
@@ -205,13 +205,13 @@ public class Scp939LungeAbility : KeySubroutine<Scp939Role>
 		Vector3 position = reader.ReadRelativePosition().Position;
 		ReferenceHub referenceHub = reader.ReadReferenceHub();
 		RelativePosition relativePosition = reader.ReadRelativePosition();
-		if (State != Scp939LungeState.Triggered)
+		if (this.State != Scp939LungeState.Triggered)
 		{
-			if (!IsReady)
+			if (!this.IsReady)
 			{
 				return;
 			}
-			TriggerLunge();
+			this.TriggerLunge();
 		}
 		if (referenceHub == null || !HitboxIdentity.IsEnemy(base.Owner, referenceHub) || !(referenceHub.roleManager.CurrentRole is FpcStandardRoleBase { FpcModule: var fpcModule }))
 		{
@@ -222,7 +222,7 @@ public class Scp939LungeAbility : KeySubroutine<Scp939Role>
 			using (new FpcBacktracker(base.Owner, fpcModule.Position, Quaternion.identity))
 			{
 				Vector3 v = fpcModule.Position - base.CastRole.FpcModule.Position;
-				if (v.SqrMagnitudeIgnoreY() > _overallTolerance * _overallTolerance || v.y > _overallTolerance || v.y < 0f - _bottomTolerance)
+				if (v.SqrMagnitudeIgnoreY() > this._overallTolerance * this._overallTolerance || v.y > this._overallTolerance || v.y < 0f - this._bottomTolerance)
 				{
 					return;
 				}
@@ -242,14 +242,14 @@ public class Scp939LungeAbility : KeySubroutine<Scp939Role>
 		if (!Physics.Linecast(position, position2, PlayerRolesUtils.AttackMask))
 		{
 			float damage = 120f;
-			Scp939AttackingEventArgs scp939AttackingEventArgs = new Scp939AttackingEventArgs(base.Owner, referenceHub, damage);
-			Scp939Events.OnAttacking(scp939AttackingEventArgs);
-			if (!scp939AttackingEventArgs.IsAllowed)
+			Scp939AttackingEventArgs e = new Scp939AttackingEventArgs(base.Owner, referenceHub, damage);
+			Scp939Events.OnAttacking(e);
+			if (!e.IsAllowed)
 			{
 				return;
 			}
-			referenceHub = scp939AttackingEventArgs.Target.ReferenceHub;
-			damage = scp939AttackingEventArgs.Damage;
+			referenceHub = e.Target.ReferenceHub;
+			damage = e.Damage;
 			flag = referenceHub.playerStats.DealDamage(new Scp939DamageHandler(base.CastRole, damage, Scp939DamageType.LungeTarget));
 			Scp939Events.OnAttacked(new Scp939AttackedEventArgs(base.Owner, referenceHub, damage));
 		}
@@ -266,21 +266,21 @@ public class Scp939LungeAbility : KeySubroutine<Scp939Role>
 				continue;
 			}
 			Vector3 position3 = fpcStandardRoleBase2.FpcModule.Position;
-			if (!((fpcStandardRoleBase2.FpcModule.Position - vector).sqrMagnitude > _secondaryRangeSqr))
+			if (!((fpcStandardRoleBase2.FpcModule.Position - vector).sqrMagnitude > this._secondaryRangeSqr))
 			{
 				if (Physics.Linecast(position3, position, PlayerRolesUtils.AttackMask))
 				{
 					return;
 				}
 				float damage2 = 30f;
-				Scp939AttackingEventArgs scp939AttackingEventArgs2 = new Scp939AttackingEventArgs(base.Owner, referenceHub, damage2);
-				Scp939Events.OnAttacking(scp939AttackingEventArgs2);
-				if (!scp939AttackingEventArgs2.IsAllowed)
+				Scp939AttackingEventArgs e2 = new Scp939AttackingEventArgs(base.Owner, referenceHub, damage2);
+				Scp939Events.OnAttacking(e2);
+				if (!e2.IsAllowed)
 				{
 					return;
 				}
-				referenceHub = scp939AttackingEventArgs2.Target.ReferenceHub;
-				damage2 = scp939AttackingEventArgs2.Damage;
+				referenceHub = e2.Target.ReferenceHub;
+				damage2 = e2.Damage;
 				if (allHub.playerStats.DealDamage(new Scp939DamageHandler(base.CastRole, damage2, Scp939DamageType.LungeSecondary)))
 				{
 					Scp939Events.OnAttacked(new Scp939AttackedEventArgs(base.Owner, referenceHub, damage2));
@@ -293,21 +293,21 @@ public class Scp939LungeAbility : KeySubroutine<Scp939Role>
 		{
 			Hitmarker.SendHitmarkerDirectly(base.Owner, num);
 		}
-		State = Scp939LungeState.LandHit;
+		this.State = Scp939LungeState.LandHit;
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte((byte)State);
+		writer.WriteByte((byte)this.State);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		if (!HasAuthority)
+		if (!this.HasAuthority)
 		{
-			State = (Scp939LungeState)reader.ReadByte();
+			this.State = (Scp939LungeState)reader.ReadByte();
 		}
 	}
 }

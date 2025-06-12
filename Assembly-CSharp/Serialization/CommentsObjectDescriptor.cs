@@ -10,17 +10,17 @@ internal sealed class CommentsObjectDescriptor : IObjectDescriptor
 
 	public string Comment { get; private set; }
 
-	public object Value => _innerDescriptor.Value;
+	public object Value => this._innerDescriptor.Value;
 
-	public Type Type => _innerDescriptor.Type;
+	public Type Type => this._innerDescriptor.Type;
 
-	public Type StaticType => _innerDescriptor.StaticType;
+	public Type StaticType => this._innerDescriptor.StaticType;
 
-	public ScalarStyle ScalarStyle => _innerDescriptor.ScalarStyle;
+	public ScalarStyle ScalarStyle => this._innerDescriptor.ScalarStyle;
 
 	public CommentsObjectDescriptor(IObjectDescriptor innerDescriptor, string comment)
 	{
-		_innerDescriptor = innerDescriptor;
-		Comment = comment;
+		this._innerDescriptor = innerDescriptor;
+		this.Comment = comment;
 	}
 }

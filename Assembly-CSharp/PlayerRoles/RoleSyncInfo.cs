@@ -15,40 +15,40 @@ public struct RoleSyncInfo : NetworkMessage
 
 	public RoleSyncInfo(ReferenceHub target, RoleTypeId role, ReferenceHub receiver)
 	{
-		_targetNetId = target.netId;
-		_targetRole = role;
-		_receiverNetId = receiver.netId;
-		_role = target.roleManager.CurrentRole;
+		this._targetNetId = target.netId;
+		this._targetRole = role;
+		this._receiverNetId = receiver.netId;
+		this._role = target.roleManager.CurrentRole;
 	}
 
 	public RoleSyncInfo(NetworkReader reader)
 	{
-		_receiverNetId = 0u;
-		_targetNetId = reader.ReadUInt();
-		if (!ReferenceHub.TryGetHubNetID(_targetNetId, out var hub))
+		this._receiverNetId = 0u;
+		this._targetNetId = reader.ReadUInt();
+		if (!ReferenceHub.TryGetHubNetID(this._targetNetId, out var hub))
 		{
-			PlayerRolesNetUtils.QueuedRoles[_targetNetId] = reader;
-			_role = null;
-			_targetRole = RoleTypeId.None;
+			PlayerRolesNetUtils.QueuedRoles[this._targetNetId] = reader;
+			this._role = null;
+			this._targetRole = RoleTypeId.None;
 			return;
 		}
-		_targetRole = reader.ReadRoleType();
+		this._targetRole = reader.ReadRoleType();
 		if (!NetworkServer.active)
 		{
-			hub.roleManager.InitializeNewRole(_targetRole, RoleChangeReason.None, RoleSpawnFlags.All, reader);
+			hub.roleManager.InitializeNewRole(this._targetRole, RoleChangeReason.None, RoleSpawnFlags.All, reader);
 		}
-		_role = hub.roleManager.CurrentRole;
+		this._role = hub.roleManager.CurrentRole;
 	}
 
 	public void Write(NetworkWriter writer)
 	{
-		writer.WriteUInt(_targetNetId);
-		writer.WriteRoleType(_targetRole);
-		if (_role is IPublicSpawnDataWriter publicSpawnDataWriter)
+		writer.WriteUInt(this._targetNetId);
+		writer.WriteRoleType(this._targetRole);
+		if (this._role is IPublicSpawnDataWriter publicSpawnDataWriter)
 		{
 			publicSpawnDataWriter.WritePublicSpawnData(writer);
 		}
-		if (_receiverNetId == _targetNetId && _role is IPrivateSpawnDataWriter privateSpawnDataWriter)
+		if (this._receiverNetId == this._targetNetId && this._role is IPrivateSpawnDataWriter privateSpawnDataWriter)
 		{
 			privateSpawnDataWriter.WritePrivateSpawnData(writer);
 		}
@@ -56,6 +56,6 @@ public struct RoleSyncInfo : NetworkMessage
 
 	public override string ToString()
 	{
-		return string.Format("{0} (TargetNetId = '{1}' Role = '{2}')", "RoleSyncInfo", _targetNetId, _role);
+		return string.Format("{0} (TargetNetId = '{1}' Role = '{2}')", "RoleSyncInfo", this._targetNetId, this._role);
 	}
 }

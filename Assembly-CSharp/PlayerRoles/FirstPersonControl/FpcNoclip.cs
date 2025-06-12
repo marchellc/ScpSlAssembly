@@ -58,11 +58,11 @@ public class FpcNoclip
 	{
 		get
 		{
-			return _stats.HasFlag(AdminFlags.Noclip);
+			return this._stats.HasFlag(AdminFlags.Noclip);
 		}
 		set
 		{
-			_stats.SetFlag(AdminFlags.Noclip, value);
+			this._stats.SetFlag(AdminFlags.Noclip, value);
 		}
 	}
 
@@ -70,9 +70,9 @@ public class FpcNoclip
 	{
 		get
 		{
-			if (_lastNcSw.IsRunning)
+			if (this._lastNcSw.IsRunning)
 			{
-				return _lastNcSw.Elapsed.TotalSeconds < 2.5;
+				return this._lastNcSw.Elapsed.TotalSeconds < 2.5;
 			}
 			return false;
 		}
@@ -80,42 +80,42 @@ public class FpcNoclip
 
 	public FpcNoclip(ReferenceHub hub, FirstPersonMovementModule fpmm)
 	{
-		_hub = hub;
-		_fpmm = fpmm;
-		_stats = hub.playerStats.GetModule<AdminFlagsStat>();
-		_lastNcSw = new Stopwatch();
-		if (_hub.isLocalPlayer)
+		this._hub = hub;
+		this._fpmm = fpmm;
+		this._stats = hub.playerStats.GetModule<AdminFlagsStat>();
+		this._lastNcSw = new Stopwatch();
+		if (this._hub.isLocalPlayer)
 		{
-			ReloadInputConfigs();
+			FpcNoclip.ReloadInputConfigs();
 		}
 	}
 
 	public void UpdateNoclip()
 	{
-		if (_hub.isLocalPlayer && Input.GetKeyDown(_keyToggle))
+		if (this._hub.isLocalPlayer && Input.GetKeyDown(FpcNoclip._keyToggle))
 		{
 			NetworkClient.Send(default(FpcNoclipToggleMessage));
 		}
-		if (!_stats.HasFlag(AdminFlags.Noclip))
+		if (!this._stats.HasFlag(AdminFlags.Noclip))
 		{
-			if (_wasEnabled)
+			if (this._wasEnabled)
 			{
-				DisableNoclipClientside();
+				this.DisableNoclipClientside();
 			}
-			_wasEnabled = false;
+			this._wasEnabled = false;
 			return;
 		}
-		_wasEnabled = true;
-		_lastNcSw.Restart();
+		this._wasEnabled = true;
+		this._lastNcSw.Restart();
 		if (NetworkServer.active)
 		{
-			_fpmm.Motor.ResetFallDamageCooldown();
+			this._fpmm.Motor.ResetFallDamageCooldown();
 		}
-		if (!_hub.isLocalPlayer)
+		if (!this._hub.isLocalPlayer)
 		{
-			Vector3 position = _fpmm.Motor.ReceivedPosition.Position;
-			float t = (((position - _fpmm.Position).sqrMagnitude > 25f) ? 1f : (16f * Time.deltaTime));
-			_fpmm.Position = Vector3.Lerp(_fpmm.Position, position, t);
+			Vector3 position = this._fpmm.Motor.ReceivedPosition.Position;
+			float t = (((position - this._fpmm.Position).sqrMagnitude > 25f) ? 1f : (16f * Time.deltaTime));
+			this._fpmm.Position = Vector3.Lerp(this._fpmm.Position, position, t);
 		}
 	}
 
@@ -123,9 +123,9 @@ public class FpcNoclip
 	{
 		if (NetworkServer.active)
 		{
-			IsActive = false;
+			this.IsActive = false;
 		}
-		DisableNoclipClientside();
+		this.DisableNoclipClientside();
 	}
 
 	private void DisableNoclipClientside()
@@ -136,7 +136,7 @@ public class FpcNoclip
 	{
 		if (ply != null)
 		{
-			return PermittedPlayers.Contains(ply.netId);
+			return FpcNoclip.PermittedPlayers.Contains(ply.netId);
 		}
 		return false;
 	}
@@ -145,7 +145,7 @@ public class FpcNoclip
 	{
 		if (!(ply == null))
 		{
-			PermittedPlayers.Add(ply.netId);
+			FpcNoclip.PermittedPlayers.Add(ply.netId);
 			ply.gameConsoleTransmission.SendToClient("Noclip is now permitted.", "green");
 		}
 	}
@@ -154,7 +154,7 @@ public class FpcNoclip
 	{
 		if (!(ply == null))
 		{
-			PermittedPlayers.Remove(ply.netId);
+			FpcNoclip.PermittedPlayers.Remove(ply.netId);
 			ply.playerStats.GetModule<AdminFlagsStat>().SetFlag(AdminFlags.Noclip, status: false);
 			ply.gameConsoleTransmission.SendToClient("Noclip permission revoked.", "yellow");
 		}
@@ -163,7 +163,7 @@ public class FpcNoclip
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		Inventory.OnServerStarted += PermittedPlayers.Clear;
+		Inventory.OnServerStarted += FpcNoclip.PermittedPlayers.Clear;
 		NewInput.OnAnyModified += ReloadInputConfigs;
 	}
 

@@ -32,12 +32,12 @@ public abstract class OverlayAnimationsBase
 
 	public virtual void OnStarted()
 	{
-		IsPlaying = true;
+		this.IsPlaying = true;
 	}
 
 	public virtual void OnStopped()
 	{
-		IsPlaying = false;
+		this.IsPlaying = false;
 	}
 
 	public virtual void OnReassigned()
@@ -54,26 +54,26 @@ public abstract class OverlayAnimationsBase
 
 	public virtual void Init(OverlayAnimationsSubcontroller ctrl, int index)
 	{
-		Controller = ctrl;
-		SyncIndex = (byte)index;
-		Model = ctrl.Model;
+		this.Controller = ctrl;
+		this.SyncIndex = (byte)index;
+		this.Model = ctrl.Model;
 	}
 
 	public void SendRpc()
 	{
-		SubcontrollerRpcHandler.ServerSendRpc(Controller, WriteRpcHeader);
+		SubcontrollerRpcHandler.ServerSendRpc(this.Controller, WriteRpcHeader);
 	}
 
 	public void Replay(bool instant)
 	{
-		if (IsPlaying)
+		if (this.IsPlaying)
 		{
-			Model.Animator.SetTrigger(instant ? HashReplayInstant : HashReplaySoft);
+			this.Model.Animator.SetTrigger(instant ? OverlayAnimationsBase.HashReplayInstant : OverlayAnimationsBase.HashReplaySoft);
 		}
 	}
 
 	private void WriteRpcHeader(NetworkWriter writer)
 	{
-		writer.WriteByte(SyncIndex);
+		writer.WriteByte(this.SyncIndex);
 	}
 }

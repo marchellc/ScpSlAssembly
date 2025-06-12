@@ -17,20 +17,20 @@ public static class CursorManager
 
 	private static void LateUpdate()
 	{
-		ProcessOverrides(out var bestOverride, out var anyMovementLocked);
+		CursorManager.ProcessOverrides(out var bestOverride, out var anyMovementLocked);
 		switch (bestOverride)
 		{
 		case CursorOverrideMode.Confined:
-			SetLockMode(CursorLockMode.Confined);
+			CursorManager.SetLockMode(CursorLockMode.Confined);
 			break;
 		case CursorOverrideMode.Centered:
-			SetLockMode(CursorLockMode.Locked);
+			CursorManager.SetLockMode(CursorLockMode.Locked);
 			break;
 		default:
-			SetLockMode(CursorLockMode.None);
+			CursorManager.SetLockMode(CursorLockMode.None);
 			break;
 		}
-		MovementLocked = anyMovementLocked;
+		CursorManager.MovementLocked = anyMovementLocked;
 	}
 
 	private static void ProcessOverrides(out CursorOverrideMode bestOverride, out bool anyMovementLocked)
@@ -42,8 +42,8 @@ public static class CursorManager
 			return;
 		}
 		int num = 0;
-		Overrides.RemoveWhere((ICursorOverride x) => x == null || (x is Object @object && @object == null));
-		foreach (ICursorOverride @override in Overrides)
+		CursorManager.Overrides.RemoveWhere((ICursorOverride x) => x == null || (x is Object obj && obj == null));
+		foreach (ICursorOverride @override in CursorManager.Overrides)
 		{
 			num = Mathf.Max(num, (int)@override.CursorOverride);
 			anyMovementLocked |= @override.LockMovement;
@@ -59,11 +59,11 @@ public static class CursorManager
 
 	public static bool Register(ICursorOverride target)
 	{
-		return Overrides.Add(target);
+		return CursorManager.Overrides.Add(target);
 	}
 
 	public static bool Unregister(ICursorOverride target)
 	{
-		return Overrides.Remove(target);
+		return CursorManager.Overrides.Remove(target);
 	}
 }

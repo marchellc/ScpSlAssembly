@@ -10,7 +10,7 @@ internal class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IEnumerable
 
 	private readonly IEnumerable<TElement> elements;
 
-	public TKey Key => key;
+	public TKey Key => this.key;
 
 	public Grouping(TKey key, IEnumerable<TElement> elements)
 	{
@@ -20,11 +20,11 @@ internal class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IEnumerable
 
 	public IEnumerator<TElement> GetEnumerator()
 	{
-		return elements.GetEnumerator();
+		return this.elements.GetEnumerator();
 	}
 
 	IEnumerator IEnumerable.GetEnumerator()
 	{
-		return GetEnumerator();
+		return this.GetEnumerator();
 	}
 }

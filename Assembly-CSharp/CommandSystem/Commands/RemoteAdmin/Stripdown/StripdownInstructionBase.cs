@@ -36,21 +36,21 @@ public abstract class StripdownInstructionBase : ICommand
 			}
 			connectionToClient = hub.connectionToClient;
 		}
-		Combiner.Clear();
+		StripdownInstructionBase.Combiner.Clear();
 		bool flag = false;
 		for (int i = 0; i < arguments.Count; i++)
 		{
 			if (flag)
 			{
-				Combiner.Append(' ');
+				StripdownInstructionBase.Combiner.Append(' ');
 			}
 			else
 			{
 				flag = true;
 			}
-			Combiner.Append(arguments.Array[arguments.Offset + i]);
+			StripdownInstructionBase.Combiner.Append(arguments.Array[arguments.Offset + i]);
 		}
-		response = ProcessInstruction(connectionToClient, Combiner.ToString());
+		response = this.ProcessInstruction(connectionToClient, StripdownInstructionBase.Combiner.ToString());
 		return true;
 	}
 

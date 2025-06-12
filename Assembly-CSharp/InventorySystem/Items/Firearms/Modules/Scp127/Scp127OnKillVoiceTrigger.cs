@@ -25,9 +25,9 @@ public class Scp127OnKillVoiceTrigger : Scp127VoiceTriggerBase
 
 	private void OnKilled(Firearm scp127, ReferenceHub deadHub)
 	{
-		if (!(scp127 != base.Firearm) && _onKillLines.TryGetRandom(deadHub.GetRoleId(), out var voiceLine))
+		if (!(scp127 != base.Firearm) && this._onKillLines.TryGetRandom(deadHub.GetRoleId(), out var voiceLine))
 		{
-			ServerPlayVoiceLine(voiceLine);
+			base.ServerPlayVoiceLine(voiceLine);
 		}
 	}
 }

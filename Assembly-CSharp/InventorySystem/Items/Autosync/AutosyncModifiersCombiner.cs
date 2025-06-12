@@ -41,41 +41,41 @@ public class AutosyncModifiersCombiner : IMovementSpeedModifier, IStaminaModifie
 
 	private readonly ModularAutosyncItem _item;
 
-	public bool StaminaModifierActive => _item.IsEquipped;
+	public bool StaminaModifierActive => this._item.IsEquipped;
 
-	public bool MovementModifierActive => _item.IsEquipped;
+	public bool MovementModifierActive => this._item.IsEquipped;
 
-	public float MovementSpeedMultiplier => CombineMultiplier(_movementSpeedModifiers, (IMovementSpeedModifier x) => x.MovementSpeedMultiplier, (IMovementSpeedModifier x) => x.MovementModifierActive);
+	public float MovementSpeedMultiplier => AutosyncModifiersCombiner.CombineMultiplier(this._movementSpeedModifiers, (IMovementSpeedModifier x) => x.MovementSpeedMultiplier, (IMovementSpeedModifier x) => x.MovementModifierActive);
 
-	public float MovementSpeedLimit => MinValue(_movementSpeedModifiers, float.MaxValue, (IMovementSpeedModifier x) => x.MovementSpeedLimit, (IMovementSpeedModifier x) => x.MovementModifierActive);
+	public float MovementSpeedLimit => AutosyncModifiersCombiner.MinValue(this._movementSpeedModifiers, float.MaxValue, (IMovementSpeedModifier x) => x.MovementSpeedLimit, (IMovementSpeedModifier x) => x.MovementModifierActive);
 
-	public float StaminaUsageMultiplier => CombineMultiplier(_staminaModifiers, (IStaminaModifier x) => x.StaminaUsageMultiplier, (IStaminaModifier x) => x.StaminaModifierActive);
+	public float StaminaUsageMultiplier => AutosyncModifiersCombiner.CombineMultiplier(this._staminaModifiers, (IStaminaModifier x) => x.StaminaUsageMultiplier, (IStaminaModifier x) => x.StaminaModifierActive);
 
-	public float StaminaRegenMultiplier => CombineMultiplier(_staminaModifiers, (IStaminaModifier x) => x.StaminaRegenMultiplier, (IStaminaModifier x) => x.StaminaModifierActive);
+	public float StaminaRegenMultiplier => AutosyncModifiersCombiner.CombineMultiplier(this._staminaModifiers, (IStaminaModifier x) => x.StaminaRegenMultiplier, (IStaminaModifier x) => x.StaminaModifierActive);
 
-	public bool SprintingDisabled => AnyTrue(_staminaModifiers, (IStaminaModifier x) => x.StaminaModifierActive && x.SprintingDisabled);
+	public bool SprintingDisabled => AutosyncModifiersCombiner.AnyTrue(this._staminaModifiers, (IStaminaModifier x) => x.StaminaModifierActive && x.SprintingDisabled);
 
-	public float ZoomAmount => CombineMultiplier(_zoomModifiers, (IZoomModifyingItem x) => x.ZoomAmount);
+	public float ZoomAmount => AutosyncModifiersCombiner.CombineMultiplier(this._zoomModifiers, (IZoomModifyingItem x) => x.ZoomAmount);
 
-	public float SensitivityScale => CombineMultiplier(_zoomModifiers, (IZoomModifyingItem x) => x.SensitivityScale);
+	public float SensitivityScale => AutosyncModifiersCombiner.CombineMultiplier(this._zoomModifiers, (IZoomModifyingItem x) => x.SensitivityScale);
 
-	public bool IsEmittingLight => AnyTrue(_lightEmitters, (ILightEmittingItem x) => x.IsEmittingLight);
+	public bool IsEmittingLight => AutosyncModifiersCombiner.AnyTrue(this._lightEmitters, (ILightEmittingItem x) => x.IsEmittingLight);
 
-	public bool ForceBarVisible => AnyTrue(_humeShields, (IHumeShieldProvider x) => x.ForceBarVisible);
+	public bool ForceBarVisible => AutosyncModifiersCombiner.AnyTrue(this._humeShields, (IHumeShieldProvider x) => x.ForceBarVisible);
 
-	public float HsMax => CombineAdditive(_humeShields, (IHumeShieldProvider x) => x.HsMax);
+	public float HsMax => AutosyncModifiersCombiner.CombineAdditive(this._humeShields, (IHumeShieldProvider x) => x.HsMax);
 
-	public float HsRegeneration => CombineAdditive(_humeShields, (IHumeShieldProvider x) => x.HsRegeneration);
+	public float HsRegeneration => AutosyncModifiersCombiner.CombineAdditive(this._humeShields, (IHumeShieldProvider x) => x.HsRegeneration);
 
-	public CustomDescriptionGui CustomGuiPrefab => _customDescription.CustomGuiPrefab;
+	public CustomDescriptionGui CustomGuiPrefab => this._customDescription.CustomGuiPrefab;
 
-	public string[] CustomDescriptionContent => _customDescription.CustomDescriptionContent;
+	public string[] CustomDescriptionContent => this._customDescription.CustomDescriptionContent;
 
 	public Color? HsWarningColor
 	{
 		get
 		{
-			IHumeShieldProvider[] humeShields = _humeShields;
+			IHumeShieldProvider[] humeShields = this._humeShields;
 			for (int i = 0; i < humeShields.Length; i++)
 			{
 				Color? hsWarningColor = humeShields[i].HsWarningColor;
@@ -92,7 +92,7 @@ public class AutosyncModifiersCombiner : IMovementSpeedModifier, IStaminaModifie
 	{
 		get
 		{
-			IItemAlertDrawer[] alertDrawers = _alertDrawers;
+			IItemAlertDrawer[] alertDrawers = this._alertDrawers;
 			foreach (IItemAlertDrawer itemAlertDrawer in alertDrawers)
 			{
 				if (itemAlertDrawer.Alert.Active)
@@ -106,7 +106,7 @@ public class AutosyncModifiersCombiner : IMovementSpeedModifier, IStaminaModifie
 
 	public bool ValidateAmmoDrop(ItemType id)
 	{
-		return !AnyTrue(_dropPreventers, (IAmmoDropPreventer x) => !x.ValidateAmmoDrop(id));
+		return !AutosyncModifiersCombiner.AnyTrue(this._dropPreventers, (IAmmoDropPreventer x) => !x.ValidateAmmoDrop(id));
 	}
 
 	private static bool AnyTrue<T>(T[] arr, Func<T, bool> selector)
@@ -163,7 +163,7 @@ public class AutosyncModifiersCombiner : IMovementSpeedModifier, IStaminaModifie
 	private void FetchModifiers<T>(T[] nonAllocArray, ref T[] targetArray)
 	{
 		int num = 0;
-		SubcomponentBase[] allSubcomponents = _item.AllSubcomponents;
+		SubcomponentBase[] allSubcomponents = this._item.AllSubcomponents;
 		for (int i = 0; i < allSubcomponents.Length; i++)
 		{
 			if (allSubcomponents[i] is T val)
@@ -177,14 +177,14 @@ public class AutosyncModifiersCombiner : IMovementSpeedModifier, IStaminaModifie
 
 	public AutosyncModifiersCombiner(ModularAutosyncItem item)
 	{
-		_item = item;
-		FetchModifiers(MovementSpeedModifiersNonAlloc, ref _movementSpeedModifiers);
-		FetchModifiers(StaminaModifiersNonAlloc, ref _staminaModifiers);
-		FetchModifiers(ZoomModifiersNonAlloc, ref _zoomModifiers);
-		FetchModifiers(LightEmittersNonAlloc, ref _lightEmitters);
-		FetchModifiers(DropPreventersNonAlloc, ref _dropPreventers);
-		FetchModifiers(HumeShieldProvidersNonAlloc, ref _humeShields);
-		FetchModifiers(AlertDrawersNonAlloc, ref _alertDrawers);
-		item.TryGetSubcomponent<ICustomDescriptionItem>(out _customDescription);
+		this._item = item;
+		this.FetchModifiers(AutosyncModifiersCombiner.MovementSpeedModifiersNonAlloc, ref this._movementSpeedModifiers);
+		this.FetchModifiers(AutosyncModifiersCombiner.StaminaModifiersNonAlloc, ref this._staminaModifiers);
+		this.FetchModifiers(AutosyncModifiersCombiner.ZoomModifiersNonAlloc, ref this._zoomModifiers);
+		this.FetchModifiers(AutosyncModifiersCombiner.LightEmittersNonAlloc, ref this._lightEmitters);
+		this.FetchModifiers(AutosyncModifiersCombiner.DropPreventersNonAlloc, ref this._dropPreventers);
+		this.FetchModifiers(AutosyncModifiersCombiner.HumeShieldProvidersNonAlloc, ref this._humeShields);
+		this.FetchModifiers(AutosyncModifiersCombiner.AlertDrawersNonAlloc, ref this._alertDrawers);
+		item.TryGetSubcomponent<ICustomDescriptionItem>(out this._customDescription);
 	}
 }

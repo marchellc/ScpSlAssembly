@@ -63,7 +63,7 @@ public class Scp3114Model : AnimatedCharacterModel, ISubcontrollerRpcRedirector
 		{
 			if (base.FootstepPlayable)
 			{
-				return ScpRole.SkeletonIdle;
+				return this.ScpRole.SkeletonIdle;
 			}
 			return false;
 		}
@@ -75,39 +75,39 @@ public class Scp3114Model : AnimatedCharacterModel, ISubcontrollerRpcRedirector
 		{
 			if (base.LandingFootstepPlayable)
 			{
-				return ScpRole.SkeletonIdle;
+				return this.ScpRole.SkeletonIdle;
 			}
 			return false;
 		}
 	}
 
-	public AnimatedCharacterModel RpcTarget => _fakeModel.RpcTarget;
+	public AnimatedCharacterModel RpcTarget => this._fakeModel.RpcTarget;
 
 	private Scp3114Role ScpRole => base.Role as Scp3114Role;
 
 	public override void Setup(ReferenceHub owner, IFpcRole role, Vector3 localPos, Quaternion localRot)
 	{
 		base.Setup(owner, role, localPos, localRot);
-		ScpRole.SubroutineModule.TryGetSubroutine<Scp3114FakeModelManager>(out _fakeModel);
-		ScpRole.SubroutineModule.TryGetSubroutine<Scp3114Strangle>(out _strangle);
-		ScpRole.SubroutineModule.TryGetSubroutine<Scp3114Dance>(out _dance);
-		ScpRole.SubroutineModule.TryGetSubroutine<Scp3114Slap>(out _slap);
-		_slap.OnTriggered += OnSlapTriggered;
-		ScpRole.CurIdentity.OnStatusChanged += OnIdentityChanged;
+		this.ScpRole.SubroutineModule.TryGetSubroutine<Scp3114FakeModelManager>(out this._fakeModel);
+		this.ScpRole.SubroutineModule.TryGetSubroutine<Scp3114Strangle>(out this._strangle);
+		this.ScpRole.SubroutineModule.TryGetSubroutine<Scp3114Dance>(out this._dance);
+		this.ScpRole.SubroutineModule.TryGetSubroutine<Scp3114Slap>(out this._slap);
+		this._slap.OnTriggered += OnSlapTriggered;
+		this.ScpRole.CurIdentity.OnStatusChanged += OnIdentityChanged;
 	}
 
 	public override void OnPlayerMove()
 	{
 		base.OnPlayerMove();
-		_fakeModel.OnPlayerMove();
+		this._fakeModel.OnPlayerMove();
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_hadIdentity = false;
-		_slap.OnTriggered -= OnSlapTriggered;
-		ScpRole.CurIdentity.OnStatusChanged -= OnIdentityChanged;
+		this._hadIdentity = false;
+		this._slap.OnTriggered -= OnSlapTriggered;
+		this.ScpRole.CurIdentity.OnStatusChanged -= OnIdentityChanged;
 	}
 
 	protected override void Update()
@@ -115,12 +115,12 @@ public class Scp3114Model : AnimatedCharacterModel, ISubcontrollerRpcRedirector
 		base.Update();
 		if (!base.Pooled)
 		{
-			bool hasValue = _strangle.SyncTarget.HasValue;
-			base.Animator.SetBool(HashStrangling, hasValue);
-			base.Animator.SetFloat(HashDanceVariant, _dance.DanceVariant);
-			base.Animator.SetBool(HashStealing, ScpRole.CurIdentity.Status == Scp3114Identity.DisguiseStatus.Equipping);
-			AdjustWeight(_strangleLayer, hasValue);
-			AdjustWeight(_danceLayer, _dance.IsDancing);
+			bool hasValue = this._strangle.SyncTarget.HasValue;
+			base.Animator.SetBool(Scp3114Model.HashStrangling, hasValue);
+			base.Animator.SetFloat(Scp3114Model.HashDanceVariant, this._dance.DanceVariant);
+			base.Animator.SetBool(Scp3114Model.HashStealing, this.ScpRole.CurIdentity.Status == Scp3114Identity.DisguiseStatus.Equipping);
+			this.AdjustWeight(this._strangleLayer, hasValue);
+			this.AdjustWeight(this._danceLayer, this._dance.IsDancing);
 		}
 	}
 
@@ -128,25 +128,25 @@ public class Scp3114Model : AnimatedCharacterModel, ISubcontrollerRpcRedirector
 	{
 		int layerIndex = base.LayerManager.GetLayerIndex(layerId);
 		float layerWeight = base.Animator.GetLayerWeight(layerIndex);
-		float num = Time.deltaTime * _layerWeightAdjustSpeed;
+		float num = Time.deltaTime * this._layerWeightAdjustSpeed;
 		float value = (isActive ? (layerWeight + num) : (layerWeight - num));
 		base.Animator.SetLayerWeight(layerIndex, Mathf.Clamp01(value));
 	}
 
 	private void OnIdentityChanged()
 	{
-		_skeletonFormItemRoot.SetActive(ScpRole.SkeletonIdle);
-		switch (ScpRole.CurIdentity.Status)
+		this._skeletonFormItemRoot.SetActive(this.ScpRole.SkeletonIdle);
+		switch (this.ScpRole.CurIdentity.Status)
 		{
 		case Scp3114Identity.DisguiseStatus.Active:
-			_hadIdentity = true;
+			this._hadIdentity = true;
 			break;
 		case Scp3114Identity.DisguiseStatus.None:
-			if (_hadIdentity)
+			if (this._hadIdentity)
 			{
-				_hadIdentity = false;
-				_revealParticles.Play(withChildren: true);
-				base.Animator.SetTrigger(HashReveal);
+				this._hadIdentity = false;
+				this._revealParticles.Play(withChildren: true);
+				base.Animator.SetTrigger(Scp3114Model.HashReveal);
 			}
 			break;
 		}
@@ -154,7 +154,7 @@ public class Scp3114Model : AnimatedCharacterModel, ISubcontrollerRpcRedirector
 
 	private void OnSlapTriggered()
 	{
-		base.Animator.SetBool(HashSlapMirror, !base.Animator.GetBool(HashSlapMirror));
-		base.Animator.SetTrigger(HashSlapTrigger);
+		base.Animator.SetBool(Scp3114Model.HashSlapMirror, !base.Animator.GetBool(Scp3114Model.HashSlapMirror));
+		base.Animator.SetTrigger(Scp3114Model.HashSlapTrigger);
 	}
 }

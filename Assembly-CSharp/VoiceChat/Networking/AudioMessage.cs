@@ -12,8 +12,8 @@ public struct AudioMessage : NetworkMessage
 
 	public AudioMessage(byte controllerId, byte[] data, int dataLen)
 	{
-		ControllerId = controllerId;
-		Data = data;
-		DataLength = dataLen;
+		this.ControllerId = controllerId;
+		this.Data = data;
+		this.DataLength = dataLen;
 	}
 }

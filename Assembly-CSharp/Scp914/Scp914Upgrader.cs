@@ -46,11 +46,11 @@ public static class Scp914Upgrader
 				ItemPickupBase component;
 				if (ReferenceHub.TryGetHub(gameObject, out var hub))
 				{
-					ProcessPlayer(hub, flag, heldOnly, setting);
+					Scp914Upgrader.ProcessPlayer(hub, flag, heldOnly, setting);
 				}
 				else if (gameObject.TryGetComponent<ItemPickupBase>(out component))
 				{
-					ProcessPickup(component, upgradeDropped, setting);
+					Scp914Upgrader.ProcessPickup(component, upgradeDropped, setting);
 				}
 			}
 		}
@@ -59,19 +59,19 @@ public static class Scp914Upgrader
 
 	private static void ProcessPlayer(ReferenceHub ply, bool upgradeInventory, bool heldOnly, Scp914KnobSetting setting)
 	{
-		if (Physics.Linecast(ply.transform.position, Scp914Controller.Singleton.IntakeChamber.position, SolidObjectMask))
+		if (Physics.Linecast(ply.transform.position, Scp914Controller.Singleton.IntakeChamber.position, Scp914Upgrader.SolidObjectMask))
 		{
 			return;
 		}
 		Vector3 newPosition = ply.transform.position + Scp914Controller.MoveVector;
-		Scp914ProcessingPlayerEventArgs scp914ProcessingPlayerEventArgs = new Scp914ProcessingPlayerEventArgs(newPosition, setting, ply);
-		Scp914Events.OnProcessingPlayer(scp914ProcessingPlayerEventArgs);
-		if (!scp914ProcessingPlayerEventArgs.IsAllowed)
+		Scp914ProcessingPlayerEventArgs e = new Scp914ProcessingPlayerEventArgs(newPosition, setting, ply);
+		Scp914Events.OnProcessingPlayer(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
-		setting = scp914ProcessingPlayerEventArgs.KnobSetting;
-		newPosition = scp914ProcessingPlayerEventArgs.NewPosition;
+		setting = e.KnobSetting;
+		newPosition = e.NewPosition;
 		ply.TryOverridePosition(newPosition);
 		if (!upgradeInventory)
 		{
@@ -87,17 +87,17 @@ public static class Scp914Upgrader
 		}
 		foreach (ushort item2 in hashSet)
 		{
-			if (!ply.inventory.UserInventory.Items.TryGetValue(item2, out var value) || !TryGetProcessor(value.ItemTypeId, out var processor))
+			if (!ply.inventory.UserInventory.Items.TryGetValue(item2, out var value) || !Scp914Upgrader.TryGetProcessor(value.ItemTypeId, out var processor))
 			{
 				continue;
 			}
 			ItemType itemTypeId = value.ItemTypeId;
-			Scp914ProcessingInventoryItemEventArgs scp914ProcessingInventoryItemEventArgs = new Scp914ProcessingInventoryItemEventArgs(value, setting, ply);
-			Scp914Events.OnProcessingInventoryItem(scp914ProcessingInventoryItemEventArgs);
-			if (scp914ProcessingInventoryItemEventArgs.IsAllowed)
+			Scp914ProcessingInventoryItemEventArgs e2 = new Scp914ProcessingInventoryItemEventArgs(value, setting, ply);
+			Scp914Events.OnProcessingInventoryItem(e2);
+			if (e2.IsAllowed)
 			{
-				setting = scp914ProcessingInventoryItemEventArgs.KnobSetting;
-				OnInventoryItemUpgraded?.Invoke(value, setting);
+				setting = e2.KnobSetting;
+				Scp914Upgrader.OnInventoryItemUpgraded?.Invoke(value, setting);
 				Scp914Result arg = processor.UpgradeInventoryItem(setting, value);
 				Scp914Upgrader.OnUpgraded?.Invoke(arg, setting);
 				if (arg.ResultingItems == null || !arg.ResultingItems.TryGet(0, out var element))
@@ -117,22 +117,22 @@ public static class Scp914Upgrader
 
 	private static void ProcessPickup(ItemPickupBase pickup, bool upgradeDropped, Scp914KnobSetting setting)
 	{
-		if (!(!pickup.Info.Locked && upgradeDropped) || !TryGetProcessor(pickup.Info.ItemId, out var processor))
+		if (!(!pickup.Info.Locked && upgradeDropped) || !Scp914Upgrader.TryGetProcessor(pickup.Info.ItemId, out var processor))
 		{
 			return;
 		}
 		Vector3 newPosition = pickup.transform.position + Scp914Controller.MoveVector;
 		ItemType itemId = pickup.Info.ItemId;
-		Scp914ProcessingPickupEventArgs scp914ProcessingPickupEventArgs = new Scp914ProcessingPickupEventArgs(newPosition, setting, pickup);
-		Scp914Events.OnProcessingPickup(scp914ProcessingPickupEventArgs);
-		if (scp914ProcessingPickupEventArgs.IsAllowed)
+		Scp914ProcessingPickupEventArgs e = new Scp914ProcessingPickupEventArgs(newPosition, setting, pickup);
+		Scp914Events.OnProcessingPickup(e);
+		if (e.IsAllowed)
 		{
-			newPosition = scp914ProcessingPickupEventArgs.NewPosition;
-			setting = scp914ProcessingPickupEventArgs.KnobSetting;
-			OnPickupUpgraded?.Invoke(pickup, setting);
+			newPosition = e.NewPosition;
+			setting = e.KnobSetting;
+			Scp914Upgrader.OnPickupUpgraded?.Invoke(pickup, setting);
 			Scp914Result arg = processor.UpgradePickup(setting, pickup);
 			Scp914Upgrader.OnUpgraded?.Invoke(arg, setting);
-			if (arg.ResultingPickups == null || arg.ResultingPickups.TryGet(0, out var element))
+			if (arg.ResultingPickups == null || !arg.ResultingPickups.TryGet(0, out var element))
 			{
 				element = null;
 			}

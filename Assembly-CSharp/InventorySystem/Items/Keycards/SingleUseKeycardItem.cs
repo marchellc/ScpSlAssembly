@@ -20,12 +20,12 @@ public class SingleUseKeycardItem : KeycardItem
 
 	public override DoorPermissionFlags GetPermissions(IDoorPermissionRequester requester)
 	{
-		DoorPermissionFlags result = _singleUsePermissions;
-		if (!_allowClosingDoors && requester is DoorVariant { TargetState: not false })
+		DoorPermissionFlags result = this._singleUsePermissions;
+		if (!this._allowClosingDoors && requester is DoorVariant { TargetState: not false })
 		{
 			result = DoorPermissionFlags.None;
 		}
-		if (_destroyed || requester == null || !requester.PermissionsPolicy.CheckPermissions(_singleUsePermissions))
+		if (this._destroyed || requester == null || !requester.PermissionsPolicy.CheckPermissions(this._singleUsePermissions))
 		{
 			result = DoorPermissionFlags.None;
 		}
@@ -35,10 +35,10 @@ public class SingleUseKeycardItem : KeycardItem
 	public override void AlwaysUpdate()
 	{
 		base.AlwaysUpdate();
-		if (NetworkServer.active && _destroyed)
+		if (NetworkServer.active && this._destroyed)
 		{
-			_timeToDestroy -= Time.deltaTime;
-			if (_timeToDestroy <= 0f || !base.IsEquipped)
+			this._timeToDestroy -= Time.deltaTime;
+			if (this._timeToDestroy <= 0f || !base.IsEquipped)
 			{
 				base.OwnerInventory.ServerRemoveItem(base.ItemSerial, null);
 			}
@@ -50,13 +50,13 @@ public class SingleUseKeycardItem : KeycardItem
 		base.OnUsed(requester, success);
 		if (success)
 		{
-			_destroyed = true;
+			this._destroyed = true;
 		}
 	}
 
 	public override ItemPickupBase ServerDropItem(bool spawn)
 	{
-		if (_destroyed)
+		if (this._destroyed)
 		{
 			base.OwnerInventory.ServerRemoveItem(base.ItemSerial, null);
 			return null;

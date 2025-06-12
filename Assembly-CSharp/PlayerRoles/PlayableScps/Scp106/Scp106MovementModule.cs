@@ -38,19 +38,19 @@ public class Scp106MovementModule : FirstPersonMovementModule, IFpcCollisionModi
 	{
 		get
 		{
-			return WalkSpeed;
+			return base.WalkSpeed;
 		}
 		set
 		{
-			SneakSpeed = value;
-			WalkSpeed = value;
-			SprintSpeed = value;
+			base.SneakSpeed = value;
+			base.WalkSpeed = value;
+			base.SprintSpeed = value;
 		}
 	}
 
 	public float CurSlowdown { get; private set; }
 
-	public LayerMask DetectionMask => PassableDetectionMask;
+	public LayerMask DetectionMask => Scp106MovementModule.PassableDetectionMask;
 
 	public static float GetSlowdownFromCollider(Collider col, out bool isPassable)
 	{
@@ -79,31 +79,31 @@ public class Scp106MovementModule : FirstPersonMovementModule, IFpcCollisionModi
 
 	private void Awake()
 	{
-		_slowndownSpeed = SneakSpeed;
-		_normalSpeed = WalkSpeed;
-		MovementSpeed = _normalSpeed;
+		this._slowndownSpeed = base.SneakSpeed;
+		this._normalSpeed = base.WalkSpeed;
+		this.MovementSpeed = this._normalSpeed;
 	}
 
 	private void Update()
 	{
 		float deltaTime = Time.deltaTime;
-		CurSlowdown = Mathf.MoveTowards(CurSlowdown, _slowndownTarget, deltaTime * 5.5f);
+		this.CurSlowdown = Mathf.MoveTowards(this.CurSlowdown, this._slowndownTarget, deltaTime * 5.5f);
 		float num;
-		if (_sinkhole.IsDuringAnimation)
+		if (this._sinkhole.IsDuringAnimation)
 		{
-			num = Mathf.Lerp(MovementSpeed, 0f, 1.5f * deltaTime);
+			num = Mathf.Lerp(this.MovementSpeed, 0f, 1.5f * deltaTime);
 		}
 		else
 		{
-			float num2 = Mathf.Lerp(_normalSpeed, _slowndownSpeed, CurSlowdown);
-			num = (_sinkhole.TargetSubmerged ? _stalkSpeed : num2);
+			float num2 = Mathf.Lerp(this._normalSpeed, this._slowndownSpeed, this.CurSlowdown);
+			num = (this._sinkhole.TargetSubmerged ? this._stalkSpeed : num2);
 		}
-		if (_remainingSpeedBoostDuration > 0f)
+		if (this._remainingSpeedBoostDuration > 0f)
 		{
-			_remainingSpeedBoostDuration -= deltaTime;
+			this._remainingSpeedBoostDuration -= deltaTime;
 			num *= 1.2f;
 		}
-		MovementSpeed = num;
+		this.MovementSpeed = num;
 	}
 
 	public override void SpawnObject()
@@ -111,19 +111,19 @@ public class Scp106MovementModule : FirstPersonMovementModule, IFpcCollisionModi
 		base.SpawnObject();
 		Scp106Role scp106Role = base.Role as Scp106Role;
 		FpcCollisionProcessor.AddModifier(this, scp106Role);
-		_sinkhole = scp106Role.Sinkhole;
+		this._sinkhole = scp106Role.Sinkhole;
 		Scp106SinkholeController.OnSubmergeStateChange += GrantSpeedBoost;
 	}
 
 	public void ProcessColliders(ArraySegment<Collider> detections)
 	{
-		_slowndownTarget = (_sinkhole.TargetSubmerged ? 1 : 0);
+		this._slowndownTarget = (this._sinkhole.TargetSubmerged ? 1 : 0);
 		foreach (Collider item in detections)
 		{
 			bool isPassable;
-			float slowdownFromCollider = GetSlowdownFromCollider(item, out isPassable);
+			float slowdownFromCollider = Scp106MovementModule.GetSlowdownFromCollider(item, out isPassable);
 			item.enabled = slowdownFromCollider == 0f;
-			_slowndownTarget = Mathf.Max(_slowndownTarget, slowdownFromCollider);
+			this._slowndownTarget = Mathf.Max(this._slowndownTarget, slowdownFromCollider);
 		}
 	}
 
@@ -131,7 +131,7 @@ public class Scp106MovementModule : FirstPersonMovementModule, IFpcCollisionModi
 	{
 		if (!isSubmerged && !(base.Role != scp106role))
 		{
-			_remainingSpeedBoostDuration = scp106role.Sinkhole.TargetTransitionDuration + 5f;
+			this._remainingSpeedBoostDuration = scp106role.Sinkhole.TargetTransitionDuration + 5f;
 		}
 	}
 }

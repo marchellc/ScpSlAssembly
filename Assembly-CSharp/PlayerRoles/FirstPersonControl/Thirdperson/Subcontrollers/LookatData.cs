@@ -24,11 +24,12 @@ public struct LookatData
 		{
 			return target;
 		}
-		LookatData result = default(LookatData);
-		result.LookDir = Vector3.Slerp(LookDir, target.LookDir, weight);
-		result.GlobalWeight = Mathf.Lerp(GlobalWeight, target.GlobalWeight, weight);
-		result.BodyWeight = Mathf.Lerp(BodyWeight, target.BodyWeight, weight);
-		result.HeadWeight = Mathf.Lerp(HeadWeight, target.HeadWeight, weight);
-		return result;
+		return new LookatData
+		{
+			LookDir = Vector3.Slerp(this.LookDir, target.LookDir, weight),
+			GlobalWeight = Mathf.Lerp(this.GlobalWeight, target.GlobalWeight, weight),
+			BodyWeight = Mathf.Lerp(this.BodyWeight, target.BodyWeight, weight),
+			HeadWeight = Mathf.Lerp(this.HeadWeight, target.HeadWeight, weight)
+		};
 	}
 }

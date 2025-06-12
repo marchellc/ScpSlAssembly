@@ -26,15 +26,15 @@ public static class NonParameterFormatter
 				break;
 			}
 		}
-		pros += FormatFlags((int)attachment.DescriptivePros, typeof(AttachmentDescriptiveAdvantages), "AttachmentDescriptiveAdvantages");
-		cons += FormatFlags((int)attachment.DescriptiveCons, typeof(AttachmentDescriptiveDownsides), "AttachmentDescriptiveDownsides");
+		pros += NonParameterFormatter.FormatFlags((int)attachment.DescriptivePros, typeof(AttachmentDescriptiveAdvantages), "AttachmentDescriptiveAdvantages");
+		cons += NonParameterFormatter.FormatFlags((int)attachment.DescriptiveCons, typeof(AttachmentDescriptiveDownsides), "AttachmentDescriptiveDownsides");
 		if (num != attachmentId)
 		{
 			fa.GetDefaultLengthAndWeight(out var length, out var weight);
 			float num2 = (attachment.Length - fa.Attachments[num].Length + length) / length;
 			float num3 = (attachment.Weight - fa.Attachments[num].Weight + weight) / weight;
-			string text = LengthString + FormatPercent(num2);
-			string text2 = WeightString + FormatPercent(num3);
+			string text = NonParameterFormatter.LengthString + NonParameterFormatter.FormatPercent(num2);
+			string text2 = NonParameterFormatter.WeightString + NonParameterFormatter.FormatPercent(num3);
 			if (num2 > 1f)
 			{
 				cons += text;

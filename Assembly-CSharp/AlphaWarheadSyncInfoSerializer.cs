@@ -15,19 +15,20 @@ public static class AlphaWarheadSyncInfoSerializer
 	public static AlphaWarheadSyncInfo ReadAlphaWarheadSyncInfo(this NetworkReader reader)
 	{
 		double num = reader.ReadDouble();
-		AlphaWarheadSyncInfo result;
 		if (num == 0.0)
 		{
-			result = default(AlphaWarheadSyncInfo);
-			result.StartTime = 0.0;
-			return result;
+			return new AlphaWarheadSyncInfo
+			{
+				StartTime = 0.0
+			};
 		}
 		byte scenarioId = reader.ReadByte();
 		byte scenarioType = reader.ReadByte();
-		result = default(AlphaWarheadSyncInfo);
-		result.ScenarioId = scenarioId;
-		result.ScenarioType = (WarheadScenarioType)scenarioType;
-		result.StartTime = num;
-		return result;
+		return new AlphaWarheadSyncInfo
+		{
+			ScenarioId = scenarioId,
+			ScenarioType = (WarheadScenarioType)scenarioType,
+			StartTime = num
+		};
 	}
 }

@@ -84,11 +84,11 @@ public class InventorySubcontroller : SubcontrollerBehaviour, IPoolResettable, I
 	{
 		get
 		{
-			return _transitionWeight;
+			return this._transitionWeight;
 		}
 		private set
 		{
-			_transitionWeight = Mathf.Clamp01(value);
+			this._transitionWeight = Mathf.Clamp01(value);
 		}
 	}
 
@@ -96,15 +96,15 @@ public class InventorySubcontroller : SubcontrollerBehaviour, IPoolResettable, I
 
 	private void OnAnimatorIK(int layerIndex)
 	{
-		if (!base.Culled && TryGetCurrentInstance(out var instance))
+		if (!base.Culled && this.TryGetCurrentInstance(out var instance))
 		{
-			instance.OnAnimIK(layerIndex, TransitionWeight);
+			instance.OnAnimIK(layerIndex, this.TransitionWeight);
 		}
 	}
 
 	private void OnFadeChanged()
 	{
-		if (TryGetCurrentInstance(out var instance))
+		if (this.TryGetCurrentInstance(out var instance))
 		{
 			instance.OnFadeChanged(base.Model.Fade);
 		}
@@ -116,30 +116,30 @@ public class InventorySubcontroller : SubcontrollerBehaviour, IPoolResettable, I
 
 	private void ResetThirdpersonItem()
 	{
-		if (_dictionarizedDefaultOverrides == null)
+		if (this._dictionarizedDefaultOverrides == null)
 		{
-			_dictionarizedDefaultOverrides = new Dictionary<AnimationClip, AnimationClip>(_defaultAnimatorOverrides.Length);
-			DefaultAnimatorOverrides[] defaultAnimatorOverrides = _defaultAnimatorOverrides;
+			this._dictionarizedDefaultOverrides = new Dictionary<AnimationClip, AnimationClip>(this._defaultAnimatorOverrides.Length);
+			DefaultAnimatorOverrides[] defaultAnimatorOverrides = this._defaultAnimatorOverrides;
 			for (int i = 0; i < defaultAnimatorOverrides.Length; i++)
 			{
 				DefaultAnimatorOverrides defaultAnimatorOverrides2 = defaultAnimatorOverrides[i];
-				_dictionarizedDefaultOverrides.Add(defaultAnimatorOverrides2.Original, defaultAnimatorOverrides2.Override);
+				this._dictionarizedDefaultOverrides.Add(defaultAnimatorOverrides2.Original, defaultAnimatorOverrides2.Override);
 			}
 		}
-		ThirdpersonItemAnimationManager.ResetOverrides(base.Model, _dictionarizedDefaultOverrides);
+		ThirdpersonItemAnimationManager.ResetOverrides(base.Model, this._dictionarizedDefaultOverrides);
 	}
 
 	private void SwapThirdpersonItem(ItemIdentifier itemId)
 	{
-		ResetThirdpersonItem();
-		if (TryGetCurrentInstance(out var instance))
+		this.ResetThirdpersonItem();
+		if (this.TryGetCurrentInstance(out var instance))
 		{
 			instance.ReturnToPool();
-			_hasThirdpersonInstance = false;
+			this._hasThirdpersonInstance = false;
 		}
-		_transitionStatus = TransitionStatus.EquippingNew;
-		_hasThirdpersonInstance = ThirdpersonItemPoolManager.TryGet(this, itemId, out _lastThirdpersonInstance, PoolHeldItem);
-		OnSwapThirdpersonItem?.Invoke(_lastThirdpersonInstance);
+		this._transitionStatus = TransitionStatus.EquippingNew;
+		this._hasThirdpersonInstance = ThirdpersonItemPoolManager.TryGet(this, itemId, out this._lastThirdpersonInstance, this.PoolHeldItem);
+		InventorySubcontroller.OnSwapThirdpersonItem?.Invoke(this._lastThirdpersonInstance);
 	}
 
 	private float GetTransitionTime(ItemIdentifier itemId)
@@ -157,36 +157,36 @@ public class InventorySubcontroller : SubcontrollerBehaviour, IPoolResettable, I
 
 	private void UpdateLayerWeights()
 	{
-		float num = Mathf.SmoothStep(0f, 1f, TransitionWeight);
-		float num2 = (_hasThirdpersonInstance ? num : 0f);
+		float num = Mathf.SmoothStep(0f, 1f, this.TransitionWeight);
+		float num2 = (this._hasThirdpersonInstance ? num : 0f);
 		float walkLayerWeight = base.Model.WalkLayerWeight;
-		ItemLayerLink[] itemLayers = _itemLayers;
+		ItemLayerLink[] itemLayers = this._itemLayers;
 		foreach (ItemLayerLink itemLayerLink in itemLayers)
 		{
 			float num3 = num;
-			if (TryGetCurrentInstance(out var instance))
+			if (this.TryGetCurrentInstance(out var instance))
 			{
 				num3 *= instance.GetWeightForLayer(itemLayerLink.Layer3p).Weight;
 			}
 			int layerIndex = itemLayerLink.GetLayerIndex(base.Model);
 			base.Animator.SetLayerWeight(layerIndex, num3);
 		}
-		base.Animator.SetLayerWeight(_movementOverrideLayerIndex, walkLayerWeight * num2);
-		base.Animator.SetLayerWeight(_itemIdleLayerIndex, num2);
-		base.Animator.SetLayerWeight(_regularIdleLayerIndex, 1f - num2);
+		base.Animator.SetLayerWeight(this._movementOverrideLayerIndex, walkLayerWeight * num2);
+		base.Animator.SetLayerWeight(this._itemIdleLayerIndex, num2);
+		base.Animator.SetLayerWeight(this._regularIdleLayerIndex, 1f - num2);
 	}
 
 	private void UpdateCuffWeight()
 	{
-		if (_cuffedOverrideLayerIndex.HasValue)
+		if (this._cuffedOverrideLayerIndex.HasValue)
 		{
 			float target = (base.OwnerHub.inventory.IsDisarmed() ? 1 : 0);
-			float maxDelta = Time.deltaTime * _cuffedAdjustSpeed;
-			float num = Mathf.MoveTowards(_prevCuffWeight, target, maxDelta);
-			if (num != _prevCuffWeight)
+			float maxDelta = Time.deltaTime * this._cuffedAdjustSpeed;
+			float num = Mathf.MoveTowards(this._prevCuffWeight, target, maxDelta);
+			if (num != this._prevCuffWeight)
 			{
-				base.Animator.SetLayerWeight(_cuffedOverrideLayerIndex.Value, num);
-				_prevCuffWeight = num;
+				base.Animator.SetLayerWeight(this._cuffedOverrideLayerIndex.Value, num);
+				this._prevCuffWeight = num;
 			}
 		}
 	}
@@ -195,42 +195,42 @@ public class InventorySubcontroller : SubcontrollerBehaviour, IPoolResettable, I
 	{
 		base.Init(model, index);
 		Transform boneTransform = model.Animator.GetBoneTransform(HumanBodyBones.RightHand);
-		ItemSpawnpoint = new GameObject().transform;
-		ItemSpawnpoint.SetParent(boneTransform, worldPositionStays: true);
-		ItemSpawnpoint.ResetLocalPose();
-		_weightAdjustSpeed = 1f;
+		this.ItemSpawnpoint = new GameObject().transform;
+		this.ItemSpawnpoint.SetParent(boneTransform, worldPositionStays: true);
+		this.ItemSpawnpoint.ResetLocalPose();
+		this._weightAdjustSpeed = 1f;
 		model.OnFadeChanged += OnFadeChanged;
 		model.OnVisibilityChanged += OnVisibilityChanged;
-		CacheLayerIndexes();
+		this.CacheLayerIndexes();
 	}
 
 	private void CacheLayerIndexes()
 	{
 		AnimatorLayerManager layerManager = base.Model.LayerManager;
-		_itemIdleLayerIndex = layerManager.GetLayerIndex(_itemIdleLayer);
-		_regularIdleLayerIndex = layerManager.GetLayerIndex(_regularIdleLayer);
-		_movementOverrideLayerIndex = layerManager.GetLayerIndex(_movementOverrideLayer);
-		_cuffedOverrideLayerIndex = ((_cuffedAdjustSpeed > 0f) ? new int?(layerManager.GetLayerIndex(_cuffedOverrideLayer)) : ((int?)null));
+		this._itemIdleLayerIndex = layerManager.GetLayerIndex(this._itemIdleLayer);
+		this._regularIdleLayerIndex = layerManager.GetLayerIndex(this._regularIdleLayer);
+		this._movementOverrideLayerIndex = layerManager.GetLayerIndex(this._movementOverrideLayer);
+		this._cuffedOverrideLayerIndex = ((this._cuffedAdjustSpeed > 0f) ? new int?(layerManager.GetLayerIndex(this._cuffedOverrideLayer)) : ((int?)null));
 	}
 
 	private void Update()
 	{
 		if (!base.Model.Pooled && !base.OwnerHub.isLocalPlayer)
 		{
-			UpdateHeldItem(base.OwnerHub.inventory.CurItem);
-			UpdateCuffWeight();
+			this.UpdateHeldItem(base.OwnerHub.inventory.CurItem);
+			this.UpdateCuffWeight();
 		}
 	}
 
 	public bool TryGetCurrentInstance(out ThirdpersonItemBase instance)
 	{
-		instance = _lastThirdpersonInstance;
-		return _hasThirdpersonInstance;
+		instance = this._lastThirdpersonInstance;
+		return this._hasThirdpersonInstance;
 	}
 
 	public bool TryGetCurrentInstance<T>(out T instance)
 	{
-		if (TryGetCurrentInstance(out var instance2) && instance2 is T val)
+		if (this.TryGetCurrentInstance(out var instance2) && instance2 is T val)
 		{
 			instance = val;
 			return true;
@@ -241,68 +241,68 @@ public class InventorySubcontroller : SubcontrollerBehaviour, IPoolResettable, I
 
 	public void ResetObject()
 	{
-		_prevItem = ItemIdentifier.None;
-		_prevCuffWeight = 0f;
-		ResetThirdpersonItem();
-		if (TryGetCurrentInstance(out var instance))
+		this._prevItem = ItemIdentifier.None;
+		this._prevCuffWeight = 0f;
+		this.ResetThirdpersonItem();
+		if (this.TryGetCurrentInstance(out var instance))
 		{
 			instance.ReturnToPool();
-			_hasThirdpersonInstance = false;
+			this._hasThirdpersonInstance = false;
 		}
 	}
 
 	public void UpdateHeldItem(ItemIdentifier itemId, bool instant = false)
 	{
-		if (_prevItem != itemId)
+		if (this._prevItem != itemId)
 		{
-			_prevItem = itemId;
-			_transitionStatus = TransitionStatus.RetractingPrevious;
-			_weightAdjustSpeed = 2f / GetTransitionTime(itemId);
+			this._prevItem = itemId;
+			this._transitionStatus = TransitionStatus.RetractingPrevious;
+			this._weightAdjustSpeed = 2f / this.GetTransitionTime(itemId);
 			if (instant)
 			{
-				SwapThirdpersonItem(itemId);
-				TransitionWeight = 1f;
+				this.SwapThirdpersonItem(itemId);
+				this.TransitionWeight = 1f;
 				return;
 			}
 		}
-		switch (_transitionStatus)
+		switch (this._transitionStatus)
 		{
 		case TransitionStatus.RetractingPrevious:
-			TransitionWeight -= Time.deltaTime * _weightAdjustSpeed;
-			if (TransitionWeight <= 0f)
+			this.TransitionWeight -= Time.deltaTime * this._weightAdjustSpeed;
+			if (this.TransitionWeight <= 0f)
 			{
-				SwapThirdpersonItem(itemId);
+				this.SwapThirdpersonItem(itemId);
 			}
 			break;
 		case TransitionStatus.EquippingNew:
-			TransitionWeight += Time.deltaTime * _weightAdjustSpeed;
-			if (TransitionWeight >= 1f)
+			this.TransitionWeight += Time.deltaTime * this._weightAdjustSpeed;
+			if (this.TransitionWeight >= 1f)
 			{
-				_transitionStatus = TransitionStatus.Done;
+				this._transitionStatus = TransitionStatus.Done;
 			}
 			break;
 		}
-		UpdateLayerWeights();
+		this.UpdateLayerWeights();
 		this.OnHeldItemUpdated?.Invoke();
 	}
 
 	public LookatData ProcessLookat(LookatData original)
 	{
-		if (!TryGetCurrentInstance(out ILookatModifier instance))
+		if (!this.TryGetCurrentInstance(out ILookatModifier instance))
 		{
 			return original;
 		}
 		LookatData target = instance.ProcessLookat(original);
-		return original.LerpTo(target, TransitionWeight);
+		return original.LerpTo(target, this.TransitionWeight);
 	}
 
 	public HandPoseData ProcessHandPose(HandPoseData original)
 	{
-		if (!TryGetCurrentInstance(out IHandPoseModifier instance))
+		if (!this.TryGetCurrentInstance(out IHandPoseModifier instance))
 		{
 			return original;
 		}
 		HandPoseData target = instance.ProcessHandPose(original);
-		return original.LerpTo(target, TransitionWeight);
+		return original.LerpTo(target, this.TransitionWeight);
 	}
 }

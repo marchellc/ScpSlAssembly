@@ -16,24 +16,24 @@ public class Scanned : StatusEffectBase, ISoundtrackMutingEffect
 	protected override void Enabled()
 	{
 		base.Enabled();
-		UpdateSourceMute();
-		_soundSource.Play();
+		this.UpdateSourceMute();
+		this._soundSource.Play();
 	}
 
 	protected override void Disabled()
 	{
 		base.Disabled();
-		_soundSource.mute = true;
+		this._soundSource.mute = true;
 	}
 
 	protected override void OnEffectUpdate()
 	{
 		base.OnEffectUpdate();
-		UpdateSourceMute();
+		this.UpdateSourceMute();
 	}
 
 	private void UpdateSourceMute()
 	{
-		_soundSource.mute = !base.IsLocalPlayer && !base.IsSpectated;
+		this._soundSource.mute = !base.IsLocalPlayer && !base.IsSpectated;
 	}
 }

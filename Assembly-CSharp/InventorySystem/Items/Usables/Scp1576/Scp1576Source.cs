@@ -22,12 +22,12 @@ public class Scp1576Source : MonoBehaviour
 	{
 		get
 		{
-			if (!_positionUpToDate)
+			if (!this._positionUpToDate)
 			{
-				_lastPos = CachedTransform.position;
-				_positionUpToDate = true;
+				this._lastPos = this.CachedTransform.position;
+				this._positionUpToDate = true;
 			}
-			return _lastPos;
+			return this._lastPos;
 		}
 	}
 
@@ -38,29 +38,29 @@ public class Scp1576Source : MonoBehaviour
 	{
 		get
 		{
-			if (!_transformCacheSet)
+			if (!this._transformCacheSet)
 			{
-				_cachedTransform = base.transform;
-				_transformCacheSet = true;
+				this._cachedTransform = base.transform;
+				this._transformCacheSet = true;
 			}
-			return _cachedTransform;
+			return this._cachedTransform;
 		}
 	}
 
 	private void Update()
 	{
-		_positionUpToDate = false;
+		this._positionUpToDate = false;
 	}
 
 	private void OnEnable()
 	{
-		Instances.Add(this);
+		Scp1576Source.Instances.Add(this);
 	}
 
 	private void OnDisable()
 	{
-		OnRemoved?.Invoke(this);
-		Instances.Remove(this);
+		Scp1576Source.OnRemoved?.Invoke(this);
+		Scp1576Source.Instances.Remove(this);
 	}
 
 	public override int GetHashCode()

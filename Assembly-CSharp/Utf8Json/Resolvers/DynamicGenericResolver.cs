@@ -10,7 +10,7 @@ public sealed class DynamicGenericResolver : IJsonFormatterResolver
 
 		static FormatterCache()
 		{
-			formatter = (IJsonFormatter<T>)DynamicGenericResolverGetFormatterHelper.GetFormatter(typeof(T));
+			FormatterCache<T>.formatter = (IJsonFormatter<T>)DynamicGenericResolverGetFormatterHelper.GetFormatter(typeof(T));
 		}
 	}
 

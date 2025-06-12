@@ -17,14 +17,14 @@ public abstract class DynamicCompositeResolver : IJsonFormatterResolver
 
 	static DynamicCompositeResolver()
 	{
-		assembly = new DynamicAssembly("Utf8Json.Resolvers.DynamicCompositeResolver");
+		DynamicCompositeResolver.assembly = new DynamicAssembly("Utf8Json.Resolvers.DynamicCompositeResolver");
 	}
 
 	public static IJsonFormatterResolver Create(IJsonFormatter[] formatters, IJsonFormatterResolver[] resolvers)
 	{
 		string text = Guid.NewGuid().ToString().Replace("-", "");
-		TypeBuilder typeBuilder = assembly.DefineType("DynamicCompositeResolver_" + text, TypeAttributes.Public | TypeAttributes.Sealed, typeof(DynamicCompositeResolver));
-		TypeBuilder typeBuilder2 = assembly.DefineType("DynamicCompositeResolverCache_" + text, TypeAttributes.Public | TypeAttributes.Sealed, null);
+		TypeBuilder typeBuilder = DynamicCompositeResolver.assembly.DefineType("DynamicCompositeResolver_" + text, TypeAttributes.Public | TypeAttributes.Sealed, typeof(DynamicCompositeResolver));
+		TypeBuilder typeBuilder2 = DynamicCompositeResolver.assembly.DefineType("DynamicCompositeResolverCache_" + text, TypeAttributes.Public | TypeAttributes.Sealed, null);
 		GenericTypeParameterBuilder genericTypeParameterBuilder = typeBuilder2.DefineGenericParameters("T")[0];
 		FieldBuilder fieldInfo = typeBuilder.DefineField("instance", typeBuilder, FieldAttributes.Public | FieldAttributes.Static);
 		FieldBuilder field = typeBuilder2.DefineField("formatter", typeof(IJsonFormatter<>).MakeGenericType(genericTypeParameterBuilder), FieldAttributes.Public | FieldAttributes.Static);
@@ -64,7 +64,7 @@ public abstract class DynamicCompositeResolver : IJsonFormatterResolver
 
 	public IJsonFormatter<T> GetFormatterLoop<T>()
 	{
-		IJsonFormatter[] array = formatters;
+		IJsonFormatter[] array = this.formatters;
 		foreach (IJsonFormatter jsonFormatter in array)
 		{
 			foreach (Type implementedInterface in jsonFormatter.GetType().GetTypeInfo().ImplementedInterfaces)
@@ -76,7 +76,7 @@ public abstract class DynamicCompositeResolver : IJsonFormatterResolver
 				}
 			}
 		}
-		IJsonFormatterResolver[] array2 = resolvers;
+		IJsonFormatterResolver[] array2 = this.resolvers;
 		for (int i = 0; i < array2.Length; i++)
 		{
 			IJsonFormatter<T> formatter = array2[i].GetFormatter<T>();

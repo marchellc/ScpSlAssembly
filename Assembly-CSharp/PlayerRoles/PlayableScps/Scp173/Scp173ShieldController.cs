@@ -9,7 +9,7 @@ public class Scp173ShieldController : DynamicHumeShieldController
 		get
 		{
 			float num = base.HsRegeneration * 0.01f;
-			return HsMax * num;
+			return this.HsMax * num;
 		}
 	}
 }

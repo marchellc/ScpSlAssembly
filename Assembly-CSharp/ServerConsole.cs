@@ -106,9 +106,9 @@ public class ServerConsole : MonoBehaviour, IDisposable
 	{
 		get
 		{
-			if (PortOverride != 0)
+			if (ServerConsole.PortOverride != 0)
 			{
-				return PortOverride;
+				return ServerConsole.PortOverride;
 			}
 			return LiteNetLib4MirrorTransport.Singleton.port;
 		}
@@ -116,32 +116,32 @@ public class ServerConsole : MonoBehaviour, IDisposable
 
 	public static void ReloadServerName()
 	{
-		ServerName = ConfigFile.ServerConfig.GetString("server_name", "My Server Name");
+		ServerConsole.ServerName = ConfigFile.ServerConfig.GetString("server_name", "My Server Name");
 	}
 
 	public void Dispose()
 	{
-		_disposing = true;
+		ServerConsole._disposing = true;
 		ServerStatic.ServerOutput?.Dispose();
-		if (_checkProcessThread != null && _checkProcessThread.IsAlive)
+		if (ServerConsole._checkProcessThread != null && ServerConsole._checkProcessThread.IsAlive)
 		{
-			_checkProcessThread.Abort();
+			ServerConsole._checkProcessThread.Abort();
 		}
-		if (_verificationRequestThread != null && _verificationRequestThread.IsAlive)
+		if (ServerConsole._verificationRequestThread != null && ServerConsole._verificationRequestThread.IsAlive)
 		{
-			_verificationRequestThread.Abort();
+			ServerConsole._verificationRequestThread.Abort();
 		}
-		if (_refreshPublicKeyThread != null && _refreshPublicKeyThread.IsAlive)
+		if (ServerConsole._refreshPublicKeyThread != null && ServerConsole._refreshPublicKeyThread.IsAlive)
 		{
-			_refreshPublicKeyThread.Abort();
+			ServerConsole._refreshPublicKeyThread.Abort();
 		}
-		if (_refreshPublicKeyOnceThread != null && _refreshPublicKeyOnceThread.IsAlive)
+		if (ServerConsole._refreshPublicKeyOnceThread != null && ServerConsole._refreshPublicKeyOnceThread.IsAlive)
 		{
-			_refreshPublicKeyOnceThread.Abort();
+			ServerConsole._refreshPublicKeyOnceThread.Abort();
 		}
-		if (_verificationRequestThread != null && _verificationRequestThread.IsAlive)
+		if (ServerConsole._verificationRequestThread != null && ServerConsole._verificationRequestThread.IsAlive)
 		{
-			_verificationRequestThread.Abort();
+			ServerConsole._verificationRequestThread.Abort();
 		}
 	}
 
@@ -150,7 +150,7 @@ public class ServerConsole : MonoBehaviour, IDisposable
 
 	private static void CheckRoot()
 	{
-		if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && GetUserId() == 0)
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && ServerConsole.GetUserId() == 0)
 		{
 			GameCore.Console.AddLog("Running the game as ROOT is NOT recommended, please create a separate user!", Color.red);
 		}
@@ -158,8 +158,8 @@ public class ServerConsole : MonoBehaviour, IDisposable
 
 	private void Start()
 	{
-		CheckRoot();
-		NameFormatter = new InterpolatedCommandFormatter
+		ServerConsole.CheckRoot();
+		this.NameFormatter = new InterpolatedCommandFormatter
 		{
 			StartClosure = '{',
 			EndClosure = '}',
@@ -169,7 +169,7 @@ public class ServerConsole : MonoBehaviour, IDisposable
 			{
 				{
 					"ip",
-					(List<string> args) => Ip
+					(List<string> args) => ServerConsole.Ip
 				},
 				{
 					"port",
@@ -195,7 +195,7 @@ public class ServerConsole : MonoBehaviour, IDisposable
 						return (playerCount == CustomNetworkManager.TypedSingleton.ReservedMaxPlayers) ? (args.Count switch
 						{
 							1 => "FULL", 
-							2 => NameFormatter.ProcessExpression(args[1]), 
+							2 => this.NameFormatter.ProcessExpression(args[1]), 
 							_ => throw new ArgumentOutOfRangeException("args", args, "Invalid arguments. Use: full_player_count OR full_player_count,[full]"), 
 						}) : $"{playerCount}/{CustomNetworkManager.TypedSingleton.ReservedMaxPlayers}";
 					}
@@ -214,7 +214,7 @@ public class ServerConsole : MonoBehaviour, IDisposable
 				},
 				{
 					"kills",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => RoundSummary.Kills.ToString(), intValue: true)
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => RoundSummary.Kills.ToString(), intValue: true)
 				},
 				{
 					"alive_role",
@@ -224,11 +224,11 @@ public class ServerConsole : MonoBehaviour, IDisposable
 						{
 							throw new CommandInputException("args", args, "Invalid arguments. Use: alive_role,[role ID]");
 						}
-						if (!Enum.TryParse<RoleTypeId>(NameFormatter.ProcessExpression(args[1]), out var role))
+						if (!Enum.TryParse<RoleTypeId>(this.NameFormatter.ProcessExpression(args[1]), out var role))
 						{
 							throw new CommandInputException("role ID", args[1], "Could not parse.");
 						}
-						return GetRoundInfo((RoundSummary s) => s.CountRole(role).ToString(), intValue: true);
+						return ServerConsole.GetRoundInfo((RoundSummary s) => s.CountRole(role).ToString(), intValue: true);
 					}
 				},
 				{
@@ -239,67 +239,67 @@ public class ServerConsole : MonoBehaviour, IDisposable
 						{
 							throw new CommandInputException("args", args, "Invalid arguments. Use: alive_team,[team ID]");
 						}
-						if (!Enum.TryParse<Team>(NameFormatter.ProcessExpression(args[1]), out var team))
+						if (!Enum.TryParse<Team>(this.NameFormatter.ProcessExpression(args[1]), out var team))
 						{
 							throw new CommandInputException("team ID", args[1], "Could not parse.");
 						}
-						return GetRoundInfo((RoundSummary s) => s.CountTeam(team).ToString(), intValue: true);
+						return ServerConsole.GetRoundInfo((RoundSummary s) => s.CountTeam(team).ToString(), intValue: true);
 					}
 				},
 				{
 					"zombies_recalled",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => RoundSummary.ChangedIntoZombies.ToString(), intValue: true)
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => RoundSummary.ChangedIntoZombies.ToString(), intValue: true)
 				},
 				{
 					"scp_counter",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => $"{summary.CountTeam(Team.SCPs) - summary.CountRole(RoleTypeId.Scp0492)}/{summary.classlistStart.scps_except_zombies}")
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => $"{summary.CountTeam(Team.SCPs) - summary.CountRole(RoleTypeId.Scp0492)}/{summary.classlistStart.scps_except_zombies}")
 				},
 				{
 					"scp_start",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => summary.classlistStart.scps_except_zombies.ToString(), intValue: true)
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => summary.classlistStart.scps_except_zombies.ToString(), intValue: true)
 				},
 				{
 					"scp_killed",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => (summary.classlistStart.scps_except_zombies - summary.CountTeam(Team.SCPs) - summary.CountRole(RoleTypeId.Scp0492)).ToString(), intValue: true)
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => (summary.classlistStart.scps_except_zombies - summary.CountTeam(Team.SCPs) - summary.CountRole(RoleTypeId.Scp0492)).ToString(), intValue: true)
 				},
 				{
 					"scp_kills",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => RoundSummary.KilledBySCPs.ToString(), intValue: true)
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => RoundSummary.KilledBySCPs.ToString(), intValue: true)
 				},
 				{
 					"classd_counter",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => $"{RoundSummary.EscapedClassD}/{summary.classlistStart.class_ds}", intValue: true)
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => $"{RoundSummary.EscapedClassD}/{summary.classlistStart.class_ds}", intValue: true)
 				},
 				{
 					"classd_start",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => summary.classlistStart.class_ds.ToString(), intValue: true)
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => summary.classlistStart.class_ds.ToString(), intValue: true)
 				},
 				{
 					"classd_escaped",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => RoundSummary.EscapedClassD.ToString(), intValue: true)
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => RoundSummary.EscapedClassD.ToString(), intValue: true)
 				},
 				{
 					"scientist_counter",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => $"{RoundSummary.EscapedScientists}/{summary.classlistStart.scientists}")
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => $"{RoundSummary.EscapedScientists}/{summary.classlistStart.scientists}")
 				},
 				{
 					"scientist_start",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => summary.classlistStart.scientists.ToString(), intValue: true)
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => summary.classlistStart.scientists.ToString(), intValue: true)
 				},
 				{
 					"scientist_escaped",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => RoundSummary.EscapedScientists.ToString(), intValue: true)
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => RoundSummary.EscapedScientists.ToString(), intValue: true)
 				},
 				{
 					"mtf_respawns",
-					(List<string> args) => GetRoundInfo((RoundSummary summary) => (NamingRulesManager.GeneratedNames.TryGetValue(Team.FoundationForces, out var value) ? (value.Count - 1) : 0).ToString(), intValue: true)
+					(List<string> args) => ServerConsole.GetRoundInfo((RoundSummary summary) => (NamingRulesManager.GeneratedNames.TryGetValue(Team.FoundationForces, out var value) ? (value.Count - 1) : 0).ToString(), intValue: true)
 				},
 				{
 					"warhead_detonated",
 					(List<string> args) => args.Count switch
 					{
-						1 => GetRoundInfo((RoundSummary s) => (!AlphaWarheadController.Detonated) ? string.Empty : "☢ WARHEAD DETONATED ☢"), 
-						3 => GetRoundInfo((RoundSummary s) => NameFormatter.ProcessExpression(args[AlphaWarheadController.Detonated ? 1 : 2])), 
+						1 => ServerConsole.GetRoundInfo((RoundSummary s) => (!AlphaWarheadController.Detonated) ? string.Empty : "☢ WARHEAD DETONATED ☢"), 
+						3 => ServerConsole.GetRoundInfo((RoundSummary s) => this.NameFormatter.ProcessExpression(args[AlphaWarheadController.Detonated ? 1 : 2])), 
 						_ => throw new CommandInputException("args", args, "Invalid arguments. Use: warhead_detonated OR warhead_detonated,[detonated],[undetonated]"), 
 					}
 				},
@@ -314,7 +314,7 @@ public class ServerConsole : MonoBehaviour, IDisposable
 						case 2:
 						{
 							result = 0f;
-							string text2 = NameFormatter.ProcessExpression(args[1]);
+							string text2 = this.NameFormatter.ProcessExpression(args[1]);
 							if (!float.TryParse(text2, out result2))
 							{
 								throw new CommandInputException("max", text2, "Could not parse.");
@@ -323,12 +323,12 @@ public class ServerConsole : MonoBehaviour, IDisposable
 						}
 						case 3:
 						{
-							string text = NameFormatter.ProcessExpression(args[1]);
+							string text = this.NameFormatter.ProcessExpression(args[1]);
 							if (!float.TryParse(text, out result))
 							{
 								throw new CommandInputException("min", text, "Could not parse.");
 							}
-							string text2 = NameFormatter.ProcessExpression(args[2]);
+							string text2 = this.NameFormatter.ProcessExpression(args[2]);
 							if (!float.TryParse(text2, out result2))
 							{
 								throw new CommandInputException("max", text2, "Could not parse.");
@@ -349,7 +349,7 @@ public class ServerConsole : MonoBehaviour, IDisposable
 						{
 							throw new CommandInputException("args", args, "Invalid arguments. Use: random_list,[entry 1],[entry 2]...");
 						}
-						return NameFormatter.ProcessExpression(args[UnityEngine.Random.Range(1, args.Count)]);
+						return this.NameFormatter.ProcessExpression(args[UnityEngine.Random.Range(1, args.Count)]);
 					}
 				},
 				{
@@ -362,60 +362,60 @@ public class ServerConsole : MonoBehaviour, IDisposable
 				},
 				{
 					"add",
-					(List<string> args) => StandardizedFloatComparison("add", args, (float a, float b) => a + b)
+					(List<string> args) => this.StandardizedFloatComparison("add", args, (float a, float b) => a + b)
 				},
 				{
 					"subtract",
-					(List<string> args) => StandardizedFloatComparison("subtract", args, (float a, float b) => a - b)
+					(List<string> args) => this.StandardizedFloatComparison("subtract", args, (float a, float b) => a - b)
 				},
 				{
 					"multiply",
-					(List<string> args) => StandardizedFloatComparison("multiply", args, (float a, float b) => a * b)
+					(List<string> args) => this.StandardizedFloatComparison("multiply", args, (float a, float b) => a * b)
 				},
 				{
 					"division",
-					(List<string> args) => StandardizedFloatComparison("division", args, (float a, float b) => a / b)
+					(List<string> args) => this.StandardizedFloatComparison("division", args, (float a, float b) => a / b)
 				},
 				{
 					"power",
-					(List<string> args) => StandardizedFloatComparison("power", args, _pow)
+					(List<string> args) => this.StandardizedFloatComparison("power", args, ServerConsole._pow)
 				},
 				{
 					"log",
 					delegate(List<string> args)
 					{
-						float result3;
-						float result4;
+						float result;
+						float result2;
 						switch (args.Count)
 						{
 						case 2:
 						{
-							string text3 = NameFormatter.ProcessExpression(args[1]);
-							if (!float.TryParse(text3, out result3))
+							string text = this.NameFormatter.ProcessExpression(args[1]);
+							if (!float.TryParse(text, out result))
 							{
-								throw new CommandInputException("value", text3, "Could not parse.");
+								throw new CommandInputException("value", text, "Could not parse.");
 							}
-							result4 = 10f;
+							result2 = 10f;
 							break;
 						}
 						case 3:
 						{
-							string text3 = NameFormatter.ProcessExpression(args[1]);
-							if (!float.TryParse(text3, out result3))
+							string text = this.NameFormatter.ProcessExpression(args[1]);
+							if (!float.TryParse(text, out result))
 							{
-								throw new CommandInputException("value", text3, "Could not parse.");
+								throw new CommandInputException("value", text, "Could not parse.");
 							}
-							string text4 = NameFormatter.ProcessExpression(args[2]);
-							if (!float.TryParse(text4, out result4))
+							string text2 = this.NameFormatter.ProcessExpression(args[2]);
+							if (!float.TryParse(text2, out result2))
 							{
-								throw new CommandInputException("base", text4, "Could not parse.");
+								throw new CommandInputException("base", text2, "Could not parse.");
 							}
 							break;
 						}
 						default:
 							throw new CommandInputException("args", args, "Invalid arguments. Use log,[value] OR log,[value],[base]");
 						}
-						return Mathf.Log(result3, result4).ToString();
+						return Mathf.Log(result, result2).ToString();
 					}
 				},
 				{
@@ -426,25 +426,25 @@ public class ServerConsole : MonoBehaviour, IDisposable
 						{
 							throw new CommandInputException("args", args, "Invalid arguments. Use ln,[value]");
 						}
-						string text5 = NameFormatter.ProcessExpression(args[1]);
-						if (!float.TryParse(text5, out var result5))
+						string text = this.NameFormatter.ProcessExpression(args[1]);
+						if (!float.TryParse(text, out var result))
 						{
-							throw new CommandInputException("value", text5, "Error parsing value.");
+							throw new CommandInputException("value", text, "Error parsing value.");
 						}
-						return Mathf.Log(result5).ToString();
+						return Mathf.Log(result).ToString();
 					}
 				},
 				{
 					"round",
-					(List<string> args) => StandardizedFloatRound("round", args, _roundNormal)
+					(List<string> args) => this.StandardizedFloatRound("round", args, ServerConsole._roundNormal)
 				},
 				{
 					"round_up",
-					(List<string> args) => StandardizedFloatRound("round_up", args, _roundCeil)
+					(List<string> args) => this.StandardizedFloatRound("round_up", args, ServerConsole._roundCeil)
 				},
 				{
 					"round_down",
-					(List<string> args) => StandardizedFloatRound("round_down", args, _roundFloor)
+					(List<string> args) => this.StandardizedFloatRound("round_down", args, ServerConsole._roundFloor)
 				},
 				{
 					"equals",
@@ -459,19 +459,19 @@ public class ServerConsole : MonoBehaviour, IDisposable
 				},
 				{
 					"greater",
-					(List<string> args) => StandardizedFloatComparison("greater", args, (float a, float b) => a > b)
+					(List<string> args) => this.StandardizedFloatComparison("greater", args, (float a, float b) => a > b)
 				},
 				{
 					"lesser",
-					(List<string> args) => StandardizedFloatComparison("lesser", args, (float a, float b) => a < b)
+					(List<string> args) => this.StandardizedFloatComparison("lesser", args, (float a, float b) => a < b)
 				},
 				{
 					"greater_or_equal",
-					(List<string> args) => StandardizedFloatComparison("greater_or_equal", args, (float a, float b) => a >= b)
+					(List<string> args) => this.StandardizedFloatComparison("greater_or_equal", args, (float a, float b) => a >= b)
 				},
 				{
 					"lesser_or_equal",
-					(List<string> args) => StandardizedFloatComparison("lesser_or_equal", args, (float a, float b) => a <= b)
+					(List<string> args) => this.StandardizedFloatComparison("lesser_or_equal", args, (float a, float b) => a <= b)
 				},
 				{
 					"not",
@@ -481,51 +481,51 @@ public class ServerConsole : MonoBehaviour, IDisposable
 						{
 							throw new CommandInputException("args", args, "Invalid arguments. Use not,[value]");
 						}
-						string text6 = NameFormatter.ProcessExpression(args[1]);
-						if (!bool.TryParse(text6, out var result6))
+						string text = this.NameFormatter.ProcessExpression(args[1]);
+						if (!bool.TryParse(text, out var result))
 						{
-							throw new CommandInputException("value", text6, "Error parsing value.");
+							throw new CommandInputException("value", text, "Error parsing value.");
 						}
-						return (!result6).ToString();
+						return (!result).ToString();
 					}
 				},
 				{
 					"or",
-					(List<string> args) => StandardizedBoolComparison("or", args, (bool a, bool b) => a || b)
+					(List<string> args) => this.StandardizedBoolComparison("or", args, (bool a, bool b) => a || b)
 				},
 				{
 					"xor",
-					(List<string> args) => StandardizedBoolComparison("xor", args, (bool a, bool b) => a ^ b)
+					(List<string> args) => this.StandardizedBoolComparison("xor", args, (bool a, bool b) => a ^ b)
 				},
 				{
 					"and",
-					(List<string> args) => StandardizedBoolComparison("and", args, (bool a, bool b) => a && b)
+					(List<string> args) => this.StandardizedBoolComparison("and", args, (bool a, bool b) => a && b)
 				},
 				{
 					"if",
 					delegate(List<string> args)
 					{
-						string text7;
-						string text8;
+						string text;
+						string text2;
 						switch (args.Count)
 						{
 						case 3:
-							text7 = args[2];
-							text8 = string.Empty;
+							text = args[2];
+							text2 = string.Empty;
 							break;
 						case 4:
-							text7 = args[2];
-							text8 = args[3];
+							text = args[2];
+							text2 = args[3];
 							break;
 						default:
 							throw new CommandInputException("args", args, "Invalid arguments. Use if,[condition],[action] OR if,[condition],[action],[else action]");
 						}
-						string text9 = NameFormatter.ProcessExpression(args[1]);
-						if (!bool.TryParse(text9, out var result7))
+						string text3 = this.NameFormatter.ProcessExpression(args[1]);
+						if (!bool.TryParse(text3, out var result))
 						{
-							throw new CommandInputException("condition", text9, "Could not parse.");
+							throw new CommandInputException("condition", text3, "Could not parse.");
 						}
-						return NameFormatter.ProcessExpression(result7 ? text7 : text8);
+						return this.NameFormatter.ProcessExpression(result ? text : text2);
 					}
 				}
 			}
@@ -533,17 +533,17 @@ public class ServerConsole : MonoBehaviour, IDisposable
 		PlayerAuthenticationManager.OnInstanceModeChanged += HandlePlayerJoin;
 		ReferenceHub.OnPlayerRemoved += delegate
 		{
-			RefreshOnlinePlayers();
+			ServerConsole.RefreshOnlinePlayers();
 		};
 		if (ServerStatic.IsDedicated && ServerStatic.ProcessIdPassed)
 		{
-			_checkProcessThread = new Thread(CheckProcess)
+			ServerConsole._checkProcessThread = new Thread(CheckProcess)
 			{
 				Priority = System.Threading.ThreadPriority.Lowest,
 				IsBackground = true,
 				Name = "Dedicated server console running check"
 			};
-			_checkProcessThread.Start();
+			ServerConsole._checkProcessThread.Start();
 		}
 	}
 
@@ -551,8 +551,8 @@ public class ServerConsole : MonoBehaviour, IDisposable
 	{
 		if (mode == ClientInstanceMode.ReadyClient)
 		{
-			NewPlayers.Add(rh);
-			RefreshOnlinePlayers();
+			ServerConsole.NewPlayers.Add(rh);
+			ServerConsole.RefreshOnlinePlayers();
 		}
 	}
 
@@ -560,19 +560,19 @@ public class ServerConsole : MonoBehaviour, IDisposable
 	{
 		if (ServerStatic.EnableConsoleHeartbeat)
 		{
-			_heartbeatTimer += Time.fixedUnscaledDeltaTime;
-			if (_heartbeatTimer >= 5f)
+			ServerConsole._heartbeatTimer += Time.fixedUnscaledDeltaTime;
+			if (ServerConsole._heartbeatTimer >= 5f)
 			{
-				_heartbeatTimer = 0f;
-				AddOutputEntry(default(HeartbeatEntry));
+				ServerConsole._heartbeatTimer = 0f;
+				ServerConsole.AddOutputEntry(default(HeartbeatEntry));
 			}
 		}
 		string result;
-		while (PrompterQueue.TryDequeue(out result))
+		while (ServerConsole.PrompterQueue.TryDequeue(out result))
 		{
 			if (!string.IsNullOrWhiteSpace(result))
 			{
-				EnterCommand(result, Scs);
+				ServerConsole.EnterCommand(result, ServerConsole.Scs);
 			}
 		}
 	}
@@ -586,31 +586,31 @@ public class ServerConsole : MonoBehaviour, IDisposable
 				ClientInstanceMode mode = allHub.Mode;
 				if ((mode == ClientInstanceMode.ReadyClient || mode == ClientInstanceMode.Host) && !string.IsNullOrEmpty(allHub.authManager.UserId) && (!allHub.isLocalPlayer || !ServerStatic.IsDedicated))
 				{
-					PlayersListRaw.objects.Add(allHub.authManager.UserId);
+					ServerConsole.PlayersListRaw.objects.Add(allHub.authManager.UserId);
 				}
 			}
-			_verificationPlayersList = JsonSerialize.ToJson(PlayersListRaw);
-			_playersAmount = PlayersListRaw.objects.Count;
-			SteamServerInfo.OnlinePlayers = _playersAmount;
-			PlayersListRaw.objects.Clear();
+			ServerConsole._verificationPlayersList = JsonSerialize.ToJson(ServerConsole.PlayersListRaw);
+			ServerConsole._playersAmount = ServerConsole.PlayersListRaw.objects.Count;
+			SteamServerInfo.OnlinePlayers = ServerConsole._playersAmount;
+			ServerConsole.PlayersListRaw.objects.Clear();
 		}
 		catch (Exception ex)
 		{
-			AddLog("[VERIFICATION] Exception in Players Online processing: " + ex.Message);
-			AddLog(ex.StackTrace);
+			ServerConsole.AddLog("[VERIFICATION] Exception in Players Online processing: " + ex.Message);
+			ServerConsole.AddLog(ex.StackTrace);
 		}
 	}
 
 	private string StandardizedBoolComparison<T>(string source, IReadOnlyList<string> args, Func<bool, bool, T> comparison)
 	{
 		bool result;
-		return StandardizedComparison(source, args, (string arg) => (success: bool.TryParse(arg, out result), value: result), comparison);
+		return this.StandardizedComparison(source, args, (string arg) => (success: bool.TryParse(arg, out result), value: result), comparison);
 	}
 
 	private string StandardizedFloatComparison<T>(string source, IReadOnlyList<string> args, Func<float, float, T> comparison)
 	{
 		float result;
-		return StandardizedComparison(source, args, (string arg) => (success: float.TryParse(arg, out result), value: result), comparison);
+		return this.StandardizedComparison(source, args, (string arg) => (success: float.TryParse(arg, out result), value: result), comparison);
 	}
 
 	private string StandardizedComparison<TArg, TResult>(string source, IReadOnlyList<string> args, Func<string, (bool success, TArg value)> parse, Func<TArg, TArg, TResult> comparison)
@@ -619,13 +619,13 @@ public class ServerConsole : MonoBehaviour, IDisposable
 		{
 			throw new CommandInputException("args", args, "Invalid arguments. Use " + source + ",[value A],[value B]");
 		}
-		string arg = NameFormatter.ProcessExpression(args[1]);
+		string arg = this.NameFormatter.ProcessExpression(args[1]);
 		var (flag, arg2) = parse(arg);
 		if (!flag)
 		{
 			throw new CommandInputException("value A", args[1], "Could not parse.");
 		}
-		string text = NameFormatter.ProcessExpression(args[2]);
+		string text = this.NameFormatter.ProcessExpression(args[2]);
 		var (flag2, arg3) = parse(text);
 		if (!flag2)
 		{
@@ -642,7 +642,7 @@ public class ServerConsole : MonoBehaviour, IDisposable
 		{
 		case 2:
 		{
-			string text = NameFormatter.ProcessExpression(args[1]);
+			string text = this.NameFormatter.ProcessExpression(args[1]);
 			if (!float.TryParse(text, out result))
 			{
 				throw new CommandInputException("value", text, "Could not parse.");
@@ -652,12 +652,12 @@ public class ServerConsole : MonoBehaviour, IDisposable
 		}
 		case 3:
 		{
-			string text = NameFormatter.ProcessExpression(args[1]);
+			string text = this.NameFormatter.ProcessExpression(args[1]);
 			if (!float.TryParse(text, out result))
 			{
 				throw new CommandInputException("value", text, "Could not parse.");
 			}
-			string text2 = NameFormatter.ProcessExpression(args[1]);
+			string text2 = this.NameFormatter.ProcessExpression(args[1]);
 			if (!int.TryParse(text2, out result2))
 			{
 				throw new CommandInputException("precision", text2, "Could not parse.");
@@ -686,60 +686,60 @@ public class ServerConsole : MonoBehaviour, IDisposable
 
 	public string RefreshServerName()
 	{
-		return NameFormatter.ProcessExpression(ServerName);
+		return this.NameFormatter.ProcessExpression(ServerConsole.ServerName);
 	}
 
 	public string RefreshServerNameSafe()
 	{
-		if (NameFormatter.TryProcessExpression(ServerName, "server name", out var result))
+		if (this.NameFormatter.TryProcessExpression(ServerConsole.ServerName, "server name", out var result))
 		{
 			SteamServerInfo.ServerName = Regex.Replace(result, "<[^>]*>", string.Empty);
 			return result;
 		}
-		AddLog(result);
+		ServerConsole.AddLog(result);
 		return "Command errored";
 	}
 
 	private void Awake()
 	{
-		Singleton = this;
+		ServerConsole.Singleton = this;
 	}
 
 	private static void CheckProcess()
 	{
-		while (!_disposing)
+		while (!ServerConsole._disposing)
 		{
 			Thread.Sleep(4000);
-			if (ConsoleProcess == null || ConsoleProcess.HasExited)
+			if (ServerConsole.ConsoleProcess == null || ServerConsole.ConsoleProcess.HasExited)
 			{
-				ConsoleProcess?.Dispose();
-				ConsoleProcess = null;
-				DisposeStatic();
+				ServerConsole.ConsoleProcess?.Dispose();
+				ServerConsole.ConsoleProcess = null;
+				ServerConsole.DisposeStatic();
 			}
 		}
 	}
 
 	public void OnDestroy()
 	{
-		Dispose();
+		this.Dispose();
 	}
 
 	public void OnApplicationQuit()
 	{
-		Dispose();
+		this.Dispose();
 	}
 
 	public static void DisposeStatic()
 	{
-		Singleton.Dispose();
+		ServerConsole.Singleton.Dispose();
 	}
 
 	public static void AddLog(string q, ConsoleColor color = ConsoleColor.Gray, bool hideFromOutputs = false)
 	{
-		PrintFormattedString(q, color);
+		ServerConsole.PrintFormattedString(q, color);
 		if (!hideFromOutputs)
 		{
-			PrintOnOutputs(q, color);
+			ServerConsole.PrintOnOutputs(q, color);
 		}
 	}
 
@@ -748,7 +748,7 @@ public class ServerConsole : MonoBehaviour, IDisposable
 		ServerStatic.ServerOutput?.AddOutput(entry);
 		if (entry is TextOutputEntry)
 		{
-			PrintOnOutputs(entry.ToString(), ConsoleColor.Gray);
+			ServerConsole.PrintOnOutputs(entry.ToString(), ConsoleColor.Gray);
 		}
 	}
 
@@ -782,24 +782,24 @@ public class ServerConsole : MonoBehaviour, IDisposable
 		}
 		else
 		{
-			Disconnect(gameObject, message);
+			ServerConsole.Disconnect(gameObject, message);
 		}
 	}
 
 	public static string ColorText(string text, ConsoleColor color)
 	{
-		return "<color=" + ConsoleColorToHex(color) + ">" + text + "</color>";
+		return "<color=" + ServerConsole.ConsoleColorToHex(color) + ">" + text + "</color>";
 	}
 
 	public static void ColorDebugLog(string text, ConsoleColor color)
 	{
-		UnityEngine.Debug.Log(ColorText(text, color), null);
+		UnityEngine.Debug.Log(ServerConsole.ColorText(text, color), null);
 	}
 
 	public static void PrintFormattedString(string text, ConsoleColor defaultColor)
 	{
-		text = _sizeRegex.Replace(text, "").Trim();
-		string[] array = _colorRegex.Split(text);
+		text = ServerConsole._sizeRegex.Replace(text, "").Trim();
+		string[] array = ServerConsole._colorRegex.Split(text);
 		for (int i = 0; i < array.Length; i++)
 		{
 			string text2 = array[i];
@@ -885,18 +885,18 @@ public class ServerConsole : MonoBehaviour, IDisposable
 		}
 		if (sender == null)
 		{
-			sender = Scs;
+			sender = ServerConsole.Scs;
 		}
 		string cmd = args[0];
 		if (cmd.StartsWith("!", StringComparison.Ordinal) && cmd.Length > 1)
 		{
-			if (cmd.StartsWith("!verify", StringComparison.OrdinalIgnoreCase) && !_emailSet)
+			if (cmd.StartsWith("!verify", StringComparison.OrdinalIgnoreCase) && !ServerConsole._emailSet)
 			{
 				return "You have to set the contact email address (\"contact_email\" key in the gameplay config) before running this command!";
 			}
 			Thread thread = new Thread((ThreadStart)delegate
 			{
-				RunCentralServerCommand(cmd.Substring(1).ToLower(), (args.Length == 1) ? "" : args.Skip(1).Aggregate((string current, string next) => current + " " + next));
+				ServerConsole.RunCentralServerCommand(cmd.Substring(1).ToLower(), (args.Length == 1) ? "" : args.Skip(1).Aggregate((string current, string next) => current + " " + next));
 			});
 			thread.IsBackground = true;
 			thread.Priority = System.Threading.ThreadPriority.AboveNormal;
@@ -904,51 +904,51 @@ public class ServerConsole : MonoBehaviour, IDisposable
 			thread.Start();
 			return "Sending command to central servers...";
 		}
-		return GameCore.Console.singleton.TypeCommand(cmds, sender ?? Scs);
+		return GameCore.Console.singleton.TypeCommand(cmds, sender ?? ServerConsole.Scs);
 	}
 
 	public void RunServer()
 	{
-		Thread verificationRequestThread = _verificationRequestThread;
+		Thread verificationRequestThread = ServerConsole._verificationRequestThread;
 		if (verificationRequestThread == null || !verificationRequestThread.IsAlive)
 		{
-			_verificationRequestThread = new Thread(RefreshServerData)
+			ServerConsole._verificationRequestThread = new Thread(RefreshServerData)
 			{
 				IsBackground = true,
 				Priority = System.Threading.ThreadPriority.AboveNormal,
 				Name = "SCP:SL Server list thread"
 			};
-			_verificationRequestThread.Start();
+			ServerConsole._verificationRequestThread.Start();
 		}
 	}
 
 	internal static void RunRefreshPublicKey()
 	{
-		Thread refreshPublicKeyThread = _refreshPublicKeyThread;
+		Thread refreshPublicKeyThread = ServerConsole._refreshPublicKeyThread;
 		if (refreshPublicKeyThread == null || !refreshPublicKeyThread.IsAlive)
 		{
-			_refreshPublicKeyThread = new Thread(RefreshPublicKey)
+			ServerConsole._refreshPublicKeyThread = new Thread(RefreshPublicKey)
 			{
 				IsBackground = true,
 				Priority = System.Threading.ThreadPriority.Normal,
 				Name = "SCP:SL Public key refreshing"
 			};
-			_refreshPublicKeyThread.Start();
+			ServerConsole._refreshPublicKeyThread.Start();
 		}
 	}
 
 	internal static void RunRefreshPublicKeyOnce()
 	{
-		Thread refreshPublicKeyOnceThread = _refreshPublicKeyOnceThread;
+		Thread refreshPublicKeyOnceThread = ServerConsole._refreshPublicKeyOnceThread;
 		if (refreshPublicKeyOnceThread == null || !refreshPublicKeyOnceThread.IsAlive)
 		{
-			_refreshPublicKeyOnceThread = new Thread(RefreshPublicKeyOnce)
+			ServerConsole._refreshPublicKeyOnceThread = new Thread(RefreshPublicKeyOnce)
 			{
 				IsBackground = true,
 				Priority = System.Threading.ThreadPriority.AboveNormal,
 				Name = "SCP:SL Public key refreshing ON DEMAND"
 			};
-			_refreshPublicKeyOnceThread.Start();
+			ServerConsole._refreshPublicKeyOnceThread.Start();
 		}
 	}
 
@@ -960,13 +960,13 @@ public class ServerConsole : MonoBehaviour, IDisposable
 		bool flag = true;
 		if (!string.IsNullOrEmpty(text))
 		{
-			PublicKey = ECDSA.PublicKeyFromString(text);
-			text2 = Sha.HashToString(Sha.Sha256(ECDSA.KeyToString(PublicKey)));
-			AddLog("Loaded central server public key from cache.");
-			AddLog("SHA256 of public key: " + text2);
+			ServerConsole.PublicKey = ECDSA.PublicKeyFromString(text);
+			text2 = Sha.HashToString(Sha.Sha256(ECDSA.KeyToString(ServerConsole.PublicKey)));
+			ServerConsole.AddLog("Loaded central server public key from cache.");
+			ServerConsole.AddLog("SHA256 of public key: " + text2);
 		}
-		AddLog("Downloading public key from central server...");
-		while (!_disposing)
+		ServerConsole.AddLog("Downloading public key from central server...");
+		while (!ServerConsole._disposing)
 		{
 			try
 			{
@@ -977,31 +977,31 @@ public class ServerConsole : MonoBehaviour, IDisposable
 					Thread.Sleep(360000);
 					continue;
 				}
-				PublicKey = ECDSA.PublicKeyFromString(publicKeyResponse.key);
-				string text4 = Sha.HashToString(Sha.Sha256(ECDSA.KeyToString(PublicKey)));
+				ServerConsole.PublicKey = ECDSA.PublicKeyFromString(publicKeyResponse.key);
+				string text4 = Sha.HashToString(Sha.Sha256(ECDSA.KeyToString(ServerConsole.PublicKey)));
 				if (text4 != text3)
 				{
 					text3 = text4;
-					AddLog("Downloaded public key from central server.");
-					AddLog("SHA256 of public key: " + text4);
+					ServerConsole.AddLog("Downloaded public key from central server.");
+					ServerConsole.AddLog("SHA256 of public key: " + text4);
 					if (text4 != text2)
 					{
 						CentralServerKeyCache.SaveCache(publicKeyResponse.key, publicKeyResponse.signature);
 					}
 					else
 					{
-						AddLog("SHA256 of cached key matches, no need to update cache.");
+						ServerConsole.AddLog("SHA256 of cached key matches, no need to update cache.");
 					}
 				}
 				else if (flag)
 				{
 					flag = false;
-					AddLog("Refreshed public key of central server - key hash not changed.");
+					ServerConsole.AddLog("Refreshed public key of central server - key hash not changed.");
 				}
 			}
 			catch (Exception ex)
 			{
-				AddLog("Can't refresh central server public key - " + ex.Message);
+				ServerConsole.AddLog("Can't refresh central server public key - " + ex.Message);
 			}
 			Thread.Sleep(360000);
 		}
@@ -1017,15 +1017,15 @@ public class ServerConsole : MonoBehaviour, IDisposable
 				GameCore.Console.AddLog("Can't refresh central server public key - invalid signature!", Color.red);
 				return;
 			}
-			PublicKey = ECDSA.PublicKeyFromString(publicKeyResponse.key);
-			string text = Sha.HashToString(Sha.Sha256(ECDSA.KeyToString(PublicKey)));
-			AddLog("Downloaded public key from central server.");
-			AddLog("SHA256 of public key: " + text);
+			ServerConsole.PublicKey = ECDSA.PublicKeyFromString(publicKeyResponse.key);
+			string text = Sha.HashToString(Sha.Sha256(ECDSA.KeyToString(ServerConsole.PublicKey)));
+			ServerConsole.AddLog("Downloaded public key from central server.");
+			ServerConsole.AddLog("SHA256 of public key: " + text);
 			CentralServerKeyCache.SaveCache(publicKeyResponse.key, publicKeyResponse.signature);
 		}
 		catch (Exception ex)
 		{
-			AddLog("Can't refresh central server public key - " + ex.Message);
+			ServerConsole.AddLog("Can't refresh central server public key - " + ex.Message);
 		}
 	}
 
@@ -1034,58 +1034,58 @@ public class ServerConsole : MonoBehaviour, IDisposable
 		cmd = cmd.ToLower();
 		List<string> list = new List<string>
 		{
-			"ip=" + Ip,
-			"port=" + PortToReport,
+			"ip=" + ServerConsole.Ip,
+			"port=" + ServerConsole.PortToReport,
 			"cmd=" + StringUtils.Base64Encode(cmd),
 			"args=" + StringUtils.Base64Encode(args)
 		};
-		if (!string.IsNullOrEmpty(Password))
+		if (!string.IsNullOrEmpty(ServerConsole.Password))
 		{
-			list.Add("passcode=" + Password);
+			list.Add("passcode=" + ServerConsole.Password);
 		}
 		try
 		{
 			string text = HttpQuery.Post(CentralServer.MasterUrl + "centralcommands/" + cmd + ".php", HttpQuery.ToPostArgs(list));
-			AddLog("[" + cmd + "] " + text);
+			ServerConsole.AddLog("[" + cmd + "] " + text);
 		}
 		catch (Exception ex)
 		{
-			AddLog("Could not execute the central server command \"" + cmd + "\" - (LOCAL EXCEPTION) " + ex.Message, ConsoleColor.Red);
+			ServerConsole.AddLog("Could not execute the central server command \"" + cmd + "\" - (LOCAL EXCEPTION) " + ex.Message, ConsoleColor.Red);
 		}
 	}
 
 	internal static void RefreshEmailSetStatus()
 	{
-		_emailSet = !string.IsNullOrEmpty(ConfigFile.ServerConfig.GetString("contact_email"));
+		ServerConsole._emailSet = !string.IsNullOrEmpty(ConfigFile.ServerConfig.GetString("contact_email"));
 	}
 
 	private void RefreshServerData()
 	{
 		bool flag = true;
 		byte b = 0;
-		RefreshEmailSetStatus();
-		RefreshToken(init: true);
-		while (!_disposing)
+		ServerConsole.RefreshEmailSetStatus();
+		ServerConsole.RefreshToken(init: true);
+		while (!ServerConsole._disposing)
 		{
 			b++;
-			if (!flag && string.IsNullOrEmpty(Password) && b < 15)
+			if (!flag && string.IsNullOrEmpty(ServerConsole.Password) && b < 15)
 			{
-				if (b == 5 || b == 12 || ScheduleTokenRefresh)
+				if (b == 5 || b == 12 || ServerConsole.ScheduleTokenRefresh)
 				{
-					RefreshToken();
+					ServerConsole.RefreshToken();
 				}
 			}
 			else
 			{
 				flag = false;
-				Update = Update || b == 10;
+				ServerConsole.Update = ServerConsole.Update || b == 10;
 				string text = string.Empty;
 				try
 				{
-					int count = NewPlayers.Count;
+					int count = ServerConsole.NewPlayers.Count;
 					int num = 0;
 					List<AuthenticatorPlayerObject> list = ListPool<AuthenticatorPlayerObject>.Shared.Rent();
-					while (!NewPlayers.IsEmpty)
+					while (!ServerConsole.NewPlayers.IsEmpty)
 					{
 						num++;
 						if (num > count + 30)
@@ -1094,7 +1094,7 @@ public class ServerConsole : MonoBehaviour, IDisposable
 						}
 						try
 						{
-							if (NewPlayers.TryTake(out var result) && result != null)
+							if (ServerConsole.NewPlayers.TryTake(out var result) && result != null)
 							{
 								string userId = result.authManager.UserId;
 								string ip = ((result.authManager.connectionToClient == null || string.IsNullOrEmpty(result.authManager.connectionToClient.address)) ? "N/A" : result.authManager.connectionToClient.address);
@@ -1105,8 +1105,8 @@ public class ServerConsole : MonoBehaviour, IDisposable
 						}
 						catch (Exception ex)
 						{
-							AddLog("[VERIFICATION THREAD] Exception in New Player (inside of loop) processing: " + ex.Message);
-							AddLog(ex.StackTrace);
+							ServerConsole.AddLog("[VERIFICATION THREAD] Exception in New Player (inside of loop) processing: " + ex.Message);
+							ServerConsole.AddLog(ex.StackTrace);
 						}
 					}
 					text = JsonSerialize.ToJson(new AuthenticatorPlayerObjects(list));
@@ -1114,18 +1114,18 @@ public class ServerConsole : MonoBehaviour, IDisposable
 				}
 				catch (Exception ex2)
 				{
-					AddLog("[VERIFICATION THREAD] Exception in New Players processing: " + ex2.Message);
-					AddLog(ex2.StackTrace);
+					ServerConsole.AddLog("[VERIFICATION THREAD] Exception in New Players processing: " + ex2.Message);
+					ServerConsole.AddLog(ex2.StackTrace);
 				}
 				object obj;
-				if (!Update)
+				if (!ServerConsole.Update)
 				{
 					obj = new List<string>
 					{
-						"ip=" + Ip,
-						"players=" + _playersAmount + "/" + CustomNetworkManager.slots,
+						"ip=" + ServerConsole.Ip,
+						"players=" + ServerConsole._playersAmount + "/" + CustomNetworkManager.slots,
 						"newPlayers=" + text,
-						"port=" + PortToReport,
+						"port=" + ServerConsole.PortToReport,
 						"version=2"
 					};
 				}
@@ -1133,59 +1133,59 @@ public class ServerConsole : MonoBehaviour, IDisposable
 				{
 					obj = new List<string>
 					{
-						"ip=" + Ip,
-						"players=" + _playersAmount + "/" + CustomNetworkManager.slots,
-						"playersList=" + _verificationPlayersList,
+						"ip=" + ServerConsole.Ip,
+						"players=" + ServerConsole._playersAmount + "/" + CustomNetworkManager.slots,
+						"playersList=" + ServerConsole._verificationPlayersList,
 						"newPlayers=" + text,
-						"port=" + PortToReport,
+						"port=" + ServerConsole.PortToReport,
 						"pastebin=" + ConfigFile.ServerConfig.GetString("serverinfo_pastebin_id", "7wV681fT"),
 						"gameVersion=" + GameCore.Version.VersionString,
 						"version=2",
 						"update=1",
-						"info=" + StringUtils.Base64Encode(RefreshServerNameSafe()).Replace('+', '-'),
+						"info=" + StringUtils.Base64Encode(this.RefreshServerNameSafe()).Replace('+', '-'),
 						"privateBeta=" + GameCore.Version.PrivateBeta,
 						"staffRA=" + ServerStatic.PermissionsHandler.StaffAccess,
-						"friendlyFire=" + FriendlyFire
+						"friendlyFire=" + ServerConsole.FriendlyFire
 					};
 					object obj2 = obj;
 					byte geoblocking = (byte)CustomLiteNetLib4MirrorTransport.Geoblocking;
 					((List<string>)obj2).Add("geoblocking=" + geoblocking);
-					((List<string>)obj).Add("modded=" + (CustomNetworkManager.Modded || TransparentlyModdedServerConfig));
-					((List<string>)obj).Add("tModded=" + TransparentlyModdedServerConfig);
-					((List<string>)obj).Add("whitelist=" + WhiteListEnabled);
-					((List<string>)obj).Add("accessRestriction=" + AccessRestriction);
-					((List<string>)obj).Add("emailSet=" + _emailSet);
-					((List<string>)obj).Add("enforceSameIp=" + EnforceSameIp);
+					((List<string>)obj).Add("modded=" + (CustomNetworkManager.Modded || ServerConsole.TransparentlyModdedServerConfig));
+					((List<string>)obj).Add("tModded=" + ServerConsole.TransparentlyModdedServerConfig);
+					((List<string>)obj).Add("whitelist=" + ServerConsole.WhiteListEnabled);
+					((List<string>)obj).Add("accessRestriction=" + ServerConsole.AccessRestriction);
+					((List<string>)obj).Add("emailSet=" + ServerConsole._emailSet);
+					((List<string>)obj).Add("enforceSameIp=" + ServerConsole.EnforceSameIp);
 				}
 				List<string> list2 = (List<string>)obj;
-				if (!string.IsNullOrEmpty(Password))
+				if (!string.IsNullOrEmpty(ServerConsole.Password))
 				{
-					list2.Add("passcode=" + Password);
+					list2.Add("passcode=" + ServerConsole.Password);
 				}
-				Update = false;
-				if (!AuthenticatorQuery.SendData(list2) && !_printedNotVerifiedMessage)
+				ServerConsole.Update = false;
+				if (!AuthenticatorQuery.SendData(list2) && !ServerConsole._printedNotVerifiedMessage)
 				{
-					_printedNotVerifiedMessage = true;
-					AddLog("Your server won't be visible on the public server list - (" + Ip + ")", ConsoleColor.Red);
-					if (!_emailSet)
+					ServerConsole._printedNotVerifiedMessage = true;
+					ServerConsole.AddLog("Your server won't be visible on the public server list - (" + ServerConsole.Ip + ")", ConsoleColor.Red);
+					if (!ServerConsole._emailSet)
 					{
-						AddLog("If you are 100% sure that the server is working, can be accessed from the Internet and YOU WANT TO MAKE IT PUBLIC, please set up your email in configuration file (\"contact_email\" value) and restart the server.", ConsoleColor.Red);
+						ServerConsole.AddLog("If you are 100% sure that the server is working, can be accessed from the Internet and YOU WANT TO MAKE IT PUBLIC, please set up your email in configuration file (\"contact_email\" value) and restart the server.", ConsoleColor.Red);
 					}
 					else
 					{
-						AddLog("If you want to make your server PUBLIC, please make sure that:", ConsoleColor.Red);
-						AddLog("- Your server is working;", ConsoleColor.Red);
-						AddLog("- It can be accessed from the internet without the use of a VPN/proxy;", ConsoleColor.Red);
-						AddLog("- It complies with the VSR (PLEASE READ: https://scpslgame.com/Verified_server_rules.pdf).", ConsoleColor.Red);
-						AddLog("If you have checked the above, you can use the following command:", ConsoleColor.Red);
-						AddLog("!verify static", ConsoleColor.Red);
-						AddLog("If you know that you have a dynamic IP, please use this command instead:", ConsoleColor.Red);
-						AddLog("!verify dynamic", ConsoleColor.Red);
+						ServerConsole.AddLog("If you want to make your server PUBLIC, please make sure that:", ConsoleColor.Red);
+						ServerConsole.AddLog("- Your server is working;", ConsoleColor.Red);
+						ServerConsole.AddLog("- It can be accessed from the internet without the use of a VPN/proxy;", ConsoleColor.Red);
+						ServerConsole.AddLog("- It complies with the VSR (PLEASE READ: https://scpslgame.com/Verified_server_rules.pdf).", ConsoleColor.Red);
+						ServerConsole.AddLog("If you have checked the above, you can use the following command:", ConsoleColor.Red);
+						ServerConsole.AddLog("!verify static", ConsoleColor.Red);
+						ServerConsole.AddLog("If you know that you have a dynamic IP, please use this command instead:", ConsoleColor.Red);
+						ServerConsole.AddLog("!verify dynamic", ConsoleColor.Red);
 					}
 				}
 				else
 				{
-					_printedNotVerifiedMessage = true;
+					ServerConsole._printedNotVerifiedMessage = true;
 				}
 			}
 			if (b >= 15)
@@ -1193,9 +1193,9 @@ public class ServerConsole : MonoBehaviour, IDisposable
 				b = 0;
 			}
 			Thread.Sleep(5000);
-			if (ScheduleTokenRefresh || b == 0)
+			if (ServerConsole.ScheduleTokenRefresh || b == 0)
 			{
-				RefreshToken();
+				ServerConsole.RefreshToken();
 			}
 		}
 	}
@@ -1204,18 +1204,18 @@ public class ServerConsole : MonoBehaviour, IDisposable
 	{
 		try
 		{
-			if (ConsoleOutputs == null)
+			if (ServerConsole.ConsoleOutputs == null)
 			{
 				return;
 			}
-			foreach (KeyValuePair<string, IOutput> consoleOutput in ConsoleOutputs)
+			foreach (KeyValuePair<string, IOutput> consoleOutput in ServerConsole.ConsoleOutputs)
 			{
 				IOutput value;
 				try
 				{
 					if (consoleOutput.Value == null || !consoleOutput.Value.Available())
 					{
-						ConsoleOutputs.TryRemove(consoleOutput.Key, out value);
+						ServerConsole.ConsoleOutputs.TryRemove(consoleOutput.Key, out value);
 					}
 					else
 					{
@@ -1224,19 +1224,19 @@ public class ServerConsole : MonoBehaviour, IDisposable
 				}
 				catch
 				{
-					ConsoleOutputs.TryRemove(consoleOutput.Key, out value);
+					ServerConsole.ConsoleOutputs.TryRemove(consoleOutput.Key, out value);
 				}
 			}
 		}
 		catch (Exception ex)
 		{
-			AddLog("Failed to print to outputs: " + ex.Message + "\n" + ex.StackTrace, ConsoleColor.Red, hideFromOutputs: true);
+			ServerConsole.AddLog("Failed to print to outputs: " + ex.Message + "\n" + ex.StackTrace, ConsoleColor.Red, hideFromOutputs: true);
 		}
 	}
 
 	private static void RefreshToken(bool init = false)
 	{
-		ScheduleTokenRefresh = false;
+		ServerConsole.ScheduleTokenRefresh = false;
 		string path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/SCP Secret Laboratory/verkey.txt";
 		if (!File.Exists(path))
 		{
@@ -1244,16 +1244,16 @@ public class ServerConsole : MonoBehaviour, IDisposable
 		}
 		using StreamReader streamReader = new StreamReader(path);
 		string text = streamReader.ReadToEnd().Trim();
-		if (!init && string.IsNullOrEmpty(Password) && !string.IsNullOrEmpty(text))
+		if (!init && string.IsNullOrEmpty(ServerConsole.Password) && !string.IsNullOrEmpty(text))
 		{
-			AddLog("Verification token loaded! Server probably will be listed on public list.");
+			ServerConsole.AddLog("Verification token loaded! Server probably will be listed on public list.");
 		}
-		if (Password != text)
+		if (ServerConsole.Password != text)
 		{
-			AddLog("Verification token reloaded.");
-			Update = true;
+			ServerConsole.AddLog("Verification token reloaded.");
+			ServerConsole.Update = true;
 		}
-		Password = text;
+		ServerConsole.Password = text;
 		CustomNetworkManager.IsVerified = true;
 	}
 }

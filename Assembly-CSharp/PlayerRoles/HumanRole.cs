@@ -32,17 +32,17 @@ public class HumanRole : FpcStandardRoleBase, IArmoredRole, IInventoryRole, IHum
 	[field: SerializeField]
 	public HumeShieldModuleBase HumeShieldModule { get; private set; }
 
-	public override RoleTypeId RoleTypeId => _roleId;
+	public override RoleTypeId RoleTypeId => this._roleId;
 
-	public override Team Team => _team;
+	public override Team Team => this._team;
 
-	public override Color RoleColor => _roleColor;
+	public override Color RoleColor => this._roleColor;
 
 	public override float MaxHealth => 100f;
 
-	public Color NicknameColor => RoleColor;
+	public Color NicknameColor => this.RoleColor;
 
-	public override ISpawnpointHandler SpawnpointHandler => _spawnpointHandler as ISpawnpointHandler;
+	public override ISpawnpointHandler SpawnpointHandler => this._spawnpointHandler as ISpawnpointHandler;
 
 	public byte UnitNameId { get; private set; }
 
@@ -51,24 +51,24 @@ public class HumanRole : FpcStandardRoleBase, IArmoredRole, IInventoryRole, IHum
 		get
 		{
 			UnitNamingRule rule;
-			return NamingRulesManager.TryGetNamingRule(Team, out rule);
+			return NamingRulesManager.TryGetNamingRule(this.Team, out rule);
 		}
 	}
 
 	public override void WritePublicSpawnData(NetworkWriter writer)
 	{
-		if (UsesUnitNames)
+		if (this.UsesUnitNames)
 		{
-			writer.WriteByte(UnitNameId);
+			writer.WriteByte(this.UnitNameId);
 		}
 		base.WritePublicSpawnData(writer);
 	}
 
 	public override void ReadSpawnData(NetworkReader reader)
 	{
-		if (UsesUnitNames)
+		if (this.UsesUnitNames)
 		{
-			UnitNameId = reader.ReadByte();
+			this.UnitNameId = reader.ReadByte();
 		}
 		base.ReadSpawnData(reader);
 	}
@@ -76,19 +76,19 @@ public class HumanRole : FpcStandardRoleBase, IArmoredRole, IInventoryRole, IHum
 	internal override void Init(ReferenceHub hub, RoleChangeReason spawnReason, RoleSpawnFlags spawnFlags)
 	{
 		base.Init(hub, spawnReason, spawnFlags);
-		if (NetworkServer.active && UsesUnitNames)
+		if (NetworkServer.active && this.UsesUnitNames)
 		{
-			UnitNameId = (byte)(NamingRulesManager.GeneratedNames.TryGetValue(Team, out var value) ? ((byte)value.Count) : 0);
-			if (UnitNameId != 0 && spawnReason != RoleChangeReason.Respawn)
+			this.UnitNameId = (byte)(NamingRulesManager.GeneratedNames.TryGetValue(this.Team, out var value) ? ((byte)value.Count) : 0);
+			if (this.UnitNameId != 0 && spawnReason != RoleChangeReason.Respawn)
 			{
-				UnitNameId--;
+				this.UnitNameId--;
 			}
 		}
 	}
 
 	public int GetArmorEfficacy(HitboxType hitbox)
 	{
-		if (!TryGetOwner(out var hub) || !hub.inventory.TryGetBodyArmor(out var bodyArmor))
+		if (!base.TryGetOwner(out var hub) || !hub.inventory.TryGetBodyArmor(out var bodyArmor))
 		{
 			return 0;
 		}
@@ -102,25 +102,25 @@ public class HumanRole : FpcStandardRoleBase, IArmoredRole, IInventoryRole, IHum
 
 	public void WriteNickname(StringBuilder sb)
 	{
-		if (TryGetOwner(out var hub))
+		if (base.TryGetOwner(out var hub))
 		{
-			NicknameSync.WriteDefaultInfo(hub, sb, null);
-			if (NamingRulesManager.TryGetNamingRule(Team, out var rule))
+			NicknameSync.WriteDefaultInfo(hub, sb);
+			if (NamingRulesManager.TryGetNamingRule(this.Team, out var rule))
 			{
 				PlayerInfoArea shownPlayerInfo = hub.nicknameSync.ShownPlayerInfo;
-				string unitName = NamingRulesManager.ClientFetchReceived(Team, UnitNameId);
-				rule.AppendName(sb, unitName, RoleTypeId, shownPlayerInfo);
+				string unitName = NamingRulesManager.ClientFetchReceived(this.Team, this.UnitNameId);
+				rule.AppendName(sb, unitName, this.RoleTypeId, shownPlayerInfo);
 			}
 		}
 	}
 
 	public bool AllowDisarming(ReferenceHub detainer)
 	{
-		if (Team.GetFaction() == detainer.GetFaction())
+		if (this.Team.GetFaction() == detainer.GetFaction())
 		{
 			return false;
 		}
-		if (!TryGetOwner(out var hub))
+		if (!base.TryGetOwner(out var hub))
 		{
 			return false;
 		}

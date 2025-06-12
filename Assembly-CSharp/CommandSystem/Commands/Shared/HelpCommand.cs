@@ -22,17 +22,17 @@ public class HelpCommand : ICommand, IUsageProvider
 
 	public HelpCommand(ICommandHandler commandHandler)
 	{
-		_commandHandler = commandHandler;
+		this._commandHandler = commandHandler;
 	}
 
 	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
 		if (arguments.Count == 0)
 		{
-			response = GetCommandList(_commandHandler, "Command list:");
+			response = this.GetCommandList(this._commandHandler, "Command list:");
 			return true;
 		}
-		if (_commandHandler.TryGetCommand(arguments.At(0), out var command))
+		if (this._commandHandler.TryGetCommand(arguments.At(0), out var command))
 		{
 			string text = command.Command;
 			ArraySegment<string> arraySegment = arguments.Segment(1);
@@ -50,7 +50,7 @@ public class HelpCommand : ICommand, IUsageProvider
 			}
 			if (command is ICommandHandler handler)
 			{
-				response += GetCommandList(handler, "\nSubcommand list:");
+				response += this.GetCommandList(handler, "\nSubcommand list:");
 			}
 			try
 			{
@@ -71,23 +71,23 @@ public class HelpCommand : ICommand, IUsageProvider
 
 	private string GetCommandList(ICommandHandler handler, string header)
 	{
-		_helpBuilder.Clear();
-		_helpBuilder.Append(header);
+		this._helpBuilder.Clear();
+		this._helpBuilder.Append(header);
 		foreach (ICommand allCommand in handler.AllCommands)
 		{
 			if (!(allCommand is IHiddenCommand))
 			{
-				_helpBuilder.AppendLine();
-				_helpBuilder.Append(allCommand.Command);
-				_helpBuilder.Append(" - ");
-				_helpBuilder.Append(allCommand.Description);
+				this._helpBuilder.AppendLine();
+				this._helpBuilder.Append(allCommand.Command);
+				this._helpBuilder.Append(" - ");
+				this._helpBuilder.Append(allCommand.Description);
 				if (allCommand.Aliases != null && allCommand.Aliases.Length != 0)
 				{
-					_helpBuilder.Append(" - Aliases: ");
-					_helpBuilder.Append(string.Join(", ", allCommand.Aliases));
+					this._helpBuilder.Append(" - Aliases: ");
+					this._helpBuilder.Append(string.Join(", ", allCommand.Aliases));
 				}
 			}
 		}
-		return _helpBuilder.ToString();
+		return this._helpBuilder.ToString();
 	}
 }

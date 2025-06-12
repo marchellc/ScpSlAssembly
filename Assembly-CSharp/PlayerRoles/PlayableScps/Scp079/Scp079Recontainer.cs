@@ -79,7 +79,7 @@ public class Scp079Recontainer : MonoBehaviour
 
 	private void Start()
 	{
-		SetContainmentDoors(opened: false, locked: true);
+		this.SetContainmentDoors(opened: false, locked: true);
 		PlayerRoleManager.OnServerRoleSet += OnServerRoleChanged;
 	}
 
@@ -94,37 +94,37 @@ public class Scp079Recontainer : MonoBehaviour
 		{
 			return;
 		}
-		RefreshActivator();
-		RefreshAmount();
-		if (_unlockStopwatch.IsRunning && _unlockStopwatch.Elapsed.TotalSeconds > (double)_lockdownDuration)
+		this.RefreshActivator();
+		this.RefreshAmount();
+		if (this._unlockStopwatch.IsRunning && this._unlockStopwatch.Elapsed.TotalSeconds > (double)this._lockdownDuration)
 		{
-			EndOvercharge();
-			_unlockStopwatch.Stop();
+			this.EndOvercharge();
+			this._unlockStopwatch.Stop();
 		}
-		if (_recontainLater > 0f)
+		if (this._recontainLater > 0f)
 		{
-			_delayStopwatch.Stop();
-			if (!CassieBusy)
+			this._delayStopwatch.Stop();
+			if (!this.CassieBusy)
 			{
-				_recontainLater -= Time.deltaTime;
+				this._recontainLater -= Time.deltaTime;
 			}
-			if (_recontainLater <= 0f)
+			if (this._recontainLater <= 0f)
 			{
-				Recontain();
+				this.Recontain();
 			}
 		}
 	}
 
 	private void OnServerRoleChanged(ReferenceHub hub, RoleTypeId newRole, RoleChangeReason reason)
 	{
-		if (newRole != RoleTypeId.Spectator || !IsScpButNot079(hub.roleManager.CurrentRole) || Scp079Role.ActiveInstances.Count == 0 || ReferenceHub.AllHubs.Count((ReferenceHub x) => x != hub && IsScpButNot079(x.roleManager.CurrentRole)) > 0)
+		if (newRole != RoleTypeId.Spectator || !this.IsScpButNot079(hub.roleManager.CurrentRole) || Scp079Role.ActiveInstances.Count == 0 || ReferenceHub.AllHubs.Count((ReferenceHub x) => x != hub && this.IsScpButNot079(x.roleManager.CurrentRole)) > 0)
 		{
 			return;
 		}
-		SetContainmentDoors(opened: true, locked: true);
-		_alreadyRecontained = true;
-		_recontainLater = 3f;
-		foreach (Scp079Generator allGenerator in AllGenerators)
+		this.SetContainmentDoors(opened: true, locked: true);
+		this._alreadyRecontained = true;
+		this._recontainLater = 3f;
+		foreach (Scp079Generator allGenerator in Scp079Recontainer.AllGenerators)
 		{
 			allGenerator.Engaged = true;
 		}
@@ -141,51 +141,51 @@ public class Scp079Recontainer : MonoBehaviour
 
 	private void RefreshActivator()
 	{
-		if (_delayStopwatch.Elapsed.TotalSeconds > (double)_activationDelay)
+		if (this._delayStopwatch.Elapsed.TotalSeconds > (double)this._activationDelay)
 		{
-			if (_delayStopwatch.IsRunning)
+			if (this._delayStopwatch.IsRunning)
 			{
-				BeginOvercharge();
-				_delayStopwatch.Stop();
-				_unlockStopwatch.Start();
+				this.BeginOvercharge();
+				this._delayStopwatch.Stop();
+				this._unlockStopwatch.Start();
 			}
 		}
-		else if (_activatorGlass.isBroken)
+		else if (this._activatorGlass.isBroken)
 		{
-			_activatorButton.transform.localPosition = Vector3.Lerp(_activatorButton.transform.localPosition, _activatorPos, _activatorLerpSpeed * Time.deltaTime);
-			if (!_alreadyRecontained && !CassieBusy)
+			this._activatorButton.transform.localPosition = Vector3.Lerp(this._activatorButton.transform.localPosition, this._activatorPos, this._activatorLerpSpeed * Time.deltaTime);
+			if (!this._alreadyRecontained && !this.CassieBusy)
 			{
-				Recontain();
+				this.Recontain();
 			}
 		}
 	}
 
 	private void Recontain()
 	{
-		_delayStopwatch.Restart();
-		PlayAnnouncement(_announcementCountdown, 0f);
+		this._delayStopwatch.Restart();
+		this.PlayAnnouncement(this._announcementCountdown, 0f);
 		new SubtitleMessage(new SubtitlePart(SubtitleType.OverchargeIn, (string[])null)).SendToAuthenticated();
-		_alreadyRecontained = true;
+		this._alreadyRecontained = true;
 	}
 
 	private void RefreshAmount()
 	{
-		if (_alreadyRecontained)
+		if (this._alreadyRecontained)
 		{
 			return;
 		}
 		int num = 0;
-		foreach (Scp079Generator allGenerator in AllGenerators)
+		foreach (Scp079Generator allGenerator in Scp079Recontainer.AllGenerators)
 		{
 			if (allGenerator.Engaged)
 			{
 				num++;
 			}
 		}
-		if (num > _prevEngaged)
+		if (num > this._prevEngaged)
 		{
-			UpdateStatus(num);
-			_prevEngaged = num;
+			this.UpdateStatus(num);
+			this._prevEngaged = num;
 		}
 	}
 
@@ -193,7 +193,7 @@ public class Scp079Recontainer : MonoBehaviour
 	{
 		if (NetworkServer.active)
 		{
-			DoorVariant[] containmentGates = _containmentGates;
+			DoorVariant[] containmentGates = this._containmentGates;
 			foreach (DoorVariant obj in containmentGates)
 			{
 				obj.NetworkTargetState = opened;
@@ -208,17 +208,17 @@ public class Scp079Recontainer : MonoBehaviour
 		{
 			return;
 		}
-		int count = AllGenerators.Count;
-		string text = string.Format(_announcementProgress, engagedGenerators, count);
+		int count = Scp079Recontainer.AllGenerators.Count;
+		string text = string.Format(this._announcementProgress, engagedGenerators, count);
 		List<SubtitlePart> list = new List<SubtitlePart>();
 		list.Add(new SubtitlePart(SubtitleType.GeneratorsActivated, engagedGenerators.ToString(), count.ToString()));
 		List<SubtitlePart> list2 = list;
 		if (engagedGenerators >= count)
 		{
-			text += _announcementAllActivated;
-			SetContainmentDoors(opened: true, Scp079Role.ActiveInstances.Count > 0);
+			text += this._announcementAllActivated;
+			this.SetContainmentDoors(opened: true, Scp079Role.ActiveInstances.Count > 0);
 			list2.Add(new SubtitlePart(SubtitleType.AllGeneratorsEngaged, (string[])null));
-			DoorVariant[] containmentGates = _containmentGates;
+			DoorVariant[] containmentGates = this._containmentGates;
 			for (int i = 0; i < containmentGates.Length; i++)
 			{
 				if (containmentGates[i] is IScp106PassableDoor scp106PassableDoor)
@@ -228,40 +228,40 @@ public class Scp079Recontainer : MonoBehaviour
 			}
 		}
 		new SubtitleMessage(list2.ToArray()).SendToAuthenticated();
-		PlayAnnouncement(text, 1f);
+		this.PlayAnnouncement(text, 1f);
 	}
 
 	private void BeginOvercharge()
 	{
-		_success = TryKill079();
+		this._success = this.TryKill079();
 		bool inProgress = AlphaWarheadController.InProgress;
 		foreach (KeyValuePair<IInteractable, Dictionary<byte, InteractableCollider>> allInstance in InteractableCollider.AllInstances)
 		{
-			if (allInstance.Key is BasicDoor basicDoor && !(basicDoor == null) && basicDoor.RequiredPermissions.RequiredPermissions == DoorPermissionFlags.None && basicDoor.Rooms.Any((RoomIdentifier x) => x.Zone == FacilityZone.HeavyContainment) && !_containmentGates.Contains(basicDoor))
+			if (allInstance.Key is BasicDoor basicDoor && !(basicDoor == null) && basicDoor.RequiredPermissions.RequiredPermissions == DoorPermissionFlags.None && basicDoor.Rooms.Any((RoomIdentifier x) => x.Zone == FacilityZone.HeavyContainment) && !this._containmentGates.Contains(basicDoor))
 			{
 				basicDoor.NetworkTargetState = basicDoor.TargetState && inProgress;
 				basicDoor.ServerChangeLock(DoorLockReason.NoPower, newState: true);
-				_lockedDoors.Add(basicDoor);
+				this._lockedDoors.Add(basicDoor);
 			}
 		}
 		foreach (RoomLightController instance in RoomLightController.Instances)
 		{
 			if (instance.Room.Zone == FacilityZone.HeavyContainment)
 			{
-				instance.ServerFlickerLights(_lockdownDuration);
+				instance.ServerFlickerLights(this._lockdownDuration);
 			}
 		}
-		SetContainmentDoors(opened: true, locked: false);
+		this.SetContainmentDoors(opened: true, locked: false);
 	}
 
 	private void EndOvercharge()
 	{
-		if (!_success)
+		if (!this._success)
 		{
-			PlayAnnouncement(_announcementFailure, 1f);
+			this.PlayAnnouncement(this._announcementFailure, 1f);
 			new SubtitleMessage(new SubtitlePart(SubtitleType.OperationalMode, (string[])null)).SendToAuthenticated();
 		}
-		foreach (DoorVariant lockedDoor in _lockedDoors)
+		foreach (DoorVariant lockedDoor in this._lockedDoors)
 		{
 			lockedDoor.ServerChangeLock(DoorLockReason.NoPower, newState: false);
 			if (lockedDoor is ElevatorDoor elevatorDoor && elevatorDoor.Chamber.IsReadyForUserInput && elevatorDoor.Chamber.DestinationDoor == elevatorDoor)
@@ -284,20 +284,20 @@ public class Scp079Recontainer : MonoBehaviour
 		}
 		foreach (ReferenceHub item in hashSet)
 		{
-			Scp079RecontainingEventArgs scp079RecontainingEventArgs = new Scp079RecontainingEventArgs(item, _activatorGlass.LastAttacker.Hub);
-			Scp079Events.OnRecontaining(scp079RecontainingEventArgs);
-			if (scp079RecontainingEventArgs.IsAllowed)
+			Scp079RecontainingEventArgs e = new Scp079RecontainingEventArgs(item, this._activatorGlass.LastAttacker.Hub);
+			Scp079Events.OnRecontaining(e);
+			if (e.IsAllowed)
 			{
 				result = true;
-				if (_activatorGlass.LastAttacker.IsSet)
+				if (this._activatorGlass.LastAttacker.IsSet)
 				{
-					item.playerStats.DealDamage(new RecontainmentDamageHandler(_activatorGlass.LastAttacker));
+					item.playerStats.DealDamage(new RecontainmentDamageHandler(this._activatorGlass.LastAttacker));
 				}
 				else
 				{
 					item.playerStats.DealDamage(new UniversalDamageHandler(-1f, DeathTranslations.Recontained));
 				}
-				Scp079Events.OnRecontained(new Scp079RecontainedEventArgs(item, _activatorGlass.LastAttacker.Hub));
+				Scp079Events.OnRecontained(new Scp079RecontainedEventArgs(item, this._activatorGlass.LastAttacker.Hub));
 			}
 		}
 		return result;

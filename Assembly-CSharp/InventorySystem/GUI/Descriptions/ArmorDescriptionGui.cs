@@ -33,19 +33,19 @@ public class ArmorDescriptionGui : RadialDescriptionBase
 
 	public override void UpdateInfo(ItemBase targetItem, Color roleColor)
 	{
-		_title.text = ((targetItem is IItemNametag itemNametag) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
-		_itemLimits.color = roleColor;
-		_ammoLimits.color = roleColor;
+		this._title.text = ((targetItem is IItemNametag itemNametag) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
+		this._itemLimits.color = roleColor;
+		this._ammoLimits.color = roleColor;
 		if (!(targetItem is BodyArmor bodyArmor))
 		{
 			return;
 		}
-		_helmetBar.SetValue((float)bodyArmor.HelmetEfficacy / 100f, bodyArmor.HelmetEfficacy + "%", roleColor);
-		_vestBar.SetValue((float)bodyArmor.VestEfficacy / 100f, bodyArmor.VestEfficacy + "%", roleColor);
+		this._helmetBar.SetValue((float)bodyArmor.HelmetEfficacy / 100f, bodyArmor.HelmetEfficacy + "%", roleColor);
+		this._vestBar.SetValue((float)bodyArmor.VestEfficacy / 100f, bodyArmor.VestEfficacy + "%", roleColor);
 		float staminaUsageMultiplier = bodyArmor.StaminaUsageMultiplier;
 		float movementSpeedMultiplier = bodyArmor.MovementSpeedMultiplier;
-		_staminaBar.SetValue(staminaUsageMultiplier - 1f, "+" + Mathf.Round((staminaUsageMultiplier - 1f) * 100f) + "%", roleColor);
-		_movementBar.SetValue(movementSpeedMultiplier, "-" + Mathf.Round((1f - movementSpeedMultiplier) * 100f) + "%", roleColor);
+		this._staminaBar.SetValue(staminaUsageMultiplier - 1f, "+" + Mathf.Round((staminaUsageMultiplier - 1f) * 100f) + "%", roleColor);
+		this._movementBar.SetValue(movementSpeedMultiplier, "-" + Mathf.Round((1f - movementSpeedMultiplier) * 100f) + "%", roleColor);
 		string totalWord = TranslationReader.Get("InventoryGUI", 14, "total");
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
 		if (TranslationReader.TryGet("InventoryGUI", 12, out var val))
@@ -58,7 +58,7 @@ public class ArmorDescriptionGui : RadialDescriptionBase
 			{
 				BodyArmor.ArmorCategoryLimitModifier armorCategoryLimitModifier = categoryLimits[i];
 				string label = TranslationReader.Get("Categories", (int)armorCategoryLimitModifier.Category, armorCategoryLimitModifier.Category.ToString());
-				AddRecord(stringBuilder, armorCategoryLimitModifier.Limit, label, InventoryLimits.GetCategoryLimit(bodyArmor, armorCategoryLimitModifier.Category), totalWord);
+				this.AddRecord(stringBuilder, armorCategoryLimitModifier.Limit, label, InventoryLimits.GetCategoryLimit(bodyArmor, armorCategoryLimitModifier.Category), totalWord);
 			}
 		}
 		StringBuilder stringBuilder2 = StringBuilderPool.Shared.Rent();
@@ -73,12 +73,12 @@ public class ArmorDescriptionGui : RadialDescriptionBase
 				BodyArmor.ArmorAmmoLimit armorAmmoLimit = ammoLimits[i];
 				if (InventoryItemLoader.AvailableItems.TryGetValue(armorAmmoLimit.AmmoType, out var value) && value is IItemNametag itemNametag2)
 				{
-					AddRecord(stringBuilder2, armorAmmoLimit.Limit, itemNametag2.Name, InventoryLimits.GetAmmoLimit(bodyArmor, armorAmmoLimit.AmmoType), totalWord);
+					this.AddRecord(stringBuilder2, armorAmmoLimit.Limit, itemNametag2.Name, InventoryLimits.GetAmmoLimit(bodyArmor, armorAmmoLimit.AmmoType), totalWord);
 				}
 			}
 		}
-		_itemLimits.text = stringBuilder.ToString();
-		_ammoLimits.text = stringBuilder2.ToString();
+		this._itemLimits.text = stringBuilder.ToString();
+		this._ammoLimits.text = stringBuilder2.ToString();
 		StringBuilderPool.Shared.Return(stringBuilder);
 		StringBuilderPool.Shared.Return(stringBuilder2);
 	}

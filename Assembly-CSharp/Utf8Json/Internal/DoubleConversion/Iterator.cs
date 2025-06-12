@@ -6,7 +6,7 @@ internal struct Iterator
 
 	private int offset;
 
-	public byte Value => buffer[offset];
+	public byte Value => this.buffer[this.offset];
 
 	public Iterator(byte[] buffer, int offset)
 	{
@@ -22,10 +22,11 @@ internal struct Iterator
 
 	public static Iterator operator +(Iterator self, int length)
 	{
-		Iterator result = default(Iterator);
-		result.buffer = self.buffer;
-		result.offset = self.offset + length;
-		return result;
+		return new Iterator
+		{
+			buffer = self.buffer,
+			offset = self.offset + length
+		};
 	}
 
 	public static int operator -(Iterator lhs, Iterator rhs)

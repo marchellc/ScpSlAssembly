@@ -16,10 +16,10 @@ public readonly struct RoundRestartMessage : NetworkMessage
 
 	public RoundRestartMessage(RoundRestartType type, float offset, ushort newport, bool reconnect, bool extendedReconnectionPeriod)
 	{
-		Type = type;
-		TimeOffset = offset;
-		NewPort = newport;
-		Reconnect = reconnect;
-		ExtendedReconnectionPeriod = extendedReconnectionPeriod;
+		this.Type = type;
+		this.TimeOffset = offset;
+		this.NewPort = newport;
+		this.Reconnect = reconnect;
+		this.ExtendedReconnectionPeriod = extendedReconnectionPeriod;
 	}
 }

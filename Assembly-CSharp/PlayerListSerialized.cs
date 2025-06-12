@@ -14,25 +14,25 @@ public readonly struct PlayerListSerialized : IEquatable<PlayerListSerialized>, 
 
 	public bool Equals(PlayerListSerialized other)
 	{
-		return objects == other.objects;
+		return this.objects == other.objects;
 	}
 
 	public override bool Equals(object obj)
 	{
 		if (obj is PlayerListSerialized other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		if (objects == null)
+		if (this.objects == null)
 		{
 			return 0;
 		}
-		return objects.GetHashCode();
+		return this.objects.GetHashCode();
 	}
 
 	public static bool operator ==(PlayerListSerialized left, PlayerListSerialized right)

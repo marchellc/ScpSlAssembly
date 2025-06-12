@@ -16,21 +16,21 @@ public static class HumanSpawner
 		{
 			get
 			{
-				if (_history == null)
+				if (this._history == null)
 				{
-					_history = new RoleTypeId[5];
+					this._history = new RoleTypeId[5];
 					for (int i = 0; i < 5; i++)
 					{
-						_history[i] = RoleTypeId.None;
+						this._history[i] = RoleTypeId.None;
 					}
 				}
-				return _history;
+				return this._history;
 			}
 		}
 
 		public void RegisterRole(RoleTypeId role)
 		{
-			History[_clock++ % 5] = role;
+			this.History[this._clock++ % 5] = role;
 		}
 	}
 
@@ -59,12 +59,12 @@ public static class HumanSpawner
 	{
 		get
 		{
-			if (_queueLength == 0)
+			if (HumanSpawner._queueLength == 0)
 			{
 				throw new InvalidOperationException("Failed to get next role to spawn, queue has no human roles.");
 			}
-			Team key = _humanQueue[_queueClock++ % _queueLength];
-			if (!Handlers.TryGetValue(key, out var value))
+			Team key = HumanSpawner._humanQueue[HumanSpawner._queueClock++ % HumanSpawner._queueLength];
+			if (!HumanSpawner.Handlers.TryGetValue(key, out var value))
 			{
 				return RoleTypeId.ClassD;
 			}
@@ -74,30 +74,30 @@ public static class HumanSpawner
 
 	public static void SpawnHumans(Team[] queue, int queueLength)
 	{
-		_humanQueue = queue;
-		_queueClock = 0;
-		_queueLength = queueLength;
+		HumanSpawner._humanQueue = queue;
+		HumanSpawner._queueClock = 0;
+		HumanSpawner._queueLength = queueLength;
 		int num = ReferenceHub.AllHubs.Count(RoleAssigner.CheckPlayer);
 		RoleTypeId[] array = new RoleTypeId[num];
 		for (int i = 0; i < num; i++)
 		{
-			array[i] = NextHumanRoleToSpawn;
+			array[i] = HumanSpawner.NextHumanRoleToSpawn;
 		}
 		array.ShuffleList();
 		for (int j = 0; j < num; j++)
 		{
-			AssignHumanRoleToRandomPlayer(array[j]);
+			HumanSpawner.AssignHumanRoleToRandomPlayer(array[j]);
 		}
 	}
 
 	public static void SpawnLate(ReferenceHub ply)
 	{
-		ply.roleManager.ServerSetRole(NextHumanRoleToSpawn, RoleChangeReason.LateJoin);
+		ply.roleManager.ServerSetRole(HumanSpawner.NextHumanRoleToSpawn, RoleChangeReason.LateJoin);
 	}
 
 	private static void AssignHumanRoleToRandomPlayer(RoleTypeId role)
 	{
-		Candidates.Clear();
+		HumanSpawner.Candidates.Clear();
 		int num = int.MaxValue;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
@@ -105,11 +105,11 @@ public static class HumanSpawner
 			{
 				continue;
 			}
-			RoleHistory orAdd = History.GetOrAdd(allHub.authManager.UserId, () => new RoleHistory());
+			RoleHistory orAdd = HumanSpawner.History.GetOrAdd(allHub.authManager.UserId, () => new RoleHistory());
 			int num2 = 0;
-			for (int i = 0; i < 5; i++)
+			for (int num3 = 0; num3 < 5; num3++)
 			{
-				if (orAdd.History[i] == role)
+				if (orAdd.History[num3] == role)
 				{
 					num2++;
 				}
@@ -118,17 +118,17 @@ public static class HumanSpawner
 			{
 				if (num2 < num)
 				{
-					Candidates.Clear();
+					HumanSpawner.Candidates.Clear();
 				}
-				Candidates.Add(allHub);
+				HumanSpawner.Candidates.Add(allHub);
 				num = num2;
 			}
 		}
-		if (Candidates.Count != 0)
+		if (HumanSpawner.Candidates.Count != 0)
 		{
-			ReferenceHub referenceHub = Candidates.RandomItem();
+			ReferenceHub referenceHub = HumanSpawner.Candidates.RandomItem();
 			referenceHub.roleManager.ServerSetRole(role, RoleChangeReason.RoundStart);
-			History[referenceHub.authManager.UserId].RegisterRole(role);
+			HumanSpawner.History[referenceHub.authManager.UserId].RegisterRole(role);
 		}
 	}
 }

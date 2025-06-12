@@ -18,12 +18,12 @@ public class ZonePostProcessing : MonoBehaviour
 		{
 			if (weight > 0f)
 			{
-				_volume.enabled = true;
-				_volume.weight = Mathf.Clamp01(weight);
+				this._volume.enabled = true;
+				this._volume.weight = Mathf.Clamp01(weight);
 			}
 			else
 			{
-				_volume.enabled = false;
+				this._volume.enabled = false;
 			}
 		}
 	}
@@ -63,7 +63,7 @@ public class ZonePostProcessing : MonoBehaviour
 		SeedSynchronizer.OnGenerationFinished += Initalize;
 		if (SeedSynchronizer.MapGenerated)
 		{
-			Initalize();
+			this.Initalize();
 		}
 	}
 
@@ -76,36 +76,36 @@ public class ZonePostProcessing : MonoBehaviour
 	private void UpdateWeights()
 	{
 		Vector3 lastPosition = MainCameraController.LastPosition;
-		if (lastPosition.TryGetRoom(out var room) && room != _lastDetectedRoom)
+		if (lastPosition.TryGetRoom(out var room) && room != this._lastDetectedRoom)
 		{
-			if (CheckWhitelisted(room))
+			if (this.CheckWhitelisted(room))
 			{
-				_lastWhitelistedRoom = room;
-				_lastBounds = GetRoomBounds(room);
-				_lastZone = room.Zone;
+				this._lastWhitelistedRoom = room;
+				this._lastBounds = this.GetRoomBounds(room);
+				this._lastZone = room.Zone;
 			}
-			_lastDetectedRoom = room;
+			this._lastDetectedRoom = room;
 		}
 		ZoneVolumePair[] zoneVols;
-		if (_lastWhitelistedRoom == room)
+		if (this._lastWhitelistedRoom == room)
 		{
-			zoneVols = _zoneVols;
+			zoneVols = this._zoneVols;
 			for (int i = 0; i < zoneVols.Length; i++)
 			{
 				ZoneVolumePair zoneVolumePair = zoneVols[i];
-				zoneVolumePair.SetWeight((zoneVolumePair.Zone == _lastZone) ? 1 : 0);
+				zoneVolumePair.SetWeight((zoneVolumePair.Zone == this._lastZone) ? 1 : 0);
 			}
 			return;
 		}
 		FacilityZone facilityZone = FacilityZone.None;
-		float num = _maxTransitionDis * _maxTransitionDis;
-		zoneVols = _zoneVols;
+		float num = this._maxTransitionDis * this._maxTransitionDis;
+		zoneVols = this._zoneVols;
 		for (int i = 0; i < zoneVols.Length; i++)
 		{
 			ZoneVolumePair zoneVolumePair2 = zoneVols[i];
-			if (zoneVolumePair2.Zone != _lastZone)
+			if (zoneVolumePair2.Zone != this._lastZone)
 			{
-				float num2 = _boundsPerZone[(int)zoneVolumePair2.Zone].SqrDistance(lastPosition);
+				float num2 = this._boundsPerZone[(int)zoneVolumePair2.Zone].SqrDistance(lastPosition);
 				if (!(num2 >= num))
 				{
 					facilityZone = zoneVolumePair2.Zone;
@@ -118,14 +118,14 @@ public class ZonePostProcessing : MonoBehaviour
 			return;
 		}
 		float num3 = Mathf.Sqrt(num);
-		float num4 = Mathf.Sqrt(_lastBounds.SqrDistance(lastPosition));
-		float num5 = Mathf.Min(_maxTransitionDis, num3 + num4);
+		float num4 = Mathf.Sqrt(this._lastBounds.SqrDistance(lastPosition));
+		float num5 = Mathf.Min(this._maxTransitionDis, num3 + num4);
 		float num6 = Mathf.Clamp01(num3 / num5);
-		zoneVols = _zoneVols;
+		zoneVols = this._zoneVols;
 		for (int i = 0; i < zoneVols.Length; i++)
 		{
 			ZoneVolumePair zoneVolumePair3 = zoneVols[i];
-			if (zoneVolumePair3.Zone == _lastZone)
+			if (zoneVolumePair3.Zone == this._lastZone)
 			{
 				zoneVolumePair3.SetWeight(num6);
 			}
@@ -142,15 +142,15 @@ public class ZonePostProcessing : MonoBehaviour
 
 	private void Initalize()
 	{
-		if (!_initalized)
+		if (!this._initalized)
 		{
-			_initalized = true;
-			_whitelistedZones = new FacilityZone[_zoneVols.Length];
-			for (int i = 0; i < _zoneVols.Length; i++)
+			this._initalized = true;
+			this._whitelistedZones = new FacilityZone[this._zoneVols.Length];
+			for (int i = 0; i < this._zoneVols.Length; i++)
 			{
-				_whitelistedZones[i] = _zoneVols[i].Zone;
+				this._whitelistedZones[i] = this._zoneVols[i].Zone;
 			}
-			GenerateZoneBounds();
+			this.GenerateZoneBounds();
 			MainCameraController.OnUpdated += UpdateWeights;
 		}
 	}
@@ -158,44 +158,44 @@ public class ZonePostProcessing : MonoBehaviour
 	private void GenerateZoneBounds()
 	{
 		int maxValue = 0;
-		_zoneVols.ForEach(delegate(ZoneVolumePair x)
+		this._zoneVols.ForEach(delegate(ZoneVolumePair x)
 		{
 			maxValue = Mathf.Max(maxValue, (int)x.Zone);
 		});
 		int num = maxValue + 1;
-		_boundsSet = new bool[num];
-		_boundsPerZone = new Bounds[num];
-		_boundsSize = Vector3.Scale(RoomIdentifier.GridScale, new Vector3(1f, _heightMultiplier, 1f));
+		this._boundsSet = new bool[num];
+		this._boundsPerZone = new Bounds[num];
+		this._boundsSize = Vector3.Scale(RoomIdentifier.GridScale, new Vector3(1f, this._heightMultiplier, 1f));
 		RoomIdentifier.AllRoomIdentifiers.ForEach(AddRoomToBounds);
 	}
 
 	private void AddRoomToBounds(RoomIdentifier room)
 	{
-		if (CheckWhitelisted(room))
+		if (this.CheckWhitelisted(room))
 		{
 			int zone = (int)room.Zone;
-			Bounds roomBounds = GetRoomBounds(room);
-			if (_boundsSet[zone])
+			Bounds roomBounds = this.GetRoomBounds(room);
+			if (this._boundsSet[zone])
 			{
-				_boundsPerZone[zone].Encapsulate(roomBounds);
+				this._boundsPerZone[zone].Encapsulate(roomBounds);
 				return;
 			}
-			_boundsSet[zone] = true;
-			_boundsPerZone[zone] = roomBounds;
+			this._boundsSet[zone] = true;
+			this._boundsPerZone[zone] = roomBounds;
 		}
 	}
 
 	private bool CheckWhitelisted(RoomIdentifier room)
 	{
-		if (!_excludedRooms.Contains(room.Name))
+		if (!this._excludedRooms.Contains(room.Name))
 		{
-			return _whitelistedZones.Contains(room.Zone);
+			return this._whitelistedZones.Contains(room.Zone);
 		}
 		return false;
 	}
 
 	private Bounds GetRoomBounds(RoomIdentifier room)
 	{
-		return new Bounds(room.transform.position, _boundsSize);
+		return new Bounds(room.transform.position, this._boundsSize);
 	}
 }

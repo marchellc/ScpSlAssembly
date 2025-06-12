@@ -16,25 +16,25 @@ public struct ObjectiveHubFootprint
 
 	public ObjectiveHubFootprint(ReferenceHub hub, RoleTypeId role = RoleTypeId.None)
 	{
-		Nickname = ((hub != null) ? hub.nicknameSync.DisplayName : "???");
-		RoleType = ((role == RoleTypeId.None) ? hub.GetRoleId() : role);
+		this.Nickname = ((hub != null) ? hub.nicknameSync.DisplayName : "???");
+		this.RoleType = ((role == RoleTypeId.None) ? hub.GetRoleId() : role);
 	}
 
 	public ObjectiveHubFootprint(Footprint footprint)
 	{
-		Nickname = footprint.Nickname;
-		RoleType = footprint.Role;
+		this.Nickname = footprint.Nickname;
+		this.RoleType = footprint.Role;
 	}
 
 	public ObjectiveHubFootprint(NetworkReader reader)
 	{
-		Nickname = reader.ReadString();
-		RoleType = reader.ReadRoleType();
+		this.Nickname = reader.ReadString();
+		this.RoleType = reader.ReadRoleType();
 	}
 
 	public void Write(NetworkWriter writer)
 	{
-		writer.WriteString(Nickname);
-		writer.WriteRoleType(RoleType);
+		writer.WriteString(this.Nickname);
+		writer.WriteRoleType(this.RoleType);
 	}
 }

@@ -11,7 +11,7 @@ public readonly struct FpcRotationOverrideMessage : NetworkMessage
 
 	public FpcRotationOverrideMessage(Vector2 rotation)
 	{
-		Rotation = rotation;
+		this.Rotation = rotation;
 	}
 
 	public FpcRotationOverrideMessage(NetworkReader reader)
@@ -21,13 +21,13 @@ public readonly struct FpcRotationOverrideMessage : NetworkMessage
 		ushort num3 = (ushort)(num << 16);
 		float x = Mathf.Lerp(-360f, 360f, (float)(int)num3 / 65535f);
 		float y = Mathf.Lerp(-360f, 360f, (float)(int)num2 / 65535f);
-		Rotation = new Vector2(x, y);
+		this.Rotation = new Vector2(x, y);
 	}
 
 	public void Write(NetworkWriter writer)
 	{
-		float num = Mathf.InverseLerp(-360f, 360f, Rotation.x);
-		float num2 = Mathf.InverseLerp(-360f, 360f, Rotation.y);
+		float num = Mathf.InverseLerp(-360f, 360f, this.Rotation.x);
+		float num2 = Mathf.InverseLerp(-360f, 360f, this.Rotation.y);
 		ushort num3 = (ushort)Mathf.RoundToInt(num * 65535f);
 		ushort num4 = (ushort)Mathf.RoundToInt(num2 * 65535f);
 		int num5 = num3;
@@ -40,8 +40,8 @@ public readonly struct FpcRotationOverrideMessage : NetworkMessage
 	{
 		if (ReferenceHub.TryGetLocalHub(out var hub) && hub.roleManager.CurrentRole is IFpcRole fpcRole && fpcRole.FpcModule.ModuleReady)
 		{
-			fpcRole.FpcModule.MouseLook.CurrentVertical = Rotation.x;
-			fpcRole.FpcModule.MouseLook.CurrentHorizontal = Rotation.y;
+			fpcRole.FpcModule.MouseLook.CurrentVertical = this.Rotation.x;
+			fpcRole.FpcModule.MouseLook.CurrentHorizontal = this.Rotation.y;
 		}
 	}
 }

@@ -26,9 +26,9 @@ public class MimicryMenuController : ToggleableMenuBase
 	{
 		get
 		{
-			if (SingletonSet)
+			if (MimicryMenuController.SingletonSet)
 			{
-				return !Singleton.gameObject.activeSelf;
+				return !MimicryMenuController.Singleton.gameObject.activeSelf;
 			}
 			return false;
 		}
@@ -50,26 +50,26 @@ public class MimicryMenuController : ToggleableMenuBase
 	{
 		get
 		{
-			if (!SingletonSet)
+			if (!MimicryMenuController.SingletonSet)
 			{
 				return 1f;
 			}
-			if (!Singleton._canvasCacheSet)
+			if (!MimicryMenuController.Singleton._canvasCacheSet)
 			{
-				Singleton._cachedCanvas = Singleton.GetComponentInParent<Canvas>();
-				Singleton._canvasCacheSet = true;
+				MimicryMenuController.Singleton._cachedCanvas = MimicryMenuController.Singleton.GetComponentInParent<Canvas>();
+				MimicryMenuController.Singleton._canvasCacheSet = true;
 			}
-			return Singleton._cachedCanvas.scaleFactor;
+			return MimicryMenuController.Singleton._cachedCanvas.scaleFactor;
 		}
 	}
 
 	private void Update()
 	{
-		float num = (IsEnabled ? 1f : (-1f));
-		float newAlpha = _fader.alpha + num * Time.deltaTime * _fadeSpeed;
+		float num = (this.IsEnabled ? 1f : (-1f));
+		float newAlpha = this._fader.alpha + num * Time.deltaTime * this._fadeSpeed;
 		newAlpha = Mathf.Clamp01(newAlpha);
-		_fader.alpha = newAlpha;
-		_inverseFaders.ForEach(delegate(CanvasGroup x)
+		this._fader.alpha = newAlpha;
+		this._inverseFaders.ForEach(delegate(CanvasGroup x)
 		{
 			x.alpha = 1f - newAlpha;
 		});
@@ -82,23 +82,23 @@ public class MimicryMenuController : ToggleableMenuBase
 	protected override void Awake()
 	{
 		base.Awake();
-		Singleton = this;
-		SingletonSet = true;
+		MimicryMenuController.Singleton = this;
+		MimicryMenuController.SingletonSet = true;
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		if (!(Singleton != this))
+		if (!(MimicryMenuController.Singleton != this))
 		{
-			Singleton = null;
-			SingletonSet = false;
+			MimicryMenuController.Singleton = null;
+			MimicryMenuController.SingletonSet = false;
 		}
 	}
 
 	protected override void OnToggled()
 	{
-		if (IsEnabled)
+		if (this.IsEnabled)
 		{
 			base.gameObject.SetActive(value: true);
 		}

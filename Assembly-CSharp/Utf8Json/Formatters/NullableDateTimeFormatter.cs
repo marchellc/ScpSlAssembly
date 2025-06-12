@@ -8,12 +8,12 @@ public sealed class NullableDateTimeFormatter : IJsonFormatter<DateTime?>, IJson
 
 	public NullableDateTimeFormatter()
 	{
-		innerFormatter = new DateTimeFormatter();
+		this.innerFormatter = new DateTimeFormatter();
 	}
 
 	public NullableDateTimeFormatter(string formatString)
 	{
-		innerFormatter = new DateTimeFormatter(formatString);
+		this.innerFormatter = new DateTimeFormatter(formatString);
 	}
 
 	public void Serialize(ref JsonWriter writer, DateTime? value, IJsonFormatterResolver formatterResolver)
@@ -24,7 +24,7 @@ public sealed class NullableDateTimeFormatter : IJsonFormatter<DateTime?>, IJson
 		}
 		else
 		{
-			innerFormatter.Serialize(ref writer, value.Value, formatterResolver);
+			this.innerFormatter.Serialize(ref writer, value.Value, formatterResolver);
 		}
 	}
 
@@ -34,6 +34,6 @@ public sealed class NullableDateTimeFormatter : IJsonFormatter<DateTime?>, IJson
 		{
 			return null;
 		}
-		return innerFormatter.Deserialize(ref reader, formatterResolver);
+		return this.innerFormatter.Deserialize(ref reader, formatterResolver);
 	}
 }

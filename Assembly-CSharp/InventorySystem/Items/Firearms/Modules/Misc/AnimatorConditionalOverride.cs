@@ -44,7 +44,7 @@ public class AnimatorConditionalOverride
 		bool flag = false;
 		for (int i = 0; i < num; i++)
 		{
-			if (clientViewmodelInstance.AnimatorStateInfo(i).tagHash == HandlingTag)
+			if (clientViewmodelInstance.AnimatorStateInfo(i).tagHash == AnimatorConditionalOverride.HandlingTag)
 			{
 				flag = true;
 				break;
@@ -52,14 +52,14 @@ public class AnimatorConditionalOverride
 		}
 		if (flag)
 		{
-			if (IsReloading(firearm))
+			if (this.IsReloading(firearm))
 			{
-				_wasReloading = true;
+				this._wasReloading = true;
 				return true;
 			}
-			return !_wasReloading;
+			return !this._wasReloading;
 		}
-		_wasReloading = false;
+		this._wasReloading = false;
 		return false;
 	}
 
@@ -67,17 +67,17 @@ public class AnimatorConditionalOverride
 	{
 		if (firearm.HasViewmodel)
 		{
-			if (_disableWhenHandling && IsHandling(firearm))
+			if (this._disableWhenHandling && this.IsHandling(firearm))
 			{
-				_handlingElapsed += Time.deltaTime;
+				this._handlingElapsed += Time.deltaTime;
 			}
 			else
 			{
-				_handlingElapsed = 0f;
+				this._handlingElapsed = 0f;
 			}
-			float num = ((!enabled || !(_handlingElapsed < 0.2f)) ? ((_disableSpeed <= 0f) ? (-1f) : ((0f - _disableSpeed) * Time.deltaTime)) : ((_enableSpeed <= 0f) ? 1f : (_enableSpeed * Time.deltaTime)));
-			_weight = Mathf.Clamp01(num + _weight);
-			_mask.SetWeight(firearm.ClientViewmodelInstance.AnimatorSetLayerWeight, _weight);
+			float num = ((!enabled || !(this._handlingElapsed < 0.2f)) ? ((this._disableSpeed <= 0f) ? (-1f) : ((0f - this._disableSpeed) * Time.deltaTime)) : ((this._enableSpeed <= 0f) ? 1f : (this._enableSpeed * Time.deltaTime)));
+			this._weight = Mathf.Clamp01(num + this._weight);
+			this._mask.SetWeight(firearm.ClientViewmodelInstance.AnimatorSetLayerWeight, this._weight);
 		}
 	}
 }

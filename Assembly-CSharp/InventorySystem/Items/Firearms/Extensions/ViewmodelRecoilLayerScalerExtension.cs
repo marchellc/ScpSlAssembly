@@ -25,26 +25,26 @@ public class ViewmodelRecoilLayerScalerExtension : MonoBehaviour, IViewmodelExte
 
 	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_viewmodel = viewmodel;
-		_fa = viewmodel.ParentFirearm;
-		_shotsCounter = new SubsequentShotsCounter(_fa, 0f, 0f, 0f);
-		_shotsCounter.OnShotRecorded += delegate
+		this._viewmodel = viewmodel;
+		this._fa = viewmodel.ParentFirearm;
+		this._shotsCounter = new SubsequentShotsCounter(this._fa, 0f, 0f, 0f);
+		this._shotsCounter.OnShotRecorded += delegate
 		{
-			_lastShotBonus = _shotsCounter.SubsequentShots;
+			this._lastShotBonus = this._shotsCounter.SubsequentShots;
 		};
 	}
 
 	private void Update()
 	{
-		float num = _fa.AttachmentsValue(AttachmentParam.OverallRecoilMultiplier);
-		_lastShotBonus = Mathf.MoveTowards(_lastShotBonus, 1f, Time.deltaTime * _postShotReturnSpeed);
-		float num2 = _weightOverScale.Evaluate(_lastShotBonus * num);
-		_recoilLayers.SetWeight(_viewmodel.AnimatorSetLayerWeight, num2);
-		int[] layers = _recoilLayers.Layers;
+		float num = this._fa.AttachmentsValue(AttachmentParam.OverallRecoilMultiplier);
+		this._lastShotBonus = Mathf.MoveTowards(this._lastShotBonus, 1f, Time.deltaTime * this._postShotReturnSpeed);
+		float num2 = this._weightOverScale.Evaluate(this._lastShotBonus * num);
+		this._recoilLayers.SetWeight(this._viewmodel.AnimatorSetLayerWeight, num2);
+		int[] layers = this._recoilLayers.Layers;
 		foreach (int layer in layers)
 		{
-			_viewmodel.AnimatorSetLayerWeight(layer, num2);
+			this._viewmodel.AnimatorSetLayerWeight(layer, num2);
 		}
-		_shotsCounter.Update();
+		this._shotsCounter.Update();
 	}
 }

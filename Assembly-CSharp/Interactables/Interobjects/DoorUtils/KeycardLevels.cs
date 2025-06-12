@@ -20,26 +20,26 @@ public readonly struct KeycardLevels
 
 	public readonly int Admin;
 
-	public int HighestLevelValue => Mathf.Max(Containment, Mathf.Max(Armory, Admin));
+	public int HighestLevelValue => Mathf.Max(this.Containment, Mathf.Max(this.Armory, this.Admin));
 
 	public DoorPermissionFlags Permissions
 	{
 		get
 		{
 			DoorPermissionFlags doorPermissionFlags = DoorPermissionFlags.None;
-			for (int i = 0; i < Containment; i++)
+			for (int i = 0; i < this.Containment; i++)
 			{
 				int num = 16 << i;
 				doorPermissionFlags = (DoorPermissionFlags)((uint)doorPermissionFlags | (uint)(ushort)num);
 			}
-			for (int j = 0; j < Armory; j++)
+			for (int j = 0; j < this.Armory; j++)
 			{
 				int num2 = 128 << j;
 				doorPermissionFlags = (DoorPermissionFlags)((uint)doorPermissionFlags | (uint)(ushort)num2);
 			}
-			for (int k = 0; k < Admin; k++)
+			for (int k = 0; k < this.Admin; k++)
 			{
-				doorPermissionFlags |= AdminLevels[k + 1];
+				doorPermissionFlags |= KeycardLevels.AdminLevels[k + 1];
 			}
 			return doorPermissionFlags;
 		}
@@ -47,15 +47,15 @@ public readonly struct KeycardLevels
 
 	public KeycardLevels(DoorPermissionFlags flags)
 	{
-		Containment = 0;
-		Armory = 0;
-		Admin = 0;
+		this.Containment = 0;
+		this.Armory = 0;
+		this.Admin = 0;
 		for (int i = 0; i < 3; i++)
 		{
 			DoorPermissionFlags flag = (DoorPermissionFlags)(16 << i);
 			if (flags.HasFlagAny(flag))
 			{
-				Containment = i + 1;
+				this.Containment = i + 1;
 			}
 		}
 		for (int j = 0; j < 3; j++)
@@ -63,14 +63,14 @@ public readonly struct KeycardLevels
 			DoorPermissionFlags flag2 = (DoorPermissionFlags)(128 << j);
 			if (flags.HasFlagAny(flag2))
 			{
-				Armory = j + 1;
+				this.Armory = j + 1;
 			}
 		}
 		for (int num = 3; num > 0; num--)
 		{
-			if (flags.HasFlagAny(AdminLevels[num]))
+			if (flags.HasFlagAny(KeycardLevels.AdminLevels[num]))
 			{
-				Admin = num;
+				this.Admin = num;
 				break;
 			}
 		}
@@ -84,8 +84,8 @@ public readonly struct KeycardLevels
 			armory = Mathf.Clamp(armory, 0, 3);
 			admin = Mathf.Clamp(admin, 0, 3);
 		}
-		Containment = containment;
-		Armory = armory;
-		Admin = admin;
+		this.Containment = containment;
+		this.Armory = armory;
+		this.Admin = admin;
 	}
 }

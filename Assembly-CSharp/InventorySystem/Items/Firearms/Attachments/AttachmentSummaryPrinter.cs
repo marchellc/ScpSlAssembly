@@ -23,15 +23,15 @@ public class AttachmentSummaryPrinter : MonoBehaviour
 
 		private readonly int _translationIndex;
 
-		public string Label => TranslationReader.Get(_translationKey, _translationIndex);
+		public string Label => TranslationReader.Get(this._translationKey, this._translationIndex);
 
 		public bool Ignored
 		{
 			get
 			{
-				if (_validator != null)
+				if (this._validator != null)
 				{
-					return !_validator();
+					return !this._validator();
 				}
 				return false;
 			}
@@ -44,30 +44,30 @@ public class AttachmentSummaryPrinter : MonoBehaviour
 
 		public string CompareTo(AttachmentSummaryPrinter printer, Firearm fa, float otherValue)
 		{
-			float value = GetValue(fa);
-			string text = Round(value) + _unit;
-			if (Round(value) == Round(otherValue))
+			float value = this.GetValue(fa);
+			string text = this.Round(value) + this._unit;
+			if (this.Round(value) == this.Round(otherValue))
 			{
 				return text;
 			}
 			bool flag = value > otherValue;
-			string text2 = ((_moreIsBetter ? flag : (!flag)) ? printer._goodColor : printer._badColor);
+			string text2 = ((this._moreIsBetter ? flag : (!flag)) ? printer._goodColor : printer._badColor);
 			return "<color=#" + text2 + ">" + text + "</color>";
 		}
 
 		public float GetValue(Firearm fa)
 		{
-			return _fetcher(fa);
+			return this._fetcher(fa);
 		}
 
 		public ComparableStat(Func<Firearm, float> fetcher, string unit, bool moreIsBetter, string translationKey, int translationIndex, Func<bool> validator = null)
 		{
-			_fetcher = fetcher;
-			_translationKey = translationKey;
-			_translationIndex = translationIndex;
-			_unit = unit;
-			_moreIsBetter = moreIsBetter;
-			_validator = validator;
+			this._fetcher = fetcher;
+			this._translationKey = translationKey;
+			this._translationIndex = translationIndex;
+			this._unit = unit;
+			this._moreIsBetter = moreIsBetter;
+			this._validator = validator;
 		}
 
 		public ComparableStat(Func<Firearm, float> fetcher, string unit, bool moreIsBetter, AttachmentParam param, Func<bool> validator = null)
@@ -86,8 +86,8 @@ public class AttachmentSummaryPrinter : MonoBehaviour
 		public ComparableConfiguration(ItemType weapon, string label, uint code)
 		{
 			bool flag = AttachmentPreferences.GetSavedPreferenceCode(weapon) == code;
-			ConfigurationName = string.Format(flag ? "<b><u>{0}</u></b>" : "{0}", label);
-			Code = code;
+			this.ConfigurationName = string.Format(flag ? "<b><u>{0}</u></b>" : "{0}", label);
+			this.Code = code;
 		}
 	}
 
@@ -101,32 +101,32 @@ public class AttachmentSummaryPrinter : MonoBehaviour
 
 	private static readonly ComparableStat[] StatsToCompare = new ComparableStat[21]
 	{
-		new ComparableStat((Firearm fa) => GetStatSafe(fa, (IHitregModule x) => x.DisplayDamage), "", moreIsBetter: true, AttachmentParam.DamageMultiplier),
-		new ComparableStat((Firearm fa) => GetStatSafe(fa, (IHitregModule x) => x.DisplayPenetration * 100f), "%", moreIsBetter: true, AttachmentParam.PenetrationMultiplier),
-		new ComparableStat((Firearm fa) => GetStatSafe(fa, (IActionModule x) => x.DisplayCyclicRate * 60f), "/MIN", moreIsBetter: true, AttachmentParam.FireRateMultiplier),
-		new ComparableStat((Firearm fa) => GetStatSafe(fa, (IDisplayableRecoilProviderModule x) => Mathf.Round(x.DisplayHipRecoilDegrees * 60f)), "′", moreIsBetter: false, AttachmentParam.OverallRecoilMultiplier),
-		new ComparableStat((Firearm fa) => GetStatSafe(fa, (IDisplayableRecoilProviderModule x) => Mathf.Round(x.DisplayAdsRecoilDegrees * 60f)), "′", moreIsBetter: false, AttachmentParam.AdsRecoilMultiplier),
-		new ComparableStat((Firearm fa) => GetStatSafe(fa, (IPrimaryAmmoContainerModule x) => x.AmmoMax), "", moreIsBetter: true, AttachmentParam.MagazineCapacityModifier),
+		new ComparableStat((Firearm fa) => AttachmentSummaryPrinter.GetStatSafe(fa, (IHitregModule x) => x.DisplayDamage), "", moreIsBetter: true, AttachmentParam.DamageMultiplier),
+		new ComparableStat((Firearm fa) => AttachmentSummaryPrinter.GetStatSafe(fa, (IHitregModule x) => x.DisplayPenetration * 100f), "%", moreIsBetter: true, AttachmentParam.PenetrationMultiplier),
+		new ComparableStat((Firearm fa) => AttachmentSummaryPrinter.GetStatSafe(fa, (IActionModule x) => x.DisplayCyclicRate * 60f), "/MIN", moreIsBetter: true, AttachmentParam.FireRateMultiplier),
+		new ComparableStat((Firearm fa) => AttachmentSummaryPrinter.GetStatSafe(fa, (IDisplayableRecoilProviderModule x) => Mathf.Round(x.DisplayHipRecoilDegrees * 60f)), "′", moreIsBetter: false, AttachmentParam.OverallRecoilMultiplier),
+		new ComparableStat((Firearm fa) => AttachmentSummaryPrinter.GetStatSafe(fa, (IDisplayableRecoilProviderModule x) => Mathf.Round(x.DisplayAdsRecoilDegrees * 60f)), "′", moreIsBetter: false, AttachmentParam.AdsRecoilMultiplier),
+		new ComparableStat((Firearm fa) => AttachmentSummaryPrinter.GetStatSafe(fa, (IPrimaryAmmoContainerModule x) => x.AmmoMax), "", moreIsBetter: true, AttachmentParam.MagazineCapacityModifier),
 		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa).BulletDeg, "°", moreIsBetter: false, AttachmentParam.BulletInaccuracyMultiplier, UsesDispersionMode),
 		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa).AdsDeg, "°", moreIsBetter: false, AttachmentParam.AdsInaccuracyMultiplier, UsesDispersionMode),
-		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa, addBulletToRest: true).GetAdsAccurateRange(imperial: false, rounded: true), " m", moreIsBetter: true, AttachmentParam.AdsInaccuracyMultiplier, () => UsesEffectiveRangeMode() && UsesMetric()),
-		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa, addBulletToRest: true).GetAdsAccurateRange(imperial: true, rounded: true), " yd", moreIsBetter: true, AttachmentParam.AdsInaccuracyMultiplier, () => UsesEffectiveRangeMode() && UsesImperial()),
+		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa, addBulletToRest: true).GetAdsAccurateRange(imperial: false, rounded: true), " m", moreIsBetter: true, AttachmentParam.AdsInaccuracyMultiplier, () => AttachmentSummaryPrinter.UsesEffectiveRangeMode() && AttachmentSummaryPrinter.UsesMetric()),
+		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa, addBulletToRest: true).GetAdsAccurateRange(imperial: true, rounded: true), " yd", moreIsBetter: true, AttachmentParam.AdsInaccuracyMultiplier, () => AttachmentSummaryPrinter.UsesEffectiveRangeMode() && AttachmentSummaryPrinter.UsesImperial()),
 		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa).HipDeg, "°", moreIsBetter: false, AttachmentParam.HipInaccuracyMultiplier, UsesDispersionMode),
-		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa, addBulletToRest: true).GetHipAccurateRange(imperial: false, rounded: true), " m", moreIsBetter: true, AttachmentParam.HipInaccuracyMultiplier, () => UsesEffectiveRangeMode() && UsesMetric()),
-		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa, addBulletToRest: true).GetHipAccurateRange(imperial: true, rounded: true), " yd", moreIsBetter: true, AttachmentParam.HipInaccuracyMultiplier, () => UsesEffectiveRangeMode() && UsesImperial()),
+		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa, addBulletToRest: true).GetHipAccurateRange(imperial: false, rounded: true), " m", moreIsBetter: true, AttachmentParam.HipInaccuracyMultiplier, () => AttachmentSummaryPrinter.UsesEffectiveRangeMode() && AttachmentSummaryPrinter.UsesMetric()),
+		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa, addBulletToRest: true).GetHipAccurateRange(imperial: true, rounded: true), " yd", moreIsBetter: true, AttachmentParam.HipInaccuracyMultiplier, () => AttachmentSummaryPrinter.UsesEffectiveRangeMode() && AttachmentSummaryPrinter.UsesImperial()),
 		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa).RunningDeg, "°", moreIsBetter: false, AttachmentParam.RunningInaccuracyMultiplier, UsesDispersionMode),
-		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa, addBulletToRest: true).GetRunningAccurateRange(imperial: false, rounded: true), " m", moreIsBetter: true, AttachmentParam.RunningInaccuracyMultiplier, () => UsesEffectiveRangeMode() && UsesMetric()),
-		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa, addBulletToRest: true).GetRunningAccurateRange(imperial: true, rounded: true), " yd", moreIsBetter: true, AttachmentParam.RunningInaccuracyMultiplier, () => UsesEffectiveRangeMode() && UsesImperial()),
-		new ComparableStat((Firearm fa) => GetStatSafe(fa, (IEquipperModule x) => x.GetDisplayEffectiveEquipTime(fa)), " s", moreIsBetter: false, AttachmentParam.DrawTimeModifier),
+		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa, addBulletToRest: true).GetRunningAccurateRange(imperial: false, rounded: true), " m", moreIsBetter: true, AttachmentParam.RunningInaccuracyMultiplier, () => AttachmentSummaryPrinter.UsesEffectiveRangeMode() && AttachmentSummaryPrinter.UsesMetric()),
+		new ComparableStat((Firearm fa) => IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(fa, addBulletToRest: true).GetRunningAccurateRange(imperial: true, rounded: true), " yd", moreIsBetter: true, AttachmentParam.RunningInaccuracyMultiplier, () => AttachmentSummaryPrinter.UsesEffectiveRangeMode() && AttachmentSummaryPrinter.UsesImperial()),
+		new ComparableStat((Firearm fa) => AttachmentSummaryPrinter.GetStatSafe(fa, (IEquipperModule x) => x.GetDisplayEffectiveEquipTime(fa)), " s", moreIsBetter: false, AttachmentParam.DrawTimeModifier),
 		new ComparableStat((Firearm fa) => fa.TotalLengthInches() * 2.54f, " cm", moreIsBetter: false, "InventoryGUI", 6, UsesMetric),
 		new ComparableStat((Firearm fa) => fa.TotalLengthInches(), "″", moreIsBetter: false, "InventoryGUI", 6, UsesImperial),
 		new ComparableStat((Firearm fa) => fa.TotalWeightKg(), " kg", moreIsBetter: false, "InventoryGUI", 5, UsesMetric),
 		new ComparableStat((Firearm fa) => fa.TotalWeightKg() * 2.20462f, " lbs", moreIsBetter: false, "InventoryGUI", 5, UsesImperial)
 	};
 
-	private static readonly List<string>[] ComparisonResults = new List<string>[StatsToCompare.Length];
+	private static readonly List<string>[] ComparisonResults = new List<string>[AttachmentSummaryPrinter.StatsToCompare.Length];
 
-	private static readonly float[] OriginalDataNonAlloc = new float[StatsToCompare.Length];
+	private static readonly float[] OriginalDataNonAlloc = new float[AttachmentSummaryPrinter.StatsToCompare.Length];
 
 	private readonly Queue<AttachmentSummaryEntry> _entryPool = new Queue<AttachmentSummaryEntry>();
 
@@ -159,7 +159,7 @@ public class AttachmentSummaryPrinter : MonoBehaviour
 	[SerializeField]
 	private Color _oddEntryColor;
 
-	private Firearm Firearm => _selectorReference.SelectedFirearm;
+	private Firearm Firearm => this._selectorReference.SelectedFirearm;
 
 	private static float GetStatSafe<T>(Firearm fa, Func<T, float> selector, float fallback = 0f)
 	{
@@ -177,7 +177,7 @@ public class AttachmentSummaryPrinter : MonoBehaviour
 
 	private static bool UsesMetric()
 	{
-		return !UsesImperial();
+		return !AttachmentSummaryPrinter.UsesImperial();
 	}
 
 	private static bool UsesDispersionMode()
@@ -187,115 +187,115 @@ public class AttachmentSummaryPrinter : MonoBehaviour
 
 	private static bool UsesEffectiveRangeMode()
 	{
-		return !UsesDispersionMode();
+		return !AttachmentSummaryPrinter.UsesDispersionMode();
 	}
 
 	private void OnEnable()
 	{
-		Refresh();
+		this.Refresh();
 	}
 
 	private void Update()
 	{
-		if (!(Firearm == _prevFirearm))
+		if (!(this.Firearm == this._prevFirearm))
 		{
-			_prevFirearm = Firearm;
-			Refresh();
+			this._prevFirearm = this.Firearm;
+			this.Refresh();
 		}
 	}
 
 	private void Refresh()
 	{
-		if (Firearm == null)
+		if (this.Firearm == null)
 		{
-			_selectorReference.ToggleSummaryScreen(summary: false);
+			this._selectorReference.ToggleSummaryScreen(summary: false);
 			return;
 		}
-		uint currentAttachmentsCode = Firearm.GetCurrentAttachmentsCode();
-		PrepareConfigurations(currentAttachmentsCode);
-		int count = _displayedConfigurations.Count;
-		_tableHeader.Setup(Firearm.Name, count, (int i) => _displayedConfigurations[i].ConfigurationName, isOdd: false);
-		for (int j = 0; j < count; j++)
+		uint currentAttachmentsCode = this.Firearm.GetCurrentAttachmentsCode();
+		this.PrepareConfigurations(currentAttachmentsCode);
+		int count = this._displayedConfigurations.Count;
+		this._tableHeader.Setup(this.Firearm.Name, count, (int index) => this._displayedConfigurations[index].ConfigurationName, isOdd: false);
+		for (int num = 0; num < count; num++)
 		{
-			UpdateComparableData(j);
+			this.UpdateComparableData(num);
 		}
 		bool flag = false;
-		int k;
-		for (k = 0; k < ComparisonResults.Length; k++)
+		int i;
+		for (i = 0; i < AttachmentSummaryPrinter.ComparisonResults.Length; i++)
 		{
-			if (!StatsToCompare[k].Ignored)
+			if (!AttachmentSummaryPrinter.StatsToCompare[i].Ignored)
 			{
-				if (!_entryPool.TryDequeue(out var result))
+				if (!this._entryPool.TryDequeue(out var result))
 				{
-					result = UnityEngine.Object.Instantiate(_entryTemplate, _entryTemplate.transform.parent);
+					result = UnityEngine.Object.Instantiate(this._entryTemplate, this._entryTemplate.transform.parent);
 				}
 				result.gameObject.SetActive(value: true);
-				result.Setup(StatsToCompare[k].Label, count, (int resultIndex) => ComparisonResults[k][resultIndex], flag);
-				_spawnedEntires.Add(result);
+				result.Setup(AttachmentSummaryPrinter.StatsToCompare[i].Label, count, (int resultIndex) => AttachmentSummaryPrinter.ComparisonResults[i][resultIndex], flag);
+				this._spawnedEntires.Add(result);
 				flag = !flag;
 			}
 		}
-		Firearm.ApplyAttachmentsCode(currentAttachmentsCode, reValidate: true);
+		this.Firearm.ApplyAttachmentsCode(currentAttachmentsCode, reValidate: true);
 	}
 
 	private void UpdateComparableData(int indexToCompare)
 	{
-		Firearm.ApplyAttachmentsCode(_displayedConfigurations[indexToCompare].Code, reValidate: false);
-		for (int i = 0; i < StatsToCompare.Length; i++)
+		this.Firearm.ApplyAttachmentsCode(this._displayedConfigurations[indexToCompare].Code, reValidate: false);
+		for (int i = 0; i < AttachmentSummaryPrinter.StatsToCompare.Length; i++)
 		{
-			ComparableStat comparableStat = StatsToCompare[i];
+			ComparableStat comparableStat = AttachmentSummaryPrinter.StatsToCompare[i];
 			if (!comparableStat.Ignored)
 			{
-				List<string> list = ComparisonResults[i];
+				List<string> list = AttachmentSummaryPrinter.ComparisonResults[i];
 				if (list == null)
 				{
 					list = new List<string>();
-					ComparisonResults[i] = list;
+					AttachmentSummaryPrinter.ComparisonResults[i] = list;
 				}
 				if (indexToCompare == 0)
 				{
-					OriginalDataNonAlloc[i] = comparableStat.GetValue(Firearm);
+					AttachmentSummaryPrinter.OriginalDataNonAlloc[i] = comparableStat.GetValue(this.Firearm);
 				}
 				while (list.Count <= indexToCompare)
 				{
 					list.Add(string.Empty);
 				}
-				list[indexToCompare] = comparableStat.CompareTo(this, Firearm, OriginalDataNonAlloc[i]);
+				list[indexToCompare] = comparableStat.CompareTo(this, this.Firearm, AttachmentSummaryPrinter.OriginalDataNonAlloc[i]);
 			}
 		}
 	}
 
 	private void PrepareConfigurations(uint initial)
 	{
-		foreach (AttachmentSummaryEntry spawnedEntire in _spawnedEntires)
+		foreach (AttachmentSummaryEntry spawnedEntire in this._spawnedEntires)
 		{
 			if (!(spawnedEntire == null))
 			{
 				spawnedEntire.gameObject.SetActive(value: false);
-				_entryPool.Enqueue(spawnedEntire);
+				this._entryPool.Enqueue(spawnedEntire);
 			}
 		}
-		_spawnedEntires.Clear();
-		_displayedCodes.Clear();
-		_displayedConfigurations.Clear();
-		AddConfiguration(0u, Translations.Get(AttachmentEditorsTranslation.DefaultAttachments), forceAdd: true);
-		if (AttachmentPreferences.GetPreset(Firearm.ItemTypeId) == 0)
+		this._spawnedEntires.Clear();
+		this._displayedCodes.Clear();
+		this._displayedConfigurations.Clear();
+		this.AddConfiguration(0u, Translations.Get(AttachmentEditorsTranslation.DefaultAttachments), forceAdd: true);
+		if (AttachmentPreferences.GetPreset(this.Firearm.ItemTypeId) == 0)
 		{
-			AddConfiguration(initial, Translations.Get(AttachmentEditorsTranslation.Custom), forceAdd: true);
+			this.AddConfiguration(initial, Translations.Get(AttachmentEditorsTranslation.Custom), forceAdd: true);
 		}
-		for (int i = 1; i <= _displayedPresets; i++)
+		for (int i = 1; i <= this._displayedPresets; i++)
 		{
-			uint preferenceCodeOfPreset = AttachmentPreferences.GetPreferenceCodeOfPreset(Firearm.ItemTypeId, i);
-			AddConfiguration(preferenceCodeOfPreset, string.Format(Translations.Get(AttachmentEditorsTranslation.PresetId), i));
+			uint preferenceCodeOfPreset = AttachmentPreferences.GetPreferenceCodeOfPreset(this.Firearm.ItemTypeId, i);
+			this.AddConfiguration(preferenceCodeOfPreset, string.Format(Translations.Get(AttachmentEditorsTranslation.PresetId), i));
 		}
 	}
 
 	private void AddConfiguration(uint attachmentCode, string label, bool forceAdd = false)
 	{
-		uint num = Firearm.ValidateAttachmentsCode(attachmentCode);
-		if (_displayedCodes.Add(num) || forceAdd)
+		uint num = this.Firearm.ValidateAttachmentsCode(attachmentCode);
+		if (this._displayedCodes.Add(num) || forceAdd)
 		{
-			_displayedConfigurations.Add(new ComparableConfiguration(Firearm.ItemTypeId, label, num));
+			this._displayedConfigurations.Add(new ComparableConfiguration(this.Firearm.ItemTypeId, label, num));
 		}
 	}
 }

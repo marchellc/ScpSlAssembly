@@ -21,30 +21,30 @@ public static class ConfigSharing
 
 	static ConfigSharing()
 	{
-		Shares = new string[7];
-		Paths = new string[7];
-		Reload();
+		ConfigSharing.Shares = new string[7];
+		ConfigSharing.Paths = new string[7];
+		ConfigSharing.Reload();
 	}
 
 	internal static void Reload()
 	{
-		Shares[0] = ConfigFile.SharingConfig.GetString("bans");
-		Shares[1] = ConfigFile.SharingConfig.GetString("mutes");
-		Shares[2] = ConfigFile.SharingConfig.GetString("whitelist");
-		Shares[3] = ConfigFile.SharingConfig.GetString("reserved_slots");
-		Shares[4] = ConfigFile.SharingConfig.GetString("groups");
-		Shares[5] = ConfigFile.SharingConfig.GetString("groups_members");
-		Shares[6] = ConfigFile.SharingConfig.GetString("gameplay_database");
-		for (ushort num = 0; num < Shares.Length; num++)
+		ConfigSharing.Shares[0] = ConfigFile.SharingConfig.GetString("bans");
+		ConfigSharing.Shares[1] = ConfigFile.SharingConfig.GetString("mutes");
+		ConfigSharing.Shares[2] = ConfigFile.SharingConfig.GetString("whitelist");
+		ConfigSharing.Shares[3] = ConfigFile.SharingConfig.GetString("reserved_slots");
+		ConfigSharing.Shares[4] = ConfigFile.SharingConfig.GetString("groups");
+		ConfigSharing.Shares[5] = ConfigFile.SharingConfig.GetString("groups_members");
+		ConfigSharing.Shares[6] = ConfigFile.SharingConfig.GetString("gameplay_database");
+		for (ushort num = 0; num < ConfigSharing.Shares.Length; num++)
 		{
-			if (Shares[num] == "disable")
+			if (ConfigSharing.Shares[num] == "disable")
 			{
-				Paths[num] = ((num == 4 || num == 5) ? null : FileManager.GetAppFolder(addSeparator: true, serverConfig: true));
+				ConfigSharing.Paths[num] = ((num == 4 || num == 5) ? null : FileManager.GetAppFolder(addSeparator: true, serverConfig: true));
 			}
 			else
 			{
-				Paths[num] = FileManager.GetAppFolder(addSeparator: true, serverConfig: true, Shares[num]);
-				string appFolder = FileManager.GetAppFolder(addSeparator: true, serverConfig: true, Shares[num]);
+				ConfigSharing.Paths[num] = FileManager.GetAppFolder(addSeparator: true, serverConfig: true, ConfigSharing.Shares[num]);
+				string appFolder = FileManager.GetAppFolder(addSeparator: true, serverConfig: true, ConfigSharing.Shares[num]);
 				if (!Directory.Exists(appFolder))
 				{
 					Directory.CreateDirectory(appFolder);
@@ -52,15 +52,15 @@ public static class ConfigSharing
 				switch (num)
 				{
 				case 5:
-					if (num == 5 && !File.Exists(Paths[num] + "shared_groups_members.txt"))
+					if (num == 5 && !File.Exists(ConfigSharing.Paths[num] + "shared_groups_members.txt"))
 					{
-						File.Copy("ConfigTemplates/shared_groups_members.template.txt", Paths[num] + "shared_groups_members.txt");
+						File.Copy("ConfigTemplates/shared_groups_members.template.txt", ConfigSharing.Paths[num] + "shared_groups_members.txt");
 					}
 					break;
 				case 4:
-					if (!File.Exists(Paths[num] + "shared_groups.txt"))
+					if (!File.Exists(ConfigSharing.Paths[num] + "shared_groups.txt"))
 					{
-						File.Copy("ConfigTemplates/shared_groups.template.txt", Paths[num] + "shared_groups.txt");
+						File.Copy("ConfigTemplates/shared_groups.template.txt", ConfigSharing.Paths[num] + "shared_groups.txt");
 					}
 					break;
 				}

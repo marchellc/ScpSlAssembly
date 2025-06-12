@@ -10,14 +10,14 @@ public abstract class HumanObjectiveBase<T> : FactionObjectiveBase, IFootprintOb
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		ObjectiveFootprint.ServerWriteRpc(writer);
+		this.ObjectiveFootprint.ServerWriteRpc(writer);
 	}
 
 	public override void ClientReadRpc(NetworkReader reader)
 	{
 		base.ClientReadRpc(reader);
-		ObjectiveFootprint = ClientCreateFootprint();
-		ObjectiveFootprint.ClientReadRpc(reader);
+		this.ObjectiveFootprint = this.ClientCreateFootprint();
+		this.ObjectiveFootprint.ClientReadRpc(reader);
 	}
 
 	protected abstract T ClientCreateFootprint();

@@ -10,21 +10,21 @@ public abstract class PickupPhysicsModule
 
 	private bool _wasSpawned;
 
-	private SyncList<byte> SyncData => Pickup.PhysicsModuleSyncData;
+	private SyncList<byte> SyncData => this.Pickup.PhysicsModuleSyncData;
 
 	protected bool IsSpawned
 	{
 		get
 		{
-			if (_wasSpawned)
+			if (this._wasSpawned)
 			{
 				return true;
 			}
-			if (!NetworkServer.spawned.ContainsKey(Pickup.netId))
+			if (!NetworkServer.spawned.ContainsKey(this.Pickup.netId))
 			{
 				return false;
 			}
-			_wasSpawned = true;
+			this._wasSpawned = true;
 			return true;
 		}
 	}
@@ -54,10 +54,10 @@ public abstract class PickupPhysicsModule
 		}
 		using NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
 		writerMethod(networkWriterPooled);
-		SyncData.Clear();
+		this.SyncData.Clear();
 		for (int i = 0; i < networkWriterPooled.Position; i++)
 		{
-			SyncData.Add(networkWriterPooled.buffer[i]);
+			this.SyncData.Add(networkWriterPooled.buffer[i]);
 		}
 	}
 
@@ -69,12 +69,12 @@ public abstract class PickupPhysicsModule
 			Debug.LogWarning("[Client] function 'System.Void InventorySystem.Items.Pickups.PickupPhysicsModule::ClientReadSyncData(System.Action`1<Mirror.NetworkReader>)' called when client was not active");
 			return;
 		}
-		int count = SyncData.Count;
+		int count = this.SyncData.Count;
 		for (int i = 0; i < count; i++)
 		{
-			ReaderBuffer[i] = SyncData[i];
+			PickupPhysicsModule.ReaderBuffer[i] = this.SyncData[i];
 		}
-		using NetworkReaderPooled obj = NetworkReaderPool.Get(new ArraySegment<byte>(ReaderBuffer, 0, count));
+		using NetworkReaderPooled obj = NetworkReaderPool.Get(new ArraySegment<byte>(PickupPhysicsModule.ReaderBuffer, 0, count));
 		readerMethod(obj);
 	}
 
@@ -85,12 +85,12 @@ public abstract class PickupPhysicsModule
 		{
 			Debug.LogWarning("[Server] function 'System.Void InventorySystem.Items.Pickups.PickupPhysicsModule::ServerSendRpc(System.Action`1<Mirror.NetworkWriter>)' called when server was not active");
 		}
-		else if (IsSpawned)
+		else if (this.IsSpawned)
 		{
 			using (NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get())
 			{
 				writerMethod(networkWriterPooled);
-				Pickup.SendPhysicsModuleRpc(networkWriterPooled.ToArraySegment());
+				this.Pickup.SendPhysicsModuleRpc(networkWriterPooled.ToArraySegment());
 			}
 		}
 	}

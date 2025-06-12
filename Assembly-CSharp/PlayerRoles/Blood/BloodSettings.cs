@@ -14,7 +14,7 @@ public class BloodSettings
 	[field: SerializeField]
 	public float DecalSpawnChance { get; private set; }
 
-	public bool RandomDecalValidate => GetRandom(DecalSpawnChance);
+	public bool RandomDecalValidate => this.GetRandom(this.DecalSpawnChance);
 
 	private bool GetRandom(float chance)
 	{

@@ -6,13 +6,13 @@ public class ExpiringDanger : DangerStackBase
 
 	public ExpiringDanger(float dangerValue, ReferenceHub owner)
 	{
-		DangerValue = dangerValue;
+		this.DangerValue = dangerValue;
 		base.Owner = owner;
-		Initialize(base.Owner);
+		this.Initialize(base.Owner);
 	}
 
 	public override void Initialize(ReferenceHub target)
 	{
-		TimeTracker.Start();
+		base.TimeTracker.Start();
 	}
 }

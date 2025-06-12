@@ -23,8 +23,8 @@ public class MappingException : Exception
 	internal MappingException(int errorCode, string errorText)
 		: base($"Error {errorCode}: {errorText}")
 	{
-		ErrorCode = errorCode;
-		ErrorText = errorText;
+		this.ErrorCode = errorCode;
+		this.ErrorText = errorText;
 	}
 
 	internal MappingException(string message, Exception innerException)
@@ -44,8 +44,8 @@ public class MappingException : Exception
 		{
 			throw new ArgumentNullException("info");
 		}
-		ErrorCode = info.GetInt32("errorCode");
-		ErrorText = info.GetString("errorText");
+		this.ErrorCode = info.GetInt32("errorCode");
+		this.ErrorText = info.GetString("errorText");
 		base.GetObjectData(info, context);
 	}
 }

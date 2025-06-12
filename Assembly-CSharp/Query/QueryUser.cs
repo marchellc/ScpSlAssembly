@@ -54,9 +54,9 @@ internal class QueryUser : IDisposable
 	{
 		get
 		{
-			if (_c.Connected && _s.CanRead && _s.CanWrite)
+			if (this._c.Connected && this._s.CanRead && this._s.CanWrite)
 			{
-				return _lastRx.ElapsedMilliseconds < _timeoutThreshold;
+				return this._lastRx.ElapsedMilliseconds < this._timeoutThreshold;
 			}
 			return false;
 		}
@@ -64,131 +64,131 @@ internal class QueryUser : IDisposable
 
 	internal QueryUser(QueryServer s, TcpClient c)
 	{
-		_c = c;
-		_server = s;
-		_s = c.GetStream();
+		this._c = c;
+		this._server = s;
+		this._s = c.GetStream();
 		c.NoDelay = true;
-		_s.ReadTimeout = 150;
-		_s.WriteTimeout = 150;
-		_remoteEndpoint = (IPEndPoint)c.Client.RemoteEndPoint;
-		_timeoutThreshold = QueryServer.TimeoutThreshold;
-		SenderID = $"Query ({_remoteEndpoint})";
-		_printer = new QueryCommandSender(this);
-		_server.Random.NextBytes(_authChallenge);
-		_lastRx = new Stopwatch();
-		_lastRx.Start();
+		this._s.ReadTimeout = 150;
+		this._s.WriteTimeout = 150;
+		this._remoteEndpoint = (IPEndPoint)c.Client.RemoteEndPoint;
+		this._timeoutThreshold = QueryServer.TimeoutThreshold;
+		this.SenderID = $"Query ({this._remoteEndpoint})";
+		this._printer = new QueryCommandSender(this);
+		this._server.Random.NextBytes(this._authChallenge);
+		this._lastRx = new Stopwatch();
+		this._lastRx.Start();
 	}
 
 	internal void Receive()
 	{
 		try
 		{
-			if (_disconnect)
+			if (this._disconnect)
 			{
-				Send("Closing connection...", QueryMessage.ClientReceivedContentType.QueryMessage);
-				DisconnectInternal();
+				this.Send("Closing connection...", QueryMessage.ClientReceivedContentType.QueryMessage);
+				this.DisconnectInternal();
 			}
-			else if (!ReceiveInternal())
+			else if (!this.ReceiveInternal())
 			{
-				DisconnectInternal(serverShutdown: false, force: true);
+				this.DisconnectInternal(serverShutdown: false, force: true);
 			}
 		}
 		catch (Exception ex)
 		{
-			ServerConsole.AddLog($"An exception occured when processing query client {_remoteEndpoint}: {ex.Message}\n{ex.StackTrace}");
+			ServerConsole.AddLog($"An exception occured when processing query client {this._remoteEndpoint}: {ex.Message}\n{ex.StackTrace}");
 			try
 			{
-				DisconnectInternal(serverShutdown: false, force: true);
+				this.DisconnectInternal(serverShutdown: false, force: true);
 			}
 			catch (Exception ex2)
 			{
-				ServerConsole.AddLog($"An exception occured when disconnecting query client {_remoteEndpoint}: {ex2.Message}\n{ex2.StackTrace}");
+				ServerConsole.AddLog($"An exception occured when disconnecting query client {this._remoteEndpoint}: {ex2.Message}\n{ex2.StackTrace}");
 			}
 		}
 	}
 
 	private bool ReceiveInternal()
 	{
-		if (!Connected)
+		if (!this.Connected)
 		{
 			return false;
 		}
-		if (_lengthToRead == 0)
+		if (this._lengthToRead == 0)
 		{
-			if (_c.Available < 2)
+			if (this._c.Available < 2)
 			{
 				return true;
 			}
-			if (_s.Read(_server.RxBuffer, 0, 2) != 2)
+			if (this._s.Read(this._server.RxBuffer, 0, 2) != 2)
 			{
-				ServerConsole.AddLog($"Query connection from {_remoteEndpoint} disconnected (can't read length bytes).");
+				ServerConsole.AddLog($"Query connection from {this._remoteEndpoint} disconnected (can't read length bytes).");
 				return false;
 			}
-			_lengthToRead = BinaryPrimitives.ReadUInt16BigEndian(_server.RxBuffer);
-			if (_lengthToRead > _server.RxBuffer.Length)
+			this._lengthToRead = BinaryPrimitives.ReadUInt16BigEndian(this._server.RxBuffer);
+			if (this._lengthToRead > this._server.RxBuffer.Length)
 			{
-				ServerConsole.AddLog($"Query connection from {_remoteEndpoint} disconnected (packet too large, limit set in gameplay config).");
-				Send($"Query input can't exceed {_server.RxBuffer.Length} bytes (limit set in config).", QueryMessage.ClientReceivedContentType.QueryMessage);
+				ServerConsole.AddLog($"Query connection from {this._remoteEndpoint} disconnected (packet too large, limit set in gameplay config).");
+				this.Send($"Query input can't exceed {this._server.RxBuffer.Length} bytes (limit set in config).", QueryMessage.ClientReceivedContentType.QueryMessage);
 				return false;
 			}
 		}
-		if (_c.Available < _lengthToRead)
+		if (this._c.Available < this._lengthToRead)
 		{
 			return true;
 		}
-		if (_s.Read(_server.RxBuffer, 0, _lengthToRead) != _lengthToRead)
+		if (this._s.Read(this._server.RxBuffer, 0, this._lengthToRead) != this._lengthToRead)
 		{
-			ServerConsole.AddLog($"Query connection from {_remoteEndpoint} disconnected (can't read length bytes).");
+			ServerConsole.AddLog($"Query connection from {this._remoteEndpoint} disconnected (can't read length bytes).");
 			return false;
 		}
-		AES.ReadNonce(_server.RxNonceBuffer, _server.RxBuffer);
+		AES.ReadNonce(this._server.RxNonceBuffer, this._server.RxBuffer);
 		int outputSize;
-		GcmBlockCipher cipher = AES.AesGcmDecryptInit(_server.RxNonceBuffer, _server.PasswordHash, _lengthToRead, out outputSize);
-		if (_server.RxDecryptionBuffer.Length < outputSize)
+		GcmBlockCipher cipher = AES.AesGcmDecryptInit(this._server.RxNonceBuffer, this._server.PasswordHash, this._lengthToRead, out outputSize);
+		if (this._server.RxDecryptionBuffer.Length < outputSize)
 		{
-			ServerConsole.AddLog($"Query connection from {_remoteEndpoint} disconnected (data to decrypt too large, limit set in gameplay config).");
-			Send($"Query decrypted data size can't exceed {_server.RxBuffer.Length} bytes (limit set in config).", QueryMessage.ClientReceivedContentType.QueryMessage);
+			ServerConsole.AddLog($"Query connection from {this._remoteEndpoint} disconnected (data to decrypt too large, limit set in gameplay config).");
+			this.Send($"Query decrypted data size can't exceed {this._server.RxBuffer.Length} bytes (limit set in config).", QueryMessage.ClientReceivedContentType.QueryMessage);
 			return false;
 		}
 		try
 		{
-			AES.AesGcmDecrypt(cipher, _server.RxBuffer, _server.RxDecryptionBuffer, 0, _lengthToRead);
+			AES.AesGcmDecrypt(cipher, this._server.RxBuffer, this._server.RxDecryptionBuffer, 0, this._lengthToRead);
 		}
 		catch (Exception ex)
 		{
-			if (_authenticated)
+			if (this._authenticated)
 			{
-				ServerConsole.AddLog($"Query connection from {_remoteEndpoint} disconnected (can't decrypt data): {ex.Message}");
-				ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Query message from {_remoteEndpoint} can't be decrypted", ServerLogs.ServerLogType.Query);
+				ServerConsole.AddLog($"Query connection from {this._remoteEndpoint} disconnected (can't decrypt data): {ex.Message}");
+				ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Query message from {this._remoteEndpoint} can't be decrypted", ServerLogs.ServerLogType.Query);
 			}
 			else
 			{
-				ServerConsole.AddLog($"Query connection from {_remoteEndpoint} disconnected (can't decrypt handshake, likely invalid password was used)): {ex.Message}");
-				ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Query handshake from {_remoteEndpoint} can't be decrypted (likely invalid password was used).", ServerLogs.ServerLogType.Query);
+				ServerConsole.AddLog($"Query connection from {this._remoteEndpoint} disconnected (can't decrypt handshake, likely invalid password was used)): {ex.Message}");
+				ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Query handshake from {this._remoteEndpoint} can't be decrypted (likely invalid password was used).", ServerLogs.ServerLogType.Query);
 			}
-			Send("Decryption failed!", QueryMessage.ClientReceivedContentType.QueryMessage);
+			this.Send("Decryption failed!", QueryMessage.ClientReceivedContentType.QueryMessage);
 			return false;
 		}
 		finally
 		{
-			_lengthToRead = 0;
-			_lastRx.Restart();
+			this._lengthToRead = 0;
+			this._lastRx.Restart();
 		}
-		if (_authenticated)
+		if (this._authenticated)
 		{
-			return HandleMessage(outputSize);
+			return this.HandleMessage(outputSize);
 		}
-		return HandleHandshake(outputSize);
+		return this.HandleHandshake(outputSize);
 	}
 
 	private bool HandleMessage(int outputSize)
 	{
-		QueryMessage qm = QueryMessage.Deserialize(new ReadOnlySpan<byte>(_server.RxDecryptionBuffer, 0, outputSize));
-		if (!qm.Validate(_rxCounter++, QueryServer.MaximumTimeDifference))
+		QueryMessage qm = QueryMessage.Deserialize(new ReadOnlySpan<byte>(this._server.RxDecryptionBuffer, 0, outputSize));
+		if (!qm.Validate(this._rxCounter++, QueryServer.MaximumTimeDifference))
 		{
-			ServerConsole.AddLog($"Query message from {_remoteEndpoint} failed validation - invalid time, timezone (on server or client) or a reply attack.");
-			ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Query message from {_remoteEndpoint} failed validation (invalid timestamp).", ServerLogs.ServerLogType.Query);
-			Send("Message failed validation!", QueryMessage.ClientReceivedContentType.QueryMessage);
+			ServerConsole.AddLog($"Query message from {this._remoteEndpoint} failed validation - invalid time, timezone (on server or client) or a reply attack.");
+			ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Query message from {this._remoteEndpoint} failed validation (invalid timestamp).", ServerLogs.ServerLogType.Query);
+			this.Send("Message failed validation!", QueryMessage.ClientReceivedContentType.QueryMessage);
 			return false;
 		}
 		try
@@ -197,74 +197,74 @@ internal class QueryUser : IDisposable
 			{
 				MainThreadDispatcher.Dispatch(delegate
 				{
-					ServerConsole.EnterCommand(qm.ToString(), _printer);
+					ServerConsole.EnterCommand(qm.ToString(), this._printer);
 				}, MainThreadDispatcher.DispatchTime.FixedUpdate);
 			}
 			else
 			{
-				Send("Unknown query message content type!", QueryMessage.ClientReceivedContentType.CommandException);
+				this.Send("Unknown query message content type!", QueryMessage.ClientReceivedContentType.CommandException);
 			}
 		}
 		catch (Exception ex)
 		{
-			ServerConsole.AddLog($"Error during processing query command from {_remoteEndpoint}: {ex.Message}\n{ex.StackTrace}");
-			Send("Error during processing your command. Check server console for more info.", QueryMessage.ClientReceivedContentType.CommandException);
+			ServerConsole.AddLog($"Error during processing query command from {this._remoteEndpoint}: {ex.Message}\n{ex.StackTrace}");
+			this.Send("Error during processing your command. Check server console for more info.", QueryMessage.ClientReceivedContentType.CommandException);
 		}
 		return true;
 	}
 
 	private bool HandleHandshake(int outputSize)
 	{
-		QueryHandshake queryHandshake = QueryHandshake.Deserialize(new ReadOnlySpan<byte>(_server.RxDecryptionBuffer, 0, outputSize), toServer: false);
+		QueryHandshake queryHandshake = QueryHandshake.Deserialize(new ReadOnlySpan<byte>(this._server.RxDecryptionBuffer, 0, outputSize), toServer: false);
 		if (!queryHandshake.Validate(QueryServer.MaximumTimeDifference))
 		{
-			ServerConsole.AddLog($"Query handshake from {_remoteEndpoint} failed validation - invalid time or timezone (on server or client).");
-			ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Query client {_remoteEndpoint} failed authentication (invalid timestamp).", ServerLogs.ServerLogType.Query);
-			Send("Message failed validation - invalid timestamp!", QueryMessage.ClientReceivedContentType.QueryMessage);
+			ServerConsole.AddLog($"Query handshake from {this._remoteEndpoint} failed validation - invalid time or timezone (on server or client).");
+			ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Query client {this._remoteEndpoint} failed authentication (invalid timestamp).", ServerLogs.ServerLogType.Query);
+			this.Send("Message failed validation - invalid timestamp!", QueryMessage.ClientReceivedContentType.QueryMessage);
 			return false;
 		}
-		if (!queryHandshake.AuthChallenge.SequenceEqual(_authChallenge))
+		if (!queryHandshake.AuthChallenge.SequenceEqual(this._authChallenge))
 		{
-			ServerConsole.AddLog($"Query handshake from {_remoteEndpoint} failed validation - invalid auth challenge.");
-			ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Query client {_remoteEndpoint} failed authentication (invalid auth challenge).", ServerLogs.ServerLogType.Query);
-			Send("Message failed validation - invalid auth challenge!", QueryMessage.ClientReceivedContentType.QueryMessage);
+			ServerConsole.AddLog($"Query handshake from {this._remoteEndpoint} failed validation - invalid auth challenge.");
+			ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Query client {this._remoteEndpoint} failed authentication (invalid auth challenge).", ServerLogs.ServerLogType.Query);
+			this.Send("Message failed validation - invalid auth challenge!", QueryMessage.ClientReceivedContentType.QueryMessage);
 			return false;
 		}
-		ServerConsole.AddLog($"Query client {_remoteEndpoint} has successfully authenticated.");
-		ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Query client {_remoteEndpoint} has successfully authenticated.", ServerLogs.ServerLogType.Query);
-		_authenticated = true;
-		_authChallenge = null;
-		_clientMaxSize = queryHandshake.MaxPacketSize;
-		QueryPermissions = QueryServer.QueryPermissions & queryHandshake.Permissions;
-		QueryKickPower = ((QueryServer.QueryKickPower < queryHandshake.KickPower) ? QueryServer.QueryKickPower : queryHandshake.KickPower);
+		ServerConsole.AddLog($"Query client {this._remoteEndpoint} has successfully authenticated.");
+		ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Query client {this._remoteEndpoint} has successfully authenticated.", ServerLogs.ServerLogType.Query);
+		this._authenticated = true;
+		this._authChallenge = null;
+		this._clientMaxSize = queryHandshake.MaxPacketSize;
+		this.QueryPermissions = QueryServer.QueryPermissions & queryHandshake.Permissions;
+		this.QueryKickPower = ((QueryServer.QueryKickPower < queryHandshake.KickPower) ? QueryServer.QueryKickPower : queryHandshake.KickPower);
 		if (queryHandshake.Username != null)
 		{
-			SenderID = $"{queryHandshake.Username} ({_remoteEndpoint})";
+			this.SenderID = $"{queryHandshake.Username} ({this._remoteEndpoint})";
 		}
-		ClientFlags = queryHandshake.Flags;
-		Send("Authentication successful!", QueryMessage.ClientReceivedContentType.QueryMessage);
-		if (ClientFlags.HasFlagFast(QueryHandshake.ClientFlags.SubscribeServerConsole))
+		this.ClientFlags = queryHandshake.Flags;
+		this.Send("Authentication successful!", QueryMessage.ClientReceivedContentType.QueryMessage);
+		if (this.ClientFlags.HasFlagFast(QueryHandshake.ClientFlags.SubscribeServerConsole))
 		{
-			if (PermissionsHandler.IsPermitted(QueryPermissions, PlayerPermissions.ServerLogLiveFeed) && PermissionsHandler.IsPermitted(QueryPermissions, PlayerPermissions.ServerConsoleCommands))
+			if (PermissionsHandler.IsPermitted(this.QueryPermissions, PlayerPermissions.ServerLogLiveFeed) && PermissionsHandler.IsPermitted(this.QueryPermissions, PlayerPermissions.ServerConsoleCommands))
 			{
-				ServerConsole.ConsoleOutputs.TryAdd(SenderID, _printer);
-				Send("You have been subscribed to server console output.", QueryMessage.ClientReceivedContentType.QueryMessage);
+				ServerConsole.ConsoleOutputs.TryAdd(this.SenderID, this._printer);
+				this.Send("You have been subscribed to server console output.", QueryMessage.ClientReceivedContentType.QueryMessage);
 			}
 			else
 			{
-				Send("You don't have permissions to subscribe to server console output!", QueryMessage.ClientReceivedContentType.QueryMessage);
+				this.Send("You don't have permissions to subscribe to server console output!", QueryMessage.ClientReceivedContentType.QueryMessage);
 			}
 		}
-		if (ClientFlags.HasFlagFast(QueryHandshake.ClientFlags.SubscribeServerLogs))
+		if (this.ClientFlags.HasFlagFast(QueryHandshake.ClientFlags.SubscribeServerLogs))
 		{
-			if (PermissionsHandler.IsPermitted(QueryPermissions, PlayerPermissions.ServerLogLiveFeed))
+			if (PermissionsHandler.IsPermitted(this.QueryPermissions, PlayerPermissions.ServerLogLiveFeed))
 			{
-				ServerLogs.LiveLogOutput.TryAdd(SenderID, _printer);
-				Send("You have been subscribed to live server logs.", QueryMessage.ClientReceivedContentType.QueryMessage);
+				ServerLogs.LiveLogOutput.TryAdd(this.SenderID, this._printer);
+				this.Send("You have been subscribed to live server logs.", QueryMessage.ClientReceivedContentType.QueryMessage);
 			}
 			else
 			{
-				Send("You don't have permissions to subscribe to live server logs!", QueryMessage.ClientReceivedContentType.QueryMessage);
+				this.Send("You don't have permissions to subscribe to live server logs!", QueryMessage.ClientReceivedContentType.QueryMessage);
 			}
 		}
 		return true;
@@ -272,13 +272,13 @@ internal class QueryUser : IDisposable
 
 	internal bool SendHandshake()
 	{
-		int num = new QueryHandshake(_server.BufferLength, _authChallenge, QueryHandshake.ClientFlags.None, ulong.MaxValue, byte.MaxValue, null, _timeoutThreshold).Serialize(new Span<byte>(_server.RxBuffer, 2, _server.BufferLength - 2), toServer: false);
-		BinaryPrimitives.WriteUInt16BigEndian(_server.RxBuffer, (ushort)num);
-		if (SendRaw(_server.RxBuffer, 0, num + 2, addLength: false))
+		int num = new QueryHandshake(this._server.BufferLength, this._authChallenge, QueryHandshake.ClientFlags.None, ulong.MaxValue, byte.MaxValue, null, this._timeoutThreshold).Serialize(new Span<byte>(this._server.RxBuffer, 2, this._server.BufferLength - 2), toServer: false);
+		BinaryPrimitives.WriteUInt16BigEndian(this._server.RxBuffer, (ushort)num);
+		if (this.SendRaw(this._server.RxBuffer, 0, num + 2, addLength: false))
 		{
 			return true;
 		}
-		DisconnectInternal(serverShutdown: false, force: true);
+		this.DisconnectInternal(serverShutdown: false, force: true);
 		return false;
 	}
 
@@ -286,13 +286,13 @@ internal class QueryUser : IDisposable
 	{
 		if (!string.IsNullOrWhiteSpace(msg))
 		{
-			if (!_authenticated)
+			if (!this._authenticated)
 			{
-				SendRaw(msg);
+				this.SendRaw(msg);
 			}
 			else
 			{
-				Send(new QueryMessage(msg, ++_txCounter, (byte)contentType));
+				this.Send(new QueryMessage(msg, ++this._txCounter, (byte)contentType));
 			}
 		}
 	}
@@ -301,13 +301,13 @@ internal class QueryUser : IDisposable
 	{
 		if (msg.Length != 0)
 		{
-			if (!_authenticated)
+			if (!this._authenticated)
 			{
-				SendRaw(msg, addLength: true);
+				this.SendRaw(msg, addLength: true);
 			}
 			else
 			{
-				Send(new QueryMessage(msg, ++_txCounter, (byte)contentType));
+				this.Send(new QueryMessage(msg, ++this._txCounter, (byte)contentType));
 			}
 		}
 	}
@@ -320,28 +320,28 @@ internal class QueryUser : IDisposable
 		try
 		{
 			int dataLength = qm.Serialize(array);
-			AES.GenerateNonce(array3, _server.Random);
+			AES.GenerateNonce(array3, this._server.Random);
 			int outputSize;
-			GcmBlockCipher cipher = AES.AesGcmEncryptInit(dataLength, _server.PasswordHash, array3, out outputSize);
+			GcmBlockCipher cipher = AES.AesGcmEncryptInit(dataLength, this._server.PasswordHash, array3, out outputSize);
 			int num = outputSize + 2;
-			if (num > _clientMaxSize)
+			if (num > this._clientMaxSize)
 			{
-				ServerConsole.AddLog($"Query message to {_remoteEndpoint} exceeds client's max size ({num} > {_clientMaxSize}).", ConsoleColor.Yellow);
-				_txCounter--;
+				ServerConsole.AddLog($"Query message to {this._remoteEndpoint} exceeds client's max size ({num} > {this._clientMaxSize}).", ConsoleColor.Yellow);
+				this._txCounter--;
 				return;
 			}
 			array2 = ArrayPool<byte>.Shared.Rent(num);
 			BinaryPrimitives.WriteUInt16BigEndian(array2, (ushort)outputSize);
 			AES.AesGcmEncrypt(cipher, array3, array, 0, dataLength, array2, 2);
-			if (!SendRaw(array2, 0, num, addLength: false))
+			if (!this.SendRaw(array2, 0, num, addLength: false))
 			{
-				_txCounter--;
+				this._txCounter--;
 			}
 		}
 		catch (Exception ex)
 		{
-			_txCounter--;
-			ServerConsole.AddLog($"Can't send query response (string) to {_remoteEndpoint}: {ex.Message}\n" + ex.StackTrace, ConsoleColor.Yellow);
+			this._txCounter--;
+			ServerConsole.AddLog($"Can't send query response (string) to {this._remoteEndpoint}: {ex.Message}\n" + ex.StackTrace, ConsoleColor.Yellow);
 		}
 		finally
 		{
@@ -356,12 +356,12 @@ internal class QueryUser : IDisposable
 
 	private bool SendRaw(string msg, bool addLength = true)
 	{
-		return SendRaw(Utf8.GetBytes(msg), addLength);
+		return this.SendRaw(Utf8.GetBytes(msg), addLength);
 	}
 
 	private bool SendRaw(byte[] msg, bool addLength)
 	{
-		return SendRaw(msg, 0, msg.Length, addLength);
+		return this.SendRaw(msg, 0, msg.Length, addLength);
 	}
 
 	private bool SendRaw(byte[] msg, int offset, int len, bool addLength)
@@ -375,9 +375,9 @@ internal class QueryUser : IDisposable
 				{
 					BinaryPrimitives.WriteUInt16BigEndian(array, (ushort)(len - offset));
 					Array.Copy(msg, offset, array, 2, len);
-					lock (_writeLock)
+					lock (this._writeLock)
 					{
-						_s.Write(msg, offset, len);
+						this._s.Write(msg, offset, len);
 					}
 				}
 				finally
@@ -386,22 +386,22 @@ internal class QueryUser : IDisposable
 				}
 				return true;
 			}
-			lock (_writeLock)
+			lock (this._writeLock)
 			{
-				_s.Write(msg, offset, len);
+				this._s.Write(msg, offset, len);
 			}
 			return true;
 		}
 		catch (Exception ex)
 		{
-			ServerConsole.AddLog($"Can't send query response (byte[]) to {_remoteEndpoint}: {ex.Message}\n" + ex.StackTrace);
+			ServerConsole.AddLog($"Can't send query response (byte[]) to {this._remoteEndpoint}: {ex.Message}\n" + ex.StackTrace);
 			return false;
 		}
 	}
 
 	public void Disconnect()
 	{
-		_disconnect = true;
+		this._disconnect = true;
 	}
 
 	internal void DisconnectInternal(bool serverShutdown = false, bool force = false)
@@ -410,44 +410,44 @@ internal class QueryUser : IDisposable
 		{
 			if (force)
 			{
-				_c.Client.LingerState = new LingerOption(enable: true, 0);
+				this._c.Client.LingerState = new LingerOption(enable: true, 0);
 			}
 			if (serverShutdown)
 			{
-				Send("Server is shutting down...", QueryMessage.ClientReceivedContentType.QueryMessage);
+				this.Send("Server is shutting down...", QueryMessage.ClientReceivedContentType.QueryMessage);
 			}
 		}
 		catch (Exception ex)
 		{
-			ServerConsole.AddLog($"Error closing query connection from {_remoteEndpoint}: {ex.Message}\n{ex.StackTrace}");
+			ServerConsole.AddLog($"Error closing query connection from {this._remoteEndpoint}: {ex.Message}\n{ex.StackTrace}");
 		}
-		Dispose();
+		this.Dispose();
 	}
 
 	public override string ToString()
 	{
-		if (!_authenticated)
+		if (!this._authenticated)
 		{
-			return SenderID + " [UNAUTHENTICATED]";
+			return this.SenderID + " [UNAUTHENTICATED]";
 		}
-		return SenderID;
+		return this.SenderID;
 	}
 
 	public void Dispose()
 	{
 		try
 		{
-			_s?.Dispose();
+			this._s?.Dispose();
 		}
 		catch (Exception ex)
 		{
-			ServerConsole.AddLog($"Error disposing query socket connection from {_remoteEndpoint}: {ex.Message}\n{ex.StackTrace}");
+			ServerConsole.AddLog($"Error disposing query socket connection from {this._remoteEndpoint}: {ex.Message}\n{ex.StackTrace}");
 		}
 		try
 		{
-			if (_server.Users.Contains(this))
+			if (this._server.Users.Contains(this))
 			{
-				_server.Users.Remove(this);
+				this._server.Users.Remove(this);
 			}
 		}
 		catch (Exception ex2)
@@ -457,7 +457,7 @@ internal class QueryUser : IDisposable
 		IOutput value;
 		try
 		{
-			ServerConsole.ConsoleOutputs.TryRemove(SenderID, out value);
+			ServerConsole.ConsoleOutputs.TryRemove(this.SenderID, out value);
 		}
 		catch (Exception ex3)
 		{
@@ -465,7 +465,7 @@ internal class QueryUser : IDisposable
 		}
 		try
 		{
-			ServerLogs.LiveLogOutput.TryRemove(SenderID, out value);
+			ServerLogs.LiveLogOutput.TryRemove(this.SenderID, out value);
 		}
 		catch (Exception ex4)
 		{

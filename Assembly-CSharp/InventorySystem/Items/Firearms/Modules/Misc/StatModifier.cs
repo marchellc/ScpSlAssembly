@@ -19,13 +19,13 @@ public class StatModifier
 
 	public float Process(float baseValue)
 	{
-		return Mode switch
+		return this.Mode switch
 		{
 			ModifierMode.Inactive => baseValue, 
-			ModifierMode.Add => baseValue + Modifier, 
-			ModifierMode.Multiply => baseValue * Modifier, 
-			ModifierMode.Override => Modifier, 
-			_ => throw new NotImplementedException("Unhadled stat mixing mode: " + Mode), 
+			ModifierMode.Add => baseValue + this.Modifier, 
+			ModifierMode.Multiply => baseValue * this.Modifier, 
+			ModifierMode.Override => this.Modifier, 
+			_ => throw new NotImplementedException("Unhadled stat mixing mode: " + this.Mode), 
 		};
 	}
 }

@@ -31,13 +31,13 @@ public class TapeItem : AutosyncItem, IItemDescription, IItemNametag, IHolidayIt
 	[SerializeField]
 	private AudioClip[] _useClips;
 
-	public string Description => ItemTypeId.GetDescription();
+	public string Description => base.ItemTypeId.GetDescription();
 
-	public string Name => ItemTypeId.GetName();
+	public string Name => base.ItemTypeId.GetName();
 
 	public HolidayType[] TargetHolidays { get; } = new HolidayType[1] { HolidayType.Christmas };
 
-	public override bool AllowHolster => !_using;
+	public override bool AllowHolster => !this._using;
 
 	public override float Weight => 0.35f;
 
@@ -46,36 +46,36 @@ public class TapeItem : AutosyncItem, IItemDescription, IItemNametag, IHolidayIt
 	public override void OnEquipped()
 	{
 		base.OnEquipped();
-		_equipTime = NetworkTime.time;
+		this._equipTime = NetworkTime.time;
 	}
 
 	public override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (NetworkServer.active && _using)
+		if (NetworkServer.active && this._using)
 		{
-			_remainingDestroy -= Time.deltaTime;
-			if (!(_remainingDestroy > 0f))
+			this._remainingDestroy -= Time.deltaTime;
+			if (!(this._remainingDestroy > 0f))
 			{
-				_using = false;
+				this._using = false;
 				base.OwnerInventory.ServerRemoveItem(base.ItemSerial, null);
 			}
 		}
-		else if (base.IsControllable && !(NetworkTime.time - _equipTime < 0.3199999928474426) && GetActionDown(ActionName.Shoot))
+		else if (base.IsControllable && !(NetworkTime.time - this._equipTime < 0.3199999928474426) && base.GetActionDown(ActionName.Shoot))
 		{
-			ClientSendCmd();
+			base.ClientSendCmd();
 		}
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (base.IsEquipped && !_using)
+		if (base.IsEquipped && !this._using)
 		{
 			bool success = Scp1507Spawner.CurState == Scp1507Spawner.State.Idle;
-			_using = true;
-			_remainingDestroy = 7.6f;
-			ServerSendPublicRpc(delegate(NetworkWriter x)
+			this._using = true;
+			this._remainingDestroy = 7.6f;
+			base.ServerSendPublicRpc(delegate(NetworkWriter x)
 			{
 				x.WriteBool(success);
 			});
@@ -93,19 +93,19 @@ public class TapeItem : AutosyncItem, IItemDescription, IItemNametag, IHolidayIt
 		TapeItem.OnPlayerTriggered?.Invoke(serial, flag);
 		if (InventoryExtensions.TryGetHubHoldingSerial(serial, out var hub))
 		{
-			AudioClip genericClip2 = (flag ? _successSound : _failSound);
+			AudioClip genericClip = (flag ? this._successSound : this._failSound);
 			bool isLocalPlayer = hub.isLocalPlayer;
-			Transform parent2 = hub.transform;
-			PlayClip(genericClip2, parent2, isLocalPlayer);
-			AudioClip[] useClips = _useClips;
+			Transform parent = hub.transform;
+			PlayClip(genericClip, parent, isLocalPlayer);
+			AudioClip[] useClips = this._useClips;
 			for (int i = 0; i < useClips.Length; i++)
 			{
-				PlayClip(useClips[i], parent2, isLocalPlayer);
+				PlayClip(useClips[i], parent, isLocalPlayer);
 			}
 		}
-		static void PlayClip(AudioClip genericClip, Transform parent, bool useSpatial)
+		static void PlayClip(AudioClip sound, Transform trackedTransform, bool useSpatial)
 		{
-			AudioSourcePoolManager.PlayOnTransform(genericClip, parent);
+			AudioSourcePoolManager.PlayOnTransform(sound, trackedTransform);
 		}
 	}
 }

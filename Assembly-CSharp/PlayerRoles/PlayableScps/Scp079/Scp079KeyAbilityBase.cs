@@ -50,38 +50,38 @@ public abstract class Scp079KeyAbilityBase : Scp079AbilityBase, IScp079FailMessa
 
 	public virtual bool DummyEmulationSupport => false;
 
-	public int CategoryId => (int)_category;
+	public int CategoryId => (int)this._category;
 
 	[field: SerializeField]
 	public bool UseLeftMenu { get; private set; }
 
 	protected string GetNoAuxMessage(float cost)
 	{
-		return _translationNoAux + "\n" + base.AuxManager.GenerateETA(cost);
+		return Scp079KeyAbilityBase._translationNoAux + "\n" + base.AuxManager.GenerateETA(cost);
 	}
 
 	protected virtual void Start()
 	{
-		_translationNoAux = Translations.Get(Scp079HudTranslation.NotEnoughAux);
+		Scp079KeyAbilityBase._translationNoAux = Translations.Get(Scp079HudTranslation.NotEnoughAux);
 	}
 
 	protected virtual void Update()
 	{
-		if (((!base.Role.IsLocalPlayer || !IsVisible) && !base.Role.IsEmulatedDummy) || !GetActionDown(ActivationKey) || base.LostSignalHandler.Lost || Scp079IntroCutscene.IsPlaying)
+		if (((!base.Role.IsLocalPlayer || !this.IsVisible) && !base.Role.IsEmulatedDummy) || !base.GetActionDown(this.ActivationKey) || base.LostSignalHandler.Lost || Scp079IntroCutscene.IsPlaying)
 		{
 			return;
 		}
-		if (IsReady)
+		if (this.IsReady)
 		{
-			if (TrackedFailMessage == this)
+			if (Scp079KeyAbilityBase.TrackedFailMessage == this)
 			{
-				TrackedFailMessage = null;
+				Scp079KeyAbilityBase.TrackedFailMessage = null;
 			}
-			Trigger();
+			this.Trigger();
 		}
 		else
 		{
-			TrackedFailMessage = this;
+			Scp079KeyAbilityBase.TrackedFailMessage = this;
 		}
 	}
 
@@ -93,7 +93,7 @@ public abstract class Scp079KeyAbilityBase : Scp079AbilityBase, IScp079FailMessa
 
 	public override void PopulateDummyActions(Action<DummyAction> actionAdder, Action<string> categoryAdder)
 	{
-		if (DummyEmulationSupport)
+		if (this.DummyEmulationSupport)
 		{
 			base.PopulateDummyActions(actionAdder, categoryAdder);
 		}

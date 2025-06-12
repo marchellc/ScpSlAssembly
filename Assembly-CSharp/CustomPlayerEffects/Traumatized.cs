@@ -25,7 +25,7 @@ public class Traumatized : StatusEffectBase
 	{
 		if (reason == RoleChangeReason.Died && newRole == RoleTypeId.Spectator && hub.GetRoleId() == RoleTypeId.Scp106 && !ReferenceHub.AllHubs.Any((ReferenceHub x) => x != hub && x.GetRoleId() == RoleTypeId.Scp106))
 		{
-			ServerSetState(0);
+			base.ServerSetState(0);
 		}
 	}
 
@@ -34,7 +34,7 @@ public class Traumatized : StatusEffectBase
 		base.Enabled();
 		if (!ReferenceHub.AllHubs.Any((ReferenceHub x) => x.GetRoleId() == RoleTypeId.Scp106))
 		{
-			ServerSetState(0);
+			base.ServerSetState(0);
 		}
 	}
 }

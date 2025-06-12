@@ -40,7 +40,7 @@ public class BanCommand : ICommand, IUsageProvider
 		string text = string.Empty;
 		if (newargs.Length > 1)
 		{
-			text = newargs.Skip(1).Aggregate((string current, string n) => current + " " + n);
+			text = newargs.Skip(1).Aggregate((string text3, string n) => text3 + " " + n);
 		}
 		long num;
 		try

@@ -54,33 +54,33 @@ public class BuoyantWater : MonoBehaviour
 	{
 		get
 		{
-			if (!_trCacheSet)
+			if (!this._trCacheSet)
 			{
-				_trCacheSet = true;
-				_cachedTransform = base.transform;
+				this._trCacheSet = true;
+				this._cachedTransform = base.transform;
 			}
-			return _cachedTransform;
+			return this._cachedTransform;
 		}
 	}
 
-	private Vector3 FlowDirection => FastTr.rotation * _localFlowDirection;
+	private Vector3 FlowDirection => this.FastTr.rotation * this._localFlowDirection;
 
 	private void FixedUpdate()
 	{
-		for (int num = _tracked.Count - 1; num >= 0; num--)
+		for (int num = this._tracked.Count - 1; num >= 0; num--)
 		{
-			TrackedRigidbody trackedRigidbody = _tracked[num];
+			TrackedRigidbody trackedRigidbody = this._tracked[num];
 			if (trackedRigidbody.Rigidbody == null)
 			{
-				_tracked.RemoveAt(num);
+				this._tracked.RemoveAt(num);
 			}
 			else
 			{
 				double num2 = NetworkTime.time - trackedRigidbody.EnterTime;
 				Vector3 position = trackedRigidbody.Rigidbody.position;
-				Vector3 flow = EvaluateFlowForceAtPoint(position) * FlowDirection;
-				float value = position.y - FastTr.position.y;
-				float submergeRatio = Mathf.InverseLerp(_startHeight, _fullSubmergeWeight, value);
+				Vector3 flow = this.EvaluateFlowForceAtPoint(position) * this.FlowDirection;
+				float value = position.y - this.FastTr.position.y;
+				float submergeRatio = Mathf.InverseLerp(this._startHeight, this._fullSubmergeWeight, value);
 				BuoyancyProcessor.ProcessFixedUpdate(trackedRigidbody.Rigidbody, trackedRigidbody.Mode, (float)num2, submergeRatio, flow);
 			}
 		}
@@ -93,15 +93,15 @@ public class BuoyantWater : MonoBehaviour
 		{
 			return;
 		}
-		for (int i = 0; i < _tracked.Count; i++)
+		for (int i = 0; i < this._tracked.Count; i++)
 		{
-			if (!(_tracked[i].Rigidbody != attachedRigidbody))
+			if (!(this._tracked[i].Rigidbody != attachedRigidbody))
 			{
 				return;
 			}
 		}
-		BuoyancyMode modeForRigidbody = GetModeForRigidbody(attachedRigidbody);
-		_tracked.Add(new TrackedRigidbody
+		BuoyancyMode modeForRigidbody = this.GetModeForRigidbody(attachedRigidbody);
+		this._tracked.Add(new TrackedRigidbody
 		{
 			EnterTime = NetworkTime.time,
 			Mode = modeForRigidbody,
@@ -117,13 +117,13 @@ public class BuoyantWater : MonoBehaviour
 		{
 			return;
 		}
-		for (int num = _tracked.Count - 1; num >= 0; num--)
+		for (int num = this._tracked.Count - 1; num >= 0; num--)
 		{
-			TrackedRigidbody trackedRigidbody = _tracked[num];
+			TrackedRigidbody trackedRigidbody = this._tracked[num];
 			if (!(trackedRigidbody.Rigidbody != attachedRigidbody))
 			{
 				BuoyancyProcessor.ProcessExit(trackedRigidbody.Rigidbody);
-				_tracked.RemoveAt(num);
+				this._tracked.RemoveAt(num);
 				break;
 			}
 		}
@@ -132,12 +132,12 @@ public class BuoyantWater : MonoBehaviour
 	private void OnDrawGizmosSelected()
 	{
 		Gizmos.color = Color.green;
-		Vector3 position = FastTr.position;
-		Gizmos.DrawLine(position + Vector3.up * _fullSubmergeWeight, position + Vector3.up * _startHeight);
-		Vector3 flowDirection = FlowDirection;
-		for (int i = 0; i < _forceOverDot.length; i++)
+		Vector3 position = this.FastTr.position;
+		Gizmos.DrawLine(position + Vector3.up * this._fullSubmergeWeight, position + Vector3.up * this._startHeight);
+		Vector3 flowDirection = this.FlowDirection;
+		for (int i = 0; i < this._forceOverDot.length; i++)
 		{
-			Keyframe keyframe = _forceOverDot[i];
+			Keyframe keyframe = this._forceOverDot[i];
 			Gizmos.DrawSphere(position + flowDirection * keyframe.time, keyframe.value / 5f + 0.05f);
 		}
 	}
@@ -156,7 +156,7 @@ public class BuoyantWater : MonoBehaviour
 		{
 			return BuoyancyMode.Floater;
 		}
-		if (!BuoyancyByPickupCategory.TryGetValue(item.Category, out var value))
+		if (!BuoyantWater.BuoyancyByPickupCategory.TryGetValue(item.Category, out var value))
 		{
 			return BuoyancyMode.Floater;
 		}
@@ -165,7 +165,7 @@ public class BuoyantWater : MonoBehaviour
 
 	private float EvaluateFlowForceAtPoint(Vector3 point)
 	{
-		float time = Vector3.Dot(point - FastTr.position, FlowDirection);
-		return _forceOverDot.Evaluate(time);
+		float time = Vector3.Dot(point - this.FastTr.position, this.FlowDirection);
+		return this._forceOverDot.Evaluate(time);
 	}
 }

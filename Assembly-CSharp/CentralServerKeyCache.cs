@@ -20,7 +20,7 @@ public static class CentralServerKeyCache
 
 	static CentralServerKeyCache()
 	{
-		MasterKey = ECDSA.PublicKeyFromString("-----BEGIN PUBLIC KEY-----\r\nMIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAbL0YvrhVB2meqCq5XzjAJD8Ii0hb\r\nBHdIQ587N583cP8twjDhcITjZhBHJPJDuA85XdpgG04HwT0SD3WcAvoQXBUAUsG1\r\nLS9TR4urHwfgfroq4tH2HAQE6ZxFZeIFSglLO8nxySim4yKBj96HLG624lzKvzoD\r\nId+GOwjcd3XskOq9Dwc=\r\n-----END PUBLIC KEY-----");
+		CentralServerKeyCache.MasterKey = ECDSA.PublicKeyFromString("-----BEGIN PUBLIC KEY-----\r\nMIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAbL0YvrhVB2meqCq5XzjAJD8Ii0hb\r\nBHdIQ587N583cP8twjDhcITjZhBHJPJDuA85XdpgG04HwT0SD3WcAvoQXBUAUsG1\r\nLS9TR4urHwfgfroq4tH2HAQE6ZxFZeIFSglLO8nxySim4yKBj96HLG624lzKvzoD\r\nId+GOwjcd3XskOq9Dwc=\r\n-----END PUBLIC KEY-----");
 	}
 
 	public static string ReadCache()
@@ -50,7 +50,7 @@ public static class CentralServerKeyCache
 			string text = source.Aggregate("", (string current, string line) => current + line + "\r\n").Trim();
 			try
 			{
-				if (ECDSA.Verify(text, array[0], MasterKey))
+				if (ECDSA.Verify(text, array[0], CentralServerKeyCache.MasterKey))
 				{
 					return text;
 				}
@@ -81,7 +81,7 @@ public static class CentralServerKeyCache
 	{
 		try
 		{
-			if (!ECDSA.Verify(key, signature, MasterKey))
+			if (!ECDSA.Verify(key, signature, CentralServerKeyCache.MasterKey))
 			{
 				GameCore.Console.AddLog("Invalid signature of Central Server Key!", Color.red);
 				return;
@@ -94,7 +94,7 @@ public static class CentralServerKeyCache
 			}
 			if (File.Exists(path))
 			{
-				if (key == ReadCache())
+				if (key == CentralServerKeyCache.ReadCache())
 				{
 					ServerConsole.AddLog("Key cache is up to date.");
 					return;

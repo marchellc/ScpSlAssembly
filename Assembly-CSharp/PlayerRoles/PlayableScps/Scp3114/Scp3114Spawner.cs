@@ -28,7 +28,7 @@ public static class Scp3114Spawner
 	{
 		if (newRole == RoleTypeId.Scp3114)
 		{
-			ServerSpawnRagdolls(userHub);
+			Scp3114Spawner.ServerSpawnRagdolls(userHub);
 		}
 	}
 
@@ -38,26 +38,26 @@ public static class Scp3114Spawner
 		{
 			return;
 		}
-		_ragdollsSpawned = false;
+		Scp3114Spawner._ragdollsSpawned = false;
 		if (!(Random.value >= 0f))
 		{
-			SpawnCandidates.Clear();
-			PlayerRolesUtils.ForEachRole<HumanRole>(SpawnCandidates.Add);
-			if (SpawnCandidates.Count >= 2)
+			Scp3114Spawner.SpawnCandidates.Clear();
+			PlayerRolesUtils.ForEachRole<HumanRole>(Scp3114Spawner.SpawnCandidates.Add);
+			if (Scp3114Spawner.SpawnCandidates.Count >= 2)
 			{
-				SpawnCandidates.RandomItem().roleManager.ServerSetRole(RoleTypeId.Scp3114, RoleChangeReason.RoundStart);
+				Scp3114Spawner.SpawnCandidates.RandomItem().roleManager.ServerSetRole(RoleTypeId.Scp3114, RoleChangeReason.RoundStart);
 			}
 		}
 	}
 
 	private static void ServerSpawnRagdolls(ReferenceHub nicknameSourceHub)
 	{
-		if (!_ragdollsSpawned && RoomUtils.TryFindRoom(RoomName.Lcz173, FacilityZone.LightContainment, RoomShape.Endroom, out var foundRoom))
+		if (!Scp3114Spawner._ragdollsSpawned && RoomUtils.TryFindRoom(RoomName.Lcz173, FacilityZone.LightContainment, RoomShape.Endroom, out var foundRoom))
 		{
-			_ragdollsSpawned = true;
+			Scp3114Spawner._ragdollsSpawned = true;
 			Transform transform = foundRoom.transform;
-			ServerSpawnRagdoll(RoleTypeId.Scientist, transform.TransformPoint(new Vector3(2.05f, 12.5f, 1.74f)), transform.rotation * Quaternion.Euler(25.5f, -35.5f, -9.4f), nicknameSourceHub);
-			ServerSpawnRagdoll(RoleTypeId.ClassD, transform.TransformPoint(new Vector3(2.9f, 12.5f, 1.74f)), transform.rotation * Quaternion.Euler(22.2f, -1.3f, 11.8f), nicknameSourceHub);
+			Scp3114Spawner.ServerSpawnRagdoll(RoleTypeId.Scientist, transform.TransformPoint(new Vector3(2.05f, 12.5f, 1.74f)), transform.rotation * Quaternion.Euler(25.5f, -35.5f, -9.4f), nicknameSourceHub);
+			Scp3114Spawner.ServerSpawnRagdoll(RoleTypeId.ClassD, transform.TransformPoint(new Vector3(2.9f, 12.5f, 1.74f)), transform.rotation * Quaternion.Euler(22.2f, -1.3f, 11.8f), nicknameSourceHub);
 		}
 	}
 

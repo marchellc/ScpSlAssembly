@@ -58,25 +58,25 @@ public class Scp049ResurrectAbility : RagdollAbilityBase<Scp049Role>
 	{
 		get
 		{
-			if (!_maskSet)
+			if (!Scp049ResurrectAbility._maskSet)
 			{
-				_mask = LayerMask.GetMask("Default");
-				_maskSet = true;
+				Scp049ResurrectAbility._mask = LayerMask.GetMask("Default");
+				Scp049ResurrectAbility._maskSet = true;
 			}
-			return _mask;
+			return Scp049ResurrectAbility._mask;
 		}
 	}
 
 	protected override void ServerComplete()
 	{
 		ReferenceHub ownerHub = base.CurRagdoll.Info.OwnerHub;
-		Scp049ResurrectingBodyEventArgs scp049ResurrectingBodyEventArgs = new Scp049ResurrectingBodyEventArgs(Ragdoll.Get(base.CurRagdoll), ownerHub, base.Owner);
-		Scp049Events.OnResurrectingBody(scp049ResurrectingBodyEventArgs);
-		if (scp049ResurrectingBodyEventArgs.IsAllowed)
+		Scp049ResurrectingBodyEventArgs e = new Scp049ResurrectingBodyEventArgs(Ragdoll.Get(base.CurRagdoll), ownerHub, base.Owner);
+		Scp049Events.OnResurrectingBody(e);
+		if (e.IsAllowed)
 		{
-			ownerHub = scp049ResurrectingBodyEventArgs.Target.ReferenceHub;
+			ownerHub = e.Target.ReferenceHub;
 			ownerHub.transform.position = base.CastRole.FpcModule.Position;
-			if (_senseAbility.DeadTargets.Contains(ownerHub))
+			if (this._senseAbility.DeadTargets.Contains(ownerHub))
 			{
 				HumeShieldModuleBase humeShieldModule = base.CastRole.HumeShieldModule;
 				humeShieldModule.HsCurrent = Mathf.Min(humeShieldModule.HsCurrent + 200f, humeShieldModule.HsMax);
@@ -87,7 +87,7 @@ public class Scp049ResurrectAbility : RagdollAbilityBase<Scp049Role>
 				newRole = RoleTypeId.ZombieFlamingo;
 			}
 			ownerHub.roleManager.ServerSetRole(newRole, RoleChangeReason.Revived);
-			if (!Physics.Raycast(ownerHub.transform.position, Vector3.down, 1f, GroundMask))
+			if (!Physics.Raycast(ownerHub.transform.position, Vector3.down, 1f, Scp049ResurrectAbility.GroundMask))
 			{
 				ownerHub.TryOverridePosition(base.CastRole.transform.position);
 			}
@@ -99,40 +99,40 @@ public class Scp049ResurrectAbility : RagdollAbilityBase<Scp049Role>
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp049SenseAbility>(out _senseAbility);
+		base.GetSubroutine<Scp049SenseAbility>(out this._senseAbility);
 	}
 
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		ClientTryStart();
+		base.ClientTryStart();
 	}
 
 	protected override void OnKeyUp()
 	{
 		base.OnKeyUp();
-		ClientTryCancel();
+		base.ClientTryCancel();
 	}
 
 	public bool CheckRagdoll(BasicRagdoll ragdoll)
 	{
-		return CheckBeginConditions(ragdoll) == ResurrectError.None;
+		return this.CheckBeginConditions(ragdoll) == ResurrectError.None;
 	}
 
 	protected override byte ServerValidateBegin(BasicRagdoll ragdoll)
 	{
-		ResurrectError resurrectError = CheckBeginConditions(ragdoll);
-		if (!ServerValidateAny())
+		ResurrectError resurrectError = this.CheckBeginConditions(ragdoll);
+		if (!this.ServerValidateAny())
 		{
 			resurrectError = ResurrectError.TargetNull;
 		}
-		Scp049StartingResurrectionEventArgs scp049StartingResurrectionEventArgs = new Scp049StartingResurrectionEventArgs(resurrectError == ResurrectError.None, ragdoll, ragdoll.Info.OwnerHub, base.Owner);
-		Scp049Events.OnStartingResurrection(scp049StartingResurrectionEventArgs);
-		if (!scp049StartingResurrectionEventArgs.IsAllowed)
+		Scp049StartingResurrectionEventArgs e = new Scp049StartingResurrectionEventArgs(resurrectError == ResurrectError.None, ragdoll, ragdoll.Info.OwnerHub, base.Owner);
+		Scp049Events.OnStartingResurrection(e);
+		if (!e.IsAllowed)
 		{
 			return 1;
 		}
-		resurrectError = ((!scp049StartingResurrectionEventArgs.CanResurrect) ? ResurrectError.TargetInvalid : ResurrectError.None);
+		resurrectError = ((!e.CanResurrect) ? ResurrectError.TargetInvalid : ResurrectError.None);
 		return (byte)resurrectError;
 	}
 
@@ -143,9 +143,9 @@ public class Scp049ResurrectAbility : RagdollAbilityBase<Scp049Role>
 			return false;
 		}
 		ReferenceHub ownerHub = base.CurRagdoll.Info.OwnerHub;
-		if (ownerHub != null && base.ServerValidateAny() && IsSpawnableSpectator(ownerHub) && CheckMaxResurrections(ownerHub) == ResurrectError.None)
+		if (ownerHub != null && base.ServerValidateAny() && Scp049ResurrectAbility.IsSpawnableSpectator(ownerHub) && this.CheckMaxResurrections(ownerHub) == ResurrectError.None)
 		{
-			return !AnyConflicts(base.CurRagdoll);
+			return !this.AnyConflicts(base.CurRagdoll);
 		}
 		return false;
 	}
@@ -156,7 +156,7 @@ public class Scp049ResurrectAbility : RagdollAbilityBase<Scp049Role>
 		bool flag = ownerHub == null;
 		if (ragdoll.Info.RoleType == RoleTypeId.Scp0492)
 		{
-			if (flag || !DeadZombies.Contains(ownerHub.netId))
+			if (flag || !Scp049ResurrectAbility.DeadZombies.Contains(ownerHub.netId))
 			{
 				return ResurrectError.TargetNull;
 			}
@@ -167,30 +167,30 @@ public class Scp049ResurrectAbility : RagdollAbilityBase<Scp049Role>
 		}
 		else
 		{
-			float num = ((!flag && _senseAbility.DeadTargets.Contains(ownerHub)) ? 18f : 12f);
+			float num = ((!flag && this._senseAbility.DeadTargets.Contains(ownerHub)) ? 18f : 12f);
 			if (ragdoll.Info.ExistenceTime > num)
 			{
 				return ResurrectError.Expired;
 			}
-			if (!IsResurrectableRole(ragdoll.Info.RoleType))
+			if (!Scp049ResurrectAbility.IsResurrectableRole(ragdoll.Info.RoleType))
 			{
 				return ResurrectError.TargetInvalid;
 			}
-			if (flag || AnyConflicts(ragdoll))
+			if (flag || this.AnyConflicts(ragdoll))
 			{
 				return ResurrectError.TargetNull;
 			}
-			if (!IsSpawnableSpectator(ownerHub))
+			if (!Scp049ResurrectAbility.IsSpawnableSpectator(ownerHub))
 			{
 				return ResurrectError.TargetInvalid;
 			}
 		}
-		return CheckMaxResurrections(ownerHub);
+		return this.CheckMaxResurrections(ownerHub);
 	}
 
 	private ResurrectError CheckMaxResurrections(ReferenceHub owner)
 	{
-		int resurrectionsNumber = GetResurrectionsNumber(owner);
+		int resurrectionsNumber = Scp049ResurrectAbility.GetResurrectionsNumber(owner);
 		if (resurrectionsNumber < 2)
 		{
 			return ResurrectError.None;
@@ -243,13 +243,13 @@ public class Scp049ResurrectAbility : RagdollAbilityBase<Scp049Role>
 		{
 			if (newRole == RoleTypeId.Overwatch || newRole.IsHuman())
 			{
-				ClearPlayerResurrections(hub);
+				Scp049ResurrectAbility.ClearPlayerResurrections(hub);
 			}
 		};
-		CustomNetworkManager.OnClientReady += DeadZombies.Clear;
+		CustomNetworkManager.OnClientReady += Scp049ResurrectAbility.DeadZombies.Clear;
 		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub hub)
 		{
-			DeadZombies.Remove(hub.netId);
+			Scp049ResurrectAbility.DeadZombies.Remove(hub.netId);
 		};
 		PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub hub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
 		{
@@ -257,11 +257,11 @@ public class Scp049ResurrectAbility : RagdollAbilityBase<Scp049Role>
 			{
 				if (prevRole is ZombieRole && newRole is SpectatorRole)
 				{
-					DeadZombies.Add(hub.netId);
+					Scp049ResurrectAbility.DeadZombies.Add(hub.netId);
 				}
 				else
 				{
-					DeadZombies.Remove(hub.netId);
+					Scp049ResurrectAbility.DeadZombies.Remove(hub.netId);
 				}
 			}
 		};
@@ -269,7 +269,7 @@ public class Scp049ResurrectAbility : RagdollAbilityBase<Scp049Role>
 
 	public static int GetResurrectionsNumber(ReferenceHub hub)
 	{
-		if (!ResurrectedPlayers.TryGetValue(hub.netId, out var value))
+		if (!Scp049ResurrectAbility.ResurrectedPlayers.TryGetValue(hub.netId, out var value))
 		{
 			return 0;
 		}
@@ -278,11 +278,11 @@ public class Scp049ResurrectAbility : RagdollAbilityBase<Scp049Role>
 
 	public static void RegisterPlayerResurrection(ReferenceHub hub, int amount = 1)
 	{
-		ResurrectedPlayers[hub.netId] = GetResurrectionsNumber(hub) + amount;
+		Scp049ResurrectAbility.ResurrectedPlayers[hub.netId] = Scp049ResurrectAbility.GetResurrectionsNumber(hub) + amount;
 	}
 
 	public static void ClearPlayerResurrections(ReferenceHub hub)
 	{
-		ResurrectedPlayers.Remove(hub.netId);
+		Scp049ResurrectAbility.ResurrectedPlayers.Remove(hub.netId);
 	}
 }

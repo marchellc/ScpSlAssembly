@@ -13,19 +13,19 @@ public readonly struct ItemIdentifier : IEquatable<ItemIdentifier>
 
 	public ItemIdentifier(ItemType t, ushort s)
 	{
-		TypeId = t;
-		SerialNumber = s;
+		this.TypeId = t;
+		this.SerialNumber = s;
 	}
 
 	public ItemIdentifier(ItemBase item)
 	{
-		TypeId = item.ItemTypeId;
-		SerialNumber = item.ItemSerial;
+		this.TypeId = item.ItemTypeId;
+		this.SerialNumber = item.ItemSerial;
 	}
 
 	public override int GetHashCode()
 	{
-		return SerialNumber;
+		return this.SerialNumber;
 	}
 
 	public static bool operator ==(ItemIdentifier left, ItemIdentifier right)
@@ -40,9 +40,9 @@ public readonly struct ItemIdentifier : IEquatable<ItemIdentifier>
 
 	public bool Equals(ItemIdentifier other)
 	{
-		if (SerialNumber == other.SerialNumber)
+		if (this.SerialNumber == other.SerialNumber)
 		{
-			return TypeId == other.TypeId;
+			return this.TypeId == other.TypeId;
 		}
 		return false;
 	}
@@ -51,13 +51,13 @@ public readonly struct ItemIdentifier : IEquatable<ItemIdentifier>
 	{
 		if (obj is ItemIdentifier other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override string ToString()
 	{
-		return string.Format("{0} (type={1} serial={2})", "ItemIdentifier", TypeId, SerialNumber);
+		return string.Format("{0} (type={1} serial={2})", "ItemIdentifier", this.TypeId, this.SerialNumber);
 	}
 }

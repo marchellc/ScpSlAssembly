@@ -50,7 +50,7 @@ public class BodyArmor : ItemBase, IWearableItem, IItemNametag, IMovementSpeedMo
 	[SerializeField]
 	private float _weight;
 
-	public override float Weight => _weight;
+	public override float Weight => this._weight;
 
 	public bool IsWorn => true;
 
@@ -62,7 +62,7 @@ public class BodyArmor : ItemBase, IWearableItem, IItemNametag, IMovementSpeedMo
 	{
 		get
 		{
-			if (IsWorn)
+			if (this.IsWorn)
 			{
 				return !IHeavyItemPenaltyImmunity.IsImmune(base.Owner);
 			}
@@ -70,7 +70,7 @@ public class BodyArmor : ItemBase, IWearableItem, IItemNametag, IMovementSpeedMo
 		}
 	}
 
-	public float MovementSpeedMultiplier => ProcessMultiplier(_movementSpeedMultiplier);
+	public float MovementSpeedMultiplier => this.ProcessMultiplier(this._movementSpeedMultiplier);
 
 	public float MovementSpeedLimit => float.MaxValue;
 
@@ -78,7 +78,7 @@ public class BodyArmor : ItemBase, IWearableItem, IItemNametag, IMovementSpeedMo
 	{
 		get
 		{
-			if (IsWorn)
+			if (this.IsWorn)
 			{
 				return !IHeavyItemPenaltyImmunity.IsImmune(base.Owner);
 			}
@@ -86,7 +86,7 @@ public class BodyArmor : ItemBase, IWearableItem, IItemNametag, IMovementSpeedMo
 		}
 	}
 
-	public float StaminaUsageMultiplier => ProcessMultiplier(_staminaUseMultiplier);
+	public float StaminaUsageMultiplier => this.ProcessMultiplier(this._staminaUseMultiplier);
 
 	public bool SprintingDisabled => false;
 
@@ -94,14 +94,14 @@ public class BodyArmor : ItemBase, IWearableItem, IItemNametag, IMovementSpeedMo
 
 	public override ItemDescriptionType DescriptionType => ItemDescriptionType.Armor;
 
-	public string Name => ItemTypeId.GetName();
+	public string Name => base.ItemTypeId.GetName();
 
 	private float ProcessMultiplier(float f)
 	{
 		Team team = base.Owner.GetTeam();
 		if (team == Team.ClassD || team == Team.Scientists)
 		{
-			f = (f - 1f) * CivilianClassDownsidesMultiplier + 1f;
+			f = (f - 1f) * this.CivilianClassDownsidesMultiplier + 1f;
 		}
 		return f;
 	}

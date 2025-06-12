@@ -14,7 +14,7 @@ public class ServerConsoleSender : CommandSender
 
 	public override void RaReply(string text, bool success, bool logToConsole, string overrideDisplay)
 	{
-		Print(text);
+		this.Print(text);
 	}
 
 	public override void Print(string text)

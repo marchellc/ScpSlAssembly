@@ -12,36 +12,37 @@ public struct SearchSession : ISearchSession, NetworkMessage, IEquatable<SearchS
 
 	public double FinishTime { get; set; }
 
-	public double Duration => FinishTime - InitialTime;
+	public double Duration => this.FinishTime - this.InitialTime;
 
-	public double Progress => MoreMath.InverseLerp(InitialTime, FinishTime, NetworkTime.time);
+	public double Progress => MoreMath.InverseLerp(this.InitialTime, this.FinishTime, NetworkTime.time);
 
 	public SearchSession(double initialTime, double finishTime, ISearchable target)
 	{
-		Target = target;
-		InitialTime = initialTime;
-		FinishTime = finishTime;
+		this.Target = target;
+		this.InitialTime = initialTime;
+		this.FinishTime = finishTime;
 	}
 
 	public void Deserialize(NetworkReader reader)
 	{
-		Target = reader.ReadNetworkIdentity().GetComponent<ISearchable>();
-		InitialTime = reader.ReadDouble();
-		FinishTime = reader.ReadDouble();
+		NetworkIdentity networkIdentity = reader.ReadNetworkIdentity();
+		this.Target = ((networkIdentity == null) ? null : networkIdentity.GetComponent<ISearchable>());
+		this.InitialTime = reader.ReadDouble();
+		this.FinishTime = reader.ReadDouble();
 	}
 
 	public void Serialize(NetworkWriter writer)
 	{
-		writer.WriteNetworkIdentity(Target?.netIdentity);
-		writer.WriteDouble(InitialTime);
-		writer.WriteDouble(FinishTime);
+		writer.WriteNetworkIdentity(this.Target?.netIdentity);
+		writer.WriteDouble(this.InitialTime);
+		writer.WriteDouble(this.FinishTime);
 	}
 
 	public bool Equals(SearchSession other)
 	{
-		if (object.Equals(Target, other.Target) && InitialTime.Equals(other.InitialTime))
+		if (object.Equals(this.Target, other.Target) && this.InitialTime.Equals(other.InitialTime))
 		{
-			return FinishTime.Equals(other.FinishTime);
+			return this.FinishTime.Equals(other.FinishTime);
 		}
 		return false;
 	}
@@ -50,13 +51,13 @@ public struct SearchSession : ISearchSession, NetworkMessage, IEquatable<SearchS
 	{
 		if (obj is SearchSession other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((((Target != null) ? Target.GetHashCode() : 0) * 397) ^ InitialTime.GetHashCode()) * 397) ^ FinishTime.GetHashCode();
+		return (((((this.Target != null) ? this.Target.GetHashCode() : 0) * 397) ^ this.InitialTime.GetHashCode()) * 397) ^ this.FinishTime.GetHashCode();
 	}
 }

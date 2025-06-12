@@ -18,7 +18,7 @@ public static class EmotionSync
 
 	public static EmotionPresetType GetEmotionPreset(ReferenceHub hub)
 	{
-		return Database.GetValueOrDefault(hub, EmotionPresetType.Neutral);
+		return EmotionSync.Database.GetValueOrDefault(hub, EmotionPresetType.Neutral);
 	}
 
 	public static void ServerSetEmotionPreset(this ReferenceHub hub, EmotionPresetType preset)
@@ -27,11 +27,12 @@ public static class EmotionSync
 		{
 			throw new InvalidOperationException("Unable to set emotions on client!");
 		}
-		Database[hub] = preset;
-		EmotionSyncMessage message = default(EmotionSyncMessage);
-		message.HubNetId = hub.netId;
-		message.Data = preset;
-		NetworkServer.SendToAll(message, 0, sendToReadyOnly: true);
+		EmotionSync.Database[hub] = preset;
+		NetworkServer.SendToAll(new EmotionSyncMessage
+		{
+			HubNetId = hub.netId,
+			Data = preset
+		}, 0, sendToReadyOnly: true);
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -45,7 +46,7 @@ public static class EmotionSync
 
 	private static void OnClientReady()
 	{
-		Database.Clear();
+		EmotionSync.Database.Clear();
 		NetworkClient.ReplaceHandler<EmotionSyncMessage>(ProcessMessage);
 		NetworkServer.ReplaceHandler<EmotionSyncMessage>(TempServerProcessMessage);
 	}
@@ -54,7 +55,7 @@ public static class EmotionSync
 	{
 		if (ReferenceHub.TryGetHubNetID(msg.HubNetId, out var hub))
 		{
-			Database[hub] = msg.Data;
+			EmotionSync.Database[hub] = msg.Data;
 			if (hub.roleManager.CurrentRole is IFpcRole fpcRole && fpcRole.FpcModule.CharacterModelInstance is AnimatedCharacterModel animatedCharacterModel && animatedCharacterModel.TryGetSubcontroller<EmotionSubcontroller>(out var subcontroller))
 			{
 				subcontroller.SetPreset(msg.Data);
@@ -64,7 +65,7 @@ public static class EmotionSync
 
 	private static void OnHubRemoved(ReferenceHub hub)
 	{
-		Database.Remove(hub);
+		EmotionSync.Database.Remove(hub);
 	}
 
 	private static void OnHubAdded(ReferenceHub hub)
@@ -73,9 +74,9 @@ public static class EmotionSync
 		{
 			return;
 		}
-		foreach (KeyValuePair<ReferenceHub, EmotionPresetType> item in Database)
+		foreach (KeyValuePair<ReferenceHub, EmotionPresetType> item in EmotionSync.Database)
 		{
-			if (item.Value != 0)
+			if (item.Value != EmotionPresetType.Neutral)
 			{
 				hub.connectionToClient.Send(new EmotionSyncMessage
 				{

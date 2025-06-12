@@ -69,17 +69,17 @@ public class LockerChamber : MonoBehaviour, IDoorPermissionRequester
 	{
 		get
 		{
-			if (!AnimatorSet)
+			if (!this.AnimatorSet)
 			{
 				return false;
 			}
-			if (!_stopwatch.IsRunning)
+			if (!this._stopwatch.IsRunning)
 			{
 				return true;
 			}
-			if (_stopwatch.Elapsed.TotalSeconds >= (double)TargetCooldown)
+			if (this._stopwatch.Elapsed.TotalSeconds >= (double)this.TargetCooldown)
 			{
-				_stopwatch.Stop();
+				this._stopwatch.Stop();
 				return true;
 			}
 			return false;
@@ -90,15 +90,15 @@ public class LockerChamber : MonoBehaviour, IDoorPermissionRequester
 	{
 		get
 		{
-			if (_animatorStatusCode == 0)
+			if (this._animatorStatusCode == 0)
 			{
-				_animatorStatusCode = (byte)((_animator == null) ? 1u : 2u);
+				this._animatorStatusCode = (byte)((this._animator == null) ? 1u : 2u);
 			}
-			return _animatorStatusCode == 2;
+			return this._animatorStatusCode == 2;
 		}
 	}
 
-	public DoorPermissionsPolicy PermissionsPolicy => new DoorPermissionsPolicy(RequiredPermissions, requireAll: true);
+	public DoorPermissionsPolicy PermissionsPolicy => new DoorPermissionsPolicy(this.RequiredPermissions, requireAll: true);
 
 	[field: SerializeField]
 	public string RequesterLogSignature { get; set; }
@@ -107,7 +107,7 @@ public class LockerChamber : MonoBehaviour, IDoorPermissionRequester
 
 	protected virtual void Start()
 	{
-		KeycardScannerPermsIndicator[] permsIndicators = _permsIndicators;
+		KeycardScannerPermsIndicator[] permsIndicators = this._permsIndicators;
 		for (int i = 0; i < permsIndicators.Length; i++)
 		{
 			permsIndicators[i].Register(this);
@@ -122,11 +122,11 @@ public class LockerChamber : MonoBehaviour, IDoorPermissionRequester
 		}
 		for (int i = 0; i < amount; i++)
 		{
-			GetSpawnpoint(id, i, out var worldPosition, out var worldRotation, out var parent);
+			this.GetSpawnpoint(id, i, out var worldPosition, out var worldRotation, out var parent);
 			ItemPickupBase itemPickupBase = UnityEngine.Object.Instantiate(value.PickupDropModel, worldPosition, worldRotation);
 			itemPickupBase.transform.SetParent(parent);
 			itemPickupBase.NetworkInfo = new PickupSyncInfo(id, value.Weight, 0, locked: true);
-			Content.Add(itemPickupBase);
+			this.Content.Add(itemPickupBase);
 			(itemPickupBase as IPickupDistributorTrigger)?.OnDistributed();
 			if (itemPickupBase.TryGetComponent<Rigidbody>(out var component))
 			{
@@ -134,9 +134,9 @@ public class LockerChamber : MonoBehaviour, IDoorPermissionRequester
 				component.transform.ResetLocalPose();
 				SpawnablesDistributorBase.BodiesToUnfreeze.Add(component);
 			}
-			if (SpawnOnFirstChamberOpening)
+			if (this.SpawnOnFirstChamberOpening)
 			{
-				ToBeSpawned.Add(itemPickupBase);
+				this.ToBeSpawned.Add(itemPickupBase);
 			}
 			else
 			{
@@ -148,14 +148,14 @@ public class LockerChamber : MonoBehaviour, IDoorPermissionRequester
 	protected virtual void GetSpawnpoint(ItemType itemType, int index, out Vector3 worldPosition, out Quaternion worldRotation, out Transform parent)
 	{
 		Transform transform;
-		if (_useMultipleSpawnpoints && _spawnpoints.Length != 0)
+		if (this._useMultipleSpawnpoints && this._spawnpoints.Length != 0)
 		{
-			int num = index % _spawnpoints.Length;
-			transform = _spawnpoints[num];
+			int num = index % this._spawnpoints.Length;
+			transform = this._spawnpoints[num];
 		}
 		else
 		{
-			transform = Spawnpoint;
+			transform = this.Spawnpoint;
 		}
 		parent = transform;
 		worldPosition = transform.position;
@@ -164,29 +164,29 @@ public class LockerChamber : MonoBehaviour, IDoorPermissionRequester
 
 	public void SetDoor(bool doorStatus, AudioClip beepClip)
 	{
-		if (doorStatus != _prevDoor)
+		if (doorStatus != this._prevDoor)
 		{
-			IsOpen = doorStatus;
-			_prevDoor = doorStatus;
-			if (AnimatorSet)
+			this.IsOpen = doorStatus;
+			this._prevDoor = doorStatus;
+			if (this.AnimatorSet)
 			{
-				_animator.SetBool(DoorHash, doorStatus);
-				TargetCooldown = _animationTime;
-				_stopwatch.Restart();
+				this._animator.SetBool(LockerChamber.DoorHash, doorStatus);
+				this.TargetCooldown = this._animationTime;
+				this._stopwatch.Restart();
 			}
-			if (_nfcScanner != null)
+			if (this._nfcScanner != null)
 			{
-				_nfcScanner.SetTemporaryGranted(_animationTime);
+				this._nfcScanner.SetTemporaryGranted(this._animationTime);
 			}
-			KeycardScannerPermsIndicator[] permsIndicators = _permsIndicators;
+			KeycardScannerPermsIndicator[] permsIndicators = this._permsIndicators;
 			for (int i = 0; i < permsIndicators.Length; i++)
 			{
-				permsIndicators[i].PlayAccepted(_animationTime);
+				permsIndicators[i].PlayAccepted(this._animationTime);
 			}
-			if (IsOpen && !WasEverOpened)
+			if (this.IsOpen && !this.WasEverOpened)
 			{
-				OnFirstTimeOpen();
-				WasEverOpened = true;
+				this.OnFirstTimeOpen();
+				this.WasEverOpened = true;
 			}
 			this.OnDoorStatusSet?.Invoke();
 		}
@@ -202,7 +202,7 @@ public class LockerChamber : MonoBehaviour, IDoorPermissionRequester
 		{
 			return;
 		}
-		foreach (ItemPickupBase item in Content)
+		foreach (ItemPickupBase item in this.Content)
 		{
 			if (!(item == null))
 			{
@@ -211,11 +211,11 @@ public class LockerChamber : MonoBehaviour, IDoorPermissionRequester
 				item.NetworkInfo = info;
 			}
 		}
-		if (!SpawnOnFirstChamberOpening)
+		if (!this.SpawnOnFirstChamberOpening)
 		{
 			return;
 		}
-		foreach (ItemPickupBase item2 in ToBeSpawned)
+		foreach (ItemPickupBase item2 in this.ToBeSpawned)
 		{
 			if (!(item2 == null))
 			{

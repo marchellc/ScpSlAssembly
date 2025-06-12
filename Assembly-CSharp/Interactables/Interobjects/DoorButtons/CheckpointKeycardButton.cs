@@ -37,42 +37,42 @@ public class CheckpointKeycardButton : KeycardButton
 
 	private void UpdateSequence()
 	{
-		if (_isIdle)
+		if (this._isIdle)
 		{
 			CheckpointDoor.SequenceState curSequence = (base.ParentDoor as CheckpointDoor).CurSequence;
-			_passScreen.SetActive(curSequence == CheckpointDoor.SequenceState.OpenLoop);
-			_warningScreen.SetActive(curSequence == CheckpointDoor.SequenceState.ClosingWarning);
+			this._passScreen.SetActive(curSequence == CheckpointDoor.SequenceState.OpenLoop);
+			this._warningScreen.SetActive(curSequence == CheckpointDoor.SequenceState.ClosingWarning);
 			if (curSequence == CheckpointDoor.SequenceState.ClosingWarning)
 			{
-				base.NfcScannerIcon.SetMaterial(_warningMaterial, null);
+				base.NfcScannerIcon.SetMaterial(this._warningMaterial, null);
 			}
 		}
 	}
 
 	private void RestoreScreen()
 	{
-		_isIdle = false;
-		_regularScreen.SetActive(value: true);
-		_passScreen.SetActive(value: false);
-		_warningScreen.SetActive(value: false);
+		this._isIdle = false;
+		this._regularScreen.SetActive(value: true);
+		this._passScreen.SetActive(value: false);
+		this._warningScreen.SetActive(value: false);
 	}
 
 	protected override void OnDenied(DoorPermissionFlags flags)
 	{
 		base.OnDenied(flags);
-		RestoreScreen();
+		this.RestoreScreen();
 	}
 
 	protected override void SetAsDestroyed()
 	{
 		base.SetAsDestroyed();
-		RestoreScreen();
+		this.RestoreScreen();
 	}
 
 	protected override void SetLocked()
 	{
 		base.SetLocked();
-		RestoreScreen();
+		this.RestoreScreen();
 	}
 
 	protected override void SetIdle()
@@ -80,17 +80,17 @@ public class CheckpointKeycardButton : KeycardButton
 		base.SetIdle();
 		if (base.ParentDoor.TargetState)
 		{
-			_isIdle = true;
-			_regularScreen.SetActive(value: false);
-			base.NfcScannerIcon.SetMaterial(_openMaterial, null);
-			UpdateSequence();
+			this._isIdle = true;
+			this._regularScreen.SetActive(value: false);
+			base.NfcScannerIcon.SetMaterial(this._openMaterial, null);
+			this.UpdateSequence();
 		}
 	}
 
 	protected override void RestoreNonDestroyed()
 	{
 		base.RestoreNonDestroyed();
-		RestoreScreen();
+		this.RestoreScreen();
 	}
 
 	protected override void SetMoving()
@@ -101,6 +101,6 @@ public class CheckpointKeycardButton : KeycardButton
 			base.NfcScannerIcon.SetRegular();
 			base.PermsIndicator.ShowIdle();
 		}
-		RestoreScreen();
+		this.RestoreScreen();
 	}
 }

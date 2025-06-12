@@ -23,7 +23,7 @@ public static class HttpQuery
 
 	static HttpQuery()
 	{
-		_client = new HttpClient
+		HttpQuery._client = new HttpClient
 		{
 			Timeout = TimeSpan.FromSeconds(15.0),
 			DefaultRequestHeaders = 
@@ -37,22 +37,22 @@ public static class HttpQuery
 		};
 		if (StartupArgs.Args.Any((string arg) => string.Equals(arg, "-lockhttpmode", StringComparison.OrdinalIgnoreCase)) || File.Exists(FileManager.GetAppFolder() + "LockHttpMode.txt"))
 		{
-			LockHttpMode = true;
+			HttpQuery.LockHttpMode = true;
 			GameCore.Console.AddLog("HTTP mode locked", Color.gray);
 		}
 		if (StartupArgs.Args.Any((string arg) => string.Equals(arg, "-httpproxy", StringComparison.OrdinalIgnoreCase)) || File.Exists(FileManager.GetAppFolder() + "HttpProxy.txt"))
 		{
-			HttpMode = HttpQueryMode.HttpProxy;
+			HttpQuery.HttpMode = HttpQueryMode.HttpProxy;
 			GameCore.Console.AddLog("HTTP mode switched to HttpProxy (startup argument)", Color.gray);
 		}
 		if (StartupArgs.Args.Any((string arg) => string.Equals(arg, "-unitywebrequest", StringComparison.OrdinalIgnoreCase)) || File.Exists(FileManager.GetAppFolder() + "UnityWebRequest.txt"))
 		{
-			HttpMode = HttpQueryMode.UnityWebRequest;
+			HttpQuery.HttpMode = HttpQueryMode.UnityWebRequest;
 			GameCore.Console.AddLog("HTTP mode switched to UnityWebRequest (startup argument)", Color.gray);
 		}
 		if (StartupArgs.Args.Any((string arg) => string.Equals(arg, "-unitywebrequestdispatcher", StringComparison.OrdinalIgnoreCase)) || File.Exists(FileManager.GetAppFolder() + "UnityWebRequestDispatcher.txt"))
 		{
-			HttpMode = HttpQueryMode.UnityWebRequestDispatcher;
+			HttpQuery.HttpMode = HttpQueryMode.UnityWebRequestDispatcher;
 			GameCore.Console.AddLog("HTTP mode switched to UnityWebRequestDispatcher (startup argument)", Color.gray);
 		}
 	}
@@ -61,7 +61,7 @@ public static class HttpQuery
 	{
 		bool success;
 		HttpStatusCode code;
-		string text = Get(url, out success, out code);
+		string text = HttpQuery.Get(url, out success, out code);
 		if (!success)
 		{
 			throw new Exception("Error " + code.ToString() + ".\n" + text);
@@ -72,13 +72,13 @@ public static class HttpQuery
 	public static string Get(string url, out bool success)
 	{
 		HttpStatusCode code;
-		return Get(url, out success, out code);
+		return HttpQuery.Get(url, out success, out code);
 	}
 
 	public static string Get(string url, out bool success, out HttpStatusCode code)
 	{
 		HashSet<HttpQueryMode> hashSet = HashSetPool<HttpQueryMode>.Shared.Rent();
-		HttpQueryMode httpQueryMode = HttpMode;
+		HttpQueryMode httpQueryMode = HttpQuery.HttpMode;
 		try
 		{
 			while (true)
@@ -88,7 +88,7 @@ public static class HttpQuery
 				case HttpQueryMode.HttpClient:
 					if (PlatformInfo.singleton == null || PlatformInfo.singleton.IsMainThread)
 					{
-						if (!hashSet.Add(HttpQueryMode.HttpClient) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.HttpClient) || HttpQuery.LockHttpMode)
 						{
 							throw new NotSupportedException();
 						}
@@ -97,14 +97,14 @@ public static class HttpQuery
 					}
 					try
 					{
-						HttpResponseMessage result = _client.GetAsync(url).GetAwaiter().GetResult();
+						HttpResponseMessage result = HttpQuery._client.GetAsync(url).GetAwaiter().GetResult();
 						code = result.StatusCode;
 						success = result.IsSuccessStatusCode;
 						return result.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 					}
 					catch (Exception ex2)
 					{
-						if (!hashSet.Add(HttpQueryMode.HttpClient) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.HttpClient) || HttpQuery.LockHttpMode)
 						{
 							throw;
 						}
@@ -115,7 +115,7 @@ public static class HttpQuery
 				case HttpQueryMode.HttpProxy:
 					if (!HttpWorkaround.Enabled)
 					{
-						if (!hashSet.Add(HttpQueryMode.HttpProxy) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.HttpProxy) || HttpQuery.LockHttpMode)
 						{
 							throw new NotSupportedException();
 						}
@@ -128,7 +128,7 @@ public static class HttpQuery
 					}
 					catch (Exception ex4)
 					{
-						if (!hashSet.Add(HttpQueryMode.HttpProxy) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.HttpProxy) || HttpQuery.LockHttpMode)
 						{
 							throw;
 						}
@@ -139,7 +139,7 @@ public static class HttpQuery
 				case HttpQueryMode.UnityWebRequest:
 					if (PlatformInfo.singleton == null || !PlatformInfo.singleton.IsMainThread)
 					{
-						if (!hashSet.Add(HttpQueryMode.UnityWebRequest) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.UnityWebRequest) || HttpQuery.LockHttpMode)
 						{
 							throw new NotSupportedException();
 						}
@@ -168,7 +168,7 @@ public static class HttpQuery
 					}
 					catch (Exception ex3)
 					{
-						if (!hashSet.Add(HttpQueryMode.UnityWebRequest) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.UnityWebRequest) || HttpQuery.LockHttpMode)
 						{
 							throw;
 						}
@@ -179,7 +179,7 @@ public static class HttpQuery
 				case HttpQueryMode.UnityWebRequestDispatcher:
 					if (PlatformInfo.singleton == null || PlatformInfo.singleton.IsMainThread)
 					{
-						if (!hashSet.Add(HttpQueryMode.UnityWebRequestDispatcher) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.UnityWebRequestDispatcher) || HttpQuery.LockHttpMode)
 						{
 							throw new NotSupportedException();
 						}
@@ -199,7 +199,7 @@ public static class HttpQuery
 					}
 					catch (Exception ex)
 					{
-						if (!hashSet.Add(HttpQueryMode.UnityWebRequestDispatcher) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.UnityWebRequestDispatcher) || HttpQuery.LockHttpMode)
 						{
 							throw;
 						}
@@ -222,7 +222,7 @@ public static class HttpQuery
 	{
 		bool success;
 		HttpStatusCode code;
-		string text = Post(url, data, out success, out code);
+		string text = HttpQuery.Post(url, data, out success, out code);
 		if (!success)
 		{
 			throw new Exception("Error " + code.ToString() + ".\n" + text);
@@ -233,13 +233,13 @@ public static class HttpQuery
 	public static string Post(string url, string data, out bool success)
 	{
 		HttpStatusCode code;
-		return Post(url, data, out success, out code);
+		return HttpQuery.Post(url, data, out success, out code);
 	}
 
 	public static string Post(string url, string data, out bool success, out HttpStatusCode code)
 	{
 		HashSet<HttpQueryMode> hashSet = HashSetPool<HttpQueryMode>.Shared.Rent();
-		HttpQueryMode httpQueryMode = HttpMode;
+		HttpQueryMode httpQueryMode = HttpQuery.HttpMode;
 		try
 		{
 			while (true)
@@ -249,7 +249,7 @@ public static class HttpQuery
 				case HttpQueryMode.HttpClient:
 					if (PlatformInfo.singleton == null || PlatformInfo.singleton.IsMainThread)
 					{
-						if (!hashSet.Add(HttpQueryMode.HttpClient) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.HttpClient) || HttpQuery.LockHttpMode)
 						{
 							throw new NotSupportedException();
 						}
@@ -258,14 +258,14 @@ public static class HttpQuery
 					}
 					try
 					{
-						HttpResponseMessage result = _client.PostAsync(url, new StringContent(data, Encoding.UTF8, "application/x-www-form-urlencoded")).GetAwaiter().GetResult();
+						HttpResponseMessage result = HttpQuery._client.PostAsync(url, new StringContent(data, Encoding.UTF8, "application/x-www-form-urlencoded")).GetAwaiter().GetResult();
 						code = result.StatusCode;
 						success = result.IsSuccessStatusCode;
 						return result.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 					}
 					catch (Exception ex2)
 					{
-						if (!hashSet.Add(HttpQueryMode.HttpClient) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.HttpClient) || HttpQuery.LockHttpMode)
 						{
 							throw;
 						}
@@ -276,7 +276,7 @@ public static class HttpQuery
 				case HttpQueryMode.HttpProxy:
 					if (!HttpWorkaround.Enabled)
 					{
-						if (!hashSet.Add(HttpQueryMode.HttpProxy) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.HttpProxy) || HttpQuery.LockHttpMode)
 						{
 							throw new NotSupportedException();
 						}
@@ -289,7 +289,7 @@ public static class HttpQuery
 					}
 					catch (Exception ex4)
 					{
-						if (!hashSet.Add(HttpQueryMode.HttpProxy) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.HttpProxy) || HttpQuery.LockHttpMode)
 						{
 							throw;
 						}
@@ -300,7 +300,7 @@ public static class HttpQuery
 				case HttpQueryMode.UnityWebRequest:
 					if (PlatformInfo.singleton == null || !PlatformInfo.singleton.IsMainThread)
 					{
-						if (!hashSet.Add(HttpQueryMode.UnityWebRequest) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.UnityWebRequest) || HttpQuery.LockHttpMode)
 						{
 							throw new NotSupportedException();
 						}
@@ -309,7 +309,7 @@ public static class HttpQuery
 					}
 					try
 					{
-						using UnityWebRequest unityWebRequest = UnityWebRequest.Post(url, ToUnityForm(data));
+						using UnityWebRequest unityWebRequest = UnityWebRequest.Post(url, HttpQuery.ToUnityForm(data));
 						UnityWebRequestAsyncOperation unityWebRequestAsyncOperation = unityWebRequest.SendWebRequest();
 						while (!unityWebRequestAsyncOperation.isDone)
 						{
@@ -329,7 +329,7 @@ public static class HttpQuery
 					}
 					catch (Exception ex3)
 					{
-						if (!hashSet.Add(HttpQueryMode.UnityWebRequest) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.UnityWebRequest) || HttpQuery.LockHttpMode)
 						{
 							throw;
 						}
@@ -340,7 +340,7 @@ public static class HttpQuery
 				case HttpQueryMode.UnityWebRequestDispatcher:
 					if (PlatformInfo.singleton == null || PlatformInfo.singleton.IsMainThread)
 					{
-						if (!hashSet.Add(HttpQueryMode.UnityWebRequestDispatcher) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.UnityWebRequestDispatcher) || HttpQuery.LockHttpMode)
 						{
 							throw new NotSupportedException();
 						}
@@ -360,7 +360,7 @@ public static class HttpQuery
 					}
 					catch (Exception ex)
 					{
-						if (!hashSet.Add(HttpQueryMode.UnityWebRequestDispatcher) || LockHttpMode)
+						if (!hashSet.Add(HttpQueryMode.UnityWebRequestDispatcher) || HttpQuery.LockHttpMode)
 						{
 							throw;
 						}

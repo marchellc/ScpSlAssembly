@@ -59,16 +59,16 @@ public class Scp079ScannerTracker : Scp079AbilityBase
 	{
 		get
 		{
-			if (_sequence.SequencePaused)
+			if (this._sequence.SequencePaused)
 			{
-				return _statusDisabled;
+				return this._statusDisabled;
 			}
-			int num = Mathf.CeilToInt(_sequence.RemainingTime);
+			int num = Mathf.CeilToInt(this._sequence.RemainingTime);
 			if (num > 0)
 			{
-				return string.Format(_statusNextScan, num);
+				return string.Format(this._statusNextScan, num);
 			}
-			return _statusScanning;
+			return this._statusScanning;
 		}
 	}
 
@@ -76,29 +76,29 @@ public class Scp079ScannerTracker : Scp079AbilityBase
 
 	private void AddTarget(ReferenceHub hub)
 	{
-		int num = TrackedPlayers.Length;
+		int num = this.TrackedPlayers.Length;
 		for (int i = 0; i < num; i++)
 		{
-			if (TrackedPlayers[i] == null)
+			if (this.TrackedPlayers[i] == null)
 			{
-				TrackedPlayers[i] = new Scp079ScannerTrackedPlayer(hub);
+				this.TrackedPlayers[i] = new Scp079ScannerTrackedPlayer(hub);
 				return;
 			}
 		}
-		Array.Resize(ref TrackedPlayers, num + 32);
-		TrackedPlayers[num] = new Scp079ScannerTrackedPlayer(hub);
+		Array.Resize(ref this.TrackedPlayers, num + 32);
+		this.TrackedPlayers[num] = new Scp079ScannerTrackedPlayer(hub);
 	}
 
 	private void RemoveTarget(ReferenceHub hub)
 	{
-		int num = TrackedPlayers.Length;
+		int num = this.TrackedPlayers.Length;
 		int hashCode = hub.GetHashCode();
 		for (int i = 0; i < num; i++)
 		{
-			Scp079ScannerTrackedPlayer obj = TrackedPlayers[i];
+			Scp079ScannerTrackedPlayer obj = this.TrackedPlayers[i];
 			if (obj != null && obj.PlayerHash == hashCode)
 			{
-				TrackedPlayers[i] = null;
+				this.TrackedPlayers[i] = null;
 				break;
 			}
 		}
@@ -108,57 +108,57 @@ public class Scp079ScannerTracker : Scp079AbilityBase
 	{
 		if (prevRole is HumanRole)
 		{
-			RemoveTarget(ply);
+			this.RemoveTarget(ply);
 		}
 		if (newRole is HumanRole)
 		{
-			AddTarget(ply);
+			this.AddTarget(ply);
 		}
 	}
 
 	private void Update()
 	{
-		if (!_sequenceActive || !NetworkServer.active)
+		if (!this._sequenceActive || !NetworkServer.active)
 		{
 			return;
 		}
-		int num = TrackedPlayers.Length;
+		int num = this.TrackedPlayers.Length;
 		for (int i = 0; i < num; i++)
 		{
-			int num2 = ++_lastRefreshedIndex % num;
-			Scp079ScannerTrackedPlayer scp079ScannerTrackedPlayer = TrackedPlayers[num2];
+			int num2 = ++this._lastRefreshedIndex % num;
+			Scp079ScannerTrackedPlayer scp079ScannerTrackedPlayer = this.TrackedPlayers[num2];
 			if (scp079ScannerTrackedPlayer != null)
 			{
-				_lastRefreshedIndex = num2;
-				scp079ScannerTrackedPlayer.Update(_areaBaselineRadius, _areaAdditiveRadius, _maxCampingTime);
+				this._lastRefreshedIndex = num2;
+				scp079ScannerTrackedPlayer.Update(this._areaBaselineRadius, this._areaAdditiveRadius, this._maxCampingTime);
 				break;
 			}
 		}
-		_sequence.ServerUpdate(out var rpcRequested);
+		this._sequence.ServerUpdate(out var rpcRequested);
 		if (rpcRequested)
 		{
-			ServerSendRpc(toAll: true);
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		_sequence.WriteRpc(writer);
+		this._sequence.WriteRpc(writer);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_sequence.ReadRpc(reader);
+		this._sequence.ReadRpc(reader);
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		_statusScanning = Translations.Get(Scp079HudTranslation.ScanStatusScanning);
-		_statusNextScan = Translations.Get(Scp079HudTranslation.ScanStatusWaiting);
-		_statusDisabled = Translations.Get(Scp079HudTranslation.ScanStatusDisabled);
+		this._statusScanning = Translations.Get(Scp079HudTranslation.ScanStatusScanning);
+		this._statusNextScan = Translations.Get(Scp079HudTranslation.ScanStatusWaiting);
+		this._statusDisabled = Translations.Get(Scp079HudTranslation.ScanStatusDisabled);
 	}
 
 	internal void ClientProcessScanResult(ReferenceHub ply, int nextScan, NetworkReader data)
@@ -166,7 +166,7 @@ public class Scp079ScannerTracker : Scp079AbilityBase
 		if (ply != null && ply.roleManager.CurrentRole is HumanRole detectedHuman)
 		{
 			Scp079NotificationManager.AddNotification(new Scp079ScannerNotification(detectedHuman));
-			AudioSourcePoolManager.PlayAtPosition(_alarmSound, data.ReadRelativePosition(), _alarmRange, 1f, FalloffType.Exponential, MixerChannel.NoDucking).Source.transform.position += Vector3.up * _alarmHeight;
+			AudioSourcePoolManager.PlayAtPosition(this._alarmSound, data.ReadRelativePosition(), this._alarmRange, 1f, FalloffType.Exponential, MixerChannel.NoDucking).Source.transform.position += Vector3.up * this._alarmHeight;
 			this.OnDetected?.Invoke(ply);
 		}
 		else
@@ -178,19 +178,19 @@ public class Scp079ScannerTracker : Scp079AbilityBase
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_sequence = new Scp079ScannerSequence(base.CastRole);
+		this._sequence = new Scp079ScannerSequence(base.CastRole);
 		if (!NetworkServer.active)
 		{
 			return;
 		}
-		_sequenceActive = true;
+		this._sequenceActive = true;
 		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
 		ReferenceHub.OnPlayerRemoved += RemoveTarget;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allHub.roleManager.CurrentRole is HumanRole)
 			{
-				AddTarget(allHub);
+				this.AddTarget(allHub);
 			}
 		}
 	}
@@ -198,12 +198,12 @@ public class Scp079ScannerTracker : Scp079AbilityBase
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		if (_sequenceActive)
+		if (this._sequenceActive)
 		{
-			_sequenceActive = false;
+			this._sequenceActive = false;
 			PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
 			ReferenceHub.OnPlayerRemoved -= RemoveTarget;
-			Array.Clear(TrackedPlayers, 0, TrackedPlayers.Length);
+			Array.Clear(this.TrackedPlayers, 0, this.TrackedPlayers.Length);
 		}
 	}
 }

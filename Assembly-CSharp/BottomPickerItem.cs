@@ -8,12 +8,12 @@ public class BottomPickerItem : MonoBehaviour
 
 	public void SetupButton(string k, int i)
 	{
-		key = k;
-		id = i;
+		this.key = k;
+		this.id = i;
 	}
 
 	public void Submit()
 	{
-		PlayerPrefsSl.Set(key, id);
+		PlayerPrefsSl.Set(this.key, this.id);
 	}
 }

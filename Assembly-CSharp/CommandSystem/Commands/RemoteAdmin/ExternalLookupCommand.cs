@@ -53,7 +53,7 @@ public class ExternalLookupCommand : ICommand, IHiddenCommand
 			response = "Invalid mode or command disabled via config.";
 			return false;
 		}
-		Timing.RunCoroutine(AuthenticateWithExternalServer(playerCommandSender, text));
+		Timing.RunCoroutine(this.AuthenticateWithExternalServer(playerCommandSender, text));
 		response = "Initiated communication with external server.";
 		return true;
 	}

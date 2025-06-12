@@ -14,8 +14,8 @@ public class SecondaryRigsSubcontroller : SubcontrollerBehaviour
 
 		public readonly void Match()
 		{
-			Original.GetPositionAndRotation(out var position, out var rotation);
-			Target.SetPositionAndRotation(position, rotation);
+			this.Original.GetPositionAndRotation(out var position, out var rotation);
+			this.Target.SetPositionAndRotation(position, rotation);
 		}
 	}
 
@@ -26,13 +26,13 @@ public class SecondaryRigsSubcontroller : SubcontrollerBehaviour
 	{
 		if (!base.HasCuller)
 		{
-			MatchAll();
+			this.MatchAll();
 		}
 	}
 
 	public void MatchAll()
 	{
-		SecondaryBone[] secondaryBones = _secondaryBones;
+		SecondaryBone[] secondaryBones = this._secondaryBones;
 		foreach (SecondaryBone secondaryBone in secondaryBones)
 		{
 			secondaryBone.Match();

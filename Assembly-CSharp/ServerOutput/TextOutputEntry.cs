@@ -16,31 +16,31 @@ public struct TextOutputEntry : IOutputEntry
 	{
 		get
 		{
-			byte color = Color;
+			byte color = this.Color;
 			return color.ToString("X");
 		}
 	}
 
 	public TextOutputEntry(string text, ConsoleColor color)
 	{
-		Text = text;
-		Color = (byte)color;
+		this.Text = text;
+		this.Color = (byte)color;
 	}
 
 	public string GetString()
 	{
-		return HexColor + Text;
+		return this.HexColor + this.Text;
 	}
 
 	public int GetBytesLength()
 	{
-		return Encoding.UTF8.GetMaxByteCount(Text.Length) + 5;
+		return Encoding.UTF8.GetMaxByteCount(this.Text.Length) + 5;
 	}
 
 	public void GetBytes(ref byte[] buffer, out int length)
 	{
-		length = Utf8.GetBytes(Text, buffer, 5);
-		buffer[0] = Color;
+		length = Utf8.GetBytes(this.Text, buffer, 5);
+		buffer[0] = this.Color;
 		MemoryMarshal.Cast<byte, int>(new ArraySegment<byte>(buffer).Slice(1, 4))[0] = length;
 		length += 5;
 	}

@@ -15,7 +15,7 @@ public class MimicryRecordingRearranger : MonoBehaviour, IPointerDownHandler, IE
 	{
 		if (eventData.button == PointerEventData.InputButton.Left)
 		{
-			_menu.BeginDrag(_icon);
+			this._menu.BeginDrag(this._icon);
 		}
 	}
 }

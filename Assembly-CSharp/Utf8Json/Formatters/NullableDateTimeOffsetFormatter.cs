@@ -8,12 +8,12 @@ public sealed class NullableDateTimeOffsetFormatter : IJsonFormatter<DateTimeOff
 
 	public NullableDateTimeOffsetFormatter()
 	{
-		innerFormatter = new DateTimeOffsetFormatter();
+		this.innerFormatter = new DateTimeOffsetFormatter();
 	}
 
 	public NullableDateTimeOffsetFormatter(string formatString)
 	{
-		innerFormatter = new DateTimeOffsetFormatter(formatString);
+		this.innerFormatter = new DateTimeOffsetFormatter(formatString);
 	}
 
 	public void Serialize(ref JsonWriter writer, DateTimeOffset? value, IJsonFormatterResolver formatterResolver)
@@ -24,7 +24,7 @@ public sealed class NullableDateTimeOffsetFormatter : IJsonFormatter<DateTimeOff
 		}
 		else
 		{
-			innerFormatter.Serialize(ref writer, value.Value, formatterResolver);
+			this.innerFormatter.Serialize(ref writer, value.Value, formatterResolver);
 		}
 	}
 
@@ -34,6 +34,6 @@ public sealed class NullableDateTimeOffsetFormatter : IJsonFormatter<DateTimeOff
 		{
 			return null;
 		}
-		return innerFormatter.Deserialize(ref reader, formatterResolver);
+		return this.innerFormatter.Deserialize(ref reader, formatterResolver);
 	}
 }

@@ -41,28 +41,28 @@ public class FlamingoSoundtrack : SoundtrackLayerBase
 
 	private const float AwayVolume = 0.01f;
 
-	public override float Weight => _weight;
+	public override float Weight => this._weight;
 
 	public override bool Additive => false;
 
 	private void Update()
 	{
-		FindFlamingos(out var anyFlamingosExist, out var anyFlamingosInRange);
+		this.FindFlamingos(out var anyFlamingosExist, out var anyFlamingosInRange);
 		if (!anyFlamingosExist)
 		{
-			_weight = Mathf.MoveTowards(_weight, 0f, _fadeOutWeightSpeed * Time.deltaTime);
+			this._weight = Mathf.MoveTowards(this._weight, 0f, this._fadeOutWeightSpeed * Time.deltaTime);
 			return;
 		}
-		if (anyFlamingosInRange || _elapsed < _omnipresentDuration)
+		if (anyFlamingosInRange || this._elapsed < this._omnipresentDuration)
 		{
-			_separationTimer = 0f;
+			this._separationTimer = 0f;
 		}
 		else
 		{
-			_separationTimer += Time.deltaTime;
+			this._separationTimer += Time.deltaTime;
 		}
-		float target = ((_separationTimer < _minSustainTime) ? 1f : 0.01f);
-		_weight = Mathf.MoveTowards(_weight, target, _fadePresenceSpeed * Time.deltaTime);
+		float target = ((this._separationTimer < this._minSustainTime) ? 1f : 0.01f);
+		this._weight = Mathf.MoveTowards(this._weight, target, this._fadePresenceSpeed * Time.deltaTime);
 	}
 
 	private void FindFlamingos(out bool anyFlamingosExist, out bool anyFlamingosInRange)
@@ -80,7 +80,7 @@ public class FlamingoSoundtrack : SoundtrackLayerBase
 				{
 					break;
 				}
-				if (!((scp1507Role.FpcModule.Position - vector.Value).sqrMagnitude > _flamingoRangeSqr))
+				if (!((scp1507Role.FpcModule.Position - vector.Value).sqrMagnitude > this._flamingoRangeSqr))
 				{
 					anyFlamingosInRange = true;
 					break;
@@ -92,13 +92,13 @@ public class FlamingoSoundtrack : SoundtrackLayerBase
 	public override void UpdateVolume(float volumeScale)
 	{
 		bool flag = volumeScale <= 0f;
-		if (_ambient.isPlaying)
+		if (this._ambient.isPlaying)
 		{
 			if (flag)
 			{
-				_ambient.Stop();
+				this._ambient.Stop();
 			}
-			_elapsed += Time.deltaTime;
+			this._elapsed += Time.deltaTime;
 		}
 		else
 		{
@@ -106,8 +106,8 @@ public class FlamingoSoundtrack : SoundtrackLayerBase
 			{
 				return;
 			}
-			_ambient.Play();
+			this._ambient.Play();
 		}
-		_ambient.volume = volumeScale * _volumeOverElapsed.Evaluate(_elapsed);
+		this._ambient.volume = volumeScale * this._volumeOverElapsed.Evaluate(this._elapsed);
 	}
 }

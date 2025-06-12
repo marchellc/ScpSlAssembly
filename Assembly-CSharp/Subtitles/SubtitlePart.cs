@@ -8,7 +8,7 @@ public struct SubtitlePart
 
 	public SubtitlePart(SubtitleType subtitle, params string[] optionalData)
 	{
-		Subtitle = subtitle;
-		OptionalData = optionalData;
+		this.Subtitle = subtitle;
+		this.OptionalData = optionalData;
 	}
 }

@@ -53,7 +53,7 @@ public class Scp127MagazineModule : MagazineModule
 		get
 		{
 			Scp127Tier tierForItem = Scp127TierManagerModule.GetTierForItem(base.Item);
-			RegenerationSettings[] regenerationPerTier = _regenerationPerTier;
+			RegenerationSettings[] regenerationPerTier = this._regenerationPerTier;
 			for (int i = 0; i < regenerationPerTier.Length; i++)
 			{
 				RegenerationSettings result = regenerationPerTier[i];
@@ -68,7 +68,7 @@ public class Scp127MagazineModule : MagazineModule
 
 	private void ServerOnFired()
 	{
-		_remainingRegenPause = ActiveSettings.PostFireDelay;
+		this._remainingRegenPause = this.ActiveSettings.PostFireDelay;
 	}
 
 	private void ServerGrantRewardSafe(int maxReward)
@@ -77,7 +77,7 @@ public class Scp127MagazineModule : MagazineModule
 		int num = Mathf.Min(base.AmmoMax, ammoStored + maxReward) - ammoStored;
 		if (num != 0)
 		{
-			ServerModifyAmmo(num);
+			base.ServerModifyAmmo(num);
 		}
 	}
 
@@ -93,24 +93,24 @@ public class Scp127MagazineModule : MagazineModule
 		base.OnRemoved(pickup);
 		if (NetworkServer.active && !(pickup == null))
 		{
-			DropTimes[base.ItemSerial] = NetworkTime.time + (double)Mathf.Max(0f, _remainingRegenPause);
+			Scp127MagazineModule.DropTimes[base.ItemSerial] = NetworkTime.time + (double)Mathf.Max(0f, this._remainingRegenPause);
 		}
 	}
 
 	internal override void OnAdded()
 	{
 		base.OnAdded();
-		if (NetworkServer.active && DropTimes.TryGetValue(base.ItemSerial, out var value))
+		if (NetworkServer.active && Scp127MagazineModule.DropTimes.TryGetValue(base.ItemSerial, out var value))
 		{
 			float num = (float)(NetworkTime.time - value);
 			if (num < 0f)
 			{
-				_remainingRegenPause = Mathf.Abs(num);
+				this._remainingRegenPause = Mathf.Abs(num);
 				return;
 			}
-			float bulletsPerSecond = ActiveSettings.BulletsPerSecond;
+			float bulletsPerSecond = this.ActiveSettings.BulletsPerSecond;
 			int maxReward = Mathf.FloorToInt(num * bulletsPerSecond);
-			ServerGrantRewardSafe(maxReward);
+			this.ServerGrantRewardSafe(maxReward);
 		}
 	}
 
@@ -121,23 +121,23 @@ public class Scp127MagazineModule : MagazineModule
 		{
 			return;
 		}
-		if (_remainingRegenPause > 0f)
+		if (this._remainingRegenPause > 0f)
 		{
-			_remainingRegenPause -= Time.deltaTime;
+			this._remainingRegenPause -= Time.deltaTime;
 			return;
 		}
-		_regenProgress += Time.deltaTime * ActiveSettings.BulletsPerSecond;
-		while (_regenProgress >= 1f)
+		this._regenProgress += Time.deltaTime * this.ActiveSettings.BulletsPerSecond;
+		while (this._regenProgress >= 1f)
 		{
-			_regenProgress -= 1f;
-			ServerGrantRewardSafe(1);
+			this._regenProgress -= 1f;
+			this.ServerGrantRewardSafe(1);
 		}
 	}
 
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		DropTimes.Clear();
+		Scp127MagazineModule.DropTimes.Clear();
 	}
 
 	internal override void OnTemplateReloaded(ModularAutosyncItem template, bool wasEverLoaded)

@@ -11,7 +11,7 @@ public struct RefIdIndexPair
 
 	public RefIdIndexPair(LayerRefId refId, int layerIndex)
 	{
-		RefId = refId;
-		LayerIndex = layerIndex;
+		this.RefId = refId;
+		this.LayerIndex = layerIndex;
 	}
 }

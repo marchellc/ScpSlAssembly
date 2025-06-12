@@ -12,9 +12,9 @@ public abstract class StatBase
 	{
 		get
 		{
-			if (MinValue != MaxValue)
+			if (this.MinValue != this.MaxValue)
 			{
-				return (CurValue - MinValue) / (MaxValue - MinValue);
+				return (this.CurValue - this.MinValue) / (this.MaxValue - this.MinValue);
 			}
 			return 0f;
 		}
@@ -24,7 +24,7 @@ public abstract class StatBase
 
 	internal virtual void Init(ReferenceHub ply)
 	{
-		Hub = ply;
+		this.Hub = ply;
 	}
 
 	internal virtual void Update()

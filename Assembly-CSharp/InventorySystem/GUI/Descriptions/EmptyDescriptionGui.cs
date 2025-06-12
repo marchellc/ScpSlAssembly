@@ -11,6 +11,6 @@ public class EmptyDescriptionGui : RadialDescriptionBase
 
 	public override void UpdateInfo(ItemBase targetItem, Color roleColor)
 	{
-		_desc.text = ((targetItem is IItemNametag itemNametag) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
+		this._desc.text = ((targetItem is IItemNametag itemNametag) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
 	}
 }

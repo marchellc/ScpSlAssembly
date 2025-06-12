@@ -8,34 +8,34 @@ public class FullAutoRateLimiter
 
 	private float _remainingCooldown;
 
-	public bool Ready => _remainingCooldown <= 0f;
+	public bool Ready => this._remainingCooldown <= 0f;
 
 	public void Update()
 	{
-		if (Ready)
+		if (this.Ready)
 		{
-			_lastWasReady = true;
+			this._lastWasReady = true;
 			return;
 		}
-		_lastWasReady = false;
-		_remainingCooldown -= Time.deltaTime;
+		this._lastWasReady = false;
+		this._remainingCooldown -= Time.deltaTime;
 	}
 
 	public void Clear()
 	{
-		_remainingCooldown = 0f;
-		_lastWasReady = true;
+		this._remainingCooldown = 0f;
+		this._lastWasReady = true;
 	}
 
 	public void Trigger(float cooldown)
 	{
-		if (_lastWasReady)
+		if (this._lastWasReady)
 		{
-			_remainingCooldown = cooldown;
+			this._remainingCooldown = cooldown;
 		}
 		else
 		{
-			_remainingCooldown += cooldown;
+			this._remainingCooldown += cooldown;
 		}
 	}
 }

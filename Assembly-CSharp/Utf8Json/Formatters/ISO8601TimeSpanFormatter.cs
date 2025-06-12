@@ -13,7 +13,7 @@ public sealed class ISO8601TimeSpanFormatter : IJsonFormatter<TimeSpan>, IJsonFo
 	{
 		if (value == TimeSpan.MinValue)
 		{
-			writer.WriteRaw(minValue);
+			writer.WriteRaw(ISO8601TimeSpanFormatter.minValue);
 			return;
 		}
 		bool num = value < TimeSpan.Zero;

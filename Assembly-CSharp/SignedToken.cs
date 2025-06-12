@@ -21,8 +21,8 @@ public class SignedToken : IJsonSerializable
 
 	public void Serialize(NetworkWriter writer)
 	{
-		writer.WriteString(token);
-		writer.WriteString(signature);
+		writer.WriteString(this.token);
+		writer.WriteString(this.signature);
 	}
 
 	public static SignedToken Deserialize(NetworkReader reader)
@@ -37,7 +37,7 @@ public class SignedToken : IJsonSerializable
 			token = null;
 			error = null;
 			userId = null;
-			if (!ECDSA.Verify(this.token, signature, ServerConsole.PublicKey))
+			if (!ECDSA.Verify(this.token, this.signature, ServerConsole.PublicKey))
 			{
 				error = "invalid signature of token used for " + usage;
 				return false;

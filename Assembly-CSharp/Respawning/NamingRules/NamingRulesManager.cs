@@ -19,12 +19,12 @@ public static class NamingRulesManager
 
 	public static bool TryGetNamingRule(Team team, out UnitNamingRule rule)
 	{
-		return AllNamingRules.TryGetValue(team, out rule);
+		return NamingRulesManager.AllNamingRules.TryGetValue(team, out rule);
 	}
 
 	public static string ClientFetchReceived(Team teamType, int unitNameId)
 	{
-		if (!GeneratedNames.TryGetValue(teamType, out var value))
+		if (!NamingRulesManager.GeneratedNames.TryGetValue(teamType, out var value))
 		{
 			return string.Empty;
 		}
@@ -39,22 +39,23 @@ public static class NamingRulesManager
 	public static void ServerGenerateName(Team team, UnitNamingRule rule)
 	{
 		rule.GenerateNew();
-		UnitNameMessage msg = default(UnitNameMessage);
-		msg.Team = team;
-		msg.NamingRule = rule;
-		msg.SendToHubsConditionally((ReferenceHub x) => true);
+		new UnitNameMessage
+		{
+			Team = team,
+			NamingRule = rule
+		}.SendToHubsConditionally((ReferenceHub x) => true);
 	}
 
 	private static void ProcessMessage(UnitNameMessage msg)
 	{
-		if (GeneratedNames.TryGetValue(msg.Team, out var value))
+		if (NamingRulesManager.GeneratedNames.TryGetValue(msg.Team, out var value))
 		{
 			value.Add(msg.UnitName);
 		}
 		else
 		{
 			value = new List<string> { msg.UnitName };
-			GeneratedNames.Add(msg.Team, value);
+			NamingRulesManager.GeneratedNames.Add(msg.Team, value);
 		}
 		int arg = value.Count - 1;
 		NamingRulesManager.OnNameAdded?.Invoke(msg.Team, msg.UnitName, arg);
@@ -66,16 +67,16 @@ public static class NamingRulesManager
 		CustomNetworkManager.OnClientReady += delegate
 		{
 			UnitNameMessageHandler.ResetHistory();
-			GeneratedNames.Clear();
+			NamingRulesManager.GeneratedNames.Clear();
 			NetworkClient.ReplaceHandler<UnitNameMessage>(ProcessMessage);
 			if (NetworkServer.active)
 			{
-				Team[] pregeneratedNameTeams = PregeneratedNameTeams;
+				Team[] pregeneratedNameTeams = NamingRulesManager.PregeneratedNameTeams;
 				foreach (Team team in pregeneratedNameTeams)
 				{
-					if (TryGetNamingRule(team, out var rule))
+					if (NamingRulesManager.TryGetNamingRule(team, out var rule))
 					{
-						ServerGenerateName(team, rule);
+						NamingRulesManager.ServerGenerateName(team, rule);
 					}
 				}
 			}

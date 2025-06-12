@@ -15,16 +15,16 @@ public class CullableSimpleDynamic : DynamicCullableBase
 	[SerializeField]
 	private AutoCuller _culler;
 
-	protected override float BoundsSize => _boundsSize;
+	protected override float BoundsSize => this._boundsSize;
 
-	protected override Vector3 BoundsOrigin => base.BoundsOrigin + Vector3.up * _heightOffset;
+	protected override Vector3 BoundsOrigin => base.BoundsOrigin + Vector3.up * this._heightOffset;
 
 	public event Action OnCullChanged;
 
 	[ContextMenu("Find cullable children")]
 	private void FindCullableChildren()
 	{
-		_culler.Generate(base.gameObject, AllowCullingFilter, AllowDeactivationFilter);
+		this._culler.Generate(base.gameObject, AllowCullingFilter, AllowDeactivationFilter);
 	}
 
 	protected virtual bool AllowCullingFilter(GameObject go)
@@ -51,7 +51,7 @@ public class CullableSimpleDynamic : DynamicCullableBase
 
 	private void Reset()
 	{
-		FindCullableChildren();
+		this.FindCullableChildren();
 	}
 
 	protected override void OnVisibilityChanged(bool isVisible)

@@ -41,18 +41,18 @@ public class Naughty : Scp2536ItemGift
 
 	public override void ServerGrant(ReferenceHub hub)
 	{
-		ItemType itemType = GenerateRandomReward();
+		ItemType itemType = base.GenerateRandomReward();
 		switch (itemType)
 		{
 		case ItemType.GrenadeHE:
 		case ItemType.GrenadeFlash:
-			SpawnProjectile(itemType, hub, SetupEffectGrenade);
+			this.SpawnProjectile(itemType, hub, SetupEffectGrenade);
 			break;
 		case ItemType.SCP018:
 		{
 			for (int i = 0; i < 3; i++)
 			{
-				SpawnProjectile(itemType, hub, SetupScp018);
+				this.SpawnProjectile(itemType, hub, SetupScp018);
 			}
 			break;
 		}

@@ -57,14 +57,14 @@ public class AudioController : MonoBehaviour, ISoundEmittingItem
 	{
 		get
 		{
-			for (int num = _activeSessions.Count - 1; num >= 0; num--)
+			for (int num = this._activeSessions.Count - 1; num >= 0; num--)
 			{
-				if (!_activeSessions[num].SameSession)
+				if (!this._activeSessions[num].SameSession)
 				{
-					_activeSessions.RemoveAt(num);
+					this._activeSessions.RemoveAt(num);
 				}
 			}
-			return _activeSessions;
+			return this._activeSessions;
 		}
 	}
 
@@ -74,15 +74,15 @@ public class AudioController : MonoBehaviour, ISoundEmittingItem
 	{
 		get
 		{
-			if (_lastPhase != 0)
+			if (this._lastPhase != MicroHidPhase.Standby)
 			{
 				return false;
 			}
-			if (!_allSilent)
+			if (!this._allSilent)
 			{
 				return false;
 			}
-			if (ActiveSessions.Count > 0)
+			if (this.ActiveSessions.Count > 0)
 			{
 				return false;
 			}
@@ -94,18 +94,18 @@ public class AudioController : MonoBehaviour, ISoundEmittingItem
 	{
 		get
 		{
-			ValidateCache();
-			return _cachedTransform;
+			this.ValidateCache();
+			return this._cachedTransform;
 		}
 	}
 
 	private void ValidateCache()
 	{
-		if (!_cacheSet)
+		if (!this._cacheSet)
 		{
-			_cachedTransform = base.transform;
-			_last3d = null;
-			_cacheSet = true;
+			this._cachedTransform = base.transform;
+			this._last3d = null;
+			this._cacheSet = true;
 		}
 	}
 
@@ -118,12 +118,12 @@ public class AudioController : MonoBehaviour, ISoundEmittingItem
 
 	private void AdjustVolumeFast(AudioSource src, bool enable)
 	{
-		AdjustVolume(src, enable, 11f);
+		this.AdjustVolume(src, enable, 11f);
 	}
 
 	private void AdjustVolumeSlow(AudioSource src, bool enable)
 	{
-		AdjustVolume(src, enable, 2f);
+		this.AdjustVolume(src, enable, 2f);
 	}
 
 	private void AdjustVolumeInstant(AudioSource src, bool enable)
@@ -138,82 +138,82 @@ public class AudioController : MonoBehaviour, ISoundEmittingItem
 
 	public AudioPoolSession PlayOneShot(AudioClip clip, float range = 10f, MixerChannel mixer = MixerChannel.NoDucking)
 	{
-		AudioPoolSession audioPoolSession = new AudioPoolSession(AudioSourcePoolManager.PlayOnTransform(clip, FastTr, range, 1f, FalloffType.Exponential, mixer));
-		ActiveSessions.Add(audioPoolSession);
-		UpdateSourcePosition();
+		AudioPoolSession audioPoolSession = new AudioPoolSession(AudioSourcePoolManager.PlayOnTransform(clip, this.FastTr, range, 1f, FalloffType.Exponential, mixer));
+		this.ActiveSessions.Add(audioPoolSession);
+		this.UpdateSourcePosition();
 		return audioPoolSession;
 	}
 
 	public void UpdateAudio(MicroHidPhase phase)
 	{
-		UpdateConditionally(phase);
-		_lastPhase = phase;
+		this.UpdateConditionally(phase);
+		this._lastPhase = phase;
 	}
 
 	private void UpdateConditionally(MicroHidPhase phase)
 	{
-		if (Idle)
+		if (this.Idle)
 		{
 			return;
 		}
-		UpdateSourcePosition();
+		this.UpdateSourcePosition();
 		if (phase == MicroHidPhase.Standby)
 		{
-			UpdateStandby();
+			this.UpdateStandby();
 			return;
 		}
-		bool flag = _lastPhase != phase;
-		if (!flag || TryFindClipSet(out _lastClipSet))
+		bool flag = this._lastPhase != phase;
+		if (!flag || this.TryFindClipSet(out this._lastClipSet))
 		{
 			switch (phase)
 			{
 			case MicroHidPhase.WindingUp:
-				UpdateWindUp(flag);
+				this.UpdateWindUp(flag);
 				break;
 			case MicroHidPhase.WoundUpSustain:
-				UpdateWindUp(changed: false);
+				this.UpdateWindUp(changed: false);
 				break;
 			case MicroHidPhase.WindingDown:
-				UpdateWindDown(flag);
+				this.UpdateWindDown(flag);
 				break;
 			case MicroHidPhase.Firing:
-				UpdateFiring(flag);
+				this.UpdateFiring(flag);
 				break;
 			}
-			_allSilent = false;
+			this._allSilent = false;
 		}
 	}
 
 	private void Set3d(bool is3D)
 	{
-		if (is3D != _last3d)
+		if (is3D != this._last3d)
 		{
-			_windupSource.SetSpace(is3D);
-			_winddownSource.SetSpace(is3D);
-			_firingSource.SetSpace(is3D);
-			_last3d = is3D;
+			this._windupSource.SetSpace(is3D);
+			this._winddownSource.SetSpace(is3D);
+			this._firingSource.SetSpace(is3D);
+			this._last3d = is3D;
 		}
 	}
 
 	private void UpdateSourcePosition()
 	{
 		ReferenceHub hub;
-		if (MicroHIDPickup.PickupsBySerial.TryGetValue(Serial, out var value))
+		if (MicroHIDPickup.PickupsBySerial.TryGetValue(this.Serial, out var value))
 		{
-			FastTr.position = value.Position;
-			Set3d(is3D: true);
+			this.FastTr.position = value.Position;
+			this.Set3d(is3D: true);
 		}
-		else if (InventoryExtensions.TryGetHubHoldingSerial(Serial, out hub))
+		else if (InventoryExtensions.TryGetHubHoldingSerial(this.Serial, out hub))
 		{
-			Set3d(!hub.isLocalPlayer && !hub.IsLocallySpectated());
-			FastTr.position = hub.GetPosition();
+			this.Set3d(!hub.isLocalPlayer && !hub.IsLocallySpectated());
+			this.FastTr.position = hub.GetPosition();
 		}
 	}
 
 	private bool TryFindClipSet(out FiringClipSet clipSet)
 	{
-		MicroHidFiringMode firingMode = CycleSyncModule.GetFiringMode(Serial);
-		FiringClipSet[] clipSets = _clipSets;
+		MicroHidFiringMode firingMode = CycleSyncModule.GetFiringMode(this.Serial);
+		FiringClipSet[] clipSets = this._clipSets;
 		for (int i = 0; i < clipSets.Length; i++)
 		{
 			FiringClipSet firingClipSet = clipSets[i];
@@ -229,19 +229,19 @@ public class AudioController : MonoBehaviour, ISoundEmittingItem
 
 	private void UpdateStandby()
 	{
-		if (!_allSilent)
+		if (!this._allSilent)
 		{
-			AdjustVolumeFast(_firingSource, enable: false);
-			if (_crossfadeSpeed > 0f)
+			this.AdjustVolumeFast(this._firingSource, enable: false);
+			if (this._crossfadeSpeed > 0f)
 			{
-				AdjustVolume(_windupSource, enable: false, _crossfadeSpeed);
-				AdjustVolume(_winddownSource, enable: true, _crossfadeSpeed);
+				this.AdjustVolume(this._windupSource, enable: false, this._crossfadeSpeed);
+				this.AdjustVolume(this._winddownSource, enable: true, this._crossfadeSpeed);
 			}
 			else
 			{
-				AdjustVolumeFast(_windupSource, enable: false);
+				this.AdjustVolumeFast(this._windupSource, enable: false);
 			}
-			_allSilent = _winddownSource.volume == 0f && _windupSource.volume == 0f && _firingSource.volume == 0f;
+			this._allSilent = this._winddownSource.volume == 0f && this._windupSource.volume == 0f && this._firingSource.volume == 0f;
 		}
 	}
 
@@ -249,88 +249,88 @@ public class AudioController : MonoBehaviour, ISoundEmittingItem
 	{
 		if (changed)
 		{
-			_windupSource.clip = _lastClipSet.WindUpClip;
-			AdjustVolumeInstant(_windupSource, enable: true);
-			_windupSource.Play();
+			this._windupSource.clip = this._lastClipSet.WindUpClip;
+			this.AdjustVolumeInstant(this._windupSource, enable: true);
+			this._windupSource.Play();
 		}
-		AdjustVolumeSlow(_winddownSource, enable: false);
-		AdjustVolumeFast(_firingSource, enable: false);
+		this.AdjustVolumeSlow(this._winddownSource, enable: false);
+		this.AdjustVolumeFast(this._firingSource, enable: false);
 	}
 
 	private void UpdateWindDown(bool changed)
 	{
 		if (!changed)
 		{
-			AdjustVolume(_windupSource, enable: false, _crossfadeSpeed);
-			AdjustVolume(_winddownSource, enable: true, _crossfadeSpeed);
-			AdjustVolumeSlow(_firingSource, enable: false);
+			this.AdjustVolume(this._windupSource, enable: false, this._crossfadeSpeed);
+			this.AdjustVolume(this._winddownSource, enable: true, this._crossfadeSpeed);
+			this.AdjustVolumeSlow(this._firingSource, enable: false);
 			return;
 		}
 		float num;
 		AudioClip audioClip;
-		if (_lastPhase == MicroHidPhase.Firing)
+		if (this._lastPhase == MicroHidPhase.Firing)
 		{
 			num = 0f;
-			audioClip = _lastClipSet.StopFiringClip;
-			_crossfadeSpeed = 4f;
+			audioClip = this._lastClipSet.StopFiringClip;
+			this._crossfadeSpeed = 4f;
 		}
 		else
 		{
-			audioClip = _lastClipSet.AbortClip;
-			float length = _windupSource.clip.length;
-			float time = _windupSource.time;
+			audioClip = this._lastClipSet.AbortClip;
+			float length = this._windupSource.clip.length;
+			float time = this._windupSource.time;
 			float num2 = length - time;
 			if (num2 > 0.01f)
 			{
-				_crossfadeSpeed = Mathf.Max(4f, 1f / num2);
-				num = _lastClipSet.AbortStartTimeOverElapsed.Evaluate(time);
-				AdjustVolumeInstant(_winddownSource, enable: false);
+				this._crossfadeSpeed = Mathf.Max(4f, 1f / num2);
+				num = this._lastClipSet.AbortStartTimeOverElapsed.Evaluate(time);
+				this.AdjustVolumeInstant(this._winddownSource, enable: false);
 			}
 			else
 			{
 				num = 0f;
-				AdjustVolumeInstant(_winddownSource, enable: true);
-				AdjustVolumeInstant(_windupSource, enable: false);
+				this.AdjustVolumeInstant(this._winddownSource, enable: true);
+				this.AdjustVolumeInstant(this._windupSource, enable: false);
 			}
 		}
 		if (num <= audioClip.length)
 		{
-			_winddownSource.clip = audioClip;
-			_winddownSource.Play();
-			_winddownSource.time = Mathf.Max(0f, num);
+			this._winddownSource.clip = audioClip;
+			this._winddownSource.Play();
+			this._winddownSource.time = Mathf.Max(0f, num);
 		}
 		else
 		{
-			_winddownSource.Stop();
+			this._winddownSource.Stop();
 		}
-		UpdateWindDown(changed: false);
+		this.UpdateWindDown(changed: false);
 	}
 
 	private void UpdateFiring(bool changed)
 	{
 		if (changed)
 		{
-			_firingSource.clip = _lastClipSet.FireClip;
-			_firingSource.Play();
+			this._firingSource.clip = this._lastClipSet.FireClip;
+			this._firingSource.Play();
 		}
-		AdjustVolumeSlow(_windupSource, enable: false);
-		AdjustVolumeSlow(_winddownSource, enable: false);
-		AdjustVolumeInstant(_firingSource, enable: true);
+		this.AdjustVolumeSlow(this._windupSource, enable: false);
+		this.AdjustVolumeSlow(this._winddownSource, enable: false);
+		this.AdjustVolumeInstant(this._firingSource, enable: true);
 	}
 
 	public bool ServerTryGetSoundEmissionRange(out float range)
 	{
-		switch (_lastPhase)
+		switch (this._lastPhase)
 		{
 		case MicroHidPhase.WindingUp:
 		case MicroHidPhase.WoundUpSustain:
-			range = _windupSource.maxDistance;
+			range = this._windupSource.maxDistance;
 			return true;
 		case MicroHidPhase.WindingDown:
-			range = _winddownSource.maxDistance;
+			range = this._winddownSource.maxDistance;
 			return true;
 		case MicroHidPhase.Firing:
-			range = _firingSource.maxDistance;
+			range = this._firingSource.maxDistance;
 			return true;
 		default:
 			range = 0f;

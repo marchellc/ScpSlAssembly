@@ -11,7 +11,7 @@ internal sealed class DynamicObjectResolverAllowPrivateTrueExcludeNullTrueNameMu
 
 		static FormatterCache()
 		{
-			formatter = (IJsonFormatter<T>)DynamicObjectTypeBuilder.BuildFormatterToDynamicMethod<T>(Instance, nameMutator, excludeNull, allowPrivate: true);
+			FormatterCache<T>.formatter = (IJsonFormatter<T>)DynamicObjectTypeBuilder.BuildFormatterToDynamicMethod<T>(DynamicObjectResolverAllowPrivateTrueExcludeNullTrueNameMutateCamelCase.Instance, DynamicObjectResolverAllowPrivateTrueExcludeNullTrueNameMutateCamelCase.nameMutator, DynamicObjectResolverAllowPrivateTrueExcludeNullTrueNameMutateCamelCase.excludeNull, allowPrivate: true);
 		}
 	}
 

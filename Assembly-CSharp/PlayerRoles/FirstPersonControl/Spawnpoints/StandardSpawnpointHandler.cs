@@ -17,7 +17,7 @@ public class StandardSpawnpointHandler : MonoBehaviour, ISpawnpointHandler
 	{
 		position = default(Vector3);
 		horizontalRot = 0f;
-		RoomRoleSpawnpoint[] validSpawnpoints = GetValidSpawnpoints(Spawnpoints);
+		RoomRoleSpawnpoint[] validSpawnpoints = this.GetValidSpawnpoints(this.Spawnpoints);
 		if (validSpawnpoints.Length == 0)
 		{
 			return false;
@@ -32,9 +32,9 @@ public class StandardSpawnpointHandler : MonoBehaviour, ISpawnpointHandler
 
 	private void OnValidate()
 	{
-		if (!(Role != null))
+		if (!(this.Role != null))
 		{
-			Role = GetComponent<PlayerRoleBase>();
+			this.Role = base.GetComponent<PlayerRoleBase>();
 		}
 	}
 }

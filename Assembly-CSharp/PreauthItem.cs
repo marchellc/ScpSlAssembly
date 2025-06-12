@@ -8,13 +8,13 @@ public struct PreauthItem
 
 	public PreauthItem(string userId)
 	{
-		UserId = userId;
-		Added = DateTime.Now.Ticks;
+		this.UserId = userId;
+		this.Added = DateTime.Now.Ticks;
 	}
 
 	public void SetUserId(string userId)
 	{
-		UserId = userId;
-		Added = DateTime.Now.Ticks;
+		this.UserId = userId;
+		this.Added = DateTime.Now.Ticks;
 	}
 }

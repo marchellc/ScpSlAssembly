@@ -22,14 +22,14 @@ public abstract class Token
 
 	protected Token(string userId, string nickname, DateTimeOffset issuanceTime, DateTimeOffset expirationTime, string usage, string issuedBy, string serial, bool testSignature, int tokenVersion)
 	{
-		UserId = userId;
-		Nickname = nickname;
-		IssuanceTime = issuanceTime;
-		ExpirationTime = expirationTime;
-		Usage = usage;
-		IssuedBy = issuedBy;
-		Serial = serial;
-		TestSignature = testSignature;
-		TokenVersion = tokenVersion;
+		this.UserId = userId;
+		this.Nickname = nickname;
+		this.IssuanceTime = issuanceTime;
+		this.ExpirationTime = expirationTime;
+		this.Usage = usage;
+		this.IssuedBy = issuedBy;
+		this.Serial = serial;
+		this.TestSignature = testSignature;
+		this.TokenVersion = tokenVersion;
 	}
 }

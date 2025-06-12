@@ -11,7 +11,7 @@ public sealed class CompositeResolver : IJsonFormatterResolver
 
 		static FormatterCache()
 		{
-			isFreezed = true;
+			CompositeResolver.isFreezed = true;
 			IJsonFormatter[] formatters = CompositeResolver.formatters;
 			foreach (IJsonFormatter jsonFormatter in formatters)
 			{
@@ -20,7 +20,7 @@ public sealed class CompositeResolver : IJsonFormatterResolver
 					TypeInfo typeInfo = implementedInterface.GetTypeInfo();
 					if (typeInfo.IsGenericType && typeInfo.GenericTypeArguments[0] == typeof(T))
 					{
-						formatter = (IJsonFormatter<T>)jsonFormatter;
+						FormatterCache<T>.formatter = (IJsonFormatter<T>)jsonFormatter;
 						return;
 					}
 				}
@@ -31,7 +31,7 @@ public sealed class CompositeResolver : IJsonFormatterResolver
 				IJsonFormatter<T> jsonFormatter2 = resolvers[i].GetFormatter<T>();
 				if (jsonFormatter2 != null)
 				{
-					formatter = jsonFormatter2;
+					FormatterCache<T>.formatter = jsonFormatter2;
 					break;
 				}
 			}
@@ -52,7 +52,7 @@ public sealed class CompositeResolver : IJsonFormatterResolver
 
 	public static void Register(params IJsonFormatterResolver[] resolvers)
 	{
-		if (isFreezed)
+		if (CompositeResolver.isFreezed)
 		{
 			throw new InvalidOperationException("Register must call on startup(before use GetFormatter<T>).");
 		}
@@ -61,7 +61,7 @@ public sealed class CompositeResolver : IJsonFormatterResolver
 
 	public static void Register(params IJsonFormatter[] formatters)
 	{
-		if (isFreezed)
+		if (CompositeResolver.isFreezed)
 		{
 			throw new InvalidOperationException("Register must call on startup(before use GetFormatter<T>).");
 		}
@@ -70,7 +70,7 @@ public sealed class CompositeResolver : IJsonFormatterResolver
 
 	public static void Register(IJsonFormatter[] formatters, IJsonFormatterResolver[] resolvers)
 	{
-		if (isFreezed)
+		if (CompositeResolver.isFreezed)
 		{
 			throw new InvalidOperationException("Register must call on startup(before use GetFormatter<T>).");
 		}
@@ -80,31 +80,31 @@ public sealed class CompositeResolver : IJsonFormatterResolver
 
 	public static void RegisterAndSetAsDefault(params IJsonFormatterResolver[] resolvers)
 	{
-		Register(resolvers);
-		JsonSerializer.SetDefaultResolver(Instance);
+		CompositeResolver.Register(resolvers);
+		JsonSerializer.SetDefaultResolver(CompositeResolver.Instance);
 	}
 
 	public static void RegisterAndSetAsDefault(params IJsonFormatter[] formatters)
 	{
-		Register(formatters);
-		JsonSerializer.SetDefaultResolver(Instance);
+		CompositeResolver.Register(formatters);
+		JsonSerializer.SetDefaultResolver(CompositeResolver.Instance);
 	}
 
 	public static void RegisterAndSetAsDefault(IJsonFormatter[] formatters, IJsonFormatterResolver[] resolvers)
 	{
-		Register(formatters);
-		Register(resolvers);
-		JsonSerializer.SetDefaultResolver(Instance);
+		CompositeResolver.Register(formatters);
+		CompositeResolver.Register(resolvers);
+		JsonSerializer.SetDefaultResolver(CompositeResolver.Instance);
 	}
 
 	public static IJsonFormatterResolver Create(params IJsonFormatter[] formatters)
 	{
-		return Create(formatters, new IJsonFormatterResolver[0]);
+		return CompositeResolver.Create(formatters, new IJsonFormatterResolver[0]);
 	}
 
 	public static IJsonFormatterResolver Create(params IJsonFormatterResolver[] resolvers)
 	{
-		return Create(new IJsonFormatter[0], resolvers);
+		return CompositeResolver.Create(new IJsonFormatter[0], resolvers);
 	}
 
 	public static IJsonFormatterResolver Create(IJsonFormatter[] formatters, IJsonFormatterResolver[] resolvers)

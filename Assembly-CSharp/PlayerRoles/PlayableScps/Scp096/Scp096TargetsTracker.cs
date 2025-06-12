@@ -49,22 +49,22 @@ public class Scp096TargetsTracker : StandardSubroutine<Scp096Role>
 
 	public bool AddTarget(ReferenceHub target, bool isLooking)
 	{
-		if (target == null || Targets.Contains(target))
+		if (target == null || this.Targets.Contains(target))
 		{
 			return false;
 		}
-		Scp096AddingTargetEventArgs scp096AddingTargetEventArgs = new Scp096AddingTargetEventArgs(base.Owner, target, isLooking);
-		Scp096Events.OnAddingTarget(scp096AddingTargetEventArgs);
-		if (!scp096AddingTargetEventArgs.IsAllowed)
+		Scp096AddingTargetEventArgs e = new Scp096AddingTargetEventArgs(base.Owner, target, isLooking);
+		Scp096Events.OnAddingTarget(e);
+		if (!e.IsAllowed)
 		{
 			return false;
 		}
-		Targets.Add(target);
-		if (!NetworkServer.active && !_markers.ContainsKey(target))
+		this.Targets.Add(target);
+		if (!NetworkServer.active && !this._markers.ContainsKey(target))
 		{
-			_markers.Add(target, UnityEngine.Object.Instantiate(TargetMarker, target.transform));
+			this._markers.Add(target, UnityEngine.Object.Instantiate(this.TargetMarker, target.transform));
 		}
-		_sendTargetsNextFrame = true;
+		this._sendTargetsNextFrame = true;
 		Scp096TargetsTracker.OnTargetAdded?.Invoke(base.Owner, target);
 		Scp096Events.OnAddedTarget(new Scp096AddedTargetEventArgs(base.Owner, target, isLooking));
 		return true;
@@ -72,33 +72,33 @@ public class Scp096TargetsTracker : StandardSubroutine<Scp096Role>
 
 	public bool RemoveTarget(ReferenceHub target)
 	{
-		if (target == null || !Targets.Remove(target))
+		if (target == null || !this.Targets.Remove(target))
 		{
 			return false;
 		}
-		if (_markers.TryGetValue(target, out var value))
+		if (this._markers.TryGetValue(target, out var value))
 		{
-			_markers.Remove(target);
+			this._markers.Remove(target);
 			UnityEngine.Object.Destroy(value);
 		}
-		_sendTargetsNextFrame = true;
+		this._sendTargetsNextFrame = true;
 		Scp096TargetsTracker.OnTargetRemoved?.Invoke(base.Owner, target);
 		return true;
 	}
 
 	public void ClearAllTargets()
 	{
-		foreach (ReferenceHub target in Targets)
+		foreach (ReferenceHub target in this.Targets)
 		{
-			if (_markers.TryGetValue(target, out var value))
+			if (this._markers.TryGetValue(target, out var value))
 			{
-				_markers.Remove(target);
+				this._markers.Remove(target);
 				UnityEngine.Object.Destroy(value);
 			}
 			Scp096TargetsTracker.OnTargetRemoved?.Invoke(base.Owner, target);
 		}
-		_sendTargetsNextFrame = true;
-		Targets.Clear();
+		this._sendTargetsNextFrame = true;
+		this.Targets.Clear();
 	}
 
 	public bool IsObservedBy(ReferenceHub target)
@@ -113,47 +113,47 @@ public class Scp096TargetsTracker : StandardSubroutine<Scp096Role>
 
 	public bool HasTarget(ReferenceHub target)
 	{
-		return Targets.Contains(target);
+		return this.Targets.Contains(target);
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		Targets.ForEach(writer.WriteReferenceHub);
+		this.Targets.ForEach(writer.WriteReferenceHub);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_unvalidatedTargets.UnionWith(Targets);
+		this._unvalidatedTargets.UnionWith(this.Targets);
 		while (reader.Position < reader.Capacity)
 		{
-			if (reader.TryReadReferenceHub(out var hub) && !_unvalidatedTargets.Remove(hub))
+			if (reader.TryReadReferenceHub(out var hub) && !this._unvalidatedTargets.Remove(hub))
 			{
-				AddTarget(hub, isLooking: false);
+				this.AddTarget(hub, isLooking: false);
 			}
 		}
-		_unvalidatedTargets.ForEach(delegate(ReferenceHub x)
+		this._unvalidatedTargets.ForEach(delegate(ReferenceHub x)
 		{
-			RemoveTarget(x);
+			this.RemoveTarget(x);
 		});
-		_unvalidatedTargets.Clear();
+		this._unvalidatedTargets.Clear();
 	}
 
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_eventsAssigned = true;
+		this._eventsAssigned = true;
 		base.Owner.playerStats.OnThisPlayerDamaged += AddTargetOnDamage;
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		ClearAllTargets();
-		if (_eventsAssigned)
+		this.ClearAllTargets();
+		if (this._eventsAssigned)
 		{
-			_eventsAssigned = false;
+			this._eventsAssigned = false;
 			base.Owner.playerStats.OnThisPlayerDamaged -= AddTargetOnDamage;
 		}
 	}
@@ -166,8 +166,8 @@ public class Scp096TargetsTracker : StandardSubroutine<Scp096Role>
 		{
 			if (state == Scp096RageState.Calming)
 			{
-				_postRageCooldown.Trigger(10.0);
-				ClearAllTargets();
+				this._postRageCooldown.Trigger(10.0);
+				this.ClearAllTargets();
 			}
 		};
 	}
@@ -177,9 +177,9 @@ public class Scp096TargetsTracker : StandardSubroutine<Scp096Role>
 		if (obj is AttackerDamageHandler attackerDamageHandler)
 		{
 			ReferenceHub hub = attackerDamageHandler.Attacker.Hub;
-			if (CanReceiveTargets && !(hub == null))
+			if (this.CanReceiveTargets && !(hub == null))
 			{
-				AddTarget(hub, isLooking: false);
+				this.AddTarget(hub, isLooking: false);
 				this.OnTargetAttacked?.Invoke(hub);
 			}
 		}
@@ -193,35 +193,35 @@ public class Scp096TargetsTracker : StandardSubroutine<Scp096Role>
 	private void Update()
 	{
 		bool visible = base.Owner.isLocalPlayer || base.Owner.IsLocallySpectated();
-		_markers.ForEachValue(delegate(GameObject x)
+		this._markers.ForEachValue(delegate(GameObject x)
 		{
 			x.SetActive(visible);
 		});
 		if (NetworkServer.active)
 		{
-			ServerCheckTargets();
+			this.ServerCheckTargets();
 		}
 	}
 
 	private void CheckRemovedPlayer(ReferenceHub ply)
 	{
-		RemoveTarget(ply);
+		this.RemoveTarget(ply);
 	}
 
 	private void ServerCheckTargets()
 	{
-		if (base.CastRole.IsRageState(Scp096RageState.Calming) || !_postRageCooldown.IsReady)
+		if (base.CastRole.IsRageState(Scp096RageState.Calming) || !this._postRageCooldown.IsReady)
 		{
 			return;
 		}
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			UpdateTarget(allHub);
+			this.UpdateTarget(allHub);
 		}
-		if (_sendTargetsNextFrame)
+		if (this._sendTargetsNextFrame)
 		{
-			_sendTargetsNextFrame = false;
-			ServerSendRpc(toAll: true);
+			this._sendTargetsNextFrame = false;
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
@@ -229,11 +229,11 @@ public class Scp096TargetsTracker : StandardSubroutine<Scp096Role>
 	{
 		if (!HitboxIdentity.IsEnemy(base.Owner, target))
 		{
-			RemoveTarget(target);
+			this.RemoveTarget(target);
 		}
-		else if (!base.CastRole.IsAbilityState(Scp096AbilityState.Charging) && IsObservedBy(target))
+		else if (!base.CastRole.IsAbilityState(Scp096AbilityState.Charging) && this.IsObservedBy(target))
 		{
-			AddTarget(target, isLooking: true);
+			this.AddTarget(target, isLooking: true);
 		}
 	}
 }

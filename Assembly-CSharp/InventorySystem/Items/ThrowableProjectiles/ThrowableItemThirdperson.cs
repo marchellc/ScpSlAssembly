@@ -41,27 +41,27 @@ public class ThrowableItemThirdperson : ThirdpersonItemBase, IHandPoseModifier, 
 
 	public override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
 	{
-		return _layerProcessor.GetWeightForLayer(this, layer);
+		return this._layerProcessor.GetWeightForLayer(this, layer);
 	}
 
 	public virtual HandPoseData ProcessHandPose(HandPoseData data)
 	{
-		return _rightHandPose;
+		return this._rightHandPose;
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_targetWeight = 0f;
-		_lastWeight = 0f;
-		_isThrowing = false;
-		_gfxToDisable.SetActive(value: true);
+		this._targetWeight = 0f;
+		this._lastWeight = 0f;
+		this._isThrowing = false;
+		this._gfxToDisable.SetActive(value: true);
 	}
 
 	internal override void Initialize(InventorySubcontroller subcontroller, ItemIdentifier id)
 	{
 		base.Initialize(subcontroller, id);
-		SetAnim(AnimState3p.Override0, _idleClip);
+		base.SetAnim(AnimState3p.Override0, this._idleClip);
 	}
 
 	protected override void Update()
@@ -69,18 +69,18 @@ public class ThrowableItemThirdperson : ThirdpersonItemBase, IHandPoseModifier, 
 		base.Update();
 		if (!base.Pooled)
 		{
-			if (_lastWeight != _targetWeight)
+			if (this._lastWeight != this._targetWeight)
 			{
-				float num = ((_targetWeight > _lastWeight) ? 8.5f : 3.5f);
-				float num2 = Mathf.MoveTowards(_lastWeight, _targetWeight, Time.deltaTime * num);
-				_layerProcessor.SetDualHandBlend(num2);
-				_lastWeight = num2;
+				float num = ((this._targetWeight > this._lastWeight) ? 8.5f : 3.5f);
+				float num2 = Mathf.MoveTowards(this._lastWeight, this._targetWeight, Time.deltaTime * num);
+				this._layerProcessor.SetDualHandBlend(num2);
+				this._lastWeight = num2;
 				base.OverrideBlend = num2;
 			}
-			if (_isThrowing)
+			if (this._isThrowing)
 			{
-				_remainingActiveTime -= Time.deltaTime;
-				_gfxToDisable.SetActive(_remainingActiveTime > 0f);
+				this._remainingActiveTime -= Time.deltaTime;
+				this._gfxToDisable.SetActive(this._remainingActiveTime > 0f);
 			}
 		}
 	}
@@ -102,16 +102,16 @@ public class ThrowableItemThirdperson : ThirdpersonItemBase, IHandPoseModifier, 
 			switch (msg.Request)
 			{
 			case ThrowableNetworkHandler.RequestType.BeginThrow:
-				PlayAnim(_beginClip);
+				this.PlayAnim(this._beginClip);
 				break;
 			case ThrowableNetworkHandler.RequestType.CancelThrow:
-				_targetWeight = 0f;
+				this._targetWeight = 0f;
 				break;
 			case ThrowableNetworkHandler.RequestType.ConfirmThrowWeak:
 			case ThrowableNetworkHandler.RequestType.ConfirmThrowFullForce:
-				PlayAnim(_throwClip);
-				_remainingActiveTime = 0.22f;
-				_isThrowing = true;
+				this.PlayAnim(this._throwClip);
+				this._remainingActiveTime = 0.22f;
+				this._isThrowing = true;
 				break;
 			}
 		}
@@ -119,14 +119,14 @@ public class ThrowableItemThirdperson : ThirdpersonItemBase, IHandPoseModifier, 
 
 	private void PlayAnim(AnimationClip clip)
 	{
-		_targetWeight = 1f;
-		SetAnim(AnimState3p.Override1, clip);
-		ReplayOverrideBlend(soft: false);
+		this._targetWeight = 1f;
+		base.SetAnim(AnimState3p.Override1, clip);
+		base.ReplayOverrideBlend(soft: false);
 	}
 
 	public LookatData ProcessLookat(LookatData data)
 	{
-		data.BodyWeight = Mathf.Clamp01(data.BodyWeight + _lastWeight);
+		data.BodyWeight = Mathf.Clamp01(data.BodyWeight + this._lastWeight);
 		return data;
 	}
 }

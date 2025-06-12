@@ -38,12 +38,12 @@ public readonly struct AttachmentParameterDefinition
 
 	public readonly float MaxValue;
 
-	public float DefaultValue => (MixingMode == ParameterMixingMode.Percent) ? 1 : 0;
+	public float DefaultValue => (this.MixingMode == ParameterMixingMode.Percent) ? 1 : 0;
 
 	public AttachmentParameterDefinition(ParameterMixingMode mode, float min = float.MinValue, float max = float.MaxValue)
 	{
-		MixingMode = mode;
-		MinValue = min;
-		MaxValue = max;
+		this.MixingMode = mode;
+		this.MinValue = min;
+		this.MaxValue = max;
 	}
 }

@@ -26,7 +26,7 @@ public class MultiBarrelHitscan : HitscanHitregModuleBase
 	internal override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		_lastRay = null;
+		this._lastRay = null;
 	}
 
 	protected override float HitmarkerSizeAtDamage(float damage)
@@ -36,31 +36,31 @@ public class MultiBarrelHitscan : HitscanHitregModuleBase
 
 	protected override void Fire()
 	{
-		Ray valueOrDefault = _lastRay.GetValueOrDefault();
-		if (!_lastRay.HasValue)
+		Ray valueOrDefault = this._lastRay.GetValueOrDefault();
+		if (!this._lastRay.HasValue)
 		{
-			valueOrDefault = RandomizeRay(base.ForwardRay, base.CurrentInaccuracy);
-			_lastRay = valueOrDefault;
+			valueOrDefault = base.RandomizeRay(base.ForwardRay, base.CurrentInaccuracy);
+			this._lastRay = valueOrDefault;
 		}
-		if (!(base.LastShotEvent is BulletShotEvent bulletShotEvent) || !_barrels.TryGet(bulletShotEvent.BarrelId, out var element))
+		if (!(base.LastShotEvent is BulletShotEvent bulletShotEvent) || !this._barrels.TryGet(bulletShotEvent.BarrelId, out var element))
 		{
-			ServerApplyDamage(ServerPrescan(_lastRay.Value));
+			this.ServerApplyDamage(base.ServerPrescan(this._lastRay.Value));
 		}
 		else
 		{
-			ShootOffset(element);
+			this.ShootOffset(element);
 		}
 	}
 
 	private void ShootOffset(BarrelOffset offset)
 	{
 		Transform playerCameraReference = base.Firearm.Owner.PlayerCameraReference;
-		Vector3 origin = _lastRay.Value.origin;
+		Vector3 origin = this._lastRay.Value.origin;
 		origin += playerCameraReference.up * offset.TopPosition;
 		origin += playerCameraReference.right * offset.RightPosition;
-		Vector3 direction = _lastRay.Value.direction;
+		Vector3 direction = this._lastRay.Value.direction;
 		direction += Vector3.up * offset.TopDirection;
 		Ray targetRay = new Ray(origin, (direction + Vector3.right * offset.RightDirection).normalized);
-		ServerApplyDamage(ServerPrescan(targetRay));
+		this.ServerApplyDamage(base.ServerPrescan(targetRay));
 	}
 }

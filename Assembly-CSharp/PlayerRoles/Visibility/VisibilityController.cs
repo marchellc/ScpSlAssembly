@@ -23,20 +23,20 @@ public class VisibilityController : MonoBehaviour, IPoolSpawnable
 		{
 			return true;
 		}
-		return (customVisibilityRole.VisibilityController.GetActiveFlags(Owner) & ~IgnoredFlags) == 0;
+		return (customVisibilityRole.VisibilityController.GetActiveFlags(this.Owner) & ~this.IgnoredFlags) == 0;
 	}
 
 	public virtual void SpawnObject()
 	{
-		Role = GetComponentInParent<PlayerRoleBase>();
-		if (Role == null)
+		this.Role = base.GetComponentInParent<PlayerRoleBase>();
+		if (this.Role == null)
 		{
 			throw new InvalidOperationException("VisibilityController " + base.name + " does not have a parent role set!");
 		}
-		if (!Role.TryGetOwner(out var hub))
+		if (!this.Role.TryGetOwner(out var hub))
 		{
 			throw new InvalidOperationException("VisibilityController " + base.name + " does not have an owner assigned!");
 		}
-		Owner = hub;
+		this.Owner = hub;
 	}
 }

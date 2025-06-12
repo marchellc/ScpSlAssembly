@@ -22,15 +22,15 @@ public class WaveCommand : ParentCommand, IUsageProvider
 
 	protected override bool ExecuteParent(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
-		response = "Unknown subcommand.\nUsage: " + Command + " " + this.DisplayCommandUsage() + ".";
+		response = "Unknown subcommand.\nUsage: " + this.Command + " " + this.DisplayCommandUsage() + ".";
 		return false;
 	}
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new WaveDebugCommand());
-		RegisterCommand(new WaveListCommand());
-		RegisterCommand(new WaveSetCommand());
-		RegisterCommand(new WaveSpawnCommand());
+		this.RegisterCommand(new WaveDebugCommand());
+		this.RegisterCommand(new WaveListCommand());
+		this.RegisterCommand(new WaveSetCommand());
+		this.RegisterCommand(new WaveSpawnCommand());
 	}
 }

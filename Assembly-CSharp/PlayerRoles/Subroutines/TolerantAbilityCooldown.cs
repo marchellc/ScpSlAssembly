@@ -6,16 +6,16 @@ public class TolerantAbilityCooldown : AbilityCooldown
 {
 	private readonly double _tolerance;
 
-	public bool TolerantIsReady => NetworkTime.time >= base.NextUse - _tolerance;
+	public bool TolerantIsReady => NetworkTime.time >= base.NextUse - this._tolerance;
 
 	public TolerantAbilityCooldown(float tolerance = 0.2f)
 	{
-		_tolerance = tolerance;
+		this._tolerance = tolerance;
 	}
 
 	public override void Trigger(double cooldown)
 	{
-		if (IsReady)
+		if (this.IsReady)
 		{
 			base.Trigger(cooldown);
 		}

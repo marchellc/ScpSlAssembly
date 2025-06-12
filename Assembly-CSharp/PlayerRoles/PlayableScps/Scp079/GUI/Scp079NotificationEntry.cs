@@ -10,5 +10,5 @@ public class Scp079NotificationEntry : Scp079GuiElementBase
 
 	public IScp079Notification Content { get; internal set; }
 
-	public TextMeshProUGUI Text => _text;
+	public TextMeshProUGUI Text => this._text;
 }

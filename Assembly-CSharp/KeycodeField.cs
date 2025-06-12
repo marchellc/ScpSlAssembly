@@ -39,34 +39,34 @@ public class KeycodeField : MonoBehaviour, IPointerClickHandler, IEventSystemHan
 
 	public void SetDisplayedKey(KeyCode key)
 	{
-		CurDisplayedKey = key;
-		_keyText.text = ((key == KeyCode.None) ? NoneSymbol : new ReadableKeyCode(key).NormalVersion);
-		_keyText.alignment = _setAlignment;
+		this.CurDisplayedKey = key;
+		this._keyText.text = ((key == KeyCode.None) ? this.NoneSymbol : new ReadableKeyCode(key).NormalVersion);
+		this._keyText.alignment = this._setAlignment;
 	}
 
 	public void OnPointerClick(PointerEventData eventData)
 	{
 		if (eventData.button == PointerEventData.InputButton.Left)
 		{
-			_lastEntry = this;
-			_keyText.text = ReadSymbol;
-			_keyText.alignment = _readAlignment;
-			if (!_currentlyEditing)
+			KeycodeField._lastEntry = this;
+			this._keyText.text = this.ReadSymbol;
+			this._keyText.alignment = this._readAlignment;
+			if (!this._currentlyEditing)
 			{
-				_currentlyEditing = true;
-				_requestedChange = KeyCode.None;
-				_inputCooldown = 3;
+				this._currentlyEditing = true;
+				this._requestedChange = KeyCode.None;
+				this._inputCooldown = 3;
 			}
 		}
 	}
 
 	public void ExitEditMode()
 	{
-		_requestedChange = KeyCode.None;
-		if (_currentlyEditing)
+		this._requestedChange = KeyCode.None;
+		if (this._currentlyEditing)
 		{
-			SetDisplayedKey(CurDisplayedKey);
-			_currentlyEditing = false;
+			this.SetDisplayedKey(this.CurDisplayedKey);
+			this._currentlyEditing = false;
 		}
 	}
 
@@ -77,39 +77,39 @@ public class KeycodeField : MonoBehaviour, IPointerClickHandler, IEventSystemHan
 
 	protected virtual void ApplyPressedKey(KeyCode key)
 	{
-		SetDisplayedKey(key);
+		this.SetDisplayedKey(key);
 		this.OnKeySet?.Invoke(key);
-		_currentlyEditing = false;
+		this._currentlyEditing = false;
 	}
 
 	protected virtual void OnDisable()
 	{
-		ExitEditMode();
+		this.ExitEditMode();
 	}
 
 	protected virtual void Update()
 	{
-		if (!_currentlyEditing)
+		if (!this._currentlyEditing)
 		{
 			return;
 		}
-		if (_lastEntry != this || _cancelKeys.Contains(_requestedChange))
+		if (KeycodeField._lastEntry != this || this._cancelKeys.Contains(this._requestedChange))
 		{
-			ExitEditMode();
+			this.ExitEditMode();
 			return;
 		}
-		if (_requestedChange != 0)
+		if (this._requestedChange != KeyCode.None)
 		{
-			if (ValidatePressedKey(_requestedChange))
+			if (this.ValidatePressedKey(this._requestedChange))
 			{
-				ApplyPressedKey(_requestedChange);
+				this.ApplyPressedKey(this._requestedChange);
 				return;
 			}
-			_requestedChange = KeyCode.None;
+			this._requestedChange = KeyCode.None;
 		}
-		if (_inputCooldown > 0)
+		if (this._inputCooldown > 0)
 		{
-			_inputCooldown--;
+			this._inputCooldown--;
 			return;
 		}
 		KeyCode[] values = EnumUtils<KeyCode>.Values;
@@ -117,7 +117,7 @@ public class KeycodeField : MonoBehaviour, IPointerClickHandler, IEventSystemHan
 		{
 			if (Input.GetKeyUp(keyCode))
 			{
-				_requestedChange = keyCode;
+				this._requestedChange = keyCode;
 			}
 		}
 	}

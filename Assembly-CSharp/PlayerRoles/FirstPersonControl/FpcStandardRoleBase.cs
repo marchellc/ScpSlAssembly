@@ -26,17 +26,17 @@ public abstract class FpcStandardRoleBase : PlayerRoleBase, ISpawnDataReader, IP
 
 	private InsufficientLighting _noLightFx;
 
-	public virtual Vector3 CameraPosition => _cameraTransform.position;
+	public virtual Vector3 CameraPosition => this._cameraTransform.position;
 
-	public virtual float VerticalRotation => _cameraTransform.eulerAngles.x;
+	public virtual float VerticalRotation => this._cameraTransform.eulerAngles.x;
 
-	public virtual float HorizontalRotation => _cameraTransform.eulerAngles.y;
+	public virtual float HorizontalRotation => this._cameraTransform.eulerAngles.y;
 
 	public virtual PlayerStats TargetStats
 	{
 		get
 		{
-			if (!TryGetOwner(out var hub))
+			if (!base.TryGetOwner(out var hub))
 			{
 				return null;
 			}
@@ -52,7 +52,7 @@ public abstract class FpcStandardRoleBase : PlayerRoleBase, ISpawnDataReader, IP
 	{
 		get
 		{
-			if (!ForceBlackAmbient)
+			if (!this.ForceBlackAmbient)
 			{
 				return InsufficientLighting.DefaultIntensity;
 			}
@@ -64,9 +64,9 @@ public abstract class FpcStandardRoleBase : PlayerRoleBase, ISpawnDataReader, IP
 	{
 		get
 		{
-			if (!InsufficientLight)
+			if (!this.InsufficientLight)
 			{
-				return InDarkness;
+				return this.InDarkness;
 			}
 			return true;
 		}
@@ -78,11 +78,11 @@ public abstract class FpcStandardRoleBase : PlayerRoleBase, ISpawnDataReader, IP
 		{
 			if (!NetworkServer.active)
 			{
-				return _noLightFx.IsEnabled;
+				return this._noLightFx.IsEnabled;
 			}
-			if (InDarkness)
+			if (this.InDarkness)
 			{
-				return !HasFlashlight;
+				return !this.HasFlashlight;
 			}
 			return false;
 		}
@@ -106,13 +106,13 @@ public abstract class FpcStandardRoleBase : PlayerRoleBase, ISpawnDataReader, IP
 	[field: SerializeField]
 	public Texture RoleAvatar { get; private set; }
 
-	private bool InDarkness => RoomLightController.IsInDarkenedRoom(FpcModule.Position);
+	private bool InDarkness => RoomLightController.IsInDarkenedRoom(this.FpcModule.Position);
 
 	private bool HasFlashlight
 	{
 		get
 		{
-			if (!TryGetOwner(out var hub))
+			if (!base.TryGetOwner(out var hub))
 			{
 				return false;
 			}
@@ -128,16 +128,16 @@ public abstract class FpcStandardRoleBase : PlayerRoleBase, ISpawnDataReader, IP
 	{
 		get
 		{
-			if (_lastPos == Vector3.zero)
+			if (this._lastPos == Vector3.zero)
 			{
-				_lastPos = _hubTransform.position;
+				this._lastPos = this._hubTransform.position;
 				return true;
 			}
-			if ((_lastPos - _hubTransform.position).sqrMagnitude < 1.25f)
+			if ((this._lastPos - this._hubTransform.position).sqrMagnitude < 1.25f)
 			{
 				return true;
 			}
-			_lastPos = _hubTransform.position;
+			this._lastPos = this._hubTransform.position;
 			return false;
 		}
 	}
@@ -153,34 +153,34 @@ public abstract class FpcStandardRoleBase : PlayerRoleBase, ISpawnDataReader, IP
 	internal override void Init(ReferenceHub hub, RoleChangeReason spawnReason, RoleSpawnFlags spawnFlags)
 	{
 		base.Init(hub, spawnReason, spawnFlags);
-		_noLightFx = hub.playerEffectsController.GetEffect<InsufficientLighting>();
-		_lastPos = Vector3.zero;
+		this._noLightFx = hub.playerEffectsController.GetEffect<InsufficientLighting>();
+		this._lastPos = Vector3.zero;
 	}
 
 	public virtual void ReadSpawnData(NetworkReader reader)
 	{
 		RelativePosition receivedPosition = reader.ReadRelativePosition();
-		FpcModule.MouseLook.ApplySyncValues(reader.ReadUShort(), 32767);
+		this.FpcModule.MouseLook.ApplySyncValues(reader.ReadUShort(), 32767);
 		if (receivedPosition.WaypointId == 0)
 		{
 			return;
 		}
 		if (!base.IsLocalPlayer)
 		{
-			FpcMotor motor = FpcModule.Motor;
+			FpcMotor motor = this.FpcModule.Motor;
 			if (motor.ReceivedPosition.WaypointId != 0)
 			{
 				return;
 			}
 			motor.ReceivedPosition = receivedPosition;
 		}
-		FpcModule.Position = receivedPosition.Position;
+		this.FpcModule.Position = receivedPosition.Position;
 	}
 
 	public virtual void WritePublicSpawnData(NetworkWriter writer)
 	{
-		FpcModule.MouseLook.GetSyncValues(0, out var syncH, out var _);
-		writer.WriteRelativePosition(new RelativePosition(_hubTransform.position));
+		this.FpcModule.MouseLook.GetSyncValues(0, out var syncH, out var _);
+		writer.WriteRelativePosition(new RelativePosition(this._hubTransform.position));
 		writer.WriteUShort(syncH);
 	}
 
@@ -190,18 +190,18 @@ public abstract class FpcStandardRoleBase : PlayerRoleBase, ISpawnDataReader, IP
 
 	public virtual void SpawnObject()
 	{
-		if (TryGetOwner(out var hub))
+		if (base.TryGetOwner(out var hub))
 		{
-			_hubTransform = hub.transform;
-			_cameraTransform = hub.PlayerCameraReference;
-			ShowStartScreen();
+			this._hubTransform = hub.transform;
+			this._cameraTransform = hub.PlayerCameraReference;
+			this.ShowStartScreen();
 		}
 	}
 
 	public virtual bool TryGetViewmodelFov(out float fov)
 	{
 		fov = 0f;
-		if (!TryGetOwner(out var hub))
+		if (!base.TryGetOwner(out var hub))
 		{
 			return false;
 		}

@@ -12,7 +12,7 @@ public abstract class StandardSubroutine<T> : SubroutineBase, IPoolSpawnable, IP
 	protected override void Awake()
 	{
 		base.Awake();
-		CastRole = base.Role as T;
+		this.CastRole = base.Role as T;
 	}
 
 	protected void GetSubroutine<TSubroutine>(out TSubroutine sr) where TSubroutine : SubroutineBase
@@ -24,9 +24,9 @@ public abstract class StandardSubroutine<T> : SubroutineBase, IPoolSpawnable, IP
 	{
 		if (!base.Role.TryGetOwner(out var hub))
 		{
-			throw new InvalidOperationException("Subroutine " + base.name + " of type " + GetType().FullName + " spawned with no valid owner!");
+			throw new InvalidOperationException("Subroutine " + base.name + " of type " + base.GetType().FullName + " spawned with no valid owner!");
 		}
-		Owner = hub;
+		this.Owner = hub;
 	}
 
 	public virtual void ResetObject()

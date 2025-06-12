@@ -38,26 +38,26 @@ public abstract class WaypointBase : MonoBehaviour
 
 	protected virtual void Start()
 	{
-		if (AutoAssign)
+		if (this.AutoAssign)
 		{
-			AssignSelfToList();
+			this.AssignSelfToList();
 		}
 	}
 
 	protected virtual void OnDestroy()
 	{
-		RemoveSelfFromList();
+		this.RemoveSelfFromList();
 	}
 
 	protected virtual void AssignSelfToList()
 	{
 		for (byte b = 1; b < byte.MaxValue; b++)
 		{
-			if (!SetWaypoints[b])
+			if (!WaypointBase.SetWaypoints[b])
 			{
-				_index = b;
-				AllWaypoints[b] = this;
-				SetWaypoints[b] = true;
+				this._index = b;
+				WaypointBase.AllWaypoints[b] = this;
+				WaypointBase.SetWaypoints[b] = true;
 				return;
 			}
 		}
@@ -66,8 +66,8 @@ public abstract class WaypointBase : MonoBehaviour
 
 	protected virtual void RemoveSelfFromList()
 	{
-		AllWaypoints[_index] = null;
-		SetWaypoints[_index] = false;
+		WaypointBase.AllWaypoints[this._index] = null;
+		WaypointBase.SetWaypoints[this._index] = false;
 	}
 
 	protected void SetId(byte newId)
@@ -76,23 +76,23 @@ public abstract class WaypointBase : MonoBehaviour
 		{
 			throw new InvalidOperationException("Cannot assign ID of 0 to a waypoint. This ID is reserved for the value of null.");
 		}
-		_id = newId;
-		WaypointIndexes[_id] = _index;
+		this._id = newId;
+		WaypointBase.WaypointIndexes[this._id] = this._index;
 	}
 
 	protected byte FindFreeId()
 	{
-		OccupiedIdFinder.Clear();
+		WaypointBase.OccupiedIdFinder.Clear();
 		for (byte b = 1; b < byte.MaxValue; b++)
 		{
-			if (SetWaypoints[b])
+			if (WaypointBase.SetWaypoints[b])
 			{
-				OccupiedIdFinder.Add(AllWaypoints[b]._id);
+				WaypointBase.OccupiedIdFinder.Add(WaypointBase.AllWaypoints[b]._id);
 			}
 		}
 		for (byte b2 = 1; b2 < byte.MaxValue; b2++)
 		{
-			if (!OccupiedIdFinder.Contains(b2))
+			if (!WaypointBase.OccupiedIdFinder.Contains(b2))
 			{
 				return b2;
 			}
@@ -110,9 +110,9 @@ public abstract class WaypointBase : MonoBehaviour
 		WaypointBase waypointBase = null;
 		for (byte b = 1; b < byte.MaxValue; b++)
 		{
-			if (SetWaypoints[b])
+			if (WaypointBase.SetWaypoints[b])
 			{
-				WaypointBase waypointBase2 = AllWaypoints[b];
+				WaypointBase waypointBase2 = WaypointBase.AllWaypoints[b];
 				float num2 = waypointBase2.SqrDistanceTo(worldPoint);
 				if (!(num2 > num))
 				{
@@ -137,22 +137,22 @@ public abstract class WaypointBase : MonoBehaviour
 
 	public static void GetRelativePositionAndRotation(Vector3 worldPoint, Quaternion worldRot, out byte closestId, out Vector3 relPoint, out Quaternion relRot)
 	{
-		ExtractWaypointData(worldPoint, extractPoint: true, worldRot, extractRot: true, out closestId, out relPoint, out relRot);
+		WaypointBase.ExtractWaypointData(worldPoint, extractPoint: true, worldRot, extractRot: true, out closestId, out relPoint, out relRot);
 	}
 
 	public static void GetRelativePosition(Vector3 worldPoint, out byte closestId, out Vector3 rel)
 	{
-		ExtractWaypointData(worldPoint, extractPoint: true, Quaternion.identity, extractRot: false, out closestId, out rel, out var _);
+		WaypointBase.ExtractWaypointData(worldPoint, extractPoint: true, Quaternion.identity, extractRot: false, out closestId, out rel, out var _);
 	}
 
 	public static void GetRelativeRotation(Vector3 center, Quaternion worldRot, out byte closestId, out Quaternion rel)
 	{
-		ExtractWaypointData(center, extractPoint: false, worldRot, extractRot: true, out closestId, out var _, out rel);
+		WaypointBase.ExtractWaypointData(center, extractPoint: false, worldRot, extractRot: true, out closestId, out var _, out rel);
 	}
 
 	public static Vector3 GetWorldPosition(byte id, Vector3 point)
 	{
-		if (!TryGetWaypoint(id, out var wp))
+		if (!WaypointBase.TryGetWaypoint(id, out var wp))
 		{
 			return point;
 		}
@@ -161,7 +161,7 @@ public abstract class WaypointBase : MonoBehaviour
 
 	public static Quaternion GetRelativeRotation(byte id, Quaternion rot)
 	{
-		if (!TryGetWaypoint(id, out var wp))
+		if (!WaypointBase.TryGetWaypoint(id, out var wp))
 		{
 			return rot;
 		}
@@ -170,7 +170,7 @@ public abstract class WaypointBase : MonoBehaviour
 
 	public static Quaternion GetWorldRotation(byte id, Quaternion rot)
 	{
-		if (!TryGetWaypoint(id, out var wp))
+		if (!WaypointBase.TryGetWaypoint(id, out var wp))
 		{
 			return rot;
 		}
@@ -179,9 +179,9 @@ public abstract class WaypointBase : MonoBehaviour
 
 	public static bool TryGetWaypoint(byte id, out WaypointBase wp)
 	{
-		int num = WaypointIndexes[id];
-		bool result = SetWaypoints[num];
-		wp = AllWaypoints[num];
+		int num = WaypointBase.WaypointIndexes[id];
+		bool result = WaypointBase.SetWaypoints[num];
+		wp = WaypointBase.AllWaypoints[num];
 		return result;
 	}
 }

@@ -18,15 +18,15 @@ public class Scp244Lid : MonoBehaviour
 
 	private void Update()
 	{
-		if (_pickup.State == Scp244State.Active)
+		if (this._pickup.State == Scp244State.Active)
 		{
-			if (Vector3.Dot(base.transform.up, Vector3.up) > _upDot)
+			if (Vector3.Dot(base.transform.up, Vector3.up) > this._upDot)
 			{
-				base.transform.localPosition += _offset;
+				base.transform.localPosition += this._offset;
 			}
 			else
 			{
-				_pressureSound.enabled = true;
+				this._pressureSound.enabled = true;
 			}
 			base.enabled = false;
 			base.gameObject.AddComponent<Rigidbody>().collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;

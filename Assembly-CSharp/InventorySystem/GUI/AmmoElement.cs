@@ -63,27 +63,27 @@ public class AmmoElement : MonoBehaviour
 
 	public void UseButton(int type)
 	{
-		if (_allowDropping)
+		if (this._allowDropping)
 		{
 			int num = type switch
 			{
-				1 => _medAmount, 
-				0 => _lowAmount, 
-				_ => _highAmount, 
+				1 => this._medAmount, 
+				0 => this._lowAmount, 
+				_ => this._highAmount, 
 			};
-			ReferenceHub.LocalHub.inventory.CmdDropAmmo((byte)_targetItem.ItemTypeId, (ushort)num);
+			ReferenceHub.LocalHub.inventory.CmdDropAmmo((byte)this._targetItem.ItemTypeId, (ushort)num);
 		}
 	}
 
 	public void Setup(ItemType type, Color classColor)
 	{
-		if (!InventoryItemLoader.AvailableItems.TryGetValue(type, out _targetItem))
+		if (!InventoryItemLoader.AvailableItems.TryGetValue(type, out this._targetItem))
 		{
 			throw new InvalidOperationException("Item " + type.ToString() + " is not defined. Cannot create an ammo element for it.");
 		}
-		_iconImg.texture = _targetItem.Icon;
-		_nameTxt.text = ((_targetItem is IItemNametag itemNametag) ? itemNametag.Name : type.ToString());
-		Graphic[] paintableParts = _paintableParts;
+		this._iconImg.texture = this._targetItem.Icon;
+		this._nameTxt.text = ((this._targetItem is IItemNametag itemNametag) ? itemNametag.Name : type.ToString());
+		Graphic[] paintableParts = this._paintableParts;
 		for (int i = 0; i < paintableParts.Length; i++)
 		{
 			paintableParts[i].color = classColor;
@@ -98,46 +98,46 @@ public class AmmoElement : MonoBehaviour
 			return;
 		}
 		base.gameObject.SetActive(value: true);
-		_amountIndicator.text = amount.ToString();
-		if (_targetItem is AmmoItem { PickupDropModel: AmmoPickup pickupDropModel })
+		this._amountIndicator.text = amount.ToString();
+		if (this._targetItem is AmmoItem { PickupDropModel: AmmoPickup pickupDropModel })
 		{
-			_medAmount = pickupDropModel.SavedAmmo;
-			_highAmount = _medAmount * 2;
-			_lowAmount = (((float)_medAmount % 2f == 0f) ? (_medAmount / 2) : (_medAmount * 2 / 3));
+			this._medAmount = pickupDropModel.SavedAmmo;
+			this._highAmount = this._medAmount * 2;
+			this._lowAmount = (((float)this._medAmount % 2f == 0f) ? (this._medAmount / 2) : (this._medAmount * 2 / 3));
 		}
 		else
 		{
-			_highAmount = amount;
-			_medAmount = Mathf.FloorToInt((float)amount / 2f);
-			_lowAmount = ((_medAmount != 1) ? 1 : 0);
+			this._highAmount = amount;
+			this._medAmount = Mathf.FloorToInt((float)amount / 2f);
+			this._lowAmount = ((this._medAmount != 1) ? 1 : 0);
 		}
-		if (amount < _medAmount)
+		if (amount < this._medAmount)
 		{
-			if (amount > _lowAmount)
+			if (amount > this._lowAmount)
 			{
-				_medAmount = amount;
+				this._medAmount = amount;
 			}
 			else
 			{
-				_lowAmount = amount;
-				_medAmount = 0;
+				this._lowAmount = amount;
+				this._medAmount = 0;
 			}
-			_highAmount = 0;
+			this._highAmount = 0;
 		}
-		else if (amount < _highAmount)
+		else if (amount < this._highAmount)
 		{
-			_highAmount = ((amount != _medAmount) ? amount : 0);
+			this._highAmount = ((amount != this._medAmount) ? amount : 0);
 		}
-		PrepButton(_lowText, _lowAmount);
-		PrepButton(_medText, _medAmount);
-		PrepButton(_highText, _highAmount);
+		this.PrepButton(this._lowText, this._lowAmount);
+		this.PrepButton(this._medText, this._medAmount);
+		this.PrepButton(this._highText, this._highAmount);
 	}
 
 	public bool IsHovering()
 	{
-		if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_myTransform, Input.mousePosition, null, out var localPoint) && localPoint.x > _minX && localPoint.x < _maxX && localPoint.y > _minY)
+		if (RectTransformUtility.ScreenPointToLocalPointInRectangle(this._myTransform, Input.mousePosition, null, out var localPoint) && localPoint.x > this._minX && localPoint.x < this._maxX && localPoint.y > this._minY)
 		{
-			return localPoint.y < _maxY;
+			return localPoint.y < this._maxY;
 		}
 		return false;
 	}
@@ -153,7 +153,7 @@ public class AmmoElement : MonoBehaviour
 
 	private void Update()
 	{
-		_allowDropping = ReferenceHub.TryGetLocalHub(out var hub) && IAmmoDropPreventer.CanDropAmmo(hub, _targetItem.ItemTypeId);
-		_dropCanvas.alpha = (_allowDropping ? 1f : 0.1f);
+		this._allowDropping = ReferenceHub.TryGetLocalHub(out var hub) && IAmmoDropPreventer.CanDropAmmo(hub, this._targetItem.ItemTypeId);
+		this._dropCanvas.alpha = (this._allowDropping ? 1f : 0.1f);
 	}
 }

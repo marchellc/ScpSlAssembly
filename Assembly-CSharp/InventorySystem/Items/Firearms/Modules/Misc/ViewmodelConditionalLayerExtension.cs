@@ -15,12 +15,12 @@ public class ViewmodelConditionalLayerExtension : MonoBehaviour, IViewmodelExten
 
 	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_firearm = viewmodel.ParentFirearm;
-		_condition.InitInstance(_firearm);
+		this._firearm = viewmodel.ParentFirearm;
+		this._condition.InitInstance(this._firearm);
 	}
 
 	private void LateUpdate()
 	{
-		_layer.Update(_firearm, _condition.Evaluate());
+		this._layer.Update(this._firearm, this._condition.Evaluate());
 	}
 }

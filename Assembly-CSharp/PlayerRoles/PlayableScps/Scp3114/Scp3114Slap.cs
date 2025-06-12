@@ -33,7 +33,7 @@ public class Scp3114Slap : ScpAttackAbilityBase<Scp3114Role>
 		{
 			if (base.CanTriggerAbility)
 			{
-				return !AbilityBlocked;
+				return !this.AbilityBlocked;
 			}
 			return false;
 		}
@@ -43,7 +43,7 @@ public class Scp3114Slap : ScpAttackAbilityBase<Scp3114Role>
 	{
 		get
 		{
-			if (!_strangle.SyncTarget.HasValue)
+			if (!this._strangle.SyncTarget.HasValue)
 			{
 				return base.CastRole.CurIdentity.Status != Scp3114Identity.DisguiseStatus.None;
 			}
@@ -57,7 +57,7 @@ public class Scp3114Slap : ScpAttackAbilityBase<Scp3114Role>
 
 	private void PlaySwingSound()
 	{
-		AudioSourcePoolManager.PlayOnTransform(_swingClips.RandomItem(), base.transform, _swingSoundRange, 1f, FalloffType.Exponential, MixerChannel.NoDucking);
+		AudioSourcePoolManager.PlayOnTransform(this._swingClips.RandomItem(), base.transform, this._swingSoundRange, 1f, FalloffType.Exponential, MixerChannel.NoDucking);
 	}
 
 	protected override DamageHandlerBase DamageHandler(float damage)
@@ -74,27 +74,27 @@ public class Scp3114Slap : ScpAttackAbilityBase<Scp3114Role>
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		GetSubroutine<Scp3114Strangle>(out _strangle);
-		_humeShield = base.Owner.playerStats.GetModule<HumeShieldStat>();
+		base.GetSubroutine<Scp3114Strangle>(out this._strangle);
+		this._humeShield = base.Owner.playerStats.GetModule<HumeShieldStat>();
 	}
 
 	protected override void DamagePlayers()
 	{
 		Transform playerCameraReference = base.Owner.PlayerCameraReference;
-		ReferenceHub primaryTarget = DetectedPlayers.GetPrimaryTarget(playerCameraReference);
+		ReferenceHub primaryTarget = base.DetectedPlayers.GetPrimaryTarget(playerCameraReference);
 		if (!(primaryTarget == null))
 		{
-			DamagePlayer(primaryTarget, DamageAmount);
-			if (HasAttackResultFlag(AttackResult.KilledPlayer))
+			this.DamagePlayer(primaryTarget, this.DamageAmount);
+			if (base.HasAttackResultFlag(AttackResult.KilledPlayer))
 			{
 				this.ServerOnKill?.Invoke();
 			}
-			if (HasAttackResultFlag(AttackResult.AttackedPlayer))
+			if (base.HasAttackResultFlag(AttackResult.AttackedPlayer))
 			{
 				this.ServerOnHit?.Invoke();
 			}
-			float a = _humeShield.CurValue + 25f;
-			_humeShield.CurValue = Mathf.Min(a, _humeShield.MaxValue);
+			float a = this._humeShield.CurValue + 25f;
+			this._humeShield.CurValue = Mathf.Min(a, this._humeShield.MaxValue);
 		}
 	}
 }

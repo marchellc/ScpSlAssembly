@@ -14,11 +14,11 @@ public class StructureSpawnpoint : DistributorSpawnpointBase
 
 	private new void Awake()
 	{
-		AvailableInstances.Add(this);
+		StructureSpawnpoint.AvailableInstances.Add(this);
 	}
 
 	private void OnDestroy()
 	{
-		AvailableInstances.Remove(this);
+		StructureSpawnpoint.AvailableInstances.Remove(this);
 	}
 }

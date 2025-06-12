@@ -34,35 +34,35 @@ public class IntercomDisplay : NetworkBehaviour
 	{
 		get
 		{
-			return _overrideText;
+			return this._overrideText;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _overrideText, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._overrideText, 1uL, null);
 		}
 	}
 
 	private void Awake()
 	{
-		_icom = GetComponent<Intercom>();
-		_singleton = this;
+		this._icom = base.GetComponent<Intercom>();
+		IntercomDisplay._singleton = this;
 		int num = 0;
 		foreach (int item in EnumUtils<IcomText>.Values.ToArray().Cast<int>())
 		{
 			num = Mathf.Max(num, item + 1);
 		}
-		_translations = new string[num];
-		_translationsSet = new bool[num];
+		this._translations = new string[num];
+		this._translationsSet = new bool[num];
 	}
 
 	public static bool TrySetDisplay(string str)
 	{
-		if (_singleton == null)
+		if (IntercomDisplay._singleton == null)
 		{
 			return false;
 		}
-		_singleton.Network_overrideText = str;
+		IntercomDisplay._singleton.Network_overrideText = str;
 		return true;
 	}
 
@@ -76,13 +76,13 @@ public class IntercomDisplay : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteString(_overrideText);
+			writer.WriteString(this._overrideText);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteString(_overrideText);
+			writer.WriteString(this._overrideText);
 		}
 	}
 
@@ -91,13 +91,13 @@ public class IntercomDisplay : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _overrideText, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._overrideText, null, reader.ReadString());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _overrideText, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._overrideText, null, reader.ReadString());
 		}
 	}
 }

@@ -33,7 +33,7 @@ public class AtlasZoneGenerator : ZoneGenerator
 
 	public override void Generate(System.Random rng)
 	{
-		SpawnableRoom[] compatibleRooms = CompatibleRooms;
+		SpawnableRoom[] compatibleRooms = this.CompatibleRooms;
 		foreach (SpawnableRoom spawnableRoom in compatibleRooms)
 		{
 			if (spawnableRoom.HolidayVariants.TryGetResult<HolidayRoomVariant, SpawnableRoom>(out var result))
@@ -45,18 +45,18 @@ public class AtlasZoneGenerator : ZoneGenerator
 				spawnableRoom.RegisterIdentities();
 			}
 		}
-		Texture2D atlas = Atlases[rng.Next(Atlases.Length)];
-		Interpreted = MapAtlasInterpreter.Singleton.Interpret(atlas, rng);
-		RandomizeInterpreted(rng);
-		for (int j = 0; j < Interpreted.Length; j++)
+		Texture2D atlas = this.Atlases[rng.Next(this.Atlases.Length)];
+		this.Interpreted = MapAtlasInterpreter.Singleton.Interpret(atlas, rng);
+		this.RandomizeInterpreted(rng);
+		for (int j = 0; j < this.Interpreted.Length; j++)
 		{
 			try
 			{
-				ProcessInterpreted(Interpreted[j], rng);
+				this.ProcessInterpreted(this.Interpreted[j], rng);
 			}
 			catch (Exception exception)
 			{
-				AtlasInterpretation atlasInterpretation = Interpreted[j];
+				AtlasInterpretation atlasInterpretation = this.Interpreted[j];
 				Debug.LogError("Interpretation failed at " + atlasInterpretation.ToString());
 				Debug.LogException(exception);
 			}
@@ -65,15 +65,15 @@ public class AtlasZoneGenerator : ZoneGenerator
 
 	protected virtual void RandomizeInterpreted(System.Random rng)
 	{
-		int num = Interpreted.Length;
+		int num = this.Interpreted.Length;
 		while (num > 1)
 		{
 			num--;
 			int num2 = rng.Next(num + 1);
-			ref AtlasInterpretation reference = ref Interpreted[num];
-			ref AtlasInterpretation reference2 = ref Interpreted[num2];
-			AtlasInterpretation atlasInterpretation = Interpreted[num2];
-			AtlasInterpretation atlasInterpretation2 = Interpreted[num];
+			ref AtlasInterpretation reference = ref this.Interpreted[num];
+			ref AtlasInterpretation reference2 = ref this.Interpreted[num2];
+			AtlasInterpretation atlasInterpretation = this.Interpreted[num2];
+			AtlasInterpretation atlasInterpretation2 = this.Interpreted[num];
 			reference = atlasInterpretation;
 			reference2 = atlasInterpretation2;
 		}
@@ -81,7 +81,7 @@ public class AtlasZoneGenerator : ZoneGenerator
 
 	public virtual void GetPositionAndRotation(AtlasInterpretation toSpawn, out Vector3 worldPosition, out float yRotation)
 	{
-		worldPosition = new Vector3((float)toSpawn.Coords.x * RoomIdentifier.GridScale.x, _zoneHeight, (float)toSpawn.Coords.y * RoomIdentifier.GridScale.z);
+		worldPosition = new Vector3((float)toSpawn.Coords.x * RoomIdentifier.GridScale.x, this._zoneHeight, (float)toSpawn.Coords.y * RoomIdentifier.GridScale.z);
 		yRotation = toSpawn.RotationY;
 	}
 
@@ -92,7 +92,7 @@ public class AtlasZoneGenerator : ZoneGenerator
 		Vector2Int vector2Int3 = coords + Vector2Int.left;
 		Vector2Int vector2Int4 = coords + Vector2Int.right;
 		float num = candidate.ChanceMultiplier;
-		foreach (SpawnedRoomData item in Spawned)
+		foreach (SpawnedRoomData item in this.Spawned)
 		{
 			if (!(item.ChosenCandidate != candidate))
 			{
@@ -109,7 +109,7 @@ public class AtlasZoneGenerator : ZoneGenerator
 	public int PreviouslySpawnedCnt(SpawnableRoom candidate)
 	{
 		int num = 0;
-		foreach (SpawnedRoomData item in Spawned)
+		foreach (SpawnedRoomData item in this.Spawned)
 		{
 			if (!(item.ChosenCandidate != candidate))
 			{
@@ -121,10 +121,10 @@ public class AtlasZoneGenerator : ZoneGenerator
 
 	public void SpawnRoom(AtlasInterpretation interpretation, SpawnableRoom chosenCandidate)
 	{
-		GetPositionAndRotation(interpretation, out var worldPosition, out var yRotation);
-		SpawnableRoom spawnableRoom = UnityEngine.Object.Instantiate(chosenCandidate, worldPosition, Quaternion.Euler(0f, yRotation, 0f), RoomSpawnParent);
-		spawnableRoom.SetupNetIdHandlers(PreviouslySpawnedCnt(chosenCandidate));
-		Spawned.Add(new SpawnedRoomData
+		this.GetPositionAndRotation(interpretation, out var worldPosition, out var yRotation);
+		SpawnableRoom spawnableRoom = UnityEngine.Object.Instantiate(chosenCandidate, worldPosition, Quaternion.Euler(0f, yRotation, 0f), this.RoomSpawnParent);
+		spawnableRoom.SetupNetIdHandlers(this.PreviouslySpawnedCnt(chosenCandidate));
+		this.Spawned.Add(new SpawnedRoomData
 		{
 			ChosenCandidate = chosenCandidate,
 			Instance = spawnableRoom,
@@ -134,49 +134,49 @@ public class AtlasZoneGenerator : ZoneGenerator
 
 	private void ProcessInterpreted(AtlasInterpretation interpretation, System.Random rng)
 	{
-		_spawnCandidates.Clear();
+		this._spawnCandidates.Clear();
 		float num = 0f;
 		bool flag = interpretation.SpecificRooms.Length != 0;
-		for (int i = 0; i < CompatibleRooms.Length; i++)
+		for (int i = 0; i < this.CompatibleRooms.Length; i++)
 		{
-			SpawnableRoom spawnableRoom = CompatibleRooms[i];
+			SpawnableRoom spawnableRoom = this.CompatibleRooms[i];
 			if (spawnableRoom.HolidayVariants.TryGetResult<HolidayRoomVariant, SpawnableRoom>(out var result))
 			{
 				spawnableRoom = result;
 			}
-			int num2 = PreviouslySpawnedCnt(spawnableRoom);
+			int num2 = this.PreviouslySpawnedCnt(spawnableRoom);
 			if (flag == spawnableRoom.SpecialRoom && (!flag || interpretation.SpecificRooms.Contains(spawnableRoom.Room.Name)) && spawnableRoom.Room.Shape == interpretation.RoomShape && num2 < spawnableRoom.MaxAmount)
 			{
 				if (num2 < spawnableRoom.MinAmount)
 				{
-					SpawnRoom(interpretation, spawnableRoom);
+					this.SpawnRoom(interpretation, spawnableRoom);
 					return;
 				}
-				num += GetChanceWeight(interpretation.Coords, spawnableRoom);
-				_spawnCandidates.Add(spawnableRoom);
+				num += this.GetChanceWeight(interpretation.Coords, spawnableRoom);
+				this._spawnCandidates.Add(spawnableRoom);
 			}
 		}
-		if (_spawnCandidates.Count == 0 || num == 0f)
+		if (this._spawnCandidates.Count == 0 || num == 0f)
 		{
-			Debug.LogError($"No candidates found for {TargetZone} {interpretation}");
+			Debug.LogError($"No candidates found for {base.TargetZone} {interpretation}");
 			return;
 		}
 		double num3 = rng.NextDouble() * (double)num;
 		float num4 = 0f;
-		for (int j = 0; j < _spawnCandidates.Count; j++)
+		for (int j = 0; j < this._spawnCandidates.Count; j++)
 		{
-			SpawnableRoom spawnableRoom2 = _spawnCandidates[j];
+			SpawnableRoom spawnableRoom2 = this._spawnCandidates[j];
 			if (spawnableRoom2.HolidayVariants.TryGetResult<HolidayRoomVariant, SpawnableRoom>(out var result2))
 			{
 				spawnableRoom2 = result2;
 			}
-			num4 += GetChanceWeight(interpretation.Coords, spawnableRoom2);
+			num4 += this.GetChanceWeight(interpretation.Coords, spawnableRoom2);
 			if (num3 <= (double)num4)
 			{
-				SpawnRoom(interpretation, spawnableRoom2);
+				this.SpawnRoom(interpretation, spawnableRoom2);
 				return;
 			}
 		}
-		Debug.LogError($"Random room spawning failed for {TargetZone} {interpretation}");
+		Debug.LogError($"Random room spawning failed for {base.TargetZone} {interpretation}");
 	}
 }

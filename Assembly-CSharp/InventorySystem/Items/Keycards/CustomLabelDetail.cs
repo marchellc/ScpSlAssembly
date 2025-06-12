@@ -17,35 +17,35 @@ public class CustomLabelDetail : SyncedDetail, ICustomizableDetail
 
 	public void ParseArguments(ArraySegment<string> args)
 	{
-		_customText = args.At(0).Replace('_', ' ');
-		Misc.TryParseColor(args.At(1), out _customColor);
+		CustomLabelDetail._customText = args.At(0).Replace('_', ' ');
+		Misc.TryParseColor(args.At(1), out CustomLabelDetail._customColor);
 	}
 
 	public void SetArguments(ArraySegment<object> args)
 	{
-		_customText = (string)args.At(0);
-		_customColor = (Color32)args.At(1);
+		CustomLabelDetail._customText = (string)args.At(0);
+		CustomLabelDetail._customColor = (Color32)args.At(1);
 	}
 
 	private void WriteCustom(NetworkWriter writer)
 	{
-		writer.WriteString(_customText);
-		writer.WriteColor32(_customColor);
+		writer.WriteString(CustomLabelDetail._customText);
+		writer.WriteColor32(CustomLabelDetail._customColor);
 	}
 
 	public override void WriteDefault(NetworkWriter writer)
 	{
-		WriteCustom(writer);
+		this.WriteCustom(writer);
 	}
 
 	public override void WriteNewItem(KeycardItem item, NetworkWriter writer)
 	{
-		WriteCustom(writer);
+		this.WriteCustom(writer);
 	}
 
 	public override void WriteNewPickup(KeycardPickup pickup, NetworkWriter writer)
 	{
-		WriteCustom(writer);
+		this.WriteCustom(writer);
 	}
 
 	protected override void ApplyDetail(KeycardGfx target, NetworkReader reader, KeycardItem template)

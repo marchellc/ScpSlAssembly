@@ -18,25 +18,25 @@ public class EmotionSubcontroller : SubcontrollerBehaviour, IPoolResettable
 	public override void Init(AnimatedCharacterModel model, int index)
 	{
 		base.Init(model, index);
-		_rendCnt = Renderers.Length;
+		this._rendCnt = this.Renderers.Length;
 	}
 
 	public override void OnReassigned()
 	{
 		base.OnReassigned();
-		SetPreset(EmotionSync.GetEmotionPreset(base.OwnerHub));
+		this.SetPreset(EmotionSync.GetEmotionPreset(base.OwnerHub));
 	}
 
 	public void ResetObject()
 	{
-		ResetWeights();
+		this.ResetWeights();
 	}
 
 	public void SetPreset(EmotionPresetType presetType)
 	{
-		ResetWeights();
+		this.ResetWeights();
 		EmotionPreset? emotionPreset = null;
-		EmotionPreset[] presets = Presets;
+		EmotionPreset[] presets = this.Presets;
 		for (int i = 0; i < presets.Length; i++)
 		{
 			EmotionPreset value = presets[i];
@@ -63,17 +63,17 @@ public class EmotionSubcontroller : SubcontrollerBehaviour, IPoolResettable
 
 	private void ResetWeights()
 	{
-		for (int i = 0; i < _rendCnt; i++)
+		for (int i = 0; i < this._rendCnt; i++)
 		{
-			Renderers[i].ResetWeights();
+			this.Renderers[i].ResetWeights();
 		}
 	}
 
 	private void SetWeight(EmotionBlendshape blendshape, float weight)
 	{
-		for (int i = 0; i < _rendCnt; i++)
+		for (int i = 0; i < this._rendCnt; i++)
 		{
-			Renderers[i].SetWeight(blendshape, weight);
+			this.Renderers[i].SetWeight(blendshape, weight);
 		}
 	}
 }

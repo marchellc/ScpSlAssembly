@@ -22,15 +22,15 @@ public class SearchSessionPipe
 
 	private SearchSession _session;
 
-	private SearchInvalidation Invalidation => new SearchInvalidation(_request.Id);
+	private SearchInvalidation Invalidation => new SearchInvalidation(this._request.Id);
 
-	public SearchRequest Request => _request;
+	public SearchRequest Request => this._request;
 
 	public SearchSession Session
 	{
 		get
 		{
-			return _session;
+			return this._session;
 		}
 		set
 		{
@@ -38,11 +38,11 @@ public class SearchSessionPipe
 			{
 				throw new InvalidOperationException("The promise can only be set from the server.");
 			}
-			if (!value.Equals(_session))
+			if (!value.Equals(this._session))
 			{
-				_owner.connectionToClient.Send(value);
-				Status = Activity.Promised;
-				_session = value;
+				this._owner.connectionToClient.Send(value);
+				this.Status = Activity.Promised;
+				this._session = value;
 			}
 		}
 	}
@@ -55,8 +55,8 @@ public class SearchSessionPipe
 
 	public SearchSessionPipe(SearchCoordinator owner, RateLimit rateLimit)
 	{
-		_owner = owner;
-		_rateLimiter = rateLimit;
+		this._owner = owner;
+		this._rateLimiter = rateLimit;
 	}
 
 	private static void ReceiveRequest(NetworkConnection source, SearchRequest request)
@@ -79,17 +79,17 @@ public class SearchSessionPipe
 
 	private void HandleRequest(SearchRequest request)
 	{
-		if (_rateLimiter.CanExecute())
+		if (this._rateLimiter.CanExecute())
 		{
-			_request = request;
-			Status = Activity.Requested;
+			this._request = request;
+			this.Status = Activity.Requested;
 			this.RequestUpdated?.Invoke();
 		}
 	}
 
 	private void ReceivePromise(NetworkConnection source, SearchSession session)
 	{
-		HandlePromise(session);
+		this.HandlePromise(session);
 	}
 
 	private void HandlePromise(SearchSession session)
@@ -107,29 +107,29 @@ public class SearchSessionPipe
 
 	private void HandleAbort(SearchInvalidation invalidation)
 	{
-		if (_request.Id != invalidation.Id)
+		if (this._request.Id != invalidation.Id)
 		{
 			return;
 		}
-		if (_request.Target is UnityEngine.Object @object && @object != null)
+		if (this._request.Target is UnityEngine.Object obj && obj != null)
 		{
-			_request.Target.ServerHandleAbort(_owner.Hub);
+			this._request.Target.ServerHandleAbort(this._owner.Hub);
 		}
 		try
 		{
-			Status = Activity.Idle;
+			this.Status = Activity.Idle;
 			this.SessionAborted?.Invoke();
 		}
 		finally
 		{
-			_request = default(SearchRequest);
-			_session = default(SearchSession);
+			this._request = default(SearchRequest);
+			this._session = default(SearchSession);
 		}
 	}
 
 	private void ReceiveInvalidation(NetworkConnection source, SearchInvalidation invalidation)
 	{
-		HandleInvalidate(invalidation);
+		this.HandleInvalidate(invalidation);
 	}
 
 	private void HandleInvalidate(SearchInvalidation invalidation)
@@ -150,41 +150,41 @@ public class SearchSessionPipe
 		{
 			throw new InvalidOperationException("An invalidation can only be performed by the server.");
 		}
-		if (_request.Target is UnityEngine.Object @object && @object != null)
+		if (this._request.Target is UnityEngine.Object obj && obj != null)
 		{
-			_request.Target.ServerHandleAbort(_owner.Hub);
+			this._request.Target.ServerHandleAbort(this._owner.Hub);
 		}
-		_owner.connectionToClient.Send(Invalidation);
-		Status = Activity.Idle;
+		this._owner.connectionToClient.Send(this.Invalidation);
+		this.Status = Activity.Idle;
 	}
 
 	public void Update()
 	{
-		Activity activity = Status;
+		Activity activity = this.Status;
 		Activity activity2;
 		do
 		{
 			activity2 = activity;
-			switch (Status)
+			switch (this.Status)
 			{
 			case Activity.Promised:
-				if (!(NetworkTime.time >= Session.FinishTime))
+				if (!(NetworkTime.time >= this.Session.FinishTime))
 				{
 					break;
 				}
 				activity = Activity.Requested;
 				continue;
 			case Activity.Requested:
-				if (!(NetworkTime.time >= Request.FinishTime))
+				if (!(NetworkTime.time >= this.Request.FinishTime))
 				{
 					break;
 				}
 				activity = Activity.Idle;
 				continue;
 			}
-			activity = Status;
+			activity = this.Status;
 		}
 		while (activity != activity2);
-		Status = activity;
+		this.Status = activity;
 	}
 }

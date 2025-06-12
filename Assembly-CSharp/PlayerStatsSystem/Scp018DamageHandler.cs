@@ -19,24 +19,24 @@ public class Scp018DamageHandler : AttackerDamageHandler
 
 	private const float HipMultiplier = 3f;
 
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
 	public override Footprint Attacker { get; protected set; }
 
 	public override bool AllowSelfDamage => true;
 
-	public override string ServerLogsText => _serverLogsText;
+	public override string ServerLogsText => this._serverLogsText;
 
 	public override bool IgnoreFriendlyFireDetector => true;
 
-	public override string RagdollInspectText => _ragdollInspectText;
+	public override string RagdollInspectText => this._ragdollInspectText;
 
-	public override string DeathScreenText => _deathScreenText;
+	public override string DeathScreenText => this._deathScreenText;
 
 	public override HandlerOutput ApplyDamage(ReferenceHub ply)
 	{
 		HandlerOutput result = base.ApplyDamage(ply);
-		StartVelocity = _ballImpactVelocity * 0.5f;
+		base.StartVelocity = this._ballImpactVelocity * 0.5f;
 		return result;
 	}
 
@@ -59,15 +59,15 @@ public class Scp018DamageHandler : AttackerDamageHandler
 
 	public Scp018DamageHandler(Scp018Projectile ball, float dmg, bool ignoreFF)
 	{
-		_ragdollInspectText = DeathTranslations.Crushed.RagdollTranslation;
-		_deathScreenText = DeathTranslations.Crushed.DeathscreenTranslation;
+		this._ragdollInspectText = DeathTranslations.Crushed.RagdollTranslation;
+		this._deathScreenText = DeathTranslations.Crushed.DeathscreenTranslation;
 		if (dmg != 0f)
 		{
-			_ballImpactVelocity = ball.RecreatedVelocity;
-			_serverLogsText = "SCP-018 thrown by: " + ball.PreviousOwner.Nickname;
-			Attacker = ball.PreviousOwner;
-			Damage = dmg;
-			ForceFullFriendlyFire = ignoreFF;
+			this._ballImpactVelocity = ball.RecreatedVelocity;
+			this._serverLogsText = "SCP-018 thrown by: " + ball.PreviousOwner.Nickname;
+			this.Attacker = ball.PreviousOwner;
+			this.Damage = dmg;
+			this.ForceFullFriendlyFire = ignoreFF;
 		}
 	}
 }

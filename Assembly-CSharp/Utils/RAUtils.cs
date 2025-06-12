@@ -31,13 +31,13 @@ public static class RAUtils
 	{
 		try
 		{
-			string text = FormatArguments(args, startindex);
+			string text = RAUtils.FormatArguments(args, startindex);
 			List<ReferenceHub> list = ListPool<ReferenceHub>.Shared.Rent();
 			if (text.StartsWith('@'))
 			{
 				foreach (Match item in new Regex("@\"(.*?)\".|@[^\\s.]+\\.").Matches(text))
 				{
-					text = ReplaceFirst(text, item.Value, "");
+					text = RAUtils.ReplaceFirst(text, item.Value, "");
 					string name = item.Value.Substring(1).Replace("\"", "").Replace(".", "");
 					List<ReferenceHub> list2 = ReferenceHub.AllHubs.Where((ReferenceHub ply) => ply.nicknameSync.MyNick.Equals(name)).ToList();
 					if (list2.Count == 1 && !list.Contains(list2[0]))
@@ -53,9 +53,9 @@ public static class RAUtils
 				if (char.IsDigit(args.At(startindex)[0]))
 				{
 					string[] array = args.At(startindex).Split('.');
-					for (int i = 0; i < array.Length; i++)
+					for (int num = 0; num < array.Length; num++)
 					{
-						if (int.TryParse(array[i], out var result) && ReferenceHub.TryGetHub(result, out var hub) && !list.Contains(hub))
+						if (int.TryParse(array[num], out var result) && ReferenceHub.TryGetHub(result, out var hub) && !list.Contains(hub))
 						{
 							list.Add(hub);
 						}
@@ -76,7 +76,7 @@ public static class RAUtils
 					}
 				}
 			}
-			newargs = ((args.Count > 1) ? FormatArguments(args, startindex + 1).Split(' ', (!keepEmptyEntries) ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None) : null);
+			newargs = ((args.Count > 1) ? RAUtils.FormatArguments(args, startindex + 1).Split(' ', (!keepEmptyEntries) ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None) : null);
 			return list;
 		}
 		catch (Exception exception)

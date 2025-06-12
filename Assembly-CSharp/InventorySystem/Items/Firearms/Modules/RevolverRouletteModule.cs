@@ -21,20 +21,20 @@ public class RevolverRouletteModule : ModuleBase, IBusyIndicatorModule, IAdsPrev
 	{
 		get
 		{
-			if (!_busy)
+			if (!this._busy)
 			{
-				return _requestTimer.Busy;
+				return this._requestTimer.Busy;
 			}
 			return true;
 		}
 	}
 
-	public bool AdsAllowed => !_busy;
+	public bool AdsAllowed => !this._busy;
 
 	protected override void OnInit()
 	{
 		base.OnInit();
-		if (!base.Firearm.TryGetModules<DoubleActionModule, CylinderAmmoModule>(out _doubleActionModule, out _cylinderModule))
+		if (!base.Firearm.TryGetModules<DoubleActionModule, CylinderAmmoModule>(out this._doubleActionModule, out this._cylinderModule))
 		{
 			throw new InvalidOperationException("The " + base.Firearm.name + " is missing one or more essential modules (required by " + base.name + ").");
 		}
@@ -43,7 +43,7 @@ public class RevolverRouletteModule : ModuleBase, IBusyIndicatorModule, IAdsPrev
 	internal override void OnHolstered()
 	{
 		base.OnHolstered();
-		_busy = false;
+		this._busy = false;
 	}
 
 	internal override void EquipUpdate()
@@ -53,16 +53,16 @@ public class RevolverRouletteModule : ModuleBase, IBusyIndicatorModule, IAdsPrev
 		{
 			return;
 		}
-		if (!GetAction(ActionName.WeaponAlt) || base.Firearm.AnyModuleBusy())
+		if (!base.GetAction(ActionName.WeaponAlt) || base.Firearm.AnyModuleBusy())
 		{
-			_keyHoldTime = 0f;
+			this._keyHoldTime = 0f;
 			return;
 		}
-		_keyHoldTime += Time.deltaTime;
-		if (_keyHoldTime > 1f)
+		this._keyHoldTime += Time.deltaTime;
+		if (this._keyHoldTime > 1f)
 		{
-			_requestTimer.Trigger();
-			SendCmd();
+			this._requestTimer.Trigger();
+			this.SendCmd();
 		}
 	}
 
@@ -71,17 +71,17 @@ public class RevolverRouletteModule : ModuleBase, IBusyIndicatorModule, IAdsPrev
 		base.ServerProcessCmd(reader);
 		if (base.IsLocalPlayer || !base.Firearm.AnyModuleBusy())
 		{
-			SendRpc();
+			this.SendRpc();
 		}
 	}
 
 	public override void ClientProcessRpcInstance(NetworkReader reader)
 	{
 		base.ClientProcessRpcInstance(reader);
-		_busy = true;
-		if (_doubleActionModule.Cocked)
+		this._busy = true;
+		if (this._doubleActionModule.Cocked)
 		{
-			_doubleActionModule.TriggerDecocking(FirearmAnimatorHashes.Roulette);
+			this._doubleActionModule.TriggerDecocking(FirearmAnimatorHashes.Roulette);
 		}
 		else
 		{
@@ -94,15 +94,15 @@ public class RevolverRouletteModule : ModuleBase, IBusyIndicatorModule, IAdsPrev
 	{
 		if (base.IsServer)
 		{
-			int ammoMax = _cylinderModule.AmmoMax;
+			int ammoMax = this._cylinderModule.AmmoMax;
 			int rotations = UnityEngine.Random.Range(0, ammoMax);
-			_cylinderModule.RotateCylinder(rotations);
+			this._cylinderModule.RotateCylinder(rotations);
 		}
 	}
 
 	[ExposedFirearmEvent]
 	public void EndSpin()
 	{
-		_busy = false;
+		this._busy = false;
 	}
 }

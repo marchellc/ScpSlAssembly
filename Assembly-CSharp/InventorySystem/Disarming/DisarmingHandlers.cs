@@ -40,14 +40,14 @@ public static class DisarmingHandlers
 	private static void ReplaceHandlers()
 	{
 		DisarmedPlayers.Entries.Clear();
-		ServerCooldowns.Clear();
+		DisarmingHandlers.ServerCooldowns.Clear();
 		NetworkServer.ReplaceHandler<DisarmMessage>(ServerProcessDisarmMessage);
 		NetworkClient.ReplaceHandler<DisarmedPlayersListMessage>(ClientProcessListMessage);
 	}
 
 	private static void ServerProcessDisarmMessage(NetworkConnection conn, DisarmMessage msg)
 	{
-		if (!NetworkServer.active || !ServerCheckCooldown(conn) || !ReferenceHub.TryGetHub(conn, out var hub) || (!msg.PlayerIsNull && ((msg.PlayerToDisarm.transform.position - hub.transform.position).sqrMagnitude > 20f || (msg.PlayerToDisarm.inventory.CurInstance != null && msg.PlayerToDisarm.inventory.CurInstance.TierFlags != 0))))
+		if (!NetworkServer.active || !DisarmingHandlers.ServerCheckCooldown(conn) || !ReferenceHub.TryGetHub(conn, out var hub) || (!msg.PlayerIsNull && ((msg.PlayerToDisarm.transform.position - hub.transform.position).sqrMagnitude > 20f || (msg.PlayerToDisarm.inventory.CurInstance != null && msg.PlayerToDisarm.inventory.CurInstance.TierFlags != ItemTierFlags.Common))))
 		{
 			return;
 		}
@@ -58,9 +58,9 @@ public static class DisarmingHandlers
 			if (!hub.inventory.IsDisarmed())
 			{
 				bool flag3 = hub.GetTeam() == Team.SCPs;
-				PlayerUncuffingEventArgs playerUncuffingEventArgs = new PlayerUncuffingEventArgs(hub, msg.PlayerToDisarm, !flag3);
-				PlayerEvents.OnUncuffing(playerUncuffingEventArgs);
-				if (!playerUncuffingEventArgs.IsAllowed || flag3)
+				PlayerUncuffingEventArgs e = new PlayerUncuffingEventArgs(hub, msg.PlayerToDisarm, !flag3);
+				PlayerEvents.OnUncuffing(e);
+				if (!e.IsAllowed || flag3)
 				{
 					return;
 				}
@@ -72,30 +72,30 @@ public static class DisarmingHandlers
 		{
 			if (!(!flag && flag2) || !msg.Disarm)
 			{
-				hub.networkIdentity.connectionToClient.Send(NewDisarmedList);
+				hub.networkIdentity.connectionToClient.Send(DisarmingHandlers.NewDisarmedList);
 				return;
 			}
 			if (msg.PlayerToDisarm.inventory.CurInstance == null || msg.PlayerToDisarm.inventory.CurInstance.AllowHolster)
 			{
-				PlayerCuffingEventArgs playerCuffingEventArgs = new PlayerCuffingEventArgs(hub, msg.PlayerToDisarm);
-				PlayerEvents.OnCuffing(playerCuffingEventArgs);
-				if (!playerCuffingEventArgs.IsAllowed)
+				PlayerCuffingEventArgs e2 = new PlayerCuffingEventArgs(hub, msg.PlayerToDisarm);
+				PlayerEvents.OnCuffing(e2);
+				if (!e2.IsAllowed)
 				{
 					return;
 				}
-				InvokeOnPlayerDisarmed(hub, msg.PlayerToDisarm);
+				DisarmingHandlers.InvokeOnPlayerDisarmed(hub, msg.PlayerToDisarm);
 				msg.PlayerToDisarm.inventory.SetDisarmedStatus(hub.inventory);
 				PlayerEvents.OnCuffed(new PlayerCuffedEventArgs(hub, msg.PlayerToDisarm));
 			}
 		}
-		NewDisarmedList.SendToAuthenticated();
+		DisarmingHandlers.NewDisarmedList.SendToAuthenticated();
 	}
 
 	private static bool ServerCheckCooldown(NetworkConnection conn)
 	{
 		uint netId = conn.identity.netId;
 		float timeSinceLevelLoad = Time.timeSinceLevelLoad;
-		if (!ServerCooldowns.TryGetValue(conn.identity.netId, out var value))
+		if (!DisarmingHandlers.ServerCooldowns.TryGetValue(conn.identity.netId, out var value))
 		{
 			value = 0f;
 		}
@@ -103,7 +103,7 @@ public static class DisarmingHandlers
 		{
 			return false;
 		}
-		ServerCooldowns[netId] = timeSinceLevelLoad;
+		DisarmingHandlers.ServerCooldowns[netId] = timeSinceLevelLoad;
 		return true;
 	}
 

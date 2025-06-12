@@ -40,7 +40,7 @@ public readonly struct Footprint : IEquatable<Footprint>
 	{
 		get
 		{
-			if (!PlayerRoleLoader.TryGetRoleTemplate<HumanRole>(Role, out var result))
+			if (!PlayerRoleLoader.TryGetRoleTemplate<HumanRole>(this.Role, out var result))
 			{
 				return string.Empty;
 			}
@@ -49,52 +49,52 @@ public readonly struct Footprint : IEquatable<Footprint>
 				return string.Empty;
 			}
 			int count = value.Count;
-			if (Unit >= count)
+			if (this.Unit >= count)
 			{
 				return string.Empty;
 			}
-			return value[Unit];
+			return value[this.Unit];
 		}
 	}
 
 	public Footprint(ReferenceHub hub)
 	{
-		IsSet = true;
-		Stopwatch = Stopwatch.StartNew();
+		this.IsSet = true;
+		this.Stopwatch = Stopwatch.StartNew();
 		bool flag = hub != null;
-		Hub = (flag ? hub : null);
-		PlayerId = (flag ? hub.PlayerId : 0);
-		NetId = (flag ? hub.networkIdentity.netId : 0u);
-		Role = (flag ? hub.GetRoleId() : RoleTypeId.None);
-		Unit = (byte)((flag && hub.roleManager.CurrentRole is HumanRole humanRole) ? humanRole.UnitNameId : 0);
-		LogUserID = (flag ? hub.authManager.UserId : string.Empty);
-		Nickname = (flag ? hub.nicknameSync.MyNick : "(null)");
-		BypassStaff = flag && hub.authManager.BypassBansFlagSet;
-		IpAddress = ((!flag || !NetworkServer.active || hub.connectionToClient == null) ? null : hub.connectionToClient.address);
-		LifeIdentifier = (flag ? hub.roleManager.CurrentRole.UniqueLifeIdentifier : 0);
+		this.Hub = (flag ? hub : null);
+		this.PlayerId = (flag ? hub.PlayerId : 0);
+		this.NetId = (flag ? hub.networkIdentity.netId : 0u);
+		this.Role = (flag ? hub.GetRoleId() : RoleTypeId.None);
+		this.Unit = (byte)((flag && hub.roleManager.CurrentRole is HumanRole humanRole) ? humanRole.UnitNameId : 0);
+		this.LogUserID = (flag ? hub.authManager.UserId : string.Empty);
+		this.Nickname = (flag ? hub.nicknameSync.MyNick : "(null)");
+		this.BypassStaff = flag && hub.authManager.BypassBansFlagSet;
+		this.IpAddress = ((!flag || !NetworkServer.active || hub.connectionToClient == null) ? null : hub.connectionToClient.address);
+		this.LifeIdentifier = (flag ? hub.roleManager.CurrentRole.UniqueLifeIdentifier : 0);
 		if (!flag)
 		{
-			_serial = 0;
+			this._serial = 0;
 			return;
 		}
-		if (++_serialClock == 0)
+		if (++Footprint._serialClock == 0)
 		{
-			_serialClock++;
+			Footprint._serialClock++;
 		}
-		_serial = _serialClock;
+		this._serial = Footprint._serialClock;
 	}
 
 	public bool Equals(Footprint other)
 	{
-		if (IsSet == other.IsSet)
+		if (this.IsSet == other.IsSet)
 		{
-			return _serial == other._serial;
+			return this._serial == other._serial;
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return _serial;
+		return this._serial;
 	}
 }

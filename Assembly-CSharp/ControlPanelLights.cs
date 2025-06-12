@@ -12,17 +12,17 @@ public class ControlPanelLights : MonoBehaviour
 
 	private void Start()
 	{
-		Timing.RunCoroutine(_Animate(), Segment.FixedUpdate);
+		Timing.RunCoroutine(this._Animate(), Segment.FixedUpdate);
 	}
 
 	private IEnumerator<float> _Animate()
 	{
-		int l = emissions.Length;
+		int l = this.emissions.Length;
 		while (this != null)
 		{
-			if (targetMat != null)
+			if (this.targetMat != null)
 			{
-				targetMat.SetTexture(_emissionMap, emissions[Random.Range(0, l)]);
+				this.targetMat.SetTexture(ControlPanelLights._emissionMap, this.emissions[Random.Range(0, l)]);
 			}
 			yield return Timing.WaitForSeconds(Random.Range(0.2f, 0.8f));
 		}

@@ -21,14 +21,14 @@ public abstract class RagdollIndicatorsBase<T> : StandardSubroutine<T> where T :
 		public void SetAlpha(float f)
 		{
 			f = Mathf.Clamp01(f);
-			_group.alpha = f;
+			this._group.alpha = f;
 		}
 
 		public Indicator(GameObject inst)
 		{
-			Instance = inst;
-			_group = inst.GetComponentInChildren<CanvasGroup>();
-			SetAlpha(0f);
+			this.Instance = inst;
+			this._group = inst.GetComponentInChildren<CanvasGroup>();
+			this.SetAlpha(0f);
 		}
 	}
 
@@ -64,15 +64,15 @@ public abstract class RagdollIndicatorsBase<T> : StandardSubroutine<T> where T :
 
 	protected virtual void Update()
 	{
-		if (NetworkServer.active && !ServerCheckNew())
+		if (NetworkServer.active && !this.ServerCheckNew())
 		{
-			ServerRevalidateOld();
+			this.ServerRevalidateOld();
 		}
 	}
 
 	protected virtual GameObject GenerateIndicator(BasicRagdoll ragdoll)
 	{
-		return Object.Instantiate(_indicatorTemplate);
+		return Object.Instantiate(this._indicatorTemplate);
 	}
 
 	protected abstract bool ValidateRagdoll(BasicRagdoll ragdoll);
@@ -81,9 +81,9 @@ public abstract class RagdollIndicatorsBase<T> : StandardSubroutine<T> where T :
 	{
 		foreach (BasicRagdoll allRagdoll in RagdollManager.AllRagdolls)
 		{
-			if (ValidateRagdoll(allRagdoll) && !(allRagdoll.Info.ExistenceTime <= _showDelay) && _availableRagdolls.Add(allRagdoll))
+			if (this.ValidateRagdoll(allRagdoll) && !(allRagdoll.Info.ExistenceTime <= this._showDelay) && this._availableRagdolls.Add(allRagdoll))
 			{
-				ServerSendRpc(ListSyncRpcType.Add, allRagdoll);
+				this.ServerSendRpc(ListSyncRpcType.Add, allRagdoll);
 				return true;
 			}
 		}
@@ -92,10 +92,10 @@ public abstract class RagdollIndicatorsBase<T> : StandardSubroutine<T> where T :
 
 	private void ServerRevalidateOld()
 	{
-		if (_availableRagdolls.TryGetFirst((BasicRagdoll x) => !ValidateRagdoll(x), out var first))
+		if (this._availableRagdolls.TryGetFirst((BasicRagdoll x) => !this.ValidateRagdoll(x), out var first))
 		{
-			_availableRagdolls.Remove(first);
-			ServerSendRpc(ListSyncRpcType.Remove, first);
+			this._availableRagdolls.Remove(first);
+			this.ServerSendRpc(ListSyncRpcType.Remove, first);
 		}
 	}
 
@@ -109,26 +109,26 @@ public abstract class RagdollIndicatorsBase<T> : StandardSubroutine<T> where T :
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_availableRagdolls.Clear();
+		this._availableRagdolls.Clear();
 		PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
 		RagdollManager.OnRagdollRemoved -= ClientRemoveRagdoll;
-		_indicatorInstances.ForEachValue(delegate(Indicator x)
+		this._indicatorInstances.ForEachValue(delegate(Indicator x)
 		{
 			Object.Destroy(x.Instance);
 		});
-		_indicatorInstances.Clear();
+		this._indicatorInstances.Clear();
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte((byte)_rpcType);
-		if (_rpcType != 0)
+		writer.WriteByte((byte)this._rpcType);
+		if (this._rpcType != ListSyncRpcType.FullResync)
 		{
-			writer.WriteUInt(_syncRagdoll);
+			writer.WriteUInt(this._syncRagdoll);
 			return;
 		}
-		_availableRagdolls.ForEach(delegate(BasicRagdoll x)
+		this._availableRagdolls.ForEach(delegate(BasicRagdoll x)
 		{
 			writer.WriteUInt(x.netId);
 		});
@@ -137,25 +137,25 @@ public abstract class RagdollIndicatorsBase<T> : StandardSubroutine<T> where T :
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_rpcType = (ListSyncRpcType)reader.ReadByte();
-		switch (_rpcType)
+		this._rpcType = (ListSyncRpcType)reader.ReadByte();
+		switch (this._rpcType)
 		{
 		case ListSyncRpcType.Add:
 		case ListSyncRpcType.Remove:
-			ClientProcessRpcSingularNetId(reader.ReadUInt(), _rpcType);
+			this.ClientProcessRpcSingularNetId(reader.ReadUInt(), this._rpcType);
 			return;
 		case ListSyncRpcType.FullResync:
 			break;
 		default:
 			return;
 		}
-		while (_availableRagdolls.Count > 0)
+		while (this._availableRagdolls.Count > 0)
 		{
-			ClientRemoveRagdoll(_availableRagdolls.First());
+			this.ClientRemoveRagdoll(this._availableRagdolls.First());
 		}
 		while (reader.Remaining > 0)
 		{
-			ClientProcessRpcSingularNetId(reader.ReadUInt(), ListSyncRpcType.Add);
+			this.ClientProcessRpcSingularNetId(reader.ReadUInt(), ListSyncRpcType.Add);
 		}
 	}
 
@@ -166,10 +166,10 @@ public abstract class RagdollIndicatorsBase<T> : StandardSubroutine<T> where T :
 			switch (rpcType)
 			{
 			case ListSyncRpcType.Add:
-				_availableRagdolls.Add(component);
+				this._availableRagdolls.Add(component);
 				break;
 			case ListSyncRpcType.Remove:
-				ClientRemoveRagdoll(component);
+				this.ClientRemoveRagdoll(component);
 				break;
 			}
 		}
@@ -179,25 +179,25 @@ public abstract class RagdollIndicatorsBase<T> : StandardSubroutine<T> where T :
 	{
 		if (NetworkServer.active && newRole is SpectatorRole)
 		{
-			_rpcType = ListSyncRpcType.FullResync;
-			ServerSendRpc(hub);
+			this._rpcType = ListSyncRpcType.FullResync;
+			base.ServerSendRpc(hub);
 		}
 	}
 
 	private void ServerSendRpc(ListSyncRpcType rpcType, BasicRagdoll ragdoll)
 	{
-		_rpcType = rpcType;
-		_syncRagdoll = ragdoll.netId;
-		ServerSendRpc((ReferenceHub x) => x == base.Owner || x.roleManager.CurrentRole is SpectatorRole);
+		this._rpcType = rpcType;
+		this._syncRagdoll = ragdoll.netId;
+		base.ServerSendRpc((ReferenceHub x) => x == base.Owner || x.roleManager.CurrentRole is SpectatorRole);
 	}
 
 	private void ClientRemoveRagdoll(BasicRagdoll ragdoll)
 	{
-		_availableRagdolls.Remove(ragdoll);
-		if (_indicatorInstances.TryGetValue(ragdoll, out var value))
+		this._availableRagdolls.Remove(ragdoll);
+		if (this._indicatorInstances.TryGetValue(ragdoll, out var value))
 		{
 			Object.Destroy(value.Instance);
-			_indicatorInstances.Remove(ragdoll);
+			this._indicatorInstances.Remove(ragdoll);
 		}
 	}
 }

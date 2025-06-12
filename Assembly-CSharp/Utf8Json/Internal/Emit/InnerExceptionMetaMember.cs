@@ -23,7 +23,7 @@ internal class InnerExceptionMetaMember : MetaMember
 
 	public override void EmitLoadValue(ILGenerator il)
 	{
-		il.Emit(OpCodes.Callvirt, getInnerException);
+		il.Emit(OpCodes.Callvirt, InnerExceptionMetaMember.getInnerException);
 	}
 
 	public override void EmitStoreValue(ILGenerator il)
@@ -33,10 +33,10 @@ internal class InnerExceptionMetaMember : MetaMember
 
 	public void EmitSerializeDirectly(ILGenerator il)
 	{
-		argWriter.EmitLoad();
-		argValue.EmitLoad();
-		il.Emit(OpCodes.Callvirt, getInnerException);
-		argResolver.EmitLoad();
-		il.EmitCall(nongenericSerialize);
+		this.argWriter.EmitLoad();
+		this.argValue.EmitLoad();
+		il.Emit(OpCodes.Callvirt, InnerExceptionMetaMember.getInnerException);
+		this.argResolver.EmitLoad();
+		il.EmitCall(InnerExceptionMetaMember.nongenericSerialize);
 	}
 }

@@ -13,11 +13,11 @@ public class MimicryPreviewPlayback : VoiceChatPlaybackBase
 	{
 		get
 		{
-			if (!_playbackSet)
+			if (!this._playbackSet)
 			{
 				return 0;
 			}
-			return _playback.Length;
+			return this._playback.Length;
 		}
 	}
 
@@ -25,9 +25,9 @@ public class MimicryPreviewPlayback : VoiceChatPlaybackBase
 	{
 		get
 		{
-			if (_playbackSet)
+			if (this._playbackSet)
 			{
-				return _playback.ReadHead == _playback.WriteHead;
+				return this._playback.ReadHead == this._playback.WriteHead;
 			}
 			return true;
 		}
@@ -35,28 +35,28 @@ public class MimicryPreviewPlayback : VoiceChatPlaybackBase
 
 	protected override float ReadSample()
 	{
-		return _playback.Read();
+		return this._playback.Read();
 	}
 
 	public void StartPreview(PlaybackBuffer pb, int startIndex, int length)
 	{
-		if (_playbackSet)
+		if (this._playbackSet)
 		{
-			_playback.Clear();
+			this._playback.Clear();
 		}
 		else
 		{
-			_playback = new PlaybackBuffer(pb.Buffer.Length, endlessTapeMode: true);
-			_playbackSet = true;
+			this._playback = new PlaybackBuffer(pb.Buffer.Length, endlessTapeMode: true);
+			this._playbackSet = true;
 		}
-		_playback.Write(pb.Buffer, length, startIndex);
+		this._playback.Write(pb.Buffer, length, startIndex);
 	}
 
 	public void StopPreview()
 	{
-		if (_playbackSet)
+		if (this._playbackSet)
 		{
-			_playback.Clear();
+			this._playback.Clear();
 		}
 	}
 }

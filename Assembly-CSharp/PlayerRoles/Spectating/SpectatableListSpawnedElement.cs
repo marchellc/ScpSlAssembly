@@ -15,7 +15,7 @@ public struct SpectatableListSpawnedElement
 
 	public void ReturnToPool()
 	{
-		FullSize.ReturnToPool();
-		Compact.ReturnToPool();
+		this.FullSize.ReturnToPool();
+		this.Compact.ReturnToPool();
 	}
 }

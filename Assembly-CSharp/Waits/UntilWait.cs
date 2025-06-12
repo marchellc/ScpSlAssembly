@@ -10,13 +10,13 @@ public abstract class UntilWait : Wait
 
 	protected virtual void Awake()
 	{
-		allocatedPredicate = Predicate;
+		this.allocatedPredicate = Predicate;
 	}
 
 	protected abstract bool Predicate();
 
 	public override IEnumerator<float> _Run()
 	{
-		yield return Timing.WaitUntilTrue(allocatedPredicate);
+		yield return Timing.WaitUntilTrue(this.allocatedPredicate);
 	}
 }

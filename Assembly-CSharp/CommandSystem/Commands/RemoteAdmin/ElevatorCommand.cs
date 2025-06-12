@@ -29,11 +29,11 @@ public class ElevatorCommand : ParentCommand, IUsageProvider
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new ElevatorListCommand());
-		RegisterCommand(new ElevatorLockCommand());
-		RegisterCommand(new ElevatorSendCommand());
-		RegisterCommand(new ElevatorTeleportCommand());
-		RegisterCommand(new ElevatorUnlockCommand());
+		this.RegisterCommand(new ElevatorListCommand());
+		this.RegisterCommand(new ElevatorLockCommand());
+		this.RegisterCommand(new ElevatorSendCommand());
+		this.RegisterCommand(new ElevatorTeleportCommand());
+		this.RegisterCommand(new ElevatorUnlockCommand());
 	}
 
 	internal static bool TryParseGroup(string txt, out ElevatorGroup group)

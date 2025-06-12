@@ -30,7 +30,7 @@ public class GeneralKillsHandler : AchievementHandlerBase
 		}
 		if (handler is AttackerDamageHandler attackerDamageHandler && attackerDamageHandler.Attacker.Hub != null)
 		{
-			HandleAttackerKill(deadPlayer, attackerDamageHandler);
+			GeneralKillsHandler.HandleAttackerKill(deadPlayer, attackerDamageHandler);
 		}
 		if (!(handler is ExplosionDamageHandler explosionDamageHandler))
 		{
@@ -40,22 +40,22 @@ public class GeneralKillsHandler : AchievementHandlerBase
 				{
 					if (handler is UniversalDamageHandler universalDamageHandler && universalDamageHandler.TranslationId == DeathTranslations.Tesla.Id && deadPlayer.inventory.CurInstance is MicroHIDItem)
 					{
-						Send(deadPlayer, AchievementName.Overcurrent);
+						GeneralKillsHandler.Send(deadPlayer, AchievementName.Overcurrent);
 					}
 				}
 				else if (microHidDamageHandler.Attacker.Hub != null && deadPlayer.IsSCP())
 				{
-					Send(microHidDamageHandler.Attacker.Hub, AchievementName.MicrowaveMeal);
+					GeneralKillsHandler.Send(microHidDamageHandler.Attacker.Hub, AchievementName.MicrowaveMeal);
 				}
 			}
 			else if (scp939DamageHandler.Attacker.Hub != null)
 			{
-				HandleScp939Kill(deadPlayer, scp939DamageHandler);
+				GeneralKillsHandler.HandleScp939Kill(deadPlayer, scp939DamageHandler);
 			}
 		}
 		else if (explosionDamageHandler.Attacker.Hub != null && explosionDamageHandler.Attacker.Hub != deadPlayer && explosionDamageHandler.ExplosionType == ExplosionType.Grenade)
 		{
-			Send(explosionDamageHandler.Attacker.Hub, AchievementName.FireInTheHole);
+			GeneralKillsHandler.Send(explosionDamageHandler.Attacker.Hub, AchievementName.FireInTheHole);
 		}
 	}
 
@@ -63,7 +63,7 @@ public class GeneralKillsHandler : AchievementHandlerBase
 	{
 		if (deadPlayer.IsHuman() && scp939DH.Attacker.Role == RoleTypeId.Scp939 && deadPlayer.playerEffectsController.TryGetEffect<AmnesiaVision>(out var playerEffect) && playerEffect.IsEnabled && scp939DH.Scp939DamageType == Scp939DamageType.LungeTarget)
 		{
-			Send(scp939DH.Attacker.Hub, AchievementName.AmnesticAmbush);
+			GeneralKillsHandler.Send(scp939DH.Attacker.Hub, AchievementName.AmnesticAmbush);
 		}
 	}
 
@@ -76,13 +76,13 @@ public class GeneralKillsHandler : AchievementHandlerBase
 		case RoleTypeId.Scp0492:
 			if (hub.IsHuman() && aDH is JailbirdDamageHandler)
 			{
-				Send(hub, AchievementName.UndeadSpaceProgram);
+				GeneralKillsHandler.Send(hub, AchievementName.UndeadSpaceProgram);
 			}
 			break;
 		case RoleTypeId.Scp096:
 			if ((deadPlayer.roleManager.CurrentRole as Scp096Role).IsRageState(Scp096RageState.Distressed))
 			{
-				Send(hub, AchievementName.Pacified);
+				GeneralKillsHandler.Send(hub, AchievementName.Pacified);
 			}
 			break;
 		}
@@ -91,25 +91,25 @@ public class GeneralKillsHandler : AchievementHandlerBase
 		case Team.Scientists:
 			if (deadPlayer.IsSCP())
 			{
-				Send(hub, AchievementName.SomethingDoneRight);
+				GeneralKillsHandler.Send(hub, AchievementName.SomethingDoneRight);
 			}
 			break;
 		case Team.ClassD:
 			if (roleId == RoleTypeId.Scientist && deadPlayer.inventory.CurInstance is KeycardItem)
 			{
-				Send(hub, AchievementName.AccessGranted);
+				GeneralKillsHandler.Send(hub, AchievementName.AccessGranted);
 			}
 			break;
 		case Team.SCPs:
 			if (RoundStart.RoundStartTimer.Elapsed.TotalSeconds < 60.0)
 			{
-				Send(hub, AchievementName.AnomalouslyEfficient);
+				GeneralKillsHandler.Send(hub, AchievementName.AnomalouslyEfficient);
 			}
 			break;
 		}
 		if (aDH is FirearmDamageHandler { WeaponType: ItemType.GunRevolver } firearmDamageHandler && (deadPlayer.IsHuman() || deadPlayer.GetRoleId() == RoleTypeId.Scp0492) && firearmDamageHandler.Hitbox == HitboxType.Headshot && !(Vector3.Distance(deadPlayer.transform.position, hub.transform.position) < 25f))
 		{
-			Send(hub, AchievementName.ArizonaRanger);
+			GeneralKillsHandler.Send(hub, AchievementName.ArizonaRanger);
 		}
 	}
 

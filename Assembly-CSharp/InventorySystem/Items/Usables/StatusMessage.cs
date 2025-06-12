@@ -16,13 +16,13 @@ public struct StatusMessage : NetworkMessage
 
 	public StatusMessage(StatusType status, ushort serial)
 	{
-		Status = status;
-		ItemSerial = serial;
+		this.Status = status;
+		this.ItemSerial = serial;
 	}
 
 	public void Serialize(NetworkWriter writer)
 	{
-		writer.WriteByte((byte)Status);
-		writer.WriteUShort(ItemSerial);
+		writer.WriteByte((byte)this.Status);
+		writer.WriteUShort(this.ItemSerial);
 	}
 }

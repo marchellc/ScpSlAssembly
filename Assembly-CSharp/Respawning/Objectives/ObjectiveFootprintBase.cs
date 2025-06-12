@@ -17,27 +17,27 @@ public abstract class ObjectiveFootprintBase
 
 	public virtual void ClientReadRpc(NetworkReader reader)
 	{
-		InfluenceReward = reader.ReadFloat();
-		TimeReward = reader.ReadFloat();
-		AchievingPlayer = new ObjectiveHubFootprint(reader);
+		this.InfluenceReward = reader.ReadFloat();
+		this.TimeReward = reader.ReadFloat();
+		this.AchievingPlayer = new ObjectiveHubFootprint(reader);
 	}
 
 	public virtual void ServerWriteRpc(NetworkWriter writer)
 	{
-		writer.WriteFloat(InfluenceReward);
-		writer.WriteFloat(TimeReward);
-		AchievingPlayer.Write(writer);
+		writer.WriteFloat(this.InfluenceReward);
+		writer.WriteFloat(this.TimeReward);
+		this.AchievingPlayer.Write(writer);
 	}
 
 	public virtual StringBuilder ClientCompletionText(StringBuilder builder)
 	{
-		RoleTypeId roleType = AchievingPlayer.RoleType;
+		RoleTypeId roleType = this.AchievingPlayer.RoleType;
 		Color roleColor = roleType.GetRoleColor();
-		bool flag = TimeReward != 0f;
-		bool num = InfluenceReward != 0f;
+		bool flag = this.TimeReward != 0f;
+		bool num = this.InfluenceReward != 0f;
 		string newValue = string.Empty;
 		string newValue2 = string.Empty;
-		builder.Append(Translations.Get(TargetTranslation));
+		builder.Append(Translations.Get(this.TargetTranslation));
 		builder.Append(Translations.Get(FootprintsTranslation.GenericRewardsDisplay));
 		if (num)
 		{
@@ -51,14 +51,14 @@ public abstract class ObjectiveFootprintBase
 		builder.Replace("%influenceDisplay%", newValue);
 		if (num)
 		{
-			builder.Replace("%influence%", InfluenceReward.ToString());
+			builder.Replace("%influence%", this.InfluenceReward.ToString());
 		}
 		if (flag)
 		{
-			builder.Replace("%time%", TimeReward.ToString());
+			builder.Replace("%time%", this.TimeReward.ToString());
 		}
 		builder.Replace("%achieverColor%", roleColor.ToHex());
-		builder.Replace("%achieverName%", AchievingPlayer.Nickname);
+		builder.Replace("%achieverName%", this.AchievingPlayer.Nickname);
 		builder.Replace("%factionColor%", roleType.GetFaction().GetFactionColor());
 		if (num || flag)
 		{

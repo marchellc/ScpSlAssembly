@@ -19,14 +19,14 @@ public class ArmyOfOneHandler : AchievementHandlerBase
 
 	internal override void OnRoundStarted()
 	{
-		Kills.Clear();
+		ArmyOfOneHandler.Kills.Clear();
 	}
 
 	private static void OnServerRoleSet(ReferenceHub hub, RoleTypeId roleTypeId, RoleChangeReason changeReason)
 	{
 		if (changeReason != RoleChangeReason.Escaped)
 		{
-			Kills.Remove(hub);
+			ArmyOfOneHandler.Kills.Remove(hub);
 		}
 	}
 
@@ -41,19 +41,19 @@ public class ArmyOfOneHandler : AchievementHandlerBase
 		{
 			return;
 		}
-		ItemType itemType = GetItemType(handler);
+		ItemType itemType = ArmyOfOneHandler.GetItemType(handler);
 		if (itemType == ItemType.None)
 		{
 			return;
 		}
-		if (!Kills.TryGetValue(hub, out var value))
+		if (!ArmyOfOneHandler.Kills.TryGetValue(hub, out var value))
 		{
-			Kills[hub] = new List<ItemType> { itemType };
+			ArmyOfOneHandler.Kills[hub] = new List<ItemType> { itemType };
 		}
 		else if (!value.Contains(itemType))
 		{
 			value.Add(itemType);
-			Kills[hub] = value;
+			ArmyOfOneHandler.Kills[hub] = value;
 			if (value.Count >= 4)
 			{
 				AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.ArmyOfOne);
@@ -73,7 +73,7 @@ public class ArmyOfOneHandler : AchievementHandlerBase
 					{
 						if (handler is ExplosionDamageHandler explosionDamageHandler)
 						{
-							return ExplosionToItemType(explosionDamageHandler.ExplosionType);
+							return ArmyOfOneHandler.ExplosionToItemType(explosionDamageHandler.ExplosionType);
 						}
 						return ItemType.None;
 					}

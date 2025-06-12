@@ -7,7 +7,7 @@ public class WarheadDanger : DangerStackBase
 	public override void Initialize(ReferenceHub target)
 	{
 		base.Initialize(target);
-		UpdateState(AlphaWarheadController.InProgress);
+		this.UpdateState(AlphaWarheadController.InProgress);
 		AlphaWarheadController.OnProgressChanged += UpdateState;
 		AlphaWarheadController.OnDetonated += OnDetonated;
 	}
@@ -21,11 +21,11 @@ public class WarheadDanger : DangerStackBase
 
 	private void UpdateState(bool warheadActive)
 	{
-		IsActive = warheadActive && !AlphaWarheadController.Detonated;
+		this.IsActive = warheadActive && !AlphaWarheadController.Detonated;
 	}
 
 	private void OnDetonated()
 	{
-		UpdateState(AlphaWarheadController.InProgress);
+		this.UpdateState(AlphaWarheadController.InProgress);
 	}
 }

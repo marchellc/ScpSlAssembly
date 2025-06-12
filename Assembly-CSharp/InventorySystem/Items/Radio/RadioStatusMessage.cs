@@ -12,22 +12,22 @@ public struct RadioStatusMessage : NetworkMessage
 
 	public void Serialize(NetworkWriter writer)
 	{
-		writer.WriteSByte((sbyte)Range);
-		writer.WriteByte(Battery);
-		writer.WriteUInt(Owner);
+		writer.WriteSByte((sbyte)this.Range);
+		writer.WriteByte(this.Battery);
+		writer.WriteUInt(this.Owner);
 	}
 
 	public RadioStatusMessage(NetworkReader reader)
 	{
-		Range = (RadioMessages.RadioRangeLevel)reader.ReadSByte();
-		Battery = reader.ReadByte();
-		Owner = reader.ReadUInt();
+		this.Range = (RadioMessages.RadioRangeLevel)reader.ReadSByte();
+		this.Battery = reader.ReadByte();
+		this.Owner = reader.ReadUInt();
 	}
 
 	public RadioStatusMessage(RadioItem radio)
 	{
-		Range = radio.RangeLevel;
-		Battery = radio.BatteryPercent;
-		Owner = radio.Owner.netId;
+		this.Range = radio.RangeLevel;
+		this.Battery = radio.BatteryPercent;
+		this.Owner = radio.Owner.netId;
 	}
 }

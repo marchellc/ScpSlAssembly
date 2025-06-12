@@ -12,14 +12,14 @@ public class DisruptorShotEvent : ShotEvent
 	public DisruptorShotEvent(ItemIdentifier shotFirearm, Footprint shooter, DisruptorActionModule.FiringState state)
 		: base(shotFirearm)
 	{
-		State = state;
-		HitregFootprint = shooter;
+		this.State = state;
+		this.HitregFootprint = shooter;
 	}
 
 	public DisruptorShotEvent(Firearm firearm, DisruptorActionModule.FiringState state)
 		: base(new ItemIdentifier(firearm))
 	{
-		State = state;
-		HitregFootprint = new Footprint(firearm.Owner);
+		this.State = state;
+		this.HitregFootprint = new Footprint(firearm.Owner);
 	}
 }

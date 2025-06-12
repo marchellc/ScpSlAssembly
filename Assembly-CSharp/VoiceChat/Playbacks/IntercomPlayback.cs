@@ -17,7 +17,7 @@ public class IntercomPlayback : SingleBufferPlayback, IGlobalPlayback
 
 	private static readonly List<IntercomPlayback> Instances = new List<IntercomPlayback>();
 
-	public bool GlobalChatActive => MaxSamples > 0;
+	public bool GlobalChatActive => this.MaxSamples > 0;
 
 	public Color GlobalChatColor { get; private set; }
 
@@ -30,46 +30,46 @@ public class IntercomPlayback : SingleBufferPlayback, IGlobalPlayback
 	protected override void Awake()
 	{
 		base.Awake();
-		_instancesCnt++;
-		Instances.Add(this);
+		IntercomPlayback._instancesCnt++;
+		IntercomPlayback.Instances.Add(this);
 		GlobalChatIndicatorManager.Subscribe(this, null);
-		if (!_templateSet)
+		if (!IntercomPlayback._templateSet)
 		{
-			_template = this;
-			_isTemplate = true;
-			_templateSet = true;
+			IntercomPlayback._template = this;
+			this._isTemplate = true;
+			IntercomPlayback._templateSet = true;
 		}
 	}
 
 	private void OnDestroy()
 	{
 		GlobalChatIndicatorManager.Unsubscribe(this);
-		if (_isTemplate)
+		if (this._isTemplate)
 		{
-			_templateSet = false;
-			_instancesCnt = 0;
-			Instances.Clear();
+			IntercomPlayback._templateSet = false;
+			IntercomPlayback._instancesCnt = 0;
+			IntercomPlayback.Instances.Clear();
 		}
 	}
 
 	private void SetSpeaker(ReferenceHub speaker)
 	{
-		_lastSpeaker = speaker;
-		GlobalChatName = speaker.nicknameSync.DisplayName;
-		GlobalChatColor = speaker.serverRoles.GetVoiceColor();
+		this._lastSpeaker = speaker;
+		this.GlobalChatName = speaker.nicknameSync.DisplayName;
+		this.GlobalChatColor = speaker.serverRoles.GetVoiceColor();
 	}
 
 	public static void ProcessSamples(ReferenceHub ply, float[] samples, int len)
 	{
-		if (!_templateSet)
+		if (!IntercomPlayback._templateSet)
 		{
 			return;
 		}
 		bool flag = false;
 		IntercomPlayback intercomPlayback = null;
-		for (int i = 0; i < _instancesCnt; i++)
+		for (int i = 0; i < IntercomPlayback._instancesCnt; i++)
 		{
-			IntercomPlayback intercomPlayback2 = Instances[i];
+			IntercomPlayback intercomPlayback2 = IntercomPlayback.Instances[i];
 			if (intercomPlayback2._lastSpeaker == ply)
 			{
 				intercomPlayback2.Buffer.Write(samples, len);
@@ -83,7 +83,7 @@ public class IntercomPlayback : SingleBufferPlayback, IGlobalPlayback
 		}
 		if (!flag)
 		{
-			intercomPlayback = Object.Instantiate(_template);
+			intercomPlayback = Object.Instantiate(IntercomPlayback._template);
 			intercomPlayback.Buffer.Clear();
 		}
 		intercomPlayback.SetSpeaker(ply);

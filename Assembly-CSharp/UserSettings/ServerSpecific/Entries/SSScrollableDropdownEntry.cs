@@ -21,7 +21,7 @@ public class SSScrollableDropdownEntry : SSDropdownEntry, ISSEntry
 	{
 		int num = base.TargetUI.value + 1;
 		base.TargetUI.value = num % base.TargetUI.options.Count;
-		UpdateInteractability();
+		this.UpdateInteractability();
 	}
 
 	public void Prev()
@@ -34,7 +34,7 @@ public class SSScrollableDropdownEntry : SSDropdownEntry, ISSEntry
 		{
 			base.TargetUI.value = base.TargetUI.options.Count - 1;
 		}
-		UpdateInteractability();
+		this.UpdateInteractability();
 	}
 
 	public override bool CheckCompatibility(ServerSpecificSettingBase setting)
@@ -50,28 +50,28 @@ public class SSScrollableDropdownEntry : SSDropdownEntry, ISSEntry
 	{
 		base.Init(setting);
 		SSDropdownSetting.DropdownEntryType entryType = (setting as SSDropdownSetting).EntryType;
-		_loopable = entryType == SSDropdownSetting.DropdownEntryType.ScrollableLoop || entryType == SSDropdownSetting.DropdownEntryType.HybridLoop;
+		this._loopable = entryType == SSDropdownSetting.DropdownEntryType.ScrollableLoop || entryType == SSDropdownSetting.DropdownEntryType.HybridLoop;
 		if (entryType != SSDropdownSetting.DropdownEntryType.Hybrid && entryType != SSDropdownSetting.DropdownEntryType.HybridLoop)
 		{
-			_hybridArrow.SetActive(value: false);
+			this._hybridArrow.SetActive(value: false);
 			base.TargetUI.interactable = false;
 			base.TargetUI.captionText.alignment = TextAlignmentOptions.Center;
 			RectTransform rectTransform = base.TargetUI.captionText.rectTransform;
 			rectTransform.anchoredPosition = new Vector2(0f, rectTransform.anchoredPosition.y);
 		}
-		UpdateInteractability();
+		this.UpdateInteractability();
 		base.TargetUI.onValueChanged.AddListener(delegate
 		{
-			UpdateInteractability();
+			this.UpdateInteractability();
 		});
 	}
 
 	private void UpdateInteractability()
 	{
-		if (!_loopable)
+		if (!this._loopable)
 		{
-			_prevArrow.interactable = base.TargetUI.value > 0;
-			_nextArrow.interactable = base.TargetUI.value < base.TargetUI.options.Count - 1;
+			this._prevArrow.interactable = base.TargetUI.value > 0;
+			this._nextArrow.interactable = base.TargetUI.value < base.TargetUI.options.Count - 1;
 		}
 	}
 }

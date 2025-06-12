@@ -59,22 +59,22 @@ public class MicroHIDThirdperson : ThirdpersonItemBase, ILookatModifier
 	internal override void Initialize(InventorySubcontroller subcontroller, ItemIdentifier id)
 	{
 		base.Initialize(subcontroller, id);
-		SetAnim(AnimState3p.Override0, _animIdle);
-		SetAnim(AnimState3p.Override1, _animWindup);
-		SetAnim(AnimState3p.Override2, _animShoot);
-		_prevPhase = MicroHidPhase.Standby;
-		_cycle = CycleSyncModule.GetCycleController(Serial);
-		_particles.Init(Serial, base.OwnerHub.PlayerCameraReference);
+		base.SetAnim(AnimState3p.Override0, this._animIdle);
+		base.SetAnim(AnimState3p.Override1, this._animWindup);
+		base.SetAnim(AnimState3p.Override2, this._animShoot);
+		this._prevPhase = MicroHidPhase.Standby;
+		this._cycle = CycleSyncModule.GetCycleController(this.Serial);
+		this._particles.Init(this.Serial, base.OwnerHub.PlayerCameraReference);
 	}
 
 	internal override void OnAnimIK(int layerIndex, float ikScale)
 	{
 		base.OnAnimIK(layerIndex, ikScale);
 		AnimatorLayerManager layerManager = base.TargetModel.LayerManager;
-		if (layerIndex == layerManager.GetLayerIndex(_leftHandIkLayer))
+		if (layerIndex == layerManager.GetLayerIndex(this._leftHandIkLayer))
 		{
 			Animator animator = base.TargetModel.Animator;
-			_leftHandIkTarget.GetPositionAndRotation(out var position, out var rotation);
+			this._leftHandIkTarget.GetPositionAndRotation(out var position, out var rotation);
 			animator.SetIKPosition(AvatarIKGoal.LeftHand, position);
 			animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 1f);
 			animator.SetIKRotation(AvatarIKGoal.LeftHand, rotation);
@@ -84,42 +84,42 @@ public class MicroHIDThirdperson : ThirdpersonItemBase, ILookatModifier
 
 	public override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
 	{
-		ThirdpersonLayerWeight weightForLayer = _idleLayerProcessor.GetWeightForLayer(this, layer);
-		ThirdpersonLayerWeight weightForLayer2 = _aimLayerProcessor.GetWeightForLayer(this, layer);
-		return ThirdpersonLayerWeight.Lerp(weightForLayer, weightForLayer2, _lastWindupProgress);
+		ThirdpersonLayerWeight weightForLayer = this._idleLayerProcessor.GetWeightForLayer(this, layer);
+		ThirdpersonLayerWeight weightForLayer2 = this._aimLayerProcessor.GetWeightForLayer(this, layer);
+		return ThirdpersonLayerWeight.Lerp(weightForLayer, weightForLayer2, this._lastWindupProgress);
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		_lastWindupProgress = WindupSyncModule.GetProgress(Serial);
-		base.OverrideBlend = Mathf.Lerp(base.OverrideBlend, 0f, Time.deltaTime * _blendDecayLerpSpeed);
-		UpdatePhase();
-		_prevPhase = _cycle.Phase;
+		this._lastWindupProgress = WindupSyncModule.GetProgress(this.Serial);
+		base.OverrideBlend = Mathf.Lerp(base.OverrideBlend, 0f, Time.deltaTime * this._blendDecayLerpSpeed);
+		this.UpdatePhase();
+		this._prevPhase = this._cycle.Phase;
 	}
 
 	private void UpdatePhase()
 	{
-		switch (_cycle.Phase)
+		switch (this._cycle.Phase)
 		{
 		case MicroHidPhase.WindingUp:
-			if (_prevPhase != MicroHidPhase.WindingUp)
+			if (this._prevPhase != MicroHidPhase.WindingUp)
 			{
-				_windupElapsed = 0f;
-				ReplayOverrideBlend(soft: false);
-				SetAnim(AnimState3p.Override0, _animIdle);
+				this._windupElapsed = 0f;
+				base.ReplayOverrideBlend(soft: false);
+				base.SetAnim(AnimState3p.Override0, this._animIdle);
 			}
 			base.OverrideBlend = 1f;
-			_windupElapsed += Time.deltaTime;
+			this._windupElapsed += Time.deltaTime;
 			break;
 		case MicroHidPhase.WindingDown:
-			if (!(_windupElapsed < _minWindupTime))
+			if (!(this._windupElapsed < this._minWindupTime))
 			{
 				base.OverrideBlend = 0f;
-				if (_prevPhase != MicroHidPhase.WindingDown)
+				if (this._prevPhase != MicroHidPhase.WindingDown)
 				{
-					SetAnim(AnimState3p.Override0, _animWinddown);
-					ReplayOverrideBlend(soft: false);
+					base.SetAnim(AnimState3p.Override0, this._animWinddown);
+					base.ReplayOverrideBlend(soft: false);
 				}
 			}
 			break;
@@ -134,7 +134,7 @@ public class MicroHIDThirdperson : ThirdpersonItemBase, ILookatModifier
 
 	public LookatData ProcessLookat(LookatData data)
 	{
-		float num = 1f - Mathf.Clamp01(_lastWindupProgress * 3f);
+		float num = 1f - Mathf.Clamp01(this._lastWindupProgress * 3f);
 		float num2 = num * num * num;
 		data.BodyWeight = Mathf.Lerp(data.BodyWeight + 0.5f, 1f, 1f - num2);
 		return data;

@@ -24,9 +24,9 @@ public class FlashlightAttachment : SerializableAttachment, ILightEmittingItem
 	{
 		get
 		{
-			if (IsEnabled)
+			if (this.IsEnabled)
 			{
-				return GetEnabled(base.ItemSerial);
+				return FlashlightAttachment.GetEnabled(base.ItemSerial);
 			}
 			return false;
 		}
@@ -40,12 +40,12 @@ public class FlashlightAttachment : SerializableAttachment, ILightEmittingItem
 		}
 		set
 		{
-			if (value != IsEnabled)
+			if (value != this.IsEnabled)
 			{
 				base.IsEnabled = value;
-				if (base.IsServer && !GetEnabled(base.ItemSerial))
+				if (base.IsServer && !FlashlightAttachment.GetEnabled(base.ItemSerial))
 				{
-					ServerSendStatus(status: true);
+					this.ServerSendStatus(status: true);
 				}
 			}
 		}
@@ -55,7 +55,7 @@ public class FlashlightAttachment : SerializableAttachment, ILightEmittingItem
 
 	private void ServerSendStatus(bool status)
 	{
-		SendRpc(delegate(NetworkWriter writer)
+		this.SendRpc(delegate(NetworkWriter writer)
 		{
 			RpcType rpcType = ((!status) ? RpcType.Disabled : RpcType.Enabled);
 			writer.WriteByte((byte)rpcType);
@@ -65,16 +65,16 @@ public class FlashlightAttachment : SerializableAttachment, ILightEmittingItem
 	protected override void EnabledEquipUpdate()
 	{
 		base.EnabledEquipUpdate();
-		if (base.IsControllable && GetActionDown(ActionName.ToggleFlashlight))
+		if (base.IsControllable && base.GetActionDown(ActionName.ToggleFlashlight))
 		{
-			SendCmd();
+			this.SendCmd();
 		}
 	}
 
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		DisabledSerials.Clear();
+		FlashlightAttachment.DisabledSerials.Clear();
 	}
 
 	internal override void OnRemoved(ItemPickupBase pickup)
@@ -82,22 +82,22 @@ public class FlashlightAttachment : SerializableAttachment, ILightEmittingItem
 		base.OnRemoved(pickup);
 		if (base.IsServer)
 		{
-			ServerSendStatus(status: true);
+			this.ServerSendStatus(status: true);
 		}
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (IsEnabled && !base.ItemUsageBlocked)
+		if (this.IsEnabled && !base.ItemUsageBlocked)
 		{
-			bool newState = !GetEnabled(base.ItemSerial);
-			PlayerTogglingWeaponFlashlightEventArgs playerTogglingWeaponFlashlightEventArgs = new PlayerTogglingWeaponFlashlightEventArgs(base.Firearm.Owner, base.Firearm, newState);
-			PlayerEvents.OnTogglingWeaponFlashlight(playerTogglingWeaponFlashlightEventArgs);
-			if (playerTogglingWeaponFlashlightEventArgs.IsAllowed)
+			bool newState = !FlashlightAttachment.GetEnabled(base.ItemSerial);
+			PlayerTogglingWeaponFlashlightEventArgs e = new PlayerTogglingWeaponFlashlightEventArgs(base.Firearm.Owner, base.Firearm, newState);
+			PlayerEvents.OnTogglingWeaponFlashlight(e);
+			if (e.IsAllowed)
 			{
-				newState = playerTogglingWeaponFlashlightEventArgs.NewState;
-				ServerSendStatus(newState);
+				newState = e.NewState;
+				this.ServerSendStatus(newState);
 				PlayerEvents.OnToggledWeaponFlashlight(new PlayerToggledWeaponFlashlightEventArgs(base.Firearm.Owner, base.Firearm, newState));
 			}
 		}
@@ -109,17 +109,17 @@ public class FlashlightAttachment : SerializableAttachment, ILightEmittingItem
 		switch ((RpcType)reader.ReadByte())
 		{
 		case RpcType.Enabled:
-			DisabledSerials.Remove(serial);
+			FlashlightAttachment.DisabledSerials.Remove(serial);
 			break;
 		case RpcType.Disabled:
-			DisabledSerials.Add(serial);
+			FlashlightAttachment.DisabledSerials.Add(serial);
 			break;
 		case RpcType.FullResync:
-			DisabledSerials.Clear();
+			FlashlightAttachment.DisabledSerials.Clear();
 			while (reader.Remaining >= 2)
 			{
 				ushort item = reader.ReadUShort();
-				DisabledSerials.Add(item);
+				FlashlightAttachment.DisabledSerials.Add(item);
 			}
 			break;
 		}
@@ -133,10 +133,10 @@ public class FlashlightAttachment : SerializableAttachment, ILightEmittingItem
 		{
 			return;
 		}
-		SendRpc(hub, delegate(NetworkWriter writer)
+		this.SendRpc(hub, delegate(NetworkWriter writer)
 		{
 			writer.WriteSubheader(RpcType.FullResync);
-			foreach (ushort disabledSerial in DisabledSerials)
+			foreach (ushort disabledSerial in FlashlightAttachment.DisabledSerials)
 			{
 				writer.WriteUShort(disabledSerial);
 			}
@@ -145,6 +145,6 @@ public class FlashlightAttachment : SerializableAttachment, ILightEmittingItem
 
 	public static bool GetEnabled(ushort serial)
 	{
-		return !DisabledSerials.Contains(serial);
+		return !FlashlightAttachment.DisabledSerials.Contains(serial);
 	}
 }

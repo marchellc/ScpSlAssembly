@@ -21,7 +21,7 @@ public class ThrownProjectile : CollisionDetectionPickup
 
 	public virtual void ToggleRenderers(bool state)
 	{
-		_renderersRoot.SetActive(state);
+		this._renderersRoot.SetActive(state);
 	}
 
 	public virtual void ServerOnThrown(Vector3 torque, Vector3 velocity)
@@ -37,7 +37,7 @@ public class ThrownProjectile : CollisionDetectionPickup
 		ThrownProjectile.OnProjectileSpawned = delegate
 		{
 		};
-		HitBlockerMask = new CachedLayerMask("Default", "Glass", "CCTV", "Door");
+		ThrownProjectile.HitBlockerMask = new CachedLayerMask("Default", "Glass", "CCTV", "Door");
 	}
 
 	public override bool Weaved()

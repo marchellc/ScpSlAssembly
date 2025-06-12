@@ -35,14 +35,14 @@ public class RecoilPatternModule : ModuleBase, IDisplayableRecoilProviderModule
 			float num = 0f;
 			for (int i = 0; i < 10; i++)
 			{
-				RecoilSettings recoilSettings = Evaluate(i, scale);
+				RecoilSettings recoilSettings = this.Evaluate(i, scale);
 				num += new Vector2(recoilSettings.SideKick, recoilSettings.UpKick).magnitude;
 			}
 			return num / 10f;
 		}
 	}
 
-	public float DisplayAdsRecoilDegrees => HipToAds(DisplayHipRecoilDegrees);
+	public float DisplayAdsRecoilDegrees => this.HipToAds(this.DisplayHipRecoilDegrees);
 
 	public virtual RecoilSettings Evaluate(int numberOfShots, float scale = 1f)
 	{
@@ -54,7 +54,7 @@ public class RecoilPatternModule : ModuleBase, IDisplayableRecoilProviderModule
 				scale *= recoilScalingModule.RecoilMultiplier;
 			}
 		}
-		return new RecoilSettings(BaseRecoil.AnimationTime, BaseRecoil.ZAxis * ZAxisScale.Evaluate(numberOfShots) * scale, (BaseRecoil.FovKick - 1f) * FovKickScale.Evaluate(numberOfShots) * scale + 1f, BaseRecoil.UpKick * VerticalKickScale.Evaluate(numberOfShots) * scale, BaseRecoil.SideKick * HorizontalKickScale.Evaluate(numberOfShots) * scale);
+		return new RecoilSettings(this.BaseRecoil.AnimationTime, this.BaseRecoil.ZAxis * this.ZAxisScale.Evaluate(numberOfShots) * scale, (this.BaseRecoil.FovKick - 1f) * this.FovKickScale.Evaluate(numberOfShots) * scale + 1f, this.BaseRecoil.UpKick * this.VerticalKickScale.Evaluate(numberOfShots) * scale, this.BaseRecoil.SideKick * this.HorizontalKickScale.Evaluate(numberOfShots) * scale);
 	}
 
 	internal override void OnAdded()
@@ -62,35 +62,35 @@ public class RecoilPatternModule : ModuleBase, IDisplayableRecoilProviderModule
 		base.OnAdded();
 		if (base.Firearm.IsLocalPlayer)
 		{
-			_counter = new SubsequentShotsCounter(base.Firearm);
-			_counter.OnShotRecorded += OnShot;
+			this._counter = new SubsequentShotsCounter(base.Firearm);
+			this._counter.OnShotRecorded += OnShot;
 		}
 	}
 
 	private float HipToAds(float hip)
 	{
 		float modifierValue = base.Firearm.AttachmentsValue(AttachmentParam.AdsRecoilMultiplier);
-		float num = AttachmentsUtils.MixValue(AdsRecoilScale, modifierValue, ParameterMixingMode.Percent);
+		float num = AttachmentsUtils.MixValue(this.AdsRecoilScale, modifierValue, ParameterMixingMode.Percent);
 		return hip * num;
 	}
 
 	private void OnShot()
 	{
-		int subsequentShots = _counter.SubsequentShots;
+		int subsequentShots = this._counter.SubsequentShots;
 		IAdsModule module;
 		float t = (base.Firearm.TryGetModule<IAdsModule>(out module) ? module.AdsAmount : 0f);
 		float num = base.Firearm.AttachmentsValue(AttachmentParam.OverallRecoilMultiplier);
-		float b = HipToAds(num);
-		CameraShakeController.AddEffect(new RecoilShake(Evaluate(subsequentShots, Mathf.Lerp(num, b, t))));
+		float b = this.HipToAds(num);
+		CameraShakeController.AddEffect(new RecoilShake(this.Evaluate(subsequentShots, Mathf.Lerp(num, b, t))));
 	}
 
 	private void Update()
 	{
-		_counter?.Update();
+		this._counter?.Update();
 	}
 
 	private void OnDestroy()
 	{
-		_counter?.Destruct();
+		this._counter?.Destruct();
 	}
 }

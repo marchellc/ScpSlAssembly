@@ -22,10 +22,10 @@ internal class UpnpSearcher : Searcher
 
 	internal UpnpSearcher(IIPAddressesProvider ipprovider)
 	{
-		_ipprovider = ipprovider;
-		UdpClients = CreateUdpClients();
-		_devices = new Dictionary<Uri, NatDevice>();
-		_lastFetched = new Dictionary<IPAddress, DateTime>();
+		this._ipprovider = ipprovider;
+		base.UdpClients = this.CreateUdpClients();
+		this._devices = new Dictionary<Uri, NatDevice>();
+		this._lastFetched = new Dictionary<IPAddress, DateTime>();
 	}
 
 	private List<UdpClient> CreateUdpClients()
@@ -33,7 +33,7 @@ internal class UpnpSearcher : Searcher
 		List<UdpClient> list = new List<UdpClient>();
 		try
 		{
-			foreach (IPAddress item in _ipprovider.UnicastAddresses())
+			foreach (IPAddress item in this._ipprovider.UnicastAddresses())
 			{
 				try
 				{
@@ -53,23 +53,23 @@ internal class UpnpSearcher : Searcher
 
 	protected override void Discover(UdpClient client, CancellationToken cancelationToken)
 	{
-		Discover(client, WellKnownConstants.IPv4MulticastAddress, cancelationToken);
+		this.Discover(client, WellKnownConstants.IPv4MulticastAddress, cancelationToken);
 		if (Socket.OSSupportsIPv6)
 		{
-			Discover(client, WellKnownConstants.IPv6LinkLocalMulticastAddress, cancelationToken);
-			Discover(client, WellKnownConstants.IPv6LinkSiteMulticastAddress, cancelationToken);
+			this.Discover(client, WellKnownConstants.IPv6LinkLocalMulticastAddress, cancelationToken);
+			this.Discover(client, WellKnownConstants.IPv6LinkSiteMulticastAddress, cancelationToken);
 		}
 	}
 
 	private void Discover(UdpClient client, IPAddress address, CancellationToken cancelationToken)
 	{
-		if (!IsValidClient(client.Client, address))
+		if (!this.IsValidClient(client.Client, address))
 		{
 			return;
 		}
-		NextSearch = DateTime.UtcNow.AddSeconds(1.0);
+		base.NextSearch = DateTime.UtcNow.AddSeconds(1.0);
 		IPEndPoint endPoint = new IPEndPoint(address, 1900);
-		string[] serviceTypes = ServiceTypes;
+		string[] serviceTypes = UpnpSearcher.ServiceTypes;
 		for (int i = 0; i < serviceTypes.Length; i++)
 		{
 			string s = DiscoverDeviceMessage.Encode(serviceTypes[i], address);
@@ -121,7 +121,7 @@ internal class UpnpSearcher : Searcher
 			text = Encoding.UTF8.GetString(response);
 			DiscoveryResponseMessage discoveryResponseMessage = new DiscoveryResponseMessage(text);
 			string text2 = discoveryResponseMessage["ST"];
-			if (!IsValidControllerService(text2))
+			if (!UpnpSearcher.IsValidControllerService(text2))
 			{
 				NatDiscoverer.TraceSource.LogWarn("Invalid controller service. Ignoring.");
 				return null;
@@ -129,30 +129,30 @@ internal class UpnpSearcher : Searcher
 			NatDiscoverer.TraceSource.LogInfo("UPnP Response: Router advertised a '{0}' service!!!", text2);
 			Uri uri = new Uri(discoveryResponseMessage["Location"] ?? discoveryResponseMessage["AL"]);
 			NatDiscoverer.TraceSource.LogInfo("Found device at: {0}", uri.ToString());
-			if (_devices.ContainsKey(uri))
+			if (this._devices.ContainsKey(uri))
 			{
 				NatDiscoverer.TraceSource.LogInfo("Already found - Ignored");
-				_devices[uri].Touch();
+				this._devices[uri].Touch();
 				return null;
 			}
-			if (_lastFetched.ContainsKey(endpoint.Address))
+			if (this._lastFetched.ContainsKey(endpoint.Address))
 			{
-				DateTime dateTime = _lastFetched[endpoint.Address];
+				DateTime dateTime = this._lastFetched[endpoint.Address];
 				if (DateTime.Now - dateTime < TimeSpan.FromSeconds(20.0))
 				{
 					return null;
 				}
 			}
-			_lastFetched[endpoint.Address] = DateTime.Now;
+			this._lastFetched[endpoint.Address] = DateTime.Now;
 			NatDiscoverer.TraceSource.LogInfo("{0}:{1}: Fetching service list", uri.Host, uri.Port);
-			UpnpNatDeviceInfo deviceInfo = BuildUpnpNatDeviceInfo(localAddress, uri);
+			UpnpNatDeviceInfo deviceInfo = this.BuildUpnpNatDeviceInfo(localAddress, uri);
 			UpnpNatDevice upnpNatDevice;
-			lock (_devices)
+			lock (this._devices)
 			{
 				upnpNatDevice = new UpnpNatDevice(deviceInfo);
-				if (!_devices.ContainsKey(uri))
+				if (!this._devices.ContainsKey(uri))
 				{
-					_devices.Add(uri, upnpNatDevice);
+					this._devices.Add(uri, upnpNatDevice);
 				}
 			}
 			return upnpNatDevice;
@@ -173,7 +173,7 @@ internal class UpnpSearcher : Searcher
 
 	private static bool IsValidControllerService(string serviceType)
 	{
-		return (from serviceName in ServiceTypes
+		return (from serviceName in UpnpSearcher.ServiceTypes
 			let serviceUrn = "urn:schemas-upnp-org:service:" + serviceName
 			where serviceType.ContainsIgnoreCase(serviceUrn)
 			select new
@@ -198,14 +198,14 @@ internal class UpnpSearcher : Searcher
 			{
 				throw new Exception($"Couldn't get services list: {httpWebResponse.StatusCode} {httpWebResponse.StatusDescription}");
 			}
-			XmlDocument xmlDocument = ReadXmlResponse(webResponse);
+			XmlDocument xmlDocument = UpnpSearcher.ReadXmlResponse(webResponse);
 			NatDiscoverer.TraceSource.LogInfo("{0}: Parsed services list", iPEndPoint);
 			XmlNamespaceManager xmlNamespaceManager = new XmlNamespaceManager(xmlDocument.NameTable);
 			xmlNamespaceManager.AddNamespace("ns", "urn:schemas-upnp-org:device-1-0");
 			foreach (XmlNode item in xmlDocument.SelectNodes("//ns:service", xmlNamespaceManager))
 			{
 				string xmlElementText = item.GetXmlElementText("serviceType");
-				if (IsValidControllerService(xmlElementText))
+				if (UpnpSearcher.IsValidControllerService(xmlElementText))
 				{
 					NatDiscoverer.TraceSource.LogInfo("{0}: Found service: {1}", iPEndPoint, xmlElementText);
 					string xmlElementText2 = item.GetXmlElementText("controlURL");

@@ -23,37 +23,37 @@ public class Scp079AuxGui : Scp079BarBaseGui
 
 	private const string Format = "{0} / {1}";
 
-	protected override string Text => $"{_auxManager.CurrentAuxFloored} / {_auxManager.MaxAux}";
+	protected override string Text => $"{this._auxManager.CurrentAuxFloored} / {this._auxManager.MaxAux}";
 
-	protected override float FillAmount => _auxManager.CurrentAux / _auxManager.MaxAux;
+	protected override float FillAmount => this._auxManager.CurrentAux / this._auxManager.MaxAux;
 
 	internal override void Init(Scp079Role role, ReferenceHub owner)
 	{
 		base.Init(role, owner);
-		role.SubroutineModule.TryGetSubroutine<Scp079AuxManager>(out _auxManager);
-		_sb = new StringBuilder(255);
-		_reducedHeader = BuildHeader(Scp079HudTranslation.AuxRegenReduced);
-		_suspendedHeader = BuildHeader(Scp079HudTranslation.AuxRegenSuspended);
+		role.SubroutineModule.TryGetSubroutine<Scp079AuxManager>(out this._auxManager);
+		this._sb = new StringBuilder(255);
+		this._reducedHeader = this.BuildHeader(Scp079HudTranslation.AuxRegenReduced);
+		this._suspendedHeader = this.BuildHeader(Scp079HudTranslation.AuxRegenSuspended);
 	}
 
 	private string BuildHeader(Scp079HudTranslation header)
 	{
-		_sb.Clear();
-		_sb.Append("<size=");
-		_sb.Append(_blockerHeaderSize);
-		_sb.Append(">");
-		_sb.Append(Translations.Get(header));
-		_sb.Append("</size>");
-		string text = _sb.ToString();
-		RectTransform rectTransform = _textBlockers.rectTransform;
-		rectTransform.sizeDelta = Vector2.Max(rectTransform.sizeDelta, _textBlockers.GetPreferredValues(text));
+		this._sb.Clear();
+		this._sb.Append("<size=");
+		this._sb.Append(this._blockerHeaderSize);
+		this._sb.Append(">");
+		this._sb.Append(Translations.Get(header));
+		this._sb.Append("</size>");
+		string text = this._sb.ToString();
+		RectTransform rectTransform = this._textBlockers.rectTransform;
+		rectTransform.sizeDelta = Vector2.Max(rectTransform.sizeDelta, this._textBlockers.GetPreferredValues(text));
 		return text;
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		_sb.Clear();
+		this._sb.Clear();
 		bool flag = false;
 		float num = 1f;
 		SubroutineBase[] allSubroutines = base.Role.SubroutineModule.AllSubroutines;
@@ -63,21 +63,21 @@ public class Scp079AuxGui : Scp079BarBaseGui
 			{
 				flag = true;
 				num *= auxRegenMultiplier;
-				_sb.Append("\n");
-				_sb.Append(scp079AuxRegenModifier.AuxReductionMessage);
+				this._sb.Append("\n");
+				this._sb.Append(scp079AuxRegenModifier.AuxReductionMessage);
 			}
 		}
 		if (flag)
 		{
 			if (num <= 0f)
 			{
-				_sb.Insert(0, _suspendedHeader);
+				this._sb.Insert(0, this._suspendedHeader);
 			}
 			else
 			{
-				_sb.Insert(0, string.Format(_reducedHeader, num.ToString("0.##%")));
+				this._sb.Insert(0, string.Format(this._reducedHeader, num.ToString("0.##%")));
 			}
 		}
-		_textBlockers.text = _sb.ToString();
+		this._textBlockers.text = this._sb.ToString();
 	}
 }

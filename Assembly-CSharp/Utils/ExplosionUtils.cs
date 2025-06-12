@@ -33,23 +33,24 @@ public static class ExplosionUtils
 
 	public static void ServerExplode(ReferenceHub hub, ExplosionType explosionType)
 	{
-		ServerExplode(hub.transform.position, new Footprint(hub), explosionType);
+		ExplosionUtils.ServerExplode(hub.transform.position, new Footprint(hub), explosionType);
 	}
 
 	public static void ServerExplode(Vector3 position, Footprint footprint, ExplosionType explosionType)
 	{
 		if (InventoryItemLoader.TryGetItem<ThrowableItem>(ItemType.GrenadeHE, out var result) && result.Projectile is ExplosionGrenade settingsReference)
 		{
-			ServerSpawnEffect(position, ItemType.GrenadeHE);
+			ExplosionUtils.ServerSpawnEffect(position, ItemType.GrenadeHE);
 			ExplosionGrenade.Explode(footprint, position, settingsReference, explosionType);
 		}
 	}
 
 	public static void ServerSpawnEffect(Vector3 pos, ItemType targetEffectGrenade)
 	{
-		GrenadeExplosionMessage message = default(GrenadeExplosionMessage);
-		message.GrenadeType = (byte)targetEffectGrenade;
-		message.Pos = new RelativePosition(pos);
-		message.SendToAuthenticated();
+		new GrenadeExplosionMessage
+		{
+			GrenadeType = (byte)targetEffectGrenade,
+			Pos = new RelativePosition(pos)
+		}.SendToAuthenticated();
 	}
 }

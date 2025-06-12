@@ -6,11 +6,11 @@ public readonly struct DisplayAmmoValues
 
 	public readonly int Chambered;
 
-	public int Total => Magazines + Chambered;
+	public int Total => this.Magazines + this.Chambered;
 
 	public DisplayAmmoValues(int magazines = 0, int chambered = 0)
 	{
-		Magazines = magazines;
-		Chambered = chambered;
+		this.Magazines = magazines;
+		this.Chambered = chambered;
 	}
 }

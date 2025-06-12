@@ -39,12 +39,12 @@ public class TeslaGateController : NetworkBehaviour
 
 	private void Awake()
 	{
-		Singleton = this;
+		TeslaGateController.Singleton = this;
 	}
 
 	private void Start()
 	{
-		Timing.RunCoroutine(DelayedStopIdleParticles());
+		Timing.RunCoroutine(this.DelayedStopIdleParticles());
 		NetworkServer.ReplaceHandler<TeslaHitMsg>(ServerReceiveMessage);
 	}
 
@@ -98,9 +98,9 @@ public class TeslaGateController : NetworkBehaviour
 									flag = allGate.IsInIdleRange(allHub);
 									if (flag)
 									{
-										PlayerIdlingTeslaEventArgs playerIdlingTeslaEventArgs = new PlayerIdlingTeslaEventArgs(allHub, allGate);
-										PlayerEvents.OnIdlingTesla(playerIdlingTeslaEventArgs);
-										if (!playerIdlingTeslaEventArgs.IsAllowed)
+										PlayerIdlingTeslaEventArgs e = new PlayerIdlingTeslaEventArgs(allHub, allGate);
+										PlayerEvents.OnIdlingTesla(e);
+										if (!e.IsAllowed)
 										{
 											flag = false;
 										}
@@ -112,9 +112,9 @@ public class TeslaGateController : NetworkBehaviour
 								}
 								if (!flag2 && allGate.PlayerInRange(allHub) && !allGate.InProgress)
 								{
-									PlayerTriggeringTeslaEventArgs playerTriggeringTeslaEventArgs = new PlayerTriggeringTeslaEventArgs(allHub, allGate);
-									PlayerEvents.OnTriggeringTesla(playerTriggeringTeslaEventArgs);
-									if (playerTriggeringTeslaEventArgs.IsAllowed)
+									PlayerTriggeringTeslaEventArgs e2 = new PlayerTriggeringTeslaEventArgs(allHub, allGate);
+									PlayerEvents.OnTriggeringTesla(e2);
+									if (e2.IsAllowed)
 									{
 										hub2 = allHub;
 										flag2 = true;

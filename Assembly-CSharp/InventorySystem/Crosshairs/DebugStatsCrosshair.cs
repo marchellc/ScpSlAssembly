@@ -29,24 +29,24 @@ public class DebugStatsCrosshair : FirearmCrosshairBase
 	protected override void UpdateCrosshair(Firearm firearm, float currentInaccuracy)
 	{
 		DisplayInaccuracyValues combinedDisplayInaccuracy = IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(firearm);
-		_circle.Radius = _radiusRatio * currentInaccuracy;
-		_sb.Clear();
-		AppendValue("Total", currentInaccuracy);
-		_sb.Append("\nDisplay values\n");
-		AppendValue("Hip", combinedDisplayInaccuracy.HipDeg);
-		AppendValue("Running", combinedDisplayInaccuracy.RunningDeg);
-		AppendValue("ADS", combinedDisplayInaccuracy.AdsDeg);
-		AppendValue("Bullet", combinedDisplayInaccuracy.BulletDeg);
-		_text.SetText(_sb);
+		this._circle.Radius = this._radiusRatio * currentInaccuracy;
+		this._sb.Clear();
+		this.AppendValue("Total", currentInaccuracy);
+		this._sb.Append("\nDisplay values\n");
+		this.AppendValue("Hip", combinedDisplayInaccuracy.HipDeg);
+		this.AppendValue("Running", combinedDisplayInaccuracy.RunningDeg);
+		this.AppendValue("ADS", combinedDisplayInaccuracy.AdsDeg);
+		this.AppendValue("Bullet", combinedDisplayInaccuracy.BulletDeg);
+		this._text.SetText(this._sb);
 	}
 
 	private void AppendValue(string label, float accuracy)
 	{
-		_sb.Append(label + ": ");
+		this._sb.Append(label + ": ");
 		for (int i = label.Length; i < 10; i++)
 		{
-			_sb.Append(' ');
+			this._sb.Append(' ');
 		}
-		_sb.Append($"{accuracy:0.000}°\n");
+		this._sb.Append($"{accuracy:0.000}°\n");
 	}
 }

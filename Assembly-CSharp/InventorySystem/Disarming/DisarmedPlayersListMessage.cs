@@ -9,6 +9,6 @@ public readonly struct DisarmedPlayersListMessage : NetworkMessage
 
 	public DisarmedPlayersListMessage(List<DisarmedPlayers.DisarmedEntry> entries)
 	{
-		Entries = entries;
+		this.Entries = entries;
 	}
 }

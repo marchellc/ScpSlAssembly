@@ -32,25 +32,25 @@ public class ChaosKeycardViewmodel : KeycardViewmodel
 
 		private int _highestLevel;
 
-		private KeycardLevels LevelMask => new KeycardLevels(_maskContainment ? 3 : 0, _maskArmory ? 3 : 0, _maskAdmin ? 3 : 0);
+		private KeycardLevels LevelMask => new KeycardLevels(this._maskContainment ? 3 : 0, this._maskArmory ? 3 : 0, this._maskAdmin ? 3 : 0);
 
-		private DoorPermissionFlags PermsMask => LevelMask.Permissions;
+		private DoorPermissionFlags PermsMask => this.LevelMask.Permissions;
 
 		public void Init(Renderer rend, DoorPermissionFlags keycardPerms)
 		{
-			_highestLevel = new KeycardLevels(PermsMask & keycardPerms).HighestLevelValue;
-			for (int i = 0; i < _diodes.Length; i++)
+			this._highestLevel = new KeycardLevels(this.PermsMask & keycardPerms).HighestLevelValue;
+			for (int i = 0; i < this._diodes.Length; i++)
 			{
-				LedDiode ledDiode = _diodes[i];
+				LedDiode ledDiode = this._diodes[i];
 				ledDiode.PropertyBlock = new MaterialPropertyBlock();
 				rend.GetPropertyBlock(ledDiode.PropertyBlock, ledDiode.MaterialId);
-				ledDiode.HasPermission = i < _highestLevel;
+				ledDiode.HasPermission = i < this._highestLevel;
 			}
 		}
 
 		public void SetColorIdle(Color inactive, Color active)
 		{
-			LedDiode[] diodes = _diodes;
+			LedDiode[] diodes = this._diodes;
 			foreach (LedDiode obj in diodes)
 			{
 				obj.SetColor(obj.HasPermission ? active : inactive);
@@ -59,26 +59,26 @@ public class ChaosKeycardViewmodel : KeycardViewmodel
 
 		public string SetPermissionColor(int index, Color active, Color inactive, Color denied, Color granted, DoorPermissionFlags requiredPerms)
 		{
-			int highestLevelValue = new KeycardLevels(requiredPerms & PermsMask).HighestLevelValue;
+			int highestLevelValue = new KeycardLevels(requiredPerms & this.PermsMask).HighestLevelValue;
 			int num = index + 1;
-			LedDiode ledDiode = _diodes[index];
+			LedDiode ledDiode = this._diodes[index];
 			if (num > highestLevelValue)
 			{
 				ledDiode.SetColor(ledDiode.HasPermission ? active : inactive);
 				return null;
 			}
-			if (num > _highestLevel)
+			if (num > this._highestLevel)
 			{
 				ledDiode.SetColor(denied);
-				return "\nEMULATING SIGNAL " + LabelPrefix + num + "...  [ FAILED ]";
+				return "\nEMULATING SIGNAL " + this.LabelPrefix + num + "...  [ FAILED ]";
 			}
 			ledDiode.SetColor(granted);
-			return "\nEMULATING SIGNAL " + LabelPrefix + num + "...  [ SUCCESS ]";
+			return "\nEMULATING SIGNAL " + this.LabelPrefix + num + "...  [ SUCCESS ]";
 		}
 
 		public void UpdateGfx(Renderer renderer)
 		{
-			LedDiode[] diodes = _diodes;
+			LedDiode[] diodes = this._diodes;
 			foreach (LedDiode ledDiode in diodes)
 			{
 				if (ledDiode.Modified)
@@ -107,11 +107,11 @@ public class ChaosKeycardViewmodel : KeycardViewmodel
 
 		public void SetColor(Color color)
 		{
-			if (!(_lastColor == color))
+			if (!(this._lastColor == color))
 			{
-				PropertyBlock.SetColor(ColorHash, color);
-				Modified = true;
-				_lastColor = color;
+				this.PropertyBlock.SetColor(LedDiode.ColorHash, color);
+				this.Modified = true;
+				this._lastColor = color;
 			}
 		}
 	}
@@ -182,13 +182,13 @@ public class ChaosKeycardViewmodel : KeycardViewmodel
 		base.InitAny();
 		ChaosKeycardItem.OnSnakeMovementDirChanged += OnDirChanged;
 		ChaosKeycardItem.OnDetailedUse += OnDetailedUse;
-		TryGetPermissions(out var perms);
-		LedColumn[] diodes = _diodes;
+		this.TryGetPermissions(out var perms);
+		LedColumn[] diodes = this._diodes;
 		for (int i = 0; i < diodes.Length; i++)
 		{
-			diodes[i].Init(_diodeRenderer, perms);
+			diodes[i].Init(this._diodeRenderer, perms);
 		}
-		SetIdle();
+		this.SetIdle();
 	}
 
 	protected override void OnDestroy()
@@ -201,17 +201,17 @@ public class ChaosKeycardViewmodel : KeycardViewmodel
 	internal override void OnEquipped()
 	{
 		base.OnEquipped();
-		SetIdle();
+		this.SetIdle();
 	}
 
 	private void OnDetailedUse(ushort serial, DoorPermissionFlags flags, string reqName)
 	{
 		if (serial == base.ItemId.SerialNumber)
 		{
-			_animReqPerms = flags;
-			_animReqName = Regex.Replace(reqName, "([a-z0-9])([A-Z])", "$1_$2").ToUpperInvariant();
-			_lastHandle.IsRunning = false;
-			_lastHandle = Timing.RunCoroutine(UseAnimation().CancelWith(base.gameObject), Segment.Update);
+			this._animReqPerms = flags;
+			this._animReqName = Regex.Replace(reqName, "([a-z0-9])([A-Z])", "$1_$2").ToUpperInvariant();
+			this._lastHandle.IsRunning = false;
+			this._lastHandle = Timing.RunCoroutine(this.UseAnimation().CancelWith(base.gameObject), Segment.Update);
 		}
 	}
 
@@ -228,49 +228,49 @@ public class ChaosKeycardViewmodel : KeycardViewmodel
 		{
 			return;
 		}
-		AnimatorSetInt(ButtonDirXHash, dir.x);
-		AnimatorSetInt(ButtonDirYHash, dir.y);
-		AnimatorSetTrigger(ButtonTriggerHash);
+		this.AnimatorSetInt(ChaosKeycardViewmodel.ButtonDirXHash, dir.x);
+		this.AnimatorSetInt(ChaosKeycardViewmodel.ButtonDirYHash, dir.y);
+		this.AnimatorSetTrigger(ChaosKeycardViewmodel.ButtonTriggerHash);
 	}
 
 	private void SetRoot(UnityEngine.Object targetActive, float idleWeight = 1f)
 	{
-		AnimatorSetLayerWeight(1, idleWeight);
-		_loadingRoot.SetActive((object)targetActive == _loadingRoot);
-		_normalRoot.SetActive((object)targetActive == _normalRoot);
-		_snakeDisplay.gameObject.SetActive((object)targetActive == _snakeDisplay);
+		this.AnimatorSetLayerWeight(1, idleWeight);
+		this._loadingRoot.SetActive((object)targetActive == this._loadingRoot);
+		this._normalRoot.SetActive((object)targetActive == this._normalRoot);
+		this._snakeDisplay.gameObject.SetActive((object)targetActive == this._snakeDisplay);
 	}
 
 	private void SetIdle()
 	{
-		_consoleText.text = _defaultText;
-		LedColumn[] diodes = _diodes;
+		this._consoleText.text = this._defaultText;
+		LedColumn[] diodes = this._diodes;
 		for (int i = 0; i < diodes.Length; i++)
 		{
-			diodes[i].SetColorIdle(_diodeOff, _diodeBlue);
+			diodes[i].SetColorIdle(this._diodeOff, this._diodeBlue);
 		}
 	}
 
 	private IEnumerator<float> UseAnimation()
 	{
-		SetIdle();
-		_consoleText.text = "INITIATOR DETECTED [ 13.56 MHz ] \nSIGNATURE: " + _animReqName + " \n\nTRANSCEIVING...";
+		this.SetIdle();
+		this._consoleText.text = "INITIATOR DETECTED [ 13.56 MHz ] \nSIGNATURE: " + this._animReqName + " \n\nTRANSCEIVING...";
 		for (int i = 0; i < 3; i++)
 		{
 			yield return Timing.WaitForSeconds(0.2f);
-			LedColumn[] diodes = _diodes;
+			LedColumn[] diodes = this._diodes;
 			for (int j = 0; j < diodes.Length; j++)
 			{
-				string text = diodes[j].SetPermissionColor(i, _diodeBlue, _diodeOff, _diodeRed, _diodeGreen, _animReqPerms);
+				string text = diodes[j].SetPermissionColor(i, this._diodeBlue, this._diodeOff, this._diodeRed, this._diodeGreen, this._animReqPerms);
 				if (!string.IsNullOrEmpty(text))
 				{
-					_consoleText.text += text;
+					this._consoleText.text += text;
 				}
 			}
 		}
-		_consoleText.text += "\n\nEMULATION STOPPING...";
+		this._consoleText.text += "\n\nEMULATION STOPPING...";
 		yield return Timing.WaitForSeconds(1.8f);
-		SetIdle();
+		this.SetIdle();
 	}
 
 	private bool TryGetPermissions(out DoorPermissionFlags perms)
@@ -287,25 +287,25 @@ public class ChaosKeycardViewmodel : KeycardViewmodel
 	protected override void LateUpdate()
 	{
 		base.LateUpdate();
-		LedColumn[] diodes = _diodes;
+		LedColumn[] diodes = this._diodes;
 		for (int i = 0; i < diodes.Length; i++)
 		{
-			diodes[i].UpdateGfx(_diodeRenderer);
+			diodes[i].UpdateGfx(this._diodeRenderer);
 		}
 		if (!KeycardItem.StartInspectTimes.TryGetValue(base.ItemId.SerialNumber, out var value))
 		{
-			SetRoot(_normalRoot);
+			this.SetRoot(this._normalRoot);
 			return;
 		}
 		float num = (float)(NetworkTime.time - value) / 1.7f;
 		if (num < 1f)
 		{
-			SetRoot(_loadingRoot, Mathf.Clamp01(1f - num));
-			_loadingSlider.value = EaseInUtils.ChoppyLoading(num, 0.1666666716337204);
+			this.SetRoot(this._loadingRoot, Mathf.Clamp01(1f - num));
+			this._loadingSlider.value = EaseInUtils.ChoppyLoading(num, 0.1666666716337204);
 		}
 		else
 		{
-			SetRoot(_snakeDisplay, 0f);
+			this.SetRoot(this._snakeDisplay, 0f);
 		}
 	}
 }

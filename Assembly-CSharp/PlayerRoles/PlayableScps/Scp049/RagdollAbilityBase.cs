@@ -27,7 +27,7 @@ public abstract class RagdollAbilityBase<T> : KeySubroutine<T>, ICursorOverride 
 	{
 		get
 		{
-			if (IsInProgress)
+			if (this.IsInProgress)
 			{
 				return base.Owner.isLocalPlayer;
 			}
@@ -41,16 +41,16 @@ public abstract class RagdollAbilityBase<T> : KeySubroutine<T>, ICursorOverride 
 	{
 		get
 		{
-			return _completionTime != 0.0;
+			return this._completionTime != 0.0;
 		}
 		private set
 		{
-			_completionTime = (value ? (NetworkTime.time + (double)Duration) : 0.0);
-			ServerSendRpc(toAll: true);
+			this._completionTime = (value ? (NetworkTime.time + (double)this.Duration) : 0.0);
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
-	public float ProgressStatus => _process.Readiness;
+	public float ProgressStatus => this._process.Readiness;
 
 	protected abstract float RangeSqr { get; }
 
@@ -67,53 +67,53 @@ public abstract class RagdollAbilityBase<T> : KeySubroutine<T>, ICursorOverride 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteNetworkBehaviour(_syncRagdoll);
+		writer.WriteNetworkBehaviour(this._syncRagdoll);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
 		Vector3 position = base.CastRole.FpcModule.Position;
-		_syncRagdoll = reader.ReadNetworkBehaviour<DynamicRagdoll>();
-		if (_syncRagdoll == null)
+		this._syncRagdoll = reader.ReadNetworkBehaviour<DynamicRagdoll>();
+		if (this._syncRagdoll == null)
 		{
-			if (IsInProgress)
+			if (this.IsInProgress)
 			{
-				_errorCode = ServerValidateCancel();
-				if (_errorCode != 0)
+				this._errorCode = this.ServerValidateCancel();
+				if (this._errorCode != 0)
 				{
-					ServerSendRpc(toAll: true);
+					base.ServerSendRpc(toAll: true);
 				}
 				else
 				{
-					IsInProgress = false;
+					this.IsInProgress = false;
 				}
 			}
 		}
 		else
 		{
-			if (IsInProgress || !IsCorpseNearby(position, _syncRagdoll, out var ragdollPosition))
+			if (this.IsInProgress || !this.IsCorpseNearby(position, this._syncRagdoll, out var ragdollPosition))
 			{
 				return;
 			}
-			Transform ragdollTransform = _ragdollTransform;
-			BasicRagdoll curRagdoll = CurRagdoll;
-			_ragdollTransform = ragdollPosition;
-			CurRagdoll = _syncRagdoll;
-			_errorCode = ServerValidateBegin(_syncRagdoll);
-			bool flag = _errorCode != 0;
-			if (flag || !ServerValidateAny())
+			Transform ragdollTransform = this._ragdollTransform;
+			BasicRagdoll curRagdoll = this.CurRagdoll;
+			this._ragdollTransform = ragdollPosition;
+			this.CurRagdoll = this._syncRagdoll;
+			this._errorCode = this.ServerValidateBegin(this._syncRagdoll);
+			bool flag = this._errorCode != 0;
+			if (flag || !this.ServerValidateAny())
 			{
-				_ragdollTransform = ragdollTransform;
-				CurRagdoll = curRagdoll;
+				this._ragdollTransform = ragdollTransform;
+				this.CurRagdoll = curRagdoll;
 				if (flag)
 				{
-					ServerSendRpc(toAll: true);
+					base.ServerSendRpc(toAll: true);
 				}
 			}
 			else
 			{
-				IsInProgress = true;
+				this.IsInProgress = true;
 			}
 		}
 	}
@@ -121,21 +121,21 @@ public abstract class RagdollAbilityBase<T> : KeySubroutine<T>, ICursorOverride 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteNetworkBehaviour(CurRagdoll);
-		writer.WriteDouble(_completionTime);
-		writer.WriteByte(_errorCode);
-		_errorCode = 0;
+		writer.WriteNetworkBehaviour(this.CurRagdoll);
+		writer.WriteDouble(this._completionTime);
+		writer.WriteByte(this._errorCode);
+		this._errorCode = 0;
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		bool flag = IsInProgress && !NetworkServer.active;
-		double completionTime = _completionTime;
-		CurRagdoll = reader.ReadNetworkBehaviour<BasicRagdoll>();
-		_completionTime = reader.ReadDouble();
+		bool flag = this.IsInProgress && !NetworkServer.active;
+		double completionTime = this._completionTime;
+		this.CurRagdoll = reader.ReadNetworkBehaviour<BasicRagdoll>();
+		this._completionTime = reader.ReadDouble();
 		byte b = reader.ReadByte();
-		if (_completionTime != completionTime)
+		if (this._completionTime != completionTime)
 		{
 			if (completionTime == 0.0)
 			{
@@ -149,16 +149,16 @@ public abstract class RagdollAbilityBase<T> : KeySubroutine<T>, ICursorOverride 
 		if (base.Owner.isLocalPlayer && b != 0)
 		{
 			this.OnErrorReceived?.Invoke(b);
-			ClientProcessErrorCode(b);
+			this.ClientProcessErrorCode(b);
 		}
-		OnProgressSet();
-		if (!IsInProgress)
+		this.OnProgressSet();
+		if (!this.IsInProgress)
 		{
-			_process.Clear();
+			this._process.Clear();
 		}
 		else if (!flag)
 		{
-			_process.Trigger((float)(_completionTime - NetworkTime.time));
+			this._process.Trigger((float)(this._completionTime - NetworkTime.time));
 		}
 	}
 
@@ -175,8 +175,8 @@ public abstract class RagdollAbilityBase<T> : KeySubroutine<T>, ICursorOverride 
 	{
 		base.ResetObject();
 		CursorManager.Unregister(this);
-		_completionTime = 0.0;
-		_process.Clear();
+		this._completionTime = 0.0;
+		this._process.Clear();
 	}
 
 	protected abstract void ServerComplete();
@@ -194,7 +194,7 @@ public abstract class RagdollAbilityBase<T> : KeySubroutine<T>, ICursorOverride 
 
 	protected virtual bool ServerValidateAny()
 	{
-		return IsCloseEnough(base.CastRole.FpcModule.Position, _ragdollTransform.position);
+		return this.IsCloseEnough(base.CastRole.FpcModule.Position, this._ragdollTransform.position);
 	}
 
 	protected virtual void ClientProcessErrorCode(byte code)
@@ -204,33 +204,33 @@ public abstract class RagdollAbilityBase<T> : KeySubroutine<T>, ICursorOverride 
 	protected override void Update()
 	{
 		base.Update();
-		if (NetworkServer.active && IsInProgress)
+		if (NetworkServer.active && this.IsInProgress)
 		{
-			if (!ServerValidateAny())
+			if (!this.ServerValidateAny())
 			{
-				IsInProgress = false;
+				this.IsInProgress = false;
 			}
-			else if (!(NetworkTime.time < _completionTime))
+			else if (!(NetworkTime.time < this._completionTime))
 			{
-				ServerComplete();
-				IsInProgress = false;
+				this.ServerComplete();
+				this.IsInProgress = false;
 			}
 		}
 	}
 
 	protected void ClientTryStart()
 	{
-		if (CanFindCorpse(base.Owner.PlayerCameraReference, out var ragdoll) && ClientValidateBegin(ragdoll) && ragdoll is DynamicRagdoll dynamicRagdoll && IsCorpseNearby(base.CastRole.FpcModule.Position, dynamicRagdoll, out var _))
+		if (this.CanFindCorpse(base.Owner.PlayerCameraReference, out var ragdoll) && this.ClientValidateBegin(ragdoll) && ragdoll is DynamicRagdoll dynamicRagdoll && this.IsCorpseNearby(base.CastRole.FpcModule.Position, dynamicRagdoll, out var _))
 		{
-			_syncRagdoll = dynamicRagdoll;
-			ClientSendCmd();
+			this._syncRagdoll = dynamicRagdoll;
+			base.ClientSendCmd();
 		}
 	}
 
 	protected void ClientTryCancel()
 	{
-		_syncRagdoll = null;
-		ClientSendCmd();
+		this._syncRagdoll = null;
+		base.ClientSendCmd();
 	}
 
 	protected virtual bool ClientValidateBegin(BasicRagdoll raycastedRagdoll)
@@ -243,7 +243,7 @@ public abstract class RagdollAbilityBase<T> : KeySubroutine<T>, ICursorOverride 
 		Transform[] linkedRigidbodiesTransforms = ragdoll.LinkedRigidbodiesTransforms;
 		foreach (Transform transform in linkedRigidbodiesTransforms)
 		{
-			if (IsCloseEnough(position, transform.position))
+			if (this.IsCloseEnough(position, transform.position))
 			{
 				ragdollPosition = transform.transform;
 				return true;
@@ -256,7 +256,7 @@ public abstract class RagdollAbilityBase<T> : KeySubroutine<T>, ICursorOverride 
 	private bool CanFindCorpse(Transform tr, out BasicRagdoll ragdoll)
 	{
 		ragdoll = null;
-		if (!Physics.Raycast(tr.position, tr.forward, out var hitInfo, RangeSqr, RaycastBlockMask))
+		if (!Physics.Raycast(tr.position, tr.forward, out var hitInfo, this.RangeSqr, RagdollAbilityBase<T>.RaycastBlockMask))
 		{
 			return false;
 		}
@@ -265,6 +265,6 @@ public abstract class RagdollAbilityBase<T> : KeySubroutine<T>, ICursorOverride 
 
 	private bool IsCloseEnough(Vector3 position, Vector3 ragdollPosition)
 	{
-		return (ragdollPosition - position).sqrMagnitude < RangeSqr;
+		return (ragdollPosition - position).sqrMagnitude < this.RangeSqr;
 	}
 }

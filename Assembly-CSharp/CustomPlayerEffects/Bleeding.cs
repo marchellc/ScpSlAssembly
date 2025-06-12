@@ -22,11 +22,11 @@ public class Bleeding : TickingEffectBase, IPulseEffect, IHealableEffect
 	{
 		if (NetworkServer.active)
 		{
-			float damage = damagePerTick * RainbowTaste.CurrentMultiplier(base.Hub);
+			float damage = this.damagePerTick * RainbowTaste.CurrentMultiplier(base.Hub);
 			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(damage, DeathTranslations.Bleeding));
 			base.Hub.playerEffectsController.ServerSendPulse<Bleeding>();
-			damagePerTick *= multPerTick;
-			damagePerTick = Mathf.Clamp(damagePerTick, minDamage, maxDamage);
+			this.damagePerTick *= this.multPerTick;
+			this.damagePerTick = Mathf.Clamp(this.damagePerTick, this.minDamage, this.maxDamage);
 		}
 	}
 
@@ -34,7 +34,7 @@ public class Bleeding : TickingEffectBase, IPulseEffect, IHealableEffect
 	{
 		if (NetworkServer.active)
 		{
-			damagePerTick = maxDamage;
+			this.damagePerTick = this.maxDamage;
 		}
 	}
 
@@ -42,7 +42,7 @@ public class Bleeding : TickingEffectBase, IPulseEffect, IHealableEffect
 	{
 		if (it == ItemType.SCP500)
 		{
-			damagePerTick = minDamage;
+			this.damagePerTick = this.minDamage;
 		}
 		return it == ItemType.Medkit;
 	}

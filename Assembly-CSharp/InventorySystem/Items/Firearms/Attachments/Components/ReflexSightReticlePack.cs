@@ -7,7 +7,7 @@ public class ReflexSightReticlePack : ScriptableObject
 {
 	public Texture[] Reticles;
 
-	public Texture this[int index] => Reticles[index];
+	public Texture this[int index] => this.Reticles[index];
 
-	public int Length => Reticles.Length;
+	public int Length => this.Reticles.Length;
 }

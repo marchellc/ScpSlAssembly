@@ -24,39 +24,39 @@ public class MimicryTooltipPopup : MonoBehaviour
 
 	private void Awake()
 	{
-		_textLayout = _text.GetComponent<LayoutElement>();
+		this._textLayout = this._text.GetComponent<LayoutElement>();
 	}
 
 	private void Update()
 	{
 		if (MimicryTooltipTarget.TryGetHint(out var hint))
 		{
-			_root.gameObject.SetActive(value: true);
+			this._root.gameObject.SetActive(value: true);
 			float scaleFactor = MimicryMenuController.ScaleFactor;
 			float num = 1f / scaleFactor;
 			float num2 = Input.mousePosition.x * num;
-			float num3 = (Mathf.Min(_text.preferredWidth, _textLayout.preferredWidth) + _panning) / 2f;
+			float num3 = (Mathf.Min(this._text.preferredWidth, this._textLayout.preferredWidth) + this._panning) / 2f;
 			float num4 = (float)Screen.width * num;
 			float a = Mathf.Max(0f, num2 + num3 - num4);
 			a = Mathf.Min(a, num2 - num3);
 			num2 -= a;
 			num2 *= scaleFactor;
-			_arrowOffset.localPosition = Vector3.right * a;
+			this._arrowOffset.localPosition = Vector3.right * a;
 			base.transform.position = new Vector3(num2, Input.mousePosition.y);
-			if (_prevHint != hint)
+			if (this._prevHint != hint)
 			{
-				_prevHint = hint;
-				_text.text = Translations.Get(hint);
+				this._prevHint = hint;
+				this._text.text = Translations.Get(hint);
 			}
 		}
 		else
 		{
-			_root.gameObject.SetActive(value: false);
+			this._root.gameObject.SetActive(value: false);
 		}
 	}
 
 	private void LateUpdate()
 	{
-		_textLayout.enabled = _text.preferredWidth >= _textLayout.preferredWidth;
+		this._textLayout.enabled = this._text.preferredWidth >= this._textLayout.preferredWidth;
 	}
 }

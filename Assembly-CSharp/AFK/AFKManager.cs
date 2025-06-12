@@ -32,23 +32,23 @@ public static class AFKManager
 
 	private static void ConfigReloaded()
 	{
-		_constantlyCheck = ConfigFile.ServerConfig.GetBool("constantly_check_afk");
-		_kickTime = ConfigFile.ServerConfig.GetFloat("afk_time", 90f);
-		_kickMessage = ConfigFile.ServerConfig.GetString("afk_kick_message", "AFK");
-		if (_kickTime <= 0f)
+		AFKManager._constantlyCheck = ConfigFile.ServerConfig.GetBool("constantly_check_afk");
+		AFKManager._kickTime = ConfigFile.ServerConfig.GetFloat("afk_time", 90f);
+		AFKManager._kickMessage = ConfigFile.ServerConfig.GetString("afk_kick_message", "AFK");
+		if (AFKManager._kickTime <= 0f)
 		{
-			if (_eventsStatus)
+			if (AFKManager._eventsStatus)
 			{
-				_eventsStatus = false;
+				AFKManager._eventsStatus = false;
 				ReferenceHub.OnPlayerAdded -= AddPlayer;
 				ReferenceHub.OnPlayerRemoved -= RemovePlayer;
 				StaticUnityMethods.OnUpdate -= OnUpdate;
 				PlayerRoleManager.OnRoleChanged -= RoleChange;
 			}
 		}
-		else if (!_eventsStatus)
+		else if (!AFKManager._eventsStatus)
 		{
-			_eventsStatus = true;
+			AFKManager._eventsStatus = true;
 			ReferenceHub.OnPlayerAdded += AddPlayer;
 			ReferenceHub.OnPlayerRemoved += RemovePlayer;
 			StaticUnityMethods.OnUpdate += OnUpdate;
@@ -58,24 +58,24 @@ public static class AFKManager
 
 	public static void AddPlayer(ReferenceHub hub)
 	{
-		if (NetworkServer.active && !(hub == ReferenceHub.HostHub) && !AFKTimers.ContainsKey(hub) && !PermissionsHandler.IsPermitted(hub.serverRoles.Permissions, PlayerPermissions.AFKImmunity))
+		if (NetworkServer.active && !(hub == ReferenceHub.HostHub) && !AFKManager.AFKTimers.ContainsKey(hub) && !PermissionsHandler.IsPermitted(hub.serverRoles.Permissions, PlayerPermissions.AFKImmunity))
 		{
-			AFKTimers.Add(hub, Stopwatch.StartNew());
+			AFKManager.AFKTimers.Add(hub, Stopwatch.StartNew());
 		}
 	}
 
 	private static void RemovePlayer(ReferenceHub hub)
 	{
-		AFKTimers.Remove(hub);
+		AFKManager.AFKTimers.Remove(hub);
 	}
 
 	private static void RoleChange(ReferenceHub hub, PlayerRoleBase oldRole, PlayerRoleBase newRole)
 	{
-		if (NetworkServer.active && AFKTimers.TryGetValue(hub, out var value))
+		if (NetworkServer.active && AFKManager.AFKTimers.TryGetValue(hub, out var value))
 		{
 			if (PermissionsHandler.IsPermitted(hub.serverRoles.Permissions, PlayerPermissions.AFKImmunity) || hub == ReferenceHub.HostHub)
 			{
-				AFKTimers.Remove(hub);
+				AFKManager.AFKTimers.Remove(hub);
 			}
 			else
 			{
@@ -88,13 +88,13 @@ public static class AFKManager
 	{
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			if (!AFKTimers.TryGetValue(allHub, out var value) || !value.IsRunning || !(allHub.roleManager.CurrentRole is IAFKRole iAFKRole))
+			if (!AFKManager.AFKTimers.TryGetValue(allHub, out var value) || !value.IsRunning || !(allHub.roleManager.CurrentRole is IAFKRole iAFKRole))
 			{
 				continue;
 			}
 			if (!iAFKRole.IsAFK)
 			{
-				if (_constantlyCheck)
+				if (AFKManager._constantlyCheck)
 				{
 					value.Restart();
 				}
@@ -103,11 +103,11 @@ public static class AFKManager
 					value.Reset();
 				}
 			}
-			else if (value.Elapsed.TotalSeconds >= (double)_kickTime)
+			else if (value.Elapsed.TotalSeconds >= (double)AFKManager._kickTime)
 			{
 				value.Reset();
 				AFKManager.OnAFKKick?.Invoke(allHub);
-				BanPlayer.KickUser(allHub, _kickMessage);
+				BanPlayer.KickUser(allHub, AFKManager._kickMessage);
 			}
 		}
 	}

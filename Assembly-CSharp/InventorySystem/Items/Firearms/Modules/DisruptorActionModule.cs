@@ -75,25 +75,25 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 	{
 		get
 		{
-			return _curFiringState;
+			return this._curFiringState;
 		}
 		private set
 		{
-			_curFiringState = value;
-			if (value != 0)
+			this._curFiringState = value;
+			if (value != FiringState.None)
 			{
-				_lastActiveFiringState = value;
+				this._lastActiveFiringState = value;
 			}
 			else
 			{
-				_firingElapsed = 0f;
+				this._firingElapsed = 0f;
 			}
 		}
 	}
 
-	public bool IsFiring => CurFiringState != FiringState.None;
+	public bool IsFiring => this.CurFiringState != FiringState.None;
 
-	public bool IsReloading => GetDisplayReloadingOrUnloading(base.ItemSerial);
+	public bool IsReloading => this.GetDisplayReloadingOrUnloading(base.ItemSerial);
 
 	public bool IsUnloading => false;
 
@@ -101,9 +101,9 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 	{
 		get
 		{
-			if (_magModule.AmmoStored <= 0)
+			if (this._magModule.AmmoStored <= 0)
 			{
-				return CurFiringState != FiringState.None;
+				return this.CurFiringState != FiringState.None;
 			}
 			return true;
 		}
@@ -113,9 +113,9 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 	{
 		get
 		{
-			if (!IsFiring)
+			if (!this.IsFiring)
 			{
-				return IsReloading;
+				return this.IsReloading;
 			}
 			return true;
 		}
@@ -127,12 +127,12 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 	[ExposedFirearmEvent]
 	public void EndShootingAnimation()
 	{
-		CurFiringState = FiringState.None;
-		ReloadRequiredSerials.Add(base.ItemSerial);
+		this.CurFiringState = FiringState.None;
+		DisruptorActionModule.ReloadRequiredSerials.Add(base.ItemSerial);
 		base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.StartReloadOrUnload);
 		if (base.IsServer)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(MessageType.RpcRequireReloadTrue);
 			});
@@ -144,7 +144,7 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 	{
 		if (base.IsServer)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(MessageType.RpcRequireReloadFalse);
 			});
@@ -153,7 +153,7 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 
 	public bool GetDisplayReloadingOrUnloading(ushort serial)
 	{
-		return ReloadRequiredSerials.Contains(serial);
+		return DisruptorActionModule.ReloadRequiredSerials.Contains(serial);
 	}
 
 	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
@@ -162,18 +162,18 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 		switch ((MessageType)reader.ReadByte())
 		{
 		case MessageType.RpcRequireReloadFullResync:
-			ReloadRequiredSerials.Clear();
+			DisruptorActionModule.ReloadRequiredSerials.Clear();
 			while (reader.Remaining > 0)
 			{
-				ReloadRequiredSerials.Add(reader.ReadUShort());
+				DisruptorActionModule.ReloadRequiredSerials.Add(reader.ReadUShort());
 			}
 			break;
 		case MessageType.RpcRequireReloadTrue:
-			ReloadRequiredSerials.Add(serial);
+			DisruptorActionModule.ReloadRequiredSerials.Add(serial);
 			break;
 		case MessageType.RpcRequireReloadFalse:
 		case MessageType.RpcStopFiring:
-			ReloadRequiredSerials.Remove(serial);
+			DisruptorActionModule.ReloadRequiredSerials.Remove(serial);
 			break;
 		case MessageType.RpcOnShot:
 		{
@@ -196,13 +196,13 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 			{
 				bool singleMode = reader.ReadBool();
 				bool last = reader.ReadBool();
-				StartFiring(singleMode, last);
+				this.StartFiring(singleMode, last);
 			}
 			break;
 		case MessageType.RpcStopFiring:
-			base.Firearm.AnimSetTrigger(StopFireHash);
-			CurFiringState = FiringState.None;
-			_audioModule.StopDisruptorShot();
+			base.Firearm.AnimSetTrigger(DisruptorActionModule.StopFireHash);
+			this.CurFiringState = FiringState.None;
+			this._audioModule.StopDisruptorShot();
 			break;
 		}
 	}
@@ -213,11 +213,11 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 		switch ((MessageType)reader.ReadByte())
 		{
 		case MessageType.CmdRequestStartFiring:
-			ServerProcessStartCmd(reader.ReadBool());
+			this.ServerProcessStartCmd(reader.ReadBool());
 			break;
 		case MessageType.CmdConfirmDischarge:
-			_receivedShots.Enqueue(new ShotBacktrackData(reader));
-			ServerUpdateShotRequests();
+			this._receivedShots.Enqueue(new ShotBacktrackData(reader));
+			this.ServerUpdateShotRequests();
 			break;
 		}
 	}
@@ -225,7 +225,7 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 	protected override void OnInit()
 	{
 		base.OnInit();
-		if (!base.Firearm.TryGetModules<MagazineModule, DisruptorModeSelector, DisruptorAudioModule>(out _magModule, out _modeSelector, out _audioModule))
+		if (!base.Firearm.TryGetModules<MagazineModule, DisruptorModeSelector, DisruptorAudioModule>(out this._magModule, out this._modeSelector, out this._audioModule))
 		{
 			throw new NotImplementedException("The DisruptorActionModule does not implement all modules necessary for its operation.");
 		}
@@ -234,22 +234,22 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 	internal override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		UpdateAction();
-		base.Firearm.AnimSetBool(FirearmAnimatorHashes.Reload, IsReloading);
+		this.UpdateAction();
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.Reload, this.IsReloading);
 		if (base.IsControllable)
 		{
-			ClientUpdate();
+			this.ClientUpdate();
 		}
 		if (base.IsServer)
 		{
-			ServerUpdateShotRequests();
+			this.ServerUpdateShotRequests();
 		}
 	}
 
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		ReloadRequiredSerials.Clear();
+		DisruptorActionModule.ReloadRequiredSerials.Clear();
 	}
 
 	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
@@ -257,10 +257,10 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 		base.ServerOnPlayerConnected(hub, firstModule);
 		if (firstModule)
 		{
-			SendRpc(hub, delegate(NetworkWriter x)
+			this.SendRpc(hub, delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(MessageType.RpcRequireReloadFullResync);
-				ReloadRequiredSerials.ForEach(x.WriteUShort);
+				DisruptorActionModule.ReloadRequiredSerials.ForEach(x.WriteUShort);
 			});
 		}
 	}
@@ -268,19 +268,19 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 	internal override void OnRemoved(ItemPickupBase pickupBase)
 	{
 		base.OnRemoved(pickupBase);
-		if (!(pickupBase is FirearmPickup firearmPickup) || pickupBase == null || !TryGetCurStateTimes(out var times) || !firearmPickup.Worldmodel.TryGetExtension<DisruptorWorldmodelActionExtension>(out var extension))
+		if (!(pickupBase is FirearmPickup firearmPickup) || pickupBase == null || !this.TryGetCurStateTimes(out var times) || !firearmPickup.Worldmodel.TryGetExtension<DisruptorWorldmodelActionExtension>(out var extension))
 		{
 			return;
 		}
 		float[] array = new float[times.Length];
 		for (int i = 0; i < times.Length; i++)
 		{
-			array[i] = times[i] - _firingElapsed;
+			array[i] = times[i] - this._firingElapsed;
 		}
-		extension.ServerScheduleShot(new Footprint(base.Firearm.Owner), CurFiringState, array);
+		extension.ServerScheduleShot(new Footprint(base.Firearm.Owner), this.CurFiringState, array);
 		if (base.IsServer)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(MessageType.RpcRequireReloadTrue);
 			});
@@ -289,31 +289,31 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 
 	private void UpdateAction()
 	{
-		if (!TryGetCurStateTimes(out var times))
+		if (!this.TryGetCurStateTimes(out var times))
 		{
 			return;
 		}
-		float num = _firingElapsed + Time.deltaTime;
+		float num = this._firingElapsed + Time.deltaTime;
 		float[] array = times;
 		foreach (float num2 in array)
 		{
-			if (!(num2 <= _firingElapsed) && !(num2 > num))
+			if (!(num2 <= this._firingElapsed) && !(num2 > num))
 			{
-				TriggerFire();
+				this.TriggerFire();
 			}
 		}
-		_firingElapsed = num;
+		this._firingElapsed = num;
 	}
 
 	private bool TryGetCurStateTimes(out float[] times)
 	{
-		switch (CurFiringState)
+		switch (this.CurFiringState)
 		{
 		case FiringState.FiringRapid:
-			times = _rapidShotTimes;
+			times = this._rapidShotTimes;
 			return true;
 		case FiringState.FiringSingle:
-			times = _singleShotTimes;
+			times = this._singleShotTimes;
 			return true;
 		default:
 			times = null;
@@ -325,13 +325,13 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 	{
 		if (base.IsServer)
 		{
-			_shotTickets.Enqueue(NetworkTime.time);
-			ServerUpdateShotRequests();
+			this._shotTickets.Enqueue(NetworkTime.time);
+			this.ServerUpdateShotRequests();
 		}
 		if (base.IsLocalPlayer)
 		{
-			ShotEventManager.Trigger(new DisruptorShotEvent(base.Firearm, CurFiringState));
-			SendCmd(delegate(NetworkWriter writer)
+			ShotEventManager.Trigger(new DisruptorShotEvent(base.Firearm, this.CurFiringState));
+			this.SendCmd(delegate(NetworkWriter writer)
 			{
 				writer.WriteSubheader(MessageType.CmdConfirmDischarge);
 				writer.WriteBacktrackData(new ShotBacktrackData(base.Firearm));
@@ -341,11 +341,11 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 
 	private void ServerUpdateShotRequests()
 	{
-		if (!_shotTickets.TryPeek(out var result))
+		if (!this._shotTickets.TryPeek(out var result))
 		{
 			return;
 		}
-		if (_receivedShots.TryDequeue(out var dequeued))
+		if (this._receivedShots.TryDequeue(out var dequeued))
 		{
 			dequeued.ProcessShot(base.Firearm, ServerFire);
 		}
@@ -355,35 +355,35 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 			{
 				return;
 			}
-			ServerFire(null);
+			this.ServerFire(null);
 		}
-		_shotTickets.Dequeue();
+		this._shotTickets.Dequeue();
 	}
 
 	private void ServerProcessStartCmd(bool ads)
 	{
-		if (IsReloading || CurFiringState != 0 || _magModule.AmmoStored == 0)
+		if (this.IsReloading || this.CurFiringState != FiringState.None || this._magModule.AmmoStored == 0)
 		{
 			return;
 		}
-		PlayerShootingWeaponEventArgs playerShootingWeaponEventArgs = new PlayerShootingWeaponEventArgs(base.Firearm.Owner, base.Firearm);
-		PlayerEvents.OnShootingWeapon(playerShootingWeaponEventArgs);
-		if (!playerShootingWeaponEventArgs.IsAllowed)
+		PlayerShootingWeaponEventArgs e = new PlayerShootingWeaponEventArgs(base.Firearm.Owner, base.Firearm);
+		PlayerEvents.OnShootingWeapon(e);
+		if (!e.IsAllowed)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(MessageType.RpcStopFiring);
 			});
 			return;
 		}
-		bool last = _magModule.AmmoStored == 1;
-		SendRpc(delegate(NetworkWriter x)
+		bool last = this._magModule.AmmoStored == 1;
+		this.SendRpc(delegate(NetworkWriter x)
 		{
 			x.WriteSubheader(MessageType.RpcStartFiring);
 			x.WriteBool(ads);
 			x.WriteBool(last);
 		});
-		_magModule.ServerModifyAmmo(-1);
+		this._magModule.ServerModifyAmmo(-1);
 		PlayerEvents.OnShotWeapon(new PlayerShotWeaponEventArgs(base.Firearm.Owner, base.Firearm));
 	}
 
@@ -391,27 +391,27 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 	{
 		if (base.Firearm.TryGetModule<IHitregModule>(out var module))
 		{
-			module.Fire(primaryTarget, new DisruptorShotEvent(base.Firearm, _lastActiveFiringState));
+			module.Fire(primaryTarget, new DisruptorShotEvent(base.Firearm, this._lastActiveFiringState));
 		}
-		SendRpc((ReferenceHub hub) => hub != base.Firearm.Owner, delegate(NetworkWriter x)
+		this.SendRpc((ReferenceHub hub) => hub != base.Firearm.Owner, delegate(NetworkWriter x)
 		{
 			x.WriteSubheader(MessageType.RpcOnShot);
-			x.WriteByte((byte)_lastActiveFiringState);
+			x.WriteByte((byte)this._lastActiveFiringState);
 		});
 	}
 
 	private void ClientUpdate()
 	{
-		if (!base.Firearm.AnyModuleBusy() && GetAction(ActionName.Shoot) && !base.PrimaryActionBlocked && !IsReloading && CurFiringState == FiringState.None)
+		if (!base.Firearm.AnyModuleBusy() && base.GetAction(ActionName.Shoot) && !base.PrimaryActionBlocked && !this.IsReloading && this.CurFiringState == FiringState.None)
 		{
 			if (!base.IsServer)
 			{
-				StartFiring(_modeSelector.SingleShotSelected, _magModule.AmmoStored <= 1);
+				this.StartFiring(this._modeSelector.SingleShotSelected, this._magModule.AmmoStored <= 1);
 			}
-			SendCmd(delegate(NetworkWriter x)
+			this.SendCmd(delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(MessageType.CmdRequestStartFiring);
-				x.WriteBool(_modeSelector.SingleShotSelected);
+				x.WriteBool(this._modeSelector.SingleShotSelected);
 			});
 		}
 	}
@@ -420,14 +420,14 @@ public class DisruptorActionModule : ModuleBase, IReloaderModule, IActionModule,
 	{
 		if (singleMode)
 		{
-			CurFiringState = FiringState.FiringSingle;
-			base.Firearm.AnimSetTrigger(last ? FireSingleLastHash : FireSingleNormalHash);
+			this.CurFiringState = FiringState.FiringSingle;
+			base.Firearm.AnimSetTrigger(last ? DisruptorActionModule.FireSingleLastHash : DisruptorActionModule.FireSingleNormalHash);
 		}
 		else
 		{
-			CurFiringState = FiringState.FiringRapid;
-			base.Firearm.AnimSetTrigger(last ? FireRapidLastHash : FireRapidNormalHash);
+			this.CurFiringState = FiringState.FiringRapid;
+			base.Firearm.AnimSetTrigger(last ? DisruptorActionModule.FireRapidLastHash : DisruptorActionModule.FireRapidNormalHash);
 		}
-		_audioModule.PlayDisruptorShot(singleMode, last);
+		this._audioModule.PlayDisruptorShot(singleMode, last);
 	}
 }

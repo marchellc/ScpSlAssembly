@@ -19,13 +19,13 @@ public class TargetDisplayDropdown : MonoBehaviour
 
 	private void Awake()
 	{
-		_dropdown = GetComponent<TMP_Dropdown>();
-		_dropdown.onValueChanged.AddListener(DisplayVideoSettings.ChangeDisplay);
+		this._dropdown = base.GetComponent<TMP_Dropdown>();
+		this._dropdown.onValueChanged.AddListener(DisplayVideoSettings.ChangeDisplay);
 	}
 
 	private void OnEnable()
 	{
-		RefreshValue();
+		this.RefreshValue();
 		DisplayVideoSettings.OnDisplayChanged += RefreshValue;
 	}
 
@@ -36,20 +36,20 @@ public class TargetDisplayDropdown : MonoBehaviour
 
 	private void RefreshValue()
 	{
-		Screen.GetDisplayLayout(Displays);
-		UpdateOptions();
-		_dropdown.SetValueWithoutNotify(DisplayVideoSettings.CurrentDisplayIndex);
+		Screen.GetDisplayLayout(TargetDisplayDropdown.Displays);
+		this.UpdateOptions();
+		this._dropdown.SetValueWithoutNotify(DisplayVideoSettings.CurrentDisplayIndex);
 	}
 
 	private void UpdateOptions()
 	{
-		List<TMP_Dropdown.OptionData> options = _dropdown.options;
-		int count = Displays.Count;
+		List<TMP_Dropdown.OptionData> options = this._dropdown.options;
+		int count = TargetDisplayDropdown.Displays.Count;
 		int num = options.Count;
 		for (int i = 0; i < count; i++)
 		{
-			DisplayInfo displayInfo = Displays[i];
-			string text = $"{displayInfo.name} <size={_fontSize}>({displayInfo.width} × {displayInfo.height} - {displayInfo.refreshRate.value} Hz)</size>";
+			DisplayInfo displayInfo = TargetDisplayDropdown.Displays[i];
+			string text = $"{displayInfo.name} <size={this._fontSize}>({displayInfo.width} × {displayInfo.height} - {displayInfo.refreshRate.value} Hz)</size>";
 			if (i < num)
 			{
 				options[i].text = text;
@@ -63,17 +63,17 @@ public class TargetDisplayDropdown : MonoBehaviour
 		{
 			options.RemoveRange(count, num2);
 		}
-		_dropdown.interactable = count > 1;
-		_dropdown.RefreshShownValue();
+		this._dropdown.interactable = count > 1;
+		this._dropdown.RefreshShownValue();
 	}
 
 	private void Update()
 	{
-		Screen.GetDisplayLayout(Displays);
-		if (_prevCount != Displays.Count)
+		Screen.GetDisplayLayout(TargetDisplayDropdown.Displays);
+		if (this._prevCount != TargetDisplayDropdown.Displays.Count)
 		{
-			UpdateOptions();
-			_prevCount = Displays.Count;
+			this.UpdateOptions();
+			this._prevCount = TargetDisplayDropdown.Displays.Count;
 		}
 	}
 }

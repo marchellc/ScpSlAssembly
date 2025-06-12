@@ -15,31 +15,31 @@ public abstract class PrimitiveHintParameter<TValue> : HintParameter
 
 	protected PrimitiveHintParameter(Func<NetworkReader, TValue> deserializer, Action<NetworkWriter, TValue> serializer)
 	{
-		_deserializer = deserializer;
-		_serializer = serializer;
+		this._deserializer = deserializer;
+		this._serializer = serializer;
 	}
 
 	protected PrimitiveHintParameter(TValue value, Func<NetworkReader, TValue> deserializer, Action<NetworkWriter, TValue> serializer)
 		: this(deserializer, serializer)
 	{
-		Value = value;
+		this.Value = value;
 	}
 
 	public override void Deserialize(NetworkReader reader)
 	{
-		Value = _deserializer(reader);
+		this.Value = this._deserializer(reader);
 	}
 
 	public override void Serialize(NetworkWriter writer)
 	{
-		_serializer(writer, Value);
+		this._serializer(writer, this.Value);
 	}
 
 	protected override string UpdateState(float progress)
 	{
-		if (!_stopFormatting)
+		if (!this._stopFormatting)
 		{
-			return FormatValue(progress, out _stopFormatting);
+			return this.FormatValue(progress, out this._stopFormatting);
 		}
 		return null;
 	}
@@ -47,6 +47,6 @@ public abstract class PrimitiveHintParameter<TValue> : HintParameter
 	protected virtual string FormatValue(float progress, out bool stopFormatting)
 	{
 		stopFormatting = true;
-		return Value.ToString();
+		return this.Value.ToString();
 	}
 }

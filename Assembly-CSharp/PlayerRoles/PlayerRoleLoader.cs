@@ -17,17 +17,17 @@ public static class PlayerRoleLoader
 	{
 		get
 		{
-			if (!_loaded)
+			if (!PlayerRoleLoader._loaded)
 			{
-				LoadRoles();
+				PlayerRoleLoader.LoadRoles();
 			}
-			return _loadedRoles;
+			return PlayerRoleLoader._loadedRoles;
 		}
 	}
 
 	public static bool TryGetRoleTemplate<T>(RoleTypeId roleType, out T result)
 	{
-		if (!AllRoles.TryGetValue(roleType, out var value) || !(value is T val))
+		if (!PlayerRoleLoader.AllRoles.TryGetValue(roleType, out var value) || !(value is T val))
 		{
 			result = default(T);
 			return false;
@@ -38,7 +38,7 @@ public static class PlayerRoleLoader
 
 	private static void LoadRoles()
 	{
-		_loadedRoles = new Dictionary<RoleTypeId, PlayerRoleBase>();
+		PlayerRoleLoader._loadedRoles = new Dictionary<RoleTypeId, PlayerRoleBase>();
 		PlayerRoleBase[] array = Resources.LoadAll<PlayerRoleBase>("Defined Roles");
 		Array.Sort(array, (PlayerRoleBase x, PlayerRoleBase y) => ((int)x.RoleTypeId).CompareTo((int)y.RoleTypeId));
 		PlayerRoleBase[] array2 = array;
@@ -46,11 +46,11 @@ public static class PlayerRoleLoader
 		{
 			if (!(playerRoleBase is IHolidayRole { IsAvailable: false }) && playerRoleBase.gameObject.activeSelf)
 			{
-				_loadedRoles[playerRoleBase.RoleTypeId] = playerRoleBase;
+				PlayerRoleLoader._loadedRoles[playerRoleBase.RoleTypeId] = playerRoleBase;
 				PoolManager.Singleton.TryAddPool(playerRoleBase);
 			}
 		}
-		_loaded = true;
-		OnLoaded?.Invoke();
+		PlayerRoleLoader._loaded = true;
+		PlayerRoleLoader.OnLoaded?.Invoke();
 	}
 }

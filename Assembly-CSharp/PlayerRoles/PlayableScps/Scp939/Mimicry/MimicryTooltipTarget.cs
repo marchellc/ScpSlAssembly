@@ -12,40 +12,40 @@ public class MimicryTooltipTarget : MonoBehaviour, IPointerEnterHandler, IEventS
 
 	public void OnPointerEnter(PointerEventData eventData)
 	{
-		_curTarget = this;
+		MimicryTooltipTarget._curTarget = this;
 	}
 
 	public void OnPointerExit(PointerEventData eventData)
 	{
-		Deselect();
+		this.Deselect();
 	}
 
 	public void OnPointerDown(PointerEventData eventData)
 	{
-		Deselect();
+		this.Deselect();
 	}
 
 	private void OnDisable()
 	{
-		Deselect();
+		this.Deselect();
 	}
 
 	private void Deselect()
 	{
-		if (!(_curTarget != this))
+		if (!(MimicryTooltipTarget._curTarget != this))
 		{
-			_curTarget = null;
+			MimicryTooltipTarget._curTarget = null;
 		}
 	}
 
 	internal static bool TryGetHint(out Scp939HudTranslation hint)
 	{
-		if (_curTarget == null)
+		if (MimicryTooltipTarget._curTarget == null)
 		{
 			hint = Scp939HudTranslation.PressKeyToLunge;
 			return false;
 		}
-		hint = _curTarget._targetHint;
+		hint = MimicryTooltipTarget._curTarget._targetHint;
 		return true;
 	}
 }

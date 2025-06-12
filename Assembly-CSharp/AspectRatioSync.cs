@@ -24,12 +24,12 @@ public class AspectRatioSync : NetworkBehaviour
 		[CompilerGenerated]
 		get
 		{
-			return _003CXScreenEdge_003Ek__BackingField;
+			return this._003CXScreenEdge_003Ek__BackingField;
 		}
 		[CompilerGenerated]
 		private set
 		{
-			Network_003CXScreenEdge_003Ek__BackingField = value;
+			this.Network_003CXScreenEdge_003Ek__BackingField = value;
 		}
 	} = 35f;
 
@@ -41,12 +41,12 @@ public class AspectRatioSync : NetworkBehaviour
 	{
 		get
 		{
-			return XScreenEdge;
+			return this.XScreenEdge;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref XScreenEdge, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.XScreenEdge, 1uL, null);
 		}
 	}
 
@@ -56,18 +56,18 @@ public class AspectRatioSync : NetworkBehaviour
 	{
 		if (base.isLocalPlayer)
 		{
-			Camera component = GetComponent<ReferenceHub>().PlayerCameraReference.GetComponent<Camera>();
-			_defaultCameraFieldOfView = ((component == null) ? 70f : component.fieldOfView);
-			YScreenEdge = _defaultCameraFieldOfView / 2f;
+			Camera component = base.GetComponent<ReferenceHub>().PlayerCameraReference.GetComponent<Camera>();
+			AspectRatioSync._defaultCameraFieldOfView = ((component == null) ? 70f : component.fieldOfView);
+			AspectRatioSync.YScreenEdge = AspectRatioSync._defaultCameraFieldOfView / 2f;
 		}
 	}
 
 	private void UpdateAspectRatio()
 	{
-		_savedWidth = Screen.width;
-		_savedHeight = Screen.height;
+		this._savedWidth = Screen.width;
+		this._savedHeight = Screen.height;
 		float aspectRatio = (float)Screen.width / (float)Screen.height;
-		CmdSetAspectRatio(aspectRatio);
+		this.CmdSetAspectRatio(aspectRatio);
 	}
 
 	private void FixedUpdate()
@@ -79,13 +79,13 @@ public class AspectRatioSync : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteFloat(aspectRatio);
-		SendCommandInternal("System.Void AspectRatioSync::CmdSetAspectRatio(System.Single)", -837572567, writer, 4);
+		base.SendCommandInternal("System.Void AspectRatioSync::CmdSetAspectRatio(System.Single)", -837572567, writer, 4);
 		NetworkWriterPool.Return(writer);
 	}
 
 	static AspectRatioSync()
 	{
-		YScreenEdge = 35f;
+		AspectRatioSync.YScreenEdge = 35f;
 		RemoteProcedureCalls.RegisterCommand(typeof(AspectRatioSync), "System.Void AspectRatioSync::CmdSetAspectRatio(System.Single)", InvokeUserCode_CmdSetAspectRatio__Single, requiresAuthority: true);
 	}
 
@@ -100,10 +100,10 @@ public class AspectRatioSync : NetworkBehaviour
 		{
 			aspectRatio = 1f;
 		}
-		AspectRatio = aspectRatio;
-		float num = Mathf.Tan(_defaultCameraFieldOfView * (MathF.PI / 180f) * 0.5f);
-		Network_003CXScreenEdge_003Ek__BackingField = Mathf.Atan(num * aspectRatio) * 57.29578f;
-		XplusY = XScreenEdge + YScreenEdge;
+		this.AspectRatio = aspectRatio;
+		float num = Mathf.Tan(AspectRatioSync._defaultCameraFieldOfView * (MathF.PI / 180f) * 0.5f);
+		this.Network_003CXScreenEdge_003Ek__BackingField = Mathf.Atan(num * aspectRatio) * 57.29578f;
+		this.XplusY = this.XScreenEdge + AspectRatioSync.YScreenEdge;
 	}
 
 	protected static void InvokeUserCode_CmdSetAspectRatio__Single(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -123,13 +123,13 @@ public class AspectRatioSync : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteFloat(XScreenEdge);
+			writer.WriteFloat(this.XScreenEdge);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteFloat(XScreenEdge);
+			writer.WriteFloat(this.XScreenEdge);
 		}
 	}
 
@@ -138,13 +138,13 @@ public class AspectRatioSync : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref XScreenEdge, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this.XScreenEdge, null, reader.ReadFloat());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref XScreenEdge, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this.XScreenEdge, null, reader.ReadFloat());
 		}
 	}
 }

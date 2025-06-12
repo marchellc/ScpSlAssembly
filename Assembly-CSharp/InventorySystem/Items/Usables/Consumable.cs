@@ -25,9 +25,9 @@ public abstract class Consumable : UsableItem, IItemProgressbarDrawer, IItemDraw
 	{
 		get
 		{
-			if (_showProgressBar)
+			if (this._showProgressBar)
 			{
-				return !AllowHolster;
+				return !this.AllowHolster;
 			}
 			return false;
 		}
@@ -35,7 +35,7 @@ public abstract class Consumable : UsableItem, IItemProgressbarDrawer, IItemDraw
 
 	public float ProgressbarMin => 0f;
 
-	public float ProgressbarMax => _realActivationTime;
+	public float ProgressbarMax => this._realActivationTime;
 
 	public float ProgressbarValue { get; private set; }
 
@@ -45,9 +45,9 @@ public abstract class Consumable : UsableItem, IItemProgressbarDrawer, IItemDraw
 	{
 		get
 		{
-			if (_useStopwatch.IsRunning)
+			if (this._useStopwatch.IsRunning)
 			{
-				return _useStopwatch.Elapsed.TotalSeconds >= (double)_realActivationTime;
+				return this._useStopwatch.Elapsed.TotalSeconds >= (double)this._realActivationTime;
 			}
 			return true;
 		}
@@ -57,9 +57,9 @@ public abstract class Consumable : UsableItem, IItemProgressbarDrawer, IItemDraw
 	{
 		get
 		{
-			if (NetworkServer.active && !_alreadyActivated && _useStopwatch.IsRunning)
+			if (NetworkServer.active && !this._alreadyActivated && this._useStopwatch.IsRunning)
 			{
-				return _useStopwatch.Elapsed.TotalSeconds >= (double)_realActivationTime;
+				return this._useStopwatch.Elapsed.TotalSeconds >= (double)this._realActivationTime;
 			}
 			return false;
 		}
@@ -68,69 +68,69 @@ public abstract class Consumable : UsableItem, IItemProgressbarDrawer, IItemDraw
 	public override void OnEquipped()
 	{
 		base.OnEquipped();
-		_realActivationTime = _activationTime;
+		this._realActivationTime = this._activationTime;
 	}
 
 	public override void OnUsingStarted()
 	{
 		base.OnUsingStarted();
-		ProgressbarValue = 0f;
-		_useStopwatch.Restart();
-		_realActivationTime = _activationTime;
-		if (ItemTypeId.TryGetSpeedMultiplier(base.Owner, out var multiplier) && multiplier != 0f)
+		this.ProgressbarValue = 0f;
+		this._useStopwatch.Restart();
+		this._realActivationTime = this._activationTime;
+		if (base.ItemTypeId.TryGetSpeedMultiplier(base.Owner, out var multiplier) && multiplier != 0f)
 		{
-			_realActivationTime /= multiplier;
+			this._realActivationTime /= multiplier;
 		}
 	}
 
 	public override void OnUsingCancelled()
 	{
 		base.OnUsingCancelled();
-		_useStopwatch.Stop();
-		_realActivationTime = _activationTime;
+		this._useStopwatch.Stop();
+		this._realActivationTime = this._activationTime;
 	}
 
 	public override void ServerOnUsingCompleted()
 	{
 		base.OwnerInventory.NetworkCurItem = ItemIdentifier.None;
 		base.OwnerInventory.CurInstance = null;
-		if (!_alreadyActivated)
+		if (!this._alreadyActivated)
 		{
-			ActivateEffects();
+			this.ActivateEffects();
 		}
-		ServerRemoveSelf();
+		base.ServerRemoveSelf();
 	}
 
 	public override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (IsLocalPlayer && ProgressbarEnabled)
+		if (this.IsLocalPlayer && this.ProgressbarEnabled)
 		{
-			ProgressbarValue += Time.deltaTime;
+			this.ProgressbarValue += Time.deltaTime;
 		}
-		if (ActivationReady)
+		if (this.ActivationReady)
 		{
-			ActivateEffects();
+			this.ActivateEffects();
 		}
 	}
 
 	public override void OnHolstered()
 	{
 		base.OnHolstered();
-		if (NetworkServer.active && _alreadyActivated)
+		if (NetworkServer.active && this._alreadyActivated)
 		{
-			ServerRemoveSelf();
+			base.ServerRemoveSelf();
 		}
 	}
 
 	public override void OnRemoved(ItemPickupBase pickup)
 	{
 		base.OnRemoved(pickup);
-		if (ActivationReady)
+		if (this.ActivationReady)
 		{
-			ActivateEffects();
+			this.ActivateEffects();
 		}
-		if (_alreadyActivated && pickup != null)
+		if (this._alreadyActivated && pickup != null)
 		{
 			pickup.DestroySelf();
 		}
@@ -144,8 +144,8 @@ public abstract class Consumable : UsableItem, IItemProgressbarDrawer, IItemDraw
 	{
 		if (NetworkServer.active)
 		{
-			OnEffectsActivated();
-			_alreadyActivated = true;
+			this.OnEffectsActivated();
+			this._alreadyActivated = true;
 		}
 	}
 

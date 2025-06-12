@@ -29,10 +29,10 @@ public class ElevatorListCommand : ICommand
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
 		stringBuilder.Append("Detected the following elevators:");
 		ElevatorGroup[] values = EnumUtils<ElevatorGroup>.Values;
-		foreach (ElevatorGroup group in values)
+		foreach (ElevatorGroup num in values)
 		{
 			stringBuilder.Append("\n- ");
-			AppendElevatorData(group, getLevels, stringBuilder);
+			ElevatorListCommand.AppendElevatorData(num, getLevels, stringBuilder);
 		}
 		response = stringBuilder.ToString();
 		StringBuilderPool.Shared.Return(stringBuilder);
@@ -76,12 +76,12 @@ public class ElevatorListCommand : ICommand
 		{
 			sb.Append(" and PARTIALLY administratively locked");
 		}
-		else if (chamber.ActiveLocksAllDoors != 0)
+		else if (chamber.ActiveLocksAllDoors != DoorLockReason.None)
 		{
 			sb.Append(" and locked");
 			flag = true;
 		}
-		else if (chamber.ActiveLocksAnyDoors != 0)
+		else if (chamber.ActiveLocksAnyDoors != DoorLockReason.None)
 		{
 			sb.Append(" and PARTIALLY locked");
 		}
@@ -90,17 +90,17 @@ public class ElevatorListCommand : ICommand
 		{
 			return;
 		}
-		for (int i = 0; i < doorsForGroup.Count; i++)
+		for (int num = 0; num < doorsForGroup.Count; num++)
 		{
-			Vector3 position = doorsForGroup[i].transform.position;
-			sb.AppendFormat("\n-   Level {0} at height {1}", i, Mathf.Round(position.y));
+			Vector3 position = doorsForGroup[num].transform.position;
+			sb.AppendFormat("\n-   Level {0} at height {1}", num, Mathf.Round(position.y));
 			if (RoomIdentifier.RoomsByCoords.TryGetValue(RoomUtils.PositionToCoords(position), out var value))
 			{
 				sb.AppendFormat(" (room: \"{0}\")", value.Name);
 			}
-			if (!(doorsForGroup[i].ActiveLocks == 0 || flag))
+			if (!(doorsForGroup[num].ActiveLocks == 0 || flag))
 			{
-				sb.Append(((DoorLockReason)doorsForGroup[i].ActiveLocks).HasFlagFast(DoorLockReason.AdminCommand) ? " (administratively locked)" : " (locked)");
+				sb.Append(((DoorLockReason)doorsForGroup[num].ActiveLocks).HasFlagFast(DoorLockReason.AdminCommand) ? " (administratively locked)" : " (locked)");
 			}
 		}
 		sb.Append('\n');

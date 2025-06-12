@@ -18,18 +18,18 @@ public class ServerTime : NetworkBehaviour
 	{
 		get
 		{
-			return timeFromStartup;
+			return this.timeFromStartup;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref timeFromStartup, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.timeFromStartup, 1uL, null);
 		}
 	}
 
 	public static bool CheckSynchronization(int myTime)
 	{
-		int num = Mathf.Abs(myTime - time);
+		int num = Mathf.Abs(myTime - ServerTime.time);
 		if (num > 2)
 		{
 			Console.AddLog("Damage sync error.", new Color32(byte.MaxValue, 200, 0, byte.MaxValue));
@@ -39,10 +39,10 @@ public class ServerTime : NetworkBehaviour
 
 	private void Update()
 	{
-		_rateLimit = false;
-		if (timeFromStartup != 0)
+		this._rateLimit = false;
+		if (this.timeFromStartup != 0)
 		{
-			time = timeFromStartup;
+			ServerTime.time = this.timeFromStartup;
 		}
 	}
 
@@ -50,13 +50,13 @@ public class ServerTime : NetworkBehaviour
 	{
 		if (base.isLocalPlayer && NetworkServer.active)
 		{
-			InvokeRepeating("IncreaseTime", 1f, 1f);
+			base.InvokeRepeating("IncreaseTime", 1f, 1f);
 		}
 	}
 
 	private void IncreaseTime()
 	{
-		NetworktimeFromStartup = timeFromStartup + 1;
+		this.NetworktimeFromStartup = this.timeFromStartup + 1;
 	}
 
 	public override bool Weaved()
@@ -69,13 +69,13 @@ public class ServerTime : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteInt(timeFromStartup);
+			writer.WriteInt(this.timeFromStartup);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteInt(timeFromStartup);
+			writer.WriteInt(this.timeFromStartup);
 		}
 	}
 
@@ -84,13 +84,13 @@ public class ServerTime : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref timeFromStartup, null, reader.ReadInt());
+			base.GeneratedSyncVarDeserialize(ref this.timeFromStartup, null, reader.ReadInt());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref timeFromStartup, null, reader.ReadInt());
+			base.GeneratedSyncVarDeserialize(ref this.timeFromStartup, null, reader.ReadInt());
 		}
 	}
 }

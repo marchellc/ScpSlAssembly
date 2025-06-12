@@ -7,11 +7,11 @@ public class Scp1344XrayProviderBase : MonoBehaviour
 {
 	private StatusEffectBase _statusEffect;
 
-	public ReferenceHub Hub => _statusEffect.Hub;
+	public ReferenceHub Hub => this._statusEffect.Hub;
 
 	public virtual void OnInit(StatusEffectBase scp1344fx)
 	{
-		_statusEffect = scp1344fx;
+		this._statusEffect = scp1344fx;
 	}
 
 	public virtual void OnVisionEnabled()

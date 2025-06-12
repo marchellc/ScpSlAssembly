@@ -47,12 +47,12 @@ public class DynamicHumeShieldController : HumeShieldModuleBase, IPoolSpawnable,
 	{
 		get
 		{
-			_blockersCount -= _blockers.RemoveWhere((IHumeShieldBlocker x) => (x is Object @object && @object == null) || x == null || !x.HumeShieldBlocked);
-			return _blockersCount > 0;
+			this._blockersCount -= this._blockers.RemoveWhere((IHumeShieldBlocker x) => (x is Object obj && obj == null) || x == null || !x.HumeShieldBlocked);
+			return this._blockersCount > 0;
 		}
 	}
 
-	public virtual AudioClip ShieldBreakSound => _shieldBreakSound;
+	public virtual AudioClip ShieldBreakSound => this._shieldBreakSound;
 
 	public virtual bool ServerPlayBreakSound
 	{
@@ -60,7 +60,7 @@ public class DynamicHumeShieldController : HumeShieldModuleBase, IPoolSpawnable,
 		{
 			if (base.Owner.IsSCP())
 			{
-				return ShieldBreakSound != null;
+				return this.ShieldBreakSound != null;
 			}
 			return false;
 		}
@@ -70,7 +70,7 @@ public class DynamicHumeShieldController : HumeShieldModuleBase, IPoolSpawnable,
 	{
 		get
 		{
-			float num = ShieldOverHealth.Evaluate(_hp.NormalizedValue);
+			float num = this.ShieldOverHealth.Evaluate(this._hp.NormalizedValue);
 			if (RoleAssigner.ScpsOverflowing)
 			{
 				num *= RoleAssigner.ScpOverflowMaxHsMultiplier;
@@ -83,11 +83,11 @@ public class DynamicHumeShieldController : HumeShieldModuleBase, IPoolSpawnable,
 	{
 		get
 		{
-			if (!(_nextRegenTime < NetworkTime.time) || IsBlocked)
+			if (!(this._nextRegenTime < NetworkTime.time) || this.IsBlocked)
 			{
 				return 0f;
 			}
-			return RegenerationRate;
+			return this.RegenerationRate;
 		}
 	}
 
@@ -95,7 +95,7 @@ public class DynamicHumeShieldController : HumeShieldModuleBase, IPoolSpawnable,
 	{
 		get
 		{
-			if (!IsBlocked)
+			if (!this.IsBlocked)
 			{
 				return null;
 			}
@@ -103,28 +103,29 @@ public class DynamicHumeShieldController : HumeShieldModuleBase, IPoolSpawnable,
 		}
 	}
 
-	public override bool HideWhenEmpty => _hideWhenEmpty;
+	public override bool HideWhenEmpty => this._hideWhenEmpty;
 
 	public void AddBlocker(IHumeShieldBlocker blocker)
 	{
-		if (_blockers.Add(blocker))
+		if (this._blockers.Add(blocker))
 		{
-			_blockersCount++;
+			this._blockersCount++;
 		}
 	}
 
 	public void ResumeRegen()
 	{
-		_nextRegenTime = 0.0;
+		this._nextRegenTime = 0.0;
 	}
 
 	public override void OnHsValueChanged(float prevValue, float newValue)
 	{
-		if (NetworkServer.active && !(newValue > 0f) && !(prevValue <= 0f) && ServerPlayBreakSound)
+		if (NetworkServer.active && !(newValue > 0f) && !(prevValue <= 0f) && this.ServerPlayBreakSound)
 		{
-			ShieldBreakMessage message = default(ShieldBreakMessage);
-			message.Target = base.Owner;
-			NetworkServer.SendToReady(message);
+			NetworkServer.SendToReady(new ShieldBreakMessage
+			{
+				Target = base.Owner
+			});
 		}
 	}
 
@@ -132,11 +133,11 @@ public class DynamicHumeShieldController : HumeShieldModuleBase, IPoolSpawnable,
 	{
 		base.SpawnObject();
 		PlayerStats playerStats = base.Owner.playerStats;
-		_hp = playerStats.GetModule<HealthStat>();
+		this._hp = playerStats.GetModule<HealthStat>();
 		playerStats.OnThisPlayerDamaged += OnDamaged;
 		if (NetworkServer.active)
 		{
-			base.HsCurrent = ShieldOverHealth.Evaluate(1f);
+			base.HsCurrent = this.ShieldOverHealth.Evaluate(1f);
 		}
 	}
 
@@ -146,18 +147,18 @@ public class DynamicHumeShieldController : HumeShieldModuleBase, IPoolSpawnable,
 		{
 			base.Owner.playerStats.OnThisPlayerDamaged -= OnDamaged;
 		}
-		RegenerationCooldown = _initialRegenCooldown;
-		RegenerationRate = _initialRegenRate;
-		_nextRegenTime = 0.0;
-		_blockersCount = 0;
-		_blockers.Clear();
+		this.RegenerationCooldown = this._initialRegenCooldown;
+		this.RegenerationRate = this._initialRegenRate;
+		this._nextRegenTime = 0.0;
+		this._blockersCount = 0;
+		this._blockers.Clear();
 	}
 
 	private void OnDamaged(DamageHandlerBase dhb)
 	{
 		if (NetworkServer.active)
 		{
-			_nextRegenTime = NetworkTime.time + (double)RegenerationCooldown;
+			this._nextRegenTime = NetworkTime.time + (double)this.RegenerationCooldown;
 		}
 	}
 
@@ -180,7 +181,7 @@ public class DynamicHumeShieldController : HumeShieldModuleBase, IPoolSpawnable,
 
 	private void Awake()
 	{
-		_initialRegenCooldown = RegenerationCooldown;
-		_initialRegenRate = RegenerationRate;
+		this._initialRegenCooldown = this.RegenerationCooldown;
+		this._initialRegenRate = this.RegenerationRate;
 	}
 }

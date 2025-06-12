@@ -14,11 +14,11 @@ public class Scp1344Orb : MonoBehaviour
 	{
 		get
 		{
-			return ParticleSystem.emission.enabled;
+			return this.ParticleSystem.emission.enabled;
 		}
 		set
 		{
-			ParticleSystem.EmissionModule emission = ParticleSystem.emission;
+			ParticleSystem.EmissionModule emission = this.ParticleSystem.emission;
 			emission.enabled = value;
 		}
 	}
@@ -27,11 +27,11 @@ public class Scp1344Orb : MonoBehaviour
 	{
 		get
 		{
-			return ParticleSystem.main.startColor.color;
+			return this.ParticleSystem.main.startColor.color;
 		}
 		set
 		{
-			ParticleSystem.MainModule main = ParticleSystem.main;
+			ParticleSystem.MainModule main = this.ParticleSystem.main;
 			main.startColor = new ParticleSystem.MinMaxGradient(value);
 		}
 	}
@@ -40,11 +40,11 @@ public class Scp1344Orb : MonoBehaviour
 	{
 		get
 		{
-			return _tr.position;
+			return this._tr.position;
 		}
 		set
 		{
-			_tr.position = value;
+			this._tr.position = value;
 		}
 	}
 
@@ -52,11 +52,11 @@ public class Scp1344Orb : MonoBehaviour
 	{
 		get
 		{
-			return _tr.localScale;
+			return this._tr.localScale;
 		}
 		set
 		{
-			_tr.localScale = value;
+			this._tr.localScale = value;
 		}
 	}
 
@@ -64,7 +64,7 @@ public class Scp1344Orb : MonoBehaviour
 
 	private void Awake()
 	{
-		_tr = base.transform;
+		this._tr = base.transform;
 	}
 
 	private void OnDestroy()

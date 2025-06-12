@@ -8,6 +8,6 @@ public class ParticleSystemUntilWait : UntilWait
 
 	protected override bool Predicate()
 	{
-		return !particleSystem.IsAlive();
+		return !this.particleSystem.IsAlive();
 	}
 }

@@ -28,11 +28,11 @@ public class KeycardGfx : MonoBehaviour
 	[SerializeField]
 	private Renderer _mainRenderer;
 
-	private IIdentifierProvider IdProvider => _idProvider ?? (_idProvider = GetComponentInParent<IIdentifierProvider>(includeInactive: true));
+	private IIdentifierProvider IdProvider => this._idProvider ?? (this._idProvider = base.GetComponentInParent<IIdentifierProvider>(includeInactive: true));
 
-	private KeycardMaterialHandler Material => _keycardMaterial ?? (_keycardMaterial = new KeycardMaterialHandler(_mainRenderer));
+	private KeycardMaterialHandler Material => this._keycardMaterial ?? (this._keycardMaterial = new KeycardMaterialHandler(this._mainRenderer));
 
-	public ItemIdentifier ParentId => IdProvider.ItemId;
+	public ItemIdentifier ParentId => this.IdProvider.ItemId;
 
 	public bool IsSubjectForIconRendering { get; private set; }
 
@@ -56,37 +56,37 @@ public class KeycardGfx : MonoBehaviour
 
 	public void SetTint(Color color)
 	{
-		Material instance = Material.Instance;
-		instance.SetColor(TintColorHash, color);
-		if (IsSubjectForIconRendering)
+		Material instance = this.Material.Instance;
+		instance.SetColor(KeycardGfx.TintColorHash, color);
+		if (this.IsSubjectForIconRendering)
 		{
-			instance.SetFloat(IgnoreDistanceTintHash, 1f);
+			instance.SetFloat(KeycardGfx.IgnoreDistanceTintHash, 1f);
 		}
 	}
 
 	public void SetAsIconSubject()
 	{
-		IsSubjectForIconRendering = true;
+		this.IsSubjectForIconRendering = true;
 	}
 
 	public void SetPermissions(KeycardLevels levels, Color? color = null)
 	{
-		if (!(_mainRenderer == null))
+		if (!(this._mainRenderer == null))
 		{
-			Material instance = Material.Instance;
-			instance.SetFloat(ContainmentLevelStepHash, LevelToStep[levels.Containment]);
-			instance.SetFloat(ArmoryLevelStepHash, LevelToStep[levels.Armory]);
-			instance.SetFloat(AdminLevelStepHash, LevelToStep[levels.Admin]);
+			Material instance = this.Material.Instance;
+			instance.SetFloat(KeycardGfx.ContainmentLevelStepHash, KeycardGfx.LevelToStep[levels.Containment]);
+			instance.SetFloat(KeycardGfx.ArmoryLevelStepHash, KeycardGfx.LevelToStep[levels.Armory]);
+			instance.SetFloat(KeycardGfx.AdminLevelStepHash, KeycardGfx.LevelToStep[levels.Admin]);
 			if (color.HasValue)
 			{
-				instance.SetColor(PermsColorHash, color.Value);
+				instance.SetColor(KeycardGfx.PermsColorHash, color.Value);
 			}
 		}
 	}
 
 	public void OnAllDetailsApplied()
 	{
-		if (IdProvider is KeycardViewmodel { IsLocal: not false } keycardViewmodel && keycardViewmodel.ParentItem.TryGetComponent<AutoIconApplier>(out var component))
+		if (this.IdProvider is KeycardViewmodel { IsLocal: not false } keycardViewmodel && keycardViewmodel.ParentItem.TryGetComponent<AutoIconApplier>(out var component))
 		{
 			component.UpdateIcon();
 		}
@@ -103,6 +103,6 @@ public class KeycardGfx : MonoBehaviour
 	private void OnDestroy()
 	{
 		KeycardDetailSynchronizer.UnregisterReceiver(this);
-		_keycardMaterial?.Cleanup();
+		this._keycardMaterial?.Cleanup();
 	}
 }

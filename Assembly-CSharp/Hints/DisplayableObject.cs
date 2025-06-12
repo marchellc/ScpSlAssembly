@@ -8,16 +8,16 @@ public abstract class DisplayableObject<TData> : NetworkObject<TData>
 
 	protected DisplayableObject(float durationScalar = 1f)
 	{
-		DurationScalar = durationScalar;
+		this.DurationScalar = durationScalar;
 	}
 
 	public override void Deserialize(NetworkReader reader)
 	{
-		DurationScalar = reader.ReadFloat();
+		this.DurationScalar = reader.ReadFloat();
 	}
 
 	public override void Serialize(NetworkWriter writer)
 	{
-		writer.WriteFloat(DurationScalar);
+		writer.WriteFloat(this.DurationScalar);
 	}
 }

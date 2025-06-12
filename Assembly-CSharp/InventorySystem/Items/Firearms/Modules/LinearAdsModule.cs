@@ -29,10 +29,10 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 		{
 			get
 			{
-				double num = _lastUpdate.Elapsed.TotalSeconds * (double)_adjustSpeed;
-				double num2 = 1f - _lastOffset;
+				double num = this._lastUpdate.Elapsed.TotalSeconds * (double)this._adjustSpeed;
+				double num2 = 1f - this._lastOffset;
 				float num3 = Mathf.Clamp01((float)(num + num2));
-				if (!AdsTarget)
+				if (!this.AdsTarget)
 				{
 					return 1f - num3;
 				}
@@ -42,20 +42,20 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 
 		public void Update(bool target, float speed, out bool targetChanged, out bool speedChanged)
 		{
-			speedChanged = speed != _adjustSpeed;
-			targetChanged = AdsTarget != target;
+			speedChanged = speed != this._adjustSpeed;
+			targetChanged = this.AdsTarget != target;
 			if (speedChanged)
 			{
-				_adjustSpeed = speed;
+				this._adjustSpeed = speed;
 			}
 			if (targetChanged)
 			{
-				_lastOffset = AdsAmount;
-				_lastUpdate.Restart();
-				AdsTarget = target;
-				if (AdsTarget)
+				this._lastOffset = this.AdsAmount;
+				this._lastUpdate.Restart();
+				this.AdsTarget = target;
+				if (this.AdsTarget)
 				{
-					_lastOffset = 1f - _lastOffset;
+					this._lastOffset = 1f - this._lastOffset;
 				}
 			}
 		}
@@ -65,13 +65,13 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 			float num = reader.ReadFloat();
 			bool target = num > 0f;
 			float speed = Mathf.Abs(num);
-			Update(target, speed, out var _, out var _);
+			this.Update(target, speed, out var _, out var _);
 		}
 
 		public void Reset()
 		{
-			AdsTarget = false;
-			_lastOffset = 0f;
+			this.AdsTarget = false;
+			this._lastOffset = 0f;
 		}
 	}
 
@@ -126,9 +126,9 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 
 	private readonly AdsData _clientData = new AdsData();
 
-	private float EffectiveHipInaccuracy => BaseHipInaccuracy * base.Firearm.AttachmentsValue(AttachmentParam.HipInaccuracyMultiplier);
+	private float EffectiveHipInaccuracy => this.BaseHipInaccuracy * base.Firearm.AttachmentsValue(AttachmentParam.HipInaccuracyMultiplier);
 
-	private float EffectiveAdsInaccuracy => BaseAdsInaccuracy * base.Firearm.AttachmentsValue(AttachmentParam.AdsInaccuracyMultiplier);
+	private float EffectiveAdsInaccuracy => this.BaseAdsInaccuracy * base.Firearm.AttachmentsValue(AttachmentParam.AdsInaccuracyMultiplier);
 
 	protected virtual bool AllowAds
 	{
@@ -156,7 +156,7 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 
 	protected virtual bool ForceAdsInput => false;
 
-	public DisplayInaccuracyValues DisplayInaccuracy => new DisplayInaccuracyValues(EffectiveHipInaccuracy, EffectiveAdsInaccuracy, EffectiveHipInaccuracy);
+	public DisplayInaccuracyValues DisplayInaccuracy => new DisplayInaccuracyValues(this.EffectiveHipInaccuracy, this.EffectiveAdsInaccuracy, this.EffectiveHipInaccuracy);
 
 	public bool AdsTarget
 	{
@@ -164,9 +164,9 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 		{
 			if (!base.IsLocalPlayer)
 			{
-				return GetAdsTargetForSerial(base.ItemSerial);
+				return LinearAdsModule.GetAdsTargetForSerial(base.ItemSerial);
 			}
-			return _clientData.AdsTarget;
+			return this._clientData.AdsTarget;
 		}
 	}
 
@@ -176,9 +176,9 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 		{
 			if (!base.IsLocalPlayer)
 			{
-				return GetAdsAmountForSerial(base.Firearm.ItemSerial);
+				return LinearAdsModule.GetAdsAmountForSerial(base.Firearm.ItemSerial);
 			}
-			return _clientData.AdsAmount;
+			return this._clientData.AdsAmount;
 		}
 	}
 
@@ -186,21 +186,21 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 	{
 		get
 		{
-			float num = Mathf.Lerp(EffectiveHipInaccuracy, EffectiveAdsInaccuracy, AdsAmount);
-			float num2 = Mathf.Abs(AdsAmount - 0.5f) * 2f;
+			float num = Mathf.Lerp(this.EffectiveHipInaccuracy, this.EffectiveAdsInaccuracy, this.AdsAmount);
+			float num2 = Mathf.Abs(this.AdsAmount - 0.5f) * 2f;
 			float num3 = num2 * num2 * num2 * num2;
 			float num4 = 1f - num3;
 			return num + num4 * 3f;
 		}
 	}
 
-	public bool InspectionAllowed => AdsAmount == 0f;
+	public bool InspectionAllowed => this.AdsAmount == 0f;
 
 	public virtual float BaseHipInaccuracy
 	{
 		get
 		{
-			if (!HipInaccuracyByCategory.TryGetValue(base.Firearm.FirearmCategory, out var value))
+			if (!LinearAdsModule.HipInaccuracyByCategory.TryGetValue(base.Firearm.FirearmCategory, out var value))
 			{
 				return 2f;
 			}
@@ -212,7 +212,7 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 	{
 		get
 		{
-			if (!AdsInaccuracyByCategory.TryGetValue(base.Firearm.FirearmCategory, out var value))
+			if (!LinearAdsModule.AdsInaccuracyByCategory.TryGetValue(base.Firearm.FirearmCategory, out var value))
 			{
 				return 0.17f;
 			}
@@ -224,7 +224,7 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 	{
 		get
 		{
-			if (!TimeToTransitionByCategory.TryGetValue(base.Firearm.FirearmCategory, out var value))
+			if (!LinearAdsModule.TimeToTransitionByCategory.TryGetValue(base.Firearm.FirearmCategory, out var value))
 			{
 				return 0.2f;
 			}
@@ -236,7 +236,7 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 	{
 		get
 		{
-			if (!_hasZoomOptions)
+			if (!this._hasZoomOptions)
 			{
 				return 1.15f;
 			}
@@ -249,7 +249,7 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 		get
 		{
 			float num = base.Firearm.AttachmentsValue(AttachmentParam.AdsZoomMultiplier);
-			return (BaseZoomAmount * num - 1f) * Mathf.SmoothStep(0f, 1f, AdsAmount) + 1f;
+			return (this.BaseZoomAmount * num - 1f) * Mathf.SmoothStep(0f, 1f, this.AdsAmount) + 1f;
 		}
 	}
 
@@ -260,9 +260,9 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 		get
 		{
 			float num = base.Firearm.AttachmentsValue(AttachmentParam.AdsZoomMultiplier);
-			float num2 = BaseZoomAmount * num * AdditionalSensitivityModifier;
+			float num2 = this.BaseZoomAmount * num * this.AdditionalSensitivityModifier;
 			float adsReductionMultiplier = SensitivitySettings.AdsReductionMultiplier;
-			float num3 = AdsAmount;
+			float num3 = this.AdsAmount;
 			if (adsReductionMultiplier < 1f)
 			{
 				num3 *= adsReductionMultiplier;
@@ -279,9 +279,9 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 	{
 		get
 		{
-			if (AdsAmount > 0f)
+			if (this.AdsAmount > 0f)
 			{
-				return AdsAmount < 1f;
+				return this.AdsAmount < 1f;
 			}
 			return false;
 		}
@@ -293,7 +293,7 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 		{
 			if (base.IsLocalPlayer)
 			{
-				return AdsAmount > 0f;
+				return this.AdsAmount > 0f;
 			}
 			return false;
 		}
@@ -301,9 +301,9 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 
 	public float MovementSpeedMultiplier => 1f;
 
-	public float MovementSpeedLimit => MovementLimitRemap.Get(AdsAmount * base.Firearm.Length);
+	public float MovementSpeedLimit => LinearAdsModule.MovementLimitRemap.Get(this.AdsAmount * base.Firearm.Length);
 
-	public bool StaminaModifierActive => MovementModifierActive;
+	public bool StaminaModifierActive => this.MovementModifierActive;
 
 	public bool SprintingDisabled
 	{
@@ -311,15 +311,15 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 		{
 			if (base.Firearm.Owner.roleManager.CurrentRole is IFpcRole fpcRole)
 			{
-				return MovementSpeedLimit <= fpcRole.FpcModule.VelocityForState(PlayerMovementState.Walking, applyCrouch: false);
+				return this.MovementSpeedLimit <= fpcRole.FpcModule.VelocityForState(PlayerMovementState.Walking, applyCrouch: false);
 			}
 			return false;
 		}
 	}
 
-	public float WalkSwayScale => 1f - AdsAmount;
+	public float WalkSwayScale => 1f - this.AdsAmount;
 
-	public float JumpSwayScale => Mathf.Lerp(1f, 0.3f, AdsAmount);
+	public float JumpSwayScale => Mathf.Lerp(1f, 0.3f, this.AdsAmount);
 
 	protected virtual void OnAdsChanged(bool newTarget, float newSpeed, bool targetChanged, bool speedChanged)
 	{
@@ -329,14 +329,14 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 		}
 		if (base.IsLocalPlayer)
 		{
-			SendCmd(delegate(NetworkWriter x)
+			this.SendCmd(delegate(NetworkWriter x)
 			{
-				x.WriteBool(_userInput);
+				x.WriteBool(this._userInput);
 			});
 		}
 		if (base.IsServer)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteFloat(newTarget ? newSpeed : (0f - newSpeed));
 			});
@@ -346,7 +346,7 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		SyncData.Clear();
+		LinearAdsModule.SyncData.Clear();
 	}
 
 	internal override void EquipUpdate()
@@ -359,14 +359,14 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 		AdsData adsData;
 		if (base.IsControllable)
 		{
-			adsData = _clientData;
+			adsData = this._clientData;
 			if (base.Item.IsDummy)
 			{
-				_userInput = GetAction(ActionName.Zoom);
+				this._userInput = base.GetAction(ActionName.Zoom);
 			}
 			else if (InventoryGuiController.ItemsSafeForInteraction)
 			{
-				_userInput = AdsInput.IsActive;
+				this._userInput = LinearAdsModule.AdsInput.IsActive;
 			}
 		}
 		else
@@ -375,12 +375,12 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 			{
 				return;
 			}
-			adsData = SyncData.GetOrAdd(base.ItemSerial, () => new AdsData());
+			adsData = LinearAdsModule.SyncData.GetOrAdd(base.ItemSerial, () => new AdsData());
 		}
-		bool flag = (_userInput || ForceAdsInput) && AllowAds;
-		float num = base.Firearm.AttachmentsValue(AttachmentParam.AdsSpeedMultiplier) / BaseTimeToTransition;
+		bool flag = (this._userInput || this.ForceAdsInput) && this.AllowAds;
+		float num = base.Firearm.AttachmentsValue(AttachmentParam.AdsSpeedMultiplier) / this.BaseTimeToTransition;
 		adsData.Update(flag, num, out var targetChanged, out var speedChanged);
-		OnAdsChanged(flag, num, targetChanged, speedChanged);
+		this.OnAdsChanged(flag, num, targetChanged, speedChanged);
 	}
 
 	protected override void OnInit()
@@ -391,7 +391,7 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 		{
 			if (attachments[i].TryGetActiveValue(AttachmentParam.AdsZoomMultiplier, out var _))
 			{
-				_hasZoomOptions = true;
+				this._hasZoomOptions = true;
 				break;
 			}
 		}
@@ -402,20 +402,20 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 		base.OnHolstered();
 		if (base.IsLocalPlayer)
 		{
-			_clientData.Reset();
-			AdsInput.ResetToggle();
+			this._clientData.Reset();
+			LinearAdsModule.AdsInput.ResetToggle();
 		}
-		if (base.IsServer && AdsTarget)
+		if (base.IsServer && this.AdsTarget)
 		{
-			SendRpc();
+			this.SendRpc();
 		}
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		_userInput = reader.ReadBool();
-		PlayerEvents.OnAimedWeapon(new PlayerAimedWeaponEventArgs(base.Firearm.Owner, base.Firearm, _userInput));
+		this._userInput = reader.ReadBool();
+		PlayerEvents.OnAimedWeapon(new PlayerAimedWeaponEventArgs(base.Firearm.Owner, base.Firearm, this._userInput));
 	}
 
 	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
@@ -423,20 +423,20 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 		base.ClientProcessRpcTemplate(reader, serial);
 		if (reader.Remaining == 0)
 		{
-			if (SyncData.TryGetValue(serial, out var value))
+			if (LinearAdsModule.SyncData.TryGetValue(serial, out var value))
 			{
 				value.Reset();
 			}
 		}
 		else
 		{
-			SyncData.GetOrAdd(serial, () => new AdsData()).DecodeData(reader);
+			LinearAdsModule.SyncData.GetOrAdd(serial, () => new AdsData()).DecodeData(reader);
 		}
 	}
 
 	public void GetDisplayAdsValues(ushort serial, out bool adsTarget, out float adsAmount)
 	{
-		if (SyncData.TryGetValue(serial, out var value))
+		if (LinearAdsModule.SyncData.TryGetValue(serial, out var value))
 		{
 			adsTarget = value.AdsTarget;
 			adsAmount = value.AdsAmount;
@@ -450,7 +450,7 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 
 	public static bool GetAdsTargetForSerial(ushort serial)
 	{
-		if (SyncData.TryGetValue(serial, out var value))
+		if (LinearAdsModule.SyncData.TryGetValue(serial, out var value))
 		{
 			return value.AdsTarget;
 		}
@@ -459,7 +459,7 @@ public class LinearAdsModule : ModuleBase, IAdsModule, IDisplayableInaccuracyPro
 
 	public static float GetAdsAmountForSerial(ushort serial)
 	{
-		if (!SyncData.TryGetValue(serial, out var value))
+		if (!LinearAdsModule.SyncData.TryGetValue(serial, out var value))
 		{
 			return 0f;
 		}

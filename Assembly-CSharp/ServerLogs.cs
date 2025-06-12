@@ -63,17 +63,17 @@ public class ServerLogs : MonoBehaviour
 
 		public ServerLog(string content, string type, string module, string time)
 		{
-			Content = content;
-			Type = type;
-			Module = module;
-			Time = time;
+			this.Content = content;
+			this.Type = type;
+			this.Module = module;
+			this.Time = time;
 		}
 
 		public bool Equals(ServerLog other)
 		{
-			if (Content == other.Content && Type == other.Type && Module == other.Module)
+			if (this.Content == other.Content && this.Type == other.Type && this.Module == other.Module)
 			{
-				return Time == other.Time;
+				return this.Time == other.Time;
 			}
 			return false;
 		}
@@ -82,14 +82,14 @@ public class ServerLogs : MonoBehaviour
 		{
 			if (obj is ServerLog other)
 			{
-				return Equals(other);
+				return this.Equals(other);
 			}
 			return false;
 		}
 
 		public override int GetHashCode()
 		{
-			return (((((((Content != null) ? Content.GetHashCode() : 0) * 397) ^ ((Type != null) ? Type.GetHashCode() : 0)) * 397) ^ ((Module != null) ? Module.GetHashCode() : 0)) * 397) ^ ((Time != null) ? Time.GetHashCode() : 0);
+			return (((((((this.Content != null) ? this.Content.GetHashCode() : 0) * 397) ^ ((this.Type != null) ? this.Type.GetHashCode() : 0)) * 397) ^ ((this.Module != null) ? this.Module.GetHashCode() : 0)) * 397) ^ ((this.Time != null) ? this.Time.GetHashCode() : 0);
 		}
 
 		public static bool operator ==(ServerLog left, ServerLog right)
@@ -123,28 +123,28 @@ public class ServerLogs : MonoBehaviour
 
 	static ServerLogs()
 	{
-		Txt = new string[11]
+		ServerLogs.Txt = new string[11]
 		{
 			"Connection update", "Remote Admin", "Remote Admin - Misc", "Kill", "Game Event", "Internal", "Auth Rate Limit", "Teamkill", "Suicide", "AdminChat",
 			"Query"
 		};
-		Modulestxt = new string[11]
+		ServerLogs.Modulestxt = new string[11]
 		{
 			"Warhead", "Networking", "Class change", "Permissions", "Administrative", "Game logic", "Data access", "FF Detector", "Throwable", "Door",
 			"Elevator"
 		};
-		Queue = new Queue<ServerLog>();
-		LockObject = new object();
-		LiveLogOutput = new ConcurrentDictionary<string, IOutput>();
-		string[] txt = Txt;
+		ServerLogs.Queue = new Queue<ServerLog>();
+		ServerLogs.LockObject = new object();
+		ServerLogs.LiveLogOutput = new ConcurrentDictionary<string, IOutput>();
+		string[] txt = ServerLogs.Txt;
 		foreach (string text in txt)
 		{
-			_maxlen = Math.Max(_maxlen, text.Length);
+			ServerLogs._maxlen = Math.Max(ServerLogs._maxlen, text.Length);
 		}
-		txt = Modulestxt;
+		txt = ServerLogs.Modulestxt;
 		foreach (string text2 in txt)
 		{
-			_modulemaxlen = Math.Max(_modulemaxlen, text2.Length);
+			ServerLogs._modulemaxlen = Math.Max(ServerLogs._modulemaxlen, text2.Length);
 		}
 	}
 
@@ -154,58 +154,58 @@ public class ServerLogs : MonoBehaviour
 		{
 			return;
 		}
-		if (_state != 0)
+		if (ServerLogs._state != LoggingState.Off)
 		{
-			_state = LoggingState.Restart;
+			ServerLogs._state = LoggingState.Restart;
 			return;
 		}
-		Thread appendThread = _appendThread;
+		Thread appendThread = ServerLogs._appendThread;
 		if (appendThread == null || !appendThread.IsAlive)
 		{
-			_appendThread = new Thread(AppendLog)
+			ServerLogs._appendThread = new Thread(AppendLog)
 			{
 				Name = "Saving server logs to file",
 				Priority = System.Threading.ThreadPriority.BelowNormal,
 				IsBackground = true
 			};
-			_appendThread.Start();
+			ServerLogs._appendThread.Start();
 		}
 	}
 
 	public static void AddLog(Modules module, string msg, ServerLogType type, bool init = false)
 	{
 		string time = TimeBehaviour.Rfc3339Time();
-		lock (LockObject)
+		lock (ServerLogs.LockObject)
 		{
-			Queue.Enqueue(new ServerLog(msg, Txt[(uint)type], Modulestxt[(uint)module], time));
+			ServerLogs.Queue.Enqueue(new ServerLog(msg, ServerLogs.Txt[(uint)type], ServerLogs.Modulestxt[(uint)module], time));
 		}
 		if (!init)
 		{
-			_state = LoggingState.Write;
+			ServerLogs._state = LoggingState.Write;
 		}
 	}
 
 	private void OnApplicationQuit()
 	{
-		_state = LoggingState.Terminate;
+		ServerLogs._state = LoggingState.Terminate;
 	}
 
 	private static void AppendLog()
 	{
-		_state = LoggingState.Standby;
+		ServerLogs._state = LoggingState.Standby;
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-		while (_state != LoggingState.Terminate)
+		while (ServerLogs._state != LoggingState.Terminate)
 		{
-			lock (LockObject)
+			lock (ServerLogs.LockObject)
 			{
-				Queue.Clear();
-				_state = LoggingState.Standby;
+				ServerLogs.Queue.Clear();
+				ServerLogs._state = LoggingState.Standby;
 			}
 			while (!NetworkServer.active)
 			{
-				if (_state == LoggingState.Terminate)
+				if (ServerLogs._state == LoggingState.Terminate)
 				{
-					_state = LoggingState.Off;
+					ServerLogs._state = LoggingState.Off;
 					StringBuilderPool.Shared.Return(stringBuilder);
 					return;
 				}
@@ -213,15 +213,15 @@ public class ServerLogs : MonoBehaviour
 			}
 			string text = TimeBehaviour.FormatTime("yyyy-MM-dd HH.mm.ss");
 			string text2 = LiteNetLib4MirrorTransport.Singleton.port.ToString();
-			AddLog(Modules.GameLogic, "Started logging.", ServerLogType.InternalMessage, init: true);
-			AddLog(Modules.GameLogic, "Game version: " + GameCore.Version.VersionString + ".", ServerLogType.InternalMessage, init: true);
-			AddLog(Modules.GameLogic, "Build type: " + GameCore.Version.BuildType.ToString() + ".", ServerLogType.InternalMessage, init: true);
-			AddLog(Modules.GameLogic, "Build timestamp: 2025-05-17 20:15:13Z.", ServerLogType.InternalMessage, init: true);
-			AddLog(Modules.GameLogic, "Headless: " + PlatformInfo.singleton.IsHeadless + ".", ServerLogType.InternalMessage, init: true);
-			while (NetworkServer.active && _state != LoggingState.Terminate && _state != LoggingState.Restart)
+			ServerLogs.AddLog(Modules.GameLogic, "Started logging.", ServerLogType.InternalMessage, init: true);
+			ServerLogs.AddLog(Modules.GameLogic, "Game version: " + GameCore.Version.VersionString + ".", ServerLogType.InternalMessage, init: true);
+			ServerLogs.AddLog(Modules.GameLogic, "Build type: " + GameCore.Version.BuildType.ToString() + ".", ServerLogType.InternalMessage, init: true);
+			ServerLogs.AddLog(Modules.GameLogic, "Build timestamp: 2025-06-09 00:37:28Z.", ServerLogType.InternalMessage, init: true);
+			ServerLogs.AddLog(Modules.GameLogic, "Headless: " + PlatformInfo.singleton.IsHeadless + ".", ServerLogType.InternalMessage, init: true);
+			while (NetworkServer.active && ServerLogs._state != LoggingState.Terminate && ServerLogs._state != LoggingState.Restart)
 			{
 				Thread.Sleep(100);
-				if (_state == LoggingState.Standby)
+				if (ServerLogs._state == LoggingState.Standby)
 				{
 					continue;
 				}
@@ -237,14 +237,14 @@ public class ServerLogs : MonoBehaviour
 				{
 					Directory.CreateDirectory(FileManager.GetAppFolder() + "ServerLogs/" + text2);
 				}
-				lock (LockObject)
+				lock (ServerLogs.LockObject)
 				{
 					ServerLog result;
-					while (Queue.TryDequeue(out result))
+					while (ServerLogs.Queue.TryDequeue(out result))
 					{
-						string text3 = result.Time + " | " + ToMax(result.Type, _maxlen) + " | " + ToMax(result.Module, _modulemaxlen) + " | " + result.Content;
+						string text3 = result.Time + " | " + ServerLogs.ToMax(result.Type, ServerLogs._maxlen) + " | " + ServerLogs.ToMax(result.Module, ServerLogs._modulemaxlen) + " | " + result.Content;
 						stringBuilder.AppendLine(text3);
-						PrintOnOutputs(text3);
+						ServerLogs.PrintOnOutputs(text3);
 					}
 				}
 				using (StreamWriter streamWriter = new StreamWriter(FileManager.GetAppFolder() + "ServerLogs/" + text2 + "/Round " + text + ".txt", append: true))
@@ -252,15 +252,15 @@ public class ServerLogs : MonoBehaviour
 					streamWriter.Write(stringBuilder.ToString());
 				}
 				stringBuilder.Clear();
-				LoggingState state = _state;
+				LoggingState state = ServerLogs._state;
 				if (state == LoggingState.Terminate || state == LoggingState.Restart)
 				{
 					break;
 				}
-				_state = LoggingState.Standby;
+				ServerLogs._state = LoggingState.Standby;
 			}
 		}
-		_state = LoggingState.Off;
+		ServerLogs._state = LoggingState.Off;
 		StringBuilderPool.Shared.Return(stringBuilder);
 	}
 
@@ -268,18 +268,18 @@ public class ServerLogs : MonoBehaviour
 	{
 		try
 		{
-			if (LiveLogOutput == null)
+			if (ServerLogs.LiveLogOutput == null)
 			{
 				return;
 			}
-			foreach (KeyValuePair<string, IOutput> item in LiveLogOutput)
+			foreach (KeyValuePair<string, IOutput> item in ServerLogs.LiveLogOutput)
 			{
 				IOutput value;
 				try
 				{
 					if (item.Value == null || !item.Value.Available())
 					{
-						LiveLogOutput.TryRemove(item.Key, out value);
+						ServerLogs.LiveLogOutput.TryRemove(item.Key, out value);
 					}
 					else if (item.Value is ServerConsoleSender)
 					{
@@ -292,7 +292,7 @@ public class ServerLogs : MonoBehaviour
 				}
 				catch
 				{
-					LiveLogOutput.TryRemove(item.Key, out value);
+					ServerLogs.LiveLogOutput.TryRemove(item.Key, out value);
 				}
 			}
 		}

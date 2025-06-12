@@ -17,51 +17,51 @@ public class MovementTracer
 
 	public MovementTracer(byte size, byte cooldown, float teleportDistance)
 	{
-		_size = size;
-		Positions = new RelativePosition[size];
-		_cooldown = cooldown;
-		_tpDis = teleportDistance;
-		_cooldownTimer = 0;
+		this._size = size;
+		this.Positions = new RelativePosition[size];
+		this._cooldown = cooldown;
+		this._tpDis = teleportDistance;
+		this._cooldownTimer = 0;
 	}
 
 	public void Record(Vector3 plyPosition)
 	{
-		if (_cooldownTimer > 0)
+		if (this._cooldownTimer > 0)
 		{
-			_cooldownTimer--;
+			this._cooldownTimer--;
 			return;
 		}
-		if (++Clock >= _size)
+		if (++this.Clock >= this._size)
 		{
-			Clock = 0;
+			this.Clock = 0;
 		}
-		Positions[Clock] = new RelativePosition(plyPosition);
-		_cooldownTimer = _cooldown;
+		this.Positions[this.Clock] = new RelativePosition(plyPosition);
+		this._cooldownTimer = this._cooldown;
 	}
 
 	public Bounds GenerateBounds(float time, bool ignoreTeleports)
 	{
-		int num = Mathf.FloorToInt(time / Time.fixedDeltaTime / (float)(_cooldown + 1));
+		int num = Mathf.FloorToInt(time / Time.fixedDeltaTime / (float)(this._cooldown + 1));
 		if (num <= 0)
 		{
 			Debug.LogError($"MovementTracer was requested to generate Bounds for the last {time} seconds, but it's too short. Please access PlayerMovementSync.RealModelPosition directly.");
 			num = 1;
 		}
-		else if (num > _size)
+		else if (num > this._size)
 		{
-			Debug.LogError($"MovementTracer was requested to generate Bounds for the last {time} seconds, but it can't keep track of positions after {((float)(int)_cooldown + 1f) * (float)(int)_size * Time.fixedDeltaTime}");
-			num = _size;
+			Debug.LogError($"MovementTracer was requested to generate Bounds for the last {time} seconds, but it can't keep track of positions after {((float)(int)this._cooldown + 1f) * (float)(int)this._size * Time.fixedDeltaTime}");
+			num = this._size;
 		}
-		Bounds result = new Bounds(Positions[Clock].Position, Vector3.zero);
+		Bounds result = new Bounds(this.Positions[this.Clock].Position, Vector3.zero);
 		for (int i = 1; i < num; i++)
 		{
-			int num2 = Clock - i;
+			int num2 = this.Clock - i;
 			if (num2 < 0)
 			{
-				num2 += _size - 1;
+				num2 += this._size - 1;
 			}
-			Vector3 position = Positions[num2].Position;
-			if (!ignoreTeleports && Vector3.Distance(result.ClosestPoint(position), position) > _tpDis)
+			Vector3 position = this.Positions[num2].Position;
+			if (!ignoreTeleports && Vector3.Distance(result.ClosestPoint(position), position) > this._tpDis)
 			{
 				break;
 			}

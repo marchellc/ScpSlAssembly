@@ -14,12 +14,12 @@ public class OverwatchHelpButton : MonoBehaviour, IPointerEnterHandler, IEventSy
 
 	public void OnPointerEnter(PointerEventData eventData)
 	{
-		HelpDialog.SetActive(value: true);
-		HelpText.text = HelpTextReplacer.DisplayText;
+		this.HelpDialog.SetActive(value: true);
+		this.HelpText.text = this.HelpTextReplacer.DisplayText;
 	}
 
 	public void OnPointerExit(PointerEventData eventData)
 	{
-		HelpDialog.SetActive(value: false);
+		this.HelpDialog.SetActive(value: false);
 	}
 }

@@ -11,19 +11,19 @@ public abstract class SerializedWaveInterface : WaveInterfaceBase<SpawnableWaveB
 
 	protected override void Awake()
 	{
-		RefreshWave();
+		this.RefreshWave();
 	}
 
 	internal void RefreshWave()
 	{
 		foreach (SpawnableWaveBase wave in WaveManager.Waves)
 		{
-			if (wave.GetType().Name.Equals(WaveIdentifier, StringComparison.OrdinalIgnoreCase))
+			if (wave.GetType().Name.Equals(this.WaveIdentifier, StringComparison.OrdinalIgnoreCase))
 			{
 				base.Wave = wave;
 				return;
 			}
 		}
-		throw new NullReferenceException("Unable to find any Wave by the " + WaveIdentifier + " name.");
+		throw new NullReferenceException("Unable to find any Wave by the " + this.WaveIdentifier + " name.");
 	}
 }

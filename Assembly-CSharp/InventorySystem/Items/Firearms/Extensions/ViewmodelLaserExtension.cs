@@ -42,7 +42,7 @@ public class ViewmodelLaserExtension : MonoBehaviour, IViewmodelExtension, IDest
 	{
 		get
 		{
-			if (!_firearm.TryGetModule<IAdsModule>(out var module))
+			if (!this._firearm.TryGetModule<IAdsModule>(out var module))
 			{
 				return 0f;
 			}
@@ -54,11 +54,11 @@ public class ViewmodelLaserExtension : MonoBehaviour, IViewmodelExtension, IDest
 	{
 		get
 		{
-			if (!_hasBarrelTip)
+			if (!this._hasBarrelTip)
 			{
-				return _selfTr.parent.forward;
+				return this._selfTr.parent.forward;
 			}
-			return _barrelTip.WorldspaceDirection;
+			return this._barrelTip.WorldspaceDirection;
 		}
 	}
 
@@ -66,7 +66,7 @@ public class ViewmodelLaserExtension : MonoBehaviour, IViewmodelExtension, IDest
 	{
 		get
 		{
-			ModuleBase[] modules = _firearm.Modules;
+			ModuleBase[] modules = this._firearm.Modules;
 			foreach (ModuleBase moduleBase in modules)
 			{
 				if (moduleBase is IInspectorModule { DisplayInspecting: not false })
@@ -84,33 +84,33 @@ public class ViewmodelLaserExtension : MonoBehaviour, IViewmodelExtension, IDest
 
 	private void LateUpdate()
 	{
-		_unlockBlend = Mathf.MoveTowards(_unlockBlend, WantsToUnlock ? 1 : 0, Time.deltaTime * 5f);
-		_selfTr.localPosition = _localPos;
-		Vector3 forward = _viewmodelTr.forward;
-		Vector3 barrelForward = BarrelForward;
-		Vector3 position = _selfTr.position;
+		this._unlockBlend = Mathf.MoveTowards(this._unlockBlend, this.WantsToUnlock ? 1 : 0, Time.deltaTime * 5f);
+		this._selfTr.localPosition = this._localPos;
+		Vector3 forward = this._viewmodelTr.forward;
+		Vector3 barrelForward = this.BarrelForward;
+		Vector3 position = this._selfTr.position;
 		float num = Vector3.Angle(forward, barrelForward);
-		float num2 = Mathf.Clamp01(1f - ClientAds * 2.5f);
+		float num2 = Mathf.Clamp01(1f - this.ClientAds * 2.5f);
 		float num3 = Mathf.InverseLerp(2.8f, 20f, num * num2);
-		float t = Mathf.SmoothStep(0f, 1f, num3 + _unlockBlend);
-		float z = _viewmodelTr.InverseTransformPoint(position).z;
-		z = Mathf.Min(z, _distanceFromWall - 0.2f);
+		float t = Mathf.SmoothStep(0f, 1f, num3 + this._unlockBlend);
+		float z = this._viewmodelTr.InverseTransformPoint(position).z;
+		z = Mathf.Min(z, this._distanceFromWall - 0.2f);
 		Vector3 position2 = new Vector3(0f, 0f, z);
-		Vector3 a = _viewmodelTr.TransformPoint(position2);
-		_selfTr.forward = Vector3.Slerp(forward, barrelForward, t);
-		_selfTr.position = Vector3.Lerp(a, position, t);
-		_lightSource.color = _laserColor * num2;
+		Vector3 a = this._viewmodelTr.TransformPoint(position2);
+		this._selfTr.forward = Vector3.Slerp(forward, barrelForward, t);
+		this._selfTr.position = Vector3.Lerp(a, position, t);
+		this._lightSource.color = this._laserColor * num2;
 	}
 
 	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_firearm = viewmodel.ParentFirearm;
-		_viewmodelTr = viewmodel.transform;
-		_lightSource = GetComponent<Light>();
-		_laserColor = _lightSource.color;
-		_selfTr = base.transform;
-		_localPos = _selfTr.localPosition;
-		_hasBarrelTip = viewmodel.TryGetExtension<BarrelTipExtension>(out _barrelTip);
+		this._firearm = viewmodel.ParentFirearm;
+		this._viewmodelTr = viewmodel.transform;
+		this._lightSource = base.GetComponent<Light>();
+		this._laserColor = this._lightSource.color;
+		this._selfTr = base.transform;
+		this._localPos = this._selfTr.localPosition;
+		this._hasBarrelTip = viewmodel.TryGetExtension<BarrelTipExtension>(out this._barrelTip);
 	}
 
 	public void OnDestroyExtension()

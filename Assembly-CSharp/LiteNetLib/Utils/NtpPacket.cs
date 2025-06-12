@@ -8,17 +8,17 @@ public class NtpPacket
 
 	public byte[] Bytes { get; }
 
-	public NtpLeapIndicator LeapIndicator => (NtpLeapIndicator)((Bytes[0] & 0xC0) >> 6);
+	public NtpLeapIndicator LeapIndicator => (NtpLeapIndicator)((this.Bytes[0] & 0xC0) >> 6);
 
 	public int VersionNumber
 	{
 		get
 		{
-			return (Bytes[0] & 0x38) >> 3;
+			return (this.Bytes[0] & 0x38) >> 3;
 		}
 		private set
 		{
-			Bytes[0] = (byte)((Bytes[0] & -57) | (value << 3));
+			this.Bytes[0] = (byte)((this.Bytes[0] & -57) | (value << 3));
 		}
 	}
 
@@ -26,41 +26,41 @@ public class NtpPacket
 	{
 		get
 		{
-			return (NtpMode)(Bytes[0] & 7);
+			return (NtpMode)(this.Bytes[0] & 7);
 		}
 		private set
 		{
-			Bytes[0] = (byte)((uint)(Bytes[0] & -8) | (uint)value);
+			this.Bytes[0] = (byte)((uint)(this.Bytes[0] & -8) | (uint)value);
 		}
 	}
 
-	public int Stratum => Bytes[1];
+	public int Stratum => this.Bytes[1];
 
-	public int Poll => Bytes[2];
+	public int Poll => this.Bytes[2];
 
-	public int Precision => (sbyte)Bytes[3];
+	public int Precision => (sbyte)this.Bytes[3];
 
-	public TimeSpan RootDelay => GetTimeSpan32(4);
+	public TimeSpan RootDelay => this.GetTimeSpan32(4);
 
-	public TimeSpan RootDispersion => GetTimeSpan32(8);
+	public TimeSpan RootDispersion => this.GetTimeSpan32(8);
 
-	public uint ReferenceId => GetUInt32BE(12);
+	public uint ReferenceId => this.GetUInt32BE(12);
 
-	public DateTime? ReferenceTimestamp => GetDateTime64(16);
+	public DateTime? ReferenceTimestamp => this.GetDateTime64(16);
 
-	public DateTime? OriginTimestamp => GetDateTime64(24);
+	public DateTime? OriginTimestamp => this.GetDateTime64(24);
 
-	public DateTime? ReceiveTimestamp => GetDateTime64(32);
+	public DateTime? ReceiveTimestamp => this.GetDateTime64(32);
 
 	public DateTime? TransmitTimestamp
 	{
 		get
 		{
-			return GetDateTime64(40);
+			return this.GetDateTime64(40);
 		}
 		private set
 		{
-			SetDateTime64(40, value);
+			this.SetDateTime64(40, value);
 		}
 	}
 
@@ -70,8 +70,8 @@ public class NtpPacket
 	{
 		get
 		{
-			CheckTimestamps();
-			return ReceiveTimestamp.Value - OriginTimestamp.Value + (DestinationTimestamp.Value - TransmitTimestamp.Value);
+			this.CheckTimestamps();
+			return this.ReceiveTimestamp.Value - this.OriginTimestamp.Value + (this.DestinationTimestamp.Value - this.TransmitTimestamp.Value);
 		}
 	}
 
@@ -79,17 +79,17 @@ public class NtpPacket
 	{
 		get
 		{
-			CheckTimestamps();
-			return TimeSpan.FromTicks((ReceiveTimestamp.Value - OriginTimestamp.Value - (DestinationTimestamp.Value - TransmitTimestamp.Value)).Ticks / 2);
+			this.CheckTimestamps();
+			return TimeSpan.FromTicks((this.ReceiveTimestamp.Value - this.OriginTimestamp.Value - (this.DestinationTimestamp.Value - this.TransmitTimestamp.Value)).Ticks / 2);
 		}
 	}
 
 	public NtpPacket()
 		: this(new byte[48])
 	{
-		Mode = NtpMode.Client;
-		VersionNumber = 4;
-		TransmitTimestamp = DateTime.UtcNow;
+		this.Mode = NtpMode.Client;
+		this.VersionNumber = 4;
+		this.TransmitTimestamp = DateTime.UtcNow;
 	}
 
 	internal NtpPacket(byte[] bytes)
@@ -98,7 +98,7 @@ public class NtpPacket
 		{
 			throw new ArgumentException("SNTP reply packet must be at least 48 bytes long.", "bytes");
 		}
-		Bytes = bytes;
+		this.Bytes = bytes;
 	}
 
 	public static NtpPacket FromServerResponse(byte[] bytes, DateTime destinationTimestamp)
@@ -111,15 +111,15 @@ public class NtpPacket
 
 	internal void ValidateRequest()
 	{
-		if (Mode != NtpMode.Client)
+		if (this.Mode != NtpMode.Client)
 		{
 			throw new InvalidOperationException("This is not a request SNTP packet.");
 		}
-		if (VersionNumber == 0)
+		if (this.VersionNumber == 0)
 		{
 			throw new InvalidOperationException("Protocol version of the request is not specified.");
 		}
-		if (!TransmitTimestamp.HasValue)
+		if (!this.TransmitTimestamp.HasValue)
 		{
 			throw new InvalidOperationException("TransmitTimestamp must be set in request packet.");
 		}
@@ -127,40 +127,40 @@ public class NtpPacket
 
 	internal void ValidateReply()
 	{
-		if (Mode != NtpMode.Server)
+		if (this.Mode != NtpMode.Server)
 		{
 			throw new InvalidOperationException("This is not a reply SNTP packet.");
 		}
-		if (VersionNumber == 0)
+		if (this.VersionNumber == 0)
 		{
 			throw new InvalidOperationException("Protocol version of the reply is not specified.");
 		}
-		if (Stratum == 0)
+		if (this.Stratum == 0)
 		{
-			throw new InvalidOperationException($"Received Kiss-o'-Death SNTP packet with code 0x{ReferenceId:x}.");
+			throw new InvalidOperationException($"Received Kiss-o'-Death SNTP packet with code 0x{this.ReferenceId:x}.");
 		}
-		if (LeapIndicator == NtpLeapIndicator.AlarmCondition)
+		if (this.LeapIndicator == NtpLeapIndicator.AlarmCondition)
 		{
 			throw new InvalidOperationException("SNTP server has unsynchronized clock.");
 		}
-		CheckTimestamps();
+		this.CheckTimestamps();
 	}
 
 	private void CheckTimestamps()
 	{
-		if (!OriginTimestamp.HasValue)
+		if (!this.OriginTimestamp.HasValue)
 		{
 			throw new InvalidOperationException("Origin timestamp is missing.");
 		}
-		if (!ReceiveTimestamp.HasValue)
+		if (!this.ReceiveTimestamp.HasValue)
 		{
 			throw new InvalidOperationException("Receive timestamp is missing.");
 		}
-		if (!TransmitTimestamp.HasValue)
+		if (!this.TransmitTimestamp.HasValue)
 		{
 			throw new InvalidOperationException("Transmit timestamp is missing.");
 		}
-		if (!DestinationTimestamp.HasValue)
+		if (!this.DestinationTimestamp.HasValue)
 		{
 			throw new InvalidOperationException("Destination timestamp is missing.");
 		}
@@ -168,12 +168,12 @@ public class NtpPacket
 
 	private DateTime? GetDateTime64(int offset)
 	{
-		ulong uInt64BE = GetUInt64BE(offset);
+		ulong uInt64BE = this.GetUInt64BE(offset);
 		if (uInt64BE == 0L)
 		{
 			return null;
 		}
-		DateTime epoch = Epoch;
+		DateTime epoch = NtpPacket.Epoch;
 		return new DateTime(epoch.Ticks + Convert.ToInt64((double)uInt64BE * 0.0023283064365386963));
 	}
 
@@ -183,39 +183,39 @@ public class NtpPacket
 		if (value.HasValue)
 		{
 			long ticks = value.Value.Ticks;
-			DateTime epoch = Epoch;
+			DateTime epoch = NtpPacket.Epoch;
 			value2 = (long)Convert.ToUInt64((double)(ticks - epoch.Ticks) * 429.4967296);
 		}
 		else
 		{
 			value2 = 0L;
 		}
-		SetUInt64BE(offset, (ulong)value2);
+		this.SetUInt64BE(offset, (ulong)value2);
 	}
 
 	private TimeSpan GetTimeSpan32(int offset)
 	{
-		return TimeSpan.FromSeconds((double)GetInt32BE(offset) / 65536.0);
+		return TimeSpan.FromSeconds((double)this.GetInt32BE(offset) / 65536.0);
 	}
 
 	private ulong GetUInt64BE(int offset)
 	{
-		return SwapEndianness(BitConverter.ToUInt64(Bytes, offset));
+		return NtpPacket.SwapEndianness(BitConverter.ToUInt64(this.Bytes, offset));
 	}
 
 	private void SetUInt64BE(int offset, ulong value)
 	{
-		FastBitConverter.GetBytes(Bytes, offset, SwapEndianness(value));
+		FastBitConverter.GetBytes(this.Bytes, offset, NtpPacket.SwapEndianness(value));
 	}
 
 	private int GetInt32BE(int offset)
 	{
-		return (int)GetUInt32BE(offset);
+		return (int)this.GetUInt32BE(offset);
 	}
 
 	private uint GetUInt32BE(int offset)
 	{
-		return SwapEndianness(BitConverter.ToUInt32(Bytes, offset));
+		return NtpPacket.SwapEndianness(BitConverter.ToUInt32(this.Bytes, offset));
 	}
 
 	private static uint SwapEndianness(uint x)
@@ -225,6 +225,6 @@ public class NtpPacket
 
 	private static ulong SwapEndianness(ulong x)
 	{
-		return ((ulong)SwapEndianness((uint)x) << 32) | SwapEndianness((uint)(x >> 32));
+		return ((ulong)NtpPacket.SwapEndianness((uint)x) << 32) | NtpPacket.SwapEndianness((uint)(x >> 32));
 	}
 }

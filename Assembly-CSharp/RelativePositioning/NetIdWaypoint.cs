@@ -27,62 +27,62 @@ public class NetIdWaypoint : WaypointBase
 	protected override void Start()
 	{
 		base.Start();
-		SetPosition();
-		AllNetWaypoints.Add(this);
-		_refreshNextFrame = true;
+		this.SetPosition();
+		NetIdWaypoint.AllNetWaypoints.Add(this);
+		NetIdWaypoint._refreshNextFrame = true;
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		AllNetWaypoints.Remove(this);
+		NetIdWaypoint.AllNetWaypoints.Remove(this);
 	}
 
 	protected override float SqrDistanceTo(Vector3 pos)
 	{
-		return (pos - _pos).sqrMagnitude;
+		return (pos - this._pos).sqrMagnitude;
 	}
 
 	public override Vector3 GetWorldspacePosition(Vector3 relPosition)
 	{
-		return relPosition + _pos;
+		return relPosition + this._pos;
 	}
 
 	public override Vector3 GetRelativePosition(Vector3 worldPoint)
 	{
-		return worldPoint - _pos;
+		return worldPoint - this._pos;
 	}
 
 	private void Update()
 	{
-		if (!_refreshNextFrame)
+		if (!NetIdWaypoint._refreshNextFrame)
 		{
 			base.enabled = false;
 			return;
 		}
 		byte b = 32;
-		foreach (NetIdWaypoint item in AllNetWaypoints.OrderBy((NetIdWaypoint x) => x._targetNetId.netId))
+		foreach (NetIdWaypoint item in NetIdWaypoint.AllNetWaypoints.OrderBy((NetIdWaypoint x) => x._targetNetId.netId))
 		{
 			item.SetPosition();
 			item.SetId(b);
 			b++;
 		}
-		if (_callEvent)
+		if (NetIdWaypoint._callEvent)
 		{
 			NetIdWaypoint.OnNetIdWaypointsSet?.Invoke();
-			_callEvent = false;
+			NetIdWaypoint._callEvent = false;
 		}
-		_refreshNextFrame = false;
+		NetIdWaypoint._refreshNextFrame = false;
 	}
 
 	private void Reset()
 	{
-		_targetNetId = GetComponent<NetworkIdentity>();
+		this._targetNetId = base.GetComponent<NetworkIdentity>();
 	}
 
 	private void SetPosition()
 	{
-		_pos = _targetNetId.transform.position;
+		this._pos = this._targetNetId.transform.position;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -92,8 +92,8 @@ public class NetIdWaypoint : WaypointBase
 		{
 			if (stage == MapGenerationPhase.RelativePositioningWaypoints)
 			{
-				_refreshNextFrame = true;
-				_callEvent = true;
+				NetIdWaypoint._refreshNextFrame = true;
+				NetIdWaypoint._callEvent = true;
 			}
 		};
 	}

@@ -16,18 +16,18 @@ public class TestItem : AutosyncItem
 
 	public override void EquipUpdate()
 	{
-		if (!IsLocalPlayer)
+		if (!this.IsLocalPlayer)
 		{
 			return;
 		}
 		if (Input.GetKeyDown(KeyCode.G))
 		{
-			Log("Sending empty message");
+			TestItem.Log("Sending empty message");
 			new AutosyncCmd(base.ItemId).Send();
 		}
 		if (Input.GetKeyDown(KeyCode.H))
 		{
-			Log("Sending 'KNOCK KNOCK'");
+			TestItem.Log("Sending 'KNOCK KNOCK'");
 			NetworkWriter writer;
 			using (new AutosyncCmd(base.ItemId, out writer))
 			{
@@ -38,7 +38,7 @@ public class TestItem : AutosyncItem
 		{
 			return;
 		}
-		Log("Sending a sequence:");
+		TestItem.Log("Sending a sequence:");
 		for (int i = 1; i <= 10; i++)
 		{
 			NetworkWriter writer2;
@@ -52,13 +52,13 @@ public class TestItem : AutosyncItem
 	public override void ServerConfirmAcqusition()
 	{
 		base.ServerConfirmAcqusition();
-		Log("Received acquisition confirmation of " + base.ItemSerial);
+		TestItem.Log("Received acquisition confirmation of " + base.ItemSerial);
 	}
 
 	public override void ClientProcessRpcInstance(NetworkReader reader)
 	{
 		base.ClientProcessRpcInstance(reader);
-		if (IsLocalPlayer && ViewModel is TestItemViewmodel testItemViewmodel)
+		if (this.IsLocalPlayer && base.ViewModel is TestItemViewmodel testItemViewmodel)
 		{
 			testItemViewmodel.UpdateText(reader.ReadString());
 		}
@@ -71,15 +71,15 @@ public class TestItem : AutosyncItem
 		if (reader.Position >= reader.Capacity)
 		{
 			text = "Empty";
-			Log("Received an empty message.");
+			TestItem.Log("Received an empty message.");
 		}
 		else
 		{
 			string text2 = reader.ReadString();
-			Log("Received a message - " + text2);
+			TestItem.Log("Received a message - " + text2);
 			text = ((!(text2 == "KNOCK KNOCK")) ? ("Unknown - " + text2) : "Who's there?");
 		}
-		Log("Sending response - " + text);
+		TestItem.Log("Sending response - " + text);
 		NetworkWriter writer;
 		using (new AutosyncRpc(base.ItemId, base.Owner, out writer))
 		{

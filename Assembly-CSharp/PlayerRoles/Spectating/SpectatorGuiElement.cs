@@ -11,26 +11,26 @@ public class SpectatorGuiElement : MonoBehaviour, IPointerEnterHandler, IEventSy
 
 	public void OnPointerEnter(PointerEventData eventData)
 	{
-		_lastHighlight = this;
-		AnyHighlighted = true;
+		SpectatorGuiElement._lastHighlight = this;
+		SpectatorGuiElement.AnyHighlighted = true;
 	}
 
 	public void OnPointerExit(PointerEventData eventData)
 	{
-		if (!(_lastHighlight != this))
+		if (!(SpectatorGuiElement._lastHighlight != this))
 		{
-			_lastHighlight = null;
-			AnyHighlighted = false;
+			SpectatorGuiElement._lastHighlight = null;
+			SpectatorGuiElement.AnyHighlighted = false;
 		}
 	}
 
 	private void OnDisable()
 	{
-		OnPointerExit(null);
+		this.OnPointerExit(null);
 	}
 
 	private void OnDestroy()
 	{
-		OnPointerExit(null);
+		this.OnPointerExit(null);
 	}
 }

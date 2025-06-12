@@ -13,24 +13,24 @@ public struct RoundMetricsCollection : IJsonSerializable
 
 	public RoundMetricsCollection(IEnumerable<CollectedMetric> metrics)
 	{
-		Metrics = metrics.ToArray();
-		VersionString = GameCore.Version.VersionString;
+		this.Metrics = metrics.ToArray();
+		this.VersionString = GameCore.Version.VersionString;
 	}
 
 	public void PrepBackwardsCompatibility()
 	{
-		if (!string.IsNullOrEmpty(VersionString))
+		if (!string.IsNullOrEmpty(this.VersionString))
 		{
 			return;
 		}
 		string name = typeof(RoundSummaryCollector).Name;
-		for (int num = Metrics.Length - 2; num >= 0; num--)
+		for (int num = this.Metrics.Length - 2; num >= 0; num--)
 		{
-			if (!(Metrics[num].Type != name))
+			if (!(this.Metrics[num].Type != name))
 			{
-				CollectedMetric[] array = new CollectedMetric[Metrics.Length - num - 1];
-				Array.Copy(Metrics, num + 1, array, 0, array.Length);
-				Metrics = array;
+				CollectedMetric[] array = new CollectedMetric[this.Metrics.Length - num - 1];
+				Array.Copy(this.Metrics, num + 1, array, 0, array.Length);
+				this.Metrics = array;
 				break;
 			}
 		}
@@ -38,7 +38,7 @@ public struct RoundMetricsCollection : IJsonSerializable
 
 	public readonly T[] GetOfType<T>() where T : MetricsCollectorBase
 	{
-		KeyValuePair<float, T>[] ofTypeWithTimestamp = GetOfTypeWithTimestamp<T>();
+		KeyValuePair<float, T>[] ofTypeWithTimestamp = this.GetOfTypeWithTimestamp<T>();
 		T[] array = new T[ofTypeWithTimestamp.Length];
 		for (int i = 0; i < ofTypeWithTimestamp.Length; i++)
 		{
@@ -51,7 +51,7 @@ public struct RoundMetricsCollection : IJsonSerializable
 	{
 		List<KeyValuePair<float, T>> list = new List<KeyValuePair<float, T>>();
 		string name = typeof(T).Name;
-		CollectedMetric[] metrics = Metrics;
+		CollectedMetric[] metrics = this.Metrics;
 		for (int i = 0; i < metrics.Length; i++)
 		{
 			CollectedMetric collectedMetric = metrics[i];

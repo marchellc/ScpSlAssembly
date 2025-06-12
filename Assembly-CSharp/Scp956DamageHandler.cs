@@ -17,12 +17,12 @@ public class Scp956DamageHandler : StandardDamageHandler
 
 	public override CassieAnnouncement CassieDeathAnnouncement => null;
 
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
 	public Scp956DamageHandler(Vector3 direction)
 	{
-		_velocity = (direction * 3f + Vector3.up) * 9f;
-		Damage = -1f;
+		this._velocity = (direction * 3f + Vector3.up) * 9f;
+		this.Damage = -1f;
 	}
 
 	public override HandlerOutput ApplyDamage(ReferenceHub ply)
@@ -47,7 +47,7 @@ public class Scp956DamageHandler : StandardDamageHandler
 				scp330Pickup.NetworkExposedCandy = candyKindID;
 				if (scp330Pickup.TryGetComponent<Rigidbody>(out var component))
 				{
-					component.linearVelocity = _velocity;
+					component.linearVelocity = this._velocity;
 				}
 			}
 		}
@@ -56,7 +56,7 @@ public class Scp956DamageHandler : StandardDamageHandler
 
 	public override void WriteAdditionalData(NetworkWriter writer)
 	{
-		StartVelocity = _velocity;
+		base.StartVelocity = this._velocity;
 		base.WriteAdditionalData(writer);
 	}
 }

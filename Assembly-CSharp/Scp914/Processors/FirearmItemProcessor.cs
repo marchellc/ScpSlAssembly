@@ -39,13 +39,13 @@ public class FirearmItemProcessor : Scp914ItemProcessor
 
 	public override Scp914Result UpgradePickup(Scp914KnobSetting setting, ItemPickupBase ipb)
 	{
-		ClearCombiner();
-		ItemType[] items = GetItems(setting, ipb.Info.ItemId);
+		base.ClearCombiner();
+		ItemType[] items = this.GetItems(setting, ipb.Info.ItemId);
 		foreach (ItemType newType in items)
 		{
-			UpgradePickup(newType, ipb);
+			this.UpgradePickup(newType, ipb);
 		}
-		return GenerateResultFromCombiner(ipb);
+		return base.GenerateResultFromCombiner(ipb);
 	}
 
 	private void UpgradePickup(ItemType newType, ItemPickupBase source)
@@ -64,29 +64,30 @@ public class FirearmItemProcessor : Scp914ItemProcessor
 				return;
 			}
 			source.transform.position = newPos;
-			AddResultToCombiner(source);
+			base.AddResultToCombiner(source);
 			return;
 		}
 		if (newType == oldId.TypeId)
 		{
 			AttachmentCodeSync.ServerSetCode(oldId.SerialNumber, AttachmentsUtils.GetRandomAttachmentsCode(newType));
 			source.transform.position = newPos;
-			AddResultToCombiner(source);
+			base.AddResultToCombiner(source);
 			return;
 		}
-		HandleOldFirearm(oldId, newType, SpawnAmmoPickup);
-		PickupSyncInfo pickupSyncInfo = default(PickupSyncInfo);
-		pickupSyncInfo.ItemId = newType;
-		pickupSyncInfo.Serial = ItemSerialGenerator.GenerateNext();
-		pickupSyncInfo.WeightKg = item.Weight;
-		PickupSyncInfo value = pickupSyncInfo;
+		this.HandleOldFirearm(oldId, newType, SpawnAmmoPickup);
+		PickupSyncInfo value = new PickupSyncInfo
+		{
+			ItemId = newType,
+			Serial = ItemSerialGenerator.GenerateNext(),
+			WeightKg = item.Weight
+		};
 		ItemPickupBase resultingPickup = InventoryExtensions.ServerCreatePickup(item, value, newPos, source.transform.rotation);
 		source.DestroySelf();
-		AddResultToCombiner(resultingPickup);
+		base.AddResultToCombiner(resultingPickup);
 		void SpawnAmmoPickup(ItemType ammoTypeToSpawn, int ammoAmountToSpawn)
 		{
 			ItemPickupBase resultingPickup2 = AmmoItemProcessor.CreateAmmoPickup(ammoTypeToSpawn, ammoAmountToSpawn, newPos);
-			AddResultToCombiner(resultingPickup2);
+			base.AddResultToCombiner(resultingPickup2);
 		}
 	}
 
@@ -114,22 +115,22 @@ public class FirearmItemProcessor : Scp914ItemProcessor
 		switch (setting)
 		{
 		case Scp914KnobSetting.Rough:
-			array = _roughOutputs;
+			array = this._roughOutputs;
 			break;
 		case Scp914KnobSetting.Coarse:
-			array = _coarseOutputs;
+			array = this._coarseOutputs;
 			break;
 		case Scp914KnobSetting.OneToOne:
-			array = _oneToOneOutputs;
+			array = this._oneToOneOutputs;
 			break;
 		case Scp914KnobSetting.Fine:
-			array = _fineOutputs;
+			array = this._fineOutputs;
 			break;
 		case Scp914KnobSetting.VeryFine:
-			array = _veryFineOutputs;
+			array = this._veryFineOutputs;
 			break;
 		default:
-			return DestroyResult;
+			return FirearmItemProcessor.DestroyResult;
 		}
 		if (array.Length == 0)
 		{
@@ -147,6 +148,6 @@ public class FirearmItemProcessor : Scp914ItemProcessor
 				return firearmOutput.TargetItems;
 			}
 		}
-		return DestroyResult;
+		return FirearmItemProcessor.DestroyResult;
 	}
 }

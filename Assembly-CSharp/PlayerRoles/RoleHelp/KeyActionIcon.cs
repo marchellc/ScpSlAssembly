@@ -27,7 +27,7 @@ public class KeyActionIcon : MonoBehaviour
 
 	private void Awake()
 	{
-		Refresh();
+		this.Refresh();
 		NewInput.OnKeyModified += OnKeyModified;
 	}
 
@@ -38,46 +38,46 @@ public class KeyActionIcon : MonoBehaviour
 
 	private void OnKeyModified(ActionName actionName, KeyCode kc)
 	{
-		if (actionName == _action)
+		if (actionName == this._action)
 		{
-			Refresh(kc);
+			this.Refresh(kc);
 		}
 	}
 
 	private void Refresh()
 	{
-		Refresh(NewInput.GetKey(_action));
+		this.Refresh(NewInput.GetKey(this._action));
 	}
 
 	private void Refresh(KeyCode kc)
 	{
-		_mouseIcons.ForEach(delegate(GameObject x)
+		this._mouseIcons.ForEach(delegate(GameObject x)
 		{
 			x.SetActive(value: false);
 		});
 		if (kc >= KeyCode.Mouse0 && kc <= KeyCode.Mouse6)
 		{
-			HandleMouse((int)(kc - 323));
+			this.HandleMouse((int)(kc - 323));
 		}
 		else
 		{
-			HandleKeycode(new ReadableKeyCode(kc));
+			this.HandleKeycode(new ReadableKeyCode(kc));
 		}
 	}
 
 	private void HandleMouse(int buttonId)
 	{
-		_keycodeText.text = string.Empty;
-		_mouseText.text = buttonId.ToString();
-		int b = _mouseIcons.Length - 1;
+		this._keycodeText.text = string.Empty;
+		this._mouseText.text = buttonId.ToString();
+		int b = this._mouseIcons.Length - 1;
 		int num = Mathf.Min(buttonId, b);
-		_mouseIcons[num].SetActive(value: true);
-		_keycodeBg.enabled = false;
+		this._mouseIcons[num].SetActive(value: true);
+		this._keycodeBg.enabled = false;
 	}
 
 	private void HandleKeycode(ReadableKeyCode rkc)
 	{
-		_keycodeText.text = rkc.NormalVersion;
-		_keycodeBg.enabled = true;
+		this._keycodeText.text = rkc.NormalVersion;
+		this._keycodeBg.enabled = true;
 	}
 }

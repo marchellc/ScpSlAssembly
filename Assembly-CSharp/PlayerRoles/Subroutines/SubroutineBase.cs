@@ -20,17 +20,17 @@ public abstract class SubroutineBase : MonoBehaviour, IRootDummyActionProvider
 	{
 		get
 		{
-			if (_syncIndex != 0)
+			if (this._syncIndex != 0)
 			{
-				return _syncIndex;
+				return this._syncIndex;
 			}
-			SubroutineBase[] allSubroutines = ((Role as ISubroutinedRole) ?? throw new InvalidOperationException("Could not generate a SyncIndex of '" + base.name + "' subroutine. The role does not derive from ISubroutinedRole!")).SubroutineModule.AllSubroutines;
+			SubroutineBase[] allSubroutines = ((this.Role as ISubroutinedRole) ?? throw new InvalidOperationException("Could not generate a SyncIndex of '" + base.name + "' subroutine. The role does not derive from ISubroutinedRole!")).SubroutineModule.AllSubroutines;
 			for (int i = 0; i < allSubroutines.Length; i++)
 			{
 				if (!(allSubroutines[i] != this))
 				{
-					_syncIndex = (byte)(i + 1);
-					return _syncIndex;
+					this._syncIndex = (byte)(i + 1);
+					return this._syncIndex;
 				}
 			}
 			throw new InvalidOperationException("Could not generate a SyncIndex of '" + base.name + "' subroutine. It's not on the list of registered subroutines!");
@@ -41,36 +41,36 @@ public abstract class SubroutineBase : MonoBehaviour, IRootDummyActionProvider
 	{
 		get
 		{
-			return _dummyDirty;
+			return this._dummyDirty;
 		}
 		set
 		{
-			_dummyDirty = value;
-			if (value && Role.TryGetOwner(out var hub))
+			this._dummyDirty = value;
+			if (value && this.Role.TryGetOwner(out var hub))
 			{
 				hub.roleManager.DummyActionsDirty = true;
 			}
 		}
 	}
 
-	private DummyKeyEmulator DummyEmulator => _dummyEmulator ?? (_dummyEmulator = new DummyKeyEmulator(this));
+	private DummyKeyEmulator DummyEmulator => this._dummyEmulator ?? (this._dummyEmulator = new DummyKeyEmulator(this));
 
 	protected virtual void Awake()
 	{
-		Role = GetComponentInParent<PlayerRoleBase>();
+		this.Role = base.GetComponentInParent<PlayerRoleBase>();
 	}
 
 	protected virtual void LateUpdate()
 	{
-		if (Role.IsEmulatedDummy)
+		if (this.Role.IsEmulatedDummy)
 		{
-			DummyEmulator.LateUpdate();
+			this.DummyEmulator.LateUpdate();
 		}
 	}
 
 	protected virtual void OnValidate()
 	{
-		SubroutineManagerModule componentInParent = GetComponentInParent<SubroutineManagerModule>();
+		SubroutineManagerModule componentInParent = base.GetComponentInParent<SubroutineManagerModule>();
 		if (!(componentInParent == null))
 		{
 			componentInParent.AllSubroutines = componentInParent.GetComponentsInChildren<SubroutineBase>();
@@ -79,35 +79,35 @@ public abstract class SubroutineBase : MonoBehaviour, IRootDummyActionProvider
 
 	public bool GetActionDown(ActionName action)
 	{
-		if (!Role.IsEmulatedDummy)
+		if (!this.Role.IsEmulatedDummy)
 		{
-			if (Role.IsLocalPlayer)
+			if (this.Role.IsLocalPlayer)
 			{
 				return Input.GetKeyDown(NewInput.GetKey(action));
 			}
 			return false;
 		}
-		return DummyEmulator.GetAction(action, firstFrameOnly: true);
+		return this.DummyEmulator.GetAction(action, firstFrameOnly: true);
 	}
 
 	public bool GetAction(ActionName action)
 	{
-		if (!Role.IsEmulatedDummy)
+		if (!this.Role.IsEmulatedDummy)
 		{
-			if (Role.IsLocalPlayer)
+			if (this.Role.IsLocalPlayer)
 			{
 				return Input.GetKey(NewInput.GetKey(action));
 			}
 			return false;
 		}
-		return DummyEmulator.GetAction(action, firstFrameOnly: false);
+		return this.DummyEmulator.GetAction(action, firstFrameOnly: false);
 	}
 
 	protected void ClientSendCmd()
 	{
-		if (!Role.Pooled)
+		if (!this.Role.Pooled)
 		{
-			if (!Role.IsControllable)
+			if (!this.Role.IsControllable)
 			{
 				throw new InvalidOperationException("ClientSendCmd can only be called on local player!");
 			}
@@ -117,23 +117,23 @@ public abstract class SubroutineBase : MonoBehaviour, IRootDummyActionProvider
 
 	protected void ServerSendRpc(bool toAll)
 	{
-		if (NetworkServer.active && !Role.Pooled)
+		if (NetworkServer.active && !this.Role.Pooled)
 		{
 			ReferenceHub hub;
 			if (toAll)
 			{
 				NetworkServer.SendToReady(new SubroutineMessage(this, isConfirmation: true));
 			}
-			else if (Role.TryGetOwner(out hub))
+			else if (this.Role.TryGetOwner(out hub))
 			{
-				ServerSendRpc(hub);
+				this.ServerSendRpc(hub);
 			}
 		}
 	}
 
 	protected void ServerSendRpc(ReferenceHub target)
 	{
-		if (NetworkServer.active && !Role.Pooled)
+		if (NetworkServer.active && !this.Role.Pooled)
 		{
 			target.connectionToClient.Send(new SubroutineMessage(this, isConfirmation: true));
 		}
@@ -141,7 +141,7 @@ public abstract class SubroutineBase : MonoBehaviour, IRootDummyActionProvider
 
 	protected void ServerSendRpc(Func<ReferenceHub, bool> condition)
 	{
-		if (NetworkServer.active && !Role.Pooled)
+		if (NetworkServer.active && !this.Role.Pooled)
 		{
 			new SubroutineMessage(this, isConfirmation: true).SendToHubsConditionally(condition);
 		}
@@ -165,11 +165,11 @@ public abstract class SubroutineBase : MonoBehaviour, IRootDummyActionProvider
 
 	public virtual void PopulateDummyActions(Action<DummyAction> actionAdder, Action<string> categoryAdder)
 	{
-		if (DummyEmulator.AnyListeners)
+		if (this.DummyEmulator.AnyListeners)
 		{
-			categoryAdder(GetType().Name);
-			DummyEmulator.PopulateDummyActions(actionAdder);
+			categoryAdder(base.GetType().Name);
+			this.DummyEmulator.PopulateDummyActions(actionAdder);
 		}
-		DummyActionsDirty = false;
+		this.DummyActionsDirty = false;
 	}
 }

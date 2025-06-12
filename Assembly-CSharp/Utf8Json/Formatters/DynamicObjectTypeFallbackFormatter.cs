@@ -35,14 +35,14 @@ public sealed class DynamicObjectTypeFallbackFormatter : IJsonFormatter<object>,
 			writer.WriteEndObject();
 			return;
 		}
-		if (!serializers.TryGetValue(type, out var value2))
+		if (!this.serializers.TryGetValue(type, out var value2))
 		{
-			lock (serializers)
+			lock (this.serializers)
 			{
-				if (!serializers.TryGetValue(type, out value2))
+				if (!this.serializers.TryGetValue(type, out value2))
 				{
 					object obj = null;
-					IJsonFormatterResolver[] array = innerResolvers;
+					IJsonFormatterResolver[] array = this.innerResolvers;
 					for (int i = 0; i < array.Length; i++)
 					{
 						obj = array[i].GetFormatterDynamic(type);
@@ -53,7 +53,7 @@ public sealed class DynamicObjectTypeFallbackFormatter : IJsonFormatter<object>,
 					}
 					if (obj == null)
 					{
-						throw new FormatterNotRegisteredException(type.FullName + " is not registered in this resolver. resolvers:" + string.Join(", ", innerResolvers.Select((IJsonFormatterResolver x) => x.GetType().Name).ToArray()));
+						throw new FormatterNotRegisteredException(type.FullName + " is not registered in this resolver. resolvers:" + string.Join(", ", this.innerResolvers.Select((IJsonFormatterResolver x) => x.GetType().Name).ToArray()));
 					}
 					Type type2 = type;
 					DynamicMethod dynamicMethod = new DynamicMethod("Serialize", null, new Type[4]
@@ -73,7 +73,7 @@ public sealed class DynamicObjectTypeFallbackFormatter : IJsonFormatter<object>,
 					iLGenerator.EmitCall(DynamicObjectTypeBuilder.EmitInfo.Serialize(type2));
 					iLGenerator.Emit(OpCodes.Ret);
 					value2 = new KeyValuePair<object, SerializeMethod>(obj, (SerializeMethod)dynamicMethod.CreateDelegate(typeof(SerializeMethod)));
-					serializers.TryAdd(type2, value2);
+					this.serializers.TryAdd(type2, value2);
 				}
 			}
 		}

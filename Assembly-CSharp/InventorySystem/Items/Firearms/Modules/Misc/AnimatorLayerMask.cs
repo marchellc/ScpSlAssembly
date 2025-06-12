@@ -17,42 +17,42 @@ public class AnimatorLayerMask
 	{
 		get
 		{
-			if (_cachedMaskValue == _maskValue && _cachedMaskArray != null)
+			if (this._cachedMaskValue == this._maskValue && this._cachedMaskArray != null)
 			{
-				return _cachedMaskArray;
+				return this._cachedMaskArray;
 			}
-			uint num = (uint)_maskValue;
+			uint num = (uint)this._maskValue;
 			int num2 = 0;
 			while (num != 0)
 			{
 				num2++;
 				num &= num - 1;
 			}
-			if (_cachedMaskArray == null || _cachedMaskArray.Length != num2)
+			if (this._cachedMaskArray == null || this._cachedMaskArray.Length != num2)
 			{
-				_cachedMaskArray = new int[num2];
+				this._cachedMaskArray = new int[num2];
 			}
 			for (int i = 0; i < 32; i++)
 			{
 				int num3 = 1 << i;
-				if (num3 > _maskValue)
+				if (num3 > this._maskValue)
 				{
 					break;
 				}
-				if ((_maskValue & num3) != 0)
+				if ((this._maskValue & num3) != 0)
 				{
-					_cachedMaskArray[--num2] = i;
+					this._cachedMaskArray[--num2] = i;
 				}
 			}
-			_cachedMaskValue = _maskValue;
-			return _cachedMaskArray;
+			this._cachedMaskValue = this._maskValue;
+			return this._cachedMaskArray;
 		}
 		set
 		{
-			_maskValue = 0;
+			this._maskValue = 0;
 			value.ForEach(delegate(int x)
 			{
-				SetLayer(x, state: true);
+				this.SetLayer(x, state: true);
 			});
 		}
 	}
@@ -62,28 +62,28 @@ public class AnimatorLayerMask
 		int num = 1 << layerIndex;
 		if (state)
 		{
-			_maskValue |= num;
+			this._maskValue |= num;
 		}
 		else
 		{
-			_maskValue &= ~num;
+			this._maskValue &= ~num;
 		}
 	}
 
 	public bool GetLayer(int layerIndex)
 	{
 		int num = 1 << layerIndex;
-		return (_maskValue & num) == num;
+		return (this._maskValue & num) == num;
 	}
 
 	public void SetWeight(Animator anim, float weight)
 	{
-		SetWeight(anim.SetLayerWeight, weight);
+		this.SetWeight(anim.SetLayerWeight, weight);
 	}
 
 	public void SetWeight(Action<int, float> setter, float weight)
 	{
-		int[] layers = Layers;
+		int[] layers = this.Layers;
 		foreach (int arg in layers)
 		{
 			setter(arg, weight);

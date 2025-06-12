@@ -33,11 +33,11 @@ public class Scp079Nightvision : Scp079GuiElementBase
 	{
 		get
 		{
-			if (_curCam.CurClientSwitchState != 0)
+			if (this._curCam.CurClientSwitchState != Scp079CurrentCameraSync.ClientSwitchState.None)
 			{
 				return null;
 			}
-			if (_lostSignal.Lost)
+			if (this._lostSignal.Lost)
 			{
 				return null;
 			}
@@ -50,7 +50,7 @@ public class Scp079Nightvision : Scp079GuiElementBase
 			{
 				return null;
 			}
-			if (!_zoneTargets.TryGetValue(currentCamera.Room.Zone, out var value))
+			if (!this._zoneTargets.TryGetValue(currentCamera.Room.Zone, out var value))
 			{
 				return null;
 			}
@@ -61,36 +61,36 @@ public class Scp079Nightvision : Scp079GuiElementBase
 	internal override void Init(Scp079Role role, ReferenceHub owner)
 	{
 		base.Init(role, owner);
-		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out _curCam);
-		role.SubroutineModule.TryGetSubroutine<Scp079LostSignalHandler>(out _lostSignal);
-		_curCam.OnCameraChanged += UpdateAll;
-		ZoneNightvisionPair[] pairs = _pairs;
+		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out this._curCam);
+		role.SubroutineModule.TryGetSubroutine<Scp079LostSignalHandler>(out this._lostSignal);
+		this._curCam.OnCameraChanged += UpdateAll;
+		ZoneNightvisionPair[] pairs = this._pairs;
 		for (int i = 0; i < pairs.Length; i++)
 		{
 			ZoneNightvisionPair zoneNightvisionPair = pairs[i];
-			_volumes.Add(zoneNightvisionPair.PostProcess);
-			_zoneTargets[zoneNightvisionPair.Zone] = zoneNightvisionPair.PostProcess;
+			this._volumes.Add(zoneNightvisionPair.PostProcess);
+			this._zoneTargets[zoneNightvisionPair.Zone] = zoneNightvisionPair.PostProcess;
 		}
-		UpdateAll();
+		this.UpdateAll();
 	}
 
 	private void OnDestroy()
 	{
-		if (!(_curCam == null))
+		if (!(this._curCam == null))
 		{
-			_curCam.OnCameraChanged -= UpdateAll;
+			this._curCam.OnCameraChanged -= UpdateAll;
 		}
 	}
 
 	private void Update()
 	{
-		UpdateAll();
+		this.UpdateAll();
 	}
 
 	private void UpdateAll()
 	{
-		Volume target = TargetVolume;
-		_volumes.ForEach(delegate(Volume x)
+		Volume target = this.TargetVolume;
+		this._volumes.ForEach(delegate(Volume x)
 		{
 			x.enabled = x == target;
 		});

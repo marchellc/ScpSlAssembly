@@ -8,7 +8,7 @@ public abstract class MimicryMenuBase : MonoBehaviour
 	{
 		if (ReferenceHub.TryGetLocalHub(out var hub) && hub.roleManager.CurrentRole is Scp939Role role)
 		{
-			Setup(role);
+			this.Setup(role);
 		}
 		else
 		{

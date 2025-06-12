@@ -23,7 +23,7 @@ public class InputSyncModule : MicroHidModuleBase
 		{
 			if (!base.Item.PrimaryActionBlocked)
 			{
-				return (_lastReceived & SyncData.Primary) != 0;
+				return (this._lastReceived & SyncData.Primary) != 0;
 			}
 			return false;
 		}
@@ -35,7 +35,7 @@ public class InputSyncModule : MicroHidModuleBase
 		{
 			if (!base.Item.PrimaryActionBlocked)
 			{
-				return (_lastReceived & SyncData.Secondary) != 0;
+				return (this._lastReceived & SyncData.Secondary) != 0;
 			}
 			return false;
 		}
@@ -44,14 +44,14 @@ public class InputSyncModule : MicroHidModuleBase
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		_lastReceived = (SyncData)reader.ReadByte();
+		this._lastReceived = (SyncData)reader.ReadByte();
 	}
 
 	internal override void OnHolstered()
 	{
 		base.OnHolstered();
-		_lastSent = null;
-		_lastReceived = SyncData.None;
+		this._lastSent = null;
+		this._lastReceived = SyncData.None;
 	}
 
 	internal override void EquipUpdate()
@@ -60,24 +60,24 @@ public class InputSyncModule : MicroHidModuleBase
 		if (base.IsControllable)
 		{
 			SyncData syncData = SyncData.None;
-			if (GetAction(ActionName.Shoot))
+			if (base.GetAction(ActionName.Shoot))
 			{
 				syncData |= SyncData.Primary;
 			}
-			if (GetAction(ActionName.Zoom))
+			if (base.GetAction(ActionName.Zoom))
 			{
 				syncData |= SyncData.Secondary;
 			}
-			if (syncData != _lastSent)
+			if (syncData != this._lastSent)
 			{
-				_lastSent = syncData;
-				SendCmd(SerializeCmd);
+				this._lastSent = syncData;
+				this.SendCmd(SerializeCmd);
 			}
 		}
 	}
 
 	private void SerializeCmd(NetworkWriter writer)
 	{
-		writer.WriteByte((byte)_lastSent.Value);
+		writer.WriteByte((byte)this._lastSent.Value);
 	}
 }

@@ -37,21 +37,21 @@ public class WearableArmor : DisplayableWearableBase
 
 		public void Setup(Animator anim)
 		{
-			_targetTr = Target.transform;
-			if (Parent != HumanBodyBones.LastBone)
+			this._targetTr = this.Target.transform;
+			if (this.Parent != HumanBodyBones.LastBone)
 			{
-				_targetTr.SetParent(anim.GetBoneTransform(Parent));
+				this._targetTr.SetParent(anim.GetBoneTransform(this.Parent));
 			}
-			if (ScaleToFade)
+			if (this.ScaleToFade)
 			{
-				_originalScale = _targetTr.localScale;
+				this._originalScale = this._targetTr.localScale;
 			}
-			Target.SetActive(value: false);
+			this.Target.SetActive(value: false);
 		}
 
 		public void SetScale(float scale)
 		{
-			_targetTr.localScale = _originalScale * scale;
+			this._targetTr.localScale = this._originalScale * scale;
 		}
 	}
 
@@ -68,13 +68,13 @@ public class WearableArmor : DisplayableWearableBase
 
 		public void Setup(Animator anim)
 		{
-			_boneTr = anim.GetBoneTransform(_bone);
+			this._boneTr = anim.GetBoneTransform(this._bone);
 		}
 
 		public void Track()
 		{
-			_boneTr.GetPositionAndRotation(out var position, out var rotation);
-			_target.SetPositionAndRotation(position, rotation);
+			this._boneTr.GetPositionAndRotation(out var position, out var rotation);
+			this._target.SetPositionAndRotation(position, rotation);
 		}
 	}
 
@@ -117,38 +117,38 @@ public class WearableArmor : DisplayableWearableBase
 	public override void Initialize(WearableSubcontroller subcontroller)
 	{
 		base.Initialize(subcontroller);
-		InitCuller();
-		InitElements();
-		InitFadeables();
-		SetFade(base.Model.Fade);
-		SetArmor(ItemType.None);
+		this.InitCuller();
+		this.InitElements();
+		this.InitFadeables();
+		this.SetFade(base.Model.Fade);
+		this.SetArmor(ItemType.None);
 	}
 
 	public override void SetFade(float fade)
 	{
-		foreach (VisibleElement activeVisibleElement in _activeVisibleElements)
+		foreach (VisibleElement activeVisibleElement in this._activeVisibleElements)
 		{
 			if (activeVisibleElement.ScaleToFade)
 			{
 				activeVisibleElement.SetScale(fade);
 			}
 		}
-		foreach (Material allFadeableMaterial in _allFadeableMaterials)
+		foreach (Material allFadeableMaterial in this._allFadeableMaterials)
 		{
-			allFadeableMaterial.SetFloat(FadeHash, fade);
+			allFadeableMaterial.SetFloat(WearableArmor.FadeHash, fade);
 		}
 	}
 
 	public override void WriteSyncvars(NetworkWriter writer)
 	{
 		base.WriteSyncvars(writer);
-		writer.WriteSByte((sbyte)ServerCurArmor);
+		writer.WriteSByte((sbyte)this.ServerCurArmor);
 	}
 
 	public override void ApplySyncvars(NetworkReader reader)
 	{
 		base.ApplySyncvars(reader);
-		SetArmor((ItemType)reader.ReadSByte());
+		this.SetArmor((ItemType)reader.ReadSByte());
 	}
 
 	public override void OnWornStatusChanged()
@@ -156,14 +156,14 @@ public class WearableArmor : DisplayableWearableBase
 		base.OnWornStatusChanged();
 		if (!base.IsWorn)
 		{
-			SetArmor(ItemType.None);
+			this.SetArmor(ItemType.None);
 		}
 	}
 
 	public override void UpdateVisibility()
 	{
 		base.UpdateVisibility();
-		foreach (VisibleElement activeVisibleElement in _activeVisibleElements)
+		foreach (VisibleElement activeVisibleElement in this._activeVisibleElements)
 		{
 			activeVisibleElement.Target.SetActive(base.IsVisible);
 		}
@@ -171,48 +171,48 @@ public class WearableArmor : DisplayableWearableBase
 
 	private void LateUpdate()
 	{
-		if (!_hasCuller)
+		if (!this._hasCuller)
 		{
-			MatchAllBones();
+			this.MatchAllBones();
 		}
 	}
 
 	private void MatchAllBones()
 	{
-		MatchBones(0);
+		this.MatchBones(0);
 	}
 
 	private void MatchBones(int startIndex)
 	{
 		if (base.IsVisible)
 		{
-			for (int i = startIndex; i < _trackedBones.Count; i++)
+			for (int i = startIndex; i < this._trackedBones.Count; i++)
 			{
-				_trackedBones[i].Track();
+				this._trackedBones[i].Track();
 			}
 		}
 	}
 
 	private void SetArmor(ItemType armorType)
 	{
-		if (_lastArmor == armorType)
+		if (this._lastArmor == armorType)
 		{
 			return;
 		}
-		_lastArmor = armorType;
-		foreach (VisibleElement activeVisibleElement in _activeVisibleElements)
+		this._lastArmor = armorType;
+		foreach (VisibleElement activeVisibleElement in this._activeVisibleElements)
 		{
 			activeVisibleElement.Target.SetActive(value: false);
 		}
-		foreach (GameObject activeSimpleElement in _activeSimpleElements)
+		foreach (GameObject activeSimpleElement in this._activeSimpleElements)
 		{
 			activeSimpleElement.SetActive(value: false);
 		}
-		_trackedBones.Clear();
-		_activeSimpleElements.Clear();
-		_activeVisibleElements.Clear();
+		this._trackedBones.Clear();
+		this._activeSimpleElements.Clear();
+		this._activeVisibleElements.Clear();
 		float fade = base.Model.Fade;
-		ArmorSet[] definedSets = DefinedSets;
+		ArmorSet[] definedSets = this.DefinedSets;
 		for (int i = 0; i < definedSets.Length; i++)
 		{
 			ArmorSet armorSet = definedSets[i];
@@ -220,9 +220,9 @@ public class WearableArmor : DisplayableWearableBase
 			{
 				continue;
 			}
-			int count = _trackedBones.Count;
-			_trackedBones.AddRange(armorSet.TrackedBones);
-			MatchBones(count);
+			int count = this._trackedBones.Count;
+			this._trackedBones.AddRange(armorSet.TrackedBones);
+			this.MatchBones(count);
 			foreach (VisibleElement visibleObject in armorSet.VisibleObjects)
 			{
 				visibleObject.Target.SetActive(base.IsVisible);
@@ -230,13 +230,13 @@ public class WearableArmor : DisplayableWearableBase
 				{
 					visibleObject.SetScale(fade);
 				}
-				_activeVisibleElements.Add(visibleObject);
+				this._activeVisibleElements.Add(visibleObject);
 			}
 			GameObject[] simpleModelElements = armorSet.SimpleModelElements;
 			foreach (GameObject gameObject in simpleModelElements)
 			{
 				gameObject.SetActive(value: true);
-				_activeSimpleElements.Add(gameObject);
+				this._activeSimpleElements.Add(gameObject);
 			}
 		}
 	}
@@ -245,7 +245,7 @@ public class WearableArmor : DisplayableWearableBase
 	{
 		if (base.Model.TryGetSubcontroller<CullingSubcontroller>(out var subcontroller))
 		{
-			_hasCuller = true;
+			this._hasCuller = true;
 			subcontroller.OnAnimatorUpdated += MatchAllBones;
 		}
 	}
@@ -253,14 +253,14 @@ public class WearableArmor : DisplayableWearableBase
 	private void InitElements()
 	{
 		Animator animator = base.Animator;
-		ArmorSet[] definedSets = DefinedSets;
+		ArmorSet[] definedSets = this.DefinedSets;
 		for (int i = 0; i < definedSets.Length; i++)
 		{
 			ArmorSet target = definedSets[i];
 			PackedArmorPart[] packedArmorParts = target.PackedArmorParts;
 			for (int j = 0; j < packedArmorParts.Length; j++)
 			{
-				packedArmorParts[j].Unpack(target, FadeableRenderes);
+				packedArmorParts[j].Unpack(target, this.FadeableRenderes);
 			}
 			foreach (VisibleElement visibleObject in target.VisibleObjects)
 			{
@@ -280,42 +280,42 @@ public class WearableArmor : DisplayableWearableBase
 
 	private void InitFadeables()
 	{
-		NonAllocMaterialCopies.Clear();
-		foreach (Renderer fadeableRendere in FadeableRenderes)
+		WearableArmor.NonAllocMaterialCopies.Clear();
+		foreach (Renderer fadeableRendere in this.FadeableRenderes)
 		{
-			SetupRendererMatInstances(fadeableRendere);
+			this.SetupRendererMatInstances(fadeableRendere);
 		}
-		_allFadeableMaterials.EnsureCapacity(NonAllocMaterialCopies.Count);
-		foreach (KeyValuePair<Material, Material> nonAllocMaterialCopy in NonAllocMaterialCopies)
+		this._allFadeableMaterials.EnsureCapacity(WearableArmor.NonAllocMaterialCopies.Count);
+		foreach (KeyValuePair<Material, Material> nonAllocMaterialCopy in WearableArmor.NonAllocMaterialCopies)
 		{
-			_allFadeableMaterials.Add(nonAllocMaterialCopy.Value);
+			this._allFadeableMaterials.Add(nonAllocMaterialCopy.Value);
 		}
 	}
 
 	private void SetupRendererMatInstances(Renderer rend)
 	{
-		NonAllocMatList.Clear();
-		rend.GetSharedMaterials(NonAllocMatList);
-		if (NonAllocMatList.Count == 1)
+		WearableArmor.NonAllocMatList.Clear();
+		rend.GetSharedMaterials(WearableArmor.NonAllocMatList);
+		if (WearableArmor.NonAllocMatList.Count == 1)
 		{
-			rend.sharedMaterial = GetOrAddMatInstance(NonAllocMatList[0]);
+			rend.sharedMaterial = this.GetOrAddMatInstance(WearableArmor.NonAllocMatList[0]);
 			return;
 		}
-		for (int i = 0; i < NonAllocMatList.Count; i++)
+		for (int i = 0; i < WearableArmor.NonAllocMatList.Count; i++)
 		{
-			NonAllocMatList[i] = GetOrAddMatInstance(NonAllocMatList[i]);
+			WearableArmor.NonAllocMatList[i] = this.GetOrAddMatInstance(WearableArmor.NonAllocMatList[i]);
 		}
-		rend.SetMaterials(NonAllocMatList);
+		rend.SetMaterials(WearableArmor.NonAllocMatList);
 	}
 
 	private Material GetOrAddMatInstance(Material original)
 	{
-		if (NonAllocMaterialCopies.TryGetValue(original, out var value))
+		if (WearableArmor.NonAllocMaterialCopies.TryGetValue(original, out var value))
 		{
 			return value;
 		}
 		Material material = new Material(original);
-		NonAllocMaterialCopies[original] = material;
+		WearableArmor.NonAllocMaterialCopies[original] = material;
 		return material;
 	}
 }

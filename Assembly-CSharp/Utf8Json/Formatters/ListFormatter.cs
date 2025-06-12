@@ -61,7 +61,7 @@ public class ListFormatter<T> : IJsonFormatter<List<T>>, IJsonFormatter, IOverwr
 			int count = 0;
 			IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
 			List<T> list = value;
-			if (deserializeToBehaviour == CollectionDeserializeToBehaviour.OverwriteReplace)
+			if (this.deserializeToBehaviour == CollectionDeserializeToBehaviour.OverwriteReplace)
 			{
 				list.Clear();
 			}

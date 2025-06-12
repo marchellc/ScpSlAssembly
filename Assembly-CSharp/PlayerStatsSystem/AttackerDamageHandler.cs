@@ -28,7 +28,7 @@ public abstract class AttackerDamageHandler : StandardDamageHandler
 	{
 		get
 		{
-			if (!Attacker.IsSet || !PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(Attacker.Role, out var result))
+			if (!this.Attacker.IsSet || !PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(this.Attacker.Role, out var result))
 			{
 				return CassieAnnouncement.Default;
 			}
@@ -68,11 +68,11 @@ public abstract class AttackerDamageHandler : StandardDamageHandler
 				}
 				else
 				{
-					string text = rule.TranslateToCassie(Attacker.UnitName);
+					string text = rule.TranslateToCassie(this.Attacker.UnitName);
 					cassieAnnouncement.Announcement = "CONTAINEDSUCCESSFULLY CONTAINMENTUNIT " + text;
 					cassieAnnouncement.SubtitleParts = new SubtitlePart[1]
 					{
-						new SubtitlePart(SubtitleType.ContainUnit, Attacker.UnitName)
+						new SubtitlePart(SubtitleType.ContainUnit, this.Attacker.UnitName)
 					};
 				}
 				break;
@@ -80,7 +80,7 @@ public abstract class AttackerDamageHandler : StandardDamageHandler
 			case Team.SCPs:
 			case Team.Flamingos:
 			{
-				NineTailedFoxAnnouncer.ConvertSCP(Attacker.Role, out var withoutSpace, out var withSpace);
+				NineTailedFoxAnnouncer.ConvertSCP(this.Attacker.Role, out var withoutSpace, out var withSpace);
 				cassieAnnouncement.Announcement = "TERMINATED BY SCP " + withSpace;
 				cassieAnnouncement.SubtitleParts = new SubtitlePart[1]
 				{
@@ -99,46 +99,46 @@ public abstract class AttackerDamageHandler : StandardDamageHandler
 
 	protected virtual bool ForceFullFriendlyFire { get; set; }
 
-	public virtual bool IgnoreFriendlyFireDetector => ForceFullFriendlyFire;
+	public virtual bool IgnoreFriendlyFireDetector => this.ForceFullFriendlyFire;
 
 	public override string ServerMetricsText
 	{
 		get
 		{
-			int lifeIdentifier = Attacker.LifeIdentifier;
+			int lifeIdentifier = this.Attacker.LifeIdentifier;
 			return lifeIdentifier.ToString();
 		}
 	}
 
 	protected override void ProcessDamage(ReferenceHub ply)
 	{
-		if (DisableSpawnProtect(Attacker.Hub, ply))
+		if (this.DisableSpawnProtect(this.Attacker.Hub, ply))
 		{
-			Damage = 0f;
+			this.Damage = 0f;
 			return;
 		}
 		StatusEffectBase[] allEffects = ply.playerEffectsController.AllEffects;
 		foreach (StatusEffectBase statusEffectBase in allEffects)
 		{
-			if (statusEffectBase is IFriendlyFireModifier friendlyFireModifier && statusEffectBase.IsEnabled && friendlyFireModifier.AllowFriendlyFire(Damage, this, Hitbox))
+			if (statusEffectBase is IFriendlyFireModifier friendlyFireModifier && statusEffectBase.IsEnabled && friendlyFireModifier.AllowFriendlyFire(this.Damage, this, base.Hitbox))
 			{
-				ForceFullFriendlyFire = true;
+				this.ForceFullFriendlyFire = true;
 				break;
 			}
 		}
-		if (ply.networkIdentity.netId == Attacker.NetId || ForceFullFriendlyFire)
+		if (ply.networkIdentity.netId == this.Attacker.NetId || this.ForceFullFriendlyFire)
 		{
-			if (!AllowSelfDamage && !ForceFullFriendlyFire)
+			if (!this.AllowSelfDamage && !this.ForceFullFriendlyFire)
 			{
-				Damage = 0f;
+				this.Damage = 0f;
 				return;
 			}
-			IsSuicide = true;
+			this.IsSuicide = true;
 		}
-		else if (!HitboxIdentity.IsEnemy(Attacker.Role, ply.GetRoleId()))
+		else if (!HitboxIdentity.IsEnemy(this.Attacker.Role, ply.GetRoleId()))
 		{
-			Damage *= _ffMultiplier;
-			IsFriendlyFire = true;
+			this.Damage *= AttackerDamageHandler._ffMultiplier;
+			this.IsFriendlyFire = true;
 		}
 		base.ProcessDamage(ply);
 	}
@@ -159,32 +159,32 @@ public abstract class AttackerDamageHandler : StandardDamageHandler
 	public override void WriteDeathScreen(NetworkWriter writer)
 	{
 		writer.WriteSpawnReason(SpectatorSpawnReason.KilledByPlayer);
-		writer.WriteUInt(Attacker.NetId);
-		writer.WriteString(Attacker.Nickname);
-		writer.WriteRoleType(Attacker.Role);
+		writer.WriteUInt(this.Attacker.NetId);
+		writer.WriteString(this.Attacker.Nickname);
+		writer.WriteRoleType(this.Attacker.Role);
 	}
 
 	public override void WriteAdditionalData(NetworkWriter writer)
 	{
 		base.WriteAdditionalData(writer);
-		writer.WriteReferenceHub(Attacker.Hub);
+		writer.WriteReferenceHub(this.Attacker.Hub);
 	}
 
 	public override void ReadAdditionalData(NetworkReader reader)
 	{
 		base.ReadAdditionalData(reader);
-		Attacker = new Footprint(reader.ReadReferenceHub());
+		this.Attacker = new Footprint(reader.ReadReferenceHub());
 	}
 
 	[RuntimeInitializeOnLoadMethod]
 	private static void RefreshConfigs()
 	{
-		if (!_eventAssigned)
+		if (!AttackerDamageHandler._eventAssigned)
 		{
 			ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(RefreshConfigs));
 			ServerConfigSynchronizer.OnRefreshed = (Action)Delegate.Combine(ServerConfigSynchronizer.OnRefreshed, new Action(RefreshConfigs));
-			_eventAssigned = true;
+			AttackerDamageHandler._eventAssigned = true;
 		}
-		_ffMultiplier = (ServerConsole.FriendlyFire ? ConfigFile.ServerConfig.GetFloat("friendly_fire_multiplier", 0.4f) : 0f);
+		AttackerDamageHandler._ffMultiplier = (ServerConsole.FriendlyFire ? ConfigFile.ServerConfig.GetFloat("friendly_fire_multiplier", 0.4f) : 0f);
 	}
 }

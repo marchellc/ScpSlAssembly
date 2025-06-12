@@ -11,7 +11,7 @@ public sealed class AuthenticationTokenFormatter : IJsonFormatter<Authentication
 
 	public AuthenticationTokenFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("RequestIp"),
@@ -106,7 +106,7 @@ public sealed class AuthenticationTokenFormatter : IJsonFormatter<Authentication
 				22
 			}
 		};
-		____stringByteKeys = new byte[23][]
+		this.____stringByteKeys = new byte[23][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("RequestIp"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("Asn"),
@@ -141,51 +141,51 @@ public sealed class AuthenticationTokenFormatter : IJsonFormatter<Authentication
 			writer.WriteNull();
 			return;
 		}
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.RequestIp);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteInt32(value.Asn);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteString(value.GlobalBan);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		writer.WriteString(value.VacSession);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		writer.WriteBoolean(value.DoNotTrack);
-		writer.WriteRaw(____stringByteKeys[5]);
+		writer.WriteRaw(this.____stringByteKeys[5]);
 		writer.WriteBoolean(value.SkipIpCheck);
-		writer.WriteRaw(____stringByteKeys[6]);
+		writer.WriteRaw(this.____stringByteKeys[6]);
 		writer.WriteBoolean(value.BypassBans);
-		writer.WriteRaw(____stringByteKeys[7]);
+		writer.WriteRaw(this.____stringByteKeys[7]);
 		writer.WriteBoolean(value.BypassGeoRestrictions);
-		writer.WriteRaw(____stringByteKeys[8]);
+		writer.WriteRaw(this.____stringByteKeys[8]);
 		writer.WriteBoolean(value.BypassWhitelists);
-		writer.WriteRaw(____stringByteKeys[9]);
+		writer.WriteRaw(this.____stringByteKeys[9]);
 		writer.WriteBoolean(value.GlobalBadge);
-		writer.WriteRaw(____stringByteKeys[10]);
+		writer.WriteRaw(this.____stringByteKeys[10]);
 		writer.WriteBoolean(value.PrivateBetaOwnership);
-		writer.WriteRaw(____stringByteKeys[11]);
+		writer.WriteRaw(this.____stringByteKeys[11]);
 		writer.WriteBoolean(value.SyncHashed);
-		writer.WriteRaw(____stringByteKeys[12]);
+		writer.WriteRaw(this.____stringByteKeys[12]);
 		writer.WriteString(value.PublicKey);
-		writer.WriteRaw(____stringByteKeys[13]);
+		writer.WriteRaw(this.____stringByteKeys[13]);
 		writer.WriteString(value.Challenge);
-		writer.WriteRaw(____stringByteKeys[14]);
+		writer.WriteRaw(this.____stringByteKeys[14]);
 		writer.WriteString(value.UserId);
-		writer.WriteRaw(____stringByteKeys[15]);
+		writer.WriteRaw(this.____stringByteKeys[15]);
 		writer.WriteString(value.Nickname);
-		writer.WriteRaw(____stringByteKeys[16]);
+		writer.WriteRaw(this.____stringByteKeys[16]);
 		formatterResolver.GetFormatterWithVerify<DateTimeOffset>().Serialize(ref writer, value.IssuanceTime, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[17]);
+		writer.WriteRaw(this.____stringByteKeys[17]);
 		formatterResolver.GetFormatterWithVerify<DateTimeOffset>().Serialize(ref writer, value.ExpirationTime, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[18]);
+		writer.WriteRaw(this.____stringByteKeys[18]);
 		writer.WriteString(value.Usage);
-		writer.WriteRaw(____stringByteKeys[19]);
+		writer.WriteRaw(this.____stringByteKeys[19]);
 		writer.WriteString(value.IssuedBy);
-		writer.WriteRaw(____stringByteKeys[20]);
+		writer.WriteRaw(this.____stringByteKeys[20]);
 		writer.WriteString(value.Serial);
-		writer.WriteRaw(____stringByteKeys[21]);
+		writer.WriteRaw(this.____stringByteKeys[21]);
 		writer.WriteBoolean(value.TestSignature);
-		writer.WriteRaw(____stringByteKeys[22]);
+		writer.WriteRaw(this.____stringByteKeys[22]);
 		writer.WriteInt32(value.TokenVersion);
 		writer.WriteEndObject();
 	}
@@ -224,7 +224,7 @@ public sealed class AuthenticationTokenFormatter : IJsonFormatter<Authentication
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

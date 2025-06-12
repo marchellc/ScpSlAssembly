@@ -13,34 +13,34 @@ public class Scp3114MovementModule : FirstPersonMovementModule, IStaminaModifier
 
 	protected override FpcStateProcessor NewStateProcessor => new SubroutineInfluencedFpcStateProcessor(base.Hub, this, FpcStateProcessor.DefaultUseRate, FpcStateProcessor.DefaultSpawnImmunity, FpcStateProcessor.DefaultRegenCooldown, FpcStateProcessor.DefaultRegenSpeed, 3.11f);
 
-	public bool StaminaModifierActive => _scpRole.SkeletonIdle;
+	public bool StaminaModifierActive => this._scpRole.SkeletonIdle;
 
 	public float StaminaUsageMultiplier => 4f;
 
 	private void Awake()
 	{
-		_scpRole = GetComponent<Scp3114Role>();
-		_skeletonWalkSpeed = WalkSpeed;
-		_skeletonSprintSpeed = SprintSpeed;
-		_scpRole.CurIdentity.OnStatusChanged += OnStatusChanged;
+		this._scpRole = base.GetComponent<Scp3114Role>();
+		this._skeletonWalkSpeed = base.WalkSpeed;
+		this._skeletonSprintSpeed = base.SprintSpeed;
+		this._scpRole.CurIdentity.OnStatusChanged += OnStatusChanged;
 	}
 
 	private void OnStatusChanged()
 	{
-		switch (_scpRole.CurIdentity.Status)
+		switch (this._scpRole.CurIdentity.Status)
 		{
 		case Scp3114Identity.DisguiseStatus.Active:
 		{
-			if (PlayerRoleLoader.TryGetRoleTemplate<HumanRole>(_scpRole.CurIdentity.StolenRole, out var result))
+			if (PlayerRoleLoader.TryGetRoleTemplate<HumanRole>(this._scpRole.CurIdentity.StolenRole, out var result))
 			{
-				WalkSpeed = result.FpcModule.WalkSpeed;
-				SprintSpeed = result.FpcModule.SprintSpeed;
+				base.WalkSpeed = result.FpcModule.WalkSpeed;
+				base.SprintSpeed = result.FpcModule.SprintSpeed;
 			}
 			break;
 		}
 		case Scp3114Identity.DisguiseStatus.None:
-			WalkSpeed = _skeletonWalkSpeed;
-			SprintSpeed = _skeletonSprintSpeed;
+			base.WalkSpeed = this._skeletonWalkSpeed;
+			base.SprintSpeed = this._skeletonSprintSpeed;
 			break;
 		}
 	}

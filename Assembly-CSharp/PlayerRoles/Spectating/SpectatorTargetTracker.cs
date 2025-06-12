@@ -31,12 +31,12 @@ public class SpectatorTargetTracker : MonoBehaviour
 	{
 		get
 		{
-			return _singleton;
+			return SpectatorTargetTracker._singleton;
 		}
 		private set
 		{
-			_singleton = value;
-			_isSingletonSet = value != null;
+			SpectatorTargetTracker._singleton = value;
+			SpectatorTargetTracker._isSingletonSet = value != null;
 		}
 	}
 
@@ -45,9 +45,9 @@ public class SpectatorTargetTracker : MonoBehaviour
 		get
 		{
 			int num;
-			if (_trackedTransformSet)
+			if (SpectatorTargetTracker._trackedTransformSet)
 			{
-				num = ((_trackedTransform == null) ? 1 : 0);
+				num = ((SpectatorTargetTracker._trackedTransform == null) ? 1 : 0);
 				if (num == 0)
 				{
 					goto IL_001e;
@@ -57,12 +57,12 @@ public class SpectatorTargetTracker : MonoBehaviour
 			{
 				num = 1;
 			}
-			_trackedTransformSet = false;
+			SpectatorTargetTracker._trackedTransformSet = false;
 			goto IL_001e;
 			IL_001e:
 			if (num == 0)
 			{
-				return _trackedTransform;
+				return SpectatorTargetTracker._trackedTransform;
 			}
 			return MainCameraController.CurrentCamera;
 		}
@@ -82,21 +82,21 @@ public class SpectatorTargetTracker : MonoBehaviour
 	{
 		get
 		{
-			return _curTracked;
+			return SpectatorTargetTracker._curTracked;
 		}
 		set
 		{
-			if (!(_curTracked == value))
+			if (!(SpectatorTargetTracker._curTracked == value))
 			{
-				if (_curTracked != null)
+				if (SpectatorTargetTracker._curTracked != null)
 				{
-					_curTracked.OnStoppedSpectating();
+					SpectatorTargetTracker._curTracked.OnStoppedSpectating();
 				}
-				_curTracked = value;
+				SpectatorTargetTracker._curTracked = value;
 				MainCameraController.ForceUpdatePosition();
 				if (value != null)
 				{
-					LastTrackedPlayer = (value.MainRole.TryGetOwner(out var hub) ? hub : null);
+					SpectatorTargetTracker.LastTrackedPlayer = (value.MainRole.TryGetOwner(out var hub) ? hub : null);
 					value.OnBeganSpectating();
 				}
 				SpectatorTargetTracker.OnTargetChanged?.Invoke();
@@ -108,21 +108,22 @@ public class SpectatorTargetTracker : MonoBehaviour
 	{
 		get
 		{
-			if (_trackedTransformSet || !TrackerSet)
+			if (SpectatorTargetTracker._trackedTransformSet || !SpectatorTargetTracker.TrackerSet)
 			{
-				Transform trackedTransform = TrackedTransform;
-				_cachedOffsetPos = trackedTransform.TransformPoint(_trackedTransformPositionOffset);
-				_cachedOffsetRot = (trackedTransform.rotation * _trackedTransformRotationOffset).eulerAngles;
+				Transform trackedTransform = SpectatorTargetTracker.TrackedTransform;
+				SpectatorTargetTracker._cachedOffsetPos = trackedTransform.TransformPoint(SpectatorTargetTracker._trackedTransformPositionOffset);
+				SpectatorTargetTracker._cachedOffsetRot = (trackedTransform.rotation * SpectatorTargetTracker._trackedTransformRotationOffset).eulerAngles;
 			}
-			else if (CurrentTarget != null && !CurrentTarget.MainRole.Pooled)
+			else if (SpectatorTargetTracker.CurrentTarget != null && !SpectatorTargetTracker.CurrentTarget.MainRole.Pooled)
 			{
-				_cachedOffsetPos = CurrentTarget.CameraPosition;
-				_cachedOffsetRot = CurrentTarget.CameraRotation;
+				SpectatorTargetTracker._cachedOffsetPos = SpectatorTargetTracker.CurrentTarget.CameraPosition;
+				SpectatorTargetTracker._cachedOffsetRot = SpectatorTargetTracker.CurrentTarget.CameraRotation;
 			}
-			Offset result = default(Offset);
-			result.position = _cachedOffsetPos ?? DefaultOffsetPos;
-			result.rotation = _cachedOffsetRot ?? DefaultOffsetRot;
-			return result;
+			return new Offset
+			{
+				position = (SpectatorTargetTracker._cachedOffsetPos ?? SpectatorTargetTracker.DefaultOffsetPos),
+				rotation = (SpectatorTargetTracker._cachedOffsetRot ?? SpectatorTargetTracker.DefaultOffsetRot)
+			};
 		}
 	}
 
@@ -130,20 +131,20 @@ public class SpectatorTargetTracker : MonoBehaviour
 
 	private void OnEnable()
 	{
-		TrackerSet = true;
+		SpectatorTargetTracker.TrackerSet = true;
 	}
 
 	private void OnDisable()
 	{
-		CurrentTarget = null;
-		TrackerSet = false;
+		SpectatorTargetTracker.CurrentTarget = null;
+		SpectatorTargetTracker.TrackerSet = false;
 	}
 
 	private void OnDestroy()
 	{
-		Singleton = null;
-		_cachedOffsetPos = DefaultOffsetPos;
-		_cachedOffsetRot = DefaultOffsetRot;
+		SpectatorTargetTracker.Singleton = null;
+		SpectatorTargetTracker._cachedOffsetPos = SpectatorTargetTracker.DefaultOffsetPos;
+		SpectatorTargetTracker._cachedOffsetRot = SpectatorTargetTracker.DefaultOffsetRot;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -154,9 +155,9 @@ public class SpectatorTargetTracker : MonoBehaviour
 
 	private static void OnRoleChanged(ReferenceHub hub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
 	{
-		if (TrackerSet && prevRole is ISpectatableRole spectatableRole && CurrentTarget == spectatableRole.SpectatorModule)
+		if (SpectatorTargetTracker.TrackerSet && prevRole is ISpectatableRole spectatableRole && SpectatorTargetTracker.CurrentTarget == spectatableRole.SpectatorModule)
 		{
-			CurrentTarget = ((newRole is ISpectatableRole spectatableRole2) ? spectatableRole2.SpectatorModule : null);
+			SpectatorTargetTracker.CurrentTarget = ((newRole is ISpectatableRole spectatableRole2) ? spectatableRole2.SpectatorModule : null);
 		}
 		if (!hub.isLocalPlayer)
 		{
@@ -164,48 +165,48 @@ public class SpectatorTargetTracker : MonoBehaviour
 		}
 		if (newRole is SpectatorRole spectatorRole)
 		{
-			LastTrackedPlayer = hub;
-			if (_isSingletonSet)
+			SpectatorTargetTracker.LastTrackedPlayer = hub;
+			if (SpectatorTargetTracker._isSingletonSet)
 			{
-				Singleton.gameObject.SetActive(value: true);
+				SpectatorTargetTracker.Singleton.gameObject.SetActive(value: true);
 			}
 			else
 			{
-				Singleton = UnityEngine.Object.Instantiate(spectatorRole.TrackerPrefab, Vector3.zero, Quaternion.identity, null);
+				SpectatorTargetTracker.Singleton = UnityEngine.Object.Instantiate(spectatorRole.TrackerPrefab, Vector3.zero, Quaternion.identity, null);
 			}
 			if (newRole is OverwatchRole)
 			{
-				Singleton.AttachmentsMenu.SetActive(value: false);
-				Singleton.VoiceChatMenu.SetActive(value: true);
+				SpectatorTargetTracker.Singleton.AttachmentsMenu.SetActive(value: false);
+				SpectatorTargetTracker.Singleton.VoiceChatMenu.SetActive(value: true);
 			}
 			else
 			{
-				Singleton.VoiceChatMenu.SetActive(value: false);
-				Singleton.AttachmentsMenu.SetActive(value: true);
+				SpectatorTargetTracker.Singleton.VoiceChatMenu.SetActive(value: false);
+				SpectatorTargetTracker.Singleton.AttachmentsMenu.SetActive(value: true);
 			}
 		}
-		else if (TrackerSet && _isSingletonSet)
+		else if (SpectatorTargetTracker.TrackerSet && SpectatorTargetTracker._isSingletonSet)
 		{
-			Singleton.gameObject.SetActive(value: false);
+			SpectatorTargetTracker.Singleton.gameObject.SetActive(value: false);
 		}
 	}
 
 	public static void SetTrackedTransform(Transform trackedTransform, Vector3 localPosOffset, Quaternion localRotOffset)
 	{
-		_trackedTransform = trackedTransform;
-		_trackedTransformSet = trackedTransform != null;
-		_trackedTransformPositionOffset = localPosOffset;
-		_trackedTransformRotationOffset = localRotOffset;
+		SpectatorTargetTracker._trackedTransform = trackedTransform;
+		SpectatorTargetTracker._trackedTransformSet = trackedTransform != null;
+		SpectatorTargetTracker._trackedTransformPositionOffset = localPosOffset;
+		SpectatorTargetTracker._trackedTransformRotationOffset = localRotOffset;
 	}
 
 	public static void SetTrackedTransform(Transform trackedTransform)
 	{
-		SetTrackedTransform(trackedTransform, Vector3.zero, Quaternion.identity);
+		SpectatorTargetTracker.SetTrackedTransform(trackedTransform, Vector3.zero, Quaternion.identity);
 	}
 
 	public static bool TryGetTrackedPlayer(out ReferenceHub hub)
 	{
-		if (TrackerSet && CurrentTarget != null && CurrentTarget.MainRole.TryGetOwner(out hub))
+		if (SpectatorTargetTracker.TrackerSet && SpectatorTargetTracker.CurrentTarget != null && SpectatorTargetTracker.CurrentTarget.MainRole.TryGetOwner(out hub))
 		{
 			return true;
 		}

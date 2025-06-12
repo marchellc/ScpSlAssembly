@@ -56,17 +56,17 @@ public class Scp173CharacterModel : CharacterModel
 	{
 		get
 		{
-			return _isFrozen;
+			return this._isFrozen;
 		}
 		set
 		{
-			if (value != _isFrozen)
+			if (value != this._isFrozen)
 			{
-				_isFrozen = value;
-				if (_isFrozen)
+				this._isFrozen = value;
+				if (this._isFrozen)
 				{
-					_frozenRot = base.transform.rotation;
-					Scp173CharacterModel.OnFrozen?.Invoke(_role);
+					this._frozenRot = base.transform.rotation;
+					Scp173CharacterModel.OnFrozen?.Invoke(this._role);
 				}
 				else
 				{
@@ -82,35 +82,35 @@ public class Scp173CharacterModel : CharacterModel
 	{
 		if (base.HasOwner && ReferenceHub.TryGetLocalHub(out var hub))
 		{
-			Frozen = HitboxIdentity.IsEnemy(Team.SCPs, hub.GetTeam()) && _observers.IsObservedBy(hub);
-			UpdateFootsteps(!Frozen && _fpc.Motor.Velocity != Vector3.zero, _fpc.IsGrounded);
-			if (Frozen)
+			this.Frozen = HitboxIdentity.IsEnemy(Team.SCPs, hub.GetTeam()) && this._observers.IsObservedBy(hub);
+			this.UpdateFootsteps(!this.Frozen && this._fpc.Motor.Velocity != Vector3.zero, this._fpc.IsGrounded);
+			if (this.Frozen)
 			{
-				base.transform.rotation = _frozenRot;
+				base.transform.rotation = this._frozenRot;
 			}
 		}
 	}
 
 	private void UpdateFootsteps(bool isMoving, bool grounded)
 	{
-		float num = (isMoving ? _footstepEnableSpeed : _footstepDisableSpeed);
+		float num = (isMoving ? this._footstepEnableSpeed : this._footstepDisableSpeed);
 		if (grounded)
 		{
-			_groundedSw.Restart();
+			this._groundedSw.Restart();
 		}
-		else if (isMoving && _groundedSw.Elapsed.TotalSeconds < (double)_groundedSustainTime)
+		else if (isMoving && this._groundedSw.Elapsed.TotalSeconds < (double)this._groundedSustainTime)
 		{
-			num *= _footstepGroundedSustainMultiplier;
+			num *= this._footstepGroundedSustainMultiplier;
 		}
-		float num2 = Mathf.MoveTowards(_currentVolume, (isMoving && grounded) ? 1 : 0, Time.deltaTime * num);
-		float pitch = Mathf.Lerp(_lowestPitch, 1f, num2);
-		float num3 = Time.timeSinceLevelLoad * _footstepSwapSpeed;
-		_currentVolume = num2;
-		num2 *= _footstepOverallLoundess;
-		for (int i = 0; i < _sourcesCount; i++)
+		float num2 = Mathf.MoveTowards(this._currentVolume, (isMoving && grounded) ? 1 : 0, Time.deltaTime * num);
+		float pitch = Mathf.Lerp(this._lowestPitch, 1f, num2);
+		float num3 = Time.timeSinceLevelLoad * this._footstepSwapSpeed;
+		this._currentVolume = num2;
+		num2 *= this._footstepOverallLoundess;
+		for (int i = 0; i < this._sourcesCount; i++)
 		{
-			AudioSource obj = _footstepSources[i];
-			float f = Mathf.Sin(num3 + MathF.PI * _stepSize * (float)i);
+			AudioSource obj = this._footstepSources[i];
+			float f = Mathf.Sin(num3 + MathF.PI * this._stepSize * (float)i);
 			obj.pitch = pitch;
 			obj.volume = num2 * Mathf.Abs(f);
 		}
@@ -118,35 +118,35 @@ public class Scp173CharacterModel : CharacterModel
 
 	private void OnGrounded()
 	{
-		_currentVolume = 1f;
+		this._currentVolume = 1f;
 	}
 
 	public override void Setup(ReferenceHub owner, IFpcRole role, Vector3 localPos, Quaternion localRot)
 	{
 		base.Setup(owner, role, localPos, localRot);
-		_role = base.OwnerHub.roleManager.CurrentRole as Scp173Role;
-		_fpc = _role.FpcModule as Scp173MovementModule;
-		Scp173MovementModule fpc = _fpc;
+		this._role = base.OwnerHub.roleManager.CurrentRole as Scp173Role;
+		this._fpc = this._role.FpcModule as Scp173MovementModule;
+		Scp173MovementModule fpc = this._fpc;
 		fpc.OnGrounded = (Action)Delegate.Combine(fpc.OnGrounded, new Action(OnGrounded));
-		_role.SubroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out _observers);
-		_sourcesCount = _footstepSources.Length;
-		_stepSize = 1f / (float)_sourcesCount;
-		for (int i = 0; i < _sourcesCount; i++)
+		this._role.SubroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out this._observers);
+		this._sourcesCount = this._footstepSources.Length;
+		this._stepSize = 1f / (float)this._sourcesCount;
+		for (int i = 0; i < this._sourcesCount; i++)
 		{
-			AudioSource obj = _footstepSources[i];
+			AudioSource obj = this._footstepSources[i];
 			obj.volume = 0f;
-			obj.PlayDelayed(obj.clip.length * _stepSize * (float)i);
+			obj.PlayDelayed(obj.clip.length * this._stepSize * (float)i);
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		FirstPersonMovementModule fpcModule = _role.FpcModule;
+		FirstPersonMovementModule fpcModule = this._role.FpcModule;
 		fpcModule.OnGrounded = (Action)Delegate.Remove(fpcModule.OnGrounded, new Action(OnGrounded));
-		for (int i = 0; i < _sourcesCount; i++)
+		for (int i = 0; i < this._sourcesCount; i++)
 		{
-			_footstepSources[i].Stop();
+			this._footstepSources[i].Stop();
 		}
 	}
 }

@@ -21,7 +21,7 @@ public struct EmotionPreset
 
 	public readonly float GetWeight(EmotionBlendshape blendshape)
 	{
-		BlendshapeWeightPair[] pairs = Pairs;
+		BlendshapeWeightPair[] pairs = this.Pairs;
 		for (int i = 0; i < pairs.Length; i++)
 		{
 			BlendshapeWeightPair blendshapeWeightPair = pairs[i];
@@ -35,7 +35,7 @@ public struct EmotionPreset
 
 	public readonly void SetWeights(Action<EmotionBlendshape, float> setter)
 	{
-		BlendshapeWeightPair[] pairs = Pairs;
+		BlendshapeWeightPair[] pairs = this.Pairs;
 		for (int i = 0; i < pairs.Length; i++)
 		{
 			BlendshapeWeightPair blendshapeWeightPair = pairs[i];

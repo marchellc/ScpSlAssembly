@@ -31,7 +31,7 @@ public class RandomItemSpawnpoint : ItemSpawnpointBase, IScenarioProcessor
 		get
 		{
 			float num = 0f;
-			ItemPreset[] presets = Presets;
+			ItemPreset[] presets = this.Presets;
 			for (int i = 0; i < presets.Length; i++)
 			{
 				ItemPreset itemPreset = presets[i];
@@ -43,13 +43,13 @@ public class RandomItemSpawnpoint : ItemSpawnpointBase, IScenarioProcessor
 
 	public void Select()
 	{
-		_isSelected = true;
+		this._isSelected = true;
 	}
 
 	public override bool TryGeneratePickup(out ItemPickupBase pickup)
 	{
-		ItemPreset? randomItemPreset = GetRandomItemPreset();
-		bool flag = !_isSelected && _scenarioDefined;
+		ItemPreset? randomItemPreset = this.GetRandomItemPreset();
+		bool flag = !this._isSelected && this._scenarioDefined;
 		if (!randomItemPreset.HasValue || flag)
 		{
 			pickup = null;
@@ -62,13 +62,13 @@ public class RandomItemSpawnpoint : ItemSpawnpointBase, IScenarioProcessor
 
 	public ItemPreset? GetRandomItemPreset()
 	{
-		if (Presets == null || Presets.Length == 0)
+		if (this.Presets == null || this.Presets.Length == 0)
 		{
 			return null;
 		}
-		float num = UnityEngine.Random.Range(0f, TotalWeight);
+		float num = UnityEngine.Random.Range(0f, this.TotalWeight);
 		float num2 = 0f;
-		ItemPreset[] presets = Presets;
+		ItemPreset[] presets = this.Presets;
 		for (int i = 0; i < presets.Length; i++)
 		{
 			ItemPreset value = presets[i];
@@ -84,19 +84,19 @@ public class RandomItemSpawnpoint : ItemSpawnpointBase, IScenarioProcessor
 	protected override void Awake()
 	{
 		base.Awake();
-		_scenarioDefined = Scenario != null;
-		if (_scenarioDefined)
+		this._scenarioDefined = this.Scenario != null;
+		if (this._scenarioDefined)
 		{
-			Scenario.Register(this);
+			this.Scenario.Register(this);
 		}
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		if (_scenarioDefined)
+		if (this._scenarioDefined)
 		{
-			Scenario.Unregister(this);
+			this.Scenario.Unregister(this);
 		}
 	}
 }

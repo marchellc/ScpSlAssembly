@@ -18,21 +18,21 @@ public class FirearmPickup : CollisionDetectionPickup, IPickupDistributorTrigger
 
 	private bool _instanceSpawned;
 
-	public ItemIdentifier CurId => new ItemIdentifier(Info.ItemId, Info.Serial);
+	public ItemIdentifier CurId => new ItemIdentifier(base.Info.ItemId, base.Info.Serial);
 
 	public Firearm Template
 	{
 		get
 		{
-			if (!_templateSet)
+			if (!this._templateSet)
 			{
-				if (!Info.ItemId.TryGetTemplate<Firearm>(out _cachedTemplate))
+				if (!base.Info.ItemId.TryGetTemplate<Firearm>(out this._cachedTemplate))
 				{
-					throw new InvalidOperationException($"Unable to create a pickup for {Info.ItemId} - this ID is not defined as a firearm.");
+					throw new InvalidOperationException($"Unable to create a pickup for {base.Info.ItemId} - this ID is not defined as a firearm.");
 				}
-				_templateSet = true;
+				this._templateSet = true;
 			}
-			return _cachedTemplate;
+			return this._cachedTemplate;
 		}
 	}
 
@@ -40,11 +40,11 @@ public class FirearmPickup : CollisionDetectionPickup, IPickupDistributorTrigger
 	{
 		get
 		{
-			if (!_instanceSpawned)
+			if (!this._instanceSpawned)
 			{
-				SpawnInstance();
+				this.SpawnInstance();
 			}
-			return _worldmodelInstance;
+			return this._worldmodelInstance;
 		}
 	}
 
@@ -52,8 +52,8 @@ public class FirearmPickup : CollisionDetectionPickup, IPickupDistributorTrigger
 	{
 		if (NetworkServer.active)
 		{
-			AttachmentCodeSync.ServerSetCode(Info.Serial, AttachmentsUtils.GetRandomAttachmentsCode(Info.ItemId));
-			SubcomponentBase[] allSubcomponents = Template.AllSubcomponents;
+			AttachmentCodeSync.ServerSetCode(base.Info.Serial, AttachmentsUtils.GetRandomAttachmentsCode(base.Info.ItemId));
+			SubcomponentBase[] allSubcomponents = this.Template.AllSubcomponents;
 			for (int i = 0; i < allSubcomponents.Length; i++)
 			{
 				allSubcomponents[i].ServerProcessMapgenDistribution(this);
@@ -63,7 +63,7 @@ public class FirearmPickup : CollisionDetectionPickup, IPickupDistributorTrigger
 
 	public override PickupSearchCompletor GetPickupSearchCompletor(SearchCoordinator coordinator, float sqrDistance)
 	{
-		if (!InventoryItemLoader.TryGetItem<ItemBase>(Info.ItemId, out var result))
+		if (!InventoryItemLoader.TryGetItem<ItemBase>(base.Info.ItemId, out var result))
 		{
 			return null;
 		}
@@ -74,7 +74,7 @@ public class FirearmPickup : CollisionDetectionPickup, IPickupDistributorTrigger
 	{
 		base.Start();
 		AttachmentCodeSync.OnReceived += OnAttachmentsReceived;
-		SpawnInstance();
+		this.SpawnInstance();
 	}
 
 	protected override void OnDestroy()
@@ -85,20 +85,20 @@ public class FirearmPickup : CollisionDetectionPickup, IPickupDistributorTrigger
 
 	private void SpawnInstance()
 	{
-		if (!_instanceSpawned)
+		if (!this._instanceSpawned)
 		{
-			_worldmodelInstance = UnityEngine.Object.Instantiate(Template.WorldModel, base.transform);
-			_worldmodelInstance.transform.ResetLocalPose();
-			_worldmodelInstance.Setup(CurId, FirearmWorldmodelType.Pickup);
-			_instanceSpawned = true;
+			this._worldmodelInstance = UnityEngine.Object.Instantiate(this.Template.WorldModel, base.transform);
+			this._worldmodelInstance.transform.ResetLocalPose();
+			this._worldmodelInstance.Setup(this.CurId, FirearmWorldmodelType.Pickup);
+			this._instanceSpawned = true;
 		}
 	}
 
 	private void OnAttachmentsReceived(ushort serial, uint attId)
 	{
-		if (serial == Info.Serial && _instanceSpawned)
+		if (serial == base.Info.Serial && this._instanceSpawned)
 		{
-			_worldmodelInstance.Setup(CurId, FirearmWorldmodelType.Pickup, attId);
+			this._worldmodelInstance.Setup(this.CurId, FirearmWorldmodelType.Pickup, attId);
 		}
 	}
 

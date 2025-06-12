@@ -19,12 +19,12 @@ public class UiGraphLine : Graphic
 	{
 		get
 		{
-			return _relativePoints;
+			return this._relativePoints;
 		}
 		set
 		{
-			_relativePoints = value;
-			SetVerticesDirty();
+			this._relativePoints = value;
+			this.SetVerticesDirty();
 		}
 	}
 
@@ -32,12 +32,12 @@ public class UiGraphLine : Graphic
 	{
 		get
 		{
-			return _width;
+			return this._width;
 		}
 		set
 		{
-			_width = value;
-			SetVerticesDirty();
+			this._width = value;
+			this.SetVerticesDirty();
 		}
 	}
 
@@ -45,20 +45,20 @@ public class UiGraphLine : Graphic
 	{
 		vh.Clear();
 		UIVertex simpleVert = UIVertex.simpleVert;
-		simpleVert.color = color;
-		int count = _relativePoints.Count;
+		simpleVert.color = this.color;
+		int count = this._relativePoints.Count;
 		if (count > 1)
 		{
-			_rectSize = base.rectTransform.rect.size;
-			_rectOffset = base.rectTransform.pivot * _rectSize;
+			this._rectSize = base.rectTransform.rect.size;
+			this._rectOffset = base.rectTransform.pivot * this._rectSize;
 			for (int i = 0; i < count - 1; i++)
 			{
-				Vector2 vector = ClampPoint(_relativePoints[i]);
-				Vector2 vector2 = ClampPoint(_relativePoints[i + 1]);
-				float rotation = RealAngle(vector2 - vector);
-				PlacePoint(vh, vector, rotation);
-				PlacePoint(vh, vector2, rotation);
-				FillRectangle(vh, i * 4);
+				Vector2 vector = this.ClampPoint(this._relativePoints[i]);
+				Vector2 vector2 = this.ClampPoint(this._relativePoints[i + 1]);
+				float rotation = this.RealAngle(vector2 - vector);
+				this.PlacePoint(vh, vector, rotation);
+				this.PlacePoint(vh, vector2, rotation);
+				this.FillRectangle(vh, i * 4);
 			}
 		}
 	}
@@ -82,12 +82,12 @@ public class UiGraphLine : Graphic
 	private void PlacePoint(VertexHelper vh, Vector2 p, float rotation)
 	{
 		UIVertex simpleVert = UIVertex.simpleVert;
-		simpleVert.color = color;
+		simpleVert.color = this.color;
 		float y = Mathf.Sin(rotation * (MathF.PI / 180f));
-		Vector2 vector = new Vector2(Mathf.Cos(rotation * (MathF.PI / 180f)), y) * Width;
-		simpleVert.position = p * _rectSize + vector - _rectOffset;
+		Vector2 vector = new Vector2(Mathf.Cos(rotation * (MathF.PI / 180f)), y) * this.Width;
+		simpleVert.position = p * this._rectSize + vector - this._rectOffset;
 		vh.AddVert(simpleVert);
-		simpleVert.position = p * _rectSize - vector - _rectOffset;
+		simpleVert.position = p * this._rectSize - vector - this._rectOffset;
 		vh.AddVert(simpleVert);
 	}
 

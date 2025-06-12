@@ -18,12 +18,12 @@ public class UiCircle : MaskableGraphic
 	{
 		get
 		{
-			return _radius;
+			return this._radius;
 		}
 		set
 		{
-			_radius = value;
-			SetVerticesDirty();
+			this._radius = value;
+			this.SetVerticesDirty();
 		}
 	}
 
@@ -31,12 +31,12 @@ public class UiCircle : MaskableGraphic
 	{
 		get
 		{
-			return _width;
+			return this._width;
 		}
 		set
 		{
-			_width = value;
-			SetVerticesDirty();
+			this._width = value;
+			this.SetVerticesDirty();
 		}
 	}
 
@@ -44,28 +44,28 @@ public class UiCircle : MaskableGraphic
 	{
 		vh.Clear();
 		UIVertex simpleVert = UIVertex.simpleVert;
-		simpleVert.color = color;
-		float radius = Radius;
-		float num = Radius - Width;
-		DrawVertCircle(vh, simpleVert, radius);
+		simpleVert.color = this.color;
+		float radius = this.Radius;
+		float num = this.Radius - this.Width;
+		this.DrawVertCircle(vh, simpleVert, radius);
 		if (num <= 0f)
 		{
-			RenderFullCircle(vh, simpleVert);
+			this.RenderFullCircle(vh, simpleVert);
 			return;
 		}
-		DrawVertCircle(vh, simpleVert, num);
-		for (int i = 0; i < _vertsCount; i++)
+		this.DrawVertCircle(vh, simpleVert, num);
+		for (int i = 0; i < this._vertsCount; i++)
 		{
-			vh.AddTriangle(i, (i + 1) % _vertsCount, i + _vertsCount);
-			vh.AddTriangle(i, i + _vertsCount, (i - 1 + _vertsCount) % _vertsCount + _vertsCount);
+			vh.AddTriangle(i, (i + 1) % this._vertsCount, i + this._vertsCount);
+			vh.AddTriangle(i, i + this._vertsCount, (i - 1 + this._vertsCount) % this._vertsCount + this._vertsCount);
 		}
 	}
 
 	private void DrawVertCircle(VertexHelper vh, UIVertex vert, float radius)
 	{
-		float num = MathF.PI * 2f / (float)_vertsCount;
+		float num = MathF.PI * 2f / (float)this._vertsCount;
 		float num2 = 0f;
-		for (int i = 0; i < _vertsCount; i++)
+		for (int i = 0; i < this._vertsCount; i++)
 		{
 			float num3 = Mathf.Sin(num2);
 			float num4 = Mathf.Sin(num2 + MathF.PI / 2f);
@@ -79,9 +79,9 @@ public class UiCircle : MaskableGraphic
 	{
 		vert.position = Vector2.zero;
 		vh.AddVert(vert);
-		for (int i = 0; i < _vertsCount; i++)
+		for (int i = 0; i < this._vertsCount; i++)
 		{
-			vh.AddTriangle(i, (i + 1) % _vertsCount, _vertsCount);
+			vh.AddTriangle(i, (i + 1) % this._vertsCount, this._vertsCount);
 		}
 	}
 }

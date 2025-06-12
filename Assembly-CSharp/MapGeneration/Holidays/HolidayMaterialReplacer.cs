@@ -23,9 +23,9 @@ public class HolidayMaterialReplacer : MonoBehaviour
 
 	private void Start()
 	{
-		if (_materials.TryGetResult<MaterialReplacement, Material>(out var result))
+		if (this._materials.TryGetResult<MaterialReplacement, Material>(out var result))
 		{
-			_renderer.material = result;
+			this._renderer.material = result;
 		}
 	}
 }

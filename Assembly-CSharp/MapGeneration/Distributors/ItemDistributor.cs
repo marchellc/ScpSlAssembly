@@ -31,7 +31,7 @@ public class ItemDistributor : SpawnablesDistributorBase
 				}
 				else if (instance2.TryGeneratePickup(out pickup))
 				{
-					ServerRegisterPickup(pickup, instance2.TriggerDoorName);
+					this.ServerRegisterPickup(pickup, instance2.TriggerDoorName);
 				}
 			}
 		}
@@ -55,9 +55,9 @@ public class ItemDistributor : SpawnablesDistributorBase
 
 	public void ServerRegisterPickup(ItemPickupBase pickup, string triggerDoor = null)
 	{
-		ItemSpawningEventArgs itemSpawningEventArgs = new ItemSpawningEventArgs(pickup.ItemId.TypeId);
-		ServerEvents.OnItemSpawning(itemSpawningEventArgs);
-		if (itemSpawningEventArgs.IsAllowed)
+		ItemSpawningEventArgs e = new ItemSpawningEventArgs(pickup.ItemId.TypeId);
+		ServerEvents.OnItemSpawning(e);
+		if (e.IsAllowed)
 		{
 			if (pickup is IPickupDistributorTrigger pickupDistributorTrigger)
 			{
@@ -65,11 +65,11 @@ public class ItemDistributor : SpawnablesDistributorBase
 			}
 			if (string.IsNullOrEmpty(triggerDoor) || !DoorNametagExtension.NamedDoors.TryGetValue(triggerDoor, out var value))
 			{
-				SpawnPickup(pickup);
+				ItemDistributor.SpawnPickup(pickup);
 			}
 			else
 			{
-				RegisterUnspawnedObject(value.TargetDoor, pickup.gameObject);
+				base.RegisterUnspawnedObject(value.TargetDoor, pickup.gameObject);
 			}
 			ServerEvents.OnItemSpawned(new ItemSpawnedEventArgs(pickup));
 		}
@@ -92,7 +92,7 @@ public class ItemDistributor : SpawnablesDistributorBase
 	{
 		if (objectToSpawn != null && objectToSpawn.TryGetComponent<ItemPickupBase>(out var component))
 		{
-			SpawnPickup(component);
+			ItemDistributor.SpawnPickup(component);
 		}
 	}
 }

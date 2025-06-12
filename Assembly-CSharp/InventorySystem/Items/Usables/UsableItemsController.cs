@@ -33,10 +33,10 @@ public static class UsableItemsController
 		StaticUnityMethods.OnUpdate += Update;
 		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub hub)
 		{
-			Handlers.Remove(hub);
+			UsableItemsController.Handlers.Remove(hub);
 		};
-		Inventory.OnLocalClientStarted += StartTimes.Clear;
-		CustomNetworkManager.OnClientReady += CurrentlyPlayingSources.Clear;
+		Inventory.OnLocalClientStarted += UsableItemsController.StartTimes.Clear;
+		CustomNetworkManager.OnClientReady += UsableItemsController.CurrentlyPlayingSources.Clear;
 	}
 
 	public static void OnClientReady()
@@ -44,16 +44,16 @@ public static class UsableItemsController
 		NetworkServer.ReplaceHandler<StatusMessage>(ServerReceivedStatus);
 		NetworkClient.ReplaceHandler<StatusMessage>(ClientReceivedStatus);
 		NetworkClient.ReplaceHandler<ItemCooldownMessage>(ClientReceivedCooldown);
-		GlobalItemCooldowns.Clear();
-		Handlers.Clear();
+		UsableItemsController.GlobalItemCooldowns.Clear();
+		UsableItemsController.Handlers.Clear();
 	}
 
 	public static PlayerHandler GetHandler(ReferenceHub ply)
 	{
-		if (!Handlers.TryGetValue(ply, out var value))
+		if (!UsableItemsController.Handlers.TryGetValue(ply, out var value))
 		{
 			value = new PlayerHandler();
-			Handlers.Add(ply, value);
+			UsableItemsController.Handlers.Add(ply, value);
 		}
 		return value;
 	}
@@ -61,7 +61,7 @@ public static class UsableItemsController
 	public static float GetCooldown(ushort itemSerial, ItemBase item, PlayerHandler ply)
 	{
 		float num = 0f;
-		if (GlobalItemCooldowns.TryGetValue(itemSerial, out var value))
+		if (UsableItemsController.GlobalItemCooldowns.TryGetValue(itemSerial, out var value))
 		{
 			num = value;
 		}
@@ -77,14 +77,14 @@ public static class UsableItemsController
 		ItemIdentifier curItem = ply.inventory.CurItem;
 		PooledAudioSource pooledAudioSource = AudioSourcePoolManager.PlayOnTransform(clip, ply.transform, 15f);
 		pooledAudioSource.Source.pitch = curItem.TypeId.GetSpeedMultiplier(ply);
-		CurrentlyPlayingSources[curItem.SerialNumber] = new AudioPoolSession(pooledAudioSource);
+		UsableItemsController.CurrentlyPlayingSources[curItem.SerialNumber] = new AudioPoolSession(pooledAudioSource);
 	}
 
 	public static void ServerEmulateMessage(ushort serial, StatusMessage.StatusType status)
 	{
 		if (InventoryExtensions.TryGetHubHoldingSerial(serial, out var hub))
 		{
-			ServerReceivedStatus(hub.connectionToClient, new StatusMessage(status, serial));
+			UsableItemsController.ServerReceivedStatus(hub.connectionToClient, new StatusMessage(status, serial));
 		}
 	}
 
@@ -94,7 +94,7 @@ public static class UsableItemsController
 		{
 			return;
 		}
-		foreach (KeyValuePair<ReferenceHub, PlayerHandler> handler in Handlers)
+		foreach (KeyValuePair<ReferenceHub, PlayerHandler> handler in UsableItemsController.Handlers)
 		{
 			handler.Value.DoUpdate(handler.Key);
 			CurrentlyUsedItem currentUsable = handler.Value.CurrentUsable;
@@ -128,7 +128,7 @@ public static class UsableItemsController
 		{
 			return;
 		}
-		PlayerHandler handler = GetHandler(hub);
+		PlayerHandler handler = UsableItemsController.GetHandler(hub);
 		switch (msg.Status)
 		{
 		case StatusMessage.StatusType.Start:
@@ -137,16 +137,16 @@ public static class UsableItemsController
 			{
 				break;
 			}
-			float cooldown = GetCooldown(msg.ItemSerial, usableItem, handler);
+			float cooldown = UsableItemsController.GetCooldown(msg.ItemSerial, usableItem, handler);
 			if (cooldown > 0f)
 			{
 				conn.Send(new ItemCooldownMessage(msg.ItemSerial, cooldown));
 			}
 			else if (usableItem.ItemTypeId.GetSpeedMultiplier(hub) > 0f)
 			{
-				PlayerUsingItemEventArgs playerUsingItemEventArgs = new PlayerUsingItemEventArgs(hub, usableItem);
-				PlayerEvents.OnUsingItem(playerUsingItemEventArgs);
-				if (playerUsingItemEventArgs.IsAllowed)
+				PlayerUsingItemEventArgs e2 = new PlayerUsingItemEventArgs(hub, usableItem);
+				PlayerEvents.OnUsingItem(e2);
+				if (e2.IsAllowed)
 				{
 					handler.CurrentUsable = new CurrentlyUsedItem(usableItem, msg.ItemSerial, Time.timeSinceLevelLoad);
 					handler.CurrentUsable.Item.OnUsingStarted();
@@ -164,9 +164,9 @@ public static class UsableItemsController
 			float speedMultiplier = handler.CurrentUsable.Item.ItemTypeId.GetSpeedMultiplier(hub);
 			if (handler.CurrentUsable.StartTime + handler.CurrentUsable.Item.MaxCancellableTime / speedMultiplier > Time.timeSinceLevelLoad)
 			{
-				PlayerCancellingUsingItemEventArgs playerCancellingUsingItemEventArgs = new PlayerCancellingUsingItemEventArgs(hub, usableItem);
-				PlayerEvents.OnCancellingUsingItem(playerCancellingUsingItemEventArgs);
-				if (playerCancellingUsingItemEventArgs.IsAllowed)
+				PlayerCancellingUsingItemEventArgs e = new PlayerCancellingUsingItemEventArgs(hub, usableItem);
+				PlayerEvents.OnCancellingUsingItem(e);
+				if (e.IsAllowed)
 				{
 					handler.CurrentUsable.Item.OnUsingCancelled();
 					handler.CurrentUsable = CurrentlyUsedItem.None;
@@ -183,11 +183,11 @@ public static class UsableItemsController
 	{
 		ushort itemSerial = msg.ItemSerial;
 		bool flag = msg.Status == StatusMessage.StatusType.Start;
-		if (!flag && CurrentlyPlayingSources.TryGetValue(itemSerial, out var value) && value.SameSession)
+		if (!flag && UsableItemsController.CurrentlyPlayingSources.TryGetValue(itemSerial, out var value) && value.SameSession)
 		{
 			value.HandledInstance.Source.Stop();
-			StartTimes.Remove(itemSerial);
-			CurrentlyPlayingSources.Remove(itemSerial);
+			UsableItemsController.StartTimes.Remove(itemSerial);
+			UsableItemsController.CurrentlyPlayingSources.Remove(itemSerial);
 		}
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
@@ -226,8 +226,8 @@ public static class UsableItemsController
 			}
 			if (flag)
 			{
-				PlaySoundOnPlayer(allHub, usingSfxClip);
-				StartTimes[itemSerial] = Time.timeSinceLevelLoad;
+				UsableItemsController.PlaySoundOnPlayer(allHub, usingSfxClip);
+				UsableItemsController.StartTimes[itemSerial] = Time.timeSinceLevelLoad;
 			}
 			break;
 		}
@@ -244,6 +244,6 @@ public static class UsableItemsController
 
 	private static void ResetPlayerOnRoleChange(ReferenceHub ply, PlayerRoleBase r1, PlayerRoleBase r2)
 	{
-		GetHandler(ply).ResetAll();
+		UsableItemsController.GetHandler(ply).ResetAll();
 	}
 }

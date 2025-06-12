@@ -33,7 +33,7 @@ public class ServerShutdown : MonoBehaviour
 
 	private void Update()
 	{
-		switch (ShutdownState)
+		switch (ServerShutdown.ShutdownState)
 		{
 		default:
 			return;
@@ -41,40 +41,40 @@ public class ServerShutdown : MonoBehaviour
 		case ServerShutdownState.Complete:
 			return;
 		case ServerShutdownState.BroadcastingShutdown:
-			if (_c > 400f)
+			if (ServerShutdown._c > 400f)
 			{
 				ServerConsole.AddLog("Shutting down the server...", ConsoleColor.DarkCyan);
-				ShutdownState = ServerShutdownState.ShuttingDown;
-				_c = 0f;
+				ServerShutdown.ShutdownState = ServerShutdownState.ShuttingDown;
+				ServerShutdown._c = 0f;
 				NetworkServer.Shutdown();
 				return;
 			}
 			break;
 		case ServerShutdownState.ShuttingDown:
-			if (_c > 1000f)
+			if (ServerShutdown._c > 1000f)
 			{
 				ServerConsole.AddLog("Server shutdown completed.", ConsoleColor.DarkCyan);
-				ShutdownState = ServerShutdownState.Complete;
+				ServerShutdown.ShutdownState = ServerShutdownState.Complete;
 				return;
 			}
 			break;
 		}
-		_c += Time.unscaledDeltaTime;
+		ServerShutdown._c += Time.unscaledDeltaTime;
 	}
 
 	internal static void Shutdown(bool noBroadcast = false)
 	{
-		if (ShutdownState != 0)
+		if (ServerShutdown.ShutdownState != ServerShutdownState.NotInitiated)
 		{
 			return;
 		}
 		if (!NetworkServer.active)
 		{
-			ShutdownState = ServerShutdownState.Complete;
+			ServerShutdown.ShutdownState = ServerShutdownState.Complete;
 			return;
 		}
 		ServerConsole.AddLog("Server shutdown initiated.", ConsoleColor.DarkCyan);
-		ShutdownState = ServerShutdownState.BroadcastingShutdown;
+		ServerShutdown.ShutdownState = ServerShutdownState.BroadcastingShutdown;
 		IdleMode.SetIdleMode(state: false);
 		CustomLiteNetLib4MirrorTransport.DelayConnections = true;
 		CustomNetworkManager.QueryServer?.StopServer();

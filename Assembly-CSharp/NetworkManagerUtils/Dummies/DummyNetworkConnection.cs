@@ -12,7 +12,7 @@ public class DummyNetworkConnection : NetworkConnectionToClient
 	public override string address { get; } = "127.0.0.1";
 
 	public DummyNetworkConnection()
-		: base(_idGenerator--)
+		: base(DummyNetworkConnection._idGenerator--)
 	{
 	}
 

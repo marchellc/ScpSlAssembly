@@ -29,13 +29,13 @@ public abstract class RadialMenuBase : MonoBehaviour
 
 	protected Image GetHighlightSafe(int index)
 	{
-		Image image = Highlights[index];
+		Image image = this.Highlights[index];
 		if (image != null)
 		{
 			return image;
 		}
-		image = Object.Instantiate(_slotTemplate, RingImage.transform);
-		Highlights[index] = image;
+		image = Object.Instantiate(this._slotTemplate, this.RingImage.transform);
+		this.Highlights[index] = image;
 		return image;
 	}
 
@@ -43,18 +43,18 @@ public abstract class RadialMenuBase : MonoBehaviour
 	{
 		for (int i = 0; i < prev; i++)
 		{
-			Highlights[i].enabled = false;
+			this.Highlights[i].enabled = false;
 		}
 		for (int j = 0; j < cur; j++)
 		{
-			Image highlightSafe = GetHighlightSafe(j);
+			Image highlightSafe = this.GetHighlightSafe(j);
 			highlightSafe.rectTransform.SetAsFirstSibling();
 			highlightSafe.rectTransform.localPosition = Vector3.zero;
-			highlightSafe.rectTransform.localEulerAngles = _slotsAngleStep * (float)j * Vector3.back;
-			highlightSafe.sprite = _settings.HighlightTemplates[cur];
+			highlightSafe.rectTransform.localEulerAngles = this._slotsAngleStep * (float)j * Vector3.back;
+			highlightSafe.sprite = this._settings.HighlightTemplates[cur];
 			highlightSafe.enabled = true;
 		}
-		RingImage.sprite = _settings.MainRings[cur];
+		this.RingImage.sprite = this._settings.MainRings[cur];
 	}
 
 	protected bool InRingRange(out float angle)
@@ -67,35 +67,35 @@ public abstract class RadialMenuBase : MonoBehaviour
 			angle = 360f - angle;
 		}
 		float magnitude = vector.magnitude;
-		if (magnitude < _ringWidth.y)
+		if (magnitude < this._ringWidth.y)
 		{
-			return magnitude > _ringWidth.x;
+			return magnitude > this._ringWidth.x;
 		}
 		return false;
 	}
 
 	protected virtual void Update()
 	{
-		int num = Mathf.Clamp(Slots, 1, _settings.HighlightTemplates.Length + 1);
-		if (num != _slotsNum)
+		int num = Mathf.Clamp(this.Slots, 1, this._settings.HighlightTemplates.Length + 1);
+		if (num != this._slotsNum)
 		{
-			int slotsNum = _slotsNum;
-			_slotsNum = num;
-			_slotsAngleStep = 360f / (float)num;
-			OnSlotsNumberChanged(slotsNum, num);
+			int slotsNum = this._slotsNum;
+			this._slotsNum = num;
+			this._slotsAngleStep = 360f / (float)num;
+			this.OnSlotsNumberChanged(slotsNum, num);
 		}
-		if (InRingRange(out var angle))
+		if (this.InRingRange(out var angle))
 		{
-			HighlightedSlot = 0;
-			while (angle > _slotsAngleStep)
+			this.HighlightedSlot = 0;
+			while (angle > this._slotsAngleStep)
 			{
-				angle -= _slotsAngleStep;
-				HighlightedSlot++;
+				angle -= this._slotsAngleStep;
+				this.HighlightedSlot++;
 			}
 		}
 		else
 		{
-			HighlightedSlot = -1;
+			this.HighlightedSlot = -1;
 		}
 	}
 }

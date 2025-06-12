@@ -16,11 +16,11 @@ public class DoorOvercon : StandardOvercon
 
 	public DoorVariant Target { get; internal set; }
 
-	private bool IsInvisible => !IsCurrentDoorValid();
+	private bool IsInvisible => !this.IsCurrentDoorValid();
 
 	private bool IsCurrentDoorValid()
 	{
-		DoorVariant target = Target;
+		DoorVariant target = this.Target;
 		if (target is IDamageableDoor damageableDoor)
 		{
 			if (damageableDoor.IsDestroyed)
@@ -40,7 +40,7 @@ public class DoorOvercon : StandardOvercon
 		{
 			goto IL_0070;
 		}
-		DoorLockReason activeLocks = (DoorLockReason)Target.ActiveLocks;
+		DoorLockReason activeLocks = (DoorLockReason)this.Target.ActiveLocks;
 		if (activeLocks.HasFlagFast(DoorLockReason.Warhead) || activeLocks.HasFlagFast(DoorLockReason.Isolation))
 		{
 			return false;
@@ -52,15 +52,15 @@ public class DoorOvercon : StandardOvercon
 
 	private void LateUpdate()
 	{
-		TargetSprite.sprite = (Target.TargetState ? _openSprite : _closedSprite);
-		bool flag = !IsInvisible;
-		TargetSprite.enabled = flag;
-		_col.enabled = flag;
+		base.TargetSprite.sprite = (this.Target.TargetState ? this._openSprite : this._closedSprite);
+		bool flag = !this.IsInvisible;
+		base.TargetSprite.enabled = flag;
+		this._col.enabled = flag;
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		_col = GetComponent<SphereCollider>();
+		this._col = base.GetComponent<SphereCollider>();
 	}
 }

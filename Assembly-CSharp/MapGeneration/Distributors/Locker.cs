@@ -47,45 +47,45 @@ public class Locker : SpawnableStructure, IServerInteractable, IInteractable, IB
 	{
 		get
 		{
-			return OpenedChambers;
+			return this.OpenedChambers;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref OpenedChambers, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.OpenedChambers, 1uL, null);
 		}
 	}
 
 	public void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
-		if (!Chambers.TryGet(colliderId, out var element) || !element.CanInteract)
+		if (!this.Chambers.TryGet(colliderId, out var element) || !element.CanInteract)
 		{
 			return;
 		}
-		bool flag = !CheckTogglePerms(colliderId, ply, out var callback);
-		PlayerInteractingLockerEventArgs playerInteractingLockerEventArgs = new PlayerInteractingLockerEventArgs(ply, this, Chambers[colliderId], !flag);
-		PlayerEvents.OnInteractingLocker(playerInteractingLockerEventArgs);
-		if (!playerInteractingLockerEventArgs.IsAllowed)
+		bool flag = !this.CheckTogglePerms(colliderId, ply, out var callback);
+		PlayerInteractingLockerEventArgs e = new PlayerInteractingLockerEventArgs(ply, this, this.Chambers[colliderId], !flag);
+		PlayerEvents.OnInteractingLocker(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
-		flag = !playerInteractingLockerEventArgs.CanOpen;
+		flag = !e.CanOpen;
 		if (flag)
 		{
-			if (_deniedCooldown <= 0f)
+			if (this._deniedCooldown <= 0f)
 			{
-				RpcPlayDenied(colliderId, ply.GetCombinedPermissions(element));
+				this.RpcPlayDenied(colliderId, ply.GetCombinedPermissions(element));
 				callback?.Invoke(element, success: false);
-				_deniedCooldown = 1f;
+				this._deniedCooldown = 1f;
 			}
-			PlayerEvents.OnInteractedLocker(new PlayerInteractedLockerEventArgs(ply, this, Chambers[colliderId], !flag));
+			PlayerEvents.OnInteractedLocker(new PlayerInteractedLockerEventArgs(ply, this, this.Chambers[colliderId], !flag));
 		}
 		else
 		{
-			element.SetDoor(!element.IsOpen, _grantedBeep);
-			RefreshOpenedSyncvar();
+			element.SetDoor(!element.IsOpen, this._grantedBeep);
+			this.RefreshOpenedSyncvar();
 			callback?.Invoke(element, success: true);
-			PlayerEvents.OnInteractedLocker(new PlayerInteractedLockerEventArgs(ply, this, Chambers[colliderId], !flag));
+			PlayerEvents.OnInteractedLocker(new PlayerInteractedLockerEventArgs(ply, this, this.Chambers[colliderId], !flag));
 		}
 	}
 
@@ -93,7 +93,7 @@ public class Locker : SpawnableStructure, IServerInteractable, IInteractable, IB
 	{
 		int num = 1;
 		int num2 = 0;
-		LockerChamber[] chambers = Chambers;
+		LockerChamber[] chambers = this.Chambers;
 		for (int i = 0; i < chambers.Length; i++)
 		{
 			if (chambers[i].IsOpen)
@@ -102,18 +102,18 @@ public class Locker : SpawnableStructure, IServerInteractable, IInteractable, IB
 			}
 			num *= 2;
 		}
-		if (num2 != OpenedChambers)
+		if (num2 != this.OpenedChambers)
 		{
-			NetworkOpenedChambers = (ushort)num2;
+			this.NetworkOpenedChambers = (ushort)num2;
 		}
 	}
 
 	public virtual void FillChamber(LockerChamber ch)
 	{
 		List<int> list = ListPool<int>.Shared.Rent();
-		for (int i = 0; i < Loot.Length; i++)
+		for (int i = 0; i < this.Loot.Length; i++)
 		{
-			LockerLoot lockerLoot = Loot[i];
+			LockerLoot lockerLoot = this.Loot[i];
 			if (lockerLoot.RemainingUses > 0 && (ch.AcceptableItems.Length == 0 || ch.AcceptableItems.Contains(lockerLoot.TargetItem)))
 			{
 				for (int j = 0; j <= lockerLoot.ProbabilityPoints; j++)
@@ -125,7 +125,7 @@ public class Locker : SpawnableStructure, IServerInteractable, IInteractable, IB
 		if (list.Count > 0)
 		{
 			int num = list[Random.Range(0, list.Count)];
-			LockerLoot lockerLoot2 = Loot[num];
+			LockerLoot lockerLoot2 = this.Loot[num];
 			ch.SpawnItem(lockerLoot2.TargetItem, Random.Range(lockerLoot2.MinPerChamber, lockerLoot2.MaxPerChamber + 1));
 			lockerLoot2.RemainingUses--;
 		}
@@ -138,7 +138,7 @@ public class Locker : SpawnableStructure, IServerInteractable, IInteractable, IB
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		NetworkWriterExtensions.WriteByte(writer, chamberId);
 		GeneratedNetworkCode._Write_Interactables_002EInterobjects_002EDoorUtils_002EDoorPermissionFlags(writer, perms);
-		SendRPCInternal("System.Void MapGeneration.Distributors.Locker::RpcPlayDenied(System.Byte,Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", 1380298176, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void MapGeneration.Distributors.Locker::RpcPlayDenied(System.Byte,Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", 1380298176, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -150,35 +150,35 @@ public class Locker : SpawnableStructure, IServerInteractable, IInteractable, IB
 		}
 		if (NetworkServer.active)
 		{
-			if (_deniedCooldown > 0f)
+			if (this._deniedCooldown > 0f)
 			{
-				_deniedCooldown -= Time.deltaTime;
+				this._deniedCooldown -= Time.deltaTime;
 			}
-			if (!_serverChambersFilled)
+			if (!this._serverChambersFilled)
 			{
-				ServerFillChambers();
-				_serverChambersFilled = true;
+				this.ServerFillChambers();
+				this._serverChambersFilled = true;
 			}
 		}
-		if (_prevOpened != OpenedChambers)
+		if (this._prevOpened != this.OpenedChambers)
 		{
 			int num = 1;
-			LockerChamber[] chambers = Chambers;
+			LockerChamber[] chambers = this.Chambers;
 			foreach (LockerChamber lockerChamber in chambers)
 			{
-				lockerChamber.SetDoor((OpenedChambers & num) == num || !lockerChamber.AnimatorSet, _grantedBeep);
+				lockerChamber.SetDoor((this.OpenedChambers & num) == num || !lockerChamber.AnimatorSet, this._grantedBeep);
 				num *= 2;
 			}
-			_prevOpened = OpenedChambers;
+			this._prevOpened = this.OpenedChambers;
 		}
 	}
 
 	protected virtual void ServerFillChambers()
 	{
-		List<LockerChamber> list = new List<LockerChamber>(Chambers);
-		if (MinChambersToFill != 0 && MaxChambersToFill >= MinChambersToFill)
+		List<LockerChamber> list = new List<LockerChamber>(this.Chambers);
+		if (this.MinChambersToFill != 0 && this.MaxChambersToFill >= this.MinChambersToFill)
 		{
-			int num = Chambers.Length - Random.Range(MinChambersToFill, MaxChambersToFill + 1);
+			int num = this.Chambers.Length - Random.Range(this.MinChambersToFill, this.MaxChambersToFill + 1);
 			for (int i = 0; i < num; i++)
 			{
 				list.RemoveAt(Random.Range(0, list.Count));
@@ -186,13 +186,13 @@ public class Locker : SpawnableStructure, IServerInteractable, IInteractable, IB
 		}
 		foreach (LockerChamber item in list)
 		{
-			FillChamber(item);
+			this.FillChamber(item);
 		}
 	}
 
 	protected virtual bool CheckTogglePerms(int chamberId, ReferenceHub ply, out PermissionUsed callback)
 	{
-		return Chambers[chamberId].CheckPermissions(ply, out callback);
+		return this.Chambers[chamberId].CheckPermissions(ply, out callback);
 	}
 
 	public override bool Weaved()
@@ -202,9 +202,9 @@ public class Locker : SpawnableStructure, IServerInteractable, IInteractable, IB
 
 	protected void UserCode_RpcPlayDenied__Byte__DoorPermissionFlags(byte chamberId, DoorPermissionFlags perms)
 	{
-		if (chamberId <= Chambers.Length)
+		if (chamberId <= this.Chambers.Length)
 		{
-			Chambers[chamberId].PlayDenied(_deniedBeep, perms, 1f);
+			this.Chambers[chamberId].PlayDenied(this._deniedBeep, perms, 1f);
 		}
 	}
 
@@ -230,13 +230,13 @@ public class Locker : SpawnableStructure, IServerInteractable, IInteractable, IB
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteUShort(OpenedChambers);
+			writer.WriteUShort(this.OpenedChambers);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteUShort(OpenedChambers);
+			writer.WriteUShort(this.OpenedChambers);
 		}
 	}
 
@@ -245,13 +245,13 @@ public class Locker : SpawnableStructure, IServerInteractable, IInteractable, IB
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref OpenedChambers, null, reader.ReadUShort());
+			base.GeneratedSyncVarDeserialize(ref this.OpenedChambers, null, reader.ReadUShort());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref OpenedChambers, null, reader.ReadUShort());
+			base.GeneratedSyncVarDeserialize(ref this.OpenedChambers, null, reader.ReadUShort());
 		}
 	}
 }

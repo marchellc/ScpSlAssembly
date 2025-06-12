@@ -28,9 +28,9 @@ public class DmsCommand : ParentCommand, IUsageProvider
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new ForceCommand());
-		RegisterCommand(new GetCommand());
-		RegisterCommand(new SetCommand());
-		RegisterCommand(new ToggleCommand());
+		this.RegisterCommand(new ForceCommand());
+		this.RegisterCommand(new GetCommand());
+		this.RegisterCommand(new SetCommand());
+		this.RegisterCommand(new ToggleCommand());
 	}
 }

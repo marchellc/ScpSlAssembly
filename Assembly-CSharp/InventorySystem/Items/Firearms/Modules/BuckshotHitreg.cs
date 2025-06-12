@@ -21,7 +21,7 @@ public class BuckshotHitreg : HitscanHitregModuleBase
 
 	public override Type CrosshairType => typeof(BuckshotCrosshair);
 
-	public float BuckshotScale => ActivePattern.OverallScale * base.Firearm.AttachmentsValue(AttachmentParam.SpreadMultiplier);
+	public float BuckshotScale => this.ActivePattern.OverallScale * base.Firearm.AttachmentsValue(AttachmentParam.SpreadMultiplier);
 
 	public override bool UseHitboxMultipliers => false;
 
@@ -37,21 +37,21 @@ public class BuckshotHitreg : HitscanHitregModuleBase
 					return buckshotPatternAttachment.Pattern;
 				}
 			}
-			return BasePattern;
+			return this.BasePattern;
 		}
 	}
 
 	protected override float HitmarkerSizeAtDamage(float damage)
 	{
-		int num = _hitmarkerMaxHits - _hitmarkerMisses;
+		int num = this._hitmarkerMaxHits - this._hitmarkerMisses;
 		if (num <= 0)
 		{
 			return 0f;
 		}
 		float num2 = damage / (float)num;
-		float num3 = DamageAtDistance(0f);
+		float num3 = this.DamageAtDistance(0f);
 		float num4 = num2 / num3;
-		float num5 = (float)_hitmarkerMisses / (float)_hitmarkerMaxHits;
+		float num5 = (float)this._hitmarkerMisses / (float)this._hitmarkerMaxHits;
 		float num6 = num5 * num5 * num5;
 		float num7 = 1f - num6;
 		return num4 * num7;
@@ -59,37 +59,37 @@ public class BuckshotHitreg : HitscanHitregModuleBase
 
 	protected override void Fire()
 	{
-		_hitCounter.Clear();
-		Ray ray = RandomizeRay(base.ForwardRay, base.CurrentInaccuracy);
-		BuckshotSettings activePattern = ActivePattern;
+		this._hitCounter.Clear();
+		Ray ray = base.RandomizeRay(base.ForwardRay, base.CurrentInaccuracy);
+		BuckshotSettings activePattern = this.ActivePattern;
 		float num = base.Firearm.AttachmentsValue(AttachmentParam.SpreadPredictability);
 		float randomness = 1f - Mathf.Clamp01(1f - activePattern.Randomness) * num;
-		float buckshotScale = BuckshotScale;
+		float buckshotScale = this.BuckshotScale;
 		HitscanResult resultNonAlloc = base.ResultNonAlloc;
 		resultNonAlloc.Clear();
 		Vector2[] predefinedPellets = activePattern.PredefinedPellets;
 		foreach (Vector2 pelletVector in predefinedPellets)
 		{
-			Vector3 pelletDirection = GetPelletDirection(pelletVector, buckshotScale, randomness, ray.direction);
-			ServerAppendPrescan(new Ray(ray.origin, pelletDirection), resultNonAlloc);
+			Vector3 pelletDirection = this.GetPelletDirection(pelletVector, buckshotScale, randomness, ray.direction);
+			base.ServerAppendPrescan(new Ray(ray.origin, pelletDirection), resultNonAlloc);
 		}
-		ServerApplyDamage(resultNonAlloc);
-		_hitmarkerMaxHits += ActivePattern.MaxHits;
-		_hitmarkerMisses += resultNonAlloc.Obstacles.Count;
+		this._hitmarkerMaxHits += this.ActivePattern.MaxHits;
+		this._hitmarkerMisses += resultNonAlloc.Obstacles.Count;
+		this.ServerApplyDamage(resultNonAlloc);
 	}
 
 	protected override float DamageAtDistance(float dist)
 	{
-		return base.DamageAtDistance(dist) / (float)ActivePattern.MaxHits;
+		return base.DamageAtDistance(dist) / (float)this.ActivePattern.MaxHits;
 	}
 
 	protected override void ServerApplyDestructibleDamage(DestructibleHitPair target, HitscanResult result)
 	{
 		uint networkId = target.Destructible.NetworkId;
-		int valueOrDefault = _hitCounter.GetValueOrDefault(networkId);
-		if (valueOrDefault < ActivePattern.MaxHits)
+		int valueOrDefault = this._hitCounter.GetValueOrDefault(networkId);
+		if (valueOrDefault < this.ActivePattern.MaxHits)
 		{
-			_hitCounter[networkId] = valueOrDefault + 1;
+			this._hitCounter[networkId] = valueOrDefault + 1;
 			base.ServerApplyDestructibleDamage(target, result);
 		}
 	}
@@ -97,8 +97,8 @@ public class BuckshotHitreg : HitscanHitregModuleBase
 	internal override void AlwaysUpdate()
 	{
 		base.AlwaysUpdate();
-		_hitmarkerMisses = 0;
-		_hitmarkerMaxHits = 0;
+		this._hitmarkerMisses = 0;
+		this._hitmarkerMaxHits = 0;
 	}
 
 	private Vector3 GetPelletDirection(Vector2 pelletVector, float scale, float randomness, Vector3 fwdDirection)

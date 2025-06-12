@@ -13,8 +13,8 @@ public class CameraFocuser : MonoBehaviour
 		ReferenceHub hub = ReferenceHub.GetHub(other.transform.root.gameObject);
 		if (hub != null && hub.characterClassManager.isLocalPlayer)
 		{
-			base.transform.LookAt(lookTarget);
-			Mathf.Clamp(Quaternion.Angle(hub.PlayerCameraReference.rotation, base.transform.rotation), minimumAngle, 70f);
+			base.transform.LookAt(this.lookTarget);
+			Mathf.Clamp(Quaternion.Angle(hub.PlayerCameraReference.rotation, base.transform.rotation), this.minimumAngle, 70f);
 		}
 	}
 }

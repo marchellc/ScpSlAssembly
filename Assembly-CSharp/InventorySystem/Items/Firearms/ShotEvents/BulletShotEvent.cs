@@ -7,12 +7,12 @@ public class BulletShotEvent : ShotEvent, IMultiBarreledShot
 	public BulletShotEvent(ItemIdentifier shotFirearm)
 		: base(shotFirearm)
 	{
-		BarrelId = 0;
+		this.BarrelId = 0;
 	}
 
 	public BulletShotEvent(ItemIdentifier shotFirearm, int barrelId)
 		: base(shotFirearm)
 	{
-		BarrelId = barrelId;
+		this.BarrelId = barrelId;
 	}
 }

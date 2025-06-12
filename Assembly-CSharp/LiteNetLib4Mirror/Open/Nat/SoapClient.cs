@@ -17,25 +17,25 @@ internal class SoapClient
 
 	public SoapClient(Uri url, string serviceType)
 	{
-		_url = url;
-		_serviceType = serviceType;
+		this._url = url;
+		this._serviceType = serviceType;
 	}
 
 	public async Task<XmlDocument> InvokeAsync(string operationName, IDictionary<string, object> args)
 	{
-		byte[] messageBody = BuildMessageBody(operationName, args);
-		HttpWebRequest request = BuildHttpWebRequest(operationName, messageBody);
+		byte[] messageBody = this.BuildMessageBody(operationName, args);
+		HttpWebRequest request = this.BuildHttpWebRequest(operationName, messageBody);
 		if (messageBody.Length != 0)
 		{
 			using Stream stream = await request.GetRequestStreamAsync();
 			await stream.WriteAsync(messageBody, 0, messageBody.Length);
 		}
-		using WebResponse webResponse = await GetWebResponse(request);
+		using WebResponse webResponse = await SoapClient.GetWebResponse(request);
 		Stream responseStream = webResponse.GetResponseStream();
 		long contentLength = webResponse.ContentLength;
 		StreamReader streamReader = new StreamReader(responseStream, Encoding.UTF8);
 		string response = ((contentLength != -1) ? streamReader.ReadAsMany((int)contentLength) : streamReader.ReadToEnd());
-		XmlDocument xmlDocument = GetXmlDocument(response);
+		XmlDocument xmlDocument = this.GetXmlDocument(response);
 		webResponse.Close();
 		return xmlDocument;
 	}
@@ -60,11 +60,11 @@ internal class SoapClient
 
 	private HttpWebRequest BuildHttpWebRequest(string operationName, byte[] messageBody)
 	{
-		HttpWebRequest httpWebRequest = WebRequest.CreateHttp(_url);
+		HttpWebRequest httpWebRequest = WebRequest.CreateHttp(this._url);
 		httpWebRequest.KeepAlive = false;
 		httpWebRequest.Method = "POST";
 		httpWebRequest.ContentType = "text/xml; charset=\"utf-8\"";
-		httpWebRequest.Headers.Add("SOAPACTION", "\"" + _serviceType + "#" + operationName + "\"");
+		httpWebRequest.Headers.Add("SOAPACTION", "\"" + this._serviceType + "#" + operationName + "\"");
 		httpWebRequest.ContentLength = messageBody.Length;
 		return httpWebRequest;
 	}
@@ -76,7 +76,7 @@ internal class SoapClient
 		stringBuilder.AppendLine("   xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" ");
 		stringBuilder.AppendLine("   s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">");
 		stringBuilder.AppendLine("   <s:Body>");
-		stringBuilder.AppendLine("\t  <u:" + operationName + " xmlns:u=\"" + _serviceType + "\">");
+		stringBuilder.AppendLine("\t  <u:" + operationName + " xmlns:u=\"" + this._serviceType + "\">");
 		foreach (KeyValuePair<string, object> arg in args)
 		{
 			stringBuilder.AppendLine("\t\t <" + arg.Key + ">" + Convert.ToString(arg.Value, CultureInfo.InvariantCulture) + "</" + arg.Key + ">");

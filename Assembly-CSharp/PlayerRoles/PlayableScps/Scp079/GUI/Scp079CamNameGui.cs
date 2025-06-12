@@ -14,14 +14,14 @@ public class Scp079CamNameGui : Scp079GuiElementBase
 	internal override void Init(Scp079Role role, ReferenceHub owner)
 	{
 		base.Init(role, owner);
-		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out _curCamSync);
+		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out this._curCamSync);
 	}
 
 	private void Update()
 	{
-		if (_curCamSync.TryGetCurrentCamera(out var cam))
+		if (this._curCamSync.TryGetCurrentCamera(out var cam))
 		{
-			_label.text = cam.Label;
+			this._label.text = cam.Label;
 		}
 	}
 }

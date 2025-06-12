@@ -12,7 +12,7 @@ public static class NetUtils
 
 	public static IPEndPoint MakeEndPoint(string hostStr, int port)
 	{
-		return new IPEndPoint(ResolveAddress(hostStr), port);
+		return new IPEndPoint(NetUtils.ResolveAddress(hostStr), port);
 	}
 
 	public static IPAddress ResolveAddress(string hostStr)
@@ -25,11 +25,11 @@ public static class NetUtils
 		{
 			if (NetManager.IPv6Support)
 			{
-				address = ResolveAddress(hostStr, AddressFamily.InterNetworkV6);
+				address = NetUtils.ResolveAddress(hostStr, AddressFamily.InterNetworkV6);
 			}
 			if (address == null)
 			{
-				address = ResolveAddress(hostStr, AddressFamily.InterNetwork);
+				address = NetUtils.ResolveAddress(hostStr, AddressFamily.InterNetwork);
 			}
 		}
 		if (address == null)
@@ -55,7 +55,7 @@ public static class NetUtils
 	public static List<string> GetLocalIpList(LocalAddrType addrType)
 	{
 		List<string> list = new List<string>();
-		GetLocalIpList(list, addrType);
+		NetUtils.GetLocalIpList(list, addrType);
 		return list;
 	}
 
@@ -116,11 +116,11 @@ public static class NetUtils
 
 	public static string GetLocalIp(LocalAddrType addrType)
 	{
-		lock (IpList)
+		lock (NetUtils.IpList)
 		{
-			IpList.Clear();
-			GetLocalIpList(IpList, addrType);
-			return (IpList.Count == 0) ? string.Empty : IpList[0];
+			NetUtils.IpList.Clear();
+			NetUtils.GetLocalIpList(NetUtils.IpList, addrType);
+			return (NetUtils.IpList.Count == 0) ? string.Empty : NetUtils.IpList[0];
 		}
 	}
 

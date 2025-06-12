@@ -29,35 +29,35 @@ public class FavoriteAndHistory : MonoBehaviour
 
 	public static string GetPath(StorageLocation location)
 	{
-		return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/SCP Secret Laboratory/" + StorageEnumToPath[location];
+		return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "/SCP Secret Laboratory/" + FavoriteAndHistory.StorageEnumToPath[location];
 	}
 
 	public static void ResetServerID()
 	{
-		ServerIDLastJoined = string.Empty;
+		FavoriteAndHistory.ServerIDLastJoined = string.Empty;
 	}
 
 	static FavoriteAndHistory()
 	{
-		Favorites = new List<string>();
-		History = new List<string>();
-		IPHistory = new List<string>();
-		LocationToList = new Dictionary<StorageLocation, List<string>>
+		FavoriteAndHistory.Favorites = new List<string>();
+		FavoriteAndHistory.History = new List<string>();
+		FavoriteAndHistory.IPHistory = new List<string>();
+		FavoriteAndHistory.LocationToList = new Dictionary<StorageLocation, List<string>>
 		{
 			{
 				StorageLocation.History,
-				History
+				FavoriteAndHistory.History
 			},
 			{
 				StorageLocation.Favorites,
-				Favorites
+				FavoriteAndHistory.Favorites
 			},
 			{
 				StorageLocation.IPHistory,
-				IPHistory
+				FavoriteAndHistory.IPHistory
 			}
 		};
-		StorageEnumToPath = new Dictionary<StorageLocation, string>
+		FavoriteAndHistory.StorageEnumToPath = new Dictionary<StorageLocation, string>
 		{
 			{
 				StorageLocation.History,
@@ -72,9 +72,9 @@ public class FavoriteAndHistory : MonoBehaviour
 				"iphistory.txt"
 			}
 		};
-		foreach (KeyValuePair<StorageLocation, List<string>> locationTo in LocationToList)
+		foreach (KeyValuePair<StorageLocation, List<string>> locationTo in FavoriteAndHistory.LocationToList)
 		{
-			Load(locationTo.Key);
+			FavoriteAndHistory.Load(locationTo.Key);
 		}
 	}
 
@@ -83,13 +83,13 @@ public class FavoriteAndHistory : MonoBehaviour
 		GameCore.Console.AddLog("Loading " + location, Color.grey);
 		try
 		{
-			List<string> list = LocationToList[location];
+			List<string> list = FavoriteAndHistory.LocationToList[location];
 			list.Clear();
-			if (!File.Exists(GetPath(location)))
+			if (!File.Exists(FavoriteAndHistory.GetPath(location)))
 			{
-				Revert(StorageEnumToPath[location]);
+				FavoriteAndHistory.Revert(FavoriteAndHistory.StorageEnumToPath[location]);
 			}
-			StreamReader streamReader = new StreamReader(GetPath(location));
+			StreamReader streamReader = new StreamReader(FavoriteAndHistory.GetPath(location));
 			string text;
 			while ((text = streamReader.ReadLine()) != null)
 			{
@@ -103,35 +103,35 @@ public class FavoriteAndHistory : MonoBehaviour
 		catch (Exception ex)
 		{
 			Debug.Log("REVENT: " + ex.StackTrace + " - " + ex.Message);
-			Revert(StorageEnumToPath[location]);
+			FavoriteAndHistory.Revert(FavoriteAndHistory.StorageEnumToPath[location]);
 		}
 	}
 
 	public static void Modify(StorageLocation location, string id, bool delete = false)
 	{
-		List<string> list = LocationToList[location];
+		List<string> list = FavoriteAndHistory.LocationToList[location];
 		list.RemoveAll((string x) => x == id);
 		if (!delete)
 		{
 			list.Add(id);
 		}
-		StreamWriter streamWriter = new StreamWriter(GetPath(location), append: false);
+		StreamWriter streamWriter = new StreamWriter(FavoriteAndHistory.GetPath(location), append: false);
 		foreach (string item in list)
 		{
 			streamWriter.WriteLine(item);
 		}
 		streamWriter.Close();
-		Load(location);
+		FavoriteAndHistory.Load(location);
 		if ((location == StorageLocation.History || location == StorageLocation.IPHistory) && list.Count >= 10)
 		{
-			HistoryLimit(location, id);
+			FavoriteAndHistory.HistoryLimit(location, id);
 		}
 	}
 
 	private static void HistoryLimit(StorageLocation location, string id)
 	{
 		int num = 0;
-		List<string> list = LocationToList[location];
+		List<string> list = FavoriteAndHistory.LocationToList[location];
 		if (list.Contains(id))
 		{
 			num = list.RemoveAll((string x) => x == id);
@@ -141,18 +141,18 @@ public class FavoriteAndHistory : MonoBehaviour
 			list.RemoveAt(0);
 		}
 		list.Add(id);
-		StreamWriter streamWriter = new StreamWriter(GetPath(location), append: false);
+		StreamWriter streamWriter = new StreamWriter(FavoriteAndHistory.GetPath(location), append: false);
 		foreach (string item in list)
 		{
 			streamWriter.WriteLine(item);
 		}
 		streamWriter.Close();
-		Load(location);
+		FavoriteAndHistory.Load(location);
 	}
 
 	public static bool IsInStorage(StorageLocation location, string id)
 	{
-		return LocationToList[location].Contains(id);
+		return FavoriteAndHistory.LocationToList[location].Contains(id);
 	}
 
 	private static void Revert(string fileName)

@@ -26,39 +26,39 @@ public class HumeShieldBarController : MonoBehaviour
 
 	private void Awake()
 	{
-		_targetBar.AutohideOption = StatusBar.AutoHideType.AlwaysVisible;
-		_firstFrame = true;
+		this._targetBar.AutohideOption = StatusBar.AutoHideType.AlwaysVisible;
+		this._firstFrame = true;
 		if (ReferenceHub.TryGetPovHub(out var hub) && hub.roleManager.CurrentRole is IHumeShieldedRole humeShieldedRole && humeShieldedRole.HumeShieldModule.HideWhenEmpty)
 		{
-			_targetBar.AutohideOption = StatusBar.AutoHideType.WhenEmpty;
+			this._targetBar.AutohideOption = StatusBar.AutoHideType.WhenEmpty;
 		}
 	}
 
 	private void Update()
 	{
-		GetValues(out var barVisible, out var warningColor);
-		if (_firstFrame || barVisible != _prevVisible)
+		this.GetValues(out var barVisible, out var warningColor);
+		if (this._firstFrame || barVisible != this._prevVisible)
 		{
-			_targetBar.SetAlpha(barVisible ? 1 : 0);
-			_firstFrame = true;
-			_prevVisible = barVisible;
+			this._targetBar.SetAlpha(barVisible ? 1 : 0);
+			this._firstFrame = true;
+			this._prevVisible = barVisible;
 		}
 		if (warningColor.HasValue)
 		{
 			Color value = warningColor.Value;
-			Color hsColor = _hsColor;
+			Color hsColor = this._hsColor;
 			float num = 35f * value.a;
-			hsColor.a = (value.a = Mathf.Min(1f, _colorTimer * 8f));
-			float t = (Mathf.Sin(_colorTimer * num) + 1f) / 2f;
-			_hsWarning.color = Color.Lerp(hsColor, value, t);
-			_colorTimer += Time.deltaTime;
+			hsColor.a = (value.a = Mathf.Min(1f, this._colorTimer * 8f));
+			float t = (Mathf.Sin(this._colorTimer * num) + 1f) / 2f;
+			this._hsWarning.color = Color.Lerp(hsColor, value, t);
+			this._colorTimer += Time.deltaTime;
 		}
 		else
 		{
-			Color color = _hsWarning.color;
+			Color color = this._hsWarning.color;
 			color.a = Mathf.Max(0f, color.a - Time.deltaTime * 8f);
-			_hsWarning.color = color;
-			_colorTimer = 0f;
+			this._hsWarning.color = color;
+			this._colorTimer = 0f;
 		}
 	}
 

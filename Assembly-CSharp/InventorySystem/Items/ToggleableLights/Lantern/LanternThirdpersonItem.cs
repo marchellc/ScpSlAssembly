@@ -22,16 +22,16 @@ public class LanternThirdpersonItem : IdleThirdpersonItem
 	{
 		get
 		{
-			if (_cacheSet)
+			if (LanternThirdpersonItem._cacheSet)
 			{
-				return _cachedFlashlight;
+				return LanternThirdpersonItem._cachedFlashlight;
 			}
 			if (!InventoryItemLoader.TryGetItem<LanternItem>(ItemType.Lantern, out var result))
 			{
 				throw new InvalidOperationException($"Item {ItemType.Lantern} is not defined!");
 			}
-			_cachedFlashlight = result;
-			_cacheSet = true;
+			LanternThirdpersonItem._cachedFlashlight = result;
+			LanternThirdpersonItem._cacheSet = true;
 			return result;
 		}
 	}
@@ -40,7 +40,7 @@ public class LanternThirdpersonItem : IdleThirdpersonItem
 	{
 		base.Initialize(subctrl, id);
 		FlashlightNetworkHandler.OnStatusReceived += ProcessReceivedStatus;
-		SetState(!FlashlightNetworkHandler.ReceivedStatuses.TryGetValue(id.SerialNumber, out var value) || value);
+		this.SetState(!FlashlightNetworkHandler.ReceivedStatuses.TryGetValue(id.SerialNumber, out var value) || value);
 	}
 
 	private void OnDestroy()
@@ -52,24 +52,24 @@ public class LanternThirdpersonItem : IdleThirdpersonItem
 	{
 		if (msg.Serial == base.ItemId.SerialNumber)
 		{
-			SetState(msg.NewState);
+			this.SetState(msg.NewState);
 		}
 	}
 
 	private void SetState(bool newState)
 	{
-		if (_lightSource.enabled != newState)
+		if (this._lightSource.enabled != newState)
 		{
-			_lightSource.enabled = newState;
+			this._lightSource.enabled = newState;
 			if (newState)
 			{
-				_particleSystem.Play();
+				this._particleSystem.Play();
 			}
 			else
 			{
-				_particleSystem.Stop();
+				this._particleSystem.Stop();
 			}
-			AudioSourcePoolManager.PlayOnTransform(newState ? Template.OnClip : Template.OffClip, base.transform, 3.2f);
+			AudioSourcePoolManager.PlayOnTransform(newState ? LanternThirdpersonItem.Template.OnClip : LanternThirdpersonItem.Template.OffClip, base.transform, 3.2f);
 		}
 	}
 }

@@ -22,21 +22,21 @@ public class AutosyncRpc : AutosyncWriterBase
 	public AutosyncRpc(ItemIdentifier item, out NetworkWriter writer)
 		: base(item, out writer)
 	{
-		_mode = Mode.AllClients;
+		this._mode = Mode.AllClients;
 	}
 
 	public AutosyncRpc(ItemIdentifier item, Func<ReferenceHub, bool> predicate, out NetworkWriter writer)
 		: base(item, out writer)
 	{
-		_mode = Mode.Conditional;
-		_predicate = predicate;
+		this._mode = Mode.Conditional;
+		this._predicate = predicate;
 	}
 
 	public AutosyncRpc(ItemIdentifier item, ReferenceHub specificHub, out NetworkWriter writer)
 		: base(item, out writer)
 	{
-		_mode = Mode.SpecificClient;
-		_specificReceiver = specificHub.connectionToClient;
+		this._mode = Mode.SpecificClient;
+		this._specificReceiver = specificHub.connectionToClient;
 	}
 
 	public AutosyncRpc(ItemIdentifier item)
@@ -58,16 +58,16 @@ public class AutosyncRpc : AutosyncWriterBase
 	{
 		if (NetworkServer.active)
 		{
-			switch (_mode)
+			switch (this._mode)
 			{
 			case Mode.SpecificClient:
-				_specificReceiver.Send(msg);
+				this._specificReceiver.Send(msg);
 				break;
 			case Mode.AllClients:
 				NetworkServer.SendToReady(msg);
 				break;
 			case Mode.Conditional:
-				msg.SendToHubsConditionally(_predicate);
+				msg.SendToHubsConditionally(this._predicate);
 				break;
 			}
 		}

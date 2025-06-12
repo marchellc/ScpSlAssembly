@@ -31,13 +31,13 @@ public class CameraZoomAxis : CameraAxisBase
 	[SerializeField]
 	private float _cooldown;
 
-	public float CurrentZoom => _magnificationCurve.Evaluate(base.CurValue);
+	public float CurrentZoom => this._magnificationCurve.Evaluate(base.CurValue);
 
 	internal override void Update(Scp079Camera cam)
 	{
 		if (Scp079Role.LocalInstanceActive && cam != null && cam.IsUsedByLocalPlayer && cam.IsActive)
 		{
-			UpdateInputs();
+			this.UpdateInputs();
 		}
 		base.Update(cam);
 	}
@@ -45,11 +45,11 @@ public class CameraZoomAxis : CameraAxisBase
 	internal override void Awake(Scp079Camera cam)
 	{
 		base.Awake(cam);
-		_unzoomedOffset = new Offset
+		this._unzoomedOffset = new Offset
 		{
-			position = _zoomBone.localPosition,
-			rotation = _zoomBone.localEulerAngles,
-			scale = _zoomBone.localScale
+			position = this._zoomBone.localPosition,
+			rotation = this._zoomBone.localEulerAngles,
+			scale = this._zoomBone.localScale
 		};
 		base.TargetValue = 0f;
 	}
@@ -57,13 +57,13 @@ public class CameraZoomAxis : CameraAxisBase
 	protected override void OnValueChanged(float newValue, Scp079Camera cam)
 	{
 		float t = Mathf.InverseLerp(base.MinValue, base.MaxValue, newValue);
-		_zoomBone.localPosition = Vector3.Lerp(_unzoomedOffset.position, _zoomedOffset.position, t);
-		_zoomBone.localRotation = Quaternion.Lerp(Quaternion.Euler(_unzoomedOffset.rotation), Quaternion.Euler(_zoomedOffset.rotation), t);
-		_zoomBone.localScale = Vector3.Lerp(_unzoomedOffset.scale, _zoomedOffset.scale, t);
-		if (!SoundEffectSource.loop && _lastSoundZoom != base.TargetValue)
+		this._zoomBone.localPosition = Vector3.Lerp(this._unzoomedOffset.position, this._zoomedOffset.position, t);
+		this._zoomBone.localRotation = Quaternion.Lerp(Quaternion.Euler(this._unzoomedOffset.rotation), Quaternion.Euler(this._zoomedOffset.rotation), t);
+		this._zoomBone.localScale = Vector3.Lerp(this._unzoomedOffset.scale, this._zoomedOffset.scale, t);
+		if (!base.SoundEffectSource.loop && this._lastSoundZoom != base.TargetValue)
 		{
-			SoundEffectSource.Play();
-			_lastSoundZoom = base.TargetValue;
+			base.SoundEffectSource.Play();
+			this._lastSoundZoom = base.TargetValue;
 		}
 	}
 
@@ -72,10 +72,10 @@ public class CameraZoomAxis : CameraAxisBase
 		if (!Scp079CursorManager.LockCameras)
 		{
 			float axisRaw = Input.GetAxisRaw("Mouse ScrollWheel");
-			if (axisRaw != 0f && _cooldownStopwatch.Elapsed.TotalSeconds >= (double)_cooldown)
+			if (axisRaw != 0f && this._cooldownStopwatch.Elapsed.TotalSeconds >= (double)this._cooldown)
 			{
-				base.TargetValue += ((axisRaw > 0f) ? _stepSize : (0f - _stepSize));
-				_cooldownStopwatch.Restart();
+				base.TargetValue += ((axisRaw > 0f) ? this._stepSize : (0f - this._stepSize));
+				this._cooldownStopwatch.Restart();
 			}
 		}
 	}

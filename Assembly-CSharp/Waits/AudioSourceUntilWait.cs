@@ -8,6 +8,6 @@ public class AudioSourceUntilWait : UntilWait
 
 	protected override bool Predicate()
 	{
-		return !audioSource.isPlaying;
+		return !this.audioSource.isPlaying;
 	}
 }

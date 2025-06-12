@@ -32,7 +32,7 @@ public class SCP079BlackoutSoundtrack : SoundtrackLayerBase
 
 	private double _blackoutTime;
 
-	public override float Weight => _weight;
+	public override float Weight => this._weight;
 
 	public override bool Additive => false;
 
@@ -40,35 +40,35 @@ public class SCP079BlackoutSoundtrack : SoundtrackLayerBase
 	{
 		if (ReferenceHub.TryGetPovHub(out var hub))
 		{
-			_audioSource.volume = volumeScale * _weight;
+			this._audioSource.volume = volumeScale * this._weight;
 			bool num = hub.IsSCP();
-			bool flag = _blackoutTime + 60.0 - 1.0 < NetworkTime.time;
-			bool flag2 = _blackoutTime + 10.0 > NetworkTime.time;
+			bool flag = this._blackoutTime + 60.0 - 1.0 < NetworkTime.time;
+			bool flag2 = this._blackoutTime + 10.0 > NetworkTime.time;
 			if (num || flag || flag2)
 			{
-				Fade(increase: false);
+				this.Fade(increase: false);
 			}
-			else if (hub.GetCurrentZone() != _blackoutZone)
+			else if (hub.GetCurrentZone() != this._blackoutZone)
 			{
-				Fade(increase: false);
+				this.Fade(increase: false);
 			}
 			else
 			{
-				Fade(increase: true);
+				this.Fade(increase: true);
 			}
 		}
 	}
 
 	private void Fade(bool increase)
 	{
-		_weight = Mathf.Lerp(_weight, increase ? 1 : 0, (increase ? _fadeInMultipler : _fadeOutMultipler) * Time.deltaTime);
+		this._weight = Mathf.Lerp(this._weight, increase ? 1 : 0, (increase ? this._fadeInMultipler : this._fadeOutMultipler) * Time.deltaTime);
 	}
 
 	private void OnClientZoneBlackout(ReferenceHub scp079Hub, FacilityZone zone)
 	{
-		_audioSource.PlayDelayed(10.25f);
-		_blackoutZone = zone;
-		_blackoutTime = NetworkTime.time;
+		this._audioSource.PlayDelayed(10.25f);
+		this._blackoutZone = zone;
+		this._blackoutTime = NetworkTime.time;
 	}
 
 	private void Start()

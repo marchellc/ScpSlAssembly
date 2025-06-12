@@ -33,7 +33,7 @@ public sealed class TypeFormatter : IJsonFormatter<Type>, IJsonFormatter
 		{
 			writer.WriteNull();
 		}
-		else if (serializeAssemblyQualifiedName)
+		else if (this.serializeAssemblyQualifiedName)
 		{
 			writer.WriteString(value.AssemblyQualifiedName);
 		}
@@ -50,10 +50,10 @@ public sealed class TypeFormatter : IJsonFormatter<Type>, IJsonFormatter
 			return null;
 		}
 		string text = reader.ReadString();
-		if (deserializeSubtractAssemblyQualifiedName)
+		if (this.deserializeSubtractAssemblyQualifiedName)
 		{
-			text = SubtractFullNameRegex.Replace(text, "");
+			text = TypeFormatter.SubtractFullNameRegex.Replace(text, "");
 		}
-		return Type.GetType(text, throwOnError);
+		return Type.GetType(text, this.throwOnError);
 	}
 }

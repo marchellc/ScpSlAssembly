@@ -15,31 +15,31 @@ internal class FriendlyFireDetector
 
 	internal FriendlyFireDetector(ReferenceHub hub)
 	{
-		_hub = hub;
+		this._hub = hub;
 	}
 
 	public virtual bool RegisterDamage(float damage)
 	{
-		Damage += damage;
+		this.Damage += damage;
 		return false;
 	}
 
 	public virtual bool RegisterKill()
 	{
-		Kills++;
+		this.Kills++;
 		return false;
 	}
 
 	public virtual void Reset()
 	{
-		Kills = 0u;
-		Damage = 0f;
+		this.Kills = 0u;
+		this.Damage = 0f;
 	}
 
 	protected void TakeAction(ref FriendlyFireAction action, string detector, ref long banDuration, ref string banReason, ref string killReason, ref string adminchat, ref string broadcast, ref bool webhook)
 	{
-		_triggered = true;
-		TakeAction(new Footprint(_hub), ref action, detector, ref banDuration, ref banReason, ref killReason, ref adminchat, ref broadcast, ref webhook);
+		this._triggered = true;
+		FriendlyFireDetector.TakeAction(new Footprint(this._hub), ref action, detector, ref banDuration, ref banReason, ref killReason, ref adminchat, ref broadcast, ref webhook);
 	}
 
 	internal static void TakeAction(Footprint fp, ref FriendlyFireAction action, string detector, ref long banDuration, ref string banReason, ref string killReason, ref string adminchat, ref string broadcast, ref bool webhook)

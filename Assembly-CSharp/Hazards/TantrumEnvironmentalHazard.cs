@@ -39,7 +39,7 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 	{
 		get
 		{
-			return _correctPosition.position + SourceOffset;
+			return this._correctPosition.position + this.SourceOffset;
 		}
 		set
 		{
@@ -52,12 +52,12 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 		[CompilerGenerated]
 		get
 		{
-			return _003CSynchronizedPosition_003Ek__BackingField;
+			return this._003CSynchronizedPosition_003Ek__BackingField;
 		}
 		[CompilerGenerated]
 		set
 		{
-			Network_003CSynchronizedPosition_003Ek__BackingField = value;
+			this.Network_003CSynchronizedPosition_003Ek__BackingField = value;
 		}
 	}
 
@@ -69,14 +69,14 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 	{
 		get
 		{
-			if (_decaySpeedOverride >= 0f)
+			if (this._decaySpeedOverride >= 0f)
 			{
-				return _decaySpeedOverride;
+				return this._decaySpeedOverride;
 			}
 			float num = 1f;
 			foreach (Scp244DeployablePickup instance in Scp244DeployablePickup.Instances)
 			{
-				num += instance.FogPercentForPoint(SourcePosition);
+				num += instance.FogPercentForPoint(this.SourcePosition);
 			}
 			return num;
 		}
@@ -86,18 +86,18 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 	{
 		get
 		{
-			return SynchronizedPosition;
+			return this.SynchronizedPosition;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref SynchronizedPosition, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.SynchronizedPosition, 1uL, null);
 		}
 	}
 
 	public override bool OnEnter(ReferenceHub player)
 	{
-		if (!IsActive || player.IsSCP())
+		if (!this.IsActive || player.IsSCP())
 		{
 			return false;
 		}
@@ -121,7 +121,7 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 		{
 			return false;
 		}
-		if (!IsActive || player.IsSCP())
+		if (!this.IsActive || player.IsSCP())
 		{
 			return false;
 		}
@@ -133,10 +133,10 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 	protected override void Start()
 	{
 		base.Start();
-		ClientApplyDecalSize();
+		this.ClientApplyDecalSize();
 		if (NetworkServer.active)
 		{
-			AllTantrums.Add(this);
+			TantrumEnvironmentalHazard.AllTantrums.Add(this);
 			ExplosionGrenade.OnExploded += CheckExplosion;
 		}
 	}
@@ -154,8 +154,8 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 			return;
 		}
 		base.ServerDestroy();
-		RpcDespawn(PlaySizzle);
-		ServerDelayedDestroy(6f);
+		this.RpcDespawn(this.PlaySizzle);
+		this.ServerDelayedDestroy(6f);
 	}
 
 	protected override void OnDestroy()
@@ -163,7 +163,7 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 		base.OnDestroy();
 		if (NetworkServer.active)
 		{
-			AllTantrums.Remove(this);
+			TantrumEnvironmentalHazard.AllTantrums.Remove(this);
 			ExplosionGrenade.OnExploded -= CheckExplosion;
 		}
 	}
@@ -173,7 +173,7 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteBool(playSizzle);
-		SendRPCInternal("System.Void Hazards.TantrumEnvironmentalHazard::RpcDespawn(System.Boolean)", -963326249, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Hazards.TantrumEnvironmentalHazard::RpcDespawn(System.Boolean)", -963326249, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -181,25 +181,25 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 	{
 		if (NetworkServer.active)
 		{
-			Timing.RunCoroutine(DelayedPuddleRemoval(waitTime).CancelWith(base.gameObject));
+			Timing.RunCoroutine(this.DelayedPuddleRemoval(waitTime).CancelWith(base.gameObject));
 		}
 	}
 
 	private void LateUpdate()
 	{
-		SourcePosition = SynchronizedPosition.Position;
+		this.SourcePosition = this.SynchronizedPosition.Position;
 	}
 
 	private void CheckExplosion(Footprint attacker, Vector3 pos, ExplosionGrenade grenade)
 	{
-		Vector3 position = _correctPosition.position;
+		Vector3 position = this._correctPosition.position;
 		if (!(Mathf.Abs(pos.y - position.y) > 5f))
 		{
-			float num = _explodeDistance * _explodeDistance;
+			float num = this._explodeDistance * this._explodeDistance;
 			if (!((position - pos).SqrMagnitudeIgnoreY() > num))
 			{
-				PlaySizzle = true;
-				ServerDestroy();
+				this.PlaySizzle = true;
+				this.ServerDestroy();
 			}
 		}
 	}
@@ -212,7 +212,7 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 
 	static TantrumEnvironmentalHazard()
 	{
-		AllTantrums = new List<TantrumEnvironmentalHazard>();
+		TantrumEnvironmentalHazard.AllTantrums = new List<TantrumEnvironmentalHazard>();
 		RemoteProcedureCalls.RegisterRpc(typeof(TantrumEnvironmentalHazard), "System.Void Hazards.TantrumEnvironmentalHazard::RpcDespawn(System.Boolean)", InvokeUserCode_RpcDespawn__Boolean);
 	}
 
@@ -242,13 +242,13 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteRelativePosition(SynchronizedPosition);
+			writer.WriteRelativePosition(this.SynchronizedPosition);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteRelativePosition(SynchronizedPosition);
+			writer.WriteRelativePosition(this.SynchronizedPosition);
 		}
 	}
 
@@ -257,13 +257,13 @@ public class TantrumEnvironmentalHazard : TemporaryHazard
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref SynchronizedPosition, null, reader.ReadRelativePosition());
+			base.GeneratedSyncVarDeserialize(ref this.SynchronizedPosition, null, reader.ReadRelativePosition());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref SynchronizedPosition, null, reader.ReadRelativePosition());
+			base.GeneratedSyncVarDeserialize(ref this.SynchronizedPosition, null, reader.ReadRelativePosition());
 		}
 	}
 }

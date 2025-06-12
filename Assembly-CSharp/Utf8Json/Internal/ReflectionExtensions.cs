@@ -32,7 +32,7 @@ internal static class ReflectionExtensions
 
 	public static IEnumerable<PropertyInfo> GetAllProperties(this Type type)
 	{
-		return GetAllPropertiesCore(type, new HashSet<string>());
+		return ReflectionExtensions.GetAllPropertiesCore(type, new HashSet<string>());
 	}
 
 	private static IEnumerable<PropertyInfo> GetAllPropertiesCore(Type type, HashSet<string> nameCheck)
@@ -48,7 +48,7 @@ internal static class ReflectionExtensions
 		{
 			yield break;
 		}
-		foreach (PropertyInfo item in GetAllPropertiesCore(type.BaseType, nameCheck))
+		foreach (PropertyInfo item in ReflectionExtensions.GetAllPropertiesCore(type.BaseType, nameCheck))
 		{
 			yield return item;
 		}
@@ -56,7 +56,7 @@ internal static class ReflectionExtensions
 
 	public static IEnumerable<FieldInfo> GetAllFields(this Type type)
 	{
-		return GetAllFieldsCore(type, new HashSet<string>());
+		return ReflectionExtensions.GetAllFieldsCore(type, new HashSet<string>());
 	}
 
 	private static IEnumerable<FieldInfo> GetAllFieldsCore(Type type, HashSet<string> nameCheck)
@@ -72,7 +72,7 @@ internal static class ReflectionExtensions
 		{
 			yield break;
 		}
-		foreach (FieldInfo item in GetAllFieldsCore(type.BaseType, nameCheck))
+		foreach (FieldInfo item in ReflectionExtensions.GetAllFieldsCore(type.BaseType, nameCheck))
 		{
 			yield return item;
 		}

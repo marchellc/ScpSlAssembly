@@ -60,17 +60,17 @@ public class CoinThirdperson : IdleThirdpersonItem, ILookatModifier
 	internal override void Initialize(InventorySubcontroller subcontroller, ItemIdentifier id)
 	{
 		base.Initialize(subcontroller, id);
-		_lastThrowTime = 0.0;
+		this._lastThrowTime = 0.0;
 		Coin.OnFlipped += OnCoinflip;
 		GameObject characterModelTemplate = subcontroller.Model.LastRole.FpcModule.CharacterModelTemplate;
-		_heightOffset = 0f;
-		ModelHeightOffset[] modelSpecificResultOffsets = _modelSpecificResultOffsets;
+		this._heightOffset = 0f;
+		ModelHeightOffset[] modelSpecificResultOffsets = this._modelSpecificResultOffsets;
 		for (int i = 0; i < modelSpecificResultOffsets.Length; i++)
 		{
 			ModelHeightOffset modelHeightOffset = modelSpecificResultOffsets[i];
 			if (!(modelHeightOffset.ModelTemplate != characterModelTemplate))
 			{
-				_heightOffset = modelHeightOffset.HeightOffset;
+				this._heightOffset = modelHeightOffset.HeightOffset;
 				break;
 			}
 		}
@@ -78,7 +78,7 @@ public class CoinThirdperson : IdleThirdpersonItem, ILookatModifier
 
 	public LookatData ProcessLookat(LookatData data)
 	{
-		data.GlobalWeight *= _lastIkMultiplier;
+		data.GlobalWeight *= this._lastIkMultiplier;
 		return data;
 	}
 
@@ -90,29 +90,29 @@ public class CoinThirdperson : IdleThirdpersonItem, ILookatModifier
 
 	private void LateUpdate()
 	{
-		float time = (float)(NetworkTime.time - _lastThrowTime);
-		float num = _resultBlendAnimation.Evaluate(time);
-		_defaultPose.GetPositionAndRotation(out var position, out var rotation);
+		float time = (float)(NetworkTime.time - this._lastThrowTime);
+		float num = this._resultBlendAnimation.Evaluate(time);
+		this._defaultPose.GetPositionAndRotation(out var position, out var rotation);
 		if (num > 0f)
 		{
-			(_lastTails ? _tailsResultPose : _headsResultPose).GetPositionAndRotation(out var position2, out var rotation2);
-			position = Vector3.Lerp(position, position2 + Vector3.up * _heightOffset, num);
+			(this._lastTails ? this._tailsResultPose : this._headsResultPose).GetPositionAndRotation(out var position2, out var rotation2);
+			position = Vector3.Lerp(position, position2 + Vector3.up * this._heightOffset, num);
 			rotation = Quaternion.Lerp(rotation, rotation2, num);
 		}
-		position += Vector3.up * _heightAnimation.Evaluate(time);
-		_coinTr.SetPositionAndRotation(position, rotation);
-		_coinTr.Rotate(_rotationAxis * _rotationAnimation.Evaluate(time), Space.Self);
-		_lastIkMultiplier = _ikMultiplierAnimation.Evaluate(time);
+		position += Vector3.up * this._heightAnimation.Evaluate(time);
+		this._coinTr.SetPositionAndRotation(position, rotation);
+		this._coinTr.Rotate(this._rotationAxis * this._rotationAnimation.Evaluate(time), Space.Self);
+		this._lastIkMultiplier = this._ikMultiplierAnimation.Evaluate(time);
 	}
 
 	private void OnCoinflip(ushort serial, bool isTails)
 	{
 		if (serial == base.ItemId.SerialNumber)
 		{
-			_lastTails = isTails;
-			_lastThrowTime = NetworkTime.time;
-			SetAnim(AnimState3p.Override0, _throwAnim);
-			ReplayOverrideBlend(soft: true);
+			this._lastTails = isTails;
+			this._lastThrowTime = NetworkTime.time;
+			base.SetAnim(AnimState3p.Override0, this._throwAnim);
+			base.ReplayOverrideBlend(soft: true);
 		}
 	}
 }

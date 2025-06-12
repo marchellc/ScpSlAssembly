@@ -19,15 +19,15 @@ public class SSTwoButtonsEntry : UserSettingsTwoButtons, ISSEntry
 
 	protected override void SaveValue(bool val)
 	{
-		PlayerPrefsSl.Set(_setting.PlayerPrefsKey, val);
-		_setting.SyncIsB = val;
-		_setting.ClientSendValue();
+		PlayerPrefsSl.Set(this._setting.PlayerPrefsKey, val);
+		this._setting.SyncIsB = val;
+		this._setting.ClientSendValue();
 	}
 
 	protected override bool ReadSavedValue()
 	{
-		_setting.SyncIsB = PlayerPrefsSl.Get(_setting.PlayerPrefsKey, _setting.DefaultIsB);
-		return _setting.SyncIsB;
+		this._setting.SyncIsB = PlayerPrefsSl.Get(this._setting.PlayerPrefsKey, this._setting.DefaultIsB);
+		return this._setting.SyncIsB;
 	}
 
 	public bool CheckCompatibility(ServerSpecificSettingBase setting)
@@ -37,11 +37,11 @@ public class SSTwoButtonsEntry : UserSettingsTwoButtons, ISSEntry
 
 	public void Init(ServerSpecificSettingBase setting)
 	{
-		_setting = setting as SSTwoButtonsSetting;
-		_label.Set(_setting);
-		_optionA.text = _setting.OptionA;
-		_optionB.text = _setting.OptionB;
-		Setup();
-		UpdateColors(instant: true);
+		this._setting = setting as SSTwoButtonsSetting;
+		this._label.Set(this._setting);
+		this._optionA.text = this._setting.OptionA;
+		this._optionB.text = this._setting.OptionB;
+		base.Setup();
+		base.UpdateColors(instant: true);
 	}
 }

@@ -40,11 +40,11 @@ public class ViewmodelDualCamExtension : MonoBehaviour, IViewmodelExtension
 	public bool TryGetVerticalScreenOccupation(out float verticalScreenOccupation)
 	{
 		verticalScreenOccupation = 0f;
-		if (!ViewmodelCamera.TryGetViewportPoint(_topPointTr.position, out var viewport))
+		if (!ViewmodelCamera.TryGetViewportPoint(this._topPointTr.position, out var viewport))
 		{
 			return false;
 		}
-		if (!ViewmodelCamera.TryGetViewportPoint(_bottomPointTr.position, out var viewport2))
+		if (!ViewmodelCamera.TryGetViewportPoint(this._bottomPointTr.position, out var viewport2))
 		{
 			return false;
 		}
@@ -54,27 +54,27 @@ public class ViewmodelDualCamExtension : MonoBehaviour, IViewmodelExtension
 
 	public virtual void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_fovCamera = _cameraSetupRoot.GetComponent<Camera>();
-		_cameraTr = _cameraSetupRoot.transform;
-		_firearm = viewmodel.ParentFirearm;
-		Material sharedMat = _targetRenderer.sharedMaterial;
-		_matInstance = MaterialInstances.GetOrAdd(sharedMat, () => new Material(sharedMat));
-		_matInstance.SetTexture(RenderTexHash, _fovCamera.targetTexture);
-		_targetRenderer.sharedMaterial = _matInstance;
+		this._fovCamera = this._cameraSetupRoot.GetComponent<Camera>();
+		this._cameraTr = this._cameraSetupRoot.transform;
+		this._firearm = viewmodel.ParentFirearm;
+		Material sharedMat = this._targetRenderer.sharedMaterial;
+		this._matInstance = ViewmodelDualCamExtension.MaterialInstances.GetOrAdd(sharedMat, () => new Material(sharedMat));
+		this._matInstance.SetTexture(ViewmodelDualCamExtension.RenderTexHash, this._fovCamera.targetTexture);
+		this._targetRenderer.sharedMaterial = this._matInstance;
 	}
 
 	protected virtual void LateUpdate()
 	{
-		if (_firearm.TryGetModule<IAdsModule>(out var module) && TryGetVerticalScreenOccupation(out var verticalScreenOccupation))
+		if (this._firearm.TryGetModule<IAdsModule>(out var module) && this.TryGetVerticalScreenOccupation(out var verticalScreenOccupation))
 		{
 			float adsAmount = module.AdsAmount;
-			_matInstance.SetFloat(AdsHash, adsAmount);
-			_cameraSetupRoot.SetActive(adsAmount > 0f);
+			this._matInstance.SetFloat(ViewmodelDualCamExtension.AdsHash, adsAmount);
+			this._cameraSetupRoot.SetActive(adsAmount > 0f);
 			Transform currentCamera = MainCameraController.CurrentCamera;
-			_cameraTr.SetPositionAndRotation(currentCamera.position, currentCamera.rotation);
-			float num = _zoomAmount / verticalScreenOccupation;
+			this._cameraTr.SetPositionAndRotation(currentCamera.position, currentCamera.rotation);
+			float num = this._zoomAmount / verticalScreenOccupation;
 			float fieldOfView = 70f / num;
-			_fovCamera.fieldOfView = fieldOfView;
+			this._fovCamera.fieldOfView = fieldOfView;
 		}
 	}
 }

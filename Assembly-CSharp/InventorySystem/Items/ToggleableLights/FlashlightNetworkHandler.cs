@@ -18,8 +18,8 @@ public static class FlashlightNetworkHandler
 
 		public FlashlightMessage(ushort flashlightSerial, bool newState)
 		{
-			Serial = flashlightSerial;
-			NewState = newState;
+			this.Serial = flashlightSerial;
+			this.NewState = newState;
 		}
 	}
 
@@ -41,15 +41,15 @@ public static class FlashlightNetworkHandler
 
 	private static void RegisterHandlers()
 	{
-		AlreadyRequestedFirstimeSync.Clear();
-		ReceivedStatuses.Clear();
+		FlashlightNetworkHandler.AlreadyRequestedFirstimeSync.Clear();
+		FlashlightNetworkHandler.ReceivedStatuses.Clear();
 		NetworkClient.ReplaceHandler<FlashlightMessage>(ClientProcessMessage);
 		NetworkServer.ReplaceHandler<FlashlightMessage>(ServerProcessMessage);
 	}
 
 	private static void ClientProcessMessage(FlashlightMessage msg)
 	{
-		ReceivedStatuses[msg.Serial] = msg.NewState;
+		FlashlightNetworkHandler.ReceivedStatuses[msg.Serial] = msg.NewState;
 		FlashlightNetworkHandler.OnStatusReceived?.Invoke(msg);
 		if (ReferenceHub.TryGetLocalHub(out var hub) && hub.inventory.UserInventory.Items.TryGetValue(msg.Serial, out var value) && value is ToggleableLightItemBase toggleableLightItemBase)
 		{
@@ -65,16 +65,16 @@ public static class FlashlightNetworkHandler
 		}
 		if (msg.Serial == 0)
 		{
-			ServerProcessFirstTimeRequest(conn);
+			FlashlightNetworkHandler.ServerProcessFirstTimeRequest(conn);
 		}
 		if (hub.inventory.CurItem.SerialNumber == msg.Serial && hub.inventory.CurInstance is ToggleableLightItemBase toggleableLightItemBase)
 		{
 			bool newState = msg.NewState;
-			PlayerTogglingFlashlightEventArgs playerTogglingFlashlightEventArgs = new PlayerTogglingFlashlightEventArgs(hub, toggleableLightItemBase, newState);
-			PlayerEvents.OnTogglingFlashlight(playerTogglingFlashlightEventArgs);
-			if (playerTogglingFlashlightEventArgs.IsAllowed)
+			PlayerTogglingFlashlightEventArgs e = new PlayerTogglingFlashlightEventArgs(hub, toggleableLightItemBase, newState);
+			PlayerEvents.OnTogglingFlashlight(e);
+			if (e.IsAllowed)
 			{
-				newState = (toggleableLightItemBase.IsEmittingLight = playerTogglingFlashlightEventArgs.NewState);
+				newState = (toggleableLightItemBase.IsEmittingLight = e.NewState);
 				new FlashlightMessage(msg.Serial, newState).SendToAuthenticated();
 				PlayerEvents.OnToggledFlashlight(new PlayerToggledFlashlightEventArgs(hub, toggleableLightItemBase, newState));
 			}
@@ -83,7 +83,7 @@ public static class FlashlightNetworkHandler
 
 	private static void ServerProcessFirstTimeRequest(NetworkConnection conn)
 	{
-		if (!AlreadyRequestedFirstimeSync.Add(conn.identity.netId))
+		if (!FlashlightNetworkHandler.AlreadyRequestedFirstimeSync.Add(conn.identity.netId))
 		{
 			return;
 		}

@@ -16,19 +16,19 @@ public sealed class AnonymousFormatter<T> : IJsonFormatter<T>, IJsonFormatter
 
 	public void Serialize(ref JsonWriter writer, T value, IJsonFormatterResolver formatterResolver)
 	{
-		if (serialize == null)
+		if (this.serialize == null)
 		{
-			throw new InvalidOperationException(GetType().Name + " does not support Serialize.");
+			throw new InvalidOperationException(base.GetType().Name + " does not support Serialize.");
 		}
-		serialize(ref writer, value, formatterResolver);
+		this.serialize(ref writer, value, formatterResolver);
 	}
 
 	public T Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
 	{
-		if (deserialize == null)
+		if (this.deserialize == null)
 		{
-			throw new InvalidOperationException(GetType().Name + " does not support Deserialize.");
+			throw new InvalidOperationException(base.GetType().Name + " does not support Deserialize.");
 		}
-		return deserialize(ref reader, formatterResolver);
+		return this.deserialize(ref reader, formatterResolver);
 	}
 }

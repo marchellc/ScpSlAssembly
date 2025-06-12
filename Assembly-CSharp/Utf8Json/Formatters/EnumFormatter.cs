@@ -32,69 +32,69 @@ public class EnumFormatter<T> : IJsonFormatter<T>, IJsonFormatter, IObjectProper
 			where fi.FieldType == type
 			select fi)
 		{
-			object value2 = item.GetValue(null);
-			string name = Enum.GetName(type, value2);
+			object value = item.GetValue(null);
+			string name = Enum.GetName(type, value);
 			DataMemberAttribute dataMemberAttribute = item.GetCustomAttributes(typeof(DataMemberAttribute), inherit: true).OfType<DataMemberAttribute>().FirstOrDefault();
 			EnumMemberAttribute enumMemberAttribute = item.GetCustomAttributes(typeof(EnumMemberAttribute), inherit: true).OfType<EnumMemberAttribute>().FirstOrDefault();
-			list2.Add(value2);
+			list2.Add(value);
 			list.Add((enumMemberAttribute != null && enumMemberAttribute.Value != null) ? enumMemberAttribute.Value : ((dataMemberAttribute != null && dataMemberAttribute.Name != null) ? dataMemberAttribute.Name : name));
 		}
-		nameValueMapping = new ByteArrayStringHashTable<T>(list.Count);
-		valueNameMapping = new Dictionary<T, string>(list.Count);
-		for (int i = 0; i < list.Count; i++)
+		EnumFormatter<T>.nameValueMapping = new ByteArrayStringHashTable<T>(list.Count);
+		EnumFormatter<T>.valueNameMapping = new Dictionary<T, string>(list.Count);
+		for (int num = 0; num < list.Count; num++)
 		{
-			nameValueMapping.Add(JsonWriter.GetEncodedPropertyNameWithoutQuotation(list[i]), (T)list2[i]);
-			valueNameMapping[(T)list2[i]] = list[i];
+			EnumFormatter<T>.nameValueMapping.Add(JsonWriter.GetEncodedPropertyNameWithoutQuotation(list[num]), (T)list2[num]);
+			EnumFormatter<T>.valueNameMapping[(T)list2[num]] = list[num];
 		}
 		bool isBoxed;
 		object serializeDelegate = EnumFormatterHelper.GetSerializeDelegate(typeof(T), out isBoxed);
 		if (isBoxed)
 		{
 			JsonSerializeAction<object> boxSerialize = (JsonSerializeAction<object>)serializeDelegate;
-			defaultSerializeByUnderlyingValue = delegate(ref JsonWriter writer, T value, IJsonFormatterResolver _)
+			EnumFormatter<T>.defaultSerializeByUnderlyingValue = delegate(ref JsonWriter writer, T val, IJsonFormatterResolver _)
 			{
-				boxSerialize(ref writer, value, _);
+				boxSerialize(ref writer, val, _);
 			};
 		}
 		else
 		{
-			defaultSerializeByUnderlyingValue = (JsonSerializeAction<T>)serializeDelegate;
+			EnumFormatter<T>.defaultSerializeByUnderlyingValue = (JsonSerializeAction<T>)serializeDelegate;
 		}
 		bool isBoxed2;
 		object deserializeDelegate = EnumFormatterHelper.GetDeserializeDelegate(typeof(T), out isBoxed2);
 		if (isBoxed2)
 		{
 			JsonDeserializeFunc<object> boxDeserialize = (JsonDeserializeFunc<object>)deserializeDelegate;
-			defaultDeserializeByUnderlyingValue = delegate(ref JsonReader reader, IJsonFormatterResolver _)
+			EnumFormatter<T>.defaultDeserializeByUnderlyingValue = delegate(ref JsonReader reader, IJsonFormatterResolver _)
 			{
 				return (T)boxDeserialize(ref reader, _);
 			};
 		}
 		else
 		{
-			defaultDeserializeByUnderlyingValue = (JsonDeserializeFunc<T>)deserializeDelegate;
+			EnumFormatter<T>.defaultDeserializeByUnderlyingValue = (JsonDeserializeFunc<T>)deserializeDelegate;
 		}
 	}
 
 	public EnumFormatter(bool serializeByName)
 	{
 		this.serializeByName = serializeByName;
-		serializeByUnderlyingValue = defaultSerializeByUnderlyingValue;
-		deserializeByUnderlyingValue = defaultDeserializeByUnderlyingValue;
+		this.serializeByUnderlyingValue = EnumFormatter<T>.defaultSerializeByUnderlyingValue;
+		this.deserializeByUnderlyingValue = EnumFormatter<T>.defaultDeserializeByUnderlyingValue;
 	}
 
 	public EnumFormatter(JsonSerializeAction<T> valueSerializeAction, JsonDeserializeFunc<T> valueDeserializeAction)
 	{
-		serializeByName = false;
-		serializeByUnderlyingValue = valueSerializeAction;
-		deserializeByUnderlyingValue = valueDeserializeAction;
+		this.serializeByName = false;
+		this.serializeByUnderlyingValue = valueSerializeAction;
+		this.deserializeByUnderlyingValue = valueDeserializeAction;
 	}
 
 	public void Serialize(ref JsonWriter writer, T value, IJsonFormatterResolver formatterResolver)
 	{
-		if (serializeByName)
+		if (this.serializeByName)
 		{
-			if (!valueNameMapping.TryGetValue(value, out var value2))
+			if (!EnumFormatter<T>.valueNameMapping.TryGetValue(value, out var value2))
 			{
 				value2 = value.ToString();
 			}
@@ -102,7 +102,7 @@ public class EnumFormatter<T> : IJsonFormatter<T>, IJsonFormatter, IObjectProper
 		}
 		else
 		{
-			serializeByUnderlyingValue(ref writer, value, formatterResolver);
+			this.serializeByUnderlyingValue(ref writer, value, formatterResolver);
 		}
 	}
 
@@ -113,15 +113,15 @@ public class EnumFormatter<T> : IJsonFormatter<T>, IJsonFormatter, IObjectProper
 		case JsonToken.String:
 		{
 			ArraySegment<byte> key = reader.ReadStringSegmentUnsafe();
-			if (!nameValueMapping.TryGetValue(key, out var value))
+			if (!EnumFormatter<T>.nameValueMapping.TryGetValue(key, out var value))
 			{
-				string @string = StringEncoding.UTF8.GetString(key.Array, key.Offset, key.Count);
-				return (T)Enum.Parse(typeof(T), @string);
+				string value2 = StringEncoding.UTF8.GetString(key.Array, key.Offset, key.Count);
+				return (T)Enum.Parse(typeof(T), value2);
 			}
 			return value;
 		}
 		case JsonToken.Number:
-			return deserializeByUnderlyingValue(ref reader, formatterResolver);
+			return this.deserializeByUnderlyingValue(ref reader, formatterResolver);
 		default:
 			throw new InvalidOperationException("Can't parse JSON to Enum format.");
 		}
@@ -129,28 +129,28 @@ public class EnumFormatter<T> : IJsonFormatter<T>, IJsonFormatter, IObjectProper
 
 	public void SerializeToPropertyName(ref JsonWriter writer, T value, IJsonFormatterResolver formatterResolver)
 	{
-		if (serializeByName)
+		if (this.serializeByName)
 		{
-			Serialize(ref writer, value, formatterResolver);
+			this.Serialize(ref writer, value, formatterResolver);
 			return;
 		}
 		writer.WriteQuotation();
-		Serialize(ref writer, value, formatterResolver);
+		this.Serialize(ref writer, value, formatterResolver);
 		writer.WriteQuotation();
 	}
 
 	public T DeserializeFromPropertyName(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
 	{
-		if (serializeByName)
+		if (this.serializeByName)
 		{
-			return Deserialize(ref reader, formatterResolver);
+			return this.Deserialize(ref reader, formatterResolver);
 		}
 		if (reader.GetCurrentJsonToken() != JsonToken.String)
 		{
 			throw new InvalidOperationException("Can't parse JSON to Enum format.");
 		}
 		reader.AdvanceOffset(1);
-		T result = Deserialize(ref reader, formatterResolver);
+		T result = this.Deserialize(ref reader, formatterResolver);
 		reader.SkipWhiteSpace();
 		reader.AdvanceOffset(1);
 		return result;

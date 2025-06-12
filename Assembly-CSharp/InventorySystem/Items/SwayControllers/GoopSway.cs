@@ -31,15 +31,15 @@ public class GoopSway : IItemSwayController
 
 		public GoopSwaySettings(Transform targetTransform, float swayIntensity, float translationIntensity, float zAxisIntensity, float swaySmoothness, float translationSmoothness, float bobIntensity, float centrifugalIntensity, bool invertSway)
 		{
-			TargetTransform = targetTransform;
-			SwayIntensity = swayIntensity;
-			TranslationIntensity = translationIntensity;
-			ZAxisIntensity = zAxisIntensity;
-			SwaySmoothness = swaySmoothness;
-			TranslationSmoothness = translationSmoothness;
-			BobIntensity = bobIntensity;
-			CentrifugalIntensity = centrifugalIntensity;
-			Invert = ((!invertSway) ? 1 : (-1));
+			this.TargetTransform = targetTransform;
+			this.SwayIntensity = swayIntensity;
+			this.TranslationIntensity = translationIntensity;
+			this.ZAxisIntensity = zAxisIntensity;
+			this.SwaySmoothness = swaySmoothness;
+			this.TranslationSmoothness = translationSmoothness;
+			this.BobIntensity = bobIntensity;
+			this.CentrifugalIntensity = centrifugalIntensity;
+			this.Invert = ((!invertSway) ? 1 : (-1));
 		}
 	}
 
@@ -59,15 +59,15 @@ public class GoopSway : IItemSwayController
 
 	private float _prevRotY;
 
-	private float CurRotX => _ownerTransform.localEulerAngles.y;
+	private float CurRotX => this._ownerTransform.localEulerAngles.y;
 
-	private float CurRotY => _camTransform.localEulerAngles.x;
+	private float CurRotY => this._camTransform.localEulerAngles.x;
 
 	private AnimatedCharacterModel CharModel
 	{
 		get
 		{
-			if (!(Owner.roleManager.CurrentRole is IFpcRole fpcRole))
+			if (!(this.Owner.roleManager.CurrentRole is IFpcRole fpcRole))
 			{
 				return null;
 			}
@@ -75,7 +75,7 @@ public class GoopSway : IItemSwayController
 		}
 	}
 
-	protected virtual GoopSwaySettings Settings => _settings;
+	protected virtual GoopSwaySettings Settings => this._settings;
 
 	protected virtual float OverallBobMultiplier => 12f;
 
@@ -83,28 +83,28 @@ public class GoopSway : IItemSwayController
 
 	public GoopSway(GoopSwaySettings settings, ReferenceHub owner)
 	{
-		_settings = settings;
-		_positionOffset = settings.TargetTransform.localPosition;
-		Owner = owner;
-		_ownerTransform = Owner.transform;
-		_camTransform = owner.PlayerCameraReference;
-		_prevRotX = CurRotX;
-		_prevRotY = CurRotY;
+		this._settings = settings;
+		this._positionOffset = settings.TargetTransform.localPosition;
+		this.Owner = owner;
+		this._ownerTransform = this.Owner.transform;
+		this._camTransform = owner.PlayerCameraReference;
+		this._prevRotX = this.CurRotX;
+		this._prevRotY = this.CurRotY;
 	}
 
 	public virtual void UpdateSway()
 	{
 		if (NetworkClient.active)
 		{
-			CameraSway(Settings.TargetTransform);
-			Transition(Settings.TargetTransform);
+			this.CameraSway(this.Settings.TargetTransform);
+			this.Transition(this.Settings.TargetTransform);
 		}
 	}
 
 	private void CameraSway(Transform tr)
 	{
-		GetInput(out var x, out var y);
-		GoopSwaySettings settings = Settings;
+		this.GetInput(out var x, out var y);
+		GoopSwaySettings settings = this.Settings;
 		Quaternion quaternion = Quaternion.AngleAxis(settings.SwayIntensity * x, -Vector3.up * settings.Invert);
 		Quaternion quaternion2 = Quaternion.AngleAxis(settings.SwayIntensity * y, Vector3.right * settings.Invert);
 		Quaternion quaternion3 = Quaternion.AngleAxis(settings.ZAxisIntensity * x, -Vector3.forward * settings.Invert);
@@ -115,27 +115,27 @@ public class GoopSway : IItemSwayController
 	private void GetInput(out float x, out float y)
 	{
 		float num = 15f;
-		float value = Vector3.Dot(_ownerTransform.forward, _camTransform.forward);
-		float num2 = OverallSwayMultiplier / Time.deltaTime;
-		x = Mathf.Clamp(num2 * Mathf.DeltaAngle(_prevRotX, CurRotX), 0f - num, num);
-		y = Mathf.Clamp(num2 * Mathf.DeltaAngle(CurRotY, _prevRotY) * Mathf.Clamp01(value), 0f - num, num);
-		_prevRotX = CurRotX;
-		_prevRotY = CurRotY;
+		float value = Vector3.Dot(this._ownerTransform.forward, this._camTransform.forward);
+		float num2 = this.OverallSwayMultiplier / Time.deltaTime;
+		x = Mathf.Clamp(num2 * Mathf.DeltaAngle(this._prevRotX, this.CurRotX), 0f - num, num);
+		y = Mathf.Clamp(num2 * Mathf.DeltaAngle(this.CurRotY, this._prevRotY) * Mathf.Clamp01(value), 0f - num, num);
+		this._prevRotX = this.CurRotX;
+		this._prevRotY = this.CurRotY;
 	}
 
 	private void Transition(Transform tr)
 	{
-		GoopSwaySettings settings = Settings;
-		Vector3 vector = _ownerTransform.InverseTransformDirection(Owner.GetVelocity());
+		GoopSwaySettings settings = this.Settings;
+		Vector3 vector = this._ownerTransform.InverseTransformDirection(this.Owner.GetVelocity());
 		float x = vector.x;
 		float num = Mathf.Abs(vector.z);
-		Vector3 b = new Vector3(settings.TranslationIntensity * (0f - x), settings.TranslationIntensity * (0f - num), 0f) + _positionOffset;
+		Vector3 b = new Vector3(settings.TranslationIntensity * (0f - x), settings.TranslationIntensity * (0f - num), 0f) + this._positionOffset;
 		if (settings.CentrifugalIntensity != 0f)
 		{
 			b += Vector3.forward * (Quaternion.Angle(Quaternion.identity, tr.localRotation) / 360f) * settings.CentrifugalIntensity;
 		}
-		AnimatedCharacterModel charModel = CharModel;
-		Vector3 vector2 = ((charModel != null) ? (settings.BobIntensity * OverallBobMultiplier * charModel.HeadBobPosition) : Vector3.zero);
+		AnimatedCharacterModel charModel = this.CharModel;
+		Vector3 vector2 = ((charModel != null) ? (settings.BobIntensity * this.OverallBobMultiplier * charModel.HeadBobPosition) : Vector3.zero);
 		tr.localPosition = Vector3.Slerp(tr.localPosition - vector2, b, Time.deltaTime * settings.TranslationSmoothness) + vector2;
 	}
 }

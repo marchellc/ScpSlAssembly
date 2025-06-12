@@ -25,11 +25,11 @@ public abstract class ThirdpersonItemBase : PoolObject, IPoolResettable, IIdenti
 	{
 		get
 		{
-			return Animator.GetFloat(HashOverrideBlend);
+			return this.Animator.GetFloat(ThirdpersonItemBase.HashOverrideBlend);
 		}
 		set
 		{
-			Animator.SetFloat(HashOverrideBlend, value);
+			this.Animator.SetFloat(ThirdpersonItemBase.HashOverrideBlend, value);
 		}
 	}
 
@@ -37,11 +37,11 @@ public abstract class ThirdpersonItemBase : PoolObject, IPoolResettable, IIdenti
 	{
 		get
 		{
-			return Animator.GetFloat(HashAdditiveBlend);
+			return this.Animator.GetFloat(ThirdpersonItemBase.HashAdditiveBlend);
 		}
 		set
 		{
-			Animator.SetFloat(HashAdditiveBlend, value);
+			this.Animator.SetFloat(ThirdpersonItemBase.HashAdditiveBlend, value);
 		}
 	}
 
@@ -51,9 +51,9 @@ public abstract class ThirdpersonItemBase : PoolObject, IPoolResettable, IIdenti
 
 	public InventorySubcontroller TargetSubcontroller { get; private set; }
 
-	public Animator Animator => TargetModel.Animator;
+	public Animator Animator => this.TargetModel.Animator;
 
-	public ReferenceHub OwnerHub => TargetModel.OwnerHub;
+	public ReferenceHub OwnerHub => this.TargetModel.OwnerHub;
 
 	public virtual void ResetObject()
 	{
@@ -68,7 +68,7 @@ public abstract class ThirdpersonItemBase : PoolObject, IPoolResettable, IIdenti
 
 	internal virtual void OnFadeChanged(float newFade)
 	{
-		_tr.localScale = Vector3.one * newFade;
+		this._tr.localScale = Vector3.one * newFade;
 	}
 
 	internal virtual void OnAnimIK(int layerIndex, float ikScale)
@@ -77,35 +77,35 @@ public abstract class ThirdpersonItemBase : PoolObject, IPoolResettable, IIdenti
 
 	internal virtual void Initialize(InventorySubcontroller subcontroller, ItemIdentifier id)
 	{
-		ItemId = id;
-		TargetModel = subcontroller.Model;
-		TargetSubcontroller = subcontroller;
-		_tr = base.transform;
-		_tr.parent = subcontroller.ItemSpawnpoint;
-		_tr.ResetTransform();
-		OverrideBlend = 0f;
-		AdditiveBlend = 0f;
-		OnFadeChanged(subcontroller.Model.Fade);
+		this.ItemId = id;
+		this.TargetModel = subcontroller.Model;
+		this.TargetSubcontroller = subcontroller;
+		this._tr = base.transform;
+		this._tr.parent = subcontroller.ItemSpawnpoint;
+		this._tr.ResetTransform();
+		this.OverrideBlend = 0f;
+		this.AdditiveBlend = 0f;
+		this.OnFadeChanged(subcontroller.Model.Fade);
 	}
 
 	protected void SetAnim(AnimState3p anim, AnimationClip clip)
 	{
-		ThirdpersonItemAnimationManager.SetAnimation(TargetModel, anim, clip);
+		ThirdpersonItemAnimationManager.SetAnimation(this.TargetModel, anim, clip);
 	}
 
 	protected void SetAnim(AnimOverrideState3pPair pair)
 	{
-		ThirdpersonItemAnimationManager.SetAnimation(TargetModel, pair);
+		ThirdpersonItemAnimationManager.SetAnimation(this.TargetModel, pair);
 	}
 
 	protected void ReplayOverrideBlend(bool soft)
 	{
-		Animator.SetTrigger(soft ? HashTriggerOverrideSoft : HashTriggerOverrideInstant);
+		this.Animator.SetTrigger(soft ? ThirdpersonItemBase.HashTriggerOverrideSoft : ThirdpersonItemBase.HashTriggerOverrideInstant);
 	}
 
 	protected void ReplayAdditiveBlend(bool soft)
 	{
-		Animator.SetTrigger(soft ? HashTriggerAdditiveSoft : HashTriggerAdditiveInstant);
+		this.Animator.SetTrigger(soft ? ThirdpersonItemBase.HashTriggerAdditiveSoft : ThirdpersonItemBase.HashTriggerAdditiveInstant);
 	}
 
 	protected virtual void Update()

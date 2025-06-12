@@ -21,7 +21,7 @@ public abstract class StandardDamageHandler : DamageHandlerBase
 
 	private short _velZ;
 
-	public abstract float Damage { get; internal set; }
+	public abstract float Damage { get; set; }
 
 	public float DealtHealthDamage { get; protected set; }
 
@@ -29,14 +29,14 @@ public abstract class StandardDamageHandler : DamageHandlerBase
 
 	public float AbsorbedHumeDamage { get; protected set; }
 
-	public float TotalDamageDealt => DealtHealthDamage + AbsorbedAhpDamage + AbsorbedHumeDamage;
+	public float TotalDamageDealt => this.DealtHealthDamage + this.AbsorbedAhpDamage + this.AbsorbedHumeDamage;
 
 	public override string ServerMetricsText => string.Empty;
 
 	public override HandlerOutput ApplyDamage(ReferenceHub ply)
 	{
-		StartVelocity = ply.GetVelocity();
-		StartVelocity.y = Mathf.Max(StartVelocity.y, 0f);
+		this.StartVelocity = ply.GetVelocity();
+		this.StartVelocity.y = Mathf.Max(this.StartVelocity.y, 0f);
 		PlayerStats playerStats = ply.playerStats;
 		if (ply.roleManager.CurrentRole is IHealthbarRole healthbarRole && healthbarRole.TargetStats != playerStats)
 		{
@@ -45,28 +45,28 @@ public abstract class StandardDamageHandler : DamageHandlerBase
 		AhpStat module = playerStats.GetModule<AhpStat>();
 		HealthStat module2 = playerStats.GetModule<HealthStat>();
 		HumeShieldStat module3 = playerStats.GetModule<HumeShieldStat>();
-		if (Damage == -1f)
+		if (this.Damage == -1f)
 		{
 			module.CurValue = 0f;
 			module2.CurValue = 0f;
 			return HandlerOutput.Death;
 		}
-		ProcessDamage(ply);
-		if (Damage <= 0f)
+		this.ProcessDamage(ply);
+		if (this.Damage <= 0f)
 		{
 			return HandlerOutput.Nothing;
 		}
 		float curValue = module2.CurValue;
-		float num = module.ServerProcessDamage(Damage);
-		AbsorbedAhpDamage = Damage - num;
-		AbsorbedHumeDamage = Mathf.Min(module3.CurValue, num);
+		float num = module.ServerProcessDamage(this.Damage);
+		this.AbsorbedAhpDamage = this.Damage - num;
+		this.AbsorbedHumeDamage = Mathf.Min(module3.CurValue, num);
 		float num2 = module3.CurValue - num;
 		if (num2 < 0f)
 		{
 			module2.CurValue += num2;
 		}
 		module3.CurValue = num2;
-		DealtHealthDamage = curValue - module2.CurValue;
+		this.DealtHealthDamage = curValue - module2.CurValue;
 		if (!(module2.CurValue <= 0f))
 		{
 			return HandlerOutput.Damaged;
@@ -81,7 +81,7 @@ public abstract class StandardDamageHandler : DamageHandlerBase
 		{
 			if (allEffects[i] is IDamageModifierEffect { DamageModifierActive: not false } damageModifierEffect)
 			{
-				Damage *= damageModifierEffect.GetDamageModifier(Damage, this, Hitbox);
+				this.Damage *= damageModifierEffect.GetDamageModifier(this.Damage, this, this.Hitbox);
 			}
 		}
 	}
@@ -89,20 +89,20 @@ public abstract class StandardDamageHandler : DamageHandlerBase
 	public override void WriteAdditionalData(NetworkWriter writer)
 	{
 		base.WriteAdditionalData(writer);
-		_velX = (short)Mathf.RoundToInt(StartVelocity.x * 100f);
-		_velY = (short)Mathf.RoundToInt(StartVelocity.y * 100f);
-		_velZ = (short)Mathf.RoundToInt(StartVelocity.z * 100f);
-		writer.WriteShort(_velX);
-		writer.WriteShort(_velY);
-		writer.WriteShort(_velZ);
+		this._velX = (short)Mathf.RoundToInt(this.StartVelocity.x * 100f);
+		this._velY = (short)Mathf.RoundToInt(this.StartVelocity.y * 100f);
+		this._velZ = (short)Mathf.RoundToInt(this.StartVelocity.z * 100f);
+		writer.WriteShort(this._velX);
+		writer.WriteShort(this._velY);
+		writer.WriteShort(this._velZ);
 	}
 
 	public override void ReadAdditionalData(NetworkReader reader)
 	{
 		base.ReadAdditionalData(reader);
-		_velX = reader.ReadShort();
-		_velY = reader.ReadShort();
-		_velZ = reader.ReadShort();
+		this._velX = reader.ReadShort();
+		this._velY = reader.ReadShort();
+		this._velZ = reader.ReadShort();
 	}
 
 	public override void ProcessRagdoll(BasicRagdoll ragdoll)
@@ -110,7 +110,7 @@ public abstract class StandardDamageHandler : DamageHandlerBase
 		base.ProcessRagdoll(ragdoll);
 		if (ragdoll is DynamicRagdoll dynamicRagdoll)
 		{
-			Vector3 linearVelocity = new Vector3(_velX, _velY, _velZ) / 100f;
+			Vector3 linearVelocity = new Vector3(this._velX, this._velY, this._velZ) / 100f;
 			Rigidbody[] linkedRigidbodies = dynamicRagdoll.LinkedRigidbodies;
 			for (int i = 0; i < linkedRigidbodies.Length; i++)
 			{

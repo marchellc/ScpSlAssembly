@@ -30,12 +30,12 @@ public abstract class CokeBase<TStack> : CokeBase, IHealableEffect, IMovementSpe
 	{
 		get
 		{
-			return _goingToExplode;
+			return this._goingToExplode;
 		}
 		private set
 		{
-			_goingToExplode = value;
-			_explosionTimer = 0f;
+			this._goingToExplode = value;
+			this._explosionTimer = 0f;
 		}
 	}
 
@@ -56,7 +56,7 @@ public abstract class CokeBase<TStack> : CokeBase, IHealableEffect, IMovementSpe
 		{
 			playerMovementState = PlayerMovementState.Crouching;
 		}
-		if (!StateMultipliers.TryGetValue(playerMovementState, out var value))
+		if (!this.StateMultipliers.TryGetValue(playerMovementState, out var value))
 		{
 			return 1f;
 		}
@@ -66,36 +66,36 @@ public abstract class CokeBase<TStack> : CokeBase, IHealableEffect, IMovementSpe
 	protected override void Awake()
 	{
 		base.Awake();
-		CurrentStack = StackMultipliers[0];
+		this.CurrentStack = this.StackMultipliers[0];
 	}
 
 	protected override void IntensityChanged(byte prevState, byte newState)
 	{
-		CurrentStack = StackMultipliers[Mathf.Clamp(newState, 0, StackMultipliers.Length - 1)];
+		this.CurrentStack = this.StackMultipliers[Mathf.Clamp(newState, 0, this.StackMultipliers.Length - 1)];
 	}
 
 	protected override void Enabled()
 	{
 		base.Enabled();
-		GoingToExplode = false;
+		this.GoingToExplode = false;
 	}
 
 	protected override void Disabled()
 	{
 		base.Disabled();
-		GoingToExplode = false;
+		this.GoingToExplode = false;
 	}
 
 	protected override void OnEffectUpdate()
 	{
 		base.OnEffectUpdate();
-		if (NetworkServer.active && GoingToExplode)
+		if (NetworkServer.active && this.GoingToExplode)
 		{
-			_explosionTimer += Time.deltaTime;
-			if (!(_explosionTimer < 1.05f))
+			this._explosionTimer += Time.deltaTime;
+			if (!(this._explosionTimer < 1.05f))
 			{
 				ExplosionUtils.ServerExplode(base.Hub, ExplosionType.Cola);
-				GoingToExplode = false;
+				this.GoingToExplode = false;
 			}
 		}
 	}
@@ -118,7 +118,7 @@ public abstract class CokeBase<TStack> : CokeBase, IHealableEffect, IMovementSpe
 		{
 			return false;
 		}
-		GoingToExplode = true;
+		this.GoingToExplode = true;
 		cokeBase.ServerDisable();
 		return true;
 	}

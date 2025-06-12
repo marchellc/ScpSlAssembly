@@ -23,11 +23,11 @@ public class HczMap : ProceduralZoneMap
 	protected override void PlaceRooms()
 	{
 		base.PlaceRooms();
-		if (RoomIdentifier.AllRoomIdentifiers.TryGetFirst((RoomIdentifier x) => x.Name == RoomName.HczCheckpointToEntranceZone && x.Zone == FacilityZone.HeavyContainment, out var first) && NodesByRoom.TryGetValue(first, out var value))
+		if (RoomIdentifier.AllRoomIdentifiers.TryGetFirst((RoomIdentifier x) => x.Name == RoomName.HczCheckpointToEntranceZone && x.Zone == FacilityZone.HeavyContainment, out var first) && base.NodesByRoom.TryGetValue(first, out var value))
 		{
 			float z = value.Transform.localEulerAngles.z;
-			Rotate(AllNodes, z);
-			Rotate(_entranceMap.AllNodes, z);
+			this.Rotate(base.AllNodes, z);
+			this.Rotate(this._entranceMap.AllNodes, z);
 		}
 	}
 
@@ -37,10 +37,10 @@ public class HczMap : ProceduralZoneMap
 		float f = Mathf.Sin(Time.timeSinceLevelLoad * MathF.PI);
 		foreach (Scp079Generator allGenerator in Scp079Recontainer.AllGenerators)
 		{
-			if (allGenerator.Activating && NodesByRoom.TryGetValue(allGenerator.ParentRoom, out var value))
+			if (allGenerator.Activating && base.NodesByRoom.TryGetValue(allGenerator.ParentRoom, out var value))
 			{
 				Image icon = value.Icon;
-				icon.color = Color.Lerp(icon.color, GeneratorColor, Mathf.Abs(f));
+				icon.color = Color.Lerp(icon.color, HczMap.GeneratorColor, Mathf.Abs(f));
 			}
 		}
 	}

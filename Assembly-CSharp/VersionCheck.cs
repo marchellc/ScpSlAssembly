@@ -7,15 +7,15 @@ public class VersionCheck : NetworkBehaviour
 {
 	private void Start()
 	{
-		if (NetworkServer.active && (!Version.AlwaysAcceptReleaseBuilds || Version.BuildType != 0))
+		if (NetworkServer.active && (!Version.AlwaysAcceptReleaseBuilds || Version.BuildType != Version.VersionType.Release))
 		{
 			if (Version.ExtendedVersionCheckNeeded)
 			{
-				TargetCheckExactVersion(base.connectionToClient, Version.VersionString);
+				this.TargetCheckExactVersion(base.connectionToClient, Version.VersionString);
 			}
 			else
 			{
-				TargetCheckVersion(base.connectionToClient, Version.Major, Version.Minor, Version.Revision);
+				this.TargetCheckVersion(base.connectionToClient, Version.Major, Version.Minor, Version.Revision);
 			}
 		}
 	}
@@ -27,7 +27,7 @@ public class VersionCheck : NetworkBehaviour
 		NetworkWriterExtensions.WriteByte(writer, major);
 		NetworkWriterExtensions.WriteByte(writer, minor);
 		NetworkWriterExtensions.WriteByte(writer, revision);
-		SendTargetRPCInternal(conn, "System.Void VersionCheck::TargetCheckVersion(Mirror.NetworkConnection,System.Byte,System.Byte,System.Byte)", 878887720, writer, 0);
+		this.SendTargetRPCInternal(conn, "System.Void VersionCheck::TargetCheckVersion(Mirror.NetworkConnection,System.Byte,System.Byte,System.Byte)", 878887720, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -36,7 +36,7 @@ public class VersionCheck : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteString(version);
-		SendTargetRPCInternal(conn, "System.Void VersionCheck::TargetCheckExactVersion(Mirror.NetworkConnection,System.String)", 87233244, writer, 0);
+		this.SendTargetRPCInternal(conn, "System.Void VersionCheck::TargetCheckExactVersion(Mirror.NetworkConnection,System.String)", 87233244, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 

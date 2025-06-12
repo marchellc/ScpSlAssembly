@@ -10,9 +10,10 @@ public static class AmmoLimitSerializer
 
 	public static ServerConfigSynchronizer.AmmoLimit ReadAmmoLimit(this NetworkReader reader)
 	{
-		ServerConfigSynchronizer.AmmoLimit result = default(ServerConfigSynchronizer.AmmoLimit);
-		result.AmmoType = (ItemType)reader.ReadByte();
-		result.Limit = reader.ReadUShort();
-		return result;
+		return new ServerConfigSynchronizer.AmmoLimit
+		{
+			AmmoType = (ItemType)reader.ReadByte(),
+			Limit = reader.ReadUShort()
+		};
 	}
 }

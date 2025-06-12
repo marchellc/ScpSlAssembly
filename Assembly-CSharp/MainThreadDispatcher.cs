@@ -22,29 +22,29 @@ public class MainThreadDispatcher : MonoBehaviour
 		switch (dispatchTime)
 		{
 		case DispatchTime.Update:
-			UpdateDispatcher.Dispatch(action);
+			MainThreadDispatcher.UpdateDispatcher.Dispatch(action);
 			break;
 		case DispatchTime.LateUpdate:
-			LateUpdateDispatcher.Dispatch(action);
+			MainThreadDispatcher.LateUpdateDispatcher.Dispatch(action);
 			break;
 		case DispatchTime.FixedUpdate:
-			FixedUpdateDispatcher.Dispatch(action);
+			MainThreadDispatcher.FixedUpdateDispatcher.Dispatch(action);
 			break;
 		}
 	}
 
 	private void Update()
 	{
-		UpdateDispatcher.Invoke();
+		MainThreadDispatcher.UpdateDispatcher.Invoke();
 	}
 
 	private void LateUpdate()
 	{
-		LateUpdateDispatcher.Invoke();
+		MainThreadDispatcher.LateUpdateDispatcher.Invoke();
 	}
 
 	private void FixedUpdate()
 	{
-		FixedUpdateDispatcher.Invoke();
+		MainThreadDispatcher.FixedUpdateDispatcher.Invoke();
 	}
 }

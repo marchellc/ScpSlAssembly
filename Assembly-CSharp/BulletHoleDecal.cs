@@ -30,11 +30,11 @@ public class BulletHoleDecal : Decal
 	public override void AttachToSurface(RaycastHit hitSurface)
 	{
 		base.AttachToSurface(hitSurface);
-		ParticleSystem fromPool = _impactParticlesTemplate.GetFromPool();
+		ParticleSystem fromPool = this._impactParticlesTemplate.GetFromPool();
 		fromPool.Play(withChildren: true);
 		Transform obj = fromPool.transform;
-		obj.SetParent(_impactParticlesTargetPosition);
+		obj.SetParent(this._impactParticlesTargetPosition);
 		obj.ResetLocalPose();
-		AudioSourcePoolManager.PlayOnTransform(((base.CachedTransform.parent.gameObject.layer == 27) ? _doorImpactSounds : _wallImpactSounds).RandomItem(), base.CachedTransform, _impactSoundRange, _impactSoundVolume).Source.pitch += Random.Range(0f - _impactSoundRandomization, _impactSoundRandomization);
+		AudioSourcePoolManager.PlayOnTransform(((base.CachedTransform.parent.gameObject.layer == 27) ? this._doorImpactSounds : this._wallImpactSounds).RandomItem(), base.CachedTransform, this._impactSoundRange, this._impactSoundVolume).Source.pitch += Random.Range(0f - this._impactSoundRandomization, this._impactSoundRandomization);
 	}
 }

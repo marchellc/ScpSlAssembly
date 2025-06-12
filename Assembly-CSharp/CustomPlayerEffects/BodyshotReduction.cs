@@ -11,11 +11,11 @@ public class BodyshotReduction : StatusEffectBase, ISpectatorDataPlayerEffect, I
 
 	public bool DamageModifierActive => base.IsEnabled;
 
-	private float CurrentMultiplier => Multipliers[Mathf.Min(base.Intensity, Multipliers.Length - 1)];
+	private float CurrentMultiplier => BodyshotReduction.Multipliers[Mathf.Min(base.Intensity, BodyshotReduction.Multipliers.Length - 1)];
 
 	public bool GetSpectatorText(out string s)
 	{
-		s = $"Damage Reduction (Body, -{Mathf.Round((1f - CurrentMultiplier) * 1000f) / 10f}%)";
+		s = $"Damage Reduction (Body, -{Mathf.Round((1f - this.CurrentMultiplier) * 1000f) / 10f}%)";
 		return base.IsEnabled;
 	}
 
@@ -23,7 +23,7 @@ public class BodyshotReduction : StatusEffectBase, ISpectatorDataPlayerEffect, I
 	{
 		if (hitboxType == HitboxType.Body)
 		{
-			return CurrentMultiplier;
+			return this.CurrentMultiplier;
 		}
 		return 1f;
 	}

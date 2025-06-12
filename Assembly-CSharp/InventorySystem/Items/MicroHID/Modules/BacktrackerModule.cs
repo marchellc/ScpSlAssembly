@@ -18,8 +18,8 @@ public class BacktrackerModule : MicroHidModuleBase
 
 		public BacktrackPair(ReferenceHub hub, RelativePosition pos)
 		{
-			Hub = hub;
-			RelPos = pos;
+			this.Hub = hub;
+			this.RelPos = pos;
 		}
 	}
 
@@ -59,14 +59,14 @@ public class BacktrackerModule : MicroHidModuleBase
 		{
 		case MicroHidPhase.WoundUpSustain:
 		case MicroHidPhase.Firing:
-			ClientSendUpdate(ret);
+			this.ClientSendUpdate(ret);
 			break;
 		case MicroHidPhase.WindingUp:
 		{
 			float windUpRate = ret.WindUpRate;
 			if (!(windUpRate <= 0f) && !((1f - base.MicroHid.CycleController.ServerWindUpProgress) / windUpRate > 0.3f))
 			{
-				ClientSendUpdate(ret);
+				this.ClientSendUpdate(ret);
 			}
 			break;
 		}
@@ -77,22 +77,22 @@ public class BacktrackerModule : MicroHidModuleBase
 	{
 		if (base.MicroHid.Owner.roleManager.CurrentRole is IFpcRole lastOwnerFpc)
 		{
-			_lastFiringMode = firingCtrl;
-			_lastOwnerFpc = lastOwnerFpc;
-			SendCmd(ClientWriteMessage);
+			this._lastFiringMode = firingCtrl;
+			this._lastOwnerFpc = lastOwnerFpc;
+			this.SendCmd(ClientWriteMessage);
 		}
 	}
 
 	private void ClientWriteMessage(NetworkWriter writer)
 	{
-		Vector3 position = _lastOwnerFpc.FpcModule.Position;
+		Vector3 position = this._lastOwnerFpc.FpcModule.Position;
 		RelativePosition msg = new RelativePosition(position);
 		Transform playerCameraReference = base.MicroHid.Owner.PlayerCameraReference;
 		writer.WriteRelativePosition(msg);
 		writer.WriteQuaternion(WaypointBase.GetRelativeRotation(msg.WaypointId, playerCameraReference.rotation));
-		float num = _lastFiringMode.FiringRange + 4f;
+		float num = this._lastFiringMode.FiringRange + 4f;
 		float num2 = num * num;
-		float backtrackerDot = _lastFiringMode.BacktrackerDot;
+		float backtrackerDot = this._lastFiringMode.BacktrackerDot;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allHub.isLocalPlayer && allHub.roleManager.CurrentRole is IFpcRole fpcRole)
@@ -112,11 +112,11 @@ public class BacktrackerModule : MicroHidModuleBase
 		base.EquipUpdate();
 		if (base.IsLocalPlayer)
 		{
-			_remainingCooldown -= Time.deltaTime;
-			if (!(_remainingCooldown > 0f))
+			this._remainingCooldown -= Time.deltaTime;
+			if (!(this._remainingCooldown > 0f))
 			{
-				UpdateTick();
-				_remainingCooldown = 0.05f;
+				this.UpdateTick();
+				this._remainingCooldown = 0.05f;
 			}
 		}
 	}
@@ -124,9 +124,9 @@ public class BacktrackerModule : MicroHidModuleBase
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		_receivedBacktracks.Clear();
-		_receivedOwnerPosition = reader.ReadRelativePosition();
-		_receivedOwnerRotation = reader.ReadQuaternion();
+		this._receivedBacktracks.Clear();
+		this._receivedOwnerPosition = reader.ReadRelativePosition();
+		this._receivedOwnerRotation = reader.ReadQuaternion();
 		while (reader.Remaining > 0)
 		{
 			ReferenceHub hub;
@@ -134,36 +134,36 @@ public class BacktrackerModule : MicroHidModuleBase
 			RelativePosition pos = reader.ReadRelativePosition();
 			if (num)
 			{
-				_receivedBacktracks.Add(new BacktrackPair(hub, pos));
+				this._receivedBacktracks.Add(new BacktrackPair(hub, pos));
 			}
 		}
-		_lastReceivedMessageTimestamp = NetworkTime.time;
+		this._lastReceivedMessageTimestamp = NetworkTime.time;
 	}
 
 	public void BacktrackAll(Action callback)
 	{
-		if (NetworkTime.time - _lastReceivedMessageTimestamp > 0.5 || !WaypointBase.TryGetWaypoint(_receivedOwnerPosition.WaypointId, out var wp))
+		if (NetworkTime.time - this._lastReceivedMessageTimestamp > 0.5 || !WaypointBase.TryGetWaypoint(this._receivedOwnerPosition.WaypointId, out var wp))
 		{
 			callback?.Invoke();
 			return;
 		}
-		Vector3 worldspacePosition = wp.GetWorldspacePosition(_receivedOwnerPosition.Relative);
-		Quaternion worldspaceRotation = wp.GetWorldspaceRotation(_receivedOwnerRotation);
+		Vector3 worldspacePosition = wp.GetWorldspacePosition(this._receivedOwnerPosition.Relative);
+		Quaternion worldspaceRotation = wp.GetWorldspaceRotation(this._receivedOwnerRotation);
 		using (new FpcBacktracker(base.MicroHid.Owner, worldspacePosition, worldspaceRotation))
 		{
-			foreach (BacktrackPair receivedBacktrack in _receivedBacktracks)
+			foreach (BacktrackPair receivedBacktrack in this._receivedBacktracks)
 			{
-				List<FpcBacktracker> victimBacktrackers = VictimBacktrackers;
+				List<FpcBacktracker> victimBacktrackers = BacktrackerModule.VictimBacktrackers;
 				ReferenceHub hub = receivedBacktrack.Hub;
 				RelativePosition relPos = receivedBacktrack.RelPos;
 				victimBacktrackers.Add(new FpcBacktracker(hub, relPos.Position));
 			}
 			callback?.Invoke();
-			foreach (FpcBacktracker victimBacktracker in VictimBacktrackers)
+			foreach (FpcBacktracker victimBacktracker in BacktrackerModule.VictimBacktrackers)
 			{
 				victimBacktracker.RestorePosition();
 			}
-			VictimBacktrackers.Clear();
+			BacktrackerModule.VictimBacktrackers.Clear();
 		}
 	}
 }

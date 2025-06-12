@@ -24,22 +24,22 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 
 	public const byte MainSyncHeader = byte.MaxValue;
 
-	public object DesignatedMobilityControllerClass => _modifiersCombiner;
+	public object DesignatedMobilityControllerClass => this._modifiersCombiner;
 
-	public bool IsHolstering => _holsterRequestTimer.Busy;
+	public bool IsHolstering => this._holsterRequestTimer.Busy;
 
 	[field: SerializeField]
 	public SubcomponentBase[] AllSubcomponents { get; protected set; }
 
 	public AutosyncInstantiationStatus InstantiationStatus { get; set; }
 
-	public bool HasOwner => InstantiationStatus == AutosyncInstantiationStatus.InventoryInstance;
+	public bool HasOwner => this.InstantiationStatus == AutosyncInstantiationStatus.InventoryInstance;
 
 	public bool PrimaryActionBlocked
 	{
 		get
 		{
-			if (HasOwner)
+			if (this.HasOwner)
 			{
 				return base.Owner.HasBlock(BlockedInteraction.ItemPrimaryAction);
 			}
@@ -51,7 +51,7 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 	{
 		get
 		{
-			if (HasOwner)
+			if (this.HasOwner)
 			{
 				return base.Owner.HasBlock(BlockedInteraction.ItemUsage);
 			}
@@ -65,7 +65,7 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 	{
 		get
 		{
-			if (HasOwner)
+			if (this.HasOwner)
 			{
 				return base.IsLocalPlayer;
 			}
@@ -77,7 +77,7 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 	{
 		get
 		{
-			if (HasOwner)
+			if (this.HasOwner)
 			{
 				return base.IsDummy;
 			}
@@ -85,32 +85,32 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 		}
 	}
 
-	public float ZoomAmount => _modifiersCombiner.ZoomAmount;
+	public float ZoomAmount => this._modifiersCombiner.ZoomAmount;
 
-	public float SensitivityScale => _modifiersCombiner.SensitivityScale;
+	public float SensitivityScale => this._modifiersCombiner.SensitivityScale;
 
-	public bool IsEmittingLight => _modifiersCombiner.IsEmittingLight;
+	public bool IsEmittingLight => this._modifiersCombiner.IsEmittingLight;
 
-	public bool ForceBarVisible => _modifiersCombiner.ForceBarVisible;
+	public bool ForceBarVisible => this._modifiersCombiner.ForceBarVisible;
 
-	public float HsMax => _modifiersCombiner.HsMax;
+	public float HsMax => this._modifiersCombiner.HsMax;
 
-	public float HsRegeneration => _modifiersCombiner.HsRegeneration;
+	public float HsRegeneration => this._modifiersCombiner.HsRegeneration;
 
-	public Color? HsWarningColor => _modifiersCombiner.HsWarningColor;
+	public Color? HsWarningColor => this._modifiersCombiner.HsWarningColor;
 
-	public virtual CustomDescriptionGui CustomGuiPrefab => _modifiersCombiner.CustomGuiPrefab;
+	public virtual CustomDescriptionGui CustomGuiPrefab => this._modifiersCombiner.CustomGuiPrefab;
 
-	public virtual string[] CustomDescriptionContent => _modifiersCombiner.CustomDescriptionContent;
+	public virtual string[] CustomDescriptionContent => this._modifiersCombiner.CustomDescriptionContent;
 
-	public virtual AlertContent Alert => _modifiersCombiner.Alert;
+	public virtual AlertContent Alert => this._modifiersCombiner.Alert;
 
 	public virtual void InitializeSubcomponents()
 	{
-		_modifiersCombiner = new AutosyncModifiersCombiner(this);
-		for (byte b = 0; b < AllSubcomponents.Length; b++)
+		this._modifiersCombiner = new AutosyncModifiersCombiner(this);
+		for (byte b = 0; b < this.AllSubcomponents.Length; b++)
 		{
-			SubcomponentBase subcomponentBase = AllSubcomponents[b];
+			SubcomponentBase subcomponentBase = this.AllSubcomponents[b];
 			try
 			{
 				subcomponentBase.Init(this, b);
@@ -119,7 +119,7 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 			{
 				if (subcomponentBase == null)
 				{
-					Debug.LogError("Null subcomponent on " + ItemTypeId.ToString() + " with index " + b);
+					Debug.LogError("Null subcomponent on " + base.ItemTypeId.ToString() + " with index " + b);
 				}
 				else
 				{
@@ -133,55 +133,55 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 	public sealed override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		DecodeAndProcessMessage(reader, delegate(IAutosyncReceiver x)
+		this.DecodeAndProcessMessage(reader, delegate(IAutosyncReceiver x)
 		{
 			x.ServerProcessCmd(reader);
 		}, delegate
 		{
-			ServerProcessMainCmd(reader);
+			this.ServerProcessMainCmd(reader);
 		}, checkCmd: true);
 	}
 
 	public sealed override void ClientProcessRpcInstance(NetworkReader reader)
 	{
 		base.ClientProcessRpcInstance(reader);
-		DecodeAndProcessMessage(reader, delegate(IAutosyncReceiver x)
+		this.DecodeAndProcessMessage(reader, delegate(IAutosyncReceiver x)
 		{
 			x.ClientProcessRpcInstance(reader);
 		}, delegate
 		{
-			ClientProcessMainRpcInstance(reader);
+			this.ClientProcessMainRpcInstance(reader);
 		});
 	}
 
 	public sealed override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
 	{
 		base.ClientProcessRpcTemplate(reader, serial);
-		DecodeAndProcessMessage(reader, delegate(IAutosyncReceiver x)
+		this.DecodeAndProcessMessage(reader, delegate(IAutosyncReceiver x)
 		{
 			x.ClientProcessRpcTemplate(reader, serial);
 		}, delegate
 		{
-			ClientProcessMainRpcTemplate(reader, serial);
+			this.ClientProcessMainRpcTemplate(reader, serial);
 		});
 	}
 
 	public override void OnAdded(ItemPickupBase pickup)
 	{
 		base.OnAdded(pickup);
-		IsServer = NetworkServer.active;
-		InstantiationStatus = AutosyncInstantiationStatus.InventoryInstance;
-		InitializeSubcomponents();
+		this.IsServer = NetworkServer.active;
+		this.InstantiationStatus = AutosyncInstantiationStatus.InventoryInstance;
+		this.InitializeSubcomponents();
 		SubcomponentBase[] allSubcomponents;
-		if (IsServer && pickup != null)
+		if (this.IsServer && pickup != null)
 		{
-			allSubcomponents = AllSubcomponents;
+			allSubcomponents = this.AllSubcomponents;
 			for (int i = 0; i < allSubcomponents.Length; i++)
 			{
 				allSubcomponents[i].ServerOnPickedUp(pickup);
 			}
 		}
-		allSubcomponents = AllSubcomponents;
+		allSubcomponents = this.AllSubcomponents;
 		for (int i = 0; i < allSubcomponents.Length; i++)
 		{
 			allSubcomponents[i].OnAdded();
@@ -191,7 +191,7 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 	public override void OnEquipped()
 	{
 		base.OnEquipped();
-		SubcomponentBase[] allSubcomponents = AllSubcomponents;
+		SubcomponentBase[] allSubcomponents = this.AllSubcomponents;
 		for (int i = 0; i < allSubcomponents.Length; i++)
 		{
 			allSubcomponents[i].OnEquipped();
@@ -201,8 +201,8 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 	public override void OnHolstered()
 	{
 		base.OnHolstered();
-		_holsterRequestTimer.Reset();
-		SubcomponentBase[] allSubcomponents = AllSubcomponents;
+		this._holsterRequestTimer.Reset();
+		SubcomponentBase[] allSubcomponents = this.AllSubcomponents;
 		for (int i = 0; i < allSubcomponents.Length; i++)
 		{
 			allSubcomponents[i].OnHolstered();
@@ -212,7 +212,7 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 	public override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		SubcomponentBase[] allSubcomponents = AllSubcomponents;
+		SubcomponentBase[] allSubcomponents = this.AllSubcomponents;
 		for (int i = 0; i < allSubcomponents.Length; i++)
 		{
 			allSubcomponents[i].EquipUpdate();
@@ -222,7 +222,7 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 	public override void AlwaysUpdate()
 	{
 		base.AlwaysUpdate();
-		SubcomponentBase[] allSubcomponents = AllSubcomponents;
+		SubcomponentBase[] allSubcomponents = this.AllSubcomponents;
 		for (int i = 0; i < allSubcomponents.Length; i++)
 		{
 			allSubcomponents[i].AlwaysUpdate();
@@ -232,7 +232,7 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 	public override void OnRemoved(ItemPickupBase pickup)
 	{
 		base.OnRemoved(pickup);
-		SubcomponentBase[] allSubcomponents = AllSubcomponents;
+		SubcomponentBase[] allSubcomponents = this.AllSubcomponents;
 		for (int i = 0; i < allSubcomponents.Length; i++)
 		{
 			allSubcomponents[i].OnRemoved(pickup);
@@ -242,30 +242,30 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 	public override void OnHolsterRequestSent()
 	{
 		base.OnHolsterRequestSent();
-		_holsterRequestTimer.Trigger();
+		this._holsterRequestTimer.Trigger();
 	}
 
 	internal override void OnTemplateReloaded(bool wasEverLoaded)
 	{
 		base.OnTemplateReloaded(wasEverLoaded);
-		InstantiationStatus = AutosyncInstantiationStatus.Template;
-		SubcomponentBase[] allSubcomponents = AllSubcomponents;
+		this.InstantiationStatus = AutosyncInstantiationStatus.Template;
+		SubcomponentBase[] allSubcomponents = this.AllSubcomponents;
 		for (int i = 0; i < allSubcomponents.Length; i++)
 		{
 			allSubcomponents[i].OnTemplateReloaded(this, wasEverLoaded);
 		}
 		if (!wasEverLoaded)
 		{
-			InitializeSubcomponents();
+			this.InitializeSubcomponents();
 			CustomNetworkManager.OnClientReady += OnClientReady;
 			StaticUnityMethods.OnUpdate += OnTemplateUpdate;
-			AllTemplates.Add(this);
+			ModularAutosyncItem.AllTemplates.Add(this);
 		}
 	}
 
 	protected virtual void OnClientReady()
 	{
-		SubcomponentBase[] allSubcomponents = AllSubcomponents;
+		SubcomponentBase[] allSubcomponents = this.AllSubcomponents;
 		for (int i = 0; i < allSubcomponents.Length; i++)
 		{
 			allSubcomponents[i].OnClientReady();
@@ -274,7 +274,7 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 
 	protected virtual void OnTemplateUpdate()
 	{
-		SubcomponentBase[] allSubcomponents = AllSubcomponents;
+		SubcomponentBase[] allSubcomponents = this.AllSubcomponents;
 		for (int i = 0; i < allSubcomponents.Length; i++)
 		{
 			allSubcomponents[i].TemplateUpdate();
@@ -295,17 +295,17 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 
 	public bool TryGetSubcomponentFromId(int id, out SubcomponentBase subcomponent)
 	{
-		if (_subcomponentsByIdCache.TryGetValue(id, out subcomponent))
+		if (this._subcomponentsByIdCache.TryGetValue(id, out subcomponent))
 		{
 			return true;
 		}
-		SubcomponentBase[] allSubcomponents = AllSubcomponents;
+		SubcomponentBase[] allSubcomponents = this.AllSubcomponents;
 		foreach (SubcomponentBase subcomponentBase in allSubcomponents)
 		{
 			if (subcomponentBase.UniqueComponentId == id)
 			{
 				subcomponent = subcomponentBase;
-				_subcomponentsByIdCache[id] = subcomponentBase;
+				this._subcomponentsByIdCache[id] = subcomponentBase;
 				return true;
 			}
 		}
@@ -314,7 +314,7 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 
 	public bool TryGetSubcomponent<T>(out T ret)
 	{
-		SubcomponentBase[] allSubcomponents = AllSubcomponents;
+		SubcomponentBase[] allSubcomponents = this.AllSubcomponents;
 		for (int i = 0; i < allSubcomponents.Length; i++)
 		{
 			if (allSubcomponents[i] is T val)
@@ -329,7 +329,7 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 
 	public bool ValidateAmmoDrop(ItemType id)
 	{
-		return _modifiersCombiner.ValidateAmmoDrop(id);
+		return this._modifiersCombiner.ValidateAmmoDrop(id);
 	}
 
 	private void DecodeAndProcessMessage(NetworkReader reader, Action<IAutosyncReceiver> interpreter, Action main, bool checkCmd = false)
@@ -340,7 +340,7 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 		{
 			main();
 		}
-		else if (AllSubcomponents.TryGet(b, out element) && (!checkCmd || base.IsEquipped || element.AllowCmdsWhileHolstered))
+		else if (this.AllSubcomponents.TryGet(b, out element) && (!checkCmd || base.IsEquipped || element.AllowCmdsWhileHolstered))
 		{
 			interpreter(element);
 		}
@@ -352,14 +352,14 @@ public abstract class ModularAutosyncItem : AutosyncItem, IExternalMobilityContr
 		{
 			return;
 		}
-		NewPlayerSyncModuleTypes.Clear();
-		foreach (ModularAutosyncItem allTemplate in AllTemplates)
+		ModularAutosyncItem.NewPlayerSyncModuleTypes.Clear();
+		foreach (ModularAutosyncItem allTemplate in ModularAutosyncItem.AllTemplates)
 		{
 			SubcomponentBase[] allSubcomponents = allTemplate.AllSubcomponents;
 			foreach (SubcomponentBase obj in allSubcomponents)
 			{
 				Type type = obj.GetType();
-				bool firstSubcomponent = NewPlayerSyncModuleTypes.Add(type);
+				bool firstSubcomponent = ModularAutosyncItem.NewPlayerSyncModuleTypes.Add(type);
 				obj.ServerOnPlayerConnected(hub, firstSubcomponent);
 			}
 		}

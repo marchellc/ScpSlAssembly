@@ -29,7 +29,7 @@ public static class ServerSpecificSettingsSync
 		() => new SSTwoButtonsSetting(0, null, null, null),
 		() => new SSSliderSetting(0, null, 0f, 0f),
 		() => new SSPlaintextSetting(0, null),
-		() => new SSButton(0, null, null, null),
+		() => new SSButton(0, null, null),
 		() => new SSTextArea(0, null)
 	};
 
@@ -54,16 +54,16 @@ public static class ServerSpecificSettingsSync
 	{
 		get
 		{
-			if (_allTypes != null)
+			if (ServerSpecificSettingsSync._allTypes != null)
 			{
-				return _allTypes;
+				return ServerSpecificSettingsSync._allTypes;
 			}
-			_allTypes = new Type[AllSettingConstructors.Length];
-			for (int i = 0; i < _allTypes.Length; i++)
+			ServerSpecificSettingsSync._allTypes = new Type[ServerSpecificSettingsSync.AllSettingConstructors.Length];
+			for (int i = 0; i < ServerSpecificSettingsSync._allTypes.Length; i++)
 			{
-				_allTypes[i] = AllSettingConstructors[i]().GetType();
+				ServerSpecificSettingsSync._allTypes[i] = ServerSpecificSettingsSync.AllSettingConstructors[i]().GetType();
 			}
-			return _allTypes;
+			return ServerSpecificSettingsSync._allTypes;
 		}
 	}
 
@@ -73,20 +73,20 @@ public static class ServerSpecificSettingsSync
 
 	public static T GetSettingOfUser<T>(ReferenceHub user, int id) where T : ServerSpecificSettingBase
 	{
-		if (TryGetSettingOfUser<T>(user, id, out var result))
+		if (ServerSpecificSettingsSync.TryGetSettingOfUser<T>(user, id, out var result))
 		{
 			return result;
 		}
-		T val = CreateInstance(typeof(T)) as T;
+		T val = ServerSpecificSettingsSync.CreateInstance(typeof(T)) as T;
 		val.SetId(id, null);
 		val.ApplyDefaultValues();
-		ReceivedUserSettings[user].Add(val);
+		ServerSpecificSettingsSync.ReceivedUserSettings[user].Add(val);
 		return val;
 	}
 
 	public static bool TryGetSettingOfUser<T>(ReferenceHub user, int id, out T result) where T : ServerSpecificSettingBase
 	{
-		foreach (ServerSpecificSettingBase item in ReceivedUserSettings.GetOrAddNew(user))
+		foreach (ServerSpecificSettingBase item in ServerSpecificSettingsSync.ReceivedUserSettings.GetOrAddNew(user))
 		{
 			if (item.SettingId == id && item is T val)
 			{
@@ -100,7 +100,7 @@ public static class ServerSpecificSettingsSync
 
 	public static int GetUserVersion(ReferenceHub user)
 	{
-		if (!ReceivedUserStatuses.TryGetValue(user, out var value))
+		if (!ServerSpecificSettingsSync.ReceivedUserStatuses.TryGetValue(user, out var value))
 		{
 			return 0;
 		}
@@ -109,7 +109,7 @@ public static class ServerSpecificSettingsSync
 
 	public static bool IsTabOpenForUser(ReferenceHub user)
 	{
-		if (ReceivedUserStatuses.TryGetValue(user, out var value))
+		if (ServerSpecificSettingsSync.ReceivedUserStatuses.TryGetValue(user, out var value))
 		{
 			return value.TabOpen;
 		}
@@ -118,7 +118,7 @@ public static class ServerSpecificSettingsSync
 
 	public static byte GetCodeFromType(Type type)
 	{
-		int num = AllSettingTypes.IndexOf(type);
+		int num = ServerSpecificSettingsSync.AllSettingTypes.IndexOf(type);
 		if (num < 0)
 		{
 			throw new ArgumentException(type.FullName + " is not a supported server-specific setting serializer.", "type");
@@ -128,14 +128,14 @@ public static class ServerSpecificSettingsSync
 
 	public static Type GetTypeFromCode(byte header)
 	{
-		return AllSettingTypes[header];
+		return ServerSpecificSettingsSync.AllSettingTypes[header];
 	}
 
 	public static void SendToAll()
 	{
 		if (NetworkServer.active)
 		{
-			new SSSEntriesPack(DefinedSettings, Version).SendToAuthenticated();
+			new SSSEntriesPack(ServerSpecificSettingsSync.DefinedSettings, ServerSpecificSettingsSync.Version).SendToAuthenticated();
 		}
 	}
 
@@ -143,7 +143,7 @@ public static class ServerSpecificSettingsSync
 	{
 		if (NetworkServer.active)
 		{
-			new SSSEntriesPack(DefinedSettings, Version).SendToHubsConditionally(filter);
+			new SSSEntriesPack(ServerSpecificSettingsSync.DefinedSettings, ServerSpecificSettingsSync.Version).SendToHubsConditionally(filter);
 		}
 	}
 
@@ -151,7 +151,7 @@ public static class ServerSpecificSettingsSync
 	{
 		if (NetworkServer.active)
 		{
-			hub.connectionToClient.Send(new SSSEntriesPack(DefinedSettings, Version));
+			hub.connectionToClient.Send(new SSSEntriesPack(ServerSpecificSettingsSync.DefinedSettings, ServerSpecificSettingsSync.Version));
 		}
 	}
 
@@ -159,13 +159,13 @@ public static class ServerSpecificSettingsSync
 	{
 		if (NetworkServer.active)
 		{
-			hub.connectionToClient.Send(new SSSEntriesPack(collection, versionOverride ?? Version));
+			hub.connectionToClient.Send(new SSSEntriesPack(collection, versionOverride ?? ServerSpecificSettingsSync.Version));
 		}
 	}
 
 	public static ServerSpecificSettingBase CreateInstance(Type t)
 	{
-		return AllSettingConstructors[AllSettingTypes.IndexOf(t)]();
+		return ServerSpecificSettingsSync.AllSettingConstructors[ServerSpecificSettingsSync.AllSettingTypes.IndexOf(t)]();
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -173,15 +173,15 @@ public static class ServerSpecificSettingsSync
 	{
 		PlayerAuthenticationManager.OnInstanceModeChanged += delegate(ReferenceHub hub, ClientInstanceMode _)
 		{
-			if (SendOnJoinFilter == null || SendOnJoinFilter(hub))
+			if (ServerSpecificSettingsSync.SendOnJoinFilter == null || ServerSpecificSettingsSync.SendOnJoinFilter(hub))
 			{
-				SendToPlayer(hub);
+				ServerSpecificSettingsSync.SendToPlayer(hub);
 			}
 		};
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			ReceivedUserSettings.Clear();
-			ReceivedUserStatuses.Clear();
+			ServerSpecificSettingsSync.ReceivedUserSettings.Clear();
+			ServerSpecificSettingsSync.ReceivedUserStatuses.Clear();
 			NetworkClient.ReplaceHandler<SSSEntriesPack>(ClientProcessPackMsg);
 			NetworkClient.ReplaceHandler<SSSUpdateMessage>(ClientProcessUpdateMsg);
 			NetworkServer.ReplaceHandler<SSSClientResponse>(ServerProcessClientResponseMsg);
@@ -191,8 +191,8 @@ public static class ServerSpecificSettingsSync
 		{
 			if (NetworkServer.active)
 			{
-				ReceivedUserSettings.Remove(hub);
-				ReceivedUserStatuses.Remove(hub);
+				ServerSpecificSettingsSync.ReceivedUserSettings.Remove(hub);
+				ServerSpecificSettingsSync.ReceivedUserStatuses.Remove(hub);
 			}
 		};
 		StaticUnityMethods.OnUpdate += UpdateDefinedSettings;
@@ -204,7 +204,7 @@ public static class ServerSpecificSettingsSync
 		{
 			if (StaticUnityMethods.IsPlaying)
 			{
-				DefinedSettings?.ForEach(delegate(ServerSpecificSettingBase x)
+				ServerSpecificSettingsSync.DefinedSettings?.ForEach(delegate(ServerSpecificSettingBase x)
 				{
 					x.OnUpdate();
 				});
@@ -222,19 +222,19 @@ public static class ServerSpecificSettingsSync
 
 	private static void ClientProcessUpdateMsg(SSSUpdateMessage msg)
 	{
-		Type typeFromCode = GetTypeFromCode(msg.TypeCode);
+		Type typeFromCode = ServerSpecificSettingsSync.GetTypeFromCode(msg.TypeCode);
 		List<byte> deserializedPooledPayload = msg.DeserializedPooledPayload;
-		ServerSpecificSettingBase[] definedSettings = DefinedSettings;
+		ServerSpecificSettingBase[] definedSettings = ServerSpecificSettingsSync.DefinedSettings;
 		foreach (ServerSpecificSettingBase serverSpecificSettingBase in definedSettings)
 		{
 			if (serverSpecificSettingBase is ISSUpdatable iSSUpdatable && serverSpecificSettingBase.SettingId == msg.Id && !(serverSpecificSettingBase.GetType() != typeFromCode))
 			{
-				if (_payloadBufferNonAlloc.Length < deserializedPooledPayload.Count)
+				if (ServerSpecificSettingsSync._payloadBufferNonAlloc.Length < deserializedPooledPayload.Count)
 				{
-					_payloadBufferNonAlloc = new byte[deserializedPooledPayload.Count + _payloadBufferNonAlloc.Length];
+					ServerSpecificSettingsSync._payloadBufferNonAlloc = new byte[deserializedPooledPayload.Count + ServerSpecificSettingsSync._payloadBufferNonAlloc.Length];
 				}
-				deserializedPooledPayload.CopyTo(_payloadBufferNonAlloc);
-				using (NetworkReaderPooled reader = NetworkReaderPool.Get(new ArraySegment<byte>(_payloadBufferNonAlloc, 0, deserializedPooledPayload.Count)))
+				deserializedPooledPayload.CopyTo(ServerSpecificSettingsSync._payloadBufferNonAlloc);
+				using (NetworkReaderPooled reader = NetworkReaderPool.Get(new ArraySegment<byte>(ServerSpecificSettingsSync._payloadBufferNonAlloc, 0, deserializedPooledPayload.Count)))
 				{
 					iSSUpdatable.DeserializeUpdate(reader);
 				}
@@ -246,11 +246,11 @@ public static class ServerSpecificSettingsSync
 
 	private static bool ServerPrevalidateClientResponse(SSSClientResponse msg)
 	{
-		if (DefinedSettings == null)
+		if (ServerSpecificSettingsSync.DefinedSettings == null)
 		{
 			return false;
 		}
-		ServerSpecificSettingBase[] definedSettings = DefinedSettings;
+		ServerSpecificSettingBase[] definedSettings = ServerSpecificSettingsSync.DefinedSettings;
 		foreach (ServerSpecificSettingBase serverSpecificSettingBase in definedSettings)
 		{
 			if (serverSpecificSettingBase.SettingId == msg.Id && !(serverSpecificSettingBase.GetType() != msg.SettingType))
@@ -263,7 +263,7 @@ public static class ServerSpecificSettingsSync
 
 	private static void ServerDeserializeClientResponse(ReferenceHub sender, ServerSpecificSettingBase setting, NetworkReaderPooled reader)
 	{
-		if (setting.ResponseMode != 0)
+		if (setting.ResponseMode != ServerSpecificSettingBase.UserResponseMode.None)
 		{
 			setting.DeserializeValue(reader);
 			ServerSpecificSettingsSync.ServerOnSettingValueReceived?.Invoke(sender, setting);
@@ -273,32 +273,32 @@ public static class ServerSpecificSettingsSync
 
 	private static void ServerProcessClientResponseMsg(NetworkConnection conn, SSSClientResponse msg)
 	{
-		if (!ReferenceHub.TryGetHub(conn, out var hub) || !ServerPrevalidateClientResponse(msg))
+		if (!ReferenceHub.TryGetHub(conn, out var hub) || !ServerSpecificSettingsSync.ServerPrevalidateClientResponse(msg))
 		{
 			return;
 		}
-		List<ServerSpecificSettingBase> orAddNew = ReceivedUserSettings.GetOrAddNew(hub);
+		List<ServerSpecificSettingBase> orAddNew = ServerSpecificSettingsSync.ReceivedUserSettings.GetOrAddNew(hub);
 		NetworkReaderPooled reader = NetworkReaderPool.Get(msg.Payload);
 		foreach (ServerSpecificSettingBase item in orAddNew)
 		{
 			if (item.SettingId == msg.Id && !(item.GetType() != msg.SettingType))
 			{
-				ServerDeserializeClientResponse(hub, item, reader);
+				ServerSpecificSettingsSync.ServerDeserializeClientResponse(hub, item, reader);
 				return;
 			}
 		}
-		ServerSpecificSettingBase serverSpecificSettingBase = CreateInstance(msg.SettingType);
+		ServerSpecificSettingBase serverSpecificSettingBase = ServerSpecificSettingsSync.CreateInstance(msg.SettingType);
 		orAddNew.Add(serverSpecificSettingBase);
 		serverSpecificSettingBase.SetId(msg.Id, null);
 		serverSpecificSettingBase.ApplyDefaultValues();
-		ServerDeserializeClientResponse(hub, serverSpecificSettingBase, reader);
+		ServerSpecificSettingsSync.ServerDeserializeClientResponse(hub, serverSpecificSettingBase, reader);
 	}
 
 	private static void ServerProcessClientStatusMsg(NetworkConnection conn, SSSUserStatusReport msg)
 	{
 		if (ReferenceHub.TryGetHub(conn, out var hub))
 		{
-			ReceivedUserStatuses[hub] = msg;
+			ServerSpecificSettingsSync.ReceivedUserStatuses[hub] = msg;
 			ServerSpecificSettingsSync.ServerOnStatusReceived?.Invoke(hub, msg);
 		}
 	}

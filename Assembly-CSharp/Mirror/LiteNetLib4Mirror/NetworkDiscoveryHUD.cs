@@ -21,18 +21,18 @@ public class NetworkDiscoveryHUD : MonoBehaviour
 
 	private void Awake()
 	{
-		_managerHud = GetComponent<NetworkManagerHUD>();
+		this._managerHud = base.GetComponent<NetworkManagerHUD>();
 	}
 
 	private IEnumerator StartDiscovery()
 	{
-		_noDiscovering = false;
+		this._noDiscovering = false;
 		LiteNetLib4MirrorDiscovery.InitializeFinder();
 		LiteNetLib4MirrorDiscovery.Singleton.onDiscoveryResponse.AddListener(OnClientDiscoveryResponse);
-		while (!_noDiscovering)
+		while (!this._noDiscovering)
 		{
 			LiteNetLib4MirrorDiscovery.SendDiscoveryRequest("NetworkManagerHUD");
-			yield return new WaitForSeconds(discoveryInterval);
+			yield return new WaitForSeconds(this.discoveryInterval);
 		}
 		LiteNetLib4MirrorDiscovery.Singleton.onDiscoveryResponse.RemoveListener(OnClientDiscoveryResponse);
 		LiteNetLib4MirrorDiscovery.StopDiscovery();
@@ -47,6 +47,6 @@ public class NetworkDiscoveryHUD : MonoBehaviour
 		LiteNetLib4MirrorTransport.Singleton.port = (ushort)endpoint.Port;
 		LiteNetLib4MirrorTransport.Singleton.maxConnections = 2;
 		NetworkManager.singleton.StartClient();
-		_noDiscovering = true;
+		this._noDiscovering = true;
 	}
 }

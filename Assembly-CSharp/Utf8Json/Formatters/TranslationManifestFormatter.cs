@@ -11,7 +11,7 @@ public sealed class TranslationManifestFormatter : IJsonFormatter<TranslationMan
 
 	public TranslationManifestFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("Name"),
@@ -34,7 +34,7 @@ public sealed class TranslationManifestFormatter : IJsonFormatter<TranslationMan
 				4
 			}
 		};
-		____stringByteKeys = new byte[5][]
+		this.____stringByteKeys = new byte[5][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("Name"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("Authors"),
@@ -46,15 +46,15 @@ public sealed class TranslationManifestFormatter : IJsonFormatter<TranslationMan
 
 	public void Serialize(ref JsonWriter writer, TranslationManifest value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.Name);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		formatterResolver.GetFormatterWithVerify<string[]>().Serialize(ref writer, value.Authors, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		formatterResolver.GetFormatterWithVerify<string[]>().Serialize(ref writer, value.InterfaceLocales, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		formatterResolver.GetFormatterWithVerify<string[]>().Serialize(ref writer, value.SystemLocales, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		formatterResolver.GetFormatterWithVerify<string[]>().Serialize(ref writer, value.ForcedFontOrder, formatterResolver);
 		writer.WriteEndObject();
 	}
@@ -75,7 +75,7 @@ public sealed class TranslationManifestFormatter : IJsonFormatter<TranslationMan
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

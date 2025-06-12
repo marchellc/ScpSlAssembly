@@ -80,7 +80,7 @@ public sealed class PrimitiveObjectFormatter : IJsonFormatter<object>, IJsonForm
 			return;
 		}
 		Type type = value.GetType();
-		if (typeToJumpCode.TryGetValue(type, out var value2))
+		if (PrimitiveObjectFormatter.typeToJumpCode.TryGetValue(type, out var value2))
 		{
 			switch (value2)
 			{
@@ -147,7 +147,7 @@ public sealed class PrimitiveObjectFormatter : IJsonFormatter<object>, IJsonForm
 					writer.WriteValueSeparator();
 				}
 				writer.WritePropertyName((string)item.Key);
-				Serialize(ref writer, item.Value, formatterResolver);
+				this.Serialize(ref writer, item.Value, formatterResolver);
 			}
 			writer.WriteEndObject();
 			return;
@@ -162,7 +162,7 @@ public sealed class PrimitiveObjectFormatter : IJsonFormatter<object>, IJsonForm
 				{
 					writer.WriteValueSeparator();
 				}
-				Serialize(ref writer, item2, formatterResolver);
+				this.Serialize(ref writer, item2, formatterResolver);
 			}
 			writer.WriteEndArray();
 			return;
@@ -183,7 +183,7 @@ public sealed class PrimitiveObjectFormatter : IJsonFormatter<object>, IJsonForm
 			while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count2))
 			{
 				string key = reader.ReadPropertyName();
-				object value = Deserialize(ref reader, formatterResolver);
+				object value = this.Deserialize(ref reader, formatterResolver);
 				dictionary.Add(key, value);
 			}
 			return dictionary;
@@ -195,7 +195,7 @@ public sealed class PrimitiveObjectFormatter : IJsonFormatter<object>, IJsonForm
 			int count = 0;
 			while (!reader.ReadIsEndArrayWithSkipValueSeparator(ref count))
 			{
-				list.Add(Deserialize(ref reader, formatterResolver));
+				list.Add(this.Deserialize(ref reader, formatterResolver));
 			}
 			return list;
 		}

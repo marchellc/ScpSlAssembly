@@ -32,13 +32,13 @@ public class A7BurnEffectModule : ModuleBase
 		ReferenceHub owner = base.Firearm.Owner;
 		Vector3 position = owner.transform.position;
 		Vector3 forward = owner.PlayerCameraReference.forward;
-		Vector3 vector = position + forward * _forwardOffset;
-		float num = _radius * _radius;
+		Vector3 vector = position + forward * this._forwardOffset;
+		float num = this._radius * this._radius;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allHub.roleManager.CurrentRole is IFpcRole fpcRole && HitboxIdentity.IsDamageable(owner, allHub) && !((vector - fpcRole.FpcModule.Position).sqrMagnitude > num) && allHub.playerEffectsController.TryGetEffect<Burned>(out var playerEffect))
 			{
-				float num2 = Mathf.Min(_perShotDuration, (float)_maxDuration - playerEffect.TimeLeft);
+				float num2 = Mathf.Min(this._perShotDuration, (float)this._maxDuration - playerEffect.TimeLeft);
 				if (!(num2 <= 0f))
 				{
 					playerEffect.IsEnabled = true;

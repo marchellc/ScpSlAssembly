@@ -36,30 +36,30 @@ public static class Scp244Spawner
 		{
 			return;
 		}
-		CompatibleRooms.Clear();
+		Scp244Spawner.CompatibleRooms.Clear();
 		if (!InventoryItemLoader.AvailableItems.TryGetValue(ItemType.SCP244b, out var value))
 		{
 			return;
 		}
 		foreach (RoomIdentifier allRoomIdentifier in RoomIdentifier.AllRoomIdentifiers)
 		{
-			if (allRoomIdentifier != null && allRoomIdentifier.Zone == FacilityZone.HeavyContainment && NameToPos.ContainsKey(allRoomIdentifier.Name))
+			if (allRoomIdentifier != null && allRoomIdentifier.Zone == FacilityZone.HeavyContainment && Scp244Spawner.NameToPos.ContainsKey(allRoomIdentifier.Name))
 			{
-				CompatibleRooms.Add(allRoomIdentifier);
+				Scp244Spawner.CompatibleRooms.Add(allRoomIdentifier);
 			}
 		}
 		for (int i = 0; i < 1; i++)
 		{
-			SpawnScp244(value);
+			Scp244Spawner.SpawnScp244(value);
 		}
 	}
 
 	private static void SpawnScp244(ItemBase ib)
 	{
-		if (CompatibleRooms.Count != 0 && !(Random.value > 0.35f))
+		if (Scp244Spawner.CompatibleRooms.Count != 0 && !(Random.value > 0.35f))
 		{
-			int index = Random.Range(0, CompatibleRooms.Count);
-			Vector3 position = CompatibleRooms[index].transform.TransformPoint(NameToPos[CompatibleRooms[index].Name]);
+			int index = Random.Range(0, Scp244Spawner.CompatibleRooms.Count);
+			Vector3 position = Scp244Spawner.CompatibleRooms[index].transform.TransformPoint(Scp244Spawner.NameToPos[Scp244Spawner.CompatibleRooms[index].Name]);
 			ItemPickupBase itemPickupBase = Object.Instantiate(ib.PickupDropModel, position, Quaternion.identity);
 			itemPickupBase.NetworkInfo = new PickupSyncInfo
 			{
@@ -72,7 +72,7 @@ public static class Scp244Spawner
 				scp244DeployablePickup.State = Scp244State.Active;
 			}
 			NetworkServer.Spawn(itemPickupBase.gameObject);
-			CompatibleRooms.RemoveAt(index);
+			Scp244Spawner.CompatibleRooms.RemoveAt(index);
 		}
 	}
 }

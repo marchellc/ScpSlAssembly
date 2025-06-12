@@ -49,9 +49,9 @@ public class RoundSummary : NetworkBehaviour
 
 		public bool Equals(SumInfo_ClassList other)
 		{
-			if (class_ds == other.class_ds && scientists == other.scientists && chaos_insurgents == other.chaos_insurgents && mtf_and_guards == other.mtf_and_guards && scps_except_zombies == other.scps_except_zombies && zombies == other.zombies && warhead_kills == other.warhead_kills)
+			if (this.class_ds == other.class_ds && this.scientists == other.scientists && this.chaos_insurgents == other.chaos_insurgents && this.mtf_and_guards == other.mtf_and_guards && this.scps_except_zombies == other.scps_except_zombies && this.zombies == other.zombies && this.warhead_kills == other.warhead_kills)
 			{
-				return flamingos == other.flamingos;
+				return this.flamingos == other.flamingos;
 			}
 			return false;
 		}
@@ -60,14 +60,14 @@ public class RoundSummary : NetworkBehaviour
 		{
 			if (obj is SumInfo_ClassList other)
 			{
-				return Equals(other);
+				return this.Equals(other);
 			}
 			return false;
 		}
 
 		public override int GetHashCode()
 		{
-			return (((((((((((((class_ds * 397) ^ scientists) * 397) ^ chaos_insurgents) * 397) ^ mtf_and_guards) * 397) ^ scps_except_zombies) * 397) ^ zombies) * 397) ^ warhead_kills) * 397) ^ flamingos;
+			return (((((((((((((this.class_ds * 397) ^ this.scientists) * 397) ^ this.chaos_insurgents) * 397) ^ this.mtf_and_guards) * 397) ^ this.scps_except_zombies) * 397) ^ this.zombies) * 397) ^ this.warhead_kills) * 397) ^ this.flamingos;
 		}
 
 		public static bool operator ==(SumInfo_ClassList left, SumInfo_ClassList right)
@@ -108,9 +108,9 @@ public class RoundSummary : NetworkBehaviour
 	{
 		get
 		{
-			if (_singletonSet)
+			if (RoundSummary._singletonSet)
 			{
-				return singleton._summaryActive;
+				return RoundSummary.singleton._summaryActive;
 			}
 			return false;
 		}
@@ -120,13 +120,13 @@ public class RoundSummary : NetworkBehaviour
 	{
 		get
 		{
-			return _extraTargets;
+			return this._extraTargets;
 		}
 		set
 		{
 			if (NetworkServer.active)
 			{
-				Network_extraTargets = value;
+				this.Network_extraTargets = value;
 			}
 		}
 	}
@@ -147,12 +147,12 @@ public class RoundSummary : NetworkBehaviour
 	{
 		get
 		{
-			return _extraTargets;
+			return this._extraTargets;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _extraTargets, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._extraTargets, 1uL, null);
 		}
 	}
 
@@ -160,19 +160,19 @@ public class RoundSummary : NetworkBehaviour
 
 	private void Start()
 	{
-		singleton = this;
-		_singletonSet = true;
-		IsRoundEnded = false;
+		RoundSummary.singleton = this;
+		RoundSummary._singletonSet = true;
+		this.IsRoundEnded = false;
 		if (NetworkServer.active)
 		{
-			roundTime = 0;
-			KeepRoundOnOne = !ConfigFile.ServerConfig.GetBool("end_round_on_one_player");
-			Timing.RunCoroutine(_ProcessServerSideCode().CancelWith(base.gameObject), Segment.FixedUpdate);
-			KilledBySCPs = 0;
-			EscapedClassD = 0;
-			EscapedScientists = 0;
-			ChangedIntoZombies = 0;
-			Kills = 0;
+			RoundSummary.roundTime = 0;
+			this.KeepRoundOnOne = !ConfigFile.ServerConfig.GetBool("end_round_on_one_player");
+			Timing.RunCoroutine(this._ProcessServerSideCode().CancelWith(base.gameObject), Segment.FixedUpdate);
+			RoundSummary.KilledBySCPs = 0;
+			RoundSummary.EscapedClassD = 0;
+			RoundSummary.EscapedScientists = 0;
+			RoundSummary.ChangedIntoZombies = 0;
+			RoundSummary.Kills = 0;
 			PlayerRoleManager.OnServerRoleSet += OnServerRoleSet;
 			PlayerStats.OnAnyPlayerDied += OnAnyPlayerDied;
 		}
@@ -180,14 +180,14 @@ public class RoundSummary : NetworkBehaviour
 
 	private void OnDestroy()
 	{
-		_singletonSet = false;
+		RoundSummary._singletonSet = false;
 		PlayerRoleManager.OnServerRoleSet -= OnServerRoleSet;
 		PlayerStats.OnAnyPlayerDied -= OnAnyPlayerDied;
 	}
 
 	private void OnAnyPlayerDied(ReferenceHub ply, DamageHandlerBase handler)
 	{
-		Kills++;
+		RoundSummary.Kills++;
 		PlayerRoleBase result;
 		if (handler is UniversalDamageHandler universalDamageHandler)
 		{
@@ -196,11 +196,11 @@ public class RoundSummary : NetworkBehaviour
 				return;
 			}
 		}
-		else if (!(handler is AttackerDamageHandler attackerDamageHandler) || !PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(attackerDamageHandler.Attacker.Role, out result) || result.Team != 0)
+		else if (!(handler is AttackerDamageHandler attackerDamageHandler) || !PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(attackerDamageHandler.Attacker.Role, out result) || result.Team != Team.SCPs)
 		{
 			return;
 		}
-		KilledBySCPs++;
+		RoundSummary.KilledBySCPs++;
 	}
 
 	private void OnServerRoleSet(ReferenceHub userHub, RoleTypeId newRole, RoleChangeReason reason)
@@ -209,8 +209,8 @@ public class RoundSummary : NetworkBehaviour
 		{
 		case RoleChangeReason.RoundStart:
 		case RoleChangeReason.LateJoin:
-			ModifySpawnedTeam(userHub.GetTeam(), -1);
-			ModifySpawnedTeam(newRole.GetTeam(), 1);
+			this.ModifySpawnedTeam(userHub.GetTeam(), -1);
+			this.ModifySpawnedTeam(newRole.GetTeam(), 1);
 			break;
 		case RoleChangeReason.Escaped:
 			if (!userHub.inventory.IsDisarmed())
@@ -218,10 +218,10 @@ public class RoundSummary : NetworkBehaviour
 				switch (newRole.GetTeam())
 				{
 				case Team.FoundationForces:
-					EscapedScientists++;
+					RoundSummary.EscapedScientists++;
 					break;
 				case Team.ChaosInsurgency:
-					EscapedClassD++;
+					RoundSummary.EscapedClassD++;
 					break;
 				}
 			}
@@ -229,8 +229,8 @@ public class RoundSummary : NetworkBehaviour
 		case RoleChangeReason.Revived:
 			if (newRole != RoleTypeId.Flamingo)
 			{
-				ChangedIntoZombies++;
-				classlistStart.zombies++;
+				RoundSummary.ChangedIntoZombies++;
+				this.classlistStart.zombies++;
 			}
 			break;
 		case RoleChangeReason.Respawn:
@@ -244,36 +244,36 @@ public class RoundSummary : NetworkBehaviour
 		switch (t)
 		{
 		case Team.ChaosInsurgency:
-			classlistStart.chaos_insurgents += modifyAmount;
+			this.classlistStart.chaos_insurgents += modifyAmount;
 			break;
 		case Team.ClassD:
-			classlistStart.class_ds += modifyAmount;
+			this.classlistStart.class_ds += modifyAmount;
 			break;
 		case Team.FoundationForces:
-			classlistStart.mtf_and_guards += modifyAmount;
+			this.classlistStart.mtf_and_guards += modifyAmount;
 			break;
 		case Team.Scientists:
-			classlistStart.scientists += modifyAmount;
+			this.classlistStart.scientists += modifyAmount;
 			break;
 		case Team.SCPs:
-			classlistStart.scps_except_zombies += modifyAmount;
+			this.classlistStart.scps_except_zombies += modifyAmount;
 			break;
 		}
 	}
 
 	public void ForceEnd()
 	{
-		IsRoundEnded = true;
+		this.IsRoundEnded = true;
 	}
 
 	public void CancelRoundEnding()
 	{
-		if (NetworkServer.active && IsRoundEnded)
+		if (NetworkServer.active && this.IsRoundEnded)
 		{
-			IsRoundEnded = false;
-			Timing.KillCoroutines(_roundEndCoroutine);
-			RpcHideRoundSummary();
-			RpcUndimScreen();
+			this.IsRoundEnded = false;
+			Timing.KillCoroutines(this._roundEndCoroutine);
+			this.RpcHideRoundSummary();
+			this.RpcUndimScreen();
 		}
 	}
 
@@ -293,7 +293,7 @@ public class RoundSummary : NetworkBehaviour
 		while (this != null)
 		{
 			yield return Timing.WaitForSeconds(2.5f);
-			if (!IsRoundEnded && (RoundLock || (KeepRoundOnOne && ReferenceHub.AllHubs.Count((ReferenceHub x) => x.authManager.InstanceMode != ClientInstanceMode.DedicatedServer) < 2) || !RoundInProgress() || Time.unscaledTime - time < 15f))
+			if (!this.IsRoundEnded && (RoundSummary.RoundLock || (this.KeepRoundOnOne && ReferenceHub.AllHubs.Count((ReferenceHub x) => x.authManager.InstanceMode != ClientInstanceMode.DedicatedServer) < 2) || !RoundSummary.RoundInProgress() || Time.unscaledTime - time < 15f))
 			{
 				continue;
 			}
@@ -335,12 +335,12 @@ public class RoundSummary : NetworkBehaviour
 			int num = newList.mtf_and_guards + newList.scientists;
 			int num2 = newList.chaos_insurgents + newList.class_ds;
 			int num3 = newList.scps_except_zombies + newList.zombies;
-			int num4 = newList.class_ds + EscapedClassD;
-			int num5 = newList.scientists + EscapedScientists;
+			int num4 = newList.class_ds + RoundSummary.EscapedClassD;
+			int num5 = newList.scientists + RoundSummary.EscapedScientists;
 			int flamingos = newList.flamingos;
-			SurvivingSCPs = newList.scps_except_zombies;
-			float num6 = ((classlistStart.class_ds != 0) ? (num4 / classlistStart.class_ds) : 0);
-			float num7 = ((classlistStart.scientists == 0) ? 1 : (num5 / classlistStart.scientists));
+			RoundSummary.SurvivingSCPs = newList.scps_except_zombies;
+			float num6 = ((this.classlistStart.class_ds != 0) ? (num4 / this.classlistStart.class_ds) : 0);
+			float num7 = ((this.classlistStart.scientists == 0) ? 1 : (num5 / this.classlistStart.scientists));
 			int num8 = 0;
 			if (num > 0)
 			{
@@ -358,12 +358,15 @@ public class RoundSummary : NetworkBehaviour
 			{
 				num8++;
 			}
-			if (ExtraTargets > 0)
+			if (this.ExtraTargets > 0)
 			{
 				num8++;
 			}
-			IsRoundEnded = num8 <= 1;
-			if (!IsRoundEnded)
+			this.IsRoundEnded = num8 <= 1;
+			RoundEndingConditionsCheckEventArgs e = new RoundEndingConditionsCheckEventArgs(this.IsRoundEnded);
+			ServerEvents.OnRoundEndingConditionsCheck(e);
+			this.IsRoundEnded = e.CanEnd;
+			if (!this.IsRoundEnded)
 			{
 				continue;
 			}
@@ -374,41 +377,41 @@ public class RoundSummary : NetworkBehaviour
 			LeadingTeam leadingTeam = LeadingTeam.Draw;
 			if (num9)
 			{
-				leadingTeam = ((EscapedScientists < EscapedClassD) ? LeadingTeam.Draw : LeadingTeam.FacilityForces);
+				leadingTeam = ((RoundSummary.EscapedScientists < RoundSummary.EscapedClassD) ? LeadingTeam.Draw : LeadingTeam.FacilityForces);
 			}
 			else if (flag2 || (flag2 && flag))
 			{
-				leadingTeam = ((EscapedClassD > SurvivingSCPs) ? LeadingTeam.ChaosInsurgency : ((SurvivingSCPs > EscapedScientists) ? LeadingTeam.Anomalies : LeadingTeam.Draw));
+				leadingTeam = ((RoundSummary.EscapedClassD > RoundSummary.SurvivingSCPs) ? LeadingTeam.ChaosInsurgency : ((RoundSummary.SurvivingSCPs > RoundSummary.EscapedScientists) ? LeadingTeam.Anomalies : LeadingTeam.Draw));
 			}
 			else if (flag)
 			{
-				leadingTeam = ((EscapedClassD >= EscapedScientists) ? LeadingTeam.ChaosInsurgency : LeadingTeam.Draw);
+				leadingTeam = ((RoundSummary.EscapedClassD >= RoundSummary.EscapedScientists) ? LeadingTeam.ChaosInsurgency : LeadingTeam.Draw);
 			}
 			else if (flag3)
 			{
 				leadingTeam = LeadingTeam.Flamingos;
 			}
-			RoundEndingEventArgs roundEndingEventArgs = new RoundEndingEventArgs(leadingTeam);
-			ServerEvents.OnRoundEnding(roundEndingEventArgs);
-			if (roundEndingEventArgs.IsAllowed)
+			RoundEndingEventArgs e2 = new RoundEndingEventArgs(leadingTeam);
+			ServerEvents.OnRoundEnding(e2);
+			if (e2.IsAllowed)
 			{
-				leadingTeam = roundEndingEventArgs.LeadingTeam;
+				leadingTeam = e2.LeadingTeam;
 				RoundSummary.OnRoundEnded?.Invoke(leadingTeam, newList);
 				FriendlyFireConfig.PauseDetector = true;
 				string text = "Round finished! Anomalies: " + num3 + " | Chaos: " + num2 + " | Facility Forces: " + num + " | D escaped percentage: " + num6 + " | S escaped percentage: " + num7 + ".";
 				GameCore.Console.AddLog(text, Color.gray);
 				ServerLogs.AddLog(ServerLogs.Modules.GameLogic, text, ServerLogs.ServerLogType.GameEvent);
 				yield return Timing.WaitForSeconds(1.5f);
-				RoundEndedEventArgs roundEndedEventArgs = new RoundEndedEventArgs(leadingTeam);
-				ServerEvents.OnRoundEnded(roundEndedEventArgs);
-				bool showSummary = roundEndedEventArgs.ShowSummary;
+				RoundEndedEventArgs e3 = new RoundEndedEventArgs(leadingTeam);
+				ServerEvents.OnRoundEnded(e3);
+				bool showSummary = e3.ShowSummary;
 				int num10 = Mathf.Clamp(ConfigFile.ServerConfig.GetInt("auto_round_restart_time", 10), 5, 1000);
 				if (this != null && showSummary)
 				{
-					RpcShowRoundSummary(classlistStart, newList, leadingTeam, EscapedClassD, EscapedScientists, KilledBySCPs, num10, (int)RoundStart.RoundLength.TotalSeconds);
+					this.RpcShowRoundSummary(this.classlistStart, newList, leadingTeam, RoundSummary.EscapedClassD, RoundSummary.EscapedScientists, RoundSummary.KilledBySCPs, num10, (int)RoundStart.RoundLength.TotalSeconds);
 				}
-				_roundEndCoroutine = Timing.RunCoroutine(InitiateRoundEnd(num10), Segment.FixedUpdate);
-				yield return Timing.WaitUntilDone(_roundEndCoroutine);
+				this._roundEndCoroutine = Timing.RunCoroutine(this.InitiateRoundEnd(num10), Segment.FixedUpdate);
+				yield return Timing.WaitUntilDone(this._roundEndCoroutine);
 			}
 		}
 	}
@@ -416,9 +419,9 @@ public class RoundSummary : NetworkBehaviour
 	private IEnumerator<float> InitiateRoundEnd(int timeToRoundRestart)
 	{
 		yield return Timing.WaitForSeconds(timeToRoundRestart - 1);
-		if (IsRoundEnded)
+		if (this.IsRoundEnded)
 		{
-			RpcDimScreen();
+			this.RpcDimScreen();
 			yield return Timing.WaitForSeconds(1f);
 			RoundRestart.InitiateRoundRestart();
 		}
@@ -436,7 +439,7 @@ public class RoundSummary : NetworkBehaviour
 		writer.WriteInt(scpKills);
 		writer.WriteInt(roundCd);
 		writer.WriteInt(seconds);
-		SendRPCInternal("System.Void RoundSummary::RpcShowRoundSummary(RoundSummary/SumInfo_ClassList,RoundSummary/SumInfo_ClassList,RoundSummary/LeadingTeam,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)", -173396156, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void RoundSummary::RpcShowRoundSummary(RoundSummary/SumInfo_ClassList,RoundSummary/SumInfo_ClassList,RoundSummary/LeadingTeam,System.Int32,System.Int32,System.Int32,System.Int32,System.Int32)", -173396156, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -444,7 +447,7 @@ public class RoundSummary : NetworkBehaviour
 	private void RpcHideRoundSummary()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void RoundSummary::RpcHideRoundSummary()", 593541252, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void RoundSummary::RpcHideRoundSummary()", 593541252, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -452,7 +455,7 @@ public class RoundSummary : NetworkBehaviour
 	private void RpcDimScreen()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void RoundSummary::RpcDimScreen()", -1745793588, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void RoundSummary::RpcDimScreen()", -1745793588, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -460,13 +463,13 @@ public class RoundSummary : NetworkBehaviour
 	private void RpcUndimScreen()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void RoundSummary::RpcUndimScreen()", 44991443, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void RoundSummary::RpcUndimScreen()", 44991443, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	public static bool RoundInProgress()
 	{
-		if (!_singletonSet)
+		if (!RoundSummary._singletonSet)
 		{
 			return false;
 		}
@@ -484,7 +487,7 @@ public class RoundSummary : NetworkBehaviour
 
 	protected void UserCode_RpcShowRoundSummary__SumInfo_ClassList__SumInfo_ClassList__LeadingTeam__Int32__Int32__Int32__Int32__Int32(SumInfo_ClassList listStart, SumInfo_ClassList listFinish, LeadingTeam leadingTeam, int eDS, int eSc, int scpKills, int roundCd, int seconds)
 	{
-		_summaryActive = true;
+		this._summaryActive = true;
 	}
 
 	protected static void InvokeUserCode_RpcShowRoundSummary__SumInfo_ClassList__SumInfo_ClassList__LeadingTeam__Int32__Int32__Int32__Int32__Int32(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -501,7 +504,7 @@ public class RoundSummary : NetworkBehaviour
 
 	protected void UserCode_RpcHideRoundSummary()
 	{
-		_summaryActive = false;
+		this._summaryActive = false;
 	}
 
 	protected static void InvokeUserCode_RpcHideRoundSummary(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -561,13 +564,13 @@ public class RoundSummary : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteInt(_extraTargets);
+			writer.WriteInt(this._extraTargets);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteInt(_extraTargets);
+			writer.WriteInt(this._extraTargets);
 		}
 	}
 
@@ -576,13 +579,13 @@ public class RoundSummary : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _extraTargets, null, reader.ReadInt());
+			base.GeneratedSyncVarDeserialize(ref this._extraTargets, null, reader.ReadInt());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _extraTargets, null, reader.ReadInt());
+			base.GeneratedSyncVarDeserialize(ref this._extraTargets, null, reader.ReadInt());
 		}
 	}
 }

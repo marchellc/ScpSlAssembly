@@ -45,6 +45,6 @@ internal sealed class NetEvent
 
 	public NetEvent(NetManager manager)
 	{
-		DataReader = new NetPacketReader(manager, this);
+		this.DataReader = new NetPacketReader(manager, this);
 	}
 }

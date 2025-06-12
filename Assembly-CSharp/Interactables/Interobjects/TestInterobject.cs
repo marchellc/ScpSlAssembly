@@ -22,7 +22,7 @@ public class TestInterobject : NetworkBehaviour, IClientInteractable, IInteracta
 			Debug.LogWarning("[Client] function 'System.Void Interactables.Interobjects.TestInterobject::ClientInteract(Interactables.InteractableCollider)' called when client was not active");
 			return;
 		}
-		ClientText.text = "Local player collider ID: " + collider.ColliderId + " (rand " + Random.value + ")";
+		this.ClientText.text = "Local player collider ID: " + collider.ColliderId + " (rand " + Random.value + ")";
 	}
 
 	[Server]
@@ -34,7 +34,7 @@ public class TestInterobject : NetworkBehaviour, IClientInteractable, IInteracta
 		}
 		else
 		{
-			RpcSendText("Player " + ply.LoggedNameFromRefHub() + " interacted using collider " + colliderId);
+			this.RpcSendText("Player " + ply.LoggedNameFromRefHub() + " interacted using collider " + colliderId);
 		}
 	}
 
@@ -43,7 +43,7 @@ public class TestInterobject : NetworkBehaviour, IClientInteractable, IInteracta
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteString(s);
-		SendRPCInternal("System.Void Interactables.Interobjects.TestInterobject::RpcSendText(System.String)", 314358345, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Interactables.Interobjects.TestInterobject::RpcSendText(System.String)", 314358345, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -54,7 +54,7 @@ public class TestInterobject : NetworkBehaviour, IClientInteractable, IInteracta
 
 	protected void UserCode_RpcSendText__String(string s)
 	{
-		GlobalText.text = s;
+		this.GlobalText.text = s;
 	}
 
 	protected static void InvokeUserCode_RpcSendText__String(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)

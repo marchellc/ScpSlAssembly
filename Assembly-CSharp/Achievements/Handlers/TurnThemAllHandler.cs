@@ -18,18 +18,18 @@ public class TurnThemAllHandler : AchievementHandlerBase
 
 	internal override void OnRoundStarted()
 	{
-		_healedPlayers = 0;
-		_alreadyAchieved = false;
+		TurnThemAllHandler._healedPlayers = 0;
+		TurnThemAllHandler._alreadyAchieved = false;
 	}
 
 	private static void OnRoleChanged(ReferenceHub userHub, RoleTypeId newClass, RoleChangeReason reason)
 	{
-		if (!NetworkServer.active || _alreadyAchieved || newClass != RoleTypeId.Scp0492 || reason != RoleChangeReason.Revived)
+		if (!NetworkServer.active || TurnThemAllHandler._alreadyAchieved || newClass != RoleTypeId.Scp0492 || reason != RoleChangeReason.Revived)
 		{
 			return;
 		}
-		_healedPlayers++;
-		if (_healedPlayers < 10)
+		TurnThemAllHandler._healedPlayers++;
+		if (TurnThemAllHandler._healedPlayers < 10)
 		{
 			return;
 		}

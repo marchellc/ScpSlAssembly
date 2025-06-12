@@ -15,12 +15,12 @@ public class RoleSpawnpointVisualizer : MonoBehaviour
 
 	private void OnDrawGizmosSelected()
 	{
-		Gizmos.color = _gizmosColor;
-		if (!PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(_role, out var result) || !(result is IFpcRole { SpawnpointHandler: { } spawnpointHandler }))
+		Gizmos.color = this._gizmosColor;
+		if (!PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(this._role, out var result) || !(result is IFpcRole { SpawnpointHandler: { } spawnpointHandler }))
 		{
 			return;
 		}
-		for (int i = 0; i < _numberOfTests; i++)
+		for (int i = 0; i < this._numberOfTests; i++)
 		{
 			if (spawnpointHandler.TryGetSpawnpoint(out var position, out var _))
 			{

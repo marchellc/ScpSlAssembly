@@ -14,19 +14,19 @@ public class Scp079ScannerNotification : Scp079AccentedNotification
 	private const string RedColorHex = "#ff1111";
 
 	public Scp079ScannerNotification(HumanRole detectedHuman)
-		: base(HumanFoundText(detectedHuman), detectedHuman.RoleColor.ToHex())
+		: base(Scp079ScannerNotification.HumanFoundText(detectedHuman), detectedHuman.RoleColor.ToHex())
 	{
 	}
 
 	public Scp079ScannerNotification(int retryTime)
-		: base(NoneFoundText(retryTime), "#ff1111")
+		: base(Scp079ScannerNotification.NoneFoundText(retryTime), "#ff1111")
 	{
 	}
 
 	private static string HumanFoundText(HumanRole role)
 	{
 		string format = Translations.Get(Scp079HudTranslation.ScanResultPlayerDetected);
-		Scp079Camera bestCamera = GetBestCamera(role.FpcModule.Position);
+		Scp079Camera bestCamera = Scp079ScannerNotification.GetBestCamera(role.FpcModule.Position);
 		return string.Format(arg2: Translations.Get(ProceduralZoneMap.ZoneTranslations[bestCamera.Room.Zone]), format: format, arg0: role.RoleName, arg1: bestCamera.Label);
 	}
 
@@ -70,7 +70,7 @@ public class Scp079ScannerNotification : Scp079AccentedNotification
 					num2 = sqrMagnitude;
 					flag2 = true;
 				}
-				if (!Physics.Linecast(scp079Camera.Position, pos, out var _, Mask))
+				if (!Physics.Linecast(scp079Camera.Position, pos, out var _, Scp079ScannerNotification.Mask))
 				{
 					result = scp079Camera;
 					flag = true;

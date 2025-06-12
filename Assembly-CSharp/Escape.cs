@@ -27,12 +27,12 @@ public static class Escape
 
 		private readonly string _def;
 
-		public string Text => TranslationReader.Get("Facility", _id, _def);
+		public string Text => TranslationReader.Get("Facility", this._id, this._def);
 
 		public EscapeScenarioText(int translationKey, string defaultText)
 		{
-			_id = translationKey;
-			_def = defaultText;
+			this._id = translationKey;
+			this._def = defaultText;
 		}
 	}
 
@@ -69,7 +69,7 @@ public static class Escape
 			return false;
 		}
 		role = fpcRole;
-		if ((role.FpcModule.Position - WorldPos).sqrMagnitude > 156.5f)
+		if ((role.FpcModule.Position - Escape.WorldPos).sqrMagnitude > 156.5f)
 		{
 			return false;
 		}
@@ -85,7 +85,7 @@ public static class Escape
 			{
 				ReferenceHub.AllHubs.ForEach(delegate(ReferenceHub x)
 				{
-					ServerHandlePlayer(x);
+					Escape.ServerHandlePlayer(x);
 				});
 			}
 		};
@@ -93,12 +93,12 @@ public static class Escape
 
 	private static void ServerHandlePlayer(ReferenceHub hub)
 	{
-		if (!CanEscape(hub, out var role))
+		if (!Escape.CanEscape(hub, out var role))
 		{
 			return;
 		}
 		RoleTypeId newRole = RoleTypeId.None;
-		EscapeScenarioType escapeScenarioType = ((role is HumanRole role2) ? ServerGetScenario(hub, role2) : EscapeScenarioType.None);
+		EscapeScenarioType escapeScenarioType = ((role is HumanRole role2) ? Escape.ServerGetScenario(hub, role2) : EscapeScenarioType.None);
 		switch (escapeScenarioType)
 		{
 		case EscapeScenarioType.ClassD:
@@ -112,13 +112,13 @@ public static class Escape
 			newRole = RoleTypeId.NtfSpecialist;
 			break;
 		}
-		PlayerEscapingEventArgs playerEscapingEventArgs = new PlayerEscapingEventArgs(hub, newRole, escapeScenarioType);
-		PlayerEvents.OnEscaping(playerEscapingEventArgs);
-		if (playerEscapingEventArgs.IsAllowed)
+		PlayerEscapingEventArgs e = new PlayerEscapingEventArgs(hub, newRole, escapeScenarioType);
+		PlayerEvents.OnEscaping(e);
+		if (e.IsAllowed)
 		{
-			newRole = playerEscapingEventArgs.NewRole;
-			escapeScenarioType = playerEscapingEventArgs.EscapeScenario;
-			if (escapeScenarioType != 0)
+			newRole = e.NewRole;
+			escapeScenarioType = e.EscapeScenario;
+			if (escapeScenarioType != EscapeScenarioType.None)
 			{
 				hub.connectionToClient.Send(new EscapeMessage
 				{

@@ -25,11 +25,11 @@ public sealed class GuidFormatter : IJsonFormatter<Guid>, IJsonFormatter, IObjec
 
 	public void SerializeToPropertyName(ref JsonWriter writer, Guid value, IJsonFormatterResolver formatterResolver)
 	{
-		Serialize(ref writer, value, formatterResolver);
+		this.Serialize(ref writer, value, formatterResolver);
 	}
 
 	public Guid DeserializeFromPropertyName(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
 	{
-		return Deserialize(ref reader, formatterResolver);
+		return this.Deserialize(ref reader, formatterResolver);
 	}
 }

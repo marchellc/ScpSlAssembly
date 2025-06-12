@@ -19,12 +19,12 @@ public class AdvancedRoomConnectorSpawnpoint : RoomConnectorSpawnpointBase
 	[SerializeField]
 	private SpawnableRoomConnectorType _fallbackType;
 
-	public override SpawnableRoomConnectorType FallbackType => _fallbackType;
+	public override SpawnableRoomConnectorType FallbackType => this._fallbackType;
 
 	public override float GetSpawnChanceWeight(SpawnableRoomConnectorType type)
 	{
 		bool flag = false;
-		ConnectorTypesChancePair[] connectors = Connectors;
+		ConnectorTypesChancePair[] connectors = this.Connectors;
 		for (int i = 0; i < connectors.Length; i++)
 		{
 			ConnectorTypesChancePair connectorTypesChancePair = connectors[i];
@@ -41,13 +41,13 @@ public class AdvancedRoomConnectorSpawnpoint : RoomConnectorSpawnpointBase
 		{
 			return 0f;
 		}
-		return (type != _fallbackType) ? 1 : 0;
+		return (type != this._fallbackType) ? 1 : 0;
 	}
 
 	public override void SpawnFallback()
 	{
 		List<SpawnableRoomConnectorType> list = new List<SpawnableRoomConnectorType>();
-		ConnectorTypesChancePair[] connectors = Connectors;
+		ConnectorTypesChancePair[] connectors = this.Connectors;
 		for (int i = 0; i < connectors.Length; i++)
 		{
 			ConnectorTypesChancePair connectorTypesChancePair = connectors[i];
@@ -55,7 +55,7 @@ public class AdvancedRoomConnectorSpawnpoint : RoomConnectorSpawnpointBase
 		}
 		if (list.Count > 0)
 		{
-			Spawn(list.RandomItem());
+			base.Spawn(list.RandomItem());
 		}
 		else
 		{
@@ -65,7 +65,7 @@ public class AdvancedRoomConnectorSpawnpoint : RoomConnectorSpawnpointBase
 
 	protected override void MergeWith(RoomConnectorSpawnpointBase retired)
 	{
-		ConnectorTypesChancePair[] connectors = Connectors;
+		ConnectorTypesChancePair[] connectors = this.Connectors;
 		for (int i = 0; i < connectors.Length; i++)
 		{
 			ConnectorTypesChancePair connectorTypesChancePair = connectors[i];

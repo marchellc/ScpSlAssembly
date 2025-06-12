@@ -24,37 +24,37 @@ public class DamagedAudio : MonoBehaviour
 
 	private void Start()
 	{
-		if (ReferenceHub.TryGetHub(base.gameObject, out _owner))
+		if (ReferenceHub.TryGetHub(base.gameObject, out this._owner))
 		{
-			_owner.playerStats.GetModule<HealthStat>().OnStatChange += OnHealthStatChange;
-			_owner.playerStats.GetModule<AhpStat>().OnStatChange += OnHealthStatChange;
-			_owner.playerStats.GetModule<HumeShieldStat>().OnStatChange += OnHumeStatChange;
+			this._owner.playerStats.GetModule<HealthStat>().OnStatChange += OnHealthStatChange;
+			this._owner.playerStats.GetModule<AhpStat>().OnStatChange += OnHealthStatChange;
+			this._owner.playerStats.GetModule<HumeShieldStat>().OnStatChange += OnHumeStatChange;
 		}
 	}
 
 	private void OnDestroy()
 	{
-		_owner.playerStats.GetModule<HealthStat>().OnStatChange -= OnHealthStatChange;
-		_owner.playerStats.GetModule<AhpStat>().OnStatChange -= OnHealthStatChange;
-		_owner.playerStats.GetModule<HumeShieldStat>().OnStatChange -= OnHumeStatChange;
+		this._owner.playerStats.GetModule<HealthStat>().OnStatChange -= OnHealthStatChange;
+		this._owner.playerStats.GetModule<AhpStat>().OnStatChange -= OnHealthStatChange;
+		this._owner.playerStats.GetModule<HumeShieldStat>().OnStatChange -= OnHumeStatChange;
 	}
 
 	private void OnHumeStatChange(float oldValue, float newValue)
 	{
-		PlayAudio(oldValue - newValue, isHume: true);
+		this.PlayAudio(oldValue - newValue, isHume: true);
 	}
 
 	private void OnHealthStatChange(float oldValue, float newValue)
 	{
-		PlayAudio(oldValue - newValue, isHume: false);
+		this.PlayAudio(oldValue - newValue, isHume: false);
 	}
 
 	private void PlayAudio(float damage, bool isHume)
 	{
-		if ((_owner.isLocalPlayer || _owner.IsLocallySpectated()) && !(damage <= 2.5f) && !(_lastTime > NetworkTime.time))
+		if ((this._owner.isLocalPlayer || this._owner.IsLocallySpectated()) && !(damage <= 2.5f) && !(this._lastTime > NetworkTime.time))
 		{
-			_lastTime = NetworkTime.time + 0.25;
-			AudioSourcePoolManager.Play2DWithParent(isHume ? _scpAudioClips.RandomItem() : _humanAudioClips.RandomItem(), _owner.transform);
+			this._lastTime = NetworkTime.time + 0.25;
+			AudioSourcePoolManager.Play2DWithParent(isHume ? this._scpAudioClips.RandomItem() : this._humanAudioClips.RandomItem(), this._owner.transform);
 		}
 	}
 }

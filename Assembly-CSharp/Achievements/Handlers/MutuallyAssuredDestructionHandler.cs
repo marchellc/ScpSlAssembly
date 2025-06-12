@@ -13,7 +13,7 @@ public class MutuallyAssuredDestructionHandler : AchievementHandlerBase
 
 	private static void OnAnyPlayerDied(ReferenceHub victim, DamageHandlerBase handler)
 	{
-		if (NetworkServer.active && handler is AttackerDamageHandler attackerDamageHandler && ValidDamage(attackerDamageHandler))
+		if (NetworkServer.active && handler is AttackerDamageHandler attackerDamageHandler && MutuallyAssuredDestructionHandler.ValidDamage(attackerDamageHandler))
 		{
 			ReferenceHub hub = attackerDamageHandler.Attacker.Hub;
 			if (!(hub == null) && !hub.IsAlive() && HitboxIdentity.IsEnemy(attackerDamageHandler.Attacker.Role, victim.GetRoleId()))

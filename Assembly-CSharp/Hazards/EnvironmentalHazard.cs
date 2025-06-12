@@ -35,7 +35,7 @@ public abstract class EnvironmentalHazard : NetworkBehaviour
 	{
 		get
 		{
-			return base.transform.position + SourceOffset;
+			return base.transform.position + this.SourceOffset;
 		}
 		set
 		{
@@ -45,13 +45,13 @@ public abstract class EnvironmentalHazard : NetworkBehaviour
 
 	public virtual bool OnEnter(ReferenceHub player)
 	{
-		PlayerEnteringHazardEventArgs playerEnteringHazardEventArgs = new PlayerEnteringHazardEventArgs(player, this);
-		PlayerEvents.OnEnteringHazard(playerEnteringHazardEventArgs);
-		if (!playerEnteringHazardEventArgs.IsAllowed)
+		PlayerEnteringHazardEventArgs e = new PlayerEnteringHazardEventArgs(player, this);
+		PlayerEvents.OnEnteringHazard(e);
+		if (!e.IsAllowed)
 		{
 			return false;
 		}
-		AffectedPlayers.Add(player);
+		this.AffectedPlayers.Add(player);
 		return true;
 	}
 
@@ -61,23 +61,23 @@ public abstract class EnvironmentalHazard : NetworkBehaviour
 
 	public virtual bool OnExit(ReferenceHub player)
 	{
-		PlayerLeavingHazardEventArgs playerLeavingHazardEventArgs = new PlayerLeavingHazardEventArgs(player, this);
-		PlayerEvents.OnLeavingHazard(playerLeavingHazardEventArgs);
-		if (!playerLeavingHazardEventArgs.IsAllowed)
+		PlayerLeavingHazardEventArgs e = new PlayerLeavingHazardEventArgs(player, this);
+		PlayerEvents.OnLeavingHazard(e);
+		if (!e.IsAllowed)
 		{
 			return false;
 		}
-		AffectedPlayers.Remove(player);
+		this.AffectedPlayers.Remove(player);
 		return true;
 	}
 
 	public virtual bool IsInArea(Vector3 sourcePos, Vector3 targetPos)
 	{
-		if (Mathf.Abs(targetPos.y - sourcePos.y) > MaxHeightDistance)
+		if (Mathf.Abs(targetPos.y - sourcePos.y) > this.MaxHeightDistance)
 		{
 			return false;
 		}
-		return (sourcePos - targetPos).SqrMagnitudeIgnoreY() <= MaxDistance * MaxDistance;
+		return (sourcePos - targetPos).SqrMagnitudeIgnoreY() <= this.MaxDistance * this.MaxDistance;
 	}
 
 	protected virtual void UpdateTargets()
@@ -89,12 +89,12 @@ public abstract class EnvironmentalHazard : NetworkBehaviour
 			{
 				continue;
 			}
-			bool flag = AffectedPlayers.Contains(allHub);
-			if (IsInArea(SourcePosition, fpcRole.FpcModule.Position))
+			bool flag = this.AffectedPlayers.Contains(allHub);
+			if (this.IsInArea(this.SourcePosition, fpcRole.FpcModule.Position))
 			{
 				if (!flag)
 				{
-					OnEnter(allHub);
+					this.OnEnter(allHub);
 				}
 				else
 				{
@@ -103,7 +103,7 @@ public abstract class EnvironmentalHazard : NetworkBehaviour
 			}
 			else if (flag)
 			{
-				OnExit(allHub);
+				this.OnExit(allHub);
 			}
 		}
 		if (list.Count == 0)
@@ -111,26 +111,26 @@ public abstract class EnvironmentalHazard : NetworkBehaviour
 			ListPool<ReferenceHub>.Shared.Return(list);
 			return;
 		}
-		PlayersStayingInHazardEventArgs playersStayingInHazardEventArgs = new PlayersStayingInHazardEventArgs(list, this);
-		PlayerEvents.OnStayingInHazard(playersStayingInHazardEventArgs);
+		PlayersStayingInHazardEventArgs e = new PlayersStayingInHazardEventArgs(list, this);
+		PlayerEvents.OnStayingInHazard(e);
 		list.Clear();
-		foreach (Player affectedPlayer in playersStayingInHazardEventArgs.AffectedPlayers)
+		foreach (Player affectedPlayer in e.AffectedPlayers)
 		{
 			list.Add(affectedPlayer.ReferenceHub);
 		}
-		ListPool<Player>.Shared.Return(playersStayingInHazardEventArgs.AffectedPlayers);
+		ListPool<Player>.Shared.Return(e.AffectedPlayers);
 		foreach (ReferenceHub item in list)
 		{
-			OnStay(item);
+			this.OnStay(item);
 		}
 		ListPool<ReferenceHub>.Shared.Return(list);
 	}
 
 	private void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
 	{
-		if (AffectedPlayers.Contains(userHub))
+		if (this.AffectedPlayers.Contains(userHub))
 		{
-			OnExit(userHub);
+			this.OnExit(userHub);
 		}
 	}
 
@@ -140,7 +140,7 @@ public abstract class EnvironmentalHazard : NetworkBehaviour
 	{
 		if (NetworkServer.active)
 		{
-			OnAdded?.Invoke(this);
+			EnvironmentalHazard.OnAdded?.Invoke(this);
 		}
 	}
 
@@ -161,7 +161,7 @@ public abstract class EnvironmentalHazard : NetworkBehaviour
 	{
 		if (NetworkServer.active)
 		{
-			UpdateTargets();
+			this.UpdateTargets();
 		}
 	}
 
@@ -170,7 +170,7 @@ public abstract class EnvironmentalHazard : NetworkBehaviour
 		if (NetworkServer.active)
 		{
 			PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
-			OnRemoved?.Invoke(this);
+			EnvironmentalHazard.OnRemoved?.Invoke(this);
 		}
 	}
 

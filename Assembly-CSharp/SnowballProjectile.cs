@@ -23,18 +23,18 @@ public class SnowballProjectile : FlybyDetectorProjectile
 			flag = true;
 			num *= 2f;
 		}
-		if (SnowballItem.IsCooked(Info.Serial, thrown: true))
+		if (SnowballItem.IsCooked(base.Info.Serial, thrown: true))
 		{
 			flag2 = true;
 			num *= 2f;
 		}
 		if (flag && flag2)
 		{
-			RpcBonk();
+			this.RpcBonk();
 		}
 		ReferenceHub targetHub = hid.TargetHub;
 		targetHub.playerEffectsController.EnableEffect<Snowed>(5f);
-		SnowballDamageHandler snowballDamageHandler = new SnowballDamageHandler(PreviousOwner, num, base.TrajPhysics.LastVelocity);
+		SnowballDamageHandler snowballDamageHandler = new SnowballDamageHandler(base.PreviousOwner, num, base.TrajPhysics.LastVelocity);
 		targetHub.playerStats.DealDamage(snowballDamageHandler);
 		Hitmarker.SendHitmarkerConditionally(num / 15f, snowballDamageHandler, targetHub);
 	}
@@ -43,7 +43,7 @@ public class SnowballProjectile : FlybyDetectorProjectile
 	private void RpcBonk()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void SnowballProjectile::RpcBonk()", 673396225, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void SnowballProjectile::RpcBonk()", 673396225, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -54,7 +54,7 @@ public class SnowballProjectile : FlybyDetectorProjectile
 
 	protected void UserCode_RpcBonk()
 	{
-		_bonk.Play();
+		this._bonk.Play();
 	}
 
 	protected static void InvokeUserCode_RpcBonk(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)

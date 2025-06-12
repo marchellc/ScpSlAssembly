@@ -14,7 +14,7 @@ public class Scp106VisibilityController : FpcVisibilityController
 	{
 		if (HitboxIdentity.IsEnemy(base.Owner, observer))
 		{
-			return _visSubroutine.SyncDamage.ContainsKey(observer.PlayerId);
+			return this._visSubroutine.SyncDamage.ContainsKey(observer.PlayerId);
 		}
 		return true;
 	}
@@ -22,7 +22,7 @@ public class Scp106VisibilityController : FpcVisibilityController
 	public override InvisibilityFlags GetActiveFlags(ReferenceHub observer)
 	{
 		InvisibilityFlags invisibilityFlags = base.GetActiveFlags(observer);
-		if (_role106.Sinkhole.IsHidden && !CheckPlayer(observer))
+		if (this._role106.Sinkhole.IsHidden && !this.CheckPlayer(observer))
 		{
 			invisibilityFlags |= InvisibilityFlags.Scp106Sinkhole;
 		}
@@ -34,8 +34,8 @@ public class Scp106VisibilityController : FpcVisibilityController
 		base.SpawnObject();
 		if (NetworkServer.active)
 		{
-			_role106 = base.Role as Scp106Role;
-			_role106.SubroutineModule.TryGetSubroutine<Scp106StalkVisibilityController>(out _visSubroutine);
+			this._role106 = base.Role as Scp106Role;
+			this._role106.SubroutineModule.TryGetSubroutine<Scp106StalkVisibilityController>(out this._visSubroutine);
 		}
 	}
 }

@@ -14,16 +14,16 @@ public struct Log : IEquatable<Log>
 
 	public Log(string t, Color c, bool b)
 	{
-		text = t;
-		color = c;
-		nospace = b;
+		this.text = t;
+		this.color = c;
+		this.nospace = b;
 	}
 
 	public bool Equals(Log other)
 	{
-		if (text == other.text && color == other.color)
+		if (this.text == other.text && this.color == other.color)
 		{
-			return nospace == other.nospace;
+			return this.nospace == other.nospace;
 		}
 		return false;
 	}
@@ -32,14 +32,14 @@ public struct Log : IEquatable<Log>
 	{
 		if (obj is Log other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((((text != null) ? text.GetHashCode() : 0) * 397) ^ color.GetHashCode()) * 397) ^ nospace.GetHashCode();
+		return (((((this.text != null) ? this.text.GetHashCode() : 0) * 397) ^ this.color.GetHashCode()) * 397) ^ this.nospace.GetHashCode();
 	}
 
 	public static bool operator ==(Log left, Log right)

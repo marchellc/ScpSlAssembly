@@ -33,16 +33,16 @@ public class Scp079AuxManager : StandardSubroutine<Scp079Role>, IScp079LevelUpNo
 
 	private static string _textNewMaxAux;
 
-	private ushort Compressed => (ushort)Mathf.Min(CurrentAuxFloored, 65535);
+	private ushort Compressed => (ushort)Mathf.Min(this.CurrentAuxFloored, 65535);
 
 	private float RegenSpeed
 	{
 		get
 		{
-			float num = _regenerationPerTier[_tierManager.AccessTierIndex];
-			for (int i = 0; i < _abilitiesCount; i++)
+			float num = this._regenerationPerTier[this._tierManager.AccessTierIndex];
+			for (int i = 0; i < this._abilitiesCount; i++)
 			{
-				num *= _abilities[i].AuxRegenMultiplier;
+				num *= this._abilities[i].AuxRegenMultiplier;
 			}
 			return num;
 		}
@@ -52,85 +52,85 @@ public class Scp079AuxManager : StandardSubroutine<Scp079Role>, IScp079LevelUpNo
 	{
 		get
 		{
-			return _aux;
+			return this._aux;
 		}
 		set
 		{
-			value = Mathf.Clamp(value, 0f, MaxAux);
-			if (value != _aux)
+			value = Mathf.Clamp(value, 0f, this.MaxAux);
+			if (value != this._aux)
 			{
-				_aux = value;
-				_valueDirty = true;
+				this._aux = value;
+				this._valueDirty = true;
 			}
 		}
 	}
 
-	public int CurrentAuxFloored => Mathf.FloorToInt(CurrentAux);
+	public int CurrentAuxFloored => Mathf.FloorToInt(this.CurrentAux);
 
-	public float MaxAux => _maxPerTier[_tierManager.AccessTierIndex];
+	public float MaxAux => this._maxPerTier[this._tierManager.AccessTierIndex];
 
 	private void Start()
 	{
-		_textEtaFormat = Translations.Get(Scp079HudTranslation.EtaTimer);
-		_textHigherTierRequired = Translations.Get(Scp079HudTranslation.HigherTierRequired);
-		_textNewMaxAux = Translations.Get(Scp079HudTranslation.AuxPowerLimitIncreased);
+		Scp079AuxManager._textEtaFormat = Translations.Get(Scp079HudTranslation.EtaTimer);
+		Scp079AuxManager._textHigherTierRequired = Translations.Get(Scp079HudTranslation.HigherTierRequired);
+		Scp079AuxManager._textNewMaxAux = Translations.Get(Scp079HudTranslation.AuxPowerLimitIncreased);
 	}
 
 	private void Update()
 	{
 		if (NetworkServer.active)
 		{
-			Regenerate();
-			SyncValues();
+			this.Regenerate();
+			this.SyncValues();
 		}
 	}
 
 	private void Regenerate()
 	{
-		CurrentAux += Time.deltaTime * RegenSpeed;
+		this.CurrentAux += Time.deltaTime * this.RegenSpeed;
 	}
 
 	private void OnRoleChanged(ReferenceHub hub, PlayerRoleBase prev, PlayerRoleBase cur)
 	{
 		if (NetworkServer.active && cur is SpectatorRole)
 		{
-			ServerSendRpc(hub);
+			base.ServerSendRpc(hub);
 		}
 	}
 
 	private void SyncValues()
 	{
-		if (!_valueDirty)
+		if (!this._valueDirty)
 		{
 			return;
 		}
-		ushort compressed = Compressed;
-		_valueDirty = false;
-		if (compressed != _prevSent)
+		ushort compressed = this.Compressed;
+		this._valueDirty = false;
+		if (compressed != this._prevSent)
 		{
-			_prevSent = compressed;
-			ServerSendRpc((ReferenceHub x) => x == base.Owner || base.Owner.IsSpectatedBy(x));
+			this._prevSent = compressed;
+			base.ServerSendRpc((ReferenceHub x) => x == base.Owner || base.Owner.IsSpectatedBy(x));
 		}
 	}
 
 	public string GenerateETA(float requiredAux)
 	{
-		if (requiredAux > MaxAux)
+		if (requiredAux > this.MaxAux)
 		{
-			return _textHigherTierRequired;
+			return Scp079AuxManager._textHigherTierRequired;
 		}
-		float regenSpeed = RegenSpeed;
+		float regenSpeed = this.RegenSpeed;
 		if (regenSpeed <= 0f)
 		{
 			return string.Empty;
 		}
-		float num = Mathf.Max(0f, requiredAux - CurrentAux);
-		return GenerateCustomETA(Mathf.CeilToInt(num / regenSpeed));
+		float num = Mathf.Max(0f, requiredAux - this.CurrentAux);
+		return this.GenerateCustomETA(Mathf.CeilToInt(num / regenSpeed));
 	}
 
 	public string GenerateCustomETA(int secondsRemaining)
 	{
-		return string.Format(_textEtaFormat, secondsRemaining);
+		return string.Format(Scp079AuxManager._textEtaFormat, secondsRemaining);
 	}
 
 	public override void SpawnObject()
@@ -138,19 +138,19 @@ public class Scp079AuxManager : StandardSubroutine<Scp079Role>, IScp079LevelUpNo
 		base.SpawnObject();
 		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
 		SubroutineManagerModule subroutineModule = base.CastRole.SubroutineModule;
-		subroutineModule.TryGetSubroutine<Scp079TierManager>(out _tierManager);
+		subroutineModule.TryGetSubroutine<Scp079TierManager>(out this._tierManager);
 		int num = subroutineModule.AllSubroutines.Length;
-		_abilities = new IScp079AuxRegenModifier[num];
-		_abilitiesCount = 0;
+		this._abilities = new IScp079AuxRegenModifier[num];
+		this._abilitiesCount = 0;
 		for (int i = 0; i < num; i++)
 		{
 			if (subroutineModule.AllSubroutines[i] is IScp079AuxRegenModifier scp079AuxRegenModifier)
 			{
-				_abilities[_abilitiesCount] = scp079AuxRegenModifier;
-				_abilitiesCount++;
+				this._abilities[this._abilitiesCount] = scp079AuxRegenModifier;
+				this._abilitiesCount++;
 			}
 		}
-		CurrentAux = _maxPerTier[0];
+		this.CurrentAux = this._maxPerTier[0];
 	}
 
 	public override void ResetObject()
@@ -162,7 +162,7 @@ public class Scp079AuxManager : StandardSubroutine<Scp079Role>, IScp079LevelUpNo
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteUShort(_prevSent);
+		writer.WriteUShort(this._prevSent);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
@@ -170,13 +170,13 @@ public class Scp079AuxManager : StandardSubroutine<Scp079Role>, IScp079LevelUpNo
 		base.ClientProcessRpc(reader);
 		if (!NetworkServer.active)
 		{
-			CurrentAux = (int)reader.ReadUShort();
+			this.CurrentAux = (int)reader.ReadUShort();
 		}
 	}
 
 	public bool WriteLevelUpNotification(StringBuilder sb, int newLevel)
 	{
-		sb.AppendFormat(_textNewMaxAux, _maxPerTier[newLevel]);
+		sb.AppendFormat(Scp079AuxManager._textNewMaxAux, this._maxPerTier[newLevel]);
 		return true;
 	}
 }

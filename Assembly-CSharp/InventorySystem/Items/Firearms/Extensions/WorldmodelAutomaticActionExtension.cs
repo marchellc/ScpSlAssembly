@@ -18,16 +18,16 @@ public class WorldmodelAutomaticActionExtension : MonoBehaviour, IWorldmodelExte
 
 	public void SetupWorldmodel(FirearmWorldmodel worldmodel)
 	{
-		_lastSerial = worldmodel.Identifier.SerialNumber;
-		UpdateAllPolarity();
+		this._lastSerial = worldmodel.Identifier.SerialNumber;
+		this.UpdateAllPolarity();
 	}
 
 	private void UpdateAllPolarity()
 	{
-		AutomaticActionModule.DecodeSyncFlags(_lastSerial, out var ammoChambered, out var boltLocked, out var cocked);
-		UpdatePolarity(_anyChambered, ammoChambered > 0);
-		UpdatePolarity(_boltLocked, boltLocked);
-		UpdatePolarity(_cocked, cocked);
+		AutomaticActionModule.DecodeSyncFlags(this._lastSerial, out var ammoChambered, out var boltLocked, out var cocked);
+		this.UpdatePolarity(this._anyChambered, ammoChambered > 0);
+		this.UpdatePolarity(this._boltLocked, boltLocked);
+		this.UpdatePolarity(this._cocked, cocked);
 	}
 
 	private void UpdatePolarity(BipolarTransform[] arr, bool polarity)

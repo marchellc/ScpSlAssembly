@@ -22,7 +22,7 @@ public static class Md
 	{
 		byte[] array = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(message.Length));
 		int bytes = Utf8.GetBytes(message, array);
-		byte[] result = Md5(array, 0, bytes);
+		byte[] result = Md.Md5(array, 0, bytes);
 		ArrayPool<byte>.Shared.Return(array);
 		return result;
 	}

@@ -43,7 +43,7 @@ public class GiveLoadoutCommand : ICommand, IUsageProvider
 		}
 		string[] newargs;
 		List<ReferenceHub> list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out newargs);
-		if (!TryParseRole(newargs[0], out var prb))
+		if (!this.TryParseRole(newargs[0], out var prb))
 		{
 			response = "Invalid role ID / name.";
 			return false;
@@ -53,7 +53,7 @@ public class GiveLoadoutCommand : ICommand, IUsageProvider
 			response = "Specified role does not have a defined inventory.";
 			return false;
 		}
-		ProvideRoleFlag(newargs, out var spawnFlags);
+		this.ProvideRoleFlag(newargs, out var spawnFlags);
 		bool resetInventory = spawnFlags.HasFlag(RoleSpawnFlags.AssignInventory);
 		int num = 0;
 		foreach (ReferenceHub item in list)

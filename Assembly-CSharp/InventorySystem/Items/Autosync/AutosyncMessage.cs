@@ -7,7 +7,7 @@ public readonly struct AutosyncMessage : NetworkMessage
 {
 	private static readonly byte[] Buffer = new byte[65790];
 
-	private static readonly NetworkReader Reader = new NetworkReader(Buffer);
+	private static readonly NetworkReader Reader = new NetworkReader(AutosyncMessage.Buffer);
 
 	private readonly int _bytesWritten;
 
@@ -17,92 +17,92 @@ public readonly struct AutosyncMessage : NetworkMessage
 
 	public AutosyncMessage(NetworkWriter writer, ItemIdentifier itemId)
 	{
-		_serial = itemId.SerialNumber;
-		_itemType = itemId.TypeId;
+		this._serial = itemId.SerialNumber;
+		this._itemType = itemId.TypeId;
 		int position = writer.Position;
 		writer.WriteByte((byte)Math.Min(position, 255));
 		if (position >= 255)
 		{
 			writer.WriteUShort((ushort)(position - 255));
 		}
-		_bytesWritten = position;
-		Array.Copy(writer.buffer, Buffer, _bytesWritten);
+		this._bytesWritten = position;
+		Array.Copy(writer.buffer, AutosyncMessage.Buffer, this._bytesWritten);
 	}
 
 	public override string ToString()
 	{
-		return string.Format("{0} (Item={1} Serial={2} Length={3} Payload={4})", "AutosyncMessage", _itemType, _serial, _bytesWritten, Reader);
+		return string.Format("{0} (Item={1} Serial={2} Length={3} Payload={4})", "AutosyncMessage", this._itemType, this._serial, this._bytesWritten, AutosyncMessage.Reader);
 	}
 
 	internal AutosyncMessage(NetworkReader reader)
 	{
-		_serial = reader.ReadUShort();
-		_itemType = (ItemType)reader.ReadByte();
-		_bytesWritten = reader.ReadByte();
-		if (_bytesWritten == 255)
+		this._serial = reader.ReadUShort();
+		this._itemType = (ItemType)reader.ReadByte();
+		this._bytesWritten = reader.ReadByte();
+		if (this._bytesWritten == 255)
 		{
-			_bytesWritten += reader.ReadUShort();
+			this._bytesWritten += reader.ReadUShort();
 		}
-		reader.ReadBytes(Buffer, _bytesWritten);
+		reader.ReadBytes(AutosyncMessage.Buffer, this._bytesWritten);
 	}
 
 	internal void Serialize(NetworkWriter writer)
 	{
-		writer.WriteUShort(_serial);
-		writer.WriteByte((byte)_itemType);
-		if (_bytesWritten < 255)
+		writer.WriteUShort(this._serial);
+		writer.WriteByte((byte)this._itemType);
+		if (this._bytesWritten < 255)
 		{
-			writer.WriteByte((byte)_bytesWritten);
+			writer.WriteByte((byte)this._bytesWritten);
 		}
 		else
 		{
 			writer.WriteByte(byte.MaxValue);
-			writer.WriteUShort((ushort)(_bytesWritten - 255));
+			writer.WriteUShort((ushort)(this._bytesWritten - 255));
 		}
-		writer.WriteBytes(Buffer, 0, _bytesWritten);
+		writer.WriteBytes(AutosyncMessage.Buffer, 0, this._bytesWritten);
 	}
 
 	internal void ProcessCmd(ReferenceHub sender)
 	{
-		if (!sender.inventory.UserInventory.Items.TryGetValue(_serial, out var value))
+		if (!sender.inventory.UserInventory.Items.TryGetValue(this._serial, out var value))
 		{
 			if (sender.isLocalPlayer)
 			{
-				TryEmulateDummies();
+				this.TryEmulateDummies();
 			}
 		}
-		else if (value is AutosyncItem autosyncItem && autosyncItem.ItemTypeId == _itemType)
+		else if (value is AutosyncItem autosyncItem && autosyncItem.ItemTypeId == this._itemType)
 		{
-			ResetReader();
-			autosyncItem.ServerProcessCmd(Reader);
+			this.ResetReader();
+			autosyncItem.ServerProcessCmd(AutosyncMessage.Reader);
 		}
 	}
 
 	internal void ProcessRpc()
 	{
-		if (InventoryItemLoader.TryGetItem<AutosyncItem>(_itemType, out var result))
+		if (InventoryItemLoader.TryGetItem<AutosyncItem>(this._itemType, out var result))
 		{
-			ResetReader();
-			result.ClientProcessRpcTemplate(Reader, _serial);
+			this.ResetReader();
+			result.ClientProcessRpcTemplate(AutosyncMessage.Reader, this._serial);
 		}
-		if (_serial == 0)
+		if (this._serial == 0)
 		{
 			return;
 		}
 		foreach (AutosyncItem instance in AutosyncItem.Instances)
 		{
-			if (instance.ItemSerial == _serial && instance.ItemTypeId == _itemType)
+			if (instance.ItemSerial == this._serial && instance.ItemTypeId == this._itemType)
 			{
-				ResetReader();
-				instance.ClientProcessRpcInstance(Reader);
+				this.ResetReader();
+				instance.ClientProcessRpcInstance(AutosyncMessage.Reader);
 			}
 		}
 	}
 
 	private void ResetReader()
 	{
-		Reader.buffer = new ArraySegment<byte>(Buffer, 0, _bytesWritten);
-		Reader.Position = 0;
+		AutosyncMessage.Reader.buffer = new ArraySegment<byte>(AutosyncMessage.Buffer, 0, this._bytesWritten);
+		AutosyncMessage.Reader.Position = 0;
 	}
 
 	private void TryEmulateDummies()
@@ -111,7 +111,7 @@ public readonly struct AutosyncMessage : NetworkMessage
 		{
 			if (allHub.IsDummy)
 			{
-				ProcessCmd(allHub);
+				this.ProcessCmd(allHub);
 			}
 		}
 	}

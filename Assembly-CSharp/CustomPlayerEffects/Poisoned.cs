@@ -27,10 +27,10 @@ public class Poisoned : TickingEffectBase, IHealableEffect, IPulseEffect
 	{
 		if (NetworkServer.active)
 		{
-			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(damagePerTick, DeathTranslations.Poisoned));
+			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(this.damagePerTick, DeathTranslations.Poisoned));
 			base.Hub.playerEffectsController.ServerSendPulse<Poisoned>();
-			damagePerTick *= multPerTick;
-			damagePerTick = Mathf.Clamp(damagePerTick, minDamage, maxDamage);
+			this.damagePerTick *= this.multPerTick;
+			this.damagePerTick = Mathf.Clamp(this.damagePerTick, this.minDamage, this.maxDamage);
 		}
 	}
 
@@ -38,7 +38,7 @@ public class Poisoned : TickingEffectBase, IHealableEffect, IPulseEffect
 	{
 		if (NetworkServer.active)
 		{
-			damagePerTick = minDamage;
+			this.damagePerTick = this.minDamage;
 		}
 	}
 }

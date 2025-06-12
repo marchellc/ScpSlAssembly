@@ -6,7 +6,7 @@ public sealed class LinkedListFormatter<T> : CollectionFormatterBase<T, LinkedLi
 {
 	private readonly CollectionDeserializeToBehaviour deserializeToBehaviour;
 
-	protected override CollectionDeserializeToBehaviour? SupportedOverwriteBehaviour => deserializeToBehaviour;
+	protected override CollectionDeserializeToBehaviour? SupportedOverwriteBehaviour => this.deserializeToBehaviour;
 
 	public LinkedListFormatter()
 		: this(CollectionDeserializeToBehaviour.Add)

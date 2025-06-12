@@ -32,30 +32,31 @@ public class WallableSmallNodeRoomConnector : SpawnableRoomConnector
 	[SyncVar(hook = "UpdateMask")]
 	private byte _syncBitmask;
 
-	private Vector3 ForwardOrigin => base.transform.TransformPoint(_forwardWallRaycastOrigin);
+	private Vector3 ForwardOrigin => base.transform.TransformPoint(this._forwardWallRaycastOrigin);
 
-	private Vector3 BackOrigin => base.transform.TransformPoint(_backWallRaycastOrigin);
+	private Vector3 BackOrigin => base.transform.TransformPoint(this._backWallRaycastOrigin);
 
 	public byte Network_syncBitmask
 	{
 		get
 		{
-			return _syncBitmask;
+			return this._syncBitmask;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _syncBitmask, 1uL, UpdateMask);
+			base.GeneratedSyncVarSetter(value, ref this._syncBitmask, 1uL, UpdateMask);
 		}
 	}
 
-	private void Start()
+	protected override void Start()
 	{
+		base.Start();
 		if (NetworkServer.active)
 		{
-			ServerDetectWalls();
+			this.ServerDetectWalls();
 		}
-		UpdateMask(0, _syncBitmask);
+		this.UpdateMask(0, this._syncBitmask);
 	}
 
 	[Server]
@@ -68,8 +69,8 @@ public class WallableSmallNodeRoomConnector : SpawnableRoomConnector
 		}
 		Vector3 forward = base.transform.forward;
 		Vector3 dir = -forward;
-		bool num = CheckWall(ForwardOrigin, forward);
-		bool flag = CheckWall(BackOrigin, dir);
+		bool num = this.CheckWall(this.ForwardOrigin, forward);
+		bool flag = this.CheckWall(this.BackOrigin, dir);
 		byte b = 0;
 		if (!num)
 		{
@@ -79,18 +80,18 @@ public class WallableSmallNodeRoomConnector : SpawnableRoomConnector
 		{
 			b |= 2;
 		}
-		Network_syncBitmask = b;
+		this.Network_syncBitmask = b;
 	}
 
 	private void UpdateMask(byte _, byte targetBitmask)
 	{
-		_forwardWall.SetActive((targetBitmask & 1) != 0);
-		_backWall.SetActive((targetBitmask & 2) != 0);
+		this._forwardWall.SetActive((targetBitmask & 1) != 0);
+		this._backWall.SetActive((targetBitmask & 2) != 0);
 	}
 
 	private bool CheckWall(Vector3 origin, Vector3 dir)
 	{
-		return Physics.Raycast(origin, dir, 0.4f, DetectionMask);
+		return Physics.Raycast(origin, dir, 0.4f, WallableSmallNodeRoomConnector.DetectionMask);
 	}
 
 	private void OnDrawGizmosSelected()
@@ -98,9 +99,9 @@ public class WallableSmallNodeRoomConnector : SpawnableRoomConnector
 		double num = Time.realtimeSinceStartupAsDouble - (double)(int)Time.realtimeSinceStartupAsDouble;
 		float num2 = 0.4f * (1f + (float)num) / 2f;
 		Gizmos.color = Color.blue;
-		Gizmos.DrawRay(ForwardOrigin, base.transform.forward * num2);
+		Gizmos.DrawRay(this.ForwardOrigin, base.transform.forward * num2);
 		Gizmos.color = Color.yellow;
-		Gizmos.DrawRay(BackOrigin, -base.transform.forward * num2);
+		Gizmos.DrawRay(this.BackOrigin, -base.transform.forward * num2);
 	}
 
 	public override bool Weaved()
@@ -113,13 +114,13 @@ public class WallableSmallNodeRoomConnector : SpawnableRoomConnector
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _syncBitmask);
+			NetworkWriterExtensions.WriteByte(writer, this._syncBitmask);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _syncBitmask);
+			NetworkWriterExtensions.WriteByte(writer, this._syncBitmask);
 		}
 	}
 
@@ -128,13 +129,13 @@ public class WallableSmallNodeRoomConnector : SpawnableRoomConnector
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _syncBitmask, UpdateMask, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._syncBitmask, UpdateMask, NetworkReaderExtensions.ReadByte(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _syncBitmask, UpdateMask, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._syncBitmask, UpdateMask, NetworkReaderExtensions.ReadByte(reader));
 		}
 	}
 }

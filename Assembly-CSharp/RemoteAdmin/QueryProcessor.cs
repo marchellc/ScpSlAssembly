@@ -31,21 +31,21 @@ public class QueryProcessor : NetworkBehaviour
 		{
 			if (obj is CommandData other)
 			{
-				return Equals(other);
+				return this.Equals(other);
 			}
 			return false;
 		}
 
 		public override int GetHashCode()
 		{
-			return (Command, Usage, Description, AliasOf, Hidden).GetHashCode();
+			return (this.Command, this.Usage, this.Description, this.AliasOf, this.Hidden).GetHashCode();
 		}
 
 		public bool Equals(CommandData other)
 		{
-			if (Command == other.Command && Usage == other.Usage && Description == other.Description && AliasOf == other.AliasOf)
+			if (this.Command == other.Command && this.Usage == other.Usage && this.Description == other.Description && this.AliasOf == other.AliasOf)
 			{
-				return Hidden == other.Hidden;
+				return this.Hidden == other.Hidden;
 			}
 			return false;
 		}
@@ -107,12 +107,12 @@ public class QueryProcessor : NetworkBehaviour
 	{
 		get
 		{
-			return _gameplayData;
+			return this._gameplayData;
 		}
 		set
 		{
-			_gameplayData = value;
-			_gdDirty = true;
+			this._gameplayData = value;
+			this._gdDirty = true;
 		}
 	}
 
@@ -120,23 +120,23 @@ public class QueryProcessor : NetworkBehaviour
 	{
 		get
 		{
-			return OverridePasswordEnabled;
+			return this.OverridePasswordEnabled;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref OverridePasswordEnabled, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.OverridePasswordEnabled, 1uL, null);
 		}
 	}
 
 	public bool TryGetSender(out PlayerCommandSender sender)
 	{
-		return (sender = _sender) != null;
+		return (sender = this._sender) != null;
 	}
 
 	private void Awake()
 	{
-		_hub = ReferenceHub.GetHub(this);
+		this._hub = ReferenceHub.GetHub(this);
 	}
 
 	private void Start()
@@ -146,46 +146,46 @@ public class QueryProcessor : NetworkBehaviour
 			EncryptedChannelManager.ReplaceServerHandler(EncryptedChannelManager.EncryptedChannel.RemoteAdmin, ServerHandleCommandFromClient);
 			EncryptedChannelManager.ReplaceServerHandler(EncryptedChannelManager.EncryptedChannel.AdminChat, ServerHandleAdminChat);
 		}
-		_commandRateLimit = _hub.playerRateLimitHandler.RateLimits[1];
+		this._commandRateLimit = this._hub.playerRateLimitHandler.RateLimits[1];
 		if (NetworkServer.active)
 		{
-			_ipAddress = base.connectionToClient.address;
-			NetworkOverridePasswordEnabled = ServerStatic.PermissionsHandler.OverrideEnabled;
+			this._ipAddress = base.connectionToClient.address;
+			this.NetworkOverridePasswordEnabled = ServerStatic.PermissionsHandler.OverrideEnabled;
 			if (base.isLocalPlayer)
 			{
-				_commands = ParseCommandsToStruct(CommandProcessor.GetAllCommands());
+				QueryProcessor._commands = QueryProcessor.ParseCommandsToStruct(CommandProcessor.GetAllCommands());
 			}
 		}
 		else if (base.isLocalPlayer)
 		{
-			_commands = null;
+			QueryProcessor._commands = null;
 		}
-		_sender = new PlayerCommandSender(_hub);
+		this._sender = new PlayerCommandSender(this._hub);
 		_ = base.isLocalPlayer;
 	}
 
 	private void Update()
 	{
-		if (base.isLocalPlayer && _lastPlayerlistRequest < 1f)
+		if (base.isLocalPlayer && this._lastPlayerlistRequest < 1f)
 		{
-			_lastPlayerlistRequest += Time.deltaTime;
+			this._lastPlayerlistRequest += Time.deltaTime;
 		}
-		if (_gdDirty)
+		if (this._gdDirty)
 		{
-			_gdDirty = false;
+			this._gdDirty = false;
 			if (NetworkServer.active)
 			{
-				TargetSyncGameplayData(base.connectionToClient, _gameplayData);
+				this.TargetSyncGameplayData(base.connectionToClient, this._gameplayData);
 			}
 		}
 	}
 
 	internal void SyncCommandsToClient()
 	{
-		if (!_commandsSynced)
+		if (!this._commandsSynced)
 		{
-			_commandsSynced = true;
-			TargetUpdateCommandList(_commands);
+			this._commandsSynced = true;
+			this.TargetUpdateCommandList(QueryProcessor._commands);
 		}
 	}
 
@@ -209,13 +209,14 @@ public class QueryProcessor : NetworkBehaviour
 			{
 				text = text.Substring(0, 80) + "...";
 			}
-			CommandData commandData = default(CommandData);
-			commandData.Command = item2.Command;
-			commandData.Usage = ((item2 is IUsageProvider usageProvider) ? usageProvider.Usage : null);
-			commandData.Description = text;
-			commandData.AliasOf = null;
-			commandData.Hidden = item2 is IHiddenCommand;
-			CommandData item = commandData;
+			CommandData item = new CommandData
+			{
+				Command = item2.Command,
+				Usage = ((item2 is IUsageProvider usageProvider) ? usageProvider.Usage : null),
+				Description = text,
+				AliasOf = null,
+				Hidden = (item2 is IHiddenCommand)
+			};
 			list2.Add(item);
 			if (item2.Aliases != null)
 			{
@@ -241,7 +242,7 @@ public class QueryProcessor : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		GeneratedNetworkCode._Write_RemoteAdmin_002EQueryProcessor_002FCommandData_005B_005D(writer, commands);
-		SendTargetRPCInternal(null, "System.Void RemoteAdmin.QueryProcessor::TargetUpdateCommandList(RemoteAdmin.QueryProcessor/CommandData[])", -1693762298, writer, 0);
+		this.SendTargetRPCInternal(null, "System.Void RemoteAdmin.QueryProcessor::TargetUpdateCommandList(RemoteAdmin.QueryProcessor/CommandData[])", -1693762298, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -254,7 +255,7 @@ public class QueryProcessor : NetworkBehaviour
 		}
 		else
 		{
-			_hub.encryptedChannelManager.TrySendMessageToClient(new RemoteAdminResponse(content, isSuccess, logInConsole, overrideDisplay).Serialize(), EncryptedChannelManager.EncryptedChannel.RemoteAdmin);
+			this._hub.encryptedChannelManager.TrySendMessageToClient(new RemoteAdminResponse(content, isSuccess, logInConsole, overrideDisplay).Serialize(), EncryptedChannelManager.EncryptedChannel.RemoteAdmin);
 		}
 	}
 
@@ -309,28 +310,28 @@ public class QueryProcessor : NetworkBehaviour
 
 	internal void ProcessGameConsoleQuery(string query)
 	{
-		PlayerCommandSender sender = _sender;
-		string[] array = query.Trim().Split(SpaceArray, 512, StringSplitOptions.RemoveEmptyEntries);
+		PlayerCommandSender sender = this._sender;
+		string[] array = query.Trim().Split(QueryProcessor.SpaceArray, 512, StringSplitOptions.RemoveEmptyEntries);
 		ArraySegment<string> arguments = array.Segment(1);
 		ICommand command;
-		bool flag = DotCommandHandler.TryGetCommand(array[0], out command);
-		CommandExecutingEventArgs commandExecutingEventArgs = new CommandExecutingEventArgs(sender, CommandType.Client, flag, command, arguments);
-		ServerEvents.OnCommandExecuting(commandExecutingEventArgs);
-		if (!commandExecutingEventArgs.IsAllowed || !commandExecutingEventArgs.CommandFound)
+		bool flag = QueryProcessor.DotCommandHandler.TryGetCommand(array[0], out command);
+		CommandExecutingEventArgs e = new CommandExecutingEventArgs(sender, CommandType.Client, flag, command, arguments);
+		ServerEvents.OnCommandExecuting(e);
+		if (!e.IsAllowed || !e.CommandFound)
 		{
-			if (!commandExecutingEventArgs.CommandFound)
+			if (!e.CommandFound)
 			{
-				_hub.gameConsoleTransmission.SendToClient("Command not found.", "red");
+				this._hub.gameConsoleTransmission.SendToClient("Command not found.", "red");
 			}
 			else
 			{
-				_hub.gameConsoleTransmission.SendToClient("Command execution failed! Reason: Forcefully cancelled by a plugin.", "magenta");
+				this._hub.gameConsoleTransmission.SendToClient("Command execution failed! Reason: Forcefully cancelled by a plugin.", "magenta");
 			}
 			return;
 		}
-		arguments = commandExecutingEventArgs.Arguments;
-		sender = commandExecutingEventArgs.Sender as PlayerCommandSender;
-		command = commandExecutingEventArgs.Command;
+		arguments = e.Arguments;
+		sender = e.Sender as PlayerCommandSender;
+		command = e.Command;
 		string response = string.Empty;
 		bool flag2 = false;
 		string color = "red";
@@ -357,7 +358,7 @@ public class QueryProcessor : NetworkBehaviour
 		}
 		finally
 		{
-			_hub.gameConsoleTransmission.SendToClient(response, color);
+			this._hub.gameConsoleTransmission.SendToClient(response, color);
 			ServerEvents.OnCommandExecuted(new CommandExecutedEventArgs(sender, CommandType.Client, command, arguments, flag2, response));
 		}
 	}
@@ -367,7 +368,7 @@ public class QueryProcessor : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteBool(gd);
-		SendTargetRPCInternal(conn, "System.Void RemoteAdmin.QueryProcessor::TargetSyncGameplayData(Mirror.NetworkConnection,System.Boolean)", 471852874, writer, 0);
+		this.SendTargetRPCInternal(conn, "System.Void RemoteAdmin.QueryProcessor::TargetSyncGameplayData(Mirror.NetworkConnection,System.Boolean)", 471852874, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -375,11 +376,11 @@ public class QueryProcessor : NetworkBehaviour
 	{
 		if (NetworkServer.active)
 		{
-			ServerConsole.ConsoleOutputs.TryRemove(_sender.OutputId, out var value);
-			ServerLogs.LiveLogOutput.TryRemove(_sender.OutputId, out value);
+			ServerConsole.ConsoleOutputs.TryRemove(this._sender.OutputId, out var value);
+			ServerLogs.LiveLogOutput.TryRemove(this._sender.OutputId, out value);
 			if (!base.isLocalPlayer || !ServerStatic.IsDedicated)
 			{
-				string text = $"{_hub.LoggedNameFromRefHub()} disconnected from IP address {_ipAddress}. Last class: {_hub.GetRoleId()}.";
+				string text = $"{this._hub.LoggedNameFromRefHub()} disconnected from IP address {this._ipAddress}. Last class: {this._hub.GetRoleId()}.";
 				ServerLogs.AddLog(ServerLogs.Modules.Networking, text, ServerLogs.ServerLogType.ConnectionUpdate);
 				ServerConsole.AddLog(text);
 			}
@@ -388,8 +389,8 @@ public class QueryProcessor : NetworkBehaviour
 
 	static QueryProcessor()
 	{
-		SpaceArray = new char[1] { ' ' };
-		DotCommandHandler = ClientCommandHandler.Create();
+		QueryProcessor.SpaceArray = new char[1] { ' ' };
+		QueryProcessor.DotCommandHandler = ClientCommandHandler.Create();
 		RemoteProcedureCalls.RegisterRpc(typeof(QueryProcessor), "System.Void RemoteAdmin.QueryProcessor::TargetUpdateCommandList(RemoteAdmin.QueryProcessor/CommandData[])", InvokeUserCode_TargetUpdateCommandList__CommandData_005B_005D);
 		RemoteProcedureCalls.RegisterRpc(typeof(QueryProcessor), "System.Void RemoteAdmin.QueryProcessor::TargetSyncGameplayData(Mirror.NetworkConnection,System.Boolean)", InvokeUserCode_TargetSyncGameplayData__NetworkConnection__Boolean);
 	}
@@ -417,7 +418,7 @@ public class QueryProcessor : NetworkBehaviour
 
 	protected void UserCode_TargetSyncGameplayData__NetworkConnection__Boolean(NetworkConnection conn, bool gd)
 	{
-		_gameplayData = gd;
+		this._gameplayData = gd;
 	}
 
 	protected static void InvokeUserCode_TargetSyncGameplayData__NetworkConnection__Boolean(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -437,13 +438,13 @@ public class QueryProcessor : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(OverridePasswordEnabled);
+			writer.WriteBool(this.OverridePasswordEnabled);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteBool(OverridePasswordEnabled);
+			writer.WriteBool(this.OverridePasswordEnabled);
 		}
 	}
 
@@ -452,13 +453,13 @@ public class QueryProcessor : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref OverridePasswordEnabled, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.OverridePasswordEnabled, null, reader.ReadBool());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref OverridePasswordEnabled, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.OverridePasswordEnabled, null, reader.ReadBool());
 		}
 	}
 }

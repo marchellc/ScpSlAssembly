@@ -17,7 +17,7 @@ public class FullAutoShotsQueue<T> : FullAutoRateLimiter
 	{
 		get
 		{
-			if (_queuedShots.IsEmpty())
+			if (this._queuedShots.IsEmpty())
 			{
 				return base.Ready;
 			}
@@ -27,22 +27,22 @@ public class FullAutoShotsQueue<T> : FullAutoRateLimiter
 
 	public void Enqueue(T item)
 	{
-		_queuedShots.Enqueue(item);
+		this._queuedShots.Enqueue(item);
 	}
 
 	public bool TryDequeue(out T dequeued)
 	{
-		while (base.Ready && _queuedShots.TryDequeue(out dequeued))
+		while (base.Ready && this._queuedShots.TryDequeue(out dequeued))
 		{
-			if (_dataSelector == null)
+			if (this._dataSelector == null)
 			{
 				return true;
 			}
-			if (_dataSelector(dequeued).Age < 0.2199999988079071)
+			if (this._dataSelector(dequeued).Age < 0.2199999988079071)
 			{
 				return true;
 			}
-			OnRequestTimedOut?.Invoke(dequeued);
+			this.OnRequestTimedOut?.Invoke(dequeued);
 		}
 		dequeued = default(T);
 		return false;
@@ -50,7 +50,7 @@ public class FullAutoShotsQueue<T> : FullAutoRateLimiter
 
 	public FullAutoShotsQueue(Func<T, ShotBacktrackData> backtrackDataSelector)
 	{
-		_queuedShots = new Queue<T>();
-		_dataSelector = backtrackDataSelector;
+		this._queuedShots = new Queue<T>();
+		this._dataSelector = backtrackDataSelector;
 	}
 }

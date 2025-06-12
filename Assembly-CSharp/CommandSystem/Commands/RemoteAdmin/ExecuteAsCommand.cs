@@ -18,13 +18,13 @@ public class ExecuteAsCommand : ICommand, IUsageProvider
 
 	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
-		if (!sender.CheckPermission(PlayerPermissions.PlayersManagement, out response))
+		if (!sender.CheckPermission(PlayerPermissions.ExecuteAs, out response))
 		{
 			return false;
 		}
 		if (arguments.Count < 1)
 		{
-			response = "You must specify the players and the command to run!\nUsage: " + Command + " " + this.DisplayCommandUsage();
+			response = "You must specify the players and the command to run!\nUsage: " + this.Command + " " + this.DisplayCommandUsage();
 			return false;
 		}
 		string[] newargs;
@@ -42,7 +42,8 @@ public class ExecuteAsCommand : ICommand, IUsageProvider
 			{
 				ServerLogs.AddLog(ServerLogs.Modules.Administrative, sender.LogName + " executed the command " + text + " as " + sender2.LogName, ServerLogs.ServerLogType.RemoteAdminActivity_Misc);
 				ulong permissions = item.serverRoles.Permissions;
-				item.serverRoles.Permissions = ((sender is PlayerCommandSender playerCommandSender) ? playerCommandSender.Permissions : ServerStatic.PermissionsHandler.FullPerm);
+				ulong num2 = ((sender is PlayerCommandSender playerCommandSender) ? playerCommandSender.Permissions : ServerStatic.PermissionsHandler.FullPerm);
+				item.serverRoles.Permissions &= num2;
 				try
 				{
 					CommandProcessor.ProcessQuery(text, sender2);

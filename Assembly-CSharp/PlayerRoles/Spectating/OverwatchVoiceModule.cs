@@ -15,11 +15,11 @@ public class OverwatchVoiceModule : SpectatorVoiceModule
 		{
 			channel = base.ValidateReceive(speaker, channel);
 		}
-		if (!UseSpatialAudio && (channel == VoiceChatChannel.Proximity || channel == VoiceChatChannel.Mimicry || channel == VoiceChatChannel.Radio) && !DisabledChannels.Contains(channel))
+		if (!this.UseSpatialAudio && (channel == VoiceChatChannel.Proximity || channel == VoiceChatChannel.Mimicry || channel == VoiceChatChannel.Radio) && !this.DisabledChannels.Contains(channel))
 		{
 			return VoiceChatChannel.RoundSummary;
 		}
-		if (!DisabledChannels.Contains(channel))
+		if (!this.DisabledChannels.Contains(channel))
 		{
 			return channel;
 		}

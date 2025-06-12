@@ -57,54 +57,56 @@ public static class FastBitConverter
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void GetBytes(byte[] bytes, int startIndex, double value)
 	{
-		ConverterHelperDouble converterHelperDouble = default(ConverterHelperDouble);
-		converterHelperDouble.Adouble = value;
-		ConverterHelperDouble converterHelperDouble2 = converterHelperDouble;
-		WriteLittleEndian(bytes, startIndex, converterHelperDouble2.Along);
+		ConverterHelperDouble converterHelperDouble = new ConverterHelperDouble
+		{
+			Adouble = value
+		};
+		FastBitConverter.WriteLittleEndian(bytes, startIndex, converterHelperDouble.Along);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void GetBytes(byte[] bytes, int startIndex, float value)
 	{
-		ConverterHelperFloat converterHelperFloat = default(ConverterHelperFloat);
-		converterHelperFloat.Afloat = value;
-		ConverterHelperFloat converterHelperFloat2 = converterHelperFloat;
-		WriteLittleEndian(bytes, startIndex, converterHelperFloat2.Aint);
+		ConverterHelperFloat converterHelperFloat = new ConverterHelperFloat
+		{
+			Afloat = value
+		};
+		FastBitConverter.WriteLittleEndian(bytes, startIndex, converterHelperFloat.Aint);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void GetBytes(byte[] bytes, int startIndex, short value)
 	{
-		WriteLittleEndian(bytes, startIndex, value);
+		FastBitConverter.WriteLittleEndian(bytes, startIndex, value);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void GetBytes(byte[] bytes, int startIndex, ushort value)
 	{
-		WriteLittleEndian(bytes, startIndex, (short)value);
+		FastBitConverter.WriteLittleEndian(bytes, startIndex, (short)value);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void GetBytes(byte[] bytes, int startIndex, int value)
 	{
-		WriteLittleEndian(bytes, startIndex, value);
+		FastBitConverter.WriteLittleEndian(bytes, startIndex, value);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void GetBytes(byte[] bytes, int startIndex, uint value)
 	{
-		WriteLittleEndian(bytes, startIndex, (int)value);
+		FastBitConverter.WriteLittleEndian(bytes, startIndex, (int)value);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void GetBytes(byte[] bytes, int startIndex, long value)
 	{
-		WriteLittleEndian(bytes, startIndex, (ulong)value);
+		FastBitConverter.WriteLittleEndian(bytes, startIndex, (ulong)value);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void GetBytes(byte[] bytes, int startIndex, ulong value)
 	{
-		WriteLittleEndian(bytes, startIndex, value);
+		FastBitConverter.WriteLittleEndian(bytes, startIndex, value);
 	}
 }

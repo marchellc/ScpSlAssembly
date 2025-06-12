@@ -67,7 +67,7 @@ public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079
 	{
 		get
 		{
-			if (!(LockedDoor != null))
+			if (!(this.LockedDoor != null))
 			{
 				return 1f;
 			}
@@ -79,13 +79,13 @@ public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079
 
 	public DoorVariant LockedDoor { get; private set; }
 
-	public override string AbilityName => string.Format(IsHighlightLockedBy079 ? _unlockText : _lockText, GetCostForDoor(TargetAction, LastDoor));
+	public override string AbilityName => string.Format(this.IsHighlightLockedBy079 ? Scp079DoorLockChanger._unlockText : Scp079DoorLockChanger._lockText, this.GetCostForDoor(this.TargetAction, base.LastDoor));
 
 	public override bool IsReady
 	{
 		get
 		{
-			if (base.TierManager.AccessTierIndex < _minTierIndex)
+			if (base.TierManager.AccessTierIndex < this._minTierIndex)
 			{
 				return false;
 			}
@@ -93,13 +93,13 @@ public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079
 			{
 				return false;
 			}
-			if (TargetAction == DoorAction.Unlocked)
+			if (this.TargetAction == DoorAction.Unlocked)
 			{
 				return true;
 			}
-			if (LockedDoor == null && !Scp079LockdownRoomAbility.IsLockedDown(LastDoor))
+			if (this.LockedDoor == null && !Scp079LockdownRoomAbility.IsLockedDown(base.LastDoor))
 			{
-				return _cooldown.IsReady;
+				return this._cooldown.IsReady;
 			}
 			return false;
 		}
@@ -111,7 +111,7 @@ public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079
 		{
 			if (base.IsVisible)
 			{
-				return base.TierManager.AccessTierIndex >= _minTierIndex;
+				return base.TierManager.AccessTierIndex >= this._minTierIndex;
 			}
 			return false;
 		}
@@ -121,24 +121,24 @@ public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079
 	{
 		get
 		{
-			if (_failedDoor == null)
+			if (this._failedDoor == null)
 			{
 				return null;
 			}
-			if (LockedDoor != null && _failedDoor != LockedDoor)
+			if (this.LockedDoor != null && this._failedDoor != this.LockedDoor)
 			{
-				return _alreadyLockedText;
+				return Scp079DoorLockChanger._alreadyLockedText;
 			}
-			if (Scp079LockdownRoomAbility.IsLockedDown(_failedDoor))
+			if (Scp079LockdownRoomAbility.IsLockedDown(this._failedDoor))
 			{
-				return _alreadyLockedText;
+				return Scp079DoorLockChanger._alreadyLockedText;
 			}
-			if (_cooldown.Remaining == 0f)
+			if (this._cooldown.Remaining == 0f)
 			{
 				return base.FailMessage;
 			}
-			int secondsRemaining = Mathf.CeilToInt(_cooldown.Remaining);
-			return _cooldownText + "\n" + base.AuxManager.GenerateCustomETA(secondsRemaining);
+			int secondsRemaining = Mathf.CeilToInt(this._cooldown.Remaining);
+			return Scp079DoorLockChanger._cooldownText + "\n" + base.AuxManager.GenerateCustomETA(secondsRemaining);
 		}
 	}
 
@@ -146,8 +146,8 @@ public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079
 	{
 		get
 		{
-			int num = (int)(base.AuxManager.MaxAux * _costMaxAuxPercent);
-			int num2 = num % _costRounding;
+			int num = (int)(base.AuxManager.MaxAux * this._costMaxAuxPercent);
+			int num2 = num % this._costRounding;
 			return num + num2;
 		}
 	}
@@ -159,7 +159,7 @@ public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079
 	{
 		get
 		{
-			if (!IsHighlightLockedBy079)
+			if (!this.IsHighlightLockedBy079)
 			{
 				return DoorAction.Locked;
 			}
@@ -167,7 +167,7 @@ public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079
 		}
 	}
 
-	private bool IsHighlightLockedBy079 => ((DoorLockReason)LastDoor.ActiveLocks).HasFlagFast(DoorLockReason.Regular079);
+	private bool IsHighlightLockedBy079 => ((DoorLockReason)base.LastDoor.ActiveLocks).HasFlagFast(DoorLockReason.Regular079);
 
 	public static event Action<Scp079Role, DoorVariant> OnServerDoorLocked;
 
@@ -179,30 +179,30 @@ public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079
 		}
 		if (!door.TargetState)
 		{
-			return LockClosedDoorCost;
+			return this.LockClosedDoorCost;
 		}
-		return LockOpenDoorCost;
+		return this.LockOpenDoorCost;
 	}
 
 	protected virtual void OnDestroy()
 	{
-		ServerUnlock();
+		this.ServerUnlock();
 	}
 
 	protected override void Start()
 	{
 		base.Start();
-		_lockText = Translations.Get(Scp079HudTranslation.LockDoor);
-		_unlockText = Translations.Get(Scp079HudTranslation.UnlockDoor);
-		_cooldownText = Translations.Get(Scp079HudTranslation.DoorLockCooldown);
-		_alreadyLockedText = Translations.Get(Scp079HudTranslation.DoorLockAlreadyActive);
-		AuxReductionMessage = Translations.Get(Scp079HudTranslation.DoorLockAuxPause);
-		_abilityUnlockText = Translations.Get(Scp079HudTranslation.DoorLockAbilityAvailable);
+		Scp079DoorLockChanger._lockText = Translations.Get(Scp079HudTranslation.LockDoor);
+		Scp079DoorLockChanger._unlockText = Translations.Get(Scp079HudTranslation.UnlockDoor);
+		Scp079DoorLockChanger._cooldownText = Translations.Get(Scp079HudTranslation.DoorLockCooldown);
+		Scp079DoorLockChanger._alreadyLockedText = Translations.Get(Scp079HudTranslation.DoorLockAlreadyActive);
+		this.AuxReductionMessage = Translations.Get(Scp079HudTranslation.DoorLockAuxPause);
+		Scp079DoorLockChanger._abilityUnlockText = Translations.Get(Scp079HudTranslation.DoorLockAbilityAvailable);
 		base.LostSignalHandler.OnStatusChanged += delegate
 		{
 			if (NetworkServer.active && base.LostSignalHandler.Lost)
 			{
-				ServerUnlock();
+				this.ServerUnlock();
 			}
 		};
 	}
@@ -210,40 +210,40 @@ public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079
 	protected override void Update()
 	{
 		base.Update();
-		if (NetworkServer.active && !(LockedDoor == null))
+		if (NetworkServer.active && !(this.LockedDoor == null))
 		{
 			float num = base.AuxManager.CurrentAux;
-			if (LockedDoor.TargetState)
+			if (this.LockedDoor.TargetState)
 			{
-				_lockTime = NetworkTime.time;
+				this._lockTime = NetworkTime.time;
 			}
 			else
 			{
-				float num2 = (float)(NetworkTime.time - _lockTime);
-				num -= Mathf.Pow(num2 * _lockCostPerSec, _lockCostPow) * Time.deltaTime;
+				float num2 = (float)(NetworkTime.time - this._lockTime);
+				num -= Mathf.Pow(num2 * this._lockCostPerSec, this._lockCostPow) * Time.deltaTime;
 				base.AuxManager.CurrentAux = num;
 			}
-			if (!(num > 0f) || !Scp079DoorAbility.ValidateAction(DoorAction.Locked, LockedDoor, base.CurrentCamSync.CurrentCamera))
+			if (!(num > 0f) || !Scp079DoorAbility.ValidateAction(DoorAction.Locked, this.LockedDoor, base.CurrentCamSync.CurrentCamera))
 			{
-				ServerUnlock();
+				this.ServerUnlock();
 			}
 		}
 	}
 
 	public void ServerUnlock()
 	{
-		if (NetworkServer.active && !(LockedDoor == null))
+		if (NetworkServer.active && !(this.LockedDoor == null))
 		{
-			Scp079UnlockingDoorEventArgs scp079UnlockingDoorEventArgs = new Scp079UnlockingDoorEventArgs(base.Owner, LockedDoor);
-			Scp079Events.OnUnlockingDoor(scp079UnlockingDoorEventArgs);
-			if (scp079UnlockingDoorEventArgs.IsAllowed)
+			Scp079UnlockingDoorEventArgs e = new Scp079UnlockingDoorEventArgs(base.Owner, this.LockedDoor);
+			Scp079Events.OnUnlockingDoor(e);
+			if (e.IsAllowed)
 			{
-				double num = (NetworkTime.time - _lockTime) * (double)_cooldownPerTimeLocked;
-				_cooldown.Trigger(num + (double)_cooldownBaseline);
-				LockedDoor.ServerChangeLock(DoorLockReason.Regular079, newState: false);
-				Scp079Events.OnUnlockedDoor(new Scp079UnlockedDoorEventArgs(base.Owner, LockedDoor));
-				LockedDoor = null;
-				ServerSendRpc(toAll: true);
+				double num = (NetworkTime.time - this._lockTime) * (double)this._cooldownPerTimeLocked;
+				this._cooldown.Trigger(num + (double)this._cooldownBaseline);
+				this.LockedDoor.ServerChangeLock(DoorLockReason.Regular079, newState: false);
+				Scp079Events.OnUnlockedDoor(new Scp079UnlockedDoorEventArgs(base.Owner, this.LockedDoor));
+				this.LockedDoor = null;
+				base.ServerSendRpc(toAll: true);
 			}
 		}
 	}
@@ -251,90 +251,90 @@ public class Scp079DoorLockChanger : Scp079DoorAbility, IPoolResettable, IScp079
 	public override void OnFailMessageAssigned()
 	{
 		base.OnFailMessageAssigned();
-		_failedDoor = LastDoor;
+		this._failedDoor = base.LastDoor;
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteUInt(LastDoor.netId);
+		writer.WriteUInt(base.LastDoor.netId);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (!NetworkServer.spawned.TryGetValue(reader.ReadUInt(), out var value) || !value.TryGetComponent<DoorVariant>(out LastDoor) || !IsReady)
+		if (!NetworkServer.spawned.TryGetValue(reader.ReadUInt(), out var value) || !value.TryGetComponent<DoorVariant>(out base.LastDoor) || !this.IsReady)
 		{
 			return;
 		}
-		if (TargetAction == DoorAction.Locked)
+		if (this.TargetAction == DoorAction.Locked)
 		{
 			if (base.LostSignalHandler.Lost)
 			{
 				return;
 			}
-			Scp079LockingDoorEventArgs scp079LockingDoorEventArgs = new Scp079LockingDoorEventArgs(base.Owner, LastDoor);
-			Scp079Events.OnLockingDoor(scp079LockingDoorEventArgs);
-			if (!scp079LockingDoorEventArgs.IsAllowed)
+			Scp079LockingDoorEventArgs e = new Scp079LockingDoorEventArgs(base.Owner, base.LastDoor);
+			Scp079Events.OnLockingDoor(e);
+			if (!e.IsAllowed)
 			{
 				return;
 			}
-			_lockTime = NetworkTime.time;
-			LockedDoor = LastDoor;
-			LockedDoor.ServerChangeLock(DoorLockReason.Regular079, newState: true);
-			base.RewardManager.MarkRooms(LastDoor.Rooms);
-			Scp079DoorLockChanger.OnServerDoorLocked?.Invoke(base.CastRole, LastDoor);
-			base.AuxManager.CurrentAux -= GetCostForDoor(DoorAction.Locked, LastDoor);
-			Scp079Events.OnLockedDoor(new Scp079LockedDoorEventArgs(base.Owner, LastDoor));
+			this._lockTime = NetworkTime.time;
+			this.LockedDoor = base.LastDoor;
+			this.LockedDoor.ServerChangeLock(DoorLockReason.Regular079, newState: true);
+			base.RewardManager.MarkRooms(base.LastDoor.Rooms);
+			Scp079DoorLockChanger.OnServerDoorLocked?.Invoke(base.CastRole, base.LastDoor);
+			base.AuxManager.CurrentAux -= this.GetCostForDoor(DoorAction.Locked, base.LastDoor);
+			Scp079Events.OnLockedDoor(new Scp079LockedDoorEventArgs(base.Owner, base.LastDoor));
 		}
-		else if (LastDoor == LockedDoor)
+		else if (base.LastDoor == this.LockedDoor)
 		{
-			ServerUnlock();
+			this.ServerUnlock();
 		}
-		ServerSendRpc(toAll: true);
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		_cooldown.WriteCooldown(writer);
-		writer.WriteNetworkBehaviour(LockedDoor);
+		this._cooldown.WriteCooldown(writer);
+		writer.WriteNetworkBehaviour(this.LockedDoor);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_failedDoor = null;
-		_cooldown.ReadCooldown(reader);
-		DoorVariant lockedDoor = LockedDoor;
+		this._failedDoor = null;
+		this._cooldown.ReadCooldown(reader);
+		DoorVariant lockedDoor = this.LockedDoor;
 		DoorVariant doorVariant = reader.ReadNetworkBehaviour<DoorVariant>();
 		if (!(doorVariant == lockedDoor) || NetworkServer.active)
 		{
-			LockedDoor = doorVariant;
+			this.LockedDoor = doorVariant;
 			if (doorVariant == null)
 			{
-				PlayConfirmationSound(_unlockSound);
+				base.PlayConfirmationSound(this._unlockSound);
 				return;
 			}
-			new Scp079DoorWhir(base.CastRole, _whirSound);
-			PlayConfirmationSound(_lockSound);
+			new Scp079DoorWhir(base.CastRole, this._whirSound);
+			base.PlayConfirmationSound(this._lockSound);
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		ServerUnlock();
-		_cooldown.Clear();
+		this.ServerUnlock();
+		this._cooldown.Clear();
 	}
 
 	public bool WriteLevelUpNotification(StringBuilder sb, int newLevel)
 	{
-		if (newLevel != _minTierIndex)
+		if (newLevel != this._minTierIndex)
 		{
 			return false;
 		}
-		sb.AppendFormat(_abilityUnlockText, $"[{new ReadableKeyCode(ActivationKey)}]");
+		sb.AppendFormat(Scp079DoorLockChanger._abilityUnlockText, $"[{new ReadableKeyCode(this.ActivationKey)}]");
 		return true;
 	}
 }

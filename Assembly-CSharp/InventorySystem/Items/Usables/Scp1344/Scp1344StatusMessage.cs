@@ -10,7 +10,7 @@ public readonly struct Scp1344StatusMessage : NetworkMessage
 
 	public Scp1344StatusMessage(ushort serial, Scp1344Status newState)
 	{
-		Serial = serial;
-		NewState = newState;
+		this.Serial = serial;
+		this.NewState = newState;
 	}
 }

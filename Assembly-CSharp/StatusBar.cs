@@ -36,9 +36,9 @@ public class StatusBar : MonoBehaviour
 	{
 		get
 		{
-			if (TargetGraphics.Length != 0)
+			if (this.TargetGraphics.Length != 0)
 			{
-				return TargetGraphics[0].GetAlpha();
+				return this.TargetGraphics[0].GetAlpha();
 			}
 			return 1f;
 		}
@@ -58,9 +58,9 @@ public class StatusBar : MonoBehaviour
 
 	private void OnEnable()
 	{
-		if (HiddenByDefault)
+		if (this.HiddenByDefault)
 		{
-			TargetGraphics.ForEach(delegate(CanvasRenderer x)
+			this.TargetGraphics.ForEach(delegate(CanvasRenderer x)
 			{
 				x.SetAlpha(0f);
 			});
@@ -69,14 +69,14 @@ public class StatusBar : MonoBehaviour
 
 	private void Move(float targetY, bool bypassAnimation)
 	{
-		Vector3 localPosition = LocalPosition;
+		Vector3 localPosition = this.LocalPosition;
 		if (bypassAnimation)
 		{
 			localPosition.y = targetY;
 		}
 		else
 		{
-			float num = Time.deltaTime * MoveSpeed;
+			float num = Time.deltaTime * this.MoveSpeed;
 			float num2 = targetY - localPosition.y;
 			if (num > Mathf.Abs(num2))
 			{
@@ -87,19 +87,19 @@ public class StatusBar : MonoBehaviour
 				localPosition.y += num * (float)((num2 > 0f) ? 1 : (-1));
 			}
 		}
-		LocalPosition = localPosition;
+		this.LocalPosition = localPosition;
 	}
 
 	private void Update()
 	{
-		UpdateBar(bypassAnims: false);
+		this.UpdateBar(bypassAnims: false);
 	}
 
 	public void UpdateBar(bool bypassAnims)
 	{
-		if (MasterBar != null)
+		if (this.MasterBar != null)
 		{
-			StatusBar masterBar = MasterBar;
+			StatusBar masterBar = this.MasterBar;
 			while (masterBar.TargetGraphics.Length != 0 && masterBar.CurAlpha <= 0.1f)
 			{
 				if (masterBar.MasterBar == null)
@@ -108,29 +108,29 @@ public class StatusBar : MonoBehaviour
 				}
 				masterBar = masterBar.MasterBar;
 			}
-			Move(masterBar.LocalPosition.y + FixedDistance, bypassAnims || CurAlpha <= 0f);
+			this.Move(masterBar.LocalPosition.y + this.FixedDistance, bypassAnims || this.CurAlpha <= 0f);
 		}
-		if (AutohideOption != AutoHideType.AlwaysVisible)
+		if (this.AutohideOption != AutoHideType.AlwaysVisible)
 		{
-			float num = FadeInSpeed;
-			if ((AutohideOption == AutoHideType.WhenEmpty && TargetSlider.value == TargetSlider.minValue) || (AutohideOption == AutoHideType.WhenFull && TargetSlider.value == TargetSlider.maxValue))
+			float num = this.FadeInSpeed;
+			if ((this.AutohideOption == AutoHideType.WhenEmpty && this.TargetSlider.value == this.TargetSlider.minValue) || (this.AutohideOption == AutoHideType.WhenFull && this.TargetSlider.value == this.TargetSlider.maxValue))
 			{
-				num = 0f - FadeOutSpeed;
+				num = 0f - this.FadeOutSpeed;
 			}
 			if (bypassAnims)
 			{
-				SetAlpha(Mathf.Sign(num));
+				this.SetAlpha(Mathf.Sign(num));
 			}
 			else
 			{
-				SetAlpha(TargetGraphics[0].GetAlpha() + num * Time.deltaTime);
+				this.SetAlpha(this.TargetGraphics[0].GetAlpha() + num * Time.deltaTime);
 			}
 		}
 	}
 
 	public void SetAlpha(float a)
 	{
-		CanvasRenderer[] targetGraphics = TargetGraphics;
+		CanvasRenderer[] targetGraphics = this.TargetGraphics;
 		for (int i = 0; i < targetGraphics.Length; i++)
 		{
 			targetGraphics[i].SetAlpha(Mathf.Clamp01(a));

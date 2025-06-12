@@ -23,33 +23,33 @@ public class AmmoCounterExtension : MixedExtension
 
 	private void Start()
 	{
-		for (int i = 0; i < _digits; i++)
+		for (int i = 0; i < this._digits; i++)
 		{
-			_toStringFormat += "0";
+			this._toStringFormat += "0";
 		}
 	}
 
 	private void LateUpdate()
 	{
-		int total = _fetcher().Total;
-		if (total != _lastTotal)
+		int total = this._fetcher().Total;
+		if (total != this._lastTotal)
 		{
-			_lastTotal = total;
-			_targetText.text = total.ToString(_toStringFormat);
+			this._lastTotal = total;
+			this._targetText.text = total.ToString(this._toStringFormat);
 		}
 	}
 
 	public override void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
 		base.InitViewmodel(viewmodel);
-		SetLayer(10);
-		_fetcher = () => IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(viewmodel.ParentFirearm);
+		base.SetLayer(10);
+		this._fetcher = () => IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(viewmodel.ParentFirearm);
 	}
 
 	public override void SetupWorldmodel(FirearmWorldmodel worldmodel)
 	{
 		base.SetupWorldmodel(worldmodel);
-		SetLayer(9);
-		_fetcher = () => IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(worldmodel.Identifier);
+		base.SetLayer(9);
+		this._fetcher = () => IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(worldmodel.Identifier);
 	}
 }

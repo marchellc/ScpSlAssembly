@@ -14,31 +14,31 @@ internal class DynamicAssembly
 
 	public TypeBuilder DefineType(string name, TypeAttributes attr)
 	{
-		lock (gate)
+		lock (this.gate)
 		{
-			return moduleBuilder.DefineType(name, attr);
+			return this.moduleBuilder.DefineType(name, attr);
 		}
 	}
 
 	public TypeBuilder DefineType(string name, TypeAttributes attr, Type parent)
 	{
-		lock (gate)
+		lock (this.gate)
 		{
-			return moduleBuilder.DefineType(name, attr, parent);
+			return this.moduleBuilder.DefineType(name, attr, parent);
 		}
 	}
 
 	public TypeBuilder DefineType(string name, TypeAttributes attr, Type parent, Type[] interfaces)
 	{
-		lock (gate)
+		lock (this.gate)
 		{
-			return moduleBuilder.DefineType(name, attr, parent, interfaces);
+			return this.moduleBuilder.DefineType(name, attr, parent, interfaces);
 		}
 	}
 
 	public DynamicAssembly(string moduleName)
 	{
-		assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(moduleName), AssemblyBuilderAccess.Run);
-		moduleBuilder = assemblyBuilder.DefineDynamicModule(moduleName);
+		this.assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(moduleName), AssemblyBuilderAccess.Run);
+		this.moduleBuilder = this.assemblyBuilder.DefineDynamicModule(moduleName);
 	}
 }

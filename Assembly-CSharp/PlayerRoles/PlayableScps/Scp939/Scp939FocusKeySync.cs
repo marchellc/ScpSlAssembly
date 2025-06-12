@@ -18,10 +18,10 @@ public class Scp939FocusKeySync : KeySubroutine<Scp939Role>
 		}
 		set
 		{
-			if (IsKeyHeld != value)
+			if (this.IsKeyHeld != value)
 			{
 				base.IsKeyHeld = value;
-				ClientSendCmd();
+				base.ClientSendCmd();
 			}
 		}
 	}
@@ -32,7 +32,7 @@ public class Scp939FocusKeySync : KeySubroutine<Scp939Role>
 		{
 			if (base.Role.IsControllable)
 			{
-				if (Cursor.visible && !_focus.TargetState)
+				if (Cursor.visible && !this._focus.TargetState)
 				{
 					return base.Role.IsEmulatedDummy;
 				}
@@ -47,24 +47,24 @@ public class Scp939FocusKeySync : KeySubroutine<Scp939Role>
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteBool(IsKeyHeld);
+		writer.WriteBool(this.IsKeyHeld);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		FocusKeyHeld = reader.ReadBool();
+		this.FocusKeyHeld = reader.ReadBool();
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		FocusKeyHeld = false;
+		this.FocusKeyHeld = false;
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp939FocusAbility>(out _focus);
+		base.GetSubroutine<Scp939FocusAbility>(out this._focus);
 	}
 }

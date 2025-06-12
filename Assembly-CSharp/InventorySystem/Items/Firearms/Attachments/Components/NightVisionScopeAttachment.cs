@@ -10,7 +10,7 @@ public class NightVisionScopeAttachment : SerializableAttachment, ILightEmitting
 	{
 		get
 		{
-			if (IsEnabled && base.Firearm.TryGetModule<IAdsModule>(out var module))
+			if (this.IsEnabled && base.Firearm.TryGetModule<IAdsModule>(out var module))
 			{
 				return module.AdsAmount > 0.6f;
 			}

@@ -55,7 +55,7 @@ public class Scp018Physics : PickupPhysicsModule
 
 	private BounceData _nextBounce;
 
-	protected override ItemPickupBase Pickup => _scp018;
+	protected override ItemPickupBase Pickup => this._scp018;
 
 	public Vector3 Position
 	{
@@ -63,18 +63,18 @@ public class Scp018Physics : PickupPhysicsModule
 		{
 			double time = NetworkTime.time;
 			bool flag = false;
-			while (time > _nextBounce.Time)
+			while (time > this._nextBounce.Time)
 			{
-				if (!_buffer.TryDequeue(out var data))
+				if (!this._buffer.TryDequeue(out var data))
 				{
-					return _nextBounce.RelPos.Position;
+					return this._nextBounce.RelPos.Position;
 				}
-				_prevBounce = _nextBounce;
-				_nextBounce = data;
+				this._prevBounce = this._nextBounce;
+				this._nextBounce = data;
 				flag = true;
-				if (WaypointBase.TryGetWaypoint(_prevBounce.RelPos.WaypointId, out var wp))
+				if (WaypointBase.TryGetWaypoint(this._prevBounce.RelPos.WaypointId, out var wp))
 				{
-					ParticleSystem.MainModule main = _trail.main;
+					ParticleSystem.MainModule main = this._trail.main;
 					if (wp is ElevatorWaypoint)
 					{
 						main.simulationSpace = ParticleSystemSimulationSpace.Custom;
@@ -86,17 +86,17 @@ public class Scp018Physics : PickupPhysicsModule
 					}
 				}
 			}
-			Vector3 position = _prevBounce.RelPos.Position;
-			Vector3 position2 = _nextBounce.RelPos.Position;
-			float num = (float)(time - _prevBounce.Time);
-			float num2 = (float)(_nextBounce.Time - _prevBounce.Time);
+			Vector3 position = this._prevBounce.RelPos.Position;
+			Vector3 position2 = this._nextBounce.RelPos.Position;
+			float num = (float)(time - this._prevBounce.Time);
+			float num2 = (float)(this._nextBounce.Time - this._prevBounce.Time);
 			if (flag)
 			{
 				float velocity = Vector3.Distance(position, position2) / num2;
-				_scp018.RegisterBounce(velocity, position);
+				this._scp018.RegisterBounce(velocity, position);
 			}
-			float freefallHeight = GetFreefallHeight(num);
-			float freefallHeight2 = GetFreefallHeight(num2);
+			float freefallHeight = this.GetFreefallHeight(num);
+			float freefallHeight2 = this.GetFreefallHeight(num2);
 			float num3 = position2.y - position.y - freefallHeight2;
 			float num4 = num / num2;
 			position2.y = (position.y = position.y + freefallHeight + num3 * num4);
@@ -110,36 +110,36 @@ public class Scp018Physics : PickupPhysicsModule
 		{
 			throw new InvalidOperationException("SCP-018's physics module can only replace PickupStandardPhysics");
 		}
-		_scp018 = thrownScp018;
-		_trail = trail;
-		_radius = radius;
-		_maxVel = maxVel;
-		_velPerBounce = velPerBounce;
-		_buffer = new OrderedBufferQueue<BounceData>((BounceData x, BounceData y) => x.Time > y.Time);
-		_lastTime = NetworkTime.time;
-		_lastVelocity = pickupStandardPhysics.Rb.linearVelocity;
-		_lastPosition = new RelativePosition(_scp018.Position);
-		_prevBounce = new BounceData
+		this._scp018 = thrownScp018;
+		this._trail = trail;
+		this._radius = radius;
+		this._maxVel = maxVel;
+		this._velPerBounce = velPerBounce;
+		this._buffer = new OrderedBufferQueue<BounceData>((BounceData x, BounceData y) => x.Time > y.Time);
+		this._lastTime = NetworkTime.time;
+		this._lastVelocity = pickupStandardPhysics.Rb.linearVelocity;
+		this._lastPosition = new RelativePosition(this._scp018.Position);
+		this._prevBounce = new BounceData
 		{
-			RelPos = _lastPosition,
-			Time = _lastTime,
-			VerticalSpeed = _lastVelocity.y
+			RelPos = this._lastPosition,
+			Time = this._lastTime,
+			VerticalSpeed = this._lastVelocity.y
 		};
 		pickupStandardPhysics.Rb.isKinematic = true;
-		int layer = _scp018.gameObject.layer;
-		for (int i = 0; i < 32; i++)
+		int layer = this._scp018.gameObject.layer;
+		for (int num = 0; num < 32; num++)
 		{
-			if (!Physics.GetIgnoreLayerCollision(layer, i))
+			if (!Physics.GetIgnoreLayerCollision(layer, num))
 			{
-				_detectionMask = (int)_detectionMask | (1 << i);
+				this._detectionMask = (int)this._detectionMask | (1 << num);
 			}
 		}
-		_nextBounce = PrecomputeNextBounce();
+		this._nextBounce = this.PrecomputeNextBounce();
 		if (NetworkServer.active)
 		{
-			_wasServer = true;
+			this._wasServer = true;
 			StaticUnityMethods.OnUpdate += ServerUpdatePrediction;
-			Pickup.GetComponentsInChildren<Collider>().ForEach(delegate(Collider x)
+			this.Pickup.GetComponentsInChildren<Collider>().ForEach(delegate(Collider x)
 			{
 				x.isTrigger = true;
 			});
@@ -149,7 +149,7 @@ public class Scp018Physics : PickupPhysicsModule
 	public override void DestroyModule()
 	{
 		base.DestroyModule();
-		if (_wasServer)
+		if (this._wasServer)
 		{
 			StaticUnityMethods.OnUpdate -= ServerUpdatePrediction;
 		}
@@ -163,7 +163,7 @@ public class Scp018Physics : PickupPhysicsModule
 		{
 			RelativePosition relPos = rpcData.ReadRelativePosition();
 			float verticalSpeed = rpcData.ReadFloat();
-			_buffer.Enqueue(new BounceData
+			this._buffer.Enqueue(new BounceData
 			{
 				RelPos = relPos,
 				Time = num,
@@ -180,11 +180,11 @@ public class Scp018Physics : PickupPhysicsModule
 			Debug.LogWarning("[Server] function 'System.Void InventorySystem.Items.ThrowableProjectiles.Scp018Physics::ServerUpdatePrediction()' called when server was not active");
 			return;
 		}
-		while (!_outOfBounds && _lastTime - 0.20000000298023224 < NetworkTime.time)
+		while (!this._outOfBounds && this._lastTime - 0.20000000298023224 < NetworkTime.time)
 		{
-			BounceData data = PrecomputeNextBounce();
-			_buffer.Enqueue(data);
-			ServerSendRpc(delegate(NetworkWriter writer)
+			BounceData data = this.PrecomputeNextBounce();
+			this._buffer.Enqueue(data);
+			base.ServerSendRpc(delegate(NetworkWriter writer)
 			{
 				writer.WriteDouble(data.Time);
 				writer.WriteRelativePosition(data.RelPos);
@@ -197,63 +197,64 @@ public class Scp018Physics : PickupPhysicsModule
 	{
 		float num = Physics.gravity.y / 2f;
 		float num2 = elapsed * elapsed;
-		return _prevBounce.VerticalSpeed * elapsed + num * num2;
+		return this._prevBounce.VerticalSpeed * elapsed + num * num2;
 	}
 
 	private BounceData PrecomputeNextBounce()
 	{
 		while (true)
 		{
-			float magnitude = _lastVelocity.magnitude;
+			float magnitude = this._lastVelocity.magnitude;
 			float maxDis = magnitude * 0.1f;
 			RaycastHit hit;
-			bool num = TrySphereCast(_lastPosition.Position, _lastVelocity, maxDis, out hit);
-			_lastPosition = new RelativePosition(hit.point);
+			bool num = this.TrySphereCast(this._lastPosition.Position, this._lastVelocity, maxDis, out hit);
+			this._lastPosition = new RelativePosition(hit.point);
 			if (num)
 			{
-				_lastTime += hit.distance / magnitude;
-				BounceTrajectory(hit.normal);
+				this._lastTime += hit.distance / magnitude;
+				this.BounceTrajectory(hit.normal);
 				break;
 			}
-			_lastTime += 0.10000000149011612;
-			_lastVelocity += Physics.gravity * 0.1f;
-			if (_lastPosition.OutOfRange)
+			this._lastTime += 0.10000000149011612;
+			this._lastVelocity += Physics.gravity * 0.1f;
+			if (this._lastPosition.OutOfRange)
 			{
-				_outOfBounds = true;
+				this._outOfBounds = true;
 				break;
 			}
 		}
-		BounceData result = default(BounceData);
-		result.RelPos = _lastPosition;
-		result.Time = _lastTime;
-		result.VerticalSpeed = _lastVelocity.y;
-		return result;
+		return new BounceData
+		{
+			RelPos = this._lastPosition,
+			Time = this._lastTime,
+			VerticalSpeed = this._lastVelocity.y
+		};
 	}
 
 	private void BounceTrajectory(Vector3 normal)
 	{
-		_lastVelocity = Vector3.Reflect(_lastVelocity, normal);
-		float magnitude = _lastVelocity.magnitude;
-		Vector3 vector = _lastVelocity / magnitude;
-		_lastVelocity = vector * Mathf.Min(magnitude + _velPerBounce, _maxVel);
+		this._lastVelocity = Vector3.Reflect(this._lastVelocity, normal);
+		float magnitude = this._lastVelocity.magnitude;
+		Vector3 vector = this._lastVelocity / magnitude;
+		this._lastVelocity = vector * Mathf.Min(magnitude + this._velPerBounce, this._maxVel);
 	}
 
 	private bool TrySphereCast(Vector3 origin, Vector3 dir, float maxDis, out RaycastHit hit)
 	{
 		dir.Normalize();
-		if (Physics.CheckSphere(origin, _radius, _detectionMask, QueryTriggerInteraction.Ignore) && _lastSafeOrigin.HasValue)
+		if (Physics.CheckSphere(origin, this._radius, this._detectionMask, QueryTriggerInteraction.Ignore) && this._lastSafeOrigin.HasValue)
 		{
-			origin = _lastSafeOrigin.Value;
+			origin = this._lastSafeOrigin.Value;
 			dir = UnityEngine.Random.insideUnitSphere;
 		}
-		DrawableLines.GenerateSphere(origin, _radius, Color.cyan);
-		if (!Physics.SphereCast(origin, _radius, dir, out hit, maxDis + 0.04f, _detectionMask, QueryTriggerInteraction.Ignore))
+		DrawableLines.GenerateSphere(origin, this._radius, Color.cyan);
+		if (!Physics.SphereCast(origin, this._radius, dir, out hit, maxDis + 0.04f, this._detectionMask, QueryTriggerInteraction.Ignore))
 		{
 			hit.point = origin + dir * maxDis;
 			return false;
 		}
-		hit.point += hit.normal * _radius - dir * 0.04f;
-		_lastSafeOrigin = origin;
+		hit.point += hit.normal * this._radius - dir * 0.04f;
+		this._lastSafeOrigin = origin;
 		return true;
 	}
 }

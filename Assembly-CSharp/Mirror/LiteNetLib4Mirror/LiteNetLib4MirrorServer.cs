@@ -23,7 +23,7 @@ public static class LiteNetLib4MirrorServer
 
 	public static int GetPing(int id)
 	{
-		return Peers[id].Ping;
+		return LiteNetLib4MirrorServer.Peers[id].Ping;
 	}
 
 	internal static bool IsActive()
@@ -35,7 +35,7 @@ public static class LiteNetLib4MirrorServer
 	{
 		try
 		{
-			Code = code;
+			LiteNetLib4MirrorServer.Code = code;
 			EventBasedNetListener eventBasedNetListener = new EventBasedNetListener();
 			LiteNetLib4MirrorCore.Host = new NetManager(eventBasedNetListener);
 			eventBasedNetListener.ConnectionRequestEvent += OnConnectionRequest;
@@ -53,7 +53,7 @@ public static class LiteNetLib4MirrorServer
 				LiteNetLib4MirrorUtils.ForwardPort();
 			}
 			LiteNetLib4MirrorCore.Host.Start(LiteNetLib4MirrorUtils.Parse(LiteNetLib4MirrorTransport.Singleton.serverIPv4BindAddress), LiteNetLib4MirrorUtils.Parse(LiteNetLib4MirrorTransport.Singleton.serverIPv6BindAddress), LiteNetLib4MirrorTransport.Singleton.port);
-			Peers = new NetPeer[LiteNetLib4MirrorTransport.Singleton.maxConnections * 2];
+			LiteNetLib4MirrorServer.Peers = new NetPeer[LiteNetLib4MirrorTransport.Singleton.maxConnections * 2];
 			LiteNetLib4MirrorTransport.Polling = true;
 			LiteNetLib4MirrorCore.State = LiteNetLib4MirrorCore.States.Server;
 		}
@@ -66,14 +66,14 @@ public static class LiteNetLib4MirrorServer
 
 	private static void OnPeerConnected(NetPeer peer)
 	{
-		if (peer.Id + 1 > Peers.Length)
+		if (peer.Id + 1 > LiteNetLib4MirrorServer.Peers.Length)
 		{
-			Array.Resize(ref Peers, Peers.Length * 2);
+			Array.Resize(ref LiteNetLib4MirrorServer.Peers, LiteNetLib4MirrorServer.Peers.Length * 2);
 		}
-		Peers[peer.Id + 1] = peer;
-		if (peer.Id + 1 > _maxId)
+		LiteNetLib4MirrorServer.Peers[peer.Id + 1] = peer;
+		if (peer.Id + 1 > LiteNetLib4MirrorServer._maxId)
 		{
-			_maxId = peer.Id + 1;
+			LiteNetLib4MirrorServer._maxId = peer.Id + 1;
 		}
 		LiteNetLib4MirrorTransport.Singleton.OnServerConnected(peer.Id + 1);
 	}
@@ -87,9 +87,9 @@ public static class LiteNetLib4MirrorServer
 	private static void OnNetworkError(IPEndPoint endpoint, SocketError socketerror)
 	{
 		LiteNetLib4MirrorCore.LastError = socketerror;
-		for (int i = 0; i < _maxId; i++)
+		for (int i = 0; i < LiteNetLib4MirrorServer._maxId; i++)
 		{
-			NetPeer netPeer = Peers[i];
+			NetPeer netPeer = LiteNetLib4MirrorServer.Peers[i];
 			if (netPeer != null && netPeer.EndPoint.Equals(endpoint))
 			{
 				LiteNetLib4MirrorTransport.Singleton.OnServerError(netPeer.Id + 1, TransportError.Unexpected, $"Socket exception: {(int)socketerror}");
@@ -123,7 +123,7 @@ public static class LiteNetLib4MirrorServer
 	{
 		try
 		{
-			Peers[connectionId].Send(data, start, length, channelNumber, method);
+			LiteNetLib4MirrorServer.Peers[connectionId].Send(data, start, length, channelNumber, method);
 			return true;
 		}
 		catch
@@ -136,13 +136,13 @@ public static class LiteNetLib4MirrorServer
 	{
 		try
 		{
-			if (DisconnectMessage == null)
+			if (LiteNetLib4MirrorServer.DisconnectMessage == null)
 			{
-				Peers[connectionId].Disconnect();
+				LiteNetLib4MirrorServer.Peers[connectionId].Disconnect();
 			}
 			else
 			{
-				Peers[connectionId].Disconnect(LiteNetLib4MirrorUtils.ReusePut(Writer, DisconnectMessage, ref _lastMessage));
+				LiteNetLib4MirrorServer.Peers[connectionId].Disconnect(LiteNetLib4MirrorUtils.ReusePut(LiteNetLib4MirrorServer.Writer, LiteNetLib4MirrorServer.DisconnectMessage, ref LiteNetLib4MirrorServer._lastMessage));
 			}
 			return true;
 		}
@@ -154,6 +154,6 @@ public static class LiteNetLib4MirrorServer
 
 	internal static string GetClientAddress(int connectionId)
 	{
-		return Peers[connectionId].EndPoint.Address.ToString();
+		return LiteNetLib4MirrorServer.Peers[connectionId].EndPoint.Address.ToString();
 	}
 }

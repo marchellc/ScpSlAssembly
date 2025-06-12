@@ -14,7 +14,7 @@ public class WaveDebugInterface : SerializedWaveInterface
 	{
 		if (ColorUtility.TryParseHtmlString(base.Wave.TargetFaction.GetFactionColor(), out var color))
 		{
-			_text.color = color;
+			this._text.color = color;
 		}
 	}
 
@@ -22,7 +22,7 @@ public class WaveDebugInterface : SerializedWaveInterface
 	{
 		if (base.Wave != null)
 		{
-			_text.text = base.Wave.CreateDebugString();
+			this._text.text = base.Wave.CreateDebugString();
 		}
 	}
 }

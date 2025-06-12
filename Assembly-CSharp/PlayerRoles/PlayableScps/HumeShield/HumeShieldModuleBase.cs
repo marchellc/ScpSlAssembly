@@ -15,13 +15,13 @@ public abstract class HumeShieldModuleBase : MonoBehaviour, IPoolSpawnable, IHum
 
 	protected ReferenceHub Owner { get; private set; }
 
-	public PlayerRoleBase Role => _role;
+	public PlayerRoleBase Role => this._role;
 
 	public float HsCurrent
 	{
 		get
 		{
-			return HsStat.CurValue;
+			return this.HsStat.CurValue;
 		}
 		set
 		{
@@ -29,11 +29,11 @@ public abstract class HumeShieldModuleBase : MonoBehaviour, IPoolSpawnable, IHum
 			{
 				throw new InvalidOperationException("Hume Shield cannot be assigned by a client!");
 			}
-			HsStat.CurValue = value;
+			this.HsStat.CurValue = value;
 		}
 	}
 
-	public virtual bool ForceBarVisible => HsMax > 0f;
+	public virtual bool ForceBarVisible => this.HsMax > 0f;
 
 	public abstract float HsMax { get; }
 
@@ -49,11 +49,11 @@ public abstract class HumeShieldModuleBase : MonoBehaviour, IPoolSpawnable, IHum
 
 	public virtual void SpawnObject()
 	{
-		if (!Role.TryGetOwner(out var hub))
+		if (!this.Role.TryGetOwner(out var hub))
 		{
 			throw new InvalidOperationException("'" + base.name + "' Hume Shield Controller spawned without a role!");
 		}
-		Owner = hub;
-		HsStat = hub.playerStats.GetModule<HumeShieldStat>();
+		this.Owner = hub;
+		this.HsStat = hub.playerStats.GetModule<HumeShieldStat>();
 	}
 }

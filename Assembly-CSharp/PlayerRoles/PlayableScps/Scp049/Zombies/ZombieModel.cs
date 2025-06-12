@@ -29,27 +29,27 @@ public class ZombieModel : AnimatedCharacterModel
 
 	private void OnAttack()
 	{
-		base.Animator.SetTrigger(AttackHash);
+		base.Animator.SetTrigger(ZombieModel.AttackHash);
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		float value = Mathf.Abs(base.Animator.GetFloat(StrafeHash));
+		float value = Mathf.Abs(base.Animator.GetFloat(ZombieModel.StrafeHash));
 		base.Animator.SetLayerWeight(6, Mathf.Clamp01(value));
 		if (!base.HasOwner)
 		{
 			return;
 		}
-		float num = Mathf.Clamp01(_prevConsume + Time.deltaTime * 10f * (float)(_consumeAbility.IsInProgress ? 1 : (-1)));
-		if (_prevConsume != num)
+		float num = Mathf.Clamp01(this._prevConsume + Time.deltaTime * 10f * (float)(this._consumeAbility.IsInProgress ? 1 : (-1)));
+		if (this._prevConsume != num)
 		{
-			if (_prevConsume == 0f)
+			if (this._prevConsume == 0f)
 			{
-				base.Animator.SetTrigger(ConsumeHash);
+				base.Animator.SetTrigger(ZombieModel.ConsumeHash);
 			}
 			base.Animator.SetLayerWeight(8, num);
-			_prevConsume = num;
+			this._prevConsume = num;
 		}
 	}
 
@@ -57,15 +57,15 @@ public class ZombieModel : AnimatedCharacterModel
 	{
 		base.Setup(owner, fpc, localPos, localRot);
 		ZombieRole obj = base.OwnerHub.roleManager.CurrentRole as ZombieRole;
-		obj.SubroutineModule.TryGetSubroutine<ZombieConsumeAbility>(out _consumeAbility);
-		obj.SubroutineModule.TryGetSubroutine<ZombieAttackAbility>(out _attackAbility);
-		_attackAbility.OnTriggered += OnAttack;
+		obj.SubroutineModule.TryGetSubroutine<ZombieConsumeAbility>(out this._consumeAbility);
+		obj.SubroutineModule.TryGetSubroutine<ZombieAttackAbility>(out this._attackAbility);
+		this._attackAbility.OnTriggered += OnAttack;
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_attackAbility.OnTriggered -= OnAttack;
-		_prevConsume = 0f;
+		this._attackAbility.OnTriggered -= OnAttack;
+		this._prevConsume = 0f;
 	}
 }

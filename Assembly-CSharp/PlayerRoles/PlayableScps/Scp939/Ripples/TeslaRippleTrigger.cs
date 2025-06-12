@@ -24,7 +24,7 @@ public class TeslaRippleTrigger : RippleTriggerBase
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_cooldown.Clear();
+		this._cooldown.Clear();
 		TeslaGate.OnBursted -= OnTeslaBursted;
 	}
 
@@ -32,22 +32,22 @@ public class TeslaRippleTrigger : RippleTriggerBase
 	{
 		if (base.IsLocalOrSpectated)
 		{
-			PlayInRange(tg.transform.position + PosOffset, 2400f, Color.red);
+			base.PlayInRange(tg.transform.position + TeslaRippleTrigger.PosOffset, 2400f, Color.red);
 		}
 	}
 
 	private void Update()
 	{
-		if (!base.IsLocalOrSpectated || !_cooldown.IsReady)
+		if (!base.IsLocalOrSpectated || !this._cooldown.IsReady)
 		{
 			return;
 		}
-		_cooldown.Trigger(0.699999988079071);
+		this._cooldown.Trigger(0.699999988079071);
 		foreach (TeslaGate allGate in TeslaGate.AllGates)
 		{
 			if (allGate.isIdling)
 			{
-				PlayInRange(allGate.transform.position + PosOffset, 120f, Color.red);
+				base.PlayInRange(allGate.transform.position + TeslaRippleTrigger.PosOffset, 120f, Color.red);
 			}
 		}
 	}

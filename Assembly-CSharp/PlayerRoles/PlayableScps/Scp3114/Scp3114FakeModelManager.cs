@@ -41,9 +41,9 @@ public class Scp3114FakeModelManager : StandardSubroutine<Scp3114Role>, ISubcont
 		{
 			return type switch
 			{
-				VariantType.Original => Original, 
-				VariantType.Disguise => Disguise, 
-				VariantType.Reveal => Reveal, 
+				VariantType.Original => this.Original, 
+				VariantType.Disguise => this.Disguise, 
+				VariantType.Reveal => this.Reveal, 
 				_ => throw new NotImplementedException("Unknown material type"), 
 			};
 		}
@@ -101,15 +101,15 @@ public class Scp3114FakeModelManager : StandardSubroutine<Scp3114Role>, ISubcont
 	{
 		get
 		{
-			return _animProgress;
+			return this._animProgress;
 		}
 		set
 		{
 			float num = Mathf.Clamp01(value);
-			if (num != _animProgress)
+			if (num != this._animProgress)
 			{
-				_animProgress = num;
-				UpdateModelMaterials();
+				this._animProgress = num;
+				this.UpdateModelMaterials();
 			}
 		}
 	}
@@ -130,19 +130,19 @@ public class Scp3114FakeModelManager : StandardSubroutine<Scp3114Role>, ISubcont
 	{
 		get
 		{
-			if (!(_lastModel != null))
+			if (!(this._lastModel != null))
 			{
-				return _ownModel;
+				return this._ownModel;
 			}
-			return _lastModel;
+			return this._lastModel;
 		}
 	}
 
 	public void OnPlayerMove()
 	{
-		if (_lastModel != null)
+		if (this._lastModel != null)
 		{
-			_lastModel.OnPlayerMove();
+			this._lastModel.OnPlayerMove();
 		}
 	}
 
@@ -150,54 +150,54 @@ public class Scp3114FakeModelManager : StandardSubroutine<Scp3114Role>, ISubcont
 	{
 		base.SpawnObject();
 		base.CastRole.CurIdentity.OnStatusChanged += OnIdentityChanged;
-		_ownModel = base.CastRole.FpcModule.CharacterModelInstance as Scp3114Model;
-		_ownModel.OnVisibilityChanged += UpdateVisibilityAll;
-		UpdateModelMaterials();
+		this._ownModel = base.CastRole.FpcModule.CharacterModelInstance as Scp3114Model;
+		this._ownModel.OnVisibilityChanged += UpdateVisibilityAll;
+		this.UpdateModelMaterials();
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		if (_ownModel != null)
+		if (this._ownModel != null)
 		{
-			_ownModel.OnVisibilityChanged -= UpdateVisibilityAll;
+			this._ownModel.OnVisibilityChanged -= UpdateVisibilityAll;
 		}
 		base.CastRole.CurIdentity.OnStatusChanged -= OnIdentityChanged;
-		_lastModel = null;
-		_animProgress = 0f;
-		_trackBones = false;
-		_lastActiveStatus = Scp3114Identity.DisguiseStatus.None;
-		_lastMaterialType = VariantType.Original;
-		_modelInstances.ForEachValue(delegate(AnimatedCharacterModel x)
+		this._lastModel = null;
+		this._animProgress = 0f;
+		this._trackBones = false;
+		this._lastActiveStatus = Scp3114Identity.DisguiseStatus.None;
+		this._lastMaterialType = VariantType.Original;
+		this._modelInstances.ForEachValue(delegate(AnimatedCharacterModel x)
 		{
 			x.gameObject.SetActive(value: false);
 		});
-		_materialsInUse.Clear();
-		_modelInstances.Clear();
-		_mappedBones.Clear();
+		this._materialsInUse.Clear();
+		this._modelInstances.Clear();
+		this._mappedBones.Clear();
 	}
 
 	private void UpdateModelMaterials()
 	{
 		CharacterModel characterModelInstance = base.CastRole.FpcModule.CharacterModelInstance;
-		float progress = AnimProgress;
-		switch (_lastMaterialType)
+		float progress = this.AnimProgress;
+		switch (this._lastMaterialType)
 		{
 		case VariantType.Reveal:
-			characterModelInstance.Fade = _revealAnimation.FadeOverProgress.Evaluate(progress);
+			characterModelInstance.Fade = this._revealAnimation.FadeOverProgress.Evaluate(progress);
 			break;
 		case VariantType.Original:
 		case VariantType.Disguise:
-			if (TeammatePerspective)
+			if (this.TeammatePerspective)
 			{
-				progress *= _teammateProgressMultiplier;
+				progress *= this._teammateProgressMultiplier;
 			}
-			characterModelInstance.Fade = _disguiseAnimation.FadeOverProgress.Evaluate(progress);
+			characterModelInstance.Fade = this._disguiseAnimation.FadeOverProgress.Evaluate(progress);
 			break;
 		}
-		_materialsInUse.ForEach(delegate(Material x)
+		this._materialsInUse.ForEach(delegate(Material x)
 		{
-			x.SetFloat(ProgressHash, progress);
+			x.SetFloat(Scp3114FakeModelManager.ProgressHash, progress);
 		});
 	}
 
@@ -207,83 +207,83 @@ public class Scp3114FakeModelManager : StandardSubroutine<Scp3114Role>, ISubcont
 		switch (curIdentity.Status)
 		{
 		case Scp3114Identity.DisguiseStatus.Active:
-			TrySetModel(curIdentity.StolenRole, VariantType.Original);
-			AnimProgress = 1f;
-			_trackBones = TeammatePerspective;
-			_lastActiveStatus = Scp3114Identity.DisguiseStatus.Active;
+			this.TrySetModel(curIdentity.StolenRole, VariantType.Original);
+			this.AnimProgress = 1f;
+			this._trackBones = this.TeammatePerspective;
+			this._lastActiveStatus = Scp3114Identity.DisguiseStatus.Active;
 			break;
 		case Scp3114Identity.DisguiseStatus.Equipping:
-			TrySetModel(curIdentity.StolenRole, VariantType.Disguise);
-			AnimProgress = 0f;
-			_trackBones = true;
-			_lastActiveStatus = Scp3114Identity.DisguiseStatus.Equipping;
+			this.TrySetModel(curIdentity.StolenRole, VariantType.Disguise);
+			this.AnimProgress = 0f;
+			this._trackBones = true;
+			this._lastActiveStatus = Scp3114Identity.DisguiseStatus.Equipping;
 			break;
 		case Scp3114Identity.DisguiseStatus.None:
-			if (_lastActiveStatus == Scp3114Identity.DisguiseStatus.Active)
+			if (this._lastActiveStatus == Scp3114Identity.DisguiseStatus.Active)
 			{
-				TrySetModel(curIdentity.StolenRole, VariantType.Reveal);
-				_trackBones = true;
-				AnimProgress = 0f;
+				this.TrySetModel(curIdentity.StolenRole, VariantType.Reveal);
+				this._trackBones = true;
+				this.AnimProgress = 0f;
 			}
 			break;
 		}
-		_wasTeammatePerpsective = TeammatePerspective;
+		this._wasTeammatePerpsective = this.TeammatePerspective;
 	}
 
 	private void UpdatePerspective()
 	{
-		if (TeammatePerspective != _wasTeammatePerpsective)
+		if (this.TeammatePerspective != this._wasTeammatePerpsective)
 		{
-			float animProgress = AnimProgress;
-			OnIdentityChanged();
-			if (animProgress == AnimProgress)
+			float animProgress = this.AnimProgress;
+			this.OnIdentityChanged();
+			if (animProgress == this.AnimProgress)
 			{
-				UpdateModelMaterials();
+				this.UpdateModelMaterials();
 			}
 			else
 			{
-				AnimProgress = animProgress;
+				this.AnimProgress = animProgress;
 			}
-			_wasTeammatePerpsective = TeammatePerspective;
+			this._wasTeammatePerpsective = this.TeammatePerspective;
 		}
 	}
 
 	private void UpdateVisibilityAll()
 	{
-		_modelInstances.ForEachValue(delegate(AnimatedCharacterModel x)
+		this._modelInstances.ForEachValue(delegate(AnimatedCharacterModel x)
 		{
-			x.SetVisibility(_ownModel.IsVisible);
+			x.SetVisibility(this._ownModel.IsVisible);
 		});
 	}
 
 	protected override void LateUpdate()
 	{
 		base.LateUpdate();
-		if (_trackBones)
+		if (this._trackBones)
 		{
-			_trackBones &= TryTrackBones();
+			this._trackBones &= this.TryTrackBones();
 		}
-		UpdatePerspective();
+		this.UpdatePerspective();
 		switch (base.CastRole.CurIdentity.Status)
 		{
 		case Scp3114Identity.DisguiseStatus.Equipping:
-			AnimProgress += Time.deltaTime * _disguiseAnimation.ProgressSpeed;
+			this.AnimProgress += Time.deltaTime * this._disguiseAnimation.ProgressSpeed;
 			break;
 		case Scp3114Identity.DisguiseStatus.None:
-			if (_lastActiveStatus == Scp3114Identity.DisguiseStatus.Active && AnimProgress < 1f)
+			if (this._lastActiveStatus == Scp3114Identity.DisguiseStatus.Active && this.AnimProgress < 1f)
 			{
-				AnimProgress += Time.deltaTime * _revealAnimation.ProgressSpeed;
-				if (AnimProgress == 1f)
+				this.AnimProgress += Time.deltaTime * this._revealAnimation.ProgressSpeed;
+				if (this.AnimProgress == 1f)
 				{
-					TrySetModel(RoleTypeId.None, VariantType.Original);
+					this.TrySetModel(RoleTypeId.None, VariantType.Original);
 				}
 			}
-			else if (_lastActiveStatus == Scp3114Identity.DisguiseStatus.Equipping && AnimProgress > 0f)
+			else if (this._lastActiveStatus == Scp3114Identity.DisguiseStatus.Equipping && this.AnimProgress > 0f)
 			{
-				AnimProgress -= Time.deltaTime * _disguiseAnimation.ProgressSpeed;
-				if (AnimProgress == 0f)
+				this.AnimProgress -= Time.deltaTime * this._disguiseAnimation.ProgressSpeed;
+				if (this.AnimProgress == 0f)
 				{
-					TrySetModel(RoleTypeId.None, VariantType.Original);
+					this.TrySetModel(RoleTypeId.None, VariantType.Original);
 				}
 			}
 			break;
@@ -292,16 +292,16 @@ public class Scp3114FakeModelManager : StandardSubroutine<Scp3114Role>, ISubcont
 
 	private bool TryTrackBones()
 	{
-		if (_lastModel == null || !_lastModel.gameObject.activeSelf)
+		if (this._lastModel == null || !this._lastModel.gameObject.activeSelf)
 		{
 			return false;
 		}
-		if (!_mappedBones.TryGetValue(_lastModel, out var value))
+		if (!this._mappedBones.TryGetValue(this._lastModel, out var value))
 		{
 			return false;
 		}
 		bool flag = base.CastRole.CurIdentity.Status == Scp3114Identity.DisguiseStatus.Equipping;
-		float t = (flag ? _boneTrackingOverDisguiseProgress.Evaluate(AnimProgress) : 1f);
+		float t = (flag ? this._boneTrackingOverDisguiseProgress.Evaluate(this.AnimProgress) : 1f);
 		foreach (MappedBone item in value)
 		{
 			item.Original.GetPositionAndRotation(out var position, out var rotation);
@@ -315,7 +315,7 @@ public class Scp3114FakeModelManager : StandardSubroutine<Scp3114Role>, ISubcont
 				item.Tracked.SetPositionAndRotation(position, rotation);
 			}
 		}
-		if (_lastModel.TryGetSubcontroller<SecondaryRigsSubcontroller>(out var subcontroller))
+		if (this._lastModel.TryGetSubcontroller<SecondaryRigsSubcontroller>(out var subcontroller))
 		{
 			subcontroller.MatchAll();
 		}
@@ -326,38 +326,38 @@ public class Scp3114FakeModelManager : StandardSubroutine<Scp3114Role>, ISubcont
 	{
 		if (!PlayerRoleLoader.TryGetRoleTemplate<HumanRole>(role, out var result))
 		{
-			if (_lastModel != null)
+			if (this._lastModel != null)
 			{
-				_lastModel.gameObject.SetActive(value: false);
+				this._lastModel.gameObject.SetActive(value: false);
 			}
 			return false;
 		}
 		GameObject characterModelTemplate = result.FpcModule.CharacterModelTemplate;
-		if (!_modelInstances.TryGetValue(characterModelTemplate, out var value))
+		if (!this._modelInstances.TryGetValue(characterModelTemplate, out var value))
 		{
-			if (!TryCreateModel(characterModelTemplate, out value))
+			if (!this.TryCreateModel(characterModelTemplate, out value))
 			{
 				return false;
 			}
-			_modelInstances.Add(characterModelTemplate, value);
+			this._modelInstances.Add(characterModelTemplate, value);
 		}
-		else if (_lastModel != value && _lastModel != null)
+		else if (this._lastModel != value && this._lastModel != null)
 		{
-			_lastModel.gameObject.SetActive(value: false);
+			this._lastModel.gameObject.SetActive(value: false);
 		}
-		_lastModel = value;
+		this._lastModel = value;
 		characterModelTemplate.transform.GetPositionAndRotation(out var position, out var rotation);
 		value.gameObject.SetActive(value: true);
 		value.RestoreOriginalMaterials();
 		value.Setup(base.Owner, base.CastRole, position, rotation);
-		value.SetVisibility(_ownModel.IsVisible);
-		if (_ownModel.IsTracked)
+		value.SetVisibility(this._ownModel.IsVisible);
+		if (this._ownModel.IsTracked)
 		{
 			SharedHandsController.SetRoleGloves(role);
-			CameraShakeController.AddEffect(new HeadbobShake(_ownModel));
+			CameraShakeController.AddEffect(new HeadbobShake(this._ownModel));
 		}
-		SetModelMaterials(value, variant);
-		_lastMaterialType = variant;
+		this.SetModelMaterials(value, variant);
+		this._lastMaterialType = variant;
 		return true;
 	}
 
@@ -378,10 +378,10 @@ public class Scp3114FakeModelManager : StandardSubroutine<Scp3114Role>, ISubcont
 		transform.GetPositionAndRotation(out var position, out var rotation);
 		obj.SetLocalPositionAndRotation(position, rotation);
 		obj.localScale = transform.localScale;
-		model.SetVisibility(_ownModel.IsVisible);
+		model.SetVisibility(this._ownModel.IsVisible);
 		model.SetOriginalMaterials();
-		List<MappedBone> orAddNew = _mappedBones.GetOrAddNew(model);
-		Scp3114Model.HumanoidBone[] humanoidBones = _ownModel.HumanoidBones;
+		List<MappedBone> orAddNew = this._mappedBones.GetOrAddNew(model);
+		Scp3114Model.HumanoidBone[] humanoidBones = this._ownModel.HumanoidBones;
 		for (int i = 0; i < humanoidBones.Length; i++)
 		{
 			Scp3114Model.HumanoidBone humanoidBone = humanoidBones[i];
@@ -401,10 +401,10 @@ public class Scp3114FakeModelManager : StandardSubroutine<Scp3114Role>, ISubcont
 	private void SetModelMaterials(AnimatedCharacterModel model, VariantType matType)
 	{
 		model.RestoreOriginalMaterials();
-		_materialsInUse.Clear();
+		this._materialsInUse.Clear();
 		if (matType == VariantType.Original)
 		{
-			if (!TeammatePerspective)
+			if (!this.TeammatePerspective)
 			{
 				return;
 			}
@@ -412,16 +412,16 @@ public class Scp3114FakeModelManager : StandardSubroutine<Scp3114Role>, ISubcont
 		}
 		model.ReplaceOriginalMaterials(delegate(Material original)
 		{
-			Material template = GetVariant(original, matType);
-			Material orAdd = _materialInstances.GetOrAdd(template, () => new Material(template));
-			_materialsInUse.Add(orAdd);
+			Material template = Scp3114FakeModelManager.GetVariant(original, matType);
+			Material orAdd = this._materialInstances.GetOrAdd(template, () => new Material(template));
+			this._materialsInUse.Add(orAdd);
 			return orAdd;
 		});
 	}
 
 	public static Material GetVariant(Material original, VariantType matType)
 	{
-		if (_dictionarizedPairs == null)
+		if (Scp3114FakeModelManager._dictionarizedPairs == null)
 		{
 			if (!PlayerRoleLoader.TryGetRoleTemplate<Scp3114Role>(RoleTypeId.Scp3114, out var result))
 			{
@@ -431,10 +431,10 @@ public class Scp3114FakeModelManager : StandardSubroutine<Scp3114Role>, ISubcont
 			{
 				return original;
 			}
-			_dictionarizedPairs = new Dictionary<Material, MaterialPair>();
-			_dictionarizedPairs.FromArray(subroutine._materialPairs, (MaterialPair x) => x.Original);
+			Scp3114FakeModelManager._dictionarizedPairs = new Dictionary<Material, MaterialPair>();
+			Scp3114FakeModelManager._dictionarizedPairs.FromArray(subroutine._materialPairs, (MaterialPair x) => x.Original);
 		}
-		if (!_dictionarizedPairs.TryGetValue(original, out var value))
+		if (!Scp3114FakeModelManager._dictionarizedPairs.TryGetValue(original, out var value))
 		{
 			return original;
 		}

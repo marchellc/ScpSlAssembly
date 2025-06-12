@@ -15,21 +15,21 @@ public class HitscanResult
 
 	public void Clear()
 	{
-		DamagedDestructibles.Clear();
-		Destructibles.Clear();
-		Obstacles.Clear();
-		OtherDamage = 0f;
+		this.DamagedDestructibles.Clear();
+		this.Destructibles.Clear();
+		this.Obstacles.Clear();
+		this.OtherDamage = 0f;
 	}
 
 	public void RegisterDamage(IDestructible dest, float appliedDamage, AttackerDamageHandler handler)
 	{
-		DamagedDestructibles.Add(new DestructibleDamageRecord(dest, appliedDamage, handler));
+		this.DamagedDestructibles.Add(new DestructibleDamageRecord(dest, appliedDamage, handler));
 	}
 
 	public float CountDamage(IDestructible dest)
 	{
 		float num = 0f;
-		foreach (DestructibleDamageRecord damagedDestructible in DamagedDestructibles)
+		foreach (DestructibleDamageRecord damagedDestructible in this.DamagedDestructibles)
 		{
 			if (damagedDestructible.Destructible == dest)
 			{

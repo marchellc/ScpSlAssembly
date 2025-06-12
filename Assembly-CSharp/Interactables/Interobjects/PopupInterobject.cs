@@ -31,16 +31,16 @@ public abstract class PopupInterobject : MonoBehaviour, IClientInteractable, IIn
 	{
 		get
 		{
-			return _currentState;
+			return PopupInterobject._currentState;
 		}
 		set
 		{
-			if (_currentState != value)
+			if (PopupInterobject._currentState != value)
 			{
-				_currentState = value;
-				if (_currentInstance != null)
+				PopupInterobject._currentState = value;
+				if (PopupInterobject._currentInstance != null)
 				{
-					_currentInstance.OnClientStateChange();
+					PopupInterobject._currentInstance.OnClientStateChange();
 				}
 			}
 		}
@@ -50,53 +50,53 @@ public abstract class PopupInterobject : MonoBehaviour, IClientInteractable, IIn
 
 	public void ClientInteract(InteractableCollider colliderId)
 	{
-		if (CurrentState != 0)
+		if (PopupInterobject.CurrentState != PopupState.Off)
 		{
-			CurrentState = PopupState.Disabling;
+			PopupInterobject.CurrentState = PopupState.Disabling;
 			return;
 		}
-		_currentInstance = this;
-		_timer = 0f;
-		CurrentState = PopupState.Enabling;
-		TrackedPosition.w = CloseAutomaticallyDistance;
+		PopupInterobject._currentInstance = this;
+		PopupInterobject._timer = 0f;
+		PopupInterobject.CurrentState = PopupState.Enabling;
+		PopupInterobject.TrackedPosition.w = this.CloseAutomaticallyDistance;
 	}
 
 	private void Update()
 	{
-		if (_masterInstance == null || !_masterInstance.gameObject.activeSelf)
+		if (PopupInterobject._masterInstance == null || !PopupInterobject._masterInstance.gameObject.activeSelf)
 		{
-			_masterInstance = this;
+			PopupInterobject._masterInstance = this;
 		}
-		if (_masterInstance != this)
+		if (PopupInterobject._masterInstance != this)
 		{
 			return;
 		}
-		switch (CurrentState)
+		switch (PopupInterobject.CurrentState)
 		{
 		case PopupState.Enabling:
-			_timer += Time.deltaTime;
-			if (_timer >= _currentInstance.FadeSpeedSeconds)
+			PopupInterobject._timer += Time.deltaTime;
+			if (PopupInterobject._timer >= PopupInterobject._currentInstance.FadeSpeedSeconds)
 			{
-				CurrentState = PopupState.On;
+				PopupInterobject.CurrentState = PopupState.On;
 			}
-			_currentInstance.OnClientUpdate(_timer / _currentInstance.FadeSpeedSeconds);
-			if (!IsInRange())
+			PopupInterobject._currentInstance.OnClientUpdate(PopupInterobject._timer / PopupInterobject._currentInstance.FadeSpeedSeconds);
+			if (!PopupInterobject.IsInRange())
 			{
-				CurrentState = PopupState.Disabling;
+				PopupInterobject.CurrentState = PopupState.Disabling;
 			}
 			break;
 		case PopupState.Disabling:
-			_timer -= Time.deltaTime;
-			if (_timer <= 0f)
+			PopupInterobject._timer -= Time.deltaTime;
+			if (PopupInterobject._timer <= 0f)
 			{
-				CurrentState = PopupState.Off;
+				PopupInterobject.CurrentState = PopupState.Off;
 			}
-			_currentInstance.OnClientUpdate(_timer / _currentInstance.FadeSpeedSeconds);
+			PopupInterobject._currentInstance.OnClientUpdate(PopupInterobject._timer / PopupInterobject._currentInstance.FadeSpeedSeconds);
 			break;
 		case PopupState.On:
-			if (!IsInRange() || Input.GetKeyDown(InteractionCoordinator.InteractKey) || Cursor.visible)
+			if (!PopupInterobject.IsInRange() || Input.GetKeyDown(InteractionCoordinator.InteractKey) || Cursor.visible)
 			{
-				CurrentState = PopupState.Disabling;
+				PopupInterobject.CurrentState = PopupState.Disabling;
 			}
 			break;
 		}
@@ -104,7 +104,7 @@ public abstract class PopupInterobject : MonoBehaviour, IClientInteractable, IIn
 
 	private static bool IsInRange()
 	{
-		if (TrackedPosition.w <= 0f)
+		if (PopupInterobject.TrackedPosition.w <= 0f)
 		{
 			return true;
 		}
@@ -112,7 +112,7 @@ public abstract class PopupInterobject : MonoBehaviour, IClientInteractable, IIn
 		{
 			return false;
 		}
-		return Vector3.Distance(TrackedPosition, hub.transform.position) < TrackedPosition.w;
+		return Vector3.Distance(PopupInterobject.TrackedPosition, hub.transform.position) < PopupInterobject.TrackedPosition.w;
 	}
 
 	protected abstract void OnClientStateChange();

@@ -25,11 +25,11 @@ public class BasicRagdoll : NetworkBehaviour
 	{
 		get
 		{
-			if (!(_originPoint != null))
+			if (!(this._originPoint != null))
 			{
 				return base.transform;
 			}
-			return _originPoint;
+			return this._originPoint;
 		}
 	}
 
@@ -39,18 +39,18 @@ public class BasicRagdoll : NetworkBehaviour
 	{
 		get
 		{
-			return Info;
+			return this.Info;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Info, 1uL, OnSyncDataChanged);
+			base.GeneratedSyncVarSetter(value, ref this.Info, 1uL, OnSyncDataChanged);
 		}
 	}
 
 	public virtual void FreezeRagdoll()
 	{
-		Frozen = true;
+		this.Frozen = true;
 	}
 
 	public virtual BasicRagdoll ServerInstantiateSelf(ReferenceHub owner, RoleTypeId targetRole)
@@ -72,7 +72,7 @@ public class BasicRagdoll : NetworkBehaviour
 	public void ClientFreezeRpc()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void PlayerRoles.Ragdolls.BasicRagdoll::ClientFreezeRpc()", 866326727, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void PlayerRoles.Ragdolls.BasicRagdoll::ClientFreezeRpc()", 866326727, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -99,12 +99,12 @@ public class BasicRagdoll : NetworkBehaviour
 
 	protected virtual void Start()
 	{
-		base.transform.SetPositionAndRotation(Info.StartPosition, Info.StartRotation);
-		Info.Handler.ProcessRagdoll(this);
+		base.transform.SetPositionAndRotation(this.Info.StartPosition, this.Info.StartRotation);
+		this.Info.Handler.ProcessRagdoll(this);
 		RagdollManager.OnSpawnedRagdoll(this);
 		if (NetworkServer.active)
 		{
-			_roundRestartEventSet = true;
+			this._roundRestartEventSet = true;
 			RoundRestart.OnRestartTriggered += OnRestartTriggered;
 		}
 	}
@@ -112,7 +112,7 @@ public class BasicRagdoll : NetworkBehaviour
 	protected virtual void OnDestroy()
 	{
 		RagdollManager.OnRemovedRagdoll(this);
-		if (_roundRestartEventSet)
+		if (this._roundRestartEventSet)
 		{
 			RoundRestart.OnRestartTriggered -= OnRestartTriggered;
 		}
@@ -120,17 +120,17 @@ public class BasicRagdoll : NetworkBehaviour
 
 	protected virtual void Update()
 	{
-		UpdateFreeze();
+		this.UpdateFreeze();
 	}
 
 	private void UpdateFreeze()
 	{
-		if (!Frozen)
+		if (!this.Frozen)
 		{
-			_existenceTime += Time.deltaTime;
-			if (!(_existenceTime < (float)RagdollManager.FreezeTime))
+			this._existenceTime += Time.deltaTime;
+			if (!(this._existenceTime < (float)RagdollManager.FreezeTime))
 			{
-				FreezeRagdoll();
+				this.FreezeRagdoll();
 			}
 		}
 	}
@@ -142,7 +142,7 @@ public class BasicRagdoll : NetworkBehaviour
 
 	protected void UserCode_ClientFreezeRpc()
 	{
-		FreezeRagdoll();
+		this.FreezeRagdoll();
 	}
 
 	protected static void InvokeUserCode_ClientFreezeRpc(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -167,13 +167,13 @@ public class BasicRagdoll : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteRagdollData(Info);
+			writer.WriteRagdollData(this.Info);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteRagdollData(Info);
+			writer.WriteRagdollData(this.Info);
 		}
 	}
 
@@ -182,13 +182,13 @@ public class BasicRagdoll : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref Info, OnSyncDataChanged, reader.ReadRagdollData());
+			base.GeneratedSyncVarDeserialize(ref this.Info, OnSyncDataChanged, reader.ReadRagdollData());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Info, OnSyncDataChanged, reader.ReadRagdollData());
+			base.GeneratedSyncVarDeserialize(ref this.Info, OnSyncDataChanged, reader.ReadRagdollData());
 		}
 	}
 }

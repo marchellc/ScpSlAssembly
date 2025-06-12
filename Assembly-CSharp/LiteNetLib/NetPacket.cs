@@ -22,11 +22,11 @@ internal sealed class NetPacket
 	{
 		get
 		{
-			return (PacketProperty)(RawData[0] & 0x1F);
+			return (PacketProperty)(this.RawData[0] & 0x1F);
 		}
 		set
 		{
-			RawData[0] = (byte)((uint)(RawData[0] & 0xE0) | (uint)value);
+			this.RawData[0] = (byte)((uint)(this.RawData[0] & 0xE0) | (uint)value);
 		}
 	}
 
@@ -34,11 +34,11 @@ internal sealed class NetPacket
 	{
 		get
 		{
-			return (byte)((RawData[0] & 0x60) >> 5);
+			return (byte)((this.RawData[0] & 0x60) >> 5);
 		}
 		set
 		{
-			RawData[0] = (byte)((RawData[0] & 0x9F) | (value << 5));
+			this.RawData[0] = (byte)((this.RawData[0] & 0x9F) | (value << 5));
 		}
 	}
 
@@ -46,25 +46,25 @@ internal sealed class NetPacket
 	{
 		get
 		{
-			return BitConverter.ToUInt16(RawData, 1);
+			return BitConverter.ToUInt16(this.RawData, 1);
 		}
 		set
 		{
-			FastBitConverter.GetBytes(RawData, 1, value);
+			FastBitConverter.GetBytes(this.RawData, 1, value);
 		}
 	}
 
-	public bool IsFragmented => (RawData[0] & 0x80) != 0;
+	public bool IsFragmented => (this.RawData[0] & 0x80) != 0;
 
 	public byte ChannelId
 	{
 		get
 		{
-			return RawData[3];
+			return this.RawData[3];
 		}
 		set
 		{
-			RawData[3] = value;
+			this.RawData[3] = value;
 		}
 	}
 
@@ -72,11 +72,11 @@ internal sealed class NetPacket
 	{
 		get
 		{
-			return BitConverter.ToUInt16(RawData, 4);
+			return BitConverter.ToUInt16(this.RawData, 4);
 		}
 		set
 		{
-			FastBitConverter.GetBytes(RawData, 4, value);
+			FastBitConverter.GetBytes(this.RawData, 4, value);
 		}
 	}
 
@@ -84,11 +84,11 @@ internal sealed class NetPacket
 	{
 		get
 		{
-			return BitConverter.ToUInt16(RawData, 6);
+			return BitConverter.ToUInt16(this.RawData, 6);
 		}
 		set
 		{
-			FastBitConverter.GetBytes(RawData, 6, value);
+			FastBitConverter.GetBytes(this.RawData, 6, value);
 		}
 	}
 
@@ -96,43 +96,43 @@ internal sealed class NetPacket
 	{
 		get
 		{
-			return BitConverter.ToUInt16(RawData, 8);
+			return BitConverter.ToUInt16(this.RawData, 8);
 		}
 		set
 		{
-			FastBitConverter.GetBytes(RawData, 8, value);
+			FastBitConverter.GetBytes(this.RawData, 8, value);
 		}
 	}
 
 	static NetPacket()
 	{
-		PropertiesCount = Enum.GetValues(typeof(PacketProperty)).Length;
-		HeaderSizes = NetUtils.AllocatePinnedUninitializedArray<int>(PropertiesCount);
-		for (int i = 0; i < HeaderSizes.Length; i++)
+		NetPacket.PropertiesCount = Enum.GetValues(typeof(PacketProperty)).Length;
+		NetPacket.HeaderSizes = NetUtils.AllocatePinnedUninitializedArray<int>(NetPacket.PropertiesCount);
+		for (int i = 0; i < NetPacket.HeaderSizes.Length; i++)
 		{
 			switch ((PacketProperty)(byte)i)
 			{
 			case PacketProperty.Channeled:
 			case PacketProperty.Ack:
-				HeaderSizes[i] = 4;
+				NetPacket.HeaderSizes[i] = 4;
 				break;
 			case PacketProperty.Ping:
-				HeaderSizes[i] = 3;
+				NetPacket.HeaderSizes[i] = 3;
 				break;
 			case PacketProperty.ConnectRequest:
-				HeaderSizes[i] = 18;
+				NetPacket.HeaderSizes[i] = 18;
 				break;
 			case PacketProperty.ConnectAccept:
-				HeaderSizes[i] = 15;
+				NetPacket.HeaderSizes[i] = 15;
 				break;
 			case PacketProperty.Disconnect:
-				HeaderSizes[i] = 9;
+				NetPacket.HeaderSizes[i] = 9;
 				break;
 			case PacketProperty.Pong:
-				HeaderSizes[i] = 11;
+				NetPacket.HeaderSizes[i] = 11;
 				break;
 			default:
-				HeaderSizes[i] = 1;
+				NetPacket.HeaderSizes[i] = 1;
 				break;
 			}
 		}
@@ -140,49 +140,49 @@ internal sealed class NetPacket
 
 	public void MarkFragmented()
 	{
-		RawData[0] |= 128;
+		this.RawData[0] |= 128;
 	}
 
 	public NetPacket(int size)
 	{
-		RawData = new byte[size];
-		Size = size;
+		this.RawData = new byte[size];
+		this.Size = size;
 	}
 
 	public NetPacket(PacketProperty property, int size)
 	{
-		size += GetHeaderSize(property);
-		RawData = new byte[size];
-		Property = property;
-		Size = size;
+		size += NetPacket.GetHeaderSize(property);
+		this.RawData = new byte[size];
+		this.Property = property;
+		this.Size = size;
 	}
 
 	public static int GetHeaderSize(PacketProperty property)
 	{
-		return HeaderSizes[(uint)property];
+		return NetPacket.HeaderSizes[(uint)property];
 	}
 
 	public int GetHeaderSize()
 	{
-		return HeaderSizes[RawData[0] & 0x1F];
+		return NetPacket.HeaderSizes[this.RawData[0] & 0x1F];
 	}
 
 	public bool Verify()
 	{
 		try
 		{
-			if (RawData.Length == 0)
+			if (this.RawData.Length == 0)
 			{
 				return false;
 			}
-			byte b = (byte)(RawData[0] & 0x1F);
-			if (b >= PropertiesCount)
+			byte b = (byte)(this.RawData[0] & 0x1F);
+			if (b >= NetPacket.PropertiesCount)
 			{
 				return false;
 			}
-			int num = HeaderSizes[b];
-			bool flag = (RawData[0] & 0x80) != 0;
-			return Size >= num && (!flag || Size >= num + 6);
+			int num = NetPacket.HeaderSizes[b];
+			bool flag = (this.RawData[0] & 0x80) != 0;
+			return this.Size >= num && (!flag || this.Size >= num + 6);
 		}
 		catch (Exception arg)
 		{

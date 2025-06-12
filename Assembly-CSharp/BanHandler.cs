@@ -29,28 +29,28 @@ public static class BanHandler
 	{
 		try
 		{
-			if (!File.Exists(GetPath(BanType.UserId)))
+			if (!File.Exists(BanHandler.GetPath(BanType.UserId)))
 			{
-				File.Create(GetPath(BanType.UserId)).Close();
+				File.Create(BanHandler.GetPath(BanType.UserId)).Close();
 			}
 			else
 			{
-				FileManager.RemoveEmptyLines(GetPath(BanType.UserId));
+				FileManager.RemoveEmptyLines(BanHandler.GetPath(BanType.UserId));
 			}
-			if (!File.Exists(GetPath(BanType.IP)))
+			if (!File.Exists(BanHandler.GetPath(BanType.IP)))
 			{
-				File.Create(GetPath(BanType.IP)).Close();
+				File.Create(BanHandler.GetPath(BanType.IP)).Close();
 			}
 			else
 			{
-				FileManager.RemoveEmptyLines(GetPath(BanType.IP));
+				FileManager.RemoveEmptyLines(BanHandler.GetPath(BanType.IP));
 			}
 		}
 		catch
 		{
 			ServerConsole.AddLog("Can't create ban files!");
 		}
-		ValidateBans();
+		BanHandler.ValidateBans();
 	}
 
 	public static bool IssueBan(BanDetails ban, BanType banType, bool forced = false)
@@ -66,34 +66,34 @@ public static class BanHandler
 			ban.Reason = ban.Reason.Replace(";", ":");
 			Misc.ReplaceUnsafeCharacters(ref ban.OriginalName);
 			Misc.ReplaceUnsafeCharacters(ref ban.Issuer);
-			List<BanDetails> bans = GetBans(banType);
+			List<BanDetails> bans = BanHandler.GetBans(banType);
 			if (!bans.Any((BanDetails b) => b.Id == ban.Id))
 			{
-				BanIssuingEventArgs banIssuingEventArgs = new BanIssuingEventArgs(banType, ban);
-				ServerEvents.OnBanIssuing(banIssuingEventArgs);
-				if (!forced && !banIssuingEventArgs.IsAllowed)
+				BanIssuingEventArgs e = new BanIssuingEventArgs(banType, ban);
+				ServerEvents.OnBanIssuing(e);
+				if (!forced && !e.IsAllowed)
 				{
 					return false;
 				}
-				banType = banIssuingEventArgs.BanType;
-				ban = banIssuingEventArgs.BanDetails;
-				FileManager.AppendFile(ban.ToString(), GetPath(banType));
-				FileManager.RemoveEmptyLines(GetPath(banType));
+				banType = e.BanType;
+				ban = e.BanDetails;
+				FileManager.AppendFile(ban.ToString(), BanHandler.GetPath(banType));
+				FileManager.RemoveEmptyLines(BanHandler.GetPath(banType));
 				ServerEvents.OnBanIssued(new BanIssuedEventArgs(banType, ban));
 			}
 			else
 			{
 				BanDetails oldBanDetails = bans.First((BanDetails old) => string.Equals(old.Id, ban.Id, StringComparison.OrdinalIgnoreCase));
-				BanUpdatingEventArgs banUpdatingEventArgs = new BanUpdatingEventArgs(banType, ban, oldBanDetails);
-				ServerEvents.OnBanUpdating(banUpdatingEventArgs);
-				if (!forced && !banUpdatingEventArgs.IsAllowed)
+				BanUpdatingEventArgs e2 = new BanUpdatingEventArgs(banType, ban, oldBanDetails);
+				ServerEvents.OnBanUpdating(e2);
+				if (!forced && !e2.IsAllowed)
 				{
 					return false;
 				}
-				RemoveBan(ban.Id, banType, forced: true);
-				banType = banUpdatingEventArgs.BanType;
-				ban = banUpdatingEventArgs.BanDetails;
-				IssueBan(ban, banType, forced: true);
+				BanHandler.RemoveBan(ban.Id, banType, forced: true);
+				banType = e2.BanType;
+				ban = e2.BanDetails;
+				BanHandler.IssueBan(ban, banType, forced: true);
 				ServerEvents.OnBanUpdated(new BanUpdatedEventArgs(banType, ban, oldBanDetails));
 			}
 			return true;
@@ -107,19 +107,19 @@ public static class BanHandler
 	public static void ValidateBans()
 	{
 		ServerConsole.AddLog("Validating bans...");
-		ValidateBans(BanType.UserId);
-		ValidateBans(BanType.IP);
+		BanHandler.ValidateBans(BanType.UserId);
+		BanHandler.ValidateBans(BanType.IP);
 		ServerConsole.AddLog("Bans has been validated.");
 	}
 
 	public static void ValidateBans(BanType banType)
 	{
-		List<string> list = FileManager.ReadAllLinesList(GetPath(banType));
+		List<string> list = FileManager.ReadAllLinesList(BanHandler.GetPath(banType));
 		List<int> list2 = ListPool<int>.Shared.Rent();
 		for (int num = list.Count - 1; num >= 0; num--)
 		{
 			string ban = list[num];
-			if (ProcessBanItem(ban, banType) == null || !CheckExpiration(ProcessBanItem(ban, banType), BanType.NULL))
+			if (BanHandler.ProcessBanItem(ban, banType) == null || !BanHandler.CheckExpiration(BanHandler.ProcessBanItem(ban, banType), BanType.NULL))
 			{
 				list2.Add(num);
 			}
@@ -138,9 +138,9 @@ public static class BanHandler
 			list.RemoveAt(item2);
 		}
 		ListPool<int>.Shared.Return(list3);
-		if (FileManager.ReadAllLines(GetPath(banType)) != list.ToArray())
+		if (FileManager.ReadAllLines(BanHandler.GetPath(banType)) != list.ToArray())
 		{
-			FileManager.WriteToFile(list.ToArray(), GetPath(banType));
+			FileManager.WriteToFile(list.ToArray(), BanHandler.GetPath(banType));
 		}
 	}
 
@@ -156,14 +156,14 @@ public static class BanHandler
 		}
 		if (banType >= BanType.UserId)
 		{
-			RemoveBan(ban.Id, banType, forced: true);
+			BanHandler.RemoveBan(ban.Id, banType, forced: true);
 		}
 		return false;
 	}
 
 	public static BanDetails ReturnChecks(BanDetails ban, BanType banType)
 	{
-		if (!CheckExpiration(ban, banType))
+		if (!BanHandler.CheckExpiration(ban, banType))
 		{
 			return null;
 		}
@@ -172,29 +172,29 @@ public static class BanHandler
 
 	public static void RemoveBan(string id, BanType banType, bool forced = false)
 	{
-		BanRevokingEventArgs banRevokingEventArgs = new BanRevokingEventArgs(banType, GetBan(id, banType));
-		ServerEvents.OnBanRevoking(banRevokingEventArgs);
-		if (forced || banRevokingEventArgs.IsAllowed)
+		BanRevokingEventArgs e = new BanRevokingEventArgs(banType, BanHandler.GetBan(id, banType));
+		ServerEvents.OnBanRevoking(e);
+		if (forced || e.IsAllowed)
 		{
 			id = id.Replace(";", ":").Replace(Environment.NewLine, "").Replace("\n", "");
-			FileManager.WriteToFile((from l in FileManager.ReadAllLines(GetPath(banType))
-				where ProcessBanItem(l, banType) != null && ProcessBanItem(l, banType).Id != id
-				select l).ToArray(), GetPath(banType));
-			ServerEvents.OnBanRevoked(new BanRevokedEventArgs(banType, banRevokingEventArgs.BanDetails));
+			FileManager.WriteToFile((from l in FileManager.ReadAllLines(BanHandler.GetPath(banType))
+				where BanHandler.ProcessBanItem(l, banType) != null && BanHandler.ProcessBanItem(l, banType).Id != id
+				select l).ToArray(), BanHandler.GetPath(banType));
+			ServerEvents.OnBanRevoked(new BanRevokedEventArgs(banType, e.BanDetails));
 		}
 	}
 
 	public static List<BanDetails> GetBans(BanType banType)
 	{
-		return (from b in FileManager.ReadAllLines(GetPath(banType))
-			select ProcessBanItem(b, banType) into b
+		return (from b in FileManager.ReadAllLines(BanHandler.GetPath(banType))
+			select BanHandler.ProcessBanItem(b, banType) into b
 			where b != null
 			select b).ToList();
 	}
 
 	public static BanDetails GetBan(string id, BanType banType)
 	{
-		return GetBans(banType).FirstOrDefault((BanDetails s) => string.Equals(s.Id, id, StringComparison.OrdinalIgnoreCase));
+		return BanHandler.GetBans(banType).FirstOrDefault((BanDetails s) => string.Equals(s.Id, id, StringComparison.OrdinalIgnoreCase));
 	}
 
 	public static KeyValuePair<BanDetails, BanDetails> QueryBan(string userId, string ip)
@@ -204,14 +204,14 @@ public static class BanHandler
 		if (!string.IsNullOrEmpty(userId))
 		{
 			userId = userId.Replace(";", ":").Replace(Environment.NewLine, "").Replace("\n", "");
-			ban = FileManager.ReadAllLines(GetPath(BanType.UserId)).FirstOrDefault((string b) => ProcessBanItem(b, BanType.UserId)?.Id == userId);
+			ban = FileManager.ReadAllLines(BanHandler.GetPath(BanType.UserId)).FirstOrDefault((string b) => BanHandler.ProcessBanItem(b, BanType.UserId)?.Id == userId);
 		}
 		if (!string.IsNullOrEmpty(ip))
 		{
 			ip = ip.Replace(";", ":").Replace(Environment.NewLine, "").Replace("\n", "");
-			ban2 = FileManager.ReadAllLines(GetPath(BanType.IP)).FirstOrDefault((string b) => ProcessBanItem(b, BanType.IP)?.Id == ip);
+			ban2 = FileManager.ReadAllLines(BanHandler.GetPath(BanType.IP)).FirstOrDefault((string b) => BanHandler.ProcessBanItem(b, BanType.IP)?.Id == ip);
 		}
-		return new KeyValuePair<BanDetails, BanDetails>(ReturnChecks(ProcessBanItem(ban, BanType.UserId), BanType.UserId), ReturnChecks(ProcessBanItem(ban2, BanType.IP), BanType.IP));
+		return new KeyValuePair<BanDetails, BanDetails>(BanHandler.ReturnChecks(BanHandler.ProcessBanItem(ban, BanType.UserId), BanType.UserId), BanHandler.ReturnChecks(BanHandler.ProcessBanItem(ban2, BanType.IP), BanType.IP));
 	}
 
 	public static BanDetails ProcessBanItem(string ban, BanType banType)
@@ -242,7 +242,7 @@ public static class BanHandler
 
 	public static string GetPath(BanType banType)
 	{
-		if (banType != 0 && banType == BanType.IP)
+		if (banType != BanType.UserId && banType == BanType.IP)
 		{
 			return ConfigSharing.Paths[0] + "IpBans.txt";
 		}

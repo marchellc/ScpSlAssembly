@@ -13,7 +13,7 @@ public class PrefabLoader : MonoBehaviour
 
 	public static bool TryFetch<T>(out T prefab, bool enableException = false) where T : UnityEngine.Object
 	{
-		foreach (UnityEngine.Object prefab2 in Prefabs)
+		foreach (UnityEngine.Object prefab2 in PrefabLoader.Prefabs)
 		{
 			if (prefab2 is T val)
 			{
@@ -31,6 +31,6 @@ public class PrefabLoader : MonoBehaviour
 
 	private void Awake()
 	{
-		Prefabs = _globalPrefabs;
+		PrefabLoader.Prefabs = this._globalPrefabs;
 	}
 }

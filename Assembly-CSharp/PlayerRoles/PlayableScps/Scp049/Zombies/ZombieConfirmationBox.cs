@@ -26,7 +26,7 @@ public class ZombieConfirmationBox : MonoBehaviour
 		{
 			NetworkServer.ReplaceHandler(delegate(NetworkConnectionToClient conn, ScpReviveBlockMessage msg)
 			{
-				ServerReceiveMessage(conn);
+				ZombieConfirmationBox.ServerReceiveMessage(conn);
 			});
 		};
 	}

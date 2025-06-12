@@ -16,8 +16,8 @@ public class PackedArmorPart : MonoBehaviour
 
 	public void Unpack(WearableArmor.ArmorSet target, List<Renderer> fadeable)
 	{
-		target.TrackedBones.AddRange(_trackedBones);
-		target.VisibleObjects.AddRange(_visibleObjects);
-		fadeable.AddRange(_fadeableRenderers);
+		target.TrackedBones.AddRange(this._trackedBones);
+		target.VisibleObjects.AddRange(this._visibleObjects);
+		fadeable.AddRange(this._fadeableRenderers);
 	}
 }

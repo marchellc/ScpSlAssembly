@@ -23,31 +23,31 @@ public class StandardAnimatedViemodel : AnimatedViewmodelBase
 
 	private IItemSwayController _swayController;
 
-	public override IItemSwayController SwayController => _swayController;
+	public override IItemSwayController SwayController => this._swayController;
 
-	public override float ViewmodelCameraFOV => _fov;
+	public override float ViewmodelCameraFOV => this._fov;
 
 	internal override void OnEquipped()
 	{
 		base.OnEquipped();
-		if (_swayController == null)
+		if (this._swayController == null)
 		{
-			_swayController = GetNewSwayController();
+			this._swayController = this.GetNewSwayController();
 		}
-		CameraShakeController.AddEffect(new TrackerShake(_trackerCamera, Quaternion.Euler(_trackerOffset), _trackerForceScale));
+		CameraShakeController.AddEffect(new TrackerShake(this._trackerCamera, Quaternion.Euler(this._trackerOffset), this._trackerForceScale));
 	}
 
 	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
 	{
 		base.InitSpectator(ply, id, wasEquipped);
-		if (_swayController == null)
+		if (this._swayController == null)
 		{
-			_swayController = GetNewSwayController();
+			this._swayController = this.GetNewSwayController();
 		}
 	}
 
 	protected virtual IItemSwayController GetNewSwayController()
 	{
-		return new GoopSway(new GoopSway.GoopSwaySettings(HandsPivot, 0.65f, 0.0035f, 0.04f, 7f, 6.5f, 0.03f, 1.6f, invertSway: false), base.Hub);
+		return new GoopSway(new GoopSway.GoopSwaySettings(this.HandsPivot, 0.65f, 0.0035f, 0.04f, 7f, 6.5f, 0.03f, 1.6f, invertSway: false), base.Hub);
 	}
 }

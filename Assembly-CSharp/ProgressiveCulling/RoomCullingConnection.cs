@@ -16,15 +16,15 @@ public class RoomCullingConnection : CullableBehaviour, IBoundsCullable, ICullab
 
 		public CoordsPair(Vector3Int coordsA, Vector3Int coordsB)
 		{
-			CoordsA = coordsA;
-			CoordsB = coordsB;
+			this.CoordsA = coordsA;
+			this.CoordsB = coordsB;
 		}
 
 		public bool Equals(CoordsPair other)
 		{
-			if (CoordsA == other.CoordsA)
+			if (this.CoordsA == other.CoordsA)
 			{
-				return CoordsB == other.CoordsB;
+				return this.CoordsB == other.CoordsB;
 			}
 			return false;
 		}
@@ -33,14 +33,14 @@ public class RoomCullingConnection : CullableBehaviour, IBoundsCullable, ICullab
 		{
 			if (obj is CoordsPair other)
 			{
-				return Equals(other);
+				return this.Equals(other);
 			}
 			return false;
 		}
 
 		public override int GetHashCode()
 		{
-			return HashCode.Combine(CoordsA, CoordsB);
+			return HashCode.Combine(this.CoordsA, this.CoordsB);
 		}
 	}
 
@@ -68,9 +68,9 @@ public class RoomCullingConnection : CullableBehaviour, IBoundsCullable, ICullab
 		{
 			get
 			{
-				if (CullableA.IsCulled)
+				if (this.CullableA.IsCulled)
 				{
-					return CullableB.IsCulled;
+					return this.CullableB.IsCulled;
 				}
 				return false;
 			}
@@ -78,24 +78,24 @@ public class RoomCullingConnection : CullableBehaviour, IBoundsCullable, ICullab
 
 		public RoomLink(RoomIdentifier a, RoomIdentifier b)
 		{
-			RoomA = a;
-			RoomB = b;
-			bool flag = a.TryGetComponent<CullableRoom>(out CullableA);
-			bool flag2 = b.TryGetComponent<CullableRoom>(out CullableB);
-			Valid = flag && flag2;
+			this.RoomA = a;
+			this.RoomB = b;
+			bool flag = a.TryGetComponent<CullableRoom>(out this.CullableA);
+			bool flag2 = b.TryGetComponent<CullableRoom>(out this.CullableB);
+			this.Valid = flag && flag2;
 			Vector3Int mainCoords = a.MainCoords;
 			Vector3Int mainCoords2 = b.MainCoords;
-			Coords = new CoordsPair(mainCoords, mainCoords2);
-			InvCoords = new CoordsPair(mainCoords2, mainCoords);
-			if (Valid)
+			this.Coords = new CoordsPair(mainCoords, mainCoords2);
+			this.InvCoords = new CoordsPair(mainCoords2, mainCoords);
+			if (this.Valid)
 			{
-				Rooms = new RoomIdentifier[2] { RoomA, RoomB };
-				Cullables = new CullableRoom[2] { CullableA, CullableB };
+				this.Rooms = new RoomIdentifier[2] { this.RoomA, this.RoomB };
+				this.Cullables = new CullableRoom[2] { this.CullableA, this.CullableB };
 			}
 			else
 			{
-				Rooms = new RoomIdentifier[0];
-				Cullables = new CullableRoom[0];
+				this.Rooms = new RoomIdentifier[0];
+				this.Cullables = new CullableRoom[0];
 			}
 		}
 	}
@@ -121,64 +121,64 @@ public class RoomCullingConnection : CullableBehaviour, IBoundsCullable, ICullab
 	{
 		get
 		{
-			if (!Link.Valid)
+			if (!this.Link.Valid)
 			{
-				return CullingCamera.CheckBoundsVisibility(WorldspaceBounds);
+				return CullingCamera.CheckBoundsVisibility(this.WorldspaceBounds);
 			}
-			return !Link.BothCulled;
+			return !this.Link.BothCulled;
 		}
 	}
 
-	private float BoundsArea => _bounds.size.x * _bounds.size.y;
+	private float BoundsArea => this._bounds.size.x * this._bounds.size.y;
 
 	private void Awake()
 	{
-		AllInstances.Add(this);
-		Connector = GetComponent<IRoomConnector>();
-		Connector.OnRoomsRegistered += OnRoomsRegistered;
-		_autoCuller.Generate(base.gameObject, null, null, ignoreDoNotCullTag: true);
-		if (Connector.RoomsAlreadyRegistered)
+		RoomCullingConnection.AllInstances.Add(this);
+		this.Connector = base.GetComponent<IRoomConnector>();
+		this.Connector.OnRoomsRegistered += OnRoomsRegistered;
+		this._autoCuller.Generate(base.gameObject, null, null, ignoreDoNotCullTag: true);
+		if (this.Connector.RoomsAlreadyRegistered)
 		{
-			OnRoomsRegistered();
+			this.OnRoomsRegistered();
 		}
 	}
 
 	private void OnDestroy()
 	{
-		AllInstances.Remove(this);
-		if (_isSmallest)
+		RoomCullingConnection.AllInstances.Remove(this);
+		if (this._isSmallest)
 		{
-			SmallestInstancesByPair.Remove(Link.Coords);
-			SmallestInstancesByPair.Remove(Link.InvCoords);
+			RoomCullingConnection.SmallestInstancesByPair.Remove(this.Link.Coords);
+			RoomCullingConnection.SmallestInstancesByPair.Remove(this.Link.InvCoords);
 		}
 	}
 
 	private Bounds GenerateWorldspaceBounds()
 	{
 		Transform obj = base.transform;
-		Vector3 center = obj.TransformPoint(_bounds.center);
-		Vector3 v = obj.rotation * _bounds.size;
+		Vector3 center = obj.TransformPoint(this._bounds.center);
+		Vector3 v = obj.rotation * this._bounds.size;
 		return new Bounds(center, v.Abs());
 	}
 
 	private void OnRoomsRegistered()
 	{
-		RoomIdentifier[] rooms = Connector.Rooms;
+		RoomIdentifier[] rooms = this.Connector.Rooms;
 		if (rooms.Length != 2)
 		{
 			return;
 		}
-		Link = new RoomLink(rooms[0], rooms[1]);
-		WorldspaceBounds = GenerateWorldspaceBounds();
-		if (Link.Valid)
+		this.Link = new RoomLink(rooms[0], rooms[1]);
+		this.WorldspaceBounds = this.GenerateWorldspaceBounds();
+		if (this.Link.Valid)
 		{
-			AddVisibilityListener(Link.CullableA);
-			AddVisibilityListener(Link.CullableB);
-			if (TryRegisterSmallest())
+			this.AddVisibilityListener(this.Link.CullableA);
+			this.AddVisibilityListener(this.Link.CullableB);
+			if (this.TryRegisterSmallest())
 			{
-				SmallestInstancesByPair[Link.Coords] = this;
-				SmallestInstancesByPair[Link.InvCoords] = this;
-				_isSmallest = true;
+				RoomCullingConnection.SmallestInstancesByPair[this.Link.Coords] = this;
+				RoomCullingConnection.SmallestInstancesByPair[this.Link.InvCoords] = this;
+				this._isSmallest = true;
 			}
 			((ICullable)this).UpdateState();
 		}
@@ -186,11 +186,11 @@ public class RoomCullingConnection : CullableBehaviour, IBoundsCullable, ICullab
 
 	private bool TryRegisterSmallest()
 	{
-		if (!SmallestInstancesByPair.TryGetValue(Link.Coords, out var value))
+		if (!RoomCullingConnection.SmallestInstancesByPair.TryGetValue(this.Link.Coords, out var value))
 		{
 			return true;
 		}
-		if (BoundsArea > value.BoundsArea)
+		if (this.BoundsArea > value.BoundsArea)
 		{
 			return false;
 		}
@@ -205,18 +205,18 @@ public class RoomCullingConnection : CullableBehaviour, IBoundsCullable, ICullab
 
 	protected override void OnVisibilityChanged(bool isVisible)
 	{
-		_autoCuller.SetVisibility(isVisible);
+		this._autoCuller.SetVisibility(isVisible);
 	}
 
 	protected override void OnDrawGizmosSelected()
 	{
 		Gizmos.color = Color.green;
-		Bounds bounds = GenerateWorldspaceBounds();
+		Bounds bounds = this.GenerateWorldspaceBounds();
 		Gizmos.DrawWireCube(bounds.center, bounds.size);
 	}
 
 	public static bool TryGetConnection(Vector3Int a, Vector3Int b, out RoomCullingConnection conn)
 	{
-		return SmallestInstancesByPair.TryGetValue(new CoordsPair(a, b), out conn);
+		return RoomCullingConnection.SmallestInstancesByPair.TryGetValue(new CoordsPair(a, b), out conn);
 	}
 }

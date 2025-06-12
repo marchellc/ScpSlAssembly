@@ -18,7 +18,7 @@ public static class RespawnTokensManager
 
 		public Milestone(int threshold)
 		{
-			Threshold = threshold;
+			this.Threshold = threshold;
 		}
 	}
 
@@ -30,8 +30,8 @@ public static class RespawnTokensManager
 
 	public static Dictionary<Faction, List<Milestone>> Milestones { get; } = new Dictionary<Faction, List<Milestone>>
 	{
-		[Faction.FoundationStaff] = DefaultMilestone,
-		[Faction.FoundationEnemy] = DefaultMilestone
+		[Faction.FoundationStaff] = RespawnTokensManager.DefaultMilestone,
+		[Faction.FoundationEnemy] = RespawnTokensManager.DefaultMilestone
 	};
 
 	private static List<Milestone> DefaultMilestone => new List<Milestone>
@@ -59,15 +59,15 @@ public static class RespawnTokensManager
 			}
 			if (NetworkServer.active)
 			{
-				AvailableRespawnsLeft = 2;
-				ResetMilestones();
+				RespawnTokensManager.AvailableRespawnsLeft = 2;
+				RespawnTokensManager.ResetMilestones();
 			}
 		};
 	}
 
 	public static bool TryGetNextThreshold(Faction faction, float influence, out int threshold)
 	{
-		Milestone milestone = Milestones[faction].FirstOrDefault((Milestone x) => influence < (float)x.Threshold, null);
+		Milestone milestone = RespawnTokensManager.Milestones[faction].FirstOrDefault((Milestone x) => influence < (float)x.Threshold, null);
 		if (milestone == null)
 		{
 			threshold = -1;
@@ -88,7 +88,7 @@ public static class RespawnTokensManager
 
 	private static void ResetMilestones()
 	{
-		foreach (List<Milestone> value in Milestones.Values)
+		foreach (List<Milestone> value in RespawnTokensManager.Milestones.Values)
 		{
 			foreach (Milestone item in value)
 			{
@@ -99,7 +99,7 @@ public static class RespawnTokensManager
 
 	private static bool TryAchieveMilestone(Faction faction, float influence)
 	{
-		foreach (Milestone item in Milestones[faction])
+		foreach (Milestone item in RespawnTokensManager.Milestones[faction])
 		{
 			if (!item.Achieved && !((float)item.Threshold > influence))
 			{
@@ -112,16 +112,16 @@ public static class RespawnTokensManager
 
 	private static void OnPointsModified(Faction faction, float newValue)
 	{
-		if (!NetworkServer.active || AvailableRespawnsLeft == 0 || !WaveManager.TryGet(faction, out var spawnWave) || !(spawnWave is ILimitedWave limitedWave))
+		if (!NetworkServer.active || RespawnTokensManager.AvailableRespawnsLeft == 0 || !WaveManager.TryGet(faction, out var spawnWave) || !(spawnWave is ILimitedWave limitedWave))
 		{
 			return;
 		}
-		while (TryAchieveMilestone(faction, newValue))
+		while (RespawnTokensManager.TryAchieveMilestone(faction, newValue))
 		{
 			limitedWave.RespawnTokens++;
-			AvailableRespawnsLeft--;
+			RespawnTokensManager.AvailableRespawnsLeft--;
 			WaveUpdateMessage.ServerSendUpdate(spawnWave, UpdateMessageFlags.Tokens);
-			if (AvailableRespawnsLeft == 0)
+			if (RespawnTokensManager.AvailableRespawnsLeft == 0)
 			{
 				break;
 			}

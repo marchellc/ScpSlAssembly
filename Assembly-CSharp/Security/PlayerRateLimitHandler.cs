@@ -8,7 +8,7 @@ public class PlayerRateLimitHandler : NetworkBehaviour
 
 	private void Awake()
 	{
-		RateLimits = RateLimitCreator.CreateRateLimit(base.connectionToClient, base.isServer && base.isLocalPlayer);
+		this.RateLimits = RateLimitCreator.CreateRateLimit(base.connectionToClient, base.isServer && base.isLocalPlayer);
 	}
 
 	public override bool Weaved()

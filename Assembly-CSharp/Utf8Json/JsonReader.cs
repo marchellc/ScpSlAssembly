@@ -17,20 +17,20 @@ public struct JsonReader
 
 		public static byte[] GetBuffer()
 		{
-			if (buffer == null)
+			if (StringBuilderCache.buffer == null)
 			{
-				buffer = new byte[65535];
+				StringBuilderCache.buffer = new byte[65535];
 			}
-			return buffer;
+			return StringBuilderCache.buffer;
 		}
 
 		public static char[] GetCodePointStringBuffer()
 		{
-			if (codePointStringBuffer == null)
+			if (StringBuilderCache.codePointStringBuffer == null)
 			{
-				codePointStringBuffer = new char[65535];
+				StringBuilderCache.codePointStringBuffer = new char[65535];
 			}
-			return codePointStringBuffer;
+			return StringBuilderCache.codePointStringBuffer;
 		}
 	}
 
@@ -42,7 +42,7 @@ public struct JsonReader
 
 	private int offset;
 
-	private bool IsInRange => offset < bytes.Length;
+	private bool IsInRange => this.offset < this.bytes.Length;
 
 	public JsonReader(byte[] bytes)
 		: this(bytes, 0)
@@ -53,7 +53,7 @@ public struct JsonReader
 	{
 		this.bytes = bytes;
 		this.offset = offset;
-		if (bytes.Length >= 3 && bytes[offset] == bom[0] && bytes[offset + 1] == bom[1] && bytes[offset + 2] == bom[2])
+		if (bytes.Length >= 3 && bytes[offset] == JsonReader.bom[0] && bytes[offset + 1] == JsonReader.bom[1] && bytes[offset + 2] == JsonReader.bom[2])
 		{
 			this.offset = (offset += 3);
 		}
@@ -61,21 +61,21 @@ public struct JsonReader
 
 	private JsonParsingException CreateParsingException(string expected)
 	{
-		char c = (char)bytes[offset];
+		char c = (char)this.bytes[this.offset];
 		string text = c.ToString();
-		int num = offset;
+		int num = this.offset;
 		try
 		{
-			switch (GetCurrentJsonToken())
+			switch (this.GetCurrentJsonToken())
 			{
 			case JsonToken.Number:
 			{
-				ArraySegment<byte> arraySegment = ReadNumberSegment();
+				ArraySegment<byte> arraySegment = this.ReadNumberSegment();
 				text = StringEncoding.UTF8.GetString(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
 				break;
 			}
 			case JsonToken.String:
-				text = "\"" + ReadString() + "\"";
+				text = "\"" + this.ReadString() + "\"";
 				break;
 			case JsonToken.True:
 				text = "true";
@@ -91,15 +91,15 @@ public struct JsonReader
 		catch
 		{
 		}
-		return new JsonParsingException("expected:'" + expected + "', actual:'" + text + "', at offset:" + num, bytes, num, offset, text);
+		return new JsonParsingException("expected:'" + expected + "', actual:'" + text + "', at offset:" + num, this.bytes, num, this.offset, text);
 	}
 
 	private JsonParsingException CreateParsingExceptionMessage(string message)
 	{
-		char c = (char)bytes[offset];
+		char c = (char)this.bytes[this.offset];
 		string actualChar = c.ToString();
-		int limit = offset;
-		return new JsonParsingException(message, bytes, limit, limit, actualChar);
+		int limit = this.offset;
+		return new JsonParsingException(message, this.bytes, limit, limit, actualChar);
 	}
 
 	public void AdvanceOffset(int offset)
@@ -109,20 +109,20 @@ public struct JsonReader
 
 	public byte[] GetBufferUnsafe()
 	{
-		return bytes;
+		return this.bytes;
 	}
 
 	public int GetCurrentOffsetUnsafe()
 	{
-		return offset;
+		return this.offset;
 	}
 
 	public JsonToken GetCurrentJsonToken()
 	{
-		SkipWhiteSpace();
-		if (offset < bytes.Length)
+		this.SkipWhiteSpace();
+		if (this.offset < this.bytes.Length)
 		{
-			return bytes[offset] switch
+			return this.bytes[this.offset] switch
 			{
 				123 => JsonToken.BeginObject, 
 				125 => JsonToken.EndObject, 
@@ -153,15 +153,15 @@ public struct JsonReader
 
 	public void SkipWhiteSpace()
 	{
-		for (int i = offset; i < bytes.Length; i++)
+		for (int i = this.offset; i < this.bytes.Length; i++)
 		{
-			switch (bytes[i])
+			switch (this.bytes[i])
 			{
 			case 47:
-				i = ReadComment(bytes, i);
+				i = JsonReader.ReadComment(this.bytes, i);
 				break;
 			default:
-				offset = i;
+				this.offset = i;
 				return;
 			case 9:
 			case 10:
@@ -170,30 +170,30 @@ public struct JsonReader
 				break;
 			}
 		}
-		offset = bytes.Length;
+		this.offset = this.bytes.Length;
 	}
 
 	public bool ReadIsNull()
 	{
-		SkipWhiteSpace();
-		if (IsInRange && bytes[offset] == 110)
+		this.SkipWhiteSpace();
+		if (this.IsInRange && this.bytes[this.offset] == 110)
 		{
-			if (bytes[offset + 1] == 117 && bytes[offset + 2] == 108 && bytes[offset + 3] == 108)
+			if (this.bytes[this.offset + 1] == 117 && this.bytes[this.offset + 2] == 108 && this.bytes[this.offset + 3] == 108)
 			{
-				offset += 4;
+				this.offset += 4;
 				return true;
 			}
-			throw CreateParsingException("null");
+			throw this.CreateParsingException("null");
 		}
 		return false;
 	}
 
 	public bool ReadIsBeginArray()
 	{
-		SkipWhiteSpace();
-		if (IsInRange && bytes[offset] == 91)
+		this.SkipWhiteSpace();
+		if (this.IsInRange && this.bytes[this.offset] == 91)
 		{
-			offset++;
+			this.offset++;
 			return true;
 		}
 		return false;
@@ -201,18 +201,18 @@ public struct JsonReader
 
 	public void ReadIsBeginArrayWithVerify()
 	{
-		if (!ReadIsBeginArray())
+		if (!this.ReadIsBeginArray())
 		{
-			throw CreateParsingException("[");
+			throw this.CreateParsingException("[");
 		}
 	}
 
 	public bool ReadIsEndArray()
 	{
-		SkipWhiteSpace();
-		if (IsInRange && bytes[offset] == 93)
+		this.SkipWhiteSpace();
+		if (this.IsInRange && this.bytes[this.offset] == 93)
 		{
-			offset++;
+			this.offset++;
 			return true;
 		}
 		return false;
@@ -220,23 +220,23 @@ public struct JsonReader
 
 	public void ReadIsEndArrayWithVerify()
 	{
-		if (!ReadIsEndArray())
+		if (!this.ReadIsEndArray())
 		{
-			throw CreateParsingException("]");
+			throw this.CreateParsingException("]");
 		}
 	}
 
 	public bool ReadIsEndArrayWithSkipValueSeparator(ref int count)
 	{
-		SkipWhiteSpace();
-		if (IsInRange && bytes[offset] == 93)
+		this.SkipWhiteSpace();
+		if (this.IsInRange && this.bytes[this.offset] == 93)
 		{
-			offset++;
+			this.offset++;
 			return true;
 		}
 		if (count++ != 0)
 		{
-			ReadIsValueSeparatorWithVerify();
+			this.ReadIsValueSeparatorWithVerify();
 		}
 		return false;
 	}
@@ -245,19 +245,19 @@ public struct JsonReader
 	{
 		if (count == 0)
 		{
-			ReadIsBeginArrayWithVerify();
-			if (ReadIsEndArray())
+			this.ReadIsBeginArrayWithVerify();
+			if (this.ReadIsEndArray())
 			{
 				return false;
 			}
 		}
 		else
 		{
-			if (ReadIsEndArray())
+			if (this.ReadIsEndArray())
 			{
 				return false;
 			}
-			ReadIsValueSeparatorWithVerify();
+			this.ReadIsValueSeparatorWithVerify();
 		}
 		count++;
 		return true;
@@ -265,10 +265,10 @@ public struct JsonReader
 
 	public bool ReadIsBeginObject()
 	{
-		SkipWhiteSpace();
-		if (IsInRange && bytes[offset] == 123)
+		this.SkipWhiteSpace();
+		if (this.IsInRange && this.bytes[this.offset] == 123)
 		{
-			offset++;
+			this.offset++;
 			return true;
 		}
 		return false;
@@ -276,18 +276,18 @@ public struct JsonReader
 
 	public void ReadIsBeginObjectWithVerify()
 	{
-		if (!ReadIsBeginObject())
+		if (!this.ReadIsBeginObject())
 		{
-			throw CreateParsingException("{");
+			throw this.CreateParsingException("{");
 		}
 	}
 
 	public bool ReadIsEndObject()
 	{
-		SkipWhiteSpace();
-		if (IsInRange && bytes[offset] == 125)
+		this.SkipWhiteSpace();
+		if (this.IsInRange && this.bytes[this.offset] == 125)
 		{
-			offset++;
+			this.offset++;
 			return true;
 		}
 		return false;
@@ -295,23 +295,23 @@ public struct JsonReader
 
 	public void ReadIsEndObjectWithVerify()
 	{
-		if (!ReadIsEndObject())
+		if (!this.ReadIsEndObject())
 		{
-			throw CreateParsingException("}");
+			throw this.CreateParsingException("}");
 		}
 	}
 
 	public bool ReadIsEndObjectWithSkipValueSeparator(ref int count)
 	{
-		SkipWhiteSpace();
-		if (IsInRange && bytes[offset] == 125)
+		this.SkipWhiteSpace();
+		if (this.IsInRange && this.bytes[this.offset] == 125)
 		{
-			offset++;
+			this.offset++;
 			return true;
 		}
 		if (count++ != 0)
 		{
-			ReadIsValueSeparatorWithVerify();
+			this.ReadIsValueSeparatorWithVerify();
 		}
 		return false;
 	}
@@ -320,19 +320,19 @@ public struct JsonReader
 	{
 		if (count == 0)
 		{
-			ReadIsBeginObjectWithVerify();
-			if (ReadIsEndObject())
+			this.ReadIsBeginObjectWithVerify();
+			if (this.ReadIsEndObject())
 			{
 				return false;
 			}
 		}
 		else
 		{
-			if (ReadIsEndObject())
+			if (this.ReadIsEndObject())
 			{
 				return false;
 			}
-			ReadIsValueSeparatorWithVerify();
+			this.ReadIsValueSeparatorWithVerify();
 		}
 		count++;
 		return true;
@@ -340,10 +340,10 @@ public struct JsonReader
 
 	public bool ReadIsValueSeparator()
 	{
-		SkipWhiteSpace();
-		if (IsInRange && bytes[offset] == 44)
+		this.SkipWhiteSpace();
+		if (this.IsInRange && this.bytes[this.offset] == 44)
 		{
-			offset++;
+			this.offset++;
 			return true;
 		}
 		return false;
@@ -351,18 +351,18 @@ public struct JsonReader
 
 	public void ReadIsValueSeparatorWithVerify()
 	{
-		if (!ReadIsValueSeparator())
+		if (!this.ReadIsValueSeparator())
 		{
-			throw CreateParsingException(",");
+			throw this.CreateParsingException(",");
 		}
 	}
 
 	public bool ReadIsNameSeparator()
 	{
-		SkipWhiteSpace();
-		if (IsInRange && bytes[offset] == 58)
+		this.SkipWhiteSpace();
+		if (this.IsInRange && this.bytes[this.offset] == 58)
 		{
-			offset++;
+			this.offset++;
 			return true;
 		}
 		return false;
@@ -370,9 +370,9 @@ public struct JsonReader
 
 	public void ReadIsNameSeparatorWithVerify()
 	{
-		if (!ReadIsNameSeparator())
+		if (!this.ReadIsNameSeparator())
 		{
-			throw CreateParsingException(":");
+			throw this.CreateParsingException(":");
 		}
 	}
 
@@ -382,25 +382,25 @@ public struct JsonReader
 		int num = 0;
 		char[] array2 = null;
 		int num2 = 0;
-		if (bytes[offset] != 34)
+		if (this.bytes[this.offset] != 34)
 		{
-			throw CreateParsingException("String Begin Token");
+			throw this.CreateParsingException("String Begin Token");
 		}
-		offset++;
-		int num3 = offset;
-		for (int i = offset; i < bytes.Length; i++)
+		this.offset++;
+		int num3 = this.offset;
+		for (int i = this.offset; i < this.bytes.Length; i++)
 		{
 			byte b = 0;
-			switch (bytes[i])
+			switch (this.bytes[i])
 			{
 			case 92:
 			{
-				switch ((char)bytes[i + 1])
+				switch ((char)this.bytes[i + 1])
 				{
 				case '"':
 				case '/':
 				case '\\':
-					b = bytes[i + 1];
+					b = this.bytes[i + 1];
 					break;
 				case 'b':
 					b = 8;
@@ -431,26 +431,26 @@ public struct JsonReader
 						}
 						int num5 = i - num3;
 						BinaryUtil.EnsureCapacity(ref array, num, num5 + 1);
-						Buffer.BlockCopy(bytes, num3, array, num, num5);
+						Buffer.BlockCopy(this.bytes, num3, array, num, num5);
 						num += num5;
 					}
 					if (array2.Length == num2)
 					{
 						Array.Resize(ref array2, array2.Length * 2);
 					}
-					byte a = bytes[i + 2];
-					char b2 = (char)bytes[i + 3];
-					char c = (char)bytes[i + 4];
-					char d = (char)bytes[i + 5];
-					int codePoint = GetCodePoint((char)a, b2, c, d);
+					byte a = this.bytes[i + 2];
+					char b2 = (char)this.bytes[i + 3];
+					char c = (char)this.bytes[i + 4];
+					char d = (char)this.bytes[i + 5];
+					int codePoint = JsonReader.GetCodePoint((char)a, b2, c, d);
 					array2[num2++] = (char)codePoint;
 					i += 5;
-					offset += 6;
-					num3 = offset;
+					this.offset += 6;
+					num3 = this.offset;
 					continue;
 				}
 				default:
-					throw CreateParsingExceptionMessage("Bad JSON escape.");
+					throw this.CreateParsingExceptionMessage("Bad JSON escape.");
 				}
 				if (array == null)
 				{
@@ -464,22 +464,22 @@ public struct JsonReader
 				}
 				int num6 = i - num3;
 				BinaryUtil.EnsureCapacity(ref array, num, num6 + 1);
-				Buffer.BlockCopy(bytes, num3, array, num, num6);
+				Buffer.BlockCopy(this.bytes, num3, array, num, num6);
 				num += num6;
 				array[num++] = b;
 				i++;
-				offset += 2;
-				num3 = offset;
+				this.offset += 2;
+				num3 = this.offset;
 				continue;
 			}
 			case 34:
 			{
-				offset++;
+				this.offset++;
 				if (num == 0 && num2 == 0)
 				{
-					resultBytes = bytes;
+					resultBytes = this.bytes;
 					resultOffset = num3;
-					resultLength = offset - 1 - num3;
+					resultLength = this.offset - 1 - num3;
 					return;
 				}
 				if (array == null)
@@ -492,9 +492,9 @@ public struct JsonReader
 					num += StringEncoding.UTF8.GetBytes(array2, 0, num2, array, num);
 					num2 = 0;
 				}
-				int num4 = offset - num3 - 1;
+				int num4 = this.offset - num3 - 1;
 				BinaryUtil.EnsureCapacity(ref array, num, num4);
-				Buffer.BlockCopy(bytes, num3, array, num, num4);
+				Buffer.BlockCopy(this.bytes, num3, array, num, num4);
 				num += num4;
 				resultBytes = array;
 				resultOffset = 0;
@@ -512,17 +512,17 @@ public struct JsonReader
 				num += StringEncoding.UTF8.GetBytes(array2, 0, num2, array, num);
 				num2 = 0;
 			}
-			offset++;
+			this.offset++;
 		}
 		resultLength = 0;
 		resultBytes = null;
 		resultOffset = 0;
-		throw CreateParsingException("String End Token");
+		throw this.CreateParsingException("String End Token");
 	}
 
 	private static int GetCodePoint(char a, char b, char c, char d)
 	{
-		return ((ToNumber(a) * 16 + ToNumber(b)) * 16 + ToNumber(c)) * 16 + ToNumber(d);
+		return ((JsonReader.ToNumber(a) * 16 + JsonReader.ToNumber(b)) * 16 + JsonReader.ToNumber(c)) * 16 + JsonReader.ToNumber(d);
 	}
 
 	private static int ToNumber(char x)
@@ -544,83 +544,83 @@ public struct JsonReader
 
 	public ArraySegment<byte> ReadStringSegmentUnsafe()
 	{
-		if (ReadIsNull())
+		if (this.ReadIsNull())
 		{
-			return nullTokenSegment;
+			return JsonReader.nullTokenSegment;
 		}
-		ReadStringSegmentCore(out var resultBytes, out var resultOffset, out var resultLength);
+		this.ReadStringSegmentCore(out var resultBytes, out var resultOffset, out var resultLength);
 		return new ArraySegment<byte>(resultBytes, resultOffset, resultLength);
 	}
 
 	public string ReadString()
 	{
-		if (ReadIsNull())
+		if (this.ReadIsNull())
 		{
 			return null;
 		}
-		ReadStringSegmentCore(out var resultBytes, out var resultOffset, out var resultLength);
+		this.ReadStringSegmentCore(out var resultBytes, out var resultOffset, out var resultLength);
 		return Encoding.UTF8.GetString(resultBytes, resultOffset, resultLength);
 	}
 
 	public string ReadPropertyName()
 	{
-		string result = ReadString();
-		ReadIsNameSeparatorWithVerify();
+		string result = this.ReadString();
+		this.ReadIsNameSeparatorWithVerify();
 		return result;
 	}
 
 	public ArraySegment<byte> ReadStringSegmentRaw()
 	{
 		ArraySegment<byte> arraySegment = default(ArraySegment<byte>);
-		if (ReadIsNull())
+		if (this.ReadIsNull())
 		{
-			return nullTokenSegment;
+			return JsonReader.nullTokenSegment;
 		}
-		if (bytes[offset++] != 34)
+		if (this.bytes[this.offset++] != 34)
 		{
-			throw CreateParsingException("\"");
+			throw this.CreateParsingException("\"");
 		}
-		int num = offset;
-		for (int i = offset; i < bytes.Length; i++)
+		int num = this.offset;
+		for (int i = this.offset; i < this.bytes.Length; i++)
 		{
-			if (bytes[i] == 34 && bytes[i - 1] != 92)
+			if (this.bytes[i] == 34 && this.bytes[i - 1] != 92)
 			{
-				offset = i + 1;
-				return new ArraySegment<byte>(bytes, num, offset - num - 1);
+				this.offset = i + 1;
+				return new ArraySegment<byte>(this.bytes, num, this.offset - num - 1);
 			}
 		}
-		throw CreateParsingExceptionMessage("not found end string.");
+		throw this.CreateParsingExceptionMessage("not found end string.");
 	}
 
 	public ArraySegment<byte> ReadPropertyNameSegmentRaw()
 	{
-		ArraySegment<byte> result = ReadStringSegmentRaw();
-		ReadIsNameSeparatorWithVerify();
+		ArraySegment<byte> result = this.ReadStringSegmentRaw();
+		this.ReadIsNameSeparatorWithVerify();
 		return result;
 	}
 
 	public bool ReadBoolean()
 	{
-		SkipWhiteSpace();
-		if (bytes[offset] == 116)
+		this.SkipWhiteSpace();
+		if (this.bytes[this.offset] == 116)
 		{
-			if (bytes[offset + 1] == 114 && bytes[offset + 2] == 117 && bytes[offset + 3] == 101)
+			if (this.bytes[this.offset + 1] == 114 && this.bytes[this.offset + 2] == 117 && this.bytes[this.offset + 3] == 101)
 			{
-				offset += 4;
+				this.offset += 4;
 				return true;
 			}
-			throw CreateParsingException("true");
+			throw this.CreateParsingException("true");
 		}
-		if (bytes[offset] == 102)
+		if (this.bytes[this.offset] == 102)
 		{
-			if (bytes[offset + 1] == 97 && bytes[offset + 2] == 108 && bytes[offset + 3] == 115 && bytes[offset + 4] == 101)
+			if (this.bytes[this.offset + 1] == 97 && this.bytes[this.offset + 2] == 108 && this.bytes[this.offset + 3] == 115 && this.bytes[this.offset + 4] == 101)
 			{
-				offset += 5;
+				this.offset += 5;
 				return false;
 			}
-			throw CreateParsingException("false");
+			throw this.CreateParsingException("false");
 		}
-		throw CreateParsingException("true | false");
+		throw this.CreateParsingException("true | false");
 	}
 
 	private static bool IsWordBreak(byte c)
@@ -643,8 +643,8 @@ public struct JsonReader
 
 	public void ReadNext()
 	{
-		JsonToken currentJsonToken = GetCurrentJsonToken();
-		ReadNextCore(currentJsonToken);
+		JsonToken currentJsonToken = this.GetCurrentJsonToken();
+		this.ReadNextCore(currentJsonToken);
 	}
 
 	private void ReadNextCore(JsonToken token)
@@ -657,39 +657,39 @@ public struct JsonReader
 		case JsonToken.EndArray:
 		case JsonToken.ValueSeparator:
 		case JsonToken.NameSeparator:
-			offset++;
+			this.offset++;
 			break;
 		case JsonToken.True:
 		case JsonToken.Null:
-			offset += 4;
+			this.offset += 4;
 			break;
 		case JsonToken.False:
-			offset += 5;
+			this.offset += 5;
 			break;
 		case JsonToken.String:
 		{
-			offset++;
-			for (int j = offset; j < bytes.Length; j++)
+			this.offset++;
+			for (int j = this.offset; j < this.bytes.Length; j++)
 			{
-				if (bytes[j] == 34 && bytes[j - 1] != 92)
+				if (this.bytes[j] == 34 && this.bytes[j - 1] != 92)
 				{
-					offset = j + 1;
+					this.offset = j + 1;
 					return;
 				}
 			}
-			throw CreateParsingExceptionMessage("not found end string.");
+			throw this.CreateParsingExceptionMessage("not found end string.");
 		}
 		case JsonToken.Number:
 		{
-			for (int i = offset; i < bytes.Length; i++)
+			for (int i = this.offset; i < this.bytes.Length; i++)
 			{
-				if (IsWordBreak(bytes[i]))
+				if (JsonReader.IsWordBreak(this.bytes[i]))
 				{
-					offset = i;
+					this.offset = i;
 					return;
 				}
 			}
-			offset = bytes.Length;
+			this.offset = this.bytes.Length;
 			break;
 		}
 		case JsonToken.None:
@@ -699,27 +699,27 @@ public struct JsonReader
 
 	public void ReadNextBlock()
 	{
-		ReadNextBlockCore(0);
+		this.ReadNextBlockCore(0);
 	}
 
 	private void ReadNextBlockCore(int stack)
 	{
-		JsonToken currentJsonToken = GetCurrentJsonToken();
+		JsonToken currentJsonToken = this.GetCurrentJsonToken();
 		switch (currentJsonToken)
 		{
 		default:
 			return;
 		case JsonToken.BeginObject:
 		case JsonToken.BeginArray:
-			offset++;
-			ReadNextBlockCore(stack + 1);
+			this.offset++;
+			this.ReadNextBlockCore(stack + 1);
 			return;
 		case JsonToken.EndObject:
 		case JsonToken.EndArray:
-			offset++;
+			this.offset++;
 			if (stack - 1 != 0)
 			{
-				ReadNextBlockCore(stack - 1);
+				this.ReadNextBlockCore(stack - 1);
 			}
 			return;
 		case JsonToken.Number:
@@ -735,126 +735,126 @@ public struct JsonReader
 		}
 		do
 		{
-			ReadNextCore(currentJsonToken);
-			currentJsonToken = GetCurrentJsonToken();
+			this.ReadNextCore(currentJsonToken);
+			currentJsonToken = this.GetCurrentJsonToken();
 		}
 		while (stack != 0 && (int)currentJsonToken >= 5);
 		if (stack != 0)
 		{
-			ReadNextBlockCore(stack);
+			this.ReadNextBlockCore(stack);
 		}
 	}
 
 	public ArraySegment<byte> ReadNextBlockSegment()
 	{
-		int num = offset;
-		ReadNextBlock();
-		return new ArraySegment<byte>(bytes, num, offset - num);
+		int num = this.offset;
+		this.ReadNextBlock();
+		return new ArraySegment<byte>(this.bytes, num, this.offset - num);
 	}
 
 	public sbyte ReadSByte()
 	{
-		return checked((sbyte)ReadInt64());
+		return checked((sbyte)this.ReadInt64());
 	}
 
 	public short ReadInt16()
 	{
-		return checked((short)ReadInt64());
+		return checked((short)this.ReadInt64());
 	}
 
 	public int ReadInt32()
 	{
-		return checked((int)ReadInt64());
+		return checked((int)this.ReadInt64());
 	}
 
 	public long ReadInt64()
 	{
-		SkipWhiteSpace();
+		this.SkipWhiteSpace();
 		int readCount;
-		long result = NumberConverter.ReadInt64(bytes, offset, out readCount);
+		long result = NumberConverter.ReadInt64(this.bytes, this.offset, out readCount);
 		if (readCount == 0)
 		{
-			throw CreateParsingException("Number Token");
+			throw this.CreateParsingException("Number Token");
 		}
-		offset += readCount;
+		this.offset += readCount;
 		return result;
 	}
 
 	public byte ReadByte()
 	{
-		return checked((byte)ReadUInt64());
+		return checked((byte)this.ReadUInt64());
 	}
 
 	public ushort ReadUInt16()
 	{
-		return checked((ushort)ReadUInt64());
+		return checked((ushort)this.ReadUInt64());
 	}
 
 	public uint ReadUInt32()
 	{
-		return checked((uint)ReadUInt64());
+		return checked((uint)this.ReadUInt64());
 	}
 
 	public ulong ReadUInt64()
 	{
-		SkipWhiteSpace();
+		this.SkipWhiteSpace();
 		int readCount;
-		ulong result = NumberConverter.ReadUInt64(bytes, offset, out readCount);
+		ulong result = NumberConverter.ReadUInt64(this.bytes, this.offset, out readCount);
 		if (readCount == 0)
 		{
-			throw CreateParsingException("Number Token");
+			throw this.CreateParsingException("Number Token");
 		}
-		offset += readCount;
+		this.offset += readCount;
 		return result;
 	}
 
 	public float ReadSingle()
 	{
-		SkipWhiteSpace();
+		this.SkipWhiteSpace();
 		int readCount;
-		float result = StringToDoubleConverter.ToSingle(bytes, offset, out readCount);
+		float result = StringToDoubleConverter.ToSingle(this.bytes, this.offset, out readCount);
 		if (readCount == 0)
 		{
-			throw CreateParsingException("Number Token");
+			throw this.CreateParsingException("Number Token");
 		}
-		offset += readCount;
+		this.offset += readCount;
 		return result;
 	}
 
 	public double ReadDouble()
 	{
-		SkipWhiteSpace();
+		this.SkipWhiteSpace();
 		int readCount;
-		double result = StringToDoubleConverter.ToDouble(bytes, offset, out readCount);
+		double result = StringToDoubleConverter.ToDouble(this.bytes, this.offset, out readCount);
 		if (readCount == 0)
 		{
-			throw CreateParsingException("Number Token");
+			throw this.CreateParsingException("Number Token");
 		}
-		offset += readCount;
+		this.offset += readCount;
 		return result;
 	}
 
 	public ArraySegment<byte> ReadNumberSegment()
 	{
-		SkipWhiteSpace();
-		int num = offset;
-		int num2 = offset;
+		this.SkipWhiteSpace();
+		int num = this.offset;
+		int num2 = this.offset;
 		while (true)
 		{
-			if (num2 < bytes.Length)
+			if (num2 < this.bytes.Length)
 			{
-				if (!NumberConverter.IsNumberRepresentation(bytes[num2]))
+				if (!NumberConverter.IsNumberRepresentation(this.bytes[num2]))
 				{
-					offset = num2;
+					this.offset = num2;
 					break;
 				}
 				num2++;
 				continue;
 			}
-			offset = bytes.Length;
+			this.offset = this.bytes.Length;
 			break;
 		}
-		return new ArraySegment<byte>(bytes, num, offset - num);
+		return new ArraySegment<byte>(this.bytes, num, this.offset - num);
 	}
 
 	private static int ReadComment(byte[] bytes, int offset)

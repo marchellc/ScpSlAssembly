@@ -29,8 +29,8 @@ public class DoorCrusherExtension : DoorVariantExtension
 			Object.Destroy(this);
 			return;
 		}
-		bool flag2 = (DeathCollider.enabled = false);
-		_enabled = flag2;
+		bool flag = (this.DeathCollider.enabled = false);
+		this._enabled = flag;
 	}
 
 	private void OnTriggerEnter(Collider other)
@@ -43,9 +43,9 @@ public class DoorCrusherExtension : DoorVariantExtension
 		if (currentRole.RoleTypeId != RoleTypeId.Scp106)
 		{
 			bool flag = currentRole.Team == Team.SCPs;
-			if (!(IgnoreScps && flag))
+			if (!(this.IgnoreScps && flag))
 			{
-				float damage = (flag ? ScpCrushDamage : (-1f));
+				float damage = (flag ? this.ScpCrushDamage : (-1f));
 				hub.playerStats.DealDamage(new UniversalDamageHandler(damage, DeathTranslations.Crushed));
 			}
 		}
@@ -55,28 +55,28 @@ public class DoorCrusherExtension : DoorVariantExtension
 	{
 		if (NetworkServer.active)
 		{
-			bool flag = IsColliderEnabled();
-			if (_enabled != flag)
+			bool flag = this.IsColliderEnabled();
+			if (this._enabled != flag)
 			{
-				DeathCollider.enabled = (_enabled = flag);
+				this.DeathCollider.enabled = (this._enabled = flag);
 			}
 		}
 	}
 
 	private bool IsColliderEnabled()
 	{
-		if (TargetDoor.TargetState)
+		if (base.TargetDoor.TargetState)
 		{
 			return false;
 		}
-		if (TargetDoor is PryableDoor { IsBeingPried: not false })
+		if (base.TargetDoor is PryableDoor { IsBeingPried: not false })
 		{
 			return false;
 		}
-		float exactState = TargetDoor.GetExactState();
-		if (exactState < MaxCrushThreshold)
+		float exactState = base.TargetDoor.GetExactState();
+		if (exactState < this.MaxCrushThreshold)
 		{
-			return exactState > MinCrushThreshold;
+			return exactState > this.MinCrushThreshold;
 		}
 		return false;
 	}

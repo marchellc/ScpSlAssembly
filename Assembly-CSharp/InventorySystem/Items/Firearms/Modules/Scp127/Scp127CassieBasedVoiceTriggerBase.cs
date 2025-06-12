@@ -29,12 +29,12 @@ public abstract class Scp127CassieBasedVoiceTriggerBase : Scp127VoiceTriggerBase
 
 	protected override MixerChannel DefaultAudioMixerChannel => MixerChannel.NoDucking;
 
-	protected bool Idle => _status == DetectionStatus.Idle;
+	protected bool Idle => this._status == DetectionStatus.Idle;
 
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		_status = DetectionStatus.Idle;
+		this._status = DetectionStatus.Idle;
 	}
 
 	protected override void RegisterEvents()
@@ -53,8 +53,8 @@ public abstract class Scp127CassieBasedVoiceTriggerBase : Scp127VoiceTriggerBase
 	{
 		if (NetworkServer.active)
 		{
-			_scheduledCallback = callback;
-			_status = DetectionStatus.WaitingForTrigger;
+			this._scheduledCallback = callback;
+			this._status = DetectionStatus.WaitingForTrigger;
 		}
 	}
 
@@ -66,19 +66,19 @@ public abstract class Scp127CassieBasedVoiceTriggerBase : Scp127VoiceTriggerBase
 		{
 			return;
 		}
-		switch (_status)
+		switch (this._status)
 		{
 		case DetectionStatus.WaitingForTrigger:
-			if (TryIdentifyLine(line))
+			if (this.TryIdentifyLine(line))
 			{
-				_status = DetectionStatus.AnnouncementStartedPlaying;
+				this._status = DetectionStatus.AnnouncementStartedPlaying;
 			}
 			break;
 		case DetectionStatus.AnnouncementStartedPlaying:
 			if (line.apiName == "END_OF_MESSAGE")
 			{
-				_status = DetectionStatus.Idle;
-				_scheduledCallback?.Invoke();
+				this._status = DetectionStatus.Idle;
+				this._scheduledCallback?.Invoke();
 			}
 			break;
 		}

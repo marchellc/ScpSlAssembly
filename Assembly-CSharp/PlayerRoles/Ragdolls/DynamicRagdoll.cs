@@ -18,7 +18,7 @@ public class DynamicRagdoll : BasicRagdoll
 	public override void FreezeRagdoll()
 	{
 		base.FreezeRagdoll();
-		LinkedRigidbodies.ForEach(delegate(Rigidbody rg)
+		this.LinkedRigidbodies.ForEach(delegate(Rigidbody rg)
 		{
 			if (rg.TryGetComponent<Joint>(out var component))
 			{
@@ -30,8 +30,8 @@ public class DynamicRagdoll : BasicRagdoll
 			}
 			Object.Destroy(rg);
 		});
-		Hitboxes = EmptyHitboxes;
-		LinkedRigidbodies = EmptyRigidbodies;
+		this.Hitboxes = DynamicRagdoll.EmptyHitboxes;
+		this.LinkedRigidbodies = DynamicRagdoll.EmptyRigidbodies;
 	}
 
 	public override bool Weaved()

@@ -16,24 +16,24 @@ public class ElevatorWaypoint : WaypointBase
 	{
 		get
 		{
-			if (!_transformSet)
+			if (!this._transformSet)
 			{
-				_transform = _elevator.transform;
-				_transformSet = true;
+				this._transform = this._elevator.transform;
+				this._transformSet = true;
 			}
-			return _transform;
+			return this._transform;
 		}
 	}
 
 	protected override void Start()
 	{
 		base.Start();
-		SetId((byte)(_elevator.AssignedGroup + 1));
+		base.SetId((byte)(this._elevator.AssignedGroup + 1));
 	}
 
 	protected override float SqrDistanceTo(Vector3 pos)
 	{
-		if (!_elevator.WorldspaceBounds.Contains(pos))
+		if (!this._elevator.WorldspaceBounds.Contains(pos))
 		{
 			return float.MaxValue;
 		}
@@ -42,21 +42,21 @@ public class ElevatorWaypoint : WaypointBase
 
 	public override Vector3 GetWorldspacePosition(Vector3 relPosition)
 	{
-		return ElevatorTransform.TransformPoint(relPosition);
+		return this.ElevatorTransform.TransformPoint(relPosition);
 	}
 
 	public override Vector3 GetRelativePosition(Vector3 worldPoint)
 	{
-		return ElevatorTransform.InverseTransformPoint(worldPoint);
+		return this.ElevatorTransform.InverseTransformPoint(worldPoint);
 	}
 
 	public override Quaternion GetWorldspaceRotation(Quaternion relRotation)
 	{
-		return ElevatorTransform.rotation * relRotation;
+		return this.ElevatorTransform.rotation * relRotation;
 	}
 
 	public override Quaternion GetRelativeRotation(Quaternion worldRot)
 	{
-		return Quaternion.Inverse(ElevatorTransform.rotation) * worldRot;
+		return Quaternion.Inverse(this.ElevatorTransform.rotation) * worldRot;
 	}
 }

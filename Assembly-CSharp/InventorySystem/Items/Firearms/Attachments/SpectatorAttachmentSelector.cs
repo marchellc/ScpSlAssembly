@@ -28,23 +28,23 @@ public class SpectatorAttachmentSelector : AttachmentSelectorBase
 	{
 		for (int i = 0; i < base.SelectedFirearm.Attachments.Length; i++)
 		{
-			if (base.SelectedFirearm.Attachments[i].Slot == SelectedSlot && base.SelectedFirearm.Attachments[i].IsEnabled)
+			if (base.SelectedFirearm.Attachments[i].Slot == base.SelectedSlot && base.SelectedFirearm.Attachments[i].IsEnabled)
 			{
 				base.SelectedFirearm.Attachments[i].IsEnabled = false;
 				break;
 			}
 		}
 		base.SelectedFirearm.Attachments[attachmentId].IsEnabled = true;
-		_selectedCode = base.SelectedFirearm.GetCurrentAttachmentsCode();
-		_selectedCode = base.SelectedFirearm.ValidateAttachmentsCode(_selectedCode);
+		this._selectedCode = base.SelectedFirearm.GetCurrentAttachmentsCode();
+		this._selectedCode = base.SelectedFirearm.ValidateAttachmentsCode(this._selectedCode);
 		AttachmentPreferences.SetPreset(base.SelectedFirearm.ItemTypeId, 0);
-		ResendPreference();
+		this.ResendPreference();
 	}
 
 	protected override void LoadPreset(uint loadedCode)
 	{
-		_selectedCode = loadedCode;
-		ResendPreference();
+		this._selectedCode = loadedCode;
+		this.ResendPreference();
 	}
 
 	public override void RegisterAction(RectTransform t, Action<Vector2> action)
@@ -67,17 +67,18 @@ public class SpectatorAttachmentSelector : AttachmentSelectorBase
 	public void SelectFirearm(Firearm firearm)
 	{
 		uint savedPreferenceCode = AttachmentPreferences.GetSavedPreferenceCode(firearm.ItemTypeId);
-		_selectedFirearmId = firearm.ItemTypeId;
-		_selectedCode = firearm.ValidateAttachmentsCode(savedPreferenceCode);
+		this._selectedFirearmId = firearm.ItemTypeId;
+		this._selectedCode = firearm.ValidateAttachmentsCode(savedPreferenceCode);
 	}
 
 	private void ResendPreference()
 	{
-		AttachmentPreferences.SavePreferenceCode(_selectedFirearmId.Value, _selectedCode);
-		AttachmentsSetupPreference message = default(AttachmentsSetupPreference);
-		message.Weapon = _selectedFirearmId.Value;
-		message.AttachmentsCode = _selectedCode;
-		NetworkClient.Send(message);
+		AttachmentPreferences.SavePreferenceCode(this._selectedFirearmId.Value, this._selectedCode);
+		NetworkClient.Send(new AttachmentsSetupPreference
+		{
+			Weapon = this._selectedFirearmId.Value,
+			AttachmentsCode = this._selectedCode
+		});
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -94,7 +95,7 @@ public class SpectatorAttachmentSelector : AttachmentSelectorBase
 		{
 			if (availableItem.Value is Firearm firearm && firearm.Attachments.Length > 1)
 			{
-				SpectatorSelectorFirearmButton obj = (flag ? _firearmButton : UnityEngine.Object.Instantiate(_firearmButton, _firearmButton.transform.parent));
+				SpectatorSelectorFirearmButton obj = (flag ? this._firearmButton : UnityEngine.Object.Instantiate(this._firearmButton, this._firearmButton.transform.parent));
 				flag = false;
 				obj.Setup(this, firearm);
 			}
@@ -103,27 +104,27 @@ public class SpectatorAttachmentSelector : AttachmentSelectorBase
 
 	private void OnDisable()
 	{
-		RefreshState(null, null);
-		_selectedFirearmId = null;
+		base.RefreshState(null, null);
+		this._selectedFirearmId = null;
 	}
 
 	private void Update()
 	{
-		if (_selectedFirearmId.HasValue)
+		if (this._selectedFirearmId.HasValue)
 		{
-			base.SelectedFirearm = AttachmentPreview.Get(_selectedFirearmId.Value, _selectedCode);
-			LerpRects(Time.deltaTime * _rescaleSpeed);
-			MonoBehaviour[] slotsPool = SlotsPool;
+			base.SelectedFirearm = AttachmentPreview.Get(this._selectedFirearmId.Value, this._selectedCode);
+			base.LerpRects(Time.deltaTime * this._rescaleSpeed);
+			MonoBehaviour[] slotsPool = base.SlotsPool;
 			for (int i = 0; i < slotsPool.Length; i++)
 			{
-				((SpectatorSelectorCollider)slotsPool[i]).UpdateColors(SelectedSlot);
+				((SpectatorSelectorCollider)slotsPool[i]).UpdateColors(base.SelectedSlot);
 			}
-			slotsPool = SelectableAttachmentsPool;
+			slotsPool = base.SelectableAttachmentsPool;
 			for (int i = 0; i < slotsPool.Length; i++)
 			{
-				((SpectatorSelectorCollider)slotsPool[i]).UpdateColors(SelectedSlot);
+				((SpectatorSelectorCollider)slotsPool[i]).UpdateColors(base.SelectedSlot);
 			}
-			RefreshState(base.SelectedFirearm, null);
+			base.RefreshState(base.SelectedFirearm, null);
 		}
 	}
 
@@ -131,7 +132,7 @@ public class SpectatorAttachmentSelector : AttachmentSelectorBase
 	{
 		if (hub.isLocalPlayer && !hub.IsAlive() && NetworkClient.active)
 		{
-			SendPreferences();
+			SpectatorAttachmentSelector.SendPreferences();
 		}
 	}
 
@@ -141,10 +142,11 @@ public class SpectatorAttachmentSelector : AttachmentSelectorBase
 		{
 			if (value is Firearm weapon)
 			{
-				AttachmentsSetupPreference message = default(AttachmentsSetupPreference);
-				message.Weapon = value.ItemTypeId;
-				message.AttachmentsCode = weapon.GetSavedPreferenceCode();
-				NetworkClient.Send(message);
+				NetworkClient.Send(new AttachmentsSetupPreference
+				{
+					Weapon = value.ItemTypeId,
+					AttachmentsCode = weapon.GetSavedPreferenceCode()
+				});
 			}
 		}
 	}

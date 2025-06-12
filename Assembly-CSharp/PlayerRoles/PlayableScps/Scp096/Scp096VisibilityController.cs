@@ -17,7 +17,7 @@ public class Scp096VisibilityController : FpcVisibilityController
 		get
 		{
 			InvisibilityFlags invisibilityFlags = base.IgnoredFlags;
-			if (HideNonTargets)
+			if (this.HideNonTargets)
 			{
 				invisibilityFlags |= (InvisibilityFlags)3u;
 			}
@@ -25,17 +25,17 @@ public class Scp096VisibilityController : FpcVisibilityController
 		}
 	}
 
-	protected override int NormalMaxRangeSqr => EnsureVisiblityForState(base.NormalMaxRangeSqr);
+	protected override int NormalMaxRangeSqr => this.EnsureVisiblityForState(base.NormalMaxRangeSqr);
 
-	protected override int SurfaceMaxRangeSqr => EnsureVisiblityForState(base.SurfaceMaxRangeSqr);
+	protected override int SurfaceMaxRangeSqr => this.EnsureVisiblityForState(base.SurfaceMaxRangeSqr);
 
 	private bool HideNonTargets
 	{
 		get
 		{
-			if (!_role.IsRageState(Scp096RageState.Distressed))
+			if (!this._role.IsRageState(Scp096RageState.Distressed))
 			{
-				return _role.IsRageState(Scp096RageState.Enraged);
+				return this._role.IsRageState(Scp096RageState.Enraged);
 			}
 			return true;
 		}
@@ -43,7 +43,7 @@ public class Scp096VisibilityController : FpcVisibilityController
 
 	private int EnsureVisiblityForState(int defaultRange)
 	{
-		if (!Scp096AudioPlayer.TryGetAudioForState(_role.StateController.RageState, out var stateAudio))
+		if (!Scp096AudioPlayer.TryGetAudioForState(this._role.StateController.RageState, out var stateAudio))
 		{
 			return defaultRange;
 		}
@@ -58,9 +58,9 @@ public class Scp096VisibilityController : FpcVisibilityController
 
 	public override bool ValidateVisibility(ReferenceHub target)
 	{
-		if (HideNonTargets)
+		if (this.HideNonTargets)
 		{
-			if (_targetsTracker.HasTarget(target))
+			if (this._targetsTracker.HasTarget(target))
 			{
 				return base.ValidateVisibility(target);
 			}
@@ -72,7 +72,7 @@ public class Scp096VisibilityController : FpcVisibilityController
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_role = base.Role as Scp096Role;
-		_role.SubroutineModule.TryGetSubroutine<Scp096TargetsTracker>(out _targetsTracker);
+		this._role = base.Role as Scp096Role;
+		this._role.SubroutineModule.TryGetSubroutine<Scp096TargetsTracker>(out this._targetsTracker);
 	}
 }

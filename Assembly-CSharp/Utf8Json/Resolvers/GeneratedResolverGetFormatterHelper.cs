@@ -12,7 +12,7 @@ internal static class GeneratedResolverGetFormatterHelper
 
 	static GeneratedResolverGetFormatterHelper()
 	{
-		lookup = new Dictionary<Type, int>(35)
+		GeneratedResolverGetFormatterHelper.lookup = new Dictionary<Type, int>(35)
 		{
 			{
 				typeof(ServerListItem[]),
@@ -159,7 +159,7 @@ internal static class GeneratedResolverGetFormatterHelper
 
 	internal static object GetFormatter(Type t)
 	{
-		if (!lookup.TryGetValue(t, out var value))
+		if (!GeneratedResolverGetFormatterHelper.lookup.TryGetValue(t, out var value))
 		{
 			return null;
 		}

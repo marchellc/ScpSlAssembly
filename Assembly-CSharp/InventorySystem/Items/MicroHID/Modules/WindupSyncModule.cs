@@ -14,13 +14,13 @@ public class WindupSyncModule : MicroHidModuleBase
 
 	public WindupSyncModule()
 	{
-		_serverUpdateController = ServerUpdateController;
+		this._serverUpdateController = ServerUpdateController;
 	}
 
 	private void ServerUpdateController(CycleController cycle)
 	{
 		byte b = (byte)Mathf.RoundToInt(cycle.ServerWindUpProgress * 255f);
-		if (ReceivedData.TryGetValue(cycle.Serial, out var value) && value == b)
+		if (WindupSyncModule.ReceivedData.TryGetValue(cycle.Serial, out var value) && value == b)
 		{
 			return;
 		}
@@ -35,7 +35,7 @@ public class WindupSyncModule : MicroHidModuleBase
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		ReceivedData.Clear();
+		WindupSyncModule.ReceivedData.Clear();
 	}
 
 	internal override void TemplateUpdate()
@@ -43,18 +43,18 @@ public class WindupSyncModule : MicroHidModuleBase
 		base.TemplateUpdate();
 		if (NetworkServer.active)
 		{
-			CycleSyncModule.ForEachController(_serverUpdateController);
+			CycleSyncModule.ForEachController(this._serverUpdateController);
 		}
 	}
 
 	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
 	{
 		base.ClientProcessRpcTemplate(reader, serial);
-		ReceivedData[serial] = reader.ReadByte();
+		WindupSyncModule.ReceivedData[serial] = reader.ReadByte();
 	}
 
 	public static float GetProgress(ushort serial)
 	{
-		return (float)(int)ReceivedData.GetValueOrDefault(serial) * 0.003921569f;
+		return (float)(int)WindupSyncModule.ReceivedData.GetValueOrDefault(serial) * 0.003921569f;
 	}
 }

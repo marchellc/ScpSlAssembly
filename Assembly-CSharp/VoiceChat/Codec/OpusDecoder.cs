@@ -11,8 +11,8 @@ public class OpusDecoder : IDisposable
 
 	public OpusDecoder()
 	{
-		_handle = OpusWrapper.CreateDecoder(48000, 1);
-		if (_handle == IntPtr.Zero)
+		this._handle = OpusWrapper.CreateDecoder(48000, 1);
+		if (this._handle == IntPtr.Zero)
 		{
 			throw new OpusException(OpusStatusCode.AllocFail, "Memory was not allocated for the encoder");
 		}
@@ -22,19 +22,19 @@ public class OpusDecoder : IDisposable
 	{
 		if (OpusWrapper.GetBandwidth(packetData) < 0)
 		{
-			_previousPacketInvalid = true;
-			return OpusWrapper.Decode(_handle, null, 0, samples, fec: false, 1);
+			this._previousPacketInvalid = true;
+			return OpusWrapper.Decode(this._handle, null, 0, samples, fec: false, 1);
 		}
-		_previousPacketInvalid = false;
-		return OpusWrapper.Decode(_handle, packetData, dataLength, samples, _previousPacketInvalid, 1);
+		this._previousPacketInvalid = false;
+		return OpusWrapper.Decode(this._handle, packetData, dataLength, samples, this._previousPacketInvalid, 1);
 	}
 
 	public void Dispose()
 	{
-		if (_handle != IntPtr.Zero)
+		if (this._handle != IntPtr.Zero)
 		{
-			OpusWrapper.Destroy(_handle);
-			_handle = IntPtr.Zero;
+			OpusWrapper.Destroy(this._handle);
+			this._handle = IntPtr.Zero;
 		}
 	}
 }

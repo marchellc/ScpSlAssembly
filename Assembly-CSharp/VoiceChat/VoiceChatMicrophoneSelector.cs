@@ -15,8 +15,8 @@ public class VoiceChatMicrophoneSelector : TMP_Dropdown
 	protected override void Awake()
 	{
 		base.Awake();
-		RefreshOptions();
-		if (TryGetPreferredMicrophone(out var mic))
+		this.RefreshOptions();
+		if (VoiceChatMicrophoneSelector.TryGetPreferredMicrophone(out var mic))
 		{
 			base.value = 0;
 			for (int i = 0; i < base.options.Count; i++)
@@ -37,13 +37,13 @@ public class VoiceChatMicrophoneSelector : TMP_Dropdown
 		int num = devices.Length;
 		if (num == 0)
 		{
-			base.options = _noMicError;
+			base.options = VoiceChatMicrophoneSelector._noMicError;
 			return;
 		}
-		SetOption(0, _defaultOption);
+		this.SetOption(0, VoiceChatMicrophoneSelector._defaultOption);
 		for (int i = 0; i < num; i++)
 		{
-			SetOption(i + 1, devices[i]);
+			this.SetOption(i + 1, devices[i]);
 		}
 		num++;
 		if (num != base.options.Count)
@@ -63,7 +63,7 @@ public class VoiceChatMicrophoneSelector : TMP_Dropdown
 
 	private void Update()
 	{
-		RefreshOptions();
+		this.RefreshOptions();
 	}
 
 	private void OnValueChanged(int i)
@@ -78,8 +78,8 @@ public class VoiceChatMicrophoneSelector : TMP_Dropdown
 	{
 		TranslationReader.OnTranslationsRefreshed += delegate
 		{
-			_defaultOption = TranslationReader.Get("Facility", 45, "Automatic (System Default)");
-			_noMicError = new List<OptionData>
+			VoiceChatMicrophoneSelector._defaultOption = TranslationReader.Get("Facility", 45, "Automatic (System Default)");
+			VoiceChatMicrophoneSelector._noMicError = new List<OptionData>
 			{
 				new OptionData(TranslationReader.Get("Facility", 46, "No Microphone Detected!"))
 			};

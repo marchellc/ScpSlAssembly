@@ -28,9 +28,9 @@ public class CullableRoom : CullableBehaviour, IRootCullable, ICullable, IBounds
 	{
 		get
 		{
-			if (_cached && RoomPreCuller.ValidateCoords(_roomIdentifier.MainCoords))
+			if (this._cached && RoomPreCuller.ValidateCoords(this._roomIdentifier.MainCoords))
 			{
-				return CullingCamera.CheckBoundsVisibility(WorldspaceBounds);
+				return CullingCamera.CheckBoundsVisibility(this.WorldspaceBounds);
 			}
 			return false;
 		}
@@ -40,51 +40,51 @@ public class CullableRoom : CullableBehaviour, IRootCullable, ICullable, IBounds
 
 	public void AddChildCullable(ICullable cullable)
 	{
-		if (_subCullables.AddIfNotContains(cullable) && cullable is IBoundsCullable boundsCullable)
+		if (this._subCullables.AddIfNotContains(cullable) && cullable is IBoundsCullable boundsCullable)
 		{
-			WorldspaceBounds.Encapsulate(boundsCullable.WorldspaceBounds);
+			this.WorldspaceBounds.Encapsulate(boundsCullable.WorldspaceBounds);
 		}
 	}
 
 	public void RemoveChildSullable(ICullable cullable)
 	{
-		_subCullables.Remove(cullable);
+		this._subCullables.Remove(cullable);
 	}
 
 	public void SetupCache()
 	{
-		_autoCuller.Generate(base.gameObject, AllowCullingFilter, CullingMath.GetSafeForDeactivation);
-		Bounds worldspaceBounds = _roomIdentifier.WorldspaceBounds;
-		foreach (ICullable subCullable in _subCullables)
+		this._autoCuller.Generate(base.gameObject, AllowCullingFilter, CullingMath.GetSafeForDeactivation);
+		Bounds worldspaceBounds = this._roomIdentifier.WorldspaceBounds;
+		foreach (ICullable subCullable in this._subCullables)
 		{
 			if (!(subCullable is IRootCullable) && subCullable is IBoundsCullable boundsCullable)
 			{
 				worldspaceBounds.Encapsulate(boundsCullable.WorldspaceBounds);
 			}
 		}
-		_cached = true;
-		WorldspaceBounds = worldspaceBounds;
-		OnVisibilityChanged(ShouldBeVisible);
+		this._cached = true;
+		this.WorldspaceBounds = worldspaceBounds;
+		this.OnVisibilityChanged(this.ShouldBeVisible);
 	}
 
 	protected override void OnVisibilityChanged(bool isVisible)
 	{
-		_autoCuller.SetVisibility(isVisible);
+		this._autoCuller.SetVisibility(isVisible);
 		if (isVisible)
 		{
-			UpdateVisible();
-			ActiveRooms.Add(this);
+			this.UpdateVisible();
+			CullableRoom.ActiveRooms.Add(this);
 		}
 		else
 		{
-			foreach (ICullable subCullable in _subCullables)
+			foreach (ICullable subCullable in this._subCullables)
 			{
-				if (!IsNullSafe(subCullable))
+				if (!this.IsNullSafe(subCullable))
 				{
 					subCullable.SetVisibility(isVisible: false);
 				}
 			}
-			ActiveRooms.Remove(this);
+			CullableRoom.ActiveRooms.Remove(this);
 		}
 		this.OnVisibilityUpdated?.Invoke();
 	}
@@ -92,12 +92,12 @@ public class CullableRoom : CullableBehaviour, IRootCullable, ICullable, IBounds
 	protected override void UpdateVisible()
 	{
 		base.UpdateVisible();
-		for (int num = _subCullables.Count - 1; num >= 0; num--)
+		for (int num = this._subCullables.Count - 1; num >= 0; num--)
 		{
-			ICullable cullable = _subCullables[num];
-			if (IsNullSafe(cullable))
+			ICullable cullable = this._subCullables[num];
+			if (this.IsNullSafe(cullable))
 			{
-				_subCullables.RemoveAt(num);
+				this._subCullables.RemoveAt(num);
 			}
 			else
 			{
@@ -110,11 +110,11 @@ public class CullableRoom : CullableBehaviour, IRootCullable, ICullable, IBounds
 	{
 		if (go.activeSelf)
 		{
-			_originalActiveChildren.Add(go);
+			this._originalActiveChildren.Add(go);
 			Transform transform = go.transform;
 			for (int i = 0; i < transform.childCount; i++)
 			{
-				ProcessOriginalChild(transform.GetChild(i).gameObject);
+				this.ProcessOriginalChild(transform.GetChild(i).gameObject);
 			}
 		}
 	}
@@ -134,24 +134,24 @@ public class CullableRoom : CullableBehaviour, IRootCullable, ICullable, IBounds
 
 	private void Awake()
 	{
-		_roomIdentifier = GetComponent<RoomIdentifier>();
-		ProcessOriginalChild(base.gameObject);
+		this._roomIdentifier = base.GetComponent<RoomIdentifier>();
+		this.ProcessOriginalChild(base.gameObject);
 		CullingCamera.RegisterRootCullable(this);
 	}
 
 	private void OnDestroy()
 	{
 		CullingCamera.UnregisterRootCullable(this);
-		ActiveRooms.Remove(this);
+		CullableRoom.ActiveRooms.Remove(this);
 	}
 
 	private bool AllowCullingFilter(GameObject go)
 	{
-		if (_originalActiveChildren.Contains(go))
+		if (this._originalActiveChildren.Contains(go))
 		{
 			if (go.TryGetComponent<ICullable>(out var component))
 			{
-				return !_subCullables.Contains(component);
+				return !this._subCullables.Contains(component);
 			}
 			return true;
 		}

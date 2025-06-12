@@ -35,9 +35,9 @@ public class Scp096RageManager : StandardSubroutine<Scp096Role>, IHumeShieldBloc
 	{
 		get
 		{
-			if (!IsEnraged)
+			if (!this.IsEnraged)
 			{
-				return IsDistressed;
+				return this.IsDistressed;
 			}
 			return true;
 		}
@@ -51,7 +51,7 @@ public class Scp096RageManager : StandardSubroutine<Scp096Role>, IHumeShieldBloc
 	{
 		get
 		{
-			return _enragedTimeLeft;
+			return this._enragedTimeLeft;
 		}
 		set
 		{
@@ -59,11 +59,11 @@ public class Scp096RageManager : StandardSubroutine<Scp096Role>, IHumeShieldBloc
 			{
 				value = 0f;
 			}
-			HudRageDuration.Remaining = value;
-			_enragedTimeLeft = value;
-			if (NetworkServer.active && _enragedTimeLeft == 0f)
+			this.HudRageDuration.Remaining = value;
+			this._enragedTimeLeft = value;
+			if (NetworkServer.active && this._enragedTimeLeft == 0f)
 			{
-				ServerEndEnrage(clearTime: false);
+				this.ServerEndEnrage(clearTime: false);
 			}
 		}
 	}
@@ -74,15 +74,15 @@ public class Scp096RageManager : StandardSubroutine<Scp096Role>, IHumeShieldBloc
 	{
 		if (NetworkServer.active)
 		{
-			Scp096EnragingEventArgs scp096EnragingEventArgs = new Scp096EnragingEventArgs(base.Owner, initialDuration);
-			Scp096Events.OnEnraging(scp096EnragingEventArgs);
-			if (scp096EnragingEventArgs.IsAllowed)
+			Scp096EnragingEventArgs e = new Scp096EnragingEventArgs(base.Owner, initialDuration);
+			Scp096Events.OnEnraging(e);
+			if (e.IsAllowed)
 			{
-				initialDuration = scp096EnragingEventArgs.InitialDuration;
-				EnragedTimeLeft = initialDuration;
-				TotalRageTime = initialDuration;
+				initialDuration = e.InitialDuration;
+				this.EnragedTimeLeft = initialDuration;
+				this.TotalRageTime = initialDuration;
 				base.CastRole.StateController.SetRageState(Scp096RageState.Distressed);
-				ServerIncreaseDuration(base.Owner, Mathf.Max((float)_targetsTracker.Targets.Count - 3f, 0f));
+				this.ServerIncreaseDuration(base.Owner, Mathf.Max((float)this._targetsTracker.Targets.Count - 3f, 0f));
 				Scp096Events.OnEnraged(new Scp096EnragedEventArgs(base.Owner, initialDuration));
 			}
 		}
@@ -94,10 +94,10 @@ public class Scp096RageManager : StandardSubroutine<Scp096Role>, IHumeShieldBloc
 		{
 			if (clearTime)
 			{
-				EnragedTimeLeft = 0f;
+				this.EnragedTimeLeft = 0f;
 			}
 			base.CastRole.StateController.SetRageState(Scp096RageState.Calming);
-			ServerSendRpc(toAll: true);
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
@@ -105,17 +105,17 @@ public class Scp096RageManager : StandardSubroutine<Scp096Role>, IHumeShieldBloc
 	{
 		if (NetworkServer.active && !(ownerHub != base.Owner))
 		{
-			addedDuration = Mathf.Min(addedDuration, 35f - TotalRageTime);
-			TotalRageTime += addedDuration;
-			EnragedTimeLeft += addedDuration;
-			ServerSendRpc(toAll: true);
+			addedDuration = Mathf.Min(addedDuration, 35f - this.TotalRageTime);
+			this.TotalRageTime += addedDuration;
+			this.EnragedTimeLeft += addedDuration;
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteFloat(EnragedTimeLeft);
+		writer.WriteFloat(this.EnragedTimeLeft);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
@@ -123,18 +123,18 @@ public class Scp096RageManager : StandardSubroutine<Scp096Role>, IHumeShieldBloc
 		base.ClientProcessRpc(reader);
 		if (!NetworkServer.active)
 		{
-			EnragedTimeLeft = reader.ReadFloat();
+			this.EnragedTimeLeft = reader.ReadFloat();
 		}
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		_shieldController = base.CastRole.HumeShieldModule as DynamicHumeShieldController;
-		GetSubroutine<Scp096TargetsTracker>(out _targetsTracker);
+		this._shieldController = base.CastRole.HumeShieldModule as DynamicHumeShieldController;
+		base.GetSubroutine<Scp096TargetsTracker>(out this._targetsTracker);
 		Scp096TargetsTracker.OnTargetAdded += delegate(ReferenceHub ownerHub, ReferenceHub targetedHub)
 		{
-			ServerIncreaseDuration(ownerHub);
+			this.ServerIncreaseDuration(ownerHub);
 		};
 		base.CastRole.StateController.OnRageUpdate += OnRageUpdate;
 	}
@@ -143,7 +143,7 @@ public class Scp096RageManager : StandardSubroutine<Scp096Role>, IHumeShieldBloc
 	{
 		if (newState == Scp096RageState.Enraged)
 		{
-			HudRageDuration.Trigger(EnragedTimeLeft);
+			this.HudRageDuration.Trigger(this.EnragedTimeLeft);
 		}
 		if (NetworkServer.active)
 		{
@@ -152,16 +152,16 @@ public class Scp096RageManager : StandardSubroutine<Scp096Role>, IHumeShieldBloc
 			{
 			case Scp096RageState.Enraged:
 				num = 1f;
-				HumeShieldBlocked = true;
-				_shieldController.AddBlocker(this);
+				this.HumeShieldBlocked = true;
+				this._shieldController.AddBlocker(this);
 				break;
 			case Scp096RageState.Calming:
 				num = 1f;
-				TotalRageTime = 0f;
-				HumeShieldBlocked = false;
+				this.TotalRageTime = 0f;
+				this.HumeShieldBlocked = false;
 				break;
 			default:
-				HumeShieldBlocked = false;
+				this.HumeShieldBlocked = false;
 				return;
 			}
 			HumeShieldModuleBase humeShieldModule = base.CastRole.HumeShieldModule;
@@ -173,25 +173,25 @@ public class Scp096RageManager : StandardSubroutine<Scp096Role>, IHumeShieldBloc
 	{
 		if (NetworkServer.active)
 		{
-			UpdateRage();
+			this.UpdateRage();
 		}
 	}
 
 	private void UpdateRage()
 	{
-		if (IsEnraged)
+		if (this.IsEnraged)
 		{
-			EnragedTimeLeft -= Time.deltaTime;
+			this.EnragedTimeLeft -= Time.deltaTime;
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		HudRageDuration.Clear();
-		_shieldController.RegenerationRate = 15f;
-		HumeShieldBlocked = false;
-		_enragedTimeLeft = 0f;
-		TotalRageTime = 0f;
+		this.HudRageDuration.Clear();
+		this._shieldController.RegenerationRate = 15f;
+		this.HumeShieldBlocked = false;
+		this._enragedTimeLeft = 0f;
+		this.TotalRageTime = 0f;
 	}
 }

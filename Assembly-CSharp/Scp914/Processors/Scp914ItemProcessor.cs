@@ -21,13 +21,13 @@ public abstract class Scp914ItemProcessor : MonoBehaviour
 	public virtual Scp914Result UpgradeInventoryItem(Scp914KnobSetting setting, ItemBase sourceItem)
 	{
 		ItemPickupBase sourcePickup = sourceItem.ServerDropItem(spawn: false);
-		Scp914Result result = UpgradePickup(setting, sourcePickup);
+		Scp914Result result = this.UpgradePickup(setting, sourcePickup);
 		if (result.ResultingPickups == null || result.ResultingPickups.Length == 0)
 		{
 			return result;
 		}
 		InventoryInfo userInventory = sourceItem.OwnerInventory.UserInventory;
-		ClearCombiner();
+		this.ClearCombiner();
 		ItemPickupBase[] resultingPickups = result.ResultingPickups;
 		foreach (ItemPickupBase itemPickupBase in resultingPickups)
 		{
@@ -41,30 +41,30 @@ public abstract class Scp914ItemProcessor : MonoBehaviour
 				searchCompletor.Complete();
 				if (userInventory.Items.TryGetValue(itemPickupBase.Info.Serial, out var value))
 				{
-					AddResultToCombiner(value);
+					this.AddResultToCombiner(value);
 				}
 			}
 			else
 			{
-				AddResultToCombiner(itemPickupBase);
+				this.AddResultToCombiner(itemPickupBase);
 				itemPickupBase.Position = sourceItem.Owner.transform.position;
 				NetworkServer.Spawn(itemPickupBase.gameObject);
 			}
 		}
-		return GenerateResultFromCombiner(sourceItem);
+		return this.GenerateResultFromCombiner(sourceItem);
 	}
 
 	protected void ClearCombiner()
 	{
-		ItemResultsToCombine.Clear();
-		PickupResultsToCombine.Clear();
+		Scp914ItemProcessor.ItemResultsToCombine.Clear();
+		Scp914ItemProcessor.PickupResultsToCombine.Clear();
 	}
 
 	protected void AddResultToCombiner(ItemBase resultingItem)
 	{
 		if (!(resultingItem == null))
 		{
-			ItemResultsToCombine.Add(resultingItem);
+			Scp914ItemProcessor.ItemResultsToCombine.Add(resultingItem);
 		}
 	}
 
@@ -72,18 +72,18 @@ public abstract class Scp914ItemProcessor : MonoBehaviour
 	{
 		if (!(resultingPickup == null))
 		{
-			PickupResultsToCombine.Add(resultingPickup);
+			Scp914ItemProcessor.PickupResultsToCombine.Add(resultingPickup);
 		}
 	}
 
 	protected Scp914Result GenerateResultFromCombiner(ItemBase oldItem)
 	{
-		return new Scp914Result(oldItem, (ItemResultsToCombine.Count > 0) ? ItemResultsToCombine.ToArray() : null, (PickupResultsToCombine.Count > 0) ? PickupResultsToCombine.ToArray() : null);
+		return new Scp914Result(oldItem, (Scp914ItemProcessor.ItemResultsToCombine.Count > 0) ? Scp914ItemProcessor.ItemResultsToCombine.ToArray() : null, (Scp914ItemProcessor.PickupResultsToCombine.Count > 0) ? Scp914ItemProcessor.PickupResultsToCombine.ToArray() : null);
 	}
 
 	protected Scp914Result GenerateResultFromCombiner(ItemPickupBase oldPickup)
 	{
-		return new Scp914Result(oldPickup, (ItemResultsToCombine.Count > 0) ? ItemResultsToCombine.ToArray() : null, (PickupResultsToCombine.Count > 0) ? PickupResultsToCombine.ToArray() : null);
+		return new Scp914Result(oldPickup, (Scp914ItemProcessor.ItemResultsToCombine.Count > 0) ? Scp914ItemProcessor.ItemResultsToCombine.ToArray() : null, (Scp914ItemProcessor.PickupResultsToCombine.Count > 0) ? Scp914ItemProcessor.PickupResultsToCombine.ToArray() : null);
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -98,11 +98,11 @@ public abstract class Scp914ItemProcessor : MonoBehaviour
 		{
 			res.ResultingItems?.ForEach(delegate(ItemBase ib)
 			{
-				ProcessResultingItem(ib, res, knobSetting);
+				Scp914ItemProcessor.ProcessResultingItem(ib, res, knobSetting);
 			});
 			res.ResultingPickups?.ForEach(delegate(ItemPickupBase pickup)
 			{
-				ProcessResultingPickup(pickup, res, knobSetting);
+				Scp914ItemProcessor.ProcessResultingPickup(pickup, res, knobSetting);
 			});
 		}
 	}

@@ -33,22 +33,22 @@ public class AudioProximityEffects : MonoBehaviour
 			{
 				return 0f;
 			}
-			return Vector3.Distance(base.transform.position, fpcRole.FpcModule.Position) / _audioSource.maxDistance * _audioSource.spatialBlend;
+			return Vector3.Distance(base.transform.position, fpcRole.FpcModule.Position) / this._audioSource.maxDistance * this._audioSource.spatialBlend;
 		}
 	}
 
 	private void Awake()
 	{
-		_audioSource = GetComponent<AudioSource>();
-		_reverbFilter = GetComponent<AudioReverbFilter>();
-		_lowPassFilter = GetComponent<AudioLowPassFilter>();
+		this._audioSource = base.GetComponent<AudioSource>();
+		this._reverbFilter = base.GetComponent<AudioReverbFilter>();
+		this._lowPassFilter = base.GetComponent<AudioLowPassFilter>();
 	}
 
 	private void Update()
 	{
-		float proximityLevel = ProximityLevel;
-		_reverbFilter.dryLevel = _reverbDryOverDistance.Evaluate(proximityLevel);
-		_reverbFilter.room = _reverbSizeOverDistance.Evaluate(proximityLevel);
-		_lowPassFilter.cutoffFrequency = _lowpassOverDistance.Evaluate(proximityLevel);
+		float proximityLevel = this.ProximityLevel;
+		this._reverbFilter.dryLevel = this._reverbDryOverDistance.Evaluate(proximityLevel);
+		this._reverbFilter.room = this._reverbSizeOverDistance.Evaluate(proximityLevel);
+		this._lowPassFilter.cutoffFrequency = this._lowpassOverDistance.Evaluate(proximityLevel);
 	}
 }

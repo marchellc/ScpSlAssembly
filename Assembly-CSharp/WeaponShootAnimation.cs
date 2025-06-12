@@ -18,27 +18,27 @@ public class WeaponShootAnimation : MonoBehaviour
 
 	private void LateUpdate()
 	{
-		if ((double)curPosition > 0.03)
+		if ((double)this.curPosition > 0.03)
 		{
-			curPosition = Mathf.Lerp(curPosition, 0f, Time.deltaTime * backSpeed * curPosition);
+			this.curPosition = Mathf.Lerp(this.curPosition, 0f, Time.deltaTime * this.backSpeed * this.curPosition);
 		}
 		else
 		{
-			curPosition -= Time.deltaTime * 0.1f;
+			this.curPosition -= Time.deltaTime * 0.1f;
 		}
-		if (curPosition < 0f)
+		if (this.curPosition < 0f)
 		{
-			curPosition = 0f;
+			this.curPosition = 0f;
 		}
-		yOverride = Mathf.Lerp(0f, yOverride, curPosition);
-		curY = Mathf.Lerp(curY, yOverride, Time.deltaTime * backY_Speed * curPosition);
-		base.transform.localPosition = Vector3.Lerp(Vector3.zero, maxRecoilPos, curPosition);
-		base.transform.localRotation = Quaternion.Lerp(Quaternion.Euler(Vector3.zero), Quaternion.Euler(maxRecoilRot + Vector3.up * curY), curPosition);
+		this.yOverride = Mathf.Lerp(0f, this.yOverride, this.curPosition);
+		this.curY = Mathf.Lerp(this.curY, this.yOverride, Time.deltaTime * this.backY_Speed * this.curPosition);
+		base.transform.localPosition = Vector3.Lerp(Vector3.zero, this.maxRecoilPos, this.curPosition);
+		base.transform.localRotation = Quaternion.Lerp(Quaternion.Euler(Vector3.zero), Quaternion.Euler(this.maxRecoilRot + Vector3.up * this.curY), this.curPosition);
 	}
 
 	public void Recoil(float f)
 	{
-		curPosition = Mathf.Clamp01(curPosition + f);
-		yOverride = Random.Range(-10f, 10f) * f;
+		this.curPosition = Mathf.Clamp01(this.curPosition + f);
+		this.yOverride = Random.Range(-10f, 10f) * f;
 	}
 }

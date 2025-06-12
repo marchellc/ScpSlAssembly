@@ -8,13 +8,13 @@ public readonly struct DestructibleHitPair
 
 	public readonly HitRayPair Raycast;
 
-	public Ray Ray => Raycast.Ray;
+	public Ray Ray => this.Raycast.Ray;
 
-	public RaycastHit Hit => Raycast.Hit;
+	public RaycastHit Hit => this.Raycast.Hit;
 
 	public DestructibleHitPair(IDestructible destructible, RaycastHit hit, Ray ray)
 	{
-		Destructible = destructible;
-		Raycast = new HitRayPair(ray, hit);
+		this.Destructible = destructible;
+		this.Raycast = new HitRayPair(ray, hit);
 	}
 }

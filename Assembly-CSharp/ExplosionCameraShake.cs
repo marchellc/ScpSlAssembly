@@ -11,13 +11,13 @@ public class ExplosionCameraShake : MonoBehaviour
 
 	private void Update()
 	{
-		force -= Time.deltaTime / deductSpeed;
-		force = Mathf.Clamp01(force);
+		this.force -= Time.deltaTime / this.deductSpeed;
+		this.force = Mathf.Clamp01(this.force);
 	}
 
 	private void Awake()
 	{
-		singleton = this;
+		ExplosionCameraShake.singleton = this;
 		SpectatorTargetTracker.OnTargetChanged += StopShake;
 	}
 
@@ -28,14 +28,14 @@ public class ExplosionCameraShake : MonoBehaviour
 
 	private void StopShake()
 	{
-		force = 0f;
+		this.force = 0f;
 	}
 
 	public void Shake(float explosionForce)
 	{
-		if (explosionForce > force)
+		if (explosionForce > this.force)
 		{
-			force = explosionForce;
+			this.force = explosionForce;
 		}
 	}
 }

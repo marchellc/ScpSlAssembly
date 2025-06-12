@@ -48,26 +48,26 @@ public class Scp1576Thirdperson : VariableGFXUsableItemThirdperson
 	internal override void OnAnimIK(int layerIndex, float ikScale)
 	{
 		base.OnAnimIK(layerIndex, ikScale);
-		if (_ikBlend > 0f)
+		if (this._ikBlend > 0f)
 		{
-			UpdateIdleIK(layerIndex);
+			this.UpdateIdleIK(layerIndex);
 		}
 	}
 
 	protected override void SetupLeftHandedInstance(GameObject instance, Transform leftHand)
 	{
-		_lastInstanceTr = instance.transform;
-		_lastInstanceTr.SetParent(leftHand);
+		this._lastInstanceTr = instance.transform;
+		this._lastInstanceTr.SetParent(leftHand);
 		base.MainGfx.transform.GetPositionAndRotation(out var position, out var rotation);
-		_lastInstanceTr.SetPositionAndRotation(position, rotation);
-		_lastInstanceTr.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
+		this._lastInstanceTr.SetPositionAndRotation(position, rotation);
+		this._lastInstanceTr.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
 		Vector3 lossyScale = leftHand.lossyScale;
-		Vector3 position2 = _leftHandLocalPose.position;
+		Vector3 position2 = this._leftHandLocalPose.position;
 		Vector3 position3 = new Vector3(position2.x / lossyScale.x, position2.y / lossyScale.y, position2.z / lossyScale.z);
-		_initialInstPose = new Pose(localPosition, localRotation);
-		_targetInstPose = new Pose(position3, _leftHandLocalPose.rotation);
+		this._initialInstPose = new Pose(localPosition, localRotation);
+		this._targetInstPose = new Pose(position3, this._leftHandLocalPose.rotation);
 		instance.SetActive(value: true);
-		_crankTr = instance.GetComponentInChildren<ConfigurableJoint>().transform;
+		this._crankTr = instance.GetComponentInChildren<ConfigurableJoint>().transform;
 	}
 
 	protected override void Update()
@@ -75,51 +75,51 @@ public class Scp1576Thirdperson : VariableGFXUsableItemThirdperson
 		base.Update();
 		if (!base.IsUsing)
 		{
-			_elapsed = 0f;
-			SetIkSmooth(targetIsOn: true);
+			this._elapsed = 0f;
+			this.SetIkSmooth(targetIsOn: true);
 			return;
 		}
-		_elapsed += Time.deltaTime;
-		float t = Mathf.Clamp01(_elapsed / 0.2f);
-		_lastInstanceTr.SetLocalPositionAndRotation(Vector3.Lerp(_initialInstPose.position, _targetInstPose.position, t), Quaternion.Lerp(_initialInstPose.rotation, _targetInstPose.rotation, t));
-		if (_elapsed > _crankingPeriodMinMax.x && _elapsed < _crankingPeriodMinMax.y)
+		this._elapsed += Time.deltaTime;
+		float t = Mathf.Clamp01(this._elapsed / 0.2f);
+		this._lastInstanceTr.SetLocalPositionAndRotation(Vector3.Lerp(this._initialInstPose.position, this._targetInstPose.position, t), Quaternion.Lerp(this._initialInstPose.rotation, this._targetInstPose.rotation, t));
+		if (this._elapsed > this._crankingPeriodMinMax.x && this._elapsed < this._crankingPeriodMinMax.y)
 		{
-			Crank();
+			this.Crank();
 		}
-		SetIkSmooth(targetIsOn: false);
-		if (_elapsed > _animEndTime)
+		this.SetIkSmooth(targetIsOn: false);
+		if (this._elapsed > this._animEndTime)
 		{
 			base.IsUsing = false;
-			OnUsingStatusChanged();
+			this.OnUsingStatusChanged();
 		}
 	}
 
 	private bool Crank()
 	{
-		Vector3 vector = _crankAnchor.position - _crankTr.position;
-		Vector3 vector2 = _crankTr.parent.TransformDirection(_crankParentUp);
+		Vector3 vector = this._crankAnchor.position - this._crankTr.position;
+		Vector3 vector2 = this._crankTr.parent.TransformDirection(this._crankParentUp);
 		Quaternion quaternion = Quaternion.LookRotation(Vector3.ProjectOnPlane(vector, vector2), vector2);
-		Quaternion quaternion2 = Quaternion.FromToRotation(_crankForward, Vector3.forward);
-		_crankTr.rotation = quaternion * quaternion2;
+		Quaternion quaternion2 = Quaternion.FromToRotation(this._crankForward, Vector3.forward);
+		this._crankTr.rotation = quaternion * quaternion2;
 		return true;
 	}
 
 	private void UpdateIdleIK(int layer)
 	{
 		AnimatorLayerManager layerManager = base.TargetModel.LayerManager;
-		if (layer == layerManager.GetLayerIndex(_leftHandIkLayer))
+		if (layer == layerManager.GetLayerIndex(this._leftHandIkLayer))
 		{
 			Animator animator = base.TargetModel.Animator;
-			_leftHandIkTarget.GetPositionAndRotation(out var position, out var rotation);
+			this._leftHandIkTarget.GetPositionAndRotation(out var position, out var rotation);
 			animator.SetIKPosition(AvatarIKGoal.LeftHand, position);
-			animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, _ikBlend);
+			animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, this._ikBlend);
 			animator.SetIKRotation(AvatarIKGoal.LeftHand, rotation);
-			animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, _ikBlend);
+			animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, this._ikBlend);
 		}
 	}
 
 	private void SetIkSmooth(bool targetIsOn)
 	{
-		_ikBlend = Mathf.MoveTowards(_ikBlend, targetIsOn ? 1 : 0, Time.deltaTime * 4f);
+		this._ikBlend = Mathf.MoveTowards(this._ikBlend, targetIsOn ? 1 : 0, Time.deltaTime * 4f);
 	}
 }

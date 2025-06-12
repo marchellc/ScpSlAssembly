@@ -6,6 +6,6 @@ public struct TeslaHitMsg : NetworkMessage
 
 	public TeslaHitMsg(TeslaGate gate)
 	{
-		Gate = gate;
+		this.Gate = gate;
 	}
 }

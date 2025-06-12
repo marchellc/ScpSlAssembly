@@ -16,43 +16,43 @@ public class SustainedValue
 	{
 		get
 		{
-			return _peak;
+			return this._peak;
 		}
 		set
 		{
-			float num = ConditionalAbs(value);
-			float num2 = ConditionalAbs(_peak);
-			bool flag = _susTime > 0f;
-			if ((_inverse && num <= num2) || (!_inverse && num >= num2))
+			float num = this.ConditionalAbs(value);
+			float num2 = this.ConditionalAbs(this._peak);
+			bool flag = this._susTime > 0f;
+			if ((this._inverse && num <= num2) || (!this._inverse && num >= num2))
 			{
-				_peak = value;
+				this._peak = value;
 				if (flag)
 				{
-					_lastUpdateSw.Restart();
+					this._lastUpdateSw.Restart();
 				}
 			}
-			else if (flag && _lastUpdateSw.Elapsed.TotalSeconds >= (double)_susTime)
+			else if (flag && this._lastUpdateSw.Elapsed.TotalSeconds >= (double)this._susTime)
 			{
-				_peak = value;
+				this._peak = value;
 			}
 		}
 	}
 
 	public SustainedValue(float initialValue, float sustainTime, bool inverse, bool absolute)
 	{
-		_peak = initialValue;
-		_susTime = sustainTime;
-		_inverse = inverse;
-		_abs = absolute;
+		this._peak = initialValue;
+		this._susTime = sustainTime;
+		this._inverse = inverse;
+		this._abs = absolute;
 		if (sustainTime > 0f)
 		{
-			_lastUpdateSw = Stopwatch.StartNew();
+			this._lastUpdateSw = Stopwatch.StartNew();
 		}
 	}
 
 	private float ConditionalAbs(float val)
 	{
-		if (!_abs || !(val < 0f))
+		if (!this._abs || !(val < 0f))
 		{
 			return val;
 		}

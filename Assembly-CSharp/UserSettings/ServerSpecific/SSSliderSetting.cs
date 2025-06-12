@@ -7,7 +7,7 @@ public class SSSliderSetting : ServerSpecificSettingBase
 {
 	public float SyncFloatValue { get; set; }
 
-	public int SyncIntValue => Mathf.RoundToInt(SyncFloatValue);
+	public int SyncIntValue => Mathf.RoundToInt(this.SyncFloatValue);
 
 	public bool SyncDragging { get; set; }
 
@@ -23,61 +23,61 @@ public class SSSliderSetting : ServerSpecificSettingBase
 
 	public string FinalDisplayFormat { get; private set; }
 
-	public override string DebugValue => SyncFloatValue.ToString();
+	public override string DebugValue => this.SyncFloatValue.ToString();
 
 	public SSSliderSetting(int? id, string label, float minValue, float maxValue, float defaultValue = 0f, bool integer = false, string valueToStringFormat = "0.##", string finalDisplayFormat = "{0}", string hint = null)
 	{
-		SetId(id, label);
+		base.SetId(id, label);
 		base.Label = label;
 		base.HintDescription = hint;
-		DefaultValue = Mathf.Clamp(defaultValue, minValue, maxValue);
-		MinValue = minValue;
-		MaxValue = maxValue;
-		Integer = integer;
-		ValueToStringFormat = valueToStringFormat;
-		FinalDisplayFormat = finalDisplayFormat;
+		this.DefaultValue = Mathf.Clamp(defaultValue, minValue, maxValue);
+		this.MinValue = minValue;
+		this.MaxValue = maxValue;
+		this.Integer = integer;
+		this.ValueToStringFormat = valueToStringFormat;
+		this.FinalDisplayFormat = finalDisplayFormat;
 		if (!finalDisplayFormat.Contains("0"))
 		{
-			FinalDisplayFormat += "{0}";
+			this.FinalDisplayFormat += "{0}";
 		}
 	}
 
 	public override void ApplyDefaultValues()
 	{
-		SyncFloatValue = DefaultValue;
+		this.SyncFloatValue = this.DefaultValue;
 	}
 
 	public override void DeserializeValue(NetworkReader reader)
 	{
-		SyncFloatValue = reader.ReadFloat();
-		SyncDragging = reader.ReadBool();
+		this.SyncFloatValue = reader.ReadFloat();
+		this.SyncDragging = reader.ReadBool();
 	}
 
 	public override void SerializeValue(NetworkWriter writer)
 	{
-		writer.WriteFloat(SyncFloatValue);
-		writer.WriteBool(SyncDragging);
+		writer.WriteFloat(this.SyncFloatValue);
+		writer.WriteBool(this.SyncDragging);
 	}
 
 	public override void SerializeEntry(NetworkWriter writer)
 	{
 		base.SerializeEntry(writer);
-		writer.WriteFloat(DefaultValue);
-		writer.WriteFloat(MinValue);
-		writer.WriteFloat(MaxValue);
-		writer.WriteBool(Integer);
-		writer.WriteString(ValueToStringFormat);
-		writer.WriteString(FinalDisplayFormat);
+		writer.WriteFloat(this.DefaultValue);
+		writer.WriteFloat(this.MinValue);
+		writer.WriteFloat(this.MaxValue);
+		writer.WriteBool(this.Integer);
+		writer.WriteString(this.ValueToStringFormat);
+		writer.WriteString(this.FinalDisplayFormat);
 	}
 
 	public override void DeserializeEntry(NetworkReader reader)
 	{
 		base.DeserializeEntry(reader);
-		DefaultValue = reader.ReadFloat();
-		MinValue = reader.ReadFloat();
-		MaxValue = reader.ReadFloat();
-		Integer = reader.ReadBool();
-		ValueToStringFormat = reader.ReadString();
-		FinalDisplayFormat = reader.ReadString();
+		this.DefaultValue = reader.ReadFloat();
+		this.MinValue = reader.ReadFloat();
+		this.MaxValue = reader.ReadFloat();
+		this.Integer = reader.ReadBool();
+		this.ValueToStringFormat = reader.ReadString();
+		this.FinalDisplayFormat = reader.ReadString();
 	}
 }

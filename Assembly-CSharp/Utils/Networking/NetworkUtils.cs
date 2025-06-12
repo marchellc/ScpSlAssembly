@@ -45,10 +45,10 @@ public static class NetworkUtils
 				if (!flag)
 				{
 					NetworkMessages.Pack(msg, networkWriterPooled);
-					_segmentNonAlloc = networkWriterPooled.ToArraySegment();
+					NetworkUtils._segmentNonAlloc = networkWriterPooled.ToArraySegment();
 					flag = true;
 				}
-				allHub.connectionToClient.Send(_segmentNonAlloc, channelId);
+				allHub.connectionToClient.Send(NetworkUtils._segmentNonAlloc, channelId);
 			}
 		}
 	}

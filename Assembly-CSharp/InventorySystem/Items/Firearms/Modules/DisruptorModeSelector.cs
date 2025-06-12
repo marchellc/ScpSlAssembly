@@ -29,11 +29,11 @@ public class DisruptorModeSelector : ModuleBase, IRecoilScalingModule
 	{
 		get
 		{
-			if (!SingleShotSelected)
+			if (!this.SingleShotSelected)
 			{
 				return 1f;
 			}
-			return _singleRecoilScale;
+			return this._singleRecoilScale;
 		}
 	}
 
@@ -43,33 +43,33 @@ public class DisruptorModeSelector : ModuleBase, IRecoilScalingModule
 	public void RequestAnimation()
 	{
 		this.OnAnimationRequested?.Invoke();
-		if (SingleShotSelected)
+		if (this.SingleShotSelected)
 		{
-			_audioModule.PlayClientside(_singleClip);
+			this._audioModule.PlayClientside(this._singleClip);
 		}
 		else
 		{
-			_audioModule.PlayClientside(_rapidClip);
+			this._audioModule.PlayClientside(this._rapidClip);
 		}
 	}
 
 	protected override void OnInit()
 	{
 		base.OnInit();
-		base.Firearm.TryGetModule<AudioModule>(out _audioModule);
+		base.Firearm.TryGetModule<AudioModule>(out this._audioModule);
 	}
 
 	internal override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (base.IsControllable && GetActionDown(ActionName.WeaponAlt) && !base.ItemUsageBlocked && _switchCooldown.IsReady && !base.Firearm.AnyModuleBusy())
+		if (base.IsControllable && base.GetActionDown(ActionName.WeaponAlt) && !base.ItemUsageBlocked && this._switchCooldown.IsReady && !base.Firearm.AnyModuleBusy())
 		{
-			SingleShotSelected = !SingleShotSelected;
-			_switchCooldown.Trigger(0.4000000059604645);
-			RequestAnimation();
-			SendCmd(delegate(NetworkWriter x)
+			this.SingleShotSelected = !this.SingleShotSelected;
+			this._switchCooldown.Trigger(0.4000000059604645);
+			this.RequestAnimation();
+			this.SendCmd(delegate(NetworkWriter x)
 			{
-				x.WriteBool(SingleShotSelected);
+				x.WriteBool(this.SingleShotSelected);
 			});
 		}
 	}
@@ -77,7 +77,7 @@ public class DisruptorModeSelector : ModuleBase, IRecoilScalingModule
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		SendRpc(delegate(NetworkWriter x)
+		this.SendRpc(delegate(NetworkWriter x)
 		{
 			x.WriteBool(reader.ReadBool());
 		});
@@ -86,11 +86,11 @@ public class DisruptorModeSelector : ModuleBase, IRecoilScalingModule
 	public override void ClientProcessRpcInstance(NetworkReader reader)
 	{
 		base.ClientProcessRpcInstance(reader);
-		if (!base.IsLocalPlayer && _switchCooldown.TolerantIsReady)
+		if (!base.IsLocalPlayer && this._switchCooldown.TolerantIsReady)
 		{
-			SingleShotSelected = reader.ReadBool();
-			_switchCooldown.Trigger(0.4000000059604645);
-			RequestAnimation();
+			this.SingleShotSelected = reader.ReadBool();
+			this._switchCooldown.Trigger(0.4000000059604645);
+			this.RequestAnimation();
 		}
 	}
 }

@@ -14,12 +14,12 @@ public class CustomTintDetail : SyncedDetail, ICustomizableDetail
 
 	public void ParseArguments(ArraySegment<string> args)
 	{
-		Misc.TryParseColor(args.At(0), out _customColor);
+		Misc.TryParseColor(args.At(0), out CustomTintDetail._customColor);
 	}
 
 	public void SetArguments(ArraySegment<object> args)
 	{
-		_customColor = (Color32)args.At(0);
+		CustomTintDetail._customColor = (Color32)args.At(0);
 	}
 
 	public override void WriteDefault(NetworkWriter writer)
@@ -29,12 +29,12 @@ public class CustomTintDetail : SyncedDetail, ICustomizableDetail
 
 	public override void WriteNewItem(KeycardItem item, NetworkWriter writer)
 	{
-		writer.WriteColor32(_customColor);
+		writer.WriteColor32(CustomTintDetail._customColor);
 	}
 
 	public override void WriteNewPickup(KeycardPickup pickup, NetworkWriter writer)
 	{
-		writer.WriteColor32(_customColor);
+		writer.WriteColor32(CustomTintDetail._customColor);
 	}
 
 	protected override void ApplyDetail(KeycardGfx target, NetworkReader reader, KeycardItem template)

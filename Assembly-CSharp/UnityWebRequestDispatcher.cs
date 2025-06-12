@@ -21,7 +21,7 @@ internal class UnityWebRequestDispatcher : MonoBehaviour
 
 		protected Request(string url)
 		{
-			Url = url;
+			this.Url = url;
 		}
 	}
 
@@ -40,7 +40,7 @@ internal class UnityWebRequestDispatcher : MonoBehaviour
 		public PostRequest(string url, string data)
 			: base(url)
 		{
-			Data = data;
+			this.Data = data;
 		}
 	}
 
@@ -51,28 +51,28 @@ internal class UnityWebRequestDispatcher : MonoBehaviour
 	public static GetRequest Get(string url)
 	{
 		GetRequest getRequest = new GetRequest(url);
-		GetQueue.Enqueue(getRequest);
+		UnityWebRequestDispatcher.GetQueue.Enqueue(getRequest);
 		return getRequest;
 	}
 
 	public static PostRequest Post(string url, string data)
 	{
 		PostRequest postRequest = new PostRequest(url, data);
-		PostQueue.Enqueue(postRequest);
+		UnityWebRequestDispatcher.PostQueue.Enqueue(postRequest);
 		return postRequest;
 	}
 
 	private void Update()
 	{
 		GetRequest result;
-		while (GetQueue.TryDequeue(out result))
+		while (UnityWebRequestDispatcher.GetQueue.TryDequeue(out result))
 		{
-			Timing.RunCoroutine(ProcessGet(result));
+			Timing.RunCoroutine(UnityWebRequestDispatcher.ProcessGet(result));
 		}
 		PostRequest result2;
-		while (PostQueue.TryDequeue(out result2))
+		while (UnityWebRequestDispatcher.PostQueue.TryDequeue(out result2))
 		{
-			Timing.RunCoroutine(ProcessPost(result2));
+			Timing.RunCoroutine(UnityWebRequestDispatcher.ProcessPost(result2));
 		}
 	}
 

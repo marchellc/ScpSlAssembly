@@ -8,6 +8,6 @@ public abstract class ButtonVariant : InteractableCollider
 
 	public virtual void Init(DoorVariant door)
 	{
-		ParentDoor = door;
+		this.ParentDoor = door;
 	}
 }

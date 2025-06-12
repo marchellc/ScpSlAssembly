@@ -12,7 +12,7 @@ public class ArmedEnemyDanger : EncounterDangerBase
 	{
 		get
 		{
-			UpdateState();
+			this.UpdateState();
 			return base.IsActive;
 		}
 		protected set
@@ -37,15 +37,15 @@ public class ArmedEnemyDanger : EncounterDangerBase
 			{
 				break;
 			}
-			if (VisionInformation.IsInView(base.Owner, allHub) && IsArmed(allHub))
+			if (VisionInformation.IsInView(base.Owner, allHub) && this.IsArmed(allHub))
 			{
-				if (WasEncounteredRecently(allHub, out var cachedEncounter))
+				if (base.WasEncounteredRecently(allHub, out var cachedEncounter))
 				{
 					cachedEncounter.TimeTracker.Restart();
 				}
 				else
 				{
-					RegisterEncounter(allHub);
+					base.RegisterEncounter(allHub);
 				}
 			}
 		}

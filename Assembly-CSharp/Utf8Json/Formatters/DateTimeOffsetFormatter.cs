@@ -9,7 +9,7 @@ public sealed class DateTimeOffsetFormatter : IJsonFormatter<DateTimeOffset>, IJ
 
 	public DateTimeOffsetFormatter()
 	{
-		formatString = null;
+		this.formatString = null;
 	}
 
 	public DateTimeOffsetFormatter(string formatString)
@@ -19,16 +19,16 @@ public sealed class DateTimeOffsetFormatter : IJsonFormatter<DateTimeOffset>, IJ
 
 	public void Serialize(ref JsonWriter writer, DateTimeOffset value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteString(value.ToString(formatString));
+		writer.WriteString(value.ToString(this.formatString));
 	}
 
 	public DateTimeOffset Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
 	{
 		string input = reader.ReadString();
-		if (formatString == null)
+		if (this.formatString == null)
 		{
 			return DateTimeOffset.Parse(input, CultureInfo.InvariantCulture);
 		}
-		return DateTimeOffset.ParseExact(input, formatString, CultureInfo.InvariantCulture);
+		return DateTimeOffset.ParseExact(input, this.formatString, CultureInfo.InvariantCulture);
 	}
 }

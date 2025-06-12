@@ -40,7 +40,7 @@ public class UnbanCommand : ICommand, IUsageProvider
 			response = "Done!";
 			return true;
 		default:
-			response = $"Incorrect syntax! Usage: unban{Usage}";
+			response = $"Incorrect syntax! Usage: unban{this.Usage}";
 			return false;
 		}
 	}

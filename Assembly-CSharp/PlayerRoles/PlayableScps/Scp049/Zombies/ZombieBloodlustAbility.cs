@@ -23,27 +23,27 @@ public class ZombieBloodlustAbility : SubroutineBase, IPoolResettable
 	{
 		get
 		{
-			return Mathf.Max(0f, _simulatedStareTime - (float)_simulatedStareSw.Elapsed.TotalSeconds);
+			return Mathf.Max(0f, this._simulatedStareTime - (float)this._simulatedStareSw.Elapsed.TotalSeconds);
 		}
 		set
 		{
-			_simulatedStareTime = value;
-			_simulatedStareSw.Restart();
+			this._simulatedStareTime = value;
+			this._simulatedStareSw.Restart();
 		}
 	}
 
 	private void Update()
 	{
-		RefreshChaseState();
+		this.RefreshChaseState();
 	}
 
 	public void RefreshChaseState()
 	{
 		if (NetworkServer.active && base.Role.TryGetOwner(out var hub))
 		{
-			bool flag = SimulatedStare > 0f;
-			LookingAtTarget = flag || AnyTargets(hub, hub.PlayerCameraReference);
-			ServerSendRpc(toAll: true);
+			bool flag = this.SimulatedStare > 0f;
+			this.LookingAtTarget = flag || this.AnyTargets(hub, hub.PlayerCameraReference);
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
@@ -51,7 +51,7 @@ public class ZombieBloodlustAbility : SubroutineBase, IPoolResettable
 	{
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			if (allHub.IsHuman() && !allHub.playerEffectsController.GetEffect<Invisible>().IsEnabled && allHub.roleManager.CurrentRole is IFpcRole fpcRole && VisionInformation.GetVisionInformation(owner, camera, fpcRole.FpcModule.Position, fpcRole.FpcModule.CharacterControllerSettings.Radius, _maxViewDistance, checkFog: true, checkLineOfSight: true, 0, checkInDarkness: false).IsLooking)
+			if (allHub.IsHuman() && !allHub.playerEffectsController.GetEffect<Invisible>().IsEnabled && allHub.roleManager.CurrentRole is IFpcRole fpcRole && VisionInformation.GetVisionInformation(owner, camera, fpcRole.FpcModule.Position, fpcRole.FpcModule.CharacterControllerSettings.Radius, this._maxViewDistance, checkFog: true, checkLineOfSight: true, 0, checkInDarkness: false).IsLooking)
 			{
 				return true;
 			}
@@ -62,17 +62,17 @@ public class ZombieBloodlustAbility : SubroutineBase, IPoolResettable
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteBool(LookingAtTarget);
+		writer.WriteBool(this.LookingAtTarget);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		LookingAtTarget = reader.ReadBool();
+		this.LookingAtTarget = reader.ReadBool();
 	}
 
 	public void ResetObject()
 	{
-		_simulatedStareTime = 0f;
+		this._simulatedStareTime = 0f;
 	}
 }

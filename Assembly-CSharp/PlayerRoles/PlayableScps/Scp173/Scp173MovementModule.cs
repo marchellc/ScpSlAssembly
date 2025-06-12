@@ -51,10 +51,10 @@ public class Scp173MovementModule : FirstPersonMovementModule
 	{
 		set
 		{
-			SneakSpeed = value;
-			WalkSpeed = value;
-			SprintSpeed = value;
-			JumpSpeed = ((value < _normalSpeed) ? 0f : _jumpSpeed);
+			base.SneakSpeed = value;
+			base.WalkSpeed = value;
+			base.SprintSpeed = value;
+			base.JumpSpeed = ((value < this._normalSpeed) ? 0f : this._jumpSpeed);
 		}
 	}
 
@@ -62,15 +62,15 @@ public class Scp173MovementModule : FirstPersonMovementModule
 	{
 		get
 		{
-			if (_observersTracker.IsObserved)
+			if (this._observersTracker.IsObserved)
 			{
 				return 0f;
 			}
-			if (!_breakneckSpeeds.IsActive)
+			if (!this._breakneckSpeeds.IsActive)
 			{
-				return _normalSpeed;
+				return this._normalSpeed;
 			}
-			return _fastSpeed;
+			return this._fastSpeed;
 		}
 	}
 
@@ -78,17 +78,17 @@ public class Scp173MovementModule : FirstPersonMovementModule
 	{
 		get
 		{
-			float targetSpeed = TargetSpeed;
+			float targetSpeed = this.TargetSpeed;
 			if (targetSpeed > 0f)
 			{
-				_lookStopwatch.Restart();
+				this._lookStopwatch.Restart();
 				return targetSpeed;
 			}
-			if (!(_lookStopwatch.Elapsed.TotalSeconds < 0.4000000059604645))
+			if (!(this._lookStopwatch.Elapsed.TotalSeconds < 0.4000000059604645))
 			{
 				return 0f;
 			}
-			return _normalSpeed;
+			return this._normalSpeed;
 		}
 	}
 
@@ -96,49 +96,49 @@ public class Scp173MovementModule : FirstPersonMovementModule
 	{
 		get
 		{
-			if (_snapMask != 0)
+			if (Scp173MovementModule._snapMask != 0)
 			{
-				return _snapMask;
+				return Scp173MovementModule._snapMask;
 			}
 			int layer = LayerMask.NameToLayer("Player");
 			for (int i = 0; i < 32; i++)
 			{
 				if (!Physics.GetIgnoreLayerCollision(layer, i))
 				{
-					_snapMask |= 1 << i;
+					Scp173MovementModule._snapMask |= 1 << i;
 				}
 			}
-			return _snapMask;
+			return Scp173MovementModule._snapMask;
 		}
 	}
 
 	private void Awake()
 	{
-		_normalSpeed = WalkSpeed;
-		_fastSpeed = SprintSpeed;
-		_jumpSpeed = JumpSpeed;
-		_observerSpeed = SprintSpeed * 2f;
-		_role = GetComponent<Scp173Role>();
-		_role.SubroutineModule.TryGetSubroutine<Scp173BreakneckSpeedsAbility>(out _breakneckSpeeds);
-		_role.SubroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out _observersTracker);
+		this._normalSpeed = base.WalkSpeed;
+		this._fastSpeed = base.SprintSpeed;
+		this._jumpSpeed = base.JumpSpeed;
+		this._observerSpeed = base.SprintSpeed * 2f;
+		this._role = base.GetComponent<Scp173Role>();
+		this._role.SubroutineModule.TryGetSubroutine<Scp173BreakneckSpeedsAbility>(out this._breakneckSpeeds);
+		this._role.SubroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out this._observersTracker);
 	}
 
 	protected override void UpdateMovement()
 	{
-		MovementSpeed = (_role.IsLocalPlayer ? TargetSpeed : (NetworkServer.active ? ServerSpeed : _observerSpeed));
+		this.MovementSpeed = (this._role.IsLocalPlayer ? this.TargetSpeed : (NetworkServer.active ? this.ServerSpeed : this._observerSpeed));
 		base.UpdateMovement();
-		UpdateGlassBreaking();
+		this.UpdateGlassBreaking();
 	}
 
 	private void UpdateGlassBreaking()
 	{
-		if (NetworkServer.active && _breakneckSpeeds.IsActive)
+		if (NetworkServer.active && this._breakneckSpeeds.IsActive)
 		{
 			Vector3 moveDirection = base.Motor.MoveDirection;
 			float maxDistance = base.CharController.radius + 0.3f;
 			if (Physics.Raycast(base.Position, moveDirection, out var hitInfo, maxDistance, 16384) && hitInfo.collider.TryGetComponent<BreakableWindow>(out var component))
 			{
-				component.Damage(component.health, _role.DamageHandler, Vector3.zero);
+				component.Damage(component.health, this._role.DamageHandler, Vector3.zero);
 			}
 		}
 	}
@@ -147,35 +147,35 @@ public class Scp173MovementModule : FirstPersonMovementModule
 	{
 		Vector3 position = base.Hub.PlayerCameraReference.position;
 		Vector3 forward = base.Hub.PlayerCameraReference.forward;
-		if (!Physics.SphereCast(position, 0.025f, forward, out var hitInfo, maxDis, TpMask))
+		if (!Physics.SphereCast(position, 0.025f, forward, out var hitInfo, maxDis, Scp173MovementModule.TpMask))
 		{
 			hitInfo.point = position + forward * maxDis;
 			hitInfo.normal = Vector3.up;
 			hitInfo.distance = maxDis;
 		}
 		usedDistance = hitInfo.distance;
-		return CheckTeleportPosition(hitInfo, out pos);
+		return this.CheckTeleportPosition(hitInfo, out pos);
 	}
 
 	private bool CheckTeleportPosition(RaycastHit hit, out Vector3 groundPoint)
 	{
 		groundPoint = Vector3.zero;
-		float radius = CharacterControllerSettings.Radius;
+		float radius = base.CharacterControllerSettings.Radius;
 		float num = radius * 1.2f;
 		Vector3 vector = hit.point + hit.normal * num;
-		if (Physics.CheckSphere(vector, radius, TpMask))
+		if (Physics.CheckSphere(vector, radius, Scp173MovementModule.TpMask))
 		{
 			return false;
 		}
-		if (Physics.Raycast(hit.point, hit.normal, num, TpMask))
+		if (Physics.Raycast(hit.point, hit.normal, num, Scp173MovementModule.TpMask))
 		{
 			return false;
 		}
-		if (!Physics.SphereCast(vector, radius, Vector3.down, out var hitInfo, 3.6f, TpMask))
+		if (!Physics.SphereCast(vector, radius, Vector3.down, out var hitInfo, 3.6f, Scp173MovementModule.TpMask))
 		{
 			return false;
 		}
-		if (!Physics.SphereCast(new Ray(vector, Vector3.down), radius * 0.5f, hitInfo.distance + 0.6f, TpMask))
+		if (!Physics.SphereCast(new Ray(vector, Vector3.down), radius * 0.5f, hitInfo.distance + 0.6f, Scp173MovementModule.TpMask))
 		{
 			return false;
 		}
@@ -183,11 +183,11 @@ public class Scp173MovementModule : FirstPersonMovementModule
 		{
 			return false;
 		}
-		if (!Physics.SphereCast(vector, radius, Vector3.up, out var hitInfo2, 7.2f, TpMask))
+		if (!Physics.SphereCast(vector, radius, Vector3.up, out var hitInfo2, 7.2f, Scp173MovementModule.TpMask))
 		{
 			hitInfo2.point = vector + Vector3.up * 7.2f;
 		}
-		if (Mathf.Abs(hitInfo.point.y - hitInfo2.point.y) < CharacterControllerSettings.Height)
+		if (Mathf.Abs(hitInfo.point.y - hitInfo2.point.y) < base.CharacterControllerSettings.Height)
 		{
 			return false;
 		}
@@ -203,7 +203,7 @@ public class Scp173MovementModule : FirstPersonMovementModule
 	{
 		if (NetworkServer.active)
 		{
-			ServerOverridePosition(pos);
+			base.ServerOverridePosition(pos);
 		}
 	}
 }

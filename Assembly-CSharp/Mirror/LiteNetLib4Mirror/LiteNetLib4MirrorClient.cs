@@ -54,7 +54,7 @@ public static class LiteNetLib4MirrorClient
 
 	private static void OnPeerConnected(NetPeer peer)
 	{
-		LastDisconnectReason = null;
+		LiteNetLib4MirrorClient.LastDisconnectReason = null;
 		LiteNetLib4MirrorCore.State = LiteNetLib4MirrorCore.States.ClientConnected;
 		LiteNetLib4MirrorTransport.Singleton.OnClientConnected();
 	}
@@ -69,7 +69,7 @@ public static class LiteNetLib4MirrorClient
 				goto IL_0046;
 			}
 			LiteNetLib4MirrorTransport.Singleton.OnConncetionRefused(disconnectinfo);
-			LastDisconnectReason = null;
+			LiteNetLib4MirrorClient.LastDisconnectReason = null;
 		}
 		else
 		{
@@ -77,7 +77,7 @@ public static class LiteNetLib4MirrorClient
 			{
 				goto IL_0046;
 			}
-			LastDisconnectReason = LiteNetLib4MirrorUtils.FromBase64(result);
+			LiteNetLib4MirrorClient.LastDisconnectReason = LiteNetLib4MirrorUtils.FromBase64(result);
 		}
 		goto IL_004c;
 		IL_004c:
@@ -88,7 +88,7 @@ public static class LiteNetLib4MirrorClient
 		LiteNetLib4MirrorCore.StopTransport();
 		return;
 		IL_0046:
-		LastDisconnectReason = null;
+		LiteNetLib4MirrorClient.LastDisconnectReason = null;
 		goto IL_004c;
 	}
 

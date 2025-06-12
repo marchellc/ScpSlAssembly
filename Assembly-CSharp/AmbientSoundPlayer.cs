@@ -37,34 +37,34 @@ public class AmbientSoundPlayer : NetworkBehaviour
 	{
 		if (base.isLocalPlayer && base.isServer)
 		{
-			for (int i = 0; i < clips.Length; i++)
+			for (int i = 0; i < this.clips.Length; i++)
 			{
-				clips[i].index = i;
+				this.clips[i].index = i;
 			}
-			Invoke("GenerateRandom", 10f);
+			base.Invoke("GenerateRandom", 10f);
 		}
 	}
 
 	private void GenerateRandom()
 	{
-		list.Clear();
+		this.list.Clear();
 		int num = 0;
-		AmbientClip[] array = clips;
+		AmbientClip[] array = this.clips;
 		foreach (AmbientClip ambientClip in array)
 		{
 			if (!ambientClip.played)
 			{
-				list.Add(ambientClip);
+				this.list.Add(ambientClip);
 			}
 		}
-		num = UnityEngine.Random.Range(0, list.Count);
-		int index = list[num].index;
-		if (!clips[index].repeatable)
+		num = UnityEngine.Random.Range(0, this.list.Count);
+		int index = this.list[num].index;
+		if (!this.clips[index].repeatable)
 		{
-			clips[index].played = true;
+			this.clips[index].played = true;
 		}
-		RpcPlaySound(index);
-		Invoke("GenerateRandom", UnityEngine.Random.Range(minTime, maxTime));
+		this.RpcPlaySound(index);
+		base.Invoke("GenerateRandom", UnityEngine.Random.Range(this.minTime, this.maxTime));
 	}
 
 	[ClientRpc]
@@ -72,7 +72,7 @@ public class AmbientSoundPlayer : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteInt(id);
-		SendRPCInternal("System.Void AmbientSoundPlayer::RpcPlaySound(System.Int32)", -1494438428, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void AmbientSoundPlayer::RpcPlaySound(System.Int32)", -1494438428, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 

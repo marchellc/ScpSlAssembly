@@ -45,29 +45,29 @@ public abstract class HitscanHitregModuleBase : ModuleBase, IHitregModule, ICust
 	[field: SerializeField]
 	public virtual float BaseBulletInaccuracy { get; private set; }
 
-	public virtual float DisplayDamage => EffectiveDamage;
+	public virtual float DisplayDamage => this.EffectiveDamage;
 
-	public virtual float DisplayPenetration => EffectivePenetration;
+	public virtual float DisplayPenetration => this.EffectivePenetration;
 
 	public virtual bool UseHitboxMultipliers => true;
 
 	public virtual Type CrosshairType => typeof(SingleBulletFirearmCrosshair);
 
-	public virtual float Inaccuracy => BaseBulletInaccuracy * base.Firearm.AttachmentsValue(AttachmentParam.BulletInaccuracyMultiplier);
+	public virtual float Inaccuracy => this.BaseBulletInaccuracy * base.Firearm.AttachmentsValue(AttachmentParam.BulletInaccuracyMultiplier);
 
-	public virtual DisplayInaccuracyValues DisplayInaccuracy => new DisplayInaccuracyValues(0f, 0f, 0f, Inaccuracy);
+	public virtual DisplayInaccuracyValues DisplayInaccuracy => new DisplayInaccuracyValues(0f, 0f, 0f, this.Inaccuracy);
 
 	protected ReferenceHub PrimaryTarget { get; private set; }
 
 	protected ShotEvent LastShotEvent { get; private set; }
 
-	protected HitscanResult ResultNonAlloc => _resultNonAlloc ?? (_resultNonAlloc = new HitscanResult());
+	protected HitscanResult ResultNonAlloc => this._resultNonAlloc ?? (this._resultNonAlloc = new HitscanResult());
 
 	protected Ray ForwardRay
 	{
 		get
 		{
-			Transform playerCameraReference = Owner.PlayerCameraReference;
+			Transform playerCameraReference = this.Owner.PlayerCameraReference;
 			return new Ray(playerCameraReference.position, playerCameraReference.forward);
 		}
 	}
@@ -89,25 +89,25 @@ public abstract class HitscanHitregModuleBase : ModuleBase, IHitregModule, ICust
 		}
 	}
 
-	protected virtual float EffectiveDamage => BaseDamage * base.Firearm.AttachmentsValue(AttachmentParam.DamageMultiplier);
+	protected virtual float EffectiveDamage => this.BaseDamage * base.Firearm.AttachmentsValue(AttachmentParam.DamageMultiplier);
 
-	protected virtual float EffectivePenetration => BasePenetration * base.Firearm.AttachmentsValue(AttachmentParam.PenetrationMultiplier);
+	protected virtual float EffectivePenetration => this.BasePenetration * base.Firearm.AttachmentsValue(AttachmentParam.PenetrationMultiplier);
 
 	protected Footprint Footprint
 	{
 		get
 		{
-			if (!_footprintCacheSet)
+			if (!this._footprintCacheSet)
 			{
-				_footprintCacheSet = true;
-				_cachedFootprint = new Footprint(Owner);
+				this._footprintCacheSet = true;
+				this._cachedFootprint = new Footprint(this.Owner);
 			}
-			return _cachedFootprint;
+			return this._cachedFootprint;
 		}
 		set
 		{
-			_cachedFootprint = value;
-			_footprintCacheSet = true;
+			this._cachedFootprint = value;
+			this._footprintCacheSet = true;
 		}
 	}
 
@@ -117,34 +117,34 @@ public abstract class HitscanHitregModuleBase : ModuleBase, IHitregModule, ICust
 
 	public void Fire(ReferenceHub primaryTarget, ShotEvent shotEvent)
 	{
-		PrimaryTarget = primaryTarget;
-		LastShotEvent = shotEvent;
-		EnableSelfDamageProtection();
-		Fire();
+		this.PrimaryTarget = primaryTarget;
+		this.LastShotEvent = shotEvent;
+		this.EnableSelfDamageProtection();
+		this.Fire();
 		this.ServerOnFired?.Invoke();
-		RestoreHitboxes();
+		this.RestoreHitboxes();
 	}
 
 	protected override void OnInit()
 	{
 		base.OnInit();
-		if (!base.Firearm.TryGetModule<ImpactEffectsModule>(out _impactEffectsModule))
+		if (!base.Firearm.TryGetModule<ImpactEffectsModule>(out this._impactEffectsModule))
 		{
-			_impactEffectsModule = null;
+			this._impactEffectsModule = null;
 		}
 	}
 
 	internal override void AlwaysUpdate()
 	{
 		base.AlwaysUpdate();
-		if (_scheduledHitmarker.HasValue)
+		if (this._scheduledHitmarker.HasValue)
 		{
-			float num = HitmarkerSizeAtDamage(_scheduledHitmarker.Value);
+			float num = this.HitmarkerSizeAtDamage(this._scheduledHitmarker.Value);
 			if (num > 0f)
 			{
-				Hitmarker.SendHitmarkerDirectly(Footprint.Hub, num);
+				Hitmarker.SendHitmarkerDirectly(this.Footprint.Hub, num);
 			}
-			_scheduledHitmarker = null;
+			this._scheduledHitmarker = null;
 		}
 	}
 
@@ -160,25 +160,25 @@ public abstract class HitscanHitregModuleBase : ModuleBase, IHitregModule, ICust
 
 	protected virtual float DamageAtDistance(float dist)
 	{
-		dist -= FullDamageDistance;
+		dist -= this.FullDamageDistance;
 		if (dist <= 0f)
 		{
-			return EffectiveDamage;
+			return this.EffectiveDamage;
 		}
-		float num = dist / DamageFalloffDistance;
-		return EffectiveDamage * Mathf.Clamp01(1f - num);
+		float num = dist / this.DamageFalloffDistance;
+		return this.EffectiveDamage * Mathf.Clamp01(1f - num);
 	}
 
 	protected virtual float HitmarkerSizeAtDamage(float damage)
 	{
-		return damage / EffectiveDamage;
+		return damage / this.EffectiveDamage;
 	}
 
 	protected void SendDamageIndicator(uint receiverNetId, float dmgDealt)
 	{
-		if (Footprint.Hub.roleManager.CurrentRole is IFpcRole fpcRole)
+		if (this.Footprint.Hub.roleManager.CurrentRole is IFpcRole fpcRole)
 		{
-			SendDamageIndicator(receiverNetId, dmgDealt, fpcRole.FpcModule.Position);
+			this.SendDamageIndicator(receiverNetId, dmgDealt, fpcRole.FpcModule.Position);
 		}
 	}
 
@@ -195,27 +195,27 @@ public abstract class HitscanHitregModuleBase : ModuleBase, IHitregModule, ICust
 		HitscanResult hitscanResult;
 		if (nonAlloc)
 		{
-			hitscanResult = ResultNonAlloc;
+			hitscanResult = this.ResultNonAlloc;
 			hitscanResult.Clear();
 		}
 		else
 		{
 			hitscanResult = new HitscanResult();
 		}
-		ServerAppendPrescan(targetRay, hitscanResult);
+		this.ServerAppendPrescan(targetRay, hitscanResult);
 		return hitscanResult;
 	}
 
 	protected void ServerAppendPrescan(Ray targetRay, HitscanResult toAppend)
 	{
-		float maxDistance = DamageFalloffDistance + FullDamageDistance;
-		if (!Physics.Raycast(targetRay, out var hitInfo, maxDistance, HitregMask))
+		float maxDistance = this.DamageFalloffDistance + this.FullDamageDistance;
+		if (!Physics.Raycast(targetRay, out var hitInfo, maxDistance, HitscanHitregModuleBase.HitregMask))
 		{
 			return;
 		}
 		if (hitInfo.collider.TryGetComponent<IDestructible>(out var component))
 		{
-			if (ValidateTarget(component, toAppend))
+			if (this.ValidateTarget(component, toAppend))
 			{
 				toAppend.Destructibles.Add(new DestructibleHitPair(component, hitInfo, targetRay));
 			}
@@ -230,24 +230,24 @@ public abstract class HitscanHitregModuleBase : ModuleBase, IHitregModule, ICust
 	{
 		foreach (DestructibleHitPair destructible in result.Destructibles)
 		{
-			ServerApplyDestructibleDamage(destructible, result);
+			this.ServerApplyDestructibleDamage(destructible, result);
 		}
 		foreach (HitRayPair obstacle in result.Obstacles)
 		{
-			ServerApplyObstacleDamage(obstacle, result);
+			this.ServerApplyObstacleDamage(obstacle, result);
 		}
-		ServerSendAllIndicators(result);
+		this.ServerSendAllIndicators(result);
 	}
 
 	protected virtual void ServerApplyObstacleDamage(HitRayPair hitInfo, HitscanResult result)
 	{
-		ServerPlayImpactEffects(hitInfo, allowBlood: false);
+		this.ServerPlayImpactEffects(hitInfo, allowBlood: false);
 	}
 
 	protected virtual void ServerApplyDestructibleDamage(DestructibleHitPair target, HitscanResult result)
 	{
-		float num = DamageAtDistance(target.Hit.distance);
-		AttackerDamageHandler handler = GetHandler(num);
+		float num = this.DamageAtDistance(target.Hit.distance);
+		AttackerDamageHandler handler = this.GetHandler(num);
 		IDestructible destructible = target.Destructible;
 		if (destructible is HitboxIdentity hitboxIdentity && !hitboxIdentity.TargetHub.IsAlive())
 		{
@@ -258,32 +258,32 @@ public abstract class HitscanHitregModuleBase : ModuleBase, IHitregModule, ICust
 		if (destructible.Damage(num, handler, point))
 		{
 			result.RegisterDamage(destructible, num, handler);
-			ServerPlayImpactEffects(target.Raycast, num > 0f);
+			this.ServerPlayImpactEffects(target.Raycast, num > 0f);
 		}
 	}
 
 	protected virtual void ServerSendAllIndicators(HitscanResult result)
 	{
 		HashSet<uint> hashSet = HashSetPool<uint>.Shared.Rent();
-		ServerAddHitmarkerDamage(result.OtherDamage);
+		this.ServerAddHitmarkerDamage(result.OtherDamage);
 		foreach (DestructibleDamageRecord damagedDestructible in result.DamagedDestructibles)
 		{
 			IDestructible destructible = damagedDestructible.Destructible;
 			if (hashSet.Add(destructible.NetworkId))
 			{
 				float dmgDealt = result.CountDamage(destructible);
-				SendDamageIndicator(destructible.NetworkId, dmgDealt);
+				this.SendDamageIndicator(destructible.NetworkId, dmgDealt);
 			}
 			if (!(destructible is HitboxIdentity hitboxIdentity))
 			{
-				ServerAddHitmarkerDamage(damagedDestructible.AppliedDamage);
+				this.ServerAddHitmarkerDamage(damagedDestructible.AppliedDamage);
 			}
 			else if (Hitmarker.CheckHitmarkerPerms(damagedDestructible.Handler, hitboxIdentity.TargetHub))
 			{
-				ServerAddHitmarkerDamage(damagedDestructible.AppliedDamage);
+				this.ServerAddHitmarkerDamage(damagedDestructible.AppliedDamage);
 			}
 		}
-		AlwaysUpdate();
+		this.AlwaysUpdate();
 		HashSetPool<uint>.Shared.Return(hashSet);
 	}
 
@@ -293,15 +293,15 @@ public abstract class HitscanHitregModuleBase : ModuleBase, IHitregModule, ICust
 		{
 			return true;
 		}
-		if (PrimaryTarget == null)
+		if (this.PrimaryTarget == null)
 		{
 			return true;
 		}
-		if (hitboxIdentity.TargetHub == PrimaryTarget)
+		if (hitboxIdentity.TargetHub == this.PrimaryTarget)
 		{
 			return true;
 		}
-		if (HitboxIdentity.IsEnemy(Owner, hitboxIdentity.TargetHub))
+		if (HitboxIdentity.IsEnemy(this.Owner, hitboxIdentity.TargetHub))
 		{
 			return true;
 		}
@@ -310,46 +310,46 @@ public abstract class HitscanHitregModuleBase : ModuleBase, IHitregModule, ICust
 
 	protected virtual AttackerDamageHandler GetHandler(float damageDealt)
 	{
-		return new FirearmDamageHandler(base.Firearm, damageDealt, EffectivePenetration, UseHitboxMultipliers);
+		return new FirearmDamageHandler(base.Firearm, damageDealt, this.EffectivePenetration, this.UseHitboxMultipliers);
 	}
 
 	protected void ServerAddHitmarkerDamage(float damageDealt)
 	{
-		float valueOrDefault = _scheduledHitmarker.GetValueOrDefault();
-		if (!_scheduledHitmarker.HasValue)
+		float valueOrDefault = this._scheduledHitmarker.GetValueOrDefault();
+		if (!this._scheduledHitmarker.HasValue)
 		{
 			valueOrDefault = 0f;
-			_scheduledHitmarker = valueOrDefault;
+			this._scheduledHitmarker = valueOrDefault;
 		}
-		_scheduledHitmarker += damageDealt;
+		this._scheduledHitmarker += damageDealt;
 	}
 
 	protected void EnableSelfDamageProtection()
 	{
-		SetHitboxes(restore: false);
+		this.SetHitboxes(restore: false);
 	}
 
 	protected void RestoreHitboxes()
 	{
-		SetHitboxes(restore: true);
+		this.SetHitboxes(restore: true);
 	}
 
 	protected void ServerPlayImpactEffects(HitRayPair rc, bool allowBlood)
 	{
-		if ((object)_impactEffectsModule != null)
+		if ((object)this._impactEffectsModule != null)
 		{
-			_impactEffectsModule.ServerProcessHit(rc.Hit, rc.Ray.origin, allowBlood);
+			this._impactEffectsModule.ServerProcessHit(rc.Hit, rc.Ray.origin, allowBlood);
 		}
 	}
 
 	private void SetHitboxes(bool restore)
 	{
-		if (!(Owner == null))
+		if (!(this.Owner == null))
 		{
-			ToggleColliders(Owner, !Owner.isLocalPlayer && restore);
-			if (!(PrimaryTarget == null) && PrimaryTarget.isLocalPlayer)
+			HitscanHitregModuleBase.ToggleColliders(this.Owner, !this.Owner.isLocalPlayer && restore);
+			if (!(this.PrimaryTarget == null) && this.PrimaryTarget.isLocalPlayer)
 			{
-				ToggleColliders(PrimaryTarget, !restore);
+				HitscanHitregModuleBase.ToggleColliders(this.PrimaryTarget, !restore);
 			}
 		}
 	}

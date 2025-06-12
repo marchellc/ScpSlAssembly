@@ -11,36 +11,36 @@ internal abstract class BaseChannel
 
 	private int _isAddedToPeerChannelSendQueue;
 
-	public int PacketsInQueue => OutgoingQueue.Count;
+	public int PacketsInQueue => this.OutgoingQueue.Count;
 
 	protected BaseChannel(NetPeer peer)
 	{
-		Peer = peer;
+		this.Peer = peer;
 	}
 
 	public void AddToQueue(NetPacket packet)
 	{
-		lock (OutgoingQueue)
+		lock (this.OutgoingQueue)
 		{
-			OutgoingQueue.Enqueue(packet);
+			this.OutgoingQueue.Enqueue(packet);
 		}
-		AddToPeerChannelSendQueue();
+		this.AddToPeerChannelSendQueue();
 	}
 
 	protected void AddToPeerChannelSendQueue()
 	{
-		if (Interlocked.CompareExchange(ref _isAddedToPeerChannelSendQueue, 1, 0) == 0)
+		if (Interlocked.CompareExchange(ref this._isAddedToPeerChannelSendQueue, 1, 0) == 0)
 		{
-			Peer.AddToReliableChannelSendQueue(this);
+			this.Peer.AddToReliableChannelSendQueue(this);
 		}
 	}
 
 	public bool SendAndCheckQueue()
 	{
-		bool num = SendNextPackets();
+		bool num = this.SendNextPackets();
 		if (!num)
 		{
-			Interlocked.Exchange(ref _isAddedToPeerChannelSendQueue, 0);
+			Interlocked.Exchange(ref this._isAddedToPeerChannelSendQueue, 0);
 		}
 		return num;
 	}

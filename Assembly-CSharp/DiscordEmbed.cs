@@ -25,9 +25,9 @@ public readonly struct DiscordEmbed : IEquatable<DiscordEmbed>, IJsonSerializabl
 
 	public bool Equals(DiscordEmbed other)
 	{
-		if (title == other.title && type == other.type && description == other.description && color == other.color)
+		if (this.title == other.title && this.type == other.type && this.description == other.description && this.color == other.color)
 		{
-			return object.Equals(fields, other.fields);
+			return object.Equals(this.fields, other.fields);
 		}
 		return false;
 	}
@@ -36,14 +36,14 @@ public readonly struct DiscordEmbed : IEquatable<DiscordEmbed>, IJsonSerializabl
 	{
 		if (obj is DiscordEmbed other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((((((((title != null) ? title.GetHashCode() : 0) * 397) ^ ((type != null) ? type.GetHashCode() : 0)) * 397) ^ ((description != null) ? description.GetHashCode() : 0)) * 397) ^ color) * 397) ^ ((fields != null) ? fields.GetHashCode() : 0);
+		return (((((((((this.title != null) ? this.title.GetHashCode() : 0) * 397) ^ ((this.type != null) ? this.type.GetHashCode() : 0)) * 397) ^ ((this.description != null) ? this.description.GetHashCode() : 0)) * 397) ^ this.color) * 397) ^ ((this.fields != null) ? this.fields.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(DiscordEmbed left, DiscordEmbed right)

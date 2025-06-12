@@ -38,12 +38,12 @@ public class ServerRoles : NetworkBehaviour
 		{
 			get
 			{
-				if (!_speakingColorSet)
+				if (!this._speakingColorSet)
 				{
-					_speakingColorSet = true;
-					ColorUtility.TryParseHtmlString("#" + (string.IsNullOrEmpty(_speakingOverride) ? ColorHex : _speakingOverride), out _speakingColorCache);
+					this._speakingColorSet = true;
+					ColorUtility.TryParseHtmlString("#" + (string.IsNullOrEmpty(this._speakingOverride) ? this.ColorHex : this._speakingOverride), out this._speakingColorCache);
 				}
-				return _speakingColorCache;
+				return this._speakingColorCache;
 			}
 		}
 	}
@@ -160,12 +160,12 @@ public class ServerRoles : NetworkBehaviour
 	{
 		get
 		{
-			return _bypassMode;
+			return this._bypassMode;
 		}
 		set
 		{
-			_bypassMode = value;
-			_hub.playerStats.GetModule<AdminFlagsStat>().SetFlag(AdminFlags.BypassMode, value);
+			this._bypassMode = value;
+			this._hub.playerStats.GetModule<AdminFlagsStat>().SetFlag(AdminFlags.BypassMode, value);
 		}
 	}
 
@@ -173,13 +173,13 @@ public class ServerRoles : NetworkBehaviour
 	{
 		get
 		{
-			return _hub.roleManager.CurrentRole is OverwatchRole;
+			return this._hub.roleManager.CurrentRole is OverwatchRole;
 		}
 		set
 		{
-			if (value != IsInOverwatch)
+			if (value != this.IsInOverwatch)
 			{
-				_hub.roleManager.ServerSetRole(value ? RoleTypeId.Overwatch : RoleTypeId.Spectator, RoleChangeReason.RemoteAdmin);
+				this._hub.roleManager.ServerSetRole(value ? RoleTypeId.Overwatch : RoleTypeId.Spectator, RoleChangeReason.RemoteAdmin);
 			}
 		}
 	}
@@ -188,11 +188,11 @@ public class ServerRoles : NetworkBehaviour
 	{
 		get
 		{
-			return _group;
+			return this._group;
 		}
 		set
 		{
-			SetGroup(value);
+			this.SetGroup(value);
 		}
 	}
 
@@ -200,17 +200,17 @@ public class ServerRoles : NetworkBehaviour
 	{
 		get
 		{
-			if (_colorDictionaryCacheSet)
+			if (ServerRoles._colorDictionaryCacheSet)
 			{
-				return DictionarizedColorsCache;
+				return ServerRoles.DictionarizedColorsCache;
 			}
-			NamedColor[] namedColors = NamedColors;
+			NamedColor[] namedColors = this.NamedColors;
 			foreach (NamedColor namedColor in namedColors)
 			{
-				DictionarizedColorsCache[namedColor.Name] = namedColor;
+				ServerRoles.DictionarizedColorsCache[namedColor.Name] = namedColor;
 			}
-			_colorDictionaryCacheSet = true;
-			return DictionarizedColorsCache;
+			ServerRoles._colorDictionaryCacheSet = true;
+			return ServerRoles.DictionarizedColorsCache;
 		}
 	}
 
@@ -218,9 +218,9 @@ public class ServerRoles : NetworkBehaviour
 	{
 		get
 		{
-			if (!_hub.authManager.RemoteAdminGlobalAccess)
+			if (!this._hub.authManager.RemoteAdminGlobalAccess)
 			{
-				return Group?.KickPower ?? 0;
+				return this.Group?.KickPower ?? 0;
 			}
 			return byte.MaxValue;
 		}
@@ -234,11 +234,11 @@ public class ServerRoles : NetworkBehaviour
 	{
 		get
 		{
-			if (GlobalBadge == null)
+			if (this.GlobalBadge == null)
 			{
-				if (MyText != null && MyText.StartsWith("[", StringComparison.Ordinal))
+				if (this.MyText != null && this.MyText.StartsWith("[", StringComparison.Ordinal))
 				{
-					return MyText.EndsWith("]", StringComparison.Ordinal);
+					return this.MyText.EndsWith("]", StringComparison.Ordinal);
 				}
 				return false;
 			}
@@ -250,9 +250,9 @@ public class ServerRoles : NetworkBehaviour
 	{
 		get
 		{
-			if (!MyText.Contains("[", StringComparison.Ordinal) && !MyText.Contains("]", StringComparison.Ordinal) && !MyText.Contains("<", StringComparison.Ordinal) && !MyText.Contains(">", StringComparison.Ordinal) && !MyText.Contains("\\u003c", StringComparison.Ordinal))
+			if (!this.MyText.Contains("[", StringComparison.Ordinal) && !this.MyText.Contains("]", StringComparison.Ordinal) && !this.MyText.Contains("<", StringComparison.Ordinal) && !this.MyText.Contains(">", StringComparison.Ordinal) && !this.MyText.Contains("\\u003c", StringComparison.Ordinal))
 			{
-				return MyText.Contains("\\u003e", StringComparison.Ordinal);
+				return this.MyText.Contains("\\u003e", StringComparison.Ordinal);
 			}
 			return true;
 		}
@@ -262,26 +262,26 @@ public class ServerRoles : NetworkBehaviour
 	{
 		get
 		{
-			if (!_hub.authManager.BypassBansFlagSet)
+			if (!this._hub.authManager.BypassBansFlagSet)
 			{
-				return !string.IsNullOrEmpty(HiddenBadge);
+				return !string.IsNullOrEmpty(this.HiddenBadge);
 			}
 			return false;
 		}
 	}
 
-	public bool HasGlobalBadge => _hub.authManager.AuthenticationResponse.SignedBadgeToken != null;
+	public bool HasGlobalBadge => this._hub.authManager.AuthenticationResponse.SignedBadgeToken != null;
 
 	public string Network_myText
 	{
 		get
 		{
-			return _myText;
+			return this._myText;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _myText, 1uL, SetTextHook);
+			base.GeneratedSyncVarSetter(value, ref this._myText, 1uL, SetTextHook);
 		}
 	}
 
@@ -289,12 +289,12 @@ public class ServerRoles : NetworkBehaviour
 	{
 		get
 		{
-			return _myColor;
+			return this._myColor;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _myColor, 2uL, SetColorHook);
+			base.GeneratedSyncVarSetter(value, ref this._myColor, 2uL, SetColorHook);
 		}
 	}
 
@@ -302,12 +302,12 @@ public class ServerRoles : NetworkBehaviour
 	{
 		get
 		{
-			return GlobalBadge;
+			return this.GlobalBadge;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref GlobalBadge, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.GlobalBadge, 4uL, null);
 		}
 	}
 
@@ -315,12 +315,12 @@ public class ServerRoles : NetworkBehaviour
 	{
 		get
 		{
-			return GlobalBadgeSignature;
+			return this.GlobalBadgeSignature;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref GlobalBadgeSignature, 8uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.GlobalBadgeSignature, 8uL, null);
 		}
 	}
 
@@ -331,10 +331,10 @@ public class ServerRoles : NetworkBehaviour
 
 	public void Start()
 	{
-		_hub = ReferenceHub.GetHub(base.gameObject);
-		if (_hub.IsDummy)
+		this._hub = ReferenceHub.GetHub(base.gameObject);
+		if (this._hub.IsDummy)
 		{
-			SetGroup(DummyUtils.DummyGroup, byAdmin: true);
+			this.SetGroup(DummyUtils.DummyGroup, byAdmin: true);
 		}
 	}
 
@@ -343,7 +343,7 @@ public class ServerRoles : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteString(role);
-		SendTargetRPCInternal(connection, "System.Void ServerRoles::TargetSetHiddenRole(Mirror.NetworkConnection,System.String)", -1356032325, writer, 0);
+		this.SendTargetRPCInternal(connection, "System.Void ServerRoles::TargetSetHiddenRole(Mirror.NetworkConnection,System.String)", -1356032325, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -351,7 +351,7 @@ public class ServerRoles : NetworkBehaviour
 	public void RpcResetFixed()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void ServerRoles::RpcResetFixed()", 87745685, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void ServerRoles::RpcResetFixed()", 87745685, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -363,7 +363,7 @@ public class ServerRoles : NetworkBehaviour
 		GeneratedNetworkCode._Write_ServerRoles_002FBadgeVisibilityPreferences(writer, globalPreferences);
 		GeneratedNetworkCode._Write_ServerRoles_002FBadgeVisibilityPreferences(writer, localPreferences);
 		writer.WriteBool(refresh);
-		SendCommandInternal("System.Void ServerRoles::CmdSetLocalTagPreferences(ServerRoles/BadgePreferences,ServerRoles/BadgeVisibilityPreferences,ServerRoles/BadgeVisibilityPreferences,System.Boolean)", -1971566213, writer, 4);
+		base.SendCommandInternal("System.Void ServerRoles::CmdSetLocalTagPreferences(ServerRoles/BadgePreferences,ServerRoles/BadgeVisibilityPreferences,ServerRoles/BadgeVisibilityPreferences,System.Boolean)", -1971566213, writer, 4);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -375,10 +375,10 @@ public class ServerRoles : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void ServerRoles::RefreshGlobalBadgeVisibility(ServerRoles/BadgeVisibilityPreferences)' called when server was not active");
 			return;
 		}
-		RefreshGlobalTag();
+		this.RefreshGlobalTag();
 		if (globalPreferences == BadgeVisibilityPreferences.Hidden)
 		{
-			TryHideTag();
+			this.TryHideTag();
 		}
 	}
 
@@ -390,10 +390,10 @@ public class ServerRoles : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void ServerRoles::RefreshLocalBadgeVisibility(ServerRoles/BadgeVisibilityPreferences)' called when server was not active");
 			return;
 		}
-		RefreshLocalTag();
+		this.RefreshLocalTag();
 		if (localPreferences == BadgeVisibilityPreferences.Hidden)
 		{
-			TryHideTag();
+			this.TryHideTag();
 		}
 	}
 
@@ -405,10 +405,10 @@ public class ServerRoles : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void ServerRoles::RefreshPermissions(System.Boolean)' called when server was not active");
 			return;
 		}
-		UserGroup userGroup = ServerStatic.PermissionsHandler.GetUserGroup(_hub.authManager.UserId);
+		UserGroup userGroup = ServerStatic.PermissionsHandler.GetUserGroup(this._hub.authManager.UserId);
 		if (userGroup != null)
 		{
-			SetGroup(userGroup, byAdmin: false, disp);
+			this.SetGroup(userGroup, byAdmin: false, disp);
 		}
 	}
 
@@ -420,86 +420,86 @@ public class ServerRoles : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void ServerRoles::SetGroup(UserGroup,System.Boolean,System.Boolean)' called when server was not active");
 			return;
 		}
-		PlayerGroupChangingEventArgs playerGroupChangingEventArgs = new PlayerGroupChangingEventArgs(_hub, group);
-		PlayerEvents.OnGroupChanging(playerGroupChangingEventArgs);
-		if (!playerGroupChangingEventArgs.IsAllowed)
+		PlayerGroupChangingEventArgs e = new PlayerGroupChangingEventArgs(this._hub, group);
+		PlayerEvents.OnGroupChanging(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
-		group = playerGroupChangingEventArgs.Group;
+		group = e.Group;
 		if (group == null)
 		{
-			RemoteAdmin = GlobalPerms != 0;
-			Permissions = GlobalPerms;
-			GlobalHidden = false;
-			_group = null;
-			SetColor(null);
-			SetText(null);
-			BadgeCover = false;
-			RpcResetFixed();
-			FinalizeSetGroup();
-			_hub.gameConsoleTransmission.SendToClient("Your local permissions has been revoked by server administrator.", "red");
+			this.RemoteAdmin = this.GlobalPerms != 0;
+			this.Permissions = this.GlobalPerms;
+			this.GlobalHidden = false;
+			this._group = null;
+			this.SetColor(null);
+			this.SetText(null);
+			this.BadgeCover = false;
+			this.RpcResetFixed();
+			this.FinalizeSetGroup();
+			this._hub.gameConsoleTransmission.SendToClient("Your local permissions has been revoked by server administrator.", "red");
 			return;
 		}
-		_hub.gameConsoleTransmission.SendToClient((!byAdmin) ? "Updating your group on server (local permissions)..." : "Updating your group on server (set by server administrator)...", "cyan");
-		_group = group;
-		BadgeCover = group.Cover;
-		if ((group.Permissions | GlobalPerms) != 0 && ServerStatic.PermissionsHandler.IsRaPermitted(group.Permissions | GlobalPerms))
+		this._hub.gameConsoleTransmission.SendToClient((!byAdmin) ? "Updating your group on server (local permissions)..." : "Updating your group on server (set by server administrator)...", "cyan");
+		this._group = group;
+		this.BadgeCover = group.Cover;
+		if ((group.Permissions | this.GlobalPerms) != 0 && ServerStatic.PermissionsHandler.IsRaPermitted(group.Permissions | this.GlobalPerms))
 		{
-			Permissions = group.Permissions | GlobalPerms;
-			_hub.authManager.ResetPasswordAttempts();
-			_hub.gameConsoleTransmission.SendToClient((!byAdmin) ? "Your remote admin access has been granted (local permissions)." : "Your remote admin access has been granted (set by server administrator).", "cyan");
+			this.Permissions = group.Permissions | this.GlobalPerms;
+			this._hub.authManager.ResetPasswordAttempts();
+			this._hub.gameConsoleTransmission.SendToClient((!byAdmin) ? "Your remote admin access has been granted (local permissions)." : "Your remote admin access has been granted (set by server administrator).", "cyan");
 		}
 		else
 		{
-			Permissions = group.Permissions | GlobalPerms;
+			this.Permissions = group.Permissions | this.GlobalPerms;
 		}
-		ServerLogs.AddLog(ServerLogs.Modules.Permissions, _hub.LoggedNameFromRefHub() + " has been assigned to group " + group.BadgeText + ".", ServerLogs.ServerLogType.ConnectionUpdate);
+		ServerLogs.AddLog(ServerLogs.Modules.Permissions, this._hub.LoggedNameFromRefHub() + " has been assigned to group " + group.BadgeText + ".", ServerLogs.ServerLogType.ConnectionUpdate);
 		if (group.BadgeColor == "none")
 		{
-			RpcResetFixed();
-			FinalizeSetGroup();
+			this.RpcResetFixed();
+			this.FinalizeSetGroup();
 			return;
 		}
-		if ((_localBadgeVisibilityPreferences == BadgeVisibilityPreferences.Hidden && !disp) || (group.HiddenByDefault && !disp && _localBadgeVisibilityPreferences != BadgeVisibilityPreferences.Visible))
+		if ((this._localBadgeVisibilityPreferences == BadgeVisibilityPreferences.Hidden && !disp) || (group.HiddenByDefault && !disp && this._localBadgeVisibilityPreferences != BadgeVisibilityPreferences.Visible))
 		{
-			BadgeCover = UserBadgePreferences == BadgePreferences.PreferLocal;
-			if (!string.IsNullOrEmpty(MyText))
+			this.BadgeCover = this.UserBadgePreferences == BadgePreferences.PreferLocal;
+			if (!string.IsNullOrEmpty(this.MyText))
 			{
 				return;
 			}
-			SetText(null);
-			SetColor("default");
-			GlobalHidden = false;
-			HiddenBadge = group.BadgeText;
-			RefreshHiddenTag();
-			TargetSetHiddenRole(base.connectionToClient, group.BadgeText);
+			this.SetText(null);
+			this.SetColor("default");
+			this.GlobalHidden = false;
+			this.HiddenBadge = group.BadgeText;
+			this.RefreshHiddenTag();
+			this.TargetSetHiddenRole(base.connectionToClient, group.BadgeText);
 			if (!byAdmin)
 			{
-				_hub.gameConsoleTransmission.SendToClient("Your role has been granted, but it's hidden. Use \"showtag\" command in the game console to show your server badge.", "yellow");
+				this._hub.gameConsoleTransmission.SendToClient("Your role has been granted, but it's hidden. Use \"showtag\" command in the game console to show your server badge.", "yellow");
 			}
 			else
 			{
-				_hub.gameConsoleTransmission.SendToClient("Your role has been granted to you (set by server administrator), but it's hidden. Use \"showtag\" command in the game console to show your server badge.", "cyan");
+				this._hub.gameConsoleTransmission.SendToClient("Your role has been granted to you (set by server administrator), but it's hidden. Use \"showtag\" command in the game console to show your server badge.", "cyan");
 			}
 		}
 		else
 		{
-			HiddenBadge = null;
-			GlobalHidden = false;
-			RpcResetFixed();
-			SetText(group.BadgeText);
-			SetColor(group.BadgeColor);
+			this.HiddenBadge = null;
+			this.GlobalHidden = false;
+			this.RpcResetFixed();
+			this.SetText(group.BadgeText);
+			this.SetColor(group.BadgeColor);
 			if (!byAdmin)
 			{
-				_hub.gameConsoleTransmission.SendToClient("Your role \"" + group.BadgeText + "\" with color " + group.BadgeColor + " has been granted to you (local permissions).", "cyan");
+				this._hub.gameConsoleTransmission.SendToClient("Your role \"" + group.BadgeText + "\" with color " + group.BadgeColor + " has been granted to you (local permissions).", "cyan");
 			}
 			else
 			{
-				_hub.gameConsoleTransmission.SendToClient("Your role \"" + group.BadgeText + "\" with color " + group.BadgeColor + " has been granted to you (set by server administrator).", "cyan");
+				this._hub.gameConsoleTransmission.SendToClient("Your role \"" + group.BadgeText + "\" with color " + group.BadgeColor + " has been granted to you (set by server administrator).", "cyan");
 			}
 		}
-		FinalizeSetGroup();
+		this.FinalizeSetGroup();
 	}
 
 	[Server]
@@ -510,21 +510,21 @@ public class ServerRoles : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void ServerRoles::FinalizeSetGroup()' called when server was not active");
 			return;
 		}
-		Permissions |= GlobalPerms;
-		RemoteAdmin = ServerStatic.PermissionsHandler.IsRaPermitted(Permissions | GlobalPerms);
-		AdminChatPerms = PermissionsHandler.IsPermitted(Permissions, PlayerPermissions.AdminChat);
-		_hub.queryProcessor.GameplayData = PermissionsHandler.IsPermitted(Permissions, PlayerPermissions.GameplayData);
-		if (RemoteAdmin)
+		this.Permissions |= this.GlobalPerms;
+		this.RemoteAdmin = ServerStatic.PermissionsHandler.IsRaPermitted(this.Permissions | this.GlobalPerms);
+		this.AdminChatPerms = PermissionsHandler.IsPermitted(this.Permissions, PlayerPermissions.AdminChat);
+		this._hub.queryProcessor.GameplayData = PermissionsHandler.IsPermitted(this.Permissions, PlayerPermissions.GameplayData);
+		if (this.RemoteAdmin)
 		{
-			OpenRemoteAdmin();
+			this.OpenRemoteAdmin();
 		}
 		else
 		{
-			TargetSetRemoteAdmin(open: false);
+			this.TargetSetRemoteAdmin(open: false);
 		}
-		SendRealIds();
-		bool flag = PermissionsHandler.IsPermitted(Permissions, PlayerPermissions.ViewHiddenBadges);
-		bool flag2 = PermissionsHandler.IsPermitted(Permissions, PlayerPermissions.ViewHiddenGlobalBadges);
+		this.SendRealIds();
+		bool flag = PermissionsHandler.IsPermitted(this.Permissions, PlayerPermissions.ViewHiddenBadges);
+		bool flag2 = PermissionsHandler.IsPermitted(this.Permissions, PlayerPermissions.ViewHiddenGlobalBadges);
 		if (flag || flag2)
 		{
 			foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
@@ -540,18 +540,18 @@ public class ServerRoles : NetworkBehaviour
 			}
 			if (flag && flag2)
 			{
-				_hub.gameConsoleTransmission.SendToClient("Hidden badges (local and global) have been displayed for you (if there are any).", "gray");
+				this._hub.gameConsoleTransmission.SendToClient("Hidden badges (local and global) have been displayed for you (if there are any).", "gray");
 			}
 			else if (flag)
 			{
-				_hub.gameConsoleTransmission.SendToClient("Hidden badges (local only) have been displayed for you (if there are any).", "gray");
+				this._hub.gameConsoleTransmission.SendToClient("Hidden badges (local only) have been displayed for you (if there are any).", "gray");
 			}
 			else
 			{
-				_hub.gameConsoleTransmission.SendToClient("Hidden badges (global only) have been displayed for you (if there are any).", "gray");
+				this._hub.gameConsoleTransmission.SendToClient("Hidden badges (global only) have been displayed for you (if there are any).", "gray");
 			}
 		}
-		PlayerEvents.OnGroupChanged(new PlayerGroupChangedEventArgs(_hub, _group));
+		PlayerEvents.OnGroupChanged(new PlayerGroupChangedEventArgs(this._hub, this._group));
 	}
 
 	[ServerCallback]
@@ -568,9 +568,9 @@ public class ServerRoles : NetworkBehaviour
 				ServerRoles serverRoles = allHub.serverRoles;
 				bool flag = PermissionsHandler.IsPermitted(serverRoles.Permissions, PlayerPermissions.ViewHiddenBadges);
 				bool flag2 = PermissionsHandler.IsPermitted(serverRoles.Permissions, PlayerPermissions.ViewHiddenGlobalBadges);
-				if ((!GlobalHidden || flag2) && (GlobalHidden || flag))
+				if ((!this.GlobalHidden || flag2) && (this.GlobalHidden || flag))
 				{
-					TargetSetHiddenRole(serverRoles.connectionToClient, HiddenBadge);
+					this.TargetSetHiddenRole(serverRoles.connectionToClient, this.HiddenBadge);
 				}
 			}
 		}
@@ -585,7 +585,7 @@ public class ServerRoles : NetworkBehaviour
 		}
 		else
 		{
-			if (_hub == null)
+			if (this._hub == null)
 			{
 				return;
 			}
@@ -593,7 +593,7 @@ public class ServerRoles : NetworkBehaviour
 			{
 				if (allHub.Mode != ClientInstanceMode.DedicatedServer && (PermissionsHandler.IsPermitted(allHub.serverRoles.Permissions, 18007046uL) || allHub.authManager.NorthwoodStaff))
 				{
-					_hub.authManager.TargetSetRealId(allHub.networkIdentity.connectionToClient, _hub.authManager.UserId);
+					this._hub.authManager.TargetSetRealId(allHub.networkIdentity.connectionToClient, this._hub.authManager.UserId);
 				}
 			}
 		}
@@ -608,39 +608,39 @@ public class ServerRoles : NetworkBehaviour
 		}
 		else
 		{
-			if (_hub.Mode == ClientInstanceMode.DedicatedServer)
+			if (this._hub.Mode == ClientInstanceMode.DedicatedServer)
 			{
 				return;
 			}
-			bool flag = _hub.authManager.NorthwoodStaff || PermissionsHandler.IsPermitted(Permissions, 18007046uL);
-			if (!flag && !_lastRealIdPerm)
+			bool flag = this._hub.authManager.NorthwoodStaff || PermissionsHandler.IsPermitted(this.Permissions, 18007046uL);
+			if (!flag && !this._lastRealIdPerm)
 			{
 				return;
 			}
-			_lastRealIdPerm = flag;
+			this._lastRealIdPerm = flag;
 			foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 			{
-				allHub.authManager.TargetSetRealId(_hub.networkIdentity.connectionToClient, flag ? allHub.authManager.UserId : null);
+				allHub.authManager.TargetSetRealId(this._hub.networkIdentity.connectionToClient, flag ? allHub.authManager.UserId : null);
 			}
 		}
 	}
 
 	public string GetColoredRoleString(bool newLine = false)
 	{
-		if (string.IsNullOrEmpty(MyColor) || string.IsNullOrEmpty(MyText) || CurrentColor == null)
+		if (string.IsNullOrEmpty(this.MyColor) || string.IsNullOrEmpty(this.MyText) || this.CurrentColor == null)
 		{
 			return string.Empty;
 		}
-		if ((CurrentColor.Restricted || HasNotAllowedText) && !_authorizeBadge)
+		if ((this.CurrentColor.Restricted || this.HasNotAllowedText) && !this._authorizeBadge)
 		{
 			return string.Empty;
 		}
-		NamedColor[] namedColors = NamedColors;
+		NamedColor[] namedColors = this.NamedColors;
 		foreach (NamedColor namedColor in namedColors)
 		{
-			if (namedColor.Name == MyColor)
+			if (namedColor.Name == this.MyColor)
 			{
-				return (newLine ? "\n" : string.Empty) + "<color=#" + namedColor.ColorHex + ">" + MyText + "</color>";
+				return (newLine ? "\n" : string.Empty) + "<color=#" + namedColor.ColorHex + ">" + this.MyText + "</color>";
 			}
 		}
 		return string.Empty;
@@ -648,19 +648,19 @@ public class ServerRoles : NetworkBehaviour
 
 	public string GetUncoloredRoleString()
 	{
-		if (string.IsNullOrEmpty(MyText) && !string.IsNullOrEmpty(FixedBadge))
+		if (string.IsNullOrEmpty(this.MyText) && !string.IsNullOrEmpty(this.FixedBadge))
 		{
-			return FixedBadge;
+			return this.FixedBadge;
 		}
-		if (string.IsNullOrEmpty(MyColor) || string.IsNullOrEmpty(MyText) || CurrentColor == null)
-		{
-			return string.Empty;
-		}
-		if ((CurrentColor.Restricted || HasNotAllowedText) && !_authorizeBadge)
+		if (string.IsNullOrEmpty(this.MyColor) || string.IsNullOrEmpty(this.MyText) || this.CurrentColor == null)
 		{
 			return string.Empty;
 		}
-		return MyText;
+		if ((this.CurrentColor.Restricted || this.HasNotAllowedText) && !this._authorizeBadge)
+		{
+			return string.Empty;
+		}
+		return this.MyText;
 	}
 
 	public Color GetColor()
@@ -670,166 +670,166 @@ public class ServerRoles : NetworkBehaviour
 
 	public Color GetVoiceColor()
 	{
-		if (string.IsNullOrEmpty(MyColor) || !NamedColorsDic.TryGetValue(MyColor, out var value))
+		if (string.IsNullOrEmpty(this.MyColor) || !this.NamedColorsDic.TryGetValue(this.MyColor, out var value))
 		{
-			return NamedColorsDic["default"].SpeakingColor;
+			return this.NamedColorsDic["default"].SpeakingColor;
 		}
 		return value.SpeakingColor;
 	}
 
 	private void Update()
 	{
-		if (!string.IsNullOrEmpty(FixedBadge) && MyText != FixedBadge)
+		if (!string.IsNullOrEmpty(this.FixedBadge) && this.MyText != this.FixedBadge)
 		{
-			SetText(FixedBadge);
-			SetColor("silver");
+			this.SetText(this.FixedBadge);
+			this.SetColor("silver");
 			return;
 		}
-		if (!string.IsNullOrEmpty(FixedBadge))
+		if (!string.IsNullOrEmpty(this.FixedBadge))
 		{
-			NamedColor currentColor = CurrentColor;
+			NamedColor currentColor = this.CurrentColor;
 			if (currentColor == null || !(currentColor.Name == "silver"))
 			{
-				SetColor("silver");
+				this.SetColor("silver");
 				return;
 			}
 		}
-		if (GlobalBadge != _prevBadge)
+		if (this.GlobalBadge != this._prevBadge)
 		{
-			_prevBadge = GlobalBadge;
-			if (string.IsNullOrEmpty(GlobalBadge))
+			this._prevBadge = this.GlobalBadge;
+			if (string.IsNullOrEmpty(this.GlobalBadge))
 			{
-				_bgc = null;
-				_bgt = null;
-				_authorizeBadge = false;
-				if (_prevColor != null)
+				this._bgc = null;
+				this._bgt = null;
+				this._authorizeBadge = false;
+				if (this._prevColor != null)
 				{
-					_prevColor += ".";
+					this._prevColor += ".";
 				}
 				else
 				{
-					_prevColor = ".";
+					this._prevColor = ".";
 				}
-				if (_prevText != null)
+				if (this._prevText != null)
 				{
-					_prevText += ".";
+					this._prevText += ".";
 				}
 				else
 				{
-					_prevText = ".";
+					this._prevText = ".";
 				}
 				return;
 			}
-			GameCore.Console.AddDebugLog("SDAUTH", "Validating global badge of user " + _hub.nicknameSync.MyNick, MessageImportance.LessImportant);
-			if (!new SignedToken(GlobalBadge, GlobalBadgeSignature).TryGetToken<BadgeToken>("Badge request", out var token, out var error, out var userId))
+			GameCore.Console.AddDebugLog("SDAUTH", "Validating global badge of user " + this._hub.nicknameSync.MyNick, MessageImportance.LessImportant);
+			if (!new SignedToken(this.GlobalBadge, this.GlobalBadgeSignature).TryGetToken<BadgeToken>("Badge request", out var token, out var error, out var userId))
 			{
-				GameCore.Console.AddDebugLog("SDAUTH", "<color=red>Validation of global badge of user " + _hub.nicknameSync.MyNick + " failed - " + error + ".</color>", MessageImportance.Normal);
-				_bgc = null;
-				_bgt = null;
-				_authorizeBadge = false;
-				if (_prevColor != null)
+				GameCore.Console.AddDebugLog("SDAUTH", "<color=red>Validation of global badge of user " + this._hub.nicknameSync.MyNick + " failed - " + error + ".</color>", MessageImportance.Normal);
+				this._bgc = null;
+				this._bgt = null;
+				this._authorizeBadge = false;
+				if (this._prevColor != null)
 				{
-					_prevColor += ".";
+					this._prevColor += ".";
 				}
 				else
 				{
-					_prevColor = ".";
+					this._prevColor = ".";
 				}
-				if (_prevText != null)
+				if (this._prevText != null)
 				{
-					_prevText += ".";
+					this._prevText += ".";
 				}
 				else
 				{
-					_prevText = ".";
+					this._prevText = ".";
 				}
 				return;
 			}
-			if (token.UserId != _hub.authManager.SaltedUserId && token.UserId != Sha.HashToString(Sha.Sha512(_hub.authManager.SaltedUserId)))
+			if (token.UserId != this._hub.authManager.SaltedUserId && token.UserId != Sha.HashToString(Sha.Sha512(this._hub.authManager.SaltedUserId)))
 			{
 				error = "badge token UserID mismatch.";
 			}
-			else if (StringUtils.Base64Decode(token.Nickname) != _hub.nicknameSync.MyNick)
+			else if (StringUtils.Base64Decode(token.Nickname) != this._hub.nicknameSync.MyNick)
 			{
 				error = "badge token nickname mismatch.";
 			}
 			if (error != null)
 			{
-				GameCore.Console.AddDebugLog("SDAUTH", "<color=red>Validation of global badge of user " + _hub.nicknameSync.MyNick + " failed - " + error + ".</color>", MessageImportance.Normal);
-				_bgc = null;
-				_bgt = null;
-				_authorizeBadge = false;
-				if (_prevColor != null)
+				GameCore.Console.AddDebugLog("SDAUTH", "<color=red>Validation of global badge of user " + this._hub.nicknameSync.MyNick + " failed - " + error + ".</color>", MessageImportance.Normal);
+				this._bgc = null;
+				this._bgt = null;
+				this._authorizeBadge = false;
+				if (this._prevColor != null)
 				{
-					_prevColor += ".";
+					this._prevColor += ".";
 				}
 				else
 				{
-					_prevColor = ".";
+					this._prevColor = ".";
 				}
-				if (_prevText != null)
+				if (this._prevText != null)
 				{
-					_prevText += ".";
+					this._prevText += ".";
 				}
 				else
 				{
-					_prevText = ".";
+					this._prevText = ".";
 				}
 				return;
 			}
-			GameCore.Console.AddDebugLog("SDAUTH", "Validation of global badge of user " + GetComponent<NicknameSync>().MyNick + " complete - badge signed by central server " + token.IssuedBy + ".", MessageImportance.LessImportant);
+			GameCore.Console.AddDebugLog("SDAUTH", "Validation of global badge of user " + base.GetComponent<NicknameSync>().MyNick + " complete - badge signed by central server " + token.IssuedBy + ".", MessageImportance.LessImportant);
 			userId = token.BadgeText;
 			if (userId == null || userId == "(none)")
 			{
 				userId = token.BadgeColor;
 				if (userId == null || userId == "(none)")
 				{
-					_bgc = null;
-					_bgt = null;
-					_authorizeBadge = false;
+					this._bgc = null;
+					this._bgt = null;
+					this._authorizeBadge = false;
 					goto IL_03fa;
 				}
 			}
-			_bgc = token.BadgeColor;
-			SetColor(_bgc);
-			_bgt = token.BadgeText;
-			MyText = _bgt;
-			_authorizeBadge = true;
+			this._bgc = token.BadgeColor;
+			this.SetColor(this._bgc);
+			this._bgt = token.BadgeText;
+			this.MyText = this._bgt;
+			this._authorizeBadge = true;
 		}
 		goto IL_03fa;
 		IL_03fa:
-		if (!(_prevColor == MyColor) || !(_prevText == MyText))
+		if (!(this._prevColor == this.MyColor) || !(this._prevText == this.MyText))
 		{
-			NamedColor currentColor = CurrentColor;
-			if (currentColor != null && currentColor.Restricted && (MyText != _bgt || MyColor != _bgc))
+			NamedColor currentColor = this.CurrentColor;
+			if (currentColor != null && currentColor.Restricted && (this.MyText != this._bgt || this.MyColor != this._bgc))
 			{
-				GameCore.Console.AddLog("TAG FAIL 1 - " + MyText + " - " + _bgt + " /-/ " + MyColor + " - " + _bgc, Color.gray);
-				_authorizeBadge = false;
-				SetColor(null);
-				_prevColor = null;
-				PlayerList.UpdatePlayerRole(_hub);
+				GameCore.Console.AddLog("TAG FAIL 1 - " + this.MyText + " - " + this._bgt + " /-/ " + this.MyColor + " - " + this._bgc, Color.gray);
+				this._authorizeBadge = false;
+				this.SetColor(null);
+				this._prevColor = null;
+				PlayerList.UpdatePlayerRole(this._hub);
 			}
-			else if (MyText != null && MyText != _bgt && HasNotAllowedText)
+			else if (this.MyText != null && this.MyText != this._bgt && this.HasNotAllowedText)
 			{
-				GameCore.Console.AddLog("TAG FAIL 2 - " + MyText + " - " + _bgt + " /-/ " + MyColor + " - " + _bgc, Color.gray);
-				_authorizeBadge = false;
-				SetText(null);
-				_prevText = null;
-				PlayerList.UpdatePlayerRole(_hub);
+				GameCore.Console.AddLog("TAG FAIL 2 - " + this.MyText + " - " + this._bgt + " /-/ " + this.MyColor + " - " + this._bgc, Color.gray);
+				this._authorizeBadge = false;
+				this.SetText(null);
+				this._prevText = null;
+				PlayerList.UpdatePlayerRole(this._hub);
 			}
 			else
 			{
-				_prevColor = MyColor;
-				_prevText = MyText;
-				_prevBadge = GlobalBadge;
-				PlayerList.UpdatePlayerRole(_hub);
+				this._prevColor = this.MyColor;
+				this._prevText = this.MyText;
+				this._prevBadge = this.GlobalBadge;
+				PlayerList.UpdatePlayerRole(this._hub);
 			}
 		}
 	}
 
 	private void SetColorHook(string p, string i)
 	{
-		SetColor(i);
+		this.SetColor(i);
 	}
 
 	public void SetColor(string i)
@@ -840,23 +840,23 @@ public class ServerRoles : NetworkBehaviour
 		}
 		if (NetworkServer.active)
 		{
-			Network_myColor = i;
+			this.Network_myColor = i;
 		}
-		MyColor = i;
-		NamedColor namedColor = NamedColors.FirstOrDefault((NamedColor row) => row.Name == MyColor);
+		this.MyColor = i;
+		NamedColor namedColor = this.NamedColors.FirstOrDefault((NamedColor row) => row.Name == this.MyColor);
 		if (namedColor == null && i != "default")
 		{
-			SetColor("default");
+			this.SetColor("default");
 		}
 		else
 		{
-			CurrentColor = namedColor;
+			this.CurrentColor = namedColor;
 		}
 	}
 
 	private void SetTextHook(string p, string i)
 	{
-		SetText(i);
+		this.SetText(i);
 	}
 
 	public void SetText(string i)
@@ -867,13 +867,13 @@ public class ServerRoles : NetworkBehaviour
 		}
 		if (NetworkServer.active)
 		{
-			Network_myText = i;
+			this.Network_myText = i;
 		}
-		MyText = i;
-		NamedColor namedColor = NamedColors.FirstOrDefault((NamedColor row) => row.Name == MyColor);
+		this.MyText = i;
+		NamedColor namedColor = this.NamedColors.FirstOrDefault((NamedColor row) => row.Name == this.MyColor);
 		if (namedColor != null)
 		{
-			CurrentColor = namedColor;
+			this.CurrentColor = namedColor;
 		}
 	}
 
@@ -885,17 +885,17 @@ public class ServerRoles : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Boolean ServerRoles::RefreshGlobalTag()' called when server was not active");
 			return default(bool);
 		}
-		if (!HasGlobalBadge)
+		if (!this.HasGlobalBadge)
 		{
 			return false;
 		}
-		SetColor(null);
-		SetText(null);
-		NetworkGlobalBadge = _hub.authManager.AuthenticationResponse.SignedBadgeToken.token;
-		NetworkGlobalBadgeSignature = _hub.authManager.AuthenticationResponse.SignedBadgeToken.signature;
-		HiddenBadge = null;
-		GlobalHidden = false;
-		RpcResetFixed();
+		this.SetColor(null);
+		this.SetText(null);
+		this.NetworkGlobalBadge = this._hub.authManager.AuthenticationResponse.SignedBadgeToken.token;
+		this.NetworkGlobalBadgeSignature = this._hub.authManager.AuthenticationResponse.SignedBadgeToken.signature;
+		this.HiddenBadge = null;
+		this.GlobalHidden = false;
+		this.RpcResetFixed();
 		return true;
 	}
 
@@ -907,12 +907,12 @@ public class ServerRoles : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void ServerRoles::RefreshLocalTag()' called when server was not active");
 			return;
 		}
-		NetworkGlobalBadge = null;
-		NetworkGlobalBadgeSignature = null;
-		HiddenBadge = null;
-		GlobalHidden = false;
-		RpcResetFixed();
-		RefreshPermissions(disp: true);
+		this.NetworkGlobalBadge = null;
+		this.NetworkGlobalBadgeSignature = null;
+		this.HiddenBadge = null;
+		this.GlobalHidden = false;
+		this.RpcResetFixed();
+		this.RefreshPermissions(disp: true);
 	}
 
 	[Server]
@@ -923,39 +923,39 @@ public class ServerRoles : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Boolean ServerRoles::TryHideTag()' called when server was not active");
 			return default(bool);
 		}
-		if (string.IsNullOrEmpty(MyText))
+		if (string.IsNullOrEmpty(this.MyText))
 		{
-			if (GlobalBadge != null && _hub.authManager.AuthenticationResponse.BadgeToken != null)
+			if (this.GlobalBadge != null && this._hub.authManager.AuthenticationResponse.BadgeToken != null)
 			{
-				HiddenBadge = _hub.authManager.AuthenticationResponse.BadgeToken.BadgeText;
-				GlobalHidden = true;
+				this.HiddenBadge = this._hub.authManager.AuthenticationResponse.BadgeToken.BadgeText;
+				this.GlobalHidden = true;
 			}
 			else
 			{
-				if (!_hub.authManager.BypassBansFlagSet)
+				if (!this._hub.authManager.BypassBansFlagSet)
 				{
 					return false;
 				}
-				GlobalHidden = false;
-				HiddenBadge = null;
+				this.GlobalHidden = false;
+				this.HiddenBadge = null;
 			}
 		}
 		else
 		{
-			GlobalHidden = GlobalSet;
-			HiddenBadge = MyText;
+			this.GlobalHidden = this.GlobalSet;
+			this.HiddenBadge = this.MyText;
 		}
-		NetworkGlobalBadge = null;
-		SetText(null);
-		SetColor(null);
-		RefreshHiddenTag();
+		this.NetworkGlobalBadge = null;
+		this.SetText(null);
+		this.SetColor(null);
+		this.RefreshHiddenTag();
 		return true;
 	}
 
 	internal void OpenRemoteAdmin()
 	{
-		TargetSetRemoteAdmin(open: true);
-		_hub.queryProcessor.SyncCommandsToClient();
+		this.TargetSetRemoteAdmin(open: true);
+		this._hub.queryProcessor.SyncCommandsToClient();
 	}
 
 	[TargetRpc]
@@ -963,13 +963,13 @@ public class ServerRoles : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteBool(open);
-		SendTargetRPCInternal(null, "System.Void ServerRoles::TargetSetRemoteAdmin(System.Boolean)", -586263322, writer, 0);
+		this.SendTargetRPCInternal(null, "System.Void ServerRoles::TargetSetRemoteAdmin(System.Boolean)", -586263322, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 
 	static ServerRoles()
 	{
-		DictionarizedColorsCache = new Dictionary<string, NamedColor>();
+		ServerRoles.DictionarizedColorsCache = new Dictionary<string, NamedColor>();
 		RemoteProcedureCalls.RegisterCommand(typeof(ServerRoles), "System.Void ServerRoles::CmdSetLocalTagPreferences(ServerRoles/BadgePreferences,ServerRoles/BadgeVisibilityPreferences,ServerRoles/BadgeVisibilityPreferences,System.Boolean)", InvokeUserCode_CmdSetLocalTagPreferences__BadgePreferences__BadgeVisibilityPreferences__BadgeVisibilityPreferences__Boolean, requiresAuthority: true);
 		RemoteProcedureCalls.RegisterRpc(typeof(ServerRoles), "System.Void ServerRoles::RpcResetFixed()", InvokeUserCode_RpcResetFixed);
 		RemoteProcedureCalls.RegisterRpc(typeof(ServerRoles), "System.Void ServerRoles::TargetSetHiddenRole(Mirror.NetworkConnection,System.String)", InvokeUserCode_TargetSetHiddenRole__NetworkConnection__String);
@@ -987,16 +987,16 @@ public class ServerRoles : NetworkBehaviour
 		{
 			if (string.IsNullOrEmpty(role))
 			{
-				SetColor(null);
-				SetText(null);
-				FixedBadge = null;
-				SetText(null);
+				this.SetColor(null);
+				this.SetText(null);
+				this.FixedBadge = null;
+				this.SetText(null);
 			}
 			else
 			{
-				SetColor("silver");
-				FixedBadge = Misc.SanitizeRichText(role.Replace("[", string.Empty).Replace("]", string.Empty)) + " " + TranslationReader.Get("Legacy_Interfaces", 18, "(hidden)");
-				SetText(FixedBadge);
+				this.SetColor("silver");
+				this.FixedBadge = Misc.SanitizeRichText(role.Replace("[", string.Empty).Replace("]", string.Empty)) + " " + TranslationReader.Get("Legacy_Interfaces", 18, "(hidden)");
+				this.SetText(this.FixedBadge);
 			}
 		}
 	}
@@ -1015,7 +1015,7 @@ public class ServerRoles : NetworkBehaviour
 
 	protected void UserCode_RpcResetFixed()
 	{
-		FixedBadge = null;
+		this.FixedBadge = null;
 	}
 
 	protected static void InvokeUserCode_RpcResetFixed(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -1032,27 +1032,27 @@ public class ServerRoles : NetworkBehaviour
 
 	protected void UserCode_CmdSetLocalTagPreferences__BadgePreferences__BadgeVisibilityPreferences__BadgeVisibilityPreferences__Boolean(BadgePreferences userPreferences, BadgeVisibilityPreferences globalPreferences, BadgeVisibilityPreferences localPreferences, bool refresh)
 	{
-		UserBadgePreferences = userPreferences;
-		_globalBadgeVisibilityPreferences = globalPreferences;
-		_localBadgeVisibilityPreferences = localPreferences;
+		this.UserBadgePreferences = userPreferences;
+		this._globalBadgeVisibilityPreferences = globalPreferences;
+		this._localBadgeVisibilityPreferences = localPreferences;
 		if (!refresh)
 		{
 			return;
 		}
-		if (userPreferences == BadgePreferences.PreferGlobal && HasGlobalBadge)
+		if (userPreferences == BadgePreferences.PreferGlobal && this.HasGlobalBadge)
 		{
-			RefreshGlobalBadgeVisibility(globalPreferences);
+			this.RefreshGlobalBadgeVisibility(globalPreferences);
 		}
-		else if (Group == null)
+		else if (this.Group == null)
 		{
-			if (HasGlobalBadge)
+			if (this.HasGlobalBadge)
 			{
-				RefreshGlobalBadgeVisibility(globalPreferences);
+				this.RefreshGlobalBadgeVisibility(globalPreferences);
 			}
 		}
 		else
 		{
-			RefreshLocalBadgeVisibility(localPreferences);
+			this.RefreshLocalBadgeVisibility(localPreferences);
 		}
 	}
 
@@ -1089,28 +1089,28 @@ public class ServerRoles : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteString(_myText);
-			writer.WriteString(_myColor);
-			writer.WriteString(GlobalBadge);
-			writer.WriteString(GlobalBadgeSignature);
+			writer.WriteString(this._myText);
+			writer.WriteString(this._myColor);
+			writer.WriteString(this.GlobalBadge);
+			writer.WriteString(this.GlobalBadgeSignature);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteString(_myText);
+			writer.WriteString(this._myText);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteString(_myColor);
+			writer.WriteString(this._myColor);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			writer.WriteString(GlobalBadge);
+			writer.WriteString(this.GlobalBadge);
 		}
 		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			writer.WriteString(GlobalBadgeSignature);
+			writer.WriteString(this.GlobalBadgeSignature);
 		}
 	}
 
@@ -1119,28 +1119,28 @@ public class ServerRoles : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _myText, SetTextHook, reader.ReadString());
-			GeneratedSyncVarDeserialize(ref _myColor, SetColorHook, reader.ReadString());
-			GeneratedSyncVarDeserialize(ref GlobalBadge, null, reader.ReadString());
-			GeneratedSyncVarDeserialize(ref GlobalBadgeSignature, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._myText, SetTextHook, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._myColor, SetColorHook, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.GlobalBadge, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.GlobalBadgeSignature, null, reader.ReadString());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _myText, SetTextHook, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._myText, SetTextHook, reader.ReadString());
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _myColor, SetColorHook, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._myColor, SetColorHook, reader.ReadString());
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref GlobalBadge, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.GlobalBadge, null, reader.ReadString());
 		}
 		if ((num & 8L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref GlobalBadgeSignature, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.GlobalBadgeSignature, null, reader.ReadString());
 		}
 	}
 }

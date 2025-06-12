@@ -24,17 +24,17 @@ public class Asphyxiated : TickingEffectBase, IStaminaModifier
 	protected override void Enabled()
 	{
 		base.Enabled();
-		_stamina = base.Hub.playerStats.GetModule<StaminaStat>();
+		this._stamina = base.Hub.playerStats.GetModule<StaminaStat>();
 	}
 
 	protected override void OnTick()
 	{
 		if (NetworkServer.active)
 		{
-			_stamina.CurValue = Mathf.Clamp01(_stamina.CurValue - staminaDrainPerTick * 0.01f);
-			if (_stamina.CurValue <= 0f)
+			this._stamina.CurValue = Mathf.Clamp01(this._stamina.CurValue - this.staminaDrainPerTick * 0.01f);
+			if (this._stamina.CurValue <= 0f)
 			{
-				float damage = healthDrainPerTick * RainbowTaste.CurrentMultiplier(base.Hub);
+				float damage = this.healthDrainPerTick * RainbowTaste.CurrentMultiplier(base.Hub);
 				base.Hub.playerStats.DealDamage(new UniversalDamageHandler(damage, DeathTranslations.Asphyxiated));
 			}
 		}

@@ -13,17 +13,17 @@ public class Scp096Target : TargetComponent
 	{
 		get
 		{
-			return _isTarget;
+			return this._isTarget;
 		}
 		set
 		{
-			_targetParticles.SetActive(value);
-			_isTarget = value;
+			this._targetParticles.SetActive(value);
+			this._isTarget = value;
 		}
 	}
 
 	private void Start()
 	{
-		IsTarget = false;
+		this.IsTarget = false;
 	}
 }

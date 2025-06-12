@@ -20,27 +20,27 @@ public class HandPart : ThirdpersonItemBase
 
 	public void UpdateItem()
 	{
-		bool flag = base.OwnerHub.inventory.CurItem.TypeId == TargetItemId;
-		if (flag == CurrentlyEnabled)
+		bool flag = base.OwnerHub.inventory.CurItem.TypeId == this.TargetItemId;
+		if (flag == this.CurrentlyEnabled)
 		{
 			return;
 		}
-		CurrentlyEnabled = flag;
-		TargetPart.SetActive(flag);
-		if (flag && optionalPrefab != null)
+		this.CurrentlyEnabled = flag;
+		this.TargetPart.SetActive(flag);
+		if (flag && this.optionalPrefab != null)
 		{
-			SpawnedObject = (PoolManager.Singleton.TryGetPoolObject(optionalPrefab, TargetPart.transform, out var poolObject) ? poolObject.gameObject : Object.Instantiate(optionalPrefab, TargetPart.transform));
-			SpawnedObject.transform.localScale = Vector3.one;
-			SpawnedObject.transform.localPosition = Vector3.zero;
-			SpawnedObject.transform.localRotation = Quaternion.identity;
-			OnActiveStateChange(isEnabled: true);
+			this.SpawnedObject = (PoolManager.Singleton.TryGetPoolObject(this.optionalPrefab, this.TargetPart.transform, out var poolObject) ? poolObject.gameObject : Object.Instantiate(this.optionalPrefab, this.TargetPart.transform));
+			this.SpawnedObject.transform.localScale = Vector3.one;
+			this.SpawnedObject.transform.localPosition = Vector3.zero;
+			this.SpawnedObject.transform.localRotation = Quaternion.identity;
+			this.OnActiveStateChange(isEnabled: true);
 		}
-		else if (SpawnedObject != null)
+		else if (this.SpawnedObject != null)
 		{
-			OnActiveStateChange(isEnabled: false);
-			if (!PoolManager.Singleton.TryReturnPoolObject(SpawnedObject))
+			this.OnActiveStateChange(isEnabled: false);
+			if (!PoolManager.Singleton.TryReturnPoolObject(this.SpawnedObject))
 			{
-				Object.Destroy(SpawnedObject);
+				Object.Destroy(this.SpawnedObject);
 			}
 		}
 	}
@@ -48,9 +48,9 @@ public class HandPart : ThirdpersonItemBase
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		TargetPart.SetActive(value: false);
-		CurrentlyEnabled = false;
-		OnActiveStateChange(isEnabled: false);
+		this.TargetPart.SetActive(value: false);
+		this.CurrentlyEnabled = false;
+		this.OnActiveStateChange(isEnabled: false);
 	}
 
 	protected virtual void OnActiveStateChange(bool isEnabled)

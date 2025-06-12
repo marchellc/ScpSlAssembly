@@ -24,7 +24,7 @@ public class ClearEffectsCommand : ICommand, IUsageProvider
 		}
 		if (arguments.Count == 0)
 		{
-			response = "To execute this command provide at least 1 arguments!\nUsage: " + Command + " " + string.Join(" ", Usage);
+			response = "To execute this command provide at least 1 arguments!\nUsage: " + this.Command + " " + string.Join(" ", this.Usage);
 			return false;
 		}
 		string[] newargs;

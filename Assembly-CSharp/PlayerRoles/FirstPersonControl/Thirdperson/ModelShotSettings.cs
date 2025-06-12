@@ -23,17 +23,17 @@ public class ModelShotSettings
 
 	public void PlayOnShotSound(HitboxIdentity hitHitbox, bool firstperson)
 	{
-		if (_onShotSoundClips.Length != 0 && !(_lastShot.Elapsed.TotalSeconds < 0.05999999865889549))
+		if (this._onShotSoundClips.Length != 0 && !(this._lastShot.Elapsed.TotalSeconds < 0.05999999865889549))
 		{
 			if (firstperson)
 			{
-				AudioSourcePoolManager.Play2D(_onShotSoundClips.RandomItem(), 1f, _onShotSoundChannel);
+				AudioSourcePoolManager.Play2D(this._onShotSoundClips.RandomItem(), 1f, this._onShotSoundChannel);
 			}
 			else
 			{
-				AudioSourcePoolManager.PlayOnTransform(_onShotSoundClips.RandomItem(), hitHitbox.transform, _onShotSoundRange, 1f, FalloffType.Exponential, _onShotSoundChannel);
+				AudioSourcePoolManager.PlayOnTransform(this._onShotSoundClips.RandomItem(), hitHitbox.transform, this._onShotSoundRange, 1f, FalloffType.Exponential, this._onShotSoundChannel);
 			}
-			_lastShot.Restart();
+			this._lastShot.Restart();
 		}
 	}
 }

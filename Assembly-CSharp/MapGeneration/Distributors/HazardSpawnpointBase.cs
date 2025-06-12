@@ -15,15 +15,15 @@ public abstract class HazardSpawnpointBase : DistributorSpawnpointBase
 
 	public abstract string ServerConfigChanceName { get; }
 
-	public float MaximumSpawnChance => ConfigFile.ServerConfig.GetFloat(ServerConfigChanceName);
+	public float MaximumSpawnChance => ConfigFile.ServerConfig.GetFloat(this.ServerConfigChanceName);
 
 	private new void Awake()
 	{
-		Instances.Add(this);
+		HazardSpawnpointBase.Instances.Add(this);
 	}
 
 	private void OnDestroy()
 	{
-		Instances.Remove(this);
+		HazardSpawnpointBase.Instances.Remove(this);
 	}
 }

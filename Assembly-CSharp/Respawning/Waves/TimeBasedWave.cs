@@ -15,18 +15,18 @@ public abstract class TimeBasedWave : SpawnableWaveBase
 
 	public virtual bool PauseOnTrigger => true;
 
-	public virtual bool IsReadyToSpawn => Timer.IsReadyToSpawn;
+	public virtual bool IsReadyToSpawn => this.Timer.IsReadyToSpawn;
 
 	protected override void OnInstanceCreated()
 	{
 		base.OnInstanceCreated();
-		Timer = new WaveTimer(this);
+		this.Timer = new WaveTimer(this);
 	}
 
 	protected override void OnInstanceDestroyed()
 	{
 		base.OnInstanceDestroyed();
-		Timer?.Destroy();
+		this.Timer?.Destroy();
 	}
 
 	protected override void OnAnyWaveSpawned(SpawnableWaveBase wave, List<ReferenceHub> spawnedPlayers)
@@ -34,7 +34,7 @@ public abstract class TimeBasedWave : SpawnableWaveBase
 		base.OnAnyWaveSpawned(wave, spawnedPlayers);
 		if (NetworkServer.active && wave == this)
 		{
-			Timer.SpawnIntervalSeconds += (float)spawnedPlayers.Count * AdditionalSecondsPerSpawn;
+			this.Timer.SpawnIntervalSeconds += (float)spawnedPlayers.Count * this.AdditionalSecondsPerSpawn;
 			WaveUpdateMessage.ServerSendUpdate(this, UpdateMessageFlags.Timer | UpdateMessageFlags.Spawn);
 		}
 	}

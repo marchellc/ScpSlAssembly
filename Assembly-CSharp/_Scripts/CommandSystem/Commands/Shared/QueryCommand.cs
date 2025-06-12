@@ -61,7 +61,7 @@ public class QueryCommand : ICommand, IUsageProvider
 			response = "All query clients have been disconnected.";
 			return true;
 		}
-		response = "Unknown subcommand.\nUsage: " + Command + " " + this.DisplayCommandUsage() + ".";
+		response = "Unknown subcommand.\nUsage: " + this.Command + " " + this.DisplayCommandUsage() + ".";
 		return false;
 	}
 }

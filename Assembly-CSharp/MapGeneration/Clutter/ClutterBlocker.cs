@@ -14,9 +14,9 @@ public class ClutterBlocker : MonoBehaviour, IClutterBlocker
 	{
 		get
 		{
-			_targetTransform.GetPositionAndRotation(out var position, out var rotation);
-			Vector3 vector = rotation * _blockingBounds.center;
-			Vector3 size = (rotation * _blockingBounds.size).Abs();
+			this._targetTransform.GetPositionAndRotation(out var position, out var rotation);
+			Vector3 vector = rotation * this._blockingBounds.center;
+			Vector3 size = (rotation * this._blockingBounds.size).Abs();
 			return new Bounds(position + vector, size);
 		}
 	}
@@ -34,14 +34,14 @@ public class ClutterBlocker : MonoBehaviour, IClutterBlocker
 	private void OnDrawGizmosSelected()
 	{
 		Gizmos.color = Color.yellow;
-		Gizmos.DrawWireCube(BlockingBounds.center, BlockingBounds.size);
+		Gizmos.DrawWireCube(this.BlockingBounds.center, this.BlockingBounds.size);
 	}
 
 	private void OnValidate()
 	{
-		if (!(_targetTransform != null))
+		if (!(this._targetTransform != null))
 		{
-			_targetTransform = base.transform;
+			this._targetTransform = base.transform;
 		}
 	}
 }

@@ -13,21 +13,21 @@ public readonly struct NewsRaw : IEquatable<NewsRaw>, IJsonSerializable
 
 	public bool Equals(NewsRaw other)
 	{
-		return appnews == other.appnews;
+		return this.appnews == other.appnews;
 	}
 
 	public override bool Equals(object obj)
 	{
 		if (obj is NewsRaw other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return appnews.GetHashCode();
+		return this.appnews.GetHashCode();
 	}
 
 	public static bool operator ==(NewsRaw left, NewsRaw right)

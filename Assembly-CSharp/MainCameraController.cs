@@ -21,26 +21,28 @@ public class MainCameraController : MonoBehaviour
 
 	public static Quaternion LastRotation { get; private set; }
 
+	public static Ray LastForwardRay => new Ray(MainCameraController.LastPosition, MainCameraController.LastRotation * Vector3.forward);
+
 	public static Transform CurrentCamera
 	{
 		get
 		{
-			return _currentCamera;
+			return MainCameraController._currentCamera;
 		}
 		set
 		{
-			if (!(_currentCamera == value))
+			if (!(MainCameraController._currentCamera == value))
 			{
 				Transform transform = value;
 				if (transform == null)
 				{
-					transform = _singleton._defaultCamera;
+					transform = MainCameraController._singleton._defaultCamera;
 				}
-				if (_currentCamera != null)
+				if (MainCameraController._currentCamera != null)
 				{
-					_currentCamera.gameObject.SetActive(value: false);
+					MainCameraController._currentCamera.gameObject.SetActive(value: false);
 				}
-				_currentCamera = transform;
+				MainCameraController._currentCamera = transform;
 				if (transform != null)
 				{
 					transform.gameObject.SetActive(value: true);
@@ -55,20 +57,20 @@ public class MainCameraController : MonoBehaviour
 
 	private void Awake()
 	{
-		InstanceActive = true;
-		_singleton = this;
-		_defaultPos = _defaultCamera.position;
-		CurrentCamera = _defaultCamera;
+		MainCameraController.InstanceActive = true;
+		MainCameraController._singleton = this;
+		MainCameraController._defaultPos = this._defaultCamera.position;
+		MainCameraController.CurrentCamera = this._defaultCamera;
 	}
 
 	private void OnDestroy()
 	{
-		InstanceActive = false;
+		MainCameraController.InstanceActive = false;
 	}
 
 	private void LateUpdate()
 	{
-		ForceUpdatePosition();
+		MainCameraController.ForceUpdatePosition();
 	}
 
 	private static void GetPositionAndRotation(out Vector3 pos, out Quaternion rot)
@@ -81,20 +83,20 @@ public class MainCameraController : MonoBehaviour
 		}
 		else
 		{
-			pos = _defaultPos;
+			pos = MainCameraController._defaultPos;
 			rot = Quaternion.identity;
 		}
 	}
 
 	public static void ForceUpdatePosition()
 	{
-		if (InstanceActive)
+		if (MainCameraController.InstanceActive)
 		{
 			MainCameraController.OnBeforeUpdated?.Invoke();
-			GetPositionAndRotation(out var pos, out var rot);
-			CurrentCamera.SetPositionAndRotation(pos, rot);
-			LastPosition = pos;
-			LastRotation = rot;
+			MainCameraController.GetPositionAndRotation(out var pos, out var rot);
+			MainCameraController.CurrentCamera.SetPositionAndRotation(pos, rot);
+			MainCameraController.LastPosition = pos;
+			MainCameraController.LastRotation = rot;
 			MainCameraController.OnUpdated?.Invoke();
 		}
 	}

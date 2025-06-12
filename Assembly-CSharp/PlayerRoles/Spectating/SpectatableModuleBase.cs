@@ -27,15 +27,15 @@ public abstract class SpectatableModuleBase : MonoBehaviour, IPoolSpawnable, IPo
 	{
 		get
 		{
-			if (!_roleCacheSet)
+			if (!this._roleCacheSet)
 			{
-				if (!TryGetComponent<PlayerRoleBase>(out _cachedRole))
+				if (!base.TryGetComponent<PlayerRoleBase>(out this._cachedRole))
 				{
 					throw new InvalidOperationException("SpectatableModuleBase of name '" + base.name + "' is not assigned to any role!");
 				}
-				_roleCacheSet = true;
+				this._roleCacheSet = true;
 			}
-			return _cachedRole;
+			return this._cachedRole;
 		}
 	}
 
@@ -43,7 +43,7 @@ public abstract class SpectatableModuleBase : MonoBehaviour, IPoolSpawnable, IPo
 	{
 		get
 		{
-			if (!MainRole.TryGetOwner(out var hub))
+			if (!this.MainRole.TryGetOwner(out var hub))
 			{
 				throw new InvalidOperationException("SpectatableModuleBase of name '" + base.name + "' does not have an owner!");
 			}
@@ -57,13 +57,13 @@ public abstract class SpectatableModuleBase : MonoBehaviour, IPoolSpawnable, IPo
 
 	public virtual void ResetObject()
 	{
-		AllInstances.Remove(this);
+		SpectatableModuleBase.AllInstances.Remove(this);
 		SpectatableModuleBase.OnRemoved?.Invoke(this);
 	}
 
 	public virtual void SpawnObject()
 	{
-		AllInstances.Add(this);
+		SpectatableModuleBase.AllInstances.Add(this);
 		SpectatableModuleBase.OnAdded?.Invoke(this);
 	}
 

@@ -47,9 +47,9 @@ internal static class NativeSocket
 
 	static NativeSocket()
 	{
-		IsSupported = false;
-		UnixMode = false;
-		NativeErrorToSocketError = new Dictionary<int, SocketError>
+		NativeSocket.IsSupported = false;
+		NativeSocket.UnixMode = false;
+		NativeSocket.NativeErrorToSocketError = new Dictionary<int, SocketError>
 		{
 			{
 				13,
@@ -222,19 +222,19 @@ internal static class NativeSocket
 		};
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
 		{
-			IsSupported = true;
-			UnixMode = true;
+			NativeSocket.IsSupported = true;
+			NativeSocket.UnixMode = true;
 		}
 		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
-			IsSupported = true;
+			NativeSocket.IsSupported = true;
 		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int RecvFrom(IntPtr socketHandle, byte[] pinnedBuffer, int len, byte[] socketAddress, ref int socketAddressSize)
 	{
-		if (!UnixMode)
+		if (!NativeSocket.UnixMode)
 		{
 			return WinSock.recvfrom(socketHandle, pinnedBuffer, len, SocketFlags.None, socketAddress, ref socketAddressSize);
 		}
@@ -244,7 +244,7 @@ internal static class NativeSocket
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static int SendTo(IntPtr socketHandle, byte[] pinnedBuffer, int len, byte[] socketAddress, int socketAddressSize)
 	{
-		if (!UnixMode)
+		if (!NativeSocket.UnixMode)
 		{
 			return WinSock.sendto(socketHandle, pinnedBuffer, len, SocketFlags.None, socketAddress, socketAddressSize);
 		}
@@ -254,9 +254,9 @@ internal static class NativeSocket
 	public static SocketError GetSocketError()
 	{
 		int lastWin32Error = Marshal.GetLastWin32Error();
-		if (UnixMode)
+		if (NativeSocket.UnixMode)
 		{
-			if (!NativeErrorToSocketError.TryGetValue(lastWin32Error, out var value))
+			if (!NativeSocket.NativeErrorToSocketError.TryGetValue(lastWin32Error, out var value))
 			{
 				return SocketError.SocketError;
 			}
@@ -268,9 +268,9 @@ internal static class NativeSocket
 	public static SocketException GetSocketException()
 	{
 		int lastWin32Error = Marshal.GetLastWin32Error();
-		if (UnixMode)
+		if (NativeSocket.UnixMode)
 		{
-			if (!NativeErrorToSocketError.TryGetValue(lastWin32Error, out var value))
+			if (!NativeSocket.NativeErrorToSocketError.TryGetValue(lastWin32Error, out var value))
 			{
 				return new SocketException(-1);
 			}
@@ -282,7 +282,7 @@ internal static class NativeSocket
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static short GetNativeAddressFamily(IPEndPoint remoteEndPoint)
 	{
-		if (!UnixMode)
+		if (!NativeSocket.UnixMode)
 		{
 			return (short)remoteEndPoint.AddressFamily;
 		}

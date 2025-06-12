@@ -28,9 +28,9 @@ public static class NetConstants
 
 	internal static readonly int[] PossibleMtu = new int[7] { 508, 1024, 1164, 1392, 1404, 1424, 1432 };
 
-	public static readonly int MaxPacketSize = PossibleMtu[PossibleMtu.Length - 1];
+	public static readonly int MaxPacketSize = NetConstants.PossibleMtu[NetConstants.PossibleMtu.Length - 1];
 
-	public static readonly int MaxUnreliableDataSize = MaxPacketSize - 1;
+	public static readonly int MaxUnreliableDataSize = NetConstants.MaxPacketSize - 1;
 
 	public const byte MaxConnectionNumber = 4;
 }

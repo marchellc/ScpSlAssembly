@@ -42,14 +42,14 @@ public struct ServerListItem : IEquatable<ServerListItem>, IJsonSerializable
 		this.modded = modded;
 		this.whitelist = whitelist;
 		this.officialCode = officialCode;
-		NameFilterPoints = 0;
+		this.NameFilterPoints = 0;
 	}
 
 	public bool Equals(ServerListItem other)
 	{
-		if (serverId == other.serverId && ip == other.ip && port == other.port && players == other.players && info == other.info && pastebin == other.pastebin && version == other.version && friendlyFire == other.friendlyFire && modded == other.modded && whitelist == other.whitelist)
+		if (this.serverId == other.serverId && this.ip == other.ip && this.port == other.port && this.players == other.players && this.info == other.info && this.pastebin == other.pastebin && this.version == other.version && this.friendlyFire == other.friendlyFire && this.modded == other.modded && this.whitelist == other.whitelist)
 		{
-			return officialCode == other.officialCode;
+			return this.officialCode == other.officialCode;
 		}
 		return false;
 	}
@@ -58,24 +58,24 @@ public struct ServerListItem : IEquatable<ServerListItem>, IJsonSerializable
 	{
 		if (obj is ServerListItem other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		uint num = serverId;
-		int num2 = ((num.GetHashCode() * 397) ^ ((ip != null) ? ip.GetHashCode() : 0)) * 397;
-		ushort num3 = port;
-		int num4 = (((((((((num2 ^ num3.GetHashCode()) * 397) ^ ((players != null) ? players.GetHashCode() : 0)) * 397) ^ ((info != null) ? info.GetHashCode() : 0)) * 397) ^ ((pastebin != null) ? pastebin.GetHashCode() : 0)) * 397) ^ ((version != null) ? version.GetHashCode() : 0)) * 397;
-		bool flag = friendlyFire;
+		uint num = this.serverId;
+		int num2 = ((num.GetHashCode() * 397) ^ ((this.ip != null) ? this.ip.GetHashCode() : 0)) * 397;
+		ushort num3 = this.port;
+		int num4 = (((((((((num2 ^ num3.GetHashCode()) * 397) ^ ((this.players != null) ? this.players.GetHashCode() : 0)) * 397) ^ ((this.info != null) ? this.info.GetHashCode() : 0)) * 397) ^ ((this.pastebin != null) ? this.pastebin.GetHashCode() : 0)) * 397) ^ ((this.version != null) ? this.version.GetHashCode() : 0)) * 397;
+		bool flag = this.friendlyFire;
 		int num5 = (num4 ^ flag.GetHashCode()) * 397;
-		flag = modded;
+		flag = this.modded;
 		int num6 = (num5 ^ flag.GetHashCode()) * 397;
-		flag = whitelist;
+		flag = this.whitelist;
 		int num7 = (num6 ^ flag.GetHashCode()) * 397;
-		byte b = officialCode;
+		byte b = this.officialCode;
 		return num7 ^ b.GetHashCode();
 	}
 

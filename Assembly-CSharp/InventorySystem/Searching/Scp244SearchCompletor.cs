@@ -15,7 +15,7 @@ public class Scp244SearchCompletor : ItemSearchCompletor
 
 	protected override bool ValidateAny()
 	{
-		if (base.ValidateAny() && TargetPickup is Scp244DeployablePickup scp244DeployablePickup)
+		if (base.ValidateAny() && base.TargetPickup is Scp244DeployablePickup scp244DeployablePickup)
 		{
 			return !scp244DeployablePickup.ModelDestroyed;
 		}
@@ -24,16 +24,16 @@ public class Scp244SearchCompletor : ItemSearchCompletor
 
 	public override void Complete()
 	{
-		if (TargetPickup is Scp244DeployablePickup scp244DeployablePickup)
+		if (base.TargetPickup is Scp244DeployablePickup scp244DeployablePickup)
 		{
-			PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(base.Hub, TargetPickup));
-			PlayerPickingUpItemEventArgs playerPickingUpItemEventArgs = new PlayerPickingUpItemEventArgs(base.Hub, TargetPickup);
-			PlayerEvents.OnPickingUpItem(playerPickingUpItemEventArgs);
-			if (playerPickingUpItemEventArgs.IsAllowed)
+			PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(base.Hub, base.TargetPickup));
+			PlayerPickingUpItemEventArgs e = new PlayerPickingUpItemEventArgs(base.Hub, base.TargetPickup);
+			PlayerEvents.OnPickingUpItem(e);
+			if (e.IsAllowed)
 			{
-				ItemBase item = base.Hub.inventory.ServerAddItem(TargetPickup.Info.ItemId, ItemAddReason.PickedUp, TargetPickup.Info.Serial, TargetPickup);
+				ItemBase item = base.Hub.inventory.ServerAddItem(base.TargetPickup.Info.ItemId, ItemAddReason.PickedUp, base.TargetPickup.Info.Serial, base.TargetPickup);
 				scp244DeployablePickup.State = Scp244State.PickedUp;
-				CheckCategoryLimitHint();
+				base.CheckCategoryLimitHint();
 				PlayerEvents.OnPickedUpItem(new PlayerPickedUpItemEventArgs(base.Hub, item));
 			}
 		}

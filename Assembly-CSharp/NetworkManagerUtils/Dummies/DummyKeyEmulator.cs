@@ -13,8 +13,8 @@ public class DummyKeyEmulator : IDummyActionProvider
 
 		public EmulatedEntry(ActionName action, bool click)
 		{
-			Action = action;
-			OnlyOneClick = click;
+			this.Action = action;
+			this.OnlyOneClick = click;
 		}
 	}
 
@@ -28,25 +28,25 @@ public class DummyKeyEmulator : IDummyActionProvider
 
 	private readonly List<EmulatedEntry> _scheduledEntries = new List<EmulatedEntry>();
 
-	public bool AnyListeners => _registeredListeners.Count > 0;
+	public bool AnyListeners => this._registeredListeners.Count > 0;
 
 	public DummyKeyEmulator(IRootDummyActionProvider inventory)
 	{
-		_root = inventory;
+		this._root = inventory;
 	}
 
 	public bool GetAction(ActionName action, bool firstFrameOnly)
 	{
-		if (!_registeredListeners.Contains(action))
+		if (!this._registeredListeners.Contains(action))
 		{
-			_root.DummyActionsDirty = true;
-			_registeredListeners.Add(action);
+			this._root.DummyActionsDirty = true;
+			this._registeredListeners.Add(action);
 		}
-		if (IsHeld(action))
+		if (this.IsHeld(action))
 		{
 			if (firstFrameOnly)
 			{
-				return _firstFrameActions.Contains(action);
+				return this._firstFrameActions.Contains(action);
 			}
 			return true;
 		}
@@ -55,24 +55,24 @@ public class DummyKeyEmulator : IDummyActionProvider
 
 	public void PopulateDummyActions(Action<DummyAction> actionAdder)
 	{
-		foreach (ActionName action in _registeredListeners)
+		foreach (ActionName action in this._registeredListeners)
 		{
 			actionAdder(new DummyAction($"{action}->Click", delegate
 			{
-				AddEntry(action, isClick: true);
+				this.AddEntry(action, isClick: true);
 			}));
-			if (IsHeld(action))
+			if (this.IsHeld(action))
 			{
 				actionAdder(new DummyAction($"{action}->Release", delegate
 				{
-					RemoveEntry(action);
+					this.RemoveEntry(action);
 				}));
 			}
 			else
 			{
 				actionAdder(new DummyAction($"{action}->Hold", delegate
 				{
-					AddEntry(action, isClick: false);
+					this.AddEntry(action, isClick: false);
 				}));
 			}
 		}
@@ -80,22 +80,22 @@ public class DummyKeyEmulator : IDummyActionProvider
 
 	public void LateUpdate()
 	{
-		_firstFrameActions.Clear();
-		for (int num = _activeEntries.Count - 1; num >= 0; num--)
+		this._firstFrameActions.Clear();
+		for (int num = this._activeEntries.Count - 1; num >= 0; num--)
 		{
-			if (_activeEntries[num].OnlyOneClick)
+			if (this._activeEntries[num].OnlyOneClick)
 			{
-				_activeEntries.RemoveAt(num);
-				_root.DummyActionsDirty = true;
+				this._activeEntries.RemoveAt(num);
+				this._root.DummyActionsDirty = true;
 			}
 		}
-		foreach (EmulatedEntry scheduledEntry in _scheduledEntries)
+		foreach (EmulatedEntry scheduledEntry in this._scheduledEntries)
 		{
-			_firstFrameActions.Add(scheduledEntry.Action);
-			_activeEntries.Add(scheduledEntry);
-			_root.DummyActionsDirty = true;
+			this._firstFrameActions.Add(scheduledEntry.Action);
+			this._activeEntries.Add(scheduledEntry);
+			this._root.DummyActionsDirty = true;
 		}
-		_scheduledEntries.Clear();
+		this._scheduledEntries.Clear();
 	}
 
 	private void RemoveEntry(List<EmulatedEntry> list, ActionName action)
@@ -105,7 +105,7 @@ public class DummyKeyEmulator : IDummyActionProvider
 			if (list[i].Action == action)
 			{
 				list.RemoveAt(i);
-				_root.DummyActionsDirty = true;
+				this._root.DummyActionsDirty = true;
 				break;
 			}
 		}
@@ -113,13 +113,13 @@ public class DummyKeyEmulator : IDummyActionProvider
 
 	private void RemoveEntry(ActionName action)
 	{
-		RemoveEntry(_activeEntries, action);
-		RemoveEntry(_scheduledEntries, action);
+		this.RemoveEntry(this._activeEntries, action);
+		this.RemoveEntry(this._scheduledEntries, action);
 	}
 
 	private bool IsHeld(ActionName action)
 	{
-		foreach (EmulatedEntry activeEntry in _activeEntries)
+		foreach (EmulatedEntry activeEntry in this._activeEntries)
 		{
 			if (activeEntry.Action == action)
 			{
@@ -131,7 +131,7 @@ public class DummyKeyEmulator : IDummyActionProvider
 
 	private void AddEntry(ActionName action, bool isClick)
 	{
-		RemoveEntry(action);
-		_scheduledEntries.Add(new EmulatedEntry(action, isClick));
+		this.RemoveEntry(action);
+		this._scheduledEntries.Add(new EmulatedEntry(action, isClick));
 	}
 }

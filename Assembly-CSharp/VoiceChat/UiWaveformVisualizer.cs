@@ -25,29 +25,29 @@ public class UiWaveformVisualizer : Graphic
 
 	public void Generate(float[] samples)
 	{
-		Generate(samples, 0, samples.Length);
+		this.Generate(samples, 0, samples.Length);
 	}
 
 	public void Generate(float[] samples, int startIndex, int length)
 	{
-		if (RenderersCount == 0)
+		if (this.RenderersCount == 0)
 		{
-			SetVerticesDirty();
+			this.SetVerticesDirty();
 			return;
 		}
-		if (_recordedAverages?.Length == RenderersCount)
+		if (this._recordedAverages?.Length == this.RenderersCount)
 		{
-			Array.Clear(_recordedAverages, 0, RenderersCount);
+			Array.Clear(this._recordedAverages, 0, this.RenderersCount);
 		}
 		else
 		{
-			_recordedAverages = new float[RenderersCount];
+			this._recordedAverages = new float[this.RenderersCount];
 		}
 		float num = 0f;
 		float num2 = 0f;
 		int num3 = 0;
 		int num4 = 0;
-		int num5 = length / RenderersCount;
+		int num5 = length / this.RenderersCount;
 		float num6 = 1f / (float)num5;
 		for (int i = 0; i < length; i++)
 		{
@@ -57,25 +57,25 @@ public class UiWaveformVisualizer : Graphic
 			if (num3 >= num5)
 			{
 				float num8 = num * num6;
-				_recordedAverages[num4++] = num8;
+				this._recordedAverages[num4++] = num8;
 				num = 0f;
 				num3 = 0;
 				if (num8 > num2)
 				{
 					num2 = num8;
 				}
-				if (num4 >= RenderersCount)
+				if (num4 >= this.RenderersCount)
 				{
 					break;
 				}
 			}
 		}
-		float num9 = Mathf.Min(1f / ((num2 <= 0f) ? 1f : num2), MaxNormalizer);
-		for (int j = 0; j < RenderersCount; j++)
+		float num9 = Mathf.Min(1f / ((num2 <= 0f) ? 1f : num2), this.MaxNormalizer);
+		for (int j = 0; j < this.RenderersCount; j++)
 		{
-			_recordedAverages[j] *= num9;
+			this._recordedAverages[j] *= num9;
 		}
-		SetVerticesDirty();
+		this.SetVerticesDirty();
 	}
 
 	protected override void OnPopulateMesh(VertexHelper vh)
@@ -83,19 +83,19 @@ public class UiWaveformVisualizer : Graphic
 		vh.Clear();
 		Rect rect = base.rectTransform.rect;
 		UIVertex simpleVert = UIVertex.simpleVert;
-		simpleVert.color = color;
-		DrawWaveform(simpleVert, rect.width, rect.height / 2f, vh);
-		if (TwoSidedMode)
+		simpleVert.color = this.color;
+		this.DrawWaveform(simpleVert, rect.width, rect.height / 2f, vh);
+		if (this.TwoSidedMode)
 		{
-			DrawWaveform(simpleVert, rect.width, (0f - rect.height) / 2f, vh);
+			this.DrawWaveform(simpleVert, rect.width, (0f - rect.height) / 2f, vh);
 		}
 	}
 
 	private void DrawWaveform(UIVertex vert, float rectWidth, float rectHeight, VertexHelper vh)
 	{
-		float[] recordedAverages = _recordedAverages;
+		float[] recordedAverages = this._recordedAverages;
 		int num = ((recordedAverages != null) ? recordedAverages.Length : 0);
-		float num2 = FlatlineHeight * rectHeight;
+		float num2 = this.FlatlineHeight * rectHeight;
 		float num3 = rectWidth / 2f;
 		vert.position = new Vector2(0f - num3, num2);
 		vh.AddVert(vert);
@@ -116,7 +116,7 @@ public class UiWaveformVisualizer : Graphic
 		float x = 0f - num3;
 		for (int i = 0; i < num; i++)
 		{
-			float num5 = rectHeight * CorrectionCurve.Evaluate(_recordedAverages[i]) + num2;
+			float num5 = rectHeight * this.CorrectionCurve.Evaluate(this._recordedAverages[i]) + num2;
 			float num6 = rectWidth * (float)i / (float)(num - 1) - num3;
 			vert.position = new Vector2(num6, num5);
 			vh.AddVert(vert);

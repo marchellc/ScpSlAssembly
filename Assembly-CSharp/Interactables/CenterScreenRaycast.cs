@@ -11,6 +11,8 @@ public class CenterScreenRaycast : MonoBehaviour
 	[SerializeField]
 	private LayerMask _centerScreenRayHits;
 
+	public static RaycastHit LastRaycastHit { get; private set; }
+
 	public static event Action<RaycastHit> OnCenterRaycastHit;
 
 	public static event Action OnCenterRaycastMissed;
@@ -28,8 +30,9 @@ public class CenterScreenRaycast : MonoBehaviour
 	private void PerformRaycast()
 	{
 		Transform currentCamera = MainCameraController.CurrentCamera;
-		if (Physics.Raycast(new Ray(currentCamera.position, currentCamera.forward), out var hitInfo, _rayDistance, _centerScreenRayHits))
+		if (Physics.Raycast(new Ray(currentCamera.position, currentCamera.forward), out var hitInfo, this._rayDistance, this._centerScreenRayHits))
 		{
+			CenterScreenRaycast.LastRaycastHit = hitInfo;
 			CenterScreenRaycast.OnCenterRaycastHit?.Invoke(hitInfo);
 		}
 		else

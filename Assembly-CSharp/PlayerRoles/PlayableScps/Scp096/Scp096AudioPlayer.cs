@@ -63,90 +63,90 @@ public class Scp096AudioPlayer : StandardSubroutine<Scp096Role>
 	private void Update()
 	{
 		bool flag = base.CastRole.IsAbilityState(Scp096AbilityState.TryingNotToCry);
-		float num = Mathf.Lerp(_tryNotToCrySource.volume, flag ? 1 : 0, Time.deltaTime * _volumeAdjustLerp);
-		_tryNotToCrySource.volume = num;
-		_rageStatesSource.volume = 1f - num;
+		float num = Mathf.Lerp(this._tryNotToCrySource.volume, flag ? 1 : 0, Time.deltaTime * this._volumeAdjustLerp);
+		this._tryNotToCrySource.volume = num;
+		this._rageStatesSource.volume = 1f - num;
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
 		base.CastRole.StateController.OnRageUpdate += SetAudioState;
-		if (!_soundsDictionarized)
+		if (!Scp096AudioPlayer._soundsDictionarized)
 		{
-			Curves.FromArray(_curves, (CurvePreset x) => x.Type);
-			AudioStates.FromArray(_rageStatesAudioClips, (Scp096StateAudio x) => x.State);
-			_soundsDictionarized = true;
+			Scp096AudioPlayer.Curves.FromArray(this._curves, (CurvePreset x) => x.Type);
+			Scp096AudioPlayer.AudioStates.FromArray(this._rageStatesAudioClips, (Scp096StateAudio x) => x.State);
+			Scp096AudioPlayer._soundsDictionarized = true;
 		}
 	}
 
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		SetAudioState(base.CastRole.StateController.RageState);
+		this.SetAudioState(base.CastRole.StateController.RageState);
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_tryNotToCrySource.volume = 0f;
-		_rageStatesSource.volume = 0f;
+		this._tryNotToCrySource.volume = 0f;
+		this._rageStatesSource.volume = 0f;
 	}
 
 	public void Play(AudioClip clip, FalloffType falloff = FalloffType.Linear, float maxDistance = -1f)
 	{
-		if (Curves.TryGetValue(falloff, out var value))
+		if (Scp096AudioPlayer.Curves.TryGetValue(falloff, out var value))
 		{
-			_rageStatesSource.SetCustomCurve(AudioSourceCurveType.CustomRolloff, value.FalloffCurve);
+			this._rageStatesSource.SetCustomCurve(AudioSourceCurveType.CustomRolloff, value.FalloffCurve);
 			if (maxDistance > 0f)
 			{
-				_rageStatesSource.maxDistance = maxDistance;
+				this._rageStatesSource.maxDistance = maxDistance;
 			}
-			_rageStatesSource.clip = clip;
-			_rageStatesSource.Play();
+			this._rageStatesSource.clip = clip;
+			this._rageStatesSource.Play();
 		}
 	}
 
 	public void SetAudioState(Scp096RageState state)
 	{
-		if (TryGetAudioForState(state, out var stateAudio) && !(_rageStatesSource.clip == stateAudio.Audio))
+		if (Scp096AudioPlayer.TryGetAudioForState(state, out var stateAudio) && !(this._rageStatesSource.clip == stateAudio.Audio))
 		{
-			Play(stateAudio.Audio, stateAudio.Falloff, stateAudio.MaxDistance);
+			this.Play(stateAudio.Audio, stateAudio.Falloff, stateAudio.MaxDistance);
 		}
 	}
 
 	public void Stop()
 	{
-		if (_rageStatesSource.isPlaying)
+		if (this._rageStatesSource.isPlaying)
 		{
-			_rageStatesSource.Stop();
+			this._rageStatesSource.Stop();
 		}
-		_rageStatesSource.clip = null;
+		this._rageStatesSource.clip = null;
 	}
 
 	public void ServerPlayAttack(Scp096HitResult hitRes)
 	{
-		_syncHitSound = hitRes;
-		ServerSendRpc(toAll: true);
+		this._syncHitSound = hitRes;
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte((byte)_syncHitSound);
+		writer.WriteByte((byte)this._syncHitSound);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
 		Scp096HitResult scp096HitResult = (Scp096HitResult)reader.ReadByte();
-		if ((scp096HitResult & Scp096HitResult.Human) != 0)
+		if ((scp096HitResult & Scp096HitResult.Human) != Scp096HitResult.None)
 		{
 			bool num = (scp096HitResult & Scp096HitResult.Lethal) == Scp096HitResult.Lethal;
-			float maxDistance = (num ? _lethalDistance : _nonLethalDistance);
-			AudioClip sound = (num ? _lethalClips : _nonLethalClips).RandomItem();
+			float maxDistance = (num ? this._lethalDistance : this._nonLethalDistance);
+			AudioClip sound = (num ? this._lethalClips : this._nonLethalClips).RandomItem();
 			MixerChannel channel = (num ? MixerChannel.NoDucking : MixerChannel.DefaultSfx);
-			float pitchScale = UnityEngine.Random.Range(1f - _pitchRandomization, 1f + _pitchRandomization);
+			float pitchScale = UnityEngine.Random.Range(1f - this._pitchRandomization, 1f + this._pitchRandomization);
 			if (base.Owner.isLocalPlayer)
 			{
 				AudioSourcePoolManager.Play2D(sound, 1f, channel, pitchScale);
@@ -160,6 +160,6 @@ public class Scp096AudioPlayer : StandardSubroutine<Scp096Role>
 
 	public static bool TryGetAudioForState(Scp096RageState state, out Scp096StateAudio stateAudio)
 	{
-		return AudioStates.TryGetValue(state, out stateAudio);
+		return Scp096AudioPlayer.AudioStates.TryGetValue(state, out stateAudio);
 	}
 }

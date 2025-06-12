@@ -73,14 +73,14 @@ public class Scp939FocusAbility : StandardSubroutine<Scp939Role>, IShakeEffect
 	{
 		get
 		{
-			return _state;
+			return this._state;
 		}
 		set
 		{
 			value = Mathf.Clamp01(value);
-			if (value != _state)
+			if (value != this._state)
 			{
-				_state = value;
+				this._state = value;
 				this.OnStateChanged?.Invoke();
 			}
 		}
@@ -90,41 +90,41 @@ public class Scp939FocusAbility : StandardSubroutine<Scp939Role>, IShakeEffect
 	{
 		get
 		{
-			if (!_targetState)
+			if (!this._targetState)
 			{
-				return _lungeAbility.State == Scp939LungeState.Triggered;
+				return this._lungeAbility.State == Scp939LungeState.Triggered;
 			}
 			return true;
 		}
 		private set
 		{
-			if (_targetState != value)
+			if (this._targetState != value)
 			{
-				if (value && State == 0f)
+				if (value && this.State == 0f)
 				{
-					_relativeWaypoint = CurrentWaypointId;
-					_relativeFreezeRot = WaypointBase.GetRelativeRotation(_relativeWaypoint, _ownerTransform.rotation).eulerAngles.y;
-					_frozenSw.Restart();
+					this._relativeWaypoint = this.CurrentWaypointId;
+					this._relativeFreezeRot = WaypointBase.GetRelativeRotation(this._relativeWaypoint, this._ownerTransform.rotation).eulerAngles.y;
+					this._frozenSw.Restart();
 				}
-				_targetState = value;
-				_serverSendCooldown.Clear();
+				this._targetState = value;
+				this._serverSendCooldown.Clear();
 			}
 		}
 	}
 
-	public float FrozenTime => (float)_frozenSw.Elapsed.TotalSeconds;
+	public float FrozenTime => (float)this._frozenSw.Elapsed.TotalSeconds;
 
-	public float FrozenRotation => WaypointBase.GetWorldRotation(_relativeWaypoint, Quaternion.Euler(Vector3.up * _relativeFreezeRot)).eulerAngles.y;
+	public float FrozenRotation => WaypointBase.GetWorldRotation(this._relativeWaypoint, Quaternion.Euler(Vector3.up * this._relativeFreezeRot)).eulerAngles.y;
 
 	public float AngularDeviation
 	{
 		get
 		{
-			if (!(State > 0f))
+			if (!(this.State > 0f))
 			{
 				return 0f;
 			}
-			return Mathf.DeltaAngle(FrozenRotation, _ownerTransform.eulerAngles.y);
+			return Mathf.DeltaAngle(this.FrozenRotation, this._ownerTransform.eulerAngles.y);
 		}
 	}
 
@@ -136,34 +136,34 @@ public class Scp939FocusAbility : StandardSubroutine<Scp939Role>, IShakeEffect
 
 	private void Update()
 	{
-		State += Time.deltaTime * (TargetState ? _transitionSpeed : (0f - _transitionSpeed));
-		if (!TargetState)
+		this.State += Time.deltaTime * (this.TargetState ? this._transitionSpeed : (0f - this._transitionSpeed));
+		if (!this.TargetState)
 		{
-			_focusInSource.volume -= Time.deltaTime * 10f;
+			this._focusInSource.volume -= Time.deltaTime * 10f;
 		}
 		if (NetworkServer.active)
 		{
-			TargetState = IsAvailable && _keySync.FocusKeyHeld && _clawAbility.Cooldown.IsReady && (_targetState || State == 0f);
-			_muteEffect.IsEnabled = TargetState;
-			UpdateRelativeRotation();
-			if (_serverSendCooldown.IsReady)
+			this.TargetState = this.IsAvailable && this._keySync.FocusKeyHeld && this._clawAbility.Cooldown.IsReady && (this._targetState || this.State == 0f);
+			this._muteEffect.IsEnabled = this.TargetState;
+			this.UpdateRelativeRotation();
+			if (this._serverSendCooldown.IsReady)
 			{
-				ServerSendRpc(toAll: true);
-				_serverSendCooldown.Trigger(1.5);
+				base.ServerSendRpc(toAll: true);
+				this._serverSendCooldown.Trigger(1.5);
 			}
 		}
 	}
 
 	private void UpdateRelativeRotation()
 	{
-		if (TargetState)
+		if (this.TargetState)
 		{
-			byte currentWaypointId = CurrentWaypointId;
-			if (currentWaypointId != _relativeWaypoint)
+			byte currentWaypointId = this.CurrentWaypointId;
+			if (currentWaypointId != this._relativeWaypoint)
 			{
-				_relativeFreezeRot = WaypointBase.GetRelativeRotation(currentWaypointId, Quaternion.Euler(Vector3.up * FrozenRotation)).eulerAngles.y;
-				_relativeWaypoint = currentWaypointId;
-				_serverSendCooldown.Clear();
+				this._relativeFreezeRot = WaypointBase.GetRelativeRotation(currentWaypointId, Quaternion.Euler(Vector3.up * this.FrozenRotation)).eulerAngles.y;
+				this._relativeWaypoint = currentWaypointId;
+				this._serverSendCooldown.Clear();
 			}
 		}
 	}
@@ -171,15 +171,15 @@ public class Scp939FocusAbility : StandardSubroutine<Scp939Role>, IShakeEffect
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp939FocusKeySync>(out _keySync);
-		GetSubroutine<Scp939ClawAbility>(out _clawAbility);
-		GetSubroutine<Scp939LungeAbility>(out _lungeAbility);
-		_lungeAbility.OnStateChanged += delegate(Scp939LungeState newState)
+		base.GetSubroutine<Scp939FocusKeySync>(out this._keySync);
+		base.GetSubroutine<Scp939ClawAbility>(out this._clawAbility);
+		base.GetSubroutine<Scp939LungeAbility>(out this._lungeAbility);
+		this._lungeAbility.OnStateChanged += delegate(Scp939LungeState newState)
 		{
-			_hitAnimationPlaying = newState == Scp939LungeState.LandHit;
-			if (newState != 0)
+			this._hitAnimationPlaying = newState == Scp939LungeState.LandHit;
+			if (newState != Scp939LungeState.None)
 			{
-				TargetState = false;
+				this.TargetState = false;
 			}
 		};
 	}
@@ -187,54 +187,54 @@ public class Scp939FocusAbility : StandardSubroutine<Scp939Role>, IShakeEffect
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		int num = Mathf.RoundToInt(_relativeFreezeRot * 64f) + 1;
-		if (!_targetState)
+		int num = Mathf.RoundToInt(this._relativeFreezeRot * 64f) + 1;
+		if (!this._targetState)
 		{
 			num *= -1;
 		}
 		writer.WriteShort((short)num);
-		writer.WriteByte(_relativeWaypoint);
+		writer.WriteByte(this._relativeWaypoint);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
 		short num = reader.ReadShort();
-		bool targetState = _targetState;
-		_targetState = num > 0;
-		_relativeWaypoint = reader.ReadByte();
-		_relativeFreezeRot = ((float)Mathf.Abs(num) - 1f) / 64f;
-		if (!(!_targetState || targetState))
+		bool targetState = this._targetState;
+		this._targetState = num > 0;
+		this._relativeWaypoint = reader.ReadByte();
+		this._relativeFreezeRot = ((float)Mathf.Abs(num) - 1f) / 64f;
+		if (!(!this._targetState || targetState))
 		{
-			if (_focusInSource.isPlaying)
+			if (this._focusInSource.isPlaying)
 			{
-				_focusInSource.timeSamples = 0;
+				this._focusInSource.timeSamples = 0;
 			}
 			else
 			{
-				_focusInSource.Play();
+				this._focusInSource.Play();
 			}
-			_focusInSource.volume = 1f;
+			this._focusInSource.volume = 1f;
 		}
 	}
 
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_ownerTransform = base.Owner.transform;
-		_offsetMultiplier = 1f;
+		this._ownerTransform = base.Owner.transform;
+		this._offsetMultiplier = 1f;
 		CameraShakeController.AddEffect(this);
 		if (NetworkServer.active)
 		{
-			_muteEffect = base.Owner.playerEffectsController.GetEffect<SoundtrackMute>();
+			this._muteEffect = base.Owner.playerEffectsController.GetEffect<SoundtrackMute>();
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_state = 0f;
-		_targetState = false;
+		this._state = 0f;
+		this._targetState = false;
 	}
 
 	public bool GetEffect(ReferenceHub ply, out ShakeEffectValues shakeValues)
@@ -248,22 +248,22 @@ public class Scp939FocusAbility : StandardSubroutine<Scp939Role>, IShakeEffect
 		{
 			return true;
 		}
-		if (State == 0f)
+		if (this.State == 0f)
 		{
 			return true;
 		}
-		bool flag = base.Owner.isLocalPlayer && _lungeAbility.State == Scp939LungeState.Triggered;
-		_offsetMultiplier = Mathf.Lerp(_offsetMultiplier, (!flag) ? 1 : 0, Time.deltaTime * 15f);
-		float num = _cameraHeightOffset.Evaluate(State) * _offsetMultiplier;
-		float num2 = _cameraForwardOffset.Evaluate(State) * _offsetMultiplier;
-		Vector3 forward = _ownerTransform.forward;
+		bool flag = base.Owner.isLocalPlayer && this._lungeAbility.State == Scp939LungeState.Triggered;
+		this._offsetMultiplier = Mathf.Lerp(this._offsetMultiplier, (!flag) ? 1 : 0, Time.deltaTime * 15f);
+		float num = this._cameraHeightOffset.Evaluate(this.State) * this._offsetMultiplier;
+		float num2 = this._cameraForwardOffset.Evaluate(this.State) * this._offsetMultiplier;
+		Vector3 forward = this._ownerTransform.forward;
 		RaycastHit hitInfo;
-		float num3 = (Physics.SphereCast(ply.PlayerCameraReference.position + Vector3.up * num, 0.16f, forward, out hitInfo, 0.16f + num2, VisibilityMask) ? Mathf.Max(0f, hitInfo.distance - 0.16f) : num2);
+		float num3 = (Physics.SphereCast(ply.PlayerCameraReference.position + Vector3.up * num, 0.16f, forward, out hitInfo, 0.16f + num2, Scp939FocusAbility.VisibilityMask) ? Mathf.Max(0f, hitInfo.distance - 0.16f) : num2);
 		Vector3 value = Vector3.up * num + forward * num3;
-		float num4 = Mathf.SmoothStep(1f, _cameraFov + 1f, State);
+		float num4 = Mathf.SmoothStep(1f, this._cameraFov + 1f, this.State);
 		Vector3? rootCameraPositionOffset;
 		float fovPercent;
-		if (!_hitAnimationPlaying || !base.Owner.isLocalPlayer)
+		if (!this._hitAnimationPlaying || !base.Owner.isLocalPlayer)
 		{
 			rootCameraPositionOffset = value;
 			fovPercent = num4;
@@ -271,9 +271,9 @@ public class Scp939FocusAbility : StandardSubroutine<Scp939Role>, IShakeEffect
 			return true;
 		}
 		float num5 = (0f - Time.deltaTime) * 480f;
-		if (State < 0.9f)
+		if (this.State < 0.9f)
 		{
-			_hitAnimationPlaying = false;
+			this._hitAnimationPlaying = false;
 		}
 		rootCameraPositionOffset = value;
 		fovPercent = num4;

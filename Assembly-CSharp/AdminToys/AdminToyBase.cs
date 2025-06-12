@@ -38,11 +38,11 @@ public abstract class AdminToyBase : NetworkBehaviour
 	{
 		get
 		{
-			return Rotation.eulerAngles;
+			return this.Rotation.eulerAngles;
 		}
 		set
 		{
-			NetworkRotation = Quaternion.Euler(value);
+			this.NetworkRotation = Quaternion.Euler(value);
 		}
 	}
 
@@ -50,12 +50,12 @@ public abstract class AdminToyBase : NetworkBehaviour
 	{
 		get
 		{
-			return Position;
+			return this.Position;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Position, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.Position, 1uL, null);
 		}
 	}
 
@@ -63,12 +63,12 @@ public abstract class AdminToyBase : NetworkBehaviour
 	{
 		get
 		{
-			return Rotation;
+			return this.Rotation;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Rotation, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.Rotation, 2uL, null);
 		}
 	}
 
@@ -76,12 +76,12 @@ public abstract class AdminToyBase : NetworkBehaviour
 	{
 		get
 		{
-			return Scale;
+			return this.Scale;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Scale, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.Scale, 4uL, null);
 		}
 	}
 
@@ -89,12 +89,12 @@ public abstract class AdminToyBase : NetworkBehaviour
 	{
 		get
 		{
-			return MovementSmoothing;
+			return this.MovementSmoothing;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref MovementSmoothing, 8uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.MovementSmoothing, 8uL, null);
 		}
 	}
 
@@ -102,12 +102,12 @@ public abstract class AdminToyBase : NetworkBehaviour
 	{
 		get
 		{
-			return IsStatic;
+			return this.IsStatic;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref IsStatic, 16uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.IsStatic, 16uL, null);
 		}
 	}
 
@@ -122,15 +122,15 @@ public abstract class AdminToyBase : NetworkBehaviour
 
 	protected virtual void LateUpdate()
 	{
-		if (!IsStatic)
+		if (!this.IsStatic)
 		{
 			if (NetworkServer.active)
 			{
-				UpdatePositionServer();
+				this.UpdatePositionServer();
 			}
 			else
 			{
-				UpdatePositionClient();
+				this.UpdatePositionClient();
 			}
 		}
 	}
@@ -140,10 +140,10 @@ public abstract class AdminToyBase : NetworkBehaviour
 		if (base.netIdentity.isServer)
 		{
 			Transform parent = base.transform.parent;
-			if (_previousParent != parent)
+			if (this._previousParent != parent)
 			{
-				RpcChangeParent(ServerParentId(parent));
-				_previousParent = parent;
+				this.RpcChangeParent(this.ServerParentId(parent));
+				this._previousParent = parent;
 			}
 		}
 	}
@@ -156,7 +156,7 @@ public abstract class AdminToyBase : NetworkBehaviour
 	public override void OnStartServer()
 	{
 		base.OnStartServer();
-		UpdatePositionServer();
+		this.UpdatePositionServer();
 	}
 
 	public override void OnStartClient()
@@ -164,8 +164,8 @@ public abstract class AdminToyBase : NetworkBehaviour
 		base.OnStartClient();
 		if (!NetworkServer.active)
 		{
-			UpdateParent();
-			UpdatePositionClient(teleport: true);
+			this.UpdateParent();
+			this.UpdatePositionClient(teleport: true);
 		}
 	}
 
@@ -174,7 +174,7 @@ public abstract class AdminToyBase : NetworkBehaviour
 		base.OnSerialize(writer, initialState);
 		if (initialState)
 		{
-			writer.WriteUInt(ServerParentId(base.transform.parent));
+			writer.WriteUInt(this.ServerParentId(base.transform.parent));
 		}
 	}
 
@@ -183,15 +183,15 @@ public abstract class AdminToyBase : NetworkBehaviour
 		base.OnDeserialize(reader, initialState);
 		if (initialState)
 		{
-			_clientParentId = reader.ReadUInt();
+			this._clientParentId = reader.ReadUInt();
 		}
 	}
 
 	public virtual void OnSpawned(ReferenceHub admin, ArraySegment<string> arguments)
 	{
-		SpawnerFootprint = new Footprint(admin);
+		this.SpawnerFootprint = new Footprint(admin);
 		NetworkServer.Spawn(base.gameObject);
-		ServerLogs.AddLog(ServerLogs.Modules.Administrative, $"{admin.LoggedNameFromRefHub()} spawned an admin toy: {CommandName} with NetID {base.netId}.", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
+		ServerLogs.AddLog(ServerLogs.Modules.Administrative, $"{admin.LoggedNameFromRefHub()} spawned an admin toy: {this.CommandName} with NetID {base.netId}.", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
 	}
 
 	[ClientRpc]
@@ -199,7 +199,7 @@ public abstract class AdminToyBase : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteUInt(parentId);
-		SendRPCInternal("System.Void AdminToys.AdminToyBase::RpcChangeParent(System.UInt32)", -342419096, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void AdminToys.AdminToyBase::RpcChangeParent(System.UInt32)", -342419096, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -214,7 +214,7 @@ public abstract class AdminToyBase : NetworkBehaviour
 
 	private void UpdateParent()
 	{
-		if (_clientParentId != 0 && NetworkClient.spawned.TryGetValue(_clientParentId, out var value))
+		if (this._clientParentId != 0 && NetworkClient.spawned.TryGetValue(this._clientParentId, out var value))
 		{
 			base.transform.SetParent(value.transform, worldPositionStays: false);
 		}
@@ -226,9 +226,9 @@ public abstract class AdminToyBase : NetworkBehaviour
 
 	private void UpdatePositionServer()
 	{
-		NetworkPosition = base.transform.localPosition;
-		NetworkRotation = base.transform.localRotation;
-		NetworkScale = base.transform.localScale;
+		this.NetworkPosition = base.transform.localPosition;
+		this.NetworkRotation = base.transform.localRotation;
+		this.NetworkScale = base.transform.localScale;
 	}
 
 	protected virtual void UpdatePositionClient(bool teleport = false)
@@ -236,18 +236,18 @@ public abstract class AdminToyBase : NetworkBehaviour
 		Vector3 localPosition;
 		Quaternion localRotation;
 		Vector3 localScale;
-		if (teleport || MovementSmoothing == 0)
+		if (teleport || this.MovementSmoothing == 0)
 		{
-			localPosition = Position;
-			localRotation = Rotation;
-			localScale = Scale;
+			localPosition = this.Position;
+			localRotation = this.Rotation;
+			localScale = this.Scale;
 		}
 		else
 		{
-			float t = Time.deltaTime * (float)(int)MovementSmoothing * 0.3f;
-			localPosition = Vector3.Lerp(base.transform.localPosition, Position, t);
-			localRotation = Quaternion.Lerp(base.transform.localRotation, Rotation, t);
-			localScale = Vector3.Lerp(base.transform.localScale, Scale, t);
+			float t = Time.deltaTime * (float)(int)this.MovementSmoothing * 0.3f;
+			localPosition = Vector3.Lerp(base.transform.localPosition, this.Position, t);
+			localRotation = Quaternion.Lerp(base.transform.localRotation, this.Rotation, t);
+			localScale = Vector3.Lerp(base.transform.localScale, this.Scale, t);
 		}
 		base.transform.SetLocalPositionAndRotation(localPosition, localRotation);
 		base.transform.localScale = localScale;
@@ -262,8 +262,8 @@ public abstract class AdminToyBase : NetworkBehaviour
 	{
 		if (!NetworkServer.active)
 		{
-			_clientParentId = parentId;
-			UpdateParent();
+			this._clientParentId = parentId;
+			this.UpdateParent();
 		}
 	}
 
@@ -289,33 +289,33 @@ public abstract class AdminToyBase : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteVector3(Position);
-			writer.WriteQuaternion(Rotation);
-			writer.WriteVector3(Scale);
-			NetworkWriterExtensions.WriteByte(writer, MovementSmoothing);
-			writer.WriteBool(IsStatic);
+			writer.WriteVector3(this.Position);
+			writer.WriteQuaternion(this.Rotation);
+			writer.WriteVector3(this.Scale);
+			NetworkWriterExtensions.WriteByte(writer, this.MovementSmoothing);
+			writer.WriteBool(this.IsStatic);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteVector3(Position);
+			writer.WriteVector3(this.Position);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteQuaternion(Rotation);
+			writer.WriteQuaternion(this.Rotation);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			writer.WriteVector3(Scale);
+			writer.WriteVector3(this.Scale);
 		}
 		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, MovementSmoothing);
+			NetworkWriterExtensions.WriteByte(writer, this.MovementSmoothing);
 		}
 		if ((base.syncVarDirtyBits & 0x10L) != 0L)
 		{
-			writer.WriteBool(IsStatic);
+			writer.WriteBool(this.IsStatic);
 		}
 	}
 
@@ -324,33 +324,33 @@ public abstract class AdminToyBase : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref Position, null, reader.ReadVector3());
-			GeneratedSyncVarDeserialize(ref Rotation, null, reader.ReadQuaternion());
-			GeneratedSyncVarDeserialize(ref Scale, null, reader.ReadVector3());
-			GeneratedSyncVarDeserialize(ref MovementSmoothing, null, NetworkReaderExtensions.ReadByte(reader));
-			GeneratedSyncVarDeserialize(ref IsStatic, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.Position, null, reader.ReadVector3());
+			base.GeneratedSyncVarDeserialize(ref this.Rotation, null, reader.ReadQuaternion());
+			base.GeneratedSyncVarDeserialize(ref this.Scale, null, reader.ReadVector3());
+			base.GeneratedSyncVarDeserialize(ref this.MovementSmoothing, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this.IsStatic, null, reader.ReadBool());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Position, null, reader.ReadVector3());
+			base.GeneratedSyncVarDeserialize(ref this.Position, null, reader.ReadVector3());
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Rotation, null, reader.ReadQuaternion());
+			base.GeneratedSyncVarDeserialize(ref this.Rotation, null, reader.ReadQuaternion());
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Scale, null, reader.ReadVector3());
+			base.GeneratedSyncVarDeserialize(ref this.Scale, null, reader.ReadVector3());
 		}
 		if ((num & 8L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref MovementSmoothing, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this.MovementSmoothing, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 		if ((num & 0x10L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref IsStatic, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.IsStatic, null, reader.ReadBool());
 		}
 	}
 }

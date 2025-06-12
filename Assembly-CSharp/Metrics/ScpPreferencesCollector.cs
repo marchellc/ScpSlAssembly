@@ -17,8 +17,8 @@ public class ScpPreferencesCollector : MetricsCollectorBase
 
 		public PrefPair(KeyValuePair<RoleTypeId, int> kvp)
 		{
-			Role = kvp.Key;
-			Weight = kvp.Value;
+			this.Role = kvp.Key;
+			this.Weight = kvp.Value;
 		}
 	}
 
@@ -42,7 +42,7 @@ public class ScpPreferencesCollector : MetricsCollectorBase
 		{
 			if (ScpSpawnPreferences.Preferences.TryGetValue(allHub.connectionToClient.connectionId, out var value))
 			{
-				RecordSpawnPreferences(value);
+				ScpPreferencesCollector.RecordSpawnPreferences(value);
 			}
 		}
 	}
@@ -86,9 +86,9 @@ public class ScpPreferencesCollector : MetricsCollectorBase
 			if (!flag || !item2.UserPreferences.All((PrefPair x) => x.Weight == 0))
 			{
 				PrefPair[] userPreferences = item2.UserPreferences;
-				for (int i = 0; i < userPreferences.Length; i++)
+				for (int num3 = 0; num3 < userPreferences.Length; num3++)
 				{
-					PrefPair prefPair = userPreferences[i];
+					PrefPair prefPair = userPreferences[num3];
 					int item = ((!item2.OptOutOfScp || result2 != OptOutExportBehavior.TreatAsZero) ? prefPair.Weight : 0);
 					dictionary.GetOrAddNew(prefPair.Role).Add(item);
 				}

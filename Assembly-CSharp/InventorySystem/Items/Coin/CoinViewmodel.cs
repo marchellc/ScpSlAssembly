@@ -34,15 +34,15 @@ public class CoinViewmodel : StandardAnimatedViemodel
 		base.InitSpectator(ply, id, wasEquipped);
 		if (wasEquipped)
 		{
-			GetComponent<AudioSource>().Stop();
-			if (TryGetMessage(id.SerialNumber, out var isTails))
+			base.GetComponent<AudioSource>().Stop();
+			if (this.TryGetMessage(id.SerialNumber, out var isTails))
 			{
-				ProcessCoinflip(id.SerialNumber, isTails);
-				AnimatorForceUpdate(base.SkipEquipTime, fastMode: false);
+				this.ProcessCoinflip(id.SerialNumber, isTails);
+				this.AnimatorForceUpdate(base.SkipEquipTime, fastMode: false);
 			}
 			else
 			{
-				AnimatorForceUpdate(base.SkipEquipTime);
+				this.AnimatorForceUpdate(base.SkipEquipTime);
 			}
 		}
 	}
@@ -50,10 +50,10 @@ public class CoinViewmodel : StandardAnimatedViemodel
 	protected override void LateUpdate()
 	{
 		base.LateUpdate();
-		float num = _positionOverrideOverTime.Evaluate((float)_animStopwatch.Elapsed.TotalSeconds);
+		float num = this._positionOverrideOverTime.Evaluate((float)this._animStopwatch.Elapsed.TotalSeconds);
 		if (!(num <= 0f))
 		{
-			_coinTr.position = Vector3.Lerp(_coinTr.position, _coinOverrideTr.position, num);
+			this._coinTr.position = Vector3.Lerp(this._coinTr.position, this._coinOverrideTr.position, num);
 		}
 	}
 
@@ -82,15 +82,15 @@ public class CoinViewmodel : StandardAnimatedViemodel
 	{
 		if (serial == base.ItemId.SerialNumber)
 		{
-			AnimatorSetBool(TailsHash, isTails);
-			AnimatorSetTrigger(TriggerHash);
-			_animStopwatch.Restart();
+			this.AnimatorSetBool(CoinViewmodel.TailsHash, isTails);
+			this.AnimatorSetTrigger(CoinViewmodel.TriggerHash);
+			this._animStopwatch.Restart();
 		}
 	}
 
 	private void OnDisable()
 	{
-		_animStopwatch.Reset();
+		this._animStopwatch.Reset();
 	}
 
 	private void OnDestroy()

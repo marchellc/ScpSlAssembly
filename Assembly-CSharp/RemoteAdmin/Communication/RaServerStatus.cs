@@ -9,10 +9,10 @@ public class RaServerStatus : RaClientDataRequest
 
 	protected override void GatherData()
 	{
-		AppendData(CastBool(RoundSummary.RoundLock));
-		AppendData(CastBool(RoundStart.LobbyLock));
-		AppendData(CastBool(AlphaWarheadController.Singleton != null && AlphaWarheadController.Singleton.IsLocked));
-		AppendData(CastBool(ServerConsole.FriendlyFire));
-		AppendData(CastBool(SpawnProtected.IsProtectionEnabled));
+		base.AppendData(base.CastBool(RoundSummary.RoundLock));
+		base.AppendData(base.CastBool(RoundStart.LobbyLock));
+		base.AppendData(base.CastBool(AlphaWarheadController.Singleton != null && AlphaWarheadController.Singleton.IsLocked));
+		base.AppendData(base.CastBool(ServerConsole.FriendlyFire));
+		base.AppendData(base.CastBool(SpawnProtected.IsProtectionEnabled));
 	}
 }

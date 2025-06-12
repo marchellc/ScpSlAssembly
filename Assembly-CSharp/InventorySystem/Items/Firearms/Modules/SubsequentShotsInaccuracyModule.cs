@@ -16,9 +16,9 @@ public class SubsequentShotsInaccuracyModule : ModuleBase, IInaccuracyProviderMo
 
 		public InaccuracySettings(float targetDeviation, int shotsToReach, int offset)
 		{
-			TargetDeviation = targetDeviation;
-			ShotsToReach = shotsToReach;
-			Offset = offset;
+			this.TargetDeviation = targetDeviation;
+			this.ShotsToReach = shotsToReach;
+			this.Offset = offset;
 		}
 	}
 
@@ -44,23 +44,23 @@ public class SubsequentShotsInaccuracyModule : ModuleBase, IInaccuracyProviderMo
 
 	private void Update()
 	{
-		if (_shotsCounter != null)
+		if (this._shotsCounter != null)
 		{
-			Inaccuracy = _optionalModifier.Process(_inaccuracyNextFrame);
-			_shotsCounter.Update();
-			InaccuracySettings orAdd = SettingsByCategory.GetOrAdd(base.Firearm.FirearmCategory, () => DefaultSettings);
-			_inaccuracyNextFrame = Mathf.InverseLerp(orAdd.Offset, orAdd.ShotsToReach, _shotsCounter.SubsequentShots) * orAdd.TargetDeviation;
+			this.Inaccuracy = this._optionalModifier.Process(this._inaccuracyNextFrame);
+			this._shotsCounter.Update();
+			InaccuracySettings orAdd = SubsequentShotsInaccuracyModule.SettingsByCategory.GetOrAdd(base.Firearm.FirearmCategory, () => SubsequentShotsInaccuracyModule.DefaultSettings);
+			this._inaccuracyNextFrame = Mathf.InverseLerp(orAdd.Offset, orAdd.ShotsToReach, this._shotsCounter.SubsequentShots) * orAdd.TargetDeviation;
 		}
 	}
 
 	private void OnDestroy()
 	{
-		_shotsCounter?.Destruct();
+		this._shotsCounter?.Destruct();
 	}
 
 	internal override void OnAdded()
 	{
 		base.OnAdded();
-		_shotsCounter = new SubsequentShotsCounter(base.Firearm);
+		this._shotsCounter = new SubsequentShotsCounter(base.Firearm);
 	}
 }

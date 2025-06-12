@@ -90,9 +90,9 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 	{
 		get
 		{
-			if (!_charging)
+			if (!this._charging)
 			{
-				return !_chargeLoadStopwatch.IsRunning;
+				return !this._chargeLoadStopwatch.IsRunning;
 			}
 			return false;
 		}
@@ -100,21 +100,21 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 
 	public int TotalChargesPerformed { get; private set; }
 
-	public bool MovementOverrideActive => _charging;
+	public bool MovementOverrideActive => this._charging;
 
 	public Vector3 MovementOverrideDirection => base.Owner.transform.forward;
 
-	public bool MovementModifierActive => _charging;
+	public bool MovementModifierActive => this._charging;
 
-	public float MovementSpeedMultiplier => _chargeMovementSpeedMultiplier;
+	public float MovementSpeedMultiplier => this._chargeMovementSpeedMultiplier;
 
-	public float MovementSpeedLimit => _chargeMovementSpeedLimiter;
+	public float MovementSpeedLimit => this._chargeMovementSpeedLimiter;
 
-	public string Description => ItemTypeId.GetDescription();
+	public string Description => base.ItemTypeId.GetDescription();
 
-	public string Name => ItemTypeId.GetName();
+	public string Name => base.ItemTypeId.GetName();
 
-	public AlertContent Alert => _hintHelper.Alert;
+	public AlertContent Alert => this._hintHelper.Alert;
 
 	public static event Action<ushort, JailbirdMessageType> OnRpcReceived;
 
@@ -123,23 +123,23 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 	public override void OnAdded(ItemPickupBase pickup)
 	{
 		base.OnAdded(pickup);
-		_hitreg.Setup(this);
-		_deterioration.Setup(this, _hitreg);
+		this._hitreg.Setup(this);
+		this._deterioration.Setup(this, this._hitreg);
 		if (!NetworkServer.active)
 		{
 			return;
 		}
 		if (pickup is JailbirdPickup jailbirdPickup)
 		{
-			TotalChargesPerformed = jailbirdPickup.TotalCharges;
-			_hitreg.TotalMeleeDamageDealt = jailbirdPickup.TotalMelee;
+			this.TotalChargesPerformed = jailbirdPickup.TotalCharges;
+			this._hitreg.TotalMeleeDamageDealt = jailbirdPickup.TotalMelee;
 			if (!jailbirdPickup.transform.TryGetComponentInParent<Locker>(out var _))
 			{
 				return;
 			}
 			base.OwnerInventory.ServerSelectItem(base.ItemSerial);
 		}
-		_deterioration.RecheckUsage();
+		this._deterioration.RecheckUsage();
 	}
 
 	public override void OnRemoved(ItemPickupBase pickup)
@@ -147,28 +147,28 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 		base.OnRemoved(pickup);
 		if (NetworkServer.active && pickup is JailbirdPickup jailbirdPickup)
 		{
-			if (_deterioration.IsBroken)
+			if (this._deterioration.IsBroken)
 			{
 				jailbirdPickup.DestroySelf();
 				return;
 			}
-			jailbirdPickup.TotalCharges = TotalChargesPerformed;
-			jailbirdPickup.TotalMelee = _hitreg.TotalMeleeDamageDealt;
-			jailbirdPickup.NetworkWear = _deterioration.WearState;
+			jailbirdPickup.TotalCharges = this.TotalChargesPerformed;
+			jailbirdPickup.TotalMelee = this._hitreg.TotalMeleeDamageDealt;
+			jailbirdPickup.NetworkWear = this._deterioration.WearState;
 		}
 	}
 
 	public override void OnHolstered()
 	{
 		base.OnHolstered();
-		_hintHelper.Hide();
-		_chargeLoadStopwatch.Reset();
-		_charging = false;
-		_attackTriggered = false;
+		this._hintHelper.Hide();
+		this._chargeLoadStopwatch.Reset();
+		this._charging = false;
+		this._attackTriggered = false;
 		if (NetworkServer.active)
 		{
-			SendRpc(JailbirdMessageType.Holstered);
-			if (_deterioration.IsBroken)
+			this.SendRpc(JailbirdMessageType.Holstered);
+			if (this._deterioration.IsBroken)
 			{
 				base.OwnerInventory.ServerRemoveItem(base.ItemSerial, null);
 			}
@@ -178,21 +178,21 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 	public override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		_hintHelper.Update(base.Owner);
-		if (_deterioration.IsBroken)
+		this._hintHelper.Update(base.Owner);
+		if (this._deterioration.IsBroken)
 		{
 			if (NetworkServer.active)
 			{
-				_brokenRemoveTime -= Time.deltaTime;
+				this._brokenRemoveTime -= Time.deltaTime;
 			}
-			if (_brokenRemoveTime < 0f)
+			if (this._brokenRemoveTime < 0f)
 			{
 				base.OwnerInventory.ServerRemoveItem(base.ItemSerial, null);
 			}
 		}
-		else if (_charging)
+		else if (this._charging)
 		{
-			UpdateCharging();
+			this.UpdateCharging();
 		}
 		else
 		{
@@ -200,55 +200,55 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 			{
 				return;
 			}
-			if (_attackTriggered)
+			if (this._attackTriggered)
 			{
-				if (_clientDelayCooldown.IsReady)
+				if (this._clientDelayCooldown.IsReady)
 				{
-					ClientAttack();
-					_attackTriggered = false;
+					this.ClientAttack();
+					this._attackTriggered = false;
 				}
 				return;
 			}
 			bool flag = !base.Owner.HasBlock(BlockedInteraction.ItemPrimaryAction);
 			bool flag2 = !base.Owner.HasBlock(BlockedInteraction.ItemUsage);
-			if (!_clientAttackCooldown.IsReady)
+			if (!this._clientAttackCooldown.IsReady)
 			{
 				return;
 			}
-			if (GetAction(ActionName.Zoom) && flag)
+			if (base.GetAction(ActionName.Zoom) && flag)
 			{
-				if (!_chargeLoadStopwatch.IsRunning)
+				if (!this._chargeLoadStopwatch.IsRunning)
 				{
-					SendCmd(JailbirdMessageType.ChargeLoadTriggered);
-					_chargeLoadStopwatch.Start();
+					this.SendCmd(JailbirdMessageType.ChargeLoadTriggered);
+					this._chargeLoadStopwatch.Start();
 				}
-				if (_chargeLoadStopwatch.Elapsed.TotalSeconds < (double)_chargeAutoengageTime)
+				if (this._chargeLoadStopwatch.Elapsed.TotalSeconds < (double)this._chargeAutoengageTime)
 				{
 					return;
 				}
 			}
-			if (_chargeLoadStopwatch.IsRunning)
+			if (this._chargeLoadStopwatch.IsRunning)
 			{
-				if (_chargeLoadStopwatch.Elapsed.TotalSeconds > (double)_chargeReadyTime && flag)
+				if (this._chargeLoadStopwatch.Elapsed.TotalSeconds > (double)this._chargeReadyTime && flag)
 				{
-					SendCmd(JailbirdMessageType.ChargeStarted);
+					this.SendCmd(JailbirdMessageType.ChargeStarted);
 				}
 				else
 				{
-					SendCmd(JailbirdMessageType.ChargeFailed);
+					this.SendCmd(JailbirdMessageType.ChargeFailed);
 				}
-				_chargeLoadStopwatch.Reset();
+				this._chargeLoadStopwatch.Reset();
 			}
-			if (GetActionDown(ActionName.InspectItem) && flag2)
+			if (base.GetActionDown(ActionName.InspectItem) && flag2)
 			{
-				SendCmd(JailbirdMessageType.Inspect);
+				this.SendCmd(JailbirdMessageType.Inspect);
 			}
-			if (GetAction(ActionName.Shoot) && flag)
+			if (base.GetAction(ActionName.Shoot) && flag)
 			{
-				_attackTriggered = true;
-				SendCmd(JailbirdMessageType.AttackTriggered);
-				_clientDelayCooldown.Trigger(_meleeDelay);
-				_clientAttackCooldown.Trigger(_meleeCooldown);
+				this._attackTriggered = true;
+				this.SendCmd(JailbirdMessageType.AttackTriggered);
+				this._clientDelayCooldown.Trigger(this._meleeDelay);
+				this._clientAttackCooldown.Trigger(this._meleeCooldown);
 			}
 		}
 	}
@@ -257,9 +257,9 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 	{
 		if (NetworkServer.active)
 		{
-			_hitreg.TotalMeleeDamageDealt = 0f;
-			TotalChargesPerformed = 0;
-			_deterioration.RecheckUsage();
+			this._hitreg.TotalMeleeDamageDealt = 0f;
+			this.TotalChargesPerformed = 0;
+			this._deterioration.RecheckUsage();
 		}
 	}
 
@@ -269,13 +269,13 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 		{
 			if (setting == Scp914KnobSetting.Coarse)
 			{
-				TotalChargesPerformed = JailbirdDeteriorationTracker.Scp914CoarseCharges;
-				_hitreg.TotalMeleeDamageDealt = JailbirdDeteriorationTracker.Scp914CoarseDamage;
-				_deterioration.RecheckUsage();
+				this.TotalChargesPerformed = JailbirdDeteriorationTracker.Scp914CoarseCharges;
+				this._hitreg.TotalMeleeDamageDealt = JailbirdDeteriorationTracker.Scp914CoarseDamage;
+				this._deterioration.RecheckUsage();
 			}
 			else
 			{
-				ServerReset();
+				this.ServerReset();
 			}
 		}
 	}
@@ -294,7 +294,7 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 		{
 			if (reader.ReadBool() && InventoryExtensions.TryGetHubHoldingSerial(serial, out var hub))
 			{
-				AudioSourcePoolManager.PlayOnTransform(_hitClip, hub.transform, 15f);
+				AudioSourcePoolManager.PlayOnTransform(this._hitClip, hub.transform, 15f);
 			}
 			break;
 		}
@@ -304,20 +304,20 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 	public override void ClientProcessRpcInstance(NetworkReader reader)
 	{
 		base.ClientProcessRpcInstance(reader);
-		if (IsLocalPlayer)
+		if (this.IsLocalPlayer)
 		{
 			switch ((JailbirdMessageType)reader.ReadByte())
 			{
 			case JailbirdMessageType.ChargeStarted:
-				_charging = true;
-				_firstChargeFrame = true;
-				_chargeLoadStopwatch.Reset();
-				_chargeAnyDetected = false;
-				_chargeResetTime = reader.ReadDouble();
+				this._charging = true;
+				this._firstChargeFrame = true;
+				this._chargeLoadStopwatch.Reset();
+				this._chargeAnyDetected = false;
+				this._chargeResetTime = reader.ReadDouble();
 				break;
 			case JailbirdMessageType.ChargeFailed:
-				_chargeLoadStopwatch.Reset();
-				_charging = false;
+				this._chargeLoadStopwatch.Reset();
+				this._charging = false;
 				break;
 			}
 		}
@@ -326,7 +326,7 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (_deterioration.IsBroken || !base.IsEquipped)
+		if (this._deterioration.IsBroken || !base.IsEquipped)
 		{
 			return;
 		}
@@ -336,57 +336,57 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 		switch (jailbirdMessageType)
 		{
 		case JailbirdMessageType.AttackTriggered:
-			if ((base.IsControllable || !_attackTriggered) && !_chargeLoadStopwatch.IsRunning && _serverAttackCooldown.TolerantIsReady)
+			if ((base.IsControllable || !this._attackTriggered) && !this._chargeLoadStopwatch.IsRunning && this._serverAttackCooldown.TolerantIsReady)
 			{
-				_attackTriggered = true;
-				_serverAttackCooldown.Trigger(_meleeCooldown);
-				SendRpc(JailbirdMessageType.AttackTriggered);
+				this._attackTriggered = true;
+				this._serverAttackCooldown.Trigger(this._meleeCooldown);
+				this.SendRpc(JailbirdMessageType.AttackTriggered);
 			}
 			break;
 		case JailbirdMessageType.AttackPerformed:
-			if (_charging)
+			if (this._charging)
 			{
-				ServerAttack(reader);
+				this.ServerAttack(reader);
 			}
-			else if (_attackTriggered && flag)
+			else if (this._attackTriggered && flag)
 			{
-				_attackTriggered = false;
-				ServerAttack(reader);
+				this._attackTriggered = false;
+				this.ServerAttack(reader);
 			}
 			break;
 		case JailbirdMessageType.Inspect:
 			if (flag2)
 			{
-				SendRpc(jailbirdMessageType);
+				this.SendRpc(jailbirdMessageType);
 			}
 			break;
 		case JailbirdMessageType.ChargeFailed:
-			_chargeLoadStopwatch.Reset();
-			SendRpc(jailbirdMessageType);
+			this._chargeLoadStopwatch.Reset();
+			this.SendRpc(jailbirdMessageType);
 			break;
 		case JailbirdMessageType.ChargeLoadTriggered:
-			if (flag && !_charging && !_chargeLoadStopwatch.IsRunning)
+			if (flag && !this._charging && !this._chargeLoadStopwatch.IsRunning)
 			{
-				_chargeLoadStopwatch.Start();
-				SendRpc(jailbirdMessageType);
+				this._chargeLoadStopwatch.Start();
+				this.SendRpc(jailbirdMessageType);
 			}
 			break;
 		case JailbirdMessageType.ChargeStarted:
 		{
-			double totalSeconds = _chargeLoadStopwatch.Elapsed.TotalSeconds;
-			if (!flag || totalSeconds - 0.4000000059604645 > (double)_chargeAutoengageTime || totalSeconds + 0.4000000059604645 < (double)_chargeDuration)
+			double totalSeconds = this._chargeLoadStopwatch.Elapsed.TotalSeconds;
+			if (!flag || totalSeconds - 0.4000000059604645 > (double)this._chargeAutoengageTime || totalSeconds + 0.4000000059604645 < (double)this._chargeDuration)
 			{
-				SendRpc(JailbirdMessageType.ChargeFailed);
+				this.SendRpc(JailbirdMessageType.ChargeFailed);
 			}
-			else if (!_charging)
+			else if (!this._charging)
 			{
-				_chargeLoadStopwatch.Reset();
-				_charging = true;
-				_chargeResetTime = NetworkTime.time + (double)_chargeDuration;
-				TotalChargesPerformed++;
-				SendRpc(JailbirdMessageType.ChargeStarted, delegate(NetworkWriter wr)
+				this._chargeLoadStopwatch.Reset();
+				this._charging = true;
+				this._chargeResetTime = NetworkTime.time + (double)this._chargeDuration;
+				this.TotalChargesPerformed++;
+				this.SendRpc(JailbirdMessageType.ChargeStarted, delegate(NetworkWriter wr)
 				{
-					wr.WriteDouble(_chargeResetTime);
+					wr.WriteDouble(this._chargeResetTime);
 				});
 			}
 			break;
@@ -396,57 +396,57 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 
 	private void UpdateCharging()
 	{
-		double num = _chargeResetTime - NetworkTime.time;
+		double num = this._chargeResetTime - NetworkTime.time;
 		if (NetworkServer.active && num < -0.4000000059604645)
 		{
-			ServerAttack(null);
+			this.ServerAttack(null);
 		}
 		else
 		{
-			if (!IsLocalPlayer)
+			if (!this.IsLocalPlayer)
 			{
 				return;
 			}
-			if (!_chargeAnyDetected && _hitreg.AnyDetected)
+			if (!this._chargeAnyDetected && this._hitreg.AnyDetected)
 			{
-				num = Mathf.Min((float)num, _chargeDetectionDelay);
-				_chargeResetTime = NetworkTime.time + num;
-				_chargeAnyDetected = true;
+				num = Mathf.Min((float)num, this._chargeDetectionDelay);
+				this._chargeResetTime = NetworkTime.time + num;
+				this._chargeAnyDetected = true;
 			}
 			if (num > 0.0)
 			{
-				if (_firstChargeFrame)
+				if (this._firstChargeFrame)
 				{
-					_firstChargeFrame = false;
+					this._firstChargeFrame = false;
 					return;
 				}
-				if (base.Owner.GetVelocity().SqrMagnitudeIgnoreY() > _chargeCancelVelocitySqr)
+				if (base.Owner.GetVelocity().SqrMagnitudeIgnoreY() > this._chargeCancelVelocitySqr)
 				{
 					return;
 				}
 			}
-			ClientAttack();
-			_charging = false;
-			_clientAttackCooldown.Trigger(_meleeCooldown);
+			this.ClientAttack();
+			this._charging = false;
+			this._clientAttackCooldown.Trigger(this._meleeCooldown);
 		}
 	}
 
 	private void ServerAttack(NetworkReader reader)
 	{
-		bool anyDamaged = _hitreg.ServerAttack(_charging, reader);
+		bool anyDamaged = this._hitreg.ServerAttack(this._charging, reader);
 		if (anyDamaged)
 		{
 			Hitmarker.SendHitmarkerDirectly(base.Owner, 1f);
 		}
-		SendRpc(JailbirdMessageType.AttackPerformed, delegate(NetworkWriter wr)
+		this.SendRpc(JailbirdMessageType.AttackPerformed, delegate(NetworkWriter wr)
 		{
 			wr.WriteBool(anyDamaged);
 		});
-		_deterioration.RecheckUsage();
-		if (_charging)
+		this._deterioration.RecheckUsage();
+		if (this._charging)
 		{
-			_charging = false;
-			if (_deterioration.IsBroken && anyDamaged)
+			this._charging = false;
+			if (this._deterioration.IsBroken && anyDamaged)
 			{
 				ExplosionUtils.ServerExplode(base.Owner, ExplosionType.Jailbird);
 			}
@@ -455,7 +455,7 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 
 	private void ClientAttack()
 	{
-		if (_hitreg.ClientTryAttack())
+		if (this._hitreg.ClientTryAttack())
 		{
 			this.OnCmdSent?.Invoke(JailbirdMessageType.AttackPerformed);
 		}
@@ -485,7 +485,7 @@ public class JailbirdItem : AutosyncItem, IItemDescription, IItemNametag, IUpgra
 	{
 		if (other is JailbirdItem jailbirdItem)
 		{
-			return _deterioration.WearState == jailbirdItem._deterioration.WearState;
+			return this._deterioration.WearState == jailbirdItem._deterioration.WearState;
 		}
 		return false;
 	}

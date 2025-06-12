@@ -43,19 +43,19 @@ public abstract class Scp127VoiceTriggerBase : ModuleBase
 
 	protected bool HasFriendship => Scp127VoiceLineManagerModule.HasFriendship(base.ItemSerial, base.Item.Owner);
 
-	protected float UserSettingsVoiceScale => CachedVolumeSetting.Value;
+	protected float UserSettingsVoiceScale => Scp127VoiceTriggerBase.CachedVolumeSetting.Value;
 
 	protected void ServerPlayVoiceLine(AudioClip clip, Action<NetworkWriter> extraData = null, VoiceLinePriority priority = VoiceLinePriority.Normal)
 	{
-		if (base.IsServer && (!RequireFriendship || HasFriendship))
+		if (base.IsServer && (!this.RequireFriendship || this.HasFriendship))
 		{
-			if (_voicePlayCallback == null)
+			if (this._voicePlayCallback == null)
 			{
 				string text = "Attempting to play a voice line on an unregistered Scp127VoiceTriggerBase - '" + base.name + "'.";
 				string text2 = "Make sure this component is assigned to a child object of Scp127VoiceLineManagerModule.";
 				throw new InvalidOperationException(text + " " + text2);
 			}
-			_voicePlayCallback(this, extraData, clip, (byte)priority);
+			this._voicePlayCallback(this, extraData, clip, (byte)priority);
 		}
 	}
 
@@ -63,7 +63,7 @@ public abstract class Scp127VoiceTriggerBase : ModuleBase
 	{
 		if (collection.TryGetRandom(base.Firearm.Owner.GetRoleId(), out var voiceLine))
 		{
-			ServerPlayVoiceLine(voiceLine, extraData, priority);
+			this.ServerPlayVoiceLine(voiceLine, extraData, priority);
 		}
 	}
 
@@ -73,7 +73,7 @@ public abstract class Scp127VoiceTriggerBase : ModuleBase
 		{
 			return false;
 		}
-		if (CheckEnemyLineOfSight && HitboxIdentity.IsEnemy(hub, owner))
+		if (this.CheckEnemyLineOfSight && HitboxIdentity.IsEnemy(hub, owner))
 		{
 			Vector3 position = owner.GetPosition();
 			Vector3 lastCamPosition = CullingCamera.LastCamPosition;
@@ -91,10 +91,10 @@ public abstract class Scp127VoiceTriggerBase : ModuleBase
 
 	protected virtual void OnDestroy()
 	{
-		if (_eventsSet)
+		if (this._eventsSet)
 		{
-			_eventsSet = false;
-			UnregisterEvents();
+			this._eventsSet = false;
+			this.UnregisterEvents();
 		}
 	}
 
@@ -113,8 +113,8 @@ public abstract class Scp127VoiceTriggerBase : ModuleBase
 
 	public void RegisterManager(ServerPlayCallback playCallback)
 	{
-		_voicePlayCallback = playCallback;
-		MarkAsSubmodule();
+		this._voicePlayCallback = playCallback;
+		base.MarkAsSubmodule();
 	}
 
 	public virtual void OnFriendshipCreated()
@@ -126,7 +126,7 @@ public abstract class Scp127VoiceTriggerBase : ModuleBase
 		Transform trackedTransform;
 		if (Scp127VoiceLineManagerModule.TryFindOwner(serial, out var owner))
 		{
-			if (!ValidateReceivingOwner(owner))
+			if (!this.ValidateReceivingOwner(owner))
 			{
 				return null;
 			}
@@ -138,15 +138,15 @@ public abstract class Scp127VoiceTriggerBase : ModuleBase
 			{
 				return null;
 			}
-			if (!ValidateReceivingWorldmodel(value))
+			if (!this.ValidateReceivingWorldmodel(value))
 			{
 				return null;
 			}
 			trackedTransform = value.transform;
 		}
-		float volume = DefaultAudioVolume * UserSettingsVoiceScale;
-		PooledAudioSource pooledAudioSource = AudioSourcePoolManager.PlayOnTransform(clip, trackedTransform, DefaultAudioRange, volume, FalloffType.Exponential, DefaultAudioMixerChannel);
-		pooledAudioSource.Source.panStereo = DefaultAudioStereo;
+		float volume = this.DefaultAudioVolume * this.UserSettingsVoiceScale;
+		PooledAudioSource pooledAudioSource = AudioSourcePoolManager.PlayOnTransform(clip, trackedTransform, this.DefaultAudioRange, volume, FalloffType.Exponential, this.DefaultAudioMixerChannel);
+		pooledAudioSource.Source.panStereo = this.DefaultAudioStereo;
 		return new AudioPoolSession(pooledAudioSource);
 	}
 
@@ -157,20 +157,20 @@ public abstract class Scp127VoiceTriggerBase : ModuleBase
 	internal override void OnAdded()
 	{
 		base.OnAdded();
-		if (!_eventsSet)
+		if (!this._eventsSet)
 		{
-			_eventsSet = true;
-			RegisterEvents();
+			this._eventsSet = true;
+			this.RegisterEvents();
 		}
 	}
 
 	internal override void OnRemoved(ItemPickupBase pickup)
 	{
 		base.OnRemoved(pickup);
-		if (_eventsSet)
+		if (this._eventsSet)
 		{
-			_eventsSet = false;
-			UnregisterEvents();
+			this._eventsSet = false;
+			this.UnregisterEvents();
 		}
 	}
 }

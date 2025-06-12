@@ -48,7 +48,7 @@ public class ArrayFormatter<T> : IJsonFormatter<T[]>, IJsonFormatter, IOverwrite
 		}
 		int count = 0;
 		IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
-		T[] array = arrayPool.Rent();
+		T[] array = ArrayFormatter<T>.arrayPool.Rent();
 		try
 		{
 			T[] array2 = array;
@@ -68,7 +68,7 @@ public class ArrayFormatter<T> : IJsonFormatter<T[]>, IJsonFormatter, IOverwrite
 		}
 		finally
 		{
-			arrayPool.Return(array);
+			ArrayFormatter<T>.arrayPool.Return(array);
 		}
 	}
 
@@ -80,9 +80,9 @@ public class ArrayFormatter<T> : IJsonFormatter<T[]>, IJsonFormatter, IOverwrite
 		}
 		int count = 0;
 		IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
-		if (deserializeToBehaviour == CollectionDeserializeToBehaviour.Add)
+		if (this.deserializeToBehaviour == CollectionDeserializeToBehaviour.Add)
 		{
-			T[] array = arrayPool.Rent();
+			T[] array = ArrayFormatter<T>.arrayPool.Rent();
 			try
 			{
 				T[] array2 = array;
@@ -106,7 +106,7 @@ public class ArrayFormatter<T> : IJsonFormatter<T[]>, IJsonFormatter, IOverwrite
 			}
 			finally
 			{
-				arrayPool.Return(array);
+				ArrayFormatter<T>.arrayPool.Return(array);
 			}
 		}
 		T[] array3 = value;

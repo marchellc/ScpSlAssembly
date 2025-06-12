@@ -25,13 +25,13 @@ public class Scp3114RagdollToBonesConverter : SubroutineBase
 
 	public static void ConvertExisting(DynamicRagdoll ragdoll)
 	{
-		if (!_cacheSet)
+		if (!Scp3114RagdollToBonesConverter._cacheSet)
 		{
-			if (!TryPrepCache())
+			if (!Scp3114RagdollToBonesConverter.TryPrepCache())
 			{
 				return;
 			}
-			_cacheSet = true;
+			Scp3114RagdollToBonesConverter._cacheSet = true;
 		}
 		Transform transform = ragdoll.transform;
 		int childCount = transform.childCount;
@@ -39,25 +39,25 @@ public class Scp3114RagdollToBonesConverter : SubroutineBase
 		{
 			Object.Destroy(transform.GetChild(i).gameObject);
 		}
-		ReplacementRbs.Clear();
-		ReplacementTransforms.Clear();
+		Scp3114RagdollToBonesConverter.ReplacementRbs.Clear();
+		Scp3114RagdollToBonesConverter.ReplacementTransforms.Clear();
 		Transform[] linkedRigidbodiesTransforms = ragdoll.LinkedRigidbodiesTransforms;
 		int num = linkedRigidbodiesTransforms.Length;
 		for (int j = 0; j < num; j++)
 		{
 			string text = linkedRigidbodiesTransforms[j].name.ToLowerInvariant();
-			for (int k = 0; k < _cachedNames.Length; k++)
+			for (int k = 0; k < Scp3114RagdollToBonesConverter._cachedNames.Length; k++)
 			{
-				if (text.Contains(_cachedNames[k]))
+				if (text.Contains(Scp3114RagdollToBonesConverter._cachedNames[k]))
 				{
-					ProcessNameMatch(ragdoll, linkedRigidbodiesTransforms[j], _cachedTemplates[k]);
+					Scp3114RagdollToBonesConverter.ProcessNameMatch(ragdoll, linkedRigidbodiesTransforms[j], Scp3114RagdollToBonesConverter._cachedTemplates[k]);
 					break;
 				}
 			}
 		}
 		ragdoll.Hitboxes = new HitboxData[0];
-		ragdoll.LinkedRigidbodies = ReplacementRbs.ToArray();
-		ragdoll.LinkedRigidbodiesTransforms = ReplacementTransforms.ToArray();
+		ragdoll.LinkedRigidbodies = Scp3114RagdollToBonesConverter.ReplacementRbs.ToArray();
+		ragdoll.LinkedRigidbodiesTransforms = Scp3114RagdollToBonesConverter.ReplacementTransforms.ToArray();
 		if (ragdoll is AutoHumanRagdoll autoHumanRagdoll)
 		{
 			autoHumanRagdoll.PauseBoneMatching = true;
@@ -93,11 +93,11 @@ public class Scp3114RagdollToBonesConverter : SubroutineBase
 		{
 			return false;
 		}
-		_cachedTemplates = subroutine._boneParts;
-		_cachedNames = new string[_cachedTemplates.Length];
-		for (int i = 0; i < _cachedTemplates.Length; i++)
+		Scp3114RagdollToBonesConverter._cachedTemplates = subroutine._boneParts;
+		Scp3114RagdollToBonesConverter._cachedNames = new string[Scp3114RagdollToBonesConverter._cachedTemplates.Length];
+		for (int i = 0; i < Scp3114RagdollToBonesConverter._cachedTemplates.Length; i++)
 		{
-			_cachedNames[i] = _cachedTemplates[i].name.ToLowerInvariant();
+			Scp3114RagdollToBonesConverter._cachedNames[i] = Scp3114RagdollToBonesConverter._cachedTemplates[i].name.ToLowerInvariant();
 		}
 		return true;
 	}
@@ -109,8 +109,8 @@ public class Scp3114RagdollToBonesConverter : SubroutineBase
 		obj.SetActive(value: true);
 		Rigidbody component = obj.GetComponent<Rigidbody>();
 		Transform transform2 = obj.transform;
-		ReplacementRbs.Add(component);
-		ReplacementTransforms.Add(transform2);
+		Scp3114RagdollToBonesConverter.ReplacementRbs.Add(component);
+		Scp3114RagdollToBonesConverter.ReplacementTransforms.Add(transform2);
 		transform2.SetPositionAndRotation(ragdollPart.TransformPoint(transform.localPosition), ragdollPart.rotation * transform.localRotation);
 		if (ragdollPart.TryGetComponent<Rigidbody>(out var component2))
 		{
@@ -122,16 +122,16 @@ public class Scp3114RagdollToBonesConverter : SubroutineBase
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteNetworkBehaviour(_syncRagdoll);
+		writer.WriteNetworkBehaviour(this._syncRagdoll);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_syncRagdoll = reader.ReadNetworkBehaviour<DynamicRagdoll>();
-		if (!(_syncRagdoll == null))
+		this._syncRagdoll = reader.ReadNetworkBehaviour<DynamicRagdoll>();
+		if (!(this._syncRagdoll == null))
 		{
-			ConvertExisting(_syncRagdoll);
+			Scp3114RagdollToBonesConverter.ConvertExisting(this._syncRagdoll);
 		}
 	}
 }

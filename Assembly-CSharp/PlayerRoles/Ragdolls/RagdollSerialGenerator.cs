@@ -8,15 +8,15 @@ public static class RagdollSerialGenerator
 
 	public static ushort GenerateNext()
 	{
-		lock (Lock)
+		lock (RagdollSerialGenerator.Lock)
 		{
-			int num = _lastGenerated + 1;
+			int num = RagdollSerialGenerator._lastGenerated + 1;
 			if (num > 65535)
 			{
 				num = 1;
 			}
-			_lastGenerated = (ushort)num;
-			return _lastGenerated;
+			RagdollSerialGenerator._lastGenerated = (ushort)num;
+			return RagdollSerialGenerator._lastGenerated;
 		}
 	}
 }

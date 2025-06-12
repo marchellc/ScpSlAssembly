@@ -11,8 +11,8 @@ public class Scp079GuiElementBase : MonoBehaviour
 
 	internal virtual void Init(Scp079Role role, ReferenceHub owner)
 	{
-		Role = role;
-		Owner = owner;
+		this.Role = role;
+		this.Owner = owner;
 	}
 
 	protected PooledAudioSource PlaySound(AudioClip clip, float pitch = 1f)

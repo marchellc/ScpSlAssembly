@@ -6,6 +6,6 @@ public static class StartupArgs
 
 	static StartupArgs()
 	{
-		Args = Environment.GetCommandLineArgs();
+		StartupArgs.Args = Environment.GetCommandLineArgs();
 	}
 }

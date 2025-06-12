@@ -18,15 +18,15 @@ public class MenuMusicManager : MonoBehaviour
 
 	private void Update()
 	{
-		curState = Mathf.Lerp(curState, creditsHolder.activeSelf ? 1f : 0f, lerpSpeed * Time.deltaTime);
-		mainSource.mute = (double)curState > 0.5;
-		creditsSource.volume = curState;
-		if (creditsChanged != creditsHolder.activeSelf)
+		this.curState = Mathf.Lerp(this.curState, this.creditsHolder.activeSelf ? 1f : 0f, this.lerpSpeed * Time.deltaTime);
+		this.mainSource.mute = (double)this.curState > 0.5;
+		this.creditsSource.volume = this.curState;
+		if (this.creditsChanged != this.creditsHolder.activeSelf)
 		{
-			creditsChanged = creditsHolder.activeSelf;
-			if (creditsChanged)
+			this.creditsChanged = this.creditsHolder.activeSelf;
+			if (this.creditsChanged)
 			{
-				creditsSource.Play();
+				this.creditsSource.Play();
 			}
 		}
 	}

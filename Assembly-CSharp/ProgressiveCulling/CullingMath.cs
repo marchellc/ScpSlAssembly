@@ -16,15 +16,15 @@ public static class CullingMath
 	{
 		Matrix4x4 matrix4x = Matrix4x4.Perspective(verticalFov, aspectRatio, zNear, zFar);
 		Matrix4x4 inverse = Matrix4x4.TRS(pos, rot * Quaternion.Euler(0f, 180f, 0f), Vector3.one).inverse;
-		GeometryUtility.CalculateFrustumPlanes(matrix4x * inverse, CustomPlanesNonAlloc);
-		return CustomPlanesNonAlloc;
+		GeometryUtility.CalculateFrustumPlanes(matrix4x * inverse, CullingMath.CustomPlanesNonAlloc);
+		return CullingMath.CustomPlanesNonAlloc;
 	}
 
 	public static Plane[] CalculateFrustumPlanesFovs(float verticalFov, float horizontalFov, float zNear, float zFar, Vector3 pos, Quaternion rot)
 	{
 		float num = Mathf.Tan(MathF.PI / 180f * horizontalFov / 2f);
 		float num2 = Mathf.Tan(MathF.PI / 180f * verticalFov / 2f);
-		return CalculateFrustumPlanesAspectRatio(verticalFov, num / num2, zNear, zFar, pos, rot);
+		return CullingMath.CalculateFrustumPlanesAspectRatio(verticalFov, num / num2, zNear, zFar, pos, rot);
 	}
 
 	public static float VerticalToHorizontalFov(float fov, float aspect)
@@ -67,28 +67,28 @@ public static class CullingMath
 
 	public static bool ContainsBoundsWithinVertex(VertexAngle2D vertex, Bounds worldspaceBounds)
 	{
-		Vector2 point = To2D(worldspaceBounds.min);
-		Vector2 point2 = To2D(worldspaceBounds.max);
-		if (!ContainsPointWithinVertex(vertex, point) && !ContainsPointWithinVertex(vertex, point2) && !ContainsPointWithinVertex(vertex, new Vector2(point.x, point2.y)))
+		Vector2 point = CullingMath.To2D(worldspaceBounds.min);
+		Vector2 point2 = CullingMath.To2D(worldspaceBounds.max);
+		if (!CullingMath.ContainsPointWithinVertex(vertex, point) && !CullingMath.ContainsPointWithinVertex(vertex, point2) && !CullingMath.ContainsPointWithinVertex(vertex, new Vector2(point.x, point2.y)))
 		{
-			return ContainsPointWithinVertex(vertex, new Vector2(point2.x, point.y));
+			return CullingMath.ContainsPointWithinVertex(vertex, new Vector2(point2.x, point.y));
 		}
 		return true;
 	}
 
 	public static bool ContainsPointWithinVertex(VertexAngle2D vertex, Vector2 point)
 	{
-		Vector2 b2 = point - vertex.Origin;
-		float num = Cross(vertex.Left, b2);
-		float num2 = Cross(vertex.Right, b2);
+		Vector2 b = point - vertex.Origin;
+		float num = Cross(vertex.Left, b);
+		float num2 = Cross(vertex.Right, b);
 		if (num >= 0f)
 		{
 			return num2 <= 0f;
 		}
 		return false;
-		static float Cross(Vector2 a, Vector2 b)
+		static float Cross(Vector2 a, Vector2 vector)
 		{
-			return a.x * b.y - a.y * b.x;
+			return a.x * vector.y - a.y * vector.x;
 		}
 	}
 
@@ -106,21 +106,21 @@ public static class CullingMath
 	{
 		if (!Ordered(a.Left, a.Right))
 		{
-			ref Vector2 right2 = ref a.Right;
-			ref Vector2 left2 = ref a.Left;
-			Vector2 left3 = a.Left;
-			Vector2 right3 = a.Right;
-			right2 = left3;
-			left2 = right3;
+			ref Vector2 right = ref a.Right;
+			ref Vector2 left = ref a.Left;
+			Vector2 left2 = a.Left;
+			Vector2 right2 = a.Right;
+			right = left2;
+			left = right2;
 		}
 		if (!Ordered(b.Left, b.Right))
 		{
-			ref Vector2 right2 = ref b.Right;
-			ref Vector2 left4 = ref b.Left;
-			Vector2 right3 = b.Left;
-			Vector2 left3 = b.Right;
-			right2 = right3;
-			left4 = left3;
+			ref Vector2 right = ref b.Right;
+			ref Vector2 left3 = ref b.Left;
+			Vector2 right2 = b.Left;
+			Vector2 left2 = b.Right;
+			right = right2;
+			left3 = left2;
 		}
 		Vector2 vector = (Ordered(a.Left, b.Left) ? b.Left : a.Left);
 		Vector2 vector2 = (Ordered(a.Right, b.Right) ? a.Right : b.Right);
@@ -131,17 +131,17 @@ public static class CullingMath
 		}
 		result = default(VertexAngle2D);
 		return false;
-		static bool Ordered(Vector2 left, Vector2 right)
+		static bool Ordered(Vector2 vector3, Vector2 vector4)
 		{
-			return left.x * right.y - left.y * right.x >= 0f;
+			return vector3.x * vector4.y - vector3.y * vector4.x >= 0f;
 		}
 	}
 
 	public static bool GetSafeForDeactivation(GameObject go)
 	{
-		go.GetComponentsInChildren(includeInactive: true, ComponentFetcherNonAlloc);
+		go.GetComponentsInChildren(includeInactive: true, CullingMath.ComponentFetcherNonAlloc);
 		bool flag = false;
-		foreach (Component item in ComponentFetcherNonAlloc)
+		foreach (Component item in CullingMath.ComponentFetcherNonAlloc)
 		{
 			if (item is NetworkIdentity || item is AudioSource || item is Collider || item is SpawnablesDistributorBase || item is Animator)
 			{
@@ -156,8 +156,8 @@ public static class CullingMath
 		{
 			return false;
 		}
-		go.GetComponentsInParent(includeInactive: true, ComponentFetcherNonAlloc);
-		foreach (Component item2 in ComponentFetcherNonAlloc)
+		go.GetComponentsInParent(includeInactive: true, CullingMath.ComponentFetcherNonAlloc);
+		foreach (Component item2 in CullingMath.ComponentFetcherNonAlloc)
 		{
 			if (item2 is Clutter || item2 is BreakableWindow)
 			{

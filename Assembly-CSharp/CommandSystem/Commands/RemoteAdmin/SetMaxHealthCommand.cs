@@ -32,9 +32,9 @@ public class SetMaxHealthCommand : ICommand, IUsageProvider
 		}
 		string[] newargs;
 		List<ReferenceHub> list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out newargs);
-		float result = (float.TryParse(newargs[0], out result) ? result : 0f);
+		float num = (float.TryParse(newargs[0], out num) ? num : 0f);
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-		int num = 0;
+		int num2 = 0;
 		if (list != null)
 		{
 			foreach (ReferenceHub item in list)
@@ -42,30 +42,30 @@ public class SetMaxHealthCommand : ICommand, IUsageProvider
 				if (!(item == null))
 				{
 					HealthStat module = item.playerStats.GetModule<HealthStat>();
-					if (result < 0f && item.roleManager.CurrentRole is IHealthbarRole healthbarRole)
+					if (num < 0f && item.roleManager.CurrentRole is IHealthbarRole healthbarRole)
 					{
 						module.MaxValue = healthbarRole.MaxHealth;
 					}
 					else
 					{
-						module.MaxValue = result;
+						module.MaxValue = num;
 					}
-					if (num != 0)
+					if (num2 != 0)
 					{
 						stringBuilder.Append(", ");
 					}
 					stringBuilder.Append(item.LoggedNameFromRefHub());
-					num++;
+					num2++;
 				}
 			}
 		}
-		if (num > 0)
+		if (num2 > 0)
 		{
-			ServerLogs.AddLog(ServerLogs.Modules.Administrative, string.Format("{0} set maximum health of player{1}{2} to {3}.", sender.LogName, (num == 1) ? " " : "s ", stringBuilder, result), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
+			ServerLogs.AddLog(ServerLogs.Modules.Administrative, string.Format("{0} set maximum health of player{1}{2} to {3}.", sender.LogName, (num2 == 1) ? " " : "s ", stringBuilder, num), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
 		}
 		StringBuilderPool.Shared.Return(stringBuilder);
 		ListPool<ReferenceHub>.Shared.Return(list);
-		response = string.Format("Done! The request affected {0} player{1}", num, (num == 1) ? "!" : "s!");
+		response = string.Format("Done! The request affected {0} player{1}", num2, (num2 == 1) ? "!" : "s!");
 		return true;
 	}
 }

@@ -8,7 +8,7 @@ public class Disabled : StatusEffectBase, IMovementSpeedModifier
 
 	public bool MovementModifierActive => base.IsEnabled;
 
-	public float MovementSpeedMultiplier => (SpeedMultiplier - 1f) * RainbowTaste.CurrentMultiplier(base.Hub) + 1f;
+	public float MovementSpeedMultiplier => (this.SpeedMultiplier - 1f) * RainbowTaste.CurrentMultiplier(base.Hub) + 1f;
 
 	public float MovementSpeedLimit => float.MaxValue;
 }

@@ -24,30 +24,30 @@ public class UsableItemThirdperson : IdleThirdpersonItem, ILookatModifier
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		IsUsing = false;
+		this.IsUsing = false;
 	}
 
 	public override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
 	{
 		ThirdpersonLayerWeight weightForLayer = base.GetWeightForLayer(layer);
-		return new ThirdpersonLayerWeight(weightForLayer.Weight, !IsUsing && weightForLayer.AllowOther);
+		return new ThirdpersonLayerWeight(weightForLayer.Weight, !this.IsUsing && weightForLayer.AllowOther);
 	}
 
 	public override HandPoseData ProcessHandPose(HandPoseData data)
 	{
-		return base.ProcessHandPose(data).LerpTo(_useHandPoseData, CurWeight);
+		return base.ProcessHandPose(data).LerpTo(this._useHandPoseData, this.CurWeight);
 	}
 
 	public virtual LookatData ProcessLookat(LookatData data)
 	{
-		data.GlobalWeight *= Mathf.Clamp01(1f - CurWeight);
+		data.GlobalWeight *= Mathf.Clamp01(1f - this.CurWeight);
 		return data;
 	}
 
 	internal override void Initialize(InventorySubcontroller sctrl, ItemIdentifier id)
 	{
 		base.Initialize(sctrl, id);
-		SetAnim(AnimState3p.Override1, _useAnim);
+		base.SetAnim(AnimState3p.Override1, this._useAnim);
 	}
 
 	protected override void Update()
@@ -55,28 +55,28 @@ public class UsableItemThirdperson : IdleThirdpersonItem, ILookatModifier
 		base.Update();
 		if (!base.Pooled)
 		{
-			if (IsUsing)
+			if (this.IsUsing)
 			{
-				CurWeight += Time.deltaTime * IncreaseWeightSpeed;
+				this.CurWeight += Time.deltaTime * this.IncreaseWeightSpeed;
 			}
 			else
 			{
-				CurWeight -= Time.deltaTime * DecreaseWeightSpeed;
+				this.CurWeight -= Time.deltaTime * this.DecreaseWeightSpeed;
 			}
-			CurWeight = Mathf.Clamp01(CurWeight);
-			base.OverrideBlend = CurWeight;
-			if (TryGetLayerProcessor<HybridLayerProcessor>(out var processor))
+			this.CurWeight = Mathf.Clamp01(this.CurWeight);
+			base.OverrideBlend = this.CurWeight;
+			if (base.TryGetLayerProcessor<HybridLayerProcessor>(out var processor))
 			{
-				processor.SetDualHandBlend(CurWeight);
+				processor.SetDualHandBlend(this.CurWeight);
 			}
 		}
 	}
 
 	protected virtual void OnUsingStatusChanged()
 	{
-		if (IsUsing)
+		if (this.IsUsing)
 		{
-			ReplayOverrideBlend(soft: true);
+			base.ReplayOverrideBlend(soft: true);
 		}
 	}
 
@@ -85,10 +85,10 @@ public class UsableItemThirdperson : IdleThirdpersonItem, ILookatModifier
 		if (msg.ItemSerial == base.ItemId.SerialNumber)
 		{
 			bool flag = msg.Status == StatusMessage.StatusType.Start;
-			if (flag != IsUsing)
+			if (flag != this.IsUsing)
 			{
-				IsUsing = flag;
-				OnUsingStatusChanged();
+				this.IsUsing = flag;
+				this.OnUsingStatusChanged();
 			}
 		}
 	}

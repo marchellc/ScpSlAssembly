@@ -10,27 +10,27 @@ public struct ArrayBuffer<T>
 
 	public ArrayBuffer(int initialSize)
 	{
-		Buffer = new T[initialSize];
-		Size = 0;
+		this.Buffer = new T[initialSize];
+		this.Size = 0;
 	}
 
 	public void Add(T value)
 	{
-		if (Size >= Buffer.Length)
+		if (this.Size >= this.Buffer.Length)
 		{
-			Array.Resize(ref Buffer, Size * 2);
+			Array.Resize(ref this.Buffer, this.Size * 2);
 		}
-		Buffer[Size++] = value;
+		this.Buffer[this.Size++] = value;
 	}
 
 	public T[] ToArray()
 	{
-		if (Buffer.Length == Size)
+		if (this.Buffer.Length == this.Size)
 		{
-			return Buffer;
+			return this.Buffer;
 		}
-		T[] array = new T[Size];
-		Array.Copy(Buffer, array, Size);
+		T[] array = new T[this.Size];
+		Array.Copy(this.Buffer, array, this.Size);
 		return array;
 	}
 }

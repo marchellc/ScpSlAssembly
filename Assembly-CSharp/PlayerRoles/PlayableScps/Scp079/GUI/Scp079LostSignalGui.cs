@@ -47,38 +47,38 @@ public class Scp079LostSignalGui : Scp079GuiElementBase
 	internal override void Init(Scp079Role role, ReferenceHub owner)
 	{
 		base.Init(role, owner);
-		role.SubroutineModule.TryGetSubroutine<Scp079LostSignalHandler>(out _handler);
-		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out _curCamSync);
-		_handler.OnStatusChanged += UpdateScreen;
-		_textFormat = Translations.Get(Scp079HudTranslation.ReconnectingEta);
+		role.SubroutineModule.TryGetSubroutine<Scp079LostSignalHandler>(out this._handler);
+		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out this._curCamSync);
+		this._handler.OnStatusChanged += UpdateScreen;
+		this._textFormat = Translations.Get(Scp079HudTranslation.ReconnectingEta);
 	}
 
 	private void OnDestroy()
 	{
-		_handler.OnStatusChanged -= UpdateScreen;
+		this._handler.OnStatusChanged -= UpdateScreen;
 	}
 
 	private void UpdateScreen()
 	{
-		if (!_handler.Lost)
+		if (!this._handler.Lost)
 		{
-			_rootObj.SetActive(value: false);
+			this._rootObj.SetActive(value: false);
 			return;
 		}
-		_rootObj.SetActive(value: true);
-		FacilityZone zone = _curCamSync.CurrentCamera.Room.Zone;
-		PlayStart(zone);
-		PlayLoop(zone);
+		this._rootObj.SetActive(value: true);
+		FacilityZone zone = this._curCamSync.CurrentCamera.Room.Zone;
+		this.PlayStart(zone);
+		this.PlayLoop(zone);
 	}
 
 	private void Update()
 	{
-		_etaText.text = string.Format(_textFormat, Mathf.CeilToInt(_handler.RemainingTime));
+		this._etaText.text = string.Format(this._textFormat, Mathf.CeilToInt(this._handler.RemainingTime));
 	}
 
 	private void PlayStart(FacilityZone zone)
 	{
-		ZoneClip[] zoneStarts = _zoneStarts;
+		ZoneClip[] zoneStarts = this._zoneStarts;
 		for (int i = 0; i < zoneStarts.Length; i++)
 		{
 			ZoneClip zoneClip = zoneStarts[i];
@@ -88,22 +88,22 @@ public class Scp079LostSignalGui : Scp079GuiElementBase
 				return;
 			}
 		}
-		AudioSourcePoolManager.Play2D(_fallbackStart);
+		AudioSourcePoolManager.Play2D(this._fallbackStart);
 	}
 
 	private void PlayLoop(FacilityZone zone)
 	{
-		_loopSource.clip = _fallbackLoop;
-		ZoneClip[] zoneLoops = _zoneLoops;
+		this._loopSource.clip = this._fallbackLoop;
+		ZoneClip[] zoneLoops = this._zoneLoops;
 		for (int i = 0; i < zoneLoops.Length; i++)
 		{
 			ZoneClip zoneClip = zoneLoops[i];
 			if (zoneClip.Zone == zone)
 			{
-				_loopSource.clip = zoneClip.Clip;
+				this._loopSource.clip = zoneClip.Clip;
 				break;
 			}
 		}
-		_loopSource.Play();
+		this._loopSource.Play();
 	}
 }

@@ -27,7 +27,7 @@ public class MicroHIDItem : ModularAutosyncItem, ICustomDescriptionItem, IItemDe
 		{
 			if (base.AllowHolster)
 			{
-				return CycleController.Phase == MicroHidPhase.Standby;
+				return this.CycleController.Phase == MicroHidPhase.Standby;
 			}
 			return false;
 		}
@@ -52,44 +52,44 @@ public class MicroHIDItem : ModularAutosyncItem, ICustomDescriptionItem, IItemDe
 	{
 		get
 		{
-			int num = Mathf.CeilToInt(EnergyManager.Energy * 100f);
-			ChargeMeterNonAlloc[0] = FormatCharge(InventoryGuiTranslation.RemainingCharge, num + "%");
-			return ChargeMeterNonAlloc;
+			int num = Mathf.CeilToInt(this.EnergyManager.Energy * 100f);
+			MicroHIDItem.ChargeMeterNonAlloc[0] = MicroHIDItem.FormatCharge(InventoryGuiTranslation.RemainingCharge, num + "%");
+			return MicroHIDItem.ChargeMeterNonAlloc;
 		}
 	}
 
-	public string Description => ItemTypeId.GetDescription();
+	public string Description => base.ItemTypeId.GetDescription();
 
-	public string Name => ItemTypeId.GetName();
+	public string Name => base.ItemTypeId.GetName();
 
-	public new AlertContent Alert => ActiveAlertHelper.Alert;
+	public new AlertContent Alert => this.ActiveAlertHelper.Alert;
 
 	private ItemHintAlertHelper ActiveAlertHelper
 	{
 		get
 		{
-			if (CycleController.Phase == MicroHidPhase.WoundUpSustain)
+			if (this.CycleController.Phase == MicroHidPhase.WoundUpSustain)
 			{
-				return _readyHint;
+				return this._readyHint;
 			}
-			_readyHint.Reset();
-			if (!BrokenSync.Broken)
+			this._readyHint.Reset();
+			if (!this.BrokenSync.Broken)
 			{
-				return _regularHint;
+				return this._regularHint;
 			}
-			return _brokenHint;
+			return this._brokenHint;
 		}
 	}
 
 	public override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		ActiveAlertHelper.Update(base.Owner);
+		this.ActiveAlertHelper.Update(base.Owner);
 	}
 
 	public override void InitializeSubcomponents()
 	{
-		CycleController = CycleSyncModule.GetCycleController(base.ItemSerial);
+		this.CycleController = CycleSyncModule.GetCycleController(base.ItemSerial);
 		SubcomponentBase[] allSubcomponents = base.AllSubcomponents;
 		foreach (SubcomponentBase subcomponentBase in allSubcomponents)
 		{
@@ -101,22 +101,22 @@ public class MicroHIDItem : ModularAutosyncItem, ICustomDescriptionItem, IItemDe
 					{
 						if (subcomponentBase is BrokenSyncModule brokenSync)
 						{
-							BrokenSync = brokenSync;
+							this.BrokenSync = brokenSync;
 						}
 					}
 					else
 					{
-						InputSync = inputSync;
+						this.InputSync = inputSync;
 					}
 				}
 				else
 				{
-					Backtracker = backtracker;
+					this.Backtracker = backtracker;
 				}
 			}
 			else
 			{
-				EnergyManager = energyManager;
+				this.EnergyManager = energyManager;
 			}
 		}
 		base.InitializeSubcomponents();

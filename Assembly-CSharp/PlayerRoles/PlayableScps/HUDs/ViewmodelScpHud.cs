@@ -9,7 +9,7 @@ public abstract class ViewmodelScpHud : ScpHudBase, IViewmodelRole
 
 	public bool TryGetViewmodelFov(out float fov)
 	{
-		fov = Viewmodel.CamFOV;
+		fov = this.Viewmodel.CamFOV;
 		return true;
 	}
 }

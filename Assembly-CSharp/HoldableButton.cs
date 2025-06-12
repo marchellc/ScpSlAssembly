@@ -15,15 +15,15 @@ public class HoldableButton : Button
 	[SerializeField]
 	private bool _deselectOnComplete;
 
-	public bool IsHeld => IsPressed();
+	public bool IsHeld => base.IsPressed();
 
 	public bool IsHovering
 	{
 		get
 		{
-			if (!IsHighlighted())
+			if (!base.IsHighlighted())
 			{
-				return IsHeld;
+				return this.IsHeld;
 			}
 			return true;
 		}
@@ -33,11 +33,11 @@ public class HoldableButton : Button
 	{
 		get
 		{
-			if (HoldTime <= 0f || !IsHeld)
+			if (this.HoldTime <= 0f || !this.IsHeld)
 			{
 				return 0f;
 			}
-			return Mathf.Clamp01((float)_holdSw.Elapsed.TotalSeconds / HoldTime);
+			return Mathf.Clamp01((float)this._holdSw.Elapsed.TotalSeconds / this.HoldTime);
 		}
 	}
 
@@ -50,28 +50,28 @@ public class HoldableButton : Button
 	public override void OnPointerDown(PointerEventData eventData)
 	{
 		base.OnPointerDown(eventData);
-		_holdSw.Restart();
-		_eventCalled = false;
+		this._holdSw.Restart();
+		this._eventCalled = false;
 	}
 
 	public override void OnPointerUp(PointerEventData eventData)
 	{
 		base.OnPointerUp(eventData);
-		_holdSw.Reset();
+		this._holdSw.Reset();
 	}
 
 	private void Update()
 	{
-		if (_loadingCircle != null)
+		if (this._loadingCircle != null)
 		{
-			_loadingCircle.fillAmount = HeldPercent;
+			this._loadingCircle.fillAmount = this.HeldPercent;
 		}
-		if (!_eventCalled && IsHeld && !(HeldPercent < 1f))
+		if (!this._eventCalled && this.IsHeld && !(this.HeldPercent < 1f))
 		{
-			_eventCalled = true;
-			if (OnHeld != null)
+			this._eventCalled = true;
+			if (this.OnHeld != null)
 			{
-				OnHeld.Invoke();
+				this.OnHeld.Invoke();
 			}
 		}
 	}

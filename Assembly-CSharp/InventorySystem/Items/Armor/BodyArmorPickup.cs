@@ -36,9 +36,9 @@ public class BodyArmorPickup : ItemPickupBase
 	{
 		get
 		{
-			if (!_released && NetworkServer.active)
+			if (!this._released && NetworkServer.active)
 			{
-				return PreviousOwner.IsSet;
+				return base.PreviousOwner.IsSet;
 			}
 			return false;
 		}
@@ -46,7 +46,7 @@ public class BodyArmorPickup : ItemPickupBase
 
 	public override PickupSearchCompletor GetPickupSearchCompletor(SearchCoordinator coordinator, float sqrDistance)
 	{
-		if (!InventoryItemLoader.TryGetItem<ItemBase>(Info.ItemId, out var result))
+		if (!InventoryItemLoader.TryGetItem<ItemBase>(base.Info.ItemId, out var result))
 		{
 			return null;
 		}
@@ -56,18 +56,18 @@ public class BodyArmorPickup : ItemPickupBase
 	protected override void Start()
 	{
 		base.Start();
-		if (IsAffected && !(PreviousOwner.Hub == null))
+		if (this.IsAffected && !(base.PreviousOwner.Hub == null))
 		{
-			_remainingReleaseTime = 0.15f;
-			_rb = (base.PhysicsModule as PickupStandardPhysics).Rb;
-			_rb.rotation = PreviousOwner.Hub.transform.rotation * StartRotation;
-			_rb.constraints = StartConstraints;
+			this._remainingReleaseTime = 0.15f;
+			this._rb = (base.PhysicsModule as PickupStandardPhysics).Rb;
+			this._rb.rotation = base.PreviousOwner.Hub.transform.rotation * BodyArmorPickup.StartRotation;
+			this._rb.constraints = BodyArmorPickup.StartConstraints;
 		}
 	}
 
 	private void OnTriggerStay(Collider other)
 	{
-		if (other.gameObject.layer == 9 && !(Vector3.Dot(Vector3.up, base.transform.right) > -0.8f) && other.transform.root.TryGetComponent<ItemPickupBase>(out var component) && !(component.Info.WeightKg > 2.1f) && _alreadyMovedPickups.Add(component.Info.Serial) && InventoryItemLoader.AvailableItems.TryGetValue(component.Info.ItemId, out var value) && value.Category != ItemCategory.Armor)
+		if (other.gameObject.layer == 9 && !(Vector3.Dot(Vector3.up, base.transform.right) > -0.8f) && other.transform.root.TryGetComponent<ItemPickupBase>(out var component) && !(component.Info.WeightKg > 2.1f) && this._alreadyMovedPickups.Add(component.Info.Serial) && InventoryItemLoader.AvailableItems.TryGetValue(component.Info.ItemId, out var value) && value.Category != ItemCategory.Armor)
 		{
 			float num = base.transform.position.y - component.transform.position.y;
 			component.transform.position += Vector3.up * (num * 2f + 0.16f);
@@ -76,13 +76,13 @@ public class BodyArmorPickup : ItemPickupBase
 
 	private void Update()
 	{
-		if (IsAffected && !(Mathf.Abs(_rb.linearVelocity.y) > 0.1f))
+		if (this.IsAffected && !(Mathf.Abs(this._rb.linearVelocity.y) > 0.1f))
 		{
-			_remainingReleaseTime -= Time.deltaTime;
-			if (_remainingReleaseTime <= 0f)
+			this._remainingReleaseTime -= Time.deltaTime;
+			if (this._remainingReleaseTime <= 0f)
 			{
-				_released = true;
-				_rb.constraints = RigidbodyConstraints.None;
+				this._released = true;
+				this._rb.constraints = RigidbodyConstraints.None;
 			}
 		}
 	}

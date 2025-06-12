@@ -29,26 +29,26 @@ public abstract class SpawnablesDistributorBase : MonoBehaviour
 	{
 		if (NetworkServer.active)
 		{
-			_eventsRegistered = true;
+			this._eventsRegistered = true;
 			CustomNetworkManager.OnClientReady += OnClientReady;
 			SeedSynchronizer.OnGenerationStage += OnMapStage;
 			Scp079Camera.OnAnyCameraStateChanged += On079CamChanged;
 			DoorEvents.OnDoorAction += OnDoorAction;
 			PocketDimensionTeleport.OnPlayerEscapePocketDimension += OnPlayerEscapePocketDimension;
-			Register();
+			this.Register();
 		}
 	}
 
 	private void OnDestroy()
 	{
-		if (_eventsRegistered)
+		if (this._eventsRegistered)
 		{
 			CustomNetworkManager.OnClientReady -= OnClientReady;
 			SeedSynchronizer.OnGenerationStage -= OnMapStage;
 			Scp079Camera.OnAnyCameraStateChanged -= On079CamChanged;
 			DoorEvents.OnDoorAction -= OnDoorAction;
 			PocketDimensionTeleport.OnPlayerEscapePocketDimension -= OnPlayerEscapePocketDimension;
-			Unregister();
+			this.Unregister();
 		}
 	}
 
@@ -56,7 +56,7 @@ public abstract class SpawnablesDistributorBase : MonoBehaviour
 	{
 		if (stage == MapGenerationPhase.SpawnableStructures && NetworkClient.ready)
 		{
-			_stopwatch.Restart();
+			this._stopwatch.Restart();
 		}
 	}
 
@@ -64,37 +64,37 @@ public abstract class SpawnablesDistributorBase : MonoBehaviour
 	{
 		if (SeedSynchronizer.MapGenerated)
 		{
-			_stopwatch.Restart();
+			this._stopwatch.Restart();
 		}
 	}
 
 	private void Update()
 	{
-		if (!NetworkServer.active || !NetworkClient.active || !_stopwatch.IsRunning)
+		if (!NetworkServer.active || !NetworkClient.active || !this._stopwatch.IsRunning)
 		{
 			return;
 		}
-		float num = (float)_stopwatch.Elapsed.TotalSeconds;
-		if (!_placed && num > Settings.SpawnerDelay)
+		float num = (float)this._stopwatch.Elapsed.TotalSeconds;
+		if (!this._placed && num > this.Settings.SpawnerDelay)
 		{
-			_placed = true;
-			PlaceSpawnables();
+			this._placed = true;
+			this.PlaceSpawnables();
 		}
-		else if (!_unfrozen && num > Settings.UnfreezeDelay)
+		else if (!this._unfrozen && num > this.Settings.UnfreezeDelay)
 		{
-			foreach (Rigidbody item in BodiesToUnfreeze)
+			foreach (Rigidbody item in SpawnablesDistributorBase.BodiesToUnfreeze)
 			{
 				if (item != null)
 				{
 					item.isKinematic = false;
 				}
 			}
-			BodiesToUnfreeze.Clear();
-			_unfrozen = true;
+			SpawnablesDistributorBase.BodiesToUnfreeze.Clear();
+			this._unfrozen = true;
 		}
-		if (_placed && _unfrozen)
+		if (this._placed && this._unfrozen)
 		{
-			_stopwatch.Stop();
+			this._stopwatch.Stop();
 		}
 	}
 
@@ -102,7 +102,7 @@ public abstract class SpawnablesDistributorBase : MonoBehaviour
 	{
 		if (action == DoorAction.Opened || action == DoorAction.Destroyed)
 		{
-			SpawnForDoor(door);
+			this.SpawnForDoor(door);
 		}
 	}
 
@@ -114,7 +114,7 @@ public abstract class SpawnablesDistributorBase : MonoBehaviour
 		}
 		foreach (DoorVariant item in value)
 		{
-			SpawnForDoor(item);
+			this.SpawnForDoor(item);
 		}
 	}
 
@@ -126,7 +126,7 @@ public abstract class SpawnablesDistributorBase : MonoBehaviour
 		}
 		foreach (DoorVariant item in value)
 		{
-			SpawnForDoor(item);
+			this.SpawnForDoor(item);
 		}
 	}
 
@@ -142,12 +142,12 @@ public abstract class SpawnablesDistributorBase : MonoBehaviour
 
 	protected void RegisterUnspawnedObject(DoorVariant door, GameObject unspawnedObject)
 	{
-		if (_unspawnedObjects.TryGetValue(door, out var value) && value != null)
+		if (this._unspawnedObjects.TryGetValue(door, out var value) && value != null)
 		{
 			value.Add(unspawnedObject);
 			return;
 		}
-		_unspawnedObjects[door] = new HashSet<GameObject> { unspawnedObject };
+		this._unspawnedObjects[door] = new HashSet<GameObject> { unspawnedObject };
 	}
 
 	protected virtual void SpawnObject(GameObject objectToSpawn)
@@ -160,14 +160,14 @@ public abstract class SpawnablesDistributorBase : MonoBehaviour
 
 	public void SpawnForDoor(DoorVariant door)
 	{
-		if (!_unspawnedObjects.TryGetValue(door, out var value) || value == null)
+		if (!this._unspawnedObjects.TryGetValue(door, out var value) || value == null)
 		{
 			return;
 		}
 		foreach (GameObject item in value)
 		{
-			SpawnObject(item);
+			this.SpawnObject(item);
 		}
-		_unspawnedObjects.Remove(door);
+		this._unspawnedObjects.Remove(door);
 	}
 }

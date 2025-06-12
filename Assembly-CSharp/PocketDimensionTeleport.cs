@@ -43,21 +43,21 @@ public class PocketDimensionTeleport : NetworkBehaviour
 
 	public void SetType(PDTeleportType t)
 	{
-		_type = t;
+		this._type = t;
 	}
 
 	public PDTeleportType GetTeleportType()
 	{
-		return _type;
+		return this._type;
 	}
 
 	public static void Exit(PocketDimensionTeleport instance, ReferenceHub hub)
 	{
 		if (hub.roleManager.CurrentRole is IFpcRole fpcRole)
 		{
-			PlayerLeavingPocketDimensionEventArgs playerLeavingPocketDimensionEventArgs = new PlayerLeavingPocketDimensionEventArgs(hub, instance, isSuccessful: true);
-			PlayerEvents.OnLeavingPocketDimension(playerLeavingPocketDimensionEventArgs);
-			if (playerLeavingPocketDimensionEventArgs.IsAllowed)
+			PlayerLeavingPocketDimensionEventArgs e = new PlayerLeavingPocketDimensionEventArgs(hub, instance, isSuccessful: true);
+			PlayerEvents.OnLeavingPocketDimension(e);
+			if (e.IsAllowed)
 			{
 				fpcRole.FpcModule.ServerOverridePosition(Scp106PocketExitFinder.GetBestExitPosition(fpcRole));
 				hub.playerEffectsController.EnableEffect<Disabled>(10f, addDuration: true);
@@ -73,9 +73,9 @@ public class PocketDimensionTeleport : NetworkBehaviour
 
 	public static void Kill(PocketDimensionTeleport instance, ReferenceHub hub)
 	{
-		PlayerLeavingPocketDimensionEventArgs playerLeavingPocketDimensionEventArgs = new PlayerLeavingPocketDimensionEventArgs(hub, instance, isSuccessful: false);
-		PlayerEvents.OnLeavingPocketDimension(playerLeavingPocketDimensionEventArgs);
-		if (playerLeavingPocketDimensionEventArgs.IsAllowed)
+		PlayerLeavingPocketDimensionEventArgs e = new PlayerLeavingPocketDimensionEventArgs(hub, instance, isSuccessful: false);
+		PlayerEvents.OnLeavingPocketDimension(e);
+		if (e.IsAllowed)
 		{
 			hub.playerStats.DealDamage(new UniversalDamageHandler(-1f, DeathTranslations.PocketDecay));
 			PlayerEvents.OnLeftPocketDimension(new PlayerLeftPocketDimensionEventArgs(hub, instance, isSuccessful: false));
@@ -84,8 +84,8 @@ public class PocketDimensionTeleport : NetworkBehaviour
 
 	private void Awake()
 	{
-		_anyModified = true;
-		AllInstances.Add(this);
+		PocketDimensionTeleport._anyModified = true;
+		PocketDimensionTeleport.AllInstances.Add(this);
 	}
 
 	private void Start()
@@ -95,17 +95,17 @@ public class PocketDimensionTeleport : NetworkBehaviour
 
 	private void OnDestroy()
 	{
-		_anyModified = true;
-		AllInstances.Remove(this);
+		PocketDimensionTeleport._anyModified = true;
+		PocketDimensionTeleport.AllInstances.Remove(this);
 		PocketDimensionTeleport.OnRemoved?.Invoke(this);
 	}
 
 	private void Update()
 	{
-		if (_anyModified)
+		if (PocketDimensionTeleport._anyModified)
 		{
 			PocketDimensionTeleport.OnInstancesUpdated?.Invoke();
-			_anyModified = false;
+			PocketDimensionTeleport._anyModified = false;
 		}
 	}
 
@@ -119,13 +119,13 @@ public class PocketDimensionTeleport : NetworkBehaviour
 		NetworkIdentity component = other.GetComponent<NetworkIdentity>();
 		if (!(component == null) && ReferenceHub.TryGetHubNetID(component.netId, out var hub) && !(hub.roleManager.CurrentRole.ActiveTime < 1f))
 		{
-			if ((_type == PDTeleportType.Killer || AlphaWarheadController.Detonated) && !DebugBool)
+			if ((this._type == PDTeleportType.Killer || AlphaWarheadController.Detonated) && !PocketDimensionTeleport.DebugBool)
 			{
-				Kill(this, hub);
+				PocketDimensionTeleport.Kill(this, hub);
 			}
-			else if (_type == PDTeleportType.Exit || DebugBool)
+			else if (this._type == PDTeleportType.Exit || PocketDimensionTeleport.DebugBool)
 			{
-				Exit(this, hub);
+				PocketDimensionTeleport.Exit(this, hub);
 			}
 		}
 	}

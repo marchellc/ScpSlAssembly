@@ -9,7 +9,7 @@ public class FlashlightEvents : MonoBehaviour
 
 	private void Toggle()
 	{
-		if (!(_ivb.ParentItem == null) && _ivb.ParentItem.OwnerInventory.CurInstance is FlashlightItem flashlightItem)
+		if (!(this._ivb.ParentItem == null) && this._ivb.ParentItem.OwnerInventory.CurInstance is FlashlightItem flashlightItem)
 		{
 			flashlightItem.ClientSendRequest(!flashlightItem.IsEmittingLight);
 		}

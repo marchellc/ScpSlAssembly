@@ -15,7 +15,7 @@ public class RoleHelpNameLabel : MonoBehaviour
 		if (ReferenceHub.TryGetLocalHub(out var hub))
 		{
 			PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
-			_text.text = string.Format(_text.text, currentRole.RoleName, TranslationReader.Get("Class_Nicknames", (int)currentRole.RoleTypeId));
+			this._text.text = string.Format(this._text.text, currentRole.RoleName, TranslationReader.Get("Class_Nicknames", (int)currentRole.RoleTypeId));
 		}
 	}
 }

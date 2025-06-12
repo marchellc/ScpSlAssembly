@@ -19,9 +19,9 @@ public class FlashedAnimation : OverlayAnimationsBase
 	{
 		get
 		{
-			if (_hasEffect)
+			if (this._hasEffect)
 			{
-				return _effect.IsEnabled;
+				return this._effect.IsEnabled;
 			}
 			return false;
 		}
@@ -31,21 +31,21 @@ public class FlashedAnimation : OverlayAnimationsBase
 	{
 		get
 		{
-			if (!(_remainingSustain > 0f))
+			if (!(this._remainingSustain > 0f))
 			{
-				return EffectEnabled;
+				return this.EffectEnabled;
 			}
 			return true;
 		}
 	}
 
-	public override bool Bypassable => !EffectEnabled;
+	public override bool Bypassable => !this.EffectEnabled;
 
 	public override AnimationClip Clip => base.Controller.FlashedLoopClip;
 
 	public override float GetLayerWeight(AnimItemLayer3p layer)
 	{
-		return Mathf.Clamp01(_remainingSustain / 1.7f);
+		return Mathf.Clamp01(this._remainingSustain / 1.7f);
 	}
 
 	public override void UpdateActive()
@@ -53,34 +53,34 @@ public class FlashedAnimation : OverlayAnimationsBase
 		base.UpdateActive();
 		if (base.Model.OwnerHub.inventory.IsDisarmed())
 		{
-			_remainingSustain = 0f;
+			this._remainingSustain = 0f;
 		}
-		else if (EffectEnabled)
+		else if (this.EffectEnabled)
 		{
-			_remainingSustain = 1.7f;
+			this._remainingSustain = 1.7f;
 		}
 		else
 		{
-			_remainingSustain -= Time.deltaTime;
+			this._remainingSustain -= Time.deltaTime;
 		}
 	}
 
 	public override void OnStopped()
 	{
 		base.OnStopped();
-		_remainingSustain = 0f;
+		this._remainingSustain = 0f;
 	}
 
 	public override void OnReassigned()
 	{
 		base.OnReassigned();
-		_hasEffect = base.Model.OwnerHub.playerEffectsController.TryGetEffect<Flashed>(out _effect);
+		this._hasEffect = base.Model.OwnerHub.playerEffectsController.TryGetEffect<Flashed>(out this._effect);
 	}
 
 	public override void OnReset()
 	{
 		base.OnReset();
-		_hasEffect = false;
-		_remainingSustain = 0f;
+		this._hasEffect = false;
+		this._remainingSustain = 0f;
 	}
 }

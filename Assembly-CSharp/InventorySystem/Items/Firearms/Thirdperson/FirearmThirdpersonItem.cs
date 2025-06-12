@@ -111,25 +111,25 @@ public class FirearmThirdpersonItem : ThirdpersonItemBase, ILookatModifier, IHan
 
 	public override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
 	{
-		ThirdpersonLayerWeight weightForLayer = _regularLayerProcessor.GetWeightForLayer(this, layer);
-		ThirdpersonLayerWeight weightForLayer2 = _reloadLayerProcessor.GetWeightForLayer(this, layer);
-		return ThirdpersonLayerWeight.Lerp(weightForLayer, weightForLayer2, _lastReloadBlend);
+		ThirdpersonLayerWeight weightForLayer = this._regularLayerProcessor.GetWeightForLayer(this, layer);
+		ThirdpersonLayerWeight weightForLayer2 = this._reloadLayerProcessor.GetWeightForLayer(this, layer);
+		return ThirdpersonLayerWeight.Lerp(weightForLayer, weightForLayer2, this._lastReloadBlend);
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_isReloading = false;
-		_isAdsing = false;
-		UnsubscribeEvents();
+		this._isReloading = false;
+		this._isAdsing = false;
+		this.UnsubscribeEvents();
 	}
 
 	public LookatData ProcessLookat(LookatData data)
 	{
-		data.BodyWeight = Mathf.Clamp01(data.BodyWeight * _bodyIkMultiplier + _bodyIkAbsolute);
-		if (_lastReloadBlend > 0f)
+		data.BodyWeight = Mathf.Clamp01(data.BodyWeight * this._bodyIkMultiplier + this._bodyIkAbsolute);
+		if (this._lastReloadBlend > 0f)
 		{
-			float a = Mathf.Clamp01(1f - _lastReloadBlend);
+			float a = Mathf.Clamp01(1f - this._lastReloadBlend);
 			a = Mathf.Lerp(a, 1f, Mathf.Abs(data.LookDir.y / 2f));
 			data.GlobalWeight *= a;
 		}
@@ -138,8 +138,8 @@ public class FirearmThirdpersonItem : ThirdpersonItemBase, ILookatModifier, IHan
 
 	public HandPoseData ProcessHandPose(HandPoseData data)
 	{
-		data = _leftHandIK.ProcessHandPose(data);
-		data = _rightHandIK.ProcessHandPose(data);
+		data = this._leftHandIK.ProcessHandPose(data);
+		data = this._rightHandIK.ProcessHandPose(data);
 		return data;
 	}
 
@@ -148,14 +148,14 @@ public class FirearmThirdpersonItem : ThirdpersonItemBase, ILookatModifier, IHan
 		base.Update();
 		if (!base.Pooled)
 		{
-			UpdateAnims();
+			this.UpdateAnims();
 		}
 	}
 
 	internal override void OnFadeChanged(float newFade)
 	{
 		base.OnFadeChanged(newFade);
-		foreach (KeyValuePair<Light, Color> defaultColor in _defaultColors)
+		foreach (KeyValuePair<Light, Color> defaultColor in this._defaultColors)
 		{
 			defaultColor.Key.color = Color.Lerp(Color.black, defaultColor.Value, newFade);
 		}
@@ -163,96 +163,96 @@ public class FirearmThirdpersonItem : ThirdpersonItemBase, ILookatModifier, IHan
 
 	internal override void Initialize(InventorySubcontroller srctr, ItemIdentifier id)
 	{
-		if (!WorldmodelInstanceSet && InventoryItemLoader.TryGetItem<Firearm>(id.TypeId, out _template))
+		if (!this.WorldmodelInstanceSet && InventoryItemLoader.TryGetItem<Firearm>(id.TypeId, out this._template))
 		{
-			WorldmodelInstance = Object.Instantiate(_template.WorldModel, base.transform);
-			WorldmodelInstance.transform.SetLocalPositionAndRotation(_localPosition, Quaternion.Euler(_localRotation));
-			WorldmodelInstanceSet = true;
+			this.WorldmodelInstance = Object.Instantiate(this._template.WorldModel, base.transform);
+			this.WorldmodelInstance.transform.SetLocalPositionAndRotation(this._localPosition, Quaternion.Euler(this._localRotation));
+			this.WorldmodelInstanceSet = true;
 		}
-		if (!_eventAssigned)
+		if (!this._eventAssigned)
 		{
 			AttachmentCodeSync.OnReceived += OnAttachmentsUpdated;
-			_eventAssigned = true;
+			this._eventAssigned = true;
 		}
 		base.Initialize(srctr, id);
-		WorldmodelInstance.Setup(base.ItemId, srctr.Model.HasOwner ? FirearmWorldmodelType.Thirdperson : FirearmWorldmodelType.Presentation);
-		SetAnim(AnimState3p.Override1, _hipAnim);
-		SetAnim(AnimState3p.Override0, _adsAnim);
-		SetAnim(AnimState3p.Override2, _reloadAnim);
-		_additionalOverrideClips.ForEach(base.SetAnim);
-		_rightHandIK.Initialize(WorldmodelInstance, base.TargetModel);
-		_leftHandIK.Initialize(WorldmodelInstance, base.TargetModel);
+		this.WorldmodelInstance.Setup(base.ItemId, srctr.Model.HasOwner ? FirearmWorldmodelType.Thirdperson : FirearmWorldmodelType.Presentation);
+		base.SetAnim(AnimState3p.Override1, this._hipAnim);
+		base.SetAnim(AnimState3p.Override0, this._adsAnim);
+		base.SetAnim(AnimState3p.Override2, this._reloadAnim);
+		this._additionalOverrideClips.ForEach(base.SetAnim);
+		this._rightHandIK.Initialize(this.WorldmodelInstance, base.TargetModel);
+		this._leftHandIK.Initialize(this.WorldmodelInstance, base.TargetModel);
 		base.OverrideBlend = 1f;
 	}
 
 	internal override void OnAnimIK(int layerIndex, float ikScale)
 	{
 		base.OnAnimIK(layerIndex, ikScale);
-		ikScale = Mathf.Clamp01(ikScale - _lastReloadBlend);
+		ikScale = Mathf.Clamp01(ikScale - this._lastReloadBlend);
 		AnimatorLayerManager layerManager = base.TargetModel.LayerManager;
-		if (layerIndex == layerManager.GetLayerIndex(_ikLayerRightHand))
+		if (layerIndex == layerManager.GetLayerIndex(this._ikLayerRightHand))
 		{
-			_rightHandIK.IKUpdateRightHandRotation(ikScale, _prevAdsBlend);
+			this._rightHandIK.IKUpdateRightHandRotation(ikScale, this._prevAdsBlend);
 		}
-		if (layerIndex == layerManager.GetLayerIndex(_ikLayerLeftHand))
+		if (layerIndex == layerManager.GetLayerIndex(this._ikLayerLeftHand))
 		{
-			_leftHandIK.IKUpdateLeftHandAnchor(ikScale);
+			this._leftHandIK.IKUpdateLeftHandAnchor(ikScale);
 		}
 	}
 
 	private void OnAttachmentsUpdated(ushort serial, uint code)
 	{
-		if (WorldmodelInstanceSet && serial == base.ItemId.SerialNumber)
+		if (this.WorldmodelInstanceSet && serial == base.ItemId.SerialNumber)
 		{
-			WorldmodelInstance.Setup(base.ItemId, FirearmWorldmodelType.Thirdperson, code);
+			this.WorldmodelInstance.Setup(base.ItemId, FirearmWorldmodelType.Thirdperson, code);
 		}
 	}
 
 	private void Awake()
 	{
-		Light[] componentsInChildren = GetComponentsInChildren<Light>(includeInactive: true);
+		Light[] componentsInChildren = base.GetComponentsInChildren<Light>(includeInactive: true);
 		foreach (Light light in componentsInChildren)
 		{
-			_defaultColors[light] = light.color;
+			this._defaultColors[light] = light.color;
 		}
 	}
 
 	private void OnDestroy()
 	{
-		UnsubscribeEvents();
+		this.UnsubscribeEvents();
 	}
 
 	private void UnsubscribeEvents()
 	{
-		if (_eventAssigned)
+		if (this._eventAssigned)
 		{
 			AttachmentCodeSync.OnReceived -= OnAttachmentsUpdated;
-			_eventAssigned = false;
+			this._eventAssigned = false;
 		}
 	}
 
 	private void UpdateAnims()
 	{
-		FirearmAnim firearmAnim = ((_isReloading && _reloadElapsed.Elapsed.TotalSeconds < (double)_maxReloadTimeSeconds) ? FirearmAnim.Reload : ((!_isAdsing) ? FirearmAnim.Hip : FirearmAnim.Ads));
+		FirearmAnim firearmAnim = ((this._isReloading && this._reloadElapsed.Elapsed.TotalSeconds < (double)this._maxReloadTimeSeconds) ? FirearmAnim.Reload : ((!this._isAdsing) ? FirearmAnim.Hip : FirearmAnim.Ads));
 		base.OverrideBlend = Mathf.MoveTowards(base.OverrideBlend, (float)firearmAnim, Time.deltaTime * 4f);
-		_prevAdsBlend = Mathf.Clamp01(1f - base.OverrideBlend);
-		_lastReloadBlend = base.OverrideBlend - 2f + 1f;
-		if (_shotReceived)
+		this._prevAdsBlend = Mathf.Clamp01(1f - base.OverrideBlend);
+		this._lastReloadBlend = base.OverrideBlend - 2f + 1f;
+		if (this._shotReceived)
 		{
-			_shotReceived = false;
+			this._shotReceived = false;
 		}
-		if (_template.TryGetModule<IAdsModule>(out var module))
+		if (this._template.TryGetModule<IAdsModule>(out var module))
 		{
-			module.GetDisplayAdsValues(base.ItemId.SerialNumber, out _isAdsing, out var _);
+			module.GetDisplayAdsValues(base.ItemId.SerialNumber, out this._isAdsing, out var _);
 		}
-		if (_template.TryGetModule<IReloaderModule>(out var module2))
+		if (this._template.TryGetModule<IReloaderModule>(out var module2))
 		{
-			bool isReloading = _isReloading;
-			_isReloading = module2.GetDisplayReloadingOrUnloading(base.ItemId.SerialNumber);
-			if (_isReloading && !isReloading)
+			bool isReloading = this._isReloading;
+			this._isReloading = module2.GetDisplayReloadingOrUnloading(base.ItemId.SerialNumber);
+			if (this._isReloading && !isReloading)
 			{
-				_reloadElapsed.Restart();
-				ReplayOverrideBlend(soft: true);
+				this._reloadElapsed.Restart();
+				base.ReplayOverrideBlend(soft: true);
 			}
 		}
 	}

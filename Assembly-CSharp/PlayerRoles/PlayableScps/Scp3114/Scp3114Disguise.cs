@@ -31,23 +31,23 @@ public class Scp3114Disguise : RagdollAbilityBase<Scp3114Role>
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		Cooldown.Clear();
+		this.Cooldown.Clear();
 		RagdollManager.ServerOnRagdollCreated -= ServerOnRagdollCreated;
 	}
 
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		if (Cooldown.IsReady)
+		if (this.Cooldown.IsReady)
 		{
-			ClientTryStart();
+			base.ClientTryStart();
 		}
 	}
 
 	protected override void OnKeyUp()
 	{
 		base.OnKeyUp();
-		ClientTryCancel();
+		base.ClientTryCancel();
 	}
 
 	protected override void OnProgressSet()
@@ -56,16 +56,16 @@ public class Scp3114Disguise : RagdollAbilityBase<Scp3114Role>
 		Scp3114Identity.StolenIdentity curIdentity = base.CastRole.CurIdentity;
 		if (base.IsInProgress)
 		{
-			_equipSkinSound.Play();
+			this._equipSkinSound.Play();
 			curIdentity.Ragdoll = base.CurRagdoll;
-			curIdentity.UnitNameId = (byte)(_prevUnitIds.TryGetValue(base.CurRagdoll, out var value) ? value : 0);
+			curIdentity.UnitNameId = (byte)(this._prevUnitIds.TryGetValue(base.CurRagdoll, out var value) ? value : 0);
 			curIdentity.Status = Scp3114Identity.DisguiseStatus.Equipping;
 		}
 		else if (curIdentity.Status == Scp3114Identity.DisguiseStatus.Equipping)
 		{
-			_equipSkinSound.Stop();
+			this._equipSkinSound.Stop();
 			curIdentity.Status = Scp3114Identity.DisguiseStatus.None;
-			Cooldown.Trigger(Duration);
+			this.Cooldown.Trigger(this.Duration);
 		}
 	}
 
@@ -81,12 +81,12 @@ public class Scp3114Disguise : RagdollAbilityBase<Scp3114Role>
 	protected override byte ServerValidateBegin(BasicRagdoll ragdoll)
 	{
 		Scp3114HudTranslation error;
-		return (byte)((!AnyValidateBegin(ragdoll, out error)) ? error : Scp3114HudTranslation.IdentityStolenWarning);
+		return (byte)((!this.AnyValidateBegin(ragdoll, out error)) ? error : Scp3114HudTranslation.IdentityStolenWarning);
 	}
 
 	protected override bool ClientValidateBegin(BasicRagdoll raycastedRagdoll)
 	{
-		if (AnyValidateBegin(raycastedRagdoll, out var error))
+		if (this.AnyValidateBegin(raycastedRagdoll, out var error))
 		{
 			return base.ClientValidateBegin(raycastedRagdoll);
 		}
@@ -119,7 +119,7 @@ public class Scp3114Disguise : RagdollAbilityBase<Scp3114Role>
 	{
 		if (owner.roleManager.CurrentRole is HumanRole humanRole)
 		{
-			_prevUnitIds[ragdoll] = humanRole.UnitNameId;
+			this._prevUnitIds[ragdoll] = humanRole.UnitNameId;
 		}
 	}
 }

@@ -11,9 +11,9 @@ public interface IReloaderModule
 	{
 		get
 		{
-			if (!IsReloading)
+			if (!this.IsReloading)
 			{
-				return IsUnloading;
+				return this.IsUnloading;
 			}
 			return true;
 		}

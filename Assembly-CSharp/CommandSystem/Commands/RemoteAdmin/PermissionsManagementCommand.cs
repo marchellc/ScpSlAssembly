@@ -34,10 +34,10 @@ public class PermissionsManagementCommand : ParentCommand
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new GroupsCommand());
-		RegisterCommand(new CommandSystem.Commands.RemoteAdmin.PermissionsManagement.ReloadCommand());
-		RegisterCommand(new CommandSystem.Commands.RemoteAdmin.PermissionsManagement.SetGroupCommand());
-		RegisterCommand(new UsersCommand());
-		RegisterCommand(GroupCommand.Create());
+		this.RegisterCommand(new GroupsCommand());
+		this.RegisterCommand(new CommandSystem.Commands.RemoteAdmin.PermissionsManagement.ReloadCommand());
+		this.RegisterCommand(new CommandSystem.Commands.RemoteAdmin.PermissionsManagement.SetGroupCommand());
+		this.RegisterCommand(new UsersCommand());
+		this.RegisterCommand(GroupCommand.Create());
 	}
 }

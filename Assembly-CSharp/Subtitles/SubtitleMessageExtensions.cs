@@ -42,9 +42,10 @@ public static class SubtitleMessageExtensions
 			}
 			array[i] = new SubtitlePart((SubtitleType)reader.ReadByte(), (num2 == 0) ? null : array2);
 		}
-		SubtitleMessage result = default(SubtitleMessage);
-		result.SubtitleParts = array;
-		return result;
+		return new SubtitleMessage
+		{
+			SubtitleParts = array
+		};
 	}
 
 	[RuntimeInitializeOnLoadMethod]

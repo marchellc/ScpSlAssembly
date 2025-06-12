@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CentralAuth;
 using InventorySystem;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
@@ -36,10 +37,10 @@ public static class FpcServerPositionDistributor
 	{
 		StaticUnityMethods.OnLateUpdate += LateUpdate;
 		PlayerRoleManager.OnRoleChanged += ResetPlayer;
-		Inventory.OnServerStarted += PreviouslySent.Clear;
+		Inventory.OnServerStarted += FpcServerPositionDistributor.PreviouslySent.Clear;
 		ReferenceHub.OnPlayerAdded += delegate
 		{
-			EnsureArrayCapacity();
+			FpcServerPositionDistributor.EnsureArrayCapacity();
 		};
 	}
 
@@ -50,7 +51,7 @@ public static class FpcServerPositionDistributor
 			return;
 		}
 		uint netId = userHub.netId;
-		foreach (KeyValuePair<uint, Dictionary<uint, FpcSyncData>> item in PreviouslySent)
+		foreach (KeyValuePair<uint, Dictionary<uint, FpcSyncData>> item in FpcServerPositionDistributor.PreviouslySent)
 		{
 			item.Value.Remove(netId);
 		}
@@ -62,15 +63,15 @@ public static class FpcServerPositionDistributor
 		{
 			return;
 		}
-		_sendCooldown += Time.deltaTime;
-		if (_sendCooldown < SendRate)
+		FpcServerPositionDistributor._sendCooldown += Time.deltaTime;
+		if (FpcServerPositionDistributor._sendCooldown < FpcServerPositionDistributor.SendRate)
 		{
 			return;
 		}
-		_sendCooldown -= SendRate;
+		FpcServerPositionDistributor._sendCooldown -= FpcServerPositionDistributor.SendRate;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			if (allHub.Mode != 0 && !allHub.isLocalPlayer)
+			if (allHub.Mode != ClientInstanceMode.Unverified && !allHub.isLocalPlayer)
 			{
 				allHub.connectionToClient.Send(new FpcPositionMessage(allHub));
 			}
@@ -79,12 +80,12 @@ public static class FpcServerPositionDistributor
 
 	private static void EnsureArrayCapacity()
 	{
-		int num = Mathf.Min(_bufferPlayerIDs.Length, _bufferSyncData.Length);
+		int num = Mathf.Min(FpcServerPositionDistributor._bufferPlayerIDs.Length, FpcServerPositionDistributor._bufferSyncData.Length);
 		int count = ReferenceHub.AllHubs.Count;
 		if (count > num - 5)
 		{
-			_bufferPlayerIDs = new int[count + 10];
-			_bufferSyncData = new FpcSyncData[count + 10];
+			FpcServerPositionDistributor._bufferPlayerIDs = new int[count + 10];
+			FpcServerPositionDistributor._bufferSyncData = new FpcSyncData[count + 10];
 		}
 	}
 
@@ -108,14 +109,14 @@ public static class FpcServerPositionDistributor
 			if (allHub.netId != receiver.netId && allHub.roleManager.CurrentRole is IFpcRole fpcRole)
 			{
 				bool flag2 = flag && !visibilityController.ValidateVisibility(allHub);
-				PlayerValidatedVisibilityEventArgs playerValidatedVisibilityEventArgs = new PlayerValidatedVisibilityEventArgs(receiver, allHub, !flag2);
-				PlayerEvents.OnValidatedVisibility(playerValidatedVisibilityEventArgs);
-				flag2 = !playerValidatedVisibilityEventArgs.IsVisible;
-				FpcSyncData newSyncData = GetNewSyncData(receiver, allHub, fpcRole.FpcModule, flag2);
+				PlayerValidatedVisibilityEventArgs e = new PlayerValidatedVisibilityEventArgs(receiver, allHub, !flag2);
+				PlayerEvents.OnValidatedVisibility(e);
+				flag2 = !e.IsVisible;
+				FpcSyncData newSyncData = FpcServerPositionDistributor.GetNewSyncData(receiver, allHub, fpcRole.FpcModule, flag2);
 				if (!flag2)
 				{
-					_bufferPlayerIDs[num] = allHub.PlayerId;
-					_bufferSyncData[num] = newSyncData;
+					FpcServerPositionDistributor._bufferPlayerIDs[num] = allHub.PlayerId;
+					FpcServerPositionDistributor._bufferSyncData[num] = newSyncData;
 					num++;
 				}
 			}
@@ -123,24 +124,24 @@ public static class FpcServerPositionDistributor
 		writer.WriteUShort(num);
 		for (int i = 0; i < num; i++)
 		{
-			writer.WriteRecyclablePlayerId(new RecyclablePlayerId(_bufferPlayerIDs[i]));
-			_bufferSyncData[i].Write(writer);
+			writer.WriteRecyclablePlayerId(new RecyclablePlayerId(FpcServerPositionDistributor._bufferPlayerIDs[i]));
+			FpcServerPositionDistributor._bufferSyncData[i].Write(writer);
 		}
 	}
 
 	private static FpcSyncData GetNewSyncData(ReferenceHub receiver, ReferenceHub target, FirstPersonMovementModule fpmm, bool isInvisible)
 	{
-		FpcSyncData prevSyncData = GetPrevSyncData(receiver, target);
+		FpcSyncData prevSyncData = FpcServerPositionDistributor.GetPrevSyncData(receiver, target);
 		FpcSyncData fpcSyncData = (isInvisible ? default(FpcSyncData) : new FpcSyncData(prevSyncData, fpmm.SyncMovementState, fpmm.IsGrounded, new RelativePosition(target.transform.position), fpmm.MouseLook));
-		PreviouslySent[receiver.netId][target.netId] = fpcSyncData;
+		FpcServerPositionDistributor.PreviouslySent[receiver.netId][target.netId] = fpcSyncData;
 		return fpcSyncData;
 	}
 
 	private static FpcSyncData GetPrevSyncData(ReferenceHub receiver, ReferenceHub target)
 	{
-		if (!PreviouslySent.TryGetValue(receiver.netId, out var value))
+		if (!FpcServerPositionDistributor.PreviouslySent.TryGetValue(receiver.netId, out var value))
 		{
-			PreviouslySent.Add(receiver.netId, new Dictionary<uint, FpcSyncData>());
+			FpcServerPositionDistributor.PreviouslySent.Add(receiver.netId, new Dictionary<uint, FpcSyncData>());
 			return default(FpcSyncData);
 		}
 		if (!value.TryGetValue(target.netId, out var value2))

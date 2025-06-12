@@ -107,7 +107,7 @@ public static class AchievementManager
 	private static void Init()
 	{
 		Inventory.OnLocalClientStarted += LocalPlayerStarted;
-		AchievementHandlerBase[] handlers = Handlers;
+		AchievementHandlerBase[] handlers = AchievementManager.Handlers;
 		for (int i = 0; i < handlers.Length; i++)
 		{
 			handlers[i].OnInitialize();
@@ -117,7 +117,7 @@ public static class AchievementManager
 	private static void LocalPlayerStarted()
 	{
 		NetworkClient.ReplaceHandler<AchievementMessage>(ClientMessageReceived);
-		AchievementHandlerBase[] handlers = Handlers;
+		AchievementHandlerBase[] handlers = AchievementManager.Handlers;
 		for (int i = 0; i < handlers.Length; i++)
 		{
 			handlers[i].OnRoundStarted();
@@ -126,7 +126,7 @@ public static class AchievementManager
 
 	private static void ClientMessageReceived(AchievementMessage msg)
 	{
-		if (Achievements.TryGetValue((AchievementName)msg.AchievementId, out var value) && value.ActivatedByServer)
+		if (AchievementManager.Achievements.TryGetValue((AchievementName)msg.AchievementId, out var value) && value.ActivatedByServer)
 		{
 			value.Achieve();
 		}

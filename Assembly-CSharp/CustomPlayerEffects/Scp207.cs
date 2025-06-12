@@ -51,7 +51,7 @@ public class Scp207 : CokeBase<Scp207Stack>, ISpectatorDataPlayerEffect, IStamin
 	{
 		if (NetworkServer.active && !Vitality.CheckPlayer(base.Hub))
 		{
-			float damage = base.CurrentStack.DamageAmount * GetMovementStateMultiplier();
+			float damage = base.CurrentStack.DamageAmount * base.GetMovementStateMultiplier();
 			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(damage, DeathTranslations.Scp207));
 		}
 	}

@@ -26,7 +26,7 @@ public class BulletHolesCommand : ICommand
 		DecalPoolType[] values = EnumUtils<DecalPoolType>.Values;
 		foreach (DecalPoolType decalPoolType in values)
 		{
-			if (decalPoolType != 0 && decalPoolType != DecalPoolType.Blood)
+			if (decalPoolType != DecalPoolType.None && decalPoolType != DecalPoolType.Blood)
 			{
 				new DecalCleanupMessage(decalPoolType, result).SendToAuthenticated();
 			}

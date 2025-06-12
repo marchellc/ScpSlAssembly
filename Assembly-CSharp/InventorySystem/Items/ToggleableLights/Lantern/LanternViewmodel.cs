@@ -9,26 +9,26 @@ public class LanternViewmodel : StandardAnimatedViemodel
 
 	public void SetLightStatus(bool lightEnabled)
 	{
-		LanternLightManager.SetLight(lightEnabled);
+		this.LanternLightManager.SetLight(lightEnabled);
 	}
 
 	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
 	{
 		base.InitSpectator(ply, id, wasEquipped);
-		LanternLightManager = GetComponentInChildren<LanternLightManager>(includeInactive: true);
+		this.LanternLightManager = base.GetComponentInChildren<LanternLightManager>(includeInactive: true);
 		FlashlightNetworkHandler.OnStatusReceived += OnStatusReceived;
-		SetLightStatus(!FlashlightNetworkHandler.ReceivedStatuses.TryGetValue(base.ItemId.SerialNumber, out var value) || value);
+		this.SetLightStatus(!FlashlightNetworkHandler.ReceivedStatuses.TryGetValue(base.ItemId.SerialNumber, out var value) || value);
 		if (wasEquipped)
 		{
-			AnimatorForceUpdate(base.SkipEquipTime);
+			this.AnimatorForceUpdate(base.SkipEquipTime);
 		}
 	}
 
 	private void OnStatusReceived(FlashlightNetworkHandler.FlashlightMessage msg)
 	{
-		if (msg.Serial == base.ItemId.SerialNumber && LanternLightManager.IsEnabled != msg.NewState)
+		if (msg.Serial == base.ItemId.SerialNumber && this.LanternLightManager.IsEnabled != msg.NewState)
 		{
-			SetLightStatus(msg.NewState);
+			this.SetLightStatus(msg.NewState);
 			AudioSourcePoolManager.Play2DWithParent(msg.NewState ? FlashlightItem.Template.OnClip : FlashlightItem.Template.OffClip, base.transform);
 		}
 	}

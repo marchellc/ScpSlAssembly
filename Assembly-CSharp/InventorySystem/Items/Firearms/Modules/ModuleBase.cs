@@ -8,11 +8,11 @@ public abstract class ModuleBase : FirearmSubcomponentBase
 
 	internal void MarkAsSubmodule()
 	{
-		IsSubmodule = true;
+		this.IsSubmodule = true;
 	}
 
 	protected virtual void Reset()
 	{
-		base.gameObject.name = Regex.Replace(GetType().Name, "[a-z][A-Z]", (Match m) => m.Value[0] + " " + m.Value[1]);
+		base.gameObject.name = Regex.Replace(base.GetType().Name, "[a-z][A-Z]", (Match m) => m.Value[0] + " " + m.Value[1]);
 	}
 }

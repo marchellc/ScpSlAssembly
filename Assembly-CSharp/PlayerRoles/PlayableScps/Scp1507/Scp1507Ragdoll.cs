@@ -39,18 +39,18 @@ public class Scp1507Ragdoll : DynamicRagdoll
 
 	private int _unfreezeDelay;
 
-	public float RevivalProgress => _revivalProgress;
+	public float RevivalProgress => this._revivalProgress;
 
 	public float Network_revivalProgress
 	{
 		get
 		{
-			return _revivalProgress;
+			return this._revivalProgress;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _revivalProgress, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._revivalProgress, 2uL, null);
 		}
 	}
 
@@ -58,12 +58,12 @@ public class Scp1507Ragdoll : DynamicRagdoll
 	{
 		get
 		{
-			return _hasAlreadyRevived;
+			return this._hasAlreadyRevived;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _hasAlreadyRevived, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._hasAlreadyRevived, 4uL, null);
 		}
 	}
 
@@ -71,26 +71,26 @@ public class Scp1507Ragdoll : DynamicRagdoll
 	{
 		get
 		{
-			return _lastResetTime;
+			return this._lastResetTime;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _lastResetTime, 8uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._lastResetTime, 8uL, null);
 		}
 	}
 
 	public bool ValidateRevive(ReferenceHub vocalizer)
 	{
-		if (_hasAlreadyRevived || Info.RoleType.GetTeam() != vocalizer.GetTeam())
+		if (this._hasAlreadyRevived || base.Info.RoleType.GetTeam() != vocalizer.GetTeam())
 		{
 			return false;
 		}
-		if (NetworkTime.time - _lastResetTime > 12.0)
+		if (NetworkTime.time - this._lastResetTime > 12.0)
 		{
 			return false;
 		}
-		ReferenceHub ownerHub = Info.OwnerHub;
+		ReferenceHub ownerHub = base.Info.OwnerHub;
 		if (ownerHub == null || !(ownerHub.roleManager.CurrentRole is SpectatorRole { ReadyToRespawn: not false }))
 		{
 			return false;
@@ -106,24 +106,24 @@ public class Scp1507Ragdoll : DynamicRagdoll
 
 	protected override void Start()
 	{
-		SpawnVariant(Info.RoleType);
-		Network_lastResetTime = NetworkTime.time;
+		this.SpawnVariant(base.Info.RoleType);
+		this.Network_lastResetTime = NetworkTime.time;
 		base.Start();
 		Scp1507VocalizeAbility.OnServerVocalize += OnVocalize;
 	}
 
 	private void FixedUpdate()
 	{
-		if (_unfreezeDelay <= 0)
+		if (this._unfreezeDelay <= 0)
 		{
 			return;
 		}
-		_unfreezeDelay--;
-		if (_unfreezeDelay > 0)
+		this._unfreezeDelay--;
+		if (this._unfreezeDelay > 0)
 		{
 			return;
 		}
-		Rigidbody[] linkedRigidbodies = LinkedRigidbodies;
+		Rigidbody[] linkedRigidbodies = base.LinkedRigidbodies;
 		foreach (Rigidbody rigidbody in linkedRigidbodies)
 		{
 			if (!(rigidbody == null))
@@ -141,57 +141,57 @@ public class Scp1507Ragdoll : DynamicRagdoll
 		default:
 			return;
 		case RoleTypeId.AlphaFlamingo:
-			array = _alphaVariants;
+			array = this._alphaVariants;
 			break;
 		case RoleTypeId.ZombieFlamingo:
-			array = _zombieVariants;
+			array = this._zombieVariants;
 			break;
 		case RoleTypeId.Flamingo:
-			array = _regularVariants;
+			array = this._regularVariants;
 			break;
 		}
 		GameObject gameObject = array.RandomItem();
 		GameObject gameObject2 = Object.Instantiate(gameObject, base.transform);
 		gameObject2.transform.SetLocalPositionAndRotation(gameObject.transform.localPosition, gameObject.transform.localRotation);
-		LinkedRigidbodies = gameObject2.GetComponentsInChildren<Rigidbody>();
-		LinkedRigidbodiesTransforms = new Transform[LinkedRigidbodies.Length];
-		for (int i = 0; i < LinkedRigidbodies.Length; i++)
+		base.LinkedRigidbodies = gameObject2.GetComponentsInChildren<Rigidbody>();
+		base.LinkedRigidbodiesTransforms = new Transform[base.LinkedRigidbodies.Length];
+		for (int i = 0; i < base.LinkedRigidbodies.Length; i++)
 		{
-			Rigidbody rigidbody = LinkedRigidbodies[i];
+			Rigidbody rigidbody = base.LinkedRigidbodies[i];
 			rigidbody.isKinematic = true;
-			LinkedRigidbodiesTransforms[i] = rigidbody.transform;
+			base.LinkedRigidbodiesTransforms[i] = rigidbody.transform;
 		}
-		_unfreezeDelay = 3;
+		this._unfreezeDelay = 3;
 	}
 
 	private void OnVocalize(ReferenceHub hub)
 	{
-		if (!NetworkServer.active || !ValidateRevive(hub))
+		if (!NetworkServer.active || !this.ValidateRevive(hub))
 		{
 			return;
 		}
 		Scp1507Role scp1507Role = hub.roleManager.CurrentRole as Scp1507Role;
 		bool flag = false;
-		for (int i = 0; i < LinkedRigidbodiesTransforms.Length; i++)
+		for (int i = 0; i < base.LinkedRigidbodiesTransforms.Length; i++)
 		{
-			if (!(scp1507Role.SqrDistanceTo(LinkedRigidbodiesTransforms[i].position) > 15f))
+			if (!(scp1507Role.SqrDistanceTo(base.LinkedRigidbodiesTransforms[i].position) > 15f))
 			{
 				flag = true;
 				break;
 			}
 		}
-		if (flag || !(scp1507Role.SqrDistanceTo(Info.StartPosition) > 15f))
+		if (flag || !(scp1507Role.SqrDistanceTo(base.Info.StartPosition) > 15f))
 		{
 			float num = 1f / 12f;
 			if (scp1507Role.RoleTypeId == RoleTypeId.AlphaFlamingo)
 			{
 				num *= 2f;
 			}
-			Network_lastResetTime = NetworkTime.time;
-			Network_revivalProgress = _revivalProgress + num;
-			if (!(_revivalProgress < 1f))
+			this.Network_lastResetTime = NetworkTime.time;
+			this.Network_revivalProgress = this._revivalProgress + num;
+			if (!(this._revivalProgress < 1f))
 			{
-				Info.OwnerHub.roleManager.ServerSetRole(Info.RoleType, RoleChangeReason.Revived);
+				base.Info.OwnerHub.roleManager.ServerSetRole(base.Info.RoleType, RoleChangeReason.Revived);
 				NetworkServer.Destroy(base.gameObject);
 			}
 		}
@@ -221,23 +221,23 @@ public class Scp1507Ragdoll : DynamicRagdoll
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteFloat(_revivalProgress);
-			writer.WriteBool(_hasAlreadyRevived);
-			writer.WriteDouble(_lastResetTime);
+			writer.WriteFloat(this._revivalProgress);
+			writer.WriteBool(this._hasAlreadyRevived);
+			writer.WriteDouble(this._lastResetTime);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteFloat(_revivalProgress);
+			writer.WriteFloat(this._revivalProgress);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			writer.WriteBool(_hasAlreadyRevived);
+			writer.WriteBool(this._hasAlreadyRevived);
 		}
 		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			writer.WriteDouble(_lastResetTime);
+			writer.WriteDouble(this._lastResetTime);
 		}
 	}
 
@@ -246,23 +246,23 @@ public class Scp1507Ragdoll : DynamicRagdoll
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _revivalProgress, null, reader.ReadFloat());
-			GeneratedSyncVarDeserialize(ref _hasAlreadyRevived, null, reader.ReadBool());
-			GeneratedSyncVarDeserialize(ref _lastResetTime, null, reader.ReadDouble());
+			base.GeneratedSyncVarDeserialize(ref this._revivalProgress, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._hasAlreadyRevived, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._lastResetTime, null, reader.ReadDouble());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _revivalProgress, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._revivalProgress, null, reader.ReadFloat());
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _hasAlreadyRevived, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._hasAlreadyRevived, null, reader.ReadBool());
 		}
 		if ((num & 8L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _lastResetTime, null, reader.ReadDouble());
+			base.GeneratedSyncVarDeserialize(ref this._lastResetTime, null, reader.ReadDouble());
 		}
 	}
 }

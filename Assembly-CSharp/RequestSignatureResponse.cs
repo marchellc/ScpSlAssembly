@@ -25,9 +25,9 @@ public readonly struct RequestSignatureResponse : IEquatable<RequestSignatureRes
 
 	public bool Equals(RequestSignatureResponse other)
 	{
-		if (success == other.success && error == other.error && authToken == other.authToken && badgeToken == other.badgeToken)
+		if (this.success == other.success && this.error == other.error && this.authToken == other.authToken && this.badgeToken == other.badgeToken)
 		{
-			return nonce == other.nonce;
+			return this.nonce == other.nonce;
 		}
 		return false;
 	}
@@ -36,15 +36,15 @@ public readonly struct RequestSignatureResponse : IEquatable<RequestSignatureRes
 	{
 		if (obj is RequestSignatureResponse other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		bool flag = success;
-		return (((((((flag.GetHashCode() * 397) ^ ((error != null) ? error.GetHashCode() : 0)) * 397) ^ ((authToken != null) ? authToken.GetHashCode() : 0)) * 397) ^ ((badgeToken != null) ? badgeToken.GetHashCode() : 0)) * 397) ^ ((nonce != null) ? nonce.GetHashCode() : 0);
+		bool flag = this.success;
+		return (((((((flag.GetHashCode() * 397) ^ ((this.error != null) ? this.error.GetHashCode() : 0)) * 397) ^ ((this.authToken != null) ? this.authToken.GetHashCode() : 0)) * 397) ^ ((this.badgeToken != null) ? this.badgeToken.GetHashCode() : 0)) * 397) ^ ((this.nonce != null) ? this.nonce.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(RequestSignatureResponse left, RequestSignatureResponse right)

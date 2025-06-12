@@ -25,7 +25,7 @@ public abstract class TargetWaveCommandBase : ICommand
 
 	protected static string TranslateWaveName(string input)
 	{
-		foreach (KeyValuePair<Type, string[]> waveAlias in WaveAliases)
+		foreach (KeyValuePair<Type, string[]> waveAlias in TargetWaveCommandBase.WaveAliases)
 		{
 			if (waveAlias.Value.Contains(input, StringComparison.OrdinalIgnoreCase))
 			{

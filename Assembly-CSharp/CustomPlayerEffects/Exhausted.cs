@@ -24,7 +24,7 @@ public class Exhausted : StatusEffectBase, IStaminaModifier
 	{
 		get
 		{
-			if (!(CurStamina < 0.5f))
+			if (!(this.CurStamina < 0.5f))
 			{
 				return 0f;
 			}
@@ -36,28 +36,28 @@ public class Exhausted : StatusEffectBase, IStaminaModifier
 	{
 		get
 		{
-			PrepCache();
-			return _staminaCache.CurValue;
+			this.PrepCache();
+			return this._staminaCache.CurValue;
 		}
 		set
 		{
-			PrepCache();
-			_staminaCache.CurValue = value;
+			this.PrepCache();
+			this._staminaCache.CurValue = value;
 		}
 	}
 
 	private void PrepCache()
 	{
-		if (!_cacheSet)
+		if (!this._cacheSet)
 		{
-			_cacheSet = true;
-			_staminaCache = base.Hub.playerStats.GetModule<StaminaStat>();
+			this._cacheSet = true;
+			this._staminaCache = base.Hub.playerStats.GetModule<StaminaStat>();
 		}
 	}
 
 	protected override void Enabled()
 	{
 		base.Enabled();
-		CurStamina = Mathf.Min(CurStamina, 0.5f);
+		this.CurStamina = Mathf.Min(this.CurStamina, 0.5f);
 	}
 }

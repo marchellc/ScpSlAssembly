@@ -28,17 +28,17 @@ public abstract class Scp079ToggleMenuAbilityBase<T> : Scp079KeyAbilityBase wher
 
 	private static readonly Stopwatch CooldownSw = Stopwatch.StartNew();
 
-	public override bool IsReady => CooldownSw.Elapsed.TotalSeconds > (double)_cooldown;
+	public override bool IsReady => Scp079ToggleMenuAbilityBase<T>.CooldownSw.Elapsed.TotalSeconds > (double)this._cooldown;
 
 	public override string AbilityName
 	{
 		get
 		{
-			if (!SyncState)
+			if (!this.SyncState)
 			{
-				return _openTxt;
+				return this._openTxt;
 			}
-			return _closeTxt;
+			return this._closeTxt;
 		}
 	}
 
@@ -54,21 +54,21 @@ public abstract class Scp079ToggleMenuAbilityBase<T> : Scp079KeyAbilityBase wher
 	{
 		get
 		{
-			if (_trackedInstanceSet)
+			if (Scp079ToggleMenuAbilityBase<T>._trackedInstanceSet)
 			{
-				return _trackedInstance.SyncState;
+				return Scp079ToggleMenuAbilityBase<T>._trackedInstance.SyncState;
 			}
 			return false;
 		}
 		internal set
 		{
-			if (_trackedInstanceSet && _trackedInstance.SyncState != value)
+			if (Scp079ToggleMenuAbilityBase<T>._trackedInstanceSet && Scp079ToggleMenuAbilityBase<T>._trackedInstance.SyncState != value)
 			{
-				_trackedInstance.SyncState = value;
-				CooldownSw.Restart();
-				if (_trackedInstance.Role.IsLocalPlayer)
+				Scp079ToggleMenuAbilityBase<T>._trackedInstance.SyncState = value;
+				Scp079ToggleMenuAbilityBase<T>.CooldownSw.Restart();
+				if (Scp079ToggleMenuAbilityBase<T>._trackedInstance.Role.IsLocalPlayer)
 				{
-					_trackedInstance.ClientSendCmd();
+					Scp079ToggleMenuAbilityBase<T>._trackedInstance.ClientSendCmd();
 				}
 			}
 		}
@@ -78,11 +78,11 @@ public abstract class Scp079ToggleMenuAbilityBase<T> : Scp079KeyAbilityBase wher
 	{
 		get
 		{
-			if (_trackedInstanceSet)
+			if (Scp079ToggleMenuAbilityBase<T>._trackedInstanceSet)
 			{
-				if (!_trackedInstance.SyncState)
+				if (!Scp079ToggleMenuAbilityBase<T>._trackedInstance.SyncState)
 				{
-					return !_trackedInstance.IsReady;
+					return !Scp079ToggleMenuAbilityBase<T>._trackedInstance.IsReady;
 				}
 				return true;
 			}
@@ -94,63 +94,63 @@ public abstract class Scp079ToggleMenuAbilityBase<T> : Scp079KeyAbilityBase wher
 	{
 		if (base.CastRole.IsSpectated || base.CastRole.IsLocalPlayer)
 		{
-			_trackedInstance = this;
-			_trackedInstanceSet = true;
+			Scp079ToggleMenuAbilityBase<T>._trackedInstance = this;
+			Scp079ToggleMenuAbilityBase<T>._trackedInstanceSet = true;
 		}
 		else
 		{
-			_trackedInstanceSet = false;
+			Scp079ToggleMenuAbilityBase<T>._trackedInstanceSet = false;
 		}
 	}
 
 	private void PlaySound()
 	{
-		AudioSourcePoolManager.Play2D(SyncState ? _soundOpen : _soundClose);
+		AudioSourcePoolManager.Play2D(this.SyncState ? this._soundOpen : this._soundClose);
 	}
 
 	protected override void Trigger()
 	{
 		if (base.CurrentCamSync.CurClientSwitchState == Scp079CurrentCameraSync.ClientSwitchState.None)
 		{
-			IsOpen = !IsOpen;
-			PlaySound();
+			Scp079ToggleMenuAbilityBase<T>.IsOpen = !Scp079ToggleMenuAbilityBase<T>.IsOpen;
+			this.PlaySound();
 		}
 	}
 
 	protected override void Start()
 	{
 		base.Start();
-		_openTxt = Translations.Get(OpenTranslation);
-		_closeTxt = Translations.Get(CloseTranslation);
+		this._openTxt = Translations.Get(this.OpenTranslation);
+		this._closeTxt = Translations.Get(this.CloseTranslation);
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteBool(SyncState);
+		writer.WriteBool(this.SyncState);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		SyncState = reader.ReadBool();
-		ServerSendRpc(toAll: true);
+		this.SyncState = reader.ReadBool();
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteBool(SyncState);
+		writer.WriteBool(this.SyncState);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		bool syncState = SyncState;
-		SyncState = reader.ReadBool();
-		if (syncState != SyncState && base.Owner.IsLocallySpectated() && base.CastRole.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out var subroutine) && subroutine.CurClientSwitchState == Scp079CurrentCameraSync.ClientSwitchState.None)
+		bool syncState = this.SyncState;
+		this.SyncState = reader.ReadBool();
+		if (syncState != this.SyncState && base.Owner.IsLocallySpectated() && base.CastRole.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out var subroutine) && subroutine.CurClientSwitchState == Scp079CurrentCameraSync.ClientSwitchState.None)
 		{
-			PlaySound();
+			this.PlaySound();
 		}
 	}
 
@@ -161,8 +161,8 @@ public abstract class Scp079ToggleMenuAbilityBase<T> : Scp079KeyAbilityBase wher
 		SpectatorTargetTracker.OnTargetChanged += OnSpectatorTargetChanged;
 		if (base.Role.IsLocalPlayer)
 		{
-			_trackedInstance = this;
-			_trackedInstanceSet = true;
+			Scp079ToggleMenuAbilityBase<T>._trackedInstance = this;
+			Scp079ToggleMenuAbilityBase<T>._trackedInstanceSet = true;
 		}
 	}
 
@@ -171,10 +171,10 @@ public abstract class Scp079ToggleMenuAbilityBase<T> : Scp079KeyAbilityBase wher
 		base.ResetObject();
 		ReferenceHub.OnPlayerAdded -= base.ServerSendRpc;
 		SpectatorTargetTracker.OnTargetChanged -= OnSpectatorTargetChanged;
-		SyncState = false;
-		if (_trackedInstanceSet && !(this != _trackedInstance))
+		this.SyncState = false;
+		if (Scp079ToggleMenuAbilityBase<T>._trackedInstanceSet && !(this != Scp079ToggleMenuAbilityBase<T>._trackedInstance))
 		{
-			_trackedInstanceSet = false;
+			Scp079ToggleMenuAbilityBase<T>._trackedInstanceSet = false;
 		}
 	}
 }

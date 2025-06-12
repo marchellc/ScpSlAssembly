@@ -21,12 +21,12 @@ public class Broadcast : NetworkBehaviour
 	{
 		get
 		{
-			if (!_broadcastSet)
+			if (!Broadcast._broadcastSet)
 			{
-				_broadcastSet = true;
-				_broadcast = ReferenceHub.LocalHub.GetComponent<Broadcast>();
+				Broadcast._broadcastSet = true;
+				Broadcast._broadcast = ReferenceHub.LocalHub.GetComponent<Broadcast>();
 			}
-			return _broadcast;
+			return Broadcast._broadcast;
 		}
 	}
 
@@ -36,9 +36,9 @@ public class Broadcast : NetworkBehaviour
 
 	private void OnDestroy()
 	{
-		if (this == _broadcast)
+		if (this == Broadcast._broadcast)
 		{
-			_broadcastSet = false;
+			Broadcast._broadcastSet = false;
 		}
 	}
 
@@ -49,7 +49,7 @@ public class Broadcast : NetworkBehaviour
 		writer.WriteString(data);
 		writer.WriteUShort(time);
 		GeneratedNetworkCode._Write_Broadcast_002FBroadcastFlags(writer, flags);
-		SendTargetRPCInternal(conn, "System.Void Broadcast::TargetAddElement(Mirror.NetworkConnection,System.String,System.UInt16,Broadcast/BroadcastFlags)", 624805019, writer, 0);
+		this.SendTargetRPCInternal(conn, "System.Void Broadcast::TargetAddElement(Mirror.NetworkConnection,System.String,System.UInt16,Broadcast/BroadcastFlags)", 624805019, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -60,7 +60,7 @@ public class Broadcast : NetworkBehaviour
 		writer.WriteString(data);
 		writer.WriteUShort(time);
 		GeneratedNetworkCode._Write_Broadcast_002FBroadcastFlags(writer, flags);
-		SendRPCInternal("System.Void Broadcast::RpcAddElement(System.String,System.UInt16,Broadcast/BroadcastFlags)", -775219482, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Broadcast::RpcAddElement(System.String,System.UInt16,Broadcast/BroadcastFlags)", -775219482, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -68,7 +68,7 @@ public class Broadcast : NetworkBehaviour
 	public void TargetClearElements(NetworkConnection conn)
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendTargetRPCInternal(conn, "System.Void Broadcast::TargetClearElements(Mirror.NetworkConnection)", -1104952326, writer, 0);
+		this.SendTargetRPCInternal(conn, "System.Void Broadcast::TargetClearElements(Mirror.NetworkConnection)", -1104952326, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -76,7 +76,7 @@ public class Broadcast : NetworkBehaviour
 	public void RpcClearElements()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void Broadcast::RpcClearElements()", -701809763, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Broadcast::RpcClearElements()", -701809763, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 

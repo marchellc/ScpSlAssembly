@@ -57,59 +57,59 @@ public class LanternLightManager : MonoBehaviour, IPoolResettable
 
 	public bool IsEnabled { get; private set; } = true;
 
-	private float AngularMag => SoundTriggerRb.angularVelocity.magnitude * VolumeModifier;
+	private float AngularMag => this.SoundTriggerRb.angularVelocity.magnitude * this.VolumeModifier;
 
 	private void AudioUpdate()
 	{
-		float x = SoundTriggerRb.transform.localRotation.x;
-		bool flag = x > _previousRot;
-		if (flag && !_forwardSound.isPlaying && x >= Forward && _previousRot <= Forward)
+		float x = this.SoundTriggerRb.transform.localRotation.x;
+		bool flag = x > this._previousRot;
+		if (flag && !this._forwardSound.isPlaying && x >= this.Forward && this._previousRot <= this.Forward)
 		{
-			_forwardSound.volume = AngularMag * ForwardVolume;
-			_forwardSound.Play();
+			this._forwardSound.volume = this.AngularMag * this.ForwardVolume;
+			this._forwardSound.Play();
 		}
-		else if (!flag && !_backwardSound.isPlaying && x <= Backward && _previousRot >= Backward)
+		else if (!flag && !this._backwardSound.isPlaying && x <= this.Backward && this._previousRot >= this.Backward)
 		{
-			_backwardSound.volume = AngularMag * BackwardVolume;
-			_backwardSound.Play();
+			this._backwardSound.volume = this.AngularMag * this.BackwardVolume;
+			this._backwardSound.Play();
 		}
-		_previousRot = x;
+		this._previousRot = x;
 	}
 
 	private void Awake()
 	{
-		if (!_initialized)
+		if (!this._initialized)
 		{
-			_blinker = GetComponent<LightBlink>();
-			_mpb = new MaterialPropertyBlock();
-			MainRenderer.GetPropertyBlock(_mpb, 1);
-			_lightRanges = new float[Lights.Length];
-			for (int i = 0; i < Lights.Length; i++)
+			this._blinker = base.GetComponent<LightBlink>();
+			this._mpb = new MaterialPropertyBlock();
+			this.MainRenderer.GetPropertyBlock(this._mpb, 1);
+			this._lightRanges = new float[this.Lights.Length];
+			for (int i = 0; i < this.Lights.Length; i++)
 			{
-				_lightRanges[i] = Lights[i].range;
+				this._lightRanges[i] = this.Lights[i].range;
 			}
-			_initialized = true;
-			ResetObject();
+			this._initialized = true;
+			this.ResetObject();
 		}
 	}
 
 	public void SetLight(bool isEnabled)
 	{
-		if (!_initialized)
+		if (!this._initialized)
 		{
-			Awake();
+			this.Awake();
 		}
-		if (IsEnabled != isEnabled && base.enabled)
+		if (this.IsEnabled != isEnabled && base.enabled)
 		{
-			IsEnabled = isEnabled;
-			_blinker.enabled = isEnabled;
+			this.IsEnabled = isEnabled;
+			this._blinker.enabled = isEnabled;
 			if (isEnabled)
 			{
-				ParticleSystem.Play();
+				this.ParticleSystem.Play();
 			}
 			else
 			{
-				ParticleSystem.Stop();
+				this.ParticleSystem.Stop();
 			}
 		}
 	}
@@ -117,56 +117,56 @@ public class LanternLightManager : MonoBehaviour, IPoolResettable
 	private void Update()
 	{
 		Vector3 position = base.transform.position;
-		Vector3 force = _oldPosition - position;
+		Vector3 force = this._oldPosition - position;
 		if (force.sqrMagnitude < 900f)
 		{
-			SoundTriggerRb.AddForce(force, ForceMode.VelocityChange);
+			this.SoundTriggerRb.AddForce(force, ForceMode.VelocityChange);
 		}
-		_oldPosition = position;
-		AudioUpdate();
-		if ((IsEnabled && !(_enableRatio >= 1f)) || (!IsEnabled && !(_enableRatio <= 0f)))
+		this._oldPosition = position;
+		this.AudioUpdate();
+		if ((this.IsEnabled && !(this._enableRatio >= 1f)) || (!this.IsEnabled && !(this._enableRatio <= 0f)))
 		{
-			_enableRatio += (IsEnabled ? Time.deltaTime : (0f - Time.deltaTime)) * LightSpeed;
-			for (int i = 0; i < Lights.Length; i++)
+			this._enableRatio += (this.IsEnabled ? Time.deltaTime : (0f - Time.deltaTime)) * this.LightSpeed;
+			for (int i = 0; i < this.Lights.Length; i++)
 			{
-				Lights[i].range = Mathf.Lerp(0f, _lightRanges[i], _enableRatio);
+				this.Lights[i].range = Mathf.Lerp(0f, this._lightRanges[i], this._enableRatio);
 			}
-			_mpb.SetColor(EmissionId, Color.Lerp(Color.black, EmissionColor, _enableRatio));
-			MainRenderer.SetPropertyBlock(_mpb, 1);
+			this._mpb.SetColor(LanternLightManager.EmissionId, Color.Lerp(Color.black, this.EmissionColor, this._enableRatio));
+			this.MainRenderer.SetPropertyBlock(this._mpb, 1);
 		}
 	}
 
 	private void OnEnable()
 	{
-		if (IsEnabled)
+		if (this.IsEnabled)
 		{
-			ParticleSystem.Play();
+			this.ParticleSystem.Play();
 		}
 	}
 
 	private void OnDisable()
 	{
-		if (IsEnabled)
+		if (this.IsEnabled)
 		{
-			ParticleSystem.Stop();
+			this.ParticleSystem.Stop();
 		}
 	}
 
 	public void ResetObject()
 	{
-		if (IsEnabled)
+		if (this.IsEnabled)
 		{
-			_blinker.enabled = false;
-			_enableRatio = 0f;
-			IsEnabled = false;
-			Light[] lights = Lights;
+			this._blinker.enabled = false;
+			this._enableRatio = 0f;
+			this.IsEnabled = false;
+			Light[] lights = this.Lights;
 			for (int i = 0; i < lights.Length; i++)
 			{
 				lights[i].range = 0f;
 			}
-			_mpb.SetColor(EmissionId, Color.black);
-			MainRenderer.SetPropertyBlock(_mpb, 1);
-			ParticleSystem.Stop();
+			this._mpb.SetColor(LanternLightManager.EmissionId, Color.black);
+			this.MainRenderer.SetPropertyBlock(this._mpb, 1);
+			this.ParticleSystem.Stop();
 		}
 	}
 }

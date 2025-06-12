@@ -52,34 +52,34 @@ public static class SteamServerInfo
 		customBinaryWriter.WriteInt(-1);
 		customBinaryWriter.WriteByte("I"u8[0]);
 		customBinaryWriter.WriteByte(17);
-		customBinaryWriter.WriteString(ServerName);
-		customBinaryWriter.WriteString(MapName);
-		customBinaryWriter.WriteString(GameDirectory);
-		customBinaryWriter.WriteString(GameName);
-		customBinaryWriter.WriteShort((short)AppId);
+		customBinaryWriter.WriteString(SteamServerInfo.ServerName);
+		customBinaryWriter.WriteString(SteamServerInfo.MapName);
+		customBinaryWriter.WriteString(SteamServerInfo.GameDirectory);
+		customBinaryWriter.WriteString(SteamServerInfo.GameName);
+		customBinaryWriter.WriteShort((short)SteamServerInfo.AppId);
 		byte b = byte.MaxValue;
-		customBinaryWriter.WriteByte((OnlinePlayers > b) ? b : ((byte)OnlinePlayers));
-		customBinaryWriter.WriteByte((MaxPlayers > b) ? b : ((byte)MaxPlayers));
-		customBinaryWriter.WriteByte((Bots > b) ? b : ((byte)Bots));
-		customBinaryWriter.WriteByte((byte)Type);
-		customBinaryWriter.WriteByte((byte)OperativeSystem);
-		customBinaryWriter.WriteByte((byte)(IsPasswordProtected ? 1u : 0u));
-		customBinaryWriter.WriteByte((byte)(IsSecure ? 1u : 0u));
-		customBinaryWriter.WriteString(Version);
-		if (string.IsNullOrEmpty(Tags))
+		customBinaryWriter.WriteByte((SteamServerInfo.OnlinePlayers > b) ? b : ((byte)SteamServerInfo.OnlinePlayers));
+		customBinaryWriter.WriteByte((SteamServerInfo.MaxPlayers > b) ? b : ((byte)SteamServerInfo.MaxPlayers));
+		customBinaryWriter.WriteByte((SteamServerInfo.Bots > b) ? b : ((byte)SteamServerInfo.Bots));
+		customBinaryWriter.WriteByte((byte)SteamServerInfo.Type);
+		customBinaryWriter.WriteByte((byte)SteamServerInfo.OperativeSystem);
+		customBinaryWriter.WriteByte((byte)(SteamServerInfo.IsPasswordProtected ? 1u : 0u));
+		customBinaryWriter.WriteByte((byte)(SteamServerInfo.IsSecure ? 1u : 0u));
+		customBinaryWriter.WriteString(SteamServerInfo.Version);
+		if (string.IsNullOrEmpty(SteamServerInfo.Tags))
 		{
 			customBinaryWriter.WriteByte(145);
-			customBinaryWriter.WriteShort((short)ServerPort);
+			customBinaryWriter.WriteShort((short)SteamServerInfo.ServerPort);
 			customBinaryWriter.WriteLong(0L);
-			customBinaryWriter.WriteLong(AppId);
+			customBinaryWriter.WriteLong(SteamServerInfo.AppId);
 		}
 		else
 		{
 			customBinaryWriter.WriteByte(177);
-			customBinaryWriter.WriteShort((short)ServerPort);
+			customBinaryWriter.WriteShort((short)SteamServerInfo.ServerPort);
 			customBinaryWriter.WriteLong(0L);
-			customBinaryWriter.WriteString(Tags);
-			customBinaryWriter.WriteLong(AppId);
+			customBinaryWriter.WriteString(SteamServerInfo.Tags);
+			customBinaryWriter.WriteLong(SteamServerInfo.AppId);
 		}
 		return customBinaryWriter.ToArray();
 	}

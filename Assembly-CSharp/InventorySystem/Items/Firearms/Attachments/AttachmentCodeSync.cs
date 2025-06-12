@@ -16,26 +16,26 @@ public static class AttachmentCodeSync
 
 		public AttachmentCodeMessage(NetworkReader reader)
 		{
-			WeaponSerial = reader.ReadUShort();
-			AttachmentCode = reader.ReadUInt();
+			this.WeaponSerial = reader.ReadUShort();
+			this.AttachmentCode = reader.ReadUInt();
 		}
 
 		public AttachmentCodeMessage(ushort serial, uint attCode)
 		{
-			WeaponSerial = serial;
-			AttachmentCode = attCode;
+			this.WeaponSerial = serial;
+			this.AttachmentCode = attCode;
 		}
 
 		public void Serialize(NetworkWriter writer)
 		{
-			writer.WriteUShort(WeaponSerial);
-			writer.WriteUInt(AttachmentCode);
+			writer.WriteUShort(this.WeaponSerial);
+			writer.WriteUInt(this.AttachmentCode);
 		}
 
 		public void Apply()
 		{
-			ReceivedCodes[WeaponSerial] = AttachmentCode;
-			AttachmentCodeSync.OnReceived?.Invoke(WeaponSerial, AttachmentCode);
+			AttachmentCodeSync.ReceivedCodes[this.WeaponSerial] = this.AttachmentCode;
+			AttachmentCodeSync.OnReceived?.Invoke(this.WeaponSerial, this.AttachmentCode);
 		}
 	}
 
@@ -46,18 +46,18 @@ public static class AttachmentCodeSync
 
 		public AttachmentCodePackMessage(NetworkReader reader)
 		{
-			LastDeserialized.Clear();
+			AttachmentCodePackMessage.LastDeserialized.Clear();
 			int num = reader.ReadInt();
 			for (int i = 0; i < num; i++)
 			{
-				LastDeserialized.Add(new AttachmentCodeMessage(reader));
+				AttachmentCodePackMessage.LastDeserialized.Add(new AttachmentCodeMessage(reader));
 			}
 		}
 
 		public void Serialize(NetworkWriter writer)
 		{
-			writer.WriteInt(ReceivedCodes.Count);
-			foreach (KeyValuePair<ushort, uint> receivedCode in ReceivedCodes)
+			writer.WriteInt(AttachmentCodeSync.ReceivedCodes.Count);
+			foreach (KeyValuePair<ushort, uint> receivedCode in AttachmentCodeSync.ReceivedCodes)
 			{
 				new AttachmentCodeMessage(receivedCode.Key, receivedCode.Value).Serialize(writer);
 			}
@@ -65,7 +65,7 @@ public static class AttachmentCodeSync
 
 		public void Apply()
 		{
-			LastDeserialized.ForEach(delegate(AttachmentCodeMessage x)
+			AttachmentCodePackMessage.LastDeserialized.ForEach(delegate(AttachmentCodeMessage x)
 			{
 				x.Apply();
 			});
@@ -85,7 +85,7 @@ public static class AttachmentCodeSync
 
 	private static void OnClientReady()
 	{
-		ReceivedCodes.Clear();
+		AttachmentCodeSync.ReceivedCodes.Clear();
 		NetworkClient.ReplaceHandler(delegate(AttachmentCodeMessage x)
 		{
 			x.Apply();
@@ -106,7 +106,7 @@ public static class AttachmentCodeSync
 
 	public static bool TryGet(ushort serial, out uint code)
 	{
-		return ReceivedCodes.TryGetValue(serial, out code);
+		return AttachmentCodeSync.ReceivedCodes.TryGetValue(serial, out code);
 	}
 
 	public static void ServerSetCode(ushort serial, uint code)
@@ -115,7 +115,7 @@ public static class AttachmentCodeSync
 		{
 			throw new InvalidOperationException("Attempting to override attachment code on client!");
 		}
-		ReceivedCodes[serial] = code;
+		AttachmentCodeSync.ReceivedCodes[serial] = code;
 		NetworkServer.SendToAll(new AttachmentCodeMessage(serial, code));
 	}
 
@@ -125,7 +125,7 @@ public static class AttachmentCodeSync
 		{
 			throw new InvalidOperationException("Attempting to resend attachment code on client!");
 		}
-		ServerSetCode(firearm.ItemSerial, firearm.GetCurrentAttachmentsCode());
+		AttachmentCodeSync.ServerSetCode(firearm.ItemSerial, firearm.GetCurrentAttachmentsCode());
 	}
 
 	public static void WriteAttachmentCodeMessage(this NetworkWriter writer, AttachmentCodeMessage value)

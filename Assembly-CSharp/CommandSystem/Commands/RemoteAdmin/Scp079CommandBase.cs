@@ -33,7 +33,7 @@ public abstract class Scp079CommandBase : ICommand, IUsageProvider
 			response = "Value argument must be a valid number.\nUsage: " + arguments.Array[0] + " " + this.DisplayCommandUsage();
 			return false;
 		}
-		return OnExecute(arguments, sender, (int)result, out response);
+		return this.OnExecute(arguments, sender, (int)result, out response);
 	}
 
 	public virtual bool OnExecute(ArraySegment<string> arguments, ICommandSender sender, int input, out string response)
@@ -46,7 +46,7 @@ public abstract class Scp079CommandBase : ICommand, IUsageProvider
 		{
 			if (item.roleManager.CurrentRole is Scp079Role scp079Role && scp079Role.SubroutineModule.TryGetSubroutine<Scp079TierManager>(out var subroutine))
 			{
-				ApplyChanges(subroutine, input);
+				this.ApplyChanges(subroutine, input);
 				num++;
 				stringBuilder.Append(", " + item.LoggedNameFromRefHub());
 			}
@@ -54,7 +54,7 @@ public abstract class Scp079CommandBase : ICommand, IUsageProvider
 		if (num > 0)
 		{
 			string text = StringBuilderPool.Shared.ToStringReturn(stringBuilder).Substring(2);
-			ServerLogs.AddLog(ServerLogs.Modules.Administrative, string.Format("{0} used \"{1} ({2})\" command on player{3}{4}.", sender.LogName, Command, input, (num == 1) ? " " : "s ", text), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
+			ServerLogs.AddLog(ServerLogs.Modules.Administrative, string.Format("{0} used \"{1} ({2})\" command on player{3}{4}.", sender.LogName, this.Command, input, (num == 1) ? " " : "s ", text), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
 		}
 		else
 		{

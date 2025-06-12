@@ -113,55 +113,55 @@ public class RadioViewmodel : AnimatedViewmodelBase
 
 	private int _prevRange = -1;
 
-	public override IItemSwayController SwayController => _goopSway;
+	public override IItemSwayController SwayController => this._goopSway;
 
 	public override float ViewmodelCameraFOV => 50f;
 
 	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
 	{
 		base.InitSpectator(ply, id, wasEquipped);
-		OnEquipped();
+		this.OnEquipped();
 		if (wasEquipped)
 		{
-			GetComponent<AudioSource>().Stop();
-			AnimatorForceUpdate(base.SkipEquipTime);
+			base.GetComponent<AudioSource>().Stop();
+			this.AnimatorForceUpdate(base.SkipEquipTime);
 		}
 	}
 
 	internal override void OnEquipped()
 	{
-		CameraShakeController.AddEffect(new TrackerShake(_cameraTrackerSource, Quaternion.Euler(_cameraTrackerOffset), _cameraTrackerIntensity));
-		RefreshKeypadColor(_panelRoot.activeSelf);
+		CameraShakeController.AddEffect(new TrackerShake(this._cameraTrackerSource, Quaternion.Euler(this._cameraTrackerOffset), this._cameraTrackerIntensity));
+		this.RefreshKeypadColor(this._panelRoot.activeSelf);
 	}
 
 	private void Start()
 	{
-		_goopSway = new GoopSway(new GoopSway.GoopSwaySettings(_swayPivot, 0.65f, 0.0035f, 0.04f, 7f, 6.5f, 0.03f, 1.6f, invertSway: false), base.Hub);
+		this._goopSway = new GoopSway(new GoopSway.GoopSwaySettings(this._swayPivot, 0.65f, 0.0035f, 0.04f, 7f, 6.5f, 0.03f, 1.6f, invertSway: false), base.Hub);
 	}
 
 	private void Update()
 	{
-		if (_panelMain.activeSelf && _panelRoot.activeSelf)
+		if (this._panelMain.activeSelf && this._panelRoot.activeSelf)
 		{
-			_textVolume.text = "-" + (_voicechatMixer.GetFloat("AudioSettings_VoiceChat", out var value) ? Mathf.Abs(Mathf.RoundToInt(value)) : 0);
-			_textTime.text = DateTime.Now.ToString("HH:mm:ss");
-			GetTxRx(out var tx, out var rx);
-			_txOn.SetActive(tx);
-			_txOff.SetActive(!tx);
-			_rxOn.SetActive(rx);
-			_rxOff.SetActive(!rx);
-			AnimatorSetBool(IsTransmittingHash, tx);
+			this._textVolume.text = "-" + (this._voicechatMixer.GetFloat("AudioSettings_VoiceChat", out var value) ? Mathf.Abs(Mathf.RoundToInt(value)) : 0);
+			this._textTime.text = DateTime.Now.ToString("HH:mm:ss");
+			this.GetTxRx(out var tx, out var rx);
+			this._txOn.SetActive(tx);
+			this._txOff.SetActive(!tx);
+			this._rxOn.SetActive(rx);
+			this._rxOff.SetActive(!rx);
+			this.AnimatorSetBool(RadioViewmodel.IsTransmittingHash, tx);
 		}
-		else if (_panelNoBattery.activeSelf)
+		else if (this._panelNoBattery.activeSelf)
 		{
-			_batteryFlashTimer += Time.deltaTime;
-			if (_batteryFlashTimer > 0.4f)
+			this._batteryFlashTimer += Time.deltaTime;
+			if (this._batteryFlashTimer > 0.4f)
 			{
-				_batteryFlashTimer = 0f;
-				_noBatteryIndicator.enabled = !_noBatteryIndicator.enabled;
+				this._batteryFlashTimer = 0f;
+				this._noBatteryIndicator.enabled = !this._noBatteryIndicator.enabled;
 			}
 		}
-		UpdateNetwork();
+		this.UpdateNetwork();
 	}
 
 	private void UpdateNetwork()
@@ -170,16 +170,16 @@ public class RadioViewmodel : AnimatedViewmodelBase
 		{
 			return;
 		}
-		SetBattery(value.Battery);
+		this.SetBattery(value.Battery);
 		if (value.Battery != 0)
 		{
 			if (value.Range == RadioMessages.RadioRangeLevel.RadioDisabled)
 			{
-				SetState(state: false);
+				this.SetState(state: false);
 				return;
 			}
-			SetState(state: true);
-			SetRange((int)value.Range);
+			this.SetState(state: true);
+			this.SetRange((int)value.Range);
 		}
 	}
 
@@ -205,63 +205,63 @@ public class RadioViewmodel : AnimatedViewmodelBase
 
 	private void SetBattery(byte percent)
 	{
-		_panelMain.SetActive(percent > 0);
-		_panelNoBattery.SetActive(percent == 0);
+		this._panelMain.SetActive(percent > 0);
+		this._panelNoBattery.SetActive(percent == 0);
 		if (percent > 0)
 		{
-			_textBatteryLevel.text = percent + "%";
-			float num = (float)_batteryLevels.Length / 100f;
-			for (int i = 0; i < _batteryLevels.Length; i++)
+			this._textBatteryLevel.text = percent + "%";
+			float num = (float)this._batteryLevels.Length / 100f;
+			for (int i = 0; i < this._batteryLevels.Length; i++)
 			{
-				_batteryLevels[i].enabled = Mathf.Round((float)(int)percent * num) >= (float)(i + 1);
+				this._batteryLevels[i].enabled = Mathf.Round((float)(int)percent * num) >= (float)(i + 1);
 			}
 		}
 		else
 		{
-			AnimatorSetBool(IsTransmittingHash, val: false);
+			this.AnimatorSetBool(RadioViewmodel.IsTransmittingHash, val: false);
 		}
 	}
 
 	private void SetRange(int rangeId)
 	{
-		if (_prevRange != rangeId)
+		if (this._prevRange != rangeId)
 		{
 			if (base.gameObject.activeInHierarchy)
 			{
-				_audioSource.PlayOneShot(_clipCircleRange);
+				this._audioSource.PlayOneShot(this._clipCircleRange);
 			}
-			_prevRange = rangeId;
+			this._prevRange = rangeId;
 		}
 		if (InventoryItemLoader.TryGetItem<RadioItem>(ItemType.Radio, out var result))
 		{
 			RadioRangeMode[] ranges = result.Ranges;
 			rangeId = Mathf.Clamp(rangeId, 0, ranges.Length - 1);
-			_textModeShort.text = ranges[rangeId].ShortName;
-			_textModeFull.text = ranges[rangeId].FullName;
-			_rangeIndicator.texture = ranges[rangeId].SignalTexture;
+			this._textModeShort.text = ranges[rangeId].ShortName;
+			this._textModeFull.text = ranges[rangeId].FullName;
+			this._rangeIndicator.texture = ranges[rangeId].SignalTexture;
 		}
 	}
 
 	private void SetState(bool state)
 	{
-		if (_panelRoot.activeSelf != state)
+		if (this._panelRoot.activeSelf != state)
 		{
-			RefreshKeypadColor(state);
-			_panelRoot.SetActive(state);
-			_audioSource.PlayOneShot(state ? _clipTurnOn : _clipTurnOff);
+			this.RefreshKeypadColor(state);
+			this._panelRoot.SetActive(state);
+			this._audioSource.PlayOneShot(state ? this._clipTurnOn : this._clipTurnOff);
 			if (!state)
 			{
-				AnimatorSetBool(IsTransmittingHash, val: false);
+				this.AnimatorSetBool(RadioViewmodel.IsTransmittingHash, val: false);
 			}
 		}
 	}
 
 	private void RefreshKeypadColor(bool state)
 	{
-		Material sharedMaterial = _radioRenderer.sharedMaterial;
-		if (!(sharedMaterial != _enabledMat) || !(sharedMaterial != _disabledMat))
+		Material sharedMaterial = this._radioRenderer.sharedMaterial;
+		if (!(sharedMaterial != this._enabledMat) || !(sharedMaterial != this._disabledMat))
 		{
-			_radioRenderer.sharedMaterial = (state ? _enabledMat : _disabledMat);
+			this._radioRenderer.sharedMaterial = (state ? this._enabledMat : this._disabledMat);
 		}
 	}
 }

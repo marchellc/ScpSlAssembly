@@ -15,11 +15,11 @@ public class SingleRoomZoneGenerator : ZoneGenerator
 
 	public override void Generate(System.Random rng)
 	{
-		if (!Prefab.HolidayVariants.TryGetResult<HolidayRoomVariant, SpawnableRoom>(out var result))
+		if (!this.Prefab.HolidayVariants.TryGetResult<HolidayRoomVariant, SpawnableRoom>(out var result))
 		{
-			result = Prefab;
+			result = this.Prefab;
 		}
 		result.RegisterIdentities();
-		UnityEngine.Object.Instantiate(result, _spawnPosition.position, _spawnPosition.rotation, ZoneSpawnParent).SetupNetIdHandlers(0);
+		UnityEngine.Object.Instantiate(result, this._spawnPosition.position, this._spawnPosition.rotation, this.ZoneSpawnParent).SetupNetIdHandlers(0);
 	}
 }

@@ -33,7 +33,7 @@ public abstract class ServerSpecificSettingBase
 			ServerSpecificSettingBase[] definedSettings = ServerSpecificSettingsSync.DefinedSettings;
 			foreach (ServerSpecificSettingBase serverSpecificSettingBase in definedSettings)
 			{
-				if (serverSpecificSettingBase.SettingId == SettingId && !(serverSpecificSettingBase.GetType() != GetType()))
+				if (serverSpecificSettingBase.SettingId == this.SettingId && !(serverSpecificSettingBase.GetType() != base.GetType()))
 				{
 					return serverSpecificSettingBase;
 				}
@@ -52,17 +52,17 @@ public abstract class ServerSpecificSettingBase
 
 	public virtual void SerializeEntry(NetworkWriter writer)
 	{
-		writer.WriteInt(SettingId);
-		writer.WriteString(Label);
-		writer.WriteString(HintDescription);
+		writer.WriteInt(this.SettingId);
+		writer.WriteString(this.Label);
+		writer.WriteString(this.HintDescription);
 	}
 
 	public virtual void DeserializeEntry(NetworkReader reader)
 	{
-		SettingId = reader.ReadInt();
-		PlayerPrefsKey = GeneratePrefsKey();
-		Label = reader.ReadString();
-		HintDescription = reader.ReadString();
+		this.SettingId = reader.ReadInt();
+		this.PlayerPrefsKey = this.GeneratePrefsKey();
+		this.Label = reader.ReadString();
+		this.HintDescription = reader.ReadString();
 	}
 
 	public virtual void OnUpdate()
@@ -81,7 +81,7 @@ public abstract class ServerSpecificSettingBase
 
 	public override string ToString()
 	{
-		return $"{GetType().Name} [ID: {SettingId}] Value: {DebugValue}";
+		return $"{base.GetType().Name} [ID: {this.SettingId}] Value: {this.DebugValue}";
 	}
 
 	internal void SetId(int? id, string labelFallback)
@@ -90,18 +90,18 @@ public abstract class ServerSpecificSettingBase
 		{
 			id = labelFallback.GetStableHashCode();
 		}
-		SettingId = id.Value;
+		this.SettingId = id.Value;
 	}
 
 	private string GeneratePrefsKey()
 	{
-		KeyGeneratorSb.Clear();
-		KeyGeneratorSb.Append("SrvSp_");
-		KeyGeneratorSb.Append(ServerSpecificSettingsSync.CurServerPrefsKey);
-		KeyGeneratorSb.Append('_');
-		KeyGeneratorSb.Append(ServerSpecificSettingsSync.GetCodeFromType(GetType()));
-		KeyGeneratorSb.Append('_');
-		KeyGeneratorSb.Append(SettingId);
-		return KeyGeneratorSb.ToString();
+		ServerSpecificSettingBase.KeyGeneratorSb.Clear();
+		ServerSpecificSettingBase.KeyGeneratorSb.Append("SrvSp_");
+		ServerSpecificSettingBase.KeyGeneratorSb.Append(ServerSpecificSettingsSync.CurServerPrefsKey);
+		ServerSpecificSettingBase.KeyGeneratorSb.Append('_');
+		ServerSpecificSettingBase.KeyGeneratorSb.Append(ServerSpecificSettingsSync.GetCodeFromType(base.GetType()));
+		ServerSpecificSettingBase.KeyGeneratorSb.Append('_');
+		ServerSpecificSettingBase.KeyGeneratorSb.Append(this.SettingId);
+		return ServerSpecificSettingBase.KeyGeneratorSb.ToString();
 	}
 }

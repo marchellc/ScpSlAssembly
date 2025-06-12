@@ -22,23 +22,23 @@ internal struct ArgumentField
 	{
 		this.il = il;
 		this.i = i;
-		@ref = ((!type.IsClass && !type.IsInterface && !type.IsAbstract) ? true : false);
+		this.@ref = ((!type.IsClass && !type.IsInterface && !type.IsAbstract) ? true : false);
 	}
 
 	public void EmitLoad()
 	{
-		if (@ref)
+		if (this.@ref)
 		{
-			il.EmitLdarga(i);
+			this.il.EmitLdarga(this.i);
 		}
 		else
 		{
-			il.EmitLdarg(i);
+			this.il.EmitLdarg(this.i);
 		}
 	}
 
 	public void EmitStore()
 	{
-		il.EmitStarg(i);
+		this.il.EmitStarg(this.i);
 	}
 }

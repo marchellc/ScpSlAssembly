@@ -17,7 +17,7 @@ public class MapAtlasInterpreter : MonoBehaviour
 
 	public AtlasInterpretation[] Interpret(Texture2D atlas, System.Random rng)
 	{
-		ResultsBuffer.Clear();
+		MapAtlasInterpreter.ResultsBuffer.Clear();
 		if (!atlas.isReadable)
 		{
 			throw new InvalidOperationException("Provided atlas '" + atlas.name + "' is not marked as readable. Please change the import settings in editor.");
@@ -29,7 +29,7 @@ public class MapAtlasInterpreter : MonoBehaviour
 		{
 			for (int j = num2; j < atlas.width; j += num)
 			{
-				GlyphShapePair? glyphShapePair = ScanPixel(atlas, j, i);
+				GlyphShapePair? glyphShapePair = this.ScanPixel(atlas, j, i);
 				if (glyphShapePair.HasValue)
 				{
 					if (!flag)
@@ -41,17 +41,17 @@ public class MapAtlasInterpreter : MonoBehaviour
 						num2 = j % 3;
 						flag = true;
 					}
-					ResultsBuffer.Add(new AtlasInterpretation(glyphShapePair.Value, rng, j, i));
+					MapAtlasInterpreter.ResultsBuffer.Add(new AtlasInterpretation(glyphShapePair.Value, rng, j, i));
 				}
 			}
 		}
-		return ResultsBuffer.ToArray();
+		return MapAtlasInterpreter.ResultsBuffer.ToArray();
 	}
 
 	private GlyphShapePair? ScanPixel(Texture2D atlas, int x, int y)
 	{
 		Color32 color = atlas.GetPixel(x, y);
-		GlyphShapePair[] pairDefinitions = PairDefinitions;
+		GlyphShapePair[] pairDefinitions = this.PairDefinitions;
 		for (int i = 0; i < pairDefinitions.Length; i++)
 		{
 			GlyphShapePair value = pairDefinitions[i];
@@ -65,6 +65,6 @@ public class MapAtlasInterpreter : MonoBehaviour
 
 	private void Awake()
 	{
-		Singleton = this;
+		MapAtlasInterpreter.Singleton = this;
 	}
 }

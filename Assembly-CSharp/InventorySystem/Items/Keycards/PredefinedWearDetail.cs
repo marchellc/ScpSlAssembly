@@ -11,7 +11,7 @@ public class PredefinedWearDetail : DetailBase
 	{
 		for (int i = 0; i < gfxTarget.ElementVariants.Length; i++)
 		{
-			gfxTarget.ElementVariants[i].SetActive(i == _wearLevel);
+			gfxTarget.ElementVariants[i].SetActive(i == this._wearLevel);
 		}
 	}
 }

@@ -6,9 +6,9 @@ public abstract class SubEffectBase : MonoBehaviour
 {
 	protected StatusEffectBase MainEffect { get; private set; }
 
-	protected ReferenceHub Hub => MainEffect.Hub;
+	protected ReferenceHub Hub => this.MainEffect.Hub;
 
-	protected bool IsLocalPlayer => MainEffect.IsLocalPlayer;
+	protected bool IsLocalPlayer => this.MainEffect.IsLocalPlayer;
 
 	public virtual bool IsActive
 	{
@@ -16,7 +16,7 @@ public abstract class SubEffectBase : MonoBehaviour
 		{
 			if (base.gameObject.activeInHierarchy)
 			{
-				return MainEffect.IsEnabled;
+				return this.MainEffect.IsEnabled;
 			}
 			return false;
 		}
@@ -28,7 +28,7 @@ public abstract class SubEffectBase : MonoBehaviour
 
 	internal virtual void Init(StatusEffectBase mainEffect)
 	{
-		MainEffect = mainEffect;
+		this.MainEffect = mainEffect;
 	}
 
 	internal virtual void UpdateEffect()

@@ -20,7 +20,7 @@ public class ViewmodelScp127Extension : MonoBehaviour, IViewmodelExtension
 
 		public readonly Vector3 GetRandom()
 		{
-			return _forwardTr.forward * UnityEngine.Random.Range(_minForce, _maxForce);
+			return this._forwardTr.forward * UnityEngine.Random.Range(this._minForce, this._maxForce);
 		}
 	}
 
@@ -37,7 +37,7 @@ public class ViewmodelScp127Extension : MonoBehaviour, IViewmodelExtension
 
 	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_serial = viewmodel.ItemId.SerialNumber;
+		this._serial = viewmodel.ItemId.SerialNumber;
 		ShotEventManager.OnShot += OnShot;
 	}
 
@@ -48,18 +48,18 @@ public class ViewmodelScp127Extension : MonoBehaviour, IViewmodelExtension
 
 	private void OnDisable()
 	{
-		_slingLoopRb.transform.localRotation = Quaternion.identity;
+		this._slingLoopRb.transform.localRotation = Quaternion.identity;
 	}
 
 	private void OnShot(ShotEvent ev)
 	{
-		if (ev.ItemId.SerialNumber == _serial)
+		if (ev.ItemId.SerialNumber == this._serial)
 		{
-			Vector3 position = _applyForcePoint.position;
-			ShotForce[] onShotForces = _onShotForces;
+			Vector3 position = this._applyForcePoint.position;
+			ShotForce[] onShotForces = this._onShotForces;
 			foreach (ShotForce shotForce in onShotForces)
 			{
-				_slingLoopRb.AddForceAtPosition(shotForce.GetRandom(), position);
+				this._slingLoopRb.AddForceAtPosition(shotForce.GetRandom(), position);
 			}
 		}
 	}

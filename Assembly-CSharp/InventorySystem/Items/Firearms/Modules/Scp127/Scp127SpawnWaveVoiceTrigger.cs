@@ -39,7 +39,7 @@ public class Scp127SpawnWaveVoiceTrigger : Scp127CassieBasedVoiceTriggerBase
 
 	protected override bool TryIdentifyLine(NineTailedFoxAnnouncer.VoiceLine line)
 	{
-		if (!_remainingKeywords.TryPeek(out var result))
+		if (!this._remainingKeywords.TryPeek(out var result))
 		{
 			return true;
 		}
@@ -47,8 +47,8 @@ public class Scp127SpawnWaveVoiceTrigger : Scp127CassieBasedVoiceTriggerBase
 		{
 			return false;
 		}
-		_remainingKeywords.Dequeue();
-		return _remainingKeywords.IsEmpty();
+		this._remainingKeywords.Dequeue();
+		return this._remainingKeywords.IsEmpty();
 	}
 
 	private void OnWaveSpawned(SpawnableWaveBase wave, List<ReferenceHub> spawnedPlayers)
@@ -58,7 +58,7 @@ public class Scp127SpawnWaveVoiceTrigger : Scp127CassieBasedVoiceTriggerBase
 			return;
 		}
 		WaveLinePair? foundPair = null;
-		WaveLinePair[] voiceLines = _voiceLines;
+		WaveLinePair[] voiceLines = this._voiceLines;
 		for (int i = 0; i < voiceLines.Length; i++)
 		{
 			WaveLinePair value = voiceLines[i];
@@ -70,17 +70,17 @@ public class Scp127SpawnWaveVoiceTrigger : Scp127CassieBasedVoiceTriggerBase
 		}
 		if (foundPair.HasValue)
 		{
-			ServerScheduleEvent(delegate
+			base.ServerScheduleEvent(delegate
 			{
-				ServerPlayVoiceLineFromCollection(foundPair.Value.Collection);
+				base.ServerPlayVoiceLineFromCollection(foundPair.Value.Collection);
 			});
-			TempSb.Clear();
-			_remainingKeywords.Clear();
-			announcedWave.Announcement.CreateAnnouncementString(TempSb);
-			string[] array = TempSb.ToString().Split(' ');
+			Scp127SpawnWaveVoiceTrigger.TempSb.Clear();
+			this._remainingKeywords.Clear();
+			announcedWave.Announcement.CreateAnnouncementString(Scp127SpawnWaveVoiceTrigger.TempSb);
+			string[] array = Scp127SpawnWaveVoiceTrigger.TempSb.ToString().Split(' ');
 			foreach (string item in array)
 			{
-				_remainingKeywords.Enqueue(item);
+				this._remainingKeywords.Enqueue(item);
 			}
 		}
 	}

@@ -10,12 +10,12 @@ internal static class StandardClassLibraryFormatterHelper
 
 	static StandardClassLibraryFormatterHelper()
 	{
-		keyValuePairName = new byte[2][]
+		StandardClassLibraryFormatterHelper.keyValuePairName = new byte[2][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("Key"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("Value")
 		};
-		keyValuePairAutomata = new AutomataDictionary
+		StandardClassLibraryFormatterHelper.keyValuePairAutomata = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("Key"),

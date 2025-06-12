@@ -34,7 +34,7 @@ public class EventBasedEquipperModule : ModuleBase, IEquipperModule, IBusyIndica
 	{
 		get
 		{
-			if (IsEquipped || base.IsSpectator)
+			if (this.IsEquipped || base.IsSpectator)
 			{
 				return base.Firearm.IsHolstering;
 			}
@@ -49,39 +49,39 @@ public class EventBasedEquipperModule : ModuleBase, IEquipperModule, IBusyIndica
 	internal override void OnEquipped()
 	{
 		base.OnEquipped();
-		Randomize();
-		ApplyFirstTimeAnims();
+		this.Randomize();
+		this.ApplyFirstTimeAnims();
 		if (base.IsLocalPlayer)
 		{
-			ClientAlreadyEquippedSerials.Add(base.ItemSerial);
+			EventBasedEquipperModule.ClientAlreadyEquippedSerials.Add(base.ItemSerial);
 		}
 	}
 
 	internal override void SpectatorInit()
 	{
 		base.SpectatorInit();
-		Randomize();
-		ApplyFirstTimeAnims();
+		this.Randomize();
+		this.ApplyFirstTimeAnims();
 	}
 
 	internal override void OnAdded()
 	{
 		base.OnAdded();
-		ServerUpdateSeed();
-		if (base.IsLocalPlayer && !ClientAlreadyEquippedSerials.Contains(base.ItemSerial))
+		this.ServerUpdateSeed();
+		if (base.IsLocalPlayer && !EventBasedEquipperModule.ClientAlreadyEquippedSerials.Contains(base.ItemSerial))
 		{
-			SendCmd();
+			this.SendCmd();
 		}
 	}
 
 	internal override void OnHolstered()
 	{
 		base.OnHolstered();
-		IsEquipped = false;
-		ServerUpdateSeed();
-		if (base.IsServer && SyncFirstEquips.Contains(base.ItemSerial))
+		this.IsEquipped = false;
+		this.ServerUpdateSeed();
+		if (base.IsServer && EventBasedEquipperModule.SyncFirstEquips.Contains(base.ItemSerial))
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(RpcType.FirstTimeFalse);
 			});
@@ -91,9 +91,9 @@ public class EventBasedEquipperModule : ModuleBase, IEquipperModule, IBusyIndica
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		NextSeeds.Clear();
-		SyncFirstEquips.Clear();
-		ClientAlreadyEquippedSerials.Clear();
+		EventBasedEquipperModule.NextSeeds.Clear();
+		EventBasedEquipperModule.SyncFirstEquips.Clear();
+		EventBasedEquipperModule.ClientAlreadyEquippedSerials.Clear();
 	}
 
 	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
@@ -103,10 +103,10 @@ public class EventBasedEquipperModule : ModuleBase, IEquipperModule, IBusyIndica
 		{
 			return;
 		}
-		SendRpc(delegate(NetworkWriter writer)
+		this.SendRpc(delegate(NetworkWriter writer)
 		{
 			writer.WriteSubheader(RpcType.ResyncAllFirstTime);
-			SyncFirstEquips.ForEach(delegate(ushort s)
+			EventBasedEquipperModule.SyncFirstEquips.ForEach(delegate(ushort s)
 			{
 				writer.WriteUShort(s);
 			});
@@ -116,7 +116,7 @@ public class EventBasedEquipperModule : ModuleBase, IEquipperModule, IBusyIndica
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		SendRpc(delegate(NetworkWriter x)
+		this.SendRpc(delegate(NetworkWriter x)
 		{
 			x.WriteSubheader(RpcType.FirstTimeTrue);
 		});
@@ -128,19 +128,19 @@ public class EventBasedEquipperModule : ModuleBase, IEquipperModule, IBusyIndica
 		switch ((RpcType)reader.ReadByte())
 		{
 		case RpcType.SeedSync:
-			NextSeeds[serial] = reader.ReadUShort();
+			EventBasedEquipperModule.NextSeeds[serial] = reader.ReadUShort();
 			break;
 		case RpcType.FirstTimeTrue:
-			SyncFirstEquips.Add(serial);
+			EventBasedEquipperModule.SyncFirstEquips.Add(serial);
 			break;
 		case RpcType.FirstTimeFalse:
-			SyncFirstEquips.Remove(serial);
+			EventBasedEquipperModule.SyncFirstEquips.Remove(serial);
 			break;
 		case RpcType.ResyncAllFirstTime:
-			SyncFirstEquips.Clear();
+			EventBasedEquipperModule.SyncFirstEquips.Clear();
 			while (reader.Remaining > 0)
 			{
-				SyncFirstEquips.Add(reader.ReadUShort());
+				EventBasedEquipperModule.SyncFirstEquips.Add(reader.ReadUShort());
 			}
 			break;
 		}
@@ -148,10 +148,10 @@ public class EventBasedEquipperModule : ModuleBase, IEquipperModule, IBusyIndica
 
 	private void ServerUpdateSeed()
 	{
-		if (base.IsServer && RandomizeOnEquip)
+		if (base.IsServer && this.RandomizeOnEquip)
 		{
 			int rand = UnityEngine.Random.Range(0, 65535);
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(RpcType.SeedSync);
 				x.WriteUShort((ushort)rand);
@@ -161,16 +161,16 @@ public class EventBasedEquipperModule : ModuleBase, IEquipperModule, IBusyIndica
 
 	private void Randomize()
 	{
-		if (RandomizeOnEquip)
+		if (this.RandomizeOnEquip)
 		{
-			double num = new System.Random(NextSeeds.GetValueOrDefault(base.ItemSerial, base.ItemSerial)).NextDouble();
+			double num = new System.Random(EventBasedEquipperModule.NextSeeds.GetValueOrDefault(base.ItemSerial, base.ItemSerial)).NextDouble();
 			base.Firearm.AnimSetFloat(FirearmAnimatorHashes.Random, (float)num);
 		}
 	}
 
 	private void ApplyFirstTimeAnims()
 	{
-		if (SyncFirstEquips.Contains(base.ItemSerial))
+		if (EventBasedEquipperModule.SyncFirstEquips.Contains(base.ItemSerial))
 		{
 			base.Firearm.AnimSetBool(FirearmAnimatorHashes.FirstTimePickup, b: true, checkIfExists: true);
 		}
@@ -179,6 +179,6 @@ public class EventBasedEquipperModule : ModuleBase, IEquipperModule, IBusyIndica
 	[ExposedFirearmEvent]
 	public void Equip()
 	{
-		IsEquipped = true;
+		this.IsEquipped = true;
 	}
 }

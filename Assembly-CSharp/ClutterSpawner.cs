@@ -26,23 +26,23 @@ public class ClutterSpawner : MonoBehaviour
 
 	private void Start()
 	{
-		noHolidays = ConfigFile.ServerConfig.GetBool("no_holidays");
+		ClutterSpawner.noHolidays = ConfigFile.ServerConfig.GetBool("no_holidays");
 	}
 
 	private void OnMapStage(MapGenerationPhase stage)
 	{
 		if (stage == MapGenerationPhase.ComplexDecorationsAndClutter)
 		{
-			GenerateClutter();
+			this.GenerateClutter();
 		}
 	}
 
 	public void GenerateClutter()
 	{
 		bool flag = false;
-		for (int num = clutters.Count - 1; num >= 0; num--)
+		for (int num = this.clutters.Count - 1; num >= 0; num--)
 		{
-			ClutterStruct clutterStruct = clutters[num];
+			ClutterStruct clutterStruct = this.clutters[num];
 			Console.AddDebugLog("MGCLTR", "Checking spawn conditions for clutter struct \"" + clutterStruct.descriptor + "\" on object \"" + base.gameObject.name + "\"", MessageImportance.LeastImportant, nospace: true);
 			if ((bool)clutterStruct.clutterComponent && !clutterStruct.clutterComponent.spawned)
 			{
@@ -61,7 +61,7 @@ public class ClutterSpawner : MonoBehaviour
 					bool flag3 = clutterStruct.targetHolidays.IsAnyHolidayActive();
 					flag2 = (invertTimespan ? (!flag3) : flag3);
 				}
-				if (flag2 && (!IsExclusive || !flag))
+				if (flag2 && (!this.IsExclusive || !flag))
 				{
 					clutterStruct.clutterComponent.SpawnClutter();
 					flag = true;

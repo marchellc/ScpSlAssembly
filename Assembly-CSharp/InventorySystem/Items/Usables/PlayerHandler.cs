@@ -14,13 +14,13 @@ public class PlayerHandler
 	public void DoUpdate(ReferenceHub hub)
 	{
 		HealthStat module = hub.playerStats.GetModule<HealthStat>();
-		foreach (RegenerationProcess activeRegeneration in ActiveRegenerations)
+		foreach (RegenerationProcess activeRegeneration in this.ActiveRegenerations)
 		{
 			activeRegeneration.GetValue(out var isDone, out var value);
 			module.ServerHeal(value);
 			if (isDone)
 			{
-				ActiveRegenerations.Remove(activeRegeneration);
+				this.ActiveRegenerations.Remove(activeRegeneration);
 				break;
 			}
 		}
@@ -28,8 +28,8 @@ public class PlayerHandler
 
 	public void ResetAll()
 	{
-		CurrentUsable = CurrentlyUsedItem.None;
-		ActiveRegenerations.Clear();
-		PersonalCooldowns.Clear();
+		this.CurrentUsable = CurrentlyUsedItem.None;
+		this.ActiveRegenerations.Clear();
+		this.PersonalCooldowns.Clear();
 	}
 }

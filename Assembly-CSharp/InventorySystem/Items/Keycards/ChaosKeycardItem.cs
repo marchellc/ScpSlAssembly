@@ -67,23 +67,23 @@ public class ChaosKeycardItem : KeycardItem, IItemAlertDrawer, IItemDrawer
 	{
 		get
 		{
-			if (_snakeHintFade <= 0f)
+			if (this._snakeHintFade <= 0f)
 			{
 				return default(AlertContent);
 			}
-			if (_snakeHintFormat == null)
+			if (this._snakeHintFormat == null)
 			{
-				_snakeHintFormat = Translations.Get(InventoryGuiTranslation.SnakeHint);
+				this._snakeHintFormat = Translations.Get(InventoryGuiTranslation.SnakeHint);
 			}
-			if (_snakeHintFormatContent == null)
+			if (this._snakeHintFormatContent == null)
 			{
-				_snakeHintFormatContent = new object[4];
+				this._snakeHintFormatContent = new object[4];
 			}
-			_snakeHintFormatContent[0] = new ReadableKeyCode(ActionName.MoveForward);
-			_snakeHintFormatContent[1] = new ReadableKeyCode(ActionName.MoveLeft);
-			_snakeHintFormatContent[2] = new ReadableKeyCode(ActionName.MoveBackward);
-			_snakeHintFormatContent[3] = new ReadableKeyCode(ActionName.MoveRight);
-			return new AlertContent(string.Format(_snakeHintFormat, _snakeHintFormatContent), _snakeHintFade);
+			this._snakeHintFormatContent[0] = new ReadableKeyCode(ActionName.MoveForward);
+			this._snakeHintFormatContent[1] = new ReadableKeyCode(ActionName.MoveLeft);
+			this._snakeHintFormatContent[2] = new ReadableKeyCode(ActionName.MoveBackward);
+			this._snakeHintFormatContent[3] = new ReadableKeyCode(ActionName.MoveRight);
+			return new AlertContent(string.Format(this._snakeHintFormat, this._snakeHintFormatContent), this._snakeHintFade);
 		}
 	}
 
@@ -97,13 +97,13 @@ public class ChaosKeycardItem : KeycardItem, IItemAlertDrawer, IItemDrawer
 		switch ((ChaosMsgType)reader.ReadByte())
 		{
 		case ChaosMsgType.SnakeMsgSync:
-			GetEngineForSerial(serial).ProcessMessage(new SnakeNetworkMessage(reader));
+			ChaosKeycardItem.GetEngineForSerial(serial).ProcessMessage(new SnakeNetworkMessage(reader));
 			break;
 		case ChaosMsgType.NewConnectionFullSync:
-			SnakeSessions.Clear();
+			ChaosKeycardItem.SnakeSessions.Clear();
 			while (reader.Remaining > 0)
 			{
-				GetEngineForSerial(reader.ReadUShort()).ProcessMessage(new SnakeNetworkMessage(reader));
+				ChaosKeycardItem.GetEngineForSerial(reader.ReadUShort()).ProcessMessage(new SnakeNetworkMessage(reader));
 			}
 			break;
 		case ChaosMsgType.MovementSwitch:
@@ -134,7 +134,7 @@ public class ChaosKeycardItem : KeycardItem, IItemAlertDrawer, IItemDrawer
 			SnakeNetworkMessage msg = new SnakeNetworkMessage(reader);
 			if (msg.HasFlag(SnakeNetworkMessage.SyncFlags.Delta))
 			{
-				ServerSendMessage(msg);
+				this.ServerSendMessage(msg);
 			}
 			break;
 		}
@@ -142,7 +142,7 @@ public class ChaosKeycardItem : KeycardItem, IItemAlertDrawer, IItemDrawer
 		{
 			sbyte x = reader.ReadSByte();
 			sbyte y = reader.ReadSByte();
-			ServerSendPublicRpc(delegate(NetworkWriter writer)
+			base.ServerSendPublicRpc(delegate(NetworkWriter writer)
 			{
 				writer.WriteSubheader(MsgType.Custom);
 				writer.WriteSubheader(ChaosMsgType.MovementSwitch);
@@ -157,11 +157,11 @@ public class ChaosKeycardItem : KeycardItem, IItemAlertDrawer, IItemDrawer
 	protected override void ServerOnNewPlayerConnected(ReferenceHub hub)
 	{
 		base.ServerOnNewPlayerConnected(hub);
-		ServerSendTargetRpc(hub, delegate(NetworkWriter writer)
+		base.ServerSendTargetRpc(hub, delegate(NetworkWriter writer)
 		{
 			writer.WriteSubheader(MsgType.Custom);
 			writer.WriteSubheader(ChaosMsgType.NewConnectionFullSync);
-			foreach (KeyValuePair<ushort, SnakeEngine> snakeSession in SnakeSessions)
+			foreach (KeyValuePair<ushort, SnakeEngine> snakeSession in ChaosKeycardItem.SnakeSessions)
 			{
 				writer.WriteUShort(snakeSession.Key);
 				snakeSession.Value.WriteFullResyncMessage(writer);
@@ -172,7 +172,7 @@ public class ChaosKeycardItem : KeycardItem, IItemAlertDrawer, IItemDrawer
 	protected override void OnUsed(IDoorPermissionRequester requester, bool success)
 	{
 		base.OnUsed(requester, success);
-		ServerSendPublicRpc(delegate(NetworkWriter x)
+		base.ServerSendPublicRpc(delegate(NetworkWriter x)
 		{
 			x.WriteSubheader(MsgType.Custom);
 			x.WriteSubheader(ChaosMsgType.UseDetails);
@@ -184,7 +184,7 @@ public class ChaosKeycardItem : KeycardItem, IItemAlertDrawer, IItemDrawer
 	internal override void OnTemplateReloaded(bool wasEverLoaded)
 	{
 		base.OnTemplateReloaded(wasEverLoaded);
-		_selfTemplate = this;
+		ChaosKeycardItem._selfTemplate = this;
 	}
 
 	public override void OnAdded(ItemPickupBase pickup)
@@ -192,8 +192,8 @@ public class ChaosKeycardItem : KeycardItem, IItemAlertDrawer, IItemDrawer
 		base.OnAdded(pickup);
 		if (base.IsControllable)
 		{
-			_localEngine = GetNewEngine(isLocalClient: true);
-			SnakeSessions[base.ItemSerial] = _localEngine;
+			this._localEngine = this.GetNewEngine(isLocalClient: true);
+			ChaosKeycardItem.SnakeSessions[base.ItemSerial] = this._localEngine;
 		}
 	}
 
@@ -204,17 +204,17 @@ public class ChaosKeycardItem : KeycardItem, IItemAlertDrawer, IItemDrawer
 		{
 			return;
 		}
-		if (UpdateSnake())
+		if (this.UpdateSnake())
 		{
-			_snakeHintElapsed += Time.deltaTime;
-			UpdateHint(_snakeHintElapsed < _hintDuration);
+			this._snakeHintElapsed += Time.deltaTime;
+			this.UpdateHint(this._snakeHintElapsed < this._hintDuration);
 			return;
 		}
-		if (_snakeHintElapsed < _hintDuration)
+		if (this._snakeHintElapsed < this._hintDuration)
 		{
-			_snakeHintElapsed = 0f;
+			this._snakeHintElapsed = 0f;
 		}
-		UpdateHint(targetVisible: false);
+		this.UpdateHint(targetVisible: false);
 	}
 
 	private bool UpdateSnake()
@@ -227,72 +227,72 @@ public class ChaosKeycardItem : KeycardItem, IItemAlertDrawer, IItemDrawer
 		{
 			return true;
 		}
-		UpdateInput(KeyCode.UpArrow, ActionName.MoveForward, Vector2Int.up);
-		UpdateInput(KeyCode.DownArrow, ActionName.MoveBackward, Vector2Int.down);
-		UpdateInput(KeyCode.LeftArrow, ActionName.MoveLeft, Vector2Int.left);
-		UpdateInput(KeyCode.RightArrow, ActionName.MoveRight, Vector2Int.right);
-		if (_remainingMoveCooldown > 0f)
+		this.UpdateInput(KeyCode.UpArrow, ActionName.MoveForward, Vector2Int.up);
+		this.UpdateInput(KeyCode.DownArrow, ActionName.MoveBackward, Vector2Int.down);
+		this.UpdateInput(KeyCode.LeftArrow, ActionName.MoveLeft, Vector2Int.left);
+		this.UpdateInput(KeyCode.RightArrow, ActionName.MoveRight, Vector2Int.right);
+		if (this._remainingMoveCooldown > 0f)
 		{
-			_remainingMoveCooldown -= Time.deltaTime;
+			this._remainingMoveCooldown -= Time.deltaTime;
 		}
 		else
 		{
-			_localEngine.Move();
-			_remainingMoveCooldown = _moveCooldownOverScore.Evaluate(_localEngine.Score);
+			this._localEngine.Move();
+			this._remainingMoveCooldown = this._moveCooldownOverScore.Evaluate(this._localEngine.Score);
 		}
 		return true;
 	}
 
 	private void UpdateInput(KeyCode kc, ActionName action, Vector2Int input)
 	{
-		if ((GetActionDown(action) || Input.GetKeyDown(kc)) && _localEngine.ProvideInput(input))
+		if ((base.GetActionDown(action) || Input.GetKeyDown(kc)) && this._localEngine.ProvideInput(input))
 		{
-			ClientSendCmd(delegate(NetworkWriter writer)
+			base.ClientSendCmd(delegate(NetworkWriter writer)
 			{
 				writer.WriteSubheader(MsgType.Custom);
 				writer.WriteSubheader(ChaosMsgType.MovementSwitch);
 				writer.WriteSByte((sbyte)input.x);
 				writer.WriteSByte((sbyte)input.y);
 			});
-			_hintDuration = _hintDurationAfterInteract;
+			this._hintDuration = this._hintDurationAfterInteract;
 			ChaosKeycardItem.OnSnakeMovementDirChanged?.Invoke(null, input);
 		}
 	}
 
 	private void UpdateHint(bool targetVisible)
 	{
-		_snakeHintFade = Mathf.MoveTowards(_snakeHintFade, targetVisible ? 1 : 0, Time.deltaTime * _hintFadeSpeed);
+		this._snakeHintFade = Mathf.MoveTowards(this._snakeHintFade, targetVisible ? 1 : 0, Time.deltaTime * this._hintFadeSpeed);
 	}
 
 	private void ServerSendMessage(SnakeNetworkMessage msg)
 	{
-		_msgToSend = msg;
-		ServerSendPublicRpc(delegate(NetworkWriter writer)
+		ChaosKeycardItem._msgToSend = msg;
+		base.ServerSendPublicRpc(delegate(NetworkWriter writer)
 		{
 			writer.WriteSubheader(MsgType.Custom);
 			writer.WriteSubheader(ChaosMsgType.SnakeMsgSync);
-			_msgToSend.WriteSelf(writer);
+			ChaosKeycardItem._msgToSend.WriteSelf(writer);
 		});
 	}
 
 	private void ClientSendMessage(SnakeNetworkMessage msg)
 	{
-		_msgToSend = msg;
-		ClientSendCmd(delegate(NetworkWriter writer)
+		ChaosKeycardItem._msgToSend = msg;
+		base.ClientSendCmd(delegate(NetworkWriter writer)
 		{
 			writer.WriteSubheader(MsgType.Custom);
 			writer.WriteSubheader(ChaosMsgType.SnakeMsgSync);
-			_msgToSend.WriteSelf(writer);
+			ChaosKeycardItem._msgToSend.WriteSelf(writer);
 		});
 	}
 
 	private SnakeEngine GetNewEngine(bool isLocalClient)
 	{
-		return new SnakeEngine(_snakeAreaSize / 2, _snakeStartLength, _snakeMaxLength, _snakeAreaSize, _snakeGameoverTime, isLocalClient ? new Action<SnakeNetworkMessage>(ClientSendMessage) : null);
+		return new SnakeEngine(this._snakeAreaSize / 2, this._snakeStartLength, this._snakeMaxLength, this._snakeAreaSize, this._snakeGameoverTime, isLocalClient ? new Action<SnakeNetworkMessage>(ClientSendMessage) : null);
 	}
 
 	private static SnakeEngine GetEngineForSerial(ushort serial)
 	{
-		return SnakeSessions.GetOrAdd(serial, () => _selfTemplate.GetNewEngine(isLocalClient: false));
+		return ChaosKeycardItem.SnakeSessions.GetOrAdd(serial, () => ChaosKeycardItem._selfTemplate.GetNewEngine(isLocalClient: false));
 	}
 }

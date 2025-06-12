@@ -152,6 +152,10 @@ public class PermissionsHandler
 		{
 			PlayerPermissions.ServerLogLiveFeed,
 			"LLF"
+		},
+		{
+			PlayerPermissions.ExecuteAs,
+			"EXA"
 		}
 	};
 
@@ -159,7 +163,7 @@ public class PermissionsHandler
 	{
 		get
 		{
-			if (!_banTeamSlots)
+			if (!this._banTeamSlots)
 			{
 				return CustomNetworkManager.IsVerified;
 			}
@@ -171,7 +175,7 @@ public class PermissionsHandler
 	{
 		get
 		{
-			if (!_banTeamGeoBypass)
+			if (!this._banTeamGeoBypass)
 			{
 				return CustomNetworkManager.IsVerified;
 			}
@@ -183,13 +187,13 @@ public class PermissionsHandler
 	{
 		get
 		{
-			if (!OverrideEnabled)
+			if (!this.OverrideEnabled)
 			{
 				return null;
 			}
-			if (Groups.ContainsKey(_overrideRole))
+			if (this.Groups.ContainsKey(this._overrideRole))
 			{
-				return Groups[_overrideRole];
+				return this.Groups[this._overrideRole];
 			}
 			return null;
 		}
@@ -199,7 +203,7 @@ public class PermissionsHandler
 	{
 		get
 		{
-			if (string.IsNullOrEmpty(OverridePassword) || OverridePassword == "none")
+			if (string.IsNullOrEmpty(this.OverridePassword) || this.OverridePassword == "none")
 			{
 				return false;
 			}
@@ -207,17 +211,17 @@ public class PermissionsHandler
 			{
 				return true;
 			}
-			if (OverridePassword.Length < 8)
+			if (this.OverridePassword.Length < 8)
 			{
 				ServerConsole.AddLog("Override password refused, because it's too short (requirement for verified servers only).");
 				return false;
 			}
-			if (OverridePassword.ToLower() == OverridePassword || OverridePassword.ToUpper() == OverridePassword)
+			if (this.OverridePassword.ToLower() == this.OverridePassword || this.OverridePassword.ToUpper() == this.OverridePassword)
 			{
 				ServerConsole.AddLog("Override password refused, because it must contain mixed case chars (requirement for verified servers only).");
 				return false;
 			}
-			if (OverridePassword.Any((char c) => !char.IsLetter(c)))
+			if (this.OverridePassword.Any((char c) => !char.IsLetter(c)))
 			{
 				return true;
 			}
@@ -234,7 +238,7 @@ public class PermissionsHandler
 	{
 		get
 		{
-			if (!_managerAccess && !StaffAccess)
+			if (!this._managerAccess && !this.StaffAccess)
 			{
 				return CustomNetworkManager.IsVerified;
 			}
@@ -246,7 +250,7 @@ public class PermissionsHandler
 	{
 		get
 		{
-			if (!_banTeamAccess && !StaffAccess)
+			if (!this._banTeamAccess && !this.StaffAccess)
 			{
 				return CustomNetworkManager.IsVerified;
 			}
@@ -258,22 +262,22 @@ public class PermissionsHandler
 
 	public PermissionsHandler(ref YamlConfig configuration, ref YamlConfig sharedGroups, ref YamlConfig sharedGroupsMembers)
 	{
-		_config = new YamlConfig(configuration.Path);
-		_sharedGroups = sharedGroups;
-		OverridePassword = configuration.GetString("override_password", "none");
-		_overrideRole = configuration.GetString("override_password_role", "owner");
-		StaffAccess = configuration.GetBool("enable_staff_access");
-		_managerAccess = configuration.GetBool("enable_manager_access", def: true);
-		_banTeamAccess = configuration.GetBool("enable_banteam_access", def: true);
-		_banTeamSlots = configuration.GetBool("enable_banteam_reserved_slots", def: true);
-		_banTeamGeoBypass = configuration.GetBool("enable_banteam_bypass_geoblocking", def: true);
-		NorthwoodAccess = configuration.GetBool("enable_northwood_access");
-		if (NorthwoodAccess)
+		this._config = new YamlConfig(configuration.Path);
+		this._sharedGroups = sharedGroups;
+		this.OverridePassword = configuration.GetString("override_password", "none");
+		this._overrideRole = configuration.GetString("override_password_role", "owner");
+		this.StaffAccess = configuration.GetBool("enable_staff_access");
+		this._managerAccess = configuration.GetBool("enable_manager_access", def: true);
+		this._banTeamAccess = configuration.GetBool("enable_banteam_access", def: true);
+		this._banTeamSlots = configuration.GetBool("enable_banteam_reserved_slots", def: true);
+		this._banTeamGeoBypass = configuration.GetBool("enable_banteam_bypass_geoblocking", def: true);
+		this.NorthwoodAccess = configuration.GetBool("enable_northwood_access");
+		if (this.NorthwoodAccess)
 		{
 			ServerConsole.AddLog("WARNING - Northwood staff access is enabled! All NW Studios staff members will have FULL Remote Admin access (this should only be used on testing servers)! You can disable this by setting 'enable_northwood_access' to false in your remote admin config file.", ConsoleColor.Yellow);
 		}
-		Groups = new Dictionary<string, UserGroup>();
-		_raPermissions = new HashSet<ulong>();
+		this.Groups = new Dictionary<string, UserGroup>();
+		this._raPermissions = new HashSet<ulong>();
 		List<string> stringList = configuration.GetStringList("Roles");
 		List<string> stringList2 = configuration.GetStringList("Roles");
 		if (sharedGroups != null)
@@ -313,12 +317,12 @@ public class PermissionsHandler
 			byte requiredKickPower = ((array.Contains<string>(item + "_required_kick_power") || sharedGroups == null) ? configuration.GetByte(item + "_required_kick_power", 0) : sharedGroups.GetByte(item + "_required_kick_power", 0));
 			if (!(text2 == "") && !(text3 == ""))
 			{
-				if (Groups.ContainsKey(item))
+				if (this.Groups.ContainsKey(item))
 				{
 					ServerConsole.AddLog("Duplicated group definition: " + item + ".");
 					continue;
 				}
-				Groups.Add(item, new UserGroup
+				this.Groups.Add(item, new UserGroup
 				{
 					Name = item,
 					BadgeColor = text3,
@@ -332,88 +336,88 @@ public class PermissionsHandler
 				});
 			}
 		}
-		Members = configuration.GetStringDictionary("Members");
+		this.Members = configuration.GetStringDictionary("Members");
 		Dictionary<string, string> dictionary = sharedGroupsMembers?.GetStringDictionary("SharedMembers");
 		if (dictionary != null)
 		{
 			foreach (KeyValuePair<string, string> item2 in dictionary)
 			{
-				if (Members.TryGetValue(item2.Key, out var value))
+				if (this.Members.TryGetValue(item2.Key, out var value))
 				{
 					ServerConsole.AddLog("Duplicated group member: " + item2.Key + ". Is member of " + value + " and " + item2.Value + ".");
 				}
 				else
 				{
-					Members.Add(item2.Key, item2.Value);
+					this.Members.Add(item2.Key, item2.Value);
 				}
 			}
 		}
-		_lastPerm = 1uL;
+		this._lastPerm = 1uL;
 		HashSet<string> hashSet = new HashSet<string>();
-		if (Members != null)
+		if (this.Members != null)
 		{
-			foreach (KeyValuePair<string, string> member in Members)
+			foreach (KeyValuePair<string, string> member in this.Members)
 			{
-				if (!Groups.ContainsKey(member.Value))
+				if (!this.Groups.ContainsKey(member.Value))
 				{
 					hashSet.Add(member.Key);
 				}
 			}
 		}
-		if (hashSet.Count > 0 && Members != null)
+		if (hashSet.Count > 0 && this.Members != null)
 		{
 			foreach (string item3 in hashSet)
 			{
-				Members.Remove(item3);
+				this.Members.Remove(item3);
 			}
 		}
 		hashSet.Clear();
-		Permissions = new Dictionary<string, ulong>();
+		this.Permissions = new Dictionary<string, ulong>();
 		string[] names = EnumUtils<PlayerPermissions>.Names;
 		foreach (string text4 in names)
 		{
-			ulong num = (ulong)Enum.Parse(typeof(PlayerPermissions), text4);
-			FullPerm |= num;
-			Permissions.Add(text4, num);
-			if (num != 4096 && num != 131072 && num != 2097152 && num != 4194304 && num != 16777216 && num != 134217728 && num != 8388608)
+			ulong num2 = (ulong)Enum.Parse(typeof(PlayerPermissions), text4);
+			this.FullPerm |= num2;
+			this.Permissions.Add(text4, num2);
+			if (num2 != 4096 && num2 != 131072 && num2 != 2097152 && num2 != 4194304 && num2 != 16777216 && num2 != 134217728 && num2 != 8388608)
 			{
-				_raPermissions.Add(num);
+				this._raPermissions.Add(num2);
 			}
-			if (num > _lastPerm)
+			if (num2 > this._lastPerm)
 			{
-				_lastPerm = num;
+				this._lastPerm = num2;
 			}
 		}
-		RefreshPermissions();
+		this.RefreshPermissions();
 	}
 
 	public ulong RegisterPermission(string name, bool remoteAdmin, bool refresh = true)
 	{
-		_lastPerm = (ulong)Math.Pow(2.0, Math.Log(_lastPerm, 2.0) + 1.0);
-		FullPerm |= _lastPerm;
-		Permissions.Add(name, _lastPerm);
+		this._lastPerm = (ulong)Math.Pow(2.0, Math.Log(this._lastPerm, 2.0) + 1.0);
+		this.FullPerm |= this._lastPerm;
+		this.Permissions.Add(name, this._lastPerm);
 		if (remoteAdmin)
 		{
-			_raPermissions.Add(_lastPerm);
+			this._raPermissions.Add(this._lastPerm);
 		}
 		if (refresh)
 		{
-			RefreshPermissions();
+			this.RefreshPermissions();
 		}
-		return _lastPerm;
+		return this._lastPerm;
 	}
 
 	public void RefreshPermissions()
 	{
-		foreach (KeyValuePair<string, UserGroup> group in Groups)
+		foreach (KeyValuePair<string, UserGroup> group in this.Groups)
 		{
 			group.Value.Permissions = 0uL;
 		}
-		Dictionary<string, string> stringDictionary = _config.GetStringDictionary("Permissions");
-		Dictionary<string, string> dictionary = _sharedGroups?.GetStringDictionary("SharedPermissions");
-		foreach (string key3 in Permissions.Keys)
+		Dictionary<string, string> stringDictionary = this._config.GetStringDictionary("Permissions");
+		Dictionary<string, string> dictionary = this._sharedGroups?.GetStringDictionary("SharedPermissions");
+		foreach (string key3 in this.Permissions.Keys)
 		{
-			ulong num = Permissions[key3];
+			ulong num = this.Permissions[key3];
 			if (stringDictionary.TryGetValue(key3, out var value))
 			{
 				string[] array = YamlConfig.ParseCommaSeparatedString(value);
@@ -426,7 +430,7 @@ public class PermissionsHandler
 					string[] array2 = array;
 					foreach (string key in array2)
 					{
-						if (Groups.TryGetValue(key, out var value2))
+						if (this.Groups.TryGetValue(key, out var value2))
 						{
 							value2.Permissions |= num;
 						}
@@ -451,7 +455,7 @@ public class PermissionsHandler
 				string[] array2 = array3;
 				foreach (string key2 in array2)
 				{
-					if (Groups.TryGetValue(key2, out var value4))
+					if (this.Groups.TryGetValue(key2, out var value4))
 					{
 						value4.Permissions |= num;
 					}
@@ -466,46 +470,46 @@ public class PermissionsHandler
 
 	public bool IsRaPermitted(ulong permissions)
 	{
-		return _raPermissions.Any((ulong perm) => IsPermitted(permissions, perm));
+		return this._raPermissions.Any((ulong perm) => PermissionsHandler.IsPermitted(permissions, perm));
 	}
 
 	public UserGroup GetGroup(string name)
 	{
-		if (Groups.ContainsKey(name))
+		if (this.Groups.ContainsKey(name))
 		{
-			return Groups[name].Clone();
+			return this.Groups[name].Clone();
 		}
 		return null;
 	}
 
 	public List<string> GetAllGroupsNames()
 	{
-		return Groups.Keys.ToList();
+		return this.Groups.Keys.ToList();
 	}
 
 	public Dictionary<string, UserGroup> GetAllGroups()
 	{
-		return Groups.Keys.ToDictionary((string gr) => gr, (string gr) => Groups[gr]);
+		return this.Groups.Keys.ToDictionary((string gr) => gr, (string gr) => this.Groups[gr]);
 	}
 
 	public string GetPermissionName(ulong value)
 	{
-		return Permissions.FirstOrDefault((KeyValuePair<string, ulong> x) => x.Value == value).Key;
+		return this.Permissions.FirstOrDefault((KeyValuePair<string, ulong> x) => x.Value == value).Key;
 	}
 
 	public ulong GetPermissionValue(string name)
 	{
-		return Permissions.FirstOrDefault((KeyValuePair<string, ulong> x) => x.Key == name).Value;
+		return this.Permissions.FirstOrDefault((KeyValuePair<string, ulong> x) => x.Key == name).Value;
 	}
 
 	public List<string> GetAllPermissions()
 	{
-		return Permissions.Keys.ToList();
+		return this.Permissions.Keys.ToList();
 	}
 
 	public static bool IsPermitted(ulong permissions, PlayerPermissions check)
 	{
-		return IsPermitted(permissions, (ulong)check);
+		return PermissionsHandler.IsPermitted(permissions, (ulong)check);
 	}
 
 	public static bool IsPermitted(ulong permissions, PlayerPermissions[] check)
@@ -516,14 +520,14 @@ public class PermissionsHandler
 		}
 		ulong num = 0uL;
 		num = check.Aggregate(0uL, (ulong current, PlayerPermissions c) => current | (ulong)c);
-		return IsPermitted(permissions, num);
+		return PermissionsHandler.IsPermitted(permissions, num);
 	}
 
 	public bool IsPermitted(ulong permissions, string check)
 	{
-		if (Permissions.ContainsKey(check))
+		if (this.Permissions.ContainsKey(check))
 		{
-			return IsPermitted(permissions, Permissions[check]);
+			return PermissionsHandler.IsPermitted(permissions, this.Permissions[check]);
 		}
 		return false;
 	}
@@ -534,8 +538,8 @@ public class PermissionsHandler
 		{
 			return true;
 		}
-		ulong check2 = check.Where((string c) => Permissions.ContainsKey(c)).Aggregate(0uL, (ulong current, string c) => current | Permissions[c]);
-		return IsPermitted(permissions, check2);
+		ulong check2 = check.Where((string c) => this.Permissions.ContainsKey(c)).Aggregate(0uL, (ulong current, string c) => current | this.Permissions[c]);
+		return PermissionsHandler.IsPermitted(permissions, check2);
 	}
 
 	public static bool IsPermitted(ulong permissions, ulong check)
@@ -545,9 +549,9 @@ public class PermissionsHandler
 
 	public UserGroup GetUserGroup(string userId)
 	{
-		if (!string.IsNullOrEmpty(userId) && Members.ContainsKey(userId))
+		if (!string.IsNullOrEmpty(userId) && this.Members.ContainsKey(userId))
 		{
-			return Groups[Members[userId]];
+			return this.Groups[this.Members[userId]];
 		}
 		return null;
 	}

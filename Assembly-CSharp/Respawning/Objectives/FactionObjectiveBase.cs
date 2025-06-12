@@ -8,7 +8,7 @@ public abstract class FactionObjectiveBase
 {
 	public FactionObjectiveBase()
 	{
-		OnInstanceCreated();
+		this.OnInstanceCreated();
 		CustomNetworkManager.OnClientReady += OnInstanceReset;
 	}
 
@@ -34,7 +34,7 @@ public abstract class FactionObjectiveBase
 
 	protected virtual bool IsValidFaction(ReferenceHub hub)
 	{
-		return IsValidFaction(hub.GetFaction());
+		return this.IsValidFaction(hub.GetFaction());
 	}
 
 	protected virtual void OnInstanceCreated()

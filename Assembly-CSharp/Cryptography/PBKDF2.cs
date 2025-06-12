@@ -7,7 +7,7 @@ public static class PBKDF2
 {
 	public static string Pbkdf2HashString(string password, byte[] salt, int iterations, int outputBytes)
 	{
-		return Convert.ToBase64String(Pbkdf2HashBytes(password, salt, iterations, outputBytes));
+		return Convert.ToBase64String(PBKDF2.Pbkdf2HashBytes(password, salt, iterations, outputBytes));
 	}
 
 	public static byte[] Pbkdf2HashBytes(string password, byte[] salt, int iterations, int outputBytes)

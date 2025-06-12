@@ -10,6 +10,6 @@ public class OpusException : Exception
 	public OpusException(OpusStatusCode statusCode, string message)
 		: base(message)
 	{
-		StatusCode = statusCode;
+		this.StatusCode = statusCode;
 	}
 }

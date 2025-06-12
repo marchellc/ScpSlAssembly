@@ -18,45 +18,45 @@ public class SSButton : ServerSpecificSettingBase
 	{
 		get
 		{
-			if (!SyncLastPress.IsRunning)
+			if (!this.SyncLastPress.IsRunning)
 			{
 				return "Never pressed";
 			}
-			return $"Pressed {SyncLastPress.Elapsed} ago";
+			return $"Pressed {this.SyncLastPress.Elapsed} ago";
 		}
 	}
 
 	public SSButton(int? id, string label, string buttonText, float? holdTimeSeconds = null, string hint = null)
 	{
-		SetId(id, label);
+		base.SetId(id, label);
 		base.Label = label;
 		base.HintDescription = hint;
-		ButtonText = buttonText;
-		HoldTimeSeconds = Mathf.Max(holdTimeSeconds.GetValueOrDefault(), 0f);
+		this.ButtonText = buttonText;
+		this.HoldTimeSeconds = Mathf.Max(holdTimeSeconds.GetValueOrDefault(), 0f);
 	}
 
 	public override void ApplyDefaultValues()
 	{
-		SyncLastPress.Reset();
+		this.SyncLastPress.Reset();
 	}
 
 	public override void SerializeEntry(NetworkWriter writer)
 	{
 		base.SerializeEntry(writer);
-		writer.WriteFloat(HoldTimeSeconds);
-		writer.WriteString(ButtonText);
+		writer.WriteFloat(this.HoldTimeSeconds);
+		writer.WriteString(this.ButtonText);
 	}
 
 	public override void DeserializeEntry(NetworkReader reader)
 	{
 		base.DeserializeEntry(reader);
-		HoldTimeSeconds = reader.ReadFloat();
-		ButtonText = reader.ReadString();
+		this.HoldTimeSeconds = reader.ReadFloat();
+		this.ButtonText = reader.ReadString();
 	}
 
 	public override void DeserializeValue(NetworkReader reader)
 	{
 		base.DeserializeValue(reader);
-		SyncLastPress.Restart();
+		this.SyncLastPress.Restart();
 	}
 }

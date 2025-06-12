@@ -23,8 +23,8 @@ public class TrilateralTerminationHandler : AchievementHandlerBase
 
 	internal override void OnRoundStarted()
 	{
-		Kills.Clear();
-		Timers.Clear();
+		TrilateralTerminationHandler.Kills.Clear();
+		TrilateralTerminationHandler.Timers.Clear();
 	}
 
 	private static void OnAnyPlayerDied(ReferenceHub victim, DamageHandlerBase handler)
@@ -36,24 +36,24 @@ public class TrilateralTerminationHandler : AchievementHandlerBase
 		ReferenceHub hub = attackerDamageHandler.Attacker.Hub;
 		if (!(hub == null) && HitboxIdentity.IsEnemy(attackerDamageHandler.Attacker.Role, victim.GetRoleId()))
 		{
-			if (!Kills.TryGetValue(hub, out var value))
+			if (!TrilateralTerminationHandler.Kills.TryGetValue(hub, out var value))
 			{
 				value = 0;
 			}
-			value = (Kills[hub] = value + 1);
-			if (!Timers.TryGetValue(hub, out var value2))
+			value = (TrilateralTerminationHandler.Kills[hub] = value + 1);
+			if (!TrilateralTerminationHandler.Timers.TryGetValue(hub, out var value2))
 			{
-				Timers.Add(hub, Stopwatch.StartNew());
+				TrilateralTerminationHandler.Timers.Add(hub, Stopwatch.StartNew());
 			}
 			else if (value2.Elapsed.TotalSeconds > 3.0)
 			{
-				Timers[hub].Restart();
-				Kills[hub] = 1;
+				TrilateralTerminationHandler.Timers[hub].Restart();
+				TrilateralTerminationHandler.Kills[hub] = 1;
 			}
 			else if (value >= 3)
 			{
-				Timers.Remove(hub);
-				Kills.Remove(hub);
+				TrilateralTerminationHandler.Timers.Remove(hub);
+				TrilateralTerminationHandler.Kills.Remove(hub);
 				AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.TrilateralTermination);
 			}
 		}

@@ -17,7 +17,7 @@ internal class ThreadsafeTypeKeyHashTable<TValue>
 
 		public override string ToString()
 		{
-			return Key?.ToString() + "(" + Count() + ")";
+			return this.Key?.ToString() + "(" + this.Count() + ")";
 		}
 
 		private int Count()
@@ -43,33 +43,33 @@ internal class ThreadsafeTypeKeyHashTable<TValue>
 
 	public ThreadsafeTypeKeyHashTable(int capacity = 4, float loadFactor = 0.75f)
 	{
-		int num = CalculateCapacity(capacity, loadFactor);
-		buckets = new Entry[num];
+		int num = ThreadsafeTypeKeyHashTable<TValue>.CalculateCapacity(capacity, loadFactor);
+		this.buckets = new Entry[num];
 		this.loadFactor = loadFactor;
 	}
 
 	public bool TryAdd(Type key, TValue value)
 	{
-		return TryAdd(key, (Type _) => value);
+		return this.TryAdd(key, (Type _) => value);
 	}
 
 	public bool TryAdd(Type key, Func<Type, TValue> valueFactory)
 	{
 		TValue resultingValue;
-		return TryAddInternal(key, valueFactory, out resultingValue);
+		return this.TryAddInternal(key, valueFactory, out resultingValue);
 	}
 
 	private bool TryAddInternal(Type key, Func<Type, TValue> valueFactory, out TValue resultingValue)
 	{
-		lock (writerLock)
+		lock (this.writerLock)
 		{
-			int num = CalculateCapacity(size + 1, loadFactor);
-			if (buckets.Length < num)
+			int num = ThreadsafeTypeKeyHashTable<TValue>.CalculateCapacity(this.size + 1, this.loadFactor);
+			if (this.buckets.Length < num)
 			{
 				Entry[] value = new Entry[num];
-				for (int i = 0; i < buckets.Length; i++)
+				for (int i = 0; i < this.buckets.Length; i++)
 				{
-					for (Entry entry = buckets[i]; entry != null; entry = entry.Next)
+					for (Entry entry = this.buckets[i]; entry != null; entry = entry.Next)
 					{
 						Entry newEntryOrNull = new Entry
 						{
@@ -77,21 +77,21 @@ internal class ThreadsafeTypeKeyHashTable<TValue>
 							Value = entry.Value,
 							Hash = entry.Hash
 						};
-						AddToBuckets(value, key, newEntryOrNull, null, out resultingValue);
+						this.AddToBuckets(value, key, newEntryOrNull, null, out resultingValue);
 					}
 				}
-				bool num2 = AddToBuckets(value, key, null, valueFactory, out resultingValue);
-				VolatileWrite(ref buckets, value);
+				bool num2 = this.AddToBuckets(value, key, null, valueFactory, out resultingValue);
+				ThreadsafeTypeKeyHashTable<TValue>.VolatileWrite(ref this.buckets, value);
 				if (num2)
 				{
-					size++;
+					this.size++;
 				}
 				return num2;
 			}
-			bool num3 = AddToBuckets(buckets, key, null, valueFactory, out resultingValue);
+			bool num3 = this.AddToBuckets(this.buckets, key, null, valueFactory, out resultingValue);
 			if (num3)
 			{
-				size++;
+				this.size++;
 			}
 			return num3;
 		}
@@ -105,12 +105,12 @@ internal class ThreadsafeTypeKeyHashTable<TValue>
 			if (newEntryOrNull != null)
 			{
 				resultingValue = newEntryOrNull.Value;
-				VolatileWrite(ref buckets[num & (buckets.Length - 1)], newEntryOrNull);
+				ThreadsafeTypeKeyHashTable<TValue>.VolatileWrite(ref buckets[num & (buckets.Length - 1)], newEntryOrNull);
 			}
 			else
 			{
 				resultingValue = valueFactory(newKey);
-				VolatileWrite(ref buckets[num & (buckets.Length - 1)], new Entry
+				ThreadsafeTypeKeyHashTable<TValue>.VolatileWrite(ref buckets[num & (buckets.Length - 1)], new Entry
 				{
 					Key = newKey,
 					Value = resultingValue,
@@ -137,12 +137,12 @@ internal class ThreadsafeTypeKeyHashTable<TValue>
 			if (newEntryOrNull != null)
 			{
 				resultingValue = newEntryOrNull.Value;
-				VolatileWrite(ref entry.Next, newEntryOrNull);
+				ThreadsafeTypeKeyHashTable<TValue>.VolatileWrite(ref entry.Next, newEntryOrNull);
 			}
 			else
 			{
 				resultingValue = valueFactory(newKey);
-				VolatileWrite(ref entry.Next, new Entry
+				ThreadsafeTypeKeyHashTable<TValue>.VolatileWrite(ref entry.Next, new Entry
 				{
 					Key = newKey,
 					Value = resultingValue,
@@ -155,7 +155,7 @@ internal class ThreadsafeTypeKeyHashTable<TValue>
 
 	public bool TryGetValue(Type key, out TValue value)
 	{
-		Entry[] array = buckets;
+		Entry[] array = this.buckets;
 		int hashCode = key.GetHashCode();
 		Entry entry = array[hashCode & (array.Length - 1)];
 		if (entry != null)
@@ -180,11 +180,11 @@ internal class ThreadsafeTypeKeyHashTable<TValue>
 
 	public TValue GetOrAdd(Type key, Func<Type, TValue> valueFactory)
 	{
-		if (TryGetValue(key, out var value))
+		if (this.TryGetValue(key, out var value))
 		{
 			return value;
 		}
-		TryAddInternal(key, valueFactory, out value);
+		this.TryAddInternal(key, valueFactory, out value);
 		return value;
 	}
 

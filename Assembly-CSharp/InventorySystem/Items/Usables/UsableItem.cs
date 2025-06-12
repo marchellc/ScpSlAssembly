@@ -35,19 +35,19 @@ public abstract class UsableItem : ItemBase, IItemAlertDrawer, IItemDrawer, IIte
 
 	public virtual bool CanStartUsing => !base.Owner.HasBlock(BlockedInteraction.ItemPrimaryAction);
 
-	public override float Weight => _weight;
+	public override float Weight => this._weight;
 
-	public virtual string Description => ItemTypeId.GetDescription();
+	public virtual string Description => base.ItemTypeId.GetDescription();
 
-	public virtual string Name => ItemTypeId.GetName();
+	public virtual string Name => base.ItemTypeId.GetName();
 
-	public override bool AllowHolster => !IsUsing;
+	public override bool AllowHolster => !this.IsUsing;
 
 	public virtual AlertContent Alert
 	{
 		get
 		{
-			if (RemainingCooldown <= 0f)
+			if (this.RemainingCooldown <= 0f)
 			{
 				return default(AlertContent);
 			}
@@ -55,8 +55,8 @@ public abstract class UsableItem : ItemBase, IItemAlertDrawer, IItemDrawer, IIte
 			{
 				return default(AlertContent);
 			}
-			TimeSpan timeSpan = TimeSpan.FromSeconds(RemainingCooldown);
-			return new AlertContent(string.Format(_cooldownFormat, timeSpan.ToString("mm\\:ss"), Name));
+			TimeSpan timeSpan = TimeSpan.FromSeconds(this.RemainingCooldown);
+			return new AlertContent(string.Format(UsableItem._cooldownFormat, timeSpan.ToString("mm\\:ss"), this.Name));
 		}
 	}
 
@@ -66,8 +66,8 @@ public abstract class UsableItem : ItemBase, IItemAlertDrawer, IItemDrawer, IIte
 
 	public virtual void OnUsingStarted()
 	{
-		IsUsing = true;
-		if (IsLocalPlayer && ViewModel is UsableItemViewmodel usableItemViewmodel)
+		this.IsUsing = true;
+		if (this.IsLocalPlayer && base.ViewModel is UsableItemViewmodel usableItemViewmodel)
 		{
 			usableItemViewmodel.OnUsingStarted();
 		}
@@ -75,8 +75,8 @@ public abstract class UsableItem : ItemBase, IItemAlertDrawer, IItemDrawer, IIte
 
 	public virtual void OnUsingCancelled()
 	{
-		IsUsing = false;
-		if (IsLocalPlayer && ViewModel is UsableItemViewmodel usableItemViewmodel)
+		this.IsUsing = false;
+		if (this.IsLocalPlayer && base.ViewModel is UsableItemViewmodel usableItemViewmodel)
 		{
 			usableItemViewmodel.OnUsingCancelled();
 		}
@@ -89,7 +89,7 @@ public abstract class UsableItem : ItemBase, IItemAlertDrawer, IItemDrawer, IIte
 
 	protected void ServerSetPersonalCooldown(float timeSeconds)
 	{
-		UsableItemsController.GetHandler(base.Owner).PersonalCooldowns[ItemTypeId] = Time.timeSinceLevelLoad + timeSeconds;
+		UsableItemsController.GetHandler(base.Owner).PersonalCooldowns[base.ItemTypeId] = Time.timeSinceLevelLoad + timeSeconds;
 	}
 
 	protected void ServerSetGlobalItemCooldown(float timeSeconds)
@@ -104,11 +104,11 @@ public abstract class UsableItem : ItemBase, IItemAlertDrawer, IItemDrawer, IIte
 
 	public override void OnAdded(ItemPickupBase pickup)
 	{
-		if (IsLocalPlayer)
+		if (this.IsLocalPlayer)
 		{
-			_useKey = NewInput.GetKey(ActionName.Shoot);
-			_cancelKey = NewInput.GetKey(ActionName.Zoom);
-			_cooldownFormat = string.Format(TranslationReader.Get("Facility", 33), "${0}$", "${1}$");
+			UsableItem._useKey = NewInput.GetKey(ActionName.Shoot);
+			UsableItem._cancelKey = NewInput.GetKey(ActionName.Zoom);
+			UsableItem._cooldownFormat = string.Format(TranslationReader.Get("Facility", 33), "${0}$", "${1}$");
 		}
 	}
 
@@ -123,17 +123,17 @@ public abstract class UsableItem : ItemBase, IItemAlertDrawer, IItemDrawer, IIte
 
 	public override void EquipUpdate()
 	{
-		if (RemainingCooldown > 0f)
+		if (this.RemainingCooldown > 0f)
 		{
-			RemainingCooldown -= Time.deltaTime;
+			this.RemainingCooldown -= Time.deltaTime;
 		}
-		if (IsLocalPlayer && InventoryGuiController.ItemsSafeForInteraction && !Cursor.visible)
+		if (this.IsLocalPlayer && InventoryGuiController.ItemsSafeForInteraction && !Cursor.visible)
 		{
-			if (Input.GetKeyDown(_useKey) && CanStartUsing)
+			if (Input.GetKeyDown(UsableItem._useKey) && this.CanStartUsing)
 			{
 				NetworkClient.Send(new StatusMessage(StatusMessage.StatusType.Start, base.ItemSerial));
 			}
-			if (Input.GetKeyDown(_cancelKey))
+			if (Input.GetKeyDown(UsableItem._cancelKey))
 			{
 				NetworkClient.Send(new StatusMessage(StatusMessage.StatusType.Cancel, base.ItemSerial));
 			}
@@ -153,7 +153,7 @@ public abstract class UsableItem : ItemBase, IItemAlertDrawer, IItemDrawer, IIte
 	public bool ServerTryGetSoundEmissionRange(out float range)
 	{
 		range = 15f;
-		return IsUsing;
+		return this.IsUsing;
 	}
 
 	public virtual void PopulateDummyActions(Action<DummyAction> actionAdder)

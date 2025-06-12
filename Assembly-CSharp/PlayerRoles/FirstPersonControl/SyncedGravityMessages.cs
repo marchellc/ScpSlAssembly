@@ -8,14 +8,14 @@ public static class SyncedGravityMessages
 {
 	public readonly struct GravityMessage : NetworkMessage
 	{
-		public readonly Vector3 Gravity;
-
 		public readonly ReferenceHub TargetHub;
+
+		public readonly Vector3 Gravity;
 
 		public GravityMessage(Vector3 gravity, ReferenceHub targetHub)
 		{
-			Gravity = gravity;
-			TargetHub = targetHub;
+			this.Gravity = gravity;
+			this.TargetHub = targetHub;
 		}
 	}
 

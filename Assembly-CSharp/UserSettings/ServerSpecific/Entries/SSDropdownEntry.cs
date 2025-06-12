@@ -13,15 +13,15 @@ public class SSDropdownEntry : UserSettingsDropdown, ISSEntry
 
 	protected override void SaveValue(int val)
 	{
-		PlayerPrefsSl.Set(_setting.PlayerPrefsKey, val);
-		_setting.SyncSelectionIndexRaw = val;
-		_setting.ClientSendValue();
+		PlayerPrefsSl.Set(this._setting.PlayerPrefsKey, val);
+		this._setting.SyncSelectionIndexRaw = val;
+		this._setting.ClientSendValue();
 	}
 
 	protected override int ReadSavedValue()
 	{
-		_setting.SyncSelectionIndexRaw = PlayerPrefsSl.Get(_setting.PlayerPrefsKey, _setting.DefaultOptionIndex);
-		return _setting.SyncSelectionIndexRaw;
+		this._setting.SyncSelectionIndexRaw = PlayerPrefsSl.Get(this._setting.PlayerPrefsKey, this._setting.DefaultOptionIndex);
+		return this._setting.SyncSelectionIndexRaw;
 	}
 
 	public virtual bool CheckCompatibility(ServerSpecificSettingBase setting)
@@ -35,15 +35,15 @@ public class SSDropdownEntry : UserSettingsDropdown, ISSEntry
 
 	public virtual void Init(ServerSpecificSettingBase setting)
 	{
-		_setting = setting as SSDropdownSetting;
-		_label.Set(_setting);
+		this._setting = setting as SSDropdownSetting;
+		this._label.Set(this._setting);
 		base.TargetUI.options.Clear();
-		string[] options = _setting.Options;
+		string[] options = this._setting.Options;
 		foreach (string text in options)
 		{
 			base.TargetUI.options.Add(new TMP_Dropdown.OptionData(text));
 		}
 		base.TargetUI.RefreshShownValue();
-		Setup();
+		base.Setup();
 	}
 }

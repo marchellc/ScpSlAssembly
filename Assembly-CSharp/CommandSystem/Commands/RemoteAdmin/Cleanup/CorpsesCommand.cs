@@ -29,9 +29,9 @@ public class CorpsesCommand : ICommand
 		{
 			num = result;
 		}
-		for (int i = 0; i < num; i++)
+		for (int num2 = 0; num2 < num; num2++)
 		{
-			NetworkServer.Destroy(array[i].gameObject);
+			NetworkServer.Destroy(array[num2].gameObject);
 		}
 		ServerLogs.AddLog(ServerLogs.Modules.Administrative, $"{sender.LogName} has force-cleaned up {num} ragdolls.", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
 		response = $"{num} ragdolls have been deleted.";

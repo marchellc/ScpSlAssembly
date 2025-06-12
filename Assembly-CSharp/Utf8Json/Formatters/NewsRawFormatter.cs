@@ -11,17 +11,17 @@ public sealed class NewsRawFormatter : IJsonFormatter<NewsRaw>, IJsonFormatter
 
 	public NewsRawFormatter()
 	{
-		____keyMapping = new AutomataDictionary { 
+		this.____keyMapping = new AutomataDictionary { 
 		{
 			JsonWriter.GetEncodedPropertyNameWithoutQuotation("appnews"),
 			0
 		} };
-		____stringByteKeys = new byte[1][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("appnews") };
+		this.____stringByteKeys = new byte[1][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("appnews") };
 	}
 
 	public void Serialize(ref JsonWriter writer, NewsRaw value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		formatterResolver.GetFormatterWithVerify<NewsList>().Serialize(ref writer, value.appnews, formatterResolver);
 		writer.WriteEndObject();
 	}
@@ -38,7 +38,7 @@ public sealed class NewsRawFormatter : IJsonFormatter<NewsRaw>, IJsonFormatter
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 			}

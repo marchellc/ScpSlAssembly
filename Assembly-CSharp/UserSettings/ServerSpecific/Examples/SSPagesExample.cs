@@ -14,25 +14,25 @@ public class SSPagesExample : SSExampleImplementationBase
 
 		public SettingsPage(string name, ServerSpecificSettingBase[] entries)
 		{
-			Name = name;
-			OwnEntries = entries;
+			this.Name = name;
+			this.OwnEntries = entries;
 		}
 
 		public void GenerateCombinedEntries(ServerSpecificSettingBase[] pageSelectorSection)
 		{
-			int num = pageSelectorSection.Length + OwnEntries.Length + 1;
-			CombinedEntries = new ServerSpecificSettingBase[num];
+			int num = pageSelectorSection.Length + this.OwnEntries.Length + 1;
+			this.CombinedEntries = new ServerSpecificSettingBase[num];
 			int num2 = 0;
 			ServerSpecificSettingBase[] array = pageSelectorSection;
 			foreach (ServerSpecificSettingBase serverSpecificSettingBase in array)
 			{
-				CombinedEntries[num2++] = serverSpecificSettingBase;
+				this.CombinedEntries[num2++] = serverSpecificSettingBase;
 			}
-			CombinedEntries[num2++] = new SSGroupHeader(Name);
-			array = OwnEntries;
+			this.CombinedEntries[num2++] = new SSGroupHeader(this.Name);
+			array = this.OwnEntries;
 			foreach (ServerSpecificSettingBase serverSpecificSettingBase2 in array)
 			{
-				CombinedEntries[num2++] = serverSpecificSettingBase2;
+				this.CombinedEntries[num2++] = serverSpecificSettingBase2;
 			}
 		}
 	}
@@ -51,8 +51,8 @@ public class SSPagesExample : SSExampleImplementationBase
 	{
 		ServerSpecificSettingsSync.ServerOnSettingValueReceived += ServerOnSettingValueReceived;
 		ReferenceHub.OnPlayerRemoved += OnPlayerDisconnected;
-		_lastSentPages = new Dictionary<ReferenceHub, int>();
-		_pages = new SettingsPage[3]
+		this._lastSentPages = new Dictionary<ReferenceHub, int>();
+		this._pages = new SettingsPage[3]
 		{
 			new SettingsPage("Page A", new ServerSpecificSettingBase[4]
 			{
@@ -65,7 +65,7 @@ public class SSPagesExample : SSExampleImplementationBase
 			{
 				new SSTwoButtonsSetting(null, "Which page is your favorite?", "Page B", "Also Page B"),
 				new SSDropdownSetting(null, "Please rate this page", new string[4] { "10/10", "5/5", "B", "★★★★★" }),
-				new SSButton(null, "\"B\", as in \"Button\"", "BBBB", null),
+				new SSButton(null, "\"B\", as in \"Button\"", "BBBB"),
 				new SSTextArea(null, "Page B stands for <color=red><b><i>BESTEST PAGE</i></b></color>")
 			}),
 			new SettingsPage("Page C", new ServerSpecificSettingBase[6]
@@ -78,22 +78,22 @@ public class SSPagesExample : SSExampleImplementationBase
 				new SSDropdownSetting(null, "Dropdown C", new string[3] { "C1", "C2", "C3" }, 0, SSDropdownSetting.DropdownEntryType.Scrollable)
 			})
 		};
-		string[] array = new string[_pages.Length];
+		string[] array = new string[this._pages.Length];
 		for (int i = 0; i < array.Length; i++)
 		{
-			array[i] = $"{_pages[i].Name} ({i + 1} out of {_pages.Length})";
+			array[i] = $"{this._pages[i].Name} ({i + 1} out of {this._pages.Length})";
 		}
-		_pinnedSection = new ServerSpecificSettingBase[2]
+		this._pinnedSection = new ServerSpecificSettingBase[2]
 		{
-			_pageSelectorDropdown = new SSDropdownSetting(null, "Page", array, 0, SSDropdownSetting.DropdownEntryType.HybridLoop),
+			this._pageSelectorDropdown = new SSDropdownSetting(null, "Page", array, 0, SSDropdownSetting.DropdownEntryType.HybridLoop),
 			new SSButton(null, "Another Pinned Element", "Do Nothing", null, "This button doesn't do anything, but it shows you can \"pin\" multiple elements.")
 		};
-		_pages.ForEach(delegate(SettingsPage page)
+		this._pages.ForEach(delegate(SettingsPage page)
 		{
-			page.GenerateCombinedEntries(_pinnedSection);
+			page.GenerateCombinedEntries(this._pinnedSection);
 		});
-		List<ServerSpecificSettingBase> allSettings = new List<ServerSpecificSettingBase>(_pinnedSection);
-		_pages.ForEach(delegate(SettingsPage page)
+		List<ServerSpecificSettingBase> allSettings = new List<ServerSpecificSettingBase>(this._pinnedSection);
+		this._pages.ForEach(delegate(SettingsPage page)
 		{
 			allSettings.AddRange(page.OwnEntries);
 		});
@@ -109,23 +109,23 @@ public class SSPagesExample : SSExampleImplementationBase
 
 	private void ServerOnSettingValueReceived(ReferenceHub hub, ServerSpecificSettingBase setting)
 	{
-		if (setting is SSDropdownSetting sSDropdownSetting && sSDropdownSetting.SettingId == _pageSelectorDropdown.SettingId)
+		if (setting is SSDropdownSetting sSDropdownSetting && sSDropdownSetting.SettingId == this._pageSelectorDropdown.SettingId)
 		{
-			ServerSendSettingsPage(hub, sSDropdownSetting.SyncSelectionIndexValidated);
+			this.ServerSendSettingsPage(hub, sSDropdownSetting.SyncSelectionIndexValidated);
 		}
 	}
 
 	private void ServerSendSettingsPage(ReferenceHub hub, int settingIndex)
 	{
-		if (!_lastSentPages.TryGetValue(hub, out var value) || value != settingIndex)
+		if (!this._lastSentPages.TryGetValue(hub, out var value) || value != settingIndex)
 		{
-			_lastSentPages[hub] = settingIndex;
-			ServerSpecificSettingsSync.SendToPlayer(hub, _pages[settingIndex].CombinedEntries, null);
+			this._lastSentPages[hub] = settingIndex;
+			ServerSpecificSettingsSync.SendToPlayer(hub, this._pages[settingIndex].CombinedEntries);
 		}
 	}
 
 	private void OnPlayerDisconnected(ReferenceHub hub)
 	{
-		_lastSentPages?.Remove(hub);
+		this._lastSentPages?.Remove(hub);
 	}
 }

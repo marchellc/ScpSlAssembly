@@ -12,8 +12,8 @@ public readonly struct DestructibleDamageRecord
 
 	public DestructibleDamageRecord(IDestructible destructible, float appliedDamage, AttackerDamageHandler handler)
 	{
-		Destructible = destructible;
-		AppliedDamage = appliedDamage;
-		Handler = handler;
+		this.Destructible = destructible;
+		this.AppliedDamage = appliedDamage;
+		this.Handler = handler;
 	}
 }

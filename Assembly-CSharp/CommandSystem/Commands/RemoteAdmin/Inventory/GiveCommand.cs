@@ -33,7 +33,7 @@ public class GiveCommand : ICommand, IUsageProvider
 				response = "You must specify item(s) to give.";
 				return false;
 			}
-			ItemType[] array = ParseItems(newargs[0]).ToArray();
+			ItemType[] array = GiveCommand.ParseItems(newargs[0]).ToArray();
 			if (array.Length == 0)
 			{
 				response = "You didn't input any items.";
@@ -51,7 +51,7 @@ public class GiveCommand : ICommand, IUsageProvider
 						ItemType[] array2 = array;
 						foreach (ItemType id in array2)
 						{
-							AddItem(item, sender, id);
+							GiveCommand.AddItem(item, sender, id);
 						}
 					}
 					catch (Exception ex)

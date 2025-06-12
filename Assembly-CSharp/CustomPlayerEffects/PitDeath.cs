@@ -42,13 +42,13 @@ public class PitDeath : StatusEffectBase, IDamageModifierEffect
 
 	public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
 	{
-		return (!IsFallDamageHandler(handler)) ? 1 : 0;
+		return (!this.IsFallDamageHandler(handler)) ? 1 : 0;
 	}
 
 	protected override void Enabled()
 	{
 		base.Enabled();
-		_activeElapsed = 0f;
+		this._activeElapsed = 0f;
 	}
 
 	protected override void OnEffectUpdate()
@@ -56,8 +56,8 @@ public class PitDeath : StatusEffectBase, IDamageModifierEffect
 		base.OnEffectUpdate();
 		if (NetworkServer.active)
 		{
-			_activeElapsed += Time.deltaTime;
-			CheckKillConditions();
+			this._activeElapsed += Time.deltaTime;
+			this.CheckKillConditions();
 		}
 	}
 
@@ -72,13 +72,13 @@ public class PitDeath : StatusEffectBase, IDamageModifierEffect
 
 	private void CheckKillConditions()
 	{
-		if (!ValidatePlayer(base.Hub))
+		if (!PitDeath.ValidatePlayer(base.Hub))
 		{
-			DisableEffect();
+			this.DisableEffect();
 		}
-		else if (!(_activeElapsed <= 1.2f) || base.Hub.IsGrounded())
+		else if (!(this._activeElapsed <= 1.2f) || base.Hub.IsGrounded())
 		{
-			KillPlayer();
+			this.KillPlayer();
 		}
 	}
 

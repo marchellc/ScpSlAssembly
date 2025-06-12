@@ -18,7 +18,7 @@ public class FpcBacktracker : IDisposable
 
 	private bool _restoreUponDeath;
 
-	public float MoveAmount => Vector3.Distance(_newPos, _prevPos);
+	public float MoveAmount => Vector3.Distance(this._newPos, this._prevPos);
 
 	public FpcBacktracker(ReferenceHub attacker, Vector3 claimedPos, Quaternion claimedRot, float backtrack = 0.1f, float forecast = 0.15f)
 		: this(attacker, claimedPos, claimedRot, backtrack, forecast, ignoreTp: true, restoreUponDeath: true)
@@ -34,68 +34,68 @@ public class FpcBacktracker : IDisposable
 	{
 		if (hub.roleManager.CurrentRole is IFpcRole { FpcModule: var fpcModule })
 		{
-			_moved = true;
-			_movedHub = hub;
-			_prevPos = fpcModule.Position;
-			_prevRot = hub.PlayerCameraReference.rotation;
+			this._moved = true;
+			this._movedHub = hub;
+			this._prevPos = fpcModule.Position;
+			this._prevRot = hub.PlayerCameraReference.rotation;
 			Bounds bounds = ((backtrack <= 0f) ? new Bounds(fpcModule.Position, Vector3.zero) : fpcModule.Tracer.GenerateBounds(backtrack, ignoreTp));
 			if (forecast > 0f)
 			{
-				bounds.Encapsulate(_prevPos + fpcModule.Motor.Velocity * forecast);
+				bounds.Encapsulate(this._prevPos + fpcModule.Motor.Velocity * forecast);
 			}
-			_newPos = bounds.ClosestPoint(claimedPos);
-			fpcModule.Position = _newPos;
+			this._newPos = bounds.ClosestPoint(claimedPos);
+			fpcModule.Position = this._newPos;
 			hub.PlayerCameraReference.rotation = claimedRot;
 		}
 		else
 		{
-			_moved = false;
+			this._moved = false;
 		}
 		if (restoreUponDeath)
 		{
 			PlayerStats.OnAnyPlayerDied += OnDied;
-			_restoreUponDeath = true;
+			this._restoreUponDeath = true;
 		}
 		else
 		{
-			_restoreUponDeath = false;
+			this._restoreUponDeath = false;
 		}
 	}
 
 	public void Cancel()
 	{
-		_moved = true;
-		_restoreUponDeath = false;
+		this._moved = true;
+		this._restoreUponDeath = false;
 	}
 
 	public void Dispose()
 	{
-		RestorePosition();
+		this.RestorePosition();
 	}
 
 	public void RestorePosition()
 	{
-		if (_moved)
+		if (this._moved)
 		{
-			if (_movedHub.roleManager.CurrentRole is IFpcRole fpcRole)
+			if (this._movedHub.roleManager.CurrentRole is IFpcRole fpcRole)
 			{
-				fpcRole.FpcModule.Position = _prevPos;
-				_movedHub.PlayerCameraReference.rotation = _prevRot;
+				fpcRole.FpcModule.Position = this._prevPos;
+				this._movedHub.PlayerCameraReference.rotation = this._prevRot;
 			}
-			_moved = false;
+			this._moved = false;
 		}
-		if (_restoreUponDeath)
+		if (this._restoreUponDeath)
 		{
 			PlayerStats.OnAnyPlayerDied -= OnDied;
-			_restoreUponDeath = false;
+			this._restoreUponDeath = false;
 		}
 	}
 
 	private void OnDied(ReferenceHub ply, DamageHandlerBase dhb)
 	{
-		if (!(ply != _movedHub))
+		if (!(ply != this._movedHub))
 		{
-			RestorePosition();
+			this.RestorePosition();
 		}
 	}
 }

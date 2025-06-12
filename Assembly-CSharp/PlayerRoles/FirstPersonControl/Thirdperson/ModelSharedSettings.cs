@@ -35,14 +35,14 @@ public class ModelSharedSettings : ScriptableObject
 		{
 			animDirection /= magnitude;
 		}
-		Vector3 vector = new Vector3(0f, _landingAnimation.Evaluate((float)_landingSw.Elapsed.TotalSeconds), 0f);
-		Vector3 vector2 = new Vector3(_walkBobHorizontal.Evaluate(time), _walkBobVertical.Evaluate(time), 0f);
-		Vector3 vector3 = new Vector3(_strafeBobHorizontal.Evaluate(time), _strafeBobVertical.Evaluate(time), 0f);
-		return (vector2 * Mathf.Abs(animDirection.y) + vector3 * Mathf.Abs(animDirection.x)) * _bobScaleOverParams.Evaluate(magnitude) + vector;
+		Vector3 vector = new Vector3(0f, this._landingAnimation.Evaluate((float)this._landingSw.Elapsed.TotalSeconds), 0f);
+		Vector3 vector2 = new Vector3(this._walkBobHorizontal.Evaluate(time), this._walkBobVertical.Evaluate(time), 0f);
+		Vector3 vector3 = new Vector3(this._strafeBobHorizontal.Evaluate(time), this._strafeBobVertical.Evaluate(time), 0f);
+		return (vector2 * Mathf.Abs(animDirection.y) + vector3 * Mathf.Abs(animDirection.x)) * this._bobScaleOverParams.Evaluate(magnitude) + vector;
 	}
 
 	public void PlayLandingAnimation()
 	{
-		_landingSw.Restart();
+		this._landingSw.Restart();
 	}
 }

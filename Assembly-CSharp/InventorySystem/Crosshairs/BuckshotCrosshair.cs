@@ -20,12 +20,12 @@ public class BuckshotCrosshair : FirearmCrosshairBase
 
 	private void SetupElements(float innerAngle, float buckshotRadius)
 	{
-		RectTransform[] elements = _elements;
+		RectTransform[] elements = this._elements;
 		foreach (RectTransform obj in elements)
 		{
-			Vector2 b = _displacementRatio * innerAngle * Vector2.up;
-			obj.anchoredPosition = Vector2.Lerp(obj.anchoredPosition, b, Time.deltaTime * _lerpSpeed);
-			obj.sizeDelta = _radiusRatio * buckshotRadius * Vector2.one;
+			Vector2 b = this._displacementRatio * innerAngle * Vector2.up;
+			obj.anchoredPosition = Vector2.Lerp(obj.anchoredPosition, b, Time.deltaTime * this._lerpSpeed);
+			obj.sizeDelta = this._radiusRatio * buckshotRadius * Vector2.one;
 		}
 	}
 
@@ -33,7 +33,7 @@ public class BuckshotCrosshair : FirearmCrosshairBase
 	{
 		if (firearm.TryGetModule<BuckshotHitreg>(out var module, ignoreSubmodules: false))
 		{
-			SetupElements(currentInaccuracy, module.BuckshotScale);
+			this.SetupElements(currentInaccuracy, module.BuckshotScale);
 		}
 	}
 }

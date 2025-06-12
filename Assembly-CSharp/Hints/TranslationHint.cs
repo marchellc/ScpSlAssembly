@@ -23,18 +23,18 @@ public class TranslationHint : FormattableHint<TranslationHint>
 	public TranslationHint(HintTranslations translation, HintParameter[] parameters = null, HintEffect[] effects = null, float durationScalar = 3f)
 		: base(parameters, effects, durationScalar)
 	{
-		Translation = translation;
+		this.Translation = translation;
 	}
 
 	public override void Deserialize(NetworkReader reader)
 	{
 		base.Deserialize(reader);
-		Translation = (HintTranslations)reader.ReadByte();
+		this.Translation = (HintTranslations)reader.ReadByte();
 	}
 
 	public override void Serialize(NetworkWriter writer)
 	{
 		base.Serialize(writer);
-		writer.WriteByte((byte)Translation);
+		writer.WriteByte((byte)this.Translation);
 	}
 }

@@ -23,16 +23,16 @@ public class ElevatorSquish : NetworkBehaviour
 
 	private void Awake()
 	{
-		_killerGo = _pitKiller.gameObject;
-		_chamber = GetComponent<ElevatorChamber>();
-		_pitKiller.OnEffectApplied += OnSquished;
+		this._killerGo = this._pitKiller.gameObject;
+		this._chamber = base.GetComponent<ElevatorChamber>();
+		this._pitKiller.OnEffectApplied += OnSquished;
 	}
 
 	private void OnSquished(ReferenceHub hub)
 	{
 		if (hub.roleManager.CurrentRole is IFpcRole fpcRole)
 		{
-			PlaySquishSound(fpcRole.FpcModule.Position);
+			this.PlaySquishSound(fpcRole.FpcModule.Position);
 		}
 	}
 
@@ -41,13 +41,13 @@ public class ElevatorSquish : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteVector3(position);
-		SendRPCInternal("System.Void Interactables.Interobjects.ElevatorSquish::PlaySquishSound(UnityEngine.Vector3)", -736738208, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Interactables.Interobjects.ElevatorSquish::PlaySquishSound(UnityEngine.Vector3)", -736738208, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	private void Update()
 	{
-		_killerGo.SetActive(_chamber.DestinationLevel == 0 && _chamber.CurSequence == ElevatorChamber.ElevatorSequence.Arriving);
+		this._killerGo.SetActive(this._chamber.DestinationLevel == 0 && this._chamber.CurSequence == ElevatorChamber.ElevatorSequence.Arriving);
 	}
 
 	public override bool Weaved()
@@ -57,7 +57,7 @@ public class ElevatorSquish : NetworkBehaviour
 
 	protected void UserCode_PlaySquishSound__Vector3(Vector3 position)
 	{
-		AudioSourcePoolManager.PlayAtPosition(_squishSound, position, _squishRange);
+		AudioSourcePoolManager.PlayAtPosition(this._squishSound, position, this._squishRange);
 	}
 
 	protected static void InvokeUserCode_PlaySquishSound__Vector3(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)

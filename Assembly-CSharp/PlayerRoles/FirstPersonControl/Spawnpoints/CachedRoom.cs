@@ -8,7 +8,7 @@ public struct CachedRoom
 
 	public CachedRoom(RoomRoleSpawnpoint roomType, int roomIndex)
 	{
-		RoomType = roomType;
-		RoomIndex = roomIndex;
+		this.RoomType = roomType;
+		this.RoomIndex = roomIndex;
 	}
 }

@@ -40,23 +40,23 @@ public class MimicPointController : StandardSubroutine<Scp939Role>
 	{
 		get
 		{
-			return _active;
+			return this._active;
 		}
 		private set
 		{
-			if (value != _active)
+			if (value != this._active)
 			{
-				_active = value;
+				this._active = value;
 				if (value)
 				{
-					UpdateMimicPoint();
+					this.UpdateMimicPoint();
 					MainCameraController.OnUpdated += UpdateIcon;
 					FirstPersonMovementModule.OnPositionUpdated += UpdateMimicPoint;
 				}
 				else
 				{
-					MimicPointTransform.localPosition = Vector3.zero;
-					_mimicPointIcon.enabled = false;
+					this.MimicPointTransform.localPosition = Vector3.zero;
+					this._mimicPointIcon.enabled = false;
 					MainCameraController.OnUpdated -= UpdateIcon;
 					FirstPersonMovementModule.OnPositionUpdated -= UpdateMimicPoint;
 				}
@@ -64,7 +64,7 @@ public class MimicPointController : StandardSubroutine<Scp939Role>
 		}
 	}
 
-	public float Distance => Vector3.Distance(base.CastRole.FpcModule.Position, MimicPointTransform.position);
+	public float Distance => Vector3.Distance(base.CastRole.FpcModule.Position, this.MimicPointTransform.position);
 
 	private bool Visible
 	{
@@ -82,26 +82,26 @@ public class MimicPointController : StandardSubroutine<Scp939Role>
 
 	private void UpdateMimicPoint()
 	{
-		Vector3 position = _syncPos.Position;
-		MimicPointTransform.position = position;
-		UpdateIcon();
-		if (NetworkServer.active && !(Distance < MaxDistance))
+		Vector3 position = this._syncPos.Position;
+		this.MimicPointTransform.position = position;
+		this.UpdateIcon();
+		if (NetworkServer.active && !(this.Distance < this.MaxDistance))
 		{
-			_syncMessage = RpcStateMsg.DestroyedByDistance;
-			ServerSendRpc(toAll: true);
+			this._syncMessage = RpcStateMsg.DestroyedByDistance;
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	private void UpdateIcon()
 	{
-		if (Visible)
+		if (this.Visible)
 		{
-			_mimicPointIcon.enabled = true;
-			MimicPointTransform.forward = MainCameraController.CurrentCamera.forward;
+			this._mimicPointIcon.enabled = true;
+			this.MimicPointTransform.forward = MainCameraController.CurrentCamera.forward;
 		}
 		else
 		{
-			_mimicPointIcon.enabled = false;
+			this._mimicPointIcon.enabled = false;
 		}
 	}
 
@@ -109,7 +109,7 @@ public class MimicPointController : StandardSubroutine<Scp939Role>
 	{
 		if (NetworkServer.active)
 		{
-			ServerSendRpc(hub);
+			base.ServerSendRpc(hub);
 		}
 	}
 
@@ -127,62 +127,62 @@ public class MimicPointController : StandardSubroutine<Scp939Role>
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		Active = false;
-		_cooldown.Clear();
+		this.Active = false;
+		this._cooldown.Clear();
 	}
 
 	public void ClientToggle()
 	{
-		if (_cooldown.IsReady)
+		if (this._cooldown.IsReady)
 		{
-			ClientSendCmd();
-			_cooldown.Trigger(0.20000000298023224);
+			base.ClientSendCmd();
+			this._cooldown.Trigger(0.20000000298023224);
 		}
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (Active)
+		if (this.Active)
 		{
-			_syncMessage = RpcStateMsg.RemovedByUser;
-			Active = false;
+			this._syncMessage = RpcStateMsg.RemovedByUser;
+			this.Active = false;
 		}
 		else
 		{
-			_syncMessage = RpcStateMsg.PlacedByUser;
-			_syncPos = new RelativePosition(base.CastRole.FpcModule.Position);
-			Active = true;
+			this._syncMessage = RpcStateMsg.PlacedByUser;
+			this._syncPos = new RelativePosition(base.CastRole.FpcModule.Position);
+			this.Active = true;
 		}
-		ServerSendRpc(toAll: true);
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte((byte)_syncMessage);
-		if (Active)
+		writer.WriteByte((byte)this._syncMessage);
+		if (this.Active)
 		{
-			writer.WriteRelativePosition(_syncPos);
+			writer.WriteRelativePosition(this._syncPos);
 		}
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_syncMessage = (RpcStateMsg)reader.ReadByte();
-		switch (_syncMessage)
+		this._syncMessage = (RpcStateMsg)reader.ReadByte();
+		switch (this._syncMessage)
 		{
 		case RpcStateMsg.None:
 			return;
 		case RpcStateMsg.PlacedByUser:
-			_syncPos = reader.ReadRelativePosition();
-			Active = true;
+			this._syncPos = reader.ReadRelativePosition();
+			this.Active = true;
 			break;
 		default:
-			Active = false;
+			this.Active = false;
 			break;
 		}
-		this.OnMessageReceived?.Invoke((Scp939HudTranslation)_syncMessage);
+		this.OnMessageReceived?.Invoke((Scp939HudTranslation)this._syncMessage);
 	}
 }

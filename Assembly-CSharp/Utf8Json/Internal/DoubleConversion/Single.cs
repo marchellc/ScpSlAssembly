@@ -32,32 +32,32 @@ internal struct Single
 		{
 			f = f
 		};
-		d32_ = unionFloatUInt.u32;
+		this.d32_ = unionFloatUInt.u32;
 	}
 
 	public DiyFp AsDiyFp()
 	{
-		return new DiyFp(Significand(), Exponent());
+		return new DiyFp(this.Significand(), this.Exponent());
 	}
 
 	public uint AsUint32()
 	{
-		return d32_;
+		return this.d32_;
 	}
 
 	public int Exponent()
 	{
-		if (IsDenormal())
+		if (this.IsDenormal())
 		{
 			return -149;
 		}
-		return (int)(((AsUint32() & 0x7F800000) >> 23) - 150);
+		return (int)(((this.AsUint32() & 0x7F800000) >> 23) - 150);
 	}
 
 	public uint Significand()
 	{
-		uint num = AsUint32() & 0x7FFFFF;
-		if (!IsDenormal())
+		uint num = this.AsUint32() & 0x7FFFFF;
+		if (!this.IsDenormal())
 		{
 			return num + 8388608;
 		}
@@ -66,17 +66,17 @@ internal struct Single
 
 	public bool IsDenormal()
 	{
-		return (AsUint32() & 0x7F800000) == 0;
+		return (this.AsUint32() & 0x7F800000) == 0;
 	}
 
 	public bool IsSpecial()
 	{
-		return (AsUint32() & 0x7F800000) == 2139095040;
+		return (this.AsUint32() & 0x7F800000) == 2139095040;
 	}
 
 	public bool IsNan()
 	{
-		uint num = AsUint32();
+		uint num = this.AsUint32();
 		if ((num & 0x7F800000) == 2139095040)
 		{
 			return (num & 0x7FFFFF) != 0;
@@ -86,7 +86,7 @@ internal struct Single
 
 	public bool IsInfinite()
 	{
-		uint num = AsUint32();
+		uint num = this.AsUint32();
 		if ((num & 0x7F800000) == 2139095040)
 		{
 			return (num & 0x7FFFFF) == 0;
@@ -96,7 +96,7 @@ internal struct Single
 
 	public int Sign()
 	{
-		if ((AsUint32() & 0x80000000u) != 0)
+		if ((this.AsUint32() & 0x80000000u) != 0)
 		{
 			return -1;
 		}
@@ -105,10 +105,10 @@ internal struct Single
 
 	public void NormalizedBoundaries(out DiyFp out_m_minus, out DiyFp out_m_plus)
 	{
-		DiyFp diyFp = AsDiyFp();
+		DiyFp diyFp = this.AsDiyFp();
 		DiyFp a = new DiyFp((diyFp.f << 1) + 1, diyFp.e - 1);
 		DiyFp diyFp2 = DiyFp.Normalize(ref a);
-		DiyFp diyFp3 = ((!LowerBoundaryIsCloser()) ? new DiyFp((diyFp.f << 1) - 1, diyFp.e - 1) : new DiyFp((diyFp.f << 2) - 1, diyFp.e - 2));
+		DiyFp diyFp3 = ((!this.LowerBoundaryIsCloser()) ? new DiyFp((diyFp.f << 1) - 1, diyFp.e - 1) : new DiyFp((diyFp.f << 2) - 1, diyFp.e - 2));
 		diyFp3.f <<= diyFp3.e - diyFp2.e;
 		diyFp3.e = diyFp2.e;
 		out_m_plus = diyFp2;
@@ -117,22 +117,24 @@ internal struct Single
 
 	public DiyFp UpperBoundary()
 	{
-		return new DiyFp(Significand() * 2 + 1, Exponent() - 1);
+		return new DiyFp(this.Significand() * 2 + 1, this.Exponent() - 1);
 	}
 
 	public bool LowerBoundaryIsCloser()
 	{
-		if ((AsUint32() & 0x7FFFFF) == 0)
+		if ((this.AsUint32() & 0x7FFFFF) == 0)
 		{
-			return Exponent() != -149;
+			return this.Exponent() != -149;
 		}
 		return false;
 	}
 
 	public float value()
 	{
-		UnionFloatUInt unionFloatUInt = default(UnionFloatUInt);
-		unionFloatUInt.u32 = d32_;
+		UnionFloatUInt unionFloatUInt = new UnionFloatUInt
+		{
+			u32 = this.d32_
+		};
 		return unionFloatUInt.f;
 	}
 

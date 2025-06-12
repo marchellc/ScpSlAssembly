@@ -35,21 +35,21 @@ public class SpectatableListManager : MonoBehaviour
 		SpectatorTargetTracker.OnTargetChanged += RefreshSize;
 		SpectatableModuleBase.OnAdded += AddTarget;
 		SpectatableModuleBase.OnRemoved += RemoveTarget;
-		if (!Initialized)
+		if (!SpectatableListManager.Initialized)
 		{
-			SpectatableListElementDefinition[] definedPairs = _definedPairs;
+			SpectatableListElementDefinition[] definedPairs = this._definedPairs;
 			for (int i = 0; i < definedPairs.Length; i++)
 			{
 				SpectatableListElementDefinition value = definedPairs[i];
-				Definitions[value.Type] = value;
+				SpectatableListManager.Definitions[value.Type] = value;
 				PoolManager.Singleton.TryAddPool(value.FullSize);
 				PoolManager.Singleton.TryAddPool(value.Compact);
 			}
-			RefreshKeybinds();
-			Initialized = true;
-			Instance = this;
+			SpectatableListManager.RefreshKeybinds();
+			SpectatableListManager.Initialized = true;
+			SpectatableListManager.Instance = this;
 		}
-		RefreshAllTargets();
+		this.RefreshAllTargets();
 	}
 
 	private void OnDisable()
@@ -65,57 +65,58 @@ public class SpectatableListManager : MonoBehaviour
 
 	private void AddTarget(SpectatableModuleBase target)
 	{
-		int orderPriority = GetOrderPriority(target.MainRole);
-		int num = _spawnedTargets.Count;
-		for (int i = 0; i < _spawnedTargets.Count; i++)
+		int orderPriority = SpectatableListManager.GetOrderPriority(target.MainRole);
+		int num = this._spawnedTargets.Count;
+		for (int i = 0; i < this._spawnedTargets.Count; i++)
 		{
-			if (_spawnedTargets[i].Priority > orderPriority)
+			if (this._spawnedTargets[i].Priority > orderPriority)
 			{
 				num = i;
 				break;
 			}
 		}
-		if (Definitions.TryGetValue(target.ListElementType, out var value) && value.TryGetFromPools(base.transform, out var full, out var compact))
+		if (SpectatableListManager.Definitions.TryGetValue(target.ListElementType, out var value) && value.TryGetFromPools(base.transform, out var full, out var compact))
 		{
-			SpectatableListSpawnedElement spectatableListSpawnedElement = default(SpectatableListSpawnedElement);
-			spectatableListSpawnedElement.Priority = orderPriority;
-			spectatableListSpawnedElement.Compact = compact;
-			spectatableListSpawnedElement.FullSize = full;
-			spectatableListSpawnedElement.Target = target;
-			SpectatableListSpawnedElement item = spectatableListSpawnedElement;
-			SetupNewTarget(item.Compact, target, num * 2);
-			SetupNewTarget(item.FullSize, target, num * 2 + 1);
-			_spawnedTargets.Insert(num, item);
-			RefreshSize();
+			SpectatableListSpawnedElement item = new SpectatableListSpawnedElement
+			{
+				Priority = orderPriority,
+				Compact = compact,
+				FullSize = full,
+				Target = target
+			};
+			this.SetupNewTarget(item.Compact, target, num * 2);
+			this.SetupNewTarget(item.FullSize, target, num * 2 + 1);
+			this._spawnedTargets.Insert(num, item);
+			this.RefreshSize();
 		}
 	}
 
 	private void RemoveTarget(SpectatableModuleBase target)
 	{
-		for (int i = 0; i < _spawnedTargets.Count; i++)
+		for (int i = 0; i < this._spawnedTargets.Count; i++)
 		{
-			if (!(_spawnedTargets[i].Compact.Target != target))
+			if (!(this._spawnedTargets[i].Compact.Target != target))
 			{
-				_spawnedTargets[i].ReturnToPool();
-				_spawnedTargets.RemoveAt(i);
+				this._spawnedTargets[i].ReturnToPool();
+				this._spawnedTargets.RemoveAt(i);
 				break;
 			}
 		}
-		RefreshSize();
+		this.RefreshSize();
 	}
 
 	private void RefreshAllTargets()
 	{
-		_spawnedTargets.ForEach(delegate(SpectatableListSpawnedElement x)
+		this._spawnedTargets.ForEach(delegate(SpectatableListSpawnedElement x)
 		{
 			x.ReturnToPool();
 		});
-		_spawnedTargets.Clear();
+		this._spawnedTargets.Clear();
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allHub.roleManager.CurrentRole is ISpectatableRole spectatableRole)
 			{
-				AddTarget(spectatableRole.SpectatorModule);
+				this.AddTarget(spectatableRole.SpectatorModule);
 			}
 		}
 	}
@@ -133,24 +134,24 @@ public class SpectatableListManager : MonoBehaviour
 
 	private void RefreshSize()
 	{
-		int count = _spawnedTargets.Count;
+		int count = this._spawnedTargets.Count;
 		if (count == 0)
 		{
 			return;
 		}
-		float num;
-		float num2 = (num = _layoutGroup.spacing * (float)(count - 1));
+		float num2;
+		float num = (num2 = this._layoutGroup.spacing * (float)(count - 1));
 		for (int i = 0; i < count; i++)
 		{
-			SpectatableListSpawnedElement spectatableListSpawnedElement = _spawnedTargets[i];
-			num += spectatableListSpawnedElement.Compact.Height;
-			num2 += spectatableListSpawnedElement.FullSize.Height;
-			if (_spawnedTargets[i].Target == SpectatorTargetTracker.CurrentTarget)
+			SpectatableListSpawnedElement spectatableListSpawnedElement = this._spawnedTargets[i];
+			num2 += spectatableListSpawnedElement.Compact.Height;
+			num += spectatableListSpawnedElement.FullSize.Height;
+			if (this._spawnedTargets[i].Target == SpectatorTargetTracker.CurrentTarget)
 			{
-				_lastTargetId = i;
+				this._lastTargetId = i;
 			}
 		}
-		float num3 = Mathf.InverseLerp(num, num2, _targetHeight);
+		float num3 = Mathf.InverseLerp(num2, num, this._targetHeight);
 		int num6;
 		int num7;
 		if (num3 < 1f)
@@ -164,7 +165,7 @@ public class SpectatableListManager : MonoBehaviour
 			{
 				num4--;
 			}
-			int num5 = Mathf.Clamp(_lastTargetId, 0, count - 1);
+			int num5 = Mathf.Clamp(this._lastTargetId, 0, count - 1);
 			num6 = num5 - num4 / 2;
 			num7 = num5 + num4 / 2;
 			if (num6 < 0)
@@ -184,15 +185,15 @@ public class SpectatableListManager : MonoBehaviour
 		for (int j = 0; j < count; j++)
 		{
 			bool flag = j >= num6 && j <= num7;
-			_spawnedTargets[j].FullSize.gameObject.SetActive(flag);
-			_spawnedTargets[j].Compact.gameObject.SetActive(!flag);
+			this._spawnedTargets[j].FullSize.gameObject.SetActive(flag);
+			this._spawnedTargets[j].Compact.gameObject.SetActive(!flag);
 		}
 	}
 
 	private static void RefreshKeybinds()
 	{
-		_nextKey = NewInput.GetKey(ActionName.Shoot);
-		_prevKey = NewInput.GetKey(ActionName.Zoom);
+		SpectatableListManager._nextKey = NewInput.GetKey(ActionName.Shoot);
+		SpectatableListManager._prevKey = NewInput.GetKey(ActionName.Zoom);
 	}
 
 	private static int GetOrderPriority(PlayerRoleBase prb)

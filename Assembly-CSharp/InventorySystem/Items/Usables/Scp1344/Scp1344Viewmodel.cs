@@ -32,10 +32,10 @@ public class Scp1344Viewmodel : UsableItemViewmodel
 	{
 		get
 		{
-			Scp1344Status status = _status;
-			if (status != Scp1344Status.Inspecting && status != 0)
+			Scp1344Status status = this._status;
+			if (status != Scp1344Status.Inspecting && status != Scp1344Status.Idle)
 			{
-				return FixedSway;
+				return Scp1344Viewmodel.FixedSway;
 			}
 			return base.SwayController;
 		}
@@ -44,15 +44,15 @@ public class Scp1344Viewmodel : UsableItemViewmodel
 	public override void InitAny()
 	{
 		base.InitAny();
-		FixedSway.SetTransform(HandsPivot);
+		Scp1344Viewmodel.FixedSway.SetTransform(base.HandsPivot);
 		Scp1344NetworkHandler.OnStatusChanged += ClientChangeStatus;
-		ClientChangeStatus(base.ItemId.SerialNumber, Scp1344NetworkHandler.GetSavedStatus(base.ItemId.SerialNumber));
+		this.ClientChangeStatus(base.ItemId.SerialNumber, Scp1344NetworkHandler.GetSavedStatus(base.ItemId.SerialNumber));
 	}
 
 	public override void OnUsingStarted()
 	{
 		base.OnUsingStarted();
-		PlayClip(_wearSound);
+		this.PlayClip(this._wearSound);
 	}
 
 	protected override void OnDestroy()
@@ -66,7 +66,7 @@ public class Scp1344Viewmodel : UsableItemViewmodel
 		base.OnEquipped();
 		if (!base.IsSpectator)
 		{
-			ClientChangeStatus(base.ItemId.SerialNumber, Scp1344NetworkHandler.GetSavedStatus(base.ItemId.SerialNumber));
+			this.ClientChangeStatus(base.ItemId.SerialNumber, Scp1344NetworkHandler.GetSavedStatus(base.ItemId.SerialNumber));
 		}
 	}
 
@@ -77,37 +77,37 @@ public class Scp1344Viewmodel : UsableItemViewmodel
 			switch (status)
 			{
 			case Scp1344Status.Inspecting:
-				AnimatorSetTrigger(InspectAnimHash);
-				PlayClip(_inspectSound, _originalVolume);
+				this.AnimatorSetTrigger(Scp1344Viewmodel.InspectAnimHash);
+				this.PlayClip(this._inspectSound, this._originalVolume);
 				break;
 			case Scp1344Status.Dropping:
-				AnimatorSetInt(StatusAnimHash, (int)status);
-				PlayClip(_removeBuildUpSound);
+				this.AnimatorSetInt(Scp1344Viewmodel.StatusAnimHash, (int)status);
+				this.PlayClip(this._removeBuildUpSound);
 				break;
 			default:
-				AnimatorSetInt(StatusAnimHash, (int)status);
+				this.AnimatorSetInt(Scp1344Viewmodel.StatusAnimHash, (int)status);
 				break;
 			}
-			_status = status;
+			this._status = status;
 		}
 	}
 
 	private void Awake()
 	{
-		_audioSource = base.gameObject.GetComponent<AudioSource>();
-		_originalClip = _audioSource.clip;
-		_originalVolume = _audioSource.volume;
+		this._audioSource = base.gameObject.GetComponent<AudioSource>();
+		this._originalClip = this._audioSource.clip;
+		this._originalVolume = this._audioSource.volume;
 	}
 
 	private void OnDisable()
 	{
-		_audioSource.clip = _originalClip;
+		this._audioSource.clip = this._originalClip;
 	}
 
 	private void PlayClip(AudioClip clip, float volume = 1f)
 	{
-		_audioSource.clip = clip;
-		_audioSource.volume = volume;
-		_audioSource.Play();
+		this._audioSource.clip = clip;
+		this._audioSource.volume = volume;
+		this._audioSource.Play();
 	}
 }

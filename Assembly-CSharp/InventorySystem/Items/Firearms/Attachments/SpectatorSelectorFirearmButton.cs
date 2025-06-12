@@ -17,20 +17,20 @@ public class SpectatorSelectorFirearmButton : Button
 
 	public void Setup(SpectatorAttachmentSelector selector, Firearm fa)
 	{
-		_img = GetComponent<RawImage>();
-		_selector = selector;
-		_img.texture = fa.Icon;
-		_normalColor = Color.Lerp(Color.clear, Color.white, 0.75f);
-		_fa = fa;
+		this._img = base.GetComponent<RawImage>();
+		this._selector = selector;
+		this._img.texture = fa.Icon;
+		this._normalColor = Color.Lerp(Color.clear, Color.white, 0.75f);
+		this._fa = fa;
 	}
 
 	private void Update()
 	{
-		_img.color = Color.Lerp(_img.color, (_selector.SelectedFirearm == _fa) ? Color.white : _normalColor, Time.deltaTime * 10f);
+		this._img.color = Color.Lerp(this._img.color, (this._selector.SelectedFirearm == this._fa) ? Color.white : this._normalColor, Time.deltaTime * 10f);
 	}
 
 	public void Click()
 	{
-		_selector.SelectFirearm(_fa);
+		this._selector.SelectFirearm(this._fa);
 	}
 }

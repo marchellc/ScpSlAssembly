@@ -29,7 +29,7 @@ public class Scp1507Role : FpcStandardScp, ISubroutinedRole, IHudScp, IHumeShiel
 	[field: SerializeField]
 	public ScpHudBase HudPrefab { get; private set; }
 
-	public bool AlreadyRevived => SpawnReason == RoleChangeReason.Revived;
+	public bool AlreadyRevived => this.SpawnReason == RoleChangeReason.Revived;
 
 	public HolidayType[] TargetHolidays => new HolidayType[2]
 	{
@@ -53,14 +53,14 @@ public class Scp1507Role : FpcStandardScp, ISubroutinedRole, IHudScp, IHumeShiel
 	{
 		get
 		{
-			float num = (AlreadyRevived ? 0.5f : 1f);
+			float num = (this.AlreadyRevived ? 0.5f : 1f);
 			return base.MaxHealth * num;
 		}
 	}
 
-	public override Team Team => _team;
+	public override Team Team => this._team;
 
-	public override Color RoleColor => _roleColor;
+	public override Color RoleColor => this._roleColor;
 
 	private RoleChangeReason SpawnReason
 	{
@@ -68,7 +68,7 @@ public class Scp1507Role : FpcStandardScp, ISubroutinedRole, IHudScp, IHumeShiel
 		{
 			if (!NetworkServer.active)
 			{
-				return _syncSpawnReason;
+				return this._syncSpawnReason;
 			}
 			return base.ServerSpawnReason;
 		}
@@ -83,6 +83,6 @@ public class Scp1507Role : FpcStandardScp, ISubroutinedRole, IHudScp, IHumeShiel
 	public override void ReadSpawnData(NetworkReader reader)
 	{
 		base.ReadSpawnData(reader);
-		_syncSpawnReason = (RoleChangeReason)reader.ReadByte();
+		this._syncSpawnReason = (RoleChangeReason)reader.ReadByte();
 	}
 }

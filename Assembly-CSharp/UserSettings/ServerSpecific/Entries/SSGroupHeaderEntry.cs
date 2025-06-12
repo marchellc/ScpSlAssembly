@@ -21,7 +21,7 @@ public class SSGroupHeaderEntry : MonoBehaviour, ISSEntry
 	public void Init(ServerSpecificSettingBase setting)
 	{
 		RectTransform obj = base.transform as RectTransform;
-		obj.sizeDelta = new Vector2(y: (setting as SSGroupHeader).ReducedPadding ? _shortPadding : _normalPadding, x: obj.sizeDelta.x);
-		_label.Set(setting);
+		obj.sizeDelta = new Vector2(y: (setting as SSGroupHeader).ReducedPadding ? this._shortPadding : this._normalPadding, x: obj.sizeDelta.x);
+		this._label.Set(setting);
 	}
 }

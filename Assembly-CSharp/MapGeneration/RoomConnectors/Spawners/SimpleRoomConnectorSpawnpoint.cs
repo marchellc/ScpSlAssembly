@@ -10,25 +10,25 @@ public class SimpleRoomConnectorSpawnpoint : RoomConnectorSpawnpointBase
 	[SerializeField]
 	private SpawnableRoomConnectorType _fallbackType;
 
-	public override SpawnableRoomConnectorType FallbackType => _fallbackType;
+	public override SpawnableRoomConnectorType FallbackType => this._fallbackType;
 
 	public override float GetSpawnChanceWeight(SpawnableRoomConnectorType type)
 	{
-		return RoomConnectorTypes.Contains(type) ? 1 : 0;
+		return this.RoomConnectorTypes.Contains(type) ? 1 : 0;
 	}
 
 	protected override void MergeWith(RoomConnectorSpawnpointBase retired)
 	{
-		for (int num = RoomConnectorTypes.Count - 1; num >= 0; num--)
+		for (int num = this.RoomConnectorTypes.Count - 1; num >= 0; num--)
 		{
-			if (!(retired.GetSpawnChanceWeight(RoomConnectorTypes[num]) > 0f))
+			if (!(retired.GetSpawnChanceWeight(this.RoomConnectorTypes[num]) > 0f))
 			{
-				RoomConnectorTypes.RemoveAt(num);
+				this.RoomConnectorTypes.RemoveAt(num);
 			}
 		}
-		if (RoomConnectorTypes.Count == 0)
+		if (this.RoomConnectorTypes.Count == 0)
 		{
-			RoomConnectorTypes.Add(_fallbackType);
+			this.RoomConnectorTypes.Add(this._fallbackType);
 		}
 	}
 }

@@ -11,7 +11,7 @@ public sealed class DiscordEmbedFieldFormatter : IJsonFormatter<DiscordEmbedFiel
 
 	public DiscordEmbedFieldFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("name"),
@@ -26,7 +26,7 @@ public sealed class DiscordEmbedFieldFormatter : IJsonFormatter<DiscordEmbedFiel
 				2
 			}
 		};
-		____stringByteKeys = new byte[3][]
+		this.____stringByteKeys = new byte[3][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("name"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("value"),
@@ -36,11 +36,11 @@ public sealed class DiscordEmbedFieldFormatter : IJsonFormatter<DiscordEmbedFiel
 
 	public void Serialize(ref JsonWriter writer, DiscordEmbedField value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.name);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.value);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteBoolean(value.inline);
 		writer.WriteEndObject();
 	}
@@ -59,7 +59,7 @@ public sealed class DiscordEmbedFieldFormatter : IJsonFormatter<DiscordEmbedFiel
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value2))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value2))
 			{
 				reader.ReadNextBlock();
 				continue;

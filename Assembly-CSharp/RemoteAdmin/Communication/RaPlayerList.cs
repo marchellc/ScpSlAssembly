@@ -39,14 +39,14 @@ public class RaPlayerList : IServerCommunication, IClientCommunication
 		bool viewHiddenBadges = CommandProcessor.CheckPermissions(sender, PlayerPermissions.ViewHiddenBadges);
 		bool viewHiddenGlobalBadges = CommandProcessor.CheckPermissions(sender, PlayerPermissions.ViewHiddenGlobalBadges);
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent("\n");
-		foreach (ReferenceHub item in num ? SortPlayersDescending(sortingType) : SortPlayers(sortingType))
+		foreach (ReferenceHub item in num ? this.SortPlayersDescending(sortingType) : this.SortPlayers(sortingType))
 		{
 			ClientInstanceMode mode = item.Mode;
-			if (mode != ClientInstanceMode.DedicatedServer && mode != 0)
+			if (mode != ClientInstanceMode.DedicatedServer && mode != ClientInstanceMode.Unverified)
 			{
 				bool isInOverwatch = item.serverRoles.IsInOverwatch;
 				bool flag2 = VoiceChatMutes.IsMuted(item);
-				stringBuilder.Append(GetPrefix(item, viewHiddenBadges, viewHiddenGlobalBadges));
+				stringBuilder.Append(RaPlayerList.GetPrefix(item, viewHiddenBadges, viewHiddenGlobalBadges));
 				if (isInOverwatch)
 				{
 					stringBuilder.Append("<link=RA_OverwatchEnabled><color=white>[</color><color=#03f8fc>\uf06e</color><color=white>]</color></link> ");
@@ -60,7 +60,7 @@ public class RaPlayerList : IServerCommunication, IClientCommunication
 				stringBuilder.AppendLine();
 			}
 		}
-		sender.RaReply($"${DataId} {StringBuilderPool.Shared.ToStringReturn(stringBuilder)}", success: true, !flag, string.Empty);
+		sender.RaReply($"${this.DataId} {StringBuilderPool.Shared.ToStringReturn(stringBuilder)}", success: true, !flag, string.Empty);
 	}
 
 	private IEnumerable<ReferenceHub> SortPlayers(PlayerSorting sortingType)

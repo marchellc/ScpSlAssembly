@@ -13,16 +13,16 @@ internal sealed class UpnpNatDevice : NatDevice
 
 	internal UpnpNatDevice(UpnpNatDeviceInfo deviceInfo)
 	{
-		Touch();
-		DeviceInfo = deviceInfo;
-		_soapClient = new SoapClient(DeviceInfo.ServiceControlUri, DeviceInfo.ServiceType);
+		base.Touch();
+		this.DeviceInfo = deviceInfo;
+		this._soapClient = new SoapClient(this.DeviceInfo.ServiceControlUri, this.DeviceInfo.ServiceType);
 	}
 
 	public override async Task<IPAddress> GetExternalIPAsync()
 	{
 		NatDiscoverer.TraceSource.LogInfo("GetExternalIPAsync - Getting external IP address");
 		GetExternalIPAddressRequestMessage getExternalIPAddressRequestMessage = new GetExternalIPAddressRequestMessage();
-		return new GetExternalIPAddressResponseMessage(await _soapClient.InvokeAsync("GetExternalIPAddress", getExternalIPAddressRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0)), DeviceInfo.ServiceType).ExternalIPAddress;
+		return new GetExternalIPAddressResponseMessage(await this._soapClient.InvokeAsync("GetExternalIPAddress", getExternalIPAddressRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0)), this.DeviceInfo.ServiceType).ExternalIPAddress;
 	}
 
 	public override async Task CreatePortMapAsync(Mapping mapping)
@@ -30,15 +30,15 @@ internal sealed class UpnpNatDevice : NatDevice
 		Guard.IsNotNull(mapping, "mapping");
 		if (mapping.PrivateIP.Equals(IPAddress.None))
 		{
-			mapping.PrivateIP = DeviceInfo.LocalAddress;
+			mapping.PrivateIP = this.DeviceInfo.LocalAddress;
 		}
 		NatDiscoverer.TraceSource.LogInfo("CreatePortMapAsync - Creating port mapping {0}", mapping);
 		bool retry = false;
 		try
 		{
 			CreatePortMappingRequestMessage createPortMappingRequestMessage = new CreatePortMappingRequestMessage(mapping);
-			await _soapClient.InvokeAsync("AddPortMapping", createPortMappingRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0));
-			RegisterMapping(mapping);
+			await this._soapClient.InvokeAsync("AddPortMapping", createPortMappingRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0));
+			base.RegisterMapping(mapping);
 		}
 		catch (MappingException ex)
 		{
@@ -72,7 +72,7 @@ internal sealed class UpnpNatDevice : NatDevice
 		}
 		if (retry)
 		{
-			await CreatePortMapAsync(mapping);
+			await this.CreatePortMapAsync(mapping);
 		}
 	}
 
@@ -81,14 +81,14 @@ internal sealed class UpnpNatDevice : NatDevice
 		Guard.IsNotNull(mapping, "mapping");
 		if (mapping.PrivateIP.Equals(IPAddress.None))
 		{
-			mapping.PrivateIP = DeviceInfo.LocalAddress;
+			mapping.PrivateIP = this.DeviceInfo.LocalAddress;
 		}
 		NatDiscoverer.TraceSource.LogInfo("DeletePortMapAsync - Deleteing port mapping {0}", mapping);
 		try
 		{
 			DeletePortMappingRequestMessage deletePortMappingRequestMessage = new DeletePortMappingRequestMessage(mapping);
-			await _soapClient.InvokeAsync("DeletePortMapping", deletePortMappingRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0));
-			UnregisterMapping(mapping);
+			await this._soapClient.InvokeAsync("DeletePortMapping", deletePortMappingRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0));
+			base.UnregisterMapping(mapping);
 		}
 		catch (MappingException ex)
 		{
@@ -109,7 +109,7 @@ internal sealed class UpnpNatDevice : NatDevice
 			try
 			{
 				GetGenericPortMappingEntry getGenericPortMappingEntry = new GetGenericPortMappingEntry(index++);
-				GetPortMappingEntryResponseMessage getPortMappingEntryResponseMessage = new GetPortMappingEntryResponseMessage(await _soapClient.InvokeAsync("GetGenericPortMappingEntry", getGenericPortMappingEntry.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0)), DeviceInfo.ServiceType, genericMapping: true);
+				GetPortMappingEntryResponseMessage getPortMappingEntryResponseMessage = new GetPortMappingEntryResponseMessage(await this._soapClient.InvokeAsync("GetGenericPortMappingEntry", getGenericPortMappingEntry.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0)), this.DeviceInfo.ServiceType, genericMapping: true);
 				if (!IPAddress.TryParse(getPortMappingEntryResponseMessage.InternalClient, out var address))
 				{
 					NatDiscoverer.TraceSource.LogWarn("InternalClient is not an IP address. Mapping ignored!");
@@ -139,7 +139,7 @@ internal sealed class UpnpNatDevice : NatDevice
 		try
 		{
 			GetSpecificPortMappingEntryRequestMessage getSpecificPortMappingEntryRequestMessage = new GetSpecificPortMappingEntryRequestMessage(networkProtocolType, publicPort);
-			GetPortMappingEntryResponseMessage getPortMappingEntryResponseMessage = new GetPortMappingEntryResponseMessage(await _soapClient.InvokeAsync("GetSpecificPortMappingEntry", getSpecificPortMappingEntryRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0)), DeviceInfo.ServiceType, genericMapping: false);
+			GetPortMappingEntryResponseMessage getPortMappingEntryResponseMessage = new GetPortMappingEntryResponseMessage(await this._soapClient.InvokeAsync("GetSpecificPortMappingEntry", getSpecificPortMappingEntryRequestMessage.ToXml()).TimeoutAfter(TimeSpan.FromSeconds(4.0)), this.DeviceInfo.ServiceType, genericMapping: false);
 			if (getPortMappingEntryResponseMessage.NetworkProtocolType != networkProtocolType)
 			{
 				NatDiscoverer.TraceSource.LogWarn("Router responded to a protocol {0} query with a protocol {1} answer, work around applied.", networkProtocolType, getPortMappingEntryResponseMessage.NetworkProtocolType);
@@ -159,6 +159,6 @@ internal sealed class UpnpNatDevice : NatDevice
 
 	public override string ToString()
 	{
-		return $"EndPoint: {DeviceInfo.HostEndPoint}\nControl Url: {DeviceInfo.ServiceControlUri}\nService Type: {DeviceInfo.ServiceType}\nLast Seen: {base.LastSeen}";
+		return $"EndPoint: {this.DeviceInfo.HostEndPoint}\nControl Url: {this.DeviceInfo.ServiceControlUri}\nService Type: {this.DeviceInfo.ServiceType}\nLast Seen: {base.LastSeen}";
 	}
 }

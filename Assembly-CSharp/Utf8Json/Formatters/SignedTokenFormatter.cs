@@ -11,7 +11,7 @@ public sealed class SignedTokenFormatter : IJsonFormatter<SignedToken>, IJsonFor
 
 	public SignedTokenFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("token"),
@@ -22,7 +22,7 @@ public sealed class SignedTokenFormatter : IJsonFormatter<SignedToken>, IJsonFor
 				1
 			}
 		};
-		____stringByteKeys = new byte[2][]
+		this.____stringByteKeys = new byte[2][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("token"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("signature")
@@ -36,9 +36,9 @@ public sealed class SignedTokenFormatter : IJsonFormatter<SignedToken>, IJsonFor
 			writer.WriteNull();
 			return;
 		}
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.token);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.signature);
 		writer.WriteEndObject();
 	}
@@ -56,7 +56,7 @@ public sealed class SignedTokenFormatter : IJsonFormatter<SignedToken>, IJsonFor
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

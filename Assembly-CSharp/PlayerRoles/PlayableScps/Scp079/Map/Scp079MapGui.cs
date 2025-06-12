@@ -79,24 +79,24 @@ public class Scp079MapGui : Scp079GuiElementBase
 	{
 		bool isOpen = Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen;
 		float num = Time.deltaTime * (float)(isOpen ? 1 : (-1));
-		_animValue = Mathf.Clamp(_animValue + num, 0f, _animDuration);
+		this._animValue = Mathf.Clamp(this._animValue + num, 0f, this._animDuration);
 		if (isOpen)
 		{
-			if (!_prevOpen)
+			if (!this._prevOpen)
 			{
-				OnOpened();
+				this.OnOpened();
 			}
-			UpdateOpen();
+			this.UpdateOpen();
 		}
-		else if (_prevOpen)
+		else if (this._prevOpen)
 		{
-			HighlightedCamera = null;
+			Scp079MapGui.HighlightedCamera = null;
 		}
-		_prevOpen = isOpen;
-		if (_prevAnimVal != _animValue)
+		this._prevOpen = isOpen;
+		if (this._prevAnimVal != this._animValue)
 		{
-			EvaluateAll(isOpen, _animValue);
-			_prevAnimVal = _animValue;
+			this.EvaluateAll(isOpen, this._animValue);
+			this._prevAnimVal = this._animValue;
 		}
 	}
 
@@ -104,64 +104,64 @@ public class Scp079MapGui : Scp079GuiElementBase
 	{
 		if (!Scp079Role.LocalInstanceActive)
 		{
-			_moverPosition = (Vector2)SyncVars;
-			_mapScaler.localScale = Vector3.one * SyncVars.z;
+			this._moverPosition = (Vector2)Scp079MapGui.SyncVars;
+			this._mapScaler.localScale = Vector3.one * Scp079MapGui.SyncVars.z;
 			return;
 		}
-		_zoom = 1f;
-		_mapScaler.localScale = Vector3.one;
-		Scp079Camera currentCamera = _curCamSync.CurrentCamera;
-		MonoBehaviour[] zoneMaps = _zoneMaps;
+		this._zoom = 1f;
+		this._mapScaler.localScale = Vector3.one;
+		Scp079Camera currentCamera = this._curCamSync.CurrentCamera;
+		MonoBehaviour[] zoneMaps = this._zoneMaps;
 		for (int i = 0; i < zoneMaps.Length; i++)
 		{
 			if (((IZoneMap)zoneMaps[i]).TryGetCenterTransform(currentCamera, out var center))
 			{
-				_prevOffset = center;
+				this._prevOffset = center;
 				break;
 			}
 		}
-		_mapMover.anchoredPosition = _prevOffset;
-		_moverPosition = _mapMover.localPosition;
+		this._mapMover.anchoredPosition = this._prevOffset;
+		this._moverPosition = this._mapMover.localPosition;
 	}
 
 	private void UpdateOpen()
 	{
-		HighlightedCamera = null;
+		Scp079MapGui.HighlightedCamera = null;
 		bool flag = !Scp079Role.LocalInstanceActive;
 		bool flag2 = !Cursor.visible && !flag;
 		bool visible = Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>.Visible;
 		if (flag2 && !visible)
 		{
 			float axisRaw = Input.GetAxisRaw("Mouse ScrollWheel");
-			_zoom = Mathf.Clamp(_zoom + axisRaw, 0.3f, 2.1f);
+			this._zoom = Mathf.Clamp(this._zoom + axisRaw, 0.3f, 2.1f);
 			Vector2 vector = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
-			_moverPosition -= 30f * SensitivitySettings.SensMultiplier * (Vector3)vector / _zoom;
-			SyncVars = new Vector3(_moverPosition.x, _moverPosition.y, _zoom);
+			this._moverPosition -= 30f * SensitivitySettings.SensMultiplier * (Vector3)vector / this._zoom;
+			Scp079MapGui.SyncVars = new Vector3(this._moverPosition.x, this._moverPosition.y, this._zoom);
 		}
 		if (flag)
 		{
-			_zoom = SyncVars.z;
-			_mapScaler.localScale = Vector3.one * _zoom;
-			_moverPosition = Vector3.Lerp(_moverPosition, SyncVars, Time.deltaTime * 15f);
-			_mapMover.localPosition = (Vector2)_moverPosition;
+			this._zoom = Scp079MapGui.SyncVars.z;
+			this._mapScaler.localScale = Vector3.one * this._zoom;
+			this._moverPosition = Vector3.Lerp(this._moverPosition, Scp079MapGui.SyncVars, Time.deltaTime * 15f);
+			this._mapMover.localPosition = (Vector2)this._moverPosition;
 		}
 		float animInterpolant = Scp079ScannerGui.AnimInterpolant;
-		_mapScaler.localScale = Vector3.one * Mathf.Lerp(_zoom, Scp079ScannerGui.MapZoom, animInterpolant);
-		_mapMover.localPosition = Vector3.Lerp((Vector2)_moverPosition, Scp079ScannerGui.MapPos, animInterpolant);
+		this._mapScaler.localScale = Vector3.one * Mathf.Lerp(this._zoom, Scp079ScannerGui.MapZoom, animInterpolant);
+		this._mapMover.localPosition = Vector3.Lerp((Vector2)this._moverPosition, Scp079ScannerGui.MapPos, animInterpolant);
 		MonoBehaviour[] zoneMaps;
 		if (!visible && (flag2 || flag))
 		{
-			zoneMaps = _zoneMaps;
+			zoneMaps = this._zoneMaps;
 			for (int i = 0; i < zoneMaps.Length; i++)
 			{
 				if (((IZoneMap)zoneMaps[i]).TryGetCamera(out var target))
 				{
-					HighlightedCamera = target;
+					Scp079MapGui.HighlightedCamera = target;
 				}
 			}
 		}
-		Scp079Camera currentCamera = _curCamSync.CurrentCamera;
-		zoneMaps = _zoneMaps;
+		Scp079Camera currentCamera = this._curCamSync.CurrentCamera;
+		zoneMaps = this._zoneMaps;
 		for (int i = 0; i < zoneMaps.Length; i++)
 		{
 			((IZoneMap)zoneMaps[i]).UpdateOpened(currentCamera);
@@ -170,17 +170,17 @@ public class Scp079MapGui : Scp079GuiElementBase
 
 	private void EvaluateAll(bool open, float val)
 	{
-		MapAnimation mapAnimation = (open ? _openAnim : _closeAnim);
-		_background.alpha = mapAnimation.Background.Evaluate(val);
-		_compressor.alpha = mapAnimation.Compressor.Evaluate(val);
-		_scalable.localScale = new Vector3(mapAnimation.Horizontal.Evaluate(val), mapAnimation.Vertical.Evaluate(val), 1f);
+		MapAnimation mapAnimation = (open ? this._openAnim : this._closeAnim);
+		this._background.alpha = mapAnimation.Background.Evaluate(val);
+		this._compressor.alpha = mapAnimation.Compressor.Evaluate(val);
+		this._scalable.localScale = new Vector3(mapAnimation.Horizontal.Evaluate(val), mapAnimation.Vertical.Evaluate(val), 1f);
 	}
 
 	internal override void Init(Scp079Role role, ReferenceHub owner)
 	{
 		base.Init(role, owner);
-		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out _curCamSync);
-		MonoBehaviour[] zoneMaps = _zoneMaps;
+		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out this._curCamSync);
+		MonoBehaviour[] zoneMaps = this._zoneMaps;
 		for (int i = 0; i < zoneMaps.Length; i++)
 		{
 			((IZoneMap)zoneMaps[i]).Generate();

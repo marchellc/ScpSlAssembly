@@ -26,19 +26,19 @@ public class ViewmodelReloadOnlyLayerExtension : MonoBehaviour, IViewmodelExtens
 
 	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_viewmodel = viewmodel;
-		_viewmodel.ParentFirearm.TryGetModule<IReloaderModule>(out _reloaderModule);
+		this._viewmodel = viewmodel;
+		this._viewmodel.ParentFirearm.TryGetModule<IReloaderModule>(out this._reloaderModule);
 	}
 
 	private void Update()
 	{
-		bool isReloadingOrUnloading = _reloaderModule.IsReloadingOrUnloading;
-		bool flag = _mode switch
+		bool isReloadingOrUnloading = this._reloaderModule.IsReloadingOrUnloading;
+		bool flag = this._mode switch
 		{
 			Mode.DuringReloadsAndUnloads => isReloadingOrUnloading, 
 			Mode.OutsideReloadsAndUnloads => !isReloadingOrUnloading, 
 			_ => throw new NotImplementedException("Unknown operating mode of ViewmodelReloadOnlyLayerExtension"), 
 		};
-		_viewmodel.AnimatorSetLayerWeight(_mask, flag ? 1 : 0);
+		this._viewmodel.AnimatorSetLayerWeight(this._mask, flag ? 1 : 0);
 	}
 }

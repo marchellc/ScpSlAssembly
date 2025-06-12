@@ -11,7 +11,7 @@ public static class FirearmUtils
 
 	public static void AnimSetInt(this Firearm fa, int hash, int i, bool checkIfExists = false)
 	{
-		if (!checkIfExists || HasParam(fa, hash))
+		if (!checkIfExists || FirearmUtils.HasParam(fa, hash))
 		{
 			if (fa.IsServer)
 			{
@@ -26,7 +26,7 @@ public static class FirearmUtils
 
 	public static void AnimSetFloat(this Firearm fa, int hash, float f, bool checkIfExists = false)
 	{
-		if (!checkIfExists || HasParam(fa, hash))
+		if (!checkIfExists || FirearmUtils.HasParam(fa, hash))
 		{
 			if (fa.IsServer)
 			{
@@ -41,7 +41,7 @@ public static class FirearmUtils
 
 	public static void AnimSetBool(this Firearm fa, int hash, bool b, bool checkIfExists = false)
 	{
-		if (!checkIfExists || HasParam(fa, hash))
+		if (!checkIfExists || FirearmUtils.HasParam(fa, hash))
 		{
 			if (fa.IsServer)
 			{
@@ -56,7 +56,7 @@ public static class FirearmUtils
 
 	public static void AnimSetTrigger(this Firearm fa, int hash, bool checkIfExists = false)
 	{
-		if (!checkIfExists || HasParam(fa, hash))
+		if (!checkIfExists || FirearmUtils.HasParam(fa, hash))
 		{
 			if (fa.IsServer)
 			{
@@ -126,6 +126,6 @@ public static class FirearmUtils
 	{
 		Animator anim = fa.ServerSideAnimator;
 		RuntimeAnimatorController runtimeAnimatorController = anim.runtimeAnimatorController;
-		return ExistingHashes.GetOrAdd(runtimeAnimatorController, () => anim.parameters.Select((AnimatorControllerParameter x) => x.nameHash).ToHashSet()).Contains(hash);
+		return FirearmUtils.ExistingHashes.GetOrAdd(runtimeAnimatorController, () => anim.parameters.Select((AnimatorControllerParameter x) => x.nameHash).ToHashSet()).Contains(hash);
 	}
 }

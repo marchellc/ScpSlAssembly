@@ -41,12 +41,12 @@ public class BreakableWindow : NetworkBehaviour, IDestructible, IBlockStaticBatc
 	{
 		get
 		{
-			return isBroken;
+			return this.isBroken;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref isBroken, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.isBroken, 1uL, null);
 		}
 	}
 
@@ -55,54 +55,54 @@ public class BreakableWindow : NetworkBehaviour, IDestructible, IBlockStaticBatc
 	{
 		if (NetworkServer.active)
 		{
-			health -= damage;
-			if (health <= 0f)
+			this.health -= damage;
+			if (this.health <= 0f)
 			{
-				NetworkisBroken = true;
+				this.NetworkisBroken = true;
 			}
 		}
 	}
 
 	private void Awake()
 	{
-		meshRenderers.AddRange(GetComponentsInChildren<MeshRenderer>());
-		_transform = base.transform;
-		GetComponent<Collider>().enabled = false;
-		Invoke("EnableColliders", 1f);
+		this.meshRenderers.AddRange(base.GetComponentsInChildren<MeshRenderer>());
+		this._transform = base.transform;
+		base.GetComponent<Collider>().enabled = false;
+		base.Invoke("EnableColliders", 1f);
 	}
 
 	private void EnableColliders()
 	{
-		GetComponent<Collider>().enabled = true;
+		base.GetComponent<Collider>().enabled = true;
 	}
 
 	private void Update()
 	{
-		if (isBroken && !prevStatus)
+		if (this.isBroken && !this.prevStatus)
 		{
-			StartCoroutine(BreakWindow());
-			prevStatus = true;
+			base.StartCoroutine(this.BreakWindow());
+			this.prevStatus = true;
 		}
 	}
 
 	private void LateUpdate()
 	{
-		for (int num = meshRenderers.Count - 1; num >= 0; num--)
+		for (int num = this.meshRenderers.Count - 1; num >= 0; num--)
 		{
-			MeshRenderer meshRenderer = meshRenderers[num];
-			meshRenderer.shadowCastingMode = (isBroken ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.Off);
-			if (isBroken)
+			MeshRenderer meshRenderer = this.meshRenderers[num];
+			meshRenderer.shadowCastingMode = (this.isBroken ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.Off);
+			if (this.isBroken)
 			{
-				meshRenderers.RemoveAt(num);
+				this.meshRenderers.RemoveAt(num);
 				Object.Destroy(meshRenderer);
 			}
-			meshRenderer.gameObject.layer = (isBroken ? 28 : 14);
+			meshRenderer.gameObject.layer = (this.isBroken ? 28 : 14);
 		}
 	}
 
 	private IEnumerator BreakWindow()
 	{
-		Collider[] componentsInChildren = GetComponentsInChildren<Collider>();
+		Collider[] componentsInChildren = base.GetComponentsInChildren<Collider>();
 		for (int i = 0; i < componentsInChildren.Length; i++)
 		{
 			componentsInChildren[i].enabled = false;
@@ -112,7 +112,7 @@ public class BreakableWindow : NetworkBehaviour, IDestructible, IBlockStaticBatc
 
 	private bool CheckDamagePerms(RoleTypeId roleType)
 	{
-		if (!_preventScpDamage)
+		if (!this._preventScpDamage)
 		{
 			return true;
 		}
@@ -127,21 +127,21 @@ public class BreakableWindow : NetworkBehaviour, IDestructible, IBlockStaticBatc
 	{
 		if (!(handler is AttackerDamageHandler attackerDamageHandler))
 		{
-			ServerDamageWindow(damage);
+			this.ServerDamageWindow(damage);
 			return true;
 		}
-		if (!CheckDamagePerms(attackerDamageHandler.Attacker.Role))
+		if (!this.CheckDamagePerms(attackerDamageHandler.Attacker.Role))
 		{
 			return false;
 		}
-		PlayerDamagingWindowEventArgs playerDamagingWindowEventArgs = new PlayerDamagingWindowEventArgs(attackerDamageHandler.Attacker.Hub, this, handler);
-		PlayerEvents.OnDamagingWindow(playerDamagingWindowEventArgs);
-		if (!playerDamagingWindowEventArgs.IsAllowed)
+		PlayerDamagingWindowEventArgs e = new PlayerDamagingWindowEventArgs(attackerDamageHandler.Attacker.Hub, this, handler);
+		PlayerEvents.OnDamagingWindow(e);
+		if (!e.IsAllowed)
 		{
 			return false;
 		}
-		LastAttacker = attackerDamageHandler.Attacker;
-		ServerDamageWindow(damage);
+		this.LastAttacker = attackerDamageHandler.Attacker;
+		this.ServerDamageWindow(damage);
 		PlayerEvents.OnDamagedWindow(new PlayerDamagedWindowEventArgs(attackerDamageHandler.Attacker.Hub, this, handler));
 		return true;
 	}
@@ -156,13 +156,13 @@ public class BreakableWindow : NetworkBehaviour, IDestructible, IBlockStaticBatc
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(isBroken);
+			writer.WriteBool(this.isBroken);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteBool(isBroken);
+			writer.WriteBool(this.isBroken);
 		}
 	}
 
@@ -171,13 +171,13 @@ public class BreakableWindow : NetworkBehaviour, IDestructible, IBlockStaticBatc
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref isBroken, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.isBroken, null, reader.ReadBool());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref isBroken, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.isBroken, null, reader.ReadBool());
 		}
 	}
 }

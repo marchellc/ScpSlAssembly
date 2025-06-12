@@ -35,7 +35,7 @@ public class GiftCommand : ICommand, IUsageProvider
 			return false;
 		}
 		Scp2536GiftBase giftBase = null;
-		bool flag = arguments.Count > 0 && TryFetchGift(newargs[0].ToUpper(), out giftBase);
+		bool flag = arguments.Count > 0 && this.TryFetchGift(newargs[0].ToUpper(), out giftBase);
 		foreach (ReferenceHub item in list)
 		{
 			if (flag)

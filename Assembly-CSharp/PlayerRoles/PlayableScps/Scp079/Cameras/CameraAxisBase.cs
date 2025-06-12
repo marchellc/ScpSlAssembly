@@ -64,25 +64,25 @@ public abstract class CameraAxisBase : IBlockStaticBatching
 
 	public float CurValue { get; internal set; }
 
-	public float MinValue => _constraints.x;
+	public float MinValue => this._constraints.x;
 
-	public float MaxValue => _constraints.y;
+	public float MaxValue => this._constraints.y;
 
 	public float TargetValue
 	{
 		get
 		{
-			return _val;
+			return this._val;
 		}
 		set
 		{
-			_val = Mathf.Clamp(value % 360f, _constraints.x, _constraints.y);
-			if (!_wasEverSet)
+			this._val = Mathf.Clamp(value % 360f, this._constraints.x, this._constraints.y);
+			if (!this._wasEverSet)
 			{
-				CurValue = _val;
-				_wasEverSet = true;
-				_wasMoving = true;
-				OnValueChanged(_val, null);
+				this.CurValue = this._val;
+				this._wasEverSet = true;
+				this._wasMoving = true;
+				this.OnValueChanged(this._val, null);
 			}
 		}
 	}
@@ -91,11 +91,11 @@ public abstract class CameraAxisBase : IBlockStaticBatching
 	{
 		get
 		{
-			return (ushort)Compress(_constraints, TargetValue, 65535);
+			return (ushort)this.Compress(this._constraints, this.TargetValue, 65535);
 		}
 		set
 		{
-			TargetValue = Uncompress(_constraints, (int)value, 65535);
+			this.TargetValue = this.Uncompress(this._constraints, (int)value, 65535);
 		}
 	}
 
@@ -103,11 +103,11 @@ public abstract class CameraAxisBase : IBlockStaticBatching
 	{
 		get
 		{
-			return (byte)Compress(_constraints, TargetValue, 255);
+			return (byte)this.Compress(this._constraints, this.TargetValue, 255);
 		}
 		set
 		{
-			TargetValue = Uncompress(_constraints, (int)value, 255);
+			this.TargetValue = this.Uncompress(this._constraints, (int)value, 255);
 		}
 	}
 
@@ -115,66 +115,66 @@ public abstract class CameraAxisBase : IBlockStaticBatching
 	{
 		get
 		{
-			return _constraints;
+			return this._constraints;
 		}
 		set
 		{
-			_constraints = value;
+			this._constraints = value;
 		}
 	}
 
 	internal virtual void Update(Scp079Camera cam)
 	{
-		if (CurValue == TargetValue)
+		if (this.CurValue == this.TargetValue)
 		{
-			if (_wasMoving)
+			if (this._wasMoving)
 			{
-				float num = SoundEffectSource.volume - _soundStopSpeed * Time.deltaTime;
+				float num = this.SoundEffectSource.volume - this._soundStopSpeed * Time.deltaTime;
 				if (num <= 0f)
 				{
-					SoundEffectSource.Stop();
-					_wasMoving = false;
+					this.SoundEffectSource.Stop();
+					this._wasMoving = false;
 				}
-				SoundEffectSource.volume = Mathf.Clamp01(num);
+				this.SoundEffectSource.volume = Mathf.Clamp01(num);
 			}
 			return;
 		}
-		float time = Mathf.Abs(CurValue - TargetValue);
-		bool isFirstperson = IsFirstperson;
-		bool isSpectating = IsSpectating;
-		float num2 = SpeedCurve.Evaluate(time);
-		float num3 = VolumeCurve.Evaluate(time);
-		float num4 = PitchCurve.Evaluate(time);
-		float num5 = ((_soundLerpSpeed == 0f) ? 1f : (_soundLerpSpeed * Time.deltaTime));
+		float time = Mathf.Abs(this.CurValue - this.TargetValue);
+		bool isFirstperson = this.IsFirstperson;
+		bool isSpectating = this.IsSpectating;
+		float num2 = this.SpeedCurve.Evaluate(time);
+		float num3 = this.VolumeCurve.Evaluate(time);
+		float num4 = this.PitchCurve.Evaluate(time);
+		float num5 = ((this._soundLerpSpeed == 0f) ? 1f : (this._soundLerpSpeed * Time.deltaTime));
 		if (isFirstperson || isSpectating)
 		{
 			num3 *= 0.4f;
 			num4 *= 1f;
 			num5 *= 1f;
 		}
-		if (!_wasMoving)
+		if (!this._wasMoving)
 		{
-			SoundEffectSource.Play();
-			_wasMoving = true;
+			this.SoundEffectSource.Play();
+			this._wasMoving = true;
 		}
 		if (isFirstperson)
 		{
-			CurValue = Mathf.Clamp(CurValue, TargetValue - _localPlayerDiffLimiter, TargetValue + _localPlayerDiffLimiter);
+			this.CurValue = Mathf.Clamp(this.CurValue, this.TargetValue - this._localPlayerDiffLimiter, this.TargetValue + this._localPlayerDiffLimiter);
 		}
 		else if (isSpectating)
 		{
-			CurValue = Mathf.Lerp(CurValue, TargetValue, Time.deltaTime * SpectatorLerpMultiplier);
+			this.CurValue = Mathf.Lerp(this.CurValue, this.TargetValue, Time.deltaTime * this.SpectatorLerpMultiplier);
 		}
 		num2 *= Time.deltaTime;
-		CurValue = ((_constraints.x == -360f || _constraints.y == 360f) ? Mathf.MoveTowardsAngle(CurValue, TargetValue, num2) : Mathf.MoveTowards(CurValue, TargetValue, num2));
-		SoundEffectSource.volume = Mathf.Lerp(SoundEffectSource.volume, num3, num5);
-		SoundEffectSource.pitch = Mathf.Lerp(SoundEffectSource.pitch, num4, num5);
-		OnValueChanged(CurValue, cam);
+		this.CurValue = ((this._constraints.x == -360f || this._constraints.y == 360f) ? Mathf.MoveTowardsAngle(this.CurValue, this.TargetValue, num2) : Mathf.MoveTowards(this.CurValue, this.TargetValue, num2));
+		this.SoundEffectSource.volume = Mathf.Lerp(this.SoundEffectSource.volume, num3, num5);
+		this.SoundEffectSource.pitch = Mathf.Lerp(this.SoundEffectSource.pitch, num4, num5);
+		this.OnValueChanged(this.CurValue, cam);
 	}
 
 	internal virtual void Awake(Scp079Camera cam)
 	{
-		_wasEverSet = false;
+		this._wasEverSet = false;
 	}
 
 	protected abstract void OnValueChanged(float newValue, Scp079Camera cam);

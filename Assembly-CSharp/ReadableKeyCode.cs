@@ -16,17 +16,17 @@ public readonly struct ReadableKeyCode
 
 	public ReadableKeyCode(KeyCode keycode)
 	{
-		if (AlreadyDefinedKeycodes.TryGetValue(keycode, out var value))
+		if (ReadableKeyCode.AlreadyDefinedKeycodes.TryGetValue(keycode, out var value))
 		{
-			NormalVersion = value.NormalVersion;
-			ShortVersion = value.ShortVersion;
-			_normalVersionLength = value._normalVersionLength;
+			this.NormalVersion = value.NormalVersion;
+			this.ShortVersion = value.ShortVersion;
+			this._normalVersionLength = value._normalVersionLength;
 		}
 		else
 		{
-			GetReadableForm(keycode, out NormalVersion, out ShortVersion);
-			_normalVersionLength = NormalVersion.Length;
-			AlreadyDefinedKeycodes[keycode] = this;
+			ReadableKeyCode.GetReadableForm(keycode, out this.NormalVersion, out this.ShortVersion);
+			this._normalVersionLength = this.NormalVersion.Length;
+			ReadableKeyCode.AlreadyDefinedKeycodes[keycode] = this;
 		}
 	}
 
@@ -35,7 +35,7 @@ public readonly struct ReadableKeyCode
 	{
 		TranslationReader.OnTranslationsRefreshed += delegate
 		{
-			AlreadyDefinedKeycodes.Clear();
+			ReadableKeyCode.AlreadyDefinedKeycodes.Clear();
 		};
 	}
 
@@ -46,16 +46,16 @@ public readonly struct ReadableKeyCode
 
 	public string GetBestVersion(int maxCharacters)
 	{
-		if (_normalVersionLength <= maxCharacters)
+		if (this._normalVersionLength <= maxCharacters)
 		{
-			return NormalVersion;
+			return this.NormalVersion;
 		}
-		return ShortVersion;
+		return this.ShortVersion;
 	}
 
 	public override string ToString()
 	{
-		return NormalVersion;
+		return this.NormalVersion;
 	}
 
 	private static void GetReadableForm(KeyCode keycode, out string normalVer, out string shortVer, bool translate = true)
@@ -188,7 +188,7 @@ public readonly struct ReadableKeyCode
 		}
 		if (translate)
 		{
-			normalVer = TranslateKey(keycode, normalVer);
+			normalVer = ReadableKeyCode.TranslateKey(keycode, normalVer);
 		}
 	}
 

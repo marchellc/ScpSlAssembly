@@ -14,23 +14,23 @@ public class Scp079Speaker : Scp079InteractableBase
 	protected override void OnRegistered()
 	{
 		base.OnRegistered();
-		_wasRegistered = true;
-		SpeakersInRooms.GetOrAddNew(Room).Add(this);
+		this._wasRegistered = true;
+		Scp079Speaker.SpeakersInRooms.GetOrAddNew(this.Room).Add(this);
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		if (_wasRegistered && !(Room == null) && SpeakersInRooms.TryGetValue(Room, out var value) && value.Remove(this) && value.Count == 0)
+		if (this._wasRegistered && !(this.Room == null) && Scp079Speaker.SpeakersInRooms.TryGetValue(this.Room, out var value) && value.Remove(this) && value.Count == 0)
 		{
-			SpeakersInRooms.Remove(Room);
+			Scp079Speaker.SpeakersInRooms.Remove(this.Room);
 		}
 	}
 
 	public static bool TryGetSpeaker(Scp079Camera cam, out Scp079Speaker best)
 	{
 		best = null;
-		if (!SpeakersInRooms.TryGetValue(cam.Room, out var value))
+		if (!Scp079Speaker.SpeakersInRooms.TryGetValue(cam.Room, out var value))
 		{
 			return false;
 		}

@@ -12,18 +12,18 @@ public class Scp106HumeShieldController : DynamicHumeShieldController
 	{
 		get
 		{
-			if (!_stalk.StalkActive || !_role106.Sinkhole.IsHidden)
+			if (!this._stalk.StalkActive || !this._role106.Sinkhole.IsHidden)
 			{
 				return 0f;
 			}
-			return RegenerationRate * HsMax;
+			return base.RegenerationRate * this.HsMax;
 		}
 	}
 
 	public override void SpawnObject()
 	{
-		_role106 = base.Role as Scp106Role;
-		_role106.SubroutineModule.TryGetSubroutine<Scp106StalkAbility>(out _stalk);
+		this._role106 = base.Role as Scp106Role;
+		this._role106.SubroutineModule.TryGetSubroutine<Scp106StalkAbility>(out this._stalk);
 		base.SpawnObject();
 	}
 }

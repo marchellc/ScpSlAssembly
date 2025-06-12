@@ -21,31 +21,31 @@ public static class GpuDriver
 			{
 				return SystemInfo.graphicsDeviceVersion;
 			}
-			lock (_dataLock)
+			lock (GpuDriver._dataLock)
 			{
-				if (!string.IsNullOrWhiteSpace(_driverVersion))
+				if (!string.IsNullOrWhiteSpace(GpuDriver._driverVersion))
 				{
-					return _driverVersion;
+					return GpuDriver._driverVersion;
 				}
 				try
 				{
 					string gpuName = SystemInfo.graphicsDeviceName;
 					Thread thread = new Thread((ThreadStart)delegate
 					{
-						lock (_dataLock)
+						lock (GpuDriver._dataLock)
 						{
-							IntPtr driverVersion = GetDriverVersion(gpuName);
+							IntPtr driverVersion = GpuDriver.GetDriverVersion(gpuName);
 							if (driverVersion == IntPtr.Zero)
 							{
 								Debug.LogWarning("GPU Driver version for " + gpuName + " not found!");
-								driverVersion = GetDriverVersion(null);
+								driverVersion = GpuDriver.GetDriverVersion(null);
 							}
-							_driverVersion = Marshal.PtrToStringUni(driverVersion) ?? "Loading failed";
-							Free(driverVersion);
-							Debug.Log("GPU Driver version: " + _driverVersion);
+							GpuDriver._driverVersion = Marshal.PtrToStringUni(driverVersion) ?? "Loading failed";
+							GpuDriver.Free(driverVersion);
+							Debug.Log("GPU Driver version: " + GpuDriver._driverVersion);
 							MainThreadDispatcher.Dispatch(delegate
 							{
-								GpuDriver.DriverLoaded?.Invoke(_driverVersion);
+								GpuDriver.DriverLoaded?.Invoke(GpuDriver._driverVersion);
 							});
 						}
 					});

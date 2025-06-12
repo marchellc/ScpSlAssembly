@@ -24,7 +24,7 @@ public class Scp079MapToggler : Scp079ToggleMenuAbilityBase<Scp079MapToggler>, I
 		{
 			if (base.Role.IsLocalPlayer && value != Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen)
 			{
-				Trigger();
+				this.Trigger();
 			}
 		}
 	}
@@ -34,7 +34,7 @@ public class Scp079MapToggler : Scp079ToggleMenuAbilityBase<Scp079MapToggler>, I
 		base.LateUpdate();
 		if (base.Role.IsLocalPlayer && base.SyncState)
 		{
-			ClientSendCmd();
+			base.ClientSendCmd();
 		}
 	}
 
@@ -52,12 +52,12 @@ public class Scp079MapToggler : Scp079ToggleMenuAbilityBase<Scp079MapToggler>, I
 		{
 			base.SyncState = true;
 			Scp079MapGui.SyncVars = reader.ReadVector3();
-			ServerSendRpc((ReferenceHub x) => x.roleManager.CurrentRole is SpectatorRole);
+			base.ServerSendRpc((ReferenceHub x) => x.roleManager.CurrentRole is SpectatorRole);
 		}
 		else
 		{
 			base.SyncState = false;
-			ServerSendRpc((ReferenceHub x) => x != base.Owner);
+			base.ServerSendRpc((ReferenceHub x) => x != base.Owner);
 		}
 	}
 

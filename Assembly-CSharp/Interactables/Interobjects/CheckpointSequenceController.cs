@@ -21,7 +21,7 @@ public class CheckpointSequenceController
 	{
 		get
 		{
-			DoorVariant[] subDoors = _checkpoint.SubDoors;
+			DoorVariant[] subDoors = this._checkpoint.SubDoors;
 			for (int i = 0; i < subDoors.Length; i++)
 			{
 				if (subDoors[i].TargetState)
@@ -29,7 +29,7 @@ public class CheckpointSequenceController
 					return true;
 				}
 			}
-			return _checkpoint.TargetState;
+			return this._checkpoint.TargetState;
 		}
 	}
 
@@ -37,7 +37,7 @@ public class CheckpointSequenceController
 	{
 		get
 		{
-			DoorVariant[] subDoors = _checkpoint.SubDoors;
+			DoorVariant[] subDoors = this._checkpoint.SubDoors;
 			for (int i = 0; i < subDoors.Length; i++)
 			{
 				if (!subDoors[i].TargetState)
@@ -45,7 +45,7 @@ public class CheckpointSequenceController
 					return true;
 				}
 			}
-			return !_checkpoint.TargetState;
+			return !this._checkpoint.TargetState;
 		}
 	}
 
@@ -54,56 +54,56 @@ public class CheckpointSequenceController
 		get
 		{
 			ushort num = 0;
-			DoorVariant[] subDoors = _checkpoint.SubDoors;
+			DoorVariant[] subDoors = this._checkpoint.SubDoors;
 			foreach (DoorVariant doorVariant in subDoors)
 			{
 				num |= doorVariant.ActiveLocks;
 			}
-			return (DoorLockReason)(num | _checkpoint.ActiveLocks);
+			return (DoorLockReason)(num | this._checkpoint.ActiveLocks);
 		}
 	}
 
-	private bool CanClose => DoorLockUtils.GetMode(LockReasons).HasFlagFast(DoorLockMode.CanClose);
+	private bool CanClose => DoorLockUtils.GetMode(this.LockReasons).HasFlagFast(DoorLockMode.CanClose);
 
 	public void Init(CheckpointDoor checkpoint)
 	{
-		_checkpoint = checkpoint;
+		this._checkpoint = checkpoint;
 	}
 
 	public CheckpointDoor.SequenceState UpdateSequence()
 	{
-		CheckpointDoor.SequenceState curSequence = _checkpoint.CurSequence;
+		CheckpointDoor.SequenceState curSequence = this._checkpoint.CurSequence;
 		if (curSequence == CheckpointDoor.SequenceState.Idle)
 		{
-			return UpdateIdle();
+			return this.UpdateIdle();
 		}
-		if (AnyClosed)
+		if (this.AnyClosed)
 		{
-			SetStateAll(targetState: false);
+			this.SetStateAll(targetState: false);
 			return CheckpointDoor.SequenceState.Idle;
 		}
 		return curSequence switch
 		{
-			CheckpointDoor.SequenceState.Granted => UpdateGranted(), 
-			CheckpointDoor.SequenceState.OpenLoop => UpdateOpenLoop(), 
-			CheckpointDoor.SequenceState.ClosingWarning => UpdateClosingWarning(), 
+			CheckpointDoor.SequenceState.Granted => this.UpdateGranted(), 
+			CheckpointDoor.SequenceState.OpenLoop => this.UpdateOpenLoop(), 
+			CheckpointDoor.SequenceState.ClosingWarning => this.UpdateClosingWarning(), 
 			_ => throw new InvalidOperationException("Unable to update checkpoint! Invalid sequence: " + curSequence), 
 		};
 	}
 
 	private CheckpointDoor.SequenceState UpdateIdle()
 	{
-		if (!AnyOpen)
+		if (!this.AnyOpen)
 		{
 			return CheckpointDoor.SequenceState.Idle;
 		}
-		SetStateAll(targetState: true);
+		this.SetStateAll(targetState: true);
 		return CheckpointDoor.SequenceState.Granted;
 	}
 
 	private CheckpointDoor.SequenceState UpdateGranted()
 	{
-		DoorVariant[] subDoors = _checkpoint.SubDoors;
+		DoorVariant[] subDoors = this._checkpoint.SubDoors;
 		for (int i = 0; i < subDoors.Length; i++)
 		{
 			if (!subDoors[i].IsConsideredOpen())
@@ -111,43 +111,43 @@ public class CheckpointSequenceController
 				return CheckpointDoor.SequenceState.Granted;
 			}
 		}
-		RemainingTime = OpenLoopTime;
+		this.RemainingTime = this.OpenLoopTime;
 		return CheckpointDoor.SequenceState.OpenLoop;
 	}
 
 	private CheckpointDoor.SequenceState UpdateOpenLoop()
 	{
-		RemainingTime -= Time.deltaTime;
-		if (RemainingTime > 0f || !CanClose)
+		this.RemainingTime -= Time.deltaTime;
+		if (this.RemainingTime > 0f || !this.CanClose)
 		{
 			return CheckpointDoor.SequenceState.OpenLoop;
 		}
-		RemainingTime = WarningTime;
+		this.RemainingTime = this.WarningTime;
 		return CheckpointDoor.SequenceState.ClosingWarning;
 	}
 
 	private CheckpointDoor.SequenceState UpdateClosingWarning()
 	{
-		if (!CanClose)
+		if (!this.CanClose)
 		{
 			return CheckpointDoor.SequenceState.OpenLoop;
 		}
-		RemainingTime -= Time.deltaTime;
-		if (RemainingTime > 0f)
+		this.RemainingTime -= Time.deltaTime;
+		if (this.RemainingTime > 0f)
 		{
 			return CheckpointDoor.SequenceState.ClosingWarning;
 		}
-		SetStateAll(targetState: false);
+		this.SetStateAll(targetState: false);
 		return CheckpointDoor.SequenceState.Idle;
 	}
 
 	private void SetStateAll(bool targetState)
 	{
-		DoorVariant[] subDoors = _checkpoint.SubDoors;
+		DoorVariant[] subDoors = this._checkpoint.SubDoors;
 		for (int i = 0; i < subDoors.Length; i++)
 		{
 			subDoors[i].NetworkTargetState = targetState;
 		}
-		_checkpoint.NetworkTargetState = targetState;
+		this._checkpoint.NetworkTargetState = targetState;
 	}
 }

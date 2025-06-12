@@ -21,19 +21,19 @@ public class PlayerBroadcastCommand : BroadcastCommandBase
 	{
 		string[] newargs;
 		List<ReferenceHub> list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out newargs);
-		if (newargs == null || newargs.Length < MinimumArguments)
+		if (newargs == null || newargs.Length < this.MinimumArguments)
 		{
 			response = "To execute this command provide at least 3 arguments!\nUsage: " + arguments.Array[0] + " " + this.DisplayCommandUsage();
 			return false;
 		}
 		string text = newargs[0];
-		if (!IsValidDuration(text, out var time))
+		if (!base.IsValidDuration(text, out var time))
 		{
 			response = "Invalid argument for duration: " + text + " Usage: " + arguments.Array[0] + " " + this.DisplayCommandUsage();
 			return false;
 		}
 		Broadcast.BroadcastFlags broadcastFlag;
-		bool flag = HasInputFlag(newargs[1], out broadcastFlag, newargs.Length);
+		bool flag = base.HasInputFlag(newargs[1], out broadcastFlag, newargs.Length);
 		string text2 = RAUtils.FormatArguments(newargs.Segment(1), flag ? 1 : 0);
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
 		Broadcast singleton = Broadcast.Singleton;

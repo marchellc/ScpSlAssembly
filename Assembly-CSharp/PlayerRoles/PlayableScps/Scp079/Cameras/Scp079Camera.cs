@@ -37,17 +37,17 @@ public class Scp079Camera : Scp079InteractableBase, IAdvancedCameraController, I
 	{
 		get
 		{
-			return _isActive;
+			return this._isActive;
 		}
 		set
 		{
-			if (value != _isActive)
+			if (value != this._isActive)
 			{
-				_isActive = value;
-				Renderer[] targetRenderers = _targetRenderers;
+				this._isActive = value;
+				Renderer[] targetRenderers = this._targetRenderers;
 				for (int i = 0; i < targetRenderers.Length; i++)
 				{
-					targetRenderers[i].sharedMaterial = (_isActive ? _onlineMat : _offlineMat);
+					targetRenderers[i].sharedMaterial = (this._isActive ? this._onlineMat : this._offlineMat);
 				}
 				Scp079Camera.OnAnyCameraStateChanged?.Invoke(this);
 			}
@@ -86,9 +86,9 @@ public class Scp079Camera : Scp079InteractableBase, IAdvancedCameraController, I
 	protected override void Awake()
 	{
 		base.Awake();
-		VerticalAxis.Awake(this);
-		HorizontalAxis.Awake(this);
-		ZoomAxis.Awake(this);
+		this.VerticalAxis.Awake(this);
+		this.HorizontalAxis.Awake(this);
+		this.ZoomAxis.Awake(this);
 	}
 
 	private void Start()
@@ -98,38 +98,38 @@ public class Scp079Camera : Scp079InteractableBase, IAdvancedCameraController, I
 
 	internal void WriteAxes(NetworkWriter writer)
 	{
-		writer.WriteUShort(VerticalAxis.Value16BitCompression);
-		writer.WriteUShort(HorizontalAxis.Value16BitCompression);
-		writer.WriteByte(ZoomAxis.Value8BitCompression);
+		writer.WriteUShort(this.VerticalAxis.Value16BitCompression);
+		writer.WriteUShort(this.HorizontalAxis.Value16BitCompression);
+		writer.WriteByte(this.ZoomAxis.Value8BitCompression);
 	}
 
 	internal void ApplyAxes(NetworkReader reader)
 	{
-		if (!IsUsedByLocalPlayer)
+		if (!this.IsUsedByLocalPlayer)
 		{
-			VerticalAxis.Value16BitCompression = reader.ReadUShort();
-			HorizontalAxis.Value16BitCompression = reader.ReadUShort();
-			ZoomAxis.Value8BitCompression = reader.ReadByte();
+			this.VerticalAxis.Value16BitCompression = reader.ReadUShort();
+			this.HorizontalAxis.Value16BitCompression = reader.ReadUShort();
+			this.ZoomAxis.Value8BitCompression = reader.ReadByte();
 		}
 	}
 
 	protected virtual void Update()
 	{
-		VerticalAxis.Update(this);
-		HorizontalAxis.Update(this);
-		ZoomAxis.Update(this);
-		if (IsActive)
+		this.VerticalAxis.Update(this);
+		this.HorizontalAxis.Update(this);
+		this.ZoomAxis.Update(this);
+		if (this.IsActive)
 		{
 			if (Scp079Role.ActiveInstances.All((Scp079Role x) => x.CurrentCamera != this))
 			{
-				IsActive = false;
+				this.IsActive = false;
 				return;
 			}
-			Vector3 eulerAngles = CameraAnchor.rotation.eulerAngles;
-			VerticalRotation = eulerAngles.x;
-			HorizontalRotation = eulerAngles.y;
-			RollRotation = eulerAngles.z;
-			CameraPosition = CameraAnchor.position;
+			Vector3 eulerAngles = this.CameraAnchor.rotation.eulerAngles;
+			this.VerticalRotation = eulerAngles.x;
+			this.HorizontalRotation = eulerAngles.y;
+			this.RollRotation = eulerAngles.z;
+			this.CameraPosition = this.CameraAnchor.position;
 		}
 	}
 

@@ -31,44 +31,44 @@ public class Scp3114VoiceLines : StandardSubroutine<Scp3114Role>
 
 		private int _lastIndex;
 
-		public float LastUseElapsedSeconds => (float)(NetworkTime.time - _lastUse - (double)MaxDuration);
+		public float LastUseElapsedSeconds => (float)(NetworkTime.time - this._lastUse - (double)this.MaxDuration);
 
 		public bool TryDrawNext(out ushort clipId)
 		{
-			if (UnityEngine.Random.value > Chance)
+			if (UnityEngine.Random.value > this.Chance)
 			{
 				clipId = 0;
 				return false;
 			}
-			_lastUse = NetworkTime.time;
-			_lastIndex++;
-			clipId = (ushort)_lastIndex;
+			this._lastUse = NetworkTime.time;
+			this._lastIndex++;
+			clipId = (ushort)this._lastIndex;
 			return true;
 		}
 
 		public AudioClip GetClip(int index)
 		{
-			return RandomClips[_order[index % _order.Count]];
+			return this.RandomClips[this._order[index % this._order.Count]];
 		}
 
 		public void Init()
 		{
-			_lastUse = 0.0;
-			if (_order == null)
+			this._lastUse = 0.0;
+			if (this._order == null)
 			{
-				_order = new List<int>(RandomClips.Length);
+				this._order = new List<int>(this.RandomClips.Length);
 			}
-			_order.Add(0);
+			this._order.Add(0);
 		}
 
 		public void Randomize(int seed)
 		{
-			_order.Clear();
-			for (int i = 0; i < RandomClips.Length; i++)
+			this._order.Clear();
+			for (int i = 0; i < this.RandomClips.Length; i++)
 			{
-				_order.Add(i);
+				this._order.Add(i);
 			}
-			_order.ShuffleList(new System.Random(seed));
+			this._order.ShuffleList(new System.Random(seed));
 		}
 	}
 
@@ -107,28 +107,28 @@ public class Scp3114VoiceLines : StandardSubroutine<Scp3114Role>
 	protected override void Awake()
 	{
 		base.Awake();
-		_voiceLines.ForEach(delegate(VoiceLinesDefinition x)
+		this._voiceLines.ForEach(delegate(VoiceLinesDefinition x)
 		{
 			x.Init();
 		});
 		base.CastRole.CurIdentity.OnStatusChanged += OnStatusChanged;
-		GetSubroutine<Scp3114Slap>(out var sr);
+		base.GetSubroutine<Scp3114Slap>(out var sr);
 		sr.ServerOnHit += delegate
 		{
-			ServerPlayConditionally(VoiceLinesName.Slap);
+			this.ServerPlayConditionally(VoiceLinesName.Slap);
 		};
 		sr.ServerOnKill += delegate
 		{
-			ServerPlayConditionally(VoiceLinesName.KillSlap);
+			this.ServerPlayConditionally(VoiceLinesName.KillSlap);
 		};
-		GetSubroutine<Scp3114Strangle>(out var sr2);
+		base.GetSubroutine<Scp3114Strangle>(out var sr2);
 		sr2.ServerOnBegin += delegate
 		{
-			ServerPlayConditionally(VoiceLinesName.StartStrangle);
+			this.ServerPlayConditionally(VoiceLinesName.StartStrangle);
 		};
 		sr2.ServerOnKill += delegate
 		{
-			ServerPlayConditionally(VoiceLinesName.KillStrangle);
+			this.ServerPlayConditionally(VoiceLinesName.KillStrangle);
 		};
 	}
 
@@ -137,17 +137,17 @@ public class Scp3114VoiceLines : StandardSubroutine<Scp3114Role>
 		switch (base.CastRole.CurIdentity.Status)
 		{
 		case Scp3114Identity.DisguiseStatus.Active:
-			_hasDisguise = true;
-			_idleRemaining = _idleCycleTime;
+			this._hasDisguise = true;
+			this._idleRemaining = this._idleCycleTime;
 			break;
 		case Scp3114Identity.DisguiseStatus.Equipping:
-			ServerPlayConditionally(VoiceLinesName.EquipStart);
+			this.ServerPlayConditionally(VoiceLinesName.EquipStart);
 			break;
 		case Scp3114Identity.DisguiseStatus.None:
-			if (_hasDisguise)
+			if (this._hasDisguise)
 			{
-				_hasDisguise = false;
-				ServerPlayConditionally(VoiceLinesName.Reveal);
+				this._hasDisguise = false;
+				this.ServerPlayConditionally(VoiceLinesName.Reveal);
 			}
 			break;
 		}
@@ -155,17 +155,17 @@ public class Scp3114VoiceLines : StandardSubroutine<Scp3114Role>
 
 	private void Update()
 	{
-		if (!_randomized)
+		if (!this._randomized)
 		{
-			RandomizeWhenReady();
+			this.RandomizeWhenReady();
 		}
-		if (NetworkServer.active && !_hasDisguise)
+		if (NetworkServer.active && !this._hasDisguise)
 		{
-			_idleRemaining -= Time.deltaTime;
-			if (!(_idleRemaining > 0f))
+			this._idleRemaining -= Time.deltaTime;
+			if (!(this._idleRemaining > 0f))
 			{
-				_idleRemaining = _idleCycleTime;
-				ServerPlayConditionally(VoiceLinesName.RandomIdle);
+				this._idleRemaining = this._idleCycleTime;
+				this.ServerPlayConditionally(VoiceLinesName.RandomIdle);
 			}
 		}
 	}
@@ -175,11 +175,11 @@ public class Scp3114VoiceLines : StandardSubroutine<Scp3114Role>
 		if (SeedSynchronizer.MapGenerated)
 		{
 			int seed = SeedSynchronizer.Seed + (int)base.Owner.netId;
-			_voiceLines.ForEach(delegate(VoiceLinesDefinition x)
+			this._voiceLines.ForEach(delegate(VoiceLinesDefinition x)
 			{
 				x.Randomize(seed);
 			});
-			_randomized = true;
+			this._randomized = true;
 		}
 	}
 
@@ -191,7 +191,7 @@ public class Scp3114VoiceLines : StandardSubroutine<Scp3114Role>
 		}
 		VoiceLinesDefinition voiceLinesDefinition = null;
 		float num = float.PositiveInfinity;
-		VoiceLinesDefinition[] voiceLines = _voiceLines;
+		VoiceLinesDefinition[] voiceLines = this._voiceLines;
 		foreach (VoiceLinesDefinition voiceLinesDefinition2 in voiceLines)
 		{
 			num = Mathf.Min(num, voiceLinesDefinition2.LastUseElapsedSeconds);
@@ -202,34 +202,34 @@ public class Scp3114VoiceLines : StandardSubroutine<Scp3114Role>
 		}
 		if (voiceLinesDefinition != null && !(voiceLinesDefinition.MinIdleTime > num) && voiceLinesDefinition.TryDrawNext(out var clipId))
 		{
-			_syncName = (byte)lineToPlay;
-			_syncId = clipId;
-			ServerSendRpc(toAll: true);
+			this._syncName = (byte)lineToPlay;
+			this._syncId = clipId;
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte(_syncName);
-		writer.WriteUShort(_syncId);
+		writer.WriteByte(this._syncName);
+		writer.WriteUShort(this._syncId);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_syncName = reader.ReadByte();
-		_syncId = reader.ReadUShort();
-		VoiceLinesDefinition[] voiceLines = _voiceLines;
+		this._syncName = reader.ReadByte();
+		this._syncId = reader.ReadUShort();
+		VoiceLinesDefinition[] voiceLines = this._voiceLines;
 		foreach (VoiceLinesDefinition voiceLinesDefinition in voiceLines)
 		{
-			if ((byte)voiceLinesDefinition.Label == _syncName)
+			if ((byte)voiceLinesDefinition.Label == this._syncName)
 			{
-				if (_source.isPlaying)
+				if (this._source.isPlaying)
 				{
-					_source.Stop();
+					this._source.Stop();
 				}
-				_source.PlayOneShot(voiceLinesDefinition.GetClip(_syncId), VolumeSetting.Value);
+				this._source.PlayOneShot(voiceLinesDefinition.GetClip(this._syncId), Scp3114VoiceLines.VolumeSetting.Value);
 				break;
 			}
 		}
@@ -238,11 +238,11 @@ public class Scp3114VoiceLines : StandardSubroutine<Scp3114Role>
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_randomized = false;
+		this._randomized = false;
 		if (NetworkServer.active)
 		{
-			_hasDisguise = false;
-			_idleRemaining = _idleCycleTime;
+			this._hasDisguise = false;
+			this._idleRemaining = this._idleCycleTime;
 		}
 	}
 }

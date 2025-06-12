@@ -42,23 +42,23 @@ public class GameMenu : SimpleToggleableMenu
 	protected override void Awake()
 	{
 		base.Awake();
-		singleton = this;
+		GameMenu.singleton = this;
 	}
 
 	private void Update()
 	{
 		if (!HideHUDController.IsHUDVisible)
 		{
-			hideHUDText.GetComponent<TextMeshProUGUI>().text = "Warning: HUD is hidden\n" + $"Press <b>{NewInput.GetKey(ActionName.HideGUI)}</b> to enable HUD";
+			this.hideHUDText.GetComponent<TextMeshProUGUI>().text = "Warning: HUD is hidden\n" + $"Press <b>{NewInput.GetKey(ActionName.HideGUI)}</b> to enable HUD";
 		}
 	}
 
 	private IEnumerator<float> _ShowServerInfo(string id)
 	{
-		infoText.text = "";
+		this.infoText.text = "";
 		if (id.Contains("/"))
 		{
-			infoText.text = "The URL isn't directing to pastebin site. Please contact server owner.";
+			this.infoText.text = "The URL isn't directing to pastebin site. Please contact server owner.";
 			yield break;
 		}
 		using UnityWebRequest www = UnityWebRequest.Get("https://pastebin.com/raw/" + id);
@@ -66,7 +66,7 @@ public class GameMenu : SimpleToggleableMenu
 		string text = (string.IsNullOrEmpty(www.error) ? www.downloadHandler.text : www.error);
 		if (text.Contains("<title>Pastebin.com - Locked Paste</title>", StringComparison.OrdinalIgnoreCase))
 		{
-			infoText.text = "The provided paste is locked via password and cannot be displayed. Please contact the server owner.";
+			this.infoText.text = "The provided paste is locked via password and cannot be displayed. Please contact the server owner.";
 			yield break;
 		}
 		if (text.Length > 5000)
@@ -74,14 +74,14 @@ public class GameMenu : SimpleToggleableMenu
 			text = text.TruncateToLast(5000, '\n');
 			text = text + "...\n<i><color=#87CEFA><u><link=\"https://pastebin.com/" + id + "\">(Click here for full content)</link></u></color></i>";
 		}
-		infoText.text = text;
-		_pastebinDisplayed = true;
+		this.infoText.text = text;
+		this._pastebinDisplayed = true;
 	}
 
 	protected override void OnToggled()
 	{
 		base.OnToggled();
-		GameObject[] array = minors;
+		GameObject[] array = this.minors;
 		foreach (GameObject gameObject in array)
 		{
 			if (gameObject.activeSelf)
@@ -93,7 +93,7 @@ public class GameMenu : SimpleToggleableMenu
 
 	public void SelectMinor(int id)
 	{
-		GameObject[] array = minors;
+		GameObject[] array = this.minors;
 		foreach (GameObject gameObject in array)
 		{
 			if (gameObject.activeSelf)
@@ -101,10 +101,10 @@ public class GameMenu : SimpleToggleableMenu
 				gameObject.SetActive(value: false);
 			}
 		}
-		minors[id].SetActive(value: true);
-		if (id == 2 && !_pastebinDisplayed && ReferenceHub.TryGetHostHub(out var hub))
+		this.minors[id].SetActive(value: true);
+		if (id == 2 && !this._pastebinDisplayed && ReferenceHub.TryGetHostHub(out var hub))
 		{
-			Timing.RunCoroutine(_ShowServerInfo(hub.characterClassManager.Pastebin), Segment.FixedUpdate);
+			Timing.RunCoroutine(this._ShowServerInfo(hub.characterClassManager.Pastebin), Segment.FixedUpdate);
 		}
 	}
 
@@ -122,6 +122,6 @@ public class GameMenu : SimpleToggleableMenu
 
 	public void Exit()
 	{
-		IsEnabled = false;
+		this.IsEnabled = false;
 	}
 }

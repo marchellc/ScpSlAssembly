@@ -13,16 +13,16 @@ public class RespawnEffectsController : NetworkBehaviour
 
 	private void Awake()
 	{
-		while (AllControllers.Contains(null))
+		while (RespawnEffectsController.AllControllers.Contains(null))
 		{
-			AllControllers.Remove(null);
+			RespawnEffectsController.AllControllers.Remove(null);
 		}
-		AllControllers.Add(this);
+		RespawnEffectsController.AllControllers.Add(this);
 	}
 
 	public static void PlayCassieAnnouncement(string words, bool makeHold, bool makeNoise, bool customAnnouncement = false, string customSubtitles = "")
 	{
-		foreach (RespawnEffectsController allController in AllControllers)
+		foreach (RespawnEffectsController allController in RespawnEffectsController.AllControllers)
 		{
 			if (allController != null)
 			{
@@ -40,16 +40,16 @@ public class RespawnEffectsController : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void Respawning.RespawnEffectsController::ServerPassCassie(System.String,System.Boolean,System.Boolean,System.Boolean,System.String)' called when server was not active");
 			return;
 		}
-		CassieAnnouncingEventArgs cassieAnnouncingEventArgs = new CassieAnnouncingEventArgs(words, makeHold, makeNoise, customAnnouncement, customSubtitles);
-		ServerEvents.OnCassieAnnouncing(cassieAnnouncingEventArgs);
-		if (cassieAnnouncingEventArgs.IsAllowed)
+		CassieAnnouncingEventArgs e = new CassieAnnouncingEventArgs(words, makeHold, makeNoise, customAnnouncement, customSubtitles);
+		ServerEvents.OnCassieAnnouncing(e);
+		if (e.IsAllowed)
 		{
-			words = cassieAnnouncingEventArgs.Words;
-			makeHold = cassieAnnouncingEventArgs.MakeHold;
-			makeNoise = cassieAnnouncingEventArgs.MakeNoise;
-			customAnnouncement = cassieAnnouncingEventArgs.CustomAnnouncement;
-			customSubtitles = cassieAnnouncingEventArgs.CustomSubtitles;
-			RpcCassieAnnouncement(words, makeHold, makeNoise, customAnnouncement, customSubtitles);
+			words = e.Words;
+			makeHold = e.MakeHold;
+			makeNoise = e.MakeNoise;
+			customAnnouncement = e.CustomAnnouncement;
+			customSubtitles = e.CustomSubtitles;
+			this.RpcCassieAnnouncement(words, makeHold, makeNoise, customAnnouncement, customSubtitles);
 			ServerEvents.OnCassieAnnounced(new CassieAnnouncedEventArgs(words, makeHold, makeNoise, customAnnouncement, customSubtitles));
 		}
 	}
@@ -63,13 +63,13 @@ public class RespawnEffectsController : NetworkBehaviour
 		writer.WriteBool(makeNoise);
 		writer.WriteBool(customAnnouncement);
 		writer.WriteString(customSubtitles);
-		SendRPCInternal("System.Void Respawning.RespawnEffectsController::RpcCassieAnnouncement(System.String,System.Boolean,System.Boolean,System.Boolean,System.String)", -31296712, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Respawning.RespawnEffectsController::RpcCassieAnnouncement(System.String,System.Boolean,System.Boolean,System.Boolean,System.String)", -31296712, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	public static void ClearQueue()
 	{
-		foreach (RespawnEffectsController allController in AllControllers)
+		foreach (RespawnEffectsController allController in RespawnEffectsController.AllControllers)
 		{
 			if (allController != null)
 			{
@@ -88,7 +88,7 @@ public class RespawnEffectsController : NetworkBehaviour
 		}
 		else
 		{
-			RpcClearQueue();
+			this.RpcClearQueue();
 		}
 	}
 
@@ -96,13 +96,13 @@ public class RespawnEffectsController : NetworkBehaviour
 	public void RpcClearQueue()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void Respawning.RespawnEffectsController::RpcClearQueue()", 370903972, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Respawning.RespawnEffectsController::RpcClearQueue()", 370903972, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	static RespawnEffectsController()
 	{
-		AllControllers = new List<RespawnEffectsController>();
+		RespawnEffectsController.AllControllers = new List<RespawnEffectsController>();
 		RemoteProcedureCalls.RegisterRpc(typeof(RespawnEffectsController), "System.Void Respawning.RespawnEffectsController::RpcCassieAnnouncement(System.String,System.Boolean,System.Boolean,System.Boolean,System.String)", InvokeUserCode_RpcCassieAnnouncement__String__Boolean__Boolean__Boolean__String);
 		RemoteProcedureCalls.RegisterRpc(typeof(RespawnEffectsController), "System.Void Respawning.RespawnEffectsController::RpcClearQueue()", InvokeUserCode_RpcClearQueue);
 	}

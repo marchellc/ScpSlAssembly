@@ -16,7 +16,7 @@ public class CompleteTheMissionHandler : AchievementHandlerBase
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			Team team = allHub.GetTeam();
-			if (team != Team.Dead && leadingTeam == GetLeadingTeam(team))
+			if (team != Team.Dead && leadingTeam == CompleteTheMissionHandler.GetLeadingTeam(team))
 			{
 				num++;
 				referenceHub = allHub;

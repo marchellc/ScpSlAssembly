@@ -23,28 +23,28 @@ public class FilmmakerKeyframesRenderer : MonoBehaviour
 
 		private void EnsureIndex(int index, GameObject template)
 		{
-			for (int i = _instanceCount; i <= index; i++)
+			for (int i = this._instanceCount; i <= index; i++)
 			{
-				GameObject gameObject = UnityEngine.Object.Instantiate(template, Parent);
-				gameObject.GetComponentInChildren<Image>().color = TrackColor;
-				_instancesTr.Add(gameObject.GetComponent<RectTransform>());
-				_instancesButtons.Add(gameObject.GetComponentInChildren<Button>());
-				_instanceCount++;
+				GameObject gameObject = UnityEngine.Object.Instantiate(template, this.Parent);
+				gameObject.GetComponentInChildren<Image>().color = this.TrackColor;
+				this._instancesTr.Add(gameObject.GetComponent<RectTransform>());
+				this._instancesButtons.Add(gameObject.GetComponentInChildren<Button>());
+				this._instanceCount++;
 			}
 		}
 
 		public void GetInstance(int index, GameObject template, out Button button, out RectTransform transform)
 		{
-			EnsureIndex(index, template);
-			button = _instancesButtons[index];
-			transform = _instancesTr[index];
+			this.EnsureIndex(index, template);
+			button = this._instancesButtons[index];
+			transform = this._instancesTr[index];
 		}
 
 		public void DisableRest(int firstIndex)
 		{
-			for (int i = firstIndex; i < _instanceCount; i++)
+			for (int i = firstIndex; i < this._instanceCount; i++)
 			{
-				_instancesTr[i].gameObject.SetActive(value: false);
+				this._instancesTr[i].gameObject.SetActive(value: false);
 			}
 		}
 	}
@@ -123,9 +123,9 @@ public class FilmmakerKeyframesRenderer : MonoBehaviour
 
 	private void Awake()
 	{
-		_canvas = GetComponentInParent<Canvas>();
-		PrepDropdown(_specificTransitionMode);
-		PrepDropdown(_defaultTransitionMode);
+		this._canvas = base.GetComponentInParent<Canvas>();
+		this.PrepDropdown(this._specificTransitionMode);
+		this.PrepDropdown(this._defaultTransitionMode);
 	}
 
 	private void PrepDropdown(TMP_Dropdown dd)
@@ -141,45 +141,45 @@ public class FilmmakerKeyframesRenderer : MonoBehaviour
 
 	private void Update()
 	{
-		UpdateTimelineScaleAndOffset();
-		UpdateGrid();
-		UpdateTime();
-		UpdateTrack(_posTrack, FilmmakerTimelineManager.PositionTrack);
-		UpdateTrack(_rotTrack, FilmmakerTimelineManager.RotationTrack);
-		UpdateTrack(_zoomTrack, FilmmakerTimelineManager.ZoomTrack);
-		_detailsGroup.SetActive(!string.IsNullOrEmpty(_selectionInfo.text));
+		this.UpdateTimelineScaleAndOffset();
+		this.UpdateGrid();
+		this.UpdateTime();
+		this.UpdateTrack(this._posTrack, FilmmakerTimelineManager.PositionTrack);
+		this.UpdateTrack(this._rotTrack, FilmmakerTimelineManager.RotationTrack);
+		this.UpdateTrack(this._zoomTrack, FilmmakerTimelineManager.ZoomTrack);
+		this._detailsGroup.SetActive(!string.IsNullOrEmpty(this._selectionInfo.text));
 	}
 
 	private void UpdateTimelineScaleAndOffset()
 	{
-		_timelineSize = Mathf.Lerp(_minTimelineWidth, _minTimelineWidth * Mathf.Max(1f, _secondsOnTimeline), _zoomSlider.value);
-		_scalableTransform.sizeDelta = new Vector2(_timelineSize, _scalableTransform.sizeDelta.y);
-		_scalableTransform.anchoredPosition = (_timelineSize - _minTimelineWidth) * _offsetSlider.value * Vector2.left;
+		this._timelineSize = Mathf.Lerp(this._minTimelineWidth, this._minTimelineWidth * Mathf.Max(1f, this._secondsOnTimeline), this._zoomSlider.value);
+		this._scalableTransform.sizeDelta = new Vector2(this._timelineSize, this._scalableTransform.sizeDelta.y);
+		this._scalableTransform.anchoredPosition = (this._timelineSize - this._minTimelineWidth) * this._offsetSlider.value * Vector2.left;
 	}
 
 	private void UpdateGrid()
 	{
-		float num = _secondsOnTimeline * 50f;
-		_secondsIndicator.uvRect = new Rect(0f, 0f, _secondsOnTimeline, 1f);
-		_framesIndicator.uvRect = new Rect(0f, 0f, num, 1f);
-		_frameToNodePosition = (_scalableTransform.rect.width - _leftMargin) / num;
-		_secondsToNodePosition = _frameToNodePosition * 50f;
+		float num = this._secondsOnTimeline * 50f;
+		this._secondsIndicator.uvRect = new Rect(0f, 0f, this._secondsOnTimeline, 1f);
+		this._framesIndicator.uvRect = new Rect(0f, 0f, num, 1f);
+		this._frameToNodePosition = (this._scalableTransform.rect.width - this._leftMargin) / num;
+		this._secondsToNodePosition = this._frameToNodePosition * 50f;
 		int i;
-		for (i = 0; (float)i < _secondsOnTimeline; i++)
+		for (i = 0; (float)i < this._secondsOnTimeline; i++)
 		{
-			while (i >= _gridIndicators.Count)
+			while (i >= this._gridIndicators.Count)
 			{
-				TextMeshProUGUI textMeshProUGUI = _gridIndicators[0];
-				_gridIndicators.Add(UnityEngine.Object.Instantiate(textMeshProUGUI, textMeshProUGUI.transform.parent));
+				TextMeshProUGUI textMeshProUGUI = this._gridIndicators[0];
+				this._gridIndicators.Add(UnityEngine.Object.Instantiate(textMeshProUGUI, textMeshProUGUI.transform.parent));
 			}
-			TextMeshProUGUI textMeshProUGUI2 = _gridIndicators[i];
+			TextMeshProUGUI textMeshProUGUI2 = this._gridIndicators[i];
 			textMeshProUGUI2.text = $" {i}s \t";
 			textMeshProUGUI2.enabled = true;
-			textMeshProUGUI2.rectTransform.sizeDelta = new Vector2(_secondsToNodePosition, textMeshProUGUI2.rectTransform.sizeDelta.y);
+			textMeshProUGUI2.rectTransform.sizeDelta = new Vector2(this._secondsToNodePosition, textMeshProUGUI2.rectTransform.sizeDelta.y);
 		}
-		while (i < _gridIndicators.Count)
+		while (i < this._gridIndicators.Count)
 		{
-			_gridIndicators[i++].enabled = false;
+			this._gridIndicators[i++].enabled = false;
 		}
 	}
 
@@ -188,31 +188,31 @@ public class FilmmakerKeyframesRenderer : MonoBehaviour
 		int num = timeline.Keyframes.Length;
 		for (int i = 0; i < num; i++)
 		{
-			track.GetInstance(i, _keyframeTemplate, out var button, out var rectTransform);
+			track.GetInstance(i, this._keyframeTemplate, out var button, out var rectTransform);
 			FilmmakerKeyframe<T> kf = timeline.Keyframes[i];
 			rectTransform.gameObject.SetActive(value: true);
-			rectTransform.anchoredPosition = _frameToNodePosition * (float)kf.TimeFrames * Vector3.right;
+			rectTransform.anchoredPosition = this._frameToNodePosition * (float)kf.TimeFrames * Vector3.right;
 			button.onClick.RemoveAllListeners();
 			button.onClick.AddListener(delegate
 			{
-				_selectionInfo.color = track.TrackColor;
+				this._selectionInfo.color = track.TrackColor;
 				float num2 = (float)kf.TimeFrames / 50f;
-				_selectionInfo.text = $"Time: {num2:0.00}s ({kf.TimeFrames} frames)" + $"\nValue: {kf.Value} ({typeof(T).Name})";
-				_removeButton.onClick.RemoveAllListeners();
-				_removeButton.onClick.AddListener(delegate
+				this._selectionInfo.text = $"Time: {num2:0.00}s ({kf.TimeFrames} frames)" + $"\nValue: {kf.Value} ({typeof(T).Name})";
+				this._removeButton.onClick.RemoveAllListeners();
+				this._removeButton.onClick.AddListener(delegate
 				{
 					timeline.ClearFrame(kf.TimeFrames);
 				});
-				_removeButton.onClick.AddListener(delegate
+				this._removeButton.onClick.AddListener(delegate
 				{
-					_selectionInfo.text = string.Empty;
+					this._selectionInfo.text = string.Empty;
 				});
-				_specificTransitionMode.SetValueWithoutNotify((int)kf.BlendCurve);
-				_specificTransitionMode.onValueChanged.RemoveAllListeners();
-				_specificTransitionMode.onValueChanged.AddListener(delegate(int val)
+				this._specificTransitionMode.SetValueWithoutNotify((int)kf.BlendCurve);
+				this._specificTransitionMode.onValueChanged.RemoveAllListeners();
+				this._specificTransitionMode.onValueChanged.AddListener(delegate(int val)
 				{
 					kf.BlendCurve = (FilmmakerBlendPreset)val;
-					_selectionInfo.text = string.Empty;
+					this._selectionInfo.text = string.Empty;
 				});
 			});
 		}
@@ -221,12 +221,12 @@ public class FilmmakerKeyframesRenderer : MonoBehaviour
 
 	private void UpdateTime()
 	{
-		_timeIndicator.anchoredPosition = _secondsToNodePosition * FilmmakerTimelineManager.TimeSeconds * Vector2.right;
-		if (_draggingTime)
+		this._timeIndicator.anchoredPosition = this._secondsToNodePosition * FilmmakerTimelineManager.TimeSeconds * Vector2.right;
+		if (this._draggingTime)
 		{
 			if (!Input.GetKey(KeyCode.Mouse0))
 			{
-				_draggingTime = false;
+				this._draggingTime = false;
 				return;
 			}
 		}
@@ -234,13 +234,13 @@ public class FilmmakerKeyframesRenderer : MonoBehaviour
 		{
 			return;
 		}
-		Rect rect = _setTimeArea.rect;
-		Vector2 vector = (Input.mousePosition - _setTimeArea.position) / _canvas.scaleFactor;
+		Rect rect = this._setTimeArea.rect;
+		Vector2 vector = (Input.mousePosition - this._setTimeArea.position) / this._canvas.scaleFactor;
 		bool flag = true;
 		if (vector.y > 0f || 0f - vector.y > rect.height / 2f)
 		{
 			flag = false;
-			if (!_draggingTime)
+			if (!this._draggingTime)
 			{
 				return;
 			}
@@ -248,8 +248,8 @@ public class FilmmakerKeyframesRenderer : MonoBehaviour
 		float num = (vector.x + rect.width / 2f) / rect.width;
 		if (!(num < 0f) && !(num > 1f))
 		{
-			_draggingTime |= flag;
-			FilmmakerTimelineManager.TimeFrames = Mathf.RoundToInt(num * _secondsOnTimeline * 50f);
+			this._draggingTime |= flag;
+			FilmmakerTimelineManager.TimeFrames = Mathf.RoundToInt(num * this._secondsOnTimeline * 50f);
 			FilmmakerKeyframesRenderer.OnTimeSet?.Invoke();
 		}
 	}

@@ -15,11 +15,11 @@ public static class CentralAuthManager
 
 	internal static void InitAuth()
 	{
-		if (!_initialized)
+		if (!CentralAuthManager._initialized)
 		{
-			_initialized = true;
+			CentralAuthManager._initialized = true;
 			CentralServer.Init();
-			Platform = DistributionPlatform.Dedicated;
+			CentralAuthManager.Platform = DistributionPlatform.Dedicated;
 			Console.AddLog("Running as headless dedicated server. Skipping distribution platform detection.", new Color32(0, byte.MaxValue, 0, byte.MaxValue));
 		}
 	}

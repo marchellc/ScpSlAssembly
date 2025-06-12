@@ -10,9 +10,9 @@ public struct AttachmentGameObjectGroup
 
 	public readonly void SetActive(bool state)
 	{
-		for (int i = 0; i < Group.Length; i++)
+		for (int i = 0; i < this.Group.Length; i++)
 		{
-			Group[i].SetActive(state);
+			this.Group[i].SetActive(state);
 		}
 	}
 }

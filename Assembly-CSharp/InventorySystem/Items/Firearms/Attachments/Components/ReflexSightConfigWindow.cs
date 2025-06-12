@@ -46,55 +46,55 @@ public class ReflexSightConfigWindow : AttachmentConfigWindow
 	public override void Setup(AttachmentSelectorBase selector, Attachment attachment, RectTransform toFit)
 	{
 		base.Setup(selector, attachment, toFit);
-		_ignoreRaycastRects.ForEach(delegate(RectTransform x)
+		this._ignoreRaycastRects.ForEach(delegate(RectTransform x)
 		{
 			selector.RegisterAction(x, null);
 		});
-		if (_colorsByHue == null)
+		if (ReflexSightConfigWindow._colorsByHue == null)
 		{
-			_colorsByHue = ReflexSightAttachment.Colors.OrderBy(GetHue).ToArray();
+			ReflexSightConfigWindow._colorsByHue = ReflexSightAttachment.Colors.OrderBy(GetHue).ToArray();
 		}
 		ReflexSightAttachment reflex = attachment as ReflexSightAttachment;
 		if ((object)reflex != null)
 		{
 			ReflexSightAttachment reflexSightAttachment = reflex;
 			reflexSightAttachment.OnValuesChanged = (Action)Delegate.Combine(reflexSightAttachment.OnValuesChanged, new Action(UpdateValues));
-			_shapeInstances = GenerateOptions(reflex.TextureOptions.Reticles, _shapeTemplate, delegate(int x)
+			this._shapeInstances = this.GenerateOptions(reflex.TextureOptions.Reticles, this._shapeTemplate, delegate(int x)
 			{
-				reflex.ModifyValues(x, null, null, null);
+				reflex.ModifyValues(x);
 			}, delegate(RectTransform y, int z)
 			{
 				y.GetComponentInChildren<RawImage>().texture = reflex.TextureOptions[z];
 			});
-			_colorInstances = GenerateOptions(_colorsByHue, _colorTemplate, delegate(int x)
+			this._colorInstances = this.GenerateOptions(ReflexSightConfigWindow._colorsByHue, this._colorTemplate, delegate(int x)
 			{
 				ReflexSightAttachment reflexSightAttachment2 = reflex;
-				int? color2 = TranslateIndex(_colorsByHue, ReflexSightAttachment.Colors, x);
+				int? color = this.TranslateIndex(ReflexSightConfigWindow._colorsByHue, ReflexSightAttachment.Colors, x);
 				int? brightness = 0;
-				reflexSightAttachment2.ModifyValues(null, color2, null, brightness);
+				reflexSightAttachment2.ModifyValues(null, color, null, brightness);
 			}, delegate(RectTransform y, int z)
 			{
-				y.GetComponentInChildren<RawImage>().color = _colorsByHue[z] * _selectedColor;
+				y.GetComponentInChildren<RawImage>().color = ReflexSightConfigWindow._colorsByHue[z] * this._selectedColor;
 			});
-			_brightnessInstances = GenerateOptions(ReflexSightAttachment.BrightnessLevels, _brightnessTemplate, delegate(int x)
+			this._brightnessInstances = this.GenerateOptions(ReflexSightAttachment.BrightnessLevels, this._brightnessTemplate, delegate(int x)
 			{
-				ReflexSightAttachment reflexSightAttachment3 = reflex;
-				int? brightness2 = x;
-				reflexSightAttachment3.ModifyValues(null, null, null, brightness2);
+				ReflexSightAttachment reflexSightAttachment2 = reflex;
+				int? brightness = x;
+				reflexSightAttachment2.ModifyValues(null, null, null, brightness);
 			}, null);
-			selector.RegisterAction(_buttonReduce, delegate
+			selector.RegisterAction(this._buttonReduce, delegate
 			{
-				ReflexSightAttachment reflexSightAttachment4 = reflex;
+				ReflexSightAttachment reflexSightAttachment2 = reflex;
 				int? size = reflex.CurSizeIndex - 1;
-				reflexSightAttachment4.ModifyValues(null, null, size, null);
+				reflexSightAttachment2.ModifyValues(null, null, size);
 			});
-			selector.RegisterAction(_buttonEnlarge, delegate
+			selector.RegisterAction(this._buttonEnlarge, delegate
 			{
-				ReflexSightAttachment reflexSightAttachment5 = reflex;
-				int? size2 = reflex.CurSizeIndex + 1;
-				reflexSightAttachment5.ModifyValues(null, null, size2, null);
+				ReflexSightAttachment reflexSightAttachment2 = reflex;
+				int? size = reflex.CurSizeIndex + 1;
+				reflexSightAttachment2.ModifyValues(null, null, size);
 			});
-			UpdateValues();
+			this.UpdateValues();
 		}
 		static float GetHue(Color32 color)
 		{
@@ -115,22 +115,22 @@ public class ReflexSightConfigWindow : AttachmentConfigWindow
 	private void UpdateValues()
 	{
 		ReflexSightAttachment reflexSightAttachment = base.Attachment as ReflexSightAttachment;
-		for (int i = 0; i < _shapeInstances.Length; i++)
+		for (int i = 0; i < this._shapeInstances.Length; i++)
 		{
-			_shapeInstances[i].color = ((i == reflexSightAttachment.CurTextureIndex) ? _selectedColor : _normalColor);
+			this._shapeInstances[i].color = ((i == reflexSightAttachment.CurTextureIndex) ? this._selectedColor : this._normalColor);
 		}
-		int num = ((reflexSightAttachment.CurBrightnessIndex > 0) ? (-1) : TranslateIndex(ReflexSightAttachment.Colors, _colorsByHue, reflexSightAttachment.CurColorIndex));
-		for (int j = 0; j < _colorInstances.Length; j++)
+		int num = ((reflexSightAttachment.CurBrightnessIndex > 0) ? (-1) : this.TranslateIndex(ReflexSightAttachment.Colors, ReflexSightConfigWindow._colorsByHue, reflexSightAttachment.CurColorIndex));
+		for (int j = 0; j < this._colorInstances.Length; j++)
 		{
-			_colorInstances[j].color = ((j == num) ? _selectedColor : _normalColor);
+			this._colorInstances[j].color = ((j == num) ? this._selectedColor : this._normalColor);
 		}
-		_textPercent.text = Mathf.RoundToInt(ReflexSightAttachment.Sizes[reflexSightAttachment.CurSizeIndex] * 100f) + "%";
-		for (int k = 0; k < _brightnessInstances.Length; k++)
+		this._textPercent.text = Mathf.RoundToInt(ReflexSightAttachment.Sizes[reflexSightAttachment.CurSizeIndex] * 100f) + "%";
+		for (int k = 0; k < this._brightnessInstances.Length; k++)
 		{
-			Image obj = _brightnessInstances[k];
-			obj.color = ((k == reflexSightAttachment.CurBrightnessIndex) ? _selectedColor : _normalColor);
+			Image obj = this._brightnessInstances[k];
+			obj.color = ((k == reflexSightAttachment.CurBrightnessIndex) ? this._selectedColor : this._normalColor);
 			Color32 color = Color32.Lerp(ReflexSightAttachment.Colors[reflexSightAttachment.CurColorIndex], t: ReflexSightAttachment.BrightnessLevels[k], b: Color.white);
-			obj.GetComponentInChildren<RawImage>().color = color * _selectedColor;
+			obj.GetComponentInChildren<RawImage>().color = color * this._selectedColor;
 		}
 	}
 

@@ -51,22 +51,22 @@ public class Scp1576Item : UsableItem
 	{
 		get
 		{
-			return _locallyUsed;
+			return Scp1576Item._locallyUsed;
 		}
 		internal set
 		{
-			_locallyUsed = value;
-			if (value != _eventAssigned)
+			Scp1576Item._locallyUsed = value;
+			if (value != Scp1576Item._eventAssigned)
 			{
 				if (value)
 				{
 					StaticUnityMethods.OnUpdate += ContinueCheckingLocalUse;
-					_eventAssigned = true;
+					Scp1576Item._eventAssigned = true;
 				}
 				else
 				{
 					StaticUnityMethods.OnUpdate -= ContinueCheckingLocalUse;
-					_eventAssigned = false;
+					Scp1576Item._eventAssigned = false;
 				}
 			}
 		}
@@ -79,25 +79,25 @@ public class Scp1576Item : UsableItem
 
 	public override void ServerOnUsingCompleted()
 	{
-		ValidatedTransmitters.Add(base.Owner);
+		Scp1576Item.ValidatedTransmitters.Add(base.Owner);
 	}
 
 	public override void OnUsingStarted()
 	{
 		base.OnUsingStarted();
-		_useStopwatch.Restart();
-		_startWarningTriggered = true;
+		this._useStopwatch.Restart();
+		this._startWarningTriggered = true;
 	}
 
 	public override void OnUsingCancelled()
 	{
 		base.OnUsingCancelled();
-		_useStopwatch.Reset();
+		this._useStopwatch.Reset();
 	}
 
 	public override bool ServerValidateStartRequest(PlayerHandler handler)
 	{
-		if (!_useStopwatch.IsRunning)
+		if (!this._useStopwatch.IsRunning)
 		{
 			return base.ServerValidateStartRequest(handler);
 		}
@@ -106,11 +106,11 @@ public class Scp1576Item : UsableItem
 
 	public override bool ServerValidateCancelRequest(PlayerHandler handler)
 	{
-		if (handler.CurrentUsable.ItemSerial == base.ItemSerial || !_useStopwatch.IsRunning)
+		if (handler.CurrentUsable.ItemSerial == base.ItemSerial || !this._useStopwatch.IsRunning)
 		{
 			return base.ServerValidateCancelRequest(handler);
 		}
-		ServerStopTransmitting();
+		this.ServerStopTransmitting();
 		return false;
 	}
 
@@ -119,7 +119,7 @@ public class Scp1576Item : UsableItem
 		base.OnAdded(pickup);
 		if (pickup is Scp1576Pickup scp1576Pickup && !(scp1576Pickup == null))
 		{
-			_serverHornPos = scp1576Pickup.HornPos;
+			this._serverHornPos = scp1576Pickup.HornPos;
 		}
 	}
 
@@ -128,7 +128,7 @@ public class Scp1576Item : UsableItem
 		base.OnRemoved(pickup);
 		if (pickup is Scp1576Pickup scp1576Pickup && !(scp1576Pickup == null))
 		{
-			scp1576Pickup.HornPos = _serverHornPos;
+			scp1576Pickup.HornPos = this._serverHornPos;
 		}
 	}
 
@@ -139,38 +139,38 @@ public class Scp1576Item : UsableItem
 		{
 			return;
 		}
-		float num = 30f + UseTime;
-		double totalSeconds = _useStopwatch.Elapsed.TotalSeconds;
+		float num = 30f + base.UseTime;
+		double totalSeconds = this._useStopwatch.Elapsed.TotalSeconds;
 		if (totalSeconds < 1.100000023841858)
 		{
 			return;
 		}
-		if (totalSeconds < (double)UseTime)
+		if (totalSeconds < (double)base.UseTime)
 		{
-			if (_startWarningTriggered && (double)UseTime - totalSeconds < 2.0)
+			if (this._startWarningTriggered && (double)base.UseTime - totalSeconds < 2.0)
 			{
-				_startWarningTriggered = false;
+				this._startWarningTriggered = false;
 				Scp1576SpectatorWarningHandler.TriggerStart(this);
 			}
-			_serverHornPos = Mathf.Max(_serverHornPos - Time.deltaTime * 0.4f, 0f);
+			this._serverHornPos = Mathf.Max(this._serverHornPos - Time.deltaTime * 0.4f, 0f);
 		}
 		else if (totalSeconds < (double)num)
 		{
-			_serverHornPos = Mathf.Clamp01((float)(totalSeconds - (double)UseTime) / num);
+			this._serverHornPos = Mathf.Clamp01((float)(totalSeconds - (double)base.UseTime) / num);
 		}
 		else
 		{
-			_serverHornPos = 1f;
-			ServerStopTransmitting();
+			this._serverHornPos = 1f;
+			this.ServerStopTransmitting();
 		}
 	}
 
 	public override void OnHolstered()
 	{
 		base.OnHolstered();
-		if (_useStopwatch.IsRunning)
+		if (this._useStopwatch.IsRunning)
 		{
-			ServerStopTransmitting();
+			this.ServerStopTransmitting();
 		}
 	}
 
@@ -181,20 +181,20 @@ public class Scp1576Item : UsableItem
 		{
 			Scp1576SpectatorWarningHandler.OnStop += delegate
 			{
-				PlayWarningSound(_warningStop);
+				Scp1576Item.PlayWarningSound(this._warningStop);
 			};
 			Scp1576SpectatorWarningHandler.OnStart += delegate
 			{
-				PlayWarningSound(_warningStart);
+				Scp1576Item.PlayWarningSound(this._warningStart);
 			};
 		}
 	}
 
 	private void ServerStopTransmitting()
 	{
-		_useStopwatch.Reset();
-		ValidatedTransmitters.Remove(base.Owner);
-		ServerSetGlobalItemCooldown(120f);
+		this._useStopwatch.Reset();
+		Scp1576Item.ValidatedTransmitters.Remove(base.Owner);
+		base.ServerSetGlobalItemCooldown(120f);
 		Scp1576SpectatorWarningHandler.TriggerStop(this);
 		new StatusMessage(StatusMessage.StatusType.Cancel, base.ItemSerial).SendToAuthenticated();
 		base.Owner.connectionToClient.Send(new ItemCooldownMessage(base.ItemSerial, 120f));
@@ -213,7 +213,7 @@ public class Scp1576Item : UsableItem
 	{
 		if (!ReferenceHub.TryGetLocalHub(out var hub) || !(hub.inventory.CurInstance is Scp1576Item scp1576Item) || !(scp1576Item != null))
 		{
-			LocallyUsed = false;
+			Scp1576Item.LocallyUsed = false;
 		}
 	}
 
@@ -225,11 +225,11 @@ public class Scp1576Item : UsableItem
 		{
 			if (NetworkServer.active)
 			{
-				ValidatedReceivers.Remove(hub);
-				ValidatedTransmitters.Remove(hub);
+				Scp1576Item.ValidatedReceivers.Remove(hub);
+				Scp1576Item.ValidatedTransmitters.Remove(hub);
 			}
 		};
-		Inventory.OnServerStarted += ValidatedTransmitters.Clear;
+		Inventory.OnServerStarted += Scp1576Item.ValidatedTransmitters.Clear;
 	}
 
 	private static void RevalidateReceivers()
@@ -238,16 +238,16 @@ public class Scp1576Item : UsableItem
 		{
 			return;
 		}
-		ValidatedReceivers.Clear();
-		ActiveNonAllocPositions.Clear();
-		foreach (ReferenceHub validatedTransmitter in ValidatedTransmitters)
+		Scp1576Item.ValidatedReceivers.Clear();
+		Scp1576Item.ActiveNonAllocPositions.Clear();
+		foreach (ReferenceHub validatedTransmitter in Scp1576Item.ValidatedTransmitters)
 		{
 			if (validatedTransmitter.roleManager.CurrentRole is IFpcRole fpcRole)
 			{
-				ActiveNonAllocPositions.Add(fpcRole.FpcModule.Position);
+				Scp1576Item.ActiveNonAllocPositions.Add(fpcRole.FpcModule.Position);
 			}
 		}
-		int count = ActiveNonAllocPositions.Count;
+		int count = Scp1576Item.ActiveNonAllocPositions.Count;
 		if (count == 0)
 		{
 			return;
@@ -258,16 +258,16 @@ public class Scp1576Item : UsableItem
 			{
 				if (allHub.IsAlive())
 				{
-					ValidatedReceivers.Add(allHub);
+					Scp1576Item.ValidatedReceivers.Add(allHub);
 				}
 				continue;
 			}
 			Vector3 position = fpcRole2.FpcModule.Position;
 			for (int i = 0; i < count; i++)
 			{
-				if (!((position - ActiveNonAllocPositions[i]).sqrMagnitude > 110f))
+				if (!((position - Scp1576Item.ActiveNonAllocPositions[i]).sqrMagnitude > 110f))
 				{
-					ValidatedReceivers.Add(allHub);
+					Scp1576Item.ValidatedReceivers.Add(allHub);
 					break;
 				}
 			}

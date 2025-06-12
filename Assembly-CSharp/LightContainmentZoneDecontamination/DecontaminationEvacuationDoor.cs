@@ -19,30 +19,30 @@ public class DecontaminationEvacuationDoor : MonoBehaviour
 
 	private void Awake()
 	{
-		Instances.Add(this);
+		DecontaminationEvacuationDoor.Instances.Add(this);
 	}
 
 	private void OnDestroy()
 	{
-		Instances.Remove(this);
+		DecontaminationEvacuationDoor.Instances.Remove(this);
 	}
 
 	public void Open()
 	{
-		if (ShouldBeOpened)
+		if (this.ShouldBeOpened)
 		{
-			_door.NetworkTargetState = true;
-			_door.ServerChangeLock(DoorLockReason.DecontEvacuate, newState: true);
+			this._door.NetworkTargetState = true;
+			this._door.ServerChangeLock(DoorLockReason.DecontEvacuate, newState: true);
 		}
 	}
 
 	public void Close()
 	{
-		if (ShouldBeClosed)
+		if (this.ShouldBeClosed)
 		{
-			_door.NetworkTargetState = false;
-			_door.ServerChangeLock(DoorLockReason.DecontEvacuate, newState: false);
-			_door.ServerChangeLock(DoorLockReason.DecontLockdown, newState: true);
+			this._door.NetworkTargetState = false;
+			this._door.ServerChangeLock(DoorLockReason.DecontEvacuate, newState: false);
+			this._door.ServerChangeLock(DoorLockReason.DecontLockdown, newState: true);
 		}
 	}
 }

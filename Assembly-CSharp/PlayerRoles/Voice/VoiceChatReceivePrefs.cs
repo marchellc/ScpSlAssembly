@@ -28,9 +28,10 @@ public class VoiceChatReceivePrefs
 				groupMuteFlags |= groupMuteFlags2;
 			}
 		}
-		GroupMuteFlagsMessage message = default(GroupMuteFlagsMessage);
-		message.Flags = (byte)groupMuteFlags;
-		NetworkClient.Send(message);
+		NetworkClient.Send(new GroupMuteFlagsMessage
+		{
+			Flags = (byte)groupMuteFlags
+		});
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -38,16 +39,16 @@ public class VoiceChatReceivePrefs
 	{
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			RememberedFlags.Clear();
+			VoiceChatReceivePrefs.RememberedFlags.Clear();
 			NetworkServer.ReplaceHandler<GroupMuteFlagsMessage>(ProcessMessage);
-			ClientSendMessage();
+			VoiceChatReceivePrefs.ClientSendMessage();
 		};
 		GroupMuteFlags[] values = EnumUtils<GroupMuteFlags>.Values;
-		for (int i = 0; i < values.Length; i++)
+		for (int num = 0; num < values.Length; num++)
 		{
-			UserSetting<bool>.AddListener(values[i], delegate
+			UserSetting<bool>.AddListener(values[num], delegate
 			{
-				ClientSendMessage();
+				VoiceChatReceivePrefs.ClientSendMessage();
 			});
 		}
 	}
@@ -56,7 +57,7 @@ public class VoiceChatReceivePrefs
 	{
 		GroupMuteFlags flags = (GroupMuteFlags)msg.Flags;
 		VoiceChatReceivePrefs.OnFlagsReceived?.Invoke(conn, flags);
-		RememberedFlags[conn] = flags;
+		VoiceChatReceivePrefs.RememberedFlags[conn] = flags;
 		if (!(conn.identity == null) && ReferenceHub.TryGetHubNetID(conn.identity.netId, out var hub) && hub.roleManager.CurrentRole is IVoiceRole voiceRole)
 		{
 			voiceRole.VoiceModule.ReceiveFlags = flags;
@@ -65,7 +66,7 @@ public class VoiceChatReceivePrefs
 
 	public static GroupMuteFlags GetFlagsForUser(ReferenceHub hub)
 	{
-		if (!RememberedFlags.TryGetValue(hub.connectionToClient, out var value))
+		if (!VoiceChatReceivePrefs.RememberedFlags.TryGetValue(hub.connectionToClient, out var value))
 		{
 			return GroupMuteFlags.None;
 		}

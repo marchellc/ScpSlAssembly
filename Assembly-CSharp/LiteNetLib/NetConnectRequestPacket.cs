@@ -20,11 +20,11 @@ internal sealed class NetConnectRequestPacket
 
 	private NetConnectRequestPacket(long connectionTime, byte connectionNumber, int localId, byte[] targetAddress, NetDataReader data)
 	{
-		ConnectionTime = connectionTime;
-		ConnectionNumber = connectionNumber;
-		TargetAddress = targetAddress;
-		Data = data;
-		PeerId = localId;
+		this.ConnectionTime = connectionTime;
+		this.ConnectionNumber = connectionNumber;
+		this.TargetAddress = targetAddress;
+		this.Data = data;
+		this.PeerId = localId;
 	}
 
 	public static int GetProtocolId(NetPacket packet)

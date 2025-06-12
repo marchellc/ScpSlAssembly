@@ -10,14 +10,14 @@ public static class Shutdown
 
 	public static void Quit(bool quit = true, bool suppressShutdownBroadcast = false)
 	{
-		if (!_quitting)
+		if (!Shutdown._quitting)
 		{
-			_quitting = true;
+			Shutdown._quitting = true;
 			Shutdown.OnQuit?.Invoke();
 			IdleMode.PauseIdleMode = true;
 			ServerShutdown.Shutdown(suppressShutdownBroadcast);
 			CentralServer.Abort = true;
-			InternalShutdown(quit);
+			Shutdown.InternalShutdown(quit);
 		}
 	}
 

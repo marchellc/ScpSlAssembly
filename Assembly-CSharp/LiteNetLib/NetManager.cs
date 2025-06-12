@@ -38,14 +38,14 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 
 		private NetPeer _p;
 
-		public NetPeer Current => _p;
+		public NetPeer Current => this._p;
 
-		object IEnumerator.Current => _p;
+		object IEnumerator.Current => this._p;
 
 		public NetPeerEnumerator(NetPeer p)
 		{
-			_initialPeer = p;
-			_p = null;
+			this._initialPeer = p;
+			this._p = null;
 		}
 
 		public void Dispose()
@@ -54,8 +54,8 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 
 		public bool MoveNext()
 		{
-			_p = ((_p == null) ? _initialPeer : _p.NextPeer);
-			return _p != null;
+			this._p = ((this._p == null) ? this._initialPeer : this._p.NextPeer);
+			return this._p != null;
 		}
 
 		public void Reset()
@@ -208,13 +208,13 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 
 	public int LocalPort { get; private set; }
 
-	public NetPeer FirstPeer => _headPeer;
+	public NetPeer FirstPeer => this._headPeer;
 
 	public byte ChannelsCount
 	{
 		get
 		{
-			return _channelsCount;
+			return this._channelsCount;
 		}
 		set
 		{
@@ -222,7 +222,7 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			{
 				throw new ArgumentException("Channels count must be between 1 and 64");
 			}
-			_channelsCount = value;
+			this._channelsCount = value;
 		}
 	}
 
@@ -230,90 +230,90 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 	{
 		get
 		{
-			GetPeersNonAlloc(_connectedPeerListCache, ConnectionState.Connected);
-			return _connectedPeerListCache;
+			this.GetPeersNonAlloc(this._connectedPeerListCache, ConnectionState.Connected);
+			return this._connectedPeerListCache;
 		}
 	}
 
-	public int ConnectedPeersCount => Interlocked.CompareExchange(ref _connectedPeersCount, 0, 0);
+	public int ConnectedPeersCount => Interlocked.CompareExchange(ref this._connectedPeersCount, 0, 0);
 
-	public int ExtraPacketSizeForLayer => _extraPacketLayer?.ExtraPacketSizeForLayer ?? 0;
+	public int ExtraPacketSizeForLayer => this._extraPacketLayer?.ExtraPacketSizeForLayer ?? 0;
 
-	public int PoolCount => _poolCount;
+	public int PoolCount => this._poolCount;
 
 	public short Ttl
 	{
 		get
 		{
-			return _udpSocketv4.Ttl;
+			return this._udpSocketv4.Ttl;
 		}
 		internal set
 		{
-			_udpSocketv4.Ttl = value;
+			this._udpSocketv4.Ttl = value;
 		}
 	}
 
 	public NetPeer GetPeerById(int id)
 	{
-		if (id >= 0 && id < _peersArray.Length)
+		if (id >= 0 && id < this._peersArray.Length)
 		{
-			return _peersArray[id];
+			return this._peersArray[id];
 		}
 		return null;
 	}
 
 	public bool TryGetPeerById(int id, out NetPeer peer)
 	{
-		peer = GetPeerById(id);
+		peer = this.GetPeerById(id);
 		return peer != null;
 	}
 
 	private bool TryGetPeer(IPEndPoint endPoint, out NetPeer peer)
 	{
-		_peersLock.EnterReadLock();
-		bool result = _peersDict.TryGetValue(endPoint, out peer);
-		_peersLock.ExitReadLock();
+		this._peersLock.EnterReadLock();
+		bool result = this._peersDict.TryGetValue(endPoint, out peer);
+		this._peersLock.ExitReadLock();
 		return result;
 	}
 
 	private void AddPeer(NetPeer peer)
 	{
-		_peersLock.EnterWriteLock();
-		if (_headPeer != null)
+		this._peersLock.EnterWriteLock();
+		if (this._headPeer != null)
 		{
-			peer.NextPeer = _headPeer;
-			_headPeer.PrevPeer = peer;
+			peer.NextPeer = this._headPeer;
+			this._headPeer.PrevPeer = peer;
 		}
-		_headPeer = peer;
-		_peersDict.Add(peer.EndPoint, peer);
-		if (peer.Id >= _peersArray.Length)
+		this._headPeer = peer;
+		this._peersDict.Add(peer.EndPoint, peer);
+		if (peer.Id >= this._peersArray.Length)
 		{
-			int num = _peersArray.Length * 2;
+			int num = this._peersArray.Length * 2;
 			while (peer.Id >= num)
 			{
 				num *= 2;
 			}
-			Array.Resize(ref _peersArray, num);
+			Array.Resize(ref this._peersArray, num);
 		}
-		_peersArray[peer.Id] = peer;
-		RegisterEndPoint(peer.EndPoint);
-		_peersLock.ExitWriteLock();
+		this._peersArray[peer.Id] = peer;
+		this.RegisterEndPoint(peer.EndPoint);
+		this._peersLock.ExitWriteLock();
 	}
 
 	private void RemovePeer(NetPeer peer)
 	{
-		_peersLock.EnterWriteLock();
-		RemovePeerInternal(peer);
-		_peersLock.ExitWriteLock();
+		this._peersLock.EnterWriteLock();
+		this.RemovePeerInternal(peer);
+		this._peersLock.ExitWriteLock();
 	}
 
 	private void RemovePeerInternal(NetPeer peer)
 	{
-		if (_peersDict.Remove(peer.EndPoint))
+		if (this._peersDict.Remove(peer.EndPoint))
 		{
-			if (peer == _headPeer)
+			if (peer == this._headPeer)
 			{
-				_headPeer = peer.NextPeer;
+				this._headPeer = peer.NextPeer;
 			}
 			if (peer.PrevPeer != null)
 			{
@@ -324,38 +324,38 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 				peer.NextPeer.PrevPeer = peer.PrevPeer;
 			}
 			peer.PrevPeer = null;
-			_peersArray[peer.Id] = null;
-			_peerIds.Enqueue(peer.Id);
-			UnregisterEndPoint(peer.EndPoint);
+			this._peersArray[peer.Id] = null;
+			this._peerIds.Enqueue(peer.Id);
+			this.UnregisterEndPoint(peer.EndPoint);
 		}
 	}
 
 	public NetManager(INetEventListener listener, PacketLayerBase extraPacketLayer = null)
 	{
-		_netEventListener = listener;
-		_deliveryEventListener = listener as IDeliveryEventListener;
-		_ntpEventListener = listener as INtpEventListener;
-		_peerAddressChangedListener = listener as IPeerAddressChangedListener;
-		NatPunchModule = new NatPunchModule(this);
-		_extraPacketLayer = extraPacketLayer;
+		this._netEventListener = listener;
+		this._deliveryEventListener = listener as IDeliveryEventListener;
+		this._ntpEventListener = listener as INtpEventListener;
+		this._peerAddressChangedListener = listener as IPeerAddressChangedListener;
+		this.NatPunchModule = new NatPunchModule(this);
+		this._extraPacketLayer = extraPacketLayer;
 	}
 
 	internal void ConnectionLatencyUpdated(NetPeer fromPeer, int latency)
 	{
-		CreateEvent(NetEvent.EType.ConnectionLatencyUpdated, fromPeer, null, SocketError.Success, latency, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0);
+		this.CreateEvent(NetEvent.EType.ConnectionLatencyUpdated, fromPeer, null, SocketError.Success, latency, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0);
 	}
 
 	internal void MessageDelivered(NetPeer fromPeer, object userData)
 	{
-		if (_deliveryEventListener != null)
+		if (this._deliveryEventListener != null)
 		{
-			CreateEvent(NetEvent.EType.MessageDelivered, fromPeer, null, SocketError.Success, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0, null, userData);
+			this.CreateEvent(NetEvent.EType.MessageDelivered, fromPeer, null, SocketError.Success, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0, null, userData);
 		}
 	}
 
 	internal void DisconnectPeerForce(NetPeer peer, DisconnectReason reason, SocketError socketErrorCode, NetPacket eventData)
 	{
-		DisconnectPeer(peer, reason, socketErrorCode, force: true, null, 0, 0, eventData);
+		this.DisconnectPeer(peer, reason, socketErrorCode, force: true, null, 0, 0, eventData);
 	}
 
 	private void DisconnectPeer(NetPeer peer, DisconnectReason reason, SocketError socketErrorCode, bool force, byte[] data, int start, int count, NetPacket eventData)
@@ -365,35 +365,35 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		case ShutdownResult.None:
 			return;
 		case ShutdownResult.WasConnected:
-			Interlocked.Decrement(ref _connectedPeersCount);
+			Interlocked.Decrement(ref this._connectedPeersCount);
 			break;
 		}
-		CreateEvent(NetEvent.EType.Disconnect, peer, null, socketErrorCode, 0, reason, null, DeliveryMethod.Unreliable, 0, eventData);
+		this.CreateEvent(NetEvent.EType.Disconnect, peer, null, socketErrorCode, 0, reason, null, DeliveryMethod.Unreliable, 0, eventData);
 	}
 
 	private void CreateEvent(NetEvent.EType type, NetPeer peer = null, IPEndPoint remoteEndPoint = null, SocketError errorCode = SocketError.Success, int latency = 0, DisconnectReason disconnectReason = DisconnectReason.ConnectionFailed, ConnectionRequest connectionRequest = null, DeliveryMethod deliveryMethod = DeliveryMethod.Unreliable, byte channelNumber = 0, NetPacket readerSource = null, object userData = null)
 	{
-		bool flag = UnsyncedEvents;
+		bool flag = this.UnsyncedEvents;
 		switch (type)
 		{
 		case NetEvent.EType.Connect:
-			Interlocked.Increment(ref _connectedPeersCount);
+			Interlocked.Increment(ref this._connectedPeersCount);
 			break;
 		case NetEvent.EType.MessageDelivered:
-			flag = UnsyncedDeliveryEvent;
+			flag = this.UnsyncedDeliveryEvent;
 			break;
 		}
 		NetEvent netEvent;
-		lock (_eventLock)
+		lock (this._eventLock)
 		{
-			netEvent = _netEventPoolHead;
+			netEvent = this._netEventPoolHead;
 			if (netEvent == null)
 			{
 				netEvent = new NetEvent(this);
 			}
 			else
 			{
-				_netEventPoolHead = netEvent.Next;
+				this._netEventPoolHead = netEvent.Next;
 			}
 		}
 		netEvent.Next = null;
@@ -408,22 +408,22 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		netEvent.DeliveryMethod = deliveryMethod;
 		netEvent.ChannelNumber = channelNumber;
 		netEvent.UserData = userData;
-		if (flag || _manualMode)
+		if (flag || this._manualMode)
 		{
-			ProcessEvent(netEvent);
+			this.ProcessEvent(netEvent);
 			return;
 		}
-		lock (_eventLock)
+		lock (this._eventLock)
 		{
-			if (_pendingEventTail == null)
+			if (this._pendingEventTail == null)
 			{
-				_pendingEventHead = netEvent;
+				this._pendingEventHead = netEvent;
 			}
 			else
 			{
-				_pendingEventTail.Next = netEvent;
+				this._pendingEventTail.Next = netEvent;
 			}
-			_pendingEventTail = netEvent;
+			this._pendingEventTail = netEvent;
 		}
 	}
 
@@ -433,65 +433,66 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		switch (evt.Type)
 		{
 		case NetEvent.EType.Connect:
-			_netEventListener.OnPeerConnected(evt.Peer);
+			this._netEventListener.OnPeerConnected(evt.Peer);
 			break;
 		case NetEvent.EType.Disconnect:
 		{
-			DisconnectInfo disconnectInfo = default(DisconnectInfo);
-			disconnectInfo.Reason = evt.DisconnectReason;
-			disconnectInfo.AdditionalData = evt.DataReader;
-			disconnectInfo.SocketErrorCode = evt.ErrorCode;
-			DisconnectInfo disconnectInfo2 = disconnectInfo;
-			_netEventListener.OnPeerDisconnected(evt.Peer, disconnectInfo2);
+			DisconnectInfo disconnectInfo = new DisconnectInfo
+			{
+				Reason = evt.DisconnectReason,
+				AdditionalData = evt.DataReader,
+				SocketErrorCode = evt.ErrorCode
+			};
+			this._netEventListener.OnPeerDisconnected(evt.Peer, disconnectInfo);
 			break;
 		}
 		case NetEvent.EType.Receive:
-			_netEventListener.OnNetworkReceive(evt.Peer, evt.DataReader, evt.ChannelNumber, evt.DeliveryMethod);
+			this._netEventListener.OnNetworkReceive(evt.Peer, evt.DataReader, evt.ChannelNumber, evt.DeliveryMethod);
 			break;
 		case NetEvent.EType.ReceiveUnconnected:
-			_netEventListener.OnNetworkReceiveUnconnected(evt.RemoteEndPoint, evt.DataReader, UnconnectedMessageType.BasicMessage);
+			this._netEventListener.OnNetworkReceiveUnconnected(evt.RemoteEndPoint, evt.DataReader, UnconnectedMessageType.BasicMessage);
 			break;
 		case NetEvent.EType.Broadcast:
-			_netEventListener.OnNetworkReceiveUnconnected(evt.RemoteEndPoint, evt.DataReader, UnconnectedMessageType.Broadcast);
+			this._netEventListener.OnNetworkReceiveUnconnected(evt.RemoteEndPoint, evt.DataReader, UnconnectedMessageType.Broadcast);
 			break;
 		case NetEvent.EType.Error:
-			_netEventListener.OnNetworkError(evt.RemoteEndPoint, evt.ErrorCode);
+			this._netEventListener.OnNetworkError(evt.RemoteEndPoint, evt.ErrorCode);
 			break;
 		case NetEvent.EType.ConnectionLatencyUpdated:
-			_netEventListener.OnNetworkLatencyUpdate(evt.Peer, evt.Latency);
+			this._netEventListener.OnNetworkLatencyUpdate(evt.Peer, evt.Latency);
 			break;
 		case NetEvent.EType.ConnectionRequest:
-			_netEventListener.OnConnectionRequest(evt.ConnectionRequest);
+			this._netEventListener.OnConnectionRequest(evt.ConnectionRequest);
 			break;
 		case NetEvent.EType.MessageDelivered:
-			_deliveryEventListener.OnMessageDelivered(evt.Peer, evt.UserData);
+			this._deliveryEventListener.OnMessageDelivered(evt.Peer, evt.UserData);
 			break;
 		case NetEvent.EType.PeerAddressChanged:
 		{
-			_peersLock.EnterUpgradeableReadLock();
+			this._peersLock.EnterUpgradeableReadLock();
 			IPEndPoint iPEndPoint = null;
-			if (_peersDict.ContainsKey(evt.Peer.EndPoint))
+			if (this._peersDict.ContainsKey(evt.Peer.EndPoint))
 			{
-				_peersLock.EnterWriteLock();
-				_peersDict.Remove(evt.Peer.EndPoint);
+				this._peersLock.EnterWriteLock();
+				this._peersDict.Remove(evt.Peer.EndPoint);
 				iPEndPoint = evt.Peer.EndPoint;
 				evt.Peer.FinishEndPointChange(evt.RemoteEndPoint);
-				_peersDict.Add(evt.Peer.EndPoint, evt.Peer);
-				_peersLock.ExitWriteLock();
+				this._peersDict.Add(evt.Peer.EndPoint, evt.Peer);
+				this._peersLock.ExitWriteLock();
 			}
-			_peersLock.ExitUpgradeableReadLock();
+			this._peersLock.ExitUpgradeableReadLock();
 			if (iPEndPoint != null)
 			{
-				_peerAddressChangedListener.OnPeerAddressChanged(evt.Peer, iPEndPoint);
+				this._peerAddressChangedListener.OnPeerAddressChanged(evt.Peer, iPEndPoint);
 			}
 			break;
 		}
 		}
 		if (isNull)
 		{
-			RecycleEvent(evt);
+			this.RecycleEvent(evt);
 		}
-		else if (AutoRecycle)
+		else if (this.AutoRecycle)
 		{
 			evt.DataReader.RecycleInternal();
 		}
@@ -503,10 +504,10 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		evt.ErrorCode = SocketError.Success;
 		evt.RemoteEndPoint = null;
 		evt.ConnectionRequest = null;
-		lock (_eventLock)
+		lock (this._eventLock)
 		{
-			evt.Next = _netEventPoolHead;
-			_netEventPoolHead = evt;
+			evt.Next = this._netEventPoolHead;
+			this._netEventPoolHead = evt;
 		}
 	}
 
@@ -515,16 +516,16 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		List<NetPeer> list = new List<NetPeer>();
 		Stopwatch stopwatch = new Stopwatch();
 		stopwatch.Start();
-		while (IsRunning)
+		while (this.IsRunning)
 		{
 			try
 			{
 				int num = (int)stopwatch.ElapsedMilliseconds;
 				num = ((num <= 0) ? 1 : num);
 				stopwatch.Restart();
-				for (NetPeer netPeer = _headPeer; netPeer != null; netPeer = netPeer.NextPeer)
+				for (NetPeer netPeer = this._headPeer; netPeer != null; netPeer = netPeer.NextPeer)
 				{
-					if (netPeer.ConnectionState == ConnectionState.Disconnected && netPeer.TimeSinceLastPacket > DisconnectTimeout)
+					if (netPeer.ConnectionState == ConnectionState.Disconnected && netPeer.TimeSinceLastPacket > this.DisconnectTimeout)
 					{
 						list.Add(netPeer);
 					}
@@ -535,19 +536,19 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 				}
 				if (list.Count > 0)
 				{
-					_peersLock.EnterWriteLock();
+					this._peersLock.EnterWriteLock();
 					for (int i = 0; i < list.Count; i++)
 					{
-						RemovePeerInternal(list[i]);
+						this.RemovePeerInternal(list[i]);
 					}
-					_peersLock.ExitWriteLock();
+					this._peersLock.ExitWriteLock();
 					list.Clear();
 				}
-				ProcessNtpRequests(num);
-				int num2 = UpdateTime - (int)stopwatch.ElapsedMilliseconds;
+				this.ProcessNtpRequests(num);
+				int num2 = this.UpdateTime - (int)stopwatch.ElapsedMilliseconds;
 				if (num2 > 0)
 				{
-					_updateTriggerEvent.WaitOne(num2);
+					this._updateTriggerEvent.WaitOne(num2);
 				}
 			}
 			catch (ThreadAbortException)
@@ -570,9 +571,9 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 	private void ProcessNtpRequests(int elapsedMilliseconds)
 	{
 		List<IPEndPoint> list = null;
-		foreach (KeyValuePair<IPEndPoint, NtpRequest> ntpRequest in _ntpRequests)
+		foreach (KeyValuePair<IPEndPoint, NtpRequest> ntpRequest in this._ntpRequests)
 		{
-			ntpRequest.Value.Send(_udpSocketv4, elapsedMilliseconds);
+			ntpRequest.Value.Send(this._udpSocketv4, elapsedMilliseconds);
 			if (ntpRequest.Value.NeedToKill)
 			{
 				if (list == null)
@@ -588,28 +589,28 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		}
 		foreach (IPEndPoint item in list)
 		{
-			_ntpRequests.Remove(item);
+			this._ntpRequests.Remove(item);
 		}
 	}
 
 	public void ManualUpdate(int elapsedMilliseconds)
 	{
-		if (!_manualMode)
+		if (!this._manualMode)
 		{
 			return;
 		}
-		for (NetPeer netPeer = _headPeer; netPeer != null; netPeer = netPeer.NextPeer)
+		for (NetPeer netPeer = this._headPeer; netPeer != null; netPeer = netPeer.NextPeer)
 		{
-			if (netPeer.ConnectionState == ConnectionState.Disconnected && netPeer.TimeSinceLastPacket > DisconnectTimeout)
+			if (netPeer.ConnectionState == ConnectionState.Disconnected && netPeer.TimeSinceLastPacket > this.DisconnectTimeout)
 			{
-				RemovePeerInternal(netPeer);
+				this.RemovePeerInternal(netPeer);
 			}
 			else
 			{
 				netPeer.Update(elapsedMilliseconds);
 			}
 		}
-		ProcessNtpRequests(elapsedMilliseconds);
+		this.ProcessNtpRequests(elapsedMilliseconds);
 	}
 
 	internal NetPeer OnConnectionSolved(ConnectionRequest request, byte[] rejectData, int start, int length)
@@ -619,7 +620,7 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		{
 			if (rejectData != null && length > 0)
 			{
-				NetPacket netPacket = PoolGetWithProperty(PacketProperty.Disconnect, length);
+				NetPacket netPacket = this.PoolGetWithProperty(PacketProperty.Disconnect, length);
 				netPacket.ConnectionNumber = request.InternalPacket.ConnectionNumber;
 				FastBitConverter.GetBytes(netPacket.RawData, 1, request.InternalPacket.ConnectionTime);
 				if (netPacket.Size >= NetConstants.PossibleMtu[0])
@@ -630,43 +631,43 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 				{
 					Buffer.BlockCopy(rejectData, start, netPacket.RawData, 9, length);
 				}
-				SendRawAndRecycle(netPacket, request.RemoteEndPoint);
+				this.SendRawAndRecycle(netPacket, request.RemoteEndPoint);
 			}
 		}
 		else
 		{
-			_peersLock.EnterUpgradeableReadLock();
-			if (_peersDict.TryGetValue(request.RemoteEndPoint, out value))
+			this._peersLock.EnterUpgradeableReadLock();
+			if (this._peersDict.TryGetValue(request.RemoteEndPoint, out value))
 			{
-				_peersLock.ExitUpgradeableReadLock();
+				this._peersLock.ExitUpgradeableReadLock();
 			}
 			else if (request.Result == ConnectionRequestResult.Reject)
 			{
-				value = new NetPeer(this, request.RemoteEndPoint, GetNextPeerId());
+				value = new NetPeer(this, request.RemoteEndPoint, this.GetNextPeerId());
 				value.Reject(request.InternalPacket, rejectData, start, length);
-				AddPeer(value);
-				_peersLock.ExitUpgradeableReadLock();
+				this.AddPeer(value);
+				this._peersLock.ExitUpgradeableReadLock();
 			}
 			else
 			{
-				value = new NetPeer(this, request, GetNextPeerId());
-				AddPeer(value);
-				_peersLock.ExitUpgradeableReadLock();
-				CreateEvent(NetEvent.EType.Connect, value, null, SocketError.Success, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0);
+				value = new NetPeer(this, request, this.GetNextPeerId());
+				this.AddPeer(value);
+				this._peersLock.ExitUpgradeableReadLock();
+				this.CreateEvent(NetEvent.EType.Connect, value, null, SocketError.Success, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0);
 			}
 		}
-		lock (_requestsDict)
+		lock (this._requestsDict)
 		{
-			_requestsDict.Remove(request.RemoteEndPoint);
+			this._requestsDict.Remove(request.RemoteEndPoint);
 			return value;
 		}
 	}
 
 	private int GetNextPeerId()
 	{
-		if (!_peerIds.TryDequeue(out var result))
+		if (!this._peerIds.TryDequeue(out var result))
 		{
-			return _lastPeerId++;
+			return this._lastPeerId++;
 		}
 		return result;
 	}
@@ -681,15 +682,15 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			default:
 				return;
 			case ConnectRequestResult.Reconnection:
-				DisconnectPeerForce(netPeer, DisconnectReason.Reconnect, SocketError.Success, null);
-				RemovePeer(netPeer);
+				this.DisconnectPeerForce(netPeer, DisconnectReason.Reconnect, SocketError.Success, null);
+				this.RemovePeer(netPeer);
 				break;
 			case ConnectRequestResult.NewConnection:
-				RemovePeer(netPeer);
+				this.RemovePeer(netPeer);
 				break;
 			case ConnectRequestResult.P2PLose:
-				DisconnectPeerForce(netPeer, DisconnectReason.PeerToPeerConnection, SocketError.Success, null);
-				RemovePeer(netPeer);
+				this.DisconnectPeerForce(netPeer, DisconnectReason.PeerToPeerConnection, SocketError.Success, null);
+				this.RemovePeer(netPeer);
 				break;
 			}
 			if (connectRequestResult != ConnectRequestResult.P2PLose)
@@ -698,28 +699,28 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			}
 		}
 		ConnectionRequest value;
-		lock (_requestsDict)
+		lock (this._requestsDict)
 		{
-			if (_requestsDict.TryGetValue(remoteEndPoint, out value))
+			if (this._requestsDict.TryGetValue(remoteEndPoint, out value))
 			{
 				value.UpdateRequest(connRequest);
 				return;
 			}
 			value = new ConnectionRequest(remoteEndPoint, connRequest, this);
-			_requestsDict.Add(remoteEndPoint, value);
+			this._requestsDict.Add(remoteEndPoint, value);
 		}
-		CreateEvent(NetEvent.EType.ConnectionRequest, null, null, SocketError.Success, 0, DisconnectReason.ConnectionFailed, value, DeliveryMethod.Unreliable, 0);
+		this.CreateEvent(NetEvent.EType.ConnectionRequest, null, null, SocketError.Success, 0, DisconnectReason.ConnectionFailed, value, DeliveryMethod.Unreliable, 0);
 	}
 
 	private void OnMessageReceived(NetPacket packet, IPEndPoint remoteEndPoint)
 	{
 		int size = packet.Size;
-		if (EnableStatistics)
+		if (this.EnableStatistics)
 		{
-			Statistics.IncrementPacketsReceived();
-			Statistics.AddBytesReceived(size);
+			this.Statistics.IncrementPacketsReceived();
+			this.Statistics.AddBytesReceived(size);
 		}
-		if (_ntpRequests.Count > 0 && _ntpRequests.TryGetValue(remoteEndPoint, out var _))
+		if (this._ntpRequests.Count > 0 && this._ntpRequests.TryGetValue(remoteEndPoint, out var _))
 		{
 			if (packet.Size >= 48)
 			{
@@ -736,16 +737,16 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 				}
 				if (ntpPacket != null)
 				{
-					_ntpRequests.Remove(remoteEndPoint);
-					_ntpEventListener?.OnNtpResponse(ntpPacket);
+					this._ntpRequests.Remove(remoteEndPoint);
+					this._ntpEventListener?.OnNtpResponse(ntpPacket);
 				}
 			}
 			return;
 		}
-		if (_extraPacketLayer != null)
+		if (this._extraPacketLayer != null)
 		{
 			int offset = 0;
-			_extraPacketLayer.ProcessInboundPacket(ref remoteEndPoint, ref packet.RawData, ref offset, ref packet.Size);
+			this._extraPacketLayer.ProcessInboundPacket(ref remoteEndPoint, ref packet.RawData, ref offset, ref packet.Size);
 			if (packet.Size == 0)
 			{
 				return;
@@ -755,13 +756,13 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		{
 			if (packet.RawData.Length >= 5 && packet.RawData[4] == 84)
 			{
-				_udpSocketv4.SendTo(SteamServerInfo.Serialize(), SocketFlags.None, remoteEndPoint);
-				PoolRecycle(packet);
+				this._udpSocketv4.SendTo(SteamServerInfo.Serialize(), SocketFlags.None, remoteEndPoint);
+				this.PoolRecycle(packet);
 			}
 			else
 			{
 				NetDebug.WriteError("[NM] DataReceived: bad!");
-				PoolRecycle(packet);
+				this.PoolRecycle(packet);
 			}
 			return;
 		}
@@ -770,34 +771,34 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		case PacketProperty.ConnectRequest:
 			if (NetConnectRequestPacket.GetProtocolId(packet) != 13)
 			{
-				SendRawAndRecycle(PoolGetWithProperty(PacketProperty.InvalidProtocol), remoteEndPoint);
+				this.SendRawAndRecycle(this.PoolGetWithProperty(PacketProperty.InvalidProtocol), remoteEndPoint);
 				return;
 			}
 			break;
 		case PacketProperty.Broadcast:
-			if (BroadcastReceiveEnabled)
+			if (this.BroadcastReceiveEnabled)
 			{
-				CreateEvent(NetEvent.EType.Broadcast, null, remoteEndPoint, SocketError.Success, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0, packet);
+				this.CreateEvent(NetEvent.EType.Broadcast, null, remoteEndPoint, SocketError.Success, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0, packet);
 			}
 			return;
 		case PacketProperty.UnconnectedMessage:
-			if (UnconnectedMessagesEnabled)
+			if (this.UnconnectedMessagesEnabled)
 			{
-				CreateEvent(NetEvent.EType.ReceiveUnconnected, null, remoteEndPoint, SocketError.Success, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0, packet);
+				this.CreateEvent(NetEvent.EType.ReceiveUnconnected, null, remoteEndPoint, SocketError.Success, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0, packet);
 			}
 			return;
 		case PacketProperty.NatMessage:
-			if (NatPunchEnabled)
+			if (this.NatPunchEnabled)
 			{
-				NatPunchModule.ProcessMessage(remoteEndPoint, packet);
+				this.NatPunchModule.ProcessMessage(remoteEndPoint, packet);
 			}
 			return;
 		}
-		_peersLock.EnterReadLock();
+		this._peersLock.EnterReadLock();
 		NetPeer value2;
-		bool flag = _peersDict.TryGetValue(remoteEndPoint, out value2);
-		_peersLock.ExitReadLock();
-		if (flag && EnableStatistics)
+		bool flag = this._peersDict.TryGetValue(remoteEndPoint, out value2);
+		this._peersLock.ExitReadLock();
+		if (flag && this.EnableStatistics)
 		{
 			value2.Statistics.IncrementPacketsReceived();
 			value2.Statistics.AddBytesReceived(size);
@@ -809,7 +810,7 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			NetConnectRequestPacket netConnectRequestPacket = NetConnectRequestPacket.FromData(packet);
 			if (netConnectRequestPacket != null)
 			{
-				ProcessConnectRequest(remoteEndPoint, value2, netConnectRequestPacket);
+				this.ProcessConnectRequest(remoteEndPoint, value2, netConnectRequestPacket);
 			}
 			break;
 		}
@@ -821,11 +822,11 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 					if (packet.Size == 1)
 					{
 						value2.ResetMtu();
-						SendRaw(NetConnectAcceptPacket.MakeNetworkChanged(value2), remoteEndPoint);
+						this.SendRaw(NetConnectAcceptPacket.MakeNetworkChanged(value2), remoteEndPoint);
 					}
 					else if (packet.Size == 2 && packet.RawData[1] == 1)
 					{
-						DisconnectPeerForce(value2, DisconnectReason.PeerNotFound, SocketError.Success, null);
+						this.DisconnectPeerForce(value2, DisconnectReason.PeerNotFound, SocketError.Success, null);
 					}
 				}
 			}
@@ -836,41 +837,41 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 					break;
 				}
 				bool flag2 = false;
-				if (AllowPeerAddressChange)
+				if (this.AllowPeerAddressChange)
 				{
 					NetConnectAcceptPacket netConnectAcceptPacket = NetConnectAcceptPacket.FromData(packet);
-					if (netConnectAcceptPacket != null && netConnectAcceptPacket.PeerNetworkChanged && netConnectAcceptPacket.PeerId < _peersArray.Length)
+					if (netConnectAcceptPacket != null && netConnectAcceptPacket.PeerNetworkChanged && netConnectAcceptPacket.PeerId < this._peersArray.Length)
 					{
-						_peersLock.EnterUpgradeableReadLock();
-						NetPeer netPeer = _peersArray[netConnectAcceptPacket.PeerId];
+						this._peersLock.EnterUpgradeableReadLock();
+						NetPeer netPeer = this._peersArray[netConnectAcceptPacket.PeerId];
 						if (netPeer != null && netPeer.ConnectTime == netConnectAcceptPacket.ConnectionTime && netPeer.ConnectionNum == netConnectAcceptPacket.ConnectionNumber)
 						{
 							if (netPeer.ConnectionState == ConnectionState.Connected)
 							{
 								netPeer.InitiateEndPointChange();
-								if (_peerAddressChangedListener != null)
+								if (this._peerAddressChangedListener != null)
 								{
-									CreateEvent(NetEvent.EType.PeerAddressChanged, netPeer, remoteEndPoint, SocketError.Success, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0);
+									this.CreateEvent(NetEvent.EType.PeerAddressChanged, netPeer, remoteEndPoint, SocketError.Success, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0);
 								}
 							}
 							flag2 = true;
 						}
-						_peersLock.ExitUpgradeableReadLock();
+						this._peersLock.ExitUpgradeableReadLock();
 					}
 				}
-				PoolRecycle(packet);
+				this.PoolRecycle(packet);
 				if (!flag2)
 				{
-					NetPacket netPacket = PoolGetWithProperty(PacketProperty.PeerNotFound, 1);
+					NetPacket netPacket = this.PoolGetWithProperty(PacketProperty.PeerNotFound, 1);
 					netPacket.RawData[1] = 1;
-					SendRawAndRecycle(netPacket, remoteEndPoint);
+					this.SendRawAndRecycle(netPacket, remoteEndPoint);
 				}
 			}
 			break;
 		case PacketProperty.InvalidProtocol:
 			if (flag && value2.ConnectionState == ConnectionState.Outgoing)
 			{
-				DisconnectPeerForce(value2, DisconnectReason.InvalidProtocol, SocketError.Success, null);
+				this.DisconnectPeerForce(value2, DisconnectReason.InvalidProtocol, SocketError.Success, null);
 			}
 			break;
 		case PacketProperty.Disconnect:
@@ -879,16 +880,16 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 				DisconnectResult disconnectResult = value2.ProcessDisconnect(packet);
 				if (disconnectResult == DisconnectResult.None)
 				{
-					PoolRecycle(packet);
+					this.PoolRecycle(packet);
 					break;
 				}
-				DisconnectPeerForce(value2, (disconnectResult == DisconnectResult.Disconnect) ? DisconnectReason.RemoteConnectionClose : DisconnectReason.ConnectionRejected, SocketError.Success, packet);
+				this.DisconnectPeerForce(value2, (disconnectResult == DisconnectResult.Disconnect) ? DisconnectReason.RemoteConnectionClose : DisconnectReason.ConnectionRejected, SocketError.Success, packet);
 			}
 			else
 			{
-				PoolRecycle(packet);
+				this.PoolRecycle(packet);
 			}
-			SendRawAndRecycle(PoolGetWithProperty(PacketProperty.ShutdownOk), remoteEndPoint);
+			this.SendRawAndRecycle(this.PoolGetWithProperty(PacketProperty.ShutdownOk), remoteEndPoint);
 			break;
 		case PacketProperty.ConnectAccept:
 			if (flag)
@@ -896,7 +897,7 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 				NetConnectAcceptPacket netConnectAcceptPacket2 = NetConnectAcceptPacket.FromData(packet);
 				if (netConnectAcceptPacket2 != null && value2.ProcessConnectAccept(netConnectAcceptPacket2))
 				{
-					CreateEvent(NetEvent.EType.Connect, value2, null, SocketError.Success, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0);
+					this.CreateEvent(NetEvent.EType.Connect, value2, null, SocketError.Success, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0);
 				}
 			}
 			break;
@@ -907,7 +908,7 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			}
 			else
 			{
-				SendRawAndRecycle(PoolGetWithProperty(PacketProperty.PeerNotFound), remoteEndPoint);
+				this.SendRawAndRecycle(this.PoolGetWithProperty(PacketProperty.PeerNotFound), remoteEndPoint);
 			}
 			break;
 		}
@@ -915,19 +916,19 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 
 	internal void CreateReceiveEvent(NetPacket packet, DeliveryMethod method, byte channelNumber, int headerSize, NetPeer fromPeer)
 	{
-		if (UnsyncedEvents || UnsyncedReceiveEvent || _manualMode)
+		if (this.UnsyncedEvents || this.UnsyncedReceiveEvent || this._manualMode)
 		{
 			NetEvent netEvent;
-			lock (_eventLock)
+			lock (this._eventLock)
 			{
-				netEvent = _netEventPoolHead;
+				netEvent = this._netEventPoolHead;
 				if (netEvent == null)
 				{
 					netEvent = new NetEvent(this);
 				}
 				else
 				{
-					_netEventPoolHead = netEvent.Next;
+					this._netEventPoolHead = netEvent.Next;
 				}
 			}
 			netEvent.Next = null;
@@ -936,19 +937,19 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			netEvent.Peer = fromPeer;
 			netEvent.DeliveryMethod = method;
 			netEvent.ChannelNumber = channelNumber;
-			ProcessEvent(netEvent);
+			this.ProcessEvent(netEvent);
 			return;
 		}
-		lock (_eventLock)
+		lock (this._eventLock)
 		{
-			NetEvent netEvent = _netEventPoolHead;
+			NetEvent netEvent = this._netEventPoolHead;
 			if (netEvent == null)
 			{
 				netEvent = new NetEvent(this);
 			}
 			else
 			{
-				_netEventPoolHead = netEvent.Next;
+				this._netEventPoolHead = netEvent.Next;
 			}
 			netEvent.Next = null;
 			netEvent.Type = NetEvent.EType.Receive;
@@ -956,90 +957,90 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			netEvent.Peer = fromPeer;
 			netEvent.DeliveryMethod = method;
 			netEvent.ChannelNumber = channelNumber;
-			if (_pendingEventTail == null)
+			if (this._pendingEventTail == null)
 			{
-				_pendingEventHead = netEvent;
+				this._pendingEventHead = netEvent;
 			}
 			else
 			{
-				_pendingEventTail.Next = netEvent;
+				this._pendingEventTail.Next = netEvent;
 			}
-			_pendingEventTail = netEvent;
+			this._pendingEventTail = netEvent;
 		}
 	}
 
 	public void SendToAll(NetDataWriter writer, DeliveryMethod options)
 	{
-		SendToAll(writer.Data, 0, writer.Length, options);
+		this.SendToAll(writer.Data, 0, writer.Length, options);
 	}
 
 	public void SendToAll(byte[] data, DeliveryMethod options)
 	{
-		SendToAll(data, 0, data.Length, options);
+		this.SendToAll(data, 0, data.Length, options);
 	}
 
 	public void SendToAll(byte[] data, int start, int length, DeliveryMethod options)
 	{
-		SendToAll(data, start, length, 0, options);
+		this.SendToAll(data, start, length, 0, options);
 	}
 
 	public void SendToAll(NetDataWriter writer, byte channelNumber, DeliveryMethod options)
 	{
-		SendToAll(writer.Data, 0, writer.Length, channelNumber, options);
+		this.SendToAll(writer.Data, 0, writer.Length, channelNumber, options);
 	}
 
 	public void SendToAll(byte[] data, byte channelNumber, DeliveryMethod options)
 	{
-		SendToAll(data, 0, data.Length, channelNumber, options);
+		this.SendToAll(data, 0, data.Length, channelNumber, options);
 	}
 
 	public void SendToAll(byte[] data, int start, int length, byte channelNumber, DeliveryMethod options)
 	{
 		try
 		{
-			_peersLock.EnterReadLock();
-			for (NetPeer netPeer = _headPeer; netPeer != null; netPeer = netPeer.NextPeer)
+			this._peersLock.EnterReadLock();
+			for (NetPeer netPeer = this._headPeer; netPeer != null; netPeer = netPeer.NextPeer)
 			{
 				netPeer.Send(data, start, length, channelNumber, options);
 			}
 		}
 		finally
 		{
-			_peersLock.ExitReadLock();
+			this._peersLock.ExitReadLock();
 		}
 	}
 
 	public void SendToAll(NetDataWriter writer, DeliveryMethod options, NetPeer excludePeer)
 	{
-		SendToAll(writer.Data, 0, writer.Length, 0, options, excludePeer);
+		this.SendToAll(writer.Data, 0, writer.Length, 0, options, excludePeer);
 	}
 
 	public void SendToAll(byte[] data, DeliveryMethod options, NetPeer excludePeer)
 	{
-		SendToAll(data, 0, data.Length, 0, options, excludePeer);
+		this.SendToAll(data, 0, data.Length, 0, options, excludePeer);
 	}
 
 	public void SendToAll(byte[] data, int start, int length, DeliveryMethod options, NetPeer excludePeer)
 	{
-		SendToAll(data, start, length, 0, options, excludePeer);
+		this.SendToAll(data, start, length, 0, options, excludePeer);
 	}
 
 	public void SendToAll(NetDataWriter writer, byte channelNumber, DeliveryMethod options, NetPeer excludePeer)
 	{
-		SendToAll(writer.Data, 0, writer.Length, channelNumber, options, excludePeer);
+		this.SendToAll(writer.Data, 0, writer.Length, channelNumber, options, excludePeer);
 	}
 
 	public void SendToAll(byte[] data, byte channelNumber, DeliveryMethod options, NetPeer excludePeer)
 	{
-		SendToAll(data, 0, data.Length, channelNumber, options, excludePeer);
+		this.SendToAll(data, 0, data.Length, channelNumber, options, excludePeer);
 	}
 
 	public void SendToAll(byte[] data, int start, int length, byte channelNumber, DeliveryMethod options, NetPeer excludePeer)
 	{
 		try
 		{
-			_peersLock.EnterReadLock();
-			for (NetPeer netPeer = _headPeer; netPeer != null; netPeer = netPeer.NextPeer)
+			this._peersLock.EnterReadLock();
+			for (NetPeer netPeer = this._headPeer; netPeer != null; netPeer = netPeer.NextPeer)
 			{
 				if (netPeer != excludePeer)
 				{
@@ -1049,102 +1050,102 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		}
 		finally
 		{
-			_peersLock.ExitReadLock();
+			this._peersLock.ExitReadLock();
 		}
 	}
 
 	public bool Start()
 	{
-		return Start(0);
+		return this.Start(0);
 	}
 
 	public bool Start(IPAddress addressIPv4, IPAddress addressIPv6, int port)
 	{
-		return Start(addressIPv4, addressIPv6, port, manualMode: false);
+		return this.Start(addressIPv4, addressIPv6, port, manualMode: false);
 	}
 
 	public bool Start(string addressIPv4, string addressIPv6, int port)
 	{
 		IPAddress addressIPv7 = NetUtils.ResolveAddress(addressIPv4);
 		IPAddress addressIPv8 = NetUtils.ResolveAddress(addressIPv6);
-		return Start(addressIPv7, addressIPv8, port);
+		return this.Start(addressIPv7, addressIPv8, port);
 	}
 
 	public bool Start(int port)
 	{
-		return Start(IPAddress.Any, IPAddress.IPv6Any, port);
+		return this.Start(IPAddress.Any, IPAddress.IPv6Any, port);
 	}
 
 	public bool StartInManualMode(IPAddress addressIPv4, IPAddress addressIPv6, int port)
 	{
-		return Start(addressIPv4, addressIPv6, port, manualMode: true);
+		return this.Start(addressIPv4, addressIPv6, port, manualMode: true);
 	}
 
 	public bool StartInManualMode(string addressIPv4, string addressIPv6, int port)
 	{
 		IPAddress addressIPv7 = NetUtils.ResolveAddress(addressIPv4);
 		IPAddress addressIPv8 = NetUtils.ResolveAddress(addressIPv6);
-		return StartInManualMode(addressIPv7, addressIPv8, port);
+		return this.StartInManualMode(addressIPv7, addressIPv8, port);
 	}
 
 	public bool StartInManualMode(int port)
 	{
-		return StartInManualMode(IPAddress.Any, IPAddress.IPv6Any, port);
+		return this.StartInManualMode(IPAddress.Any, IPAddress.IPv6Any, port);
 	}
 
 	public bool SendUnconnectedMessage(byte[] message, IPEndPoint remoteEndPoint)
 	{
-		return SendUnconnectedMessage(message, 0, message.Length, remoteEndPoint);
+		return this.SendUnconnectedMessage(message, 0, message.Length, remoteEndPoint);
 	}
 
 	public bool SendUnconnectedMessage(NetDataWriter writer, string address, int port)
 	{
 		IPEndPoint remoteEndPoint = NetUtils.MakeEndPoint(address, port);
-		return SendUnconnectedMessage(writer.Data, 0, writer.Length, remoteEndPoint);
+		return this.SendUnconnectedMessage(writer.Data, 0, writer.Length, remoteEndPoint);
 	}
 
 	public bool SendUnconnectedMessage(NetDataWriter writer, IPEndPoint remoteEndPoint)
 	{
-		return SendUnconnectedMessage(writer.Data, 0, writer.Length, remoteEndPoint);
+		return this.SendUnconnectedMessage(writer.Data, 0, writer.Length, remoteEndPoint);
 	}
 
 	public bool SendUnconnectedMessage(byte[] message, int start, int length, IPEndPoint remoteEndPoint)
 	{
-		NetPacket packet = PoolGetWithData(PacketProperty.UnconnectedMessage, message, start, length);
-		return SendRawAndRecycle(packet, remoteEndPoint) > 0;
+		NetPacket packet = this.PoolGetWithData(PacketProperty.UnconnectedMessage, message, start, length);
+		return this.SendRawAndRecycle(packet, remoteEndPoint) > 0;
 	}
 
 	public void TriggerUpdate()
 	{
-		_updateTriggerEvent.Set();
+		this._updateTriggerEvent.Set();
 	}
 
 	public void PollEvents()
 	{
-		if (_manualMode)
+		if (this._manualMode)
 		{
-			if (_udpSocketv4 != null)
+			if (this._udpSocketv4 != null)
 			{
-				ManualReceive(_udpSocketv4, _bufferEndPointv4);
+				this.ManualReceive(this._udpSocketv4, this._bufferEndPointv4);
 			}
-			if (_udpSocketv6 != null && _udpSocketv6 != _udpSocketv4)
+			if (this._udpSocketv6 != null && this._udpSocketv6 != this._udpSocketv4)
 			{
-				ManualReceive(_udpSocketv6, _bufferEndPointv6);
+				this.ManualReceive(this._udpSocketv6, this._bufferEndPointv6);
 			}
 		}
-		else if (!UnsyncedEvents)
+		else if (!this.UnsyncedEvents)
 		{
 			NetEvent netEvent;
-			lock (_eventLock)
+			lock (this._eventLock)
 			{
-				netEvent = _pendingEventHead;
-				_pendingEventHead = null;
-				_pendingEventTail = null;
+				netEvent = this._pendingEventHead;
+				this._pendingEventHead = null;
+				this._pendingEventTail = null;
 			}
 			while (netEvent != null)
 			{
 				NetEvent next = netEvent.Next;
-				ProcessEvent(netEvent);
+				this.ProcessEvent(netEvent);
 				netEvent = next;
 			}
 		}
@@ -1152,7 +1153,7 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 
 	public NetPeer Connect(string address, int port, string key)
 	{
-		return Connect(address, port, NetDataWriter.FromString(key));
+		return this.Connect(address, port, NetDataWriter.FromString(key));
 	}
 
 	public NetPeer Connect(string address, int port, NetDataWriter connectionData)
@@ -1164,189 +1165,189 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		}
 		catch
 		{
-			CreateEvent(NetEvent.EType.Disconnect, null, null, SocketError.Success, 0, DisconnectReason.UnknownHost, null, DeliveryMethod.Unreliable, 0);
+			this.CreateEvent(NetEvent.EType.Disconnect, null, null, SocketError.Success, 0, DisconnectReason.UnknownHost, null, DeliveryMethod.Unreliable, 0);
 			return null;
 		}
-		return Connect(target, connectionData);
+		return this.Connect(target, connectionData);
 	}
 
 	public NetPeer Connect(IPEndPoint target, string key)
 	{
-		return Connect(target, NetDataWriter.FromString(key));
+		return this.Connect(target, NetDataWriter.FromString(key));
 	}
 
 	public NetPeer Connect(IPEndPoint target, NetDataWriter connectionData)
 	{
-		if (!IsRunning)
+		if (!this.IsRunning)
 		{
 			throw new InvalidOperationException("Client is not running");
 		}
-		lock (_requestsDict)
+		lock (this._requestsDict)
 		{
-			if (_requestsDict.ContainsKey(target))
+			if (this._requestsDict.ContainsKey(target))
 			{
 				return null;
 			}
 		}
 		byte connectNum = 0;
-		_peersLock.EnterUpgradeableReadLock();
-		if (_peersDict.TryGetValue(target, out var value))
+		this._peersLock.EnterUpgradeableReadLock();
+		if (this._peersDict.TryGetValue(target, out var value))
 		{
 			ConnectionState connectionState = value.ConnectionState;
 			if (connectionState == ConnectionState.Outgoing || connectionState == ConnectionState.Connected)
 			{
-				_peersLock.ExitUpgradeableReadLock();
+				this._peersLock.ExitUpgradeableReadLock();
 				return value;
 			}
 			connectNum = (byte)((value.ConnectionNum + 1) % 4);
-			RemovePeer(value);
+			this.RemovePeer(value);
 		}
-		value = new NetPeer(this, target, GetNextPeerId(), connectNum, connectionData);
-		AddPeer(value);
-		_peersLock.ExitUpgradeableReadLock();
+		value = new NetPeer(this, target, this.GetNextPeerId(), connectNum, connectionData);
+		this.AddPeer(value);
+		this._peersLock.ExitUpgradeableReadLock();
 		return value;
 	}
 
 	public void Stop()
 	{
-		Stop(sendDisconnectMessages: true);
+		this.Stop(sendDisconnectMessages: true);
 	}
 
 	public void Stop(bool sendDisconnectMessages)
 	{
-		if (IsRunning)
+		if (this.IsRunning)
 		{
-			_pausedSocketFix.Deinitialize();
-			_pausedSocketFix = null;
-			for (NetPeer netPeer = _headPeer; netPeer != null; netPeer = netPeer.NextPeer)
+			this._pausedSocketFix.Deinitialize();
+			this._pausedSocketFix = null;
+			for (NetPeer netPeer = this._headPeer; netPeer != null; netPeer = netPeer.NextPeer)
 			{
 				netPeer.Shutdown(null, 0, 0, !sendDisconnectMessages);
 			}
-			CloseSocket();
-			_updateTriggerEvent.Set();
-			if (!_manualMode)
+			this.CloseSocket();
+			this._updateTriggerEvent.Set();
+			if (!this._manualMode)
 			{
-				_logicThread.Join();
-				_logicThread = null;
+				this._logicThread.Join();
+				this._logicThread = null;
 			}
-			_peersLock.EnterWriteLock();
-			_headPeer = null;
-			_peersDict.Clear();
-			_peersArray = new NetPeer[32];
-			_peersLock.ExitWriteLock();
-			_peerIds = new ConcurrentQueue<int>();
-			_lastPeerId = 0;
-			_connectedPeersCount = 0;
-			_pendingEventHead = null;
-			_pendingEventTail = null;
+			this._peersLock.EnterWriteLock();
+			this._headPeer = null;
+			this._peersDict.Clear();
+			this._peersArray = new NetPeer[32];
+			this._peersLock.ExitWriteLock();
+			this._peerIds = new ConcurrentQueue<int>();
+			this._lastPeerId = 0;
+			this._connectedPeersCount = 0;
+			this._pendingEventHead = null;
+			this._pendingEventTail = null;
 		}
 	}
 
 	public int GetPeersCount(ConnectionState peerState)
 	{
 		int num = 0;
-		_peersLock.EnterReadLock();
-		for (NetPeer netPeer = _headPeer; netPeer != null; netPeer = netPeer.NextPeer)
+		this._peersLock.EnterReadLock();
+		for (NetPeer netPeer = this._headPeer; netPeer != null; netPeer = netPeer.NextPeer)
 		{
 			if ((netPeer.ConnectionState & peerState) != 0)
 			{
 				num++;
 			}
 		}
-		_peersLock.ExitReadLock();
+		this._peersLock.ExitReadLock();
 		return num;
 	}
 
 	public void GetPeersNonAlloc(List<NetPeer> peers, ConnectionState peerState)
 	{
 		peers.Clear();
-		_peersLock.EnterReadLock();
-		for (NetPeer netPeer = _headPeer; netPeer != null; netPeer = netPeer.NextPeer)
+		this._peersLock.EnterReadLock();
+		for (NetPeer netPeer = this._headPeer; netPeer != null; netPeer = netPeer.NextPeer)
 		{
 			if ((netPeer.ConnectionState & peerState) != 0)
 			{
 				peers.Add(netPeer);
 			}
 		}
-		_peersLock.ExitReadLock();
+		this._peersLock.ExitReadLock();
 	}
 
 	public void DisconnectAll()
 	{
-		DisconnectAll(null, 0, 0);
+		this.DisconnectAll(null, 0, 0);
 	}
 
 	public void DisconnectAll(byte[] data, int start, int count)
 	{
-		_peersLock.EnterReadLock();
-		for (NetPeer netPeer = _headPeer; netPeer != null; netPeer = netPeer.NextPeer)
+		this._peersLock.EnterReadLock();
+		for (NetPeer netPeer = this._headPeer; netPeer != null; netPeer = netPeer.NextPeer)
 		{
-			DisconnectPeer(netPeer, DisconnectReason.DisconnectPeerCalled, SocketError.Success, force: false, data, start, count, null);
+			this.DisconnectPeer(netPeer, DisconnectReason.DisconnectPeerCalled, SocketError.Success, force: false, data, start, count, null);
 		}
-		_peersLock.ExitReadLock();
+		this._peersLock.ExitReadLock();
 	}
 
 	public void DisconnectPeerForce(NetPeer peer)
 	{
-		DisconnectPeerForce(peer, DisconnectReason.DisconnectPeerCalled, SocketError.Success, null);
+		this.DisconnectPeerForce(peer, DisconnectReason.DisconnectPeerCalled, SocketError.Success, null);
 	}
 
 	public void DisconnectPeer(NetPeer peer)
 	{
-		DisconnectPeer(peer, null, 0, 0);
+		this.DisconnectPeer(peer, null, 0, 0);
 	}
 
 	public void DisconnectPeer(NetPeer peer, byte[] data)
 	{
-		DisconnectPeer(peer, data, 0, data.Length);
+		this.DisconnectPeer(peer, data, 0, data.Length);
 	}
 
 	public void DisconnectPeer(NetPeer peer, NetDataWriter writer)
 	{
-		DisconnectPeer(peer, writer.Data, 0, writer.Length);
+		this.DisconnectPeer(peer, writer.Data, 0, writer.Length);
 	}
 
 	public void DisconnectPeer(NetPeer peer, byte[] data, int start, int count)
 	{
-		DisconnectPeer(peer, DisconnectReason.DisconnectPeerCalled, SocketError.Success, force: false, data, start, count, null);
+		this.DisconnectPeer(peer, DisconnectReason.DisconnectPeerCalled, SocketError.Success, force: false, data, start, count, null);
 	}
 
 	public void CreateNtpRequest(IPEndPoint endPoint)
 	{
-		_ntpRequests.Add(endPoint, new NtpRequest(endPoint));
+		this._ntpRequests.Add(endPoint, new NtpRequest(endPoint));
 	}
 
 	public void CreateNtpRequest(string ntpServerAddress, int port)
 	{
 		IPEndPoint iPEndPoint = NetUtils.MakeEndPoint(ntpServerAddress, port);
-		_ntpRequests.Add(iPEndPoint, new NtpRequest(iPEndPoint));
+		this._ntpRequests.Add(iPEndPoint, new NtpRequest(iPEndPoint));
 	}
 
 	public void CreateNtpRequest(string ntpServerAddress)
 	{
 		IPEndPoint iPEndPoint = NetUtils.MakeEndPoint(ntpServerAddress, 123);
-		_ntpRequests.Add(iPEndPoint, new NtpRequest(iPEndPoint));
+		this._ntpRequests.Add(iPEndPoint, new NtpRequest(iPEndPoint));
 	}
 
 	public NetPeerEnumerator GetEnumerator()
 	{
-		return new NetPeerEnumerator(_headPeer);
+		return new NetPeerEnumerator(this._headPeer);
 	}
 
 	IEnumerator<NetPeer> IEnumerable<NetPeer>.GetEnumerator()
 	{
-		return new NetPeerEnumerator(_headPeer);
+		return new NetPeerEnumerator(this._headPeer);
 	}
 
 	IEnumerator IEnumerable.GetEnumerator()
 	{
-		return new NetPeerEnumerator(_headPeer);
+		return new NetPeerEnumerator(this._headPeer);
 	}
 
 	private NetPacket PoolGetWithData(PacketProperty property, byte[] data, int start, int length)
 	{
 		int headerSize = NetPacket.GetHeaderSize(property);
-		NetPacket netPacket = PoolGetPacket(length + headerSize);
+		NetPacket netPacket = this.PoolGetPacket(length + headerSize);
 		netPacket.Property = property;
 		Buffer.BlockCopy(data, start, netPacket.RawData, headerSize, length);
 		return netPacket;
@@ -1354,14 +1355,14 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 
 	private NetPacket PoolGetWithProperty(PacketProperty property, int size)
 	{
-		NetPacket netPacket = PoolGetPacket(size + NetPacket.GetHeaderSize(property));
+		NetPacket netPacket = this.PoolGetPacket(size + NetPacket.GetHeaderSize(property));
 		netPacket.Property = property;
 		return netPacket;
 	}
 
 	private NetPacket PoolGetWithProperty(PacketProperty property)
 	{
-		NetPacket netPacket = PoolGetPacket(NetPacket.GetHeaderSize(property));
+		NetPacket netPacket = this.PoolGetPacket(NetPacket.GetHeaderSize(property));
 		netPacket.Property = property;
 		return netPacket;
 	}
@@ -1373,15 +1374,15 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			return new NetPacket(size);
 		}
 		NetPacket poolHead;
-		lock (_poolLock)
+		lock (this._poolLock)
 		{
-			poolHead = _poolHead;
+			poolHead = this._poolHead;
 			if (poolHead == null)
 			{
 				return new NetPacket(size);
 			}
-			_poolHead = _poolHead.Next;
-			_poolCount--;
+			this._poolHead = this._poolHead.Next;
+			this._poolCount--;
 		}
 		poolHead.Size = size;
 		if (poolHead.RawData.Length < size)
@@ -1393,39 +1394,39 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 
 	internal void PoolRecycle(NetPacket packet)
 	{
-		if (packet.RawData.Length > NetConstants.MaxPacketSize || _poolCount >= PacketPoolSize)
+		if (packet.RawData.Length > NetConstants.MaxPacketSize || this._poolCount >= this.PacketPoolSize)
 		{
 			return;
 		}
 		packet.RawData[0] = 0;
-		lock (_poolLock)
+		lock (this._poolLock)
 		{
-			packet.Next = _poolHead;
-			_poolHead = packet;
-			_poolCount++;
+			packet.Next = this._poolHead;
+			this._poolHead = packet;
+			this._poolCount++;
 		}
 	}
 
 	static NetManager()
 	{
-		MulticastAddressV6 = IPAddress.Parse("ff02::1");
-		IPv6Support = Socket.OSSupportsIPv6;
+		NetManager.MulticastAddressV6 = IPAddress.Parse("ff02::1");
+		NetManager.IPv6Support = Socket.OSSupportsIPv6;
 	}
 
 	private void RegisterEndPoint(IPEndPoint ep)
 	{
-		if (UseNativeSockets && ep is NativeEndPoint nativeEndPoint)
+		if (this.UseNativeSockets && ep is NativeEndPoint nativeEndPoint)
 		{
-			_nativeAddrMap.Add(new NativeAddr(nativeEndPoint.NativeAddress, nativeEndPoint.NativeAddress.Length), nativeEndPoint);
+			this._nativeAddrMap.Add(new NativeAddr(nativeEndPoint.NativeAddress, nativeEndPoint.NativeAddress.Length), nativeEndPoint);
 		}
 	}
 
 	private void UnregisterEndPoint(IPEndPoint ep)
 	{
-		if (UseNativeSockets && ep is NativeEndPoint nativeEndPoint)
+		if (this.UseNativeSockets && ep is NativeEndPoint nativeEndPoint)
 		{
 			NativeAddr key = new NativeAddr(nativeEndPoint.NativeAddress, nativeEndPoint.NativeAddress.Length);
-			_nativeAddrMap.Remove(key);
+			this._nativeAddrMap.Remove(key);
 		}
 	}
 
@@ -1434,7 +1435,7 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		switch (ex.SocketErrorCode)
 		{
 		case SocketError.NotConnected:
-			NotConnected = true;
+			this.NotConnected = true;
 			return true;
 		case SocketError.OperationAborted:
 		case SocketError.Interrupted:
@@ -1442,7 +1443,7 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			return true;
 		default:
 			NetDebug.WriteError($"[R]Error code: {(int)ex.SocketErrorCode} - {ex}");
-			CreateEvent(NetEvent.EType.Error, null, null, ex.SocketErrorCode, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0);
+			this.CreateEvent(NetEvent.EType.Error, null, null, ex.SocketErrorCode, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0);
 			break;
 		case SocketError.MessageSize:
 		case SocketError.NetworkReset:
@@ -1460,9 +1461,9 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			int num = 0;
 			while (socket.Available > 0)
 			{
-				ReceiveFrom(socket, ref bufferEndPoint);
+				this.ReceiveFrom(socket, ref bufferEndPoint);
 				num++;
-				if (num == MaxPacketsReceivePerUpdate)
+				if (num == this.MaxPacketsReceivePerUpdate)
 				{
 					break;
 				}
@@ -1470,7 +1471,7 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		}
 		catch (SocketException ex)
 		{
-			ProcessError(ex);
+			this.ProcessError(ex);
 		}
 		catch (ObjectDisposedException)
 		{
@@ -1493,49 +1494,49 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			SocketError socketError = NativeSocket.GetSocketError();
 			if (socketError != SocketError.WouldBlock && socketError != SocketError.TimedOut)
 			{
-				return !ProcessError(new SocketException((int)socketError));
+				return !this.ProcessError(new SocketException((int)socketError));
 			}
 			return true;
 		}
 		NativeAddr key = new NativeAddr(addrBuffer, addrSize);
-		if (!_nativeAddrMap.TryGetValue(key, out var value))
+		if (!this._nativeAddrMap.TryGetValue(key, out var value))
 		{
 			value = new NativeEndPoint(addrBuffer);
 		}
-		OnMessageReceived(packet, value);
-		packet = PoolGetPacket(NetConstants.MaxPacketSize);
+		this.OnMessageReceived(packet, value);
+		packet = this.PoolGetPacket(NetConstants.MaxPacketSize);
 		return true;
 	}
 
 	private void NativeReceiveLogic()
 	{
-		IntPtr handle = _udpSocketv4.Handle;
-		IntPtr s = _udpSocketv6?.Handle ?? IntPtr.Zero;
+		IntPtr handle = this._udpSocketv4.Handle;
+		IntPtr s = this._udpSocketv6?.Handle ?? IntPtr.Zero;
 		byte[] array = new byte[16];
 		byte[] array2 = new byte[28];
 		int addrSize = array.Length;
 		int addrSize2 = array2.Length;
 		List<Socket> list = new List<Socket>(2);
-		Socket udpSocketv = _udpSocketv4;
-		Socket udpSocketv2 = _udpSocketv6;
-		NetPacket packet = PoolGetPacket(NetConstants.MaxPacketSize);
-		while (IsRunning)
+		Socket udpSocketv = this._udpSocketv4;
+		Socket udpSocketv2 = this._udpSocketv6;
+		NetPacket packet = this.PoolGetPacket(NetConstants.MaxPacketSize);
+		while (this.IsRunning)
 		{
 			try
 			{
 				if (udpSocketv2 == null)
 				{
-					NativeReceiveFrom(ref packet, handle, array, addrSize);
+					this.NativeReceiveFrom(ref packet, handle, array, addrSize);
 				}
 				bool flag = false;
 				if (udpSocketv.Available != 0 || list.Contains(udpSocketv))
 				{
-					NativeReceiveFrom(ref packet, handle, array, addrSize);
+					this.NativeReceiveFrom(ref packet, handle, array, addrSize);
 					flag = true;
 				}
 				if (udpSocketv2.Available != 0 || list.Contains(udpSocketv2))
 				{
-					NativeReceiveFrom(ref packet, s, array2, addrSize2);
+					this.NativeReceiveFrom(ref packet, s, array2, addrSize2);
 					flag = true;
 				}
 				list.Clear();
@@ -1548,7 +1549,7 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			}
 			catch (SocketException ex)
 			{
-				if (ProcessError(ex))
+				if (this.ProcessError(ex))
 				{
 					break;
 				}
@@ -1570,9 +1571,9 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 
 	private void ReceiveFrom(Socket s, ref EndPoint bufferEndPoint)
 	{
-		NetPacket netPacket = PoolGetPacket(NetConstants.MaxPacketSize);
+		NetPacket netPacket = this.PoolGetPacket(NetConstants.MaxPacketSize);
 		netPacket.Size = s.ReceiveFrom(netPacket.RawData, 0, NetConstants.MaxPacketSize, SocketFlags.None, ref bufferEndPoint);
-		OnMessageReceived(netPacket, (IPEndPoint)bufferEndPoint);
+		this.OnMessageReceived(netPacket, (IPEndPoint)bufferEndPoint);
 	}
 
 	private void ReceiveLogic()
@@ -1580,9 +1581,9 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		EndPoint bufferEndPoint = new IPEndPoint(IPAddress.Any, 0);
 		EndPoint bufferEndPoint2 = new IPEndPoint(IPAddress.IPv6Any, 0);
 		List<Socket> list = new List<Socket>(2);
-		Socket udpSocketv = _udpSocketv4;
-		Socket udpSocketv2 = _udpSocketv6;
-		while (IsRunning)
+		Socket udpSocketv = this._udpSocketv4;
+		Socket udpSocketv2 = this._udpSocketv6;
+		while (this.IsRunning)
 		{
 			try
 			{
@@ -1590,19 +1591,19 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 				{
 					if (udpSocketv.Available != 0 || udpSocketv.Poll(500000, SelectMode.SelectRead))
 					{
-						ReceiveFrom(udpSocketv, ref bufferEndPoint);
+						this.ReceiveFrom(udpSocketv, ref bufferEndPoint);
 					}
 					continue;
 				}
 				bool flag = false;
 				if (udpSocketv.Available != 0 || list.Contains(udpSocketv))
 				{
-					ReceiveFrom(udpSocketv, ref bufferEndPoint);
+					this.ReceiveFrom(udpSocketv, ref bufferEndPoint);
 					flag = true;
 				}
 				if (udpSocketv2.Available != 0 || list.Contains(udpSocketv2))
 				{
-					ReceiveFrom(udpSocketv2, ref bufferEndPoint2);
+					this.ReceiveFrom(udpSocketv2, ref bufferEndPoint2);
 					flag = true;
 				}
 				list.Clear();
@@ -1615,7 +1616,7 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			}
 			catch (SocketException ex)
 			{
-				if (ProcessError(ex))
+				if (this.ProcessError(ex))
 				{
 					break;
 				}
@@ -1637,64 +1638,64 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 
 	public bool Start(IPAddress addressIPv4, IPAddress addressIPv6, int port, bool manualMode)
 	{
-		if (IsRunning && !NotConnected)
+		if (this.IsRunning && !this.NotConnected)
 		{
 			return false;
 		}
-		NotConnected = false;
-		_manualMode = manualMode;
-		UseNativeSockets = UseNativeSockets && NativeSocket.IsSupported;
-		_udpSocketv4 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-		if (!BindSocket(_udpSocketv4, new IPEndPoint(addressIPv4, port)))
+		this.NotConnected = false;
+		this._manualMode = manualMode;
+		this.UseNativeSockets = this.UseNativeSockets && NativeSocket.IsSupported;
+		this._udpSocketv4 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+		if (!this.BindSocket(this._udpSocketv4, new IPEndPoint(addressIPv4, port)))
 		{
 			return false;
 		}
-		LocalPort = ((IPEndPoint)_udpSocketv4.LocalEndPoint).Port;
-		if (_pausedSocketFix == null)
+		this.LocalPort = ((IPEndPoint)this._udpSocketv4.LocalEndPoint).Port;
+		if (this._pausedSocketFix == null)
 		{
-			_pausedSocketFix = new PausedSocketFix(this, addressIPv4, addressIPv6, port, manualMode);
+			this._pausedSocketFix = new PausedSocketFix(this, addressIPv4, addressIPv6, port, manualMode);
 		}
-		IsRunning = true;
-		if (_manualMode)
+		this.IsRunning = true;
+		if (this._manualMode)
 		{
-			_bufferEndPointv4 = new IPEndPoint(IPAddress.Any, 0);
+			this._bufferEndPointv4 = new IPEndPoint(IPAddress.Any, 0);
 		}
-		if (IPv6Support && IPv6Enabled)
+		if (NetManager.IPv6Support && this.IPv6Enabled)
 		{
-			_udpSocketv6 = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-			if (BindSocket(_udpSocketv6, new IPEndPoint(addressIPv6, LocalPort)))
+			this._udpSocketv6 = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+			if (this.BindSocket(this._udpSocketv6, new IPEndPoint(addressIPv6, this.LocalPort)))
 			{
-				if (_manualMode)
+				if (this._manualMode)
 				{
-					_bufferEndPointv6 = new IPEndPoint(IPAddress.IPv6Any, 0);
+					this._bufferEndPointv6 = new IPEndPoint(IPAddress.IPv6Any, 0);
 				}
 			}
 			else
 			{
-				_udpSocketv6 = null;
+				this._udpSocketv6 = null;
 			}
 		}
 		if (!manualMode)
 		{
 			ThreadStart start = ReceiveLogic;
-			if (UseNativeSockets)
+			if (this.UseNativeSockets)
 			{
 				start = NativeReceiveLogic;
 			}
-			_receiveThread = new Thread(start)
+			this._receiveThread = new Thread(start)
 			{
-				Name = $"ReceiveThread({LocalPort})",
+				Name = $"ReceiveThread({this.LocalPort})",
 				IsBackground = true
 			};
-			_receiveThread.Start();
-			if (_logicThread == null)
+			this._receiveThread.Start();
+			if (this._logicThread == null)
 			{
-				_logicThread = new Thread(UpdateLogic)
+				this._logicThread = new Thread(UpdateLogic)
 				{
 					Name = "LogicThread",
 					IsBackground = true
 				};
-				_logicThread.Start();
+				this._logicThread.Start();
 			}
 		}
 		return true;
@@ -1719,15 +1720,15 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		}
 		try
 		{
-			socket.ExclusiveAddressUse = !ReuseAddress;
-			socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, ReuseAddress);
+			socket.ExclusiveAddressUse = !this.ReuseAddress;
+			socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, this.ReuseAddress);
 		}
 		catch
 		{
 		}
 		if (ep.AddressFamily == AddressFamily.InterNetwork)
 		{
-			Ttl = 255;
+			this.Ttl = 255;
 			try
 			{
 				socket.EnableBroadcast = true;
@@ -1785,35 +1786,35 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 
 	internal int SendRawAndRecycle(NetPacket packet, IPEndPoint remoteEndPoint)
 	{
-		int result = SendRaw(packet.RawData, 0, packet.Size, remoteEndPoint);
-		PoolRecycle(packet);
+		int result = this.SendRaw(packet.RawData, 0, packet.Size, remoteEndPoint);
+		this.PoolRecycle(packet);
 		return result;
 	}
 
 	internal int SendRaw(NetPacket packet, IPEndPoint remoteEndPoint)
 	{
-		return SendRaw(packet.RawData, 0, packet.Size, remoteEndPoint);
+		return this.SendRaw(packet.RawData, 0, packet.Size, remoteEndPoint);
 	}
 
 	internal int SendRaw(byte[] message, int start, int length, IPEndPoint remoteEndPoint)
 	{
-		if (!IsRunning)
+		if (!this.IsRunning)
 		{
 			return 0;
 		}
 		NetPacket netPacket = null;
-		if (_extraPacketLayer != null)
+		if (this._extraPacketLayer != null)
 		{
-			netPacket = PoolGetPacket(length + _extraPacketLayer.ExtraPacketSizeForLayer);
+			netPacket = this.PoolGetPacket(length + this._extraPacketLayer.ExtraPacketSizeForLayer);
 			Buffer.BlockCopy(message, start, netPacket.RawData, 0, length);
 			start = 0;
-			_extraPacketLayer.ProcessOutBoundPacket(ref remoteEndPoint, ref netPacket.RawData, ref start, ref length);
+			this._extraPacketLayer.ProcessOutBoundPacket(ref remoteEndPoint, ref netPacket.RawData, ref start, ref length);
 			message = netPacket.RawData;
 		}
-		Socket socket = _udpSocketv4;
-		if (remoteEndPoint.AddressFamily == AddressFamily.InterNetworkV6 && IPv6Support)
+		Socket socket = this._udpSocketv4;
+		if (remoteEndPoint.AddressFamily == AddressFamily.InterNetworkV6 && NetManager.IPv6Support)
 		{
-			socket = _udpSocketv6;
+			socket = this._udpSocketv6;
 			if (socket == null)
 			{
 				return 0;
@@ -1822,7 +1823,7 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		int num2;
 		try
 		{
-			if (UseNativeSockets)
+			if (this.UseNativeSockets)
 			{
 				byte[] array;
 				if (remoteEndPoint is NativeEndPoint nativeEndPoint)
@@ -1831,11 +1832,11 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 				}
 				else
 				{
-					if (_endPointBuffer == null)
+					if (NetManager._endPointBuffer == null)
 					{
-						_endPointBuffer = new byte[28];
+						NetManager._endPointBuffer = new byte[28];
 					}
-					array = _endPointBuffer;
+					array = NetManager._endPointBuffer;
 					bool num = remoteEndPoint.AddressFamily == AddressFamily.InterNetwork;
 					short nativeAddressFamily = NativeSocket.GetNativeAddressFamily(remoteEndPoint);
 					array[0] = (byte)nativeAddressFamily;
@@ -1857,12 +1858,12 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 				}
 				if (start > 0)
 				{
-					if (_sendToBuffer == null)
+					if (NetManager._sendToBuffer == null)
 					{
-						_sendToBuffer = new byte[NetConstants.MaxPacketSize];
+						NetManager._sendToBuffer = new byte[NetConstants.MaxPacketSize];
 					}
-					Buffer.BlockCopy(message, start, _sendToBuffer, 0, length);
-					message = _sendToBuffer;
+					Buffer.BlockCopy(message, start, NetManager._sendToBuffer, 0, length);
+					message = NetManager._sendToBuffer;
 				}
 				num2 = NativeSocket.SendTo(socket.Handle, message, length, array, array.Length);
 				if (num2 == -1)
@@ -1887,11 +1888,11 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 			case SocketError.NetworkUnreachable:
 			case SocketError.HostUnreachable:
 			{
-				if (DisconnectOnUnreachable && TryGetPeer(remoteEndPoint, out var peer))
+				if (this.DisconnectOnUnreachable && this.TryGetPeer(remoteEndPoint, out var peer))
 				{
-					DisconnectPeerForce(peer, (ex.SocketErrorCode == SocketError.HostUnreachable) ? DisconnectReason.HostUnreachable : DisconnectReason.NetworkUnreachable, ex.SocketErrorCode, null);
+					this.DisconnectPeerForce(peer, (ex.SocketErrorCode == SocketError.HostUnreachable) ? DisconnectReason.HostUnreachable : DisconnectReason.NetworkUnreachable, ex.SocketErrorCode, null);
 				}
-				CreateEvent(NetEvent.EType.Error, null, remoteEndPoint, ex.SocketErrorCode, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0);
+				this.CreateEvent(NetEvent.EType.Error, null, remoteEndPoint, ex.SocketErrorCode, 0, DisconnectReason.ConnectionFailed, null, DeliveryMethod.Unreliable, 0);
 				return -1;
 			}
 			default:
@@ -1908,61 +1909,61 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		{
 			if (netPacket != null)
 			{
-				PoolRecycle(netPacket);
+				this.PoolRecycle(netPacket);
 			}
 		}
 		if (num2 <= 0)
 		{
 			return 0;
 		}
-		if (EnableStatistics)
+		if (this.EnableStatistics)
 		{
-			Statistics.IncrementPacketsSent();
-			Statistics.AddBytesSent(length);
+			this.Statistics.IncrementPacketsSent();
+			this.Statistics.AddBytesSent(length);
 		}
 		return num2;
 	}
 
 	public bool SendBroadcast(NetDataWriter writer, int port)
 	{
-		return SendBroadcast(writer.Data, 0, writer.Length, port);
+		return this.SendBroadcast(writer.Data, 0, writer.Length, port);
 	}
 
 	public bool SendBroadcast(byte[] data, int port)
 	{
-		return SendBroadcast(data, 0, data.Length, port);
+		return this.SendBroadcast(data, 0, data.Length, port);
 	}
 
 	public bool SendBroadcast(byte[] data, int start, int length, int port)
 	{
-		if (!IsRunning)
+		if (!this.IsRunning)
 		{
 			return false;
 		}
 		NetPacket netPacket;
-		if (_extraPacketLayer != null)
+		if (this._extraPacketLayer != null)
 		{
 			int headerSize = NetPacket.GetHeaderSize(PacketProperty.Broadcast);
-			netPacket = PoolGetPacket(headerSize + length + _extraPacketLayer.ExtraPacketSizeForLayer);
+			netPacket = this.PoolGetPacket(headerSize + length + this._extraPacketLayer.ExtraPacketSizeForLayer);
 			netPacket.Property = PacketProperty.Broadcast;
 			Buffer.BlockCopy(data, start, netPacket.RawData, headerSize, length);
 			int offset = 0;
 			int length2 = length + headerSize;
 			IPEndPoint endPoint = null;
-			_extraPacketLayer.ProcessOutBoundPacket(ref endPoint, ref netPacket.RawData, ref offset, ref length2);
+			this._extraPacketLayer.ProcessOutBoundPacket(ref endPoint, ref netPacket.RawData, ref offset, ref length2);
 		}
 		else
 		{
-			netPacket = PoolGetWithData(PacketProperty.Broadcast, data, start, length);
+			netPacket = this.PoolGetWithData(PacketProperty.Broadcast, data, start, length);
 		}
 		bool flag = false;
 		bool flag2 = false;
 		try
 		{
-			flag = _udpSocketv4.SendTo(netPacket.RawData, 0, netPacket.Size, SocketFlags.None, new IPEndPoint(IPAddress.Broadcast, port)) > 0;
-			if (_udpSocketv6 != null)
+			flag = this._udpSocketv4.SendTo(netPacket.RawData, 0, netPacket.Size, SocketFlags.None, new IPEndPoint(IPAddress.Broadcast, port)) > 0;
+			if (this._udpSocketv6 != null)
 			{
-				flag2 = _udpSocketv6.SendTo(netPacket.RawData, 0, netPacket.Size, SocketFlags.None, new IPEndPoint(MulticastAddressV6, port)) > 0;
+				flag2 = this._udpSocketv6.SendTo(netPacket.RawData, 0, netPacket.Size, SocketFlags.None, new IPEndPoint(NetManager.MulticastAddressV6, port)) > 0;
 			}
 		}
 		catch (Exception arg)
@@ -1972,22 +1973,22 @@ public class NetManager : IEnumerable<NetPeer>, IEnumerable
 		}
 		finally
 		{
-			PoolRecycle(netPacket);
+			this.PoolRecycle(netPacket);
 		}
 		return flag || flag2;
 	}
 
 	private void CloseSocket()
 	{
-		IsRunning = false;
-		_udpSocketv4?.Close();
-		_udpSocketv6?.Close();
-		_udpSocketv4 = null;
-		_udpSocketv6 = null;
-		if (_receiveThread != null && _receiveThread != Thread.CurrentThread)
+		this.IsRunning = false;
+		this._udpSocketv4?.Close();
+		this._udpSocketv6?.Close();
+		this._udpSocketv4 = null;
+		this._udpSocketv6 = null;
+		if (this._receiveThread != null && this._receiveThread != Thread.CurrentThread)
 		{
-			_receiveThread.Join();
+			this._receiveThread.Join();
 		}
-		_receiveThread = null;
+		this._receiveThread = null;
 	}
 }

@@ -12,8 +12,8 @@ public abstract class FormattablePrimitiveHintParameter<TValue> : PrimitiveHintP
 	protected FormattablePrimitiveHintParameter(TValue value, string format, Func<TValue, string, string> formatter, Func<NetworkReader, TValue> deserializer, Action<NetworkWriter, TValue> serializer)
 		: base(value, deserializer, serializer)
 	{
-		_formatter = formatter;
-		Format = format;
+		this._formatter = formatter;
+		this.Format = format;
 	}
 
 	protected FormattablePrimitiveHintParameter(Func<TValue, string, string> formatter, Func<NetworkReader, TValue> deserializer, Action<NetworkWriter, TValue> serializer)
@@ -24,18 +24,18 @@ public abstract class FormattablePrimitiveHintParameter<TValue> : PrimitiveHintP
 	public override void Deserialize(NetworkReader reader)
 	{
 		base.Deserialize(reader);
-		Format = reader.ReadString();
+		this.Format = reader.ReadString();
 	}
 
 	public override void Serialize(NetworkWriter writer)
 	{
 		base.Serialize(writer);
-		writer.WriteString(Format);
+		writer.WriteString(this.Format);
 	}
 
 	protected override string FormatValue(float progress, out bool stopFormatting)
 	{
 		stopFormatting = true;
-		return _formatter(base.Value, Format);
+		return this._formatter(base.Value, this.Format);
 	}
 }

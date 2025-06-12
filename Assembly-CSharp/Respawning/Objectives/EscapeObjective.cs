@@ -44,7 +44,7 @@ public class EscapeObjective : HumanObjectiveBase<EscapeObjectiveFootprint>
 		}
 		bool flag = hub.inventory.IsDisarmed();
 		Faction faction = hub.GetFaction();
-		Faction faction2 = (flag ? GetOpposingFaction(faction) : faction);
+		Faction faction2 = (flag ? this.GetOpposingFaction(faction) : faction);
 		if (faction2 != Faction.Unclassified)
 		{
 			float num = 0f;
@@ -60,15 +60,15 @@ public class EscapeObjective : HumanObjectiveBase<EscapeObjectiveFootprint>
 				num2 = (flag ? 5f : 5f);
 				break;
 			}
-			GrantInfluence(faction2, num2);
-			ReduceTimer(faction2, num);
+			base.GrantInfluence(faction2, num2);
+			base.ReduceTimer(faction2, num);
 			base.ObjectiveFootprint = new EscapeObjectiveFootprint
 			{
 				AchievingPlayer = new ObjectiveHubFootprint(hub, newRole),
 				InfluenceReward = num2,
 				TimeReward = num
 			};
-			ServerSendUpdate();
+			base.ServerSendUpdate();
 		}
 	}
 

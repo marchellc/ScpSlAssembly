@@ -18,37 +18,37 @@ public class PredefinedItemSpawnpoint : ItemSpawnpointBase, IScenarioProcessor
 
 	public void Select()
 	{
-		_isSelected = true;
+		this._isSelected = true;
 	}
 
 	public override bool TryGeneratePickup(out ItemPickupBase pickup)
 	{
-		if (!_isSelected && _scenarioDefined)
+		if (!this._isSelected && this._scenarioDefined)
 		{
 			pickup = null;
 			return false;
 		}
-		Transform parentRoom = PossibleSpawnpoints.RandomItem();
-		pickup = ItemDistributor.ServerCreatePickup(TargetItem, parentRoom);
+		Transform parentRoom = this.PossibleSpawnpoints.RandomItem();
+		pickup = ItemDistributor.ServerCreatePickup(this.TargetItem, parentRoom);
 		return pickup != null;
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		_scenarioDefined = Scenario != null;
-		if (_scenarioDefined)
+		this._scenarioDefined = this.Scenario != null;
+		if (this._scenarioDefined)
 		{
-			Scenario.Register(this);
+			this.Scenario.Register(this);
 		}
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		if (_scenarioDefined)
+		if (this._scenarioDefined)
 		{
-			Scenario.Unregister(this);
+			this.Scenario.Unregister(this);
 		}
 	}
 }

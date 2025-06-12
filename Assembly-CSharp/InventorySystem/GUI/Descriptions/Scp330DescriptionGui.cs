@@ -23,10 +23,10 @@ public class Scp330DescriptionGui : RadialDescriptionBase
 		{
 			return;
 		}
-		_title.text = scp330Bag.Name;
-		_desc.text = scp330Bag.Description;
-		_candies.text = string.Empty;
-		_candies.color = roleColor;
+		this._title.text = scp330Bag.Name;
+		this._desc.text = scp330Bag.Description;
+		this._candies.text = string.Empty;
+		this._candies.color = roleColor;
 		Dictionary<CandyKindID, int> dictionary = new Dictionary<CandyKindID, int>();
 		foreach (CandyKindID candy in scp330Bag.Candies)
 		{
@@ -47,11 +47,11 @@ public class Scp330DescriptionGui : RadialDescriptionBase
 				{
 					text2 = text2 + " (<color=white>" + value2 + "x</color>)";
 				}
-				TextMeshProUGUI candies = _candies;
+				TextMeshProUGUI candies = this._candies;
 				candies.text = candies.text + text2 + "\n";
 			}
 		}
-		_title.text = scp330Bag.Name;
-		_desc.text = scp330Bag.Description;
+		this._title.text = scp330Bag.Name;
+		this._desc.text = scp330Bag.Description;
 	}
 }

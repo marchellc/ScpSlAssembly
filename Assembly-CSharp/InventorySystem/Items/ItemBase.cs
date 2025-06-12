@@ -25,7 +25,7 @@ public abstract class ItemBase : MonoBehaviour, IIdentifierProvider
 
 	public ItemPickupBase PickupDropModel;
 
-	public ItemIdentifier ItemId => new ItemIdentifier(ItemTypeId, ItemSerial);
+	public ItemIdentifier ItemId => new ItemIdentifier(this.ItemTypeId, this.ItemSerial);
 
 	public virtual ItemDescriptionType DescriptionType => ItemDescriptionType.Default;
 
@@ -45,9 +45,9 @@ public abstract class ItemBase : MonoBehaviour, IIdentifierProvider
 	{
 		get
 		{
-			if (!AllowHolster)
+			if (!this.AllowHolster)
 			{
-				return !IsEquipped;
+				return !this.IsEquipped;
 			}
 			return true;
 		}
@@ -55,11 +55,11 @@ public abstract class ItemBase : MonoBehaviour, IIdentifierProvider
 
 	public abstract float Weight { get; }
 
-	internal Inventory OwnerInventory => Owner.inventory;
+	internal Inventory OwnerInventory => this.Owner.inventory;
 
-	internal virtual bool IsLocalPlayer => Owner.isLocalPlayer;
+	internal virtual bool IsLocalPlayer => this.Owner.isLocalPlayer;
 
-	internal virtual bool IsDummy => Owner.IsDummy;
+	internal virtual bool IsDummy => this.Owner.IsDummy;
 
 	public static event Action<ItemBase> OnItemAdded;
 
@@ -113,14 +113,14 @@ public abstract class ItemBase : MonoBehaviour, IIdentifierProvider
 		{
 			throw new InvalidOperationException("Method ServerDropItem can only be executed on the server.");
 		}
-		if (PickupDropModel == null)
+		if (this.PickupDropModel == null)
 		{
 			Debug.LogError("No pickup drop model set. Could not drop the item.");
 			return null;
 		}
-		ItemPickupBase itemPickupBase = InventoryExtensions.ServerCreatePickup(psi: new PickupSyncInfo(ItemTypeId, Weight, ItemSerial), inv: OwnerInventory, item: this, spawn: spawn);
-		OwnerInventory.ServerRemoveItem(ItemSerial, itemPickupBase);
-		itemPickupBase.PreviousOwner = new Footprint(Owner);
+		ItemPickupBase itemPickupBase = InventoryExtensions.ServerCreatePickup(psi: new PickupSyncInfo(this.ItemTypeId, this.Weight, this.ItemSerial), inv: this.OwnerInventory, item: this, spawn: spawn);
+		this.OwnerInventory.ServerRemoveItem(this.ItemSerial, itemPickupBase);
+		itemPickupBase.PreviousOwner = new Footprint(this.Owner);
 		return itemPickupBase;
 	}
 }

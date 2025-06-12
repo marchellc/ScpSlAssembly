@@ -9,7 +9,7 @@ public interface IHolidayItem
 	{
 		get
 		{
-			if (TargetHolidays.IsAnyHolidayActive(mustBeForced: true, ignoreServerConfig: true))
+			if (this.TargetHolidays.IsAnyHolidayActive(mustBeForced: true, ignoreServerConfig: true))
 			{
 				return true;
 			}

@@ -31,7 +31,7 @@ public static class HumanBlockingRewards
 
 	private static void ProcessBlockage(Scp079Role role, DoorVariant dv)
 	{
-		if (dv.TargetState || _lastBlockTime + 5.0 > NetworkTime.time)
+		if (dv.TargetState || HumanBlockingRewards._lastBlockTime + 5.0 > NetworkTime.time)
 		{
 			return;
 		}
@@ -39,10 +39,10 @@ public static class HumanBlockingRewards
 		RoomIdentifier[] rooms = dv.Rooms;
 		for (int i = 0; i < rooms.Length; i++)
 		{
-			if (CheckRoom(rooms[i], position))
+			if (HumanBlockingRewards.CheckRoom(rooms[i], position))
 			{
 				Scp079RewardManager.GrantExp(role, 5, Scp079HudTranslation.ExpGainBlockingHuman);
-				_lastBlockTime = NetworkTime.time;
+				HumanBlockingRewards._lastBlockTime = NetworkTime.time;
 				break;
 			}
 		}
@@ -50,8 +50,8 @@ public static class HumanBlockingRewards
 
 	private static bool CheckRoom(RoomIdentifier room, Vector3 doorPos)
 	{
-		RoomScps.Clear();
-		RoomHumans.Clear();
+		HumanBlockingRewards.RoomScps.Clear();
+		HumanBlockingRewards.RoomHumans.Clear();
 		bool flag = false;
 		bool flag2 = false;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
@@ -60,12 +60,12 @@ public static class HumanBlockingRewards
 			{
 				if (allHub.IsSCP())
 				{
-					RoomScps.Add(fpcModule);
+					HumanBlockingRewards.RoomScps.Add(fpcModule);
 					flag = true;
 				}
 				else
 				{
-					RoomHumans.Add(fpcModule);
+					HumanBlockingRewards.RoomHumans.Add(fpcModule);
 					flag2 = true;
 				}
 			}
@@ -74,18 +74,18 @@ public static class HumanBlockingRewards
 		{
 			return false;
 		}
-		foreach (FirstPersonMovementModule roomScp in RoomScps)
+		foreach (FirstPersonMovementModule roomScp in HumanBlockingRewards.RoomScps)
 		{
-			Vector3 lhs = NormalizeIgnoreY(roomScp.Motor.MoveDirection.normalized);
-			Vector3 rhs = NormalizeIgnoreY(doorPos - roomScp.Position);
+			Vector3 lhs = HumanBlockingRewards.NormalizeIgnoreY(roomScp.Motor.MoveDirection.normalized);
+			Vector3 rhs = HumanBlockingRewards.NormalizeIgnoreY(doorPos - roomScp.Position);
 			if (Vector3.Dot(lhs, rhs) < 0.5f)
 			{
 				continue;
 			}
-			foreach (FirstPersonMovementModule roomHuman in RoomHumans)
+			foreach (FirstPersonMovementModule roomHuman in HumanBlockingRewards.RoomHumans)
 			{
 				Vector3 direction = roomHuman.Position - roomScp.Position;
-				if (!(direction.sqrMagnitude > 400f) && Vector3.Dot(lhs, NormalizeIgnoreY(direction)) >= 0.5f)
+				if (!(direction.sqrMagnitude > 400f) && Vector3.Dot(lhs, HumanBlockingRewards.NormalizeIgnoreY(direction)) >= 0.5f)
 				{
 					return true;
 				}

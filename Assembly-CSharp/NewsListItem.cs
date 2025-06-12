@@ -40,9 +40,9 @@ public readonly struct NewsListItem : IEquatable<NewsListItem>, IJsonSerializabl
 
 	public bool Equals(NewsListItem other)
 	{
-		if (gid == other.gid && title == other.title && url == other.url && is_external_url == other.is_external_url && author == other.author && contents == other.contents && feedlabel == other.feedlabel && date == other.date && feedname == other.feedname)
+		if (this.gid == other.gid && this.title == other.title && this.url == other.url && this.is_external_url == other.is_external_url && this.author == other.author && this.contents == other.contents && this.feedlabel == other.feedlabel && this.date == other.date && this.feedname == other.feedname)
 		{
-			return feedtype == other.feedtype;
+			return this.feedtype == other.feedtype;
 		}
 		return false;
 	}
@@ -51,14 +51,14 @@ public readonly struct NewsListItem : IEquatable<NewsListItem>, IJsonSerializabl
 	{
 		if (obj is NewsListItem other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return gid.GetHashCode();
+		return this.gid.GetHashCode();
 	}
 
 	public static bool operator ==(NewsListItem left, NewsListItem right)

@@ -120,7 +120,7 @@ internal struct GuidBits
 	public GuidBits(ref Guid value)
 	{
 		this = default(GuidBits);
-		Value = value;
+		this.Value = value;
 	}
 
 	public GuidBits(ref ArraySegment<byte> utf8string)
@@ -132,70 +132,70 @@ internal struct GuidBits
 		{
 			if (BitConverter.IsLittleEndian)
 			{
-				Byte0 = Parse(array, offset + 6);
-				Byte1 = Parse(array, offset + 4);
-				Byte2 = Parse(array, offset + 2);
-				Byte3 = Parse(array, offset);
-				Byte4 = Parse(array, offset + 10);
-				Byte5 = Parse(array, offset + 8);
-				Byte6 = Parse(array, offset + 14);
-				Byte7 = Parse(array, offset + 12);
+				this.Byte0 = GuidBits.Parse(array, offset + 6);
+				this.Byte1 = GuidBits.Parse(array, offset + 4);
+				this.Byte2 = GuidBits.Parse(array, offset + 2);
+				this.Byte3 = GuidBits.Parse(array, offset);
+				this.Byte4 = GuidBits.Parse(array, offset + 10);
+				this.Byte5 = GuidBits.Parse(array, offset + 8);
+				this.Byte6 = GuidBits.Parse(array, offset + 14);
+				this.Byte7 = GuidBits.Parse(array, offset + 12);
 			}
 			else
 			{
-				Byte0 = Parse(array, offset);
-				Byte1 = Parse(array, offset + 2);
-				Byte2 = Parse(array, offset + 4);
-				Byte3 = Parse(array, offset + 6);
-				Byte4 = Parse(array, offset + 8);
-				Byte5 = Parse(array, offset + 10);
-				Byte6 = Parse(array, offset + 12);
-				Byte7 = Parse(array, offset + 14);
+				this.Byte0 = GuidBits.Parse(array, offset);
+				this.Byte1 = GuidBits.Parse(array, offset + 2);
+				this.Byte2 = GuidBits.Parse(array, offset + 4);
+				this.Byte3 = GuidBits.Parse(array, offset + 6);
+				this.Byte4 = GuidBits.Parse(array, offset + 8);
+				this.Byte5 = GuidBits.Parse(array, offset + 10);
+				this.Byte6 = GuidBits.Parse(array, offset + 12);
+				this.Byte7 = GuidBits.Parse(array, offset + 14);
 			}
-			Byte8 = Parse(array, offset + 16);
-			Byte9 = Parse(array, offset + 18);
-			Byte10 = Parse(array, offset + 20);
-			Byte11 = Parse(array, offset + 22);
-			Byte12 = Parse(array, offset + 24);
-			Byte13 = Parse(array, offset + 26);
-			Byte14 = Parse(array, offset + 28);
-			Byte15 = Parse(array, offset + 30);
+			this.Byte8 = GuidBits.Parse(array, offset + 16);
+			this.Byte9 = GuidBits.Parse(array, offset + 18);
+			this.Byte10 = GuidBits.Parse(array, offset + 20);
+			this.Byte11 = GuidBits.Parse(array, offset + 22);
+			this.Byte12 = GuidBits.Parse(array, offset + 24);
+			this.Byte13 = GuidBits.Parse(array, offset + 26);
+			this.Byte14 = GuidBits.Parse(array, offset + 28);
+			this.Byte15 = GuidBits.Parse(array, offset + 30);
 			return;
 		}
 		if (utf8string.Count == 36)
 		{
 			if (BitConverter.IsLittleEndian)
 			{
-				Byte0 = Parse(array, offset + 6);
-				Byte1 = Parse(array, offset + 4);
-				Byte2 = Parse(array, offset + 2);
-				Byte3 = Parse(array, offset);
+				this.Byte0 = GuidBits.Parse(array, offset + 6);
+				this.Byte1 = GuidBits.Parse(array, offset + 4);
+				this.Byte2 = GuidBits.Parse(array, offset + 2);
+				this.Byte3 = GuidBits.Parse(array, offset);
 				if (array[offset + 8] == 45)
 				{
-					Byte4 = Parse(array, offset + 11);
-					Byte5 = Parse(array, offset + 9);
+					this.Byte4 = GuidBits.Parse(array, offset + 11);
+					this.Byte5 = GuidBits.Parse(array, offset + 9);
 					if (array[offset + 13] == 45)
 					{
-						Byte6 = Parse(array, offset + 16);
-						Byte7 = Parse(array, offset + 14);
+						this.Byte6 = GuidBits.Parse(array, offset + 16);
+						this.Byte7 = GuidBits.Parse(array, offset + 14);
 						goto IL_02e0;
 					}
 				}
 			}
 			else
 			{
-				Byte0 = Parse(array, offset);
-				Byte1 = Parse(array, offset + 2);
-				Byte2 = Parse(array, offset + 4);
-				Byte3 = Parse(array, offset + 6);
+				this.Byte0 = GuidBits.Parse(array, offset);
+				this.Byte1 = GuidBits.Parse(array, offset + 2);
+				this.Byte2 = GuidBits.Parse(array, offset + 4);
+				this.Byte3 = GuidBits.Parse(array, offset + 6);
 				if (array[offset + 8] == 45)
 				{
-					Byte4 = Parse(array, offset + 9);
-					Byte5 = Parse(array, offset + 11);
+					this.Byte4 = GuidBits.Parse(array, offset + 9);
+					this.Byte5 = GuidBits.Parse(array, offset + 11);
 					if (array[offset + 13] == 45)
 					{
-						Byte6 = Parse(array, offset + 14);
-						Byte7 = Parse(array, offset + 16);
+						this.Byte6 = GuidBits.Parse(array, offset + 14);
+						this.Byte7 = GuidBits.Parse(array, offset + 16);
 						goto IL_02e0;
 					}
 				}
@@ -205,16 +205,16 @@ internal struct GuidBits
 		IL_02e0:
 		if (array[offset + 18] == 45)
 		{
-			Byte8 = Parse(array, offset + 19);
-			Byte9 = Parse(array, offset + 21);
+			this.Byte8 = GuidBits.Parse(array, offset + 19);
+			this.Byte9 = GuidBits.Parse(array, offset + 21);
 			if (array[offset + 23] == 45)
 			{
-				Byte10 = Parse(array, offset + 24);
-				Byte11 = Parse(array, offset + 26);
-				Byte12 = Parse(array, offset + 28);
-				Byte13 = Parse(array, offset + 30);
-				Byte14 = Parse(array, offset + 32);
-				Byte15 = Parse(array, offset + 34);
+				this.Byte10 = GuidBits.Parse(array, offset + 24);
+				this.Byte11 = GuidBits.Parse(array, offset + 26);
+				this.Byte12 = GuidBits.Parse(array, offset + 28);
+				this.Byte13 = GuidBits.Parse(array, offset + 30);
+				this.Byte14 = GuidBits.Parse(array, offset + 32);
+				this.Byte15 = GuidBits.Parse(array, offset + 34);
 				return;
 			}
 		}
@@ -225,7 +225,7 @@ internal struct GuidBits
 
 	private static byte Parse(byte[] bytes, int highOffset)
 	{
-		return (byte)(SwitchParse(bytes[highOffset]) * 16 + SwitchParse(bytes[highOffset + 1]));
+		return (byte)(GuidBits.SwitchParse(bytes[highOffset]) * 16 + GuidBits.SwitchParse(bytes[highOffset + 1]));
 	}
 
 	private static byte SwitchParse(byte b)
@@ -266,63 +266,63 @@ internal struct GuidBits
 	{
 		if (BitConverter.IsLittleEndian)
 		{
-			buffer[offset + 6] = byteToHexStringHigh[Byte0];
-			buffer[offset + 7] = byteToHexStringLow[Byte0];
-			buffer[offset + 4] = byteToHexStringHigh[Byte1];
-			buffer[offset + 5] = byteToHexStringLow[Byte1];
-			buffer[offset + 2] = byteToHexStringHigh[Byte2];
-			buffer[offset + 3] = byteToHexStringLow[Byte2];
-			buffer[offset] = byteToHexStringHigh[Byte3];
-			buffer[offset + 1] = byteToHexStringLow[Byte3];
+			buffer[offset + 6] = GuidBits.byteToHexStringHigh[this.Byte0];
+			buffer[offset + 7] = GuidBits.byteToHexStringLow[this.Byte0];
+			buffer[offset + 4] = GuidBits.byteToHexStringHigh[this.Byte1];
+			buffer[offset + 5] = GuidBits.byteToHexStringLow[this.Byte1];
+			buffer[offset + 2] = GuidBits.byteToHexStringHigh[this.Byte2];
+			buffer[offset + 3] = GuidBits.byteToHexStringLow[this.Byte2];
+			buffer[offset] = GuidBits.byteToHexStringHigh[this.Byte3];
+			buffer[offset + 1] = GuidBits.byteToHexStringLow[this.Byte3];
 			buffer[offset + 8] = 45;
-			buffer[offset + 11] = byteToHexStringHigh[Byte4];
-			buffer[offset + 12] = byteToHexStringLow[Byte4];
-			buffer[offset + 9] = byteToHexStringHigh[Byte5];
-			buffer[offset + 10] = byteToHexStringLow[Byte5];
+			buffer[offset + 11] = GuidBits.byteToHexStringHigh[this.Byte4];
+			buffer[offset + 12] = GuidBits.byteToHexStringLow[this.Byte4];
+			buffer[offset + 9] = GuidBits.byteToHexStringHigh[this.Byte5];
+			buffer[offset + 10] = GuidBits.byteToHexStringLow[this.Byte5];
 			buffer[offset + 13] = 45;
-			buffer[offset + 16] = byteToHexStringHigh[Byte6];
-			buffer[offset + 17] = byteToHexStringLow[Byte6];
-			buffer[offset + 14] = byteToHexStringHigh[Byte7];
-			buffer[offset + 15] = byteToHexStringLow[Byte7];
+			buffer[offset + 16] = GuidBits.byteToHexStringHigh[this.Byte6];
+			buffer[offset + 17] = GuidBits.byteToHexStringLow[this.Byte6];
+			buffer[offset + 14] = GuidBits.byteToHexStringHigh[this.Byte7];
+			buffer[offset + 15] = GuidBits.byteToHexStringLow[this.Byte7];
 		}
 		else
 		{
-			buffer[offset] = byteToHexStringHigh[Byte0];
-			buffer[offset + 1] = byteToHexStringLow[Byte0];
-			buffer[offset + 2] = byteToHexStringHigh[Byte1];
-			buffer[offset + 3] = byteToHexStringLow[Byte1];
-			buffer[offset + 4] = byteToHexStringHigh[Byte2];
-			buffer[offset + 5] = byteToHexStringLow[Byte2];
-			buffer[offset + 6] = byteToHexStringHigh[Byte3];
-			buffer[offset + 7] = byteToHexStringLow[Byte3];
+			buffer[offset] = GuidBits.byteToHexStringHigh[this.Byte0];
+			buffer[offset + 1] = GuidBits.byteToHexStringLow[this.Byte0];
+			buffer[offset + 2] = GuidBits.byteToHexStringHigh[this.Byte1];
+			buffer[offset + 3] = GuidBits.byteToHexStringLow[this.Byte1];
+			buffer[offset + 4] = GuidBits.byteToHexStringHigh[this.Byte2];
+			buffer[offset + 5] = GuidBits.byteToHexStringLow[this.Byte2];
+			buffer[offset + 6] = GuidBits.byteToHexStringHigh[this.Byte3];
+			buffer[offset + 7] = GuidBits.byteToHexStringLow[this.Byte3];
 			buffer[offset + 8] = 45;
-			buffer[offset + 9] = byteToHexStringHigh[Byte4];
-			buffer[offset + 10] = byteToHexStringLow[Byte4];
-			buffer[offset + 11] = byteToHexStringHigh[Byte5];
-			buffer[offset + 12] = byteToHexStringLow[Byte5];
+			buffer[offset + 9] = GuidBits.byteToHexStringHigh[this.Byte4];
+			buffer[offset + 10] = GuidBits.byteToHexStringLow[this.Byte4];
+			buffer[offset + 11] = GuidBits.byteToHexStringHigh[this.Byte5];
+			buffer[offset + 12] = GuidBits.byteToHexStringLow[this.Byte5];
 			buffer[offset + 13] = 45;
-			buffer[offset + 14] = byteToHexStringHigh[Byte6];
-			buffer[offset + 15] = byteToHexStringLow[Byte6];
-			buffer[offset + 16] = byteToHexStringHigh[Byte7];
-			buffer[offset + 17] = byteToHexStringLow[Byte7];
+			buffer[offset + 14] = GuidBits.byteToHexStringHigh[this.Byte6];
+			buffer[offset + 15] = GuidBits.byteToHexStringLow[this.Byte6];
+			buffer[offset + 16] = GuidBits.byteToHexStringHigh[this.Byte7];
+			buffer[offset + 17] = GuidBits.byteToHexStringLow[this.Byte7];
 		}
 		buffer[offset + 18] = 45;
-		buffer[offset + 19] = byteToHexStringHigh[Byte8];
-		buffer[offset + 20] = byteToHexStringLow[Byte8];
-		buffer[offset + 21] = byteToHexStringHigh[Byte9];
-		buffer[offset + 22] = byteToHexStringLow[Byte9];
+		buffer[offset + 19] = GuidBits.byteToHexStringHigh[this.Byte8];
+		buffer[offset + 20] = GuidBits.byteToHexStringLow[this.Byte8];
+		buffer[offset + 21] = GuidBits.byteToHexStringHigh[this.Byte9];
+		buffer[offset + 22] = GuidBits.byteToHexStringLow[this.Byte9];
 		buffer[offset + 23] = 45;
-		buffer[offset + 24] = byteToHexStringHigh[Byte10];
-		buffer[offset + 25] = byteToHexStringLow[Byte10];
-		buffer[offset + 26] = byteToHexStringHigh[Byte11];
-		buffer[offset + 27] = byteToHexStringLow[Byte11];
-		buffer[offset + 28] = byteToHexStringHigh[Byte12];
-		buffer[offset + 29] = byteToHexStringLow[Byte12];
-		buffer[offset + 30] = byteToHexStringHigh[Byte13];
-		buffer[offset + 31] = byteToHexStringLow[Byte13];
-		buffer[offset + 32] = byteToHexStringHigh[Byte14];
-		buffer[offset + 33] = byteToHexStringLow[Byte14];
-		buffer[offset + 34] = byteToHexStringHigh[Byte15];
-		buffer[offset + 35] = byteToHexStringLow[Byte15];
+		buffer[offset + 24] = GuidBits.byteToHexStringHigh[this.Byte10];
+		buffer[offset + 25] = GuidBits.byteToHexStringLow[this.Byte10];
+		buffer[offset + 26] = GuidBits.byteToHexStringHigh[this.Byte11];
+		buffer[offset + 27] = GuidBits.byteToHexStringLow[this.Byte11];
+		buffer[offset + 28] = GuidBits.byteToHexStringHigh[this.Byte12];
+		buffer[offset + 29] = GuidBits.byteToHexStringLow[this.Byte12];
+		buffer[offset + 30] = GuidBits.byteToHexStringHigh[this.Byte13];
+		buffer[offset + 31] = GuidBits.byteToHexStringLow[this.Byte13];
+		buffer[offset + 32] = GuidBits.byteToHexStringHigh[this.Byte14];
+		buffer[offset + 33] = GuidBits.byteToHexStringLow[this.Byte14];
+		buffer[offset + 34] = GuidBits.byteToHexStringHigh[this.Byte15];
+		buffer[offset + 35] = GuidBits.byteToHexStringLow[this.Byte15];
 	}
 }

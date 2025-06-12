@@ -8,10 +8,10 @@ public class LoadingCircle : MonoBehaviour
 
 	private void FixedUpdate()
 	{
-		i++;
-		if (i > framesToNextRotation)
+		this.i++;
+		if (this.i > this.framesToNextRotation)
 		{
-			i = 0;
+			this.i = 0;
 			base.transform.Rotate(Vector3.forward * -45f, Space.Self);
 		}
 	}

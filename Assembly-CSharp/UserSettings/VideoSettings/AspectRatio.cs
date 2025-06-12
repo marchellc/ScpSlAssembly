@@ -13,9 +13,9 @@ public struct AspectRatio
 	public bool CheckRes(Resolution res)
 	{
 		float num = (float)res.width / (float)res.height;
-		if (num >= RatioMinMax.x)
+		if (num >= this.RatioMinMax.x)
 		{
-			return num <= RatioMinMax.y;
+			return num <= this.RatioMinMax.y;
 		}
 		return false;
 	}

@@ -11,42 +11,42 @@ public class SoundPlayer : MonoBehaviour
 
 	private void Start()
 	{
-		_source = GetComponent<AudioSource>();
-		LoadInspectorCurves();
+		this._source = base.GetComponent<AudioSource>();
+		this.LoadInspectorCurves();
 	}
 
 	protected void LoadInspectorCurves()
 	{
-		CurvePreset[] curves = Curves;
+		CurvePreset[] curves = this.Curves;
 		foreach (CurvePreset curvePreset in curves)
 		{
-			if (!_curves.ContainsKey(curvePreset.Type))
+			if (!this._curves.ContainsKey(curvePreset.Type))
 			{
-				_curves.Add(curvePreset.Type, curvePreset);
+				this._curves.Add(curvePreset.Type, curvePreset);
 			}
 		}
 	}
 
 	public void Play(AudioClip clip, FalloffType falloff = FalloffType.Linear, float maxDistance = -1f)
 	{
-		if (_curves.TryGetValue(falloff, out var value))
+		if (this._curves.TryGetValue(falloff, out var value))
 		{
-			_source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, value.FalloffCurve);
+			this._source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, value.FalloffCurve);
 			if (maxDistance > 0f)
 			{
-				_source.maxDistance = maxDistance;
+				this._source.maxDistance = maxDistance;
 			}
-			_source.clip = clip;
-			_source.Play();
+			this._source.clip = clip;
+			this._source.Play();
 		}
 	}
 
 	public void Stop()
 	{
-		if (_source.isPlaying)
+		if (this._source.isPlaying)
 		{
-			_source.Stop();
+			this._source.Stop();
 		}
-		_source.clip = null;
+		this._source.clip = null;
 	}
 }

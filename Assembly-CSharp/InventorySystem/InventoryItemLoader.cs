@@ -19,17 +19,17 @@ public static class InventoryItemLoader
 	{
 		get
 		{
-			if (!_loaded)
+			if (!InventoryItemLoader._loaded)
 			{
-				ForceReload();
+				InventoryItemLoader.ForceReload();
 			}
-			return _loadedItems;
+			return InventoryItemLoader._loadedItems;
 		}
 	}
 
 	public static bool TryGetItem<T>(ItemType itemType, out T result) where T : ItemBase
 	{
-		if (!AvailableItems.TryGetValue(itemType, out var value) || !(value is T val))
+		if (!InventoryItemLoader.AvailableItems.TryGetValue(itemType, out var value) || !(value is T val))
 		{
 			result = null;
 			return false;
@@ -47,14 +47,14 @@ public static class InventoryItemLoader
 	private static void RegisterPrefabs()
 	{
 		HashSet<GameObject> hashSet = HashSetPool<GameObject>.Shared.Rent();
-		foreach (ItemBase value in AvailableItems.Values)
+		foreach (ItemBase value in InventoryItemLoader.AvailableItems.Values)
 		{
 			if (!(value.PickupDropModel == null) && hashSet.Add(value.PickupDropModel.gameObject))
 			{
 				NetworkClient.RegisterPrefab(value.PickupDropModel.gameObject);
 			}
 		}
-		Debug.Log("Successfully registered " + hashSet.Count + " pickups for " + AvailableItems.Count + " items.");
+		Debug.Log("Successfully registered " + hashSet.Count + " pickups for " + InventoryItemLoader.AvailableItems.Count + " items.");
 		HashSetPool<GameObject>.Shared.Return(hashSet);
 	}
 
@@ -63,7 +63,7 @@ public static class InventoryItemLoader
 		ItemType itemType = ItemType.None;
 		try
 		{
-			_loadedItems = new Dictionary<ItemType, ItemBase>();
+			InventoryItemLoader._loadedItems = new Dictionary<ItemType, ItemBase>();
 			ItemBase[] array = Resources.LoadAll<ItemBase>("Defined Items");
 			Array.Sort(array, delegate(ItemBase x, ItemBase y)
 			{
@@ -76,17 +76,17 @@ public static class InventoryItemLoader
 				if (!(itemBase is IHolidayItem { IsAvailable: false }) && itemBase.ItemTypeId != ItemType.None)
 				{
 					itemType = itemBase.ItemTypeId;
-					_loadedItems[itemBase.ItemTypeId] = itemBase;
-					itemBase.OnTemplateReloaded(_loaded);
+					InventoryItemLoader._loadedItems[itemBase.ItemTypeId] = itemBase;
+					itemBase.OnTemplateReloaded(InventoryItemLoader._loaded);
 				}
 			}
-			_loaded = true;
+			InventoryItemLoader._loaded = true;
 		}
 		catch (Exception exception)
 		{
 			Debug.LogError("Error while loading items from the resources folder. Last assigned item: " + itemType);
 			Debug.LogException(exception);
-			_loaded = false;
+			InventoryItemLoader._loaded = false;
 		}
 	}
 }

@@ -39,7 +39,7 @@ public class OverlayAnimationsSubcontroller : SubcontrollerBehaviour, IPoolReset
 	public override void OnReassigned()
 	{
 		base.OnReassigned();
-		OverlayAnimationsBase[] overlayAnimations = _overlayAnimations;
+		OverlayAnimationsBase[] overlayAnimations = this._overlayAnimations;
 		for (int i = 0; i < overlayAnimations.Length; i++)
 		{
 			overlayAnimations[i].OnReassigned();
@@ -48,9 +48,9 @@ public class OverlayAnimationsSubcontroller : SubcontrollerBehaviour, IPoolReset
 
 	public void ResetObject()
 	{
-		_lastActive?.OnStopped();
-		_lastActive = null;
-		OverlayAnimationsBase[] overlayAnimations = _overlayAnimations;
+		this._lastActive?.OnStopped();
+		this._lastActive = null;
+		OverlayAnimationsBase[] overlayAnimations = this._overlayAnimations;
 		for (int i = 0; i < overlayAnimations.Length; i++)
 		{
 			overlayAnimations[i].OnReset();
@@ -60,14 +60,14 @@ public class OverlayAnimationsSubcontroller : SubcontrollerBehaviour, IPoolReset
 	public override void Init(AnimatedCharacterModel model, int index)
 	{
 		base.Init(model, index);
-		if (!model.TryGetSubcontroller<InventorySubcontroller>(out _inventory))
+		if (!model.TryGetSubcontroller<InventorySubcontroller>(out this._inventory))
 		{
 			throw new InvalidOperationException("Unable to setup OverlayAnimationsSubcontroller - missing dependency: InventorySubcontroller.");
 		}
-		_inventory.OnHeldItemUpdated += UpdateAll;
-		for (int i = 0; i < _overlayAnimations.Length; i++)
+		this._inventory.OnHeldItemUpdated += UpdateAll;
+		for (int i = 0; i < this._overlayAnimations.Length; i++)
 		{
-			_overlayAnimations[i].Init(this, i);
+			this._overlayAnimations[i].Init(this, i);
 		}
 	}
 
@@ -75,7 +75,7 @@ public class OverlayAnimationsSubcontroller : SubcontrollerBehaviour, IPoolReset
 	{
 		base.ProcessRpc(reader);
 		int index = reader.ReadByte();
-		if (_overlayAnimations.TryGet(index, out var element))
+		if (this._overlayAnimations.TryGet(index, out var element))
 		{
 			element.ProcessRpc(reader);
 		}
@@ -83,14 +83,14 @@ public class OverlayAnimationsSubcontroller : SubcontrollerBehaviour, IPoolReset
 
 	private void OnAnimatorIK(int layerIndex)
 	{
-		ScaleIk(AvatarIKGoal.LeftHand, _leftIkScale);
-		ScaleIk(AvatarIKGoal.RightHand, _rightIkScale);
+		this.ScaleIk(AvatarIKGoal.LeftHand, this._leftIkScale);
+		this.ScaleIk(AvatarIKGoal.RightHand, this._rightIkScale);
 	}
 
 	private void UpdateAll()
 	{
 		OverlayAnimationsBase overlayAnimationsBase = null;
-		OverlayAnimationsBase[] overlayAnimations = _overlayAnimations;
+		OverlayAnimationsBase[] overlayAnimations = this._overlayAnimations;
 		foreach (OverlayAnimationsBase overlayAnimationsBase2 in overlayAnimations)
 		{
 			if (overlayAnimationsBase2.WantsToPlay)
@@ -106,17 +106,17 @@ public class OverlayAnimationsSubcontroller : SubcontrollerBehaviour, IPoolReset
 				}
 			}
 		}
-		if (overlayAnimationsBase == _lastActive)
+		if (overlayAnimationsBase == this._lastActive)
 		{
-			UpdateActive();
+			this.UpdateActive();
 		}
 		else
 		{
-			UpdateSwitch(overlayAnimationsBase);
+			this.UpdateSwitch(overlayAnimationsBase);
 		}
-		if (_lastActive != null)
+		if (this._lastActive != null)
 		{
-			base.Model.AnimatorOverride[_animationToReplace] = _lastActive.Clip;
+			base.Model.AnimatorOverride[this._animationToReplace] = this._lastActive.Clip;
 		}
 	}
 
@@ -124,35 +124,35 @@ public class OverlayAnimationsSubcontroller : SubcontrollerBehaviour, IPoolReset
 	{
 		bool flag = false;
 		float speedMultiplier = ((newMatch == null) ? 6.5f : 11.5f);
-		ItemLayerLink[] layers = _layers;
+		ItemLayerLink[] layers = this._layers;
 		foreach (ItemLayerLink layer in layers)
 		{
-			if (AdjustLayerWeight(layer, 0f, speedMultiplier) > 0f)
+			if (this.AdjustLayerWeight(layer, 0f, speedMultiplier) > 0f)
 			{
 				flag = true;
 			}
 		}
 		if (!flag)
 		{
-			OverlayAnimationsBase lastActive = _lastActive;
-			_lastActive = newMatch;
+			OverlayAnimationsBase lastActive = this._lastActive;
+			this._lastActive = newMatch;
 			lastActive?.OnStopped();
 			newMatch?.OnStarted();
 			if (lastActive != null)
 			{
-				UpdateActive();
+				this.UpdateActive();
 			}
 		}
 	}
 
 	private void UpdateActive()
 	{
-		_lastActive?.UpdateActive();
-		ItemLayerLink[] layers = _layers;
+		this._lastActive?.UpdateActive();
+		ItemLayerLink[] layers = this._layers;
 		foreach (ItemLayerLink itemLayerLink in layers)
 		{
-			float num = Mathf.Clamp01(_lastActive?.GetLayerWeight(itemLayerLink.Layer3p) ?? 0f);
-			if (num > 0f && _inventory.TryGetCurrentInstance(out var instance))
+			float num = Mathf.Clamp01(this._lastActive?.GetLayerWeight(itemLayerLink.Layer3p) ?? 0f);
+			if (num > 0f && this._inventory.TryGetCurrentInstance(out var instance))
 			{
 				ThirdpersonLayerWeight weightForLayer = instance.GetWeightForLayer(itemLayerLink.Layer3p);
 				if (!weightForLayer.AllowOther)
@@ -160,7 +160,7 @@ public class OverlayAnimationsSubcontroller : SubcontrollerBehaviour, IPoolReset
 					num -= weightForLayer.Weight;
 				}
 			}
-			AdjustLayerWeight(itemLayerLink, num, 6.5f);
+			this.AdjustLayerWeight(itemLayerLink, num, 6.5f);
 		}
 	}
 
@@ -172,10 +172,10 @@ public class OverlayAnimationsSubcontroller : SubcontrollerBehaviour, IPoolReset
 		switch (layer.Layer3p)
 		{
 		case AnimItemLayer3p.Left:
-			_leftIkScale = Mathf.Clamp01(1f - num);
+			this._leftIkScale = Mathf.Clamp01(1f - num);
 			break;
 		case AnimItemLayer3p.Right:
-			_rightIkScale = Mathf.Clamp01(1f - num);
+			this._rightIkScale = Mathf.Clamp01(1f - num);
 			break;
 		}
 		return num;

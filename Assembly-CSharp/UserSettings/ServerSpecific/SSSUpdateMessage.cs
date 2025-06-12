@@ -17,27 +17,27 @@ public readonly struct SSSUpdateMessage : NetworkMessage
 
 	public SSSUpdateMessage(NetworkReader reader)
 	{
-		Id = reader.ReadInt();
-		TypeCode = reader.ReadByte();
+		this.Id = reader.ReadInt();
+		this.TypeCode = reader.ReadByte();
 		int count = reader.ReadInt();
-		DeserializedPooledPayload = ListPool<byte>.Shared.Rent(reader.ReadBytesSegment(count));
-		ServersidePayloadWriter = null;
+		this.DeserializedPooledPayload = ListPool<byte>.Shared.Rent(reader.ReadBytesSegment(count));
+		this.ServersidePayloadWriter = null;
 	}
 
 	public SSSUpdateMessage(ServerSpecificSettingBase setting, Action<NetworkWriter> writerFunc)
 	{
-		Id = setting.SettingId;
-		TypeCode = ServerSpecificSettingsSync.GetCodeFromType(setting.GetType());
-		DeserializedPooledPayload = null;
-		ServersidePayloadWriter = writerFunc;
+		this.Id = setting.SettingId;
+		this.TypeCode = ServerSpecificSettingsSync.GetCodeFromType(setting.GetType());
+		this.DeserializedPooledPayload = null;
+		this.ServersidePayloadWriter = writerFunc;
 	}
 
 	public void Serialize(NetworkWriter writer)
 	{
-		writer.WriteInt(Id);
-		writer.WriteByte(TypeCode);
+		writer.WriteInt(this.Id);
+		writer.WriteByte(this.TypeCode);
 		using NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-		ServersidePayloadWriter?.Invoke(networkWriterPooled);
+		this.ServersidePayloadWriter?.Invoke(networkWriterPooled);
 		writer.WriteArraySegment(networkWriterPooled.ToArraySegment());
 	}
 }

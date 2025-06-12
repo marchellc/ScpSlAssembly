@@ -43,9 +43,9 @@ public class UnmuteCommand : ICommand, IUsageProvider
 		{
 			foreach (ReferenceHub item in list)
 			{
-				PlayerUnmutingEventArgs playerUnmutingEventArgs = new PlayerUnmutingEventArgs(item, issuer, isIntercom: false);
-				PlayerEvents.OnUnmuting(playerUnmutingEventArgs);
-				if (playerUnmutingEventArgs.IsAllowed)
+				PlayerUnmutingEventArgs e = new PlayerUnmutingEventArgs(item, issuer, isIntercom: false);
+				PlayerEvents.OnUnmuting(e);
+				if (e.IsAllowed)
 				{
 					VoiceChatMutes.RevokeLocalMute(item.authManager.UserId);
 					PlayerEvents.OnUnmuted(new PlayerUnmutedEventArgs(item, issuer, isIntercom: false));

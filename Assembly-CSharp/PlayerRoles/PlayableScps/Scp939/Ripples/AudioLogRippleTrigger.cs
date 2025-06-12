@@ -15,7 +15,7 @@ public class AudioLogRippleTrigger : RippleTriggerBase
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_cooldowns.Clear();
+		this._cooldowns.Clear();
 	}
 
 	private void Update()
@@ -26,11 +26,11 @@ public class AudioLogRippleTrigger : RippleTriggerBase
 		}
 		foreach (AudioLog instance in AudioLog.Instances)
 		{
-			if (CanTriggerRipple(instance))
+			if (this.CanTriggerRipple(instance))
 			{
-				float maxRange = instance.MaxHearingRange * RangeMultiplier;
-				PlayInRange(instance.PlayingLocation, maxRange, Color.red);
-				_cooldowns[instance] = Time.time + CooldownPerLog;
+				float maxRange = instance.MaxHearingRange * this.RangeMultiplier;
+				base.PlayInRange(instance.PlayingLocation, maxRange, Color.red);
+				this._cooldowns[instance] = Time.time + this.CooldownPerLog;
 			}
 		}
 	}
@@ -41,7 +41,7 @@ public class AudioLogRippleTrigger : RippleTriggerBase
 		{
 			return false;
 		}
-		if (!_cooldowns.TryGetValue(audioLog, out var value))
+		if (!this._cooldowns.TryGetValue(audioLog, out var value))
 		{
 			return true;
 		}

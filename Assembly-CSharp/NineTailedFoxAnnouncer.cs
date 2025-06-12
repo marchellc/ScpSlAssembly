@@ -97,16 +97,16 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 
 		public static bool IsRegular(string s)
 		{
-			if (!IsYield(s, out var value) && !IsJam(s, out var _, out var _))
+			if (!VoiceLine.IsYield(s, out var value) && !VoiceLine.IsJam(s, out var _, out var _))
 			{
-				return !IsPitch(s, out value);
+				return !VoiceLine.IsPitch(s, out value);
 			}
 			return false;
 		}
 
 		public string GetName()
 		{
-			return apiName;
+			return this.apiName;
 		}
 	}
 
@@ -121,9 +121,9 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 
 		public bool Equals(ScpDeath other)
 		{
-			if (scpSubjects == other.scpSubjects)
+			if (this.scpSubjects == other.scpSubjects)
 			{
-				return string.Equals(announcement, other.announcement);
+				return string.Equals(this.announcement, other.announcement);
 			}
 			return false;
 		}
@@ -132,14 +132,14 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 		{
 			if (obj is ScpDeath other)
 			{
-				return Equals(other);
+				return this.Equals(other);
 			}
 			return false;
 		}
 
 		public override int GetHashCode()
 		{
-			return (((scpSubjects != null) ? scpSubjects.GetHashCode() : 0) * 397) ^ ((announcement != null) ? announcement.GetHashCode() : 0);
+			return (((this.scpSubjects != null) ? this.scpSubjects.GetHashCode() : 0) * 397) ^ ((this.announcement != null) ? this.announcement.GetHashCode() : 0);
 		}
 
 		public static bool operator ==(ScpDeath left, ScpDeath right)
@@ -242,7 +242,7 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 		string text = string.Empty;
 		if (num2 > 0)
 		{
-			text = text + ConvertNumber(num2) + " thousand ";
+			text = text + NineTailedFoxAnnouncer.ConvertNumber(num2) + " thousand ";
 		}
 		if (b > 0)
 		{
@@ -271,26 +271,26 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 
 	public static void AnnounceScpTermination(ReferenceHub scp, DamageHandlerBase hit)
 	{
-		singleton.scpListTimer = 0f;
+		NineTailedFoxAnnouncer.singleton.scpListTimer = 0f;
 		if (!scp.IsSCP(includeZombies: false))
 		{
 			return;
 		}
 		string announcement = hit.CassieDeathAnnouncement.Announcement;
 		SubtitlePart[] subtitleParts = hit.CassieDeathAnnouncement.SubtitleParts;
-		CassieQueuingScpTerminationEventArgs cassieQueuingScpTerminationEventArgs = new CassieQueuingScpTerminationEventArgs(scp, announcement, subtitleParts);
-		ServerEvents.OnCassieQueuingScpTermination(cassieQueuingScpTerminationEventArgs);
-		if (!cassieQueuingScpTerminationEventArgs.IsAllowed)
+		CassieQueuingScpTerminationEventArgs e = new CassieQueuingScpTerminationEventArgs(scp, announcement, subtitleParts);
+		ServerEvents.OnCassieQueuingScpTermination(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
-		announcement = cassieQueuingScpTerminationEventArgs.Announcement;
-		subtitleParts = cassieQueuingScpTerminationEventArgs.SubtitleParts;
+		announcement = e.Announcement;
+		subtitleParts = e.SubtitleParts;
 		if (string.IsNullOrEmpty(announcement))
 		{
 			return;
 		}
-		foreach (ScpDeath scpDeath in scpDeaths)
+		foreach (ScpDeath scpDeath in NineTailedFoxAnnouncer.scpDeaths)
 		{
 			if (!(scpDeath.announcement != announcement))
 			{
@@ -298,7 +298,7 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 				return;
 			}
 		}
-		scpDeaths.Add(new ScpDeath
+		NineTailedFoxAnnouncer.scpDeaths.Add(new ScpDeath
 		{
 			scpSubjects = new List<RoleTypeId>(new RoleTypeId[1] { scp.GetRoleId() }),
 			announcement = announcement,
@@ -343,11 +343,11 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 			}
 			if (int.TryParse(text, out var result) && !rawNumber)
 			{
-				num += CalculateDuration(ConvertNumber(result), rawNumber: true, speed);
+				num += this.CalculateDuration(NineTailedFoxAnnouncer.ConvertNumber(result), rawNumber: true, speed);
 				continue;
 			}
 			bool flag2 = false;
-			VoiceLine[] array2 = voiceLines;
+			VoiceLine[] array2 = this.voiceLines;
 			for (j = 0; j < array2.Length; j++)
 			{
 				VoiceLine voiceLine = array2[j];
@@ -363,7 +363,7 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 			}
 			for (byte b = 1; b <= 3; b++)
 			{
-				array2 = voiceLines;
+				array2 = this.voiceLines;
 				for (j = 0; j < array2.Length; j++)
 				{
 					VoiceLine voiceLine2 = array2[j];
@@ -380,25 +380,25 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 	public void ServerOnlyAddGlitchyPhrase(string tts, float glitchChance, float jamChance)
 	{
 		string[] array = tts.Split(' ');
-		newWords.Clear();
-		newWords.EnsureCapacity(array.Length);
+		this.newWords.Clear();
+		this.newWords.EnsureCapacity(array.Length);
 		for (int i = 0; i < array.Length; i++)
 		{
-			newWords.Add(array[i]);
+			this.newWords.Add(array[i]);
 			if (i < array.Length - 1)
 			{
 				if (UnityEngine.Random.value < glitchChance)
 				{
-					newWords.Add(".G" + UnityEngine.Random.Range(1, 7));
+					this.newWords.Add(".G" + UnityEngine.Random.Range(1, 7));
 				}
 				if (UnityEngine.Random.value < jamChance)
 				{
-					newWords.Add("JAM_" + UnityEngine.Random.Range(0, 70).ToString("000") + "_" + UnityEngine.Random.Range(2, 6));
+					this.newWords.Add("JAM_" + UnityEngine.Random.Range(0, 70).ToString("000") + "_" + UnityEngine.Random.Range(2, 6));
 				}
 			}
 		}
 		tts = "";
-		foreach (string newWord in newWords)
+		foreach (string newWord in this.newWords)
 		{
 			tts = tts + newWord + " ";
 		}
@@ -407,9 +407,9 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 
 	public void ClearQueue()
 	{
-		queue.Clear();
-		backgroundSource.Stop();
-		speakerSource.Stop();
+		this.queue.Clear();
+		this.backgroundSource.Stop();
+		this.speakerSource.Stop();
 	}
 
 	public void AddPhraseToQueue(string tts, bool generateNoise, bool rawNumber = false, bool makeHold = false, bool customAnnouncement = false, string customSubtitles = "")
@@ -417,9 +417,9 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 		string[] array = tts.Split(' ');
 		if (!rawNumber)
 		{
-			float num = CalculateDuration(tts);
+			float num = this.CalculateDuration(tts);
 			int num2 = 0;
-			for (int i = 0; i < backgroundLines.Length - 1; i++)
+			for (int i = 0; i < this.backgroundLines.Length - 1; i++)
 			{
 				if ((float)i < num)
 				{
@@ -428,10 +428,10 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 			}
 			if (generateNoise)
 			{
-				queue.Add(new VoiceLine
+				this.queue.Add(new VoiceLine
 				{
 					apiName = "BG_BACKGROUND",
-					clip = backgroundLines[num2],
+					clip = this.backgroundLines[num2],
 					length = 2.5f
 				});
 			}
@@ -442,7 +442,7 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 		{
 			if (!VoiceLine.IsRegular(text))
 			{
-				queue.Add(new VoiceLine
+				this.queue.Add(new VoiceLine
 				{
 					apiName = text.ToUpper()
 				});
@@ -450,16 +450,16 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 			}
 			if (!rawNumber && float.TryParse(text, out var result))
 			{
-				AddPhraseToQueue(ConvertNumber((int)result), generateNoise: false, rawNumber: true);
+				this.AddPhraseToQueue(NineTailedFoxAnnouncer.ConvertNumber((int)result), generateNoise: false, rawNumber: true);
 				continue;
 			}
 			bool flag = false;
-			VoiceLine[] array3 = voiceLines;
+			VoiceLine[] array3 = this.voiceLines;
 			foreach (VoiceLine voiceLine in array3)
 			{
 				if (string.Equals(text, voiceLine.apiName, StringComparison.OrdinalIgnoreCase))
 				{
-					queue.Add(new VoiceLine
+					this.queue.Add(new VoiceLine
 					{
 						apiName = voiceLine.apiName,
 						clip = voiceLine.clip,
@@ -479,7 +479,7 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 				{
 					if (text.Length > b)
 					{
-						array3 = voiceLines;
+						array3 = this.voiceLines;
 						foreach (VoiceLine voiceLine3 in array3)
 						{
 							if ((string.Equals(text.Remove(text.Length - b), voiceLine3.apiName, StringComparison.OrdinalIgnoreCase) || (text.EndsWith("ING", StringComparison.OrdinalIgnoreCase) && string.Equals(text.Remove(text.Length - b) + "E", voiceLine3.apiName, StringComparison.OrdinalIgnoreCase))) && voiceLine2 == null)
@@ -497,14 +497,14 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 			}
 			if (voiceLine2 != null)
 			{
-				AudioClip audioClip = ((!text.EndsWith("TED", StringComparison.OrdinalIgnoreCase) && !text.EndsWith("DED", StringComparison.OrdinalIgnoreCase)) ? (text.EndsWith("D", StringComparison.OrdinalIgnoreCase) ? suffixPastStandard : (text.EndsWith("ING", StringComparison.OrdinalIgnoreCase) ? suffixContinuous : ((!voiceLine2.apiName.EndsWith("S") && !voiceLine2.apiName.EndsWith("SH") && !voiceLine2.apiName.EndsWith("CH") && !voiceLine2.apiName.EndsWith("X") && !voiceLine2.apiName.EndsWith("Z")) ? suffixPluralStandard : suffixPluralException))) : suffixPastException);
-				queue.Add(new VoiceLine
+				AudioClip audioClip = ((!text.EndsWith("TED", StringComparison.OrdinalIgnoreCase) && !text.EndsWith("DED", StringComparison.OrdinalIgnoreCase)) ? (text.EndsWith("D", StringComparison.OrdinalIgnoreCase) ? this.suffixPastStandard : (text.EndsWith("ING", StringComparison.OrdinalIgnoreCase) ? this.suffixContinuous : ((!voiceLine2.apiName.EndsWith("S") && !voiceLine2.apiName.EndsWith("SH") && !voiceLine2.apiName.EndsWith("CH") && !voiceLine2.apiName.EndsWith("X") && !voiceLine2.apiName.EndsWith("Z")) ? this.suffixPluralStandard : this.suffixPluralException))) : this.suffixPastException);
+				this.queue.Add(new VoiceLine
 				{
 					apiName = voiceLine2.apiName,
 					clip = voiceLine2.clip,
 					length = (voiceLine2.length - (text.EndsWith("ING", StringComparison.OrdinalIgnoreCase) ? 0.1f : 0.06f)) / num3
 				});
-				queue.Add(new VoiceLine
+				this.queue.Add(new VoiceLine
 				{
 					apiName = "SUFFIX_" + audioClip.name,
 					clip = audioClip,
@@ -514,13 +514,13 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 		}
 		if (!rawNumber)
 		{
-			queue.Add(new VoiceLine
+			this.queue.Add(new VoiceLine
 			{
 				apiName = "PITCH_1"
 			});
 			for (byte b2 = 0; b2 < ((!makeHold) ? 1 : 3); b2++)
 			{
-				queue.Add(new VoiceLine
+				this.queue.Add(new VoiceLine
 				{
 					apiName = "END_OF_MESSAGE"
 				});
@@ -530,26 +530,26 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 
 	private IEnumerator Start()
 	{
-		scpDeaths.Clear();
-		singleton = this;
+		NineTailedFoxAnnouncer.scpDeaths.Clear();
+		NineTailedFoxAnnouncer.singleton = this;
 		float speed = 1f;
 		int jammed = 0;
 		int jamSize = 0;
 		WaitForEndOfFrame wait = new WaitForEndOfFrame();
 		while (this != null)
 		{
-			if (queue.Count == 0)
+			if (this.queue.Count == 0)
 			{
 				speed = 1f;
 				yield return wait;
 				continue;
 			}
-			VoiceLine line = queue[0];
-			queue.RemoveAt(0);
+			VoiceLine line = this.queue[0];
+			this.queue.RemoveAt(0);
 			NineTailedFoxAnnouncer.OnLineDequeued?.Invoke(line);
 			if (line.apiName == "END_OF_MESSAGE")
 			{
-				speakerSource.pitch = 1f;
+				this.speakerSource.pitch = 1f;
 				yield return new WaitForSeconds(4f);
 				continue;
 			}
@@ -564,39 +564,39 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 			{
 				if (flag)
 				{
-					backgroundSource.PlayOneShot(line.clip);
+					this.backgroundSource.PlayOneShot(line.clip);
 				}
 				else if (flag2)
 				{
-					speakerSource.Stop();
-					speakerSource.PlayOneShot(line.clip);
+					this.speakerSource.Stop();
+					this.speakerSource.PlayOneShot(line.clip);
 				}
 				else if (jammed > 0)
 				{
-					speakerSource.Stop();
+					this.speakerSource.Stop();
 					float timeToJam = line.length * ((float)jammed / 100f);
-					speakerSource.clip = line.clip;
-					speakerSource.time = 0f;
-					speakerSource.Play();
+					this.speakerSource.clip = line.clip;
+					this.speakerSource.time = 0f;
+					this.speakerSource.Play();
 					yield return new WaitForSeconds(timeToJam);
 					float stepSize = 0.13f;
 					for (int i = 0; i < jamSize; i++)
 					{
 						absoluteTimeAddition -= stepSize * 3f;
-						speakerSource.time = timeToJam;
+						this.speakerSource.time = timeToJam;
 						yield return new WaitForSeconds(stepSize);
 					}
 					jammed = 0;
 				}
 				else
 				{
-					speakerSource.PlayOneShot(line.clip);
+					this.speakerSource.PlayOneShot(line.clip);
 				}
 			}
 			else if (VoiceLine.IsPitch(line.apiName, out value))
 			{
 				speed = value;
-				speakerSource.pitch = speed;
+				this.speakerSource.pitch = speed;
 			}
 			else if (VoiceLine.IsJam(line.apiName, out percent, out amount))
 			{
@@ -608,9 +608,9 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 				continue;
 			}
 			float num = 0f;
-			for (int j = 0; j < queue.Count && !VoiceLine.IsRegular(queue[j].apiName); j++)
+			for (int j = 0; j < this.queue.Count && !VoiceLine.IsRegular(this.queue[j].apiName); j++)
 			{
-				if (VoiceLine.IsYield(queue[j].apiName, out var value2))
+				if (VoiceLine.IsYield(this.queue[j].apiName, out var value2))
 				{
 					num = value2;
 					break;
@@ -631,23 +631,23 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 
 	private void Update()
 	{
-		if (scpDeaths.Count <= 0)
+		if (NineTailedFoxAnnouncer.scpDeaths.Count <= 0)
 		{
 			return;
 		}
-		scpListTimer += Time.deltaTime;
-		if (scpListTimer <= 1f)
+		this.scpListTimer += Time.deltaTime;
+		if (this.scpListTimer <= 1f)
 		{
 			return;
 		}
-		for (int i = 0; i < scpDeaths.Count; i++)
+		for (int i = 0; i < NineTailedFoxAnnouncer.scpDeaths.Count; i++)
 		{
-			ScpDeath scpDeath = scpDeaths[i];
+			ScpDeath scpDeath = NineTailedFoxAnnouncer.scpDeaths[i];
 			List<SubtitlePart> list = new List<SubtitlePart>(1);
 			string text = "";
 			for (int j = 0; j < scpDeath.scpSubjects.Count; j++)
 			{
-				ConvertSCP(scpDeath.scpSubjects[j], out var withoutSpace, out var withSpace);
+				NineTailedFoxAnnouncer.ConvertSCP(scpDeath.scpSubjects[j], out var withoutSpace, out var withSpace);
 				text = ((j != 0) ? (text + ". SCP " + withSpace) : (text + "SCP " + withSpace));
 				list.Add(new SubtitlePart(SubtitleType.SCP, withoutSpace));
 			}
@@ -657,11 +657,11 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 				list.AddRange(scpDeath.subtitleParts);
 			}
 			float num = (AlphaWarheadController.Detonated ? 3.5f : 1f);
-			ServerOnlyAddGlitchyPhrase(text, UnityEngine.Random.Range(0.1f, 0.14f) * num, UnityEngine.Random.Range(0.07f, 0.08f) * num);
+			this.ServerOnlyAddGlitchyPhrase(text, UnityEngine.Random.Range(0.1f, 0.14f) * num, UnityEngine.Random.Range(0.07f, 0.08f) * num);
 			new SubtitleMessage(list.ToArray()).SendToAuthenticated();
 		}
-		scpListTimer = 0f;
-		scpDeaths.Clear();
+		this.scpListTimer = 0f;
+		NineTailedFoxAnnouncer.scpDeaths.Clear();
 	}
 
 	public static void ConvertSCP(RoleTypeId role, out string withoutSpace, out string withSpace)
@@ -673,7 +673,7 @@ public class NineTailedFoxAnnouncer : MonoBehaviour
 		}
 		else
 		{
-			ConvertSCP(result.RoleName, out withoutSpace, out withSpace);
+			NineTailedFoxAnnouncer.ConvertSCP(result.RoleName, out withoutSpace, out withSpace);
 		}
 	}
 

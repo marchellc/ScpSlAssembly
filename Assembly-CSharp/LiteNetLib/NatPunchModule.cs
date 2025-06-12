@@ -67,32 +67,32 @@ public sealed class NatPunchModule
 
 	internal NatPunchModule(NetManager socket)
 	{
-		_socket = socket;
-		_netPacketProcessor.SubscribeReusable<NatIntroduceResponsePacket>(OnNatIntroductionResponse);
-		_netPacketProcessor.SubscribeReusable<NatIntroduceRequestPacket, IPEndPoint>(OnNatIntroductionRequest);
-		_netPacketProcessor.SubscribeReusable<NatPunchPacket, IPEndPoint>(OnNatPunch);
+		this._socket = socket;
+		this._netPacketProcessor.SubscribeReusable<NatIntroduceResponsePacket>(OnNatIntroductionResponse);
+		this._netPacketProcessor.SubscribeReusable<NatIntroduceRequestPacket, IPEndPoint>(OnNatIntroductionRequest);
+		this._netPacketProcessor.SubscribeReusable<NatPunchPacket, IPEndPoint>(OnNatPunch);
 	}
 
 	internal void ProcessMessage(IPEndPoint senderEndPoint, NetPacket packet)
 	{
-		lock (_cacheReader)
+		lock (this._cacheReader)
 		{
-			_cacheReader.SetSource(packet.RawData, 1, packet.Size);
-			_netPacketProcessor.ReadAllPackets(_cacheReader, senderEndPoint);
+			this._cacheReader.SetSource(packet.RawData, 1, packet.Size);
+			this._netPacketProcessor.ReadAllPackets(this._cacheReader, senderEndPoint);
 		}
 	}
 
 	public void Init(INatPunchListener listener)
 	{
-		_natPunchListener = listener;
+		this._natPunchListener = listener;
 	}
 
 	private void Send<T>(T packet, IPEndPoint target) where T : class, new()
 	{
-		_cacheWriter.Reset();
-		_cacheWriter.Put((byte)16);
-		_netPacketProcessor.Write(_cacheWriter, packet);
-		_socket.SendRaw(_cacheWriter.Data, 0, _cacheWriter.Length, target);
+		this._cacheWriter.Reset();
+		this._cacheWriter.Put((byte)16);
+		this._netPacketProcessor.Write(this._cacheWriter, packet);
+		this._socket.SendRaw(this._cacheWriter.Data, 0, this._cacheWriter.Length, target);
 	}
 
 	public void NatIntroduce(IPEndPoint hostInternal, IPEndPoint hostExternal, IPEndPoint clientInternal, IPEndPoint clientExternal, string additionalInfo)
@@ -103,32 +103,32 @@ public sealed class NatPunchModule
 		};
 		natIntroduceResponsePacket.Internal = hostInternal;
 		natIntroduceResponsePacket.External = hostExternal;
-		Send(natIntroduceResponsePacket, clientExternal);
+		this.Send(natIntroduceResponsePacket, clientExternal);
 		natIntroduceResponsePacket.Internal = clientInternal;
 		natIntroduceResponsePacket.External = clientExternal;
-		Send(natIntroduceResponsePacket, hostExternal);
+		this.Send(natIntroduceResponsePacket, hostExternal);
 	}
 
 	public void PollEvents()
 	{
-		if (!UnsyncedEvents && _natPunchListener != null && (!_successEvents.IsEmpty || !_requestEvents.IsEmpty))
+		if (!this.UnsyncedEvents && this._natPunchListener != null && (!this._successEvents.IsEmpty || !this._requestEvents.IsEmpty))
 		{
 			SuccessEventData result;
-			while (_successEvents.TryDequeue(out result))
+			while (this._successEvents.TryDequeue(out result))
 			{
-				_natPunchListener.OnNatIntroductionSuccess(result.TargetEndPoint, result.Type, result.Token);
+				this._natPunchListener.OnNatIntroductionSuccess(result.TargetEndPoint, result.Type, result.Token);
 			}
 			RequestEventData result2;
-			while (_requestEvents.TryDequeue(out result2))
+			while (this._requestEvents.TryDequeue(out result2))
 			{
-				_natPunchListener.OnNatIntroductionRequest(result2.LocalEndPoint, result2.RemoteEndPoint, result2.Token);
+				this._natPunchListener.OnNatIntroductionRequest(result2.LocalEndPoint, result2.RemoteEndPoint, result2.Token);
 			}
 		}
 	}
 
 	public void SendNatIntroduceRequest(string host, int port, string additionalInfo)
 	{
-		SendNatIntroduceRequest(NetUtils.MakeEndPoint(host, port), additionalInfo);
+		this.SendNatIntroduceRequest(NetUtils.MakeEndPoint(host, port), additionalInfo);
 	}
 
 	public void SendNatIntroduceRequest(IPEndPoint masterServerEndPoint, string additionalInfo)
@@ -138,21 +138,21 @@ public sealed class NatPunchModule
 		{
 			localIp = NetUtils.GetLocalIp(LocalAddrType.IPv6);
 		}
-		Send(new NatIntroduceRequestPacket
+		this.Send(new NatIntroduceRequestPacket
 		{
-			Internal = NetUtils.MakeEndPoint(localIp, _socket.LocalPort),
+			Internal = NetUtils.MakeEndPoint(localIp, this._socket.LocalPort),
 			Token = additionalInfo
 		}, masterServerEndPoint);
 	}
 
 	private void OnNatIntroductionRequest(NatIntroduceRequestPacket req, IPEndPoint senderEndPoint)
 	{
-		if (UnsyncedEvents)
+		if (this.UnsyncedEvents)
 		{
-			_natPunchListener.OnNatIntroductionRequest(req.Internal, senderEndPoint, req.Token);
+			this._natPunchListener.OnNatIntroductionRequest(req.Internal, senderEndPoint, req.Token);
 			return;
 		}
-		_requestEvents.Enqueue(new RequestEventData
+		this._requestEvents.Enqueue(new RequestEventData
 		{
 			LocalEndPoint = req.Internal,
 			RemoteEndPoint = senderEndPoint,
@@ -166,22 +166,22 @@ public sealed class NatPunchModule
 		{
 			Token = req.Token
 		};
-		Send(natPunchPacket, req.Internal);
-		_socket.Ttl = 2;
-		_socket.SendRaw(new byte[1] { 17 }, 0, 1, req.External);
-		_socket.Ttl = 255;
+		this.Send(natPunchPacket, req.Internal);
+		this._socket.Ttl = 2;
+		this._socket.SendRaw(new byte[1] { 17 }, 0, 1, req.External);
+		this._socket.Ttl = 255;
 		natPunchPacket.IsExternal = true;
-		Send(natPunchPacket, req.External);
+		this.Send(natPunchPacket, req.External);
 	}
 
 	private void OnNatPunch(NatPunchPacket req, IPEndPoint senderEndPoint)
 	{
-		if (UnsyncedEvents)
+		if (this.UnsyncedEvents)
 		{
-			_natPunchListener.OnNatIntroductionSuccess(senderEndPoint, req.IsExternal ? NatAddressType.External : NatAddressType.Internal, req.Token);
+			this._natPunchListener.OnNatIntroductionSuccess(senderEndPoint, req.IsExternal ? NatAddressType.External : NatAddressType.Internal, req.Token);
 			return;
 		}
-		_successEvents.Enqueue(new SuccessEventData
+		this._successEvents.Enqueue(new SuccessEventData
 		{
 			TargetEndPoint = senderEndPoint,
 			Type = (req.IsExternal ? NatAddressType.External : NatAddressType.Internal),

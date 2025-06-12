@@ -18,9 +18,9 @@ public class SpawnableStructure : NetworkBehaviour
 
 	public RoomIdentifier ParentRoom { get; private set; }
 
-	public int MinAmount => Mathf.FloorToInt(MinMaxProbability.Evaluate(0f));
+	public int MinAmount => Mathf.FloorToInt(this.MinMaxProbability.Evaluate(0f));
 
-	public int MaxAmount => Mathf.FloorToInt(MinMaxProbability.Evaluate(1f));
+	public int MaxAmount => Mathf.FloorToInt(this.MinMaxProbability.Evaluate(1f));
 
 	public static event Action<SpawnableStructure> OnAdded;
 
@@ -30,15 +30,15 @@ public class SpawnableStructure : NetworkBehaviour
 	{
 		if (SeedSynchronizer.MapGenerated)
 		{
-			RegisterRoom();
+			this.RegisterRoom();
 		}
-		AllInstances.Add(this);
+		SpawnableStructure.AllInstances.Add(this);
 		SpawnableStructure.OnAdded?.Invoke(this);
 	}
 
 	protected virtual void OnDestroy()
 	{
-		AllInstances.Remove(this);
+		SpawnableStructure.AllInstances.Remove(this);
 		SpawnableStructure.OnRemoved?.Invoke(this);
 	}
 
@@ -48,7 +48,7 @@ public class SpawnableStructure : NetworkBehaviour
 		base.gameObject.SetActive(value: false);
 		if (base.transform.position.TryGetRoom(out var room))
 		{
-			ParentRoom = room;
+			this.ParentRoom = room;
 		}
 		else
 		{
@@ -64,7 +64,7 @@ public class SpawnableStructure : NetworkBehaviour
 		{
 			if (phase == MapGenerationPhase.ParentRoomRegistration)
 			{
-				AllInstances.ForEach(delegate(SpawnableStructure x)
+				SpawnableStructure.AllInstances.ForEach(delegate(SpawnableStructure x)
 				{
 					x.RegisterRoom();
 				});

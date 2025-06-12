@@ -23,20 +23,20 @@ internal static class RateLimitCreator
 
 	internal static void Load()
 	{
-		_init = true;
-		_limitsAmount = ServerRateLimits.Length;
-		_limits = new uint[_limitsAmount][];
-		for (ushort num = 0; num < _limitsAmount; num++)
+		RateLimitCreator._init = true;
+		RateLimitCreator._limitsAmount = RateLimitCreator.ServerRateLimits.Length;
+		RateLimitCreator._limits = new uint[RateLimitCreator._limitsAmount][];
+		for (ushort num = 0; num < RateLimitCreator._limitsAmount; num++)
 		{
-			_limits[num] = new uint[2];
-			_limits[num][0] = ConfigFile.ServerConfig.GetUInt("ratelimit_" + ServerRateLimits[num] + "_threshold", DefaultThresholds[num]);
-			_limits[num][1] = ConfigFile.ServerConfig.GetUInt("ratelimit_" + ServerRateLimits[num] + "_window", DefaultWindows[num]);
+			RateLimitCreator._limits[num] = new uint[2];
+			RateLimitCreator._limits[num][0] = ConfigFile.ServerConfig.GetUInt("ratelimit_" + RateLimitCreator.ServerRateLimits[num] + "_threshold", RateLimitCreator.DefaultThresholds[num]);
+			RateLimitCreator._limits[num][1] = ConfigFile.ServerConfig.GetUInt("ratelimit_" + RateLimitCreator.ServerRateLimits[num] + "_window", RateLimitCreator.DefaultWindows[num]);
 		}
-		_dummy = new DummyRateLimit();
-		_dummyTable = new RateLimit[_limitsAmount];
-		for (ushort num2 = 0; num2 < _limitsAmount; num2++)
+		RateLimitCreator._dummy = new DummyRateLimit();
+		RateLimitCreator._dummyTable = new RateLimit[RateLimitCreator._limitsAmount];
+		for (ushort num2 = 0; num2 < RateLimitCreator._limitsAmount; num2++)
 		{
-			_dummyTable[num2] = _dummy;
+			RateLimitCreator._dummyTable[num2] = RateLimitCreator._dummy;
 		}
 		ServerConsole.AddLog("Rate limiting loaded");
 	}
@@ -45,17 +45,17 @@ internal static class RateLimitCreator
 	{
 		if (NetworkServer.active && !dummy)
 		{
-			RateLimit[] array = new RateLimit[_limitsAmount];
-			for (ushort num = 0; num < _limitsAmount; num++)
+			RateLimit[] array = new RateLimit[RateLimitCreator._limitsAmount];
+			for (ushort num = 0; num < RateLimitCreator._limitsAmount; num++)
 			{
-				array[num] = new RateLimit((int)_limits[num][0], _limits[num][1], connection);
+				array[num] = new RateLimit((int)RateLimitCreator._limits[num][0], RateLimitCreator._limits[num][1], connection);
 			}
 			return array;
 		}
-		if (!_init)
+		if (!RateLimitCreator._init)
 		{
-			Load();
+			RateLimitCreator.Load();
 		}
-		return _dummyTable;
+		return RateLimitCreator._dummyTable;
 	}
 }

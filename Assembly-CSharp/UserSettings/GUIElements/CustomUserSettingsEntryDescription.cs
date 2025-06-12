@@ -4,10 +4,10 @@ public class CustomUserSettingsEntryDescription : UserSettingsEntryDescription
 {
 	private string _customText;
 
-	public override string Text => _customText;
+	public override string Text => this._customText;
 
 	public void SetCustomText(string text)
 	{
-		_customText = text;
+		this._customText = text;
 	}
 }

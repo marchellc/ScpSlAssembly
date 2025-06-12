@@ -50,31 +50,31 @@ public class Scp1507VocalizeAbility : KeySubroutine<Scp1507Role>
 			}
 		}
 		Scp1507VocalizeAbility.OnServerVocalize?.Invoke(base.Owner);
-		ServerSendRpc(toAll: true);
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (Cooldown.IsReady)
+		if (this.Cooldown.IsReady)
 		{
-			Cooldown.Trigger(5.0);
-			ServerScream();
+			this.Cooldown.Trigger(5.0);
+			this.ServerScream();
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		Cooldown.WriteCooldown(writer);
+		this.Cooldown.WriteCooldown(writer);
 		writer.WriteRelativePosition(new RelativePosition(base.CastRole.FpcModule.Position));
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		Cooldown.ReadCooldown(reader);
-		AudioClip sound = ((base.Role.RoleTypeId == RoleTypeId.AlphaFlamingo) ? _alphaSounds : _regularSounds).RandomItem();
+		this.Cooldown.ReadCooldown(reader);
+		AudioClip sound = ((base.Role.RoleTypeId == RoleTypeId.AlphaFlamingo) ? this._alphaSounds : this._regularSounds).RandomItem();
 		RelativePosition relativePosition = reader.ReadRelativePosition();
 		if ((relativePosition.Position - base.CastRole.FpcModule.Position).sqrMagnitude <= 250f)
 		{
@@ -84,21 +84,21 @@ public class Scp1507VocalizeAbility : KeySubroutine<Scp1507Role>
 		{
 			AudioSourcePoolManager.PlayAtPosition(sound, relativePosition, 45f);
 		}
-		OnVocalized?.Invoke();
+		this.OnVocalized?.Invoke();
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		Cooldown.Clear();
+		this.Cooldown.Clear();
 	}
 
 	protected override void OnKeyUp()
 	{
 		base.OnKeyUp();
-		if (Cooldown.IsReady)
+		if (this.Cooldown.IsReady)
 		{
-			ClientSendCmd();
+			base.ClientSendCmd();
 		}
 	}
 }

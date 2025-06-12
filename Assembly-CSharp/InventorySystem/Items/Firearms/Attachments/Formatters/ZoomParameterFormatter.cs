@@ -17,7 +17,7 @@ public class ZoomParameterFormatter : IAttachmentsParameterFormatter
 		else
 		{
 			Attachment attachment = firearm.Attachments[attId];
-			num = GetMultiplier(attachment, AttachmentParam.AdsMouseSensitivityMultiplier) * GetMultiplier(attachment, AttachmentParam.AdsZoomMultiplier);
+			num = this.GetMultiplier(attachment, AttachmentParam.AdsMouseSensitivityMultiplier) * this.GetMultiplier(attachment, AttachmentParam.AdsZoomMultiplier);
 		}
 		formattedText = Mathf.Round(num * 100f) / 100f + "x";
 		isGood = true;

@@ -14,7 +14,7 @@ public abstract class SpawnableWaveBase
 
 	public SpawnableWaveBase()
 	{
-		OnInstanceCreated();
+		this.OnInstanceCreated();
 		CustomNetworkManager.OnClientReady += OnInstanceReset;
 		WaveManager.OnWaveSpawned += OnAnyWaveSpawned;
 	}
@@ -32,7 +32,7 @@ public abstract class SpawnableWaveBase
 
 	public void Destroy()
 	{
-		OnInstanceDestroyed();
+		this.OnInstanceDestroyed();
 		CustomNetworkManager.OnClientReady -= OnInstanceReset;
 		WaveManager.OnWaveSpawned -= OnAnyWaveSpawned;
 	}

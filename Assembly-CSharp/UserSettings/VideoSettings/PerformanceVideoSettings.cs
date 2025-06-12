@@ -8,15 +8,15 @@ public static class PerformanceVideoSettings
 
 	private static void ApplyTextureResolution(int presetIndex)
 	{
-		QualitySettings.globalTextureMipmapLimit = TextureQualityPresets[Mathf.Clamp(presetIndex, 0, TextureQualityPresets.Length - 1)];
+		QualitySettings.globalTextureMipmapLimit = PerformanceVideoSettings.TextureQualityPresets[Mathf.Clamp(presetIndex, 0, PerformanceVideoSettings.TextureQualityPresets.Length - 1)];
 	}
 
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		SetDefaultValues();
+		PerformanceVideoSettings.SetDefaultValues();
 		UserSetting<int>.AddListener(PerformanceVideoSetting.TextureResolution, ApplyTextureResolution);
-		ApplyAll();
+		PerformanceVideoSettings.ApplyAll();
 	}
 
 	private static void SetDefaultValues()
@@ -35,6 +35,6 @@ public static class PerformanceVideoSettings
 
 	private static void ApplyAll()
 	{
-		ApplyTextureResolution(UserSetting<int>.Get(PerformanceVideoSetting.TextureResolution));
+		PerformanceVideoSettings.ApplyTextureResolution(UserSetting<int>.Get(PerformanceVideoSetting.TextureResolution));
 	}
 }

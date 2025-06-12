@@ -12,7 +12,7 @@ public class MarshmallowModel : AnimatedCharacterModel
 		base.Update();
 		if (!base.Pooled)
 		{
-			base.Animator.SetBool(HashGrounded, base.FpcModule.Noclip.IsActive || base.FpcModule.IsGrounded);
+			base.Animator.SetBool(MarshmallowModel.HashGrounded, base.FpcModule.Noclip.IsActive || base.FpcModule.IsGrounded);
 		}
 	}
 }

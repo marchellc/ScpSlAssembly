@@ -11,7 +11,7 @@ internal static class UnityResolverGetFormatterHelper
 
 	static UnityResolverGetFormatterHelper()
 	{
-		lookup = new Dictionary<Type, int>(7)
+		UnityResolverGetFormatterHelper.lookup = new Dictionary<Type, int>(7)
 		{
 			{
 				typeof(Vector2),
@@ -102,7 +102,7 @@ internal static class UnityResolverGetFormatterHelper
 
 	internal static object GetFormatter(Type t)
 	{
-		if (!lookup.TryGetValue(t, out var value))
+		if (!UnityResolverGetFormatterHelper.lookup.TryGetValue(t, out var value))
 		{
 			return null;
 		}

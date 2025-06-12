@@ -25,13 +25,13 @@ public class PlatformInfo : MonoBehaviour
 
 	public int MainThreadId { get; private set; }
 
-	public bool IsMainThread => Thread.CurrentThread.ManagedThreadId == MainThreadId;
+	public bool IsMainThread => Thread.CurrentThread.ManagedThreadId == this.MainThreadId;
 
 	private void Awake()
 	{
-		MainThreadId = Thread.CurrentThread.ManagedThreadId;
-		BuildGuid = Application.buildGUID;
-		singleton = this;
+		this.MainThreadId = Thread.CurrentThread.ManagedThreadId;
+		this.BuildGuid = Application.buildGUID;
+		PlatformInfo.singleton = this;
 		Console.AddLog("Loaded NorthwoodLib " + PlatformSettings.Version, Color.green);
 		PlatformSettings.Logged += OnLogged;
 	}

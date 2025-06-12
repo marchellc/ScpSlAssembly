@@ -9,66 +9,66 @@ public class LiteNetLib4MirrorNetworkManager : NetworkManager
 
 	public override void Awake()
 	{
-		GetComponent<LiteNetLib4MirrorTransport>().InitializeTransport();
+		base.GetComponent<LiteNetLib4MirrorTransport>().InitializeTransport();
 		base.Awake();
-		singleton = this;
+		LiteNetLib4MirrorNetworkManager.singleton = this;
 	}
 
 	public void StartClient(string ip, ushort port)
 	{
-		networkAddress = ip;
-		maxConnections = 2;
+		base.networkAddress = ip;
+		base.maxConnections = 2;
 		LiteNetLib4MirrorTransport.Singleton.clientAddress = ip;
 		LiteNetLib4MirrorTransport.Singleton.port = port;
 		LiteNetLib4MirrorTransport.Singleton.maxConnections = 2;
-		StartClient();
+		this.StartClient();
 	}
 
 	public void StartHost(string serverIPv4BindAddress, string serverIPv6BindAddress, ushort port, ushort maxPlayers)
 	{
-		networkAddress = serverIPv4BindAddress;
-		maxConnections = maxPlayers;
+		base.networkAddress = serverIPv4BindAddress;
+		base.maxConnections = maxPlayers;
 		LiteNetLib4MirrorTransport.Singleton.clientAddress = serverIPv4BindAddress;
 		LiteNetLib4MirrorTransport.Singleton.serverIPv4BindAddress = serverIPv4BindAddress;
 		LiteNetLib4MirrorTransport.Singleton.serverIPv6BindAddress = serverIPv6BindAddress;
 		LiteNetLib4MirrorTransport.Singleton.port = port;
 		LiteNetLib4MirrorTransport.Singleton.maxConnections = maxPlayers;
-		StartHost();
+		base.StartHost();
 	}
 
 	public void StartServer(string serverIPv4BindAddress, string serverIPv6BindAddress, ushort port, ushort maxPlayers)
 	{
-		networkAddress = serverIPv4BindAddress;
-		maxConnections = maxPlayers;
+		base.networkAddress = serverIPv4BindAddress;
+		base.maxConnections = maxPlayers;
 		LiteNetLib4MirrorTransport.Singleton.clientAddress = serverIPv4BindAddress;
 		LiteNetLib4MirrorTransport.Singleton.serverIPv4BindAddress = serverIPv4BindAddress;
 		LiteNetLib4MirrorTransport.Singleton.serverIPv6BindAddress = serverIPv6BindAddress;
 		LiteNetLib4MirrorTransport.Singleton.port = port;
 		LiteNetLib4MirrorTransport.Singleton.maxConnections = maxPlayers;
-		StartServer();
+		base.StartServer();
 	}
 
 	public void StartHost(ushort port, ushort maxPlayers)
 	{
-		networkAddress = "127.0.0.1";
-		maxConnections = maxPlayers;
+		base.networkAddress = "127.0.0.1";
+		base.maxConnections = maxPlayers;
 		LiteNetLib4MirrorTransport.Singleton.clientAddress = "127.0.0.1";
 		LiteNetLib4MirrorTransport.Singleton.serverIPv4BindAddress = "0.0.0.0";
 		LiteNetLib4MirrorTransport.Singleton.serverIPv6BindAddress = "::";
 		LiteNetLib4MirrorTransport.Singleton.port = port;
 		LiteNetLib4MirrorTransport.Singleton.maxConnections = maxPlayers;
-		StartHost();
+		base.StartHost();
 	}
 
 	public void StartServer(ushort port, ushort maxPlayers)
 	{
-		networkAddress = "127.0.0.1";
-		maxConnections = maxPlayers;
+		base.networkAddress = "127.0.0.1";
+		base.maxConnections = maxPlayers;
 		LiteNetLib4MirrorTransport.Singleton.serverIPv4BindAddress = "0.0.0.0";
 		LiteNetLib4MirrorTransport.Singleton.serverIPv6BindAddress = "::";
 		LiteNetLib4MirrorTransport.Singleton.port = port;
 		LiteNetLib4MirrorTransport.Singleton.maxConnections = maxPlayers;
-		StartServer();
+		base.StartServer();
 	}
 
 	public void DisconnectConnection(NetworkConnection conn, string message = null)

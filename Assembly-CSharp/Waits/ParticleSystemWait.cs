@@ -13,11 +13,11 @@ public class ParticleSystemWait : Wait
 
 	protected virtual void Awake()
 	{
-		isAliveDelegate = particleSystem.IsAlive;
+		this.isAliveDelegate = this.particleSystem.IsAlive;
 	}
 
 	public override IEnumerator<float> _Run()
 	{
-		yield return Timing.WaitUntilFalse(isAliveDelegate);
+		yield return Timing.WaitUntilFalse(this.isAliveDelegate);
 	}
 }

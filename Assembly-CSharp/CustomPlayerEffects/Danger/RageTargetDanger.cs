@@ -13,7 +13,7 @@ public class RageTargetDanger : DangerStackBase
 		{
 			if (allHub.roleManager.CurrentRole is Scp096Role scp096Role && scp096Role.SubroutineModule.TryGetSubroutine<Scp096TargetsTracker>(out var subroutine) && subroutine.Targets.Contains(base.Owner))
 			{
-				IsActive = true;
+				this.IsActive = true;
 			}
 		}
 		Scp096TargetsTracker.OnTargetAdded += OnTargetAdded;
@@ -29,19 +29,19 @@ public class RageTargetDanger : DangerStackBase
 
 	private void OnTargetAdded(ReferenceHub owner, ReferenceHub target)
 	{
-		UpdateState(targetAdded: true, target);
+		this.UpdateState(targetAdded: true, target);
 	}
 
 	private void OnTargetRemoved(ReferenceHub owner, ReferenceHub target)
 	{
-		UpdateState(targetAdded: false, target);
+		this.UpdateState(targetAdded: false, target);
 	}
 
 	private void UpdateState(bool targetAdded, ReferenceHub targetedHub)
 	{
 		if (!(targetedHub == null) && !(targetedHub != base.Owner))
 		{
-			IsActive = targetAdded;
+			this.IsActive = targetAdded;
 		}
 	}
 }

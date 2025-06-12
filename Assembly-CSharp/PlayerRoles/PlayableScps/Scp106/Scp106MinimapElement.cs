@@ -21,16 +21,16 @@ public class Scp106MinimapElement : MonoBehaviour, IPointerEnterHandler, IEventS
 
 	public void OnPointerEnter(PointerEventData eventData)
 	{
-		LastHighlighted = this;
-		AnyHighlighted = true;
+		Scp106MinimapElement.LastHighlighted = this;
+		Scp106MinimapElement.AnyHighlighted = true;
 	}
 
 	public void OnPointerExit(PointerEventData eventData)
 	{
-		if (!(LastHighlighted != this))
+		if (!(Scp106MinimapElement.LastHighlighted != this))
 		{
-			LastHighlighted = null;
-			AnyHighlighted = false;
+			Scp106MinimapElement.LastHighlighted = null;
+			Scp106MinimapElement.AnyHighlighted = false;
 		}
 	}
 }

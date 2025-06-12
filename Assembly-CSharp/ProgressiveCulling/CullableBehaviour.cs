@@ -10,9 +10,9 @@ public abstract class CullableBehaviour : MonoBehaviour, ICullable
 	{
 		get
 		{
-			if (_prevVisible.HasValue)
+			if (this._prevVisible.HasValue)
 			{
-				return !_prevVisible.Value;
+				return !this._prevVisible.Value;
 			}
 			return false;
 		}
@@ -24,21 +24,21 @@ public abstract class CullableBehaviour : MonoBehaviour, ICullable
 
 	public void SetVisibility(bool isVisible)
 	{
-		if (_prevVisible == isVisible)
+		if (this._prevVisible == isVisible)
 		{
 			if (isVisible)
 			{
-				UpdateVisible();
+				this.UpdateVisible();
 			}
 			else
 			{
-				UpdateInvisible();
+				this.UpdateInvisible();
 			}
 		}
 		else
 		{
-			_prevVisible = isVisible;
-			OnVisibilityChanged(isVisible);
+			this._prevVisible = isVisible;
+			this.OnVisibilityChanged(isVisible);
 		}
 	}
 

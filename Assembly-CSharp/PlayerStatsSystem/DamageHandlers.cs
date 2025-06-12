@@ -42,11 +42,11 @@ public static class DamageHandlers
 	private static void PrepDictionaries()
 	{
 		byte b = 0;
-		Func<DamageHandlerBase>[] definedConstructors = DefinedConstructors;
+		Func<DamageHandlerBase>[] definedConstructors = DamageHandlers.DefinedConstructors;
 		foreach (Func<DamageHandlerBase> func in definedConstructors)
 		{
-			IdsByTypeHash.Add(func().GetType().FullName.GetStableHashCode(), b);
-			ConstructorsById.Add(b, func);
+			DamageHandlers.IdsByTypeHash.Add(func().GetType().FullName.GetStableHashCode(), b);
+			DamageHandlers.ConstructorsById.Add(b, func);
 			b++;
 		}
 	}

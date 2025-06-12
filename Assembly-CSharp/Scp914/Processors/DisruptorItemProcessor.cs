@@ -15,13 +15,13 @@ public class DisruptorItemProcessor : Scp914ItemProcessor
 		{
 		case Scp914KnobSetting.Rough:
 			sourcePickup.DestroySelf();
-			return NewPickup(sourcePickup, vector, ItemType.Flashlight);
+			return this.NewPickup(sourcePickup, vector, ItemType.Flashlight);
 		case Scp914KnobSetting.Coarse:
 			sourcePickup.DestroySelf();
-			return NewPickup(sourcePickup, vector, ItemType.GunE11SR);
+			return this.NewPickup(sourcePickup, vector, ItemType.GunE11SR);
 		case Scp914KnobSetting.OneToOne:
 			sourcePickup.DestroySelf();
-			return NewPickup(sourcePickup, vector, ItemType.Jailbird);
+			return this.NewPickup(sourcePickup, vector, ItemType.Jailbird);
 		default:
 		{
 			AttachmentPreview.Get(ItemType.ParticleDisruptor, 0u, reValidate: true).TryGetModule<MagazineModule>(out var module);

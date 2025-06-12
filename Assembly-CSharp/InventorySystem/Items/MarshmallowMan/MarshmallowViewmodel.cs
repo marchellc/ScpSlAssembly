@@ -29,7 +29,7 @@ public class MarshmallowViewmodel : StandardAnimatedViemodel
 
 	private void Awake()
 	{
-		_curAttackVariant = Random.Range(0, _attackVariants);
+		this._curAttackVariant = Random.Range(0, this._attackVariants);
 		MarshmallowItem.OnSwing += OnSwing;
 		MarshmallowItem.OnHolsterRequested += OnHolsterRequested;
 	}
@@ -45,9 +45,9 @@ public class MarshmallowViewmodel : StandardAnimatedViemodel
 		if (base.Hub.roleManager.CurrentRole is IFpcRole fpcRole && fpcRole.FpcModule.CharacterModelInstance is AnimatedCharacterModel animatedCharacterModel)
 		{
 			float target = (base.Hub.IsGrounded() ? base.Hub.GetVelocity().MagnitudeIgnoreY() : 0f);
-			_prevVel = Mathf.MoveTowards(_prevVel, target, Time.deltaTime * 28.5f);
-			AnimatorSetFloat(WalkCycleHash, animatedCharacterModel.WalkCycle);
-			AnimatorSetLayerWeight(2, Mathf.Clamp01(_prevVel / 7.5f));
+			this._prevVel = Mathf.MoveTowards(this._prevVel, target, Time.deltaTime * 28.5f);
+			this.AnimatorSetFloat(MarshmallowViewmodel.WalkCycleHash, animatedCharacterModel.WalkCycle);
+			this.AnimatorSetLayerWeight(2, Mathf.Clamp01(this._prevVel / 7.5f));
 		}
 	}
 
@@ -55,7 +55,7 @@ public class MarshmallowViewmodel : StandardAnimatedViemodel
 	{
 		if (serial == base.ItemId.SerialNumber)
 		{
-			AnimatorSetTrigger(HolsterTriggerHash);
+			this.AnimatorSetTrigger(MarshmallowViewmodel.HolsterTriggerHash);
 		}
 	}
 
@@ -63,15 +63,15 @@ public class MarshmallowViewmodel : StandardAnimatedViemodel
 	{
 		if (serial == base.ItemId.SerialNumber)
 		{
-			_curAttackVariant++;
-			AnimatorSetFloat(AttackVariantHash, _curAttackVariant % _attackVariants);
-			AnimatorSetTrigger(AttackTriggerHash);
+			this._curAttackVariant++;
+			this.AnimatorSetFloat(MarshmallowViewmodel.AttackVariantHash, this._curAttackVariant % this._attackVariants);
+			this.AnimatorSetTrigger(MarshmallowViewmodel.AttackTriggerHash);
 		}
 	}
 
 	public override void InitLocal(ItemBase ib)
 	{
 		base.InitLocal(ib);
-		GetComponent<MarshmallowAudio>().Setup(ib.ItemSerial, ib.Owner.transform);
+		base.GetComponent<MarshmallowAudio>().Setup(ib.ItemSerial, ib.Owner.transform);
 	}
 }

@@ -24,13 +24,13 @@ public class Scp173Role : FpcStandardScp, ISubroutinedRole, IArmoredRole, IHumeS
 	{
 		get
 		{
-			return _damagedEventAssigned;
+			return this._damagedEventAssigned;
 		}
 		set
 		{
-			if (value != DamagedEventActive && (!value || NetworkServer.active))
+			if (value != this.DamagedEventActive && (!value || NetworkServer.active))
 			{
-				PlayerStats playerStats = _owner.playerStats;
+				PlayerStats playerStats = this._owner.playerStats;
 				if (value)
 				{
 					playerStats.OnThisPlayerDamaged += OnDamaged;
@@ -39,7 +39,7 @@ public class Scp173Role : FpcStandardScp, ISubroutinedRole, IArmoredRole, IHumeS
 				{
 					playerStats.OnThisPlayerDamaged -= OnDamaged;
 				}
-				_damagedEventAssigned = value;
+				this._damagedEventAssigned = value;
 			}
 		}
 	}
@@ -48,7 +48,7 @@ public class Scp173Role : FpcStandardScp, ISubroutinedRole, IArmoredRole, IHumeS
 	{
 		get
 		{
-			if (!TryGetOwner(out var hub))
+			if (!base.TryGetOwner(out var hub))
 			{
 				throw new InvalidOperationException("Damage handler could not be created for an inactive instance of SCP-173.");
 			}
@@ -69,31 +69,31 @@ public class Scp173Role : FpcStandardScp, ISubroutinedRole, IArmoredRole, IHumeS
 	{
 		if (obj is FirearmDamageHandler)
 		{
-			_audio.ServerSendSound(Scp173AudioPlayer.Scp173SoundId.Hit);
+			this._audio.ServerSendSound(Scp173AudioPlayer.Scp173SoundId.Hit);
 		}
 	}
 
 	private void Awake()
 	{
-		SubroutineModule.TryGetSubroutine<Scp173AudioPlayer>(out _audio);
+		this.SubroutineModule.TryGetSubroutine<Scp173AudioPlayer>(out this._audio);
 	}
 
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		TryGetOwner(out _owner);
-		DamagedEventActive = true;
+		base.TryGetOwner(out this._owner);
+		this.DamagedEventActive = true;
 	}
 
 	public override void DisableRole(RoleTypeId newRole)
 	{
 		base.DisableRole(newRole);
-		DamagedEventActive = false;
+		this.DamagedEventActive = false;
 	}
 
 	public int GetArmorEfficacy(HitboxType hitbox)
 	{
-		return _armorEfficacy;
+		return this._armorEfficacy;
 	}
 
 	public float GetSpawnChance(List<RoleTypeId> alreadySpawned)

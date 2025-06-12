@@ -58,8 +58,8 @@ public class Scp106Attack : Scp106VigorAbilityBase
 	{
 		base.OnKeyDown();
 		float num = -1f;
-		_claimedOwnerPosition = base.CastRole.FpcModule.Position;
-		_claimedOwnerCamRotation = OwnerCam.rotation;
+		this._claimedOwnerPosition = base.CastRole.FpcModule.Position;
+		this._claimedOwnerCamRotation = this.OwnerCam.rotation;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (!HitboxIdentity.IsEnemy(base.Owner, allHub) || !(allHub.roleManager.CurrentRole is IFpcRole fpcRole))
@@ -67,21 +67,21 @@ public class Scp106Attack : Scp106VigorAbilityBase
 				continue;
 			}
 			Vector3 position = fpcRole.FpcModule.Position;
-			Vector3 vector = position - _claimedOwnerPosition;
-			if (!(vector.sqrMagnitude > _maxRangeSqr))
+			Vector3 vector = position - this._claimedOwnerPosition;
+			if (!(vector.sqrMagnitude > this._maxRangeSqr))
 			{
-				float num2 = Vector3.Dot(vector.normalized, OwnerCam.forward);
+				float num2 = Vector3.Dot(vector.normalized, this.OwnerCam.forward);
 				if (!(num2 < num))
 				{
-					_claimedTargetPosition = position;
-					_targetHub = allHub;
+					this._claimedTargetPosition = position;
+					this._targetHub = allHub;
 					num = num2;
 				}
 			}
 		}
 		if (num != -1f)
 		{
-			ClientSendCmd();
+			base.ClientSendCmd();
 		}
 	}
 
@@ -89,8 +89,8 @@ public class Scp106Attack : Scp106VigorAbilityBase
 	{
 		if (!(cooldown <= 0f))
 		{
-			_nextAttack = NetworkTime.time + (double)cooldown;
-			ServerSendRpc((ReferenceHub x) => x == base.Owner || base.Owner.IsSpectatedBy(x));
+			this._nextAttack = NetworkTime.time + (double)cooldown;
+			base.ServerSendRpc((ReferenceHub x) => x == base.Owner || base.Owner.IsSpectatedBy(x));
 		}
 	}
 
@@ -101,30 +101,30 @@ public class Scp106Attack : Scp106VigorAbilityBase
 
 	private bool VerifyShot()
 	{
-		if (!(_targetHub.roleManager.CurrentRole is IFpcRole fpcRole))
+		if (!(this._targetHub.roleManager.CurrentRole is IFpcRole fpcRole))
 		{
 			return false;
 		}
-		using (new FpcBacktracker(_targetHub, _claimedTargetPosition, 0.35f))
+		using (new FpcBacktracker(this._targetHub, this._claimedTargetPosition, 0.35f))
 		{
 			Vector3 position = base.CastRole.FpcModule.Position;
 			Vector3 position2 = fpcRole.FpcModule.Position;
 			Vector3 vector = position2 - position;
 			float sqrMagnitude = vector.sqrMagnitude;
-			if (sqrMagnitude > _maxRangeSqr)
+			if (sqrMagnitude > this._maxRangeSqr)
 			{
 				return false;
 			}
-			Vector3 forward = OwnerCam.forward;
+			Vector3 forward = this.OwnerCam.forward;
 			forward.y = 0f;
 			vector.y = 0f;
 			if (Physics.Linecast(position, position2, PlayerRolesUtils.AttackMask))
 			{
 				return false;
 			}
-			if (!(_dotOverDistance.Evaluate(sqrMagnitude) <= Vector3.Dot(vector.normalized, forward.normalized)))
+			if (!(this._dotOverDistance.Evaluate(sqrMagnitude) <= Vector3.Dot(vector.normalized, forward.normalized)))
 			{
-				SendCooldown(_missCooldown);
+				this.SendCooldown(this._missCooldown);
 				return false;
 			}
 		}
@@ -133,28 +133,28 @@ public class Scp106Attack : Scp106VigorAbilityBase
 
 	private void ServerShoot()
 	{
-		if (!VerifyShot())
+		if (!this.VerifyShot())
 		{
 			return;
 		}
-		PlayerEffectsController playerEffectsController = _targetHub.playerEffectsController;
+		PlayerEffectsController playerEffectsController = this._targetHub.playerEffectsController;
 		Corroding effect = playerEffectsController.GetEffect<Corroding>();
 		if (playerEffectsController.GetEffect<Traumatized>().IsEnabled)
 		{
 			DamageHandlerBase handler = new ScpDamageHandler(base.Owner, -1f, DeathTranslations.PocketDecay);
-			if (_targetHub.playerStats.DealDamage(handler))
+			if (this._targetHub.playerStats.DealDamage(handler))
 			{
 				base.VigorAmount += 0.3f;
-				SendCooldown(_hitCooldown);
-				ReduceSinkholeCooldown();
+				this.SendCooldown(this._hitCooldown);
+				this.ReduceSinkholeCooldown();
 				Hitmarker.SendHitmarkerDirectly(base.Owner, 1f);
 			}
 			return;
 		}
 		if (!effect.IsEnabled)
 		{
-			DamageHandlerBase handler2 = new ScpDamageHandler(base.Owner, _damage, DeathTranslations.PocketDecay);
-			if (!_targetHub.playerStats.DealDamage(handler2))
+			DamageHandlerBase handler2 = new ScpDamageHandler(base.Owner, this._damage, DeathTranslations.PocketDecay);
+			if (!this._targetHub.playerStats.DealDamage(handler2))
 			{
 				return;
 			}
@@ -163,62 +163,62 @@ public class Scp106Attack : Scp106VigorAbilityBase
 		}
 		else
 		{
-			Scp106TeleportingPlayerEvent scp106TeleportingPlayerEvent = new Scp106TeleportingPlayerEvent(base.Owner, _targetHub);
+			Scp106TeleportingPlayerEvent scp106TeleportingPlayerEvent = new Scp106TeleportingPlayerEvent(base.Owner, this._targetHub);
 			Scp106Events.OnTeleportingPlayer(scp106TeleportingPlayerEvent);
 			if (!scp106TeleportingPlayerEvent.IsAllowed)
 			{
 				return;
 			}
-			Scp106Attack.OnPlayerTeleported?.Invoke(base.Owner, _targetHub);
+			Scp106Attack.OnPlayerTeleported?.Invoke(base.Owner, this._targetHub);
 			playerEffectsController.EnableEffect<PocketCorroding>();
 			base.VigorAmount += 0.3f;
-			Scp106Events.OnTeleportedPlayer(new Scp106TeleportedPlayerEvent(base.Owner, _targetHub));
+			Scp106Events.OnTeleportedPlayer(new Scp106TeleportedPlayerEvent(base.Owner, this._targetHub));
 		}
-		SendCooldown(_hitCooldown);
-		ReduceSinkholeCooldown();
+		this.SendCooldown(this._hitCooldown);
+		this.ReduceSinkholeCooldown();
 		Hitmarker.SendHitmarkerDirectly(base.Owner, 1f);
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteReferenceHub(_targetHub);
-		writer.WriteRelativePosition(new RelativePosition(_claimedTargetPosition));
-		writer.WriteQuaternion(_claimedOwnerCamRotation);
-		writer.WriteRelativePosition(new RelativePosition(_claimedOwnerPosition));
+		writer.WriteReferenceHub(this._targetHub);
+		writer.WriteRelativePosition(new RelativePosition(this._claimedTargetPosition));
+		writer.WriteQuaternion(this._claimedOwnerCamRotation);
+		writer.WriteRelativePosition(new RelativePosition(this._claimedOwnerPosition));
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (_nextAttack > NetworkTime.time || base.CastRole.Sinkhole.SubmergeProgress > 0f)
+		if (this._nextAttack > NetworkTime.time || base.CastRole.Sinkhole.SubmergeProgress > 0f)
 		{
 			return;
 		}
-		_targetHub = reader.ReadReferenceHub();
-		_claimedTargetPosition = reader.ReadRelativePosition().Position;
-		_claimedOwnerCamRotation = reader.ReadQuaternion();
-		_claimedOwnerPosition = reader.ReadRelativePosition().Position;
-		if (_targetHub == null || !HitboxIdentity.IsEnemy(base.Owner, _targetHub))
+		this._targetHub = reader.ReadReferenceHub();
+		this._claimedTargetPosition = reader.ReadRelativePosition().Position;
+		this._claimedOwnerCamRotation = reader.ReadQuaternion();
+		this._claimedOwnerPosition = reader.ReadRelativePosition().Position;
+		if (this._targetHub == null || !HitboxIdentity.IsEnemy(base.Owner, this._targetHub))
 		{
 			return;
 		}
-		using (new FpcBacktracker(base.Owner, _claimedOwnerPosition, _claimedOwnerCamRotation))
+		using (new FpcBacktracker(base.Owner, this._claimedOwnerPosition, this._claimedOwnerCamRotation))
 		{
-			ServerShoot();
+			this.ServerShoot();
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteDouble(_nextAttack);
+		writer.WriteDouble(this._nextAttack);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		ReduceSinkholeCooldown();
+		this.ReduceSinkholeCooldown();
 		Scp106Hud.PlayCooldownAnimation(reader.ReadDouble());
 	}
 }

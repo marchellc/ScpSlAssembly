@@ -42,9 +42,9 @@ public static class Version
 	{
 		get
 		{
-			if (BuildType != VersionType.PublicBeta)
+			if (Version.BuildType != VersionType.PublicBeta)
 			{
-				return BuildType == VersionType.PublicRC;
+				return Version.BuildType == VersionType.PublicRC;
 			}
 			return true;
 		}
@@ -54,7 +54,7 @@ public static class Version
 	{
 		get
 		{
-			VersionType buildType = BuildType;
+			VersionType buildType = Version.BuildType;
 			return buildType == VersionType.PrivateBeta || buildType == VersionType.PrivateBetaStreamingForbidden || buildType == VersionType.PrivateRC || buildType == VersionType.PrivateRCStreamingForbidden || buildType == VersionType.Development || buildType == VersionType.Nightly;
 		}
 	}
@@ -63,7 +63,7 @@ public static class Version
 	{
 		get
 		{
-			VersionType buildType = BuildType;
+			VersionType buildType = Version.BuildType;
 			return buildType == VersionType.PublicRC || buildType == VersionType.PrivateRC || buildType == VersionType.PrivateRCStreamingForbidden;
 		}
 	}
@@ -72,7 +72,7 @@ public static class Version
 	{
 		get
 		{
-			VersionType buildType = BuildType;
+			VersionType buildType = Version.BuildType;
 			if (buildType != VersionType.PrivateBetaStreamingForbidden && buildType != VersionType.PrivateRCStreamingForbidden && buildType != VersionType.Development)
 			{
 				return buildType != VersionType.Nightly;
@@ -81,21 +81,21 @@ public static class Version
 		}
 	}
 
-	public static bool ExtendedVersionCheckNeeded => BuildType != VersionType.Release;
+	public static bool ExtendedVersionCheckNeeded => Version.BuildType != VersionType.Release;
 
 	static Version()
 	{
-		Major = 14;
-		Minor = 1;
-		Revision = 0;
-		AlwaysAcceptReleaseBuilds = false;
-		BuildType = VersionType.Release;
-		ActiveHoliday = HolidayType.None;
-		BackwardCompatibility = false;
-		BackwardRevision = 0;
-		DescriptionOverride = "release-beta-90e1f22c";
-		VersionString = string.Format("{0}.{1}.{2}{3}", Major, Minor, Revision, (!ExtendedVersionCheckNeeded) ? string.Empty : ("-" + (DescriptionOverride ?? "release-beta-8b5899d8")));
-		SteamServerInfo.Version = VersionString;
+		Version.Major = 14;
+		Version.Minor = 1;
+		Version.Revision = 1;
+		Version.AlwaysAcceptReleaseBuilds = false;
+		Version.BuildType = VersionType.Release;
+		Version.ActiveHoliday = HolidayType.None;
+		Version.BackwardCompatibility = false;
+		Version.BackwardRevision = 0;
+		Version.DescriptionOverride = null;
+		Version.VersionString = string.Format("{0}.{1}.{2}{3}", Version.Major, Version.Minor, Version.Revision, (!Version.ExtendedVersionCheckNeeded) ? string.Empty : ("-" + (Version.DescriptionOverride ?? "deploy-d69d84dc")));
+		SteamServerInfo.Version = Version.VersionString;
 	}
 
 	public static bool CompatibilityCheck(byte sMajor, byte sMinor, byte sRevision, byte cMajor, byte cMinor, byte cRevision, bool cBackwardEnabled, byte cBackwardRevision)

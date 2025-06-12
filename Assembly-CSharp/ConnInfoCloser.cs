@@ -6,7 +6,7 @@ public class ConnInfoCloser : ConnInfoButton
 
 	public override void UseButton()
 	{
-		GameObject[] array = objToClose;
+		GameObject[] array = this.objToClose;
 		for (int i = 0; i < array.Length; i++)
 		{
 			array[i].SetActive(value: false);

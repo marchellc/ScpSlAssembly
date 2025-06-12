@@ -16,7 +16,12 @@ public static class FilmmakerTimelineManager
 
 	public static readonly FilmmakerTrack<float> ZoomTrack = new FilmmakerTrack<float>(1f);
 
-	public static readonly IFilmmakerTrack[] AllTracks = new IFilmmakerTrack[3] { PositionTrack, RotationTrack, ZoomTrack };
+	public static readonly IFilmmakerTrack[] AllTracks = new IFilmmakerTrack[3]
+	{
+		FilmmakerTimelineManager.PositionTrack,
+		FilmmakerTimelineManager.RotationTrack,
+		FilmmakerTimelineManager.ZoomTrack
+	};
 
 	private static readonly Dictionary<FilmmakerBlendPreset, AnimationCurve> BlendPresets = new Dictionary<FilmmakerBlendPreset, AnimationCurve>
 	{
@@ -32,11 +37,11 @@ public static class FilmmakerTimelineManager
 	{
 		get
 		{
-			return Mathf.RoundToInt(TimeSeconds * 50f);
+			return Mathf.RoundToInt(FilmmakerTimelineManager.TimeSeconds * 50f);
 		}
 		set
 		{
-			TimeSeconds = (float)value * 0.02f;
+			FilmmakerTimelineManager.TimeSeconds = (float)value * 0.02f;
 		}
 	}
 
@@ -44,9 +49,9 @@ public static class FilmmakerTimelineManager
 	{
 		if (ReferenceHub.TryGetLocalHub(out var hub) && hub.roleManager.CurrentRole is FilmmakerRole filmmakerRole)
 		{
-			filmmakerRole.CameraPosition = EvaluateParam(PositionTrack, Vector3.Lerp);
-			filmmakerRole.CameraRotation = EvaluateParam(RotationTrack, Quaternion.Lerp);
-			FilmmakerRole.ZoomScale = EvaluateParam(ZoomTrack, Mathf.Lerp);
+			filmmakerRole.CameraPosition = FilmmakerTimelineManager.EvaluateParam(FilmmakerTimelineManager.PositionTrack, Vector3.Lerp);
+			filmmakerRole.CameraRotation = FilmmakerTimelineManager.EvaluateParam(FilmmakerTimelineManager.RotationTrack, Quaternion.Lerp);
+			FilmmakerRole.ZoomScale = FilmmakerTimelineManager.EvaluateParam(FilmmakerTimelineManager.ZoomTrack, Mathf.Lerp);
 		}
 	}
 
@@ -55,7 +60,7 @@ public static class FilmmakerTimelineManager
 		FilmmakerKeyframe<T>[] keyframes = selector.Keyframes;
 		FilmmakerKeyframe<T> filmmakerKeyframe = null;
 		FilmmakerKeyframe<T> filmmakerKeyframe2 = null;
-		int timeFrames = TimeFrames;
+		int timeFrames = FilmmakerTimelineManager.TimeFrames;
 		for (int num = keyframes.Length - 1; num >= 0; num--)
 		{
 			if (keyframes[num].TimeFrames <= timeFrames)
@@ -84,10 +89,10 @@ public static class FilmmakerTimelineManager
 		{
 			return selector.DefaultValue;
 		}
-		AnimationCurve animationCurve = BlendPresets[filmmakerKeyframe.BlendCurve];
+		AnimationCurve animationCurve = FilmmakerTimelineManager.BlendPresets[filmmakerKeyframe.BlendCurve];
 		float a = (float)filmmakerKeyframe.TimeFrames * 0.02f;
 		float b = (float)filmmakerKeyframe2.TimeFrames * 0.02f;
-		float time = Mathf.InverseLerp(a, b, TimeSeconds);
+		float time = Mathf.InverseLerp(a, b, FilmmakerTimelineManager.TimeSeconds);
 		return lerp(filmmakerKeyframe.Value, filmmakerKeyframe2.Value, animationCurve.Evaluate(time));
 	}
 }

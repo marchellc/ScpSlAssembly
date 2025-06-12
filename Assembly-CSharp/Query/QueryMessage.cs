@@ -30,7 +30,7 @@ public readonly struct QueryMessage
 
 	private const int HeaderSize = 13;
 
-	public int SerializedSize => Payload.Length + 13;
+	public int SerializedSize => this.Payload.Length + 13;
 
 	public QueryMessage(string payload, uint sequentialNumber, byte queryContentType)
 		: this(Utf8.GetBytes(payload), sequentialNumber, queryContentType, DateTimeOffset.UtcNow.ToUnixTimeSeconds())
@@ -49,33 +49,33 @@ public readonly struct QueryMessage
 
 	public QueryMessage(byte[] payload, uint sequentialNumber, byte queryContentType, long timestamp)
 	{
-		Payload = payload;
-		SequentialNumber = sequentialNumber;
-		QueryContentType = queryContentType;
-		Timestamp = timestamp;
+		this.Payload = payload;
+		this.SequentialNumber = sequentialNumber;
+		this.QueryContentType = queryContentType;
+		this.Timestamp = timestamp;
 	}
 
 	public bool Validate(uint lastRxSequentialNumber, int timeTolerance = 120)
 	{
-		if (SequentialNumber == lastRxSequentialNumber + 1)
+		if (this.SequentialNumber == lastRxSequentialNumber + 1)
 		{
-			return Math.Abs(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - Timestamp) <= timeTolerance;
+			return Math.Abs(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - this.Timestamp) <= timeTolerance;
 		}
 		return false;
 	}
 
 	public override string ToString()
 	{
-		return Utf8.GetString(Payload);
+		return Utf8.GetString(this.Payload);
 	}
 
 	public int Serialize(Span<byte> buffer)
 	{
-		BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(0, 4), SequentialNumber);
-		BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(4, 8), Timestamp);
-		buffer[12] = QueryContentType;
-		Payload.CopyTo(buffer.Slice(13));
-		return SerializedSize;
+		BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(0, 4), this.SequentialNumber);
+		BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(4, 8), this.Timestamp);
+		buffer[12] = this.QueryContentType;
+		this.Payload.CopyTo(buffer.Slice(13));
+		return this.SerializedSize;
 	}
 
 	public static QueryMessage Deserialize(ReadOnlySpan<byte> buffer)

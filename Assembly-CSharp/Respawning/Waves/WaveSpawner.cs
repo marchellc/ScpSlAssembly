@@ -33,7 +33,7 @@ public static class WaveSpawner
 	public static List<ReferenceHub> GetAvailablePlayers(Team spawningTeam)
 	{
 		return (from hub in ReferenceHub.AllHubs.Where(CanBeSpawned)
-			orderby CalculatePriority(hub, spawningTeam) descending
+			orderby WaveSpawner.CalculatePriority(hub, spawningTeam) descending
 			select hub).ToList();
 	}
 
@@ -41,7 +41,7 @@ public static class WaveSpawner
 	{
 		List<ReferenceHub> list = NorthwoodLib.Pools.ListPool<ReferenceHub>.Shared.Rent();
 		Team spawnableTeam = wave.TargetFaction.GetSpawnableTeam();
-		List<ReferenceHub> availablePlayers = GetAvailablePlayers(spawnableTeam);
+		List<ReferenceHub> availablePlayers = WaveSpawner.GetAvailablePlayers(spawnableTeam);
 		int maxWaveSize = wave.MaxWaveSize;
 		int num = Mathf.Min(availablePlayers.Count, maxWaveSize);
 		if (num <= 0)
@@ -52,7 +52,7 @@ public static class WaveSpawner
 		{
 			NamingRulesManager.ServerGenerateName(spawnableTeam, rule);
 		}
-		wave.PopulateQueue(SpawnQueue, num);
+		wave.PopulateQueue(WaveSpawner.SpawnQueue, num);
 		RoleChangeReason reason = ((wave is IMiniWave) ? RoleChangeReason.RespawnMiniwave : RoleChangeReason.Respawn);
 		Dictionary<ReferenceHub, RoleTypeId> dictionary = CollectionPool<Dictionary<ReferenceHub, RoleTypeId>, KeyValuePair<ReferenceHub, RoleTypeId>>.Get();
 		foreach (ReferenceHub item in availablePlayers)
@@ -63,7 +63,7 @@ public static class WaveSpawner
 			}
 			try
 			{
-				RoleTypeId value = SpawnQueue.Dequeue();
+				RoleTypeId value = WaveSpawner.SpawnQueue.Dequeue();
 				dictionary.Add(item, value);
 			}
 			catch (Exception ex)
@@ -78,20 +78,21 @@ public static class WaveSpawner
 				}
 			}
 		}
-		WaveRespawningEventArgs waveRespawningEventArgs = new WaveRespawningEventArgs(wave, dictionary);
-		ServerEvents.OnWaveRespawning(waveRespawningEventArgs);
-		if (!waveRespawningEventArgs.IsAllowed)
+		WaveRespawningEventArgs e = new WaveRespawningEventArgs(wave, dictionary);
+		ServerEvents.OnWaveRespawning(e);
+		if (!e.IsAllowed)
 		{
 			list.Clear();
 			CollectionPool<Dictionary<ReferenceHub, RoleTypeId>, KeyValuePair<ReferenceHub, RoleTypeId>>.Release(dictionary);
-			SpawnQueue.Clear();
+			WaveSpawner.SpawnQueue.Clear();
 			return list;
 		}
-		foreach (KeyValuePair<Player, RoleTypeId> role in waveRespawningEventArgs.Roles)
+		dictionary.Clear();
+		foreach (KeyValuePair<Player, RoleTypeId> role in e.Roles)
 		{
 			dictionary[role.Key.ReferenceHub] = role.Value;
 		}
-		CollectionPool<Dictionary<Player, RoleTypeId>, KeyValuePair<Player, RoleTypeId>>.Release(waveRespawningEventArgs.Roles);
+		CollectionPool<Dictionary<Player, RoleTypeId>, KeyValuePair<Player, RoleTypeId>>.Release(e.Roles);
 		if (wave is IAnnouncedWave announcedWave)
 		{
 			announcedWave.Announcement.PlayAnnouncement();
@@ -125,7 +126,7 @@ public static class WaveSpawner
 		{
 			ServerLogs.AddLog(ServerLogs.Modules.ClassChange, string.Format("{0} has successfully spawned {1} players as {2}!", "WaveSpawner", list.Count, spawnableTeam), ServerLogs.ServerLogType.GameEvent);
 		}
-		SpawnQueue.Clear();
+		WaveSpawner.SpawnQueue.Clear();
 		CollectionPool<Dictionary<ReferenceHub, RoleTypeId>, KeyValuePair<ReferenceHub, RoleTypeId>>.Release(dictionary);
 		return list;
 	}
@@ -138,7 +139,7 @@ public static class WaveSpawner
 			return 0f - num;
 		}
 		num += spectatorRole.ActiveTime / 15f;
-		if (!PreviousTeam.TryGetValue(hub, out var value))
+		if (!WaveSpawner.PreviousTeam.TryGetValue(hub, out var value))
 		{
 			return num;
 		}
@@ -172,12 +173,12 @@ public static class WaveSpawner
 	private static void Init()
 	{
 		PlayerRoleManager.OnServerRoleSet += OnServerRoleSet;
-		CustomNetworkManager.OnClientReady += PreviousTeam.Clear;
+		CustomNetworkManager.OnClientReady += WaveSpawner.PreviousTeam.Clear;
 	}
 
 	private static void OnServerRoleSet(ReferenceHub userHub, RoleTypeId newRole, RoleChangeReason reason)
 	{
 		Team spawnableTeam = userHub.GetFaction().GetSpawnableTeam();
-		PreviousTeam[userHub] = spawnableTeam;
+		WaveSpawner.PreviousTeam[userHub] = spawnableTeam;
 	}
 }

@@ -31,36 +31,36 @@ public class Scp173TeleportIndicator : MonoBehaviour
 
 	private void Awake()
 	{
-		_subroutineManager.TryGetSubroutine<Scp173TeleportAbility>(out _teleportAbility);
-		_subroutineManager.TryGetSubroutine<Scp173BreakneckSpeedsAbility>(out _breakneckSpeedsAbility);
+		this._subroutineManager.TryGetSubroutine<Scp173TeleportAbility>(out this._teleportAbility);
+		this._subroutineManager.TryGetSubroutine<Scp173BreakneckSpeedsAbility>(out this._breakneckSpeedsAbility);
 	}
 
 	private void Update()
 	{
-		_soundSource.volume = Mathf.MoveTowards(_soundSource.volume, _targetVolume, _volumeAdjustmentSpeed * Time.deltaTime);
+		this._soundSource.volume = Mathf.MoveTowards(this._soundSource.volume, this._targetVolume, this._volumeAdjustmentSpeed * Time.deltaTime);
 	}
 
 	private void SetupVisiblity(bool normal = false, bool kill = false, bool neutral = false)
 	{
-		_normalIndicator.SetActive(normal);
-		_killIndicator.SetActive(kill);
-		_neutralIndicator.SetActive(neutral);
+		this._normalIndicator.SetActive(normal);
+		this._killIndicator.SetActive(kill);
+		this._neutralIndicator.SetActive(neutral);
 	}
 
 	public void UpdateVisibility(bool isVisible)
 	{
-		_targetVolume = (isVisible ? 1 : 0);
+		this._targetVolume = (isVisible ? 1 : 0);
 		if (!isVisible)
 		{
-			SetupVisiblity();
+			this.SetupVisiblity();
 			return;
 		}
-		if (_breakneckSpeedsAbility.IsActive)
+		if (this._breakneckSpeedsAbility.IsActive)
 		{
-			SetupVisiblity(normal: false, kill: false, neutral: true);
+			this.SetupVisiblity(normal: false, kill: false, neutral: true);
 			return;
 		}
-		bool flag = _teleportAbility.BestTarget != null;
-		SetupVisiblity(!flag, flag);
+		bool flag = this._teleportAbility.BestTarget != null;
+		this.SetupVisiblity(!flag, flag);
 	}
 }

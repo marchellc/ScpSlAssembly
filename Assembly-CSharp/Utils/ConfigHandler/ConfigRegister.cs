@@ -9,7 +9,7 @@ public abstract class ConfigRegister
 
 	public ConfigEntry[] GetRegisteredConfigs()
 	{
-		return registeredConfigs.ToArray();
+		return this.registeredConfigs.ToArray();
 	}
 
 	public ConfigEntry GetRegisteredConfig(string key)
@@ -18,7 +18,7 @@ public abstract class ConfigRegister
 		{
 			return null;
 		}
-		foreach (ConfigEntry registeredConfig in registeredConfigs)
+		foreach (ConfigEntry registeredConfig in this.registeredConfigs)
 		{
 			if (string.Equals(key, registeredConfig.Key, StringComparison.OrdinalIgnoreCase))
 			{
@@ -32,10 +32,10 @@ public abstract class ConfigRegister
 	{
 		if (configEntry != null && !string.IsNullOrEmpty(configEntry.Key))
 		{
-			registeredConfigs.Add(configEntry);
+			this.registeredConfigs.Add(configEntry);
 			if (updateValue)
 			{
-				UpdateConfigValue(configEntry);
+				this.UpdateConfigValue(configEntry);
 			}
 		}
 	}
@@ -46,7 +46,7 @@ public abstract class ConfigRegister
 		{
 			foreach (ConfigEntry configEntry in configEntries)
 			{
-				RegisterConfig(configEntry, updateValue);
+				this.RegisterConfig(configEntry, updateValue);
 			}
 		}
 	}
@@ -55,13 +55,13 @@ public abstract class ConfigRegister
 	{
 		if (configEntry != null && !string.IsNullOrEmpty(configEntry.Key))
 		{
-			registeredConfigs.Remove(configEntry);
+			this.registeredConfigs.Remove(configEntry);
 		}
 	}
 
 	public void UnRegisterConfig(string key)
 	{
-		UnRegisterConfig(GetRegisteredConfig(key));
+		this.UnRegisterConfig(this.GetRegisteredConfig(key));
 	}
 
 	public void UnRegisterConfigs(params ConfigEntry[] configEntries)
@@ -70,7 +70,7 @@ public abstract class ConfigRegister
 		{
 			foreach (ConfigEntry configEntry in configEntries)
 			{
-				UnRegisterConfig(configEntry);
+				this.UnRegisterConfig(configEntry);
 			}
 		}
 	}
@@ -81,16 +81,16 @@ public abstract class ConfigRegister
 		{
 			foreach (string key in keys)
 			{
-				UnRegisterConfig(key);
+				this.UnRegisterConfig(key);
 			}
 		}
 	}
 
 	public void UnRegisterConfigs()
 	{
-		foreach (ConfigEntry registeredConfig in registeredConfigs)
+		foreach (ConfigEntry registeredConfig in this.registeredConfigs)
 		{
-			UnRegisterConfig(registeredConfig);
+			this.UnRegisterConfig(registeredConfig);
 		}
 	}
 
@@ -102,16 +102,16 @@ public abstract class ConfigRegister
 		{
 			foreach (ConfigEntry configEntry in configEntries)
 			{
-				UpdateConfigValue(configEntry);
+				this.UpdateConfigValue(configEntry);
 			}
 		}
 	}
 
 	public void UpdateRegisteredConfigValues()
 	{
-		foreach (ConfigEntry registeredConfig in registeredConfigs)
+		foreach (ConfigEntry registeredConfig in this.registeredConfigs)
 		{
-			UpdateConfigValue(registeredConfig);
+			this.UpdateConfigValue(registeredConfig);
 		}
 	}
 }

@@ -39,30 +39,30 @@ public static class HitregUtils
 	public static void Raycast(Transform plyCam, float thickness, float range, out int detections)
 	{
 		Vector3 position = plyCam.position;
-		detections = Physics.SphereCastNonAlloc(position, thickness, plyCam.forward, HitsNonAlloc, range, DetectionMask);
-		DetectedDestructibles.Clear();
-		DetectedNetIds.Clear();
+		detections = Physics.SphereCastNonAlloc(position, thickness, plyCam.forward, HitregUtils.HitsNonAlloc, range, HitregUtils.DetectionMask);
+		HitregUtils.DetectedDestructibles.Clear();
+		HitregUtils.DetectedNetIds.Clear();
 		for (int i = 0; i < detections; i++)
 		{
-			Collider collider = HitsNonAlloc[i].collider;
-			DetectionsNonAlloc[i] = collider;
-			if (collider.TryGetComponent<IDestructible>(out var component) && (!Physics.Linecast(position, component.CenterOfMass, out var hitInfo, PlayerRolesUtils.AttackMask) || !(hitInfo.collider != collider)) && DetectedNetIds.Add(component.NetworkId))
+			Collider collider = HitregUtils.HitsNonAlloc[i].collider;
+			HitregUtils.DetectionsNonAlloc[i] = collider;
+			if (collider.TryGetComponent<IDestructible>(out var component) && (!Physics.Linecast(position, component.CenterOfMass, out var hitInfo, PlayerRolesUtils.AttackMask) || !(hitInfo.collider != collider)) && HitregUtils.DetectedNetIds.Add(component.NetworkId))
 			{
-				DetectedDestructibles.Add(component);
+				HitregUtils.DetectedDestructibles.Add(component);
 			}
 		}
 	}
 
 	public static void OverlapSphere(Vector3 point, float radius, out int detections, Predicate<IDestructible> prevalidator = null)
 	{
-		detections = Physics.OverlapSphereNonAlloc(point, radius, DetectionsNonAlloc, DetectionMask);
-		DetectedDestructibles.Clear();
-		DetectedNetIds.Clear();
+		detections = Physics.OverlapSphereNonAlloc(point, radius, HitregUtils.DetectionsNonAlloc, HitregUtils.DetectionMask);
+		HitregUtils.DetectedDestructibles.Clear();
+		HitregUtils.DetectedNetIds.Clear();
 		for (int i = 0; i < detections; i++)
 		{
-			if (DetectionsNonAlloc[i].TryGetComponent<IDestructible>(out var component) && !Physics.Linecast(point, component.CenterOfMass, PlayerRolesUtils.AttackMask) && (prevalidator == null || prevalidator(component)) && DetectedNetIds.Add(component.NetworkId))
+			if (HitregUtils.DetectionsNonAlloc[i].TryGetComponent<IDestructible>(out var component) && !Physics.Linecast(point, component.CenterOfMass, PlayerRolesUtils.AttackMask) && (prevalidator == null || prevalidator(component)) && HitregUtils.DetectedNetIds.Add(component.NetworkId))
 			{
-				DetectedDestructibles.Add(component);
+				HitregUtils.DetectedDestructibles.Add(component);
 			}
 		}
 	}

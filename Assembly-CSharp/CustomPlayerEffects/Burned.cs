@@ -21,6 +21,6 @@ public class Burned : StatusEffectBase, IHealableEffect, IDamageModifierEffect
 
 	public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
 	{
-		return DamageMultiplier;
+		return this.DamageMultiplier;
 	}
 }

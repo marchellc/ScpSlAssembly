@@ -15,7 +15,7 @@ public abstract class SoundtrackLayerBase : MonoBehaviour
 		{
 			if (ReferenceHub.TryGetPovHub(out var hub))
 			{
-				return IsMutedForPlayer(hub);
+				return this.IsMutedForPlayer(hub);
 			}
 			return false;
 		}

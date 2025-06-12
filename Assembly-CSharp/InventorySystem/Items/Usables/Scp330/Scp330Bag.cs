@@ -25,9 +25,9 @@ public class Scp330Bag : UsableItem, IAcquisitionConfirmationTrigger, IUniqueIte
 	{
 		get
 		{
-			if (SelectedCandyId >= 0)
+			if (this.SelectedCandyId >= 0)
 			{
-				return SelectedCandyId < Candies.Count;
+				return this.SelectedCandyId < this.Candies.Count;
 			}
 			return false;
 		}
@@ -36,9 +36,9 @@ public class Scp330Bag : UsableItem, IAcquisitionConfirmationTrigger, IUniqueIte
 	public override void OnAdded(ItemPickupBase pickup)
 	{
 		base.OnAdded(pickup);
-		if (NetworkServer.active && ServerProcessPickup(base.Owner, pickup as Scp330Pickup, out var bag) && !(bag == null) && !(bag == this))
+		if (NetworkServer.active && Scp330Bag.ServerProcessPickup(base.Owner, pickup as Scp330Pickup, out var bag) && !(bag == null) && !(bag == this))
 		{
-			ServerRemoveSelf();
+			base.ServerRemoveSelf();
 		}
 	}
 
@@ -47,67 +47,67 @@ public class Scp330Bag : UsableItem, IAcquisitionConfirmationTrigger, IUniqueIte
 		base.OnRemoved(pickup);
 		if (NetworkServer.active && pickup is Scp330Pickup scp330Pickup && scp330Pickup != null)
 		{
-			scp330Pickup.StoredCandies = Candies;
+			scp330Pickup.StoredCandies = this.Candies;
 		}
 	}
 
 	public override void OnEquipped()
 	{
-		SelectedCandyId = -1;
+		this.SelectedCandyId = -1;
 	}
 
 	public override void OnHolstered()
 	{
-		IsUsing = false;
+		base.IsUsing = false;
 	}
 
 	public void ServerConfirmAcqusition()
 	{
-		ServerRefreshBag();
+		this.ServerRefreshBag();
 	}
 
 	public override void ServerOnUsingCompleted()
 	{
-		if (IsCandySelected && Scp330Candies.CandiesById.TryGetValue(Candies[SelectedCandyId], out var value))
+		if (this.IsCandySelected && Scp330Candies.CandiesById.TryGetValue(this.Candies[this.SelectedCandyId], out var value))
 		{
-			IsUsing = false;
+			base.IsUsing = false;
 			value.ServerApplyEffects(base.Owner);
-			Candies.RemoveAt(SelectedCandyId);
+			this.Candies.RemoveAt(this.SelectedCandyId);
 			base.OwnerInventory.ServerSelectItem(0);
-			ServerRefreshBag();
+			this.ServerRefreshBag();
 		}
 	}
 
 	public void DropCandy(int index)
 	{
-		SendClientMessage(index, drop: true);
+		this.SendClientMessage(index, drop: true);
 	}
 
 	public void SelectCandy(int index)
 	{
-		SelectedCandyId = index;
-		SendClientMessage(index, drop: false);
+		this.SelectedCandyId = index;
+		this.SendClientMessage(index, drop: false);
 	}
 
 	public bool TryAddSpecific(CandyKindID kind)
 	{
-		if (Candies.Count >= 6)
+		if (this.Candies.Count >= 6)
 		{
 			return false;
 		}
-		Candies.Add(kind);
+		this.Candies.Add(kind);
 		return true;
 	}
 
 	public CandyKindID TryRemove(int index)
 	{
-		if (index < 0 || index > Candies.Count)
+		if (index < 0 || index > this.Candies.Count)
 		{
 			return CandyKindID.None;
 		}
-		CandyKindID result = Candies[index];
-		Candies.RemoveAt(index);
-		ServerRefreshBag();
+		CandyKindID result = this.Candies[index];
+		this.Candies.RemoveAt(index);
+		this.ServerRefreshBag();
 		return result;
 	}
 
@@ -117,13 +117,13 @@ public class Scp330Bag : UsableItem, IAcquisitionConfirmationTrigger, IUniqueIte
 		{
 			return false;
 		}
-		if (Candies.Count != scp330Bag.Candies.Count)
+		if (this.Candies.Count != scp330Bag.Candies.Count)
 		{
 			return false;
 		}
-		for (int i = 0; i < Candies.Count; i++)
+		for (int i = 0; i < this.Candies.Count; i++)
 		{
-			if (Candies[i] != scp330Bag.Candies[i])
+			if (this.Candies[i] != scp330Bag.Candies[i])
 			{
 				return false;
 			}
@@ -133,7 +133,7 @@ public class Scp330Bag : UsableItem, IAcquisitionConfirmationTrigger, IUniqueIte
 
 	public static bool ServerProcessPickup(ReferenceHub ply, Scp330Pickup pickup, out Scp330Bag bag)
 	{
-		if (!TryGetBag(ply, out bag))
+		if (!Scp330Bag.TryGetBag(ply, out bag))
 		{
 			int num = ((!(pickup == null)) ? pickup.Info.Serial : 0);
 			return ply.inventory.ServerAddItem(ItemType.SCP330, ItemAddReason.Scp914Upgrade, (ushort)num, pickup) != null;
@@ -157,7 +157,7 @@ public class Scp330Bag : UsableItem, IAcquisitionConfirmationTrigger, IUniqueIte
 
 	public static bool TryAddCandy(ReferenceHub hub, CandyKindID kind)
 	{
-		if (!TryGetBag(hub, out var bag))
+		if (!Scp330Bag.TryGetBag(hub, out var bag))
 		{
 			bag = (Scp330Bag)hub.inventory.ServerAddItem(ItemType.SCP330, ItemAddReason.Scp914Upgrade, 0);
 			if (bag == null)
@@ -173,7 +173,7 @@ public class Scp330Bag : UsableItem, IAcquisitionConfirmationTrigger, IUniqueIte
 
 	public static bool CanAddCandy(ReferenceHub hub)
 	{
-		if (!TryGetBag(hub, out var bag))
+		if (!Scp330Bag.TryGetBag(hub, out var bag))
 		{
 			return hub.inventory.UserInventory.Items.Count < 8;
 		}
@@ -207,26 +207,27 @@ public class Scp330Bag : UsableItem, IAcquisitionConfirmationTrigger, IUniqueIte
 
 	private void SendClientMessage(int candyIdex, bool drop)
 	{
-		SelectScp330Message message = default(SelectScp330Message);
-		message.Serial = base.ItemSerial;
-		message.CandyID = (byte)candyIdex;
-		message.Drop = drop;
-		NetworkClient.Send(message);
+		NetworkClient.Send(new SelectScp330Message
+		{
+			Serial = base.ItemSerial,
+			CandyID = (byte)candyIdex,
+			Drop = drop
+		});
 	}
 
 	public void ServerRefreshBag()
 	{
-		if (Candies.Count > 0)
+		if (this.Candies.Count > 0)
 		{
 			base.OwnerInventory.connectionToClient.Send(new SyncScp330Message
 			{
 				Serial = base.ItemSerial,
-				Candies = Candies
+				Candies = this.Candies
 			});
 		}
 		else
 		{
-			ServerRemoveSelf();
+			base.ServerRemoveSelf();
 		}
 	}
 
@@ -236,18 +237,18 @@ public class Scp330Bag : UsableItem, IAcquisitionConfirmationTrigger, IUniqueIte
 		{
 			return;
 		}
-		for (int i = 0; i < Candies.Count; i++)
+		for (int i = 0; i < this.Candies.Count; i++)
 		{
 			int copyI = i;
-			actionAdder(new DummyAction(string.Format("{0}->Eat_{1}_{2}", "Scp330Bag", i, Candies[i]), delegate
+			actionAdder(new DummyAction(string.Format("{0}->Eat_{1}_{2}", "Scp330Bag", i, this.Candies[i]), delegate
 			{
 				this.ServerSelectCandy(copyI);
 			}));
 		}
-		for (int j = 0; j < Candies.Count; j++)
+		for (int num = 0; num < this.Candies.Count; num++)
 		{
-			int copyI2 = j;
-			actionAdder(new DummyAction(string.Format("{0}->Drop_{1}_{2}", "Scp330Bag", j, Candies[j]), delegate
+			int copyI2 = num;
+			actionAdder(new DummyAction(string.Format("{0}->Drop_{1}_{2}", "Scp330Bag", num, this.Candies[num]), delegate
 			{
 				this.ServerDropCandy(copyI2);
 			}));

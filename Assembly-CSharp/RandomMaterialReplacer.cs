@@ -6,11 +6,11 @@ public class RandomMaterialReplacer : MonoBehaviour
 
 	private void Start()
 	{
-		int num = Random.Range(0, mats.Length);
-		MeshRenderer[] componentsInChildren = GetComponentsInChildren<MeshRenderer>();
+		int num = Random.Range(0, this.mats.Length);
+		MeshRenderer[] componentsInChildren = base.GetComponentsInChildren<MeshRenderer>();
 		for (int i = 0; i < componentsInChildren.Length; i++)
 		{
-			componentsInChildren[i].material = mats[num];
+			componentsInChildren[i].material = this.mats[num];
 		}
 	}
 }

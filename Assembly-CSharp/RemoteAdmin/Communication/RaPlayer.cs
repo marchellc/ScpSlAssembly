@@ -41,7 +41,7 @@ public class RaPlayer : IServerCommunication, IClientCommunication
 		if (list.Count > 1)
 		{
 			StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-			stringBuilder.AppendFormat("${0} ", DataId);
+			stringBuilder.AppendFormat("${0} ", this.DataId);
 			stringBuilder.Append("<color=white>Multiple players selected:");
 			stringBuilder.Append("\nPlayer ID: <color=green><link=CP_ID>\uf0c5</link></color>");
 			stringBuilder.AppendFormat("\nIP Address: {0}", (!flag) ? "<color=green><link=CP_IP>\uf0c5</link></color>" : "[REDACTED]");
@@ -84,7 +84,7 @@ public class RaPlayer : IServerCommunication, IClientCommunication
 			playerCommandSender2.ReferenceHub.queryProcessor.GameplayData = flag3;
 		}
 		StringBuilder stringBuilder5 = StringBuilderPool.Shared.Rent();
-		stringBuilder5.AppendFormat("${0} ", DataId);
+		stringBuilder5.AppendFormat("${0} ", this.DataId);
 		stringBuilder5.AppendFormat("<color=white>Nickname: {0}", nicknameSync.CombinedName);
 		stringBuilder5.AppendFormat("\nPlayer ID: {0} <color=green><link=CP_ID>\uf0c5</link></color>", referenceHub.PlayerId);
 		RaClipboard.Send(sender, RaClipboard.RaClipBoardType.PlayerId, $"{referenceHub.PlayerId}");
@@ -160,13 +160,13 @@ public class RaPlayer : IServerCommunication, IClientCommunication
 			}
 		}
 		VcMuteFlags flags = VoiceChatMutes.GetFlags(list[0]);
-		if (flags != 0)
+		if (flags != VcMuteFlags.None)
 		{
 			stringBuilder5.Append("\nMUTE STATUS:");
 			VcMuteFlags[] values = EnumUtils<VcMuteFlags>.Values;
 			foreach (VcMuteFlags vcMuteFlags in values)
 			{
-				if (vcMuteFlags != 0 && (flags & vcMuteFlags) == vcMuteFlags)
+				if (vcMuteFlags != VcMuteFlags.None && (flags & vcMuteFlags) == vcMuteFlags)
 				{
 					stringBuilder5.Append(" <color=#F70D1A>");
 					stringBuilder5.Append(vcMuteFlags);

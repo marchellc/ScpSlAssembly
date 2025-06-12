@@ -28,13 +28,13 @@ public class SSPlaintextEntry : UserSettingsUIBase<TMP_InputField, string>, ISSE
 
 	public void Init(ServerSpecificSettingBase setting)
 	{
-		_setting = setting as SSPlaintextSetting;
-		_setting.OnClearRequested += ClearField;
-		_label.Set(_setting);
-		_placeholder.text = _setting.Placeholder;
-		_inputField.contentType = _setting.ContentType;
-		_inputField.characterLimit = _setting.CharacterLimit;
-		Setup();
+		this._setting = setting as SSPlaintextSetting;
+		this._setting.OnClearRequested += ClearField;
+		this._label.Set(this._setting);
+		this._placeholder.text = this._setting.Placeholder;
+		this._inputField.contentType = this._setting.ContentType;
+		this._inputField.characterLimit = this._setting.CharacterLimit;
+		base.Setup();
 	}
 
 	protected override void Awake()
@@ -52,41 +52,41 @@ public class SSPlaintextEntry : UserSettingsUIBase<TMP_InputField, string>, ISSE
 
 	protected override void SaveValue(string val)
 	{
-		PlayerPrefsSl.Set(_setting.PlayerPrefsKey, val);
-		_setting.SyncInputText = val;
-		_setting.ClientSendValue();
+		PlayerPrefsSl.Set(this._setting.PlayerPrefsKey, val);
+		this._setting.SyncInputText = val;
+		this._setting.ClientSendValue();
 	}
 
 	protected override string ReadSavedValue()
 	{
-		_setting.SyncInputText = PlayerPrefsSl.Get(_setting.PlayerPrefsKey, string.Empty);
-		return _setting.SyncInputText;
+		this._setting.SyncInputText = PlayerPrefsSl.Get(this._setting.PlayerPrefsKey, string.Empty);
+		return this._setting.SyncInputText;
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		if (_setting != null)
+		if (this._setting != null)
 		{
-			_setting.OnClearRequested -= ClearField;
+			this._setting.OnClearRequested -= ClearField;
 		}
 	}
 
 	protected override void SetValueAndTriggerEvent(string val)
 	{
-		_inputField.text = val;
+		this._inputField.text = val;
 	}
 
 	protected override void SetValueWithoutNotify(string val)
 	{
-		_inputField.SetTextWithoutNotify(val);
+		this._inputField.SetTextWithoutNotify(val);
 	}
 
 	private void ClearField()
 	{
-		if (!_inputField.isFocused)
+		if (!this._inputField.isFocused)
 		{
-			SetValueAndTriggerEvent(string.Empty);
+			this.SetValueAndTriggerEvent(string.Empty);
 		}
 	}
 }

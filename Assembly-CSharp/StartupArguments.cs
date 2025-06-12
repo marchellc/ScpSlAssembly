@@ -14,7 +14,7 @@ public static class StartupArguments
 		{
 			if (!string.IsNullOrEmpty(alias))
 			{
-				return IsSetShort(alias);
+				return StartupArguments.IsSetShort(alias);
 			}
 			return false;
 		}

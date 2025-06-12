@@ -36,7 +36,7 @@ public class RedirectCommand : ICommand, IUsageProvider
 		IdleMode.PauseIdleMode = true;
 		ServerConsole.AddOutputEntry(default(ExitActionShutdownEntry));
 		new RoundRestartMessage(RoundRestartType.RedirectRestart, 0.1f, result, reconnect: true, extendedReconnectionPeriod: false).SendToAuthenticated();
-		Timing.RunCoroutine(ScheduleShutdown(), Segment.FixedUpdate);
+		Timing.RunCoroutine(this.ScheduleShutdown(), Segment.FixedUpdate);
 		response = $"Players have been redirected to port {result}. Server will shutdown in a couple of seconds.";
 		return true;
 	}

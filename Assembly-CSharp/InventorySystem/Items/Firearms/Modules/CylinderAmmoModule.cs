@@ -20,11 +20,11 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 		{
 			get
 			{
-				return _predictedState.Value;
+				return this._predictedState.Value;
 			}
 			set
 			{
-				_predictedState.Value = value;
+				this._predictedState.Value = value;
 			}
 		}
 
@@ -34,38 +34,38 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 			{
 				if (!NetworkServer.active)
 				{
-					return PredictedState;
+					return this.PredictedState;
 				}
-				return ServerSyncState;
+				return this.ServerSyncState;
 			}
 			set
 			{
 				if (NetworkServer.active)
 				{
-					ServerSyncState = value;
+					this.ServerSyncState = value;
 				}
 				else
 				{
-					PredictedState = value;
+					this.PredictedState = value;
 				}
 			}
 		}
 
 		public Chamber()
 		{
-			ServerSyncState = ChamberState.Empty;
-			_predictedState = new ClientPredictedValue<ChamberState>(() => ServerSyncState);
+			this.ServerSyncState = ChamberState.Empty;
+			this._predictedState = new ClientPredictedValue<ChamberState>(() => this.ServerSyncState);
 		}
 
 		public byte ToByte(int offset)
 		{
-			return (byte)((uint)ServerSyncState << offset * 2);
+			return (byte)((uint)this.ServerSyncState << offset * 2);
 		}
 
 		public void FromByte(byte b, int offset)
 		{
 			int num = (b >> offset * 2) & 3;
-			ServerSyncState = (ChamberState)num;
+			this.ServerSyncState = (ChamberState)num;
 		}
 	}
 
@@ -97,14 +97,14 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 	[field: SerializeField]
 	public ItemType AmmoType { get; private set; }
 
-	public int AmmoMax => _defaultCapacity + (int)base.Firearm.AttachmentsValue(AttachmentParam.MagazineCapacityModifier);
+	public int AmmoMax => this._defaultCapacity + (int)base.Firearm.AttachmentsValue(AttachmentParam.MagazineCapacityModifier);
 
 	public int AmmoStored
 	{
 		get
 		{
 			int num = 0;
-			ReadOnlySpan<Chamber> chambers = Chambers;
+			ReadOnlySpan<Chamber> chambers = this.Chambers;
 			for (int i = 0; i < chambers.Length; i++)
 			{
 				if (chambers[i].ContextState == ChamberState.Live)
@@ -120,8 +120,8 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 	{
 		get
 		{
-			int ammoMax = AmmoMax;
-			return new ReadOnlySpan<Chamber>(GetChambersArrayForSerial(base.ItemSerial, ammoMax), 0, ammoMax);
+			int ammoMax = this.AmmoMax;
+			return new ReadOnlySpan<Chamber>(CylinderAmmoModule.GetChambersArrayForSerial(base.ItemSerial, ammoMax), 0, ammoMax);
 		}
 	}
 
@@ -129,8 +129,8 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 	{
 		get
 		{
-			int curAmmo = base.Firearm.OwnerInventory.GetCurAmmo(AmmoType);
-			if (AmmoStored >= AmmoMax || curAmmo <= 0)
+			int curAmmo = base.Firearm.OwnerInventory.GetCurAmmo(this.AmmoType);
+			if (this.AmmoStored >= this.AmmoMax || curAmmo <= 0)
 			{
 				return IReloadUnloadValidatorModule.Authorization.Idle;
 			}
@@ -142,7 +142,7 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 	{
 		get
 		{
-			if (!AllChambersEmpty)
+			if (!this.AllChambersEmpty)
 			{
 				return IReloadUnloadValidatorModule.Authorization.Allowed;
 			}
@@ -154,10 +154,10 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 	{
 		get
 		{
-			ReadOnlySpan<Chamber> chambers = Chambers;
+			ReadOnlySpan<Chamber> chambers = this.Chambers;
 			for (int i = 0; i < chambers.Length; i++)
 			{
-				if (chambers[i].ContextState != 0)
+				if (chambers[i].ContextState != ChamberState.Empty)
 				{
 					return false;
 				}
@@ -170,7 +170,7 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 
 	public bool ValidateAmmoDrop(ItemType id)
 	{
-		if (id == AmmoType && base.Firearm.TryGetModule<IReloaderModule>(out var module))
+		if (id == this.AmmoType && base.Firearm.TryGetModule<IReloaderModule>(out var module))
 		{
 			return !module.IsReloadingOrUnloading;
 		}
@@ -179,18 +179,18 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 
 	public void ServerModifyAmmo(int amt)
 	{
-		ModifyAmmo(amt);
-		_needsResyncing = true;
+		this.ModifyAmmo(amt);
+		this._needsResyncing = true;
 	}
 
 	public void ModifyAmmo(int amt)
 	{
 		int num = amt;
-		ReadOnlySpan<Chamber> chambers = Chambers;
+		ReadOnlySpan<Chamber> chambers = this.Chambers;
 		int length = chambers.Length;
 		for (int i = 0; i < length; i++)
 		{
-			int num2 = i + _ammoInsertionOffset;
+			int num2 = i + this._ammoInsertionOffset;
 			Chamber chamber = chambers[num2 % length];
 			if (num != 0)
 			{
@@ -214,7 +214,7 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 	[ExposedFirearmEvent]
 	public void RotateCylinder(int rotations)
 	{
-		ReadOnlySpan<Chamber> chambers = Chambers;
+		ReadOnlySpan<Chamber> chambers = this.Chambers;
 		int length = chambers.Length;
 		while (rotations < 0)
 		{
@@ -222,38 +222,38 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 		}
 		if (rotations % length != 0)
 		{
-			if (_rotationBuffer.Length < length)
+			if (CylinderAmmoModule._rotationBuffer.Length < length)
 			{
-				_rotationBuffer = new ChamberState[length * 2];
+				CylinderAmmoModule._rotationBuffer = new ChamberState[length * 2];
 			}
 			for (int i = 0; i < length; i++)
 			{
-				_rotationBuffer[i] = chambers[i].ContextState;
+				CylinderAmmoModule._rotationBuffer[i] = chambers[i].ContextState;
 			}
 			for (int j = 0; j < length; j++)
 			{
 				int num = (j + rotations) % length;
-				chambers[j].ContextState = _rotationBuffer[num];
+				chambers[j].ContextState = CylinderAmmoModule._rotationBuffer[num];
 			}
-			_needsResyncing = true;
+			this._needsResyncing = true;
 		}
 	}
 
 	public void ServerResync()
 	{
-		if (ChambersCache.TryGetValue(base.ItemSerial, out var chambers))
+		if (CylinderAmmoModule.ChambersCache.TryGetValue(base.ItemSerial, out var chambers))
 		{
-			SendRpc(delegate(NetworkWriter writer)
+			this.SendRpc(delegate(NetworkWriter writer)
 			{
-				ServerWriteChambers(writer, chambers);
+				CylinderAmmoModule.ServerWriteChambers(writer, chambers);
 			});
 		}
-		_needsResyncing = false;
+		this._needsResyncing = false;
 	}
 
 	public void ClientHoldPrediction()
 	{
-		ReadOnlySpan<Chamber> chambers = Chambers;
+		ReadOnlySpan<Chamber> chambers = this.Chambers;
 		for (int i = 0; i < chambers.Length; i++)
 		{
 			Chamber obj = chambers[i];
@@ -264,16 +264,16 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 	[ExposedFirearmEvent]
 	public void UnloadAllChambers()
 	{
-		int ammoStored = AmmoStored;
-		ReadOnlySpan<Chamber> chambers = Chambers;
+		int ammoStored = this.AmmoStored;
+		ReadOnlySpan<Chamber> chambers = this.Chambers;
 		for (int i = 0; i < chambers.Length; i++)
 		{
 			chambers[i].ContextState = ChamberState.Empty;
 		}
 		if (base.IsServer)
 		{
-			_needsResyncing = true;
-			base.Firearm.OwnerInventory.ServerAddAmmo(AmmoType, ammoStored);
+			this._needsResyncing = true;
+			base.Firearm.OwnerInventory.ServerAddAmmo(this.AmmoType, ammoStored);
 		}
 	}
 
@@ -286,14 +286,14 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 			{
 			case ItemAddReason.AdminCommand:
 			case ItemAddReason.Scp2536:
-				ServerModifyAmmo(AmmoMax);
+				this.ServerModifyAmmo(this.AmmoMax);
 				break;
 			case ItemAddReason.StartingItem:
-				ServerModifyAmmo(AmmoMax);
-				base.Firearm.OwnerInventory.ServerAddAmmo(AmmoType, -AmmoStored);
+				this.ServerModifyAmmo(this.AmmoMax);
+				base.Firearm.OwnerInventory.ServerAddAmmo(this.AmmoType, -this.AmmoStored);
 				break;
 			}
-			_needsResyncing = true;
+			this._needsResyncing = true;
 		}
 	}
 
@@ -309,7 +309,7 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 			serial = reader.ReadUShort();
 		}
 		int num = reader.Remaining * 4;
-		Chamber[] chambersArrayForSerial = GetChambersArrayForSerial(serial, num);
+		Chamber[] chambersArrayForSerial = CylinderAmmoModule.GetChambersArrayForSerial(serial, num);
 		byte b = 0;
 		for (int i = 0; i < num; i++)
 		{
@@ -330,13 +330,13 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 	internal override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsUnloaded, AllChambersEmpty, checkIfExists: true);
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsUnloaded, this.AllChambersEmpty, checkIfExists: true);
 	}
 
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		ChambersCache.Clear();
+		CylinderAmmoModule.ChambersCache.Clear();
 	}
 
 	internal override void OnAttachmentsApplied()
@@ -346,9 +346,9 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 		{
 			return;
 		}
-		int? lastAmmoMax = _lastAmmoMax;
-		_lastAmmoMax = AmmoMax;
-		if (!lastAmmoMax.HasValue || lastAmmoMax.Value == _lastAmmoMax || !ChambersCache.TryGetValue(base.ItemSerial, out var value) || value == null)
+		int? lastAmmoMax = this._lastAmmoMax;
+		this._lastAmmoMax = this.AmmoMax;
+		if (!lastAmmoMax.HasValue || lastAmmoMax.Value == this._lastAmmoMax || !CylinderAmmoModule.ChambersCache.TryGetValue(base.ItemSerial, out var value) || value == null)
 		{
 			return;
 		}
@@ -361,17 +361,17 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 			}
 			obj.ContextState = ChamberState.Empty;
 		}
-		int num2 = num - _lastAmmoMax.Value;
+		int num2 = num - this._lastAmmoMax.Value;
 		if (num2 > 0)
 		{
-			base.Firearm.OwnerInventory.ServerAddAmmo(AmmoType, num2);
+			base.Firearm.OwnerInventory.ServerAddAmmo(this.AmmoType, num2);
 		}
-		ServerModifyAmmo(num);
+		this.ServerModifyAmmo(num);
 	}
 
 	public int GetAmmoStoredForSerial(ushort serial)
 	{
-		if (!ChambersCache.TryGetValue(serial, out var value) || value == null)
+		if (!CylinderAmmoModule.ChambersCache.TryGetValue(serial, out var value) || value == null)
 		{
 			return 0;
 		}
@@ -390,7 +390,7 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 	internal override void OnEquipped()
 	{
 		base.OnEquipped();
-		_needsResyncing = true;
+		this._needsResyncing = true;
 	}
 
 	internal override void ServerProcessMapgenDistribution(ItemPickupBase pickupBase)
@@ -398,7 +398,7 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 		base.ServerProcessMapgenDistribution(pickupBase);
 		if (pickupBase is FirearmPickup firearmPickup && AttachmentPreview.TryGet(firearmPickup.CurId, reValidate: false, out var result) && result.TryGetModule<CylinderAmmoModule>(out var module))
 		{
-			ServerPrepareNewChambers(firearmPickup.CurId.SerialNumber, module.AmmoMax);
+			CylinderAmmoModule.ServerPrepareNewChambers(firearmPickup.CurId.SerialNumber, module.AmmoMax);
 		}
 	}
 
@@ -409,34 +409,34 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 		{
 			return;
 		}
-		foreach (KeyValuePair<ushort, Chamber[]> data in ChambersCache)
+		foreach (KeyValuePair<ushort, Chamber[]> data in CylinderAmmoModule.ChambersCache)
 		{
-			SendRpc(hub, delegate(NetworkWriter x)
+			this.SendRpc(hub, delegate(NetworkWriter x)
 			{
 				x.WriteUShort(data.Key);
-				ServerWriteChambers(x, data.Value);
+				CylinderAmmoModule.ServerWriteChambers(x, data.Value);
 			});
 		}
 	}
 
 	private void LateUpdate()
 	{
-		if (base.IsServer && _needsResyncing)
+		if (base.IsServer && this._needsResyncing)
 		{
-			ServerResync();
+			this.ServerResync();
 		}
 	}
 
 	public static Chamber[] GetChambersArrayForSerial(ushort serial, int minLength)
 	{
-		if (!ChambersCache.TryGetValue(serial, out var value))
+		if (!CylinderAmmoModule.ChambersCache.TryGetValue(serial, out var value))
 		{
 			value = new Chamber[minLength];
 			for (int i = 0; i < minLength; i++)
 			{
 				value[i] = new Chamber();
 			}
-			ChambersCache[serial] = value;
+			CylinderAmmoModule.ChambersCache[serial] = value;
 			return value;
 		}
 		if (value.Length < minLength)
@@ -447,14 +447,14 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 			{
 				value[j] = new Chamber();
 			}
-			ChambersCache[serial] = value;
+			CylinderAmmoModule.ChambersCache[serial] = value;
 		}
 		return value;
 	}
 
 	private static void ServerPrepareNewChambers(ushort serial, int ammoLoaded)
 	{
-		Chamber[] chambersArrayForSerial = GetChambersArrayForSerial(serial, ammoLoaded);
+		Chamber[] chambersArrayForSerial = CylinderAmmoModule.GetChambersArrayForSerial(serial, ammoLoaded);
 		for (int i = 0; i < ammoLoaded; i++)
 		{
 			chambersArrayForSerial[i].ServerSyncState = ChamberState.Live;
@@ -466,7 +466,7 @@ public class CylinderAmmoModule : ModuleBase, IPrimaryAmmoContainerModule, IAmmo
 		int num = 0;
 		for (int num2 = chambers.Length - 1; num2 >= 0; num2--)
 		{
-			if (chambers[num2].ContextState != 0)
+			if (chambers[num2].ContextState != ChamberState.Empty)
 			{
 				num = num2;
 				break;

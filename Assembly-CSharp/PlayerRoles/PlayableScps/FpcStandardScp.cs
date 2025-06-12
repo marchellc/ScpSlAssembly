@@ -26,7 +26,7 @@ public class FpcStandardScp : FpcStandardRoleBase, IBleedableRole, IDoorPermissi
 	[field: SerializeField]
 	public BloodSettings BloodSettings { get; private set; }
 
-	public override RoleTypeId RoleTypeId => _roleTypeId;
+	public override RoleTypeId RoleTypeId => this._roleTypeId;
 
 	public override Team Team => Team.SCPs;
 
@@ -38,9 +38,9 @@ public class FpcStandardScp : FpcStandardRoleBase, IBleedableRole, IDoorPermissi
 		{
 			if (!RoleAssigner.ScpsOverflowing)
 			{
-				return _maxHealth;
+				return this._maxHealth;
 			}
-			return (float)_maxHealth * 1.1f;
+			return (float)this._maxHealth * 1.1f;
 		}
 	}
 
@@ -48,15 +48,15 @@ public class FpcStandardScp : FpcStandardRoleBase, IBleedableRole, IDoorPermissi
 	{
 		get
 		{
-			if (_disableSpawnpoint)
+			if (this._disableSpawnpoint)
 			{
 				return null;
 			}
-			if (_cachedSpawnpoint == null)
+			if (this._cachedSpawnpoint == null)
 			{
-				_cachedSpawnpoint = new RoomRoleSpawnpoint(_roomSpawnpoint);
+				this._cachedSpawnpoint = new RoomRoleSpawnpoint(this._roomSpawnpoint);
 			}
-			return _cachedSpawnpoint;
+			return this._cachedSpawnpoint;
 		}
 	}
 
@@ -64,7 +64,7 @@ public class FpcStandardScp : FpcStandardRoleBase, IBleedableRole, IDoorPermissi
 	{
 		get
 		{
-			if (!InsufficientLight)
+			if (!this.InsufficientLight)
 			{
 				return base.AmbientBoost;
 			}

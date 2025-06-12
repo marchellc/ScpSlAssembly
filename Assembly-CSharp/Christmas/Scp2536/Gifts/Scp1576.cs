@@ -17,7 +17,7 @@ public class Scp1576 : Scp2536ItemGift
 
 	public override bool CanBeGranted(ReferenceHub hub)
 	{
-		if (!_hasBeenGranted && base.CanBeGranted(hub))
+		if (!Scp1576._hasBeenGranted && base.CanBeGranted(hub))
 		{
 			return Random.value <= 0.05f;
 		}
@@ -26,9 +26,9 @@ public class Scp1576 : Scp2536ItemGift
 
 	public override void ServerGrant(ReferenceHub hub)
 	{
-		ItemType type = GenerateRandomReward();
+		ItemType type = base.GenerateRandomReward();
 		hub.inventory.ServerAddItem(type, ItemAddReason.Scp2536, 0).GrantAmmoReward();
-		_hasBeenGranted = true;
+		Scp1576._hasBeenGranted = true;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -36,7 +36,7 @@ public class Scp1576 : Scp2536ItemGift
 	{
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			_hasBeenGranted = false;
+			Scp1576._hasBeenGranted = false;
 		};
 	}
 }

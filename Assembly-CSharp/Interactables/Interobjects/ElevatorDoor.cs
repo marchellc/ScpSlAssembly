@@ -24,13 +24,13 @@ public class ElevatorDoor : BasicDoor, INonInteractableDoor, IServerInteractable
 	[NonSerialized]
 	public ElevatorChamber Chamber;
 
-	public Vector3 TargetPosition => base.transform.TransformPoint(_targetPosition);
+	public Vector3 TargetPosition => base.transform.TransformPoint(this._targetPosition);
 
-	public Vector3 TopPosition => base.transform.TransformPoint(_topPosition);
+	public Vector3 TopPosition => base.transform.TransformPoint(this._topPosition);
 
-	public Vector3 BottomPosition => base.transform.TransformPoint(_bottomPosition);
+	public Vector3 BottomPosition => base.transform.TransformPoint(this._bottomPosition);
 
-	public ElevatorGroup Group => _group;
+	public ElevatorGroup Group => this._group;
 
 	public bool IgnoreLockdowns => true;
 
@@ -46,9 +46,9 @@ public class ElevatorDoor : BasicDoor, INonInteractableDoor, IServerInteractable
 	protected override void Awake()
 	{
 		base.Awake();
-		List<ElevatorDoor> doorsForGroup = GetDoorsForGroup(_group);
+		List<ElevatorDoor> doorsForGroup = ElevatorDoor.GetDoorsForGroup(this._group);
 		bool flag = false;
-		float y = TargetPosition.y;
+		float y = this.TargetPosition.y;
 		for (int i = 0; i < doorsForGroup.Count; i++)
 		{
 			if (!(y >= doorsForGroup[i].TargetPosition.y))
@@ -66,27 +66,27 @@ public class ElevatorDoor : BasicDoor, INonInteractableDoor, IServerInteractable
 
 	public new void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
-		if (Chamber.IsReadyForUserInput && ActiveLocks == 0)
+		if (this.Chamber.IsReadyForUserInput && base.ActiveLocks == 0)
 		{
-			Chamber.ServerInteract(ply, colliderId);
+			this.Chamber.ServerInteract(ply, colliderId);
 		}
 	}
 
 	protected override void LockChanged(ushort prevValue)
 	{
 		base.LockChanged(prevValue);
-		ElevatorDoor.OnLocksChanged?.Invoke(_group);
+		ElevatorDoor.OnLocksChanged?.Invoke(this._group);
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		GetDoorsForGroup(_group).Remove(this);
+		ElevatorDoor.GetDoorsForGroup(this._group).Remove(this);
 	}
 
 	public static List<ElevatorDoor> GetDoorsForGroup(ElevatorGroup group)
 	{
-		return AllElevatorDoors.GetOrAddNew(group);
+		return ElevatorDoor.AllElevatorDoors.GetOrAddNew(group);
 	}
 
 	public override bool Weaved()

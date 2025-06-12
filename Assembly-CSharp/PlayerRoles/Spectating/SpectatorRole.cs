@@ -51,7 +51,7 @@ public class SpectatorRole : PlayerRoleBase, IPrivateSpawnDataWriter, IHealthbar
 	{
 		get
 		{
-			if (TryGetOwner(out var hub))
+			if (base.TryGetOwner(out var hub))
 			{
 				return hub.authManager.InstanceMode != ClientInstanceMode.DedicatedServer;
 			}
@@ -72,7 +72,7 @@ public class SpectatorRole : PlayerRoleBase, IPrivateSpawnDataWriter, IHealthbar
 	{
 		get
 		{
-			if (!TryGetTrackedRole<IHealthbarRole>(out var role))
+			if (!SpectatorRole.TryGetTrackedRole<IHealthbarRole>(out var role))
 			{
 				return null;
 			}
@@ -84,7 +84,7 @@ public class SpectatorRole : PlayerRoleBase, IPrivateSpawnDataWriter, IHealthbar
 	{
 		get
 		{
-			if (!TryGetTrackedRole<IAmbientLightRole>(out var role))
+			if (!SpectatorRole.TryGetTrackedRole<IAmbientLightRole>(out var role))
 			{
 				return InsufficientLighting.DefaultIntensity;
 			}
@@ -96,7 +96,7 @@ public class SpectatorRole : PlayerRoleBase, IPrivateSpawnDataWriter, IHealthbar
 	{
 		get
 		{
-			if (TryGetTrackedRole<IAmbientLightRole>(out var role))
+			if (SpectatorRole.TryGetTrackedRole<IAmbientLightRole>(out var role))
 			{
 				return role.ForceBlackAmbient;
 			}
@@ -109,27 +109,27 @@ public class SpectatorRole : PlayerRoleBase, IPrivateSpawnDataWriter, IHealthbar
 	public override void DisableRole(RoleTypeId newRole)
 	{
 		base.DisableRole(newRole);
-		_damageHandler = null;
-		if (!(_transformToRestore == null))
+		this._damageHandler = null;
+		if (!(this._transformToRestore == null))
 		{
-			_transformToRestore.position = DeathPosition.Position;
-			_transformToRestore = null;
+			this._transformToRestore.position = this.DeathPosition.Position;
+			this._transformToRestore = null;
 		}
 	}
 
 	public void SpawnObject()
 	{
-		if (!TryGetOwner(out var hub))
+		if (!base.TryGetOwner(out var hub))
 		{
 			throw new InvalidOperationException("Spectator role failed to spawn - owner is null");
 		}
 		Transform transform = hub.transform;
-		DeathPosition = new RelativePosition(transform.position);
+		this.DeathPosition = new RelativePosition(transform.position);
 		transform.position = Vector3.up * 6000f;
-		SyncedSpectatedNetId = 0u;
+		this.SyncedSpectatedNetId = 0u;
 		if (NetworkServer.active || hub.isLocalPlayer)
 		{
-			_transformToRestore = transform;
+			this._transformToRestore = transform;
 		}
 		SpectatorTargetTracker.OnTargetChanged += ResetAutomaticSwitch;
 	}
@@ -141,15 +141,15 @@ public class SpectatorRole : PlayerRoleBase, IPrivateSpawnDataWriter, IHealthbar
 
 	public void WritePrivateSpawnData(NetworkWriter writer)
 	{
-		if (_damageHandler == null)
+		if (this._damageHandler == null)
 		{
 			writer.WriteSpawnReason(SpectatorSpawnReason.None);
 		}
 		else
 		{
-			_damageHandler.WriteDeathScreen(writer);
+			this._damageHandler.WriteDeathScreen(writer);
 		}
-		_damageHandler = null;
+		this._damageHandler = null;
 	}
 
 	public void ReadSpawnData(NetworkReader reader)
@@ -159,7 +159,7 @@ public class SpectatorRole : PlayerRoleBase, IPrivateSpawnDataWriter, IHealthbar
 
 	public void ServerSetData(DamageHandlerBase dhb)
 	{
-		_damageHandler = dhb;
+		this._damageHandler = dhb;
 	}
 
 	public bool TryGetViewmodelFov(out float fov)
@@ -182,19 +182,19 @@ public class SpectatorRole : PlayerRoleBase, IPrivateSpawnDataWriter, IHealthbar
 
 	private void ResetAutomaticSwitch()
 	{
-		_timeTillAutomaticSwitch = 0f;
-		_switchAutomatically = false;
-		_killerId = null;
+		this._timeTillAutomaticSwitch = 0f;
+		this._switchAutomatically = false;
+		this._killerId = null;
 	}
 
 	private bool TryGetKiller(out ISpectatableRole spectatableRole)
 	{
 		spectatableRole = null;
-		if (!_killerId.HasValue)
+		if (!this._killerId.HasValue)
 		{
 			return false;
 		}
-		if (!ReferenceHub.TryGetHubNetID(_killerId.Value, out var hub))
+		if (!ReferenceHub.TryGetHubNetID(this._killerId.Value, out var hub))
 		{
 			return false;
 		}

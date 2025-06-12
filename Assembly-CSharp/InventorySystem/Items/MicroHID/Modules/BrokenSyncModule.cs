@@ -24,18 +24,18 @@ public class BrokenSyncModule : MicroHidModuleBase
 	[SerializeField]
 	private float _explosionSoundRange;
 
-	public bool Broken => GetBroken(base.ItemSerial);
+	public bool Broken => BrokenSyncModule.GetBroken(base.ItemSerial);
 
 	public static event Action<ushort> OnBroken;
 
 	public static bool GetBroken(ushort serial)
 	{
-		return BrokenSerialTimes.ContainsKey(serial);
+		return BrokenSyncModule.BrokenSerialTimes.ContainsKey(serial);
 	}
 
 	public static bool TryGetBrokenElapsed(ushort serial, out float elapsed)
 	{
-		if (BrokenSerialTimes.TryGetValue(serial, out var value))
+		if (BrokenSyncModule.BrokenSerialTimes.TryGetValue(serial, out var value))
 		{
 			elapsed = (float)(NetworkTime.time - value);
 			return true;
@@ -48,13 +48,13 @@ public class BrokenSyncModule : MicroHidModuleBase
 	{
 		if (broken)
 		{
-			BrokenSerialTimes[serial] = NetworkTime.time;
+			BrokenSyncModule.BrokenSerialTimes[serial] = NetworkTime.time;
 		}
 		else
 		{
-			BrokenSerialTimes.Remove(serial);
+			BrokenSyncModule.BrokenSerialTimes.Remove(serial);
 		}
-		SendRpc(delegate(NetworkWriter writer)
+		this.SendRpc(delegate(NetworkWriter writer)
 		{
 			RpcType rpcType = ((!broken) ? RpcType.UnbreakSpecific : RpcType.BreakSpecific);
 			writer.WriteByte((byte)rpcType);
@@ -68,7 +68,7 @@ public class BrokenSyncModule : MicroHidModuleBase
 		{
 			throw new InvalidOperationException("Attempting to set broken when NetworkServer is not active.");
 		}
-		ServerSetBroken(base.ItemSerial, broken: true);
+		this.ServerSetBroken(base.ItemSerial, broken: true);
 	}
 
 	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
@@ -83,8 +83,8 @@ public class BrokenSyncModule : MicroHidModuleBase
 		case RpcType.BreakSpecific:
 		{
 			serial = reader.ReadUShort();
-			bool num = BrokenSerialTimes.ContainsKey(serial);
-			BrokenSerialTimes[serial] = NetworkTime.time;
+			bool num = BrokenSyncModule.BrokenSerialTimes.ContainsKey(serial);
+			BrokenSyncModule.BrokenSerialTimes[serial] = NetworkTime.time;
 			if (!num)
 			{
 				BrokenSyncModule.OnBroken?.Invoke(serial);
@@ -93,19 +93,19 @@ public class BrokenSyncModule : MicroHidModuleBase
 				MicroHidPhase phase = cycleController.Phase;
 				if (phase == MicroHidPhase.WoundUpSustain || phase == MicroHidPhase.WindingDown)
 				{
-					controller.PlayOneShot(_explosionClip, _explosionSoundRange, MixerChannel.Weapons);
+					controller.PlayOneShot(this._explosionClip, this._explosionSoundRange, MixerChannel.Weapons);
 				}
 			}
 			break;
 		}
 		case RpcType.UnbreakSpecific:
-			BrokenSerialTimes.Remove(reader.ReadUShort());
+			BrokenSyncModule.BrokenSerialTimes.Remove(reader.ReadUShort());
 			break;
 		case RpcType.ResyncAll:
-			BrokenSerialTimes.Clear();
+			BrokenSyncModule.BrokenSerialTimes.Clear();
 			while (reader.Remaining > 0)
 			{
-				BrokenSerialTimes.Add(reader.ReadUShort(), 0.0);
+				BrokenSyncModule.BrokenSerialTimes.Add(reader.ReadUShort(), 0.0);
 			}
 			break;
 		}
@@ -114,15 +114,15 @@ public class BrokenSyncModule : MicroHidModuleBase
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		BrokenSerialTimes.Clear();
+		BrokenSyncModule.BrokenSerialTimes.Clear();
 	}
 
 	internal override void OnAdded()
 	{
 		base.OnAdded();
-		if (base.IsServer && Broken)
+		if (base.IsServer && this.Broken)
 		{
-			ServerSetBroken();
+			this.ServerSetBroken();
 		}
 	}
 
@@ -131,10 +131,10 @@ public class BrokenSyncModule : MicroHidModuleBase
 		base.ServerOnPlayerConnected(hub, firstSubcomponent);
 		if (firstSubcomponent)
 		{
-			SendRpc(hub, delegate(NetworkWriter writer)
+			this.SendRpc(hub, delegate(NetworkWriter writer)
 			{
 				writer.WriteByte(1);
-				BrokenSerialTimes.ForEachKey(writer.WriteUShort);
+				BrokenSyncModule.BrokenSerialTimes.ForEachKey(writer.WriteUShort);
 			});
 		}
 	}

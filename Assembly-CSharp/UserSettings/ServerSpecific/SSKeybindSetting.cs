@@ -1,4 +1,5 @@
 using Mirror;
+using PlayerRoles.Spectating;
 using UnityEngine;
 
 namespace UserSettings.ServerSpecific;
@@ -9,6 +10,8 @@ public class SSKeybindSetting : ServerSpecificSettingBase
 
 	public bool PreventInteractionOnGUI { get; private set; }
 
+	public bool AllowSpectatorTrigger { get; private set; }
+
 	public KeyCode SuggestedKey { get; private set; }
 
 	public KeyCode AssignedKeyCode { get; internal set; }
@@ -17,7 +20,7 @@ public class SSKeybindSetting : ServerSpecificSettingBase
 	{
 		get
 		{
-			if (!SyncIsPressed)
+			if (!this.SyncIsPressed)
 			{
 				return "Released";
 			}
@@ -25,41 +28,60 @@ public class SSKeybindSetting : ServerSpecificSettingBase
 		}
 	}
 
-	public SSKeybindSetting(int? id, string label, KeyCode suggestedKey = KeyCode.None, bool preventInteractionOnGui = true, string hint = null)
+	private bool IsLocallySpectating
 	{
-		SetId(id, label);
+		get
+		{
+			if (!ReferenceHub.TryGetLocalHub(out var hub))
+			{
+				return false;
+			}
+			if (!(hub.roleManager.CurrentRole is SpectatorRole))
+			{
+				return false;
+			}
+			return true;
+		}
+	}
+
+	public SSKeybindSetting(int? id, string label, KeyCode suggestedKey = KeyCode.None, bool preventInteractionOnGui = true, bool allowSpectatorTrigger = true, string hint = null)
+	{
+		base.SetId(id, label);
 		base.Label = label;
-		SuggestedKey = suggestedKey;
-		PreventInteractionOnGUI = preventInteractionOnGui;
+		this.SuggestedKey = suggestedKey;
+		this.PreventInteractionOnGUI = preventInteractionOnGui;
+		this.AllowSpectatorTrigger = allowSpectatorTrigger;
 		base.HintDescription = hint;
 	}
 
 	public override void ApplyDefaultValues()
 	{
-		SyncIsPressed = false;
+		this.SyncIsPressed = false;
 	}
 
 	public override void DeserializeValue(NetworkReader reader)
 	{
-		SyncIsPressed = reader.ReadBool();
+		this.SyncIsPressed = reader.ReadBool();
 	}
 
 	public override void SerializeValue(NetworkWriter writer)
 	{
-		writer.WriteBool(SyncIsPressed);
+		writer.WriteBool(this.SyncIsPressed);
 	}
 
 	public override void DeserializeEntry(NetworkReader reader)
 	{
 		base.DeserializeEntry(reader);
-		PreventInteractionOnGUI = reader.ReadBool();
-		SuggestedKey = (KeyCode)reader.ReadInt();
+		this.PreventInteractionOnGUI = reader.ReadBool();
+		this.AllowSpectatorTrigger = reader.ReadBool();
+		this.SuggestedKey = (KeyCode)reader.ReadInt();
 	}
 
 	public override void SerializeEntry(NetworkWriter writer)
 	{
 		base.SerializeEntry(writer);
-		writer.WriteBool(PreventInteractionOnGUI);
-		writer.WriteInt((int)SuggestedKey);
+		writer.WriteBool(this.PreventInteractionOnGUI);
+		writer.WriteBool(this.AllowSpectatorTrigger);
+		writer.WriteInt((int)this.SuggestedKey);
 	}
 }

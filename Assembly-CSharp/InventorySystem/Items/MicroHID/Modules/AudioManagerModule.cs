@@ -18,29 +18,29 @@ public class AudioManagerModule : MicroHidModuleBase
 
 	public static AudioController GetController(ushort serial)
 	{
-		if (!Instances.TryGetValue(serial, out var value))
+		if (!AudioManagerModule.Instances.TryGetValue(serial, out var value))
 		{
-			value = UnityEngine.Object.Instantiate(_globalAudioControllerTemplate);
+			value = UnityEngine.Object.Instantiate(AudioManagerModule._globalAudioControllerTemplate);
 			value.Serial = serial;
-			Instances[serial] = value;
+			AudioManagerModule.Instances[serial] = value;
 		}
 		return value;
 	}
 
 	public static void RegisterDestroyed(AudioController destroyed)
 	{
-		Instances.Remove(destroyed.Serial);
+		AudioManagerModule.Instances.Remove(destroyed.Serial);
 	}
 
 	private static void UpdateInstance(CycleController cycleController)
 	{
 		MicroHidPhase phase = cycleController.Phase;
 		AudioController value;
-		if (phase != 0)
+		if (phase != MicroHidPhase.Standby)
 		{
-			GetController(cycleController.Serial).UpdateAudio(phase);
+			AudioManagerModule.GetController(cycleController.Serial).UpdateAudio(phase);
 		}
-		else if (Instances.TryGetValue(cycleController.Serial, out value))
+		else if (AudioManagerModule.Instances.TryGetValue(cycleController.Serial, out value))
 		{
 			value.UpdateAudio(phase);
 		}
@@ -49,12 +49,12 @@ public class AudioManagerModule : MicroHidModuleBase
 	internal override void TemplateUpdate()
 	{
 		base.TemplateUpdate();
-		CycleSyncModule.ForEachController(UpdateInstanceCached);
+		CycleSyncModule.ForEachController(AudioManagerModule.UpdateInstanceCached);
 	}
 
 	internal override void OnTemplateReloaded(ModularAutosyncItem template, bool wasEverLoaded)
 	{
 		base.OnTemplateReloaded(template, wasEverLoaded);
-		_globalAudioControllerTemplate = _audioControllerPrefab;
+		AudioManagerModule._globalAudioControllerTemplate = this._audioControllerPrefab;
 	}
 }

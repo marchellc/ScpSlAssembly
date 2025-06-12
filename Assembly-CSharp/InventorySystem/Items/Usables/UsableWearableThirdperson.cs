@@ -49,29 +49,29 @@ public class UsableWearableThirdperson : UsableItemThirdperson
 	protected override void OnUsingStatusChanged()
 	{
 		base.OnUsingStatusChanged();
-		_elapsed = 0f;
-		SetGfxVisibility(isVisible: true);
+		this._elapsed = 0f;
+		this.SetGfxVisibility(isVisible: true);
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_elapsed = 0f;
-		_lastWeight = 0f;
-		UpdateOverrides(0f);
-		SetGfxVisibility(isVisible: true);
+		this._elapsed = 0f;
+		this._lastWeight = 0f;
+		this.UpdateOverrides(0f);
+		this.SetGfxVisibility(isVisible: true);
 	}
 
 	public override LookatData ProcessLookat(LookatData data)
 	{
 		LookatData target = base.ProcessLookat(data);
-		return data.LerpTo(target, _ikWeightOverTime.Evaluate(_elapsed));
+		return data.LerpTo(target, this._ikWeightOverTime.Evaluate(this._elapsed));
 	}
 
 	public override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
 	{
 		ThirdpersonLayerWeight weightForLayer = base.GetWeightForLayer(layer);
-		return new ThirdpersonLayerWeight(weightForLayer.Weight * _ikWeightOverTime.Evaluate(_elapsed), weightForLayer.AllowOther);
+		return new ThirdpersonLayerWeight(weightForLayer.Weight * this._ikWeightOverTime.Evaluate(this._elapsed), weightForLayer.AllowOther);
 	}
 
 	protected override void Update()
@@ -79,49 +79,49 @@ public class UsableWearableThirdperson : UsableItemThirdperson
 		base.Update();
 		if (base.IsUsing)
 		{
-			_elapsed += Time.deltaTime;
-			_lastWeight = _positionOverrideWeightOverTime.Evaluate(_elapsed);
+			this._elapsed += Time.deltaTime;
+			this._lastWeight = this._positionOverrideWeightOverTime.Evaluate(this._elapsed);
 		}
 		else
 		{
 			float num = Time.deltaTime / 0.2f;
-			_lastWeight = Mathf.Clamp01(_lastWeight - num);
+			this._lastWeight = Mathf.Clamp01(this._lastWeight - num);
 		}
-		UpdateOverrides(_lastWeight);
+		this.UpdateOverrides(this._lastWeight);
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		_gfxToDisable = _movable.gameObject;
-		_lScale = _movable.localScale;
-		_movable.GetLocalPositionAndRotation(out _lPos, out _lRot);
+		this._gfxToDisable = this._movable.gameObject;
+		this._lScale = this._movable.localScale;
+		this._movable.GetLocalPositionAndRotation(out this._lPos, out this._lRot);
 	}
 
 	private void UpdateOverrides(float weight)
 	{
-		if (_locationModified)
+		if (this._locationModified)
 		{
-			_movable.localScale = _lScale;
-			_movable.SetLocalPositionAndRotation(_lPos, _lRot);
-			_locationModified = false;
+			this._movable.localScale = this._lScale;
+			this._movable.SetLocalPositionAndRotation(this._lPos, this._lRot);
+			this._locationModified = false;
 		}
-		if (base.TargetModel.TryGetSubcontroller<WearableSubcontroller>(out var subcontroller) && subcontroller.TryGetWearable<SimpleWearable>(_targetSlot, out var ret))
+		if (base.TargetModel.TryGetSubcontroller<WearableSubcontroller>(out var subcontroller) && subcontroller.TryGetWearable<SimpleWearable>(this._targetSlot, out var ret))
 		{
 			WearableGameObject targetObject = ret.TargetObject;
 			if (targetObject.Source.activeSelf)
 			{
-				SetGfxVisibility(isVisible: false);
+				this.SetGfxVisibility(isVisible: false);
 			}
 			if (!(weight <= 0f))
 			{
-				_movable.GetPositionAndRotation(out var position, out var rotation);
+				this._movable.GetPositionAndRotation(out var position, out var rotation);
 				Transform sourceTr = targetObject.SourceTr;
-				position = Vector3.Lerp(position, sourceTr.TransformPoint(_positionOffset), weight);
-				rotation = Quaternion.Lerp(rotation, Quaternion.Euler(_rotationOffset) * sourceTr.rotation, weight);
-				_movable.SetPositionAndRotation(position, rotation);
-				_movable.localScale = Vector3.Lerp(_lScale, Vector3.Scale(targetObject.GlobalScale, _scaleMultiplier), weight);
-				_locationModified = true;
+				position = Vector3.Lerp(position, sourceTr.TransformPoint(this._positionOffset), weight);
+				rotation = Quaternion.Lerp(rotation, Quaternion.Euler(this._rotationOffset) * sourceTr.rotation, weight);
+				this._movable.SetPositionAndRotation(position, rotation);
+				this._movable.localScale = Vector3.Lerp(this._lScale, Vector3.Scale(targetObject.GlobalScale, this._scaleMultiplier), weight);
+				this._locationModified = true;
 			}
 		}
 	}
@@ -129,10 +129,10 @@ public class UsableWearableThirdperson : UsableItemThirdperson
 	private void SetGfxVisibility(bool isVisible)
 	{
 		bool flag = !isVisible;
-		if (flag != _gfxDisabled)
+		if (flag != this._gfxDisabled)
 		{
-			_gfxDisabled = flag;
-			_gfxToDisable.SetActive(isVisible);
+			this._gfxDisabled = flag;
+			this._gfxToDisable.SetActive(isVisible);
 		}
 	}
 }

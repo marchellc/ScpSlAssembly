@@ -12,14 +12,14 @@ internal class ILStreamReader : BinaryReader
 
 	private int endPosition;
 
-	public int CurrentPosition => (int)BaseStream.Position;
+	public int CurrentPosition => (int)this.BaseStream.Position;
 
-	public bool EndOfStream => (int)BaseStream.Position >= endPosition;
+	public bool EndOfStream => (int)this.BaseStream.Position >= this.endPosition;
 
 	static ILStreamReader()
 	{
-		oneByteOpCodes = new OpCode[256];
-		twoByteOpCodes = new OpCode[256];
+		ILStreamReader.oneByteOpCodes = new OpCode[256];
+		ILStreamReader.twoByteOpCodes = new OpCode[256];
 		FieldInfo[] fields = typeof(OpCodes).GetFields(BindingFlags.Static | BindingFlags.Public);
 		for (int i = 0; i < fields.Length; i++)
 		{
@@ -27,11 +27,11 @@ internal class ILStreamReader : BinaryReader
 			ushort num = (ushort)opCode.Value;
 			if (num < 256)
 			{
-				oneByteOpCodes[num] = opCode;
+				ILStreamReader.oneByteOpCodes[num] = opCode;
 			}
 			else if ((num & 0xFF00) == 65024)
 			{
-				twoByteOpCodes[num & 0xFF] = opCode;
+				ILStreamReader.twoByteOpCodes[num & 0xFF] = opCode;
 			}
 		}
 	}
@@ -39,22 +39,22 @@ internal class ILStreamReader : BinaryReader
 	public ILStreamReader(byte[] ilByteArray)
 		: base(new MemoryStream(ilByteArray))
 	{
-		endPosition = ilByteArray.Length;
+		this.endPosition = ilByteArray.Length;
 	}
 
 	public OpCode ReadOpCode()
 	{
-		byte b = ReadByte();
+		byte b = this.ReadByte();
 		if (b != 254)
 		{
-			return oneByteOpCodes[b];
+			return ILStreamReader.oneByteOpCodes[b];
 		}
-		b = ReadByte();
-		return twoByteOpCodes[b];
+		b = this.ReadByte();
+		return ILStreamReader.twoByteOpCodes[b];
 	}
 
 	public int ReadMetadataToken()
 	{
-		return ReadInt32();
+		return this.ReadInt32();
 	}
 }

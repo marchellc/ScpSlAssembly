@@ -22,32 +22,32 @@ internal abstract class Searcher
 	{
 		await Task.Factory.StartNew(delegate
 		{
-			NatDiscoverer.TraceSource.LogInfo("Searching for: {0}", GetType().Name);
+			NatDiscoverer.TraceSource.LogInfo("Searching for: {0}", base.GetType().Name);
 			while (!cancelationToken.IsCancellationRequested)
 			{
-				Discover(cancelationToken);
-				Receive(cancelationToken);
+				this.Discover(cancelationToken);
+				this.Receive(cancelationToken);
 			}
-			CloseUdpClients();
+			this.CloseUdpClients();
 		}, null, cancelationToken);
-		return _devices;
+		return this._devices;
 	}
 
 	private void Discover(CancellationToken cancelationToken)
 	{
-		if (DateTime.UtcNow < NextSearch)
+		if (DateTime.UtcNow < this.NextSearch)
 		{
 			return;
 		}
-		foreach (UdpClient udpClient in UdpClients)
+		foreach (UdpClient udpClient in this.UdpClients)
 		{
 			try
 			{
-				Discover(udpClient, cancelationToken);
+				this.Discover(udpClient, cancelationToken);
 			}
 			catch (Exception ex)
 			{
-				NatDiscoverer.TraceSource.LogError("Error searching {0} - Details:", GetType().Name);
+				NatDiscoverer.TraceSource.LogError("Error searching {0} - Details:", base.GetType().Name);
 				NatDiscoverer.TraceSource.LogError(ex.ToString());
 			}
 		}
@@ -55,7 +55,7 @@ internal abstract class Searcher
 
 	private void Receive(CancellationToken cancelationToken)
 	{
-		foreach (UdpClient item in UdpClients.Where((UdpClient x) => x.Available > 0))
+		foreach (UdpClient item in this.UdpClients.Where((UdpClient x) => x.Available > 0))
 		{
 			if (cancelationToken.IsCancellationRequested)
 			{
@@ -64,10 +64,10 @@ internal abstract class Searcher
 			IPAddress address = ((IPEndPoint)item.Client.LocalEndPoint).Address;
 			IPEndPoint remoteEP = new IPEndPoint(IPAddress.None, 0);
 			byte[] response = item.Receive(ref remoteEP);
-			NatDevice natDevice = AnalyseReceivedResponse(address, response, remoteEP);
+			NatDevice natDevice = this.AnalyseReceivedResponse(address, response, remoteEP);
 			if (natDevice != null)
 			{
-				RaiseDeviceFound(natDevice);
+				this.RaiseDeviceFound(natDevice);
 			}
 		}
 	}
@@ -78,7 +78,7 @@ internal abstract class Searcher
 
 	public void CloseUdpClients()
 	{
-		foreach (UdpClient udpClient in UdpClients)
+		foreach (UdpClient udpClient in this.UdpClients)
 		{
 			udpClient.Close();
 		}
@@ -86,7 +86,7 @@ internal abstract class Searcher
 
 	private void RaiseDeviceFound(NatDevice device)
 	{
-		_devices.Add(device);
-		DeviceFound?.Invoke(this, new DeviceEventArgs(device));
+		this._devices.Add(device);
+		this.DeviceFound?.Invoke(this, new DeviceEventArgs(device));
 	}
 }

@@ -21,17 +21,17 @@ public static class TimeBehaviour
 
 	public static string Rfc3339Time()
 	{
-		return Rfc3339Time(DateTimeOffset.Now);
+		return TimeBehaviour.Rfc3339Time(DateTimeOffset.Now);
 	}
 
 	public static string Rfc3339Time(DateTimeOffset date)
 	{
-		return FormatTime((date.Offset == TimeSpan.Zero) ? "yyyy-MM-dd HH:mm:ss.fffZ" : "yyyy-MM-dd HH:mm:ss.fff zzz", date);
+		return TimeBehaviour.FormatTime((date.Offset == TimeSpan.Zero) ? "yyyy-MM-dd HH:mm:ss.fffZ" : "yyyy-MM-dd HH:mm:ss.fff zzz", date);
 	}
 
 	public static string FormatTime(string format)
 	{
-		return FormatTime(format, DateTimeOffset.Now);
+		return TimeBehaviour.FormatTime(format, DateTimeOffset.Now);
 	}
 
 	public static string FormatTime(string format, DateTimeOffset date)

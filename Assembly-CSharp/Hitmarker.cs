@@ -14,8 +14,8 @@ public class Hitmarker : MonoBehaviour
 
 		public HitmarkerMessage(byte size, bool playAudio = true)
 		{
-			Size = size;
-			Audio = playAudio;
+			this.Size = size;
+			this.Audio = playAudio;
 		}
 	}
 
@@ -32,7 +32,7 @@ public class Hitmarker : MonoBehaviour
 			size = Mathf.Clamp(size, 0f, 2.55f);
 			if (hub.isLocalPlayer)
 			{
-				PlayHitmarker(size, playAudio);
+				Hitmarker.PlayHitmarker(size, playAudio);
 			}
 			else
 			{
@@ -45,15 +45,15 @@ public class Hitmarker : MonoBehaviour
 	{
 		if (ReferenceHub.TryGetHub(conn, out var hub))
 		{
-			SendHitmarkerDirectly(hub, size);
+			Hitmarker.SendHitmarkerDirectly(hub, size);
 		}
 	}
 
 	public static void SendHitmarkerConditionally(float size, AttackerDamageHandler adh, ReferenceHub victim)
 	{
-		if (CheckHitmarkerPerms(adh, victim))
+		if (Hitmarker.CheckHitmarkerPerms(adh, victim))
 		{
-			SendHitmarkerDirectly(adh.Attacker.Hub, size);
+			Hitmarker.SendHitmarkerDirectly(adh.Attacker.Hub, size);
 		}
 	}
 

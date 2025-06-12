@@ -23,10 +23,10 @@ public class EnvMimicryStandardButton : MonoBehaviour
 
 	protected virtual void Awake()
 	{
-		_button = GetComponent<Button>();
-		_button.onClick.AddListener(OnButtonPressed);
-		_buttonGameObject = _button.gameObject;
-		_prevState = !IsAvailable;
+		this._button = base.GetComponent<Button>();
+		this._button.onClick.AddListener(OnButtonPressed);
+		this._buttonGameObject = this._button.gameObject;
+		this._prevState = !this.IsAvailable;
 		StaticUnityMethods.OnUpdate += AlwaysUpdate;
 	}
 
@@ -37,28 +37,28 @@ public class EnvMimicryStandardButton : MonoBehaviour
 
 	protected virtual void AlwaysUpdate()
 	{
-		if (_prevState != IsAvailable)
+		if (this._prevState != this.IsAvailable)
 		{
-			bool flag = !_prevState;
-			_buttonGameObject.SetActive(flag);
-			_prevState = flag;
+			bool flag = !this._prevState;
+			this._buttonGameObject.SetActive(flag);
+			this._prevState = flag;
 		}
 	}
 
 	protected virtual void OnButtonPressed()
 	{
-		if (TryGetLocalSubroutine(out var localSubroutine))
+		if (this.TryGetLocalSubroutine(out var localSubroutine))
 		{
-			localSubroutine.ClientSelect(_randomSequences.RandomItem());
+			localSubroutine.ClientSelect(this._randomSequences.RandomItem());
 		}
 	}
 
 	private bool TryGetLocalSubroutine(out EnvironmentalMimicry localSubroutine)
 	{
-		localSubroutine = _cachedSubroutine;
-		if (_cacheSet)
+		localSubroutine = this._cachedSubroutine;
+		if (this._cacheSet)
 		{
-			return _cachedSubroutine != null;
+			return this._cachedSubroutine != null;
 		}
 		if (!ReferenceHub.TryGetLocalHub(out var hub))
 		{
@@ -72,8 +72,8 @@ public class EnvMimicryStandardButton : MonoBehaviour
 		{
 			return false;
 		}
-		_cacheSet = true;
-		_cachedSubroutine = localSubroutine;
+		this._cacheSet = true;
+		this._cachedSubroutine = localSubroutine;
 		return true;
 	}
 }

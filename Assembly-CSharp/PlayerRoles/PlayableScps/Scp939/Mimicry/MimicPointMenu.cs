@@ -20,26 +20,26 @@ public class MimicPointMenu : MimicryMenuBase
 
 	private void Update()
 	{
-		bool active = _mimicController.Active;
-		_onRoot.SetActive(!active);
-		_offRoot.SetActive(active);
+		bool active = this._mimicController.Active;
+		this._onRoot.SetActive(!active);
+		this._offRoot.SetActive(active);
 		if (active)
 		{
-			int a = Mathf.RoundToInt(_mimicController.Distance);
-			int num = Mathf.RoundToInt(_mimicController.MaxDistance);
-			_distanceText.text = $"{Mathf.Min(a, num)}m / {num}m";
+			int a = Mathf.RoundToInt(this._mimicController.Distance);
+			int num = Mathf.RoundToInt(this._mimicController.MaxDistance);
+			this._distanceText.text = $"{Mathf.Min(a, num)}m / {num}m";
 		}
 	}
 
 	protected override void Setup(Scp939Role role)
 	{
 		base.Setup(role);
-		role.SubroutineModule.TryGetSubroutine<MimicPointController>(out _mimicController);
+		role.SubroutineModule.TryGetSubroutine<MimicPointController>(out this._mimicController);
 	}
 
 	public void RequestToggle()
 	{
-		_mimicController.ClientToggle();
+		this._mimicController.ClientToggle();
 		if (MimicryMenuController.SingletonSet)
 		{
 			MimicryMenuController.Singleton.IsEnabled = false;

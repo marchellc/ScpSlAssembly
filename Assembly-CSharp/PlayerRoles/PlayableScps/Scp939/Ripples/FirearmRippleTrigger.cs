@@ -33,11 +33,11 @@ public class FirearmRippleTrigger : RippleTriggerBase
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteRelativePosition(_syncRipplePos);
-		writer.WriteReferenceHub(_syncPlayer);
-		if (!(_focus.State < 1f))
+		writer.WriteRelativePosition(this._syncRipplePos);
+		writer.WriteReferenceHub(this._syncPlayer);
+		if (!(this._focus.State < 1f))
 		{
-			writer.WriteSByte((sbyte)_syncRoleColor);
+			writer.WriteSByte((sbyte)this._syncRoleColor);
 		}
 	}
 
@@ -47,29 +47,29 @@ public class FirearmRippleTrigger : RippleTriggerBase
 		Vector3 position = reader.ReadRelativePosition().Position;
 		if (reader.TryReadReferenceHub(out var hub))
 		{
-			OnPlayedRipple(hub);
+			base.OnPlayedRipple(hub);
 		}
-		base.Player.Play(position, DecodeColor(reader));
+		base.Player.Play(position, this.DecodeColor(reader));
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp939FocusAbility>(out _focus);
+		base.GetSubroutine<Scp939FocusAbility>(out this._focus);
 	}
 
 	private void OnFirearmPlayed(ItemIdentifier id, PlayerRoleBase shooterRole, PooledAudioSource src)
 	{
-		if (NetworkServer.active && shooterRole.TryGetOwner(out var hub) && shooterRole is HumanRole humanRole && !CheckVisibility(hub))
+		if (NetworkServer.active && shooterRole.TryGetOwner(out var hub) && shooterRole is HumanRole humanRole && !base.CheckVisibility(hub))
 		{
 			Vector3 position = humanRole.FpcModule.Position;
 			float maxDistance = src.Source.maxDistance;
 			if (!((position - base.CastRole.FpcModule.Position).sqrMagnitude > maxDistance * maxDistance))
 			{
-				_syncRipplePos = new RelativePosition(humanRole.FpcModule.Position);
-				_syncRoleColor = humanRole.RoleTypeId;
-				_syncPlayer = hub;
-				ServerSendRpcToObservers();
+				this._syncRipplePos = new RelativePosition(humanRole.FpcModule.Position);
+				this._syncRoleColor = humanRole.RoleTypeId;
+				this._syncPlayer = hub;
+				base.ServerSendRpcToObservers();
 			}
 		}
 	}

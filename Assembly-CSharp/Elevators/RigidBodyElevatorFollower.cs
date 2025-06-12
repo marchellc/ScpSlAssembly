@@ -11,25 +11,25 @@ public class RigidBodyElevatorFollower : ElevatorFollowerBase
 	protected override void Awake()
 	{
 		base.Awake();
-		LastPosition = Rigidbody.position;
+		base.LastPosition = this.Rigidbody.position;
 	}
 
 	protected override void LateUpdate()
 	{
 		base.LateUpdate();
-		if (!_unlinked && !Rigidbody.IsSleeping())
+		if (!this._unlinked && !this.Rigidbody.IsSleeping())
 		{
-			LastPosition = Rigidbody.position;
+			base.LastPosition = this.Rigidbody.position;
 		}
 	}
 
 	private void Reset()
 	{
-		Rigidbody = GetComponent<Rigidbody>();
+		this.Rigidbody = base.GetComponent<Rigidbody>();
 	}
 
 	public void Unlink()
 	{
-		_unlinked = true;
+		this._unlinked = true;
 	}
 }

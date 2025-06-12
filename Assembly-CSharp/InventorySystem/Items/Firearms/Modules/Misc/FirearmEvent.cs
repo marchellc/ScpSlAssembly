@@ -25,9 +25,9 @@ public class FirearmEvent
 	{
 		try
 		{
-			CurrentlyInvokedEvent = this;
-			LastInvocation = data;
-			Action.Invoke();
+			FirearmEvent.CurrentlyInvokedEvent = this;
+			this.LastInvocation = data;
+			this.Action.Invoke();
 		}
 		catch (Exception exception)
 		{
@@ -35,7 +35,7 @@ public class FirearmEvent
 		}
 		finally
 		{
-			CurrentlyInvokedEvent = null;
+			FirearmEvent.CurrentlyInvokedEvent = null;
 		}
 	}
 }

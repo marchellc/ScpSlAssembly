@@ -9,7 +9,7 @@ public sealed class DateTimeFormatter : IJsonFormatter<DateTime>, IJsonFormatter
 
 	public DateTimeFormatter()
 	{
-		formatString = null;
+		this.formatString = null;
 	}
 
 	public DateTimeFormatter(string formatString)
@@ -19,16 +19,16 @@ public sealed class DateTimeFormatter : IJsonFormatter<DateTime>, IJsonFormatter
 
 	public void Serialize(ref JsonWriter writer, DateTime value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteString(value.ToString(formatString));
+		writer.WriteString(value.ToString(this.formatString));
 	}
 
 	public DateTime Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
 	{
 		string s = reader.ReadString();
-		if (formatString == null)
+		if (this.formatString == null)
 		{
 			return DateTime.Parse(s, CultureInfo.InvariantCulture);
 		}
-		return DateTime.ParseExact(s, formatString, CultureInfo.InvariantCulture);
+		return DateTime.ParseExact(s, this.formatString, CultureInfo.InvariantCulture);
 	}
 }

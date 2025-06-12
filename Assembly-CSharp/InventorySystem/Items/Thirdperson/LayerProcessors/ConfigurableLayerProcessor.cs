@@ -33,21 +33,21 @@ public class ConfigurableLayerProcessor : LayerProcessorBase
 			weight = 1f;
 			break;
 		case AnimItemLayer3p.Left:
-			if (!_rightHandOnly)
+			if (!this._rightHandOnly)
 			{
 				goto case AnimItemLayer3p.Right;
 			}
 			goto default;
 		case AnimItemLayer3p.Right:
-			weight = Mathf.Lerp(_handStationaryIntensity, _handWalkIntensity, WalkWeight);
+			weight = Mathf.Lerp(this._handStationaryIntensity, this._handWalkIntensity, this.WalkWeight);
 			break;
 		case AnimItemLayer3p.Middle:
-			weight = Mathf.Lerp(_chestStationaryIntensity, _chestWalkIntensity, WalkWeight);
+			weight = Mathf.Lerp(this._chestStationaryIntensity, this._chestWalkIntensity, this.WalkWeight);
 			break;
 		default:
 			weight = 0f;
 			break;
 		}
-		return new ThirdpersonLayerWeight(weight, !_overlayBlockMask.Contains(layer));
+		return new ThirdpersonLayerWeight(weight, !this._overlayBlockMask.Contains(layer));
 	}
 }

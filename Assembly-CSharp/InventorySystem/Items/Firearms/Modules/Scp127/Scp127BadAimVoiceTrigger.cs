@@ -18,7 +18,7 @@ public class Scp127BadAimVoiceTrigger : Scp127VoiceTriggerBase
 	protected override void OnInit()
 	{
 		base.OnInit();
-		base.Firearm.TryGetModules<Scp127MagazineModule, Scp127ActionModule, IHitregModule>(out _magazineModule, out _actionModule, out var m);
+		base.Firearm.TryGetModules<Scp127MagazineModule, Scp127ActionModule, IHitregModule>(out this._magazineModule, out this._actionModule, out var m);
 		m.ServerOnFired += OnFired;
 	}
 
@@ -26,20 +26,20 @@ public class Scp127BadAimVoiceTrigger : Scp127VoiceTriggerBase
 	{
 		if (!(scp127 != base.Firearm))
 		{
-			_missedAmmo = 0;
+			this._missedAmmo = 0;
 		}
 	}
 
 	private void OnFired()
 	{
-		_missedAmmo++;
-		if (_actionModule.AmmoStored <= 0)
+		this._missedAmmo++;
+		if (this._actionModule.AmmoStored <= 0)
 		{
-			float num = 0.8f * (float)_magazineModule.AmmoMax;
-			if (!((float)_missedAmmo < num))
+			float num = 0.8f * (float)this._magazineModule.AmmoMax;
+			if (!((float)this._missedAmmo < num))
 			{
-				_missedAmmo = 0;
-				ServerPlayVoiceLineFromCollection(_voiceLine);
+				this._missedAmmo = 0;
+				base.ServerPlayVoiceLineFromCollection(this._voiceLine);
 			}
 		}
 	}

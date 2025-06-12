@@ -22,13 +22,13 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 	[SerializeField]
 	private AnimatorConditionalOverride _magazineRemovedOverrideLayers;
 
-	public ItemType AmmoType => _ammoType;
+	public ItemType AmmoType => this._ammoType;
 
 	public virtual IReloadUnloadValidatorModule.Authorization ReloadAuthorization
 	{
 		get
 		{
-			if (AmmoStored >= AmmoMax || base.Firearm.OwnerInventory.GetCurAmmo(AmmoType) <= 0)
+			if (this.AmmoStored >= this.AmmoMax || base.Firearm.OwnerInventory.GetCurAmmo(this.AmmoType) <= 0)
 			{
 				return IReloadUnloadValidatorModule.Authorization.Idle;
 			}
@@ -40,7 +40,7 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 	{
 		get
 		{
-			if (AmmoStored <= 0)
+			if (this.AmmoStored <= 0)
 			{
 				return IReloadUnloadValidatorModule.Authorization.Idle;
 			}
@@ -48,19 +48,19 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 		}
 	}
 
-	public int AmmoMax => _defaultCapacity + (int)base.Firearm.AttachmentsValue(AttachmentParam.MagazineCapacityModifier);
+	public int AmmoMax => this._defaultCapacity + (int)base.Firearm.AttachmentsValue(AttachmentParam.MagazineCapacityModifier);
 
 	public int AmmoStored
 	{
 		get
 		{
-			return GetAmmoStoredForSerial(base.ItemSerial);
+			return this.GetAmmoStoredForSerial(base.ItemSerial);
 		}
 		private set
 		{
-			if (MagazineInserted)
+			if (this.MagazineInserted)
 			{
-				SyncData[base.ItemSerial] = value + 1;
+				MagazineModule.SyncData[base.ItemSerial] = value + 1;
 			}
 		}
 	}
@@ -69,11 +69,11 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 	{
 		get
 		{
-			return GetMagazineInserted(base.ItemSerial);
+			return MagazineModule.GetMagazineInserted(base.ItemSerial);
 		}
 		private set
 		{
-			SyncData[base.ItemSerial] = (value ? (AmmoStored + 1) : 0);
+			MagazineModule.SyncData[base.ItemSerial] = (value ? (this.AmmoStored + 1) : 0);
 		}
 	}
 
@@ -85,7 +85,7 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 
 	public static bool GetMagazineInserted(ushort serial)
 	{
-		if (SyncData.TryGetValue(serial, out var value))
+		if (MagazineModule.SyncData.TryGetValue(serial, out var value))
 		{
 			return value > 0;
 		}
@@ -94,8 +94,8 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 
 	public void ServerSetInstanceAmmo(ushort serial, int amount)
 	{
-		SyncData[serial] = amount + 1;
-		SendRpc(delegate(NetworkWriter writer)
+		MagazineModule.SyncData[serial] = amount + 1;
+		this.SendRpc(delegate(NetworkWriter writer)
 		{
 			writer.WriteUShort(serial);
 			writer.WriteByte((byte)(amount + 1));
@@ -107,9 +107,9 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 	{
 		if (base.IsServer)
 		{
-			UserInv.ServerAddAmmo(AmmoType, AmmoStored);
-			MagazineInserted = false;
-			ServerResyncData();
+			this.UserInv.ServerAddAmmo(this.AmmoType, this.AmmoStored);
+			this.MagazineInserted = false;
+			this.ServerResyncData();
 		}
 	}
 
@@ -118,8 +118,8 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 	{
 		if (base.IsServer)
 		{
-			ServerInsertEmptyMagazine();
-			ServerLoadAmmoFromInventory();
+			this.ServerInsertEmptyMagazine();
+			this.ServerLoadAmmoFromInventory();
 		}
 	}
 
@@ -128,8 +128,8 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 	{
 		if (base.IsServer)
 		{
-			MagazineInserted = true;
-			ServerResyncData();
+			this.MagazineInserted = true;
+			this.ServerResyncData();
 		}
 	}
 
@@ -138,25 +138,25 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 	{
 		if (base.IsServer)
 		{
-			int b = AmmoMax - AmmoStored;
-			int num = Mathf.Min(Mathf.Min(UserInv.GetCurAmmo(AmmoType), b), insertionLimit);
-			UserInv.ServerAddAmmo(AmmoType, -num);
-			AmmoStored += num;
-			ServerResyncData();
+			int b = this.AmmoMax - this.AmmoStored;
+			int num = Mathf.Min(Mathf.Min(this.UserInv.GetCurAmmo(this.AmmoType), b), insertionLimit);
+			this.UserInv.ServerAddAmmo(this.AmmoType, -num);
+			this.AmmoStored += num;
+			this.ServerResyncData();
 		}
 	}
 
 	[ExposedFirearmEvent]
 	public void ServerLoadAmmoFromInventory()
 	{
-		ServerLoadAmmoFromInventory(int.MaxValue);
+		this.ServerLoadAmmoFromInventory(int.MaxValue);
 	}
 
 	public void ServerResyncData()
 	{
-		if (SyncData.TryGetValue(base.ItemSerial, out var syncData))
+		if (MagazineModule.SyncData.TryGetValue(base.ItemSerial, out var syncData))
 		{
-			SendRpc(delegate(NetworkWriter writer)
+			this.SendRpc(delegate(NetworkWriter writer)
 			{
 				writer.WriteUShort(base.ItemSerial);
 				writer.WriteByte((byte)syncData);
@@ -170,20 +170,20 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 		{
 			ushort num = reader.ReadUShort();
 			byte value = reader.ReadByte();
-			SyncData[num] = value;
+			MagazineModule.SyncData[num] = value;
 			MagazineModule.OnDataReceived?.Invoke(num);
 		}
 	}
 
 	public void ServerModifyAmmo(int amt)
 	{
-		AmmoStored += amt;
-		ServerResyncData();
+		this.AmmoStored += amt;
+		this.ServerResyncData();
 	}
 
 	public int GetAmmoStoredForSerial(ushort serial)
 	{
-		if (!SyncData.TryGetValue(serial, out var value))
+		if (!MagazineModule.SyncData.TryGetValue(serial, out var value))
 		{
 			return 0;
 		}
@@ -192,7 +192,7 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 
 	public DisplayAmmoValues GetDisplayAmmoForSerial(ushort serial)
 	{
-		return new DisplayAmmoValues(GetAmmoStoredForSerial(serial));
+		return new DisplayAmmoValues(this.GetAmmoStoredForSerial(serial));
 	}
 
 	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
@@ -202,9 +202,9 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 		{
 			return;
 		}
-		SendRpc(hub, delegate(NetworkWriter writer)
+		this.SendRpc(hub, delegate(NetworkWriter writer)
 		{
-			foreach (KeyValuePair<ushort, int> syncDatum in SyncData)
+			foreach (KeyValuePair<ushort, int> syncDatum in MagazineModule.SyncData)
 			{
 				writer.WriteUShort(syncDatum.Key);
 				writer.WriteByte((byte)syncDatum.Value);
@@ -215,9 +215,9 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 	internal override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		_magazineRemovedOverrideLayers.Update(base.Firearm, !MagazineInserted);
-		base.Firearm.AnimSetInt(FirearmAnimatorHashes.MagazineAmmo, AmmoStored, checkIfExists: true);
-		base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsMagInserted, MagazineInserted, checkIfExists: true);
+		this._magazineRemovedOverrideLayers.Update(base.Firearm, !this.MagazineInserted);
+		base.Firearm.AnimSetInt(FirearmAnimatorHashes.MagazineAmmo, this.AmmoStored, checkIfExists: true);
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsMagInserted, this.MagazineInserted, checkIfExists: true);
 	}
 
 	internal override void OnAdded()
@@ -229,14 +229,14 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 			{
 			case ItemAddReason.AdminCommand:
 			case ItemAddReason.Scp2536:
-				MagazineInserted = true;
-				AmmoStored = AmmoMax;
+				this.MagazineInserted = true;
+				this.AmmoStored = this.AmmoMax;
 				break;
 			case ItemAddReason.StartingItem:
-				ServerInsertMagazine();
+				this.ServerInsertMagazine();
 				return;
 			}
-			ServerResyncData();
+			this.ServerResyncData();
 		}
 	}
 
@@ -245,12 +245,12 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 		base.OnAttachmentsApplied();
 		if (base.IsServer)
 		{
-			int num = AmmoStored - AmmoMax;
+			int num = this.AmmoStored - this.AmmoMax;
 			if (num > 0)
 			{
-				AmmoStored -= num;
-				UserInv.ServerAddAmmo(AmmoType, num);
-				ServerResyncData();
+				this.AmmoStored -= num;
+				this.UserInv.ServerAddAmmo(this.AmmoType, num);
+				this.ServerResyncData();
 			}
 		}
 	}
@@ -260,7 +260,7 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 		base.OnEquipped();
 		if (base.IsServer)
 		{
-			ServerResyncData();
+			this.ServerResyncData();
 		}
 	}
 
@@ -269,7 +269,7 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 		base.ServerProcessMapgenDistribution(pickupBase);
 		if (pickupBase is FirearmPickup firearmPickup && AttachmentPreview.TryGet(firearmPickup.CurId, reValidate: false, out var result) && result.TryGetModule<MagazineModule>(out var module))
 		{
-			SyncData[firearmPickup.CurId.SerialNumber] = module.AmmoMax + 1;
+			MagazineModule.SyncData[firearmPickup.CurId.SerialNumber] = module.AmmoMax + 1;
 		}
 	}
 
@@ -280,10 +280,10 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 		{
 			return;
 		}
-		SyncData[serial] = AmmoMax + 1;
-		if (SyncData.TryGetValue(serial, out var syncData))
+		MagazineModule.SyncData[serial] = this.AmmoMax + 1;
+		if (MagazineModule.SyncData.TryGetValue(serial, out var syncData))
 		{
-			SendRpc(delegate(NetworkWriter writer)
+			this.SendRpc(delegate(NetworkWriter writer)
 			{
 				writer.WriteUShort(serial);
 				writer.WriteByte((byte)syncData);
@@ -294,12 +294,12 @@ public class MagazineModule : ModuleBase, IReloadUnloadValidatorModule, IMagazin
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		SyncData.Clear();
+		MagazineModule.SyncData.Clear();
 	}
 
 	public bool ValidateAmmoDrop(ItemType id)
 	{
-		if (id == AmmoType && base.Firearm.TryGetModule<IReloaderModule>(out var module))
+		if (id == this.AmmoType && base.Firearm.TryGetModule<IReloaderModule>(out var module))
 		{
 			return !module.IsReloadingOrUnloading;
 		}

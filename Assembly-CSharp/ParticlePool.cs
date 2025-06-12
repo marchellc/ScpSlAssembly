@@ -12,12 +12,12 @@ public static class ParticlePool
 
 		public readonly Stopwatch LastUseTime;
 
-		public double AgeSeconds => LastUseTime.Elapsed.TotalSeconds;
+		public double AgeSeconds => this.LastUseTime.Elapsed.TotalSeconds;
 
 		public PooledSystem(T template)
 		{
-			System = UnityEngine.Object.Instantiate(template);
-			LastUseTime = Stopwatch.StartNew();
+			this.System = UnityEngine.Object.Instantiate(template);
+			this.LastUseTime = Stopwatch.StartNew();
 		}
 	}
 
@@ -27,12 +27,12 @@ public static class ParticlePool
 
 	public static VisualEffect GetFromPool(this VisualEffect template, float minAge = 0.1f)
 	{
-		return GetAny(template, VfxPools, (VisualEffect x) => x.aliveParticleCount > 0, minAge);
+		return ParticlePool.GetAny(template, ParticlePool.VfxPools, (VisualEffect x) => x.aliveParticleCount > 0, minAge);
 	}
 
 	public static ParticleSystem GetFromPool(this ParticleSystem template, float minAge = 0.1f)
 	{
-		return GetAny(template, PsPools, (ParticleSystem x) => x.isPlaying, minAge);
+		return ParticlePool.GetAny(template, ParticlePool.PsPools, (ParticleSystem x) => x.isPlaying, minAge);
 	}
 
 	private static T GetAny<T>(T template, Dictionary<T, Queue<PooledSystem<T>>> pool, Predicate<T> isBusy, float minElapsed) where T : Component

@@ -27,7 +27,7 @@ public class InsufficientLighting : StatusEffectBase, ICustomRADisplay
 	internal override void OnRoleChanged(PlayerRoleBase previousRole, PlayerRoleBase newRole)
 	{
 		base.OnRoleChanged(previousRole, newRole);
-		_prevTarget = false;
+		this._prevTarget = false;
 	}
 
 	protected override void Start()
@@ -45,17 +45,17 @@ public class InsufficientLighting : StatusEffectBase, ICustomRADisplay
 	{
 		if (NetworkServer.active)
 		{
-			UpdateServer();
+			this.UpdateServer();
 		}
 	}
 
 	private void UpdateServer()
 	{
-		bool flag = CurRole is IAmbientLightRole ambientLightRole && ambientLightRole.InsufficientLight;
-		if (flag != _prevTarget)
+		bool flag = this.CurRole is IAmbientLightRole ambientLightRole && ambientLightRole.InsufficientLight;
+		if (flag != this._prevTarget)
 		{
 			base.Intensity = (byte)(flag ? 1u : 0u);
-			_prevTarget = flag;
+			this._prevTarget = flag;
 		}
 	}
 }

@@ -49,22 +49,22 @@ public readonly struct VisionInformation
 
 	public VisionInformation(ReferenceHub sourceHub, Vector3 targetHub, bool isLooking, bool isOnSameFloor, float lookingAmount, float distance, bool isInLineOfSight, bool isInDarkness, bool isInDistance)
 	{
-		SourceHub = sourceHub;
-		TargetPosition = targetHub;
-		IsLooking = isLooking;
-		LookingAmount = lookingAmount;
-		Distance = distance;
-		IsInLineOfSight = isInLineOfSight;
-		IsInDarkness = isInDarkness;
-		IsInDistance = isInDistance;
-		IsOnSameFloor = isOnSameFloor;
+		this.SourceHub = sourceHub;
+		this.TargetPosition = targetHub;
+		this.IsLooking = isLooking;
+		this.LookingAmount = lookingAmount;
+		this.Distance = distance;
+		this.IsInLineOfSight = isInLineOfSight;
+		this.IsInDarkness = isInDarkness;
+		this.IsInDistance = isInDistance;
+		this.IsOnSameFloor = isOnSameFloor;
 	}
 
 	public static VisionInformation GetVisionInformation(ReferenceHub source, Transform sourceCam, Vector3 target, float targetRadius = 0f, float visionTriggerDistance = 0f, bool checkFog = true, bool checkLineOfSight = true, int maskLayer = 0, bool checkInDarkness = true)
 	{
 		bool isOnSameFloor = false;
 		bool flag = false;
-		if (TargetOnTheSameFloor(sourceCam.position, target))
+		if (VisionInformation.TargetOnTheSameFloor(sourceCam.position, target))
 		{
 			isOnSameFloor = true;
 			flag = true;
@@ -96,19 +96,19 @@ public readonly struct VisionInformation
 			}
 			else
 			{
-				flag = TargetInViewDirection(source, target, targetRadius, out lookingAmount);
+				flag = VisionInformation.TargetInViewDirection(source, target, targetRadius, out lookingAmount);
 			}
 		}
 		bool flag4 = !checkLineOfSight;
 		if (flag && checkLineOfSight)
 		{
-			flag4 = TargetVisibilityUnobstructed(sourceCam, directionToTarget);
+			flag4 = VisionInformation.TargetVisibilityUnobstructed(sourceCam, directionToTarget);
 			flag = flag4;
 		}
 		bool flag5 = false;
 		if (checkInDarkness)
 		{
-			flag5 = !CheckAttachments(source) && RoomLightController.IsInDarkenedRoom(target);
+			flag5 = !VisionInformation.CheckAttachments(source) && RoomLightController.IsInDarkenedRoom(target);
 			flag = flag && !flag5;
 		}
 		return new VisionInformation(source, target, flag, isOnSameFloor, lookingAmount, magnitude, flag4, flag5, flag2);
@@ -118,14 +118,14 @@ public readonly struct VisionInformation
 	{
 		if (maskLayer == 0)
 		{
-			maskLayer = VisionLayerMask;
+			maskLayer = VisionInformation.VisionLayerMask;
 		}
-		return Physics.RaycastNonAlloc(new Ray(sourceCam.position, directionToTarget.normalized), RaycastResult, directionToTarget.magnitude, maskLayer) == 0;
+		return Physics.RaycastNonAlloc(new Ray(sourceCam.position, directionToTarget.normalized), VisionInformation.RaycastResult, directionToTarget.magnitude, maskLayer) == 0;
 	}
 
 	public static bool TargetInViewDirection(ReferenceHub source, Vector3 targetPosition, float targetRadius, out float lookingAmount)
 	{
-		return TargetInCustomViewDirection(source.PlayerCameraReference, targetPosition, targetRadius, out lookingAmount, source.aspectRatioSync.XScreenEdge, AspectRatioSync.YScreenEdge);
+		return VisionInformation.TargetInCustomViewDirection(source.PlayerCameraReference, targetPosition, targetRadius, out lookingAmount, source.aspectRatioSync.XScreenEdge, AspectRatioSync.YScreenEdge);
 	}
 
 	public static bool TargetInCustomViewDirection(Transform sourceCam, Vector3 targetPosition, float targetRadius, out float lookingAmount, float xAxisAcceptedEdge, float yAxisAcceptedEdge)
@@ -156,7 +156,7 @@ public readonly struct VisionInformation
 
 	public static bool TargetOnTheSameFloor(Vector3 firstPosition, Vector3 secondPosition)
 	{
-		return Mathf.Abs(firstPosition.y - secondPosition.y) < (float)SameFloorDistanceThreshold;
+		return Mathf.Abs(firstPosition.y - secondPosition.y) < (float)VisionInformation.SameFloorDistanceThreshold;
 	}
 
 	private static bool CheckAttachments(ReferenceHub source)
@@ -171,27 +171,27 @@ public readonly struct VisionInformation
 
 	public FailReason GetFailReason()
 	{
-		if (!IsOnSameFloor)
+		if (!this.IsOnSameFloor)
 		{
 			return FailReason.NotOnSameFloor;
 		}
-		if (!IsInDistance)
+		if (!this.IsInDistance)
 		{
 			return FailReason.NotInDistance;
 		}
-		if (LookingAmount >= 1f)
+		if (this.LookingAmount >= 1f)
 		{
 			return FailReason.NotInView;
 		}
-		if (!IsInLineOfSight)
+		if (!this.IsInLineOfSight)
 		{
 			return FailReason.NotInLineOfSight;
 		}
-		if (IsInDarkness)
+		if (this.IsInDarkness)
 		{
 			return FailReason.InDarkRoom;
 		}
-		if (!IsLooking)
+		if (!this.IsLooking)
 		{
 			return FailReason.UnkownReason;
 		}
@@ -204,7 +204,7 @@ public readonly struct VisionInformation
 		{
 			return false;
 		}
-		return IsInView(originHub, fpcRole);
+		return VisionInformation.IsInView(originHub, fpcRole);
 	}
 
 	public static bool IsInView(ReferenceHub originHub, IFpcRole fpcRole)
@@ -212,6 +212,6 @@ public readonly struct VisionInformation
 		Vector3 position = fpcRole.FpcModule.Position;
 		float radius = fpcRole.FpcModule.CharacterControllerSettings.Radius;
 		float visionTriggerDistance = ((position.GetZone() == FacilityZone.Surface) ? 60f : 30f);
-		return GetVisionInformation(originHub, originHub.PlayerCameraReference, position, radius, visionTriggerDistance, checkFog: false).IsLooking;
+		return VisionInformation.GetVisionInformation(originHub, originHub.PlayerCameraReference, position, radius, visionTriggerDistance, checkFog: false).IsLooking;
 	}
 }

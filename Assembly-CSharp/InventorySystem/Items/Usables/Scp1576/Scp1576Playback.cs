@@ -34,17 +34,17 @@ public class Scp1576Playback : SingleBufferPlayback, IGlobalPlayback, IPoolReset
 	{
 		get
 		{
-			if (_templateCacheSet)
+			if (Scp1576Playback._templateCacheSet)
 			{
-				return _templateCache;
+				return Scp1576Playback._templateCache;
 			}
 			if (!InventoryItemLoader.TryGetItem<Scp1576Item>(ItemType.SCP1576, out var result))
 			{
 				throw new InvalidOperationException("SCP-1576 template not found!");
 			}
-			_templateCache = result.PlaybackTemplate;
-			_templateCacheSet = true;
-			return _templateCache;
+			Scp1576Playback._templateCache = result.PlaybackTemplate;
+			Scp1576Playback._templateCacheSet = true;
+			return Scp1576Playback._templateCache;
 		}
 	}
 
@@ -54,17 +54,17 @@ public class Scp1576Playback : SingleBufferPlayback, IGlobalPlayback, IPoolReset
 	{
 		get
 		{
-			if (!_spawned || !_source.HideGlobalIndicator)
+			if (!this._spawned || !this._source.HideGlobalIndicator)
 			{
-				return MaxSamples > 0;
+				return this.MaxSamples > 0;
 			}
 			return false;
 		}
 	}
 
-	public virtual Color GlobalChatColor => Owner.serverRoles.GetVoiceColor();
+	public virtual Color GlobalChatColor => this.Owner.serverRoles.GetVoiceColor();
 
-	public virtual string GlobalChatName => Owner.nicknameSync.DisplayName;
+	public virtual string GlobalChatName => this.Owner.nicknameSync.DisplayName;
 
 	public virtual float GlobalChatLoudness => base.Loudness;
 
@@ -72,16 +72,16 @@ public class Scp1576Playback : SingleBufferPlayback, IGlobalPlayback, IPoolReset
 
 	public void SpawnObject()
 	{
-		if (_playerMode && base.transform.parent.TryGetComponent<HumanRole>(out var component) && component.TryGetOwner(out var hub))
+		if (this._playerMode && base.transform.parent.TryGetComponent<HumanRole>(out var component) && component.TryGetOwner(out var hub))
 		{
-			Owner = hub;
-			GlobalChatIndicatorManager.Subscribe(this, Owner);
+			this.Owner = hub;
+			GlobalChatIndicatorManager.Subscribe(this, this.Owner);
 		}
 	}
 
 	public void ResetObject()
 	{
-		if (_playerMode)
+		if (this._playerMode)
 		{
 			GlobalChatIndicatorManager.Unsubscribe(this);
 		}
@@ -90,24 +90,24 @@ public class Scp1576Playback : SingleBufferPlayback, IGlobalPlayback, IPoolReset
 	protected override void Awake()
 	{
 		base.Awake();
-		_tr = base.transform;
+		this._tr = base.transform;
 	}
 
 	private void OnDestroy()
 	{
-		if (_anyCreated)
+		if (Scp1576Playback._anyCreated)
 		{
-			Pool.Clear();
-			ActiveInstances.Clear();
-			_anyCreated = false;
+			Scp1576Playback.Pool.Clear();
+			Scp1576Playback.ActiveInstances.Clear();
+			Scp1576Playback._anyCreated = false;
 		}
 	}
 
 	private void LateUpdate()
 	{
-		if (_spawned)
+		if (this._spawned)
 		{
-			_tr.position = _source.Position;
+			this._tr.position = this._source.Position;
 		}
 	}
 
@@ -115,36 +115,36 @@ public class Scp1576Playback : SingleBufferPlayback, IGlobalPlayback, IPoolReset
 	{
 		foreach (Scp1576Source instance in Scp1576Source.Instances)
 		{
-			GetOrAdd(speaker, instance).Buffer.Write(samples, len);
+			Scp1576Playback.GetOrAdd(speaker, instance).Buffer.Write(samples, len);
 		}
 	}
 
 	private static Scp1576Playback GetOrAdd(ReferenceHub player, Scp1576Source source)
 	{
-		if (ActiveInstances.TryGetValue(source, out var value) && value.TryGetValue(player, out var value2))
+		if (Scp1576Playback.ActiveInstances.TryGetValue(source, out var value) && value.TryGetValue(player, out var value2))
 		{
 			return value2;
 		}
-		if (!Pool.TryDequeue(out value2))
+		if (!Scp1576Playback.Pool.TryDequeue(out value2))
 		{
-			value2 = UnityEngine.Object.Instantiate(Template);
-			_anyCreated = true;
+			value2 = UnityEngine.Object.Instantiate(Scp1576Playback.Template);
+			Scp1576Playback._anyCreated = true;
 		}
 		value2._spawned = true;
 		value2.Owner = player;
 		value2._source = source;
-		ActiveInstances.GetOrAdd(source, () => new Dictionary<ReferenceHub, Scp1576Playback>())[player] = value2;
+		Scp1576Playback.ActiveInstances.GetOrAdd(source, () => new Dictionary<ReferenceHub, Scp1576Playback>())[player] = value2;
 		GlobalChatIndicatorManager.Subscribe(value2, player);
 		return value2;
 	}
 
 	private static void ReturnToPool(Scp1576Playback playback)
 	{
-		if (ActiveInstances.TryGetValue(playback._source, out var value))
+		if (Scp1576Playback.ActiveInstances.TryGetValue(playback._source, out var value))
 		{
 			value.Remove(playback.Owner);
 		}
-		Pool.Enqueue(playback);
+		Scp1576Playback.Pool.Enqueue(playback);
 		playback._spawned = false;
 		GlobalChatIndicatorManager.Unsubscribe(playback);
 	}
@@ -154,21 +154,21 @@ public class Scp1576Playback : SingleBufferPlayback, IGlobalPlayback, IPoolReset
 	{
 		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub hub)
 		{
-			ActiveInstances.ForEachValue(delegate(Dictionary<ReferenceHub, Scp1576Playback> x)
+			Scp1576Playback.ActiveInstances.ForEachValue(delegate(Dictionary<ReferenceHub, Scp1576Playback> x)
 			{
 				if (x.TryGetValue(hub, out var value))
 				{
 					x.Remove(hub);
-					ReturnToPool(value);
+					Scp1576Playback.ReturnToPool(value);
 				}
 			});
 		};
 		Scp1576Source.OnRemoved = (Action<Scp1576Source>)Delegate.Combine(Scp1576Source.OnRemoved, (Action<Scp1576Source>)delegate(Scp1576Source src)
 		{
-			if (ActiveInstances.TryGetValue(src, out var value2))
+			if (Scp1576Playback.ActiveInstances.TryGetValue(src, out var value))
 			{
-				ActiveInstances.Remove(src);
-				value2.ForEachValue(ReturnToPool);
+				Scp1576Playback.ActiveInstances.Remove(src);
+				value.ForEachValue(ReturnToPool);
 			}
 		});
 	}

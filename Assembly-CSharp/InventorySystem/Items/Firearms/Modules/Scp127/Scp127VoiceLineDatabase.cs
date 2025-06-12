@@ -25,19 +25,19 @@ public class Scp127VoiceLineDatabase : ScriptableObject
 		{
 			get
 			{
-				if (!ClipDurationValid)
+				if (!this.ClipDurationValid)
 				{
-					return Clip.length;
+					return this.Clip.length;
 				}
-				return SegmentTimestamps[^1];
+				return this.SegmentTimestamps[^1];
 			}
 			private set
 			{
-				if (!ClipDurationValid)
+				if (!this.ClipDurationValid)
 				{
-					SegmentTimestamps = new float[1];
+					this.SegmentTimestamps = new float[1];
 				}
-				SegmentTimestamps[^1] = value;
+				this.SegmentTimestamps[^1] = value;
 			}
 		}
 
@@ -45,9 +45,9 @@ public class Scp127VoiceLineDatabase : ScriptableObject
 		{
 			get
 			{
-				if (SegmentTimestamps != null)
+				if (this.SegmentTimestamps != null)
 				{
-					return SegmentTimestamps.Length != 0;
+					return this.SegmentTimestamps.Length != 0;
 				}
 				return false;
 			}
@@ -55,8 +55,8 @@ public class Scp127VoiceLineDatabase : ScriptableObject
 
 		public void RecalculateClipDuration()
 		{
-			float[] array = new float[Clip.samples * Clip.channels];
-			Clip.GetData(array, 0);
+			float[] array = new float[this.Clip.samples * this.Clip.channels];
+			this.Clip.GetData(array, 0);
 			for (int num = array.Length - 1; num >= 0; num -= 4800)
 			{
 				float num2 = 0f;
@@ -71,11 +71,11 @@ public class Scp127VoiceLineDatabase : ScriptableObject
 				}
 				if (num2 > 48f)
 				{
-					LineDuration = Clip.length * ((float)num / (float)array.Length);
+					this.LineDuration = this.Clip.length * ((float)num / (float)array.Length);
 					return;
 				}
 			}
-			LineDuration = Clip.length;
+			this.LineDuration = this.Clip.length;
 		}
 	}
 
@@ -89,14 +89,14 @@ public class Scp127VoiceLineDatabase : ScriptableObject
 
 	public bool TryGetClip(Scp127VoiceLinesTranslation translation, out AudioClip clip)
 	{
-		SetIndexing(force: false);
-		return _clipsByTranslation.TryGetValue(translation, out clip);
+		this.SetIndexing(force: false);
+		return this._clipsByTranslation.TryGetValue(translation, out clip);
 	}
 
 	public bool TryGetEntry(AudioClip voiceLine, out VoiceEntry entry)
 	{
-		SetIndexing(force: false);
-		return _entriesByClip.TryGetValue(voiceLine, out entry);
+		this.SetIndexing(force: false);
+		return this._entriesByClip.TryGetValue(voiceLine, out entry);
 	}
 
 	public bool IsStillPlaying(AudioPoolSession session)
@@ -106,7 +106,7 @@ public class Scp127VoiceLineDatabase : ScriptableObject
 			return false;
 		}
 		AudioSource source = session.Source;
-		if (!_entriesByClip.TryGetValue(source.clip, out var value))
+		if (!this._entriesByClip.TryGetValue(source.clip, out var value))
 		{
 			return true;
 		}
@@ -117,15 +117,15 @@ public class Scp127VoiceLineDatabase : ScriptableObject
 
 	public void SetIndexing(bool force)
 	{
-		if (!_indexingSet || force)
+		if (!this._indexingSet || force)
 		{
-			VoiceEntry[] entries = Entries;
+			VoiceEntry[] entries = this.Entries;
 			foreach (VoiceEntry voiceEntry in entries)
 			{
-				_entriesByClip[voiceEntry.Clip] = voiceEntry;
-				_clipsByTranslation[voiceEntry.Translation] = voiceEntry.Clip;
+				this._entriesByClip[voiceEntry.Clip] = voiceEntry;
+				this._clipsByTranslation[voiceEntry.Translation] = voiceEntry.Clip;
 			}
-			_indexingSet = true;
+			this._indexingSet = true;
 		}
 	}
 }

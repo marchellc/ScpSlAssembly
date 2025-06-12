@@ -15,17 +15,17 @@ public abstract class RaClientDataRequest : IServerCommunication, IClientCommuni
 
 	public virtual void ReceiveData(CommandSender sender, string data)
 	{
-		_stringBuilder.Clear();
-		_stringBuilder.Append("$").Append(DataId).Append(" ");
-		GatherData();
-		sender.RaReply($"${DataId} {_stringBuilder}", success: true, logToConsole: false, string.Empty);
+		this._stringBuilder.Clear();
+		this._stringBuilder.Append("$").Append(this.DataId).Append(" ");
+		this.GatherData();
+		sender.RaReply($"${this.DataId} {this._stringBuilder}", success: true, logToConsole: false, string.Empty);
 	}
 
 	protected abstract void GatherData();
 
 	protected void AppendData(object data)
 	{
-		_stringBuilder.Append(data).Append(",");
+		this._stringBuilder.Append(data).Append(",");
 	}
 
 	protected int CastBool(bool value)

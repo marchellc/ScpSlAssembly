@@ -12,7 +12,7 @@ public class FirearmSearchCompletor : ItemSearchCompletor
 	public FirearmSearchCompletor(ReferenceHub hub, FirearmPickup targetPickup, ItemBase targetItem, double maxDistanceSquared)
 		: base(hub, targetPickup, targetItem, maxDistanceSquared)
 	{
-		_extensions = targetPickup.Worldmodel.Extensions;
+		this._extensions = targetPickup.Worldmodel.Extensions;
 	}
 
 	protected override bool ValidateAny()
@@ -21,7 +21,7 @@ public class FirearmSearchCompletor : ItemSearchCompletor
 		{
 			return false;
 		}
-		Component[] extensions = _extensions;
+		Component[] extensions = this._extensions;
 		for (int i = 0; i < extensions.Length; i++)
 		{
 			if (extensions[i] is IPickupLockingExtension { LockPrefab: not false })

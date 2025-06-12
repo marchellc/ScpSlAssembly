@@ -34,43 +34,43 @@ public class Scp173BreakneckSpeedsAbility : KeySubroutine<Scp173Role>
 
 	public Action OnToggled;
 
-	private float Elapsed => (float)_duration.Elapsed.TotalSeconds;
+	private float Elapsed => (float)this._duration.Elapsed.TotalSeconds;
 
 	public bool IsActive
 	{
 		get
 		{
-			return _duration.IsRunning;
+			return this._duration.IsRunning;
 		}
 		private set
 		{
-			if (value == IsActive)
+			if (value == this.IsActive)
 			{
 				return;
 			}
-			Scp173BreakneckSpeedChangingEventArgs scp173BreakneckSpeedChangingEventArgs = new Scp173BreakneckSpeedChangingEventArgs(base.Owner, value);
-			Scp173Events.OnBreakneckSpeedChanging(scp173BreakneckSpeedChangingEventArgs);
-			if (!scp173BreakneckSpeedChangingEventArgs.IsAllowed)
+			Scp173BreakneckSpeedChangingEventArgs e = new Scp173BreakneckSpeedChangingEventArgs(base.Owner, value);
+			Scp173Events.OnBreakneckSpeedChanging(e);
+			if (!e.IsAllowed)
 			{
 				return;
 			}
 			if (value)
 			{
-				_duration.Start();
-				_disableTime = 0f;
+				this._duration.Start();
+				this._disableTime = 0f;
 			}
 			else
 			{
-				_duration.Reset();
+				this._duration.Reset();
 			}
 			if (NetworkServer.active)
 			{
 				if (!value)
 				{
-					Cooldown.Trigger(40.0);
+					this.Cooldown.Trigger(40.0);
 				}
-				ServerSendRpc(toAll: true);
-				OnToggled?.Invoke();
+				base.ServerSendRpc(toAll: true);
+				this.OnToggled?.Invoke();
 				Scp173Events.OnBreakneckSpeedChanged(new Scp173BreakneckSpeedChangedEventArgs(base.Owner, value));
 			}
 		}
@@ -80,27 +80,27 @@ public class Scp173BreakneckSpeedsAbility : KeySubroutine<Scp173Role>
 
 	private void UpdateServerside()
 	{
-		if (!IsActive)
+		if (!this.IsActive)
 		{
 			return;
 		}
-		if (_disableTime > 0f)
+		if (this._disableTime > 0f)
 		{
-			if (!(Elapsed < _disableTime))
+			if (!(this.Elapsed < this._disableTime))
 			{
-				IsActive = false;
+				this.IsActive = false;
 			}
 		}
-		else if (_observersTracker.IsObserved)
+		else if (this._observersTracker.IsObserved)
 		{
-			_disableTime = Elapsed + 10f;
+			this._disableTime = this.Elapsed + 10f;
 		}
 	}
 
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		ClientSendCmd();
+		base.ClientSendCmd();
 	}
 
 	protected override void Update()
@@ -108,69 +108,69 @@ public class Scp173BreakneckSpeedsAbility : KeySubroutine<Scp173Role>
 		base.Update();
 		if (base.Owner.isLocalPlayer || base.Owner.IsLocallySpectated())
 		{
-			_ppVolume.enabled = true;
-			_ppVolume.weight = Mathf.Lerp(_ppVolume.weight, IsActive ? 1 : 0, Time.deltaTime * _ppLerpSpeed);
+			this._ppVolume.enabled = true;
+			this._ppVolume.weight = Mathf.Lerp(this._ppVolume.weight, this.IsActive ? 1 : 0, Time.deltaTime * this._ppLerpSpeed);
 		}
 		else
 		{
-			_ppVolume.enabled = false;
+			this._ppVolume.enabled = false;
 		}
 		if (NetworkServer.active)
 		{
-			UpdateServerside();
+			this.UpdateServerside();
 		}
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp173ObserversTracker>(out _observersTracker);
+		base.GetSubroutine<Scp173ObserversTracker>(out this._observersTracker);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
-		if (IsActive)
+		if (this.IsActive)
 		{
-			if (!(Elapsed < 1f))
+			if (!(this.Elapsed < 1f))
 			{
-				IsActive = false;
+				this.IsActive = false;
 			}
 		}
-		else if (Cooldown.IsReady)
+		else if (this.Cooldown.IsReady)
 		{
-			IsActive = true;
+			this.IsActive = true;
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
-		writer.WriteBool(IsActive);
-		if (!IsActive)
+		writer.WriteBool(this.IsActive);
+		if (!this.IsActive)
 		{
-			Cooldown.WriteCooldown(writer);
+			this.Cooldown.WriteCooldown(writer);
 		}
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
-		IsActive = reader.ReadBool();
-		if (!IsActive)
+		this.IsActive = reader.ReadBool();
+		if (!this.IsActive)
 		{
-			Cooldown.ReadCooldown(reader);
+			this.Cooldown.ReadCooldown(reader);
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_ppVolume.weight = 0f;
-		IsActive = false;
-		Cooldown.Clear();
+		this._ppVolume.weight = 0f;
+		this.IsActive = false;
+		this.Cooldown.Clear();
 	}
 
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		Cooldown.Trigger(40.0);
+		this.Cooldown.Trigger(40.0);
 	}
 }

@@ -14,6 +14,6 @@ public abstract class SyncedDetail : DetailBase
 
 	public sealed override void ApplyDetail(KeycardGfx target, KeycardItem template)
 	{
-		ApplyDetail(target, KeycardDetailSynchronizer.PayloadReader, template);
+		this.ApplyDetail(target, KeycardDetailSynchronizer.PayloadReader, template);
 	}
 }

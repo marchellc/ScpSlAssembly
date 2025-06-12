@@ -15,16 +15,17 @@ public class StripdownPrintCommand : StripdownInstructionBase
 		try
 		{
 			string[] lines = StripdownProcessor.Print(instruction.Split(' '));
-			StripdownNetworking.StripdownResponse stripdownResponse = default(StripdownNetworking.StripdownResponse);
-			stripdownResponse.Lines = lines;
-			StripdownNetworking.StripdownResponse stripdownResponse2 = stripdownResponse;
+			StripdownNetworking.StripdownResponse stripdownResponse = new StripdownNetworking.StripdownResponse
+			{
+				Lines = lines
+			};
 			if (sender == null)
 			{
-				StripdownNetworking.ProcessMessage(stripdownResponse2);
+				StripdownNetworking.ProcessMessage(stripdownResponse);
 			}
 			else
 			{
-				sender.Send(stripdownResponse2);
+				sender.Send(stripdownResponse);
 			}
 			return "Values printed into the debug console (or saved into a game data file).";
 		}

@@ -15,7 +15,7 @@ public static class RoleTranslations
 
 	public static string GetRoleName(RoleTypeId rt)
 	{
-		if (!TranslatedNames.TryGetValue(rt, out var value))
+		if (!RoleTranslations.TranslatedNames.TryGetValue(rt, out var value))
 		{
 			return rt.ToString();
 		}
@@ -24,9 +24,9 @@ public static class RoleTranslations
 
 	public static string GetAbbreviatedRoleName(this RoleTypeId rt)
 	{
-		if (!TranslatedAbbreviatedNames.TryGetValue(rt, out var value))
+		if (!RoleTranslations.TranslatedAbbreviatedNames.TryGetValue(rt, out var value))
 		{
-			return GetRoleName(rt);
+			return RoleTranslations.GetRoleName(rt);
 		}
 		return value;
 	}
@@ -44,11 +44,11 @@ public static class RoleTranslations
 			int key = (int)allRole.Key;
 			if (key >= 0 && TranslationReader.TryGet("Class_Names", key, out var val))
 			{
-				TranslatedNames[allRole.Key] = val;
+				RoleTranslations.TranslatedNames[allRole.Key] = val;
 			}
 			if (TranslationReader.TryGet("RA_RoleManagement", key + 1, out val))
 			{
-				TranslatedAbbreviatedNames[allRole.Key] = val;
+				RoleTranslations.TranslatedAbbreviatedNames[allRole.Key] = val;
 			}
 		}
 	}

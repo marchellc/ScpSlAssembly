@@ -53,62 +53,62 @@ public class WorldmodelLaserExtension : MonoBehaviour, IWorldmodelExtension
 
 	private void LateUpdate()
 	{
-		bool flag = (_pickupMode ? UpdatePickup() : UpdateThirdperson());
-		_decal.enabled = flag;
+		bool flag = (this._pickupMode ? this.UpdatePickup() : this.UpdateThirdperson());
+		this._decal.enabled = flag;
 		if (flag)
 		{
-			_decalTransform.position = _lastHit.point;
-			float num = (_range - _lastHit.distance) * 0.2f;
+			this._decalTransform.position = this._lastHit.point;
+			float num = (this._range - this._lastHit.distance) * 0.2f;
 			for (int i = 0; i < 3; i++)
 			{
 				num *= num;
 			}
-			_decal.fadeFactor = num;
+			this._decal.fadeFactor = num;
 		}
 	}
 
 	private void GetOrigin(out Vector3 pos, out Vector3 fwd)
 	{
-		if (_hasBarrelTip)
+		if (this._hasBarrelTip)
 		{
-			pos = _barrelTipExtension.WorldspacePosition;
-			fwd = _barrelTipExtension.WorldspaceDirection;
+			pos = this._barrelTipExtension.WorldspacePosition;
+			fwd = this._barrelTipExtension.WorldspaceDirection;
 		}
 		else
 		{
-			fwd = _originTransform.position;
-			pos = _originTransform.forward;
+			fwd = this._originTransform.position;
+			pos = this._originTransform.forward;
 		}
 	}
 
 	private bool UpdatePickup()
 	{
-		GetOrigin(out var pos, out var fwd);
-		return TryRaycast(pos, fwd, out _lastHit);
+		this.GetOrigin(out var pos, out var fwd);
+		return this.TryRaycast(pos, fwd, out this._lastHit);
 	}
 
 	private bool UpdateThirdperson()
 	{
-		GetOrigin(out var pos, out var fwd);
-		if (!TryRaycast(pos, fwd, out var hit))
+		this.GetOrigin(out var pos, out var fwd);
+		if (!this.TryRaycast(pos, fwd, out var hit))
 		{
 			return false;
 		}
 		if (hit.distance < 1.3f)
 		{
-			_lastHit = hit;
+			this._lastHit = hit;
 			return true;
 		}
-		Transform playerCameraReference = _thirdperson.TargetModel.OwnerHub.PlayerCameraReference;
+		Transform playerCameraReference = this._thirdperson.TargetModel.OwnerHub.PlayerCameraReference;
 		Vector3 forward = playerCameraReference.forward;
 		Vector3 vector = playerCameraReference.position + forward * 0.8f;
-		if (!TryRaycast(vector, forward, out var hit2))
+		if (!this.TryRaycast(vector, forward, out var hit2))
 		{
 			return false;
 		}
 		float t = Mathf.InverseLerp(1.3f, 3.2f, hit2.distance);
 		Vector3 pos2 = Vector3.Lerp(pos, vector, t);
-		return TryRaycast(pos2, forward, out _lastHit);
+		return this.TryRaycast(pos2, forward, out this._lastHit);
 	}
 
 	private bool TryRaycast(Vector3 pos, Vector3 fwd, out RaycastHit hit)
@@ -117,38 +117,38 @@ public class WorldmodelLaserExtension : MonoBehaviour, IWorldmodelExtension
 		bool flag;
 		while (true)
 		{
-			flag = Physics.Raycast(pos, fwd, out hit, _range, Mask);
-			if (!flag || hit.distance > 1.5f || !_selfColliderInstanceIds.Contains(hit.colliderInstanceID))
+			flag = Physics.Raycast(pos, fwd, out hit, this._range, WorldmodelLaserExtension.Mask);
+			if (!flag || hit.distance > 1.5f || !this._selfColliderInstanceIds.Contains(hit.colliderInstanceID))
 			{
 				break;
 			}
 			Collider collider = hit.collider;
 			collider.enabled = false;
-			_collidersToDisable.Add(collider);
+			this._collidersToDisable.Add(collider);
 		}
 		SetColliders(targetEnabled: true);
 		return flag;
 		void SetColliders(bool targetEnabled)
 		{
-			int count = _collidersToDisable.Count;
+			int count = this._collidersToDisable.Count;
 			for (int i = 0; i < count; i++)
 			{
-				_collidersToDisable[i].enabled = targetEnabled;
+				this._collidersToDisable[i].enabled = targetEnabled;
 			}
 		}
 	}
 
 	public void SetupWorldmodel(FirearmWorldmodel worldmodel)
 	{
-		_originTransform = base.transform;
-		_decalTransform = _decal.transform;
-		_pickupMode = !_originTransform.TryGetComponentInParent<FirearmThirdpersonItem>(out _thirdperson);
-		_range = (_pickupMode ? 8f : 30f);
-		_hasBarrelTip = worldmodel.TryGetExtension<BarrelTipExtension>(out _barrelTipExtension);
-		if (_selfColliderInstanceIds == null)
+		this._originTransform = base.transform;
+		this._decalTransform = this._decal.transform;
+		this._pickupMode = !this._originTransform.TryGetComponentInParent<FirearmThirdpersonItem>(out this._thirdperson);
+		this._range = (this._pickupMode ? 8f : 30f);
+		this._hasBarrelTip = worldmodel.TryGetExtension<BarrelTipExtension>(out this._barrelTipExtension);
+		if (this._selfColliderInstanceIds == null)
 		{
-			_collidersToDisable = new List<Collider>(worldmodel.Colliders.Length);
-			_selfColliderInstanceIds = new HashSet<int>(worldmodel.Colliders.Select((Collider x) => x.GetInstanceID()));
+			this._collidersToDisable = new List<Collider>(worldmodel.Colliders.Length);
+			this._selfColliderInstanceIds = new HashSet<int>(worldmodel.Colliders.Select((Collider x) => x.GetInstanceID()));
 		}
 	}
 }

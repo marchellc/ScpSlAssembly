@@ -22,11 +22,11 @@ public abstract class ItemSpawnpointBase : DistributorSpawnpointBase
 
 	protected virtual void Start()
 	{
-		Instances.Add(this);
+		ItemSpawnpointBase.Instances.Add(this);
 	}
 
 	protected virtual void OnDestroy()
 	{
-		Instances.Remove(this);
+		ItemSpawnpointBase.Instances.Remove(this);
 	}
 }

@@ -32,57 +32,57 @@ public class ZombieMovementModule : FirstPersonMovementModule
 	{
 		get
 		{
-			return WalkSpeed;
+			return base.WalkSpeed;
 		}
 		set
 		{
-			WalkSpeed = value;
-			SprintSpeed = value;
+			base.WalkSpeed = value;
+			base.SprintSpeed = value;
 		}
 	}
 
 	public void ForceBloodlustSpeed()
 	{
-		MovementSpeed = BloodlustSpeed;
+		this.MovementSpeed = this.BloodlustSpeed;
 	}
 
 	private void Awake()
 	{
-		NormalSpeed = WalkSpeed;
-		BloodlustSpeed = SprintSpeed;
-		_role.SubroutineModule.TryGetSubroutine<ZombieBloodlustAbility>(out _visionTracker);
+		this.NormalSpeed = base.WalkSpeed;
+		this.BloodlustSpeed = base.SprintSpeed;
+		this._role.SubroutineModule.TryGetSubroutine<ZombieBloodlustAbility>(out this._visionTracker);
 	}
 
 	protected override void UpdateMovement()
 	{
 		float deltaTime = Time.deltaTime;
-		UpdateBloodlustState(deltaTime);
-		UpdateSpeed(deltaTime);
+		this.UpdateBloodlustState(deltaTime);
+		this.UpdateSpeed(deltaTime);
 		base.UpdateMovement();
 	}
 
 	private void UpdateBloodlustState(float deltaTime)
 	{
-		float value = _lookingTimer + (_visionTracker.LookingAtTarget ? deltaTime : (0f - deltaTime));
-		_lookingTimer = Mathf.Clamp(value, 0f, 5f);
-		if (_lookingTimer > 1f)
+		float value = this._lookingTimer + (this._visionTracker.LookingAtTarget ? deltaTime : (0f - deltaTime));
+		this._lookingTimer = Mathf.Clamp(value, 0f, 5f);
+		if (this._lookingTimer > 1f)
 		{
-			_bloodlustActive = true;
+			this._bloodlustActive = true;
 		}
-		else if (_lookingTimer == 0f)
+		else if (this._lookingTimer == 0f)
 		{
-			_bloodlustActive = false;
+			this._bloodlustActive = false;
 		}
 	}
 
 	private void UpdateSpeed(float deltaTime)
 	{
-		_speedTickTimer += deltaTime;
-		if (!(_speedTickTimer < 1f))
+		this._speedTickTimer += deltaTime;
+		if (!(this._speedTickTimer < 1f))
 		{
-			_speedTickTimer = 0f;
-			float value = MovementSpeed + (_bloodlustActive ? 0.05f : (-0.1f));
-			MovementSpeed = Mathf.Clamp(value, NormalSpeed, BloodlustSpeed);
+			this._speedTickTimer = 0f;
+			float value = this.MovementSpeed + (this._bloodlustActive ? 0.05f : (-0.1f));
+			this.MovementSpeed = Mathf.Clamp(value, this.NormalSpeed, this.BloodlustSpeed);
 		}
 	}
 }

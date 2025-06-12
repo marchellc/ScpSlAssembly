@@ -10,13 +10,13 @@ public struct AttachmentsSetupPreference : NetworkMessage
 
 	public AttachmentsSetupPreference(NetworkReader reader)
 	{
-		Weapon = (ItemType)reader.ReadByte();
-		AttachmentsCode = reader.ReadUInt();
+		this.Weapon = (ItemType)reader.ReadByte();
+		this.AttachmentsCode = reader.ReadUInt();
 	}
 
 	public readonly void Serialize(NetworkWriter writer)
 	{
-		writer.WriteByte((byte)Weapon);
-		writer.WriteUInt(AttachmentsCode);
+		writer.WriteByte((byte)this.Weapon);
+		writer.WriteUInt(this.AttachmentsCode);
 	}
 }

@@ -30,7 +30,7 @@ public class MedicalItems : Scp2536ItemGift
 
 	public override void ServerGrant(ReferenceHub hub)
 	{
-		ItemType type = GenerateRandomReward();
+		ItemType type = base.GenerateRandomReward();
 		hub.inventory.ServerAddItem(type, ItemAddReason.Scp2536, 0).GrantAmmoReward();
 	}
 }

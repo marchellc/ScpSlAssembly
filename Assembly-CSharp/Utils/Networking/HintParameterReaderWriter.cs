@@ -27,7 +27,8 @@ public static class HintParameterReaderWriter
 		PackedLong,
 		PackedULong,
 		Scp330Hint,
-		SSKeybind
+		SSKeybind,
+		AnimationCurve
 	}
 
 	public static HintParameter ReadHintParameter(this NetworkReader reader)
@@ -93,6 +94,9 @@ public static class HintParameterReaderWriter
 		case HintParameterType.SSKeybind:
 			func = SSKeybindHintParameter.FromNetwork;
 			break;
+		case HintParameterType.AnimationCurve:
+			func = AnimationCurveHintParameter.FromNetwork;
+			break;
 		default:
 			Debug.LogWarning($"Received malformed hint parameter (type {b}).");
 			return null;
@@ -145,9 +149,16 @@ public static class HintParameterReaderWriter
 																			{
 																				if (!(parameter is SSKeybindHintParameter))
 																				{
-																					throw new ArgumentException("Hint parameter was of an unknown type. This type should be added to the pattern switch (needed for polymorphism to work).", "parameter");
+																					if (!(parameter is AnimationCurveHintParameter))
+																					{
+																						throw new ArgumentException("Hint parameter was of an unknown type. This type should be added to the pattern switch (needed for polymorphism to work).", "parameter");
+																					}
+																					value = HintParameterType.AnimationCurve;
 																				}
-																				value = HintParameterType.SSKeybind;
+																				else
+																				{
+																					value = HintParameterType.SSKeybind;
+																				}
 																			}
 																			else
 																			{

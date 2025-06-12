@@ -42,12 +42,12 @@ public class RadioPickup : CollisionDetectionPickup, IUpgradeTrigger
 	{
 		get
 		{
-			return SavedEnabled;
+			return this.SavedEnabled;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref SavedEnabled, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.SavedEnabled, 2uL, null);
 		}
 	}
 
@@ -55,53 +55,53 @@ public class RadioPickup : CollisionDetectionPickup, IUpgradeTrigger
 	{
 		get
 		{
-			return SavedRange;
+			return this.SavedRange;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref SavedRange, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.SavedRange, 4uL, null);
 		}
 	}
 
 	private void Update()
 	{
-		_playback.RangeId = SavedRange;
-		if (_prevEnabled != SavedEnabled)
+		this._playback.RangeId = this.SavedRange;
+		if (this._prevEnabled != this.SavedEnabled)
 		{
-			bool flag = (_prevEnabled = SavedEnabled);
-			_activeObject.SetActive(flag);
-			_targetRenderer.sharedMaterial = (flag ? _enabledMat : _disabledMat);
+			bool flag = (this._prevEnabled = this.SavedEnabled);
+			this._activeObject.SetActive(flag);
+			this._targetRenderer.sharedMaterial = (flag ? this._enabledMat : this._disabledMat);
 		}
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		if (!_radioCacheSet)
+		if (!RadioPickup._radioCacheSet)
 		{
-			_radioCacheSet = InventoryItemLoader.TryGetItem<RadioItem>(ItemType.Radio, out _radioCache);
+			RadioPickup._radioCacheSet = InventoryItemLoader.TryGetItem<RadioItem>(ItemType.Radio, out RadioPickup._radioCache);
 		}
 	}
 
 	private void LateUpdate()
 	{
-		if (NetworkServer.active && SavedEnabled && _radioCacheSet)
+		if (NetworkServer.active && this.SavedEnabled && RadioPickup._radioCacheSet)
 		{
-			float num = _radioCache.Ranges[SavedRange].MinuteCostWhenIdle / 60f;
-			float num2 = SavedBattery - Time.deltaTime * num / 100f;
+			float num = RadioPickup._radioCache.Ranges[this.SavedRange].MinuteCostWhenIdle / 60f;
+			float num2 = this.SavedBattery - Time.deltaTime * num / 100f;
 			if (num2 <= 0f)
 			{
-				NetworkSavedEnabled = false;
+				this.NetworkSavedEnabled = false;
 				num2 = 0f;
 			}
-			SavedBattery = num2;
+			this.SavedBattery = num2;
 		}
 	}
 
 	public void ServerOnUpgraded(Scp914KnobSetting setting)
 	{
-		SavedBattery = 1f;
+		this.SavedBattery = 1f;
 	}
 
 	public override bool Weaved()
@@ -114,18 +114,18 @@ public class RadioPickup : CollisionDetectionPickup, IUpgradeTrigger
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(SavedEnabled);
-			NetworkWriterExtensions.WriteByte(writer, SavedRange);
+			writer.WriteBool(this.SavedEnabled);
+			NetworkWriterExtensions.WriteByte(writer, this.SavedRange);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteBool(SavedEnabled);
+			writer.WriteBool(this.SavedEnabled);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, SavedRange);
+			NetworkWriterExtensions.WriteByte(writer, this.SavedRange);
 		}
 	}
 
@@ -134,18 +134,18 @@ public class RadioPickup : CollisionDetectionPickup, IUpgradeTrigger
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref SavedEnabled, null, reader.ReadBool());
-			GeneratedSyncVarDeserialize(ref SavedRange, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this.SavedEnabled, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.SavedRange, null, NetworkReaderExtensions.ReadByte(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref SavedEnabled, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.SavedEnabled, null, reader.ReadBool());
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref SavedRange, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this.SavedRange, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 	}
 }

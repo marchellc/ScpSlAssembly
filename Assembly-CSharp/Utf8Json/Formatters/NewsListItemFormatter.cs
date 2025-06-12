@@ -11,7 +11,7 @@ public sealed class NewsListItemFormatter : IJsonFormatter<NewsListItem>, IJsonF
 
 	public NewsListItemFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("gid"),
@@ -54,7 +54,7 @@ public sealed class NewsListItemFormatter : IJsonFormatter<NewsListItem>, IJsonF
 				9
 			}
 		};
-		____stringByteKeys = new byte[10][]
+		this.____stringByteKeys = new byte[10][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("gid"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("title"),
@@ -71,25 +71,25 @@ public sealed class NewsListItemFormatter : IJsonFormatter<NewsListItem>, IJsonF
 
 	public void Serialize(ref JsonWriter writer, NewsListItem value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.gid);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.title);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteString(value.url);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		writer.WriteBoolean(value.is_external_url);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		writer.WriteString(value.author);
-		writer.WriteRaw(____stringByteKeys[5]);
+		writer.WriteRaw(this.____stringByteKeys[5]);
 		writer.WriteString(value.contents);
-		writer.WriteRaw(____stringByteKeys[6]);
+		writer.WriteRaw(this.____stringByteKeys[6]);
 		writer.WriteString(value.feedlabel);
-		writer.WriteRaw(____stringByteKeys[7]);
+		writer.WriteRaw(this.____stringByteKeys[7]);
 		writer.WriteInt64(value.date);
-		writer.WriteRaw(____stringByteKeys[8]);
+		writer.WriteRaw(this.____stringByteKeys[8]);
 		writer.WriteString(value.feedname);
-		writer.WriteRaw(____stringByteKeys[9]);
+		writer.WriteRaw(this.____stringByteKeys[9]);
 		writer.WriteInt32(value.feedtype);
 		writer.WriteEndObject();
 	}
@@ -115,7 +115,7 @@ public sealed class NewsListItemFormatter : IJsonFormatter<NewsListItem>, IJsonF
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

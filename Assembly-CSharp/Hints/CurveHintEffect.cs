@@ -13,20 +13,20 @@ public abstract class CurveHintEffect : HintEffect
 	{
 		get
 		{
-			return _curve;
+			return this._curve;
 		}
 		set
 		{
 			if (value != null && value.length > 0)
 			{
-				IterationScalar = value[value.length - 1].time - value[0].time;
-				IterationScalar *= IterationScalar;
+				this.IterationScalar = value[value.length - 1].time - value[0].time;
+				this.IterationScalar *= this.IterationScalar;
 			}
 			else
 			{
-				IterationScalar = 0f;
+				this.IterationScalar = 0f;
 			}
-			_curve = value;
+			this._curve = value;
 		}
 	}
 
@@ -40,18 +40,18 @@ public abstract class CurveHintEffect : HintEffect
 	protected CurveHintEffect(AnimationCurve curve, float startScalar = 0f, float durationScalar = 1f)
 		: this(startScalar, durationScalar)
 	{
-		Curve = curve ?? throw new ArgumentNullException("curve");
+		this.Curve = curve ?? throw new ArgumentNullException("curve");
 	}
 
 	public override void Deserialize(NetworkReader reader)
 	{
 		base.Deserialize(reader);
-		Curve = reader.ReadAnimationCurve();
+		this.Curve = reader.ReadAnimationCurve();
 	}
 
 	public override void Serialize(NetworkWriter writer)
 	{
 		base.Serialize(writer);
-		writer.WriteAnimationCurve(Curve);
+		writer.WriteAnimationCurve(this.Curve);
 	}
 }

@@ -36,23 +36,23 @@ public abstract class SyncedStatBase : StatBase
 	{
 		get
 		{
-			return _lastValue;
+			return this._lastValue;
 		}
 		set
 		{
-			float lastValue = _lastValue;
-			_lastValue = value;
-			if (CheckDirty(_lastSent, value))
+			float lastValue = this._lastValue;
+			this._lastValue = value;
+			if (this.CheckDirty(this._lastSent, value))
 			{
-				ValueDirty = true;
+				this.ValueDirty = true;
 			}
 			if (lastValue != value)
 			{
-				if (value != MaxValue)
+				if (value != this.MaxValue)
 				{
 					this.OnStatChange?.Invoke(lastValue, value);
 				}
-				OnValueChanged(lastValue, value);
+				this.OnValueChanged(lastValue, value);
 			}
 		}
 	}
@@ -61,9 +61,9 @@ public abstract class SyncedStatBase : StatBase
 	{
 		get
 		{
-			if (_syncId.HasValue)
+			if (this._syncId.HasValue)
 			{
-				return _syncId.Value;
+				return this._syncId.Value;
 			}
 			StatBase[] statModules = base.Hub.playerStats.StatModules;
 			byte b = 0;
@@ -74,7 +74,7 @@ public abstract class SyncedStatBase : StatBase
 					syncedStatBase._syncId = b++;
 				}
 			}
-			return _syncId.Value;
+			return this._syncId.Value;
 		}
 	}
 
@@ -84,7 +84,7 @@ public abstract class SyncedStatBase : StatBase
 
 	public SyncedStatBase()
 	{
-		_canReceive = CanReceive;
+		this._canReceive = CanReceive;
 	}
 
 	public abstract float ReadValue(SyncedStatMessages.StatMessageType type, NetworkReader reader);
@@ -99,7 +99,7 @@ public abstract class SyncedStatBase : StatBase
 
 	public static SyncedStatBase GetStatOfUser(uint netId, byte syncId)
 	{
-		if (!AllSyncedStats.TryGetValue(netId, out var value))
+		if (!SyncedStatBase.AllSyncedStats.TryGetValue(netId, out var value))
 		{
 			if (!ReferenceHub.TryGetHubNetID(netId, out var hub))
 			{
@@ -114,7 +114,7 @@ public abstract class SyncedStatBase : StatBase
 					value.Add(syncedStatBase.SyncId, syncedStatBase);
 				}
 			}
-			AllSyncedStats[netId] = value;
+			SyncedStatBase.AllSyncedStats[netId] = value;
 		}
 		if (!value.TryGetValue(syncId, out var value2))
 		{
@@ -128,24 +128,26 @@ public abstract class SyncedStatBase : StatBase
 		base.Update();
 		if (NetworkServer.active)
 		{
-			if (ValueDirty)
+			if (this.ValueDirty)
 			{
-				SyncedStatMessages.StatMessage msg = default(SyncedStatMessages.StatMessage);
-				msg.Stat = this;
-				msg.Type = SyncedStatMessages.StatMessageType.CurrentValue;
-				msg.SyncedValue = CurValue;
-				msg.SendToHubsConditionally(_canReceive);
-				ValueDirty = false;
-				_lastSent = CurValue;
+				new SyncedStatMessages.StatMessage
+				{
+					Stat = this,
+					Type = SyncedStatMessages.StatMessageType.CurrentValue,
+					SyncedValue = this.CurValue
+				}.SendToHubsConditionally(this._canReceive);
+				this.ValueDirty = false;
+				this._lastSent = this.CurValue;
 			}
-			if (MaxValueDirty)
+			if (this.MaxValueDirty)
 			{
-				SyncedStatMessages.StatMessage msg = default(SyncedStatMessages.StatMessage);
-				msg.Stat = this;
-				msg.Type = SyncedStatMessages.StatMessageType.MaxValue;
-				msg.SyncedValue = MaxValue;
-				msg.SendToHubsConditionally(_canReceive);
-				MaxValueDirty = false;
+				new SyncedStatMessages.StatMessage
+				{
+					Stat = this,
+					Type = SyncedStatMessages.StatMessageType.MaxValue,
+					SyncedValue = this.MaxValue
+				}.SendToHubsConditionally(this._canReceive);
+				this.MaxValueDirty = false;
 			}
 		}
 	}
@@ -155,8 +157,8 @@ public abstract class SyncedStatBase : StatBase
 		base.ClassChanged();
 		if (NetworkServer.active)
 		{
-			ValueDirty = true;
-			MaxValueDirty = true;
+			this.ValueDirty = true;
+			this.MaxValueDirty = true;
 		}
 	}
 
@@ -166,7 +168,7 @@ public abstract class SyncedStatBase : StatBase
 		{
 			return false;
 		}
-		return Mode switch
+		return this.Mode switch
 		{
 			SyncMode.Private => hub == base.Hub, 
 			SyncMode.PrivateAndSpectators => !hub.IsAlive() || hub == base.Hub, 
@@ -180,7 +182,7 @@ public abstract class SyncedStatBase : StatBase
 	{
 		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub x)
 		{
-			AllSyncedStats.Remove(x.netId);
+			SyncedStatBase.AllSyncedStats.Remove(x.netId);
 		};
 	}
 }

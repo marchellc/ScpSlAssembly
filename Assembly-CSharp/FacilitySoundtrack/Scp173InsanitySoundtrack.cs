@@ -21,17 +21,17 @@ public class Scp173InsanitySoundtrack : SoundtrackLayerBase
 
 		public bool TryUse(float currentTime)
 		{
-			if (currentTime < _nextUse)
+			if (currentTime < this._nextUse)
 			{
 				return false;
 			}
-			_nextUse = currentTime + Cooldown;
+			this._nextUse = currentTime + this.Cooldown;
 			return true;
 		}
 
 		public void ResetCooldown()
 		{
-			_nextUse = 0f;
+			this._nextUse = 0f;
 		}
 	}
 
@@ -100,9 +100,9 @@ public class Scp173InsanitySoundtrack : SoundtrackLayerBase
 
 	private float CurTime => Time.timeSinceLevelLoad;
 
-	private bool IsObserved => _observed173sCount > 0;
+	private bool IsObserved => this._observed173sCount > 0;
 
-	public override float Weight => _weight;
+	public override float Weight => this._weight;
 
 	public override bool Additive => false;
 
@@ -112,12 +112,12 @@ public class Scp173InsanitySoundtrack : SoundtrackLayerBase
 	{
 		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
 		Scp173CharacterModel.OnFrozen += OnFrozen;
-		_shouldRemove = (Scp173Role x) => !IsObservedBy(x, _localHub);
-		_ambientsCount = _distanceAmbients.Length;
-		_volumeCurves = new AnimationCurve[_ambientsCount];
-		for (int i = 0; i < _ambientsCount; i++)
+		this._shouldRemove = (Scp173Role x) => !this.IsObservedBy(x, this._localHub);
+		this._ambientsCount = this._distanceAmbients.Length;
+		this._volumeCurves = new AnimationCurve[this._ambientsCount];
+		for (int num = 0; num < this._ambientsCount; num++)
 		{
-			_volumeCurves[i] = _distanceAmbients[i].GetCustomCurve(AudioSourceCurveType.CustomRolloff);
+			this._volumeCurves[num] = this._distanceAmbients[num].GetCustomCurve(AudioSourceCurveType.CustomRolloff);
 		}
 	}
 
@@ -129,71 +129,71 @@ public class Scp173InsanitySoundtrack : SoundtrackLayerBase
 
 	private void Update()
 	{
-		if (!_isActive || !ReferenceHub.TryGetLocalHub(out var hub))
+		if (!this._isActive || !ReferenceHub.TryGetLocalHub(out var hub))
 		{
 			return;
 		}
-		if (_observed173sCount > 0)
+		if (this._observed173sCount > 0)
 		{
-			_localHub = hub;
-			_observed173sCount -= _observed173s.RemoveWhere(_shouldRemove);
-			if (!IsObserved)
+			this._localHub = hub;
+			this._observed173sCount -= this._observed173s.RemoveWhere(this._shouldRemove);
+			if (!this.IsObserved)
 			{
-				_stopAmbientTime = CurTime + _sustainTime;
+				this._stopAmbientTime = this.CurTime + this._sustainTime;
 			}
 		}
-		bool flag = IsObserved || _stopAmbientTime > CurTime;
-		bool num = flag != _prevPlay;
-		_weight = Mathf.Lerp(_weight, flag ? 1 : 0, (flag ? _fadeInLerp : _fadeOutLerp) * Time.deltaTime);
-		_prevPlay = flag;
+		bool flag = this.IsObserved || this._stopAmbientTime > this.CurTime;
+		bool num = flag != this._prevPlay;
+		this._weight = Mathf.Lerp(this._weight, flag ? 1 : 0, (flag ? this._fadeInLerp : this._fadeOutLerp) * Time.deltaTime);
+		this._prevPlay = flag;
 		if (num && !flag)
 		{
-			_encounterSource.PlayOneShot(_goneClip);
-			_closeEncounter.ResetCooldown();
-			_farEncounter.ResetCooldown();
+			this._encounterSource.PlayOneShot(this._goneClip);
+			this._closeEncounter.ResetCooldown();
+			this._farEncounter.ResetCooldown();
 			Scp173InsanitySoundtrack.OnPlayerEscapeScp173?.Invoke(hub);
 		}
 		if (!flag)
 		{
 			return;
 		}
-		float num2 = _distanceCap;
-		foreach (Scp173Role observed in _observed173s)
+		float num2 = this._distanceCap;
+		foreach (Scp173Role observed in this._observed173s)
 		{
-			float num3 = DistanceTo(observed);
+			float num3 = this.DistanceTo(observed);
 			if (num3 < num2)
 			{
 				num2 = num3;
 			}
 		}
-		_lastDistance = Mathf.Lerp(_lastDistance, num2, Time.deltaTime * _distanceLerp);
+		this._lastDistance = Mathf.Lerp(this._lastDistance, num2, Time.deltaTime * this._distanceLerp);
 	}
 
 	private void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
 	{
 		if (userHub.isLocalPlayer)
 		{
-			_isActive = userHub.IsHuman();
-			_prevPlay = false;
-			_weight = 0f;
-			_observed173sCount = 0;
-			_stopAmbientTime = 0f;
+			this._isActive = userHub.IsHuman();
+			this._prevPlay = false;
+			this._weight = 0f;
+			this._observed173sCount = 0;
+			this._stopAmbientTime = 0f;
 		}
 	}
 
 	private void OnFrozen(Scp173Role target)
 	{
-		if (_observed173s.Add(target))
+		if (this._observed173s.Add(target))
 		{
-			_observed173sCount++;
+			this._observed173sCount++;
 		}
-		if (DistanceTo(target) < _closeEncounterDistanceThreshold && _closeEncounter.TryUse(CurTime))
+		if (this.DistanceTo(target) < this._closeEncounterDistanceThreshold && this._closeEncounter.TryUse(this.CurTime))
 		{
-			_encounterSource.PlayOneShot(_closeEncounter.Clip);
+			this._encounterSource.PlayOneShot(this._closeEncounter.Clip);
 		}
-		else if (_farEncounter.TryUse(CurTime))
+		else if (this._farEncounter.TryUse(this.CurTime))
 		{
-			_encounterSource.PlayOneShot(_farEncounter.Clip);
+			this._encounterSource.PlayOneShot(this._farEncounter.Clip);
 		}
 	}
 
@@ -213,16 +213,16 @@ public class Scp173InsanitySoundtrack : SoundtrackLayerBase
 
 	public override void UpdateVolume(float volumeScale)
 	{
-		for (int i = 0; i < _ambientsCount; i++)
+		for (int i = 0; i < this._ambientsCount; i++)
 		{
 			float num = volumeScale;
 			if (num > 0f)
 			{
-				float time = _lastDistance / _distanceAmbients[i].maxDistance;
-				num *= _volumeCurves[i].Evaluate(time);
+				float time = this._lastDistance / this._distanceAmbients[i].maxDistance;
+				num *= this._volumeCurves[i].Evaluate(time);
 			}
-			_distanceAmbients[i].volume = num;
-			_distanceAmbients[i].panStereo = _lastScreenPosition;
+			this._distanceAmbients[i].volume = num;
+			this._distanceAmbients[i].panStereo = this._lastScreenPosition;
 		}
 	}
 }

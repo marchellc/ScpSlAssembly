@@ -24,17 +24,17 @@ internal static class StringToDouble
 		1E+20, 1E+21, 1E+22
 	};
 
-	private static readonly int kExactPowersOfTenSize = exact_powers_of_ten.Length;
+	private static readonly int kExactPowersOfTenSize = StringToDouble.exact_powers_of_ten.Length;
 
 	private const int kMaxSignificantDecimalDigits = 780;
 
 	private static byte[] GetCopyBuffer()
 	{
-		if (copyBuffer == null)
+		if (StringToDouble.copyBuffer == null)
 		{
-			copyBuffer = new byte[780];
+			StringToDouble.copyBuffer = new byte[780];
 		}
-		return copyBuffer;
+		return StringToDouble.copyBuffer;
 	}
 
 	private static Vector TrimLeadingZeros(Vector buffer)
@@ -73,12 +73,12 @@ internal static class StringToDouble
 
 	private static void TrimAndCut(Vector buffer, int exponent, byte[] buffer_copy_space, int space_size, out Vector trimmed, out int updated_exponent)
 	{
-		Vector buffer2 = TrimLeadingZeros(buffer);
-		Vector vector = TrimTrailingZeros(buffer2);
+		Vector buffer2 = StringToDouble.TrimLeadingZeros(buffer);
+		Vector vector = StringToDouble.TrimTrailingZeros(buffer2);
 		exponent += buffer2.length() - vector.length();
 		if (vector.length() > 780)
 		{
-			CutToMaxSignificantDigits(vector, exponent, buffer_copy_space, out updated_exponent);
+			StringToDouble.CutToMaxSignificantDigits(vector, exponent, buffer_copy_space, out updated_exponent);
 			trimmed = new Vector(buffer_copy_space, 0, 780);
 		}
 		else
@@ -104,7 +104,7 @@ internal static class StringToDouble
 	private static void ReadDiyFp(Vector buffer, out DiyFp result, out int remaining_decimals)
 	{
 		int number_of_read_digits;
-		ulong num = ReadUint64(buffer, out number_of_read_digits);
+		ulong num = StringToDouble.ReadUint64(buffer, out number_of_read_digits);
 		if (buffer.length() == number_of_read_digits)
 		{
 			result = new DiyFp(num, 0);
@@ -125,24 +125,24 @@ internal static class StringToDouble
 		if (trimmed.length() <= 15)
 		{
 			int number_of_read_digits;
-			if (exponent < 0 && -exponent < kExactPowersOfTenSize)
+			if (exponent < 0 && -exponent < StringToDouble.kExactPowersOfTenSize)
 			{
-				result = ReadUint64(trimmed, out number_of_read_digits);
-				result /= exact_powers_of_ten[-exponent];
+				result = StringToDouble.ReadUint64(trimmed, out number_of_read_digits);
+				result /= StringToDouble.exact_powers_of_ten[-exponent];
 				return true;
 			}
-			if (0 <= exponent && exponent < kExactPowersOfTenSize)
+			if (0 <= exponent && exponent < StringToDouble.kExactPowersOfTenSize)
 			{
-				result = ReadUint64(trimmed, out number_of_read_digits);
-				result *= exact_powers_of_ten[exponent];
+				result = StringToDouble.ReadUint64(trimmed, out number_of_read_digits);
+				result *= StringToDouble.exact_powers_of_ten[exponent];
 				return true;
 			}
 			int num = 15 - trimmed.length();
-			if (0 <= exponent && exponent - num < kExactPowersOfTenSize)
+			if (0 <= exponent && exponent - num < StringToDouble.kExactPowersOfTenSize)
 			{
-				result = ReadUint64(trimmed, out number_of_read_digits);
-				result *= exact_powers_of_ten[num];
-				result *= exact_powers_of_ten[exponent - num];
+				result = StringToDouble.ReadUint64(trimmed, out number_of_read_digits);
+				result *= StringToDouble.exact_powers_of_ten[num];
+				result *= StringToDouble.exact_powers_of_ten[exponent - num];
 				return true;
 			}
 		}
@@ -167,7 +167,7 @@ internal static class StringToDouble
 
 	private static bool DiyFpStrtod(Vector buffer, int exponent, out double result)
 	{
-		ReadDiyFp(buffer, out var result2, out var remaining_decimals);
+		StringToDouble.ReadDiyFp(buffer, out var result2, out var remaining_decimals);
 		exponent += remaining_decimals;
 		ulong num = (ulong)(int)((remaining_decimals != 0) ? 4u : 0u);
 		int e = result2.e;
@@ -182,7 +182,7 @@ internal static class StringToDouble
 		if (found_exponent != exponent)
 		{
 			int num2 = exponent - found_exponent;
-			DiyFp other = AdjustmentPowerOfTen(num2);
+			DiyFp other = StringToDouble.AdjustmentPowerOfTen(num2);
 			result2.Multiply(ref other);
 			if (19 - buffer.length() < num2)
 			{
@@ -243,7 +243,7 @@ internal static class StringToDouble
 			guess = 0.0;
 			return true;
 		}
-		if (DoubleStrtod(trimmed, exponent, out guess) || DiyFpStrtod(trimmed, exponent, out guess))
+		if (StringToDouble.DoubleStrtod(trimmed, exponent, out guess) || StringToDouble.DiyFpStrtod(trimmed, exponent, out guess))
 		{
 			return true;
 		}
@@ -256,10 +256,10 @@ internal static class StringToDouble
 
 	public static double? Strtod(Vector buffer, int exponent)
 	{
-		byte[] buffer_copy_space = GetCopyBuffer();
-		TrimAndCut(buffer, exponent, buffer_copy_space, 780, out var trimmed, out var updated_exponent);
+		byte[] buffer_copy_space = StringToDouble.GetCopyBuffer();
+		StringToDouble.TrimAndCut(buffer, exponent, buffer_copy_space, 780, out var trimmed, out var updated_exponent);
 		exponent = updated_exponent;
-		if (ComputeGuess(trimmed, exponent, out var guess))
+		if (StringToDouble.ComputeGuess(trimmed, exponent, out var guess))
 		{
 			return guess;
 		}
@@ -268,11 +268,11 @@ internal static class StringToDouble
 
 	public static float? Strtof(Vector buffer, int exponent)
 	{
-		byte[] buffer_copy_space = GetCopyBuffer();
-		TrimAndCut(buffer, exponent, buffer_copy_space, 780, out var trimmed, out var updated_exponent);
+		byte[] buffer_copy_space = StringToDouble.GetCopyBuffer();
+		StringToDouble.TrimAndCut(buffer, exponent, buffer_copy_space, 780, out var trimmed, out var updated_exponent);
 		exponent = updated_exponent;
 		double guess;
-		bool flag = ComputeGuess(trimmed, exponent, out guess);
+		bool flag = StringToDouble.ComputeGuess(trimmed, exponent, out guess);
 		float num = (float)guess;
 		if ((double)num == guess)
 		{

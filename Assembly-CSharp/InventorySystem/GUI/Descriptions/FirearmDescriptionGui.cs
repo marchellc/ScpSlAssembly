@@ -37,19 +37,19 @@ public class FirearmDescriptionGui : RadialDescriptionBase
 
 		public void SetValue(float normalizedValue, string text, Color col)
 		{
-			if (!_defaultsSet)
+			if (!this._defaultsSet)
 			{
-				if (TranslationReader.TryGet("InventoryGUI", (int)_headerTranslation, out var val))
+				if (TranslationReader.TryGet("InventoryGUI", (int)this._headerTranslation, out var val))
 				{
-					_headerText.text = val;
+					this._headerText.text = val;
 				}
-				_defaultHeight = _targetImage.rectTransform.sizeDelta.y;
-				_defaultWidth = _targetImage.rectTransform.sizeDelta.x;
-				_defaultsSet = true;
+				this._defaultHeight = this._targetImage.rectTransform.sizeDelta.y;
+				this._defaultWidth = this._targetImage.rectTransform.sizeDelta.x;
+				this._defaultsSet = true;
 			}
-			_valueText.text = text;
-			_targetImage.color = col;
-			_targetImage.rectTransform.sizeDelta = new Vector2(Mathf.Clamp01(normalizedValue) * _defaultWidth, _defaultHeight);
+			this._valueText.text = text;
+			this._targetImage.color = col;
+			this._targetImage.rectTransform.sizeDelta = new Vector2(Mathf.Clamp01(normalizedValue) * this._defaultWidth, this._defaultHeight);
 		}
 	}
 
@@ -101,36 +101,36 @@ public class FirearmDescriptionGui : RadialDescriptionBase
 
 	public override void UpdateInfo(ItemBase targetItem, Color roleColor)
 	{
-		_title.text = ((targetItem is IItemNametag itemNametag) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
+		this._title.text = ((targetItem is IItemNametag itemNametag) ? itemNametag.Name : targetItem.ItemTypeId.ToString());
 		if (targetItem is Firearm firearm)
 		{
 			if (firearm.TryGetModule<IHitregModule>(out var module))
 			{
 				float displayDamage = module.DisplayDamage;
-				_damageBar.SetValue(Mathf.InverseLerp(16f, 40.5f, displayDamage), (Mathf.Round(displayDamage * 10f) / 10f).ToString(), roleColor);
+				this._damageBar.SetValue(Mathf.InverseLerp(16f, 40.5f, displayDamage), (Mathf.Round(displayDamage * 10f) / 10f).ToString(), roleColor);
 				float displayPenetration = module.DisplayPenetration;
-				_penetrationBar.SetValue(displayPenetration, Mathf.Round(displayPenetration * 100f) + "%", roleColor);
+				this._penetrationBar.SetValue(displayPenetration, Mathf.Round(displayPenetration * 100f) + "%", roleColor);
 			}
 			else
 			{
-				_damageBar.SetValue(0f, "n/a", roleColor);
-				_penetrationBar.SetValue(0f, "n/a", roleColor);
+				this._damageBar.SetValue(0f, "n/a", roleColor);
+				this._penetrationBar.SetValue(0f, "n/a", roleColor);
 			}
 			if (firearm.TryGetModule<IActionModule>(out var module2))
 			{
 				float displayCyclicRate = module2.DisplayCyclicRate;
-				_firerateBar.SetValue(Mathf.InverseLerp(2.1f, 11.5f, displayCyclicRate), Mathf.Round(displayCyclicRate * 60f).ToString(), roleColor);
+				this._firerateBar.SetValue(Mathf.InverseLerp(2.1f, 11.5f, displayCyclicRate), Mathf.Round(displayCyclicRate * 60f).ToString(), roleColor);
 			}
 			else
 			{
-				_firerateBar.SetValue(0f, "n/a", roleColor);
+				this._firerateBar.SetValue(0f, "n/a", roleColor);
 			}
 			DisplayInaccuracyValues combinedDisplayInaccuracy = IDisplayableInaccuracyProviderModule.GetCombinedDisplayInaccuracy(firearm, addBulletToRest: true);
 			if (UserSetting<bool>.Get(UISetting.InaccuracyAsDispersion))
 			{
-				_hipAccBar.SetValue(_accuracyToValue.Evaluate(combinedDisplayInaccuracy.HipDeg), Mathf.Round(combinedDisplayInaccuracy.HipDeg * 10f) / 10f + "°", roleColor);
-				_adsAccBar.SetValue(_accuracyToValue.Evaluate(combinedDisplayInaccuracy.AdsDeg), Mathf.Round(combinedDisplayInaccuracy.AdsDeg * 100f) / 100f + "°", roleColor);
-				_runAccBar.SetValue(_accuracyToValue.Evaluate(combinedDisplayInaccuracy.RunningDeg), Mathf.Round(combinedDisplayInaccuracy.RunningDeg * 10f) / 10f + "°", roleColor);
+				this._hipAccBar.SetValue(this._accuracyToValue.Evaluate(combinedDisplayInaccuracy.HipDeg), Mathf.Round(combinedDisplayInaccuracy.HipDeg * 10f) / 10f + "°", roleColor);
+				this._adsAccBar.SetValue(this._accuracyToValue.Evaluate(combinedDisplayInaccuracy.AdsDeg), Mathf.Round(combinedDisplayInaccuracy.AdsDeg * 100f) / 100f + "°", roleColor);
+				this._runAccBar.SetValue(this._accuracyToValue.Evaluate(combinedDisplayInaccuracy.RunningDeg), Mathf.Round(combinedDisplayInaccuracy.RunningDeg * 10f) / 10f + "°", roleColor);
 			}
 			else
 			{
@@ -139,17 +139,17 @@ public class FirearmDescriptionGui : RadialDescriptionBase
 				float hipAccurateRange = combinedDisplayInaccuracy.GetHipAccurateRange(flag, rounded: true);
 				float adsAccurateRange = combinedDisplayInaccuracy.GetAdsAccurateRange(flag, rounded: true);
 				float runningAccurateRange = combinedDisplayInaccuracy.GetRunningAccurateRange(flag, rounded: true);
-				_hipAccBar.SetValue(hipAccurateRange / 75f, hipAccurateRange + text, roleColor);
-				_adsAccBar.SetValue(adsAccurateRange / 800f, adsAccurateRange + text, roleColor);
-				_runAccBar.SetValue(runningAccurateRange / 75f, runningAccurateRange + text, roleColor);
+				this._hipAccBar.SetValue(hipAccurateRange / 75f, hipAccurateRange + text, roleColor);
+				this._adsAccBar.SetValue(adsAccurateRange / 800f, adsAccurateRange + text, roleColor);
+				this._runAccBar.SetValue(runningAccurateRange / 75f, runningAccurateRange + text, roleColor);
 			}
 			object designatedMobilityControllerClass = firearm.DesignatedMobilityControllerClass;
 			float num = ((designatedMobilityControllerClass is IStaminaModifier staminaModifier) ? staminaModifier.StaminaUsageMultiplier : 1f);
-			_staminaUsageBar.SetValue(Mathf.InverseLerp(1.5f, 1f, num), "+" + Mathf.Round((num - 1f) * 100f) + "%", roleColor);
+			this._staminaUsageBar.SetValue(Mathf.InverseLerp(1.5f, 1f, num), "+" + Mathf.Round((num - 1f) * 100f) + "%", roleColor);
 			float num2 = ((designatedMobilityControllerClass is IMovementSpeedModifier movementSpeedModifier) ? movementSpeedModifier.MovementSpeedMultiplier : 1f);
-			_movementSpeedBar.SetValue(Mathf.InverseLerp(0.85f, 1f, num2), "-" + Mathf.Round(Mathf.Abs(num2 - 1f) * 100f) + "%", roleColor);
+			this._movementSpeedBar.SetValue(Mathf.InverseLerp(0.85f, 1f, num2), "-" + Mathf.Round(Mathf.Abs(num2 - 1f) * 100f) + "%", roleColor);
 			uint defaultAtt = firearm.ValidateAttachmentsCode(0u);
-			firearm.GenerateIcon(_bodyImage, _attachmentsPool, _attachmentIconsBorders.sizeDelta, delegate(int x)
+			firearm.GenerateIcon(this._bodyImage, this._attachmentsPool, this._attachmentIconsBorders.sizeDelta, delegate(int x)
 			{
 				uint num3 = (uint)(1 << x);
 				return ((defaultAtt & num3) != num3) ? roleColor : Color.white;
@@ -157,13 +157,13 @@ public class FirearmDescriptionGui : RadialDescriptionBase
 			firearm.GetAmmoContainerData(out var totalStored, out var totalMax);
 			if (firearm.TryGetModule<IPrimaryAmmoContainerModule>(out var module3))
 			{
-				SetAmmoText(module3.AmmoType, totalStored, totalMax);
+				this.SetAmmoText(module3.AmmoType, totalStored, totalMax);
 			}
 			else
 			{
-				SetAmmoText(ItemType.None, totalStored, totalMax);
+				this.SetAmmoText(ItemType.None, totalStored, totalMax);
 			}
-			_ammoText.color = roleColor;
+			this._ammoText.color = roleColor;
 		}
 	}
 
@@ -175,6 +175,6 @@ public class FirearmDescriptionGui : RadialDescriptionBase
 		{
 			arg = "<color=white>" + itemNametag.Name + "</color>";
 		}
-		_ammoText.text = string.Format("<color=white>" + text, "</color>" + curAmmo, maxAmmo, arg);
+		this._ammoText.text = string.Format("<color=white>" + text, "</color>" + curAmmo, maxAmmo, arg);
 	}
 }

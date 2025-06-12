@@ -18,12 +18,12 @@ public class MelancholyOfDecayHandler : AchievementHandlerBase
 
 	internal override void OnRoundStarted()
 	{
-		TimeframesPerNetId.Clear();
+		MelancholyOfDecayHandler.TimeframesPerNetId.Clear();
 	}
 
 	private void OnPlayerTeleported(ReferenceHub scp106, ReferenceHub hub)
 	{
-		if (TimeframesPerNetId.TryGetValue(scp106.netId, out var value) && !(NetworkTime.time > value))
+		if (MelancholyOfDecayHandler.TimeframesPerNetId.TryGetValue(scp106.netId, out var value) && !(NetworkTime.time > value))
 		{
 			AchievementHandlerBase.ServerAchieve(scp106.connectionToClient, AchievementName.MelancholyOfDecay);
 		}
@@ -33,7 +33,7 @@ public class MelancholyOfDecayHandler : AchievementHandlerBase
 	{
 		if (NetworkServer.active && !newTargetSubmerged && scp106.TryGetOwner(out var hub))
 		{
-			TimeframesPerNetId[hub.netId] = NetworkTime.time + (double)scp106.Sinkhole.TargetTransitionDuration + 5.0;
+			MelancholyOfDecayHandler.TimeframesPerNetId[hub.netId] = NetworkTime.time + (double)scp106.Sinkhole.TargetTransitionDuration + 5.0;
 		}
 	}
 }

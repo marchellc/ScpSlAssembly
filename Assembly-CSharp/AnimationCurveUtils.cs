@@ -4,7 +4,7 @@ public static class AnimationCurveUtils
 {
 	public static AnimationCurve MakeLinearCurve(Keyframe[] keyframes, WrapMode preWrapMode = WrapMode.Once, WrapMode postWrapMode = WrapMode.Once)
 	{
-		return new AnimationCurve(MakeLinearKeyframes(keyframes))
+		return new AnimationCurve(AnimationCurveUtils.MakeLinearKeyframes(keyframes))
 		{
 			preWrapMode = preWrapMode,
 			postWrapMode = postWrapMode
@@ -15,7 +15,7 @@ public static class AnimationCurveUtils
 	{
 		for (int i = 0; i < keyframes.Length; i++)
 		{
-			keyframes[i] = MakeLinearKeyframe(keyframes[i]);
+			keyframes[i] = AnimationCurveUtils.MakeLinearKeyframe(keyframes[i]);
 		}
 		return keyframes;
 	}
@@ -27,6 +27,6 @@ public static class AnimationCurveUtils
 
 	public static Keyframe MakeLinearKeyframe(Keyframe keyframe)
 	{
-		return MakeLinearKeyframe(keyframe.time, keyframe.value);
+		return AnimationCurveUtils.MakeLinearKeyframe(keyframe.time, keyframe.value);
 	}
 }

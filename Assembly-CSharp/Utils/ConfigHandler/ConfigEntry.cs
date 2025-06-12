@@ -20,10 +20,10 @@ public abstract class ConfigEntry
 
 	public ConfigEntry(string key, bool inherit = true, string name = null, string description = null)
 	{
-		Key = key;
-		Inherit = inherit;
-		Name = name;
-		Description = description;
+		this.Key = key;
+		this.Inherit = inherit;
+		this.Name = name;
+		this.Description = description;
 	}
 
 	public ConfigEntry(string key, string name = null, string description = null)
@@ -43,11 +43,11 @@ public class ConfigEntry<T> : ConfigEntry
 	{
 		get
 		{
-			return Value;
+			return this.Value;
 		}
 		set
 		{
-			Value = (T)value;
+			this.Value = (T)value;
 		}
 	}
 
@@ -55,18 +55,18 @@ public class ConfigEntry<T> : ConfigEntry
 	{
 		get
 		{
-			return Default;
+			return this.Default;
 		}
 		set
 		{
-			Default = (T)value;
+			this.Default = (T)value;
 		}
 	}
 
 	public ConfigEntry(string key, T defaultValue = default(T), bool inherit = true, string name = null, string description = null)
 		: base(key, inherit, name, description)
 	{
-		Default = defaultValue;
+		this.Default = defaultValue;
 	}
 
 	public ConfigEntry(string key, T defaultValue = default(T), string name = null, string description = null)

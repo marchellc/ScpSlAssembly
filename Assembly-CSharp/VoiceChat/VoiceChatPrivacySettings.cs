@@ -26,12 +26,12 @@ public class VoiceChatPrivacySettings : ToggleableMenuBase
 		{
 			get
 			{
-				return AcceptToggle.isOn;
+				return this.AcceptToggle.isOn;
 			}
 			set
 			{
-				AcceptToggle.SetIsOnWithoutNotify(value);
-				DenyToggle.SetIsOnWithoutNotify(!value);
+				this.AcceptToggle.SetIsOnWithoutNotify(value);
+				this.DenyToggle.SetIsOnWithoutNotify(!value);
 			}
 		}
 	}
@@ -84,7 +84,7 @@ public class VoiceChatPrivacySettings : ToggleableMenuBase
 		}
 		set
 		{
-			base.IsEnabled = value || _forceOpen;
+			base.IsEnabled = value || this._forceOpen;
 		}
 	}
 
@@ -106,20 +106,20 @@ public class VoiceChatPrivacySettings : ToggleableMenuBase
 	{
 		get
 		{
-			if (_flagsLoaded)
+			if (VoiceChatPrivacySettings._flagsLoaded)
 			{
-				return _loadedFlags;
+				return VoiceChatPrivacySettings._loadedFlags;
 			}
-			_loadedFlags = PrefsFlags;
-			_flagsLoaded = true;
-			return _loadedFlags;
+			VoiceChatPrivacySettings._loadedFlags = VoiceChatPrivacySettings.PrefsFlags;
+			VoiceChatPrivacySettings._flagsLoaded = true;
+			return VoiceChatPrivacySettings._loadedFlags;
 		}
 		set
 		{
-			if (_loadedFlags != value)
+			if (VoiceChatPrivacySettings._loadedFlags != value)
 			{
-				_loadedFlags = value;
-				PrefsFlags = value;
+				VoiceChatPrivacySettings._loadedFlags = value;
+				VoiceChatPrivacySettings.PrefsFlags = value;
 			}
 		}
 	}
@@ -129,13 +129,13 @@ public class VoiceChatPrivacySettings : ToggleableMenuBase
 	protected override void Awake()
 	{
 		base.Awake();
-		ToggleGroup[] groups = _groups;
+		ToggleGroup[] groups = this._groups;
 		foreach (ToggleGroup toggleGroup in groups)
 		{
-			_groupsByFlags.Add(toggleGroup.Flags, toggleGroup);
+			this._groupsByFlags.Add(toggleGroup.Flags, toggleGroup);
 		}
-		Singleton = this;
-		UpdateToggles();
+		VoiceChatPrivacySettings.Singleton = this;
+		this.UpdateToggles();
 	}
 
 	protected override void OnToggled()
@@ -144,17 +144,17 @@ public class VoiceChatPrivacySettings : ToggleableMenuBase
 
 	public void UpdateToggles()
 	{
-		ToggleGroup[] groups = _groups;
+		ToggleGroup[] groups = this._groups;
 		foreach (ToggleGroup toggleGroup in groups)
 		{
-			toggleGroup.IsAccepted = (PrivacyFlags & toggleGroup.Flags) == toggleGroup.Flags;
+			toggleGroup.IsAccepted = (VoiceChatPrivacySettings.PrivacyFlags & toggleGroup.Flags) == toggleGroup.Flags;
 		}
-		_recordDim.enabled = (PrivacyFlags & VcPrivacyFlags.AllowRecording) == 0;
+		this._recordDim.enabled = (VoiceChatPrivacySettings.PrivacyFlags & VcPrivacyFlags.AllowRecording) == 0;
 	}
 
 	public void HandleToggle(Toggle checkbox)
 	{
-		ToggleGroup[] groups = _groups;
+		ToggleGroup[] groups = this._groups;
 		foreach (ToggleGroup toggleGroup in groups)
 		{
 			if (toggleGroup.AcceptToggle == checkbox)
@@ -168,17 +168,17 @@ public class VoiceChatPrivacySettings : ToggleableMenuBase
 				break;
 			}
 		}
-		if (_groupsByFlags[VcPrivacyFlags.AllowMicCapture].IsAccepted)
+		if (this._groupsByFlags[VcPrivacyFlags.AllowMicCapture].IsAccepted)
 		{
-			_recordDim.enabled = false;
+			this._recordDim.enabled = false;
 		}
 		else
 		{
-			_recordDim.enabled = true;
-			_groupsByFlags[VcPrivacyFlags.AllowRecording].IsAccepted = false;
+			this._recordDim.enabled = true;
+			this._groupsByFlags[VcPrivacyFlags.AllowRecording].IsAccepted = false;
 		}
-		VcPrivacyFlags vcPrivacyFlags = PrivacyFlags & VcPrivacyFlags.SettingsSelected;
-		groups = _groups;
+		VcPrivacyFlags vcPrivacyFlags = VoiceChatPrivacySettings.PrivacyFlags & VcPrivacyFlags.SettingsSelected;
+		groups = this._groups;
 		foreach (ToggleGroup toggleGroup2 in groups)
 		{
 			if (toggleGroup2.IsAccepted)
@@ -186,12 +186,13 @@ public class VoiceChatPrivacySettings : ToggleableMenuBase
 				vcPrivacyFlags |= toggleGroup2.Flags;
 			}
 		}
-		PrivacyFlags = vcPrivacyFlags;
+		VoiceChatPrivacySettings.PrivacyFlags = vcPrivacyFlags;
 		if (NetworkClient.ready && ReferenceHub.TryGetLocalHub(out var hub))
 		{
-			VcPrivacyMessage message = default(VcPrivacyMessage);
-			message.Flags = (byte)PrivacyFlags;
-			NetworkClient.Send(message);
+			NetworkClient.Send(new VcPrivacyMessage
+			{
+				Flags = (byte)VoiceChatPrivacySettings.PrivacyFlags
+			});
 			VoiceChatPrivacySettings.OnUserFlagsChanged?.Invoke(hub);
 		}
 	}
@@ -203,10 +204,10 @@ public class VoiceChatPrivacySettings : ToggleableMenuBase
 		{
 			NetworkServer.ReplaceHandler(delegate(NetworkConnectionToClient conn, VcPrivacyMessage msg)
 			{
-				if (ReferenceHub.TryGetHub(conn, out var hub2))
+				if (ReferenceHub.TryGetHub(conn, out var hub))
 				{
-					FlagsOfPlayers[hub2] = (VcPrivacyFlags)msg.Flags;
-					VoiceChatPrivacySettings.OnUserFlagsChanged?.Invoke(hub2);
+					VoiceChatPrivacySettings.FlagsOfPlayers[hub] = (VcPrivacyFlags)msg.Flags;
+					VoiceChatPrivacySettings.OnUserFlagsChanged?.Invoke(hub);
 				}
 			});
 		};
@@ -214,20 +215,21 @@ public class VoiceChatPrivacySettings : ToggleableMenuBase
 		{
 			if (hub.isLocalPlayer && !NetworkServer.active)
 			{
-				VcPrivacyMessage message = default(VcPrivacyMessage);
-				message.Flags = (byte)PrivacyFlags;
-				NetworkClient.Send(message);
+				NetworkClient.Send(new VcPrivacyMessage
+				{
+					Flags = (byte)VoiceChatPrivacySettings.PrivacyFlags
+				});
 			}
 		};
 		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub hub)
 		{
-			FlagsOfPlayers.Remove(hub);
+			VoiceChatPrivacySettings.FlagsOfPlayers.Remove(hub);
 		};
 	}
 
 	public static bool CheckUserFlags(ReferenceHub user, VcPrivacyFlags flags)
 	{
-		if (FlagsOfPlayers.TryGetValue(user, out var value))
+		if (VoiceChatPrivacySettings.FlagsOfPlayers.TryGetValue(user, out var value))
 		{
 			return (value & flags) == flags;
 		}

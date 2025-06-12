@@ -16,18 +16,18 @@ public class StandardOutput : IServerOutput, IDisposable
 
 	public void AddLog(string text)
 	{
-		AddLog(text, ConsoleColor.Gray);
+		this.AddLog(text, ConsoleColor.Gray);
 	}
 
 	public void AddOutput(IOutputEntry entry)
 	{
 		if (entry is TextOutputEntry textOutputEntry)
 		{
-			AddLog(textOutputEntry.Text, (ConsoleColor)textOutputEntry.Color);
+			this.AddLog(textOutputEntry.Text, (ConsoleColor)textOutputEntry.Color);
 		}
 		else
 		{
-			AddLog("[Control Message] " + entry.GetString(), ConsoleColor.Gray);
+			this.AddLog("[Control Message] " + entry.GetString(), ConsoleColor.Gray);
 		}
 	}
 

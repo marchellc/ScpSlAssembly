@@ -20,7 +20,7 @@ public class AmnesiaItems : StatusEffectBase, IUsableItemModifierEffect, IWeapon
 		{
 			if (base.IsEnabled)
 			{
-				return _activeTime >= _blockDelay;
+				return this._activeTime >= this._blockDelay;
 			}
 			return false;
 		}
@@ -31,35 +31,35 @@ public class AmnesiaItems : StatusEffectBase, IUsableItemModifierEffect, IWeapon
 		base.Update();
 		if (base.IsEnabled)
 		{
-			_activeTime += Time.deltaTime;
+			this._activeTime += Time.deltaTime;
 		}
 	}
 
 	protected override void Enabled()
 	{
 		base.Enabled();
-		_activeTime = 0f;
+		this._activeTime = 0f;
 	}
 
 	public bool TryGetSpeed(ItemType item, out float speed)
 	{
 		speed = 0f;
-		if (!NetworkServer.active || !_blockedUsableItems.Contains(item) || _activeTime < _blockDelay)
+		if (!NetworkServer.active || !this._blockedUsableItems.Contains(item) || this._activeTime < this._blockDelay)
 		{
 			return false;
 		}
-		ServerSendPulse();
+		this.ServerSendPulse();
 		return true;
 	}
 
 	public bool TryGetWeaponParam(AttachmentParam param, out float val)
 	{
 		val = 1f;
-		if (!NetworkServer.active || param != AttachmentParam.PreventReload || _activeTime < _blockDelay)
+		if (!NetworkServer.active || param != AttachmentParam.PreventReload || this._activeTime < this._blockDelay)
 		{
 			return false;
 		}
-		ServerSendPulse();
+		this.ServerSendPulse();
 		return true;
 	}
 

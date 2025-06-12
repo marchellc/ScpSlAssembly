@@ -34,25 +34,25 @@ public class Scp173BlinkTimer : SubroutineBase, IPoolResettable
 		{
 			if (!NetworkServer.active)
 			{
-				return _totalCooldown;
+				return this._totalCooldown;
 			}
-			return TotalCooldownServer;
+			return this.TotalCooldownServer;
 		}
 	}
 
-	private float TotalCooldownServer => _totalCooldown * (_breakneckSpeedsAbility.IsActive ? 0.5f : 1f);
+	private float TotalCooldownServer => this._totalCooldown * (this._breakneckSpeedsAbility.IsActive ? 0.5f : 1f);
 
-	private float RemainingSustain => (float)(_endSustainTime - NetworkTime.time);
+	private float RemainingSustain => (float)(this._endSustainTime - NetworkTime.time);
 
-	public float RemainingBlinkCooldown => Mathf.Max(0f, (float)(_initialStopTime + (double)TotalCooldown - NetworkTime.time));
+	public float RemainingBlinkCooldown => Mathf.Max(0f, (float)(this._initialStopTime + (double)this.TotalCooldown - NetworkTime.time));
 
 	public float RemainingSustainPercent
 	{
 		get
 		{
-			if (_endSustainTime != -1.0)
+			if (this._endSustainTime != -1.0)
 			{
-				return Mathf.Clamp(RemainingSustain, 0f, 2f) / 2f;
+				return Mathf.Clamp(this.RemainingSustain, 0f, 2f) / 2f;
 			}
 			return 1f;
 		}
@@ -62,9 +62,9 @@ public class Scp173BlinkTimer : SubroutineBase, IPoolResettable
 	{
 		get
 		{
-			if (RemainingSustainPercent > 0f)
+			if (this.RemainingSustainPercent > 0f)
 			{
-				return RemainingBlinkCooldown <= 0f;
+				return this.RemainingBlinkCooldown <= 0f;
 			}
 			return false;
 		}
@@ -75,14 +75,14 @@ public class Scp173BlinkTimer : SubroutineBase, IPoolResettable
 		base.Awake();
 		if (base.Role is Scp173Role scp173Role)
 		{
-			_fpcModule = scp173Role.FpcModule as Scp173MovementModule;
-			scp173Role.SubroutineModule.TryGetSubroutine<Scp173BreakneckSpeedsAbility>(out _breakneckSpeedsAbility);
-			scp173Role.SubroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out _observers);
-			_observers.OnObserversChanged += OnObserversChanged;
-			Scp173BreakneckSpeedsAbility breakneckSpeedsAbility = _breakneckSpeedsAbility;
+			this._fpcModule = scp173Role.FpcModule as Scp173MovementModule;
+			scp173Role.SubroutineModule.TryGetSubroutine<Scp173BreakneckSpeedsAbility>(out this._breakneckSpeedsAbility);
+			scp173Role.SubroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out this._observers);
+			this._observers.OnObserversChanged += OnObserversChanged;
+			Scp173BreakneckSpeedsAbility breakneckSpeedsAbility = this._breakneckSpeedsAbility;
 			breakneckSpeedsAbility.OnToggled = (Action)Delegate.Combine(breakneckSpeedsAbility.OnToggled, (Action)delegate
 			{
-				ServerSendRpc(toAll: true);
+				base.ServerSendRpc(toAll: true);
 			});
 		}
 	}
@@ -91,23 +91,23 @@ public class Scp173BlinkTimer : SubroutineBase, IPoolResettable
 	{
 		if (NetworkServer.active)
 		{
-			if (prev == 0 && RemainingSustainPercent == 0f)
+			if (prev == 0 && this.RemainingSustainPercent == 0f)
 			{
-				_initialStopTime = NetworkTime.time;
-				_totalCooldown = 3f;
+				this._initialStopTime = NetworkTime.time;
+				this._totalCooldown = 3f;
 			}
-			_totalCooldown += 0f * (float)(current - prev);
-			_endSustainTime = ((current > 0) ? (-1.0) : (NetworkTime.time + 2.0));
-			ServerSendRpc(toAll: true);
+			this._totalCooldown += 0f * (float)(current - prev);
+			this._endSustainTime = ((current > 0) ? (-1.0) : (NetworkTime.time + 2.0));
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteDouble(_initialStopTime);
-		writer.WriteDouble(_endSustainTime);
-		writer.WriteFloat(TotalCooldownServer);
+		writer.WriteDouble(this._initialStopTime);
+		writer.WriteDouble(this._endSustainTime);
+		writer.WriteFloat(this.TotalCooldownServer);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
@@ -115,28 +115,28 @@ public class Scp173BlinkTimer : SubroutineBase, IPoolResettable
 		base.ClientProcessRpc(reader);
 		if (!NetworkServer.active)
 		{
-			_initialStopTime = reader.ReadDouble();
-			_endSustainTime = reader.ReadDouble();
-			_totalCooldown = reader.ReadFloat();
+			this._initialStopTime = reader.ReadDouble();
+			this._endSustainTime = reader.ReadDouble();
+			this._totalCooldown = reader.ReadFloat();
 		}
 	}
 
 	public void ResetObject()
 	{
-		_totalCooldown = 0f;
-		_initialStopTime = 0.0;
-		_endSustainTime = 0.0;
+		this._totalCooldown = 0f;
+		this._initialStopTime = 0.0;
+		this._endSustainTime = 0.0;
 	}
 
 	public void ServerBlink(Vector3 pos)
 	{
-		int currentObservers = _observers.CurrentObservers;
-		_fpcModule.ServerTeleportTo(pos);
-		_initialStopTime = NetworkTime.time;
-		_observers.UpdateObservers();
-		if (currentObservers == _observers.CurrentObservers)
+		int currentObservers = this._observers.CurrentObservers;
+		this._fpcModule.ServerTeleportTo(pos);
+		this._initialStopTime = NetworkTime.time;
+		this._observers.UpdateObservers();
+		if (currentObservers == this._observers.CurrentObservers)
 		{
-			ServerSendRpc(toAll: true);
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 }

@@ -26,10 +26,10 @@ public struct RadioRangeMode
 	{
 		Vector3 vector = lhs - rhs;
 		sqrMag = vector.sqrMagnitude;
-		if (sqrMag > (float)(MaximumRange * MaximumRange))
+		if (sqrMag > (float)(this.MaximumRange * this.MaximumRange))
 		{
 			return false;
 		}
-		return (int)Mathf.Abs(vector.y * 0.004f) <= VerticalPenetration;
+		return (int)Mathf.Abs(vector.y * 0.004f) <= this.VerticalPenetration;
 	}
 }

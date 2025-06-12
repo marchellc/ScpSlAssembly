@@ -28,27 +28,27 @@ public class NineTailedFoxNamingRule : UnitNamingRule
 	{
 		do
 		{
-			_lastUnitNato = Random.Range(0, PossibleCodes.Length - 1);
-			_lastUnitNumber = Random.Range(1, 19);
+			this._lastUnitNato = Random.Range(0, NineTailedFoxNamingRule.PossibleCodes.Length - 1);
+			this._lastUnitNumber = Random.Range(1, 19);
 		}
-		while (!_usedCombos.Add(_lastUnitNato * 255 + _lastUnitNumber));
-		base.LastGeneratedName = ReadName(_lastUnitNato, _lastUnitNumber);
+		while (!this._usedCombos.Add(this._lastUnitNato * 255 + this._lastUnitNumber));
+		base.LastGeneratedName = this.ReadName(this._lastUnitNato, this._lastUnitNumber);
 	}
 
 	public override void WriteName(NetworkWriter writer)
 	{
-		writer.WriteByte((byte)_lastUnitNato);
-		writer.WriteByte((byte)_lastUnitNumber);
+		writer.WriteByte((byte)this._lastUnitNato);
+		writer.WriteByte((byte)this._lastUnitNumber);
 	}
 
 	public override string ReadName(NetworkReader reader)
 	{
-		return ReadName(reader.ReadByte(), reader.ReadByte());
+		return this.ReadName(reader.ReadByte(), reader.ReadByte());
 	}
 
 	public string ReadName(int nato, int num)
 	{
-		return $"{PossibleCodes[nato]}-{num:00}";
+		return $"{NineTailedFoxNamingRule.PossibleCodes[nato]}-{num:00}";
 	}
 
 	public override string TranslateToCassie(string untranslatedString)

@@ -14,12 +14,12 @@ public class WorldspaceLightParticleConverter : MonoBehaviour
 	{
 		get
 		{
-			if (!_matLoaded)
+			if (!WorldspaceLightParticleConverter._matLoaded)
 			{
-				_invisibleMat = Resources.Load<Material>("StaticMaterials/Invisible");
-				_matLoaded = true;
+				WorldspaceLightParticleConverter._invisibleMat = Resources.Load<Material>("StaticMaterials/Invisible");
+				WorldspaceLightParticleConverter._matLoaded = true;
 			}
-			return _invisibleMat;
+			return WorldspaceLightParticleConverter._invisibleMat;
 		}
 	}
 
@@ -31,13 +31,13 @@ public class WorldspaceLightParticleConverter : MonoBehaviour
 		}
 		else
 		{
-			ConvertIndividual(system);
+			WorldspaceLightParticleConverter.ConvertIndividual(system);
 		}
 	}
 
 	public static void Convert(ParticleSystem system)
 	{
-		Convert(system, includeSubsystems: true);
+		WorldspaceLightParticleConverter.Convert(system, includeSubsystems: true);
 	}
 
 	private static void ConvertIndividual(ParticleSystem system)
@@ -62,7 +62,7 @@ public class WorldspaceLightParticleConverter : MonoBehaviour
 			break;
 		}
 		particleSystem.gameObject.layer = 0;
-		particleSystem.GetComponent<ParticleSystemRenderer>().sharedMaterial = InvisibleMaterial;
+		particleSystem.GetComponent<ParticleSystemRenderer>().sharedMaterial = WorldspaceLightParticleConverter.InvisibleMaterial;
 		main.duration = Mathf.Max(main.duration, 0.025f);
 		Transform transform3 = particleSystem.lights.light.transform;
 		for (int i = 0; i < transform2.childCount; i++)

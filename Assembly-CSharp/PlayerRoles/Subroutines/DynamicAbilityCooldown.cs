@@ -9,14 +9,14 @@ public class DynamicAbilityCooldown : AbilityCooldown
 	public void Append(double cooldown)
 	{
 		base.Remaining = (float)cooldown;
-		_appendCooldownNext = true;
+		this._appendCooldownNext = true;
 	}
 
 	public override void WriteCooldown(NetworkWriter writer)
 	{
-		writer.WriteBool(_appendCooldownNext);
+		writer.WriteBool(this._appendCooldownNext);
 		base.WriteCooldown(writer);
-		_appendCooldownNext = false;
+		this._appendCooldownNext = false;
 	}
 
 	public override void ReadCooldown(NetworkReader reader)
@@ -34,6 +34,6 @@ public class DynamicAbilityCooldown : AbilityCooldown
 	public override void Clear()
 	{
 		base.Clear();
-		_appendCooldownNext = false;
+		this._appendCooldownNext = false;
 	}
 }

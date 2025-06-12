@@ -51,67 +51,67 @@ public class Scp1576Viewmodel : UsableItemViewmodel
 	{
 		get
 		{
-			if (!_useTimeCacheSet)
+			if (!Scp1576Viewmodel._useTimeCacheSet)
 			{
-				_cachedUseTime = (InventoryItemLoader.AvailableItems[ItemType.SCP1576] as UsableItem).UseTime;
-				_useTimeCacheSet = true;
+				Scp1576Viewmodel._cachedUseTime = (InventoryItemLoader.AvailableItems[ItemType.SCP1576] as UsableItem).UseTime;
+				Scp1576Viewmodel._useTimeCacheSet = true;
 			}
-			return _cachedUseTime;
+			return Scp1576Viewmodel._cachedUseTime;
 		}
 	}
 
 	protected override void LateUpdate()
 	{
 		base.LateUpdate();
-		if (!PrevWeights.TryGetValue(base.ItemId.SerialNumber, out var value))
+		if (!Scp1576Viewmodel.PrevWeights.TryGetValue(base.ItemId.SerialNumber, out var value))
 		{
 			value = 0f;
 		}
-		if (!TimersBySerial.TryGetValue(base.ItemId.SerialNumber, out var value2) || !value2.IsRunning)
+		if (!Scp1576Viewmodel.TimersBySerial.TryGetValue(base.ItemId.SerialNumber, out var value2) || !value2.IsRunning)
 		{
-			if (_particles.isPlaying)
+			if (this._particles.isPlaying)
 			{
-				_particles.Stop();
+				this._particles.Stop();
 			}
-			if (_audioLoop.volume > 0f)
+			if (this._audioLoop.volume > 0f)
 			{
-				AudioSourcePoolManager.Play2DWithParent(_endRecordClip, base.transform);
+				AudioSourcePoolManager.Play2DWithParent(this._endRecordClip, base.transform);
 			}
-			_audioLoop.volume = 0f;
-			_playbackSource.enabled = false;
+			this._audioLoop.volume = 0f;
+			this._playbackSource.enabled = false;
 			Scp1576Item.LocallyUsed = false;
-			AnimatorSetLayerWeight(_posLayer, value);
+			this.AnimatorSetLayerWeight(this._posLayer, value);
 			return;
 		}
 		float num = (float)value2.Elapsed.TotalSeconds;
-		if (num > UseTime)
+		if (num > Scp1576Viewmodel.UseTime)
 		{
-			if (_wasCranking)
+			if (this._wasCranking)
 			{
-				_particles.Play();
-				AudioSourcePoolManager.Play2DWithParent(_startRecording, base.transform);
-				_wasCranking = false;
-				_playbackSource.enabled |= base.IsLocal;
+				this._particles.Play();
+				AudioSourcePoolManager.Play2DWithParent(this._startRecording, base.transform);
+				this._wasCranking = false;
+				this._playbackSource.enabled |= base.IsLocal;
 				Scp1576Item.LocallyUsed |= base.IsLocal;
 			}
-			float num2 = num - UseTime;
-			_audioLoop.volume = num2;
+			float num2 = num - Scp1576Viewmodel.UseTime;
+			this._audioLoop.volume = num2;
 			value = num2 / 30f;
-			_beltMaterial.mainTextureOffset += _beltSpeed * Time.deltaTime;
+			this._beltMaterial.mainTextureOffset += this._beltSpeed * Time.deltaTime;
 		}
 		else if (num > 1.1f)
 		{
-			_wasCranking = true;
+			this._wasCranking = true;
 			float num3 = value;
 			value -= Time.deltaTime * 0.4f;
 			if (num3 > 0f && value <= 0f)
 			{
-				AudioSourcePoolManager.Play2DWithParent(_rewindClip, base.transform);
+				AudioSourcePoolManager.Play2DWithParent(this._rewindClip, base.transform);
 			}
 		}
 		value = Mathf.Clamp01(value);
-		PrevWeights[base.ItemId.SerialNumber] = value;
-		AnimatorSetLayerWeight(_posLayer, value);
+		Scp1576Viewmodel.PrevWeights[base.ItemId.SerialNumber] = value;
+		this.AnimatorSetLayerWeight(this._posLayer, value);
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -120,7 +120,7 @@ public class Scp1576Viewmodel : UsableItemViewmodel
 		UsableItemsController.OnClientStatusReceived += OnClientStatusReceived;
 		Scp1576Pickup.OnHornPositionUpdated += delegate(ushort serial, float pos)
 		{
-			PrevWeights[serial] = pos;
+			Scp1576Viewmodel.PrevWeights[serial] = pos;
 		};
 	}
 
@@ -131,12 +131,12 @@ public class Scp1576Viewmodel : UsableItemViewmodel
 		case StatusMessage.StatusType.Start:
 			if (ReferenceHub.AllHubs.Any((ReferenceHub x) => x.inventory.CurItem.SerialNumber == msg.ItemSerial && x.inventory.CurItem.TypeId == ItemType.SCP1576))
 			{
-				TimersBySerial.GetOrAdd(msg.ItemSerial, () => new Stopwatch()).Restart();
+				Scp1576Viewmodel.TimersBySerial.GetOrAdd(msg.ItemSerial, () => new Stopwatch()).Restart();
 			}
 			break;
 		case StatusMessage.StatusType.Cancel:
 		{
-			if (TimersBySerial.TryGetValue(msg.ItemSerial, out var value))
+			if (Scp1576Viewmodel.TimersBySerial.TryGetValue(msg.ItemSerial, out var value))
 			{
 				value.Reset();
 			}

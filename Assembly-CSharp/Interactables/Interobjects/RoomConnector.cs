@@ -20,16 +20,16 @@ public class RoomConnector : MonoBehaviour, IRoomConnector
 
 	private void Start()
 	{
-		AllConnectors.Add(this);
+		RoomConnector.AllConnectors.Add(this);
 		if (SeedSynchronizer.MapGenerated)
 		{
-			RegisterRooms();
+			this.RegisterRooms();
 		}
 	}
 
 	private void OnDestroy()
 	{
-		AllConnectors.Remove(this);
+		RoomConnector.AllConnectors.Remove(this);
 	}
 
 	private void RegisterRooms()
@@ -47,10 +47,10 @@ public class RoomConnector : MonoBehaviour, IRoomConnector
 			}
 		}
 		HashSetPool<RoomIdentifier>.Shared.Return(hashSet);
-		Rooms = new RoomIdentifier[num];
-		Array.Copy(IRoomConnector.RoomsNonAlloc, Rooms, num);
+		this.Rooms = new RoomIdentifier[num];
+		Array.Copy(IRoomConnector.RoomsNonAlloc, this.Rooms, num);
 		this.OnRoomsRegistered?.Invoke();
-		RoomsAlreadyRegistered = true;
+		this.RoomsAlreadyRegistered = true;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -65,7 +65,7 @@ public class RoomConnector : MonoBehaviour, IRoomConnector
 		{
 			return;
 		}
-		foreach (RoomConnector allConnector in AllConnectors)
+		foreach (RoomConnector allConnector in RoomConnector.AllConnectors)
 		{
 			allConnector.RegisterRooms();
 		}

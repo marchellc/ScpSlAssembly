@@ -11,7 +11,7 @@ public class UnityResolver : IJsonFormatterResolver
 			object obj = UnityResolverGetFormatterHelper.GetFormatter(typeof(T));
 			if (obj != null)
 			{
-				formatter = (IJsonFormatter<T>)obj;
+				FormatterCache<T>.formatter = (IJsonFormatter<T>)obj;
 			}
 		}
 	}

@@ -28,7 +28,7 @@ public class ParticleDisruptor : Firearm
 	[SerializeField]
 	private CustomDescriptionGui _descriptionPrefab;
 
-	public override CustomDescriptionGui CustomGuiPrefab => _descriptionPrefab;
+	public override CustomDescriptionGui CustomGuiPrefab => this._descriptionPrefab;
 
 	public override bool AllowHolster
 	{
@@ -36,9 +36,9 @@ public class ParticleDisruptor : Firearm
 		{
 			if (base.AllowHolster)
 			{
-				if (_actionModule.IsFiring)
+				if (this._actionModule.IsFiring)
 				{
-					return DeleteOnDrop;
+					return this.DeleteOnDrop;
 				}
 				return true;
 			}
@@ -50,14 +50,14 @@ public class ParticleDisruptor : Firearm
 
 	public override ItemDescriptionType DescriptionType => ItemDescriptionType.Custom;
 
-	public override AlertContent Alert => _hint.Alert;
+	public override AlertContent Alert => this._hint.Alert;
 
 	public override string[] CustomDescriptionContent
 	{
 		get
 		{
-			DescriptionNonAlloc[0] = MicroHIDItem.FormatCharge(InventoryGuiTranslation.RemainingAmmo, _magazineModule.AmmoStored.ToString());
-			return DescriptionNonAlloc;
+			ParticleDisruptor.DescriptionNonAlloc[0] = MicroHIDItem.FormatCharge(InventoryGuiTranslation.RemainingAmmo, this._magazineModule.AmmoStored.ToString());
+			return ParticleDisruptor.DescriptionNonAlloc;
 		}
 	}
 
@@ -65,9 +65,9 @@ public class ParticleDisruptor : Firearm
 	{
 		get
 		{
-			if (!_actionModule.IsFiring)
+			if (!this._actionModule.IsFiring)
 			{
-				return _magazineModule.AmmoStored == 0;
+				return this._magazineModule.AmmoStored == 0;
 			}
 			return false;
 		}
@@ -76,7 +76,7 @@ public class ParticleDisruptor : Firearm
 	public override void InitializeSubcomponents()
 	{
 		base.InitializeSubcomponents();
-		this.TryGetModules<DisruptorActionModule, MagazineModule, IEquipperModule>(out _actionModule, out _magazineModule, out _equipperModule);
+		this.TryGetModules<DisruptorActionModule, MagazineModule, IEquipperModule>(out this._actionModule, out this._magazineModule, out this._equipperModule);
 	}
 
 	public override void OnAdded(ItemPickupBase pickup)
@@ -91,17 +91,17 @@ public class ParticleDisruptor : Firearm
 	public override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (_equipperModule.IsEquipped && !base.PrimaryActionBlocked)
+		if (this._equipperModule.IsEquipped && !base.PrimaryActionBlocked)
 		{
-			_hint.Update(base.Owner);
+			this._hint.Update(base.Owner);
 		}
 	}
 
 	public override ItemPickupBase ServerDropItem(bool spawn)
 	{
-		if (DeleteOnDrop)
+		if (this.DeleteOnDrop)
 		{
-			ServerDestroyItem();
+			this.ServerDestroyItem();
 			return null;
 		}
 		return base.ServerDropItem(spawn);
@@ -111,14 +111,14 @@ public class ParticleDisruptor : Firearm
 	{
 		if (base.IsServer)
 		{
-			ServerSendBrokenRpc(base.ItemSerial);
+			this.ServerSendBrokenRpc(base.ItemSerial);
 			base.OwnerInventory.ServerRemoveItem(base.ItemSerial, null);
 		}
 	}
 
 	public void ServerSendBrokenRpc(ushort serial)
 	{
-		ServerSendPublicRpc(delegate(NetworkWriter x)
+		base.ServerSendPublicRpc(delegate(NetworkWriter x)
 		{
 			x.WriteByte(byte.MaxValue);
 			x.WriteUShort(serial);
@@ -128,12 +128,12 @@ public class ParticleDisruptor : Firearm
 	protected override void OnClientReady()
 	{
 		base.OnClientReady();
-		BrokenSerials.Clear();
+		ParticleDisruptor.BrokenSerials.Clear();
 	}
 
 	protected override void ClientProcessMainRpcTemplate(NetworkReader reader, ushort serial)
 	{
 		base.ClientProcessMainRpcTemplate(reader, serial);
-		BrokenSerials.Add(reader.ReadUShort());
+		ParticleDisruptor.BrokenSerials.Add(reader.ReadUShort());
 	}
 }

@@ -67,34 +67,34 @@ public class PlayerList : SimpleToggleableMenu
 
 	private void Update()
 	{
-		RectTransform component = GetComponent<RectTransform>();
+		RectTransform component = base.GetComponent<RectTransform>();
 		component.localPosition = Vector3.zero;
 		component.sizeDelta = Vector2.zero;
 	}
 
 	private void Start()
 	{
-		_anyAdminOnServer = false;
+		PlayerList._anyAdminOnServer = false;
 		if (NetworkServer.active)
 		{
-			ConfigFile.ServerConfig.UpdateConfigValue(RefreshRate);
-			ConfigFile.ServerConfig.UpdateConfigValue(Title);
-			Timing.RunCoroutine(_RefreshTitleLoop(), Segment.FixedUpdate);
+			ConfigFile.ServerConfig.UpdateConfigValue(PlayerList.RefreshRate);
+			ConfigFile.ServerConfig.UpdateConfigValue(PlayerList.Title);
+			Timing.RunCoroutine(this._RefreshTitleLoop(), Segment.FixedUpdate);
 		}
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		instances.Clear();
-		singleton = this;
-		s_parent = parent;
-		s_template = template;
+		PlayerList.instances.Clear();
+		PlayerList.singleton = this;
+		PlayerList.s_parent = this.parent;
+		PlayerList.s_template = this.template;
 	}
 
 	public static void UpdatePlayerNickname(ReferenceHub instance)
 	{
-		foreach (Instance instance2 in instances)
+		foreach (Instance instance2 in PlayerList.instances)
 		{
 			if (!(instance2.owner == null) && !(instance2.owner != instance))
 			{
@@ -114,17 +114,17 @@ public class PlayerList : SimpleToggleableMenu
 
 	public static void UpdatePlayerRole(ReferenceHub instance)
 	{
-		_anyAdminOnServer = false;
+		PlayerList._anyAdminOnServer = false;
 		bool flag = instance == null;
-		foreach (Instance instance2 in instances)
+		foreach (Instance instance2 in PlayerList.instances)
 		{
 			try
 			{
 				if (instance2 != null)
 				{
-					if (!_anyAdminOnServer && !string.IsNullOrEmpty(instance.serverRoles.GetUncoloredRoleString()))
+					if (!PlayerList._anyAdminOnServer && !string.IsNullOrEmpty(instance.serverRoles.GetUncoloredRoleString()))
 					{
-						_anyAdminOnServer = true;
+						PlayerList._anyAdminOnServer = true;
 					}
 					if (!flag)
 					{
@@ -143,32 +143,32 @@ public class PlayerList : SimpleToggleableMenu
 	public void RefreshTitleSafe()
 	{
 		string result;
-		if (string.IsNullOrEmpty(Title.Value))
+		if (string.IsNullOrEmpty(PlayerList.Title.Value))
 		{
-			ServerName = ServerConsole.Singleton.RefreshServerNameSafe();
+			PlayerList.ServerName = ServerConsole.Singleton.RefreshServerNameSafe();
 		}
-		else if (!ServerConsole.Singleton.NameFormatter.TryProcessExpression(Title.Value, "player list title", out result))
+		else if (!ServerConsole.Singleton.NameFormatter.TryProcessExpression(PlayerList.Title.Value, "player list title", out result))
 		{
 			ServerConsole.AddLog(result);
 		}
 		else
 		{
-			ServerName = result;
+			PlayerList.ServerName = result;
 		}
 	}
 
 	public void RefreshTitle()
 	{
-		ServerName = (string.IsNullOrEmpty(Title.Value) ? ServerConsole.Singleton.RefreshServerName() : ServerConsole.Singleton.NameFormatter.ProcessExpression(Title.Value));
+		PlayerList.ServerName = (string.IsNullOrEmpty(PlayerList.Title.Value) ? ServerConsole.Singleton.RefreshServerName() : ServerConsole.Singleton.NameFormatter.ProcessExpression(PlayerList.Title.Value));
 	}
 
 	private IEnumerator<float> _RefreshTitleLoop()
 	{
 		while (this != null)
 		{
-			RefreshTitleSafe();
+			this.RefreshTitleSafe();
 			ushort i = 0;
-			while ((float)(int)i < 50f * RefreshRate.Value)
+			while ((float)(int)i < 50f * PlayerList.RefreshRate.Value)
 			{
 				yield return 0f;
 				i++;

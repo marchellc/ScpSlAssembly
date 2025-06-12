@@ -84,20 +84,20 @@ public class Scp079CurrentCameraSync : StandardSubroutine<Scp079Role>, IScp079Fa
 	{
 		get
 		{
-			TryGetCurrentCamera(out var cam);
+			this.TryGetCurrentCamera(out var cam);
 			return cam;
 		}
 		private set
 		{
 			value.IsActive = true;
-			_camSet = true;
-			if (!(value == _lastCam))
+			this._camSet = true;
+			if (!(value == this._lastCam))
 			{
-				_lastCam = value;
+				this._lastCam = value;
 				this.OnCameraChanged?.Invoke();
 				if (NetworkServer.active)
 				{
-					ServerSendRpc(toAll: true);
+					base.ServerSendRpc(toAll: true);
 				}
 			}
 		}
@@ -107,42 +107,42 @@ public class Scp079CurrentCameraSync : StandardSubroutine<Scp079Role>, IScp079Fa
 
 	private void Update()
 	{
-		if (!_initialized)
+		if (!this._initialized)
 		{
-			if (!TryGetCurrentCamera(out var _))
+			if (!this.TryGetCurrentCamera(out var _))
 			{
 				return;
 			}
-			_initialized = true;
+			this._initialized = true;
 		}
-		if (CurClientSwitchState != 0 && base.Role.IsControllable && !(_switchStopwatch.Elapsed.TotalSeconds < (double)_targetSwitchTime))
+		if (this.CurClientSwitchState != ClientSwitchState.None && base.Role.IsControllable && !(this._switchStopwatch.Elapsed.TotalSeconds < (double)this._targetSwitchTime))
 		{
-			_clientSwitchRequest = ClientSwitchState.None;
-			_switchStopwatch.Stop();
-			ClientSendCmd();
+			this._clientSwitchRequest = ClientSwitchState.None;
+			this._switchStopwatch.Stop();
+			base.ClientSendCmd();
 		}
 	}
 
 	private bool TryGetDefaultCamera(out Scp079Camera cam)
 	{
-		if (_defaultCamId == 0)
+		if (this._defaultCamId == 0)
 		{
 			if (Scp079InteractableBase.AllInstances.TryGetFirst((Scp079InteractableBase x) => x is Scp079Camera scp079Camera && x.SyncId != 0 && scp079Camera.Room.Name == RoomName.Hcz079 && scp079Camera.Label.Equals("079 CONT CHAMBER", StringComparison.InvariantCultureIgnoreCase), out var first))
 			{
 				cam = first as Scp079Camera;
-				_defaultCamId = cam.SyncId;
+				this._defaultCamId = cam.SyncId;
 				return true;
 			}
 			if (Scp079InteractableBase.AllInstances.TryGetFirst((Scp079InteractableBase x) => x is Scp079Camera, out var first2))
 			{
 				cam = first2 as Scp079Camera;
-				_defaultCamId = cam.SyncId;
+				this._defaultCamId = cam.SyncId;
 				return true;
 			}
 			cam = null;
 			return false;
 		}
-		if (Scp079InteractableBase.TryGetInteractable(_defaultCamId, out Scp079Camera result))
+		if (Scp079InteractableBase.TryGetInteractable(this._defaultCamId, out Scp079Camera result))
 		{
 			cam = result;
 			return true;
@@ -155,15 +155,15 @@ public class Scp079CurrentCameraSync : StandardSubroutine<Scp079Role>, IScp079Fa
 	{
 		if (NetworkServer.active)
 		{
-			ServerSendRpc(hub);
+			base.ServerSendRpc(hub);
 		}
 	}
 
 	public int GetSwitchCost(Scp079Camera target)
 	{
-		Vector3 position = CurrentCamera.Position;
+		Vector3 position = this.CurrentCamera.Position;
 		Vector3 position2 = target.Position;
-		FacilityZone zone = CurrentCamera.Room.Zone;
+		FacilityZone zone = this.CurrentCamera.Room.Zone;
 		FacilityZone zone2 = target.Room.Zone;
 		bool flag = Mathf.Abs(position.y - position2.y) < 60f;
 		bool flag2 = zone == zone2;
@@ -171,7 +171,7 @@ public class Scp079CurrentCameraSync : StandardSubroutine<Scp079Role>, IScp079Fa
 		int num2 = ((!flag) ? 5 : num);
 		if (flag2)
 		{
-			Vector3Int mainCoords = CurrentCamera.Room.MainCoords;
+			Vector3Int mainCoords = this.CurrentCamera.Room.MainCoords;
 			Vector3Int mainCoords2 = target.Room.MainCoords;
 			bool flag3 = (mainCoords - mainCoords2).sqrMagnitude <= 1;
 			if (!flag)
@@ -188,7 +188,7 @@ public class Scp079CurrentCameraSync : StandardSubroutine<Scp079Role>, IScp079Fa
 			}
 			return 0;
 		}
-		int num3 = Mathf.Abs(ZoneQueue.IndexOf(zone) - ZoneQueue.IndexOf(zone2)) - 1;
+		int num3 = Mathf.Abs(Scp079CurrentCameraSync.ZoneQueue.IndexOf(zone) - Scp079CurrentCameraSync.ZoneQueue.IndexOf(zone2)) - 1;
 		return num2 + 10 + 20 * num3;
 	}
 
@@ -198,16 +198,16 @@ public class Scp079CurrentCameraSync : StandardSubroutine<Scp079Role>, IScp079Fa
 		{
 			throw new InvalidOperationException("Method ClientSwitchTo can only be called on the local client instance!");
 		}
-		if (CurClientSwitchState == ClientSwitchState.None)
+		if (this.CurClientSwitchState == ClientSwitchState.None)
 		{
-			bool flag = target.Room.Zone == CurrentCamera.Room.Zone;
-			_switchTarget = target;
-			_targetSwitchTime = (flag ? 0.1f : 0.98f);
-			CurClientSwitchState = (flag ? ClientSwitchState.SwitchingRoom : ClientSwitchState.SwitchingZone);
-			CurClientTargetZone = target.Room.Zone;
-			_clientSwitchRequest = CurClientSwitchState;
-			ClientSendCmd();
-			_switchStopwatch.Restart();
+			bool flag = target.Room.Zone == this.CurrentCamera.Room.Zone;
+			this._switchTarget = target;
+			this._targetSwitchTime = (flag ? 0.1f : 0.98f);
+			this.CurClientSwitchState = (flag ? ClientSwitchState.SwitchingRoom : ClientSwitchState.SwitchingZone);
+			this.CurClientTargetZone = target.Room.Zone;
+			this._clientSwitchRequest = this.CurClientSwitchState;
+			base.ClientSendCmd();
+			this._switchStopwatch.Restart();
 		}
 	}
 
@@ -216,126 +216,126 @@ public class Scp079CurrentCameraSync : StandardSubroutine<Scp079Role>, IScp079Fa
 		base.SpawnObject();
 		if (NetworkServer.active)
 		{
-			_eventAssigned = true;
+			this._eventAssigned = true;
 			ReferenceHub.OnPlayerAdded += OnHubAdded;
-			(base.Role as Scp079Role).SubroutineModule.TryGetSubroutine<Scp079AuxManager>(out _auxManager);
-			(base.Role as Scp079Role).SubroutineModule.TryGetSubroutine<Scp079LostSignalHandler>(out _lostSignalHandler);
+			(base.Role as Scp079Role).SubroutineModule.TryGetSubroutine<Scp079AuxManager>(out this._auxManager);
+			(base.Role as Scp079Role).SubroutineModule.TryGetSubroutine<Scp079LostSignalHandler>(out this._lostSignalHandler);
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		if (_eventAssigned)
+		if (this._eventAssigned)
 		{
 			ReferenceHub.OnPlayerAdded -= OnHubAdded;
 		}
-		_defaultCamId = 0;
-		_errorCode = Scp079HudTranslation.Zoom;
-		_lastCam = null;
-		_camSet = false;
-		_initialized = false;
-		_eventAssigned = false;
-		CurClientSwitchState = ClientSwitchState.None;
+		this._defaultCamId = 0;
+		this._errorCode = Scp079HudTranslation.Zoom;
+		this._lastCam = null;
+		this._camSet = false;
+		this._initialized = false;
+		this._eventAssigned = false;
+		this.CurClientSwitchState = ClientSwitchState.None;
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteByte((byte)_clientSwitchRequest);
-		writer.WriteUShort(_switchTarget.SyncId);
+		writer.WriteByte((byte)this._clientSwitchRequest);
+		writer.WriteUShort(this._switchTarget.SyncId);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		_clientSwitchRequest = (ClientSwitchState)reader.ReadByte();
-		_requestedCamId = reader.ReadUShort();
-		if (_clientSwitchRequest != 0)
+		this._clientSwitchRequest = (ClientSwitchState)reader.ReadByte();
+		this._requestedCamId = reader.ReadUShort();
+		if (this._clientSwitchRequest != ClientSwitchState.None)
 		{
-			ServerSendRpc((ReferenceHub x) => x.roleManager.CurrentRole is SpectatorRole);
+			base.ServerSendRpc((ReferenceHub x) => x.roleManager.CurrentRole is SpectatorRole);
 			return;
 		}
-		if (!Scp079InteractableBase.TryGetInteractable(_requestedCamId, out _switchTarget))
+		if (!Scp079InteractableBase.TryGetInteractable(this._requestedCamId, out this._switchTarget))
 		{
-			_errorCode = Scp079HudTranslation.InvalidCamera;
-			ServerSendRpc(toAll: true);
+			this._errorCode = Scp079HudTranslation.InvalidCamera;
+			base.ServerSendRpc(toAll: true);
 			return;
 		}
-		float num = GetSwitchCost(_switchTarget);
-		if (num > _auxManager.CurrentAux)
+		float num = this.GetSwitchCost(this._switchTarget);
+		if (num > this._auxManager.CurrentAux)
 		{
-			_errorCode = Scp079HudTranslation.NotEnoughAux;
-			ServerSendRpc(toAll: true);
+			this._errorCode = Scp079HudTranslation.NotEnoughAux;
+			base.ServerSendRpc(toAll: true);
 			return;
 		}
-		if (_lostSignalHandler.Lost)
+		if (this._lostSignalHandler.Lost)
 		{
-			_errorCode = Scp079HudTranslation.SignalLost;
-			ServerSendRpc(toAll: true);
+			this._errorCode = Scp079HudTranslation.SignalLost;
+			base.ServerSendRpc(toAll: true);
 			return;
 		}
-		if (_switchTarget != CurrentCamera)
+		if (this._switchTarget != this.CurrentCamera)
 		{
-			Scp079ChangingCameraEventArgs scp079ChangingCameraEventArgs = new Scp079ChangingCameraEventArgs(base.Owner, _switchTarget);
-			Scp079Events.OnChangingCamera(scp079ChangingCameraEventArgs);
-			if (!scp079ChangingCameraEventArgs.IsAllowed)
+			Scp079ChangingCameraEventArgs e = new Scp079ChangingCameraEventArgs(base.Owner, this._switchTarget);
+			Scp079Events.OnChangingCamera(e);
+			if (!e.IsAllowed)
 			{
-				_errorCode = Scp079HudTranslation.SignalLost;
-				ServerSendRpc(toAll: true);
+				this._errorCode = Scp079HudTranslation.SignalLost;
+				base.ServerSendRpc(toAll: true);
 				return;
 			}
-			_switchTarget = scp079ChangingCameraEventArgs.Camera.Base;
+			this._switchTarget = e.Camera.Base;
 		}
-		_auxManager.CurrentAux -= num;
-		_errorCode = Scp079HudTranslation.Zoom;
-		if (_switchTarget != CurrentCamera)
+		this._auxManager.CurrentAux -= num;
+		this._errorCode = Scp079HudTranslation.Zoom;
+		if (this._switchTarget != this.CurrentCamera)
 		{
-			CurrentCamera = _switchTarget;
-			Scp079Events.OnChangedCamera(new Scp079ChangedCameraEventArgs(base.Owner, _switchTarget));
+			this.CurrentCamera = this._switchTarget;
+			Scp079Events.OnChangedCamera(new Scp079ChangedCameraEventArgs(base.Owner, this._switchTarget));
 		}
 		else
 		{
-			ServerSendRpc(toAll: true);
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte((byte)_clientSwitchRequest);
-		if (_clientSwitchRequest == ClientSwitchState.None)
+		writer.WriteByte((byte)this._clientSwitchRequest);
+		if (this._clientSwitchRequest == ClientSwitchState.None)
 		{
-			writer.WriteUShort(CurrentCamera.SyncId);
-			writer.WriteByte((byte)_errorCode);
+			writer.WriteUShort(this.CurrentCamera.SyncId);
+			writer.WriteByte((byte)this._errorCode);
 		}
 		else
 		{
-			writer.WriteUShort(_requestedCamId);
+			writer.WriteUShort(this._requestedCamId);
 		}
-		_errorCode = Scp079HudTranslation.Zoom;
+		this._errorCode = Scp079HudTranslation.Zoom;
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		CurClientSwitchState = (ClientSwitchState)reader.ReadByte();
+		this.CurClientSwitchState = (ClientSwitchState)reader.ReadByte();
 		ushort num = reader.ReadUShort();
 		Scp079Camera result;
 		bool flag = Scp079InteractableBase.TryGetInteractable(num, out result);
-		switch (CurClientSwitchState)
+		switch (this.CurClientSwitchState)
 		{
 		case ClientSwitchState.SwitchingRoom:
 			return;
 		case ClientSwitchState.SwitchingZone:
 			if (flag)
 			{
-				CurClientTargetZone = result.Room.Zone;
+				this.CurClientTargetZone = result.Room.Zone;
 			}
 			return;
 		}
-		_errorCode = (Scp079HudTranslation)reader.ReadByte();
-		if (_errorCode != 0)
+		this._errorCode = (Scp079HudTranslation)reader.ReadByte();
+		if (this._errorCode != Scp079HudTranslation.Zoom)
 		{
 			if ((base.Role.IsControllable || base.CastRole.IsSpectated) && Scp079AbilityList.TryGetSingleton(out var singleton))
 			{
@@ -346,11 +346,11 @@ public class Scp079CurrentCameraSync : StandardSubroutine<Scp079Role>, IScp079Fa
 		{
 			if (flag)
 			{
-				CurrentCamera = result;
+				this.CurrentCamera = result;
 				return;
 			}
-			_camSet = false;
-			_defaultCamId = num;
+			this._camSet = false;
+			this._defaultCamId = num;
 		}
 	}
 
@@ -361,15 +361,15 @@ public class Scp079CurrentCameraSync : StandardSubroutine<Scp079Role>, IScp079Fa
 			cam = null;
 			return false;
 		}
-		if (_camSet)
+		if (this._camSet)
 		{
-			cam = _lastCam;
+			cam = this._lastCam;
 			return true;
 		}
-		if (TryGetDefaultCamera(out var cam2))
+		if (this.TryGetDefaultCamera(out var cam2))
 		{
 			cam = cam2;
-			CurrentCamera = cam;
+			this.CurrentCamera = cam;
 			return true;
 		}
 		cam = null;
@@ -378,7 +378,7 @@ public class Scp079CurrentCameraSync : StandardSubroutine<Scp079Role>, IScp079Fa
 
 	public void OnFailMessageAssigned()
 	{
-		FailMessage = Translations.Get(_errorCode);
+		this.FailMessage = Translations.Get(this._errorCode);
 	}
 
 	public override void PopulateDummyActions(Action<DummyAction> actionAdder, Action<string> categoryAdder)
@@ -392,7 +392,7 @@ public class Scp079CurrentCameraSync : StandardSubroutine<Scp079Role>, IScp079Fa
 			{
 				actionAdder(new DummyAction($"\"{cam.Label}\" #{cam.SyncId}", delegate
 				{
-					ClientSwitchTo(cam);
+					this.ClientSwitchTo(cam);
 				}));
 			}
 		}

@@ -26,39 +26,39 @@ public class UserSettingsCategories : MonoBehaviour
 
 	public void ResetSelection()
 	{
-		SelectCategory(0);
+		this.SelectCategory(0);
 	}
 
 	private void Awake()
 	{
-		for (int i = 0; i < _categories.Length; i++)
+		for (int i = 0; i < this._categories.Length; i++)
 		{
-			ToggleCategory(i, i == 0);
+			this.ToggleCategory(i, i == 0);
 			int iCopy = i;
-			_categories[i].Activator.onClick.AddListener(delegate
+			this._categories[i].Activator.onClick.AddListener(delegate
 			{
-				SelectCategory(iCopy);
+				this.SelectCategory(iCopy);
 			});
 		}
 	}
 
 	private void Update()
 	{
-		_layoutGroup.CalculateLayoutInputHorizontal();
-		_layoutGroup.SetLayoutHorizontal();
+		this._layoutGroup.CalculateLayoutInputHorizontal();
+		this._layoutGroup.SetLayoutHorizontal();
 	}
 
 	private void ToggleCategory(int index, bool isVisible)
 	{
-		Category category = _categories[index];
+		Category category = this._categories[index];
 		category.Group.SetActive(isVisible);
 		category.Highlight.SetActive(isVisible);
 	}
 
 	private void SelectCategory(int cat)
 	{
-		ToggleCategory(_prev, isVisible: false);
-		ToggleCategory(cat, isVisible: true);
-		_prev = cat;
+		this.ToggleCategory(this._prev, isVisible: false);
+		this.ToggleCategory(cat, isVisible: true);
+		this._prev = cat;
 	}
 }

@@ -64,20 +64,20 @@ public class IdlePoseRetainerSubcontroller : SubcontrollerBehaviour, IRotationRe
 
 	public float RetentionWeight => 1f - base.Model.WalkLayerWeight;
 
-	public bool IsTurning => _turnStatus != TurnStatus.Idle;
+	public bool IsTurning => this._turnStatus != TurnStatus.Idle;
 
-	private float OwnerRotation => _lastOwnerRoot.eulerAngles.y;
+	private float OwnerRotation => this._lastOwnerRoot.eulerAngles.y;
 
 	private float ModelRotation
 	{
 		get
 		{
-			return WaypointBase.GetWorldRotation(_lastWaypointId, _relativeRotation).eulerAngles.y;
+			return WaypointBase.GetWorldRotation(this._lastWaypointId, this._relativeRotation).eulerAngles.y;
 		}
 		set
 		{
 			Quaternion quaternion = Quaternion.Euler(Vector3.up * value);
-			WaypointBase.GetRelativeRotation(base.ModelTr.position, quaternion, out _lastWaypointId, out _relativeRotation);
+			WaypointBase.GetRelativeRotation(base.ModelTr.position, quaternion, out this._lastWaypointId, out this._relativeRotation);
 			base.ModelTr.rotation = quaternion;
 		}
 	}
@@ -85,7 +85,7 @@ public class IdlePoseRetainerSubcontroller : SubcontrollerBehaviour, IRotationRe
 	public override void OnReassigned()
 	{
 		base.OnReassigned();
-		_lastOwnerRoot = base.OwnerHub.transform;
+		this._lastOwnerRoot = base.OwnerHub.transform;
 	}
 
 	public override void Init(AnimatedCharacterModel model, int index)
@@ -99,7 +99,7 @@ public class IdlePoseRetainerSubcontroller : SubcontrollerBehaviour, IRotationRe
 		float walkLayerWeight = base.Model.WalkLayerWeight;
 		float target = Mathf.InverseLerp(0.12f, 0.3f, new Vector2(base.Model.TargetForward, base.Model.TargetStrafe).magnitude);
 		walkLayerWeight = Mathf.MoveTowards(walkLayerWeight, target, base.Model.LastMovedDeltaT * 5f);
-		ModelRotation = Mathf.LerpAngle(ModelRotation, OwnerRotation, walkLayerWeight);
+		this.ModelRotation = Mathf.LerpAngle(this.ModelRotation, this.OwnerRotation, walkLayerWeight);
 		base.Model.WalkLayerWeight = walkLayerWeight;
 	}
 
@@ -107,41 +107,41 @@ public class IdlePoseRetainerSubcontroller : SubcontrollerBehaviour, IRotationRe
 	{
 		if (base.HasOwner)
 		{
-			CalculateDeltas();
-			ClampOwner();
-			if (!IsTurning || _turningElapsed > 0.45f)
+			this.CalculateDeltas();
+			this.ClampOwner();
+			if (!this.IsTurning || this._turningElapsed > 0.45f)
 			{
-				UpdateComfort();
+				this.UpdateComfort();
 			}
-			if (IsTurning)
+			if (this.IsTurning)
 			{
-				UpdateTurning();
+				this.UpdateTurning();
 			}
 		}
 	}
 
 	private void CalculateDeltas()
 	{
-		_prevAngleDelta = AngleDelta;
-		AngleDelta = Mathf.DeltaAngle(ModelRotation, OwnerRotation);
-		AngleAbsDiff = Mathf.Abs(AngleDelta);
+		this._prevAngleDelta = this.AngleDelta;
+		this.AngleDelta = Mathf.DeltaAngle(this.ModelRotation, this.OwnerRotation);
+		this.AngleAbsDiff = Mathf.Abs(this.AngleDelta);
 	}
 
 	private void ClampOwner()
 	{
-		float num = AngleAbsDiff - 95f;
+		float num = this.AngleAbsDiff - 95f;
 		if (!(num <= 0f))
 		{
-			if (AngleDelta > 0f)
+			if (this.AngleDelta > 0f)
 			{
-				ModelRotation += num;
+				this.ModelRotation += num;
 			}
 			else
 			{
-				ModelRotation -= num;
+				this.ModelRotation -= num;
 			}
-			CalculateDeltas();
-			StartTurning();
+			this.CalculateDeltas();
+			this.StartTurning();
 		}
 	}
 
@@ -149,14 +149,14 @@ public class IdlePoseRetainerSubcontroller : SubcontrollerBehaviour, IRotationRe
 	{
 		if (base.Model.WalkLayerWeight > 0f)
 		{
-			_turnStatus = TurnStatus.Idle;
+			this._turnStatus = TurnStatus.Idle;
 			return;
 		}
-		float num = Mathf.DeltaAngle(_startTurningRotation, _targetTurningRotation);
-		base.Animator.SetFloat(TurnBlendHash, num / 66f);
-		float num2 = _startTurningRotation;
-		float num3 = _targetTurningRotation;
-		if (_turnStatus == TurnStatus.TurningLeft)
+		float num = Mathf.DeltaAngle(this._startTurningRotation, this._targetTurningRotation);
+		base.Animator.SetFloat(IdlePoseRetainerSubcontroller.TurnBlendHash, num / 66f);
+		float num2 = this._startTurningRotation;
+		float num3 = this._targetTurningRotation;
+		if (this._turnStatus == TurnStatus.TurningLeft)
 		{
 			for (; num2 < num3; num2 += 360f)
 			{
@@ -168,45 +168,45 @@ public class IdlePoseRetainerSubcontroller : SubcontrollerBehaviour, IRotationRe
 			{
 			}
 		}
-		_turningElapsed += Time.deltaTime;
-		_turningAnimCooldown -= Time.deltaTime;
-		float t = TurningCurve.Evaluate(_turningElapsed) / 66f;
-		ModelRotation = Mathf.LerpUnclamped(num2, num3, t);
-		if (_turningElapsed > 0.7f)
+		this._turningElapsed += Time.deltaTime;
+		this._turningAnimCooldown -= Time.deltaTime;
+		float t = IdlePoseRetainerSubcontroller.TurningCurve.Evaluate(this._turningElapsed) / 66f;
+		this.ModelRotation = Mathf.LerpUnclamped(num2, num3, t);
+		if (this._turningElapsed > 0.7f)
 		{
-			_turnStatus = TurnStatus.Idle;
+			this._turnStatus = TurnStatus.Idle;
 		}
 	}
 
 	private void UpdateComfort()
 	{
-		if (AngleAbsDiff < 35f || !AngleDelta.SameSign(_prevAngleDelta))
+		if (this.AngleAbsDiff < 35f || !this.AngleDelta.SameSign(this._prevAngleDelta))
 		{
-			_uncomfortableElapsed = 0f;
+			this._uncomfortableElapsed = 0f;
 			return;
 		}
-		if (!IsTurning)
+		if (!this.IsTurning)
 		{
-			_uncomfortableElapsed += Time.deltaTime;
+			this._uncomfortableElapsed += Time.deltaTime;
 		}
-		float num = Remap.Evaluate(35f, 66f, 2.5f, 0f, AngleAbsDiff);
-		if (_uncomfortableElapsed > num)
+		float num = Remap.Evaluate(35f, 66f, 2.5f, 0f, this.AngleAbsDiff);
+		if (this._uncomfortableElapsed > num)
 		{
-			_uncomfortableElapsed = 0f;
-			StartTurning();
+			this._uncomfortableElapsed = 0f;
+			this.StartTurning();
 		}
 	}
 
 	private void StartTurning()
 	{
-		if (_turnStatus == TurnStatus.Idle || _turningAnimCooldown <= 0f)
+		if (this._turnStatus == TurnStatus.Idle || this._turningAnimCooldown <= 0f)
 		{
-			_turningAnimCooldown = 0.3f;
-			base.Animator.SetTrigger(TurnTriggerHash);
+			this._turningAnimCooldown = 0.3f;
+			base.Animator.SetTrigger(IdlePoseRetainerSubcontroller.TurnTriggerHash);
 		}
-		_turnStatus = ((AngleDelta > 0f) ? TurnStatus.TurningRight : TurnStatus.TurningLeft);
-		_turningElapsed = 0f;
-		_startTurningRotation = ModelRotation;
-		_targetTurningRotation = OwnerRotation;
+		this._turnStatus = ((this.AngleDelta > 0f) ? TurnStatus.TurningRight : TurnStatus.TurningLeft);
+		this._turningElapsed = 0f;
+		this._startTurningRotation = this.ModelRotation;
+		this._targetTurningRotation = this.OwnerRotation;
 	}
 }

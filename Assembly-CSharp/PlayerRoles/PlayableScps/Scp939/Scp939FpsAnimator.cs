@@ -63,53 +63,53 @@ public class Scp939FpsAnimator : ScpViewmodelBase
 	{
 		base.Start();
 		Scp939Role scp939Role = base.Role as Scp939Role;
-		scp939Role.SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out _focusAbility);
-		scp939Role.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out _lungeAbility);
-		scp939Role.SubroutineModule.TryGetSubroutine<Scp939ClawAbility>(out _clawAbility);
-		scp939Role.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out _cloudAbility);
-		_fpc = scp939Role.FpcModule as Scp939MovementModule;
-		_model = _fpc.CharacterModelInstance as Scp939Model;
-		_lungeAbility.OnStateChanged += OnLungeStateChanged;
-		_clawAbility.OnTriggered += OnAttackTriggered;
-		OnLungeStateChanged(_lungeAbility.State);
+		scp939Role.SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out this._focusAbility);
+		scp939Role.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out this._lungeAbility);
+		scp939Role.SubroutineModule.TryGetSubroutine<Scp939ClawAbility>(out this._clawAbility);
+		scp939Role.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out this._cloudAbility);
+		this._fpc = scp939Role.FpcModule as Scp939MovementModule;
+		this._model = this._fpc.CharacterModelInstance as Scp939Model;
+		this._lungeAbility.OnStateChanged += OnLungeStateChanged;
+		this._clawAbility.OnTriggered += OnAttackTriggered;
+		this.OnLungeStateChanged(this._lungeAbility.State);
 		if (!base.Owner.isLocalPlayer)
 		{
-			UpdateAnimations();
-			SkipAnimations(2.5f);
+			this.UpdateAnimations();
+			this.SkipAnimations(2.5f);
 		}
 	}
 
 	private void OnLungeStateChanged(Scp939LungeState state)
 	{
-		if (state != 0)
+		if (state != Scp939LungeState.None)
 		{
-			base.Anim.SetInteger(LungeStateHash, (int)state);
-			base.Anim.SetTrigger(LungeTriggerHash);
+			base.Anim.SetInteger(Scp939FpsAnimator.LungeStateHash, (int)state);
+			base.Anim.SetTrigger(Scp939FpsAnimator.LungeTriggerHash);
 		}
 	}
 
 	private void OnAttackTriggered()
 	{
-		base.Anim.SetTrigger(ClawAttackHash);
-		AudioSourcePoolManager.Play2D(_attackSound, 1f, MixerChannel.DefaultSfx, Random.Range(_pitchRandomization.x, _pitchRandomization.y));
+		base.Anim.SetTrigger(Scp939FpsAnimator.ClawAttackHash);
+		AudioSourcePoolManager.Play2D(this._attackSound, 1f, MixerChannel.DefaultSfx, Random.Range(this._pitchRandomization.x, this._pitchRandomization.y));
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		if (_lungeAbility != null)
+		if (this._lungeAbility != null)
 		{
-			_lungeAbility.OnStateChanged -= OnLungeStateChanged;
+			this._lungeAbility.OnStateChanged -= OnLungeStateChanged;
 		}
-		if (_clawAbility != null)
+		if (this._clawAbility != null)
 		{
-			_clawAbility.OnTriggered -= OnAttackTriggered;
+			this._clawAbility.OnTriggered -= OnAttackTriggered;
 		}
 	}
 
 	private void SetCloudLayer(float weight, bool charging)
 	{
-		base.Anim.SetBool(CloudHash, charging);
+		base.Anim.SetBool(Scp939FpsAnimator.CloudHash, charging);
 		float num = Time.deltaTime * 1.5f;
 		weight += (charging ? num : (0f - num));
 		base.Anim.SetLayerWeight(4, Mathf.Clamp(weight, 0f, 2.5f));
@@ -117,14 +117,14 @@ public class Scp939FpsAnimator : ScpViewmodelBase
 
 	protected override void UpdateAnimations()
 	{
-		SetCloudLayer(base.Anim.GetLayerWeight(4), _cloudAbility.TargetState);
-		float value = (_fpc.IsGrounded ? _fpc.Motor.Velocity.MagnitudeIgnoreY() : 0f);
-		base.Anim.SetFloat(WalkCycleHash, _model.WalkCycle);
-		base.Anim.SetFloat(WalkBlendHash, value, _dampTimeBlend, Time.deltaTime);
-		base.Anim.SetBool(JumpingHash, !_fpc.IsGrounded);
-		base.Anim.SetBool(FocusActiveHash, _focusAbility.TargetState || _focusAbility.State > 0.4f);
+		this.SetCloudLayer(base.Anim.GetLayerWeight(4), this._cloudAbility.TargetState);
+		float value = (this._fpc.IsGrounded ? this._fpc.Motor.Velocity.MagnitudeIgnoreY() : 0f);
+		base.Anim.SetFloat(Scp939FpsAnimator.WalkCycleHash, this._model.WalkCycle);
+		base.Anim.SetFloat(Scp939FpsAnimator.WalkBlendHash, value, this._dampTimeBlend, Time.deltaTime);
+		base.Anim.SetBool(Scp939FpsAnimator.JumpingHash, !this._fpc.IsGrounded);
+		base.Anim.SetBool(Scp939FpsAnimator.FocusActiveHash, this._focusAbility.TargetState || this._focusAbility.State > 0.4f);
 		float layerWeight = base.Anim.GetLayerWeight(2);
-		bool num = _clawAbility.Cooldown.IsReady && _focusAbility.State == 0f;
+		bool num = this._clawAbility.Cooldown.IsReady && this._focusAbility.State == 0f;
 		float target = Mathf.Min(b: Mathf.Max(0f, base.Role.ActiveTime - 0.4f), a: num ? 1 : 0);
 		base.Anim.SetLayerWeight(2, Mathf.MoveTowards(layerWeight, target, Time.deltaTime * 4.5f));
 	}

@@ -16,25 +16,25 @@ public static class UserSetting<T>
 
 		public bool Equals(SettingChangeListener other)
 		{
-			if (Event == other.Event && TypeHash == other.TypeHash)
+			if (this.Event == other.Event && this.TypeHash == other.TypeHash)
 			{
-				return NumericalValue == other.NumericalValue;
+				return this.NumericalValue == other.NumericalValue;
 			}
 			return false;
 		}
 
 		public SettingChangeListener(Enum key, Action<T> listenerEvent)
 		{
-			TypeHash = SettingsKeyGenerator.GetStableTypeHash(key.GetType());
-			NumericalValue = ((IConvertible)key).ToUInt16((IFormatProvider)null);
-			Event = listenerEvent;
+			this.TypeHash = SettingsKeyGenerator.GetStableTypeHash(key.GetType());
+			this.NumericalValue = ((IConvertible)key).ToUInt16((IFormatProvider)null);
+			this.Event = listenerEvent;
 		}
 
 		public SettingChangeListener(ushort typeHash, ushort numVal, Action<T> listenerEvent)
 		{
-			TypeHash = typeHash;
-			NumericalValue = numVal;
-			Event = listenerEvent;
+			this.TypeHash = typeHash;
+			this.NumericalValue = numVal;
+			this.Event = listenerEvent;
 		}
 	}
 
@@ -53,7 +53,7 @@ public static class UserSetting<T>
 	private static IPrefsReaderWriter<T> GetHandler()
 	{
 		Type typeFromHandle = typeof(T);
-		object[] typeHandlers = TypeHandlers;
+		object[] typeHandlers = UserSetting<T>.TypeHandlers;
 		for (int i = 0; i < typeHandlers.Length; i++)
 		{
 			if (typeHandlers[i] is IPrefsReaderWriter<T> result)
@@ -68,42 +68,42 @@ public static class UserSetting<T>
 	{
 		ushort stableTypeHash = SettingsKeyGenerator.GetStableTypeHash(typeof(TEnum));
 		ushort val = key.ToUInt16(null);
-		return Get(stableTypeHash, val);
+		return UserSetting<T>.Get(stableTypeHash, val);
 	}
 
 	public static T Get<TEnum>(TEnum key, T defaultValue, bool setAsDefault = false) where TEnum : Enum, IConvertible
 	{
 		ushort stableTypeHash = SettingsKeyGenerator.GetStableTypeHash(typeof(TEnum));
 		ushort val = key.ToUInt16(null);
-		return Get(stableTypeHash, val, defaultValue, setAsDefault);
+		return UserSetting<T>.Get(stableTypeHash, val, defaultValue, setAsDefault);
 	}
 
 	public static T Get(ushort typeHash, ushort val)
 	{
-		return Get(typeHash, val, GetDefaultValue(typeHash, val));
+		return UserSetting<T>.Get(typeHash, val, UserSetting<T>.GetDefaultValue(typeHash, val));
 	}
 
 	public static T Get(ushort typeHash, ushort val, T defaultValue, bool setAsDefault = false)
 	{
 		if (setAsDefault)
 		{
-			SetDefaultValue(typeHash, val, defaultValue);
+			UserSetting<T>.SetDefaultValue(typeHash, val, defaultValue);
 		}
-		return GetHandler().Load(SettingsKeyGenerator.TypeValueToKey(typeHash, val), defaultValue);
+		return UserSetting<T>.GetHandler().Load(SettingsKeyGenerator.TypeValueToKey(typeHash, val), defaultValue);
 	}
 
 	public static void Set<TEnum>(TEnum key, T value) where TEnum : Enum, IConvertible
 	{
-		Set(SettingsKeyGenerator.GetStableTypeHash(typeof(TEnum)), key.ToUInt16(null), value);
+		UserSetting<T>.Set(SettingsKeyGenerator.GetStableTypeHash(typeof(TEnum)), key.ToUInt16(null), value);
 	}
 
 	public static void Set(ushort typeHash, ushort val, T value)
 	{
-		GetHandler().Save(SettingsKeyGenerator.TypeValueToKey(typeHash, val), value);
-		int count = Listeners.Count;
+		UserSetting<T>.GetHandler().Save(SettingsKeyGenerator.TypeValueToKey(typeHash, val), value);
+		int count = UserSetting<T>.Listeners.Count;
 		for (int i = 0; i < count; i++)
 		{
-			SettingChangeListener settingChangeListener = Listeners[i];
+			SettingChangeListener settingChangeListener = UserSetting<T>.Listeners[i];
 			if (settingChangeListener.TypeHash == typeHash && settingChangeListener.NumericalValue == val)
 			{
 				try
@@ -120,35 +120,35 @@ public static class UserSetting<T>
 
 	private static void AddListener(SettingChangeListener newListener)
 	{
-		foreach (SettingChangeListener listener in Listeners)
+		foreach (SettingChangeListener listener in UserSetting<T>.Listeners)
 		{
 			if (listener.Equals(newListener))
 			{
 				return;
 			}
 		}
-		Listeners.Add(newListener);
+		UserSetting<T>.Listeners.Add(newListener);
 	}
 
 	public static void AddListener<TEnum>(TEnum key, Action<T> listenerEvent) where TEnum : Enum, IConvertible
 	{
-		AddListener(new SettingChangeListener(key, listenerEvent));
+		UserSetting<T>.AddListener(new SettingChangeListener(key, listenerEvent));
 	}
 
 	public static void AddListener(ushort typeHash, ushort numValue, Action<T> listenerEvent)
 	{
-		AddListener(new SettingChangeListener(typeHash, numValue, listenerEvent));
+		UserSetting<T>.AddListener(new SettingChangeListener(typeHash, numValue, listenerEvent));
 	}
 
 	public static void RemoveListener<TEnum>(TEnum key, Action<T> listenerEvent) where TEnum : Enum, IConvertible
 	{
 		SettingChangeListener settingChangeListener = new SettingChangeListener(key, listenerEvent);
-		int count = Listeners.Count;
+		int count = UserSetting<T>.Listeners.Count;
 		for (int i = 0; i < count; i++)
 		{
-			if (settingChangeListener.Equals(Listeners[i]))
+			if (settingChangeListener.Equals(UserSetting<T>.Listeners[i]))
 			{
-				Listeners.RemoveAt(i);
+				UserSetting<T>.Listeners.RemoveAt(i);
 				break;
 			}
 		}
@@ -156,24 +156,24 @@ public static class UserSetting<T>
 
 	public static void RemoveListener(Action<T> listenerEvent)
 	{
-		Listeners.RemoveAll((SettingChangeListener x) => x.Event == listenerEvent);
+		UserSetting<T>.Listeners.RemoveAll((SettingChangeListener x) => x.Event == listenerEvent);
 	}
 
 	public static void SetDefaultValue(ushort type, ushort val, T defaultValue)
 	{
-		DefaultValues[GetDefValueHash(type, val)] = defaultValue;
+		UserSetting<T>.DefaultValues[UserSetting<T>.GetDefValueHash(type, val)] = defaultValue;
 	}
 
 	public static void SetDefaultValue<TEnum>(TEnum key, T defaultValue) where TEnum : Enum, IConvertible
 	{
 		ushort stableTypeHash = SettingsKeyGenerator.GetStableTypeHash(typeof(TEnum));
 		ushort val = key.ToUInt16(null);
-		SetDefaultValue(stableTypeHash, val, defaultValue);
+		UserSetting<T>.SetDefaultValue(stableTypeHash, val, defaultValue);
 	}
 
 	private static T GetDefaultValue(ushort type, ushort val)
 	{
-		if (!DefaultValues.TryGetValue(GetDefValueHash(type, val), out var value))
+		if (!UserSetting<T>.DefaultValues.TryGetValue(UserSetting<T>.GetDefValueHash(type, val), out var value))
 		{
 			value = default(T);
 		}

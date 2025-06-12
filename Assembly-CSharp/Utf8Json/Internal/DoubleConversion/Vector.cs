@@ -12,11 +12,11 @@ internal struct Vector
 	{
 		get
 		{
-			return bytes[start + i];
+			return this.bytes[this.start + i];
 		}
 		set
 		{
-			bytes[start + i] = value;
+			this.bytes[this.start + i] = value;
 		}
 	}
 
@@ -24,31 +24,31 @@ internal struct Vector
 	{
 		this.bytes = bytes;
 		this.start = start;
-		_length = length;
+		this._length = length;
 	}
 
 	public int length()
 	{
-		return _length;
+		return this._length;
 	}
 
 	public byte first()
 	{
-		return bytes[start];
+		return this.bytes[this.start];
 	}
 
 	public byte last()
 	{
-		return bytes[_length - 1];
+		return this.bytes[this._length - 1];
 	}
 
 	public bool is_empty()
 	{
-		return _length == 0;
+		return this._length == 0;
 	}
 
 	public Vector SubVector(int from, int to)
 	{
-		return new Vector(bytes, start + from, to - from);
+		return new Vector(this.bytes, this.start + from, to - from);
 	}
 }

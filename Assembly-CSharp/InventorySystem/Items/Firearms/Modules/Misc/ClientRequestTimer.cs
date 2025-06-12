@@ -17,9 +17,9 @@ public class ClientRequestTimer
 	{
 		get
 		{
-			if (Sent)
+			if (this.Sent)
 			{
-				return !TimedOut;
+				return !this.TimedOut;
 			}
 			return false;
 		}
@@ -29,30 +29,30 @@ public class ClientRequestTimer
 	{
 		get
 		{
-			if (!Sent)
+			if (!this.Sent)
 			{
 				return false;
 			}
-			return _stopwatch.Elapsed.TotalSeconds > _timeoutDuration;
+			return this._stopwatch.Elapsed.TotalSeconds > this._timeoutDuration;
 		}
 	}
 
 	public void Trigger()
 	{
-		Sent = true;
-		if (_stopwatch == null)
+		this.Sent = true;
+		if (this._stopwatch == null)
 		{
-			_stopwatch = Stopwatch.StartNew();
+			this._stopwatch = Stopwatch.StartNew();
 		}
 		else
 		{
-			_stopwatch.Restart();
+			this._stopwatch.Restart();
 		}
-		_timeoutDuration = NetworkTime.rtt + 0.25;
+		this._timeoutDuration = NetworkTime.rtt + 0.25;
 	}
 
 	public void Reset()
 	{
-		Sent = false;
+		this.Sent = false;
 	}
 }

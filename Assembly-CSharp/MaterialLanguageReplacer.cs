@@ -6,11 +6,11 @@ public class MaterialLanguageReplacer : MonoBehaviour
 
 	private void Start()
 	{
-		GetComponent<Renderer>().material = englishVersion;
+		base.GetComponent<Renderer>().material = this.englishVersion;
 	}
 
 	private void OnDestroy()
 	{
-		Object.Destroy(GetComponent<Renderer>().material);
+		Object.Destroy(base.GetComponent<Renderer>().material);
 	}
 }

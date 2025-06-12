@@ -24,34 +24,34 @@ public class ThrowableItemViewmodel : StandardAnimatedViemodel
 	{
 		base.InitSpectator(ply, id, wasEquipped);
 		ThrowableNetworkHandler.OnAudioMessageReceived += OnMsgReceived;
-		OnEquipped();
+		this.OnEquipped();
 		if (!wasEquipped)
 		{
 			return;
 		}
-		if (TryGetComponent<AudioSource>(out var component))
+		if (base.TryGetComponent<AudioSource>(out var component))
 		{
 			component.Stop();
 		}
 		if (!ThrowableNetworkHandler.ReceivedRequests.TryGetValue(id.SerialNumber, out var value))
 		{
-			AnimatorForceUpdate(base.SkipEquipTime);
+			this.AnimatorForceUpdate(base.SkipEquipTime);
 			return;
 		}
 		float deltaTime = Mathf.Min(Time.timeSinceLevelLoad - value.Time, base.SkipEquipTime);
 		if (value.Request == ThrowableNetworkHandler.RequestType.CancelThrow)
 		{
-			ProcessAnim(ThrowableNetworkHandler.RequestType.BeginThrow);
-			AnimatorForceUpdate(base.SkipEquipTime, fastMode: false);
+			this.ProcessAnim(ThrowableNetworkHandler.RequestType.BeginThrow);
+			this.AnimatorForceUpdate(base.SkipEquipTime, fastMode: false);
 		}
-		ProcessAnim(value.Request);
-		AnimatorForceUpdate(deltaTime, fastMode: false);
+		this.ProcessAnim(value.Request);
+		this.AnimatorForceUpdate(deltaTime, fastMode: false);
 	}
 
 	internal override void OnEquipped()
 	{
 		base.OnEquipped();
-		AnimatorSetFloat(GrenadeModifier, base.ItemId.TypeId.GetSpeedMultiplier(base.Hub));
+		this.AnimatorSetFloat(ThrowableItemViewmodel.GrenadeModifier, base.ItemId.TypeId.GetSpeedMultiplier(base.Hub));
 	}
 
 	private void OnDestroy()
@@ -71,18 +71,18 @@ public class ThrowableItemViewmodel : StandardAnimatedViemodel
 		switch (request)
 		{
 		case ThrowableNetworkHandler.RequestType.BeginThrow:
-			AnimatorSetBool(AimHash, val: true);
+			this.AnimatorSetBool(ThrowableItemViewmodel.AimHash, val: true);
 			break;
 		case ThrowableNetworkHandler.RequestType.CancelThrow:
-			AnimatorSetBool(AimHash, val: false);
+			this.AnimatorSetBool(ThrowableItemViewmodel.AimHash, val: false);
 			break;
 		case ThrowableNetworkHandler.RequestType.ConfirmThrowFullForce:
-			AnimatorSetBool(AimHash, val: true);
-			AnimatorSetTrigger(ThrowFullHash);
+			this.AnimatorSetBool(ThrowableItemViewmodel.AimHash, val: true);
+			this.AnimatorSetTrigger(ThrowableItemViewmodel.ThrowFullHash);
 			break;
 		case ThrowableNetworkHandler.RequestType.ConfirmThrowWeak:
-			AnimatorSetBool(AimHash, val: true);
-			AnimatorSetTrigger(ThrowWeakHash);
+			this.AnimatorSetBool(ThrowableItemViewmodel.AimHash, val: true);
+			this.AnimatorSetTrigger(ThrowableItemViewmodel.ThrowWeakHash);
 			break;
 		}
 	}
@@ -91,7 +91,7 @@ public class ThrowableItemViewmodel : StandardAnimatedViemodel
 	{
 		if (msg.Serial == base.ItemId.SerialNumber)
 		{
-			ProcessAnim(msg.Request);
+			this.ProcessAnim(msg.Request);
 		}
 	}
 }

@@ -39,56 +39,56 @@ public class Scp106Model : AnimatedCharacterModel
 		{
 			if (base.FpcModule.IsGrounded && base.FpcModule.Motor.MovementDetected)
 			{
-				return LandingFootstepPlayable;
+				return this.LandingFootstepPlayable;
 			}
 			return false;
 		}
 	}
 
-	public override bool LandingFootstepPlayable => _sinkhole.SubmergeProgress == 0f;
+	public override bool LandingFootstepPlayable => this._sinkhole.SubmergeProgress == 0f;
 
-	protected override Vector3 ModelPositionOffset => base.ModelPositionOffset + _modelOffset;
+	protected override Vector3 ModelPositionOffset => base.ModelPositionOffset + this._modelOffset;
 
 	private void LateUpdate()
 	{
 		if (!base.Pooled)
 		{
-			bool targetSubmerged = _sinkhole.TargetSubmerged;
-			float targetTransitionDuration = _sinkhole.TargetTransitionDuration;
+			bool targetSubmerged = this._sinkhole.TargetSubmerged;
+			float targetTransitionDuration = this._sinkhole.TargetTransitionDuration;
 			float num = (targetSubmerged ? 3.333f : 3.908f);
 			if (targetTransitionDuration > 0f)
 			{
-				base.Animator.SetFloat(SpeedHash, num / targetTransitionDuration);
+				base.Animator.SetFloat(Scp106Model.SpeedHash, num / targetTransitionDuration);
 			}
-			bool isHidden = _sinkhole.IsHidden;
-			GameObject[] hiddenObjects = _hiddenObjects;
+			bool isHidden = this._sinkhole.IsHidden;
+			GameObject[] hiddenObjects = this._hiddenObjects;
 			for (int i = 0; i < hiddenObjects.Length; i++)
 			{
 				hiddenObjects[i].SetActive(!isHidden);
 			}
 			if (base.IsTracked)
 			{
-				SetVisibility(_sinkhole.IsDuringAnimation);
+				this.SetVisibility(this._sinkhole.IsDuringAnimation);
 			}
-			base.Animator.SetBool(SubmergeHash, targetSubmerged);
-			float submergeProgress = _sinkhole.SubmergeProgress;
-			AnimationCurve animationCurve = (targetSubmerged ? _submergeAnim : _appearAnim);
-			_modelOffset = Vector3.up * animationCurve.Evaluate(submergeProgress);
+			base.Animator.SetBool(Scp106Model.SubmergeHash, targetSubmerged);
+			float submergeProgress = this._sinkhole.SubmergeProgress;
+			AnimationCurve animationCurve = (targetSubmerged ? this._submergeAnim : this._appearAnim);
+			this._modelOffset = Vector3.up * animationCurve.Evaluate(submergeProgress);
 		}
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		_tr = base.transform;
+		this._tr = base.transform;
 	}
 
 	public override void Setup(ReferenceHub owner, IFpcRole fpc, Vector3 localPos, Quaternion localRot)
 	{
 		base.Setup(owner, fpc, localPos, localRot);
 		Scp106Role scp106Role = base.OwnerHub.roleManager.CurrentRole as Scp106Role;
-		scp106Role.SubroutineModule.TryGetSubroutine<Scp106StalkAbility>(out _stalkAbility);
-		_fpc = scp106Role.FpcModule as Scp106MovementModule;
-		_sinkhole = scp106Role.Sinkhole;
+		scp106Role.SubroutineModule.TryGetSubroutine<Scp106StalkAbility>(out this._stalkAbility);
+		this._fpc = scp106Role.FpcModule as Scp106MovementModule;
+		this._sinkhole = scp106Role.Sinkhole;
 	}
 }

@@ -16,14 +16,14 @@ public class Scp127AnimEventVoiceTrigger : Scp127VoiceTriggerBase
 			{
 				throw new InvalidOperationException("Scp127AnimEventVoiceTrigger can only be called through an event.");
 			}
-			ServerPlayVoiceLineFromCollection(collection, null, _priorityOverride ?? VoiceLinePriority.Normal);
-			_priorityOverride = null;
+			base.ServerPlayVoiceLineFromCollection(collection, null, this._priorityOverride ?? VoiceLinePriority.Normal);
+			this._priorityOverride = null;
 		}
 	}
 
 	[ExposedFirearmEvent]
 	public void SetPriority(int priority)
 	{
-		_priorityOverride = (VoiceLinePriority)priority;
+		this._priorityOverride = (VoiceLinePriority)priority;
 	}
 }

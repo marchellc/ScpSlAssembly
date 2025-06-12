@@ -25,7 +25,7 @@ public class GeneratorRippleTrigger : RippleTriggerBase
 	{
 		if (base.IsLocalOrSpectated)
 		{
-			PlayInRangeSqr(generator.transform.position + _offset, 100f, Color.red);
+			base.PlayInRangeSqr(generator.transform.position + this._offset, 100f, Color.red);
 		}
 	}
 }

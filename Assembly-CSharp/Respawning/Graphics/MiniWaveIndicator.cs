@@ -21,14 +21,14 @@ public abstract class MiniWaveIndicator<TMiniWave> : WaveInterfaceBase<TMiniWave
 	protected override void Awake()
 	{
 		base.Awake();
-		_miniWaveIndicator = GetComponent<Image>();
+		this._miniWaveIndicator = base.GetComponent<Image>();
 	}
 
 	private void Update()
 	{
-		Color color = _miniWaveIndicator.color;
-		color.a = GetAlphaColor();
-		_miniWaveIndicator.color = color;
+		Color color = this._miniWaveIndicator.color;
+		color.a = this.GetAlphaColor();
+		this._miniWaveIndicator.color = color;
 	}
 
 	private float GetAlphaColor()
@@ -45,8 +45,8 @@ public abstract class MiniWaveIndicator<TMiniWave> : WaveInterfaceBase<TMiniWave
 		float time = (float)RoundStart.RoundLength.TotalSeconds;
 		if (!(timeLeft <= 3f))
 		{
-			return NormalAnimation.Evaluate(time);
+			return this.NormalAnimation.Evaluate(time);
 		}
-		return FastAnimation.Evaluate(time);
+		return this.FastAnimation.Evaluate(time);
 	}
 }

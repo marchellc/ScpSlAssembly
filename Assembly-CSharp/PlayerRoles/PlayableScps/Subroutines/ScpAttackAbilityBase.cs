@@ -55,9 +55,9 @@ public abstract class ScpAttackAbilityBase<T> : KeySubroutine<T> where T : Playe
 		{
 			if (!base.Owner.isLocalPlayer && NetworkServer.active)
 			{
-				return _serverCooldown;
+				return this._serverCooldown;
 			}
-			return _clientCooldown;
+			return this._clientCooldown;
 		}
 	}
 
@@ -75,13 +75,13 @@ public abstract class ScpAttackAbilityBase<T> : KeySubroutine<T> where T : Playe
 
 	protected virtual bool SelfRepeating => true;
 
-	protected virtual bool CanTriggerAbility => _clientCooldown.IsReady;
+	protected virtual bool CanTriggerAbility => this._clientCooldown.IsReady;
 
 	protected override ActionName TargetKey => ActionName.Shoot;
 
 	private Transform PlyCam => base.Owner.PlayerCameraReference;
 
-	private Vector3 OverlapSphereOrigin => PlyCam.position + PlyCam.forward * _detectionOffset;
+	private Vector3 OverlapSphereOrigin => this.PlyCam.position + this.PlyCam.forward * this._detectionOffset;
 
 	public event Action<AttackResult> OnAttacked;
 
@@ -92,17 +92,17 @@ public abstract class ScpAttackAbilityBase<T> : KeySubroutine<T> where T : Playe
 	public static ArraySegment<IDestructible> DetectDestructibles(ReferenceHub detector, float offset, float radius, bool losTest = true)
 	{
 		Vector3 cameraPos = detector.PlayerCameraReference.position;
-		int num = Physics.OverlapSphereNonAlloc(detector.PlayerCameraReference.TransformPoint(Vector3.forward * offset), radius, DetectionsNonAlloc, DetectionMask);
+		int num = Physics.OverlapSphereNonAlloc(detector.PlayerCameraReference.TransformPoint(Vector3.forward * offset), radius, ScpAttackAbilityBase<T>.DetectionsNonAlloc, ScpAttackAbilityBase<T>.DetectionMask);
 		int count = 0;
 		for (int i = 0; i < num; i++)
 		{
-			Collider collider = DetectionsNonAlloc[i];
+			Collider collider = ScpAttackAbilityBase<T>.DetectionsNonAlloc[i];
 			if (collider.TryGetComponent<IDestructible>(out var component) && component.NetworkId != detector.netId && (!losTest || CheckLineOfSight(collider, component.CenterOfMass)))
 			{
-				DestDetectionsNonAlloc[count++] = component;
+				ScpAttackAbilityBase<T>.DestDetectionsNonAlloc[count++] = component;
 			}
 		}
-		return new ArraySegment<IDestructible>(DestDetectionsNonAlloc, 0, count);
+		return new ArraySegment<IDestructible>(ScpAttackAbilityBase<T>.DestDetectionsNonAlloc, 0, count);
 		bool CheckLineOfSight(Collider hitColldier, Vector3 hitCenterOfMass)
 		{
 			if (!Physics.Linecast(cameraPos, hitCenterOfMass, out var hitInfo, PlayerRolesUtils.AttackMask))
@@ -119,67 +119,67 @@ public abstract class ScpAttackAbilityBase<T> : KeySubroutine<T> where T : Playe
 
 	private void ServerPerformAttack()
 	{
-		LastAttackResult = AttackResult.None;
-		foreach (IDestructible item in DetectDestructibles(base.Owner, _detectionOffset, _detectionRadius))
+		this.LastAttackResult = AttackResult.None;
+		foreach (IDestructible item in ScpAttackAbilityBase<T>.DetectDestructibles(base.Owner, this._detectionOffset, this._detectionRadius))
 		{
 			if (!(item is HitboxIdentity hitboxIdentity))
 			{
-				DamageDestructible(item);
-				LastAttackResult |= AttackResult.AttackedObject;
+				this.DamageDestructible(item);
+				this.LastAttackResult |= AttackResult.AttackedObject;
 			}
 			else if (HitboxIdentity.IsEnemy(base.Owner, hitboxIdentity.TargetHub))
 			{
-				DetectedPlayers.Add(hitboxIdentity.TargetHub);
+				this.DetectedPlayers.Add(hitboxIdentity.TargetHub);
 			}
 		}
-		DamagePlayers();
-		ServerSendRpc(toAll: true);
+		this.DamagePlayers();
+		base.ServerSendRpc(toAll: true);
 	}
 
 	protected virtual void DamagePlayers()
 	{
-		foreach (ReferenceHub detectedPlayer in DetectedPlayers)
+		foreach (ReferenceHub detectedPlayer in this.DetectedPlayers)
 		{
-			DamagePlayer(detectedPlayer, DamageAmount);
+			this.DamagePlayer(detectedPlayer, this.DamageAmount);
 		}
 	}
 
 	protected virtual void DamagePlayer(ReferenceHub hub, float damage)
 	{
 		PlayerStats playerStats = hub.playerStats;
-		if (playerStats.DealDamage(DamageHandler(damage)))
+		if (playerStats.DealDamage(this.DamageHandler(damage)))
 		{
-			LastAttackResult |= AttackResult.AttackedPlayer;
+			this.LastAttackResult |= AttackResult.AttackedPlayer;
 			if (!(playerStats.GetModule<HealthStat>().CurValue > 0f))
 			{
-				LastAttackResult |= AttackResult.KilledPlayer;
+				this.LastAttackResult |= AttackResult.KilledPlayer;
 			}
 		}
 	}
 
 	protected virtual void DamageDestructible(IDestructible dest)
 	{
-		dest.Damage(DamageAmount, DamageHandler(DamageAmount), dest.CenterOfMass);
+		dest.Damage(this.DamageAmount, this.DamageHandler(this.DamageAmount), dest.CenterOfMass);
 	}
 
 	protected bool HasAttackResultFlag(AttackResult flag)
 	{
-		return (LastAttackResult & flag) == flag;
+		return (this.LastAttackResult & flag) == flag;
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		if (AttackTriggered)
+		if (this.AttackTriggered)
 		{
 			writer.WriteRelativePosition(default(RelativePosition));
 			return;
 		}
 		Vector3 position = base.CastRole.FpcModule.Position;
-		float num = _detectionOffset + _detectionRadius;
+		float num = this._detectionOffset + this._detectionRadius;
 		float num2 = num * num;
 		writer.WriteRelativePosition(new RelativePosition(position));
-		writer.WriteLowPrecisionQuaternion(new LowPrecisionQuaternion(PlyCam.rotation));
+		writer.WriteLowPrecisionQuaternion(new LowPrecisionQuaternion(this.PlyCam.rotation));
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (HitboxIdentity.IsEnemy(base.Owner, allHub) && allHub.roleManager.CurrentRole is IFpcRole fpcRole)
@@ -200,19 +200,19 @@ public abstract class ScpAttackAbilityBase<T> : KeySubroutine<T> where T : Playe
 		RelativePosition relativePosition = reader.ReadRelativePosition();
 		if (relativePosition.WaypointId == 0)
 		{
-			AttackTriggered = true;
-			ServerSendRpc(toAll: true);
+			this.AttackTriggered = true;
+			base.ServerSendRpc(toAll: true);
 		}
 		else
 		{
-			if (!_serverCooldown.TolerantIsReady && !base.Owner.isLocalPlayer)
+			if (!this._serverCooldown.TolerantIsReady && !base.Owner.isLocalPlayer)
 			{
 				return;
 			}
-			AttackTriggered = false;
+			this.AttackTriggered = false;
 			Vector3 position = relativePosition.Position;
 			Quaternion value = reader.ReadLowPrecisionQuaternion().Value;
-			BacktrackedPlayers.Add(new FpcBacktracker(base.Owner, position, value));
+			ScpAttackAbilityBase<T>.BacktrackedPlayers.Add(new FpcBacktracker(base.Owner, position, value));
 			List<ReferenceHub> list = new List<ReferenceHub>();
 			while (reader.Position < reader.Capacity)
 			{
@@ -221,27 +221,27 @@ public abstract class ScpAttackAbilityBase<T> : KeySubroutine<T> where T : Playe
 				RelativePosition relativePosition2 = reader.ReadRelativePosition();
 				if (!(referenceHub == null) && HitboxIdentity.IsEnemy(base.Owner, referenceHub))
 				{
-					BacktrackedPlayers.Add(new FpcBacktracker(referenceHub, relativePosition2.Position));
+					ScpAttackAbilityBase<T>.BacktrackedPlayers.Add(new FpcBacktracker(referenceHub, relativePosition2.Position));
 				}
 			}
-			ServerPerformAttack();
-			BacktrackedPlayers.ForEach(delegate(FpcBacktracker x)
+			this.ServerPerformAttack();
+			ScpAttackAbilityBase<T>.BacktrackedPlayers.ForEach(delegate(FpcBacktracker x)
 			{
 				x.RestorePosition();
 			});
-			_serverCooldown.Trigger(BaseCooldown);
-			DetectedPlayers.Clear();
-			BacktrackedPlayers.Clear();
-			ServerSendRpc(toAll: true);
+			this._serverCooldown.Trigger(this.BaseCooldown);
+			this.DetectedPlayers.Clear();
+			ScpAttackAbilityBase<T>.BacktrackedPlayers.Clear();
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		if (!AttackTriggered)
+		if (!this.AttackTriggered)
 		{
-			writer.WriteByte((byte)LastAttackResult);
+			writer.WriteByte((byte)this.LastAttackResult);
 		}
 	}
 
@@ -252,40 +252,40 @@ public abstract class ScpAttackAbilityBase<T> : KeySubroutine<T> where T : Playe
 		{
 			if (!base.Role.IsControllable)
 			{
-				_clientCooldown.Trigger(BaseCooldown);
+				this._clientCooldown.Trigger(this.BaseCooldown);
 				this.OnTriggered?.Invoke();
 			}
 			return;
 		}
-		LastAttackResult = (AttackResult)reader.ReadByte();
-		this.OnAttacked?.Invoke(LastAttackResult);
-		if (LastAttackResult != 0 && (base.Owner.isLocalPlayer || base.Owner.IsLocallySpectated()))
+		this.LastAttackResult = (AttackResult)reader.ReadByte();
+		this.OnAttacked?.Invoke(this.LastAttackResult);
+		if (this.LastAttackResult != AttackResult.None && (base.Owner.isLocalPlayer || base.Owner.IsLocallySpectated()))
 		{
 			Hitmarker.PlayHitmarker(1f);
 		}
-		if (HasAttackResultFlag(AttackResult.KilledPlayer) && _killSound != null)
+		if (this.HasAttackResultFlag(AttackResult.KilledPlayer) && this._killSound != null)
 		{
-			AudioSourcePoolManager.PlayOnTransform(_killSound, base.transform, SoundRange);
+			AudioSourcePoolManager.PlayOnTransform(this._killSound, base.transform, this.SoundRange);
 		}
-		else if (HasAttackResultFlag(AttackResult.AttackedPlayer) && _hitClipsHuman.Length != 0)
+		else if (this.HasAttackResultFlag(AttackResult.AttackedPlayer) && this._hitClipsHuman.Length != 0)
 		{
-			AudioSourcePoolManager.PlayOnTransform(_hitClipsHuman.RandomItem(), base.transform, SoundRange);
+			AudioSourcePoolManager.PlayOnTransform(this._hitClipsHuman.RandomItem(), base.transform, this.SoundRange);
 		}
-		else if (HasAttackResultFlag(AttackResult.AttackedObject) && _hitClipsObjects.Length != 0)
+		else if (this.HasAttackResultFlag(AttackResult.AttackedObject) && this._hitClipsObjects.Length != 0)
 		{
-			AudioSourcePoolManager.PlayOnTransform(_hitClipsObjects.RandomItem(), base.transform, SoundRange);
+			AudioSourcePoolManager.PlayOnTransform(this._hitClipsObjects.RandomItem(), base.transform, this.SoundRange);
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		AttackTriggered = false;
-		_delaySw.Reset();
-		_clientCooldown.Clear();
-		_serverCooldown.Clear();
-		DetectedPlayers.Clear();
-		BacktrackedPlayers.Clear();
+		this.AttackTriggered = false;
+		this._delaySw.Reset();
+		this._clientCooldown.Clear();
+		this._serverCooldown.Clear();
+		this.DetectedPlayers.Clear();
+		ScpAttackAbilityBase<T>.BacktrackedPlayers.Clear();
 	}
 
 	protected override void Update()
@@ -293,42 +293,42 @@ public abstract class ScpAttackAbilityBase<T> : KeySubroutine<T> where T : Playe
 		base.Update();
 		if (base.Role.IsControllable)
 		{
-			OnClientUpdate();
+			this.OnClientUpdate();
 		}
 	}
 
 	protected virtual void OnClientUpdate()
 	{
-		if (AttackTriggered)
+		if (this.AttackTriggered)
 		{
-			if (!(_delaySw.Elapsed.TotalSeconds < (double)AttackDelay))
+			if (!(this._delaySw.Elapsed.TotalSeconds < (double)this.AttackDelay))
 			{
-				AttackTriggered = false;
-				ClientSendCmd();
+				this.AttackTriggered = false;
+				base.ClientSendCmd();
 			}
 		}
-		else if (CanTriggerAbility && SelfRepeating && IsKeyHeld)
+		else if (this.CanTriggerAbility && this.SelfRepeating && this.IsKeyHeld)
 		{
-			ClientPerformAttack();
+			this.ClientPerformAttack();
 		}
 	}
 
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		if (!AttackTriggered && !SelfRepeating && CanTriggerAbility)
+		if (!this.AttackTriggered && !this.SelfRepeating && this.CanTriggerAbility)
 		{
-			ClientPerformAttack();
+			this.ClientPerformAttack();
 		}
 	}
 
 	protected virtual void ClientPerformAttack(bool attackTriggered = true)
 	{
-		_clientCooldown.Trigger(BaseCooldown);
-		AttackTriggered = attackTriggered;
-		_delaySw.Restart();
-		AttackTriggered = true;
-		ClientSendCmd();
+		this._clientCooldown.Trigger(this.BaseCooldown);
+		this.AttackTriggered = attackTriggered;
+		this._delaySw.Restart();
+		this.AttackTriggered = true;
+		base.ClientSendCmd();
 		this.OnTriggered?.Invoke();
 	}
 
@@ -337,7 +337,7 @@ public abstract class ScpAttackAbilityBase<T> : KeySubroutine<T> where T : Playe
 		if (!(base.Owner == null))
 		{
 			Gizmos.color = Color.green;
-			Gizmos.DrawWireSphere(OverlapSphereOrigin, _detectionRadius);
+			Gizmos.DrawWireSphere(this.OverlapSphereOrigin, this._detectionRadius);
 		}
 	}
 }

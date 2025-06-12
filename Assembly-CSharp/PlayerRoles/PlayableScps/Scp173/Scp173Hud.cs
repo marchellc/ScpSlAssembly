@@ -50,28 +50,28 @@ public class Scp173Hud : ScpHudBase
 		base.Init(hub);
 		if (hub.roleManager.CurrentRole is Scp173Role scp173Role)
 		{
-			scp173Role.SubroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out _observersTracker);
-			scp173Role.SubroutineModule.TryGetSubroutine<Scp173BlinkTimer>(out _blinkAbility);
-			scp173Role.SubroutineModule.TryGetSubroutine<Scp173TantrumAbility>(out _tantrumAbility);
-			scp173Role.SubroutineModule.TryGetSubroutine<Scp173BreakneckSpeedsAbility>(out _breakneckSpeedsAbility);
+			scp173Role.SubroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out this._observersTracker);
+			scp173Role.SubroutineModule.TryGetSubroutine<Scp173BlinkTimer>(out this._blinkAbility);
+			scp173Role.SubroutineModule.TryGetSubroutine<Scp173TantrumAbility>(out this._tantrumAbility);
+			scp173Role.SubroutineModule.TryGetSubroutine<Scp173BreakneckSpeedsAbility>(out this._breakneckSpeedsAbility);
 		}
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		bool isObserved = _observersTracker.IsObserved;
-		float remainingSustainPercent = _blinkAbility.RemainingSustainPercent;
-		float remainingBlinkCooldown = _blinkAbility.RemainingBlinkCooldown;
+		bool isObserved = this._observersTracker.IsObserved;
+		float remainingSustainPercent = this._blinkAbility.RemainingSustainPercent;
+		float remainingBlinkCooldown = this._blinkAbility.RemainingBlinkCooldown;
 		bool flag = isObserved || remainingSustainPercent > 0f;
-		_hudAnimator.SetBool(AnimatorHudShownHash, flag);
-		_hudAnimator.SetBool(AnimatorHudReadyHash, remainingBlinkCooldown <= 0f);
-		_eyeIndicator.fillAmount = remainingSustainPercent;
-		_timer.text = (flag ? $"{remainingBlinkCooldown:F1}s" : string.Empty);
-		_timer.color = Color.Lerp(Color.clear, Color.white, remainingSustainPercent);
-		UpdateCooldown(_tantrumCooldown, _tantrumAbility.Cooldown);
-		UpdateCooldown(_breakneckSpeedsCooldown, _breakneckSpeedsAbility.Cooldown);
-		_eyeIndicator.sprite = ((remainingBlinkCooldown <= 0f) ? _bloodshotEye : _openEye);
+		this._hudAnimator.SetBool(Scp173Hud.AnimatorHudShownHash, flag);
+		this._hudAnimator.SetBool(Scp173Hud.AnimatorHudReadyHash, remainingBlinkCooldown <= 0f);
+		this._eyeIndicator.fillAmount = remainingSustainPercent;
+		this._timer.text = (flag ? $"{remainingBlinkCooldown:F1}s" : string.Empty);
+		this._timer.color = Color.Lerp(Color.clear, Color.white, remainingSustainPercent);
+		this.UpdateCooldown(this._tantrumCooldown, this._tantrumAbility.Cooldown);
+		this.UpdateCooldown(this._breakneckSpeedsCooldown, this._breakneckSpeedsAbility.Cooldown);
+		this._eyeIndicator.sprite = ((remainingBlinkCooldown <= 0f) ? this._bloodshotEye : this._openEye);
 	}
 
 	private void UpdateCooldown(Image target, AbilityCooldown cooldown)

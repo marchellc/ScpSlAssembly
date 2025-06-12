@@ -45,43 +45,43 @@ public class DisruptorDualCamExtension : ViewmodelDualCamExtension
 	public override void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
 		base.InitViewmodel(viewmodel);
-		_itemId = viewmodel.ItemId;
-		if (viewmodel.ParentFirearm.TryGetModules<MagazineModule, DisruptorModeSelector>(out _magModule, out _selectorModule))
+		this._itemId = viewmodel.ItemId;
+		if (viewmodel.ParentFirearm.TryGetModules<MagazineModule, DisruptorModeSelector>(out this._magModule, out this._selectorModule))
 		{
 			ShotEventManager.OnShot += OnShot;
-			_selectorModule.OnAnimationRequested += OnAnimationRequested;
+			this._selectorModule.OnAnimationRequested += OnAnimationRequested;
 		}
 	}
 
 	protected override void LateUpdate()
 	{
 		base.LateUpdate();
-		IconDefinition[] icons = _icons;
+		IconDefinition[] icons = this._icons;
 		for (int i = 0; i < icons.Length; i++)
 		{
 			IconDefinition iconDefinition = icons[i];
-			iconDefinition.Root.SetActive(iconDefinition.Type == _selectedIcon);
+			iconDefinition.Root.SetActive(iconDefinition.Type == this._selectedIcon);
 		}
-		_root.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+		this._root.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
 	}
 
 	private void OnDestroy()
 	{
 		ShotEventManager.OnShot -= OnShot;
-		if (_selectorModule != null)
+		if (this._selectorModule != null)
 		{
-			_selectorModule.OnAnimationRequested -= OnAnimationRequested;
+			this._selectorModule.OnAnimationRequested -= OnAnimationRequested;
 		}
 	}
 
 	private void OnDisable()
 	{
-		_selectedIcon = IconType.None;
+		this._selectedIcon = IconType.None;
 	}
 
 	private void SetIcon(IconType newIcon)
 	{
-		_selectedIcon = newIcon;
+		this._selectedIcon = newIcon;
 	}
 
 	private void PlayAnimation(IconType icon)
@@ -89,47 +89,47 @@ public class DisruptorDualCamExtension : ViewmodelDualCamExtension
 		switch (icon)
 		{
 		case IconType.None:
-			SetIcon(icon);
+			this.SetIcon(icon);
 			break;
 		case IconType.DesintegratorMode:
-			RunCoroutine(AnimateDisintegratorMode());
+			this.RunCoroutine(this.AnimateDisintegratorMode());
 			break;
 		case IconType.BurstMode:
-			RunCoroutine(AnimateBurstMode());
+			this.RunCoroutine(this.AnimateBurstMode());
 			break;
 		case IconType.CriticalWarn:
-			RunCoroutine(AnimateCriticalWarn());
+			this.RunCoroutine(this.AnimateCriticalWarn());
 			break;
 		case IconType.CrashWarn:
-			RunCoroutine(AnimateCrash());
+			this.RunCoroutine(this.AnimateCrash());
 			break;
 		}
 	}
 
 	private void RunCoroutine(IEnumerator<float> coroutine)
 	{
-		if (_lastHandle.IsRunning)
+		if (this._lastHandle.IsRunning)
 		{
-			Timing.KillCoroutines(_lastHandle);
-			SetIcon(IconType.None);
+			Timing.KillCoroutines(this._lastHandle);
+			this.SetIcon(IconType.None);
 		}
-		_lastHandle = Timing.RunCoroutine(coroutine.CancelWith(base.gameObject), Segment.Update);
+		this._lastHandle = Timing.RunCoroutine(coroutine.CancelWith(base.gameObject), Segment.Update);
 	}
 
 	private IEnumerator<float> AnimateDisintegratorMode()
 	{
-		SetIcon(IconType.DesintegratorMode);
+		this.SetIcon(IconType.DesintegratorMode);
 		yield return Timing.WaitForSeconds(0.4f);
-		SetIcon(IconType.None);
+		this.SetIcon(IconType.None);
 	}
 
 	private IEnumerator<float> AnimateBurstMode()
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			SetIcon(IconType.BurstMode);
+			this.SetIcon(IconType.BurstMode);
 			yield return Timing.WaitForSeconds(0.082f);
-			SetIcon(IconType.None);
+			this.SetIcon(IconType.None);
 			yield return Timing.WaitForSeconds(0.035f);
 		}
 	}
@@ -138,9 +138,9 @@ public class DisruptorDualCamExtension : ViewmodelDualCamExtension
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			SetIcon(IconType.CriticalWarn);
+			this.SetIcon(IconType.CriticalWarn);
 			yield return Timing.WaitForSeconds(0.082f);
-			SetIcon(IconType.None);
+			this.SetIcon(IconType.None);
 			yield return Timing.WaitForSeconds(0.055f);
 		}
 	}
@@ -149,13 +149,13 @@ public class DisruptorDualCamExtension : ViewmodelDualCamExtension
 	{
 		for (int i = 0; i < 20; i++)
 		{
-			SetIcon(IconType.CriticalWarn);
+			this.SetIcon(IconType.CriticalWarn);
 			yield return Timing.WaitForSeconds(UnityEngine.Random.Range(0.03f, 0.07f));
-			SetIcon(IconType.CrashWarn);
+			this.SetIcon(IconType.CrashWarn);
 			yield return Timing.WaitForSeconds(UnityEngine.Random.Range(0.12f, 0.2f));
 			if (UnityEngine.Random.value > 0.6f)
 			{
-				SetIcon(IconType.None);
+				this.SetIcon(IconType.None);
 				yield return Timing.WaitForSeconds(0.05f);
 			}
 		}
@@ -163,15 +163,15 @@ public class DisruptorDualCamExtension : ViewmodelDualCamExtension
 
 	private void OnShot(ShotEvent shotEvent)
 	{
-		if (!(shotEvent.ItemId != _itemId))
+		if (!(shotEvent.ItemId != this._itemId))
 		{
-			switch (_magModule.AmmoStored)
+			switch (this._magModule.AmmoStored)
 			{
 			case 0:
-				PlayAnimation(IconType.CrashWarn);
+				this.PlayAnimation(IconType.CrashWarn);
 				break;
 			case 1:
-				PlayAnimation(IconType.CriticalWarn);
+				this.PlayAnimation(IconType.CriticalWarn);
 				break;
 			}
 		}
@@ -179,6 +179,6 @@ public class DisruptorDualCamExtension : ViewmodelDualCamExtension
 
 	private void OnAnimationRequested()
 	{
-		PlayAnimation(_selectorModule.SingleShotSelected ? IconType.DesintegratorMode : IconType.BurstMode);
+		this.PlayAnimation(this._selectorModule.SingleShotSelected ? IconType.DesintegratorMode : IconType.BurstMode);
 	}
 }

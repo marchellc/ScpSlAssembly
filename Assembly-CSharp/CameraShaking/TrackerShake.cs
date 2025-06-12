@@ -25,37 +25,37 @@ public class TrackerShake : IShakeEffect
 
 	public TrackerShake(Transform target, Quaternion offset, float intensity = 1f)
 	{
-		_tracker = target;
-		_offset = offset;
-		_intensity = intensity;
-		_remainingFade = 0.1f;
-		_isVisible = true;
+		this._tracker = target;
+		this._offset = offset;
+		this._intensity = intensity;
+		this._remainingFade = 0.1f;
+		this._isVisible = true;
 	}
 
 	public bool GetEffect(ReferenceHub ply, out ShakeEffectValues shakeValues)
 	{
-		if (_tracker == null || !_tracker.gameObject.activeInHierarchy)
+		if (this._tracker == null || !this._tracker.gameObject.activeInHierarchy)
 		{
-			_isVisible = false;
+			this._isVisible = false;
 		}
 		Quaternion quaternion;
-		if (_isVisible)
+		if (this._isVisible)
 		{
-			quaternion = _tracker.localRotation * _offset;
-			if (_intensity != 1f)
+			quaternion = this._tracker.localRotation * this._offset;
+			if (this._intensity != 1f)
 			{
-				quaternion = Quaternion.LerpUnclamped(Quaternion.identity, quaternion, _intensity);
+				quaternion = Quaternion.LerpUnclamped(Quaternion.identity, quaternion, this._intensity);
 			}
-			_lastKnownRotation = quaternion;
+			this._lastKnownRotation = quaternion;
 		}
 		else
 		{
-			_remainingFade -= Time.deltaTime;
-			quaternion = Quaternion.Lerp(Quaternion.identity, _lastKnownRotation, _remainingFade / 0.1f);
+			this._remainingFade -= Time.deltaTime;
+			quaternion = Quaternion.Lerp(Quaternion.identity, this._lastKnownRotation, this._remainingFade / 0.1f);
 		}
 		Vector3 eulerAngles = quaternion.eulerAngles;
 		quaternion = Quaternion.Euler(0f - eulerAngles.x, eulerAngles.z, eulerAngles.y);
-		shakeValues = new ShakeEffectValues(quaternion, Quaternion.Inverse(quaternion), null);
-		return _remainingFade > 0f;
+		shakeValues = new ShakeEffectValues(quaternion, Quaternion.Inverse(quaternion));
+		return this._remainingFade > 0f;
 	}
 }

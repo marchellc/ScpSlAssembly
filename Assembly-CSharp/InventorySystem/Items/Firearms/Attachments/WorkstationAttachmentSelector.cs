@@ -28,7 +28,7 @@ public class WorkstationAttachmentSelector : AttachmentSelectorBase
 		int num = attachmentId;
 		for (int i = 0; i < base.SelectedFirearm.Attachments.Length; i++)
 		{
-			if (base.SelectedFirearm.Attachments[i].Slot == SelectedSlot && base.SelectedFirearm.Attachments[i].IsEnabled)
+			if (base.SelectedFirearm.Attachments[i].Slot == base.SelectedSlot && base.SelectedFirearm.Attachments[i].IsEnabled)
 			{
 				num = i;
 				base.SelectedFirearm.Attachments[i].IsEnabled = false;
@@ -41,13 +41,13 @@ public class WorkstationAttachmentSelector : AttachmentSelectorBase
 		base.SelectedFirearm.SavePreferenceCode();
 		base.SelectedFirearm.Attachments[attachmentId].IsEnabled = false;
 		base.SelectedFirearm.Attachments[num].IsEnabled = true;
-		SentChangeRequest(currentAttachmentsCode);
+		this.SentChangeRequest(currentAttachmentsCode);
 	}
 
 	protected override void LoadPreset(uint loadedCode)
 	{
 		AttachmentPreferences.SavePreferenceCode(base.SelectedFirearm.ItemTypeId, loadedCode);
-		SentChangeRequest(loadedCode);
+		this.SentChangeRequest(loadedCode);
 	}
 
 	public override void RegisterAction(RectTransform rt, Action<Vector2> action)
@@ -57,15 +57,16 @@ public class WorkstationAttachmentSelector : AttachmentSelectorBase
 
 	private void SentChangeRequest(uint code)
 	{
-		AttachmentsChangeRequest message = default(AttachmentsChangeRequest);
-		message.AttachmentsCode = code;
-		message.WeaponSerial = base.SelectedFirearm.OwnerInventory.CurItem.SerialNumber;
-		NetworkClient.Send(message);
+		NetworkClient.Send(new AttachmentsChangeRequest
+		{
+			AttachmentsCode = code,
+			WeaponSerial = base.SelectedFirearm.OwnerInventory.CurItem.SerialNumber
+		});
 	}
 
 	private void Start()
 	{
-		UseLookatMode = PlayerPrefsSl.Get("FastWorkstationMode", defaultValue: false);
+		this.UseLookatMode = PlayerPrefsSl.Get("FastWorkstationMode", defaultValue: false);
 	}
 
 	private void Update()
@@ -75,43 +76,43 @@ public class WorkstationAttachmentSelector : AttachmentSelectorBase
 			return;
 		}
 		Firearm firearm = hub.inventory.CurInstance as Firearm;
-		if (firearm == null || !_controllerRef.IsInRange(firearm.Owner))
+		if (firearm == null || !this._controllerRef.IsInRange(firearm.Owner))
 		{
-			ShowInactivePanel(_panelNoWeapon);
+			this.ShowInactivePanel(this._panelNoWeapon);
 		}
 		else if (firearm.Attachments.Length > 1)
 		{
-			ShowPanel(_panelMain);
-			LerpRects(Time.deltaTime * _rescaleSpeed);
-			MonoBehaviour[] slotsPool = SlotsPool;
+			this.ShowPanel(this._panelMain);
+			base.LerpRects(Time.deltaTime * this._rescaleSpeed);
+			MonoBehaviour[] slotsPool = base.SlotsPool;
 			for (int i = 0; i < slotsPool.Length; i++)
 			{
-				((WorkstationSelectorCollider)slotsPool[i]).UpdateColors(SelectedSlot);
+				((WorkstationSelectorCollider)slotsPool[i]).UpdateColors(base.SelectedSlot);
 			}
-			slotsPool = SelectableAttachmentsPool;
+			slotsPool = base.SelectableAttachmentsPool;
 			for (int i = 0; i < slotsPool.Length; i++)
 			{
-				((WorkstationSelectorCollider)slotsPool[i]).UpdateColors(SelectedSlot);
+				((WorkstationSelectorCollider)slotsPool[i]).UpdateColors(base.SelectedSlot);
 			}
-			RefreshState(firearm, null);
+			base.RefreshState(firearm, null);
 		}
 		else
 		{
-			ShowInactivePanel(_panelUnknownWeapon);
+			this.ShowInactivePanel(this._panelUnknownWeapon);
 		}
 	}
 
 	private void ShowInactivePanel(GameObject go)
 	{
-		ShowPanel(go);
+		this.ShowPanel(go);
 		base.SelectedFirearm = null;
-		ToggleSummaryScreen(summary: false);
+		base.ToggleSummaryScreen(summary: false);
 	}
 
 	private void ShowPanel(GameObject go)
 	{
-		_panelMain.SetActive(_panelMain == go);
-		_panelNoWeapon.SetActive(_panelNoWeapon == go);
-		_panelUnknownWeapon.SetActive(_panelUnknownWeapon == go);
+		this._panelMain.SetActive(this._panelMain == go);
+		this._panelNoWeapon.SetActive(this._panelNoWeapon == go);
+		this._panelUnknownWeapon.SetActive(this._panelUnknownWeapon == go);
 	}
 }

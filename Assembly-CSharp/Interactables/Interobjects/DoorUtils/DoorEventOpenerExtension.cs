@@ -29,25 +29,25 @@ public class DoorEventOpenerExtension : DoorVariantExtension
 
 	private void Start()
 	{
-		OnDoorsTriggerred += Trigger;
-		_configLoaded = false;
+		DoorEventOpenerExtension.OnDoorsTriggerred += Trigger;
+		DoorEventOpenerExtension._configLoaded = false;
 	}
 
 	private void OnDestroy()
 	{
-		OnDoorsTriggerred -= Trigger;
+		DoorEventOpenerExtension.OnDoorsTriggerred -= Trigger;
 	}
 
 	private void Trigger(OpenerEventType eventType)
 	{
-		if (!NetworkServer.active || ((DoorLockReason)TargetDoor.ActiveLocks).HasFlagFast(DoorLockReason.SpecialDoorFeature))
+		if (!NetworkServer.active || ((DoorLockReason)base.TargetDoor.ActiveLocks).HasFlagFast(DoorLockReason.SpecialDoorFeature))
 		{
 			return;
 		}
-		if (!_configLoaded)
+		if (!DoorEventOpenerExtension._configLoaded)
 		{
-			_configLoaded = true;
-			_isolateCheckpoints = ConfigFile.ServerConfig.GetBool("isolate_zones_on_countdown");
+			DoorEventOpenerExtension._configLoaded = true;
+			DoorEventOpenerExtension._isolateCheckpoints = ConfigFile.ServerConfig.GetBool("isolate_zones_on_countdown");
 		}
 		bool flag = base.transform.position.GetZone() == FacilityZone.LightContainment;
 		switch (eventType)
@@ -55,44 +55,44 @@ public class DoorEventOpenerExtension : DoorVariantExtension
 		case OpenerEventType.WarheadStart:
 		{
 			DoorNametagExtension component;
-			if (_isolateCheckpoints && TargetDoor is CheckpointDoor checkpointDoor)
+			if (DoorEventOpenerExtension._isolateCheckpoints && base.TargetDoor is CheckpointDoor checkpointDoor)
 			{
 				checkpointDoor.ServerChangeLock(DoorLockReason.Isolation, newState: true);
 			}
-			else if (AlphaWarheadController.LockGatesOnCountdown || !(TargetDoor is PryableDoor) || !TryGetComponent<DoorNametagExtension>(out component) || !component.GetName.Contains("GATE"))
+			else if (AlphaWarheadController.LockGatesOnCountdown || !(base.TargetDoor is PryableDoor) || !base.TryGetComponent<DoorNametagExtension>(out component) || !component.GetName.Contains("GATE"))
 			{
-				TargetDoor.NetworkTargetState = true;
-				TargetDoor.ServerChangeLock(DoorLockReason.Warhead, newState: true);
+				base.TargetDoor.NetworkTargetState = true;
+				base.TargetDoor.ServerChangeLock(DoorLockReason.Warhead, newState: true);
 			}
 			break;
 		}
 		case OpenerEventType.WarheadCancel:
-			TargetDoor.ServerChangeLock(DoorLockReason.Warhead, newState: false);
-			TargetDoor.ServerChangeLock(DoorLockReason.Isolation, newState: false);
+			base.TargetDoor.ServerChangeLock(DoorLockReason.Warhead, newState: false);
+			base.TargetDoor.ServerChangeLock(DoorLockReason.Isolation, newState: false);
 			break;
 		case OpenerEventType.DeconEvac:
 			if (flag)
 			{
-				TargetDoor.NetworkTargetState = true;
-				if (TargetDoor is CheckpointDoor)
+				base.TargetDoor.NetworkTargetState = true;
+				if (base.TargetDoor is CheckpointDoor)
 				{
-					TargetDoor.ServerChangeLock(DoorLockReason.DecontEvacuate, newState: true);
+					base.TargetDoor.ServerChangeLock(DoorLockReason.DecontEvacuate, newState: true);
 				}
 			}
 			break;
 		case OpenerEventType.DeconFinish:
 			if (flag)
 			{
-				TargetDoor.NetworkTargetState = false;
-				TargetDoor.ServerChangeLock(DoorLockReason.DecontEvacuate, newState: false);
-				TargetDoor.ServerChangeLock(DoorLockReason.DecontLockdown, newState: true);
+				base.TargetDoor.NetworkTargetState = false;
+				base.TargetDoor.ServerChangeLock(DoorLockReason.DecontEvacuate, newState: false);
+				base.TargetDoor.ServerChangeLock(DoorLockReason.DecontLockdown, newState: true);
 			}
 			break;
 		case OpenerEventType.DeconReset:
 			if (flag)
 			{
-				TargetDoor.ServerChangeLock(DoorLockReason.DecontEvacuate, newState: false);
-				TargetDoor.ServerChangeLock(DoorLockReason.DecontLockdown, newState: false);
+				base.TargetDoor.ServerChangeLock(DoorLockReason.DecontEvacuate, newState: false);
+				base.TargetDoor.ServerChangeLock(DoorLockReason.DecontLockdown, newState: false);
 			}
 			break;
 		}

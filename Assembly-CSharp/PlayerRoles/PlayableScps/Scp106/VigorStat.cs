@@ -18,27 +18,27 @@ public class VigorStat : SyncedStatBase
 	{
 		get
 		{
-			return _maxValue;
+			return this._maxValue;
 		}
 		set
 		{
-			_maxValue = value;
+			this._maxValue = value;
 		}
 	}
 
 	public override bool CheckDirty(float prevValue, float newValue)
 	{
-		return ToByte(prevValue) != ToByte(newValue);
+		return this.ToByte(prevValue) != this.ToByte(newValue);
 	}
 
 	public override float ReadValue(SyncedStatMessages.StatMessageType type, NetworkReader reader)
 	{
-		return ToFloat(reader.ReadByte());
+		return this.ToFloat(reader.ReadByte());
 	}
 
 	public override void WriteValue(SyncedStatMessages.StatMessageType type, NetworkWriter writer)
 	{
-		byte value = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? ToByte(CurValue) : ToByte(MaxValue));
+		byte value = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? this.ToByte(this.CurValue) : this.ToByte(this.MaxValue));
 		writer.WriteByte(value);
 	}
 
@@ -47,8 +47,8 @@ public class VigorStat : SyncedStatBase
 		base.ClassChanged();
 		if (NetworkServer.active)
 		{
-			_maxValue = 1f;
-			CurValue = 0f;
+			this._maxValue = 1f;
+			this.CurValue = 0f;
 		}
 	}
 

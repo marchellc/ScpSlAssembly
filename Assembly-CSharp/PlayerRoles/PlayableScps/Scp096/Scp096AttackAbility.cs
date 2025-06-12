@@ -71,8 +71,8 @@ public class Scp096AttackAbility : KeySubroutine<Scp096Role>, IPoolResettable
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		byte b = (byte)_hitResult;
-		if (LeftAttack)
+		byte b = (byte)this._hitResult;
+		if (this.LeftAttack)
 		{
 			b |= 0x40;
 		}
@@ -83,10 +83,10 @@ public class Scp096AttackAbility : KeySubroutine<Scp096Role>, IPoolResettable
 	{
 		base.ClientProcessRpc(reader);
 		byte b = reader.ReadByte();
-		LeftAttack = (b & 0x40) != 0;
+		this.LeftAttack = (b & 0x40) != 0;
 		Scp096HitResult scp096HitResult = (Scp096HitResult)(b & -65);
 		this.OnHitReceived?.Invoke(scp096HitResult);
-		if (scp096HitResult != 0 && (base.Owner.isLocalPlayer || base.Owner.IsLocallySpectated()))
+		if (scp096HitResult != Scp096HitResult.None && (base.Owner.isLocalPlayer || base.Owner.IsLocallySpectated()))
 		{
 			Hitmarker.PlayHitmarker(1f);
 		}
@@ -97,7 +97,7 @@ public class Scp096AttackAbility : KeySubroutine<Scp096Role>, IPoolResettable
 		base.ClientWriteCmd(writer);
 		writer.WriteRelativePosition(new RelativePosition(base.CastRole.FpcModule.Position));
 		writer.WriteQuaternion(base.Owner.PlayerCameraReference.rotation);
-		foreach (ReferenceHub item in PlayersToSend)
+		foreach (ReferenceHub item in Scp096AttackAbility.PlayersToSend)
 		{
 			if (item.roleManager.CurrentRole is IFpcRole fpcRole)
 			{
@@ -111,13 +111,13 @@ public class Scp096AttackAbility : KeySubroutine<Scp096Role>, IPoolResettable
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (!_serverAttackCooldown.TolerantIsReady || !AttackPossible)
+		if (!this._serverAttackCooldown.TolerantIsReady || !this.AttackPossible)
 		{
 			return;
 		}
-		BacktrackedPlayers.Clear();
+		Scp096AttackAbility.BacktrackedPlayers.Clear();
 		RelativePosition relativePosition = reader.ReadRelativePosition();
-		BacktrackedPlayers.Add(new FpcBacktracker(base.Owner, relativePosition.Position, reader.ReadQuaternion()));
+		Scp096AttackAbility.BacktrackedPlayers.Add(new FpcBacktracker(base.Owner, relativePosition.Position, reader.ReadQuaternion()));
 		while (reader.Position < reader.Capacity)
 		{
 			ReferenceHub hub;
@@ -125,50 +125,50 @@ public class Scp096AttackAbility : KeySubroutine<Scp096Role>, IPoolResettable
 			Vector3 position = reader.ReadRelativePosition().Position;
 			if (num)
 			{
-				BacktrackedPlayers.Add(new FpcBacktracker(hub, position));
+				Scp096AttackAbility.BacktrackedPlayers.Add(new FpcBacktracker(hub, position));
 			}
 		}
-		ServerAttack();
-		BacktrackedPlayers.ForEach(delegate(FpcBacktracker x)
+		this.ServerAttack();
+		Scp096AttackAbility.BacktrackedPlayers.ForEach(delegate(FpcBacktracker x)
 		{
 			x.RestorePosition();
 		});
-		_serverAttackCooldown.Trigger(0.5);
+		this._serverAttackCooldown.Trigger(0.5);
 	}
 
 	private void ServerAttack()
 	{
 		if (NetworkServer.active)
 		{
-			LeftAttack = !LeftAttack;
+			this.LeftAttack = !this.LeftAttack;
 			base.CastRole.StateController.SetAbilityState(Scp096AbilityState.Attacking);
 			Transform playerCameraReference = base.Owner.PlayerCameraReference;
-			Scp096HitHandler scp096HitHandler = (LeftAttack ? _leftHitHandler : _rightHitHandler);
+			Scp096HitHandler scp096HitHandler = (this.LeftAttack ? this._leftHitHandler : this._rightHitHandler);
 			scp096HitHandler.Clear();
-			_hitResult = scp096HitHandler.DamageSphere(playerCameraReference.position + playerCameraReference.forward * _sphereHitboxOffset, _sphereHitboxRadius);
-			_audioPlayer.ServerPlayAttack(_hitResult);
-			ServerSendRpc(toAll: true);
+			this._hitResult = scp096HitHandler.DamageSphere(playerCameraReference.position + playerCameraReference.forward * this._sphereHitboxOffset, this._sphereHitboxRadius);
+			this._audioPlayer.ServerPlayAttack(this._hitResult);
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_clientAttackCooldown.Clear();
-		_serverAttackCooldown.Clear();
+		this._clientAttackCooldown.Clear();
+		this._serverAttackCooldown.Clear();
 	}
 
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_leftHitHandler = new Scp096HitHandler(base.CastRole, Scp096DamageHandler.AttackType.SlapLeft, 500f, 250f, 60f, 0f);
-		_rightHitHandler = new Scp096HitHandler(base.CastRole, Scp096DamageHandler.AttackType.SlapRight, 500f, 250f, 60f, 0f);
+		this._leftHitHandler = new Scp096HitHandler(base.CastRole, Scp096DamageHandler.AttackType.SlapLeft, 500f, 250f, 60f, 0f);
+		this._rightHitHandler = new Scp096HitHandler(base.CastRole, Scp096DamageHandler.AttackType.SlapRight, 500f, 250f, 60f, 0f);
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		if (NetworkServer.active && _serverAttackCooldown.IsReady && base.CastRole.IsAbilityState(Scp096AbilityState.Attacking))
+		if (NetworkServer.active && this._serverAttackCooldown.IsReady && base.CastRole.IsAbilityState(Scp096AbilityState.Attacking))
 		{
 			base.CastRole.ResetAbilityState();
 		}
@@ -177,27 +177,27 @@ public class Scp096AttackAbility : KeySubroutine<Scp096Role>, IPoolResettable
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		if (!AttackPossible || !_clientAttackCooldown.IsReady)
+		if (!this.AttackPossible || !this._clientAttackCooldown.IsReady)
 		{
 			return;
 		}
-		PlayersToSend.Clear();
+		Scp096AttackAbility.PlayersToSend.Clear();
 		Vector3 position = base.CastRole.FpcModule.Position;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allHub.roleManager.CurrentRole is IFpcRole fpcRole && HitboxIdentity.IsEnemy(base.Owner, allHub) && !((fpcRole.FpcModule.Position - position).sqrMagnitude > 9f))
 			{
-				PlayersToSend.Add(allHub);
+				Scp096AttackAbility.PlayersToSend.Add(allHub);
 			}
 		}
-		ClientSendCmd();
-		_clientAttackCooldown.Trigger(0.5);
+		base.ClientSendCmd();
+		this._clientAttackCooldown.Trigger(0.5);
 		this.OnAttackTriggered?.Invoke();
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp096AudioPlayer>(out _audioPlayer);
+		base.GetSubroutine<Scp096AudioPlayer>(out this._audioPlayer);
 	}
 }

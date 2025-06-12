@@ -13,15 +13,15 @@ public class ElevatorOvercon : StandardOvercon
 	{
 		get
 		{
-			if (!ElevatorChamber.TryGetChamber(Target.Group, out var chamber))
+			if (!ElevatorChamber.TryGetChamber(this.Target.Group, out var chamber))
 			{
-				return _busyColor;
+				return ElevatorOvercon._busyColor;
 			}
 			if (!chamber.IsReady)
 			{
-				return _busyColor;
+				return ElevatorOvercon._busyColor;
 			}
-			if (!IsHighlighted)
+			if (!this.IsHighlighted)
 			{
 				return StandardOvercon.NormalColor;
 			}
@@ -31,6 +31,6 @@ public class ElevatorOvercon : StandardOvercon
 
 	private void LateUpdate()
 	{
-		TargetSprite.color = TargetColor;
+		base.TargetSprite.color = this.TargetColor;
 	}
 }

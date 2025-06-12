@@ -12,12 +12,12 @@ public class SingleBufferPlayback : VoiceChatPlaybackBase
 	{
 		get
 		{
-			if (!_bufferSet)
+			if (!this._bufferSet)
 			{
-				_buffer = new PlaybackBuffer();
-				_bufferSet = true;
+				this._buffer = new PlaybackBuffer();
+				this._bufferSet = true;
 			}
-			return _buffer;
+			return this._buffer;
 		}
 	}
 
@@ -25,33 +25,33 @@ public class SingleBufferPlayback : VoiceChatPlaybackBase
 	{
 		get
 		{
-			if (!_bufferSet)
+			if (!this._bufferSet)
 			{
 				return 0;
 			}
-			return Buffer.Length;
+			return this.Buffer.Length;
 		}
 	}
 
 	private void OnDestroy()
 	{
-		if (_bufferSet)
+		if (this._bufferSet)
 		{
-			Buffer.Dispose();
+			this.Buffer.Dispose();
 		}
 	}
 
 	protected override void OnDisable()
 	{
 		base.OnDisable();
-		if (_bufferSet)
+		if (this._bufferSet)
 		{
-			Buffer.Clear();
+			this.Buffer.Clear();
 		}
 	}
 
 	protected override float ReadSample()
 	{
-		return Buffer.Read();
+		return this.Buffer.Read();
 	}
 }

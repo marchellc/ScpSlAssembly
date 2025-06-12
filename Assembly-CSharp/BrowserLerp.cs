@@ -12,14 +12,14 @@ public class BrowserLerp : MonoBehaviour
 
 	private void Start()
 	{
-		rectTransform = GetComponent<RectTransform>();
+		this.rectTransform = base.GetComponent<RectTransform>();
 	}
 
 	private void LateUpdate()
 	{
-		targetPos += rectTransform.localPosition - prevPos;
-		rectTransform.localPosition = prevPos;
-		rectTransform.localPosition = Vector3.Lerp(rectTransform.localPosition, targetPos, Time.deltaTime * speed * 4f);
-		prevPos = rectTransform.localPosition;
+		this.targetPos += this.rectTransform.localPosition - this.prevPos;
+		this.rectTransform.localPosition = this.prevPos;
+		this.rectTransform.localPosition = Vector3.Lerp(this.rectTransform.localPosition, this.targetPos, Time.deltaTime * this.speed * 4f);
+		this.prevPos = this.rectTransform.localPosition;
 	}
 }

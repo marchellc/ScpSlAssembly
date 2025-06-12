@@ -35,12 +35,12 @@ public class AttachmentPresetSelector : MonoBehaviour, IClientInteractable, IInt
 
 	private void Start()
 	{
-		for (int i = 0; i < _currentPresetIndicators.Length; i++)
+		for (int i = 0; i < this._currentPresetIndicators.Length; i++)
 		{
-			_currentPresetIndicators[i].text = ((i == 0) ? Translations.Get(AttachmentEditorsTranslation.Custom) : string.Format(Translations.Get(AttachmentEditorsTranslation.PresetId), i));
+			this._currentPresetIndicators[i].text = ((i == 0) ? Translations.Get(AttachmentEditorsTranslation.Custom) : string.Format(Translations.Get(AttachmentEditorsTranslation.PresetId), i));
 		}
 		string text = "[ " + Translations.Get(AttachmentEditorsTranslation.SaveAttachments) + " ]";
-		TextMeshProUGUI[] saveButtons = _saveButtons;
+		TextMeshProUGUI[] saveButtons = this._saveButtons;
 		for (int j = 0; j < saveButtons.Length; j++)
 		{
 			saveButtons[j].text = text;
@@ -53,41 +53,41 @@ public class AttachmentPresetSelector : MonoBehaviour, IClientInteractable, IInt
 		{
 			if (id == 254)
 			{
-				_selectorRef.ResetAttachments();
+				this._selectorRef.ResetAttachments();
 			}
 			else if (id > 100)
 			{
-				_selectorRef.SaveAsPreset(id - 100);
+				this._selectorRef.SaveAsPreset(id - 100);
 			}
 			else
 			{
-				_selectorRef.LoadPreset(id);
+				this._selectorRef.LoadPreset(id);
 			}
 		}
 		else
 		{
-			_selectorRef.ToggleSummaryScreen();
+			this._selectorRef.ToggleSummaryScreen();
 		}
 	}
 
 	private void LateUpdate()
 	{
-		if (_selectorRef.SelectedFirearm == null)
+		if (this._selectorRef.SelectedFirearm == null)
 		{
-			_rootObject.SetActive(value: false);
+			this._rootObject.SetActive(value: false);
 			return;
 		}
-		int preset = AttachmentPreferences.GetPreset(_selectorRef.SelectedFirearm.ItemTypeId);
-		for (int i = 0; i < Mathf.Min(_currentPresetIndicators.Length, _saveButtons.Length); i++)
+		int preset = AttachmentPreferences.GetPreset(this._selectorRef.SelectedFirearm.ItemTypeId);
+		for (int i = 0; i < Mathf.Min(this._currentPresetIndicators.Length, this._saveButtons.Length); i++)
 		{
-			_saveButtons[i].gameObject.SetActive(_selectorRef.CanSaveAsPreference(i));
-			_currentPresetIndicators[i].color = ((preset == i) ? _currentColor : _normalColor);
+			this._saveButtons[i].gameObject.SetActive(this._selectorRef.CanSaveAsPreference(i));
+			this._currentPresetIndicators[i].color = ((preset == i) ? this._currentColor : this._normalColor);
 		}
-		_rootObject.SetActive(value: true);
+		this._rootObject.SetActive(value: true);
 	}
 
 	public void ClientInteract(InteractableCollider collider)
 	{
-		ProcessButton(collider.ColliderId);
+		this.ProcessButton(collider.ColliderId);
 	}
 }

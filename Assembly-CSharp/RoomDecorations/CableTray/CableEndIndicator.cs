@@ -23,51 +23,51 @@ public class CableEndIndicator : MonoBehaviour
 
 	private void Awake()
 	{
-		Position = base.transform.position;
-		AllInstances.Add(this);
-		if (!IsRoomBorder())
+		this.Position = base.transform.position;
+		CableEndIndicator.AllInstances.Add(this);
+		if (!this.IsRoomBorder())
 		{
 			return;
 		}
-		foreach (CableEndIndicator unconnectedInstance in UnconnectedInstances)
+		foreach (CableEndIndicator unconnectedInstance in CableEndIndicator.UnconnectedInstances)
 		{
-			if (!((Position - unconnectedInstance.Position).sqrMagnitude > 0.16f))
+			if (!((this.Position - unconnectedInstance.Position).sqrMagnitude > 0.16f))
 			{
 				unconnectedInstance.RemoveFromUnconnected();
 				return;
 			}
 		}
-		_isUnconnected = true;
-		UnconnectedInstances.Add(this);
+		this._isUnconnected = true;
+		CableEndIndicator.UnconnectedInstances.Add(this);
 	}
 
 	private void OnDestroy()
 	{
-		RemoveFromUnconnected();
-		AllInstances.Remove(this);
+		this.RemoveFromUnconnected();
+		CableEndIndicator.AllInstances.Remove(this);
 	}
 
 	private void RemoveFromUnconnected()
 	{
-		if (_isUnconnected)
+		if (this._isUnconnected)
 		{
-			_isUnconnected = false;
-			UnconnectedInstances.Remove(this);
+			this._isUnconnected = false;
+			CableEndIndicator.UnconnectedInstances.Remove(this);
 		}
 	}
 
 	private bool IsRoomBorder()
 	{
-		Vector3 fwd = Position + Vector3.forward * 0.2f;
-		if (CompareCoords(fwd, Vector3.back) && CompareCoords(fwd, Vector3.left))
+		Vector3 fwd = this.Position + Vector3.forward * 0.2f;
+		if (this.CompareCoords(fwd, Vector3.back) && this.CompareCoords(fwd, Vector3.left))
 		{
-			return !CompareCoords(fwd, Vector3.right);
+			return !this.CompareCoords(fwd, Vector3.right);
 		}
 		return true;
 	}
 
 	private bool CompareCoords(Vector3 fwd, Vector3 dir)
 	{
-		return fwd.CompareCoords(Position + dir * 0.2f);
+		return fwd.CompareCoords(this.Position + dir * 0.2f);
 	}
 }

@@ -21,7 +21,7 @@ public class Scp330Pickup : CollisionDetectionPickup
 
 		public void Refresh(CandyKindID exposed)
 		{
-			_candyObject.SetActive(exposed == _kind);
+			this._candyObject.SetActive(exposed == this._kind);
 		}
 	}
 
@@ -39,12 +39,12 @@ public class Scp330Pickup : CollisionDetectionPickup
 	{
 		get
 		{
-			return ExposedCandy;
+			return this.ExposedCandy;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref ExposedCandy, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.ExposedCandy, 2uL, null);
 		}
 	}
 
@@ -55,18 +55,18 @@ public class Scp330Pickup : CollisionDetectionPickup
 
 	private void Update()
 	{
-		int exposedCandy = (int)ExposedCandy;
-		if (_prevExposed != exposedCandy)
+		int exposedCandy = (int)this.ExposedCandy;
+		if (this._prevExposed != exposedCandy)
 		{
-			IndividualCandy[] candyTypes = _candyTypes;
+			IndividualCandy[] candyTypes = this._candyTypes;
 			foreach (IndividualCandy individualCandy in candyTypes)
 			{
-				individualCandy.Refresh(ExposedCandy);
+				individualCandy.Refresh(this.ExposedCandy);
 			}
-			_prevExposed = exposedCandy;
-			if (NetworkServer.active && StoredCandies.Count == 0)
+			this._prevExposed = exposedCandy;
+			if (NetworkServer.active && this.StoredCandies.Count == 0)
 			{
-				DestroySelf();
+				base.DestroySelf();
 			}
 		}
 	}
@@ -81,13 +81,13 @@ public class Scp330Pickup : CollisionDetectionPickup
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EUsables_002EScp330_002ECandyKindID(writer, ExposedCandy);
+			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EUsables_002EScp330_002ECandyKindID(writer, this.ExposedCandy);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EUsables_002EScp330_002ECandyKindID(writer, ExposedCandy);
+			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EUsables_002EScp330_002ECandyKindID(writer, this.ExposedCandy);
 		}
 	}
 
@@ -96,13 +96,13 @@ public class Scp330Pickup : CollisionDetectionPickup
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref ExposedCandy, null, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EUsables_002EScp330_002ECandyKindID(reader));
+			base.GeneratedSyncVarDeserialize(ref this.ExposedCandy, null, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EUsables_002EScp330_002ECandyKindID(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref ExposedCandy, null, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EUsables_002EScp330_002ECandyKindID(reader));
+			base.GeneratedSyncVarDeserialize(ref this.ExposedCandy, null, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EUsables_002EScp330_002ECandyKindID(reader));
 		}
 	}
 }

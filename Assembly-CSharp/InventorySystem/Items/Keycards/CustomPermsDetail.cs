@@ -8,7 +8,7 @@ namespace InventorySystem.Items.Keycards;
 
 public class CustomPermsDetail : SyncedDetail, ICustomizableDetail, IDoorPermissionProvider
 {
-	private static readonly Dictionary<ushort, DoorPermissionFlags> ServerCustomPermissions = new Dictionary<ushort, DoorPermissionFlags>();
+	private static readonly Dictionary<ushort, DoorPermissionFlags> CustomPermissions = new Dictionary<ushort, DoorPermissionFlags>();
 
 	private static KeycardLevels _customLevels;
 
@@ -28,29 +28,29 @@ public class CustomPermsDetail : SyncedDetail, ICustomizableDetail, IDoorPermiss
 
 	public void ParseArguments(ArraySegment<string> args)
 	{
-		_customColor = (Misc.TryParseColor(args.At(3), out var color) ? new Color32?(color) : ((Color32?)null));
+		CustomPermsDetail._customColor = (Misc.TryParseColor(args.At(3), out var color) ? new Color32?(color) : ((Color32?)null));
 		int containment = int.Parse(args.At(0));
 		int armory = int.Parse(args.At(1));
 		int admin = int.Parse(args.At(2));
-		_customLevels = new KeycardLevels(containment, armory, admin);
+		CustomPermsDetail._customLevels = new KeycardLevels(containment, armory, admin);
 	}
 
 	public void SetArguments(ArraySegment<object> args)
 	{
-		_customLevels = (KeycardLevels)args.At(0);
-		_customColor = (Color32)args.At(1);
+		CustomPermsDetail._customLevels = (KeycardLevels)args.At(0);
+		CustomPermsDetail._customColor = (Color32)args.At(1);
 	}
 
 	private void WriteCustom(IIdentifierProvider target, NetworkWriter writer)
 	{
-		DoorPermissionFlags permissions = _customLevels.Permissions;
+		DoorPermissionFlags permissions = CustomPermsDetail._customLevels.Permissions;
 		if (NetworkServer.active)
 		{
 			ushort serialNumber = target.ItemId.SerialNumber;
-			ServerCustomPermissions[serialNumber] = permissions;
+			CustomPermsDetail.CustomPermissions[serialNumber] = permissions;
 		}
 		writer.WriteUShort((ushort)permissions);
-		writer.WriteColor32Nullable(_customColor);
+		writer.WriteColor32Nullable(CustomPermsDetail._customColor);
 	}
 
 	public override void WriteDefault(NetworkWriter writer)
@@ -61,19 +61,20 @@ public class CustomPermsDetail : SyncedDetail, ICustomizableDetail, IDoorPermiss
 
 	public override void WriteNewItem(KeycardItem item, NetworkWriter writer)
 	{
-		WriteCustom(item, writer);
+		this.WriteCustom(item, writer);
 	}
 
 	public override void WriteNewPickup(KeycardPickup pickup, NetworkWriter writer)
 	{
-		WriteCustom(pickup, writer);
+		this.WriteCustom(pickup, writer);
 	}
 
 	protected override void ApplyDetail(KeycardGfx target, NetworkReader reader, KeycardItem template)
 	{
-		DoorPermissionFlags flags = (DoorPermissionFlags)reader.ReadUShort();
+		DoorPermissionFlags doorPermissionFlags = (DoorPermissionFlags)reader.ReadUShort();
 		Color? color = reader.ReadColor32Nullable();
-		target.SetPermissions(new KeycardLevels(flags), color);
+		target.SetPermissions(new KeycardLevels(doorPermissionFlags), color);
+		CustomPermsDetail.CustomPermissions[target.ParentId.SerialNumber] = doorPermissionFlags;
 	}
 
 	public DoorPermissionFlags GetPermissions(IDoorPermissionRequester requester)
@@ -81,7 +82,7 @@ public class CustomPermsDetail : SyncedDetail, ICustomizableDetail, IDoorPermiss
 		KeycardItem component = base.transform.parent.GetComponent<KeycardItem>();
 		if (!(component == null))
 		{
-			return ServerCustomPermissions.GetValueOrDefault(component.ItemSerial);
+			return CustomPermsDetail.CustomPermissions.GetValueOrDefault(component.ItemSerial);
 		}
 		return DoorPermissionFlags.None;
 	}

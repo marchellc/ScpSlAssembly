@@ -19,9 +19,9 @@ public readonly struct PublicKeyResponse : IEquatable<PublicKeyResponse>, IJsonS
 
 	public bool Equals(PublicKeyResponse other)
 	{
-		if (key == other.key && signature == other.signature)
+		if (this.key == other.key && this.signature == other.signature)
 		{
-			return credits == other.credits;
+			return this.credits == other.credits;
 		}
 		return false;
 	}
@@ -30,14 +30,14 @@ public readonly struct PublicKeyResponse : IEquatable<PublicKeyResponse>, IJsonS
 	{
 		if (obj is PublicKeyResponse other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((key != null) ? key.GetHashCode() : 0) * 397) ^ ((signature != null) ? signature.GetHashCode() : 0) ^ ((credits != null) ? credits.GetHashCode() : 0);
+		return (((this.key != null) ? this.key.GetHashCode() : 0) * 397) ^ ((this.signature != null) ? this.signature.GetHashCode() : 0) ^ ((this.credits != null) ? this.credits.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(PublicKeyResponse left, PublicKeyResponse right)

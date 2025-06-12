@@ -34,7 +34,7 @@ public class Scp914UpgradeHandler : AchievementHandlerBase
 
 	private static void ItemUpgraded(ItemBase item, Scp914KnobSetting sett)
 	{
-		if (item.Owner.GetRoleId() == RoleTypeId.Scientist && item is KeycardItem && AnyDClassIn914)
+		if (item.Owner.GetRoleId() == RoleTypeId.Scientist && item is KeycardItem && Scp914UpgradeHandler.AnyDClassIn914)
 		{
 			AchievementHandlerBase.ServerAchieve(item.OwnerInventory.connectionToClient, AchievementName.Friendship);
 		}
@@ -47,7 +47,7 @@ public class Scp914UpgradeHandler : AchievementHandlerBase
 		if (ipb is KeycardPickup && previousOwner.Role == RoleTypeId.Scientist && !(hub == null))
 		{
 			PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
-			if (previousOwner.LifeIdentifier == currentRole.UniqueLifeIdentifier && AnyDClassIn914)
+			if (previousOwner.LifeIdentifier == currentRole.UniqueLifeIdentifier && Scp914UpgradeHandler.AnyDClassIn914)
 			{
 				AchievementHandlerBase.ServerAchieve(ipb.PreviousOwner.Hub.networkIdentity.connectionToClient, AchievementName.Friendship);
 			}

@@ -29,19 +29,19 @@ public class HumanVoiceModule : StandardVoiceModule, IRadioVoiceModule
 	{
 		get
 		{
-			return _wasTransmitting;
+			return this._wasTransmitting;
 		}
 		set
 		{
-			if (Transmitting != value)
+			if (this.Transmitting != value)
 			{
-				AudioSourcePoolManager.Play2D((value ? _radioOnSounds : _radioOffSounds).RandomItem(), _toggleSoundsVolume, MixerChannel.VoiceChat);
-				_wasTransmitting = value;
+				AudioSourcePoolManager.Play2D((value ? this._radioOnSounds : this._radioOffSounds).RandomItem(), this._toggleSoundsVolume, MixerChannel.VoiceChat);
+				this._wasTransmitting = value;
 			}
 		}
 	}
 
-	public SingleBufferPlayback FirstProxPlayback => ProximityPlaybacks[0];
+	public SingleBufferPlayback FirstProxPlayback => this.ProximityPlaybacks[0];
 
 	[field: SerializeField]
 	public SingleBufferPlayback[] ProximityPlaybacks { get; private set; }
@@ -52,13 +52,13 @@ public class HumanVoiceModule : StandardVoiceModule, IRadioVoiceModule
 	[field: SerializeField]
 	public PersonalRadioPlayback RadioPlayback { get; private set; }
 
-	public override bool IsSpeaking => FirstProxPlayback.MaxSamples > 0;
+	public override bool IsSpeaking => this.FirstProxPlayback.MaxSamples > 0;
 
 	private bool CheckProximity(ReferenceHub hub)
 	{
 		if (hub != base.Owner)
 		{
-			return _vctrl.ValidateVisibility(hub);
+			return this._vctrl.ValidateVisibility(hub);
 		}
 		return false;
 	}
@@ -67,15 +67,15 @@ public class HumanVoiceModule : StandardVoiceModule, IRadioVoiceModule
 	{
 		if ((primary || alt) && Scp1576Item.LocallyUsed)
 		{
-			Transmitting = false;
+			this.Transmitting = false;
 			return VoiceChatChannel.Scp1576;
 		}
-		if (alt && RadioPlayback.RadioUsable && !base.Owner.HasBlock(BlockedInteraction.ItemPrimaryAction))
+		if (alt && this.RadioPlayback.RadioUsable && !base.Owner.HasBlock(BlockedInteraction.ItemPrimaryAction))
 		{
-			Transmitting = true;
+			this.Transmitting = true;
 			return VoiceChatChannel.Radio;
 		}
-		Transmitting = false;
+		this.Transmitting = false;
 		if (!primary)
 		{
 			return VoiceChatChannel.None;
@@ -91,13 +91,13 @@ public class HumanVoiceModule : StandardVoiceModule, IRadioVoiceModule
 		case VoiceChatChannel.RoundSummary:
 			return;
 		case VoiceChatChannel.Scp1576:
-			Scp1576Playback.Buffer.Write(data, len);
+			this.Scp1576Playback.Buffer.Write(data, len);
 			return;
 		case VoiceChatChannel.Radio:
-			RadioPlayback.DistributeSamples(data, len);
+			this.RadioPlayback.DistributeSamples(data, len);
 			break;
 		}
-		SingleBufferPlayback[] proximityPlaybacks = ProximityPlaybacks;
+		SingleBufferPlayback[] proximityPlaybacks = this.ProximityPlaybacks;
 		for (int i = 0; i < proximityPlaybacks.Length; i++)
 		{
 			proximityPlaybacks[i].Buffer.Write(data, len);
@@ -108,8 +108,8 @@ public class HumanVoiceModule : StandardVoiceModule, IRadioVoiceModule
 	{
 		base.Update();
 		ReferenceHub hub;
-		bool flag = IsSpeaking && base.CurrentChannel == VoiceChatChannel.Radio && ReferenceHub.TryGetLocalHub(out hub) && hub.roleManager.CurrentRole is IVoiceRole { VoiceModule: IRadioVoiceModule voiceModule } && voiceModule.RadioPlayback.RadioUsable;
-		SingleBufferPlayback[] proximityPlaybacks = ProximityPlaybacks;
+		bool flag = this.IsSpeaking && base.CurrentChannel == VoiceChatChannel.Radio && ReferenceHub.TryGetLocalHub(out hub) && hub.roleManager.CurrentRole is IVoiceRole { VoiceModule: IRadioVoiceModule voiceModule } && voiceModule.RadioPlayback.RadioUsable;
+		SingleBufferPlayback[] proximityPlaybacks = this.ProximityPlaybacks;
 		for (int i = 0; i < proximityPlaybacks.Length; i++)
 		{
 			proximityPlaybacks[i].Source.volume = (flag ? 0.35f : 1f);
@@ -119,7 +119,7 @@ public class HumanVoiceModule : StandardVoiceModule, IRadioVoiceModule
 	protected override void Awake()
 	{
 		base.Awake();
-		_vctrl = (base.Role as ICustomVisibilityRole).VisibilityController;
+		this._vctrl = (base.Role as ICustomVisibilityRole).VisibilityController;
 	}
 
 	public override VoiceChatChannel ValidateSend(VoiceChatChannel channel)
@@ -137,7 +137,7 @@ public class HumanVoiceModule : StandardVoiceModule, IRadioVoiceModule
 					return VoiceChatChannel.Scp1576;
 				}
 			}
-			else if (RadioPlayback.RadioUsable)
+			else if (this.RadioPlayback.RadioUsable)
 			{
 				goto IL_0031;
 			}
@@ -164,7 +164,7 @@ public class HumanVoiceModule : StandardVoiceModule, IRadioVoiceModule
 			}
 			break;
 		case VoiceChatChannel.Proximity:
-			if (!CheckProximity(speaker))
+			if (!this.CheckProximity(speaker))
 			{
 				break;
 			}
@@ -181,8 +181,8 @@ public class HumanVoiceModule : StandardVoiceModule, IRadioVoiceModule
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		RadioPlayback.Setup(base.Owner, ProximityPlaybacks);
-		SingleBufferPlayback[] proximityPlaybacks = ProximityPlaybacks;
+		this.RadioPlayback.Setup(base.Owner, this.ProximityPlaybacks);
+		SingleBufferPlayback[] proximityPlaybacks = this.ProximityPlaybacks;
 		for (int i = 0; i < proximityPlaybacks.Length; i++)
 		{
 			proximityPlaybacks[i].Source.mute = base.Owner.isLocalPlayer;
@@ -192,6 +192,6 @@ public class HumanVoiceModule : StandardVoiceModule, IRadioVoiceModule
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_wasTransmitting = false;
+		this._wasTransmitting = false;
 	}
 }

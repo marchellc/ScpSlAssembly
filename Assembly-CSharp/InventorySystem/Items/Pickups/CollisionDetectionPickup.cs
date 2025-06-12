@@ -25,13 +25,13 @@ public class CollisionDetectionPickup : ItemPickupBase
 
 		public bool TryPlaySound(float vel, AudioSource src)
 		{
-			if (vel < _minimalVelocity)
+			if (vel < this._minimalVelocity)
 			{
 				return false;
 			}
-			src.PlayOneShot(_randomClips[UnityEngine.Random.Range(0, _randomClips.Length)]);
-			src.maxDistance = _maxRange;
-			src.pitch = UnityEngine.Random.Range(1f - _randomizePitch, 1f / (1f - _randomizePitch));
+			src.PlayOneShot(this._randomClips[UnityEngine.Random.Range(0, this._randomClips.Length)]);
+			src.maxDistance = this._maxRange;
+			src.pitch = UnityEngine.Random.Range(1f - this._randomizePitch, 1f / (1f - this._randomizePitch));
 			return true;
 		}
 	}
@@ -51,15 +51,15 @@ public class CollisionDetectionPickup : ItemPickupBase
 
 	private void OnCollisionEnter(Collision collision)
 	{
-		ProcessCollision(collision);
+		this.ProcessCollision(collision);
 	}
 
 	public float GetRangeOfCollisionVelocity(float sqrVel)
 	{
 		AudioSource source = AudioSourcePoolManager.GetFree().Source;
-		for (int num = _soundsOverVelocity.Length - 1; num >= 0; num--)
+		for (int num = this._soundsOverVelocity.Length - 1; num >= 0; num--)
 		{
-			if (_soundsOverVelocity[num].TryPlaySound(sqrVel, source))
+			if (this._soundsOverVelocity[num].TryPlaySound(sqrVel, source))
 			{
 				source.Stop();
 				return source.maxDistance;
@@ -74,7 +74,7 @@ public class CollisionDetectionPickup : ItemPickupBase
 		float sqrMagnitude = collision.relativeVelocity.sqrMagnitude;
 		if (NetworkServer.active)
 		{
-			float num = Info.WeightKg * sqrMagnitude / 2f;
+			float num = base.Info.WeightKg * sqrMagnitude / 2f;
 			if (num > 15f)
 			{
 				float damage = num * 0.4f;
@@ -84,7 +84,7 @@ public class CollisionDetectionPickup : ItemPickupBase
 				}
 			}
 		}
-		MakeCollisionSound(sqrMagnitude);
+		this.MakeCollisionSound(sqrMagnitude);
 	}
 
 	protected void MakeCollisionSound(float sqrtVelocity)

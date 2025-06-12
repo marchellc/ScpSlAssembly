@@ -28,12 +28,12 @@ public class ObjectiveFeedManager : MonoBehaviour
 	{
 		get
 		{
-			return _isFeedEnabled;
+			return this._isFeedEnabled;
 		}
 		private set
 		{
-			_isFeedEnabled = value;
-			_animator.SetBool("IsEnabled", value);
+			this._isFeedEnabled = value;
+			this._animator.SetBool("IsEnabled", value);
 		}
 	}
 
@@ -41,7 +41,7 @@ public class ObjectiveFeedManager : MonoBehaviour
 	{
 		get
 		{
-			ObjectiveFeedEntry[] feedEntries = _feedEntries;
+			ObjectiveFeedEntry[] feedEntries = this._feedEntries;
 			for (int i = 0; i < feedEntries.Length; i++)
 			{
 				if (feedEntries[i].isActiveAndEnabled)
@@ -59,11 +59,11 @@ public class ObjectiveFeedManager : MonoBehaviour
 		{
 			Debug.LogError("Unable to receive ObjectiveCompletionMessage on a server.");
 		}
-		else if (!(Singleton == null) && Singleton.isActiveAndEnabled && message.Objective is IFootprintObjective footprintObjective)
+		else if (!(ObjectiveFeedManager.Singleton == null) && ObjectiveFeedManager.Singleton.isActiveAndEnabled && message.Objective is IFootprintObjective footprintObjective)
 		{
 			StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
 			footprintObjective.ObjectiveFootprint.ClientCompletionText(stringBuilder);
-			ObjectiveEntryQueue.Enqueue(stringBuilder.ToString());
+			ObjectiveFeedManager.ObjectiveEntryQueue.Enqueue(stringBuilder.ToString());
 			StringBuilderPool.Shared.Return(stringBuilder);
 		}
 	}
@@ -79,9 +79,9 @@ public class ObjectiveFeedManager : MonoBehaviour
 
 	private void Awake()
 	{
-		Singleton = this;
+		ObjectiveFeedManager.Singleton = this;
 		UserSetting<bool>.AddListener(RespawnSetting.ObjectiveFeedVisible, SetEnabled);
-		IsFeedEnabled = UserSetting<bool>.Get(RespawnSetting.ObjectiveFeedVisible);
+		this.IsFeedEnabled = UserSetting<bool>.Get(RespawnSetting.ObjectiveFeedVisible);
 	}
 
 	private void OnDestroy()
@@ -91,7 +91,7 @@ public class ObjectiveFeedManager : MonoBehaviour
 
 	private void Start()
 	{
-		ObjectiveFeedEntry[] feedEntries = _feedEntries;
+		ObjectiveFeedEntry[] feedEntries = this._feedEntries;
 		for (int i = 0; i < feedEntries.Length; i++)
 		{
 			feedEntries[i].gameObject.SetActive(value: false);
@@ -100,16 +100,16 @@ public class ObjectiveFeedManager : MonoBehaviour
 
 	private void Update()
 	{
-		if (ObjectiveEntryQueue.Count == 0)
+		if (ObjectiveFeedManager.ObjectiveEntryQueue.Count == 0)
 		{
 			return;
 		}
-		ObjectiveFeedEntry[] feedEntries = _feedEntries;
+		ObjectiveFeedEntry[] feedEntries = this._feedEntries;
 		foreach (ObjectiveFeedEntry objectiveFeedEntry in feedEntries)
 		{
 			if (!objectiveFeedEntry.isActiveAndEnabled)
 			{
-				if (!ObjectiveEntryQueue.TryDequeue(out var result))
+				if (!ObjectiveFeedManager.ObjectiveEntryQueue.TryDequeue(out var result))
 				{
 					break;
 				}
@@ -120,16 +120,16 @@ public class ObjectiveFeedManager : MonoBehaviour
 
 	private void OnDisable()
 	{
-		ObjectiveEntryQueue.Clear();
+		ObjectiveFeedManager.ObjectiveEntryQueue.Clear();
 	}
 
 	private void SetEnabled(bool isEnabled)
 	{
-		IsFeedEnabled = isEnabled;
-		if (isEnabled && !InUse)
+		this.IsFeedEnabled = isEnabled;
+		if (isEnabled && !this.InUse)
 		{
 			string item = Translations.Get(FootprintsTranslation.ObjectiveFeedExample);
-			ObjectiveEntryQueue.Enqueue(item);
+			ObjectiveFeedManager.ObjectiveEntryQueue.Enqueue(item);
 		}
 	}
 }

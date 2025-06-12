@@ -66,7 +66,7 @@ public class Scp096ChargeAbility : KeySubroutine<Scp096Role>
 		{
 			if (base.CastRole.IsRageState(Scp096RageState.Enraged) && base.CastRole.IsAbilityState(Scp096AbilityState.None))
 			{
-				return Cooldown.IsReady;
+				return this.Cooldown.IsReady;
 			}
 			return false;
 		}
@@ -77,30 +77,30 @@ public class Scp096ChargeAbility : KeySubroutine<Scp096Role>
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		Cooldown.ReadCooldown(reader);
-		Duration.ReadCooldown(reader);
+		this.Cooldown.ReadCooldown(reader);
+		this.Duration.ReadCooldown(reader);
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		Cooldown.WriteCooldown(writer);
-		Duration.WriteCooldown(writer);
+		this.Cooldown.WriteCooldown(writer);
+		this.Duration.WriteCooldown(writer);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (CanCharge)
+		if (this.CanCharge)
 		{
-			Scp096ChargingEventArgs scp096ChargingEventArgs = new Scp096ChargingEventArgs(base.Owner);
-			Scp096Events.OnCharging(scp096ChargingEventArgs);
-			if (scp096ChargingEventArgs.IsAllowed)
+			Scp096ChargingEventArgs e = new Scp096ChargingEventArgs(base.Owner);
+			Scp096Events.OnCharging(e);
+			if (e.IsAllowed)
 			{
-				_hitHandler.Clear();
-				Duration.Trigger(1.0);
+				this._hitHandler.Clear();
+				this.Duration.Trigger(1.0);
 				base.CastRole.StateController.SetAbilityState(Scp096AbilityState.Charging);
-				ServerSendRpc(toAll: true);
+				base.ServerSendRpc(toAll: true);
 				Scp096Events.OnCharged(new Scp096ChargedEventArgs(base.Owner));
 			}
 		}
@@ -109,35 +109,35 @@ public class Scp096ChargeAbility : KeySubroutine<Scp096Role>
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_hitHandler = new Scp096HitHandler(base.CastRole, Scp096DamageHandler.AttackType.Charge, 750f, 750f, 90f, 35f);
-		_hitHandler.OnPlayerHit += delegate(ReferenceHub ply)
+		this._hitHandler = new Scp096HitHandler(base.CastRole, Scp096DamageHandler.AttackType.Charge, 750f, 750f, 90f, 35f);
+		this._hitHandler.OnPlayerHit += delegate(ReferenceHub ply)
 		{
-			ply.playerEffectsController.EnableEffect<Concussed>(_targetsTracker.HasTarget(ply) ? 10f : 4f);
+			ply.playerEffectsController.EnableEffect<Concussed>(this._targetsTracker.HasTarget(ply) ? 10f : 4f);
 		};
 	}
 
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		ClientSendCmd();
+		base.ClientSendCmd();
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		_tr = base.transform;
-		GetSubroutine<Scp096AudioPlayer>(out _audioPlayer);
-		GetSubroutine<Scp096TargetsTracker>(out _targetsTracker);
+		this._tr = base.transform;
+		base.GetSubroutine<Scp096AudioPlayer>(out this._audioPlayer);
+		base.GetSubroutine<Scp096TargetsTracker>(out this._targetsTracker);
 		base.CastRole.StateController.OnAbilityUpdate += delegate
 		{
-			foreach (Collider disabledCollider in DisabledColliders)
+			foreach (Collider disabledCollider in Scp096ChargeAbility.DisabledColliders)
 			{
 				if (!(disabledCollider == null))
 				{
 					disabledCollider.enabled = true;
 				}
 			}
-			DisabledColliders.Clear();
+			Scp096ChargeAbility.DisabledColliders.Clear();
 		};
 	}
 
@@ -148,40 +148,40 @@ public class Scp096ChargeAbility : KeySubroutine<Scp096Role>
 		{
 			if (NetworkServer.active)
 			{
-				UpdateServer();
+				this.UpdateServer();
 			}
 			if (base.Role.IsLocalPlayer)
 			{
-				UpdateLocalClient();
+				this.UpdateLocalClient();
 			}
 		}
 	}
 
 	private void UpdateServer()
 	{
-		if (Duration.IsReady || !base.CastRole.IsRageState(Scp096RageState.Enraged))
+		if (this.Duration.IsReady || !base.CastRole.IsRageState(Scp096RageState.Enraged))
 		{
 			base.CastRole.ResetAbilityState();
-			Cooldown.Trigger(5.0);
-			ServerSendRpc(toAll: true);
+			this.Cooldown.Trigger(5.0);
+			base.ServerSendRpc(toAll: true);
 			return;
 		}
-		Scp096HitResult scp096HitResult = _hitHandler.DamageBox(_tr.TransformPoint(_detectionOffset), _detectionExtents, _tr.rotation);
-		if (scp096HitResult != 0)
+		Scp096HitResult scp096HitResult = this._hitHandler.DamageBox(this._tr.TransformPoint(this._detectionOffset), this._detectionExtents, this._tr.rotation);
+		if (scp096HitResult != Scp096HitResult.None)
 		{
 			Hitmarker.SendHitmarkerDirectly(base.Owner, 1f);
-			_audioPlayer.ServerPlayAttack(scp096HitResult);
+			this._audioPlayer.ServerPlayAttack(scp096HitResult);
 		}
 	}
 
 	private void UpdateLocalClient()
 	{
-		int num = Physics.OverlapBoxNonAlloc(_tr.TransformPoint(_detectionOffset), _detectionExtents, DoorDetections, _tr.rotation, ClientsideDoorDetectorMask);
+		int num = Physics.OverlapBoxNonAlloc(this._tr.TransformPoint(this._detectionOffset), this._detectionExtents, Scp096ChargeAbility.DoorDetections, this._tr.rotation, Scp096ChargeAbility.ClientsideDoorDetectorMask);
 		for (int i = 0; i < num; i++)
 		{
-			if (DoorDetections[i].TryGetComponent<InteractableCollider>(out var component))
+			if (Scp096ChargeAbility.DoorDetections[i].TryGetComponent<InteractableCollider>(out var component))
 			{
-				CheckDoor(component.Target as IInteractable);
+				this.CheckDoor(component.Target as IInteractable);
 			}
 		}
 	}
@@ -192,7 +192,7 @@ public class Scp096ChargeAbility : KeySubroutine<Scp096Role>
 		{
 			if (inter is PryableDoor door)
 			{
-				GetSubroutine<Scp096PrygateAbility>(out var sr);
+				base.GetSubroutine<Scp096PrygateAbility>(out var sr);
 				sr.ClientTryPry(door);
 			}
 			return;
@@ -202,7 +202,7 @@ public class Scp096ChargeAbility : KeySubroutine<Scp096Role>
 			if (collider.enabled)
 			{
 				collider.enabled = false;
-				DisabledColliders.Add(collider);
+				Scp096ChargeAbility.DisabledColliders.Add(collider);
 			}
 		}
 	}

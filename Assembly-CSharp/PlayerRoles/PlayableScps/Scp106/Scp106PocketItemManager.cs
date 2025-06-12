@@ -53,8 +53,6 @@ public static class Scp106PocketItemManager
 
 	private static readonly HashSet<ItemPickupBase> ToRemove = new HashSet<ItemPickupBase>();
 
-	private static readonly Vector2 HeightLimit = new Vector2(-1990f, -2002f);
-
 	private static float RandomVel => UnityEngine.Random.Range(-0.2f, 0.2f);
 
 	public static event Action<ItemPickupBase, PocketItem> OnPocketItemAdded;
@@ -67,38 +65,38 @@ public static class Scp106PocketItemManager
 		{
 			PocketItem pocketItem = new PocketItem
 			{
-				Remove = (UnityEngine.Random.value > RecycleChances[GetRarity(result)]),
-				TriggerTime = NetworkTime.time + (double)UnityEngine.Random.Range(TimerRange.x, TimerRange.y),
-				DropPosition = GetRandomValidSpawnPosition(),
+				Remove = (UnityEngine.Random.value > Scp106PocketItemManager.RecycleChances[Scp106PocketItemManager.GetRarity(result)]),
+				TriggerTime = NetworkTime.time + (double)UnityEngine.Random.Range(Scp106PocketItemManager.TimerRange.x, Scp106PocketItemManager.TimerRange.y),
+				DropPosition = Scp106PocketItemManager.GetRandomValidSpawnPosition(),
 				WarningSent = false
 			};
 			Scp106PocketItemManager.OnPocketItemAdded?.Invoke(itemPickup, pocketItem);
-			TrackedItems.Add(itemPickup, pocketItem);
+			Scp106PocketItemManager.TrackedItems.Add(itemPickup, pocketItem);
 		}
 	}
 
 	public static void RemoveItem(ItemPickupBase itemPickup)
 	{
 		Scp106PocketItemManager.OnPocketItemRemoved?.Invoke(itemPickup);
-		TrackedItems.Remove(itemPickup);
+		Scp106PocketItemManager.TrackedItems.Remove(itemPickup);
 	}
 
 	public static int GetRarity(ItemBase ib)
 	{
 		int num = 0;
-		if (HasFlagFast(ib, ItemTierFlags.Rare))
+		if (Scp106PocketItemManager.HasFlagFast(ib, ItemTierFlags.Rare))
 		{
 			num++;
 		}
-		if (HasFlagFast(ib, ItemTierFlags.MilitaryGrade))
+		if (Scp106PocketItemManager.HasFlagFast(ib, ItemTierFlags.MilitaryGrade))
 		{
 			num++;
 		}
-		if (HasFlagFast(ib, ItemTierFlags.ExtraRare))
+		if (Scp106PocketItemManager.HasFlagFast(ib, ItemTierFlags.ExtraRare))
 		{
 			num += 2;
 		}
-		return Mathf.Min(num, RecycleChances.Length - 1);
+		return Mathf.Min(num, Scp106PocketItemManager.RecycleChances.Length - 1);
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -109,7 +107,7 @@ public static class Scp106PocketItemManager
 		StaticUnityMethods.OnUpdate += Update;
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			TrackedItems.Clear();
+			Scp106PocketItemManager.TrackedItems.Clear();
 			NetworkClient.ReplaceHandler(delegate(WarningMessage x)
 			{
 				if (PlayerRoleLoader.TryGetRoleTemplate<Scp106Role>(RoleTypeId.Scp106, out var result))
@@ -127,11 +125,11 @@ public static class Scp106PocketItemManager
 			return;
 		}
 		bool flag = false;
-		foreach (KeyValuePair<ItemPickupBase, PocketItem> trackedItem in TrackedItems)
+		foreach (KeyValuePair<ItemPickupBase, PocketItem> trackedItem in Scp106PocketItemManager.TrackedItems)
 		{
-			if (trackedItem.Key == null || !ValidateHeight(trackedItem.Key))
+			if (!trackedItem.Key || !Scp106PocketItemManager.IsInPocketDimension(trackedItem.Key.transform.position))
 			{
-				flag |= ToRemove.Add(trackedItem.Key);
+				flag |= Scp106PocketItemManager.ToRemove.Add(trackedItem.Key);
 				continue;
 			}
 			PocketItem value = trackedItem.Value;
@@ -142,9 +140,10 @@ public static class Scp106PocketItemManager
 			}
 			if (!value.Remove && !value.WarningSent)
 			{
-				WarningMessage message = default(WarningMessage);
-				message.Position = value.DropPosition;
-				NetworkServer.SendToAll(message, 0, sendToReadyOnly: true);
+				NetworkServer.SendToAll(new WarningMessage
+				{
+					Position = value.DropPosition
+				}, 0, sendToReadyOnly: true);
 				value.WarningSent = true;
 			}
 			if (!(num > 0.0))
@@ -157,26 +156,26 @@ public static class Scp106PocketItemManager
 				}
 				else if (key.TryGetComponent<Rigidbody>(out component))
 				{
-					component.linearVelocity = new Vector3(RandomVel, Physics.gravity.y, RandomVel);
+					component.linearVelocity = new Vector3(Scp106PocketItemManager.RandomVel, Physics.gravity.y, Scp106PocketItemManager.RandomVel);
 					key.transform.position = value.DropPosition.Position;
 				}
-				flag |= ToRemove.Add(key);
+				value.TriggerTime = NetworkTime.time + (double)UnityEngine.Random.Range(Scp106PocketItemManager.TimerRange.x, Scp106PocketItemManager.TimerRange.y);
 			}
 		}
 		if (flag)
 		{
-			ToRemove.ForEach(delegate(ItemPickupBase x)
+			Scp106PocketItemManager.ToRemove.ForEach(delegate(ItemPickupBase x)
 			{
-				RemoveItem(x);
+				Scp106PocketItemManager.RemoveItem(x);
 			});
 		}
 	}
 
 	private static void OnAdded(ItemPickupBase ipb)
 	{
-		if (NetworkServer.active && ValidateHeight(ipb))
+		if (NetworkServer.active && Scp106PocketItemManager.IsInPocketDimension(ipb.transform.position))
 		{
-			AddItem(ipb);
+			Scp106PocketItemManager.AddItem(ipb);
 		}
 	}
 
@@ -184,16 +183,15 @@ public static class Scp106PocketItemManager
 	{
 		if (NetworkServer.active)
 		{
-			TrackedItems.Remove(ipb);
+			Scp106PocketItemManager.TrackedItems.Remove(ipb);
 		}
 	}
 
-	private static bool ValidateHeight(ItemPickupBase ipb)
+	private static bool IsInPocketDimension(Vector3 position)
 	{
-		float y = ipb.transform.position.y;
-		if (y >= HeightLimit.y)
+		if (position.TryGetRoom(out var room))
 		{
-			return y <= HeightLimit.x;
+			return room.Name == RoomName.Pocket;
 		}
 		return false;
 	}
@@ -208,9 +206,9 @@ public static class Scp106PocketItemManager
 				continue;
 			}
 			Vector3 position = fpcRole.FpcModule.Position;
-			if (!(position.y < HeightLimit.x) && TryGetRoofPosition(position, out var result))
+			if (!Scp106PocketItemManager.IsInPocketDimension(position) && Scp106PocketItemManager.TryGetRoofPosition(position, out var result))
 			{
-				ValidPositionsNonAlloc[num] = result;
+				Scp106PocketItemManager.ValidPositionsNonAlloc[num] = result;
 				if (++num > 64)
 				{
 					break;
@@ -219,13 +217,13 @@ public static class Scp106PocketItemManager
 		}
 		if (num > 0)
 		{
-			return new RelativePosition(ValidPositionsNonAlloc[UnityEngine.Random.Range(0, num)]);
+			return new RelativePosition(Scp106PocketItemManager.ValidPositionsNonAlloc[UnityEngine.Random.Range(0, num)]);
 		}
 		foreach (RoomIdentifier allRoomIdentifier in RoomIdentifier.AllRoomIdentifiers)
 		{
-			if ((allRoomIdentifier.Zone == FacilityZone.HeavyContainment || allRoomIdentifier.Zone == FacilityZone.Entrance) && TryGetRoofPosition(allRoomIdentifier.transform.position, out var result2))
+			if ((allRoomIdentifier.Zone == FacilityZone.HeavyContainment || allRoomIdentifier.Zone == FacilityZone.Entrance) && Scp106PocketItemManager.TryGetRoofPosition(allRoomIdentifier.transform.position, out var result2) && !Scp106PocketItemManager.IsInPocketDimension(result2))
 			{
-				ValidPositionsNonAlloc[num] = result2;
+				Scp106PocketItemManager.ValidPositionsNonAlloc[num] = result2;
 				if (++num > 64)
 				{
 					break;
@@ -237,7 +235,7 @@ public static class Scp106PocketItemManager
 			throw new InvalidOperationException("GetRandomValidSpawnPosition found no valid spawn positions.");
 		}
 		int num2 = UnityEngine.Random.Range(0, num);
-		return new RelativePosition(ValidPositionsNonAlloc[num2]);
+		return new RelativePosition(Scp106PocketItemManager.ValidPositionsNonAlloc[num2]);
 	}
 
 	private static bool TryGetRoofPosition(Vector3 point, out Vector3 result)

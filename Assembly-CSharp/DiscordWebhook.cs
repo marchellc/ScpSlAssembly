@@ -25,9 +25,9 @@ public readonly struct DiscordWebhook : IEquatable<DiscordWebhook>, IJsonSeriali
 
 	public bool Equals(DiscordWebhook other)
 	{
-		if (content == other.content && username == other.username && avatar_url == other.avatar_url && tts == other.tts)
+		if (this.content == other.content && this.username == other.username && this.avatar_url == other.avatar_url && this.tts == other.tts)
 		{
-			return object.Equals(embeds, other.embeds);
+			return object.Equals(this.embeds, other.embeds);
 		}
 		return false;
 	}
@@ -36,16 +36,16 @@ public readonly struct DiscordWebhook : IEquatable<DiscordWebhook>, IJsonSeriali
 	{
 		if (obj is DiscordWebhook other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		int num = ((((((content != null) ? content.GetHashCode() : 0) * 397) ^ ((username != null) ? username.GetHashCode() : 0)) * 397) ^ ((avatar_url != null) ? avatar_url.GetHashCode() : 0)) * 397;
-		bool flag = tts;
-		return ((num ^ flag.GetHashCode()) * 397) ^ ((embeds != null) ? embeds.GetHashCode() : 0);
+		int num = ((((((this.content != null) ? this.content.GetHashCode() : 0) * 397) ^ ((this.username != null) ? this.username.GetHashCode() : 0)) * 397) ^ ((this.avatar_url != null) ? this.avatar_url.GetHashCode() : 0)) * 397;
+		bool flag = this.tts;
+		return ((num ^ flag.GetHashCode()) * 397) ^ ((this.embeds != null) ? this.embeds.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(DiscordWebhook left, DiscordWebhook right)

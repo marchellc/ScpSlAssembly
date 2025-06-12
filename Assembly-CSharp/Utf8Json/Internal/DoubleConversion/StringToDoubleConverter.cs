@@ -39,7 +39,7 @@ internal static class StringToDoubleConverter
 
 	private static readonly byte[] kWhitespaceTable7 = new byte[6] { 32, 13, 10, 9, 11, 12 };
 
-	private static readonly int kWhitespaceTable7Length = kWhitespaceTable7.Length;
+	private static readonly int kWhitespaceTable7Length = StringToDoubleConverter.kWhitespaceTable7.Length;
 
 	private static readonly ushort[] kWhitespaceTable16 = new ushort[20]
 	{
@@ -47,43 +47,43 @@ internal static class StringToDoubleConverter
 		8197, 8198, 8199, 8200, 8201, 8202, 8239, 8287, 12288, 65279
 	};
 
-	private static readonly int kWhitespaceTable16Length = kWhitespaceTable16.Length;
+	private static readonly int kWhitespaceTable16Length = StringToDoubleConverter.kWhitespaceTable16.Length;
 
 	private static byte[] GetBuffer()
 	{
-		if (kBuffer == null)
+		if (StringToDoubleConverter.kBuffer == null)
 		{
-			kBuffer = new byte[782];
+			StringToDoubleConverter.kBuffer = new byte[782];
 		}
-		return kBuffer;
+		return StringToDoubleConverter.kBuffer;
 	}
 
 	private static byte[] GetFallbackBuffer()
 	{
-		if (fallbackBuffer == null)
+		if (StringToDoubleConverter.fallbackBuffer == null)
 		{
-			fallbackBuffer = new byte[99];
+			StringToDoubleConverter.fallbackBuffer = new byte[99];
 		}
-		return fallbackBuffer;
+		return StringToDoubleConverter.fallbackBuffer;
 	}
 
 	public static double ToDouble(byte[] buffer, int offset, out int readCount)
 	{
-		return StringToIeee(new Iterator(buffer, offset), buffer.Length - offset, read_as_double: true, out readCount);
+		return StringToDoubleConverter.StringToIeee(new Iterator(buffer, offset), buffer.Length - offset, read_as_double: true, out readCount);
 	}
 
 	public static float ToSingle(byte[] buffer, int offset, out int readCount)
 	{
-		return (float)StringToIeee(new Iterator(buffer, offset), buffer.Length - offset, read_as_double: false, out readCount);
+		return (float)StringToDoubleConverter.StringToIeee(new Iterator(buffer, offset), buffer.Length - offset, read_as_double: false, out readCount);
 	}
 
 	private static bool isWhitespace(int x)
 	{
 		if (x < 128)
 		{
-			for (int i = 0; i < kWhitespaceTable7Length; i++)
+			for (int i = 0; i < StringToDoubleConverter.kWhitespaceTable7Length; i++)
 			{
-				if (kWhitespaceTable7[i] == x)
+				if (StringToDoubleConverter.kWhitespaceTable7[i] == x)
 				{
 					return true;
 				}
@@ -91,9 +91,9 @@ internal static class StringToDoubleConverter
 		}
 		else
 		{
-			for (int j = 0; j < kWhitespaceTable16Length; j++)
+			for (int j = 0; j < StringToDoubleConverter.kWhitespaceTable16Length; j++)
 			{
-				if (kWhitespaceTable16[j] == x)
+				if (StringToDoubleConverter.kWhitespaceTable16[j] == x)
 				{
 					return true;
 				}
@@ -106,7 +106,7 @@ internal static class StringToDoubleConverter
 	{
 		while (current != end)
 		{
-			if (!isWhitespace(current.Value))
+			if (!StringToDoubleConverter.isWhitespace(current.Value))
 			{
 				return true;
 			}
@@ -158,7 +158,7 @@ internal static class StringToDoubleConverter
 		}
 		if (flag2 || flag3)
 		{
-			if (!AdvanceToNonspace(ref current, iterator))
+			if (!StringToDoubleConverter.AdvanceToNonspace(ref current, iterator))
 			{
 				processed_characters_count = current - input;
 				return 0.0;
@@ -168,7 +168,7 @@ internal static class StringToDoubleConverter
 				return double.NaN;
 			}
 		}
-		byte[] buffer = GetBuffer();
+		byte[] buffer = StringToDoubleConverter.GetBuffer();
 		int num = 0;
 		int num2 = 0;
 		int num3 = 0;
@@ -180,7 +180,7 @@ internal static class StringToDoubleConverter
 			flag6 = current == '-';
 			++current;
 			Iterator current2 = current;
-			if (!AdvanceToNonspace(ref current2, iterator))
+			if (!StringToDoubleConverter.AdvanceToNonspace(ref current2, iterator))
 			{
 				return double.NaN;
 			}
@@ -190,9 +190,9 @@ internal static class StringToDoubleConverter
 			}
 			current = current2;
 		}
-		if (infinity_symbol_ != null && ConsumeFirstCharacter(ref current, infinity_symbol_, 0))
+		if (StringToDoubleConverter.infinity_symbol_ != null && StringToDoubleConverter.ConsumeFirstCharacter(ref current, StringToDoubleConverter.infinity_symbol_, 0))
 		{
-			if (!ConsumeSubString(ref current, iterator, infinity_symbol_))
+			if (!StringToDoubleConverter.ConsumeSubString(ref current, iterator, StringToDoubleConverter.infinity_symbol_))
 			{
 				return double.NaN;
 			}
@@ -200,7 +200,7 @@ internal static class StringToDoubleConverter
 			{
 				return double.NaN;
 			}
-			if (!flag && AdvanceToNonspace(ref current, iterator))
+			if (!flag && StringToDoubleConverter.AdvanceToNonspace(ref current, iterator))
 			{
 				return double.NaN;
 			}
@@ -211,9 +211,9 @@ internal static class StringToDoubleConverter
 			}
 			return double.NegativeInfinity;
 		}
-		if (nan_symbol_ != null && ConsumeFirstCharacter(ref current, nan_symbol_, 0))
+		if (StringToDoubleConverter.nan_symbol_ != null && StringToDoubleConverter.ConsumeFirstCharacter(ref current, StringToDoubleConverter.nan_symbol_, 0))
 		{
-			if (!ConsumeSubString(ref current, iterator, nan_symbol_))
+			if (!StringToDoubleConverter.ConsumeSubString(ref current, iterator, StringToDoubleConverter.nan_symbol_))
 			{
 				return double.NaN;
 			}
@@ -221,7 +221,7 @@ internal static class StringToDoubleConverter
 			{
 				return double.NaN;
 			}
-			if (!flag && AdvanceToNonspace(ref current, iterator))
+			if (!flag && StringToDoubleConverter.AdvanceToNonspace(ref current, iterator))
 			{
 				return double.NaN;
 			}
@@ -239,7 +239,7 @@ internal static class StringToDoubleConverter
 			if (current == iterator)
 			{
 				processed_characters_count = current - input;
-				return SignedZero(flag6);
+				return StringToDoubleConverter.SignedZero(flag6);
 			}
 			flag7 = true;
 			while (current == '0')
@@ -248,7 +248,7 @@ internal static class StringToDoubleConverter
 				if (current == iterator)
 				{
 					processed_characters_count = current - input;
-					return SignedZero(flag6);
+					return StringToDoubleConverter.SignedZero(flag6);
 				}
 			}
 		}
@@ -301,7 +301,7 @@ internal static class StringToDoubleConverter
 						if (current == iterator)
 						{
 							processed_characters_count = current - input;
-							return SignedZero(flag6);
+							return StringToDoubleConverter.SignedZero(flag6);
 						}
 						num2--;
 					}
@@ -384,13 +384,13 @@ internal static class StringToDoubleConverter
 			{
 				return double.NaN;
 			}
-			if (!flag && AdvanceToNonspace(ref current, iterator))
+			if (!flag && StringToDoubleConverter.AdvanceToNonspace(ref current, iterator))
 			{
 				return double.NaN;
 			}
 			if (flag3)
 			{
-				AdvanceToNonspace(ref current, iterator);
+				StringToDoubleConverter.AdvanceToNonspace(ref current, iterator);
 			}
 			break;
 			continue;
@@ -409,8 +409,8 @@ internal static class StringToDoubleConverter
 		if (!num7.HasValue)
 		{
 			processed_characters_count = current - input;
-			byte[] array = GetFallbackBuffer();
-			BinaryUtil.EnsureCapacity(ref fallbackBuffer, 0, processed_characters_count);
+			byte[] array = StringToDoubleConverter.GetFallbackBuffer();
+			BinaryUtil.EnsureCapacity(ref StringToDoubleConverter.fallbackBuffer, 0, processed_characters_count);
 			int count = 0;
 			while (input != current)
 			{

@@ -14,16 +14,16 @@ public class Remap
 
 	public float Get(float f)
 	{
-		return Evaluate(_inMin, _inMax, _outMin, _outMax, f, _clamped);
+		return Remap.Evaluate(this._inMin, this._inMax, this._outMin, this._outMax, f, this._clamped);
 	}
 
 	public Remap(float inMin, float inMax, float outMin, float outMax, bool clamped = true)
 	{
-		_inMin = inMin;
-		_inMax = inMax;
-		_outMin = outMin;
-		_outMax = outMax;
-		_clamped = clamped;
+		this._inMin = inMin;
+		this._inMax = inMax;
+		this._outMin = outMin;
+		this._outMax = outMax;
+		this._clamped = clamped;
 	}
 
 	public static float Evaluate(float inMin, float inMax, float outMin, float outMax, float inValue, bool clamped = true)

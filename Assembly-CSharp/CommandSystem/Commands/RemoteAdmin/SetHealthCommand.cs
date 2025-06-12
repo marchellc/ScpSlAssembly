@@ -31,9 +31,9 @@ public class SetHealthCommand : ICommand, IUsageProvider
 		}
 		string[] newargs;
 		List<ReferenceHub> list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out newargs);
-		int result = (int.TryParse(newargs[0], out result) ? result : 0);
+		int num = (int.TryParse(newargs[0], out num) ? num : 0);
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-		int num = 0;
+		int num2 = 0;
 		if (list != null)
 		{
 			foreach (ReferenceHub item in list)
@@ -41,23 +41,23 @@ public class SetHealthCommand : ICommand, IUsageProvider
 				if (!(item == null))
 				{
 					HealthStat module = item.playerStats.GetModule<HealthStat>();
-					module.CurValue = ((result > 0) ? ((float)result) : module.MaxValue);
-					if (num != 0)
+					module.CurValue = ((num > 0) ? ((float)num) : module.MaxValue);
+					if (num2 != 0)
 					{
 						stringBuilder.Append(", ");
 					}
 					stringBuilder.Append(item.LoggedNameFromRefHub());
-					num++;
+					num2++;
 				}
 			}
 		}
-		if (num > 0)
+		if (num2 > 0)
 		{
-			ServerLogs.AddLog(ServerLogs.Modules.Administrative, string.Format("{0} set health of player{1}{2} to {3}.", sender.LogName, (num == 1) ? " " : "s ", stringBuilder, result), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
+			ServerLogs.AddLog(ServerLogs.Modules.Administrative, string.Format("{0} set health of player{1}{2} to {3}.", sender.LogName, (num2 == 1) ? " " : "s ", stringBuilder, num), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
 		}
 		StringBuilderPool.Shared.Return(stringBuilder);
 		ListPool<ReferenceHub>.Shared.Return(list);
-		response = string.Format("Done! The request affected {0} player{1}", num, (num == 1) ? "!" : "s!");
+		response = string.Format("Done! The request affected {0} player{1}", num2, (num2 == 1) ? "!" : "s!");
 		return true;
 	}
 }

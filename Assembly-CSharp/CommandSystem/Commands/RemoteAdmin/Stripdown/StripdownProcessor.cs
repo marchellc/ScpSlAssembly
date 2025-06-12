@@ -23,14 +23,14 @@ public static class StripdownProcessor
 		{
 			return "null";
 		}
-		ReturnSb.Clear();
+		StripdownProcessor.ReturnSb.Clear();
 		foreach (MemberInfo memberInfo in infos)
 		{
-			ReturnSb.Append(memberInfo.Name);
-			ReturnSb.Append("=\"");
+			StripdownProcessor.ReturnSb.Append(memberInfo.Name);
+			StripdownProcessor.ReturnSb.Append("=\"");
 			if (memberInfo is FieldInfo fieldInfo)
 			{
-				ReturnSb.Append(PrintObjToString(fieldInfo.GetValue(obj)));
+				StripdownProcessor.ReturnSb.Append(StripdownProcessor.PrintObjToString(fieldInfo.GetValue(obj)));
 			}
 			else
 			{
@@ -38,11 +38,11 @@ public static class StripdownProcessor
 				{
 					throw new InvalidOperationException("Member " + memberInfo.Name + " is not a value provider!");
 				}
-				ReturnSb.Append(PrintObjToString(propertyInfo.GetValue(obj)));
+				StripdownProcessor.ReturnSb.Append(StripdownProcessor.PrintObjToString(propertyInfo.GetValue(obj)));
 			}
-			ReturnSb.Append("\"; ");
+			StripdownProcessor.ReturnSb.Append("\"; ");
 		}
-		return ReturnSb.ToString();
+		return StripdownProcessor.ReturnSb.ToString();
 	}
 
 	private static string PrintObjToString(object obj)
@@ -61,63 +61,63 @@ public static class StripdownProcessor
 
 	private static MemberInfo GetValueMemberByName(string name)
 	{
-		MemberInfo memberInfo = (MemberInfo)(((object)_selectedType.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)) ?? ((object)_selectedType.GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)));
+		MemberInfo memberInfo = (MemberInfo)(((object)StripdownProcessor._selectedType.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)) ?? ((object)StripdownProcessor._selectedType.GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)));
 		if (memberInfo != null)
 		{
 			return memberInfo;
 		}
-		ReturnSb.Clear();
-		ReturnSb.Append("Value " + name + " not found. Available values:");
-		_selectedType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).ForEach(delegate(FieldInfo x)
+		StripdownProcessor.ReturnSb.Clear();
+		StripdownProcessor.ReturnSb.Append("Value " + name + " not found. Available values:");
+		StripdownProcessor._selectedType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).ForEach(delegate(FieldInfo x)
 		{
-			ReturnSb.AppendLine(x.Name);
+			StripdownProcessor.ReturnSb.AppendLine(x.Name);
 		});
-		_selectedType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).ForEach(delegate(PropertyInfo x)
+		StripdownProcessor._selectedType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).ForEach(delegate(PropertyInfo x)
 		{
-			ReturnSb.AppendLine(x.Name);
+			StripdownProcessor.ReturnSb.AppendLine(x.Name);
 		});
-		throw new InvalidParameterException(ReturnSb.ToString());
+		throw new InvalidParameterException(StripdownProcessor.ReturnSb.ToString());
 	}
 
 	public static int SelectUnityObjects(string typeName)
 	{
-		_selectedType = Type.GetType(typeName, throwOnError: true, ignoreCase: true);
-		object[] selections = UnityEngine.Object.FindObjectsOfType(_selectedType);
-		_selections = selections;
-		return _selections.Length;
+		StripdownProcessor._selectedType = Type.GetType(typeName, throwOnError: true, ignoreCase: true);
+		object[] selections = UnityEngine.Object.FindObjectsOfType(StripdownProcessor._selectedType);
+		StripdownProcessor._selections = selections;
+		return StripdownProcessor._selections.Length;
 	}
 
 	public static void SelectValues(string valueName)
 	{
-		MemberInfo valueMemberByName = GetValueMemberByName(valueName);
-		int num = _selections.Length;
+		MemberInfo valueMemberByName = StripdownProcessor.GetValueMemberByName(valueName);
+		int num = StripdownProcessor._selections.Length;
 		object[] array = new object[num];
-		Array.Copy(_selections, array, num);
-		_selections = new object[num];
+		Array.Copy(StripdownProcessor._selections, array, num);
+		StripdownProcessor._selections = new object[num];
 		if (valueMemberByName is PropertyInfo propertyInfo)
 		{
-			_selectedType = propertyInfo.PropertyType;
+			StripdownProcessor._selectedType = propertyInfo.PropertyType;
 			for (int i = 0; i < num; i++)
 			{
-				_selections[i] = propertyInfo.GetValue(array[i]);
+				StripdownProcessor._selections[i] = propertyInfo.GetValue(array[i]);
 			}
 		}
 		else if (valueMemberByName is FieldInfo fieldInfo)
 		{
-			_selectedType = fieldInfo.FieldType;
+			StripdownProcessor._selectedType = fieldInfo.FieldType;
 			for (int j = 0; j < num; j++)
 			{
-				_selections[j] = fieldInfo.GetValue(array[j]);
+				StripdownProcessor._selections[j] = fieldInfo.GetValue(array[j]);
 			}
 		}
 	}
 
 	public static void SelectComponent(string componentName)
 	{
-		int num = _selections.Length;
+		int num = StripdownProcessor._selections.Length;
 		object[] array = new object[num];
-		Array.Copy(_selections, array, num);
-		_selections = new object[num];
+		Array.Copy(StripdownProcessor._selections, array, num);
+		StripdownProcessor._selections = new object[num];
 		for (int i = 0; i < num; i++)
 		{
 			object obj = array[i];
@@ -137,31 +137,31 @@ public static class StripdownProcessor
 			Component component2 = gameObject.GetComponent(componentName);
 			if (component2 == null)
 			{
-				ReturnSb.Clear();
-				ReturnSb.Append("GameObject " + gameObject.name + " does not have a " + componentName + " component.");
-				ReturnSb.AppendLine("List of compoenents:");
+				StripdownProcessor.ReturnSb.Clear();
+				StripdownProcessor.ReturnSb.Append("GameObject " + gameObject.name + " does not have a " + componentName + " component.");
+				StripdownProcessor.ReturnSb.AppendLine("List of compoenents:");
 				gameObject.GetComponents<Component>().ForEach(delegate(Component x)
 				{
-					ReturnSb.AppendLine(x.GetType().Name);
+					StripdownProcessor.ReturnSb.AppendLine(x.GetType().Name);
 				});
-				throw new InvalidParameterException(ReturnSb.ToString());
+				throw new InvalidParameterException(StripdownProcessor.ReturnSb.ToString());
 			}
-			_selections[i] = component2;
+			StripdownProcessor._selections[i] = component2;
 		}
 	}
 
 	public static string[] Print(params string[] valueNames)
 	{
-		if (_selections == null || _selections.Length == 0)
+		if (StripdownProcessor._selections == null || StripdownProcessor._selections.Length == 0)
 		{
 			throw new InvalidOperationException("No objects selected!");
 		}
-		int num = _selections.Length;
+		int num = StripdownProcessor._selections.Length;
 		int num2 = valueNames.Length;
 		MemberInfo[] array = new MemberInfo[num2];
 		for (int i = 0; i < num2; i++)
 		{
-			array[i] = GetValueMemberByName(valueNames[i]);
+			array[i] = StripdownProcessor.GetValueMemberByName(valueNames[i]);
 		}
 		string[] array2 = new string[num];
 		for (int j = 0; j < num; j++)
@@ -169,7 +169,7 @@ public static class StripdownProcessor
 			string text;
 			try
 			{
-				text = PrintMembers(_selections[j], array);
+				text = StripdownProcessor.PrintMembers(StripdownProcessor._selections[j], array);
 			}
 			catch (Exception ex)
 			{

@@ -39,7 +39,7 @@ public class ArraySegmentFormatter<T> : IJsonFormatter<ArraySegment<T>>, IJsonFo
 		}
 		int count = 0;
 		IJsonFormatter<T> formatterWithVerify = formatterResolver.GetFormatterWithVerify<T>();
-		T[] array = arrayPool.Rent();
+		T[] array = ArraySegmentFormatter<T>.arrayPool.Rent();
 		try
 		{
 			T[] array2 = array;
@@ -59,7 +59,7 @@ public class ArraySegmentFormatter<T> : IJsonFormatter<ArraySegment<T>>, IJsonFo
 		}
 		finally
 		{
-			arrayPool.Return(array);
+			ArraySegmentFormatter<T>.arrayPool.Return(array);
 		}
 	}
 }

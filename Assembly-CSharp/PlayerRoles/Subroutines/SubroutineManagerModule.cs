@@ -9,14 +9,14 @@ public class SubroutineManagerModule : MonoBehaviour
 
 	private void OnValidate()
 	{
-		AllSubroutines = GetComponentsInChildren<SubroutineBase>();
+		this.AllSubroutines = base.GetComponentsInChildren<SubroutineBase>();
 	}
 
 	public bool TryGetSubroutine<T>(out T subroutine) where T : SubroutineBase
 	{
-		for (int i = 0; i < AllSubroutines.Length; i++)
+		for (int i = 0; i < this.AllSubroutines.Length; i++)
 		{
-			if (AllSubroutines[i] is T val)
+			if (this.AllSubroutines[i] is T val)
 			{
 				subroutine = val;
 				return true;

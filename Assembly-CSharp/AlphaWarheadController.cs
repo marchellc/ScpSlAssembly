@@ -32,7 +32,7 @@ public class AlphaWarheadController : NetworkBehaviour
 
 		public int AdditionalTime;
 
-		public int TotalTime => TimeToDetonate + AdditionalTime;
+		public int TotalTime => this.TimeToDetonate + this.AdditionalTime;
 	}
 
 	public DetonationScenario[] StartScenarios;
@@ -92,11 +92,11 @@ public class AlphaWarheadController : NetworkBehaviour
 
 	public bool AlreadyDetonated { get; private set; }
 
-	public DetonationScenario CurScenario => Info.ScenarioType switch
+	public DetonationScenario CurScenario => this.Info.ScenarioType switch
 	{
-		WarheadScenarioType.Start => StartScenarios[Info.ScenarioId], 
-		WarheadScenarioType.Resume => ResumeScenarios[Info.ScenarioId], 
-		WarheadScenarioType.DeadmanSwitch => DeadmanSwitchScenario, 
+		WarheadScenarioType.Start => this.StartScenarios[this.Info.ScenarioId], 
+		WarheadScenarioType.Resume => this.ResumeScenarios[this.Info.ScenarioId], 
+		WarheadScenarioType.DeadmanSwitch => this.DeadmanSwitchScenario, 
 		_ => null, 
 	};
 
@@ -112,11 +112,11 @@ public class AlphaWarheadController : NetworkBehaviour
 	{
 		get
 		{
-			if (!SingletonSet)
+			if (!AlphaWarheadController.SingletonSet)
 			{
 				return null;
 			}
-			return Singleton._triggeringPlayer.Hub;
+			return AlphaWarheadController.Singleton._triggeringPlayer.Hub;
 		}
 	}
 
@@ -124,9 +124,9 @@ public class AlphaWarheadController : NetworkBehaviour
 	{
 		get
 		{
-			if (InProgress)
+			if (AlphaWarheadController.InProgress)
 			{
-				return TimeUntilDetonation == 0f;
+				return AlphaWarheadController.TimeUntilDetonation == 0f;
 			}
 			return false;
 		}
@@ -136,26 +136,26 @@ public class AlphaWarheadController : NetworkBehaviour
 	{
 		get
 		{
-			if (SingletonSet)
+			if (AlphaWarheadController.SingletonSet)
 			{
-				return Singleton.Info.InProgress;
+				return AlphaWarheadController.Singleton.Info.InProgress;
 			}
 			return false;
 		}
 	}
 
-	public static float TimeUntilDetonation => Mathf.Max(0f, (float)(Singleton.Info.StartTime + (double)Singleton.CurScenario.TotalTime - NetworkTime.time));
+	public static float TimeUntilDetonation => Mathf.Max(0f, (float)(AlphaWarheadController.Singleton.Info.StartTime + (double)AlphaWarheadController.Singleton.CurScenario.TotalTime - NetworkTime.time));
 
 	public AlphaWarheadSyncInfo NetworkInfo
 	{
 		get
 		{
-			return Info;
+			return this.Info;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Info, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.Info, 1uL, null);
 		}
 	}
 
@@ -163,12 +163,12 @@ public class AlphaWarheadController : NetworkBehaviour
 	{
 		get
 		{
-			return CooldownEndTime;
+			return this.CooldownEndTime;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref CooldownEndTime, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.CooldownEndTime, 2uL, null);
 		}
 	}
 
@@ -178,53 +178,53 @@ public class AlphaWarheadController : NetworkBehaviour
 
 	private void Awake()
 	{
-		Singleton = this;
-		SingletonSet = true;
+		AlphaWarheadController.Singleton = this;
+		AlphaWarheadController.SingletonSet = true;
 	}
 
 	private void Start()
 	{
-		_alarmSource = GetComponent<AudioSource>();
+		this._alarmSource = base.GetComponent<AudioSource>();
 		if (!NetworkServer.active)
 		{
 			return;
 		}
-		NetworkCooldownEndTime = 0.0;
-		_autoDetonateTime = ConfigFile.ServerConfig.GetFloat("auto_warhead_start_minutes") * 60f;
-		_autoDetonate = _autoDetonateTime > 0f;
-		_autoDetonateLock = ConfigFile.ServerConfig.GetBool("auto_warhead_lock");
-		_openDoors = ConfigFile.ServerConfig.GetBool("open_doors_on_countdown", def: true);
-		_cooldown = ConfigFile.ServerConfig.GetInt("warhead_cooldown", 40);
+		this.NetworkCooldownEndTime = 0.0;
+		this._autoDetonateTime = ConfigFile.ServerConfig.GetFloat("auto_warhead_start_minutes") * 60f;
+		this._autoDetonate = this._autoDetonateTime > 0f;
+		this._autoDetonateLock = ConfigFile.ServerConfig.GetBool("auto_warhead_lock");
+		this._openDoors = ConfigFile.ServerConfig.GetBool("open_doors_on_countdown", def: true);
+		this._cooldown = ConfigFile.ServerConfig.GetInt("warhead_cooldown", 40);
 		AlphaWarheadSyncInfo networkInfo = default(AlphaWarheadSyncInfo);
-		int @int = ConfigFile.ServerConfig.GetInt("warhead_tminus_start_duration", 90);
-		networkInfo.ScenarioId = DefaultScenarioId;
-		for (byte b = 0; b < StartScenarios.Length; b++)
+		int num = ConfigFile.ServerConfig.GetInt("warhead_tminus_start_duration", 90);
+		networkInfo.ScenarioId = this.DefaultScenarioId;
+		for (byte b = 0; b < this.StartScenarios.Length; b++)
 		{
-			if (StartScenarios[b].TimeToDetonate == @int)
+			if (this.StartScenarios[b].TimeToDetonate == num)
 			{
 				networkInfo.ScenarioId = b;
 			}
 		}
-		NetworkInfo = networkInfo;
+		this.NetworkInfo = networkInfo;
 		ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(OnConfigReloaded));
 	}
 
 	private void OnDestroy()
 	{
-		SingletonSet = false;
+		AlphaWarheadController.SingletonSet = false;
 		ConfigFile.OnConfigReloaded = (Action)Delegate.Remove(ConfigFile.OnConfigReloaded, new Action(OnConfigReloaded));
 	}
 
 	private void Update()
 	{
-		if (Info != _prevInfo)
+		if (this.Info != this._prevInfo)
 		{
-			OnInfoUpdated();
-			_prevInfo = Info;
+			this.OnInfoUpdated();
+			this._prevInfo = this.Info;
 		}
-		UpdateFog();
-		ServerUpdateDetonationTime();
-		ServerUpdateAutonuke();
+		this.UpdateFog();
+		this.ServerUpdateDetonationTime();
+		this.ServerUpdateAutonuke();
 	}
 
 	private bool TryGetBroadcaster(out Broadcast broadcaster)
@@ -239,137 +239,137 @@ public class AlphaWarheadController : NetworkBehaviour
 
 	private void OnInfoUpdated()
 	{
-		bool inProgress = Info.InProgress;
-		if (inProgress != _prevInfo.InProgress)
+		bool inProgress = this.Info.InProgress;
+		if (inProgress != this._prevInfo.InProgress)
 		{
 			AlphaWarheadController.OnProgressChanged?.Invoke(inProgress);
 		}
-		_alarmSource.Stop();
+		this._alarmSource.Stop();
 		if (!inProgress)
 		{
-			if (_prevInfo.InProgress)
+			if (this._prevInfo.InProgress)
 			{
-				_alarmSource.PlayOneShot(_cancelSound);
+				this._alarmSource.PlayOneShot(this._cancelSound);
 			}
 			return;
 		}
-		_alarmSource.volume = 1f;
-		_alarmSource.clip = CurScenario.Clip;
-		float num = (float)(NetworkTime.time - Info.StartTime);
+		this._alarmSource.volume = 1f;
+		this._alarmSource.clip = this.CurScenario.Clip;
+		float num = (float)(NetworkTime.time - this.Info.StartTime);
 		if (num < 0f)
 		{
-			_alarmSource.PlayDelayed(0f - num);
+			this._alarmSource.PlayDelayed(0f - num);
 		}
-		else if (num < _alarmSource.clip.length)
+		else if (num < this._alarmSource.clip.length)
 		{
-			_alarmSource.Play();
-			_alarmSource.time = num;
+			this._alarmSource.Play();
+			this._alarmSource.time = num;
 		}
 	}
 
 	public void ForceTime(float remaining)
 	{
-		InstantPrepare();
-		StartDetonation(isAutomatic: false, suppressSubtitles: true);
-		AlphaWarheadSyncInfo info = Info;
-		remaining -= (float)CurScenario.TotalTime;
+		this.InstantPrepare();
+		this.StartDetonation(isAutomatic: false, suppressSubtitles: true);
+		AlphaWarheadSyncInfo info = this.Info;
+		remaining -= (float)this.CurScenario.TotalTime;
 		info.StartTime = NetworkTime.time + (double)remaining;
-		NetworkInfo = info;
+		this.NetworkInfo = info;
 	}
 
 	public void InstantPrepare()
 	{
-		AlphaWarheadSyncInfo info = Info;
+		AlphaWarheadSyncInfo info = this.Info;
 		info.StartTime = 0.0;
-		NetworkInfo = info;
-		NetworkCooldownEndTime = 0.0;
+		this.NetworkInfo = info;
+		this.NetworkCooldownEndTime = 0.0;
 	}
 
 	public void StartDetonation(bool isAutomatic = false, bool suppressSubtitles = false, ReferenceHub trigger = null)
 	{
-		if (Info.InProgress || CooldownEndTime > NetworkTime.time || IsLocked)
+		if (this.Info.InProgress || this.CooldownEndTime > NetworkTime.time || this.IsLocked)
 		{
 			return;
 		}
-		AlphaWarheadSyncInfo info = Info;
+		AlphaWarheadSyncInfo info = this.Info;
 		info.StartTime = NetworkTime.time;
-		WarheadStartingEventArgs warheadStartingEventArgs = new WarheadStartingEventArgs((trigger == null) ? ReferenceHub.HostHub : trigger, isAutomatic, suppressSubtitles, info);
-		WarheadEvents.OnStarting(warheadStartingEventArgs);
-		if (!warheadStartingEventArgs.IsAllowed)
+		WarheadStartingEventArgs e = new WarheadStartingEventArgs((trigger == null) ? ReferenceHub.HostHub : trigger, isAutomatic, suppressSubtitles, info);
+		WarheadEvents.OnStarting(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
-		isAutomatic = warheadStartingEventArgs.IsAutomatic;
-		suppressSubtitles = warheadStartingEventArgs.SuppressSubtitles;
-		info = warheadStartingEventArgs.WarheadState;
-		trigger = warheadStartingEventArgs.Player.ReferenceHub;
-		_isAutomatic = isAutomatic;
-		AlreadyDetonated = false;
+		isAutomatic = e.IsAutomatic;
+		suppressSubtitles = e.SuppressSubtitles;
+		info = e.WarheadState;
+		trigger = e.Player.ReferenceHub;
+		this._isAutomatic = isAutomatic;
+		this.AlreadyDetonated = false;
 		if (isAutomatic)
 		{
-			IsLocked |= _autoDetonateLock;
-			if (!AlreadyDetonated && !Info.InProgress && AutoWarheadBroadcastEnabled && TryGetBroadcaster(out var broadcaster))
+			this.IsLocked |= this._autoDetonateLock;
+			if (!this.AlreadyDetonated && !this.Info.InProgress && AlphaWarheadController.AutoWarheadBroadcastEnabled && this.TryGetBroadcaster(out var broadcaster))
 			{
-				broadcaster.RpcAddElement(WarheadBroadcastMessage, WarheadBroadcastMessageTime, Broadcast.BroadcastFlags.Normal);
+				broadcaster.RpcAddElement(AlphaWarheadController.WarheadBroadcastMessage, AlphaWarheadController.WarheadBroadcastMessageTime, Broadcast.BroadcastFlags.Normal);
 			}
-			_autoDetonate = false;
+			this._autoDetonate = false;
 		}
-		_doorsAlreadyOpen = false;
+		this._doorsAlreadyOpen = false;
 		ServerLogs.AddLog(ServerLogs.Modules.Warhead, "Countdown started.", ServerLogs.ServerLogType.GameEvent);
-		_triggeringPlayer = new Footprint(trigger);
-		NetworkInfo = info;
+		this._triggeringPlayer = new Footprint(trigger);
+		this.NetworkInfo = info;
 		WarheadEvents.OnStarted(new WarheadStartedEventArgs((trigger == null) ? ReferenceHub.HostHub : trigger, isAutomatic, suppressSubtitles, info));
 		if (!suppressSubtitles)
 		{
-			SubtitleType subtitle = ((Info.ScenarioType == WarheadScenarioType.Resume) ? SubtitleType.AlphaWarheadResumed : SubtitleType.AlphaWarheadEngage);
-			new SubtitleMessage(new SubtitlePart(subtitle, CurScenario.TimeToDetonate.ToString())).SendToAuthenticated();
+			SubtitleType subtitle = ((this.Info.ScenarioType == WarheadScenarioType.Resume) ? SubtitleType.AlphaWarheadResumed : SubtitleType.AlphaWarheadEngage);
+			new SubtitleMessage(new SubtitlePart(subtitle, this.CurScenario.TimeToDetonate.ToString())).SendToAuthenticated();
 		}
 	}
 
 	public void CancelDetonation()
 	{
-		CancelDetonation(null);
+		this.CancelDetonation(null);
 	}
 
 	public void CancelDetonation(ReferenceHub disabler)
 	{
-		if (!Info.InProgress || TimeUntilDetonation <= 10f || IsLocked)
+		if (!this.Info.InProgress || AlphaWarheadController.TimeUntilDetonation <= 10f || this.IsLocked)
 		{
 			return;
 		}
-		AlphaWarheadSyncInfo info = Info;
-		WarheadStoppingEventArgs warheadStoppingEventArgs = new WarheadStoppingEventArgs((disabler == null) ? ReferenceHub.HostHub : disabler, info);
-		WarheadEvents.OnStopping(warheadStoppingEventArgs);
-		if (!warheadStoppingEventArgs.IsAllowed)
+		AlphaWarheadSyncInfo info = this.Info;
+		WarheadStoppingEventArgs e = new WarheadStoppingEventArgs((disabler == null) ? ReferenceHub.HostHub : disabler, info);
+		WarheadEvents.OnStopping(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
-		info = warheadStoppingEventArgs.WarheadState;
-		disabler = warheadStoppingEventArgs.Player.ReferenceHub;
+		info = e.WarheadState;
+		disabler = e.Player.ReferenceHub;
 		ServerLogs.AddLog(ServerLogs.Modules.Warhead, "Detonation cancelled.", ServerLogs.ServerLogType.GameEvent);
-		if (TimeUntilDetonation <= 15f && disabler != null)
+		if (AlphaWarheadController.TimeUntilDetonation <= 15f && disabler != null)
 		{
 			AchievementHandlerBase.ServerAchieve(disabler.connectionToClient, AchievementName.ThatWasClose);
 		}
 		info.StartTime = 0.0;
-		int num = (int)Mathf.Min(TimeUntilDetonation, CurScenario.TimeToDetonate);
+		int num = (int)Mathf.Min(AlphaWarheadController.TimeUntilDetonation, this.CurScenario.TimeToDetonate);
 		int num2 = int.MaxValue;
 		info.ScenarioType = WarheadScenarioType.Resume;
-		for (byte b = 0; b < ResumeScenarios.Length; b++)
+		for (byte b = 0; b < this.ResumeScenarios.Length; b++)
 		{
-			int num3 = ResumeScenarios[b].TimeToDetonate - num;
+			int num3 = this.ResumeScenarios[b].TimeToDetonate - num;
 			if (num3 >= 0 && num3 <= num2)
 			{
 				num2 = num3;
 				info.ScenarioId = b;
 			}
 		}
-		NetworkInfo = info;
-		NetworkCooldownEndTime = NetworkTime.time + (double)_cooldown;
+		this.NetworkInfo = info;
+		this.NetworkCooldownEndTime = NetworkTime.time + (double)this._cooldown;
 		DoorEventOpenerExtension.TriggerAction(DoorEventOpenerExtension.OpenerEventType.WarheadCancel);
 		if (NetworkServer.active)
 		{
-			_isAutomatic = false;
+			this._isAutomatic = false;
 			new SubtitleMessage(new SubtitlePart(SubtitleType.AlphaWarheadCancelled, (string[])null)).SendToAuthenticated();
 			WarheadEvents.OnStopped(new WarheadStoppedEventArgs((disabler == null) ? ReferenceHub.HostHub : disabler, info));
 		}
@@ -377,18 +377,18 @@ public class AlphaWarheadController : NetworkBehaviour
 
 	private void Detonate()
 	{
-		ReferenceHub player = ((_triggeringPlayer.Hub == null) ? ReferenceHub.HostHub : _triggeringPlayer.Hub);
-		WarheadDetonatingEventArgs warheadDetonatingEventArgs = new WarheadDetonatingEventArgs(player);
-		WarheadEvents.OnDetonating(warheadDetonatingEventArgs);
-		if (!warheadDetonatingEventArgs.IsAllowed)
+		ReferenceHub player = ((this._triggeringPlayer.Hub == null) ? ReferenceHub.HostHub : this._triggeringPlayer.Hub);
+		WarheadDetonatingEventArgs e = new WarheadDetonatingEventArgs(player);
+		WarheadEvents.OnDetonating(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
-		_triggeringPlayer = new Footprint(warheadDetonatingEventArgs.Player.ReferenceHub);
+		this._triggeringPlayer = new Footprint(e.Player.ReferenceHub);
 		AlphaWarheadController.OnDetonated?.Invoke();
-		if (_isAutomatic && !AlreadyDetonated && !Info.InProgress && AutoWarheadBroadcastEnabled && TryGetBroadcaster(out var broadcaster))
+		if (this._isAutomatic && !this.AlreadyDetonated && !this.Info.InProgress && AlphaWarheadController.AutoWarheadBroadcastEnabled && this.TryGetBroadcaster(out var broadcaster))
 		{
-			broadcaster.RpcAddElement(WarheadExplodedBroadcastMessage, WarheadExplodedBroadcastMessageTime, Broadcast.BroadcastFlags.Normal);
+			broadcaster.RpcAddElement(AlphaWarheadController.WarheadExplodedBroadcastMessage, AlphaWarheadController.WarheadExplodedBroadcastMessageTime, Broadcast.BroadcastFlags.Normal);
 		}
 		ServerLogs.AddLog(ServerLogs.Modules.Warhead, "Warhead detonated.", ServerLogs.ServerLogType.GameEvent);
 		if (DecontaminationController.Singleton.DecontaminationOverride != DecontaminationController.DecontaminationStatus.Disabled)
@@ -396,21 +396,21 @@ public class AlphaWarheadController : NetworkBehaviour
 			ServerLogs.AddLog(ServerLogs.Modules.Administrative, "LCZ decontamination has been disabled by detonation of the Alpha Warhead.", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
 			DecontaminationController.Singleton.NetworkDecontaminationOverride = DecontaminationController.DecontaminationStatus.Disabled;
 		}
-		AlreadyDetonated = true;
+		this.AlreadyDetonated = true;
 		HashSet<Team> hashSet = new HashSet<Team>();
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			PlayerRoleBase currentRole = allHub.roleManager.CurrentRole;
-			if (allHub.IsAlive() && (!(currentRole is IFpcRole fpcRole) || CanBeDetonated(fpcRole.FpcModule.Position)))
+			if (allHub.IsAlive() && (!(currentRole is IFpcRole fpcRole) || AlphaWarheadController.CanBeDetonated(fpcRole.FpcModule.Position)))
 			{
 				hashSet.Add(allHub.GetTeam());
 				allHub.playerStats.DealDamage(new WarheadDamageHandler());
-				WarheadKills++;
+				this.WarheadKills++;
 			}
 		}
 		foreach (Scp244DeployablePickup instance in Scp244DeployablePickup.Instances)
 		{
-			if (CanBeDetonated(instance.transform.position, includeOnlyLifts: true))
+			if (AlphaWarheadController.CanBeDetonated(instance.transform.position, includeOnlyLifts: true))
 			{
 				instance.DestroySelf();
 			}
@@ -422,7 +422,7 @@ public class AlphaWarheadController : NetworkBehaviour
 				elevatorDoor.NetworkActiveLocks = (ushort)(elevatorDoor.ActiveLocks | 4);
 			}
 		}
-		RpcShake(achieve: true);
+		this.RpcShake(achieve: true);
 		WarheadEvents.OnDetonated(new WarheadDetonatedEventArgs(player));
 	}
 
@@ -444,7 +444,7 @@ public class AlphaWarheadController : NetworkBehaviour
 
 	private void OnConfigReloaded()
 	{
-		if (!InProgress)
+		if (!AlphaWarheadController.InProgress)
 		{
 			return;
 		}
@@ -452,7 +452,7 @@ public class AlphaWarheadController : NetworkBehaviour
 		{
 			if (allDoor is PryableDoor pryableDoor)
 			{
-				if (LockGatesOnCountdown)
+				if (AlphaWarheadController.LockGatesOnCountdown)
 				{
 					pryableDoor.NetworkTargetState = true;
 					pryableDoor.ServerChangeLock(DoorLockReason.Warhead, newState: true);
@@ -470,7 +470,7 @@ public class AlphaWarheadController : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteBool(achieve);
-		SendRPCInternal("System.Void AlphaWarheadController::RpcShake(System.Boolean)", 1208415683, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void AlphaWarheadController::RpcShake(System.Boolean)", 1208415683, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -481,35 +481,35 @@ public class AlphaWarheadController : NetworkBehaviour
 	[ServerCallback]
 	private void ServerUpdateAutonuke()
 	{
-		if (NetworkServer.active && NetworkServer.active && RoundStart.RoundStarted && _autoDetonate && !AlreadyDetonated && !Info.InProgress && !(RoundStart.RoundLength.TotalSeconds < (double)_autoDetonateTime))
+		if (NetworkServer.active && NetworkServer.active && RoundStart.RoundStarted && this._autoDetonate && !this.AlreadyDetonated && !this.Info.InProgress && !(RoundStart.RoundLength.TotalSeconds < (double)this._autoDetonateTime))
 		{
-			StartDetonation(isAutomatic: true);
+			this.StartDetonation(isAutomatic: true);
 		}
 	}
 
 	[ServerCallback]
 	private void ServerUpdateDetonationTime()
 	{
-		if (!NetworkServer.active || !NetworkServer.active || !Info.InProgress)
+		if (!NetworkServer.active || !NetworkServer.active || !this.Info.InProgress)
 		{
 			return;
 		}
-		if (!_blastDoorsShut && TimeUntilDetonation < 2f)
+		if (!this._blastDoorsShut && AlphaWarheadController.TimeUntilDetonation < 2f)
 		{
-			_blastDoorsShut = true;
+			this._blastDoorsShut = true;
 			BlastDoor.Instances.ForEach(delegate(BlastDoor x)
 			{
 				x.ServerSetTargetState(isOpen: false);
 			});
 		}
-		if (_openDoors && !_doorsAlreadyOpen && TimeUntilDetonation < (float)CurScenario.TimeToDetonate)
+		if (this._openDoors && !this._doorsAlreadyOpen && AlphaWarheadController.TimeUntilDetonation < (float)this.CurScenario.TimeToDetonate)
 		{
-			_doorsAlreadyOpen = true;
+			this._doorsAlreadyOpen = true;
 			DoorEventOpenerExtension.TriggerAction(DoorEventOpenerExtension.OpenerEventType.WarheadStart);
 		}
-		if (!AlreadyDetonated && !(TimeUntilDetonation > 0f))
+		if (!this.AlreadyDetonated && !(AlphaWarheadController.TimeUntilDetonation > 0f))
 		{
-			Detonate();
+			this.Detonate();
 		}
 	}
 
@@ -544,18 +544,18 @@ public class AlphaWarheadController : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteAlphaWarheadSyncInfo(Info);
-			writer.WriteDouble(CooldownEndTime);
+			writer.WriteAlphaWarheadSyncInfo(this.Info);
+			writer.WriteDouble(this.CooldownEndTime);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteAlphaWarheadSyncInfo(Info);
+			writer.WriteAlphaWarheadSyncInfo(this.Info);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteDouble(CooldownEndTime);
+			writer.WriteDouble(this.CooldownEndTime);
 		}
 	}
 
@@ -564,18 +564,18 @@ public class AlphaWarheadController : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref Info, null, reader.ReadAlphaWarheadSyncInfo());
-			GeneratedSyncVarDeserialize(ref CooldownEndTime, null, reader.ReadDouble());
+			base.GeneratedSyncVarDeserialize(ref this.Info, null, reader.ReadAlphaWarheadSyncInfo());
+			base.GeneratedSyncVarDeserialize(ref this.CooldownEndTime, null, reader.ReadDouble());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Info, null, reader.ReadAlphaWarheadSyncInfo());
+			base.GeneratedSyncVarDeserialize(ref this.Info, null, reader.ReadAlphaWarheadSyncInfo());
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref CooldownEndTime, null, reader.ReadDouble());
+			base.GeneratedSyncVarDeserialize(ref this.CooldownEndTime, null, reader.ReadDouble());
 		}
 	}
 }

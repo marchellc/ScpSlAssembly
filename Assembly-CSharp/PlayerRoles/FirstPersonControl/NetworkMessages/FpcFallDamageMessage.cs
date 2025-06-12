@@ -17,9 +17,9 @@ public struct FpcFallDamageMessage : NetworkMessage
 
 	public FpcFallDamageMessage(ReferenceHub hub, Vector3 prevPos, RoleTypeId role)
 	{
-		_hub = hub;
-		_prevPos = prevPos;
-		_role = role;
+		this._hub = hub;
+		this._prevPos = prevPos;
+		this._role = role;
 	}
 
 	public FpcFallDamageMessage(NetworkReader reader)
@@ -27,29 +27,29 @@ public struct FpcFallDamageMessage : NetworkMessage
 		int value = reader.ReadRecyclablePlayerId().Value;
 		if (value == 0)
 		{
-			_hub = null;
-			_prevPos = reader.ReadRelativePosition().Position;
-			_role = reader.ReadRoleType();
+			this._hub = null;
+			this._prevPos = reader.ReadRelativePosition().Position;
+			this._role = reader.ReadRoleType();
 		}
 		else
 		{
-			_hub = ReferenceHub.GetHub(value);
-			_prevPos = Vector3.zero;
-			_role = ((_hub != null) ? _hub.GetRoleId() : RoleTypeId.None);
+			this._hub = ReferenceHub.GetHub(value);
+			this._prevPos = Vector3.zero;
+			this._role = ((this._hub != null) ? this._hub.GetRoleId() : RoleTypeId.None);
 		}
 	}
 
 	public void Write(NetworkWriter writer)
 	{
-		if (_hub == null || !_hub.IsAlive())
+		if (this._hub == null || !this._hub.IsAlive())
 		{
 			writer.WriteReferenceHub(null);
-			writer.WriteRelativePosition(new RelativePosition(_prevPos));
-			writer.WriteRoleType(_role);
+			writer.WriteRelativePosition(new RelativePosition(this._prevPos));
+			writer.WriteRoleType(this._role);
 		}
 		else
 		{
-			writer.WriteReferenceHub(_hub);
+			writer.WriteReferenceHub(this._hub);
 		}
 	}
 

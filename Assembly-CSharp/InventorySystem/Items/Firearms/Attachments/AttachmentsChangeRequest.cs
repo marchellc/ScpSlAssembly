@@ -10,13 +10,13 @@ public struct AttachmentsChangeRequest : NetworkMessage
 
 	public AttachmentsChangeRequest(NetworkReader reader)
 	{
-		WeaponSerial = reader.ReadUShort();
-		AttachmentsCode = reader.ReadUInt();
+		this.WeaponSerial = reader.ReadUShort();
+		this.AttachmentsCode = reader.ReadUInt();
 	}
 
 	public readonly void Serialize(NetworkWriter writer)
 	{
-		writer.WriteUShort(WeaponSerial);
-		writer.WriteUInt(AttachmentsCode);
+		writer.WriteUShort(this.WeaponSerial);
+		writer.WriteUInt(this.AttachmentsCode);
 	}
 }

@@ -20,15 +20,15 @@ public class Scp127IdleChatterVoiceTrigger : Scp127VoiceTriggerBase
 
 	private void ReRandomizeTimer()
 	{
-		_idleTimer.Restart();
-		_nextLineSeconds = Random.Range(_minIdleTimeMinutes, _maxIdleTimeMinutes) * 60f;
+		this._idleTimer.Restart();
+		this._nextLineSeconds = Random.Range(this._minIdleTimeMinutes, this._maxIdleTimeMinutes) * 60f;
 	}
 
 	private void ResetIdleTimer(Firearm firearm)
 	{
 		if (!(firearm != base.Firearm))
 		{
-			_idleTimer.Restart();
+			this._idleTimer.Restart();
 		}
 	}
 
@@ -49,23 +49,23 @@ public class Scp127IdleChatterVoiceTrigger : Scp127VoiceTriggerBase
 		base.OnAdded();
 		if (base.HasFriendship)
 		{
-			ReRandomizeTimer();
+			this.ReRandomizeTimer();
 		}
 	}
 
 	public override void OnFriendshipCreated()
 	{
 		base.OnFriendshipCreated();
-		ReRandomizeTimer();
+		this.ReRandomizeTimer();
 	}
 
 	internal override void AlwaysUpdate()
 	{
 		base.AlwaysUpdate();
-		if (!(_idleTimer.Elapsed.TotalSeconds < (double)_nextLineSeconds))
+		if (!(this._idleTimer.Elapsed.TotalSeconds < (double)this._nextLineSeconds))
 		{
-			ReRandomizeTimer();
-			ServerPlayVoiceLineFromCollection(_voiceLines);
+			this.ReRandomizeTimer();
+			base.ServerPlayVoiceLineFromCollection(this._voiceLines);
 		}
 	}
 }

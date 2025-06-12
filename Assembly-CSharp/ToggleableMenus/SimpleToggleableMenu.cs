@@ -11,6 +11,6 @@ public class SimpleToggleableMenu : ToggleableMenuBase
 
 	protected override void OnToggled()
 	{
-		_targetRoot.SetActive(IsEnabled);
+		this._targetRoot.SetActive(this.IsEnabled);
 	}
 }

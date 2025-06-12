@@ -18,13 +18,13 @@ public readonly struct RemoteAdminResponse : IEquatable<RemoteAdminResponse>
 
 	private const int HeaderSize = 5;
 
-	public int GetLength => ((Content != null) ? Utf8.GetLength(Content) : 0) + ((OverrideDisplay != null) ? Utf8.GetLength(OverrideDisplay) : 0) + 5;
+	public int GetLength => ((this.Content != null) ? Utf8.GetLength(this.Content) : 0) + ((this.OverrideDisplay != null) ? Utf8.GetLength(this.OverrideDisplay) : 0) + 5;
 
 	public RemoteAdminResponse(string content, RemoteAdminResponseFlags flags, string overrideDisplay)
 	{
-		Content = (string.IsNullOrEmpty(content) ? null : content);
-		Flags = flags;
-		OverrideDisplay = (string.IsNullOrEmpty(overrideDisplay) ? null : overrideDisplay);
+		this.Content = (string.IsNullOrEmpty(content) ? null : content);
+		this.Flags = flags;
+		this.OverrideDisplay = (string.IsNullOrEmpty(overrideDisplay) ? null : overrideDisplay);
 	}
 
 	public RemoteAdminResponse(string content, bool isSuccess, bool logInConsole, string overrideDisplay)
@@ -34,19 +34,19 @@ public readonly struct RemoteAdminResponse : IEquatable<RemoteAdminResponse>
 
 	public byte[] Serialize()
 	{
-		byte[] array = new byte[GetLength];
-		Serialize(array);
+		byte[] array = new byte[this.GetLength];
+		this.Serialize(array);
 		return array;
 	}
 
 	public void Serialize(byte[] array)
 	{
-		array[0] = (byte)Flags;
-		int num = ((Content != null) ? Utf8.GetBytes(Content, array, 5) : 0);
+		array[0] = (byte)this.Flags;
+		int num = ((this.Content != null) ? Utf8.GetBytes(this.Content, array, 5) : 0);
 		BinaryPrimitives.WriteInt32BigEndian(new Span<byte>(array, 1, 4), num);
-		if (OverrideDisplay != null)
+		if (this.OverrideDisplay != null)
 		{
-			Utf8.GetBytes(OverrideDisplay, array, num + 5);
+			Utf8.GetBytes(this.OverrideDisplay, array, num + 5);
 		}
 	}
 
@@ -58,9 +58,9 @@ public readonly struct RemoteAdminResponse : IEquatable<RemoteAdminResponse>
 
 	public bool Equals(RemoteAdminResponse other)
 	{
-		if (string.Equals(Content, other.Content) && Flags == other.Flags)
+		if (string.Equals(this.Content, other.Content) && this.Flags == other.Flags)
 		{
-			return string.Equals(OverrideDisplay, other.OverrideDisplay);
+			return string.Equals(this.OverrideDisplay, other.OverrideDisplay);
 		}
 		return false;
 	}
@@ -69,14 +69,14 @@ public readonly struct RemoteAdminResponse : IEquatable<RemoteAdminResponse>
 	{
 		if (obj is RemoteAdminResponse other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((((Content != null) ? Content.GetHashCode() : 0) * 397) ^ Flags.GetHashCode()) * 397) ^ ((OverrideDisplay != null) ? OverrideDisplay.GetHashCode() : 0);
+		return (((((this.Content != null) ? this.Content.GetHashCode() : 0) * 397) ^ this.Flags.GetHashCode()) * 397) ^ ((this.OverrideDisplay != null) ? this.OverrideDisplay.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(RemoteAdminResponse left, RemoteAdminResponse right)
@@ -91,6 +91,6 @@ public readonly struct RemoteAdminResponse : IEquatable<RemoteAdminResponse>
 
 	public bool HasFlag(RemoteAdminResponseFlags flag)
 	{
-		return (Flags & flag) == flag;
+		return (this.Flags & flag) == flag;
 	}
 }

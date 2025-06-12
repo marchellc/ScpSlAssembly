@@ -20,7 +20,7 @@ public class Scp268 : UsableItem, IWearableItem
 	{
 		get
 		{
-			if (!IsWorn)
+			if (!this.IsWorn)
 			{
 				return base.Alert;
 			}
@@ -32,15 +32,15 @@ public class Scp268 : UsableItem, IWearableItem
 	{
 		get
 		{
-			if (!IsLocalPlayer || NetworkServer.active)
+			if (!this.IsLocalPlayer || NetworkServer.active)
 			{
-				return _isWorn;
+				return this._isWorn;
 			}
 			return base.Owner.playerEffectsController.GetEffect<Invisible>().Intensity != 0;
 		}
 		set
 		{
-			_isWorn = value;
+			this._isWorn = value;
 			if (NetworkServer.active)
 			{
 				if (value)
@@ -61,9 +61,9 @@ public class Scp268 : UsableItem, IWearableItem
 	{
 		get
 		{
-			if (IsUsing)
+			if (base.IsUsing)
 			{
-				return IsWorn;
+				return this.IsWorn;
 			}
 			return true;
 		}
@@ -73,10 +73,10 @@ public class Scp268 : UsableItem, IWearableItem
 
 	public override void ServerOnUsingCompleted()
 	{
-		IsUsing = false;
-		IsWorn = true;
-		SetState(state: true);
-		ServerSetPersonalCooldown(120f);
+		base.IsUsing = false;
+		this.IsWorn = true;
+		this.SetState(state: true);
+		base.ServerSetPersonalCooldown(120f);
 	}
 
 	public override void OnHolstered()
@@ -84,24 +84,24 @@ public class Scp268 : UsableItem, IWearableItem
 		base.OnHolstered();
 		if (NetworkServer.active)
 		{
-			SetState(state: false);
+			this.SetState(state: false);
 		}
-		if (IsLocalPlayer)
+		if (this.IsLocalPlayer)
 		{
-			IsUsing = false;
+			base.IsUsing = false;
 		}
 	}
 
 	public override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (IsLocalPlayer && IsWorn && IsUsing)
+		if (this.IsLocalPlayer && this.IsWorn && base.IsUsing)
 		{
-			IsUsing = false;
+			base.IsUsing = false;
 		}
-		if (NetworkServer.active && _stopwatch.IsRunning && (_stopwatch.Elapsed.TotalSeconds >= 15.0 || Effect.Intensity == 0))
+		if (NetworkServer.active && this._stopwatch.IsRunning && (this._stopwatch.Elapsed.TotalSeconds >= 15.0 || this.Effect.Intensity == 0))
 		{
-			SetState(state: false);
+			this.SetState(state: false);
 		}
 	}
 
@@ -109,15 +109,15 @@ public class Scp268 : UsableItem, IWearableItem
 	{
 		if (state)
 		{
-			Effect.Intensity = 1;
-			_stopwatch.Restart();
+			this.Effect.Intensity = 1;
+			this._stopwatch.Restart();
 		}
-		else if (IsWorn)
+		else if (this.IsWorn)
 		{
-			Effect.Intensity = 0;
-			_stopwatch.Stop();
-			IsWorn = false;
-			if (base.OwnerInventory.CurItem.TypeId == ItemTypeId)
+			this.Effect.Intensity = 0;
+			this._stopwatch.Stop();
+			this.IsWorn = false;
+			if (base.OwnerInventory.CurItem.TypeId == base.ItemTypeId)
 			{
 				base.OwnerInventory.ServerSelectItem(0);
 			}

@@ -9,6 +9,6 @@ public class PredefinedRankDetail : DetailBase
 
 	public override void ApplyDetail(KeycardGfx gfxTarget, KeycardItem template)
 	{
-		gfxTarget.RankFilter.sharedMesh = _mesh;
+		gfxTarget.RankFilter.sharedMesh = this._mesh;
 	}
 }

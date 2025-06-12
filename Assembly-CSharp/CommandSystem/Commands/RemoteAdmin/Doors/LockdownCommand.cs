@@ -37,7 +37,7 @@ public class LockdownCommand : ICommand, IUsageProvider
 			return false;
 		}
 		ServerLogs.AddLog(ServerLogs.Modules.Administrative, $"{sender.LogName} has locked down the facility (Filter: {result}){((result2 == 0f) ? string.Empty : $"for {result2} seconds.")}", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
-		Lockdown(result, result2, result2 != -1f, out response);
+		this.Lockdown(result, result2, result2 != -1f, out response);
 		return true;
 	}
 
@@ -56,12 +56,12 @@ public class LockdownCommand : ICommand, IUsageProvider
 				allDoor.ServerChangeLock(DoorLockReason.AdminCommand, doLock);
 			}
 		}
-		Timing.KillCoroutines(_lockdownHandle);
+		Timing.KillCoroutines(this._lockdownHandle);
 		if (duration != 0f)
 		{
-			_lockdownHandle = Timing.CallDelayed(duration, delegate
+			this._lockdownHandle = Timing.CallDelayed(duration, delegate
 			{
-				Lockdown(zoneToAffect, 0f, doLock: false, out var _);
+				this.Lockdown(zoneToAffect, 0f, doLock: false, out var _);
 			});
 		}
 		commandResponse = ((zoneToAffect == FacilityZone.None) ? ("Locked down the facility" + ((duration == 0f) ? "." : $" for {duration} seconds.")) : string.Format("Locked down {0}{1}", zoneToAffect, (duration == 0f) ? "." : $" for {duration} seconds."));

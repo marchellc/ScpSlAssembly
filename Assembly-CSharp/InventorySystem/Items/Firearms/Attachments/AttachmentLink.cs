@@ -22,11 +22,11 @@ public class AttachmentLink
 	{
 		get
 		{
-			if (!_instanceSet)
+			if (!this._instanceSet)
 			{
 				throw new InvalidOperationException("Attempting to access attachment without assigning an instance.");
 			}
-			return _cachedInstance;
+			return this._cachedInstance;
 		}
 	}
 
@@ -34,46 +34,46 @@ public class AttachmentLink
 	{
 		get
 		{
-			if (!_filterSet)
+			if (!this._filterSet)
 			{
 				throw new InvalidOperationException("Attempting to access attachment without assigning an item type.");
 			}
-			return _cachedFilter;
+			return this._cachedFilter;
 		}
 	}
 
 	public void InitCache(Firearm fa)
 	{
-		_cachedInstance = GetAttachment(fa);
-		_instanceSet = true;
-		_cachedFilter = 1u;
-		for (int i = 0; i < _cachedInstance.Index; i++)
+		this._cachedInstance = this.GetAttachment(fa);
+		this._instanceSet = true;
+		this._cachedFilter = 1u;
+		for (int i = 0; i < this._cachedInstance.Index; i++)
 		{
-			_cachedFilter *= 2u;
+			this._cachedFilter *= 2u;
 		}
-		_filterSet = true;
+		this._filterSet = true;
 	}
 
 	public void InitCache(ItemType firearmType)
 	{
-		_filterSet = true;
-		TryGetFilter(firearmType, out _cachedFilter);
+		this._filterSet = true;
+		this.TryGetFilter(firearmType, out this._cachedFilter);
 	}
 
 	public Attachment GetAttachment(Firearm instance)
 	{
-		TryGetAttachment(instance, out var att);
+		this.TryGetAttachment(instance, out var att);
 		return att;
 	}
 
 	public bool TryGetAttachment(Firearm instance, out Attachment att)
 	{
-		return instance.TryGetAttachmentWithId(Id, out att);
+		return instance.TryGetAttachmentWithId(this.Id, out att);
 	}
 
 	public bool TryGetIndex(ItemType weaponType, out int index)
 	{
-		if (!weaponType.TryGetTemplate<Firearm>(out var item) || !TryGetAttachment(item, out var att))
+		if (!weaponType.TryGetTemplate<Firearm>(out var item) || !this.TryGetAttachment(item, out var att))
 		{
 			index = -1;
 			return false;
@@ -84,7 +84,7 @@ public class AttachmentLink
 
 	public bool TryGetFilter(ItemType weaponType, out uint filter)
 	{
-		if (!TryGetIndex(weaponType, out var index))
+		if (!this.TryGetIndex(weaponType, out var index))
 		{
 			filter = 0u;
 			return false;
@@ -100,7 +100,7 @@ public class AttachmentLink
 
 	public uint GetFilter(Firearm firearm)
 	{
-		int index = GetAttachment(firearm).Index;
+		int index = this.GetAttachment(firearm).Index;
 		uint num = 1u;
 		for (int i = 0; i < index; i++)
 		{

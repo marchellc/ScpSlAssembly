@@ -30,64 +30,64 @@ public class Scp079TierGui : Scp079BarBaseGui
 
 	public const string NewLineFormat = "\n  - ";
 
-	protected override string Text => _cachedText;
+	protected override string Text => this._cachedText;
 
-	protected override float FillAmount => _cachedFill;
+	protected override float FillAmount => this._cachedFill;
 
 	internal override void Init(Scp079Role role, ReferenceHub owner)
 	{
 		base.Init(role, owner);
-		_tierFormat = Translations.Get(Scp079HudTranslation.AccessTier);
-		_expFormat = Translations.Get(Scp079HudTranslation.Experience);
-		_maxTierText = Translations.Get(Scp079HudTranslation.MaxTierReached);
-		_levelUpNotification = Translations.Get(Scp079HudTranslation.AccessTierUnlocked);
-		role.SubroutineModule.TryGetSubroutine<Scp079TierManager>(out _tierManager);
-		Scp079TierManager tierManager = _tierManager;
+		this._tierFormat = Translations.Get(Scp079HudTranslation.AccessTier);
+		this._expFormat = Translations.Get(Scp079HudTranslation.Experience);
+		this._maxTierText = Translations.Get(Scp079HudTranslation.MaxTierReached);
+		this._levelUpNotification = Translations.Get(Scp079HudTranslation.AccessTierUnlocked);
+		role.SubroutineModule.TryGetSubroutine<Scp079TierManager>(out this._tierManager);
+		Scp079TierManager tierManager = this._tierManager;
 		tierManager.OnExpChanged = (Action)Delegate.Combine(tierManager.OnExpChanged, new Action(SetDirty));
-		Scp079TierManager tierManager2 = _tierManager;
+		Scp079TierManager tierManager2 = this._tierManager;
 		tierManager2.OnLevelledUp = (Action)Delegate.Combine(tierManager2.OnLevelledUp, new Action(OnLevelledUp));
-		_uiDirty = true;
+		this._uiDirty = true;
 	}
 
 	private void OnDestroy()
 	{
-		Scp079TierManager tierManager = _tierManager;
+		Scp079TierManager tierManager = this._tierManager;
 		tierManager.OnExpChanged = (Action)Delegate.Remove(tierManager.OnExpChanged, new Action(SetDirty));
-		Scp079TierManager tierManager2 = _tierManager;
+		Scp079TierManager tierManager2 = this._tierManager;
 		tierManager2.OnLevelledUp = (Action)Delegate.Remove(tierManager2.OnLevelledUp, new Action(OnLevelledUp));
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		if (_uiDirty)
+		if (this._uiDirty)
 		{
-			_textTier.text = string.Format(_tierFormat, _tierManager.AccessTierLevel);
-			if (_tierManager.NextLevelThreshold <= 0)
+			this._textTier.text = string.Format(this._tierFormat, this._tierManager.AccessTierLevel);
+			if (this._tierManager.NextLevelThreshold <= 0)
 			{
-				_cachedFill = 1f;
-				_cachedText = _maxTierText;
+				this._cachedFill = 1f;
+				this._cachedText = this._maxTierText;
 			}
 			else
 			{
-				_cachedFill = (float)_tierManager.RelativeExp / (float)_tierManager.NextLevelThreshold;
-				_cachedText = string.Format(_expFormat, _tierManager.RelativeExp, _tierManager.NextLevelThreshold);
+				this._cachedFill = (float)this._tierManager.RelativeExp / (float)this._tierManager.NextLevelThreshold;
+				this._cachedText = string.Format(this._expFormat, this._tierManager.RelativeExp, this._tierManager.NextLevelThreshold);
 			}
-			_uiDirty = false;
+			this._uiDirty = false;
 		}
 	}
 
 	private void SetDirty()
 	{
-		_uiDirty = true;
+		this._uiDirty = true;
 	}
 
 	private void OnLevelledUp()
 	{
-		SetDirty();
+		this.SetDirty();
 		bool flag = false;
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-		stringBuilder.AppendFormat(_levelUpNotification, _tierManager.AccessTierLevel);
+		stringBuilder.AppendFormat(this._levelUpNotification, this._tierManager.AccessTierLevel);
 		SubroutineBase[] allSubroutines = base.Role.SubroutineModule.AllSubroutines;
 		for (int i = 0; i < allSubroutines.Length; i++)
 		{
@@ -97,7 +97,7 @@ public class Scp079TierGui : Scp079BarBaseGui
 				{
 					stringBuilder.Append("\n  - ");
 				}
-				flag = !scp079LevelUpNotifier.WriteLevelUpNotification(stringBuilder, _tierManager.AccessTierIndex);
+				flag = !scp079LevelUpNotifier.WriteLevelUpNotification(stringBuilder, this._tierManager.AccessTierIndex);
 			}
 		}
 		string text = StringBuilderPool.Shared.ToStringReturn(stringBuilder);

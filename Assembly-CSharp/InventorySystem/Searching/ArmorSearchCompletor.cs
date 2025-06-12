@@ -19,7 +19,7 @@ public class ArmorSearchCompletor : PickupSearchCompletor
 	public ArmorSearchCompletor(ReferenceHub hub, ItemPickupBase targetPickup, ItemBase targetItem, double maxDistanceSquared)
 		: base(hub, targetPickup, maxDistanceSquared)
 	{
-		_category = targetItem.Category;
+		this._category = targetItem.Category;
 	}
 
 	protected override bool ValidateAny()
@@ -29,7 +29,7 @@ public class ArmorSearchCompletor : PickupSearchCompletor
 			return false;
 		}
 		bool num = 8 > base.Hub.inventory.UserInventory.Items.Count;
-		bool flag = base.Hub.inventory.TryGetBodyArmor(out _currentArmor);
+		bool flag = base.Hub.inventory.TryGetBodyArmor(out this._currentArmor);
 		if (!num && !flag)
 		{
 			base.Hub.hints.Show(new TranslationHint(HintTranslations.MaxItemsAlreadyReached, new HintParameter[1]
@@ -47,17 +47,17 @@ public class ArmorSearchCompletor : PickupSearchCompletor
 		{
 			return false;
 		}
-		if (TargetItemType == ItemType.None)
+		if (base.TargetItemType == ItemType.None)
 		{
 			throw new InvalidOperationException("Item has an invalid ItemType.");
 		}
-		if (_category == ItemCategory.Ammo)
+		if (this._category == ItemCategory.Ammo)
 		{
 			throw new InvalidOperationException("Item is not equippable (can be held in inventory).");
 		}
-		PlayerSearchingArmorEventArgs playerSearchingArmorEventArgs = new PlayerSearchingArmorEventArgs(base.Hub, TargetPickup as BodyArmorPickup);
-		PlayerEvents.OnSearchingArmor(playerSearchingArmorEventArgs);
-		if (!playerSearchingArmorEventArgs.IsAllowed)
+		PlayerSearchingArmorEventArgs e = new PlayerSearchingArmorEventArgs(base.Hub, base.TargetPickup as BodyArmorPickup);
+		PlayerEvents.OnSearchingArmor(e);
+		if (!e.IsAllowed)
 		{
 			return false;
 		}
@@ -66,18 +66,18 @@ public class ArmorSearchCompletor : PickupSearchCompletor
 
 	public override void Complete()
 	{
-		PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(base.Hub, TargetPickup));
-		PlayerPickingUpArmorEventArgs playerPickingUpArmorEventArgs = new PlayerPickingUpArmorEventArgs(base.Hub, TargetPickup as BodyArmorPickup);
-		PlayerEvents.OnPickingUpArmor(playerPickingUpArmorEventArgs);
-		if (playerPickingUpArmorEventArgs.IsAllowed)
+		PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(base.Hub, base.TargetPickup));
+		PlayerPickingUpArmorEventArgs e = new PlayerPickingUpArmorEventArgs(base.Hub, base.TargetPickup as BodyArmorPickup);
+		PlayerEvents.OnPickingUpArmor(e);
+		if (e.IsAllowed)
 		{
-			if (_currentArmor != null)
+			if (this._currentArmor != null)
 			{
-				base.Hub.inventory.ServerDropItem(_currentArmor.ItemSerial);
+				base.Hub.inventory.ServerDropItem(this._currentArmor.ItemSerial);
 			}
-			BodyArmor armor = base.Hub.inventory.ServerAddItem(TargetPickup.Info.ItemId, ItemAddReason.PickedUp, TargetPickup.Info.Serial, TargetPickup) as BodyArmor;
+			BodyArmor armor = base.Hub.inventory.ServerAddItem(base.TargetPickup.Info.ItemId, ItemAddReason.PickedUp, base.TargetPickup.Info.Serial, base.TargetPickup) as BodyArmor;
 			BodyArmorUtils.SetPlayerDirty(base.Hub);
-			TargetPickup.DestroySelf();
+			base.TargetPickup.DestroySelf();
 			PlayerEvents.OnPickedUpArmor(new PlayerPickedUpArmorEventArgs(base.Hub, armor));
 		}
 	}

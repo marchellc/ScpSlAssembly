@@ -32,22 +32,22 @@ public class Scp106Role : FpcStandardScp, ISubroutinedRole, IHudScp, IPoolResett
 	{
 		get
 		{
-			if (!_sinkholeSet)
+			if (!this._sinkholeSet)
 			{
-				SubroutineModule.TryGetSubroutine<Scp106SinkholeController>(out _sinkholeCtrl);
-				_sinkholeSet = true;
+				this.SubroutineModule.TryGetSubroutine<Scp106SinkholeController>(out this._sinkholeCtrl);
+				this._sinkholeSet = true;
 			}
-			return _sinkholeCtrl;
+			return this._sinkholeCtrl;
 		}
 	}
 
-	public bool CanActivateShock => !Sinkhole.TargetSubmerged;
+	public bool CanActivateShock => !this.Sinkhole.TargetSubmerged;
 
 	public bool IsStalking
 	{
 		get
 		{
-			if (SubroutineModule.TryGetSubroutine<Scp106StalkAbility>(out var subroutine))
+			if (this.SubroutineModule.TryGetSubroutine<Scp106StalkAbility>(out var subroutine))
 			{
 				return subroutine.StalkActive;
 			}
@@ -58,21 +58,21 @@ public class Scp106Role : FpcStandardScp, ISubroutinedRole, IHudScp, IPoolResett
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		AllInstances.Add(this);
+		Scp106Role.AllInstances.Add(this);
 	}
 
 	public void ResetObject()
 	{
-		AllInstances.Remove(this);
+		Scp106Role.AllInstances.Remove(this);
 	}
 
 	public DamageHandlerBase ProcessDamageHandler(DamageHandlerBase dhb)
 	{
-		if (!_sinkholeCtrl.IsHidden)
+		if (!this._sinkholeCtrl.IsHidden)
 		{
 			return dhb;
 		}
-		if (!ValidateDamageHandler(dhb))
+		if (!this.ValidateDamageHandler(dhb))
 		{
 			dhb = new UniversalDamageHandler();
 		}
@@ -86,7 +86,7 @@ public class Scp106Role : FpcStandardScp, ISubroutinedRole, IHudScp, IPoolResett
 
 	public bool IsInIdleRange(TeslaGate teslaGate)
 	{
-		if (!IsStalking)
+		if (!this.IsStalking)
 		{
 			return teslaGate.IsInIdleRange(base.FpcModule.Position);
 		}
@@ -99,7 +99,7 @@ public class Scp106Role : FpcStandardScp, ISubroutinedRole, IHudScp, IPoolResett
 		{
 			return false;
 		}
-		if (dhb is ExplosionDamageHandler || dhb is MicroHidDamageHandler || dhb is FirearmDamageHandler || (dhb is Scp018DamageHandler && IsStalking))
+		if (dhb is ExplosionDamageHandler || dhb is MicroHidDamageHandler || dhb is FirearmDamageHandler || (dhb is Scp018DamageHandler && this.IsStalking))
 		{
 			return false;
 		}

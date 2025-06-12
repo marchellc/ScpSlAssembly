@@ -40,7 +40,7 @@ public class HumanKillObjective : HumanObjectiveBase<KillObjectiveFootprint>
 		}
 		RoleTypeId role = attacker.Role;
 		Faction faction = role.GetFaction();
-		if (IsValidFaction(faction) && IsValidEnemy(role, victim))
+		if (this.IsValidFaction(faction) && this.IsValidEnemy(role, victim))
 		{
 			bool num = victim.IsSCP(includeZombies: false);
 			bool flag = victim.roleManager.CurrentRole.RoleTypeId == RoleTypeId.Scp0492;
@@ -65,8 +65,8 @@ public class HumanKillObjective : HumanObjectiveBase<KillObjectiveFootprint>
 			{
 				num3 += 5f;
 			}
-			GrantInfluence(faction, num3);
-			ReduceTimer(faction, num2);
+			base.GrantInfluence(faction, num3);
+			base.ReduceTimer(faction, num2);
 			base.ObjectiveFootprint = new KillObjectiveFootprint
 			{
 				InfluenceReward = num3,
@@ -74,7 +74,7 @@ public class HumanKillObjective : HumanObjectiveBase<KillObjectiveFootprint>
 				AchievingPlayer = new ObjectiveHubFootprint(attacker),
 				VictimFootprint = new ObjectiveHubFootprint(victim)
 			};
-			ServerSendUpdate();
+			base.ServerSendUpdate();
 		}
 	}
 

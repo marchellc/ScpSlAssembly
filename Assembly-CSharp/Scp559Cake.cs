@@ -111,18 +111,18 @@ public class Scp559Cake : NetworkBehaviour, IServerInteractable, IInteractable
 
 	public IVerificationRule VerificationRule => StandardDistanceVerification.Default;
 
-	public bool CanBeUsed => _remainingSlices > 0;
+	public bool CanBeUsed => this._remainingSlices > 0;
 
 	public byte Network_remainingSlices
 	{
 		get
 		{
-			return _remainingSlices;
+			return this._remainingSlices;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _remainingSlices, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._remainingSlices, 1uL, null);
 		}
 	}
 
@@ -130,12 +130,12 @@ public class Scp559Cake : NetworkBehaviour, IServerInteractable, IInteractable
 	{
 		get
 		{
-			return _isSpawned;
+			return this._isSpawned;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _isSpawned, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._isSpawned, 2uL, null);
 		}
 	}
 
@@ -143,12 +143,12 @@ public class Scp559Cake : NetworkBehaviour, IServerInteractable, IInteractable
 	{
 		get
 		{
-			return _hasPedestal;
+			return this._hasPedestal;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _hasPedestal, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._hasPedestal, 4uL, null);
 		}
 	}
 
@@ -156,23 +156,23 @@ public class Scp559Cake : NetworkBehaviour, IServerInteractable, IInteractable
 	{
 		get
 		{
-			return _position;
+			return this._position;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _position, 8uL, SetPosition);
+			base.GeneratedSyncVarSetter(value, ref this._position, 8uL, SetPosition);
 		}
 	}
 
 	public void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
-		if (_isSpawned && ply.IsHuman() && _remainingSlices != 0)
+		if (this._isSpawned && ply.IsHuman() && this._remainingSlices != 0)
 		{
 			Scp559Effect effect = ply.playerEffectsController.GetEffect<Scp559Effect>();
 			if (!effect.IsEnabled)
 			{
-				Network_remainingSlices = (byte)(_remainingSlices - 1);
+				this.Network_remainingSlices = (byte)(this._remainingSlices - 1);
 				effect.IsEnabled = true;
 			}
 		}
@@ -182,20 +182,20 @@ public class Scp559Cake : NetworkBehaviour, IServerInteractable, IInteractable
 	{
 		if (NetworkServer.active)
 		{
-			UpdateServer();
+			this.UpdateServer();
 		}
-		UpdateVisual();
+		this.UpdateVisual();
 	}
 
 	private void Start()
 	{
-		if (NetworkServer.active && !CanSpawn())
+		if (NetworkServer.active && !this.CanSpawn())
 		{
 			NetworkServer.Destroy(base.gameObject);
 		}
 		else
 		{
-			SetPosition(_position, _position);
+			this.SetPosition(this._position, this._position);
 		}
 	}
 
@@ -206,106 +206,106 @@ public class Scp559Cake : NetworkBehaviour, IServerInteractable, IInteractable
 
 	private void UpdateServer()
 	{
-		_remainingTime -= Time.deltaTime;
-		if (!(_remainingTime > 0f))
+		this._remainingTime -= Time.deltaTime;
+		if (!(this._remainingTime > 0f))
 		{
 			Vector3 pos;
 			bool pedestal;
-			if (_isSpawned)
+			if (this._isSpawned)
 			{
-				Network_isSpawned = false;
-				_remainingTime = _respawnTime;
+				this.Network_isSpawned = false;
+				this._remainingTime = this._respawnTime;
 			}
-			else if (RoundStart.RoundStarted && !(RoundStart.RoundLength.TotalSeconds < (double)_respawnTime) && TryGetSpawnPoint(out pos, out pedestal))
+			else if (RoundStart.RoundStarted && !(RoundStart.RoundLength.TotalSeconds < (double)this._respawnTime) && this.TryGetSpawnPoint(out pos, out pedestal))
 			{
-				Network_position = pos;
-				Network_isSpawned = true;
-				Network_hasPedestal = pedestal;
-				Network_remainingSlices = _maxSlices;
-				_remainingTime = _spawnedDuration;
+				this.Network_position = pos;
+				this.Network_isSpawned = true;
+				this.Network_hasPedestal = pedestal;
+				this.Network_remainingSlices = this._maxSlices;
+				this._remainingTime = this._spawnedDuration;
 			}
 		}
 	}
 
 	private void UpdateVisual()
 	{
-		_pedestal.SetActive(_hasPedestal);
-		float num = Mathf.Clamp01(_fade + _dissolveSpeed * Time.deltaTime * (float)(_isSpawned ? 1 : (-1)));
-		if (num != _fade)
+		this._pedestal.SetActive(this._hasPedestal);
+		float num = Mathf.Clamp01(this._fade + this._dissolveSpeed * Time.deltaTime * (float)(this._isSpawned ? 1 : (-1)));
+		if (num != this._fade)
 		{
-			if (_fade <= 0f)
+			if (this._fade <= 0f)
 			{
-				AudioSourcePoolManager.PlayOnTransform(_appearSound, base.transform, 25f);
+				AudioSourcePoolManager.PlayOnTransform(this._appearSound, base.transform, 25f);
 			}
-			if (_fade >= 1f)
+			if (this._fade >= 1f)
 			{
-				AudioSourcePoolManager.PlayOnTransform(_disappearClip, base.transform, 15f);
+				AudioSourcePoolManager.PlayOnTransform(this._disappearClip, base.transform, 15f);
 			}
-			_fade = num;
-			_dissolveMat.SetFloat(ShaderDissolveProperty, 1f - _fade);
-			_visuals.SetActive(_fade > 0f);
-			_prevSlices = -1;
-			_slices.ForEach(delegate(GameObject x)
+			this._fade = num;
+			this._dissolveMat.SetFloat(Scp559Cake.ShaderDissolveProperty, 1f - this._fade);
+			this._visuals.SetActive(this._fade > 0f);
+			this._prevSlices = -1;
+			this._slices.ForEach(delegate(GameObject x)
 			{
 				x.SetActive(value: false);
 			});
 		}
-		else if (_prevSlices != _remainingSlices)
+		else if (this._prevSlices != this._remainingSlices)
 		{
-			for (int i = 0; i < _slices.Length; i++)
+			for (int num2 = 0; num2 < this._slices.Length; num2++)
 			{
-				_slices[i].SetActive(i < _remainingSlices);
+				this._slices[num2].SetActive(num2 < this._remainingSlices);
 			}
-			if (_prevSlices > _remainingSlices)
+			if (this._prevSlices > this._remainingSlices)
 			{
-				AudioSourcePoolManager.PlayOnTransform(_useSound, base.transform, 9f);
+				AudioSourcePoolManager.PlayOnTransform(this._useSound, base.transform, 9f);
 			}
-			_prevSlices = _remainingSlices;
+			this._prevSlices = this._remainingSlices;
 		}
 	}
 
 	private bool TryGetSpawnPoint(out Vector3 pos, out bool pedestal)
 	{
-		PossiblePositions.Clear();
-		PopulatedRooms.Clear();
+		Scp559Cake.PossiblePositions.Clear();
+		Scp559Cake.PopulatedRooms.Clear();
 		int num = 0;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			if (allHub.roleManager.CurrentRole is HumanRole && allHub.TryGetCurrentRoom(out var room) && Spawnpoints.ContainsKey(room.Name))
+			if (allHub.roleManager.CurrentRole is HumanRole && allHub.TryGetCurrentRoom(out var room) && Scp559Cake.Spawnpoints.ContainsKey(room.Name))
 			{
-				PopulatedRooms.TryGetValue(room, out var value);
+				Scp559Cake.PopulatedRooms.TryGetValue(room, out var value);
 				if (!allHub.playerEffectsController.GetEffect<Scp559Effect>().IsEnabled)
 				{
 					value++;
 				}
-				PopulatedRooms[room] = value;
+				Scp559Cake.PopulatedRooms[room] = value;
 				num = Mathf.Max(value, num);
 			}
 		}
-		foreach (KeyValuePair<RoomIdentifier, int> populatedRoom in PopulatedRooms)
+		foreach (KeyValuePair<RoomIdentifier, int> populatedRoom in Scp559Cake.PopulatedRooms)
 		{
 			if (populatedRoom.Value >= num)
 			{
-				Vector4 vector = Spawnpoints[populatedRoom.Key.Name];
+				Vector4 vector = Scp559Cake.Spawnpoints[populatedRoom.Key.Name];
 				Vector3 position = populatedRoom.Key.transform.TransformPoint(vector);
-				if (!Physics.CheckSphere(position, _cakeRadius, CheckerMask))
+				if (!Physics.CheckSphere(position, this._cakeRadius, Scp559Cake.CheckerMask))
 				{
-					PossiblePositions.Add(new Vector4(position.x, position.y, position.z, vector.w));
+					Scp559Cake.PossiblePositions.Add(new Vector4(position.x, position.y, position.z, vector.w));
 				}
 			}
 		}
-		if (PossiblePositions.Count == 0)
+		if (Scp559Cake.PossiblePositions.Count == 0)
 		{
 			pos = Vector3.zero;
 			pedestal = false;
 			return false;
 		}
-		Vector4 vector2 = PossiblePositions.RandomItem();
+		Vector4 vector2 = Scp559Cake.PossiblePositions.RandomItem();
 		pos = vector2;
 		pedestal = vector2.w > 0f;
 		if (!pedestal)
 		{
-			pos += PedestalOffset;
+			pos += Scp559Cake.PedestalOffset;
 		}
 		return true;
 	}
@@ -330,28 +330,28 @@ public class Scp559Cake : NetworkBehaviour, IServerInteractable, IInteractable
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _remainingSlices);
-			writer.WriteBool(_isSpawned);
-			writer.WriteBool(_hasPedestal);
-			writer.WriteVector3(_position);
+			NetworkWriterExtensions.WriteByte(writer, this._remainingSlices);
+			writer.WriteBool(this._isSpawned);
+			writer.WriteBool(this._hasPedestal);
+			writer.WriteVector3(this._position);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _remainingSlices);
+			NetworkWriterExtensions.WriteByte(writer, this._remainingSlices);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteBool(_isSpawned);
+			writer.WriteBool(this._isSpawned);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			writer.WriteBool(_hasPedestal);
+			writer.WriteBool(this._hasPedestal);
 		}
 		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			writer.WriteVector3(_position);
+			writer.WriteVector3(this._position);
 		}
 	}
 
@@ -360,28 +360,28 @@ public class Scp559Cake : NetworkBehaviour, IServerInteractable, IInteractable
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _remainingSlices, null, NetworkReaderExtensions.ReadByte(reader));
-			GeneratedSyncVarDeserialize(ref _isSpawned, null, reader.ReadBool());
-			GeneratedSyncVarDeserialize(ref _hasPedestal, null, reader.ReadBool());
-			GeneratedSyncVarDeserialize(ref _position, SetPosition, reader.ReadVector3());
+			base.GeneratedSyncVarDeserialize(ref this._remainingSlices, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._isSpawned, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._hasPedestal, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._position, SetPosition, reader.ReadVector3());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _remainingSlices, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._remainingSlices, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _isSpawned, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._isSpawned, null, reader.ReadBool());
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _hasPedestal, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._hasPedestal, null, reader.ReadBool());
 		}
 		if ((num & 8L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _position, SetPosition, reader.ReadVector3());
+			base.GeneratedSyncVarDeserialize(ref this._position, SetPosition, reader.ReadVector3());
 		}
 	}
 }

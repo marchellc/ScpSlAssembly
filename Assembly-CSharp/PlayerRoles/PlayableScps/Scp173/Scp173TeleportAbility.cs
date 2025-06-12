@@ -67,7 +67,7 @@ public class Scp173TeleportAbility : KeySubroutine<Scp173Role>
 	[SerializeField]
 	private Volume _blinkEffect;
 
-	private float EffectiveBlinkDistance => 8f * (_breakneckSpeedsAbility.IsActive ? 1.8f : 1f);
+	private float EffectiveBlinkDistance => 8f * (this._breakneckSpeedsAbility.IsActive ? 1.8f : 1f);
 
 	protected override ActionName TargetKey => ActionName.Zoom;
 
@@ -84,7 +84,7 @@ public class Scp173TeleportAbility : KeySubroutine<Scp173Role>
 					continue;
 				}
 				Vector3 position = fpcRole.FpcModule.Position;
-				Vector3 tpPosition = _tpPosition;
+				Vector3 tpPosition = this._tpPosition;
 				if ((position - tpPosition).MagnitudeOnlyY() < 2.2f)
 				{
 					position.y = 0f;
@@ -113,12 +113,12 @@ public class Scp173TeleportAbility : KeySubroutine<Scp173Role>
 	protected override void Awake()
 	{
 		base.Awake();
-		_fpcModule = base.CastRole.FpcModule as Scp173MovementModule;
+		this._fpcModule = base.CastRole.FpcModule as Scp173MovementModule;
 		SubroutineManagerModule subroutineModule = base.CastRole.SubroutineModule;
-		subroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out _observersTracker);
-		subroutineModule.TryGetSubroutine<Scp173BreakneckSpeedsAbility>(out _breakneckSpeedsAbility);
-		subroutineModule.TryGetSubroutine<Scp173AudioPlayer>(out _audioSubroutine);
-		subroutineModule.TryGetSubroutine<Scp173BlinkTimer>(out _blinkTimer);
+		subroutineModule.TryGetSubroutine<Scp173ObserversTracker>(out this._observersTracker);
+		subroutineModule.TryGetSubroutine<Scp173BreakneckSpeedsAbility>(out this._breakneckSpeedsAbility);
+		subroutineModule.TryGetSubroutine<Scp173AudioPlayer>(out this._audioSubroutine);
+		subroutineModule.TryGetSubroutine<Scp173BlinkTimer>(out this._blinkTimer);
 	}
 
 	protected override void Update()
@@ -126,117 +126,117 @@ public class Scp173TeleportAbility : KeySubroutine<Scp173Role>
 		base.Update();
 		if (!base.Role.IsControllable && !base.Owner.IsLocallySpectated())
 		{
-			if (_isAiming)
+			if (this._isAiming)
 			{
-				_isAiming = false;
-				_tpIndicator.UpdateVisibility(isVisible: false);
+				this._isAiming = false;
+				this._tpIndicator.UpdateVisibility(isVisible: false);
 			}
 			return;
 		}
-		bool flag = IsKeyHeld && (!Cursor.visible || base.Role.IsEmulatedDummy);
-		bool flag2 = (base.Role.IsControllable ? flag : HasDataFlag(CmdTeleportData.Aiming));
-		if (_isAiming)
+		bool flag = this.IsKeyHeld && (!Cursor.visible || base.Role.IsEmulatedDummy);
+		bool flag2 = (base.Role.IsControllable ? flag : this.HasDataFlag(CmdTeleportData.Aiming));
+		if (this._isAiming)
 		{
-			UpdateAiming(!flag2);
+			this.UpdateAiming(!flag2);
 		}
 		else if (flag2)
 		{
-			_isAiming = true;
+			this._isAiming = true;
 		}
 	}
 
 	private void UpdateAiming(bool wantsToTeleport)
 	{
-		bool flag = _fpcModule.TryGetTeleportPos(EffectiveBlinkDistance, out _tpPosition, out _targetDis);
+		bool flag = this._fpcModule.TryGetTeleportPos(this.EffectiveBlinkDistance, out this._tpPosition, out this._targetDis);
 		if (!wantsToTeleport)
 		{
-			_tpIndicator.UpdateVisibility(flag && _blinkTimer.AbilityReady);
-			_tpIndicator.transform.position = _tpPosition;
-			if (!HasDataFlag(CmdTeleportData.Aiming))
+			this._tpIndicator.UpdateVisibility(flag && this._blinkTimer.AbilityReady);
+			this._tpIndicator.transform.position = this._tpPosition;
+			if (!this.HasDataFlag(CmdTeleportData.Aiming))
 			{
-				_cmdData = CmdTeleportData.Aiming;
-				ClientSendCmd();
+				this._cmdData = CmdTeleportData.Aiming;
+				base.ClientSendCmd();
 			}
 		}
 		else
 		{
 			if (base.Role.IsControllable)
 			{
-				_cmdData = ((!flag) ? CmdTeleportData.Aiming : CmdTeleportData.WantsToTeleport);
-				ClientSendCmd();
+				this._cmdData = ((!flag) ? CmdTeleportData.Aiming : CmdTeleportData.WantsToTeleport);
+				base.ClientSendCmd();
 			}
-			_isAiming = false;
-			_tpIndicator.UpdateVisibility(isVisible: false);
+			this._isAiming = false;
+			this._tpIndicator.UpdateVisibility(isVisible: false);
 		}
 	}
 
 	private bool TryBlink(float maxDis)
 	{
-		maxDis = Mathf.Clamp(maxDis, 0f, EffectiveBlinkDistance);
-		if (!_blinkTimer.AbilityReady)
+		maxDis = Mathf.Clamp(maxDis, 0f, this.EffectiveBlinkDistance);
+		if (!this._blinkTimer.AbilityReady)
 		{
 			return false;
 		}
-		if (!_fpcModule.TryGetTeleportPos(maxDis, out _tpPosition, out var _))
+		if (!this._fpcModule.TryGetTeleportPos(maxDis, out this._tpPosition, out var _))
 		{
 			return false;
 		}
-		float num = _fpcModule.CharController.height / 2f;
-		_blinkTimer.ServerBlink(_tpPosition + Vector3.up * num);
+		float num = this._fpcModule.CharController.height / 2f;
+		this._blinkTimer.ServerBlink(this._tpPosition + Vector3.up * num);
 		return true;
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteByte((byte)_cmdData);
-		if (HasDataFlag(CmdTeleportData.WantsToTeleport))
+		writer.WriteByte((byte)this._cmdData);
+		if (this.HasDataFlag(CmdTeleportData.WantsToTeleport))
 		{
 			writer.WriteQuaternion(base.Owner.PlayerCameraReference.rotation);
-			writer.WriteFloat(_targetDis + 0.1f);
-			writer.WriteReferenceHub(BestTarget);
+			writer.WriteFloat(this._targetDis + 0.1f);
+			writer.WriteReferenceHub(this.BestTarget);
 		}
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		_cmdData = (CmdTeleportData)reader.ReadByte();
-		if (!HasDataFlag(CmdTeleportData.WantsToTeleport))
+		this._cmdData = (CmdTeleportData)reader.ReadByte();
+		if (!this.HasDataFlag(CmdTeleportData.WantsToTeleport))
 		{
-			ServerSendRpc(toAll: true);
+			base.ServerSendRpc(toAll: true);
 		}
 		else
 		{
-			if (!_blinkTimer.AbilityReady)
+			if (!this._blinkTimer.AbilityReady)
 			{
 				return;
 			}
 			Transform playerCameraReference = base.Owner.PlayerCameraReference;
-			HashSet<ReferenceHub> prevObservers = new HashSet<ReferenceHub>(_observersTracker.Observers);
-			CmdTeleportData cmdData = _cmdData;
-			_cmdData = (CmdTeleportData)0;
-			ServerSendRpc(toAll: true);
-			_cmdData = cmdData;
+			HashSet<ReferenceHub> prevObservers = new HashSet<ReferenceHub>(this._observersTracker.Observers);
+			CmdTeleportData cmdData = this._cmdData;
+			this._cmdData = (CmdTeleportData)0;
+			base.ServerSendRpc(toAll: true);
+			this._cmdData = cmdData;
 			Quaternion rotation = playerCameraReference.rotation;
 			playerCameraReference.rotation = reader.ReadQuaternion();
-			bool num = TryBlink(reader.ReadFloat());
+			bool num = this.TryBlink(reader.ReadFloat());
 			playerCameraReference.rotation = rotation;
 			if (!num)
 			{
 				return;
 			}
-			prevObservers.UnionWith(_observersTracker.Observers);
-			ServerSendRpc((ReferenceHub x) => prevObservers.Contains(x));
-			_audioSubroutine.ServerSendSound(Scp173AudioPlayer.Scp173SoundId.Teleport);
-			if (_breakneckSpeedsAbility.IsActive)
+			prevObservers.UnionWith(this._observersTracker.Observers);
+			base.ServerSendRpc((ReferenceHub x) => prevObservers.Contains(x));
+			this._audioSubroutine.ServerSendSound(Scp173AudioPlayer.Scp173SoundId.Teleport);
+			if (this._breakneckSpeedsAbility.IsActive)
 			{
 				return;
 			}
-			int num2 = Physics.OverlapSphereNonAlloc(_fpcModule.Position, 0.8f, DetectedColliders, 16384);
-			for (int i = 0; i < num2; i++)
+			int num2 = Physics.OverlapSphereNonAlloc(this._fpcModule.Position, 0.8f, Scp173TeleportAbility.DetectedColliders, 16384);
+			for (int num3 = 0; num3 < num2; num3++)
 			{
-				if (DetectedColliders[i].TryGetComponent<BreakableWindow>(out var component))
+				if (Scp173TeleportAbility.DetectedColliders[num3].TryGetComponent<BreakableWindow>(out var component))
 				{
 					component.Damage(component.health, base.CastRole.DamageHandler, Vector3.zero);
 				}
@@ -247,7 +247,7 @@ public class Scp173TeleportAbility : KeySubroutine<Scp173Role>
 				Bounds bounds = fpcRole.FpcModule.Tracer.GenerateBounds(0.4f, ignoreTeleports: true);
 				Vector3 position = fpcRole.FpcModule.Position;
 				bounds.Encapsulate(new Bounds(position, Vector3.up * 2.2f));
-				if (!(bounds.SqrDistance(_fpcModule.Position) > 1.66f) && !Physics.Linecast(_tpPosition, position, PlayerRolesUtils.AttackMask) && referenceHub.playerStats.DealDamage(base.CastRole.DamageHandler) && base.CastRole.SubroutineModule.TryGetSubroutine<Scp173AudioPlayer>(out var subroutine))
+				if (!(bounds.SqrDistance(this._fpcModule.Position) > 1.66f) && !Physics.Linecast(this._tpPosition, position, PlayerRolesUtils.AttackMask) && referenceHub.playerStats.DealDamage(base.CastRole.DamageHandler) && base.CastRole.SubroutineModule.TryGetSubroutine<Scp173AudioPlayer>(out var subroutine))
 				{
 					Hitmarker.SendHitmarkerDirectly(base.Owner, 1f);
 					subroutine.ServerSendSound(Scp173AudioPlayer.Scp173SoundId.Snap);
@@ -259,36 +259,36 @@ public class Scp173TeleportAbility : KeySubroutine<Scp173Role>
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte((byte)_cmdData);
-		if (HasDataFlag(CmdTeleportData.WantsToTeleport))
+		writer.WriteByte((byte)this._cmdData);
+		if (this.HasDataFlag(CmdTeleportData.WantsToTeleport))
 		{
-			writer.WriteRelativePosition(new RelativePosition(_fpcModule.Position));
+			writer.WriteRelativePosition(new RelativePosition(this._fpcModule.Position));
 		}
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_cmdData = (CmdTeleportData)reader.ReadByte();
-		if (HasDataFlag(CmdTeleportData.WantsToTeleport))
+		this._cmdData = (CmdTeleportData)reader.ReadByte();
+		if (this.HasDataFlag(CmdTeleportData.WantsToTeleport))
 		{
 			RelativePosition receivedPosition = reader.ReadRelativePosition();
-			_fpcModule.Motor.ReceivedPosition = receivedPosition;
-			_fpcModule.Position = receivedPosition.Position;
-			_lastBlink = Time.timeSinceLevelLoad;
-			_blinkEffect.weight = 1f;
-			(_fpcModule.CharacterModelInstance as Scp173CharacterModel).Frozen = false;
+			this._fpcModule.Motor.ReceivedPosition = receivedPosition;
+			this._fpcModule.Position = receivedPosition.Position;
+			this._lastBlink = Time.timeSinceLevelLoad;
+			this._blinkEffect.weight = 1f;
+			(this._fpcModule.CharacterModelInstance as Scp173CharacterModel).Frozen = false;
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_lastBlink = 0f;
+		this._lastBlink = 0f;
 	}
 
 	private bool HasDataFlag(CmdTeleportData ctd)
 	{
-		return (_cmdData & ctd) == ctd;
+		return (this._cmdData & ctd) == ctd;
 	}
 }

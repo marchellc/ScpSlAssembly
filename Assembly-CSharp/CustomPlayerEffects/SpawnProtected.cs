@@ -33,7 +33,7 @@ public class SpawnProtected : StatusEffectBase, ISpectatorDataPlayerEffect, ICus
 
 	internal override void OnRoleChanged(PlayerRoleBase previousRole, PlayerRoleBase newRole)
 	{
-		if (!TryGiveProtection(base.Hub))
+		if (!SpawnProtected.TryGiveProtection(base.Hub))
 		{
 			base.OnRoleChanged(previousRole, newRole);
 		}
@@ -41,21 +41,21 @@ public class SpawnProtected : StatusEffectBase, ISpectatorDataPlayerEffect, ICus
 
 	public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
 	{
-		if (!IsProtectionEnabled)
+		if (!SpawnProtected.IsProtectionEnabled)
 		{
 			return 1f;
 		}
 		if (!(handler is AttackerDamageHandler attackerDamageHandler))
 		{
-			if (!PreventAllDamage)
+			if (!SpawnProtected.PreventAllDamage)
 			{
 				return 1f;
 			}
-			return CancelDamage();
+			return this.CancelDamage();
 		}
 		if (!(attackerDamageHandler.Attacker.Hub == base.Hub))
 		{
-			return CancelDamage();
+			return this.CancelDamage();
 		}
 		return 1f;
 	}
@@ -78,7 +78,7 @@ public class SpawnProtected : StatusEffectBase, ISpectatorDataPlayerEffect, ICus
 
 	public static bool CheckPlayer(ReferenceHub hub)
 	{
-		if (NetworkServer.active && !IsProtectionEnabled)
+		if (NetworkServer.active && !SpawnProtected.IsProtectionEnabled)
 		{
 			return false;
 		}
@@ -87,7 +87,7 @@ public class SpawnProtected : StatusEffectBase, ISpectatorDataPlayerEffect, ICus
 
 	public static bool TryGiveProtection(ReferenceHub hub)
 	{
-		if (!NetworkServer.active || !IsProtectionEnabled)
+		if (!NetworkServer.active || !SpawnProtected.IsProtectionEnabled)
 		{
 			return false;
 		}
@@ -96,44 +96,44 @@ public class SpawnProtected : StatusEffectBase, ISpectatorDataPlayerEffect, ICus
 		{
 			return false;
 		}
-		if (!ProtectedTeams.Contains(currentRole.Team))
+		if (!SpawnProtected.ProtectedTeams.Contains(currentRole.Team))
 		{
 			return false;
 		}
-		hub.playerEffectsController.EnableEffect<SpawnProtected>(SpawnDuration);
+		hub.playerEffectsController.EnableEffect<SpawnProtected>(SpawnProtected.SpawnDuration);
 		return true;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		if (!_eventAssigned)
+		if (!SpawnProtected._eventAssigned)
 		{
 			ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(RefreshConfigs));
 			ServerConfigSynchronizer.OnRefreshed = (Action)Delegate.Combine(ServerConfigSynchronizer.OnRefreshed, new Action(RefreshConfigs));
-			_eventAssigned = true;
+			SpawnProtected._eventAssigned = true;
 		}
-		RefreshConfigs();
+		SpawnProtected.RefreshConfigs();
 	}
 
 	private static void RefreshConfigs()
 	{
-		ProtectedTeams.Clear();
-		IsProtectionEnabled = ConfigFile.ServerConfig.GetBool("spawn_protect_enabled");
-		CanShoot = ConfigFile.ServerConfig.GetBool("spawn_protect_can_shoot");
-		PreventAllDamage = ConfigFile.ServerConfig.GetBool("spawn_protect_prevent_all");
-		SpawnDuration = ConfigFile.ServerConfig.GetFloat("spawn_protect_time", 8f);
+		SpawnProtected.ProtectedTeams.Clear();
+		SpawnProtected.IsProtectionEnabled = ConfigFile.ServerConfig.GetBool("spawn_protect_enabled");
+		SpawnProtected.CanShoot = ConfigFile.ServerConfig.GetBool("spawn_protect_can_shoot");
+		SpawnProtected.PreventAllDamage = ConfigFile.ServerConfig.GetBool("spawn_protect_prevent_all");
+		SpawnProtected.SpawnDuration = ConfigFile.ServerConfig.GetFloat("spawn_protect_time", 8f);
 		List<int> intList = ConfigFile.ServerConfig.GetIntList("spawn_protect_team");
 		if (intList.Count == 0)
 		{
-			ProtectedTeams.Add(Team.FoundationForces);
-			ProtectedTeams.Add(Team.ChaosInsurgency);
+			SpawnProtected.ProtectedTeams.Add(Team.FoundationForces);
+			SpawnProtected.ProtectedTeams.Add(Team.ChaosInsurgency);
 		}
 		else
 		{
 			intList.ForEach(delegate(int t)
 			{
-				ProtectedTeams.Add((Team)t);
+				SpawnProtected.ProtectedTeams.Add((Team)t);
 			});
 		}
 	}

@@ -64,12 +64,12 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 	{
 		get
 		{
-			return MainBoolsSync;
+			return this.MainBoolsSync;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref MainBoolsSync, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.MainBoolsSync, 1uL, null);
 		}
 	}
 
@@ -77,12 +77,12 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 	{
 		get
 		{
-			return ServerName;
+			return this.ServerName;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref ServerName, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.ServerName, 2uL, null);
 		}
 	}
 
@@ -90,12 +90,12 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 	{
 		get
 		{
-			return EnableRemoteAdminPredefinedBanTemplates;
+			return this.EnableRemoteAdminPredefinedBanTemplates;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref EnableRemoteAdminPredefinedBanTemplates, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.EnableRemoteAdminPredefinedBanTemplates, 4uL, null);
 		}
 	}
 
@@ -103,12 +103,12 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 	{
 		get
 		{
-			return RemoteAdminExternalPlayerLookupMode;
+			return this.RemoteAdminExternalPlayerLookupMode;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref RemoteAdminExternalPlayerLookupMode, 8uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.RemoteAdminExternalPlayerLookupMode, 8uL, null);
 		}
 	}
 
@@ -116,24 +116,24 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 	{
 		get
 		{
-			return RemoteAdminExternalPlayerLookupURL;
+			return this.RemoteAdminExternalPlayerLookupURL;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref RemoteAdminExternalPlayerLookupURL, 16uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.RemoteAdminExternalPlayerLookupURL, 16uL, null);
 		}
 	}
 
 	public static void RefreshAllConfigs()
 	{
-		if (!(Singleton == null))
+		if (!(ServerConfigSynchronizer.Singleton == null))
 		{
-			Singleton.RefreshMainBools();
-			Singleton.RefreshCategoryLimits();
-			Singleton.RefreshAmmoLimits();
-			Singleton.RefreshRAConfigs();
-			OnRefreshed?.Invoke();
+			ServerConfigSynchronizer.Singleton.RefreshMainBools();
+			ServerConfigSynchronizer.Singleton.RefreshCategoryLimits();
+			ServerConfigSynchronizer.Singleton.RefreshAmmoLimits();
+			ServerConfigSynchronizer.Singleton.RefreshRAConfigs();
+			ServerConfigSynchronizer.OnRefreshed?.Invoke();
 		}
 	}
 
@@ -146,7 +146,7 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 		}
 		else
 		{
-			NetworkMainBoolsSync = Misc.BoolsToByte(ServerConsole.FriendlyFire);
+			this.NetworkMainBoolsSync = Misc.BoolsToByte(ServerConsole.FriendlyFire);
 		}
 	}
 
@@ -158,12 +158,12 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void ServerConfigSynchronizer::RefreshRAConfigs()' called when server was not active");
 			return;
 		}
-		NetworkEnableRemoteAdminPredefinedBanTemplates = ServerStatic.RolesConfig.GetBool("enable_predefined_ban_templates", def: true);
-		NetworkRemoteAdminExternalPlayerLookupMode = ServerStatic.RolesConfig.GetString("external_player_lookup_mode", "disabled").Trim().ToLower();
-		NetworkRemoteAdminExternalPlayerLookupURL = ServerStatic.RolesConfig.GetString("external_player_lookup_url");
-		RemoteAdminExternalPlayerLookupToken = ServerStatic.RolesConfig.GetString("external_player_lookup_token");
-		RemoteAdminPredefinedBanTemplates.Clear();
-		if (!EnableRemoteAdminPredefinedBanTemplates)
+		this.NetworkEnableRemoteAdminPredefinedBanTemplates = ServerStatic.RolesConfig.GetBool("enable_predefined_ban_templates", def: true);
+		this.NetworkRemoteAdminExternalPlayerLookupMode = ServerStatic.RolesConfig.GetString("external_player_lookup_mode", "disabled").Trim().ToLower();
+		this.NetworkRemoteAdminExternalPlayerLookupURL = ServerStatic.RolesConfig.GetString("external_player_lookup_url");
+		this.RemoteAdminExternalPlayerLookupToken = ServerStatic.RolesConfig.GetString("external_player_lookup_token");
+		this.RemoteAdminPredefinedBanTemplates.Clear();
+		if (!this.EnableRemoteAdminPredefinedBanTemplates)
 		{
 			return;
 		}
@@ -208,16 +208,16 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 				{
 					item.FormattedDuration = $"{timeSpan.Seconds}s";
 				}
-				RemoteAdminPredefinedBanTemplates.Add(item);
+				this.RemoteAdminPredefinedBanTemplates.Add(item);
 			}
-			if (RemoteAdminPredefinedBanTemplates.Count == 0)
+			if (this.RemoteAdminPredefinedBanTemplates.Count == 0)
 			{
-				NetworkEnableRemoteAdminPredefinedBanTemplates = false;
+				this.NetworkEnableRemoteAdminPredefinedBanTemplates = false;
 			}
 		}
 		else
 		{
-			NetworkEnableRemoteAdminPredefinedBanTemplates = false;
+			this.NetworkEnableRemoteAdminPredefinedBanTemplates = false;
 		}
 	}
 
@@ -229,13 +229,13 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void ServerConfigSynchronizer::RefreshCategoryLimits()' called when server was not active");
 			return;
 		}
-		CategoryLimits.Clear();
+		this.CategoryLimits.Clear();
 		for (int i = 0; Enum.IsDefined(typeof(ItemCategory), (ItemCategory)i); i++)
 		{
 			ItemCategory key = (ItemCategory)i;
 			if (InventoryLimits.StandardCategoryLimits.TryGetValue(key, out var value) && value >= 0)
 			{
-				CategoryLimits.Add(ConfigFile.ServerConfig.GetSByte("limit_category_" + key.ToString().ToLowerInvariant(), value));
+				this.CategoryLimits.Add(ConfigFile.ServerConfig.GetSByte("limit_category_" + key.ToString().ToLowerInvariant(), value));
 			}
 		}
 	}
@@ -248,14 +248,14 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void ServerConfigSynchronizer::RefreshAmmoLimits()' called when server was not active");
 			return;
 		}
-		if (AmmoLimitsSync.Count > 0)
+		if (this.AmmoLimitsSync.Count > 0)
 		{
-			AmmoLimitsSync.Clear();
+			this.AmmoLimitsSync.Clear();
 		}
 		foreach (KeyValuePair<ItemType, ushort> standardAmmoLimit in InventoryLimits.StandardAmmoLimits)
 		{
 			ushort uShort = ConfigFile.ServerConfig.GetUShort("limit_" + standardAmmoLimit.Key.ToString().ToLowerInvariant(), standardAmmoLimit.Value);
-			AmmoLimitsSync.Add(new AmmoLimit
+			this.AmmoLimitsSync.Add(new AmmoLimit
 			{
 				AmmoType = standardAmmoLimit.Key,
 				Limit = uShort
@@ -265,31 +265,31 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 
 	private void Awake()
 	{
-		Singleton = this;
+		ServerConfigSynchronizer.Singleton = this;
 	}
 
 	private void Update()
 	{
-		if (!_ready)
+		if (!this._ready)
 		{
 			ReferenceHub hub;
 			if (!NetworkServer.active)
 			{
-				_ready = true;
+				this._ready = true;
 			}
 			else if (ReferenceHub.TryGetHostHub(out hub))
 			{
-				_ready = true;
-				RefreshAllConfigs();
+				this._ready = true;
+				ServerConfigSynchronizer.RefreshAllConfigs();
 			}
 		}
 	}
 
 	public ServerConfigSynchronizer()
 	{
-		InitSyncObject(CategoryLimits);
-		InitSyncObject(AmmoLimitsSync);
-		InitSyncObject(RemoteAdminPredefinedBanTemplates);
+		base.InitSyncObject(this.CategoryLimits);
+		base.InitSyncObject(this.AmmoLimitsSync);
+		base.InitSyncObject(this.RemoteAdminPredefinedBanTemplates);
 	}
 
 	public override bool Weaved()
@@ -302,33 +302,33 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			NetworkWriterExtensions.WriteByte(writer, MainBoolsSync);
-			writer.WriteString(ServerName);
-			writer.WriteBool(EnableRemoteAdminPredefinedBanTemplates);
-			writer.WriteString(RemoteAdminExternalPlayerLookupMode);
-			writer.WriteString(RemoteAdminExternalPlayerLookupURL);
+			NetworkWriterExtensions.WriteByte(writer, this.MainBoolsSync);
+			writer.WriteString(this.ServerName);
+			writer.WriteBool(this.EnableRemoteAdminPredefinedBanTemplates);
+			writer.WriteString(this.RemoteAdminExternalPlayerLookupMode);
+			writer.WriteString(this.RemoteAdminExternalPlayerLookupURL);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, MainBoolsSync);
+			NetworkWriterExtensions.WriteByte(writer, this.MainBoolsSync);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteString(ServerName);
+			writer.WriteString(this.ServerName);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			writer.WriteBool(EnableRemoteAdminPredefinedBanTemplates);
+			writer.WriteBool(this.EnableRemoteAdminPredefinedBanTemplates);
 		}
 		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			writer.WriteString(RemoteAdminExternalPlayerLookupMode);
+			writer.WriteString(this.RemoteAdminExternalPlayerLookupMode);
 		}
 		if ((base.syncVarDirtyBits & 0x10L) != 0L)
 		{
-			writer.WriteString(RemoteAdminExternalPlayerLookupURL);
+			writer.WriteString(this.RemoteAdminExternalPlayerLookupURL);
 		}
 	}
 
@@ -337,33 +337,33 @@ public class ServerConfigSynchronizer : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref MainBoolsSync, null, NetworkReaderExtensions.ReadByte(reader));
-			GeneratedSyncVarDeserialize(ref ServerName, null, reader.ReadString());
-			GeneratedSyncVarDeserialize(ref EnableRemoteAdminPredefinedBanTemplates, null, reader.ReadBool());
-			GeneratedSyncVarDeserialize(ref RemoteAdminExternalPlayerLookupMode, null, reader.ReadString());
-			GeneratedSyncVarDeserialize(ref RemoteAdminExternalPlayerLookupURL, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.MainBoolsSync, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this.ServerName, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.EnableRemoteAdminPredefinedBanTemplates, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.RemoteAdminExternalPlayerLookupMode, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.RemoteAdminExternalPlayerLookupURL, null, reader.ReadString());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref MainBoolsSync, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this.MainBoolsSync, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref ServerName, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.ServerName, null, reader.ReadString());
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref EnableRemoteAdminPredefinedBanTemplates, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.EnableRemoteAdminPredefinedBanTemplates, null, reader.ReadBool());
 		}
 		if ((num & 8L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref RemoteAdminExternalPlayerLookupMode, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.RemoteAdminExternalPlayerLookupMode, null, reader.ReadString());
 		}
 		if ((num & 0x10L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref RemoteAdminExternalPlayerLookupURL, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.RemoteAdminExternalPlayerLookupURL, null, reader.ReadString());
 		}
 	}
 }

@@ -17,26 +17,26 @@ public class MixerAudioSettings : MonoBehaviour
 
 		public AudioSlider(VolumeSliderSetting setting, string floatName)
 		{
-			_setting = setting;
-			_floatName = floatName;
-			UserSetting<float>.AddListener(_setting, SetFloat);
-			UserSetting<float>.SetDefaultValue(_setting, 0.7f);
+			this._setting = setting;
+			this._floatName = floatName;
+			UserSetting<float>.AddListener(this._setting, SetFloat);
+			UserSetting<float>.SetDefaultValue(this._setting, 0.7f);
 		}
 
 		public void SetMixer(AudioMixer mixer)
 		{
-			_mixer = mixer;
-			_mixerSet = true;
-			SetFloat(UserSetting<float>.Get(_setting));
+			this._mixer = mixer;
+			this._mixerSet = true;
+			this.SetFloat(UserSetting<float>.Get(this._setting));
 		}
 
 		private void SetFloat(float vol)
 		{
-			if (_mixerSet)
+			if (this._mixerSet)
 			{
 				vol = Mathf.Clamp01(vol);
 				float value = ((!(vol > 0f)) ? (-144f) : (20f * Mathf.Log10(vol)));
-				_mixer.SetFloat(_floatName, value);
+				this._mixer.SetFloat(this._floatName, value);
 			}
 		}
 	}
@@ -68,9 +68,9 @@ public class MixerAudioSettings : MonoBehaviour
 
 	private void Start()
 	{
-		Sliders.ForEach(delegate(AudioSlider x)
+		MixerAudioSettings.Sliders.ForEach(delegate(AudioSlider x)
 		{
-			x.SetMixer(_mixer);
+			x.SetMixer(this._mixer);
 		});
 	}
 

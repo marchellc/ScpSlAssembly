@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using AdminToys;
 using Achievements;
+using AdminToys;
 using CentralAuth;
 using CommandSystem.Commands.RemoteAdmin.Cleanup;
 using CommandSystem.Commands.RemoteAdmin.Stripdown;
@@ -105,11 +105,12 @@ public static class GeneratedNetworkCode
 
 	public static SceneMessage _Read_Mirror_002ESceneMessage(NetworkReader reader)
 	{
-		SceneMessage result = default(SceneMessage);
-		result.sceneName = reader.ReadString();
-		result.sceneOperation = _Read_Mirror_002ESceneOperation(reader);
-		result.customHandling = reader.ReadBool();
-		return result;
+		return new SceneMessage
+		{
+			sceneName = reader.ReadString(),
+			sceneOperation = GeneratedNetworkCode._Read_Mirror_002ESceneOperation(reader),
+			customHandling = reader.ReadBool()
+		};
 	}
 
 	public static SceneOperation _Read_Mirror_002ESceneOperation(NetworkReader reader)
@@ -120,7 +121,7 @@ public static class GeneratedNetworkCode
 	public static void _Write_Mirror_002ESceneMessage(NetworkWriter writer, SceneMessage value)
 	{
 		writer.WriteString(value.sceneName);
-		_Write_Mirror_002ESceneOperation(writer, value.sceneOperation);
+		GeneratedNetworkCode._Write_Mirror_002ESceneOperation(writer, value.sceneOperation);
 		writer.WriteBool(value.customHandling);
 	}
 
@@ -131,12 +132,13 @@ public static class GeneratedNetworkCode
 
 	public static CommandMessage _Read_Mirror_002ECommandMessage(NetworkReader reader)
 	{
-		CommandMessage result = default(CommandMessage);
-		result.netId = reader.ReadUInt();
-		result.componentIndex = NetworkReaderExtensions.ReadByte(reader);
-		result.functionHash = reader.ReadUShort();
-		result.payload = reader.ReadArraySegmentAndSize();
-		return result;
+		return new CommandMessage
+		{
+			netId = reader.ReadUInt(),
+			componentIndex = NetworkReaderExtensions.ReadByte(reader),
+			functionHash = reader.ReadUShort(),
+			payload = reader.ReadArraySegmentAndSize()
+		};
 	}
 
 	public static void _Write_Mirror_002ECommandMessage(NetworkWriter writer, CommandMessage value)
@@ -149,12 +151,13 @@ public static class GeneratedNetworkCode
 
 	public static RpcMessage _Read_Mirror_002ERpcMessage(NetworkReader reader)
 	{
-		RpcMessage result = default(RpcMessage);
-		result.netId = reader.ReadUInt();
-		result.componentIndex = NetworkReaderExtensions.ReadByte(reader);
-		result.functionHash = reader.ReadUShort();
-		result.payload = reader.ReadArraySegmentAndSize();
-		return result;
+		return new RpcMessage
+		{
+			netId = reader.ReadUInt(),
+			componentIndex = NetworkReaderExtensions.ReadByte(reader),
+			functionHash = reader.ReadUShort(),
+			payload = reader.ReadArraySegmentAndSize()
+		};
 	}
 
 	public static void _Write_Mirror_002ERpcMessage(NetworkWriter writer, RpcMessage value)
@@ -167,17 +170,18 @@ public static class GeneratedNetworkCode
 
 	public static SpawnMessage _Read_Mirror_002ESpawnMessage(NetworkReader reader)
 	{
-		SpawnMessage result = default(SpawnMessage);
-		result.netId = reader.ReadUInt();
-		result.isLocalPlayer = reader.ReadBool();
-		result.isOwner = reader.ReadBool();
-		result.sceneId = reader.ReadULong();
-		result.assetId = reader.ReadUInt();
-		result.position = reader.ReadVector3();
-		result.rotation = reader.ReadQuaternion();
-		result.scale = reader.ReadVector3();
-		result.payload = reader.ReadArraySegmentAndSize();
-		return result;
+		return new SpawnMessage
+		{
+			netId = reader.ReadUInt(),
+			isLocalPlayer = reader.ReadBool(),
+			isOwner = reader.ReadBool(),
+			sceneId = reader.ReadULong(),
+			assetId = reader.ReadUInt(),
+			position = reader.ReadVector3(),
+			rotation = reader.ReadQuaternion(),
+			scale = reader.ReadVector3(),
+			payload = reader.ReadArraySegmentAndSize()
+		};
 	}
 
 	public static void _Write_Mirror_002ESpawnMessage(NetworkWriter writer, SpawnMessage value)
@@ -195,11 +199,12 @@ public static class GeneratedNetworkCode
 
 	public static ChangeOwnerMessage _Read_Mirror_002EChangeOwnerMessage(NetworkReader reader)
 	{
-		ChangeOwnerMessage result = default(ChangeOwnerMessage);
-		result.netId = reader.ReadUInt();
-		result.isOwner = reader.ReadBool();
-		result.isLocalPlayer = reader.ReadBool();
-		return result;
+		return new ChangeOwnerMessage
+		{
+			netId = reader.ReadUInt(),
+			isOwner = reader.ReadBool(),
+			isLocalPlayer = reader.ReadBool()
+		};
 	}
 
 	public static void _Write_Mirror_002EChangeOwnerMessage(NetworkWriter writer, ChangeOwnerMessage value)
@@ -229,9 +234,10 @@ public static class GeneratedNetworkCode
 
 	public static ObjectDestroyMessage _Read_Mirror_002EObjectDestroyMessage(NetworkReader reader)
 	{
-		ObjectDestroyMessage result = default(ObjectDestroyMessage);
-		result.netId = reader.ReadUInt();
-		return result;
+		return new ObjectDestroyMessage
+		{
+			netId = reader.ReadUInt()
+		};
 	}
 
 	public static void _Write_Mirror_002EObjectDestroyMessage(NetworkWriter writer, ObjectDestroyMessage value)
@@ -241,9 +247,10 @@ public static class GeneratedNetworkCode
 
 	public static ObjectHideMessage _Read_Mirror_002EObjectHideMessage(NetworkReader reader)
 	{
-		ObjectHideMessage result = default(ObjectHideMessage);
-		result.netId = reader.ReadUInt();
-		return result;
+		return new ObjectHideMessage
+		{
+			netId = reader.ReadUInt()
+		};
 	}
 
 	public static void _Write_Mirror_002EObjectHideMessage(NetworkWriter writer, ObjectHideMessage value)
@@ -253,10 +260,11 @@ public static class GeneratedNetworkCode
 
 	public static EntityStateMessage _Read_Mirror_002EEntityStateMessage(NetworkReader reader)
 	{
-		EntityStateMessage result = default(EntityStateMessage);
-		result.netId = reader.ReadUInt();
-		result.payload = reader.ReadArraySegmentAndSize();
-		return result;
+		return new EntityStateMessage
+		{
+			netId = reader.ReadUInt(),
+			payload = reader.ReadArraySegmentAndSize()
+		};
 	}
 
 	public static void _Write_Mirror_002EEntityStateMessage(NetworkWriter writer, EntityStateMessage value)
@@ -267,9 +275,10 @@ public static class GeneratedNetworkCode
 
 	public static NetworkPingMessage _Read_Mirror_002ENetworkPingMessage(NetworkReader reader)
 	{
-		NetworkPingMessage result = default(NetworkPingMessage);
-		result.localTime = reader.ReadDouble();
-		return result;
+		return new NetworkPingMessage
+		{
+			localTime = reader.ReadDouble()
+		};
 	}
 
 	public static void _Write_Mirror_002ENetworkPingMessage(NetworkWriter writer, NetworkPingMessage value)
@@ -279,9 +288,10 @@ public static class GeneratedNetworkCode
 
 	public static NetworkPongMessage _Read_Mirror_002ENetworkPongMessage(NetworkReader reader)
 	{
-		NetworkPongMessage result = default(NetworkPongMessage);
-		result.localTime = reader.ReadDouble();
-		return result;
+		return new NetworkPongMessage
+		{
+			localTime = reader.ReadDouble()
+		};
 	}
 
 	public static void _Write_Mirror_002ENetworkPongMessage(NetworkWriter writer, NetworkPongMessage value)
@@ -291,10 +301,11 @@ public static class GeneratedNetworkCode
 
 	public static Hitmarker.HitmarkerMessage _Read_Hitmarker_002FHitmarkerMessage(NetworkReader reader)
 	{
-		Hitmarker.HitmarkerMessage result = default(Hitmarker.HitmarkerMessage);
-		result.Size = NetworkReaderExtensions.ReadByte(reader);
-		result.Audio = reader.ReadBool();
-		return result;
+		return new Hitmarker.HitmarkerMessage
+		{
+			Size = NetworkReaderExtensions.ReadByte(reader),
+			Audio = reader.ReadBool()
+		};
 	}
 
 	public static void _Write_Hitmarker_002FHitmarkerMessage(NetworkWriter writer, Hitmarker.HitmarkerMessage value)
@@ -305,10 +316,11 @@ public static class GeneratedNetworkCode
 
 	public static Escape.EscapeMessage _Read_Escape_002FEscapeMessage(NetworkReader reader)
 	{
-		Escape.EscapeMessage result = default(Escape.EscapeMessage);
-		result.ScenarioId = NetworkReaderExtensions.ReadByte(reader);
-		result.EscapeTime = reader.ReadUShort();
-		return result;
+		return new Escape.EscapeMessage
+		{
+			ScenarioId = NetworkReaderExtensions.ReadByte(reader),
+			EscapeTime = reader.ReadUShort()
+		};
 	}
 
 	public static void _Write_Escape_002FEscapeMessage(NetworkWriter writer, Escape.EscapeMessage value)
@@ -328,9 +340,10 @@ public static class GeneratedNetworkCode
 
 	public static VoiceChatMuteIndicator.SyncMuteMessage _Read_VoiceChat_002EVoiceChatMuteIndicator_002FSyncMuteMessage(NetworkReader reader)
 	{
-		VoiceChatMuteIndicator.SyncMuteMessage result = default(VoiceChatMuteIndicator.SyncMuteMessage);
-		result.Flags = NetworkReaderExtensions.ReadByte(reader);
-		return result;
+		return new VoiceChatMuteIndicator.SyncMuteMessage
+		{
+			Flags = NetworkReaderExtensions.ReadByte(reader)
+		};
 	}
 
 	public static void _Write_VoiceChat_002EVoiceChatMuteIndicator_002FSyncMuteMessage(NetworkWriter writer, VoiceChatMuteIndicator.SyncMuteMessage value)
@@ -340,9 +353,10 @@ public static class GeneratedNetworkCode
 
 	public static VoiceChatPrivacySettings.VcPrivacyMessage _Read_VoiceChat_002EVoiceChatPrivacySettings_002FVcPrivacyMessage(NetworkReader reader)
 	{
-		VoiceChatPrivacySettings.VcPrivacyMessage result = default(VoiceChatPrivacySettings.VcPrivacyMessage);
-		result.Flags = NetworkReaderExtensions.ReadByte(reader);
-		return result;
+		return new VoiceChatPrivacySettings.VcPrivacyMessage
+		{
+			Flags = NetworkReaderExtensions.ReadByte(reader)
+		};
 	}
 
 	public static void _Write_VoiceChat_002EVoiceChatPrivacySettings_002FVcPrivacyMessage(NetworkWriter writer, VoiceChatPrivacySettings.VcPrivacyMessage value)
@@ -352,10 +366,11 @@ public static class GeneratedNetworkCode
 
 	public static PersonalRadioPlayback.TransmitterPositionMessage _Read_VoiceChat_002EPlaybacks_002EPersonalRadioPlayback_002FTransmitterPositionMessage(NetworkReader reader)
 	{
-		PersonalRadioPlayback.TransmitterPositionMessage result = default(PersonalRadioPlayback.TransmitterPositionMessage);
-		result.Transmitter = reader.ReadRecyclablePlayerId();
-		result.WaypointId = NetworkReaderExtensions.ReadByte(reader);
-		return result;
+		return new PersonalRadioPlayback.TransmitterPositionMessage
+		{
+			Transmitter = reader.ReadRecyclablePlayerId(),
+			WaypointId = NetworkReaderExtensions.ReadByte(reader)
+		};
 	}
 
 	public static void _Write_VoiceChat_002EPlaybacks_002EPersonalRadioPlayback_002FTransmitterPositionMessage(NetworkWriter writer, PersonalRadioPlayback.TransmitterPositionMessage value)
@@ -366,11 +381,12 @@ public static class GeneratedNetworkCode
 
 	public static LockerWaypoint.LockerWaypointAssignMessage _Read_RelativePositioning_002ELockerWaypoint_002FLockerWaypointAssignMessage(NetworkReader reader)
 	{
-		LockerWaypoint.LockerWaypointAssignMessage result = default(LockerWaypoint.LockerWaypointAssignMessage);
-		result.LockerNetId = reader.ReadUInt();
-		result.Chamber = NetworkReaderExtensions.ReadByte(reader);
-		result.WaypointId = NetworkReaderExtensions.ReadByte(reader);
-		return result;
+		return new LockerWaypoint.LockerWaypointAssignMessage
+		{
+			LockerNetId = reader.ReadUInt(),
+			Chamber = NetworkReaderExtensions.ReadByte(reader),
+			WaypointId = NetworkReaderExtensions.ReadByte(reader)
+		};
 	}
 
 	public static void _Write_RelativePositioning_002ELockerWaypoint_002FLockerWaypointAssignMessage(NetworkWriter writer, LockerWaypoint.LockerWaypointAssignMessage value)
@@ -382,9 +398,10 @@ public static class GeneratedNetworkCode
 
 	public static VoiceChatReceivePrefs.GroupMuteFlagsMessage _Read_PlayerRoles_002EVoice_002EVoiceChatReceivePrefs_002FGroupMuteFlagsMessage(NetworkReader reader)
 	{
-		VoiceChatReceivePrefs.GroupMuteFlagsMessage result = default(VoiceChatReceivePrefs.GroupMuteFlagsMessage);
-		result.Flags = NetworkReaderExtensions.ReadByte(reader);
-		return result;
+		return new VoiceChatReceivePrefs.GroupMuteFlagsMessage
+		{
+			Flags = NetworkReaderExtensions.ReadByte(reader)
+		};
 	}
 
 	public static void _Write_PlayerRoles_002EVoice_002EVoiceChatReceivePrefs_002FGroupMuteFlagsMessage(NetworkWriter writer, VoiceChatReceivePrefs.GroupMuteFlagsMessage value)
@@ -394,10 +411,11 @@ public static class GeneratedNetworkCode
 
 	public static OverwatchVoiceChannelSelector.ChannelMuteFlagsMessage _Read_PlayerRoles_002ESpectating_002EOverwatchVoiceChannelSelector_002FChannelMuteFlagsMessage(NetworkReader reader)
 	{
-		OverwatchVoiceChannelSelector.ChannelMuteFlagsMessage result = default(OverwatchVoiceChannelSelector.ChannelMuteFlagsMessage);
-		result.SpatialAudio = reader.ReadBool();
-		result.EnabledChannels = reader.ReadUInt();
-		return result;
+		return new OverwatchVoiceChannelSelector.ChannelMuteFlagsMessage
+		{
+			SpatialAudio = reader.ReadBool(),
+			EnabledChannels = reader.ReadUInt()
+		};
 	}
 
 	public static void _Write_PlayerRoles_002ESpectating_002EOverwatchVoiceChannelSelector_002FChannelMuteFlagsMessage(NetworkWriter writer, OverwatchVoiceChannelSelector.ChannelMuteFlagsMessage value)
@@ -408,9 +426,10 @@ public static class GeneratedNetworkCode
 
 	public static SpectatorNetworking.SpectatedNetIdSyncMessage _Read_PlayerRoles_002ESpectating_002ESpectatorNetworking_002FSpectatedNetIdSyncMessage(NetworkReader reader)
 	{
-		SpectatorNetworking.SpectatedNetIdSyncMessage result = default(SpectatorNetworking.SpectatedNetIdSyncMessage);
-		result.NetId = reader.ReadUInt();
-		return result;
+		return new SpectatorNetworking.SpectatedNetIdSyncMessage
+		{
+			NetId = reader.ReadUInt()
+		};
 	}
 
 	public static void _Write_PlayerRoles_002ESpectating_002ESpectatorNetworking_002FSpectatedNetIdSyncMessage(NetworkWriter writer, SpectatorNetworking.SpectatedNetIdSyncMessage value)
@@ -420,9 +439,10 @@ public static class GeneratedNetworkCode
 
 	public static Scp106PocketItemManager.WarningMessage _Read_PlayerRoles_002EPlayableScps_002EScp106_002EScp106PocketItemManager_002FWarningMessage(NetworkReader reader)
 	{
-		Scp106PocketItemManager.WarningMessage result = default(Scp106PocketItemManager.WarningMessage);
-		result.Position = reader.ReadRelativePosition();
-		return result;
+		return new Scp106PocketItemManager.WarningMessage
+		{
+			Position = reader.ReadRelativePosition()
+		};
 	}
 
 	public static void _Write_PlayerRoles_002EPlayableScps_002EScp106_002EScp106PocketItemManager_002FWarningMessage(NetworkWriter writer, Scp106PocketItemManager.WarningMessage value)
@@ -441,9 +461,10 @@ public static class GeneratedNetworkCode
 
 	public static DynamicHumeShieldController.ShieldBreakMessage _Read_PlayerRoles_002EPlayableScps_002EHumeShield_002EDynamicHumeShieldController_002FShieldBreakMessage(NetworkReader reader)
 	{
-		DynamicHumeShieldController.ShieldBreakMessage result = default(DynamicHumeShieldController.ShieldBreakMessage);
-		result.Target = reader.ReadReferenceHub();
-		return result;
+		return new DynamicHumeShieldController.ShieldBreakMessage
+		{
+			Target = reader.ReadReferenceHub()
+		};
 	}
 
 	public static void _Write_PlayerRoles_002EPlayableScps_002EHumeShield_002EDynamicHumeShieldController_002FShieldBreakMessage(NetworkWriter writer, DynamicHumeShieldController.ShieldBreakMessage value)
@@ -453,9 +474,10 @@ public static class GeneratedNetworkCode
 
 	public static FpcRotationOverrideMessage _Read_PlayerRoles_002EFirstPersonControl_002ENetworkMessages_002EFpcRotationOverrideMessage(NetworkReader reader)
 	{
-		FpcRotationOverrideMessage result = default(FpcRotationOverrideMessage);
-		result.Rotation = reader.ReadVector2();
-		return result;
+		return new FpcRotationOverrideMessage
+		{
+			Rotation = reader.ReadVector2()
+		};
 	}
 
 	public static void _Write_PlayerRoles_002EFirstPersonControl_002ENetworkMessages_002EFpcRotationOverrideMessage(NetworkWriter writer, FpcRotationOverrideMessage value)
@@ -474,10 +496,11 @@ public static class GeneratedNetworkCode
 
 	public static EmotionSync.EmotionSyncMessage _Read_PlayerRoles_002EFirstPersonControl_002EThirdperson_002ESubcontrollers_002EEmotionSync_002FEmotionSyncMessage(NetworkReader reader)
 	{
-		EmotionSync.EmotionSyncMessage result = default(EmotionSync.EmotionSyncMessage);
-		result.HubNetId = reader.ReadUInt();
-		result.Data = _Read_PlayerRoles_002EFirstPersonControl_002EThirdperson_002ESubcontrollers_002EEmotionPresetType(reader);
-		return result;
+		return new EmotionSync.EmotionSyncMessage
+		{
+			HubNetId = reader.ReadUInt(),
+			Data = GeneratedNetworkCode._Read_PlayerRoles_002EFirstPersonControl_002EThirdperson_002ESubcontrollers_002EEmotionPresetType(reader)
+		};
 	}
 
 	public static EmotionPresetType _Read_PlayerRoles_002EFirstPersonControl_002EThirdperson_002ESubcontrollers_002EEmotionPresetType(NetworkReader reader)
@@ -488,7 +511,7 @@ public static class GeneratedNetworkCode
 	public static void _Write_PlayerRoles_002EFirstPersonControl_002EThirdperson_002ESubcontrollers_002EEmotionSync_002FEmotionSyncMessage(NetworkWriter writer, EmotionSync.EmotionSyncMessage value)
 	{
 		writer.WriteUInt(value.HubNetId);
-		_Write_PlayerRoles_002EFirstPersonControl_002EThirdperson_002ESubcontrollers_002EEmotionPresetType(writer, value.Data);
+		GeneratedNetworkCode._Write_PlayerRoles_002EFirstPersonControl_002EThirdperson_002ESubcontrollers_002EEmotionPresetType(writer, value.Data);
 	}
 
 	public static void _Write_PlayerRoles_002EFirstPersonControl_002EThirdperson_002ESubcontrollers_002EEmotionPresetType(NetworkWriter writer, EmotionPresetType value)
@@ -498,10 +521,11 @@ public static class GeneratedNetworkCode
 
 	public static ExplosionUtils.GrenadeExplosionMessage _Read_Utils_002EExplosionUtils_002FGrenadeExplosionMessage(NetworkReader reader)
 	{
-		ExplosionUtils.GrenadeExplosionMessage result = default(ExplosionUtils.GrenadeExplosionMessage);
-		result.GrenadeType = NetworkReaderExtensions.ReadByte(reader);
-		result.Pos = reader.ReadRelativePosition();
-		return result;
+		return new ExplosionUtils.GrenadeExplosionMessage
+		{
+			GrenadeType = NetworkReaderExtensions.ReadByte(reader),
+			Pos = reader.ReadRelativePosition()
+		};
 	}
 
 	public static void _Write_Utils_002EExplosionUtils_002FGrenadeExplosionMessage(NetworkWriter writer, ExplosionUtils.GrenadeExplosionMessage value)
@@ -512,9 +536,10 @@ public static class GeneratedNetworkCode
 
 	public static SeedSynchronizer.SeedMessage _Read_MapGeneration_002ESeedSynchronizer_002FSeedMessage(NetworkReader reader)
 	{
-		SeedSynchronizer.SeedMessage result = default(SeedSynchronizer.SeedMessage);
-		result.Value = reader.ReadInt();
-		return result;
+		return new SeedSynchronizer.SeedMessage
+		{
+			Value = reader.ReadInt()
+		};
 	}
 
 	public static void _Write_MapGeneration_002ESeedSynchronizer_002FSeedMessage(NetworkWriter writer, SeedSynchronizer.SeedMessage value)
@@ -524,9 +549,10 @@ public static class GeneratedNetworkCode
 
 	public static CustomPlayerEffects.AntiScp207.BreakMessage _Read_CustomPlayerEffects_002EAntiScp207_002FBreakMessage(NetworkReader reader)
 	{
-		CustomPlayerEffects.AntiScp207.BreakMessage result = default(CustomPlayerEffects.AntiScp207.BreakMessage);
-		result.SoundPos = reader.ReadVector3();
-		return result;
+		return new CustomPlayerEffects.AntiScp207.BreakMessage
+		{
+			SoundPos = reader.ReadVector3()
+		};
 	}
 
 	public static void _Write_CustomPlayerEffects_002EAntiScp207_002FBreakMessage(NetworkWriter writer, CustomPlayerEffects.AntiScp207.BreakMessage value)
@@ -536,10 +562,11 @@ public static class GeneratedNetworkCode
 
 	public static InfluenceUpdateMessage _Read_Respawning_002EInfluenceUpdateMessage(NetworkReader reader)
 	{
-		InfluenceUpdateMessage result = default(InfluenceUpdateMessage);
-		result.Faction = _Read_PlayerRoles_002EFaction(reader);
-		result.Influence = reader.ReadFloat();
-		return result;
+		return new InfluenceUpdateMessage
+		{
+			Faction = GeneratedNetworkCode._Read_PlayerRoles_002EFaction(reader),
+			Influence = reader.ReadFloat()
+		};
 	}
 
 	public static Faction _Read_PlayerRoles_002EFaction(NetworkReader reader)
@@ -549,7 +576,7 @@ public static class GeneratedNetworkCode
 
 	public static void _Write_Respawning_002EInfluenceUpdateMessage(NetworkWriter writer, InfluenceUpdateMessage value)
 	{
-		_Write_PlayerRoles_002EFaction(writer, value.Faction);
+		GeneratedNetworkCode._Write_PlayerRoles_002EFaction(writer, value.Faction);
 		writer.WriteFloat(value.Influence);
 	}
 
@@ -560,9 +587,10 @@ public static class GeneratedNetworkCode
 
 	public static StripdownNetworking.StripdownResponse _Read_CommandSystem_002ECommands_002ERemoteAdmin_002EStripdown_002EStripdownNetworking_002FStripdownResponse(NetworkReader reader)
 	{
-		StripdownNetworking.StripdownResponse result = default(StripdownNetworking.StripdownResponse);
-		result.Lines = _Read_System_002EString_005B_005D(reader);
-		return result;
+		return new StripdownNetworking.StripdownResponse
+		{
+			Lines = GeneratedNetworkCode._Read_System_002EString_005B_005D(reader)
+		};
 	}
 
 	public static string[] _Read_System_002EString_005B_005D(NetworkReader reader)
@@ -572,7 +600,7 @@ public static class GeneratedNetworkCode
 
 	public static void _Write_CommandSystem_002ECommands_002ERemoteAdmin_002EStripdown_002EStripdownNetworking_002FStripdownResponse(NetworkWriter writer, StripdownNetworking.StripdownResponse value)
 	{
-		_Write_System_002EString_005B_005D(writer, value.Lines);
+		GeneratedNetworkCode._Write_System_002EString_005B_005D(writer, value.Lines);
 	}
 
 	public static void _Write_System_002EString_005B_005D(NetworkWriter writer, string[] value)
@@ -582,9 +610,10 @@ public static class GeneratedNetworkCode
 
 	public static AchievementManager.AchievementMessage _Read_Achievements_002EAchievementManager_002FAchievementMessage(NetworkReader reader)
 	{
-		AchievementManager.AchievementMessage result = default(AchievementManager.AchievementMessage);
-		result.AchievementId = NetworkReaderExtensions.ReadByte(reader);
-		return result;
+		return new AchievementManager.AchievementMessage
+		{
+			AchievementId = NetworkReaderExtensions.ReadByte(reader)
+		};
 	}
 
 	public static void _Write_Achievements_002EAchievementManager_002FAchievementMessage(NetworkWriter writer, AchievementManager.AchievementMessage value)
@@ -603,11 +632,12 @@ public static class GeneratedNetworkCode
 
 	public static Hypothermia.ForcedHypothermiaMessage _Read_InventorySystem_002EItems_002EUsables_002EScp244_002EHypothermia_002EHypothermia_002FForcedHypothermiaMessage(NetworkReader reader)
 	{
-		Hypothermia.ForcedHypothermiaMessage result = default(Hypothermia.ForcedHypothermiaMessage);
-		result.IsForced = reader.ReadBool();
-		result.Exposure = reader.ReadFloat();
-		result.PlayerHub = reader.ReadReferenceHub();
-		return result;
+		return new Hypothermia.ForcedHypothermiaMessage
+		{
+			IsForced = reader.ReadBool(),
+			Exposure = reader.ReadFloat(),
+			PlayerHub = reader.ReadReferenceHub()
+		};
 	}
 
 	public static void _Write_InventorySystem_002EItems_002EUsables_002EScp244_002EHypothermia_002EHypothermia_002FForcedHypothermiaMessage(NetworkWriter writer, Hypothermia.ForcedHypothermiaMessage value)
@@ -619,9 +649,10 @@ public static class GeneratedNetworkCode
 
 	public static Scp1576SpectatorWarningHandler.SpectatorWarningMessage _Read_InventorySystem_002EItems_002EUsables_002EScp1576_002EScp1576SpectatorWarningHandler_002FSpectatorWarningMessage(NetworkReader reader)
 	{
-		Scp1576SpectatorWarningHandler.SpectatorWarningMessage result = default(Scp1576SpectatorWarningHandler.SpectatorWarningMessage);
-		result.IsStop = reader.ReadBool();
-		return result;
+		return new Scp1576SpectatorWarningHandler.SpectatorWarningMessage
+		{
+			IsStop = reader.ReadBool()
+		};
 	}
 
 	public static void _Write_InventorySystem_002EItems_002EUsables_002EScp1576_002EScp1576SpectatorWarningHandler_002FSpectatorWarningMessage(NetworkWriter writer, Scp1576SpectatorWarningHandler.SpectatorWarningMessage value)
@@ -631,10 +662,11 @@ public static class GeneratedNetworkCode
 
 	public static Scp1344StatusMessage _Read_InventorySystem_002EItems_002EUsables_002EScp1344_002EScp1344StatusMessage(NetworkReader reader)
 	{
-		Scp1344StatusMessage result = default(Scp1344StatusMessage);
-		result.Serial = reader.ReadUShort();
-		result.NewState = _Read_InventorySystem_002EItems_002EUsables_002EScp1344_002EScp1344Status(reader);
-		return result;
+		return new Scp1344StatusMessage
+		{
+			Serial = reader.ReadUShort(),
+			NewState = GeneratedNetworkCode._Read_InventorySystem_002EItems_002EUsables_002EScp1344_002EScp1344Status(reader)
+		};
 	}
 
 	public static Scp1344Status _Read_InventorySystem_002EItems_002EUsables_002EScp1344_002EScp1344Status(NetworkReader reader)
@@ -645,7 +677,7 @@ public static class GeneratedNetworkCode
 	public static void _Write_InventorySystem_002EItems_002EUsables_002EScp1344_002EScp1344StatusMessage(NetworkWriter writer, Scp1344StatusMessage value)
 	{
 		writer.WriteUShort(value.Serial);
-		_Write_InventorySystem_002EItems_002EUsables_002EScp1344_002EScp1344Status(writer, value.NewState);
+		GeneratedNetworkCode._Write_InventorySystem_002EItems_002EUsables_002EScp1344_002EScp1344Status(writer, value.NewState);
 	}
 
 	public static void _Write_InventorySystem_002EItems_002EUsables_002EScp1344_002EScp1344Status(NetworkWriter writer, Scp1344Status value)
@@ -655,10 +687,11 @@ public static class GeneratedNetworkCode
 
 	public static DamageIndicatorMessage _Read_InventorySystem_002EItems_002EFirearms_002EBasicMessages_002EDamageIndicatorMessage(NetworkReader reader)
 	{
-		DamageIndicatorMessage result = default(DamageIndicatorMessage);
-		result.ReceivedDamage = NetworkReaderExtensions.ReadByte(reader);
-		result.DamagePosition = reader.ReadRelativePosition();
-		return result;
+		return new DamageIndicatorMessage
+		{
+			ReceivedDamage = NetworkReaderExtensions.ReadByte(reader),
+			DamagePosition = reader.ReadRelativePosition()
+		};
 	}
 
 	public static void _Write_InventorySystem_002EItems_002EFirearms_002EBasicMessages_002EDamageIndicatorMessage(NetworkWriter writer, DamageIndicatorMessage value)
@@ -679,11 +712,12 @@ public static class GeneratedNetworkCode
 
 	public static ServerConfigSynchronizer.PredefinedBanTemplate _Read_ServerConfigSynchronizer_002FPredefinedBanTemplate(NetworkReader reader)
 	{
-		ServerConfigSynchronizer.PredefinedBanTemplate result = default(ServerConfigSynchronizer.PredefinedBanTemplate);
-		result.Duration = reader.ReadInt();
-		result.FormattedDuration = reader.ReadString();
-		result.Reason = reader.ReadString();
-		return result;
+		return new ServerConfigSynchronizer.PredefinedBanTemplate
+		{
+			Duration = reader.ReadInt(),
+			FormattedDuration = reader.ReadString(),
+			Reason = reader.ReadString()
+		};
 	}
 
 	public static void _Write_ServerConfigSynchronizer_002FPredefinedBanTemplate(NetworkWriter writer, ServerConfigSynchronizer.PredefinedBanTemplate value)
@@ -723,16 +757,6 @@ public static class GeneratedNetworkCode
 		return (PlayerInfoArea)reader.ReadInt();
 	}
 
-	public static void _Write_PlayerInteract_002FAlphaPanelOperations(NetworkWriter writer, PlayerInteract.AlphaPanelOperations value)
-	{
-		NetworkWriterExtensions.WriteByte(writer, (byte)value);
-	}
-
-	public static PlayerInteract.AlphaPanelOperations _Read_PlayerInteract_002FAlphaPanelOperations(NetworkReader reader)
-	{
-		return (PlayerInteract.AlphaPanelOperations)NetworkReaderExtensions.ReadByte(reader);
-	}
-
 	public static void _Write_RoundSummary_002FSumInfo_ClassList(NetworkWriter writer, RoundSummary.SumInfo_ClassList value)
 	{
 		writer.WriteInt(value.class_ds);
@@ -752,16 +776,17 @@ public static class GeneratedNetworkCode
 
 	public static RoundSummary.SumInfo_ClassList _Read_RoundSummary_002FSumInfo_ClassList(NetworkReader reader)
 	{
-		RoundSummary.SumInfo_ClassList result = default(RoundSummary.SumInfo_ClassList);
-		result.class_ds = reader.ReadInt();
-		result.scientists = reader.ReadInt();
-		result.chaos_insurgents = reader.ReadInt();
-		result.mtf_and_guards = reader.ReadInt();
-		result.scps_except_zombies = reader.ReadInt();
-		result.zombies = reader.ReadInt();
-		result.warhead_kills = reader.ReadInt();
-		result.flamingos = reader.ReadInt();
-		return result;
+		return new RoundSummary.SumInfo_ClassList
+		{
+			class_ds = reader.ReadInt(),
+			scientists = reader.ReadInt(),
+			chaos_insurgents = reader.ReadInt(),
+			mtf_and_guards = reader.ReadInt(),
+			scps_except_zombies = reader.ReadInt(),
+			zombies = reader.ReadInt(),
+			warhead_kills = reader.ReadInt(),
+			flamingos = reader.ReadInt()
+		};
 	}
 
 	public static RoundSummary.LeadingTeam _Read_RoundSummary_002FLeadingTeam(NetworkReader reader)
@@ -797,7 +822,7 @@ public static class GeneratedNetworkCode
 	public static void _Write_RemoteAdmin_002EQueryProcessor_002FCommandData(NetworkWriter writer, QueryProcessor.CommandData value)
 	{
 		writer.WriteString(value.Command);
-		_Write_System_002EString_005B_005D(writer, value.Usage);
+		GeneratedNetworkCode._Write_System_002EString_005B_005D(writer, value.Usage);
 		writer.WriteString(value.Description);
 		writer.WriteString(value.AliasOf);
 		writer.WriteBool(value.Hidden);
@@ -810,13 +835,14 @@ public static class GeneratedNetworkCode
 
 	public static QueryProcessor.CommandData _Read_RemoteAdmin_002EQueryProcessor_002FCommandData(NetworkReader reader)
 	{
-		QueryProcessor.CommandData result = default(QueryProcessor.CommandData);
-		result.Command = reader.ReadString();
-		result.Usage = _Read_System_002EString_005B_005D(reader);
-		result.Description = reader.ReadString();
-		result.AliasOf = reader.ReadString();
-		result.Hidden = reader.ReadBool();
-		return result;
+		return new QueryProcessor.CommandData
+		{
+			Command = reader.ReadString(),
+			Usage = GeneratedNetworkCode._Read_System_002EString_005B_005D(reader),
+			Description = reader.ReadString(),
+			AliasOf = reader.ReadString(),
+			Hidden = reader.ReadBool()
+		};
 	}
 
 	public static void _Write_LightContainmentZoneDecontamination_002EDecontaminationController_002FDecontaminationStatus(NetworkWriter writer, DecontaminationController.DecontaminationStatus value)
@@ -916,7 +942,7 @@ public static class GeneratedNetworkCode
 
 	public static void _Write_InventorySystem_002EItems_002EItemIdentifier(NetworkWriter writer, ItemIdentifier value)
 	{
-		_Write_ItemType(writer, value.TypeId);
+		GeneratedNetworkCode._Write_ItemType(writer, value.TypeId);
 		writer.WriteUShort(value.SerialNumber);
 	}
 
@@ -932,10 +958,11 @@ public static class GeneratedNetworkCode
 
 	public static ItemIdentifier _Read_InventorySystem_002EItems_002EItemIdentifier(NetworkReader reader)
 	{
-		ItemIdentifier result = default(ItemIdentifier);
-		result.TypeId = _Read_ItemType(reader);
-		result.SerialNumber = reader.ReadUShort();
-		return result;
+		return new ItemIdentifier
+		{
+			TypeId = GeneratedNetworkCode._Read_ItemType(reader),
+			SerialNumber = reader.ReadUShort()
+		};
 	}
 
 	public static ItemType _Read_ItemType(NetworkReader reader)
@@ -1094,6 +1121,7 @@ public static class GeneratedNetworkCode
 		Writer<ScpSpawnPreferences.SpawnPreferences>.write = ScpSpawnPreferences.WriteSpawnPreferences;
 		Writer<RagdollData>.write = RagdollDataReaderWriter.WriteRagdollData;
 		Writer<SyncedGravityMessages.GravityMessage>.write = SyncedGravityMessages.Serialize;
+		Writer<SyncedScaleMessages.ScaleMessage>.write = SyncedScaleMessages.Serialize;
 		Writer<FpcFromClientMessage>.write = FpcMessagesReadersWriters.WriteFpcFromClientMessage;
 		Writer<FpcPositionMessage>.write = FpcMessagesReadersWriters.WriteFpcPositionMessage;
 		Writer<FpcPositionOverrideMessage>.write = FpcMessagesReadersWriters.WriteFpcRotationOverrideMessage;
@@ -1116,6 +1144,7 @@ public static class GeneratedNetworkCode
 		Writer<Scp330HintParameter>.write = Scp330HintParameterFunctions.Serialize;
 		Writer<ItemCategoryHintParameter>.write = ItemCategoryHintParameterFunctions.Serialize;
 		Writer<ItemHintParameter>.write = ItemHintParameterFunctions.Serialize;
+		Writer<AnimationCurveHintParameter>.write = AnimationCurveHintParameterFunctions.Serialize;
 		Writer<ByteHintParameter>.write = ByteHintParameterFunctions.Serialize;
 		Writer<DoubleHintParameter>.write = DoubleHintParameterFunctions.Serialize;
 		Writer<FloatHintParameter>.write = FloatHintParameterFunctions.Serialize;
@@ -1200,7 +1229,6 @@ public static class GeneratedNetworkCode
 		Writer<Broadcast.BroadcastFlags>.write = _Write_Broadcast_002FBroadcastFlags;
 		Writer<KeyCode>.write = _Write_UnityEngine_002EKeyCode;
 		Writer<PlayerInfoArea>.write = _Write_PlayerInfoArea;
-		Writer<PlayerInteract.AlphaPanelOperations>.write = _Write_PlayerInteract_002FAlphaPanelOperations;
 		Writer<RoundSummary.SumInfo_ClassList>.write = _Write_RoundSummary_002FSumInfo_ClassList;
 		Writer<RoundSummary.LeadingTeam>.write = _Write_RoundSummary_002FLeadingTeam;
 		Writer<ServerRoles.BadgePreferences>.write = _Write_ServerRoles_002FBadgePreferences;
@@ -1331,6 +1359,7 @@ public static class GeneratedNetworkCode
 		Reader<ScpSpawnPreferences.SpawnPreferences>.read = ScpSpawnPreferences.ReadSpawnPreferences;
 		Reader<RagdollData>.read = RagdollDataReaderWriter.ReadRagdollData;
 		Reader<SyncedGravityMessages.GravityMessage>.read = SyncedGravityMessages.Deserialize;
+		Reader<SyncedScaleMessages.ScaleMessage>.read = SyncedScaleMessages.Deserialize;
 		Reader<FpcFromClientMessage>.read = FpcMessagesReadersWriters.ReadFpcFromClientMessage;
 		Reader<FpcPositionMessage>.read = FpcMessagesReadersWriters.ReadFpcPositionMessage;
 		Reader<FpcPositionOverrideMessage>.read = FpcMessagesReadersWriters.ReadFpcRotationOverrideMessage;
@@ -1353,6 +1382,7 @@ public static class GeneratedNetworkCode
 		Reader<Scp330HintParameter>.read = Scp330HintParameterFunctions.Deserialize;
 		Reader<ItemCategoryHintParameter>.read = ItemCategoryHintParameterFunctions.Deserialize;
 		Reader<ItemHintParameter>.read = ItemHintParameterFunctions.Deserialize;
+		Reader<AnimationCurveHintParameter>.read = AnimationCurveHintParameterFunctions.Deserialize;
 		Reader<ByteHintParameter>.read = ByteHintParameterFunctions.Deserialize;
 		Reader<DoubleHintParameter>.read = DoubleHintParameterFunctions.Deserialize;
 		Reader<FloatHintParameter>.read = FloatHintParameterFunctions.Deserialize;
@@ -1435,7 +1465,6 @@ public static class GeneratedNetworkCode
 		Reader<Broadcast.BroadcastFlags>.read = _Read_Broadcast_002FBroadcastFlags;
 		Reader<KeyCode>.read = _Read_UnityEngine_002EKeyCode;
 		Reader<PlayerInfoArea>.read = _Read_PlayerInfoArea;
-		Reader<PlayerInteract.AlphaPanelOperations>.read = _Read_PlayerInteract_002FAlphaPanelOperations;
 		Reader<RoundSummary.SumInfo_ClassList>.read = _Read_RoundSummary_002FSumInfo_ClassList;
 		Reader<RoundSummary.LeadingTeam>.read = _Read_RoundSummary_002FLeadingTeam;
 		Reader<ServerRoles.BadgePreferences>.read = _Read_ServerRoles_002FBadgePreferences;

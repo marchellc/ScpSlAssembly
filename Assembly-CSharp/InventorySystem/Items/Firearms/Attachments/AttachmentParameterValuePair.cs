@@ -13,8 +13,8 @@ public struct AttachmentParameterValuePair
 
 	public AttachmentParameterValuePair(AttachmentParam param, float val, bool uiOnly = false)
 	{
-		Parameter = param;
-		Value = val;
-		UIOnly = uiOnly;
+		this.Parameter = param;
+		this.Value = val;
+		this.UIOnly = uiOnly;
 	}
 }

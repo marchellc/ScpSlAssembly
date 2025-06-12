@@ -10,16 +10,16 @@ public struct DeathTranslation
 
 	public readonly string LogLabel;
 
-	public readonly string RagdollTranslation => TranslationReader.Get("DeathReasons", _ragdollTranId, LogLabel);
+	public readonly string RagdollTranslation => TranslationReader.Get("DeathReasons", this._ragdollTranId, this.LogLabel);
 
-	public readonly string DeathscreenTranslation => TranslationReader.Get("DeathReasons", _deathTranId, LogLabel);
+	public readonly string DeathscreenTranslation => TranslationReader.Get("DeathReasons", this._deathTranId, this.LogLabel);
 
 	public DeathTranslation(byte id, int ragdoll, int deathscreen, string backup)
 	{
-		Id = id;
-		_ragdollTranId = ragdoll - 1;
-		_deathTranId = deathscreen - 1;
-		LogLabel = backup;
+		this.Id = id;
+		this._ragdollTranId = ragdoll - 1;
+		this._deathTranId = deathscreen - 1;
+		this.LogLabel = backup;
 		DeathTranslations.TranslationsById[id] = this;
 	}
 }

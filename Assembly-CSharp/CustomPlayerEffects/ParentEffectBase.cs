@@ -9,7 +9,7 @@ public abstract class ParentEffectBase<T> : StatusEffectBase where T : SubEffect
 	internal override void OnRoleChanged(PlayerRoleBase previousRole, PlayerRoleBase newRole)
 	{
 		base.OnRoleChanged(previousRole, newRole);
-		T[] subEffects = SubEffects;
+		T[] subEffects = this.SubEffects;
 		for (int i = 0; i < subEffects.Length; i++)
 		{
 			subEffects[i].DisableEffect();
@@ -19,7 +19,7 @@ public abstract class ParentEffectBase<T> : StatusEffectBase where T : SubEffect
 	public override void OnStopSpectating()
 	{
 		base.OnStopSpectating();
-		T[] subEffects = SubEffects;
+		T[] subEffects = this.SubEffects;
 		for (int i = 0; i < subEffects.Length; i++)
 		{
 			subEffects[i].DisableEffect();
@@ -29,7 +29,7 @@ public abstract class ParentEffectBase<T> : StatusEffectBase where T : SubEffect
 	protected override void Awake()
 	{
 		base.Awake();
-		T[] subEffects = SubEffects;
+		T[] subEffects = this.SubEffects;
 		for (int i = 0; i < subEffects.Length; i++)
 		{
 			subEffects[i].Init(this);
@@ -38,7 +38,7 @@ public abstract class ParentEffectBase<T> : StatusEffectBase where T : SubEffect
 
 	protected virtual void UpdateSubEffects()
 	{
-		T[] subEffects = SubEffects;
+		T[] subEffects = this.SubEffects;
 		for (int i = 0; i < subEffects.Length; i++)
 		{
 			subEffects[i].UpdateEffect();

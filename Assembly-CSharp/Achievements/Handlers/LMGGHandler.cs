@@ -22,8 +22,8 @@ public class LMGGHandler : AchievementHandlerBase
 
 	internal override void OnRoundStarted()
 	{
-		LastHeldTime.Clear();
-		KillsSinceHeld.Clear();
+		LMGGHandler.LastHeldTime.Clear();
+		LMGGHandler.KillsSinceHeld.Clear();
 	}
 
 	private void OnAnyPlayerDied(ReferenceHub victim, DamageHandlerBase handler)
@@ -38,22 +38,22 @@ public class LMGGHandler : AchievementHandlerBase
 			return;
 		}
 		SimpleTriggerModule.ReceivedData data = SimpleTriggerModule.GetData(firearmDamageHandler.Firearm.ItemSerial);
-		if (!LastHeldTime.TryGetValue(hub, out var value))
+		if (!LMGGHandler.LastHeldTime.TryGetValue(hub, out var value))
 		{
 			value = data.PressTime;
-			LastHeldTime[hub] = value;
+			LMGGHandler.LastHeldTime[hub] = value;
 		}
 		if (Math.Abs(data.PressTime - value) > 1E-09)
 		{
-			LastHeldTime[hub] = data.PressTime;
-			KillsSinceHeld[hub] = 1;
+			LMGGHandler.LastHeldTime[hub] = data.PressTime;
+			LMGGHandler.KillsSinceHeld[hub] = 1;
 			return;
 		}
-		if (!KillsSinceHeld.TryGetValue(hub, out var value2))
+		if (!LMGGHandler.KillsSinceHeld.TryGetValue(hub, out var value2))
 		{
 			value2 = 0;
 		}
-		value2 = (KillsSinceHeld[hub] = value2 + 1);
+		value2 = (LMGGHandler.KillsSinceHeld[hub] = value2 + 1);
 		if (value2 >= 3)
 		{
 			AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.LMGG);

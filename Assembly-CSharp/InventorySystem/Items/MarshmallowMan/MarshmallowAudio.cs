@@ -34,32 +34,32 @@ public class MarshmallowAudio : MonoBehaviour
 
 	public void Setup(ushort serial, Transform audioParent)
 	{
-		_trackedSerial = serial;
-		_audioParent = audioParent;
+		this._trackedSerial = serial;
+		this._audioParent = audioParent;
 	}
 
 	private void OnEnable()
 	{
-		if (!_eventsSet)
+		if (!MarshmallowAudio._eventsSet)
 		{
-			SetupEvents();
+			MarshmallowAudio.SetupEvents();
 		}
-		Instances.Add(this);
+		MarshmallowAudio.Instances.Add(this);
 	}
 
 	private void OnDisable()
 	{
-		Instances.Remove(this);
+		MarshmallowAudio.Instances.Remove(this);
 	}
 
 	private void PlaySound(AudioClip clip, float range)
 	{
-		AudioSourcePoolManager.PlayOnTransform(clip, _audioParent, range, 1f, FalloffType.Exponential, MixerChannel.NoDucking);
+		AudioSourcePoolManager.PlayOnTransform(clip, this._audioParent, range, 1f, FalloffType.Exponential, MixerChannel.NoDucking);
 	}
 
 	private static void SetupEvents()
 	{
-		_eventsSet = true;
+		MarshmallowAudio._eventsSet = true;
 		AnimatedCharacterModel.OnFootstepPlayed = (Action<AnimatedCharacterModel, float>)Delegate.Combine(AnimatedCharacterModel.OnFootstepPlayed, new Action<AnimatedCharacterModel, float>(OnFootstepPlayed));
 		MarshmallowItem.OnHit += OnHit;
 		MarshmallowItem.OnHolsterRequested += OnHolsterRequested;
@@ -68,7 +68,7 @@ public class MarshmallowAudio : MonoBehaviour
 
 	private static void OnSwing(ushort serial)
 	{
-		if (TryGetInstance(serial, out var inst))
+		if (MarshmallowAudio.TryGetInstance(serial, out var inst))
 		{
 			inst.PlaySound(inst._swingClips.RandomItem(), 15f);
 		}
@@ -76,7 +76,7 @@ public class MarshmallowAudio : MonoBehaviour
 
 	private static void OnHolsterRequested(ushort serial)
 	{
-		if (TryGetInstance(serial, out var inst))
+		if (MarshmallowAudio.TryGetInstance(serial, out var inst))
 		{
 			inst.PlaySound(inst._holsterClip, 15f);
 		}
@@ -84,7 +84,7 @@ public class MarshmallowAudio : MonoBehaviour
 
 	private static void OnHit(ushort serial)
 	{
-		if (TryGetInstance(serial, out var inst))
+		if (MarshmallowAudio.TryGetInstance(serial, out var inst))
 		{
 			inst.PlaySound(inst._hitClips.RandomItem(), 15f);
 		}
@@ -92,7 +92,7 @@ public class MarshmallowAudio : MonoBehaviour
 
 	private static void OnFootstepPlayed(AnimatedCharacterModel model, float loudness)
 	{
-		if (TryGetInstance(model.OwnerHub.inventory.CurItem.SerialNumber, out var inst) && model.OwnerHub.roleManager.CurrentRole is IFpcRole fpcRole && !(fpcRole.FpcModule.CharacterModelInstance != model))
+		if (MarshmallowAudio.TryGetInstance(model.OwnerHub.inventory.CurItem.SerialNumber, out var inst) && model.OwnerHub.roleManager.CurrentRole is IFpcRole fpcRole && !(fpcRole.FpcModule.CharacterModelInstance != model))
 		{
 			inst.PlaySound(inst._footstepsClips.RandomItem(), loudness);
 		}
@@ -100,6 +100,6 @@ public class MarshmallowAudio : MonoBehaviour
 
 	private static bool TryGetInstance(ushort serial, out MarshmallowAudio inst)
 	{
-		return Instances.TryGetFirst((MarshmallowAudio x) => x._trackedSerial == serial, out inst);
+		return MarshmallowAudio.Instances.TryGetFirst((MarshmallowAudio x) => x._trackedSerial == serial, out inst);
 	}
 }

@@ -13,37 +13,37 @@ public class ViewmodelCamera : MonoBehaviour
 
 	private void ResetCam()
 	{
-		_resetting = true;
+		this._resetting = true;
 	}
 
 	private void Awake()
 	{
-		_camSet = true;
-		_viewModelCamera = GetComponent<Camera>();
+		ViewmodelCamera._camSet = true;
+		ViewmodelCamera._viewModelCamera = base.GetComponent<Camera>();
 		SpectatorTargetTracker.OnTargetChanged += ResetCam;
 	}
 
 	private void OnDestroy()
 	{
-		_camSet = false;
+		ViewmodelCamera._camSet = false;
 		SpectatorTargetTracker.OnTargetChanged -= ResetCam;
 	}
 
 	private void LateUpdate()
 	{
-		if (TryGetViewmodelFov(out var fov) && !_resetting)
+		if (this.TryGetViewmodelFov(out var fov) && !this._resetting)
 		{
-			_viewModelCamera.fieldOfView = fov;
+			ViewmodelCamera._viewModelCamera.fieldOfView = fov;
 		}
 		else
 		{
-			_resetting = false;
+			this._resetting = false;
 		}
 	}
 
 	private bool TryGetViewmodelFov(out float fov)
 	{
-		fov = _viewModelCamera.fieldOfView;
+		fov = ViewmodelCamera._viewModelCamera.fieldOfView;
 		if (!ReferenceHub.TryGetLocalHub(out var hub))
 		{
 			return false;
@@ -62,12 +62,12 @@ public class ViewmodelCamera : MonoBehaviour
 
 	public static bool TryGetViewportPoint(Vector3 worldPos, out Vector3 viewport)
 	{
-		if (!_camSet)
+		if (!ViewmodelCamera._camSet)
 		{
 			viewport = Vector3.zero;
 			return false;
 		}
-		viewport = _viewModelCamera.WorldToViewportPoint(worldPos);
+		viewport = ViewmodelCamera._viewModelCamera.WorldToViewportPoint(worldPos);
 		return true;
 	}
 }

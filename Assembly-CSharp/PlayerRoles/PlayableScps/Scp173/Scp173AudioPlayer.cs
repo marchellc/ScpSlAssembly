@@ -41,14 +41,14 @@ public class Scp173AudioPlayer : SubroutineBase
 	protected override void Awake()
 	{
 		base.Awake();
-		if (!_soundsDictionarized)
+		if (!Scp173AudioPlayer._soundsDictionarized)
 		{
-			Scp173Sound[] sounds = _sounds;
+			Scp173Sound[] sounds = this._sounds;
 			foreach (Scp173Sound scp173Sound in sounds)
 			{
-				Sounds.Add((byte)scp173Sound.Id, scp173Sound);
+				Scp173AudioPlayer.Sounds.Add((byte)scp173Sound.Id, scp173Sound);
 			}
-			_soundsDictionarized = true;
+			Scp173AudioPlayer._soundsDictionarized = true;
 		}
 	}
 
@@ -60,8 +60,8 @@ public class Scp173AudioPlayer : SubroutineBase
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte(_soundToSend);
-		writer.WriteRelativePosition(new RelativePosition(_lastPos));
+		writer.WriteByte(this._soundToSend);
+		writer.WriteRelativePosition(new RelativePosition(this._lastPos));
 	}
 
 	public void ServerSendSound(Scp173SoundId soundId)
@@ -70,20 +70,20 @@ public class Scp173AudioPlayer : SubroutineBase
 		bool flag = base.Role.TryGetOwner(out hub);
 		if (flag)
 		{
-			Scp173PlayingSoundEventArgs scp173PlayingSoundEventArgs = new Scp173PlayingSoundEventArgs(hub, soundId);
-			Scp173Events.OnPlayingSound(scp173PlayingSoundEventArgs);
-			if (!scp173PlayingSoundEventArgs.IsAllowed)
+			Scp173PlayingSoundEventArgs e = new Scp173PlayingSoundEventArgs(hub, soundId);
+			Scp173Events.OnPlayingSound(e);
+			if (!e.IsAllowed)
 			{
 				return;
 			}
-			soundId = scp173PlayingSoundEventArgs.SoundId;
+			soundId = e.SoundId;
 		}
-		_soundToSend = (byte)soundId;
-		_lastPos = (base.Role as Scp173Role).FpcModule.Position;
-		if (Sounds.TryGetValue(_soundToSend, out var value))
+		this._soundToSend = (byte)soundId;
+		this._lastPos = (base.Role as Scp173Role).FpcModule.Position;
+		if (Scp173AudioPlayer.Sounds.TryGetValue(this._soundToSend, out var value))
 		{
 			float disSqr = value.MaxDistance * value.MaxDistance;
-			ServerSendRpc((ReferenceHub x) => !(x.roleManager.CurrentRole is IFpcRole fpcRole) || (fpcRole.FpcModule.Position - _lastPos).sqrMagnitude <= disSqr);
+			base.ServerSendRpc((ReferenceHub x) => !(x.roleManager.CurrentRole is IFpcRole fpcRole) || (fpcRole.FpcModule.Position - this._lastPos).sqrMagnitude <= disSqr);
 			if (flag)
 			{
 				Scp173Events.OnPlayedSound(new Scp173PlayedSoundEventArgs(hub, soundId));

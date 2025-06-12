@@ -23,9 +23,9 @@ public class Scp244TransferCondition
 	private Scp244TransferCondition(Bounds b, DoorVariant[] dv, Scp244DeployablePickup scp)
 	{
 		Vector3 position = scp.transform.position;
-		ClosestPoint = Vector3.Distance(position, b.ClosestPoint(position));
-		BoundsToEncapsulate = b;
-		Doors = dv ?? new DoorVariant[0];
+		this.ClosestPoint = Vector3.Distance(position, b.ClosestPoint(position));
+		this.BoundsToEncapsulate = b;
+		this.Doors = dv ?? new DoorVariant[0];
 	}
 
 	public static Scp244TransferCondition[] GenerateTransferConditions(Scp244DeployablePickup scp244)
@@ -41,11 +41,11 @@ public class Scp244TransferCondition
 		}
 		List<Bounds> list2 = new List<Bounds>();
 		HashSet<Vector3> hashSet = new HashSet<Vector3>();
-		Bounds boundsOfEntireRoom = GetBoundsOfEntireRoom(room);
+		Bounds boundsOfEntireRoom = Scp244TransferCondition.GetBoundsOfEntireRoom(room);
 		HashSet<DoorVariant> hashSet2 = new HashSet<DoorVariant>();
 		list2.Add(boundsOfEntireRoom);
 		List<Vector3Int> list3 = new List<Vector3Int>();
-		AddNearbyRooms(list3, startCoords, room);
+		Scp244TransferCondition.AddNearbyRooms(list3, startCoords, room);
 		foreach (Vector3Int item in list3)
 		{
 			if (RoomIdentifier.RoomsByCoords.TryGetValue(item, out var value) && !(value == null))
@@ -57,10 +57,10 @@ public class Scp244TransferCondition
 		{
 			if (hashSet.Add(item2.center))
 			{
-				Bounds bounds = new Bounds(boundsOfEntireRoom.center, DoorDetectionThickness);
+				Bounds bounds = new Bounds(boundsOfEntireRoom.center, Scp244TransferCondition.DoorDetectionThickness);
 				bounds.Encapsulate(item2.center);
-				AddDoorsFromRoom(hashSet2, bounds, boundsOfEntireRoom.center, list2);
-				AddDoorsFromRoom(hashSet2, bounds, item2.center, list2);
+				Scp244TransferCondition.AddDoorsFromRoom(hashSet2, bounds, boundsOfEntireRoom.center, list2);
+				Scp244TransferCondition.AddDoorsFromRoom(hashSet2, bounds, item2.center, list2);
 				list.Add(new Scp244TransferCondition(item2, hashSet2.ToArray(), scp244));
 				hashSet2.Clear();
 			}

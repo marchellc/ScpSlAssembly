@@ -25,11 +25,11 @@ public abstract class WaveAnnouncementBase
 	public virtual void PlayAnnouncement()
 	{
 		float num = (AlphaWarheadController.Detonated ? 2.5f : 1f);
-		float glitchChance = Random.Range(MinGlitch, MaxGlitch) * num;
-		float jamChance = Random.Range(MinJam, MaxJam) * num;
+		float glitchChance = Random.Range(this.MinGlitch, this.MaxGlitch) * num;
+		float jamChance = Random.Range(this.MinJam, this.MaxJam) * num;
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-		CreateAnnouncementString(stringBuilder);
-		SendSubtitles();
+		this.CreateAnnouncementString(stringBuilder);
+		this.SendSubtitles();
 		string tts = StringBuilderPool.Shared.ToStringReturn(stringBuilder);
 		NineTailedFoxAnnouncer.singleton.ServerOnlyAddGlitchyPhrase(tts, glitchChance, jamChance);
 	}

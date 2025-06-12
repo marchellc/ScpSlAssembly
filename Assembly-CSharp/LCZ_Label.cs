@@ -11,17 +11,17 @@ public class LCZ_Label : MonoBehaviour
 
 	private void Awake()
 	{
-		AllLabels.Add(this);
+		LCZ_Label.AllLabels.Add(this);
 	}
 
 	private void OnDestroy()
 	{
-		AllLabels.Remove(this);
+		LCZ_Label.AllLabels.Remove(this);
 	}
 
 	public void Refresh(Material ch, Material num)
 	{
-		chRend.sharedMaterial = ch;
-		numRend.sharedMaterial = num;
+		this.chRend.sharedMaterial = ch;
+		this.numRend.sharedMaterial = num;
 	}
 }

@@ -18,7 +18,7 @@ public static class AuthenticatorQuery
 		try
 		{
 			string text = HttpQuery.Post(CentralServer.MasterUrl + "v5/authenticator.php", HttpQuery.ToPostArgs(data));
-			return text.StartsWith("{\"") ? ProcessResponse(text) : ProcessLegacyResponse(text);
+			return text.StartsWith("{\"") ? AuthenticatorQuery.ProcessResponse(text) : AuthenticatorQuery.ProcessLegacyResponse(text);
 		}
 		catch (Exception ex)
 		{
@@ -68,14 +68,14 @@ public static class AuthenticatorQuery
 			if (!string.IsNullOrEmpty(authenticatorResponse.token))
 			{
 				ServerConsole.AddLog("Received verification token from central server.");
-				SaveNewToken(authenticatorResponse.token);
+				AuthenticatorQuery.SaveNewToken(authenticatorResponse.token);
 			}
 			if (authenticatorResponse.actions != null && authenticatorResponse.actions.Length != 0)
 			{
 				string[] actions = authenticatorResponse.actions;
 				for (int i = 0; i < actions.Length; i++)
 				{
-					HandleAction(actions[i]);
+					AuthenticatorQuery.HandleAction(actions[i]);
 				}
 			}
 			if (authenticatorResponse.messages != null && authenticatorResponse.messages.Length != 0)
@@ -155,19 +155,19 @@ public static class AuthenticatorQuery
 		}
 		else if (response.Contains(":Restart:"))
 		{
-			HandleAction("Restart");
+			AuthenticatorQuery.HandleAction("Restart");
 		}
 		else if (response.Contains(":RoundRestart:"))
 		{
-			HandleAction("RoundRestart");
+			AuthenticatorQuery.HandleAction("RoundRestart");
 		}
 		else if (response.Contains(":UpdateData:"))
 		{
-			HandleAction("UpdateData");
+			AuthenticatorQuery.HandleAction("UpdateData");
 		}
 		else if (response.Contains(":RefreshKey:"))
 		{
-			HandleAction("RefreshKey");
+			AuthenticatorQuery.HandleAction("RefreshKey");
 		}
 		else if (response.Contains(":Message - "))
 		{
@@ -177,7 +177,7 @@ public static class AuthenticatorQuery
 		}
 		else if (response.Contains(":GetContactAddress:"))
 		{
-			HandleAction("GetContactAddress");
+			AuthenticatorQuery.HandleAction("GetContactAddress");
 		}
 		else
 		{

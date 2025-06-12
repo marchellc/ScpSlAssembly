@@ -12,20 +12,20 @@ public abstract class KeySubroutine<T> : StandardSubroutine<T> where T : PlayerR
 	{
 		get
 		{
-			return _held;
+			return this._held;
 		}
 		set
 		{
-			if (value != _held)
+			if (value != this._held)
 			{
-				_held = value;
+				this._held = value;
 				if (value)
 				{
-					OnKeyDown();
+					this.OnKeyDown();
 				}
 				else
 				{
-					OnKeyUp();
+					this.OnKeyUp();
 				}
 			}
 		}
@@ -51,13 +51,13 @@ public abstract class KeySubroutine<T> : StandardSubroutine<T> where T : PlayerR
 
 	protected virtual void Update()
 	{
-		if (KeyPressable && GetAction(TargetKey))
+		if (this.KeyPressable && base.GetAction(this.TargetKey))
 		{
-			IsKeyHeld = true;
+			this.IsKeyHeld = true;
 		}
-		else if (IsKeyHeld && KeyReleasable)
+		else if (this.IsKeyHeld && this.KeyReleasable)
 		{
-			IsKeyHeld = false;
+			this.IsKeyHeld = false;
 		}
 	}
 
@@ -72,6 +72,6 @@ public abstract class KeySubroutine<T> : StandardSubroutine<T> where T : PlayerR
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_held = false;
+		this._held = false;
 	}
 }

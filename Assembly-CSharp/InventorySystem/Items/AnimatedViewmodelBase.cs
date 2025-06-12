@@ -14,11 +14,11 @@ public abstract class AnimatedViewmodelBase : ItemViewmodelBase
 
 	private const float MaxSkipEquipTime = 7.5f;
 
-	public Avatar AnimatorAvatar => _animator.avatar;
+	public Avatar AnimatorAvatar => this._animator.avatar;
 
-	public RuntimeAnimatorController AnimatorRuntimeController => _animator.runtimeAnimatorController;
+	public RuntimeAnimatorController AnimatorRuntimeController => this._animator.runtimeAnimatorController;
 
-	public Transform AnimatorTransform => _animator.transform;
+	public Transform AnimatorTransform => this._animator.transform;
 
 	public bool IsFastForwarding { get; private set; }
 
@@ -30,46 +30,46 @@ public abstract class AnimatedViewmodelBase : ItemViewmodelBase
 
 	protected virtual void LateUpdate()
 	{
-		SwayController?.UpdateSway();
+		this.SwayController?.UpdateSway();
 		AnimatedViewmodelBase.OnSwayUpdated?.Invoke();
 	}
 
 	public override void InitAny()
 	{
 		base.InitAny();
-		_animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-		AnimatorForceUpdate();
+		this._animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+		this.AnimatorForceUpdate();
 	}
 
 	public virtual AnimatorStateInfo AnimatorStateInfo(int layer)
 	{
-		return _animator.GetCurrentAnimatorStateInfo(layer);
+		return this._animator.GetCurrentAnimatorStateInfo(layer);
 	}
 
 	public virtual bool AnimatorInTransition(int layer)
 	{
-		return _animator.IsInTransition(layer);
+		return this._animator.IsInTransition(layer);
 	}
 
 	public virtual void AnimatorForceUpdate()
 	{
-		AnimatorForceUpdate(Time.deltaTime);
+		this.AnimatorForceUpdate(Time.deltaTime);
 	}
 
 	public virtual void AnimatorForceUpdate(float deltaTime, bool fastMode = true)
 	{
 		if (fastMode)
 		{
-			IsFastForwarding = true;
-			_animator.Update(deltaTime);
+			this.IsFastForwarding = true;
+			this._animator.Update(deltaTime);
 			SharedHandsController.Singleton.Hands.Update(deltaTime);
-			IsFastForwarding = false;
+			this.IsFastForwarding = false;
 		}
 		else
 		{
 			while (deltaTime > 0f)
 			{
-				AnimatorForceUpdate(Mathf.Min(deltaTime, 0.07f));
+				this.AnimatorForceUpdate(Mathf.Min(deltaTime, 0.07f));
 				deltaTime -= 0.07f;
 			}
 		}
@@ -77,31 +77,31 @@ public abstract class AnimatedViewmodelBase : ItemViewmodelBase
 
 	public virtual void AnimatorSetBool(int hash, bool val)
 	{
-		_animator.SetBool(hash, val);
+		this._animator.SetBool(hash, val);
 		SharedHandsController.Singleton.Hands.SetBool(hash, val);
 	}
 
 	public virtual void AnimatorSetFloat(int hash, float val)
 	{
-		_animator.SetFloat(hash, val);
+		this._animator.SetFloat(hash, val);
 		SharedHandsController.Singleton.Hands.SetFloat(hash, val);
 	}
 
 	public virtual void AnimatorSetInt(int hash, int val)
 	{
-		_animator.SetInteger(hash, val);
+		this._animator.SetInteger(hash, val);
 		SharedHandsController.Singleton.Hands.SetInteger(hash, val);
 	}
 
 	public virtual void AnimatorSetTrigger(int hash)
 	{
-		_animator.SetTrigger(hash);
+		this._animator.SetTrigger(hash);
 		SharedHandsController.Singleton.Hands.SetTrigger(hash);
 	}
 
 	public virtual void AnimatorSetLayerWeight(int layer, float val)
 	{
-		_animator.SetLayerWeight(layer, val);
+		this._animator.SetLayerWeight(layer, val);
 		SharedHandsController.Singleton.Hands.SetLayerWeight(layer, val);
 	}
 
@@ -110,34 +110,34 @@ public abstract class AnimatedViewmodelBase : ItemViewmodelBase
 		int[] layers = mask.Layers;
 		foreach (int layer in layers)
 		{
-			AnimatorSetLayerWeight(layer, val);
+			this.AnimatorSetLayerWeight(layer, val);
 		}
 	}
 
 	public virtual float AnimatorGetLayerWeight(int layer)
 	{
-		return _animator.GetLayerWeight(layer);
+		return this._animator.GetLayerWeight(layer);
 	}
 
 	public virtual string AnimatorGetLayerName(int layer)
 	{
-		return _animator.GetLayerName(layer);
+		return this._animator.GetLayerName(layer);
 	}
 
 	public virtual void AnimatorPlay(int hash, int layer, float time)
 	{
-		_animator.Play(hash, layer, time);
+		this._animator.Play(hash, layer, time);
 		SharedHandsController.Singleton.Hands.Play(hash, layer, time);
 	}
 
 	public int AnimatorGetLayerCount()
 	{
-		return _animator.layerCount;
+		return this._animator.layerCount;
 	}
 
 	public void AnimatorRebind()
 	{
-		_animator.Rebind();
+		this._animator.Rebind();
 		SharedHandsController.Singleton.Hands.Rebind();
 	}
 }

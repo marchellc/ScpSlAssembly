@@ -83,7 +83,7 @@ public class AnimatedCharacterModel : CharacterModel, IAnimatorLayerSource
 
 	public ModelSharedSettings SharedSettings;
 
-	public AudioClip RandomFootstep => _footstepClips.RandomItem();
+	public AudioClip RandomFootstep => this._footstepClips.RandomItem();
 
 	public Vector3 HeadBobPosition { get; protected set; }
 
@@ -111,7 +111,7 @@ public class AnimatedCharacterModel : CharacterModel, IAnimatorLayerSource
 			{
 				return Time.deltaTime;
 			}
-			return _lastMovedDeltaT;
+			return this._lastMovedDeltaT;
 		}
 	}
 
@@ -129,8 +129,8 @@ public class AnimatedCharacterModel : CharacterModel, IAnimatorLayerSource
 	{
 		get
 		{
-			float num = (float)_footstepLoudness;
-			if (FpcModule.CurrentMovementState == PlayerMovementState.Sprinting)
+			float num = (float)this._footstepLoudness;
+			if (this.FpcModule.CurrentMovementState == PlayerMovementState.Sprinting)
 			{
 				num *= 2f;
 			}
@@ -142,18 +142,18 @@ public class AnimatedCharacterModel : CharacterModel, IAnimatorLayerSource
 	{
 		get
 		{
-			if (!FpcModule.IsGrounded || !FpcModule.Motor.MovementDetected)
+			if (!this.FpcModule.IsGrounded || !this.FpcModule.Motor.MovementDetected)
 			{
 				return false;
 			}
-			float num = FpcModule.VelocityForState(PlayerMovementState.Sneaking, applyCrouch: false);
-			float maxMovementSpeed = FpcModule.MaxMovementSpeed;
+			float num = this.FpcModule.VelocityForState(PlayerMovementState.Sneaking, applyCrouch: false);
+			float maxMovementSpeed = this.FpcModule.MaxMovementSpeed;
 			if (maxMovementSpeed <= num && maxMovementSpeed > 0f)
 			{
 				return false;
 			}
 			num *= 0.7f;
-			return FpcModule.Motor.Velocity.SqrMagnitudeIgnoreY() >= num * num;
+			return this.FpcModule.Motor.Velocity.SqrMagnitudeIgnoreY() >= num * num;
 		}
 	}
 
@@ -163,7 +163,7 @@ public class AnimatedCharacterModel : CharacterModel, IAnimatorLayerSource
 	{
 		get
 		{
-			float walkCycleRaw = WalkCycleRaw;
+			float walkCycleRaw = this.WalkCycleRaw;
 			if (!float.IsNaN(walkCycleRaw))
 			{
 				return walkCycleRaw - (float)(int)walkCycleRaw;
@@ -172,54 +172,54 @@ public class AnimatedCharacterModel : CharacterModel, IAnimatorLayerSource
 		}
 	}
 
-	public float WalkCycleRaw => Animator.GetCurrentAnimatorStateInfo(WalkLayerIndex).normalizedTime;
+	public float WalkCycleRaw => this.Animator.GetCurrentAnimatorStateInfo(this.WalkLayerIndex).normalizedTime;
 
 	public float WalkLayerWeight
 	{
 		get
 		{
-			float valueOrDefault = _lastAppliedWalkLayerWeight.GetValueOrDefault();
-			if (!_lastAppliedWalkLayerWeight.HasValue)
+			float valueOrDefault = this._lastAppliedWalkLayerWeight.GetValueOrDefault();
+			if (!this._lastAppliedWalkLayerWeight.HasValue)
 			{
-				valueOrDefault = LayerManager.GetLayerWeight(_walkLayer);
-				_lastAppliedWalkLayerWeight = valueOrDefault;
+				valueOrDefault = this.LayerManager.GetLayerWeight(this._walkLayer);
+				this._lastAppliedWalkLayerWeight = valueOrDefault;
 			}
-			return _lastAppliedWalkLayerWeight.Value;
+			return this._lastAppliedWalkLayerWeight.Value;
 		}
 		set
 		{
 			float num = Mathf.Clamp01(value);
-			LayerManager.SetLayerWeight(_walkLayer, num);
-			_lastAppliedWalkLayerWeight = num;
+			this.LayerManager.SetLayerWeight(this._walkLayer, num);
+			this._lastAppliedWalkLayerWeight = num;
 		}
 	}
 
-	public ReadOnlySpan<IAnimatedModelSubcontroller> AllSubcontrollers => new ReadOnlySpan<IAnimatedModelSubcontroller>(_subcontrollers);
+	public ReadOnlySpan<IAnimatedModelSubcontroller> AllSubcontrollers => new ReadOnlySpan<IAnimatedModelSubcontroller>(this._subcontrollers);
 
-	public float CurrentStafe => Animator.GetFloat(HashStrafe);
+	public float CurrentStafe => this.Animator.GetFloat(AnimatedCharacterModel.HashStrafe);
 
-	public float CurrentForward => Animator.GetFloat(HashForward);
+	public float CurrentForward => this.Animator.GetFloat(AnimatedCharacterModel.HashForward);
 
 	public float TargetStrafe { get; private set; }
 
 	public float TargetForward { get; private set; }
 
-	public RuntimeAnimatorController AnimLayersSource => GetComponentInChildren<Animator>().runtimeAnimatorController;
+	public RuntimeAnimatorController AnimLayersSource => base.GetComponentInChildren<Animator>().runtimeAnimatorController;
 
-	private int WalkLayerIndex => LayerManager.GetLayerIndex(_walkLayer);
+	private int WalkLayerIndex => this.LayerManager.GetLayerIndex(this._walkLayer);
 
 	public event Action<PooledAudioSource> OnFootstepAudioSpawned;
 
 	protected override void Awake()
 	{
 		base.Awake();
-		Animator = SetupAnimator();
-		LayerManager = Animator.GetComponent<AnimatorLayerManager>();
-		_allParameterHashes = new HashSet<int>(Animator.parameters.Select((AnimatorControllerParameter x) => x.nameHash));
-		_subcontrollers = GetComponents<IAnimatedModelSubcontroller>();
-		for (int i = 0; i < _subcontrollers.Length; i++)
+		this.Animator = this.SetupAnimator();
+		this.LayerManager = this.Animator.GetComponent<AnimatorLayerManager>();
+		this._allParameterHashes = new HashSet<int>(this.Animator.parameters.Select((AnimatorControllerParameter x) => x.nameHash));
+		this._subcontrollers = base.GetComponents<IAnimatedModelSubcontroller>();
+		for (int num = 0; num < this._subcontrollers.Length; num++)
 		{
-			_subcontrollers[i].Init(this, i);
+			this._subcontrollers[num].Init(this, num);
 		}
 	}
 
@@ -227,58 +227,58 @@ public class AnimatedCharacterModel : CharacterModel, IAnimatorLayerSource
 	{
 		if (!base.Pooled)
 		{
-			float dampTime = (base.OwnerHub.isLocalPlayer ? _firstpersonDampTime : _thirdpersonDampTime);
-			float num = WalkCycleRaw;
+			float dampTime = (base.OwnerHub.isLocalPlayer ? this._firstpersonDampTime : this._thirdpersonDampTime);
+			float num = this.WalkCycleRaw;
 			if (float.IsNaN(num))
 			{
 				num = 0f;
 			}
 			Vector2 movementDirection;
 			float normalizedVelocity;
-			if (!FpcModule.IsGrounded)
+			if (!this.FpcModule.IsGrounded)
 			{
 				movementDirection = Vector2.zero;
 				normalizedVelocity = 0f;
 			}
 			else
 			{
-				Vector3 vector = base.CachedTransform.InverseTransformDirection(FpcModule.Motor.Velocity);
+				Vector3 vector = base.CachedTransform.InverseTransformDirection(this.FpcModule.Motor.Velocity);
 				Vector2 vector2 = new Vector2(vector.x, vector.z);
 				float magnitude = vector2.magnitude;
 				movementDirection = ((magnitude <= float.Epsilon) ? Vector2.zero : (vector2 / magnitude));
-				float walkSpeed = FpcModule.WalkSpeed;
+				float walkSpeed = this.FpcModule.WalkSpeed;
 				normalizedVelocity = ((walkSpeed == 0f) ? 1f : (magnitude / walkSpeed));
 			}
-			UpdateHeadBob(num);
-			UpdateFootsteps(num);
-			UpdateAnimatorParameters(movementDirection, normalizedVelocity, dampTime);
-			if (HasParameter(HashGrounded))
+			this.UpdateHeadBob(num);
+			this.UpdateFootsteps(num);
+			this.UpdateAnimatorParameters(movementDirection, normalizedVelocity, dampTime);
+			if (this.HasParameter(AnimatedCharacterModel.HashGrounded))
 			{
-				bool value = FpcModule.Noclip.IsActive || Role.ActiveTime < 0.3f || FpcModule.IsGrounded;
-				Animator.SetBool(HashGrounded, value);
+				bool value = this.FpcModule.Noclip.IsActive || this.Role.ActiveTime < 0.3f || this.FpcModule.IsGrounded;
+				this.Animator.SetBool(AnimatedCharacterModel.HashGrounded, value);
 			}
 		}
 	}
 
 	public override void OnPlayerMove()
 	{
-		float a = (float)_lastMovedSw.Elapsed.TotalSeconds;
-		_lastMovedSw.Restart();
-		_lastMovedDeltaT = Mathf.Min(a, Time.maximumDeltaTime);
+		float a = (float)this._lastMovedSw.Elapsed.TotalSeconds;
+		this._lastMovedSw.Restart();
+		this._lastMovedDeltaT = Mathf.Min(a, Time.maximumDeltaTime);
 		base.OnPlayerMove();
 	}
 
 	protected virtual Animator SetupAnimator()
 	{
-		Animator componentInChildren = GetComponentInChildren<Animator>();
-		AnimatorOverride = new AnimatorOverrideController(componentInChildren.runtimeAnimatorController);
-		componentInChildren.runtimeAnimatorController = AnimatorOverride;
+		Animator componentInChildren = base.GetComponentInChildren<Animator>();
+		this.AnimatorOverride = new AnimatorOverrideController(componentInChildren.runtimeAnimatorController);
+		componentInChildren.runtimeAnimatorController = this.AnimatorOverride;
 		return componentInChildren;
 	}
 
 	protected virtual PooledAudioSource PlayFootstepAudioClip(AudioClip clip, float dis, float vol)
 	{
-		return AudioSourcePoolManager.PlayOnTransform(RandomFootstep, base.transform, dis, vol, FalloffType.Footstep);
+		return AudioSourcePoolManager.PlayOnTransform(this.RandomFootstep, base.transform, dis, vol, FalloffType.Footstep);
 	}
 
 	private void UpdateHeadBob(float time)
@@ -288,40 +288,40 @@ public class AnimatedCharacterModel : CharacterModel, IAnimatorLayerSource
 	private void UpdateFootsteps(float time)
 	{
 		time -= (float)(int)time;
-		int num = _footstepTimes.Length;
-		if (_lastFootstep < num)
+		int num = this._footstepTimes.Length;
+		if (this._lastFootstep < num)
 		{
-			if (!(time < _footstepTimes[_lastFootstep]))
+			if (!(time < this._footstepTimes[this._lastFootstep]))
 			{
-				_lastFootstep++;
-				if (FootstepPlayable)
+				this._lastFootstep++;
+				if (this.FootstepPlayable)
 				{
-					PlayFootstep();
+					this.PlayFootstep();
 				}
 			}
 		}
-		else if (num > 0 && time < _footstepTimes[0])
+		else if (num > 0 && time < this._footstepTimes[0])
 		{
-			_lastFootstep = 0;
+			this._lastFootstep = 0;
 		}
 	}
 
 	private void OnGrounded()
 	{
-		if (!(base.OwnerHub.roleManager.CurrentRole.ActiveTime < 0.3f) && LandingFootstepPlayable)
+		if (!(base.OwnerHub.roleManager.CurrentRole.ActiveTime < 0.3f) && this.LandingFootstepPlayable)
 		{
-			PlayFootstep();
-			_lastTouchdownSw.Restart();
-			if (IsTracked)
+			this.PlayFootstep();
+			this._lastTouchdownSw.Restart();
+			if (this.IsTracked)
 			{
-				SharedSettings.PlayLandingAnimation();
+				this.SharedSettings.PlayLandingAnimation();
 			}
 		}
 	}
 
 	private void PlayFootstep()
 	{
-		float footstepLoudnessDistance = FootstepLoudnessDistance;
+		float footstepLoudnessDistance = this.FootstepLoudnessDistance;
 		float num = 1f;
 		bool flag = true;
 		PlayerEffectsController playerEffectsController = base.OwnerHub.playerEffectsController;
@@ -340,18 +340,18 @@ public class AnimatedCharacterModel : CharacterModel, IAnimatorLayerSource
 		}
 		if (!flag || num >= 0f)
 		{
-			OnFootstepPlayed?.Invoke(this, footstepLoudnessDistance);
+			AnimatedCharacterModel.OnFootstepPlayed?.Invoke(this, footstepLoudnessDistance);
 		}
 	}
 
 	public bool HasParameter(int hash)
 	{
-		return _allParameterHashes.Contains(hash);
+		return this._allParameterHashes.Contains(hash);
 	}
 
 	public bool TryGetSubcontroller<T>(out T subcontroller) where T : class
 	{
-		IAnimatedModelSubcontroller[] subcontrollers = _subcontrollers;
+		IAnimatedModelSubcontroller[] subcontrollers = this._subcontrollers;
 		for (int i = 0; i < subcontrollers.Length; i++)
 		{
 			if (subcontrollers[i] is T val)
@@ -366,54 +366,54 @@ public class AnimatedCharacterModel : CharacterModel, IAnimatorLayerSource
 
 	public virtual void UpdateAnimatorParameters(Vector2 movementDirection, float normalizedVelocity, float dampTime)
 	{
-		float value = _walkVelocityScale.Evaluate(normalizedVelocity);
+		float value = this._walkVelocityScale.Evaluate(normalizedVelocity);
 		movementDirection *= normalizedVelocity;
-		TargetStrafe = movementDirection.x;
-		TargetForward = movementDirection.y;
-		if (_forceUpdate)
+		this.TargetStrafe = movementDirection.x;
+		this.TargetForward = movementDirection.y;
+		if (this._forceUpdate)
 		{
-			Animator.SetFloat(HashForward, TargetForward);
-			Animator.SetFloat(HashStrafe, TargetStrafe);
-			Animator.SetFloat(HashSpeed, value);
+			this.Animator.SetFloat(AnimatedCharacterModel.HashForward, this.TargetForward);
+			this.Animator.SetFloat(AnimatedCharacterModel.HashStrafe, this.TargetStrafe);
+			this.Animator.SetFloat(AnimatedCharacterModel.HashSpeed, value);
 		}
 		else
 		{
-			Animator.SetFloat(HashForward, TargetForward, dampTime, Time.deltaTime);
-			Animator.SetFloat(HashStrafe, TargetStrafe, dampTime, Time.deltaTime);
-			Animator.SetFloat(HashSpeed, value, dampTime, Time.deltaTime);
+			this.Animator.SetFloat(AnimatedCharacterModel.HashForward, this.TargetForward, dampTime, Time.deltaTime);
+			this.Animator.SetFloat(AnimatedCharacterModel.HashStrafe, this.TargetStrafe, dampTime, Time.deltaTime);
+			this.Animator.SetFloat(AnimatedCharacterModel.HashSpeed, value, dampTime, Time.deltaTime);
 		}
 	}
 
 	public virtual void ForceUpdate()
 	{
-		_forceUpdate = true;
-		Update();
-		_forceUpdate = false;
+		this._forceUpdate = true;
+		this.Update();
+		this._forceUpdate = false;
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		FirstPersonMovementModule fpcModule = FpcModule;
+		FirstPersonMovementModule fpcModule = this.FpcModule;
 		fpcModule.OnGrounded = (Action)Delegate.Remove(fpcModule.OnGrounded, new Action(OnGrounded));
 	}
 
 	public override void Setup(ReferenceHub owner, IFpcRole role, Vector3 localPos, Quaternion localRot)
 	{
 		base.Setup(owner, role, localPos, localRot);
-		Role = role as PlayerRoleBase;
-		FpcModule = role.FpcModule;
-		FirstPersonMovementModule fpcModule = FpcModule;
+		this.Role = role as PlayerRoleBase;
+		this.FpcModule = role.FpcModule;
+		FirstPersonMovementModule fpcModule = this.FpcModule;
 		fpcModule.OnGrounded = (Action)Delegate.Combine(fpcModule.OnGrounded, new Action(OnGrounded));
-		Animator.Rebind();
-		Animator.Update(10f);
-		HitboxIdentity[] hitboxes = Hitboxes;
+		this.Animator.Rebind();
+		this.Animator.Update(10f);
+		HitboxIdentity[] hitboxes = base.Hitboxes;
 		foreach (HitboxIdentity hitboxIdentity in hitboxes)
 		{
 			HitboxIdentity.Instances.Add(hitboxIdentity);
 			hitboxIdentity.SetColliders(!base.OwnerHub.isLocalPlayer);
 		}
-		IAnimatedModelSubcontroller[] subcontrollers = _subcontrollers;
+		IAnimatedModelSubcontroller[] subcontrollers = this._subcontrollers;
 		for (int i = 0; i < subcontrollers.Length; i++)
 		{
 			subcontrollers[i].OnReassigned();
@@ -423,6 +423,6 @@ public class AnimatedCharacterModel : CharacterModel, IAnimatorLayerSource
 	public override void SetAsOwnerless()
 	{
 		base.SetAsOwnerless();
-		Awake();
+		this.Awake();
 	}
 }

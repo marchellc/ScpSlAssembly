@@ -17,32 +17,32 @@ public class RaDummyActions : RaClientDataRequest
 
 		private const string InitialGroupName = "Miscellaneous";
 
-		public ReadOnlySpan<ActionsGroupPair> Groups => new ReadOnlySpan<ActionsGroupPair>(_groups, 0, _groupsLen);
+		public ReadOnlySpan<ActionsGroupPair> Groups => new ReadOnlySpan<ActionsGroupPair>(this._groups, 0, this._groupsLen);
 
 		private ActionsGroupPair CurGroup
 		{
 			get
 			{
-				EnsureCapacity(_groupsLen);
-				int num = Mathf.Max(0, _groupsLen - 1);
-				return _groups[num];
+				this.EnsureCapacity(this._groupsLen);
+				int num = Mathf.Max(0, this._groupsLen - 1);
+				return this._groups[num];
 			}
 		}
 
 		private void EnsureCapacity(int minLen)
 		{
-			if (_groups == null)
+			if (this._groups == null)
 			{
 				int num = Mathf.Max(minLen * 2, 16);
-				_groups = new ActionsGroupPair[num];
+				this._groups = new ActionsGroupPair[num];
 			}
-			else if (_groups.Length < minLen)
+			else if (this._groups.Length < minLen)
 			{
-				Array.Resize(ref _groups, minLen * 2);
+				Array.Resize(ref this._groups, minLen * 2);
 			}
-			for (int i = 0; i < _groups.Length; i++)
+			for (int i = 0; i < this._groups.Length; i++)
 			{
-				ActionsGroupPair[] groups = _groups;
+				ActionsGroupPair[] groups = this._groups;
 				int num2 = i;
 				if (groups[num2] == null)
 				{
@@ -53,30 +53,30 @@ public class RaDummyActions : RaClientDataRequest
 
 		public void Clear()
 		{
-			if (_groups != null)
+			if (this._groups != null)
 			{
-				for (int i = 0; i < _groupsLen; i++)
+				for (int i = 0; i < this._groupsLen; i++)
 				{
-					ActionsGroupPair obj = _groups[i];
+					ActionsGroupPair obj = this._groups[i];
 					obj.Name = "Miscellaneous";
 					obj.Actions.Clear();
 				}
 			}
-			_groupsLen = 0;
+			this._groupsLen = 0;
 		}
 
 		public void Receive(string word)
 		{
 			if (word.StartsWith("___"))
 			{
-				_groupsLen++;
-				ActionsGroupPair curGroup = CurGroup;
+				this._groupsLen++;
+				ActionsGroupPair curGroup = this.CurGroup;
 				int length = "___".Length;
 				curGroup.Name = word.Substring(length, word.Length - length);
 			}
 			else
 			{
-				CurGroup.Actions.Add(word);
+				this.CurGroup.Actions.Add(word);
 			}
 		}
 	}
@@ -89,8 +89,8 @@ public class RaDummyActions : RaClientDataRequest
 
 		public ActionsGroupPair(string name)
 		{
-			Name = name;
-			Actions = new List<string>();
+			this.Name = name;
+			this.Actions = new List<string>();
 		}
 	}
 
@@ -111,16 +111,16 @@ public class RaDummyActions : RaClientDataRequest
 	public override void ReceiveData(string data, bool secure)
 	{
 		base.ReceiveData(data, secure);
-		LastError = null;
+		this.LastError = null;
 		try
 		{
 			int num = data.IndexOf("***");
 			string text = data.Substring(num, data.Length - num);
-			ClientReceive(text.Split(','));
+			this.ClientReceive(text.Split(','));
 		}
 		catch (Exception ex)
 		{
-			LastError = ex.Message;
+			this.LastError = ex.Message;
 		}
 	}
 
@@ -132,18 +132,18 @@ public class RaDummyActions : RaClientDataRequest
 			return;
 		}
 		bool flag = false;
-		_senderNetId = playerCommandSender.ReferenceHub.netId;
+		this._senderNetId = playerCommandSender.ReferenceHub.netId;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allHub.IsDummy)
 			{
-				HashSet<uint> orAddNew = NonDirtyReceivers.GetOrAddNew(allHub.netId);
+				HashSet<uint> orAddNew = RaDummyActions.NonDirtyReceivers.GetOrAddNew(allHub.netId);
 				if (DummyActionCollector.IsDirty(allHub))
 				{
 					orAddNew.Clear();
 					flag = true;
 				}
-				else if (!orAddNew.Contains(_senderNetId))
+				else if (!orAddNew.Contains(this._senderNetId))
 				{
 					flag = true;
 				}
@@ -159,25 +159,25 @@ public class RaDummyActions : RaClientDataRequest
 	{
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			if (allHub.IsDummy && !NonDirtyReceivers.GetOrAddNew(allHub.netId).Contains(_senderNetId))
+			if (allHub.IsDummy && !RaDummyActions.NonDirtyReceivers.GetOrAddNew(allHub.netId).Contains(this._senderNetId))
 			{
-				AppendDummy(allHub);
+				this.AppendDummy(allHub);
 			}
 		}
 	}
 
 	private void AppendDummy(ReferenceHub dummy)
 	{
-		AppendData("***" + dummy.netId);
+		base.AppendData("***" + dummy.netId);
 		foreach (DummyAction item in DummyActionCollector.ServerGetActions(dummy))
 		{
 			if (item.Action == null)
 			{
-				AppendData("___" + item.Name);
+				base.AppendData("___" + item.Name);
 			}
 			else
 			{
-				AppendData(item.Name);
+				base.AppendData(item.Name);
 			}
 		}
 	}
@@ -196,7 +196,7 @@ public class RaDummyActions : RaClientDataRequest
 				string text2 = text;
 				int length = "***".Length;
 				string s = text2.Substring(length, text2.Length - length);
-				dummyData = ReceivedData.GetOrAdd(uint.Parse(s), () => new DummyData());
+				dummyData = RaDummyActions.ReceivedData.GetOrAdd(uint.Parse(s), () => new DummyData());
 				dummyData.Clear();
 			}
 			else
@@ -214,7 +214,7 @@ public class RaDummyActions : RaClientDataRequest
 
 	private static void OnClientReady()
 	{
-		NonDirtyReceivers.Clear();
-		ReceivedData.Clear();
+		RaDummyActions.NonDirtyReceivers.Clear();
+		RaDummyActions.ReceivedData.Clear();
 	}
 }

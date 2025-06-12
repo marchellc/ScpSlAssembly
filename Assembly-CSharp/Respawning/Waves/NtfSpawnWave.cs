@@ -23,7 +23,7 @@ public class NtfSpawnWave : TimeBasedWave, IAnimatedWave, ILimitedWave, IAnnounc
 	{
 		get
 		{
-			if (!(Configuration is PrimaryWaveConfig<NtfSpawnWave> primaryWaveConfig))
+			if (!(this.Configuration is PrimaryWaveConfig<NtfSpawnWave> primaryWaveConfig))
 			{
 				return 0;
 			}
@@ -43,15 +43,15 @@ public class NtfSpawnWave : TimeBasedWave, IAnimatedWave, ILimitedWave, IAnnounc
 
 	public override void PopulateQueue(Queue<RoleTypeId> queueToFill, int playersToSpawn)
 	{
-		for (int i = 0; i < MaxCaptains; i++)
+		for (int i = 0; i < this.MaxCaptains; i++)
 		{
 			queueToFill.Enqueue(RoleTypeId.NtfCaptain);
 		}
-		for (int j = 0; j < MaxSergeants; j++)
+		for (int j = 0; j < this.MaxSergeants; j++)
 		{
 			queueToFill.Enqueue(RoleTypeId.NtfSergeant);
 		}
-		int num = MaxCaptains + MaxSergeants;
+		int num = this.MaxCaptains + this.MaxSergeants;
 		for (int k = 0; k < playersToSpawn - num; k++)
 		{
 			queueToFill.Enqueue(RoleTypeId.NtfPrivate);

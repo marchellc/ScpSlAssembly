@@ -23,62 +23,62 @@ public class FileConsole : IServerOutput, IDisposable
 
 	public FileConsole(string session)
 	{
-		_session = (string.IsNullOrEmpty(session) ? "default" : session);
-		_queueThread = new Thread(Prompt)
+		this._session = (string.IsNullOrEmpty(session) ? "default" : session);
+		this._queueThread = new Thread(Prompt)
 		{
 			Priority = System.Threading.ThreadPriority.Lowest,
 			IsBackground = true,
 			Name = "Dedicated server console output"
 		};
-		_fsw = new FileSystemWatcher
+		this._fsw = new FileSystemWatcher
 		{
-			Path = "SCPSL_Data/Dedicated/" + _session,
+			Path = "SCPSL_Data/Dedicated/" + this._session,
 			NotifyFilter = NotifyFilters.FileName
 		};
 	}
 
 	public void Start()
 	{
-		if (Directory.Exists("SCPSL_Data/Dedicated/" + _session) && Environment.GetCommandLineArgs().Contains<string>("-nodedicateddelete"))
+		if (Directory.Exists("SCPSL_Data/Dedicated/" + this._session) && Environment.GetCommandLineArgs().Contains<string>("-nodedicateddelete"))
 		{
-			string[] files = Directory.GetFiles("SCPSL_Data/Dedicated/" + _session);
+			string[] files = Directory.GetFiles("SCPSL_Data/Dedicated/" + this._session);
 			for (int i = 0; i < files.Length; i++)
 			{
 				File.Delete(files[i]);
 			}
 		}
-		Directory.CreateDirectory("SCPSL_Data/Dedicated/" + _session);
-		_queueThread.Start();
-		_fsw.Created += delegate(object sender, FileSystemEventArgs args)
+		Directory.CreateDirectory("SCPSL_Data/Dedicated/" + this._session);
+		this._queueThread.Start();
+		this._fsw.Created += delegate(object sender, FileSystemEventArgs args)
 		{
 			if (args.Name.Contains("cs") && args.Name.Contains("mapi"))
 			{
 				new Thread((ThreadStart)delegate
 				{
-					ReadLog(args.FullPath);
+					this.ReadLog(args.FullPath);
 				}).Start();
 			}
 		};
-		_fsw.EnableRaisingEvents = true;
+		this._fsw.EnableRaisingEvents = true;
 	}
 
 	public void Dispose()
 	{
-		_disposing = true;
-		_fsw.Dispose();
+		this._disposing = true;
+		this._fsw.Dispose();
 		try
 		{
-			if (_queueThread.IsAlive)
+			if (this._queueThread.IsAlive)
 			{
-				_queueThread.Abort();
+				this._queueThread.Abort();
 			}
 		}
 		catch
 		{
 		}
-		if (!ServerStatic.KeepSession && Directory.Exists("SCPSL_Data/Dedicated/" + _session))
+		if (!ServerStatic.KeepSession && Directory.Exists("SCPSL_Data/Dedicated/" + this._session))
 		{
-			Directory.Delete("SCPSL_Data/Dedicated/" + _session, recursive: true);
+			Directory.Delete("SCPSL_Data/Dedicated/" + this._session, recursive: true);
 		}
 	}
 
@@ -97,7 +97,7 @@ public class FileConsole : IServerOutput, IDisposable
 			try
 			{
 				text2 = "Error while reading the file: " + text;
-				using StreamReader streamReader = new StreamReader("SCPSL_Data/Dedicated/" + _session + "/" + text);
+				using StreamReader streamReader = new StreamReader("SCPSL_Data/Dedicated/" + this._session + "/" + text);
 				string text3 = streamReader.ReadToEnd();
 				text2 = "Error while dedecting 'terminator end-of-message' signal.";
 				if (text3.Contains("terminator"))
@@ -106,7 +106,7 @@ public class FileConsole : IServerOutput, IDisposable
 				}
 				text2 = "Error while sending message.";
 				ServerConsole.PrompterQueue.Enqueue(text3);
-				File.Delete("SCPSL_Data/Dedicated/" + _session + "/" + text);
+				File.Delete("SCPSL_Data/Dedicated/" + this._session + "/" + text);
 				return;
 			}
 			catch
@@ -115,7 +115,7 @@ public class FileConsole : IServerOutput, IDisposable
 			}
 			if (!string.IsNullOrEmpty(empty))
 			{
-				AddLog(empty, color);
+				this.AddLog(empty, color);
 			}
 		}
 		catch (Exception exception)
@@ -130,7 +130,7 @@ public class FileConsole : IServerOutput, IDisposable
 		{
 			if (ServerStatic.IsDedicated)
 			{
-				_prompterQueue.Enqueue(new TextOutputEntry(text, color));
+				this._prompterQueue.Enqueue(new TextOutputEntry(text, color));
 			}
 			else
 			{
@@ -141,30 +141,30 @@ public class FileConsole : IServerOutput, IDisposable
 
 	public void AddLog(string text)
 	{
-		AddLog(text, ConsoleColor.Gray);
+		this.AddLog(text, ConsoleColor.Gray);
 	}
 
 	public void AddOutput(IOutputEntry entry)
 	{
 		if (ServerStatic.IsDedicated)
 		{
-			_prompterQueue.Enqueue(entry);
+			this._prompterQueue.Enqueue(entry);
 		}
 	}
 
 	private void Prompt()
 	{
-		while (!_disposing)
+		while (!this._disposing)
 		{
 			IOutputEntry result;
-			if (_prompterQueue.Count == 0)
+			if (this._prompterQueue.Count == 0)
 			{
 				Thread.Sleep(25);
 			}
-			else if (_prompterQueue.TryDequeue(out result))
+			else if (this._prompterQueue.TryDequeue(out result))
 			{
-				StreamWriter streamWriter = new StreamWriter("SCPSL_Data/Dedicated/" + _session + "/sl" + _logId + ".mapi");
-				_logId++;
+				StreamWriter streamWriter = new StreamWriter("SCPSL_Data/Dedicated/" + this._session + "/sl" + this._logId + ".mapi");
+				this._logId++;
 				streamWriter.WriteLine(result.ToString());
 				streamWriter.Close();
 			}

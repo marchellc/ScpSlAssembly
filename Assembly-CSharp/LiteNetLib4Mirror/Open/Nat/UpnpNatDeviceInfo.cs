@@ -15,18 +15,18 @@ internal class UpnpNatDeviceInfo
 
 	public UpnpNatDeviceInfo(IPAddress localAddress, Uri locationUri, string serviceControlUrl, string serviceType)
 	{
-		LocalAddress = localAddress;
-		ServiceType = serviceType;
-		HostEndPoint = new IPEndPoint(IPAddress.Parse(locationUri.Host), locationUri.Port);
+		this.LocalAddress = localAddress;
+		this.ServiceType = serviceType;
+		this.HostEndPoint = new IPEndPoint(IPAddress.Parse(locationUri.Host), locationUri.Port);
 		if (Uri.IsWellFormedUriString(serviceControlUrl, UriKind.Absolute))
 		{
 			Uri uri = new Uri(serviceControlUrl);
-			IPEndPoint hostEndPoint = HostEndPoint;
+			IPEndPoint hostEndPoint = this.HostEndPoint;
 			serviceControlUrl = uri.PathAndQuery;
-			NatDiscoverer.TraceSource.LogInfo("{0}: Absolute URI detected. Host address is now: {1}", hostEndPoint, HostEndPoint);
-			NatDiscoverer.TraceSource.LogInfo("{0}: New control url: {1}", HostEndPoint, serviceControlUrl);
+			NatDiscoverer.TraceSource.LogInfo("{0}: Absolute URI detected. Host address is now: {1}", hostEndPoint, this.HostEndPoint);
+			NatDiscoverer.TraceSource.LogInfo("{0}: New control url: {1}", this.HostEndPoint, serviceControlUrl);
 		}
 		UriBuilder uriBuilder = new UriBuilder("http", locationUri.Host, locationUri.Port);
-		ServiceControlUri = new Uri(uriBuilder.Uri, serviceControlUrl);
+		this.ServiceControlUri = new Uri(uriBuilder.Uri, serviceControlUrl);
 	}
 }

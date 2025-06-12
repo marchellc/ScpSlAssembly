@@ -39,13 +39,13 @@ public class Scp1344 : StatusEffectBase, ICustomRADisplay
 
 	protected override void Start()
 	{
-		DisableEffect();
+		this.DisableEffect();
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		Scp1344XrayProviderBase[] xrayProviders = _xrayProviders;
+		Scp1344XrayProviderBase[] xrayProviders = this._xrayProviders;
 		for (int i = 0; i < xrayProviders.Length; i++)
 		{
 			xrayProviders[i].OnInit(this);
@@ -58,7 +58,7 @@ public class Scp1344 : StatusEffectBase, ICustomRADisplay
 		{
 			base.Hub.EnableWearables(WearableElements.Scp1344Goggles);
 		}
-		PlaySound();
+		this.PlaySound();
 	}
 
 	protected override void Disabled()
@@ -67,67 +67,67 @@ public class Scp1344 : StatusEffectBase, ICustomRADisplay
 		{
 			base.Hub.DisableWearables(WearableElements.Scp1344Goggles);
 		}
-		UpdateVision(isVisionActive: false);
+		this.UpdateVision(isVisionActive: false);
 	}
 
 	protected override void OnEffectUpdate()
 	{
 		base.OnEffectUpdate();
-		UpdateVision(base.IsPOV || NetworkServer.active);
+		this.UpdateVision(base.IsPOV || NetworkServer.active);
 	}
 
 	public override void OnStopSpectating()
 	{
 		base.OnStopSpectating();
-		CloseSoundSessions();
-		UpdateVision(isVisionActive: false);
+		this.CloseSoundSessions();
+		this.UpdateVision(isVisionActive: false);
 	}
 
 	public void PlayBuildupSound()
 	{
-		AudioSourcePoolManager.PlayOnTransform(_sfxBuildupDiegetic, base.Hub.transform);
+		AudioSourcePoolManager.PlayOnTransform(this._sfxBuildupDiegetic, base.Hub.transform);
 	}
 
 	private void CloseSoundSessions()
 	{
-		if (_enableSoundSession.SameSession)
+		if (this._enableSoundSession.SameSession)
 		{
-			_enableSoundSession.Source.Stop();
+			this._enableSoundSession.Source.Stop();
 		}
 	}
 
 	private void PlaySound()
 	{
-		AudioSourcePoolManager.PlayOnTransform(_sfxEnable, base.Hub.transform);
+		AudioSourcePoolManager.PlayOnTransform(this._sfxEnable, base.Hub.transform);
 		if (base.IsLocalPlayer || base.IsSpectated)
 		{
-			_enableSoundSession = new AudioPoolSession(AudioSourcePoolManager.Play2D(_sfxEnableNonDiegetic, 1f, MixerChannel.NoDucking));
+			this._enableSoundSession = new AudioPoolSession(AudioSourcePoolManager.Play2D(this._sfxEnableNonDiegetic, 1f, MixerChannel.NoDucking));
 		}
 	}
 
 	private void UpdateVision(bool isVisionActive)
 	{
-		if (isVisionActive != _prevVisionActive)
+		if (isVisionActive != this._prevVisionActive)
 		{
 			if (isVisionActive)
 			{
-				_xrayProviders.ForEach(delegate(Scp1344XrayProviderBase x)
+				this._xrayProviders.ForEach(delegate(Scp1344XrayProviderBase x)
 				{
 					x.OnVisionEnabled();
 				});
 			}
 			else
 			{
-				_xrayProviders.ForEach(delegate(Scp1344XrayProviderBase x)
+				this._xrayProviders.ForEach(delegate(Scp1344XrayProviderBase x)
 				{
 					x.OnVisionDisabled();
 				});
 			}
-			_prevVisionActive = isVisionActive;
+			this._prevVisionActive = isVisionActive;
 		}
 		if (isVisionActive)
 		{
-			_xrayProviders.ForEach(delegate(Scp1344XrayProviderBase x)
+			this._xrayProviders.ForEach(delegate(Scp1344XrayProviderBase x)
 			{
 				x.OnUpdate();
 			});

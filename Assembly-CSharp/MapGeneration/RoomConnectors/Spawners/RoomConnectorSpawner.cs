@@ -13,8 +13,8 @@ public static class RoomConnectorSpawner
 
 		public SpawnpointWeightPair(RoomConnectorSpawnpointBase sp, SpawnableRoomConnectorType type)
 		{
-			Spawnpoint = sp;
-			Weight = sp.GetSpawnChanceWeight(type);
+			this.Spawnpoint = sp;
+			this.Weight = sp.GetSpawnChanceWeight(type);
 		}
 	}
 
@@ -23,12 +23,12 @@ public static class RoomConnectorSpawner
 	public static void ServerSpawnAllConnectors(HashSet<RoomConnectorSpawnpointBase> readyToSpawn)
 	{
 		Random rng = new Random(SeedSynchronizer.Seed);
-		Queue<SpawnableRoomConnectorType> queue = GenerateSpawnQueue(GenerateCompatibleSpawnpointCounts(readyToSpawn), rng);
-		List<int> allPriorities = GetAllPriorities(readyToSpawn);
+		Queue<SpawnableRoomConnectorType> queue = RoomConnectorSpawner.GenerateSpawnQueue(RoomConnectorSpawner.GenerateCompatibleSpawnpointCounts(readyToSpawn), rng);
+		List<int> allPriorities = RoomConnectorSpawner.GetAllPriorities(readyToSpawn);
 		SpawnableRoomConnectorType result;
 		while (queue.TryDequeue(out result))
 		{
-			TrySpawnConnector(result, allPriorities, readyToSpawn, rng);
+			RoomConnectorSpawner.TrySpawnConnector(result, allPriorities, readyToSpawn, rng);
 		}
 		foreach (RoomConnectorSpawnpointBase item in readyToSpawn)
 		{
@@ -42,7 +42,7 @@ public static class RoomConnectorSpawner
 		RoomConnectorSpawnpointBase result = null;
 		foreach (int priority in priorities)
 		{
-			if (TryGetRandomSpawnpointForPriority(type, priority, remainingSpawnpoints, rng, out result))
+			if (RoomConnectorSpawner.TryGetRandomSpawnpointForPriority(type, priority, remainingSpawnpoints, rng, out result))
 			{
 				flag = true;
 				break;
@@ -59,7 +59,7 @@ public static class RoomConnectorSpawner
 
 	private static bool TryGetRandomSpawnpointForPriority(SpawnableRoomConnectorType type, int priority, HashSet<RoomConnectorSpawnpointBase> remainingSpawnpoints, Random rng, out RoomConnectorSpawnpointBase result)
 	{
-		CompatibleNonAlloc.Clear();
+		RoomConnectorSpawner.CompatibleNonAlloc.Clear();
 		double num = 0.0;
 		foreach (RoomConnectorSpawnpointBase remainingSpawnpoint in remainingSpawnpoints)
 		{
@@ -69,18 +69,18 @@ public static class RoomConnectorSpawner
 				if (!(item.Weight <= 0f))
 				{
 					num += (double)item.Weight;
-					CompatibleNonAlloc.Add(item);
+					RoomConnectorSpawner.CompatibleNonAlloc.Add(item);
 				}
 			}
 		}
-		if (CompatibleNonAlloc.Count == 0)
+		if (RoomConnectorSpawner.CompatibleNonAlloc.Count == 0)
 		{
 			result = null;
 			return false;
 		}
 		double num2 = rng.NextDouble() * num;
 		double num3 = 0.0;
-		foreach (SpawnpointWeightPair item2 in CompatibleNonAlloc)
+		foreach (SpawnpointWeightPair item2 in RoomConnectorSpawner.CompatibleNonAlloc)
 		{
 			num3 += (double)item2.Weight;
 			if (!(num2 > num3))

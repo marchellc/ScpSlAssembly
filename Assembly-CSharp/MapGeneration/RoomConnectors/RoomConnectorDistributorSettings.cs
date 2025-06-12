@@ -14,7 +14,7 @@ public class RoomConnectorDistributorSettings : ScriptableObject
 
 	public static bool TryGetTemplate(SpawnableRoomConnectorType type, out SpawnableRoomConnector result)
 	{
-		foreach (SpawnableRoomConnector registeredConnector in RegisteredConnectors)
+		foreach (SpawnableRoomConnector registeredConnector in RoomConnectorDistributorSettings.RegisteredConnectors)
 		{
 			if (registeredConnector.SpawnData.ConnectorType == type)
 			{
@@ -29,14 +29,14 @@ public class RoomConnectorDistributorSettings : ScriptableObject
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		LoadSettingsFromResources();
+		RoomConnectorDistributorSettings.LoadSettingsFromResources();
 		CustomNetworkManager.OnClientStarted += RegisterSpawnables;
 	}
 
 	private static void LoadSettingsFromResources()
 	{
 		RoomConnectorDistributorSettings[] array = Resources.LoadAll<RoomConnectorDistributorSettings>(string.Empty);
-		RegisteredConnectors.Clear();
+		RoomConnectorDistributorSettings.RegisteredConnectors.Clear();
 		RoomConnectorDistributorSettings[] array2 = array;
 		for (int i = 0; i < array2.Length; i++)
 		{
@@ -46,7 +46,7 @@ public class RoomConnectorDistributorSettings : ScriptableObject
 
 	private static void RegisterSpawnables()
 	{
-		foreach (SpawnableRoomConnector registeredConnector in RegisteredConnectors)
+		foreach (SpawnableRoomConnector registeredConnector in RoomConnectorDistributorSettings.RegisteredConnectors)
 		{
 			NetworkIdentity netIdentity = registeredConnector.netIdentity;
 			NetworkClient.prefabs[netIdentity.assetId] = netIdentity.gameObject;
@@ -55,10 +55,10 @@ public class RoomConnectorDistributorSettings : ScriptableObject
 
 	private void RegisterAll()
 	{
-		SpawnableRoomConnector[] spawnableConnectors = SpawnableConnectors;
+		SpawnableRoomConnector[] spawnableConnectors = this.SpawnableConnectors;
 		foreach (SpawnableRoomConnector element in spawnableConnectors)
 		{
-			RegisteredConnectors.AddIfNotContains(element);
+			RoomConnectorDistributorSettings.RegisteredConnectors.AddIfNotContains(element);
 		}
 	}
 }

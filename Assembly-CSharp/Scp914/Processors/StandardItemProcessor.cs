@@ -27,11 +27,11 @@ public class StandardItemProcessor : Scp914ItemProcessor
 
 	public override Scp914Result UpgradePickup(Scp914KnobSetting setting, ItemPickupBase sourcePickup)
 	{
-		ClearCombiner();
+		base.ClearCombiner();
 		Vector3 newPosition = sourcePickup.Position + Scp914Controller.MoveVector;
-		ItemType newType = RandomOutput(setting, sourcePickup.Info.ItemId);
-		ProcessPickup(sourcePickup, newType, newPosition, setting);
-		return GenerateResultFromCombiner(sourcePickup);
+		ItemType newType = this.RandomOutput(setting, sourcePickup.Info.ItemId);
+		this.ProcessPickup(sourcePickup, newType, newPosition, setting);
+		return base.GenerateResultFromCombiner(sourcePickup);
 	}
 
 	protected virtual void HandleNone(ItemPickupBase ipb, Vector3 newPosition)
@@ -49,27 +49,28 @@ public class StandardItemProcessor : Scp914ItemProcessor
 		ItemBase value;
 		if (newType == ItemType.None)
 		{
-			HandleNone(sourcePickup, newPosition);
+			this.HandleNone(sourcePickup, newPosition);
 		}
 		else if (newType == sourcePickup.Info.ItemId || !InventoryItemLoader.AvailableItems.TryGetValue(newType, out value))
 		{
 			sourcePickup.transform.position = newPosition;
-			if (_fireUpgradeTrigger && sourcePickup is IUpgradeTrigger upgradeTrigger)
+			if (this._fireUpgradeTrigger && sourcePickup is IUpgradeTrigger upgradeTrigger)
 			{
 				upgradeTrigger.ServerOnUpgraded(setting);
 			}
-			AddResultToCombiner(sourcePickup);
+			base.AddResultToCombiner(sourcePickup);
 		}
 		else
 		{
-			PickupSyncInfo pickupSyncInfo = default(PickupSyncInfo);
-			pickupSyncInfo.ItemId = newType;
-			pickupSyncInfo.Serial = ItemSerialGenerator.GenerateNext();
-			pickupSyncInfo.WeightKg = value.Weight;
-			PickupSyncInfo value2 = pickupSyncInfo;
+			PickupSyncInfo value2 = new PickupSyncInfo
+			{
+				ItemId = newType,
+				Serial = ItemSerialGenerator.GenerateNext(),
+				WeightKg = value.Weight
+			};
 			ItemPickupBase resultingPickup = InventoryExtensions.ServerCreatePickup(value, value2, newPosition);
-			AddResultToCombiner(resultingPickup);
-			HandleOldPickup(sourcePickup, newPosition);
+			base.AddResultToCombiner(resultingPickup);
+			this.HandleOldPickup(sourcePickup, newPosition);
 		}
 	}
 
@@ -79,19 +80,19 @@ public class StandardItemProcessor : Scp914ItemProcessor
 		switch (setting)
 		{
 		case Scp914KnobSetting.Rough:
-			array = _roughOutputs;
+			array = this._roughOutputs;
 			break;
 		case Scp914KnobSetting.Coarse:
-			array = _coarseOutputs;
+			array = this._coarseOutputs;
 			break;
 		case Scp914KnobSetting.OneToOne:
-			array = _oneToOneOutputs;
+			array = this._oneToOneOutputs;
 			break;
 		case Scp914KnobSetting.Fine:
-			array = _fineOutputs;
+			array = this._fineOutputs;
 			break;
 		case Scp914KnobSetting.VeryFine:
-			array = _veryFineOutputs;
+			array = this._veryFineOutputs;
 			break;
 		default:
 			return id;

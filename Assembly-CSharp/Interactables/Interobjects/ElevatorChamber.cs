@@ -93,21 +93,21 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 	[SerializeField]
 	private float _serverLagCompensation;
 
-	public bool IsReady => CurSequence == ElevatorSequence.Ready;
+	public bool IsReady => this.CurSequence == ElevatorSequence.Ready;
 
 	public bool IsReadyForUserInput
 	{
 		get
 		{
-			if (IsReady)
+			if (this.IsReady)
 			{
-				return !_queuedDestination.HasValue;
+				return !this._queuedDestination.HasValue;
 			}
 			return false;
 		}
 	}
 
-	public int DestinationLevel => _syncDestinationLevel;
+	public int DestinationLevel => this._syncDestinationLevel;
 
 	public bool GoingUp { get; private set; }
 
@@ -115,7 +115,7 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 	{
 		get
 		{
-			if (!_floorDoors.TryGet(DestinationLevel, out var element))
+			if (!this._floorDoors.TryGet(this.DestinationLevel, out var element))
 			{
 				return null;
 			}
@@ -127,7 +127,7 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 	{
 		get
 		{
-			if (!_floorDoors.TryGet(NextLevel, out var element))
+			if (!this._floorDoors.TryGet(this.NextLevel, out var element))
 			{
 				return null;
 			}
@@ -144,7 +144,7 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 		get
 		{
 			DoorLockReason doorLockReason = DoorLockReason.None;
-			foreach (ElevatorDoor floorDoor in _floorDoors)
+			foreach (ElevatorDoor floorDoor in this._floorDoors)
 			{
 				doorLockReason = (DoorLockReason)((uint)doorLockReason | (uint)floorDoor.ActiveLocks);
 			}
@@ -157,7 +157,7 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 		get
 		{
 			DoorLockReason doorLockReason = (DoorLockReason)65535;
-			foreach (ElevatorDoor floorDoor in _floorDoors)
+			foreach (ElevatorDoor floorDoor in this._floorDoors)
 			{
 				doorLockReason = (DoorLockReason)((uint)doorLockReason & (uint)floorDoor.ActiveLocks);
 			}
@@ -169,17 +169,17 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 	{
 		get
 		{
-			return _dynamicAdminLock;
+			return this._dynamicAdminLock;
 		}
 		set
 		{
-			_dynamicAdminLock = value;
+			this._dynamicAdminLock = value;
 			if (value)
 			{
-				UpdateDynamicLock();
+				this.UpdateDynamicLock();
 				return;
 			}
-			_floorDoors.ForEach(delegate(ElevatorDoor x)
+			this._floorDoors.ForEach(delegate(ElevatorDoor x)
 			{
 				x.NetworkActiveLocks = (ushort)(x.ActiveLocks & 0xFFF7);
 			});
@@ -190,17 +190,17 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 	{
 		get
 		{
-			if (!_cachedBoundsUpToDate)
+			if (!this._cachedBoundsUpToDate)
 			{
-				float num = _boundsSize * (_percentOfRotation * _rotationSizeGrowMultiplier + 1f);
-				_cachedBounds = new Bounds(base.transform.TransformPoint(_boundsCenter), new Vector3(num, _boundsHeight, num));
-				_cachedBoundsUpToDate = true;
+				float num = this._boundsSize * (this._percentOfRotation * this._rotationSizeGrowMultiplier + 1f);
+				this._cachedBounds = new Bounds(base.transform.TransformPoint(this._boundsCenter), new Vector3(num, this._boundsHeight, num));
+				this._cachedBoundsUpToDate = true;
 			}
-			return _cachedBounds;
+			return this._cachedBounds;
 		}
 	}
 
-	public int NextLevel => (DestinationLevel + 1) % _floorDoors.Count;
+	public int NextLevel => (this.DestinationLevel + 1) % this._floorDoors.Count;
 
 	private float TargetLagCompensation
 	{
@@ -210,22 +210,22 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 			{
 				return 0f;
 			}
-			return _serverLagCompensation;
+			return this._serverLagCompensation;
 		}
 	}
 
-	private float SequenceElapsed => (float)_sequenceStopwatch.Elapsed.TotalSeconds;
+	private float SequenceElapsed => (float)this._sequenceStopwatch.Elapsed.TotalSeconds;
 
 	public ElevatorGroup NetworkAssignedGroup
 	{
 		get
 		{
-			return AssignedGroup;
+			return this.AssignedGroup;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref AssignedGroup, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.AssignedGroup, 1uL, null);
 		}
 	}
 
@@ -233,12 +233,12 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 	{
 		get
 		{
-			return _syncDestinationLevel;
+			return this._syncDestinationLevel;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _syncDestinationLevel, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._syncDestinationLevel, 2uL, null);
 		}
 	}
 
@@ -252,7 +252,7 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 
 	public static bool TryGetChamber(ElevatorGroup group, out ElevatorChamber chamber)
 	{
-		foreach (ElevatorChamber allChamber in AllChambers)
+		foreach (ElevatorChamber allChamber in ElevatorChamber.AllChambers)
 		{
 			if (allChamber.AssignedGroup == group)
 			{
@@ -266,16 +266,16 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 
 	private void ForceDestination(int level)
 	{
-		ElevatorDoor elevatorDoor = _floorDoors[level];
-		if (_lastArrivedDestination != null)
+		ElevatorDoor elevatorDoor = this._floorDoors[level];
+		if (this._lastArrivedDestination != null)
 		{
 			if (NetworkServer.active)
 			{
-				_lastArrivedDestination.NetworkTargetState = false;
+				this._lastArrivedDestination.NetworkTargetState = false;
 			}
-			GoingUp = _lastArrivedDestination.TargetPosition.y < elevatorDoor.TargetPosition.y;
-			CurSequence = ElevatorSequence.StartingSequence;
-			_sequenceStopwatch.Restart();
+			this.GoingUp = this._lastArrivedDestination.TargetPosition.y < elevatorDoor.TargetPosition.y;
+			this.CurSequence = ElevatorSequence.StartingSequence;
+			this._sequenceStopwatch.Restart();
 		}
 		else
 		{
@@ -284,49 +284,49 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 				elevatorDoor.NetworkTargetState = true;
 			}
 			base.transform.SetPositionAndRotation(elevatorDoor.TargetPosition, elevatorDoor.transform.rotation);
-			_lastArrivedDestination = elevatorDoor;
-			CurSequence = ElevatorSequence.Ready;
-			UpdateDynamicLock();
-			SetInnerDoor(state: true);
+			this._lastArrivedDestination = elevatorDoor;
+			this.CurSequence = ElevatorSequence.Ready;
+			this.UpdateDynamicLock();
+			this.SetInnerDoor(state: true);
 			this.OnSequenceChanged?.Invoke();
 		}
-		_lastSetDestinationLevel = level;
+		this._lastSetDestinationLevel = level;
 	}
 
 	private void SetInnerDoor(bool state)
 	{
-		_doorAnimator.SetBool(DoorAnimHash, state);
-		_cachedBoundsUpToDate = false;
+		this._doorAnimator.SetBool(ElevatorChamber.DoorAnimHash, state);
+		this._cachedBoundsUpToDate = false;
 	}
 
 	private void Awake()
 	{
-		CurSequence = ElevatorSequence.Ready;
+		this.CurSequence = ElevatorSequence.Ready;
 	}
 
 	private void Start()
 	{
-		AllChambers.Add(this);
-		_floorDoors = ElevatorDoor.GetDoorsForGroup(AssignedGroup);
+		ElevatorChamber.AllChambers.Add(this);
+		this._floorDoors = ElevatorDoor.GetDoorsForGroup(this.AssignedGroup);
 		if (NetworkServer.active)
 		{
-			ServerSetDestination(UnityEngine.Random.Range(0, _floorDoors.Count), allowQueueing: false);
+			this.ServerSetDestination(UnityEngine.Random.Range(0, this._floorDoors.Count), allowQueueing: false);
 		}
 		ElevatorChamber.OnElevatorSpawned?.Invoke(this);
 	}
 
 	private void OnDestroy()
 	{
-		AllChambers.Remove(this);
+		ElevatorChamber.AllChambers.Remove(this);
 		ElevatorChamber.OnElevatorRemoved?.Invoke(this);
 	}
 
 	private void Update()
 	{
-		ElevatorSequence curSequence = CurSequence;
-		UpdateDestination();
-		UpdateSequence();
-		if (curSequence != CurSequence)
+		ElevatorSequence curSequence = this.CurSequence;
+		this.UpdateDestination();
+		this.UpdateSequence();
+		if (curSequence != this.CurSequence)
 		{
 			this.OnSequenceChanged?.Invoke();
 		}
@@ -335,12 +335,12 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 	protected override void OnValidate()
 	{
 		base.OnValidate();
-		_cachedBoundsUpToDate = false;
+		this._cachedBoundsUpToDate = false;
 	}
 
 	public void ServerLockAllDoors(DoorLockReason lockReason, bool state)
 	{
-		foreach (ElevatorDoor floorDoor in _floorDoors)
+		foreach (ElevatorDoor floorDoor in this._floorDoors)
 		{
 			if (state)
 			{
@@ -355,25 +355,25 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 
 	public void ServerSetDestination(int level, bool allowQueueing)
 	{
-		if (IsReady || !allowQueueing)
+		if (this.IsReady || !allowQueueing)
 		{
-			Network_syncDestinationLevel = (byte)level;
-			_queuedDestination = null;
+			this.Network_syncDestinationLevel = (byte)level;
+			this._queuedDestination = null;
 		}
 		else
 		{
-			_queuedDestination = (byte)level;
+			this._queuedDestination = (byte)level;
 		}
 	}
 
 	public void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
 		bool isAllowed = true;
-		if (!IsReadyForUserInput)
+		if (!this.IsReadyForUserInput)
 		{
 			isAllowed = false;
 		}
-		if (DestinationDoor.ActiveLocks != 0)
+		if (this.DestinationDoor.ActiveLocks != 0)
 		{
 			isAllowed = false;
 		}
@@ -385,64 +385,64 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 		PlayerEvents.OnInteractingElevator(obj);
 		if (obj.IsAllowed)
 		{
-			ServerSetDestination(NextLevel, allowQueueing: false);
+			this.ServerSetDestination(this.NextLevel, allowQueueing: false);
 			PlayerEvents.OnInteractedElevator(new PlayerInteractedElevatorEventArgs(ply, this, panel));
 		}
 	}
 
 	private void UpdateDestination()
 	{
-		if (NetworkServer.active && _queuedDestination.HasValue && IsReady)
+		if (NetworkServer.active && this._queuedDestination.HasValue && this.IsReady)
 		{
-			Network_syncDestinationLevel = _queuedDestination.Value;
-			_queuedDestination = null;
+			this.Network_syncDestinationLevel = this._queuedDestination.Value;
+			this._queuedDestination = null;
 		}
-		if (_lastSetDestinationLevel != DestinationLevel && DestinationLevel >= 0 && DestinationLevel < _floorDoors.Count)
+		if (this._lastSetDestinationLevel != this.DestinationLevel && this.DestinationLevel >= 0 && this.DestinationLevel < this._floorDoors.Count)
 		{
-			ForceDestination(DestinationLevel);
+			this.ForceDestination(this.DestinationLevel);
 		}
 	}
 
 	private void UpdateSequence()
 	{
-		switch (CurSequence)
+		switch (this.CurSequence)
 		{
 		case ElevatorSequence.StartingSequence:
-			if (!(SequenceElapsed < TargetLagCompensation))
+			if (!(this.SequenceElapsed < this.TargetLagCompensation))
 			{
-				_travelSounds.ForEach(delegate(AudioSource x)
+				this._travelSounds.ForEach(delegate(AudioSource x)
 				{
 					x.Play();
 				});
-				_sequenceStopwatch.Restart();
-				CurSequence = ElevatorSequence.DoorClosing;
-				SetInnerDoor(state: false);
+				this._sequenceStopwatch.Restart();
+				this.CurSequence = ElevatorSequence.DoorClosing;
+				this.SetInnerDoor(state: false);
 			}
 			break;
 		case ElevatorSequence.MovingAway:
 		case ElevatorSequence.Arriving:
 		{
 			Transform transform = base.transform;
-			Bounds worldspaceBounds = WorldspaceBounds;
+			Bounds worldspaceBounds = this.WorldspaceBounds;
 			transform.GetPositionAndRotation(out var position, out var rotation);
-			UpdateMovement(transform, CurSequence == ElevatorSequence.Arriving);
-			_cachedBoundsUpToDate = false;
+			this.UpdateMovement(transform, this.CurSequence == ElevatorSequence.Arriving);
+			this._cachedBoundsUpToDate = false;
 			Vector3 deltaPos = transform.position - position;
 			Quaternion deltaRot = transform.rotation * Quaternion.Inverse(rotation);
 			ElevatorChamber.OnElevatorMoved?.Invoke(worldspaceBounds, this, deltaPos, deltaRot);
 			break;
 		}
 		case ElevatorSequence.DoorClosing:
-			if (!(SequenceElapsed < _doorCloseTime))
+			if (!(this.SequenceElapsed < this._doorCloseTime))
 			{
-				CurSequence = ElevatorSequence.MovingAway;
-				_sequenceStopwatch.Restart();
+				this.CurSequence = ElevatorSequence.MovingAway;
+				this._sequenceStopwatch.Restart();
 			}
 			break;
 		case ElevatorSequence.DoorOpening:
-			if (!(SequenceElapsed < _doorOpenTime + TargetLagCompensation))
+			if (!(this.SequenceElapsed < this._doorOpenTime + this.TargetLagCompensation))
 			{
-				CurSequence = ElevatorSequence.Ready;
+				this.CurSequence = ElevatorSequence.Ready;
 			}
 			break;
 		}
@@ -450,36 +450,36 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 
 	private void UpdateMovement(Transform t, bool arriving)
 	{
-		ElevatorDoor elevatorDoor = _floorDoors[DestinationLevel];
-		float num = _animationTime - TargetLagCompensation;
-		float num2 = Mathf.Clamp01(SequenceElapsed / num);
-		UpdateRotation(t, elevatorDoor, num2, arriving);
+		ElevatorDoor elevatorDoor = this._floorDoors[this.DestinationLevel];
+		float num = this._animationTime - this.TargetLagCompensation;
+		float num2 = Mathf.Clamp01(this.SequenceElapsed / num);
+		this.UpdateRotation(t, elevatorDoor, num2, arriving);
 		if (arriving)
 		{
-			Vector3 a = (GoingUp ? elevatorDoor.BottomPosition : elevatorDoor.TopPosition);
-			t.position = Vector3.Lerp(a, elevatorDoor.TargetPosition, _translationCurve.Evaluate(num2));
+			Vector3 a = (this.GoingUp ? elevatorDoor.BottomPosition : elevatorDoor.TopPosition);
+			t.position = Vector3.Lerp(a, elevatorDoor.TargetPosition, this._translationCurve.Evaluate(num2));
 			if (!(num2 < 1f))
 			{
 				if (NetworkServer.active)
 				{
 					elevatorDoor.NetworkTargetState = true;
 				}
-				SetInnerDoor(state: true);
-				_lastArrivedDestination = elevatorDoor;
-				UpdateDynamicLock();
-				CurSequence = ElevatorSequence.DoorOpening;
-				_sequenceStopwatch.Restart();
+				this.SetInnerDoor(state: true);
+				this._lastArrivedDestination = elevatorDoor;
+				this.UpdateDynamicLock();
+				this.CurSequence = ElevatorSequence.DoorOpening;
+				this._sequenceStopwatch.Restart();
 			}
 		}
 		else
 		{
-			Vector3 b = (GoingUp ? _lastArrivedDestination.TopPosition : _lastArrivedDestination.BottomPosition);
-			t.position = Vector3.Lerp(_lastArrivedDestination.TargetPosition, b, 1f - _translationCurve.Evaluate(1f - num2));
+			Vector3 b = (this.GoingUp ? this._lastArrivedDestination.TopPosition : this._lastArrivedDestination.BottomPosition);
+			t.position = Vector3.Lerp(this._lastArrivedDestination.TargetPosition, b, 1f - this._translationCurve.Evaluate(1f - num2));
 			if (!(num2 < 1f))
 			{
 				t.SetParent(elevatorDoor.transform.parent);
-				CurSequence = ElevatorSequence.Arriving;
-				_sequenceStopwatch.Restart();
+				this.CurSequence = ElevatorSequence.Arriving;
+				this._sequenceStopwatch.Restart();
 			}
 		}
 	}
@@ -490,29 +490,29 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 		{
 			f += 1f;
 		}
-		f = Mathf.InverseLerp(_rotationTime, 2f - _rotationTime, f);
-		_percentOfRotation = (arriving ? (1f - f) : f);
-		Quaternion rotation = _lastArrivedDestination.transform.rotation;
+		f = Mathf.InverseLerp(this._rotationTime, 2f - this._rotationTime, f);
+		this._percentOfRotation = (arriving ? (1f - f) : f);
+		Quaternion rotation = this._lastArrivedDestination.transform.rotation;
 		Quaternion rotation2 = dest.transform.rotation;
-		t.rotation = Quaternion.Lerp(rotation, rotation2, _rotationCurve.Evaluate(f));
+		t.rotation = Quaternion.Lerp(rotation, rotation2, this._rotationCurve.Evaluate(f));
 	}
 
 	private void UpdateDynamicLock()
 	{
-		if (!_dynamicAdminLock)
+		if (!this._dynamicAdminLock)
 		{
 			return;
 		}
-		for (int i = 0; i < _floorDoors.Count; i++)
+		for (int i = 0; i < this._floorDoors.Count; i++)
 		{
-			if (i == DestinationLevel)
+			if (i == this.DestinationLevel)
 			{
-				ElevatorDoor elevatorDoor = _floorDoors[i];
+				ElevatorDoor elevatorDoor = this._floorDoors[i];
 				elevatorDoor.NetworkActiveLocks = (ushort)(elevatorDoor.ActiveLocks & 0xFFF7);
 			}
 			else
 			{
-				ElevatorDoor elevatorDoor2 = _floorDoors[i];
+				ElevatorDoor elevatorDoor2 = this._floorDoors[i];
 				elevatorDoor2.NetworkActiveLocks = (ushort)(elevatorDoor2.ActiveLocks | 8);
 			}
 		}
@@ -521,9 +521,9 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 	private void OnDrawGizmosSelected()
 	{
 		Gizmos.color = Color.green;
-		Gizmos.DrawWireCube(WorldspaceBounds.center, WorldspaceBounds.size);
+		Gizmos.DrawWireCube(this.WorldspaceBounds.center, this.WorldspaceBounds.size);
 		Gizmos.color = new Color(0f, 1f, 0f, 0.1f);
-		Gizmos.DrawCube(WorldspaceBounds.center, WorldspaceBounds.size);
+		Gizmos.DrawCube(this.WorldspaceBounds.center, this.WorldspaceBounds.size);
 	}
 
 	public override bool Weaved()
@@ -536,18 +536,18 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			GeneratedNetworkCode._Write_Interactables_002EInterobjects_002EElevatorGroup(writer, AssignedGroup);
-			NetworkWriterExtensions.WriteByte(writer, _syncDestinationLevel);
+			GeneratedNetworkCode._Write_Interactables_002EInterobjects_002EElevatorGroup(writer, this.AssignedGroup);
+			NetworkWriterExtensions.WriteByte(writer, this._syncDestinationLevel);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			GeneratedNetworkCode._Write_Interactables_002EInterobjects_002EElevatorGroup(writer, AssignedGroup);
+			GeneratedNetworkCode._Write_Interactables_002EInterobjects_002EElevatorGroup(writer, this.AssignedGroup);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _syncDestinationLevel);
+			NetworkWriterExtensions.WriteByte(writer, this._syncDestinationLevel);
 		}
 	}
 
@@ -556,18 +556,18 @@ public class ElevatorChamber : NetworkBehaviour, IServerInteractable, IInteracta
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref AssignedGroup, null, GeneratedNetworkCode._Read_Interactables_002EInterobjects_002EElevatorGroup(reader));
-			GeneratedSyncVarDeserialize(ref _syncDestinationLevel, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this.AssignedGroup, null, GeneratedNetworkCode._Read_Interactables_002EInterobjects_002EElevatorGroup(reader));
+			base.GeneratedSyncVarDeserialize(ref this._syncDestinationLevel, null, NetworkReaderExtensions.ReadByte(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref AssignedGroup, null, GeneratedNetworkCode._Read_Interactables_002EInterobjects_002EElevatorGroup(reader));
+			base.GeneratedSyncVarDeserialize(ref this.AssignedGroup, null, GeneratedNetworkCode._Read_Interactables_002EInterobjects_002EElevatorGroup(reader));
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _syncDestinationLevel, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._syncDestinationLevel, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 	}
 }

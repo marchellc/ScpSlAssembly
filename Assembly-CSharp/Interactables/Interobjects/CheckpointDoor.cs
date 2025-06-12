@@ -46,14 +46,14 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 	{
 		get
 		{
-			return (SequenceState)_curSequence;
+			return (SequenceState)this._curSequence;
 		}
 		set
 		{
 			byte b = (byte)value;
-			if (_curSequence != b)
+			if (this._curSequence != b)
 			{
-				Network_curSequence = b;
+				this.Network_curSequence = b;
 				if (NetworkServer.active)
 				{
 					this.OnSequenceChanged?.Invoke();
@@ -68,7 +68,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 		{
 			float num = 0f;
 			int num2 = 0;
-			DoorVariant[] subDoors = SubDoors;
+			DoorVariant[] subDoors = this.SubDoors;
 			for (int i = 0; i < subDoors.Length; i++)
 			{
 				if (subDoors[i] is IDamageableDoor damageableDoor)
@@ -81,7 +81,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 		}
 		set
 		{
-			DoorVariant[] subDoors = SubDoors;
+			DoorVariant[] subDoors = this.SubDoors;
 			for (int i = 0; i < subDoors.Length; i++)
 			{
 				if (subDoors[i] is BreakableDoor breakableDoor)
@@ -98,7 +98,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 		{
 			float num = 0f;
 			int num2 = 0;
-			DoorVariant[] subDoors = SubDoors;
+			DoorVariant[] subDoors = this.SubDoors;
 			for (int i = 0; i < subDoors.Length; i++)
 			{
 				if (subDoors[i] is IDamageableDoor damageableDoor)
@@ -111,7 +111,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 		}
 		set
 		{
-			DoorVariant[] subDoors = SubDoors;
+			DoorVariant[] subDoors = this.SubDoors;
 			for (int i = 0; i < subDoors.Length; i++)
 			{
 				if (subDoors[i] is BreakableDoor breakableDoor)
@@ -126,7 +126,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 	{
 		get
 		{
-			DoorVariant[] subDoors = SubDoors;
+			DoorVariant[] subDoors = this.SubDoors;
 			for (int i = 0; i < subDoors.Length; i++)
 			{
 				if (!(subDoors[i] is IDamageableDoor damageableDoor))
@@ -142,7 +142,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 		}
 		set
 		{
-			DoorVariant[] subDoors = SubDoors;
+			DoorVariant[] subDoors = this.SubDoors;
 			for (int i = 0; i < subDoors.Length; i++)
 			{
 				if (subDoors[i] is IDamageableDoor damageableDoor)
@@ -157,12 +157,12 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 	{
 		get
 		{
-			return _curSequence;
+			return this._curSequence;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _curSequence, 8uL, SequenceHook);
+			base.GeneratedSyncVarSetter(value, ref this._curSequence, 8uL, SequenceHook);
 		}
 	}
 
@@ -181,7 +181,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 	protected override void Awake()
 	{
 		base.Awake();
-		SequenceCtrl.Init(this);
+		this.SequenceCtrl.Init(this);
 		ButtonVariant[] buttons = base.Buttons;
 		for (int i = 0; i < buttons.Length; i++)
 		{
@@ -190,11 +190,11 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 				checkpointKeycardButton.Init(this);
 			}
 		}
-		OnSequenceChanged += delegate
+		this.OnSequenceChanged += delegate
 		{
-			if (CurSequence == SequenceState.ClosingWarning)
+			if (this.CurSequence == SequenceState.ClosingWarning)
 			{
-				PlayWarningSound();
+				this.PlayWarningSound();
 			}
 		};
 	}
@@ -202,28 +202,28 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 	protected override void Update()
 	{
 		base.Update();
-		if (_prevDestroyed != IsDestroyed)
+		if (this._prevDestroyed != this.IsDestroyed)
 		{
 			this.OnDestroyedChanged?.Invoke();
-			_prevDestroyed = !_prevDestroyed;
+			this._prevDestroyed = !this._prevDestroyed;
 		}
 		if (NetworkServer.active)
 		{
-			CurSequence = SequenceCtrl.UpdateSequence();
+			this.CurSequence = this.SequenceCtrl.UpdateSequence();
 		}
 	}
 
 	public override bool AllowInteracting(ReferenceHub ply, byte colliderId)
 	{
-		if (IsDestroyed)
+		if (this.IsDestroyed)
 		{
 			return false;
 		}
-		if (CurSequence != 0)
+		if (this.CurSequence != SequenceState.Idle)
 		{
 			return false;
 		}
-		DoorVariant[] subDoors = SubDoors;
+		DoorVariant[] subDoors = this.SubDoors;
 		for (int i = 0; i < subDoors.Length; i++)
 		{
 			if (!subDoors[i].AllowInteracting(null, colliderId))
@@ -236,12 +236,12 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 
 	public override float GetExactState()
 	{
-		if (SubDoors.Length == 0)
+		if (this.SubDoors.Length == 0)
 		{
 			return 0f;
 		}
 		float num = 0f;
-		DoorVariant[] subDoors = SubDoors;
+		DoorVariant[] subDoors = this.SubDoors;
 		foreach (DoorVariant doorVariant in subDoors)
 		{
 			num = Mathf.Max(num, doorVariant.GetExactState());
@@ -251,7 +251,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 
 	public override bool IsConsideredOpen()
 	{
-		DoorVariant[] subDoors = SubDoors;
+		DoorVariant[] subDoors = this.SubDoors;
 		for (int i = 0; i < subDoors.Length; i++)
 		{
 			if (subDoors[i].IsConsideredOpen())
@@ -264,7 +264,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 
 	public override bool AnticheatPassageApproved()
 	{
-		DoorVariant[] subDoors = SubDoors;
+		DoorVariant[] subDoors = this.SubDoors;
 		for (int i = 0; i < subDoors.Length; i++)
 		{
 			if (subDoors[i].AnticheatPassageApproved())
@@ -277,7 +277,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 
 	public void ToggleAllDoors(bool newState)
 	{
-		DoorVariant[] subDoors = SubDoors;
+		DoorVariant[] subDoors = this.SubDoors;
 		foreach (DoorVariant doorVariant in subDoors)
 		{
 			if (!(doorVariant is IDamageableDoor { IsDestroyed: not false }))
@@ -290,7 +290,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 	public bool ServerDamage(float hp, DoorDamageType type, Footprint attacker = default(Footprint))
 	{
 		bool flag = false;
-		DoorVariant[] subDoors = SubDoors;
+		DoorVariant[] subDoors = this.SubDoors;
 		for (int i = 0; i < subDoors.Length; i++)
 		{
 			if (subDoors[i] is IDamageableDoor damageableDoor)
@@ -304,7 +304,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 	public bool ServerRepair()
 	{
 		bool flag = false;
-		DoorVariant[] subDoors = SubDoors;
+		DoorVariant[] subDoors = this.SubDoors;
 		for (int i = 0; i < subDoors.Length; i++)
 		{
 			if (subDoors[i] is IDamageableDoor damageableDoor)
@@ -318,7 +318,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 	public float GetHealthPercent()
 	{
 		float num = 1f;
-		DoorVariant[] subDoors = SubDoors;
+		DoorVariant[] subDoors = this.SubDoors;
 		for (int i = 0; i < subDoors.Length; i++)
 		{
 			if (subDoors[i] is IDamageableDoor damageableDoor)
@@ -340,38 +340,38 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 	internal override void TargetStateChanged()
 	{
 		base.TargetStateChanged();
-		_loudSource.Play();
+		this._loudSource.Play();
 	}
 
 	public override void LockBypassDenied(ReferenceHub ply, byte colliderId)
 	{
-		RpcPlayDeniedBeep();
+		this.RpcPlayDeniedBeep();
 	}
 
 	public override void PermissionsDenied(ReferenceHub ply, byte colliderId)
 	{
-		RpcPlayDeniedBeep();
-		PlayDeniedButtonAnims(ply.GetCombinedPermissions(this));
+		this.RpcPlayDeniedBeep();
+		this.PlayDeniedButtonAnims(ply.GetCombinedPermissions(this));
 	}
 
 	[ClientRpc]
 	public void RpcPlayWarningSound()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void Interactables.Interobjects.CheckpointDoor::RpcPlayWarningSound()", -1870757840, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Interactables.Interobjects.CheckpointDoor::RpcPlayWarningSound()", -1870757840, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	public void PlayWarningSound()
 	{
-		_beepSource.PlayOneShot(_warningClip);
+		this._beepSource.PlayOneShot(this._warningClip);
 	}
 
 	[ClientRpc]
 	private void RpcPlayDeniedBeep()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void Interactables.Interobjects.CheckpointDoor::RpcPlayDeniedBeep()", -1557414586, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Interactables.Interobjects.CheckpointDoor::RpcPlayDeniedBeep()", -1557414586, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -380,7 +380,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		GeneratedNetworkCode._Write_Interactables_002EInterobjects_002EDoorUtils_002EDoorPermissionFlags(writer, perms);
-		SendRPCInternal("System.Void Interactables.Interobjects.CheckpointDoor::PlayDeniedButtonAnims(Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", 534590385, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Interactables.Interobjects.CheckpointDoor::PlayDeniedButtonAnims(Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", 534590385, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -391,7 +391,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 
 	protected void UserCode_RpcPlayWarningSound()
 	{
-		PlayWarningSound();
+		this.PlayWarningSound();
 	}
 
 	protected static void InvokeUserCode_RpcPlayWarningSound(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -408,7 +408,7 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 
 	protected void UserCode_RpcPlayDeniedBeep()
 	{
-		_beepSource.PlayOneShot(_deniedClip);
+		this._beepSource.PlayOneShot(this._deniedClip);
 	}
 
 	protected static void InvokeUserCode_RpcPlayDeniedBeep(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -459,13 +459,13 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _curSequence);
+			NetworkWriterExtensions.WriteByte(writer, this._curSequence);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _curSequence);
+			NetworkWriterExtensions.WriteByte(writer, this._curSequence);
 		}
 	}
 
@@ -474,13 +474,13 @@ public class CheckpointDoor : DoorVariant, IDamageableDoor
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _curSequence, SequenceHook, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._curSequence, SequenceHook, NetworkReaderExtensions.ReadByte(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 8L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _curSequence, SequenceHook, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._curSequence, SequenceHook, NetworkReaderExtensions.ReadByte(reader));
 		}
 	}
 }

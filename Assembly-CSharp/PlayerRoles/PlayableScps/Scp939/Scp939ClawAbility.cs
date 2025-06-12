@@ -26,9 +26,9 @@ public class Scp939ClawAbility : ScpAttackAbilityBase<Scp939Role>
 	{
 		get
 		{
-			if (base.CanTriggerAbility && _focusAbility.State == 0f)
+			if (base.CanTriggerAbility && this._focusAbility.State == 0f)
 			{
-				return !_cloudAbility.TargetState;
+				return !this._cloudAbility.TargetState;
 			}
 			return false;
 		}
@@ -41,7 +41,7 @@ public class Scp939ClawAbility : ScpAttackAbilityBase<Scp939Role>
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
-		if (_focusAbility.State == 0f)
+		if (this._focusAbility.State == 0f)
 		{
 			base.ServerProcessCmd(reader);
 		}
@@ -49,29 +49,29 @@ public class Scp939ClawAbility : ScpAttackAbilityBase<Scp939Role>
 
 	protected override void DamagePlayers()
 	{
-		int num = Mathf.Max(0, DetectedPlayers.Count - 1);
-		ReferenceHub primaryTarget = DetectedPlayers.GetPrimaryTarget(base.Owner.PlayerCameraReference);
-		foreach (ReferenceHub detectedPlayer in DetectedPlayers)
+		int num = Mathf.Max(0, base.DetectedPlayers.Count - 1);
+		ReferenceHub primaryTarget = base.DetectedPlayers.GetPrimaryTarget(base.Owner.PlayerCameraReference);
+		foreach (ReferenceHub detectedPlayer in base.DetectedPlayers)
 		{
 			if (detectedPlayer == primaryTarget)
 			{
-				DamagePlayer(detectedPlayer, DamageAmount);
+				this.DamagePlayer(detectedPlayer, this.DamageAmount);
 			}
 			else
 			{
-				DamagePlayer(detectedPlayer, DamageAmount / (float)num);
+				this.DamagePlayer(detectedPlayer, this.DamageAmount / (float)num);
 			}
 		}
 	}
 
 	protected override void DamagePlayer(ReferenceHub hub, float damage)
 	{
-		Scp939AttackingEventArgs scp939AttackingEventArgs = new Scp939AttackingEventArgs(base.Owner, hub, damage);
-		Scp939Events.OnAttacking(scp939AttackingEventArgs);
-		if (scp939AttackingEventArgs.IsAllowed)
+		Scp939AttackingEventArgs e = new Scp939AttackingEventArgs(base.Owner, hub, damage);
+		Scp939Events.OnAttacking(e);
+		if (e.IsAllowed)
 		{
-			hub = scp939AttackingEventArgs.Target.ReferenceHub;
-			damage = scp939AttackingEventArgs.Damage;
+			hub = e.Target.ReferenceHub;
+			damage = e.Damage;
 			base.DamagePlayer(hub, damage);
 			Scp939Events.OnAttacked(new Scp939AttackedEventArgs(base.Owner, hub, damage));
 		}
@@ -80,7 +80,7 @@ public class Scp939ClawAbility : ScpAttackAbilityBase<Scp939Role>
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp939FocusAbility>(out _focusAbility);
-		GetSubroutine<Scp939AmnesticCloudAbility>(out _cloudAbility);
+		base.GetSubroutine<Scp939FocusAbility>(out this._focusAbility);
+		base.GetSubroutine<Scp939AmnesticCloudAbility>(out this._cloudAbility);
 	}
 }

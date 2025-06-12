@@ -16,7 +16,7 @@ public class RefreshCommandsCommand : ICommand
 
 	public RefreshCommandsCommand(ICommandHandler commandHandler)
 	{
-		_commandHandler = commandHandler;
+		this._commandHandler = commandHandler;
 	}
 
 	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
@@ -25,8 +25,8 @@ public class RefreshCommandsCommand : ICommand
 		{
 			return false;
 		}
-		_commandHandler.ClearCommands();
-		_commandHandler.LoadGeneratedCommands();
+		this._commandHandler.ClearCommands();
+		this._commandHandler.LoadGeneratedCommands();
 		response = "Successfully reloaded all commands!";
 		return true;
 	}

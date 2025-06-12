@@ -5,7 +5,6 @@ using PlayerRoles.FirstPersonControl;
 using PlayerRoles.Ragdolls;
 using PlayerRoles.Spectating;
 using PlayerRoles.Subroutines;
-using Respawning.NamingRules;
 using UnityEngine;
 
 namespace PlayerRoles.PlayableScps.Scp3114;
@@ -31,13 +30,13 @@ public class Scp3114Identity : StandardSubroutine<Scp3114Role>, ICustomNicknameD
 		{
 			get
 			{
-				return _status;
+				return this._status;
 			}
 			set
 			{
-				if (_status != value)
+				if (this._status != value)
 				{
-					_status = value;
+					this._status = value;
 					this.OnStatusChanged?.Invoke();
 				}
 			}
@@ -47,9 +46,9 @@ public class Scp3114Identity : StandardSubroutine<Scp3114Role>, ICustomNicknameD
 		{
 			get
 			{
-				if (!(Ragdoll == null))
+				if (!(this.Ragdoll == null))
 				{
-					return Ragdoll.Info.RoleType;
+					return this.Ragdoll.Info.RoleType;
 				}
 				return RoleTypeId.None;
 			}
@@ -59,9 +58,9 @@ public class Scp3114Identity : StandardSubroutine<Scp3114Role>, ICustomNicknameD
 
 		public void Reset()
 		{
-			_status = DisguiseStatus.None;
-			Ragdoll = null;
-			UnitNameId = 0;
+			this._status = DisguiseStatus.None;
+			this.Ragdoll = null;
+			this.UnitNameId = 0;
 		}
 	}
 
@@ -87,11 +86,11 @@ public class Scp3114Identity : StandardSubroutine<Scp3114Role>, ICustomNicknameD
 	{
 		get
 		{
-			if (CurIdentity.Status != DisguiseStatus.Active)
+			if (this.CurIdentity.Status != DisguiseStatus.Active)
 			{
 				return base.Role.RoleColor;
 			}
-			if (!PlayerRoleLoader.TryGetRoleTemplate<HumanRole>(CurIdentity.StolenRole, out var result))
+			if (!PlayerRoleLoader.TryGetRoleTemplate<HumanRole>(this.CurIdentity.StolenRole, out var result))
 			{
 				return base.Role.RoleColor;
 			}
@@ -101,9 +100,9 @@ public class Scp3114Identity : StandardSubroutine<Scp3114Role>, ICustomNicknameD
 
 	private void OnRagdollRemoved(BasicRagdoll ragdoll)
 	{
-		if (!(CurIdentity.Ragdoll != ragdoll))
+		if (!(this.CurIdentity.Ragdoll != ragdoll))
 		{
-			CurIdentity.Status = DisguiseStatus.None;
+			this.CurIdentity.Status = DisguiseStatus.None;
 		}
 	}
 
@@ -111,29 +110,29 @@ public class Scp3114Identity : StandardSubroutine<Scp3114Role>, ICustomNicknameD
 	{
 		if (NetworkServer.active)
 		{
-			ServerSendRpc(player);
+			base.ServerSendRpc(player);
 		}
 	}
 
 	private void Update()
 	{
-		UpdateWarningAudio();
-		if (NetworkServer.active && CurIdentity.Status == DisguiseStatus.Active && RemainingDuration.IsReady)
+		this.UpdateWarningAudio();
+		if (NetworkServer.active && this.CurIdentity.Status == DisguiseStatus.Active && this.RemainingDuration.IsReady)
 		{
-			CurIdentity.Status = DisguiseStatus.None;
-			ServerResendIdentity();
+			this.CurIdentity.Status = DisguiseStatus.None;
+			this.ServerResendIdentity();
 		}
 	}
 
 	private void UpdateWarningAudio()
 	{
-		double num = RemainingDuration.Remaining;
-		bool flag = num < (double)_warningTimeSeconds && num > 0.0;
-		if (_revealWarningSource.isPlaying)
+		double num = this.RemainingDuration.Remaining;
+		bool flag = num < (double)this._warningTimeSeconds && num > 0.0;
+		if (this._revealWarningSource.isPlaying)
 		{
 			if (!flag)
 			{
-				_revealWarningSource.Stop();
+				this._revealWarningSource.Stop();
 			}
 		}
 		else
@@ -142,24 +141,24 @@ public class Scp3114Identity : StandardSubroutine<Scp3114Role>, ICustomNicknameD
 			{
 				return;
 			}
-			_revealWarningSource.Play();
+			this._revealWarningSource.Play();
 		}
-		_revealWarningSource.mute = !base.Role.IsLocalPlayer && !base.Owner.IsLocallySpectated();
+		this._revealWarningSource.mute = !base.Role.IsLocalPlayer && !base.Owner.IsLocallySpectated();
 	}
 
 	private void OnIdentityStatusChanged()
 	{
-		if (CurIdentity.Status == DisguiseStatus.Active)
+		if (this.CurIdentity.Status == DisguiseStatus.Active)
 		{
-			_wasDisguised = true;
-			RemainingDuration.Trigger(_disguiseDurationSeconds);
+			this._wasDisguised = true;
+			this.RemainingDuration.Trigger(this._disguiseDurationSeconds);
 			return;
 		}
-		RemainingDuration.Clear();
-		if (_wasDisguised)
+		this.RemainingDuration.Clear();
+		if (this._wasDisguised)
 		{
-			_wasDisguised = false;
-			_revealEffectSources.ForEach(delegate(AudioSource x)
+			this._wasDisguised = false;
+			this._revealEffectSources.ForEach(delegate(AudioSource x)
 			{
 				x.Play();
 			});
@@ -169,7 +168,7 @@ public class Scp3114Identity : StandardSubroutine<Scp3114Role>, ICustomNicknameD
 	protected override void Awake()
 	{
 		base.Awake();
-		CurIdentity.OnStatusChanged += OnIdentityStatusChanged;
+		this.CurIdentity.OnStatusChanged += OnIdentityStatusChanged;
 	}
 
 	public override void SpawnObject()
@@ -182,48 +181,29 @@ public class Scp3114Identity : StandardSubroutine<Scp3114Role>, ICustomNicknameD
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_wasDisguised = false;
-		RemainingDuration.Clear();
-		CurIdentity.Status = DisguiseStatus.None;
+		this._wasDisguised = false;
+		this.RemainingDuration.Clear();
+		this.CurIdentity.Status = DisguiseStatus.None;
 		ReferenceHub.OnPlayerAdded -= OnPlayerAdded;
 		RagdollManager.OnRagdollRemoved -= OnRagdollRemoved;
 	}
 
 	public void WriteNickname(StringBuilder sb)
 	{
-		if (ReferenceHub.TryGetLocalHub(out var hub) && !HitboxIdentity.IsEnemy(base.Owner, hub))
-		{
-			NicknameSync.WriteDefaultInfo(base.Owner, sb, null);
-			return;
-		}
-		if (CurIdentity.Status != DisguiseStatus.Active || !PlayerRoleLoader.TryGetRoleTemplate<HumanRole>(CurIdentity.StolenRole, out var result))
-		{
-			sb.Append(base.CastRole.RoleName);
-			return;
-		}
-		RagdollData info = CurIdentity.Ragdoll.Info;
-		sb.AppendLine(info.Nickname);
-		sb.Append(result.RoleName);
-		Team team = result.Team;
-		if (NamingRulesManager.TryGetNamingRule(team, out var rule))
-		{
-			string unitName = NamingRulesManager.ClientFetchReceived(team, CurIdentity.UnitNameId);
-			rule.AppendName(sb, unitName, info.RoleType, base.Owner.nicknameSync.ShownPlayerInfo);
-		}
 	}
 
 	public void ServerResendIdentity()
 	{
-		ServerSendRpc(toAll: true);
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		RemainingDuration.WriteCooldown(writer);
-		writer.WriteNetworkBehaviour(CurIdentity.Ragdoll);
-		writer.WriteByte(CurIdentity.UnitNameId);
-		writer.WriteByte((byte)CurIdentity.Status);
+		this.RemainingDuration.WriteCooldown(writer);
+		writer.WriteNetworkBehaviour(this.CurIdentity.Ragdoll);
+		writer.WriteByte(this.CurIdentity.UnitNameId);
+		writer.WriteByte((byte)this.CurIdentity.Status);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
@@ -231,10 +211,10 @@ public class Scp3114Identity : StandardSubroutine<Scp3114Role>, ICustomNicknameD
 		base.ClientProcessRpc(reader);
 		if (!NetworkServer.active)
 		{
-			RemainingDuration.ReadCooldown(reader);
-			CurIdentity.Ragdoll = reader.ReadNetworkBehaviour<BasicRagdoll>();
-			CurIdentity.UnitNameId = reader.ReadByte();
-			CurIdentity.Status = (DisguiseStatus)reader.ReadByte();
+			this.RemainingDuration.ReadCooldown(reader);
+			this.CurIdentity.Ragdoll = reader.ReadNetworkBehaviour<BasicRagdoll>();
+			this.CurIdentity.UnitNameId = reader.ReadByte();
+			this.CurIdentity.Status = (DisguiseStatus)reader.ReadByte();
 		}
 	}
 }

@@ -20,21 +20,21 @@ public class AttachmentSummaryEntry : MonoBehaviour
 
 	public void Setup(string label, int valuesLen, Func<int, string> valueSelector, bool isOdd)
 	{
-		if (isOdd && _firstSetup)
+		if (isOdd && this._firstSetup)
 		{
-			GetComponent<Image>().color = _oddColor;
-			_firstSetup = false;
+			base.GetComponent<Image>().color = this._oddColor;
+			this._firstSetup = false;
 		}
-		_label.text = label;
-		for (int i = 0; i < _valuesBank.Length; i++)
+		this._label.text = label;
+		for (int i = 0; i < this._valuesBank.Length; i++)
 		{
 			if (i >= valuesLen)
 			{
-				_valuesBank[i].gameObject.SetActive(value: false);
+				this._valuesBank[i].gameObject.SetActive(value: false);
 				continue;
 			}
-			_valuesBank[i].gameObject.SetActive(value: true);
-			_valuesBank[i].text = valueSelector(i);
+			this._valuesBank[i].gameObject.SetActive(value: true);
+			this._valuesBank[i].text = valueSelector(i);
 		}
 	}
 }

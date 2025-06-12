@@ -17,26 +17,26 @@ public static class SafeLocationFinder
 
 	public static List<Pose> GetLocations(Predicate<RoomCullingConnection> connectionFilter, Predicate<DoorVariant> doorFilter)
 	{
-		ResultsNonAlloc.Clear();
-		GetLocations(ResultsNonAlloc, connectionFilter, doorFilter);
-		return ResultsNonAlloc;
+		SafeLocationFinder.ResultsNonAlloc.Clear();
+		SafeLocationFinder.GetLocations(SafeLocationFinder.ResultsNonAlloc, connectionFilter, doorFilter);
+		return SafeLocationFinder.ResultsNonAlloc;
 	}
 
 	public static void GetLocations(List<Pose> results, Predicate<RoomCullingConnection> connectionFilter, Predicate<DoorVariant> doorFilter)
 	{
-		DuplicatePreventer.Clear();
+		SafeLocationFinder.DuplicatePreventer.Clear();
 		foreach (RoomCullingConnection allInstance in RoomCullingConnection.AllInstances)
 		{
 			if (connectionFilter == null || connectionFilter(allInstance))
 			{
-				AddTransform(allInstance.transform, results);
+				SafeLocationFinder.AddTransform(allInstance.transform, results);
 			}
 		}
 		foreach (DoorVariant allDoor in DoorVariant.AllDoors)
 		{
 			if (doorFilter == null || doorFilter(allDoor))
 			{
-				AddTransform(allDoor.transform, results);
+				SafeLocationFinder.AddTransform(allDoor.transform, results);
 			}
 		}
 	}
@@ -47,7 +47,7 @@ public static class SafeLocationFinder
 		float radius = charController.radius;
 		float num = Mathf.Lerp(radius, range, UnityEngine.Random.value);
 		Vector3 vector = Vector3.up * charController.height / 2f;
-		Vector3 vector2 = position + charController.center + GroundOffset + Vector3.up * radius;
+		Vector3 vector2 = position + charController.center + SafeLocationFinder.GroundOffset + Vector3.up * radius;
 		if (!Physics.SphereCast(vector2, radius, direction, out var hitInfo, num + radius, FpcStateProcessor.Mask))
 		{
 			return vector2 + direction * num + vector;
@@ -62,14 +62,14 @@ public static class SafeLocationFinder
 		{
 			vector = -vector;
 		}
-		return GetSafePosition(pose.position, vector, range, charController);
+		return SafeLocationFinder.GetSafePosition(pose.position, vector, range, charController);
 	}
 
 	private static void AddTransform(Transform tr, List<Pose> target)
 	{
 		tr.GetPositionAndRotation(out var position, out var rotation);
 		Pose item = new Pose(position, rotation);
-		if (DuplicatePreventer.Add(item))
+		if (SafeLocationFinder.DuplicatePreventer.Add(item))
 		{
 			target.Add(item);
 		}

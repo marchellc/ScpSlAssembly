@@ -10,14 +10,14 @@ public static class ReservedSlot
 
 	static ReservedSlot()
 	{
-		Users = new HashSet<string>();
-		Reload();
+		ReservedSlot.Users = new HashSet<string>();
+		ReservedSlot.Reload();
 	}
 
 	public static void Reload()
 	{
 		string path = ConfigSharing.Paths[3] + "UserIDReservedSlots.txt";
-		Users.Clear();
+		ReservedSlot.Users.Clear();
 		if (!File.Exists(path))
 		{
 			FileManager.WriteStringToFile("#Put one UserID (eg. 76561198071934271@steam or 274613382353518592@discord) per line. Lines prefixed with \"#\" are ignored.", path);
@@ -30,7 +30,7 @@ public static class ReservedSlot
 			{
 				if (!string.IsNullOrWhiteSpace(text) && !text.TrimStart().StartsWith("#", StringComparison.Ordinal) && text.Contains("@"))
 				{
-					Users.Add(text.Trim());
+					ReservedSlot.Users.Add(text.Trim());
 				}
 			}
 		}
@@ -39,7 +39,7 @@ public static class ReservedSlot
 
 	public static bool HasReservedSlot(string userId)
 	{
-		if (!Users.Contains(userId.Trim()))
+		if (!ReservedSlot.Users.Contains(userId.Trim()))
 		{
 			return !PlayerAuthenticationManager.OnlineMode;
 		}

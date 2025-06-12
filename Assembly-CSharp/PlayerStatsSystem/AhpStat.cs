@@ -27,14 +27,14 @@ public class AhpStat : SyncedStatBase
 
 		public AhpProcess(float startAmount, float limit, float decay, float efficacy, float sustain, bool persistant)
 		{
-			_killCodeAI++;
-			CurrentAmount = startAmount;
-			Limit = limit;
-			DecayRate = decay;
-			Efficacy = efficacy;
-			SustainTime = sustain;
-			Persistant = persistant;
-			KillCode = _killCodeAI;
+			AhpProcess._killCodeAI++;
+			this.CurrentAmount = startAmount;
+			this.Limit = limit;
+			this.DecayRate = decay;
+			this.Efficacy = efficacy;
+			this.SustainTime = sustain;
+			this.Persistant = persistant;
+			this.KillCode = AhpProcess._killCodeAI;
 		}
 	}
 
@@ -56,21 +56,21 @@ public class AhpStat : SyncedStatBase
 	{
 		get
 		{
-			return _maxSoFar;
+			return this._maxSoFar;
 		}
 		set
 		{
-			_maxSoFar = value;
-			MaxValueDirty = true;
+			this._maxSoFar = value;
+			base.MaxValueDirty = true;
 		}
 	}
 
 	internal override void ClassChanged()
 	{
-		_maxSoFar = 75f;
+		this._maxSoFar = 75f;
 		if (NetworkServer.active)
 		{
-			_activeProcesses.Clear();
+			this._activeProcesses.Clear();
 		}
 	}
 
@@ -79,17 +79,17 @@ public class AhpStat : SyncedStatBase
 		base.Update();
 		if (NetworkServer.active)
 		{
-			ServerUpdateProcesses();
+			this.ServerUpdateProcesses();
 		}
-		if (CurValue == MinValue)
+		if (this.CurValue == this.MinValue)
 		{
-			_maxSoFar = 75f;
+			this._maxSoFar = 75f;
 		}
 	}
 
 	protected override void OnValueChanged(float prevValue, float newValue)
 	{
-		_maxSoFar = Mathf.Max(_maxSoFar, newValue);
+		this._maxSoFar = Mathf.Max(this._maxSoFar, newValue);
 	}
 
 	public override float ReadValue(SyncedStatMessages.StatMessageType type, NetworkReader reader)
@@ -99,7 +99,7 @@ public class AhpStat : SyncedStatBase
 
 	public override void WriteValue(SyncedStatMessages.StatMessageType type, NetworkWriter writer)
 	{
-		int num = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? Mathf.Clamp(Mathf.CeilToInt(CurValue), 0, 65535) : Mathf.Clamp(Mathf.CeilToInt(MaxValue), 0, 65535));
+		int num = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? Mathf.Clamp(Mathf.CeilToInt(this.CurValue), 0, 65535) : Mathf.Clamp(Mathf.CeilToInt(this.MaxValue), 0, 65535));
 		writer.WriteUShort((ushort)num);
 	}
 
@@ -112,7 +112,7 @@ public class AhpStat : SyncedStatBase
 	{
 		float num = 0f;
 		float num2 = limit;
-		foreach (AhpProcess activeProcess in _activeProcesses)
+		foreach (AhpProcess activeProcess in this._activeProcesses)
 		{
 			num += activeProcess.CurrentAmount;
 			num2 = Mathf.Max(num2, activeProcess.Limit);
@@ -123,26 +123,26 @@ public class AhpStat : SyncedStatBase
 			amount = Mathf.Max(0f, amount - num3);
 		}
 		AhpProcess ahpProcess = new AhpProcess(amount, limit, decay, efficacy, sustain, persistant);
-		for (int i = 0; i < _activeProcesses.Count; i++)
+		for (int i = 0; i < this._activeProcesses.Count; i++)
 		{
-			if (!(efficacy < _activeProcesses[i].Efficacy))
+			if (!(efficacy < this._activeProcesses[i].Efficacy))
 			{
-				_activeProcesses.Insert(i, ahpProcess);
+				this._activeProcesses.Insert(i, ahpProcess);
 				return ahpProcess;
 			}
 		}
-		_activeProcesses.Add(ahpProcess);
+		this._activeProcesses.Add(ahpProcess);
 		return ahpProcess;
 	}
 
 	public AhpProcess ServerAddProcess(float amount)
 	{
-		return ServerAddProcess(amount, MaxValue, 1.2f, 0.7f, 0f, persistant: false);
+		return this.ServerAddProcess(amount, this.MaxValue, 1.2f, 0.7f, 0f, persistant: false);
 	}
 
 	public bool ServerTryGetProcess(int killcode, out AhpProcess process)
 	{
-		foreach (AhpProcess activeProcess in _activeProcesses)
+		foreach (AhpProcess activeProcess in this._activeProcesses)
 		{
 			if (activeProcess.KillCode == killcode)
 			{
@@ -156,16 +156,16 @@ public class AhpStat : SyncedStatBase
 
 	public bool ServerKillProcess(int killcode)
 	{
-		if (ServerTryGetProcess(killcode, out var process))
+		if (this.ServerTryGetProcess(killcode, out var process))
 		{
-			return _activeProcesses.Remove(process);
+			return this._activeProcesses.Remove(process);
 		}
 		return false;
 	}
 
 	public void ServerKillAllProcesses()
 	{
-		_activeProcesses.Clear();
+		this._activeProcesses.Clear();
 	}
 
 	public float ServerProcessDamage(float damage)
@@ -174,7 +174,7 @@ public class AhpStat : SyncedStatBase
 		{
 			return damage;
 		}
-		foreach (AhpProcess activeProcess in _activeProcesses)
+		foreach (AhpProcess activeProcess in this._activeProcesses)
 		{
 			float num = damage * activeProcess.Efficacy;
 			if (num >= activeProcess.CurrentAmount)
@@ -193,9 +193,9 @@ public class AhpStat : SyncedStatBase
 	{
 		float num = 0f;
 		List<int> list = ListPool<int>.Shared.Rent();
-		for (int i = 0; i < _activeProcesses.Count; i++)
+		for (int i = 0; i < this._activeProcesses.Count; i++)
 		{
-			AhpProcess ahpProcess = _activeProcesses[i];
+			AhpProcess ahpProcess = this._activeProcesses[i];
 			num += ahpProcess.CurrentAmount;
 			if (ahpProcess.SustainTime > 0f)
 			{
@@ -210,9 +210,9 @@ public class AhpStat : SyncedStatBase
 		}
 		foreach (int item in list)
 		{
-			_activeProcesses.RemoveAt(item);
+			this._activeProcesses.RemoveAt(item);
 		}
 		ListPool<int>.Shared.Return(list);
-		CurValue = Mathf.Clamp(num, MinValue, MaxValue);
+		this.CurValue = Mathf.Clamp(num, this.MinValue, this.MaxValue);
 	}
 }

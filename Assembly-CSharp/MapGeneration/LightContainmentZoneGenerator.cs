@@ -34,17 +34,17 @@ public class LightContainmentZoneGenerator : AtlasZoneGenerator
 
 	private void SetLabel(LCZ_Label label)
 	{
-		if (!TryFindRoom(label.transform, out var ret))
+		if (!this.TryFindRoom(label.transform, out var ret))
 		{
 			return;
 		}
-		LabelSettings[] settings = _settings;
+		LabelSettings[] settings = this._settings;
 		foreach (LabelSettings labelSettings in settings)
 		{
 			if (labelSettings.Name == ret.Room.Name && labelSettings.Shape == ret.Room.Shape)
 			{
 				int num = labelSettings.DefaultNumber + ret.DuplicateId;
-				label.Refresh(labelSettings.Label, _numbers[num % _numbers.Length]);
+				label.Refresh(labelSettings.Label, this._numbers[num % this._numbers.Length]);
 				break;
 			}
 		}
@@ -53,7 +53,7 @@ public class LightContainmentZoneGenerator : AtlasZoneGenerator
 	private bool TryFindRoom(Transform labelTr, out SpawnableRoom ret)
 	{
 		Vector3 point = labelTr.position + labelTr.forward * 8f;
-		foreach (SpawnedRoomData item in Spawned)
+		foreach (SpawnedRoomData item in base.Spawned)
 		{
 			RoomIdentifier room = item.Instance.Room;
 			if (new Bounds(room.transform.position, RoomIdentifier.GridScale).Contains(point))

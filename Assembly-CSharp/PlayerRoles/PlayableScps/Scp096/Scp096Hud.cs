@@ -42,60 +42,60 @@ public class Scp096Hud : ViewmodelScpHud
 	internal override void Init(ReferenceHub hub)
 	{
 		base.Init(hub);
-		_scp096 = hub.roleManager.CurrentRole as Scp096Role;
-		_scp096.SubroutineModule.TryGetSubroutine<Scp096RageCycleAbility>(out _rageCycle);
-		_scp096.SubroutineModule.TryGetSubroutine<Scp096RageManager>(out _rageManager);
-		_scp096.SubroutineModule.TryGetSubroutine<Scp096ChargeAbility>(out _chargeAbility);
-		_rageDuration.Setup(_rageManager.HudRageDuration, null);
-		_chargeCooldown.Setup(_chargeAbility.Cooldown, _chargeAbility.Duration);
-		_rageInfo.gameObject.SetActive(hub.isLocalPlayer);
-		UpdateColorGrading(1f);
+		this._scp096 = hub.roleManager.CurrentRole as Scp096Role;
+		this._scp096.SubroutineModule.TryGetSubroutine<Scp096RageCycleAbility>(out this._rageCycle);
+		this._scp096.SubroutineModule.TryGetSubroutine<Scp096RageManager>(out this._rageManager);
+		this._scp096.SubroutineModule.TryGetSubroutine<Scp096ChargeAbility>(out this._chargeAbility);
+		this._rageDuration.Setup(this._rageManager.HudRageDuration, null);
+		this._chargeCooldown.Setup(this._chargeAbility.Cooldown, this._chargeAbility.Duration);
+		this._rageInfo.gameObject.SetActive(hub.isLocalPlayer);
+		this.UpdateColorGrading(1f);
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		UpdateRageInfo();
-		UpdateColorGrading(_rageVolumeDelta * Time.deltaTime);
+		this.UpdateRageInfo();
+		this.UpdateColorGrading(this._rageVolumeDelta * Time.deltaTime);
 	}
 
 	private void UpdateColorGrading(float maxDelta)
 	{
-		_rageVolume.weight = Mathf.MoveTowards(_rageVolume.weight, _rageManager.IsEnragedOrDistressed ? 1 : 0, maxDelta);
+		this._rageVolume.weight = Mathf.MoveTowards(this._rageVolume.weight, this._rageManager.IsEnragedOrDistressed ? 1 : 0, maxDelta);
 	}
 
 	private void UpdateRageInfo()
 	{
-		_keyCircles.ForEach(delegate(Image x)
+		this._keyCircles.ForEach(delegate(Image x)
 		{
-			x.fillAmount = _rageCycle.HudEnterRageKeyProgress;
+			x.fillAmount = this._rageCycle.HudEnterRageKeyProgress;
 		});
-		switch (_scp096.StateController.RageState)
+		switch (this._scp096.StateController.RageState)
 		{
 		case Scp096RageState.Docile:
 		{
-			float hudEnterRageSustain = _rageCycle.HudEnterRageSustain;
-			_docileCircles.SetActive(hudEnterRageSustain > 0f);
-			_rageEnterSustainCircle.fillAmount = hudEnterRageSustain;
-			_rageDuration.Update(forceHidden: true);
-			_chargeCooldown.Update(forceHidden: true);
+			float hudEnterRageSustain = this._rageCycle.HudEnterRageSustain;
+			this._docileCircles.SetActive(hudEnterRageSustain > 0f);
+			this._rageEnterSustainCircle.fillAmount = hudEnterRageSustain;
+			this._rageDuration.Update(forceHidden: true);
+			this._chargeCooldown.Update(forceHidden: true);
 			if (!(hudEnterRageSustain <= 0f))
 			{
-				SetWarning(Scp096HudTranslation.EnterRageKeyInfo, ActionName.Reload, hudEnterRageSustain);
+				this.SetWarning(Scp096HudTranslation.EnterRageKeyInfo, ActionName.Reload, hudEnterRageSustain);
 			}
 			break;
 		}
 		case Scp096RageState.Enraged:
-			_rageDuration.Update();
-			_chargeCooldown.Update();
-			_docileCircles.SetActive(value: false);
-			SetWarning(Scp096HudTranslation.ExitRageKeyInfo, ActionName.Reload);
+			this._rageDuration.Update();
+			this._chargeCooldown.Update();
+			this._docileCircles.SetActive(value: false);
+			this.SetWarning(Scp096HudTranslation.ExitRageKeyInfo, ActionName.Reload);
 			break;
 		default:
-			_rageDuration.Update(forceHidden: true);
-			_chargeCooldown.Update(forceHidden: true);
-			_docileCircles.SetActive(value: false);
-			_rageInfo.SetText(string.Empty);
+			this._rageDuration.Update(forceHidden: true);
+			this._chargeCooldown.Update(forceHidden: true);
+			this._docileCircles.SetActive(value: false);
+			this._rageInfo.SetText(string.Empty);
 			break;
 		}
 	}
@@ -106,6 +106,6 @@ public class Scp096Hud : ViewmodelScpHud
 		{
 			tr = "Hold {0} to " + key;
 		}
-		_rageInfo.SetText(string.Format(tr, $"<color=red>{new ReadableKeyCode(action)}</color>"), duration);
+		this._rageInfo.SetText(string.Format(tr, $"<color=red>{new ReadableKeyCode(action)}</color>"), duration);
 	}
 }

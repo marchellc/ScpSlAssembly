@@ -24,11 +24,11 @@ public class Scp049CallAbility : KeySubroutine<Scp049Role>
 	{
 		get
 		{
-			if (!Duration.IsReady)
+			if (!this.Duration.IsReady)
 			{
 				if (NetworkServer.active)
 				{
-					return _serverTriggered;
+					return this._serverTriggered;
 				}
 				return true;
 			}
@@ -40,25 +40,25 @@ public class Scp049CallAbility : KeySubroutine<Scp049Role>
 
 	private void ServerRefreshDuration()
 	{
-		if (_serverTriggered && Duration.IsReady)
+		if (this._serverTriggered && this.Duration.IsReady)
 		{
-			Cooldown.Trigger(45.0);
-			_serverTriggered = false;
-			ServerSendRpc(toAll: true);
+			this.Cooldown.Trigger(45.0);
+			this._serverTriggered = false;
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
-		if (!_serverTriggered && Cooldown.IsReady)
+		if (!this._serverTriggered && this.Cooldown.IsReady)
 		{
-			Scp049UsingDoctorsCallEventArgs scp049UsingDoctorsCallEventArgs = new Scp049UsingDoctorsCallEventArgs(base.Owner);
-			Scp049Events.OnUsingDoctorsCall(scp049UsingDoctorsCallEventArgs);
-			if (scp049UsingDoctorsCallEventArgs.IsAllowed)
+			Scp049UsingDoctorsCallEventArgs e = new Scp049UsingDoctorsCallEventArgs(base.Owner);
+			Scp049Events.OnUsingDoctorsCall(e);
+			if (e.IsAllowed)
 			{
-				Duration.Trigger(20.0);
-				_serverTriggered = true;
-				ServerSendRpc(toAll: true);
+				this.Duration.Trigger(20.0);
+				this._serverTriggered = true;
+				base.ServerSendRpc(toAll: true);
 				Scp049Events.OnUsedDoctorsCall(new Scp049UsedDoctorsCallEventArgs(base.Owner));
 			}
 		}
@@ -66,21 +66,21 @@ public class Scp049CallAbility : KeySubroutine<Scp049Role>
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
-		Cooldown.WriteCooldown(writer);
-		Duration.WriteCooldown(writer);
+		this.Cooldown.WriteCooldown(writer);
+		this.Duration.WriteCooldown(writer);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
-		Cooldown.ReadCooldown(reader);
-		Duration.ReadCooldown(reader);
-		if (Cooldown.Remaining >= 45f)
+		this.Cooldown.ReadCooldown(reader);
+		this.Duration.ReadCooldown(reader);
+		if (this.Cooldown.Remaining >= 45f)
 		{
-			AbilityAudio(start: false);
+			this.AbilityAudio(start: false);
 		}
-		else if (Duration.Remaining >= 20f)
+		else if (this.Duration.Remaining >= 20f)
 		{
-			AbilityAudio(start: true);
+			this.AbilityAudio(start: true);
 		}
 	}
 
@@ -93,24 +93,24 @@ public class Scp049CallAbility : KeySubroutine<Scp049Role>
 		base.Update();
 		if (NetworkServer.active)
 		{
-			ServerRefreshDuration();
+			this.ServerRefreshDuration();
 		}
 	}
 
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		if (Cooldown.IsReady && Duration.IsReady)
+		if (this.Cooldown.IsReady && this.Duration.IsReady)
 		{
-			ClientSendCmd();
+			base.ClientSendCmd();
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		Cooldown.Clear();
-		Duration.Clear();
-		_serverTriggered = false;
+		this.Cooldown.Clear();
+		this.Duration.Clear();
+		this._serverTriggered = false;
 	}
 }

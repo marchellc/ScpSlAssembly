@@ -16,7 +16,7 @@ public static class UnitNameMessageHandler
 		{
 			if (NetworkServer.active && !hub.isLocalPlayer)
 			{
-				NetworkReaderPooled networkReaderPooled = NetworkReaderPool.Get(new ArraySegment<byte>(SendHistory.buffer, 0, SendHistory.Position));
+				NetworkReaderPooled networkReaderPooled = NetworkReaderPool.Get(new ArraySegment<byte>(UnitNameMessageHandler.SendHistory.buffer, 0, UnitNameMessageHandler.SendHistory.Position));
 				while (networkReaderPooled.Remaining > 0)
 				{
 					Team team = (Team)networkReaderPooled.ReadByte();
@@ -43,11 +43,12 @@ public static class UnitNameMessageHandler
 		{
 			throw new InvalidOperationException($"No compatible decoder detected to read the name of spawnable team: {team}.");
 		}
-		UnitNameMessage result = default(UnitNameMessage);
-		result.Team = team;
-		result.NamingRule = rule;
-		result.UnitName = rule.ReadName(reader);
-		return result;
+		return new UnitNameMessage
+		{
+			Team = team,
+			NamingRule = rule,
+			UnitName = rule.ReadName(reader)
+		};
 	}
 
 	public static void WriteUnitName(this NetworkWriter writer, UnitNameMessage msg)
@@ -58,8 +59,8 @@ public static class UnitNameMessageHandler
 		{
 			int position = writer.Position;
 			msg.NamingRule.WriteName(writer);
-			SendHistory.WriteByte(team);
-			SendHistory.WriteBytes(writer.buffer, position, writer.Position - position);
+			UnitNameMessageHandler.SendHistory.WriteByte(team);
+			UnitNameMessageHandler.SendHistory.WriteBytes(writer.buffer, position, writer.Position - position);
 		}
 		else
 		{
@@ -71,6 +72,6 @@ public static class UnitNameMessageHandler
 
 	public static void ResetHistory()
 	{
-		SendHistory.Reset();
+		UnitNameMessageHandler.SendHistory.Reset();
 	}
 }

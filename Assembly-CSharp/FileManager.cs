@@ -13,26 +13,26 @@ public static class FileManager
 
 	public static void RefreshAppFolder()
 	{
-		_appfolder = ((ServerStatic.IsDedicated && ConfigFile.HosterPolicy != null && ConfigFile.HosterPolicy.GetBool("gamedir_for_configs")) ? "AppData" : (Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + GetPathSeparator() + "SCP Secret Laboratory"));
+		FileManager._appfolder = ((ServerStatic.IsDedicated && ConfigFile.HosterPolicy != null && ConfigFile.HosterPolicy.GetBool("gamedir_for_configs")) ? "AppData" : (Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + FileManager.GetPathSeparator() + "SCP Secret Laboratory"));
 	}
 
 	public static string GetAppFolder(bool addSeparator = true, bool serverConfig = false, string centralConfig = "")
 	{
-		if (string.IsNullOrEmpty(_appfolder))
+		if (string.IsNullOrEmpty(FileManager._appfolder))
 		{
-			RefreshAppFolder();
+			FileManager.RefreshAppFolder();
 		}
-		if (serverConfig && !string.IsNullOrEmpty(_configfolder) && string.IsNullOrEmpty(centralConfig))
+		if (serverConfig && !string.IsNullOrEmpty(FileManager._configfolder) && string.IsNullOrEmpty(centralConfig))
 		{
-			return _configfolder + (addSeparator ? GetPathSeparator().ToString() : "");
+			return FileManager._configfolder + (addSeparator ? FileManager.GetPathSeparator().ToString() : "");
 		}
-		return _appfolder + ((addSeparator || serverConfig) ? GetPathSeparator().ToString() : "") + (serverConfig ? ("config/" + ((!string.IsNullOrEmpty(centralConfig)) ? centralConfig : (ServerStatic.IsDedicated ? ServerStatic.ServerPort.ToString() : "nondedicated")) + (addSeparator ? GetPathSeparator().ToString() : "")) : "");
+		return FileManager._appfolder + ((addSeparator || serverConfig) ? FileManager.GetPathSeparator().ToString() : "") + (serverConfig ? ("config/" + ((!string.IsNullOrEmpty(centralConfig)) ? centralConfig : (ServerStatic.IsDedicated ? ServerStatic.ServerPort.ToString() : "nondedicated")) + (addSeparator ? FileManager.GetPathSeparator().ToString() : "")) : "");
 	}
 
 	public static string StripPath(string path)
 	{
 		path = path.Replace("\"", "").Trim();
-		while (path.EndsWith("\\") || path.EndsWith("/") || path.EndsWith(GetPathSeparator().ToString()))
+		while (path.EndsWith("\\") || path.EndsWith("/") || path.EndsWith(FileManager.GetPathSeparator().ToString()))
 		{
 			path = path.Substring(0, path.Length - 1);
 		}
@@ -41,33 +41,33 @@ public static class FileManager
 
 	public static void SetAppFolder(string path)
 	{
-		path = StripPath(path);
+		path = FileManager.StripPath(path);
 		if (!Directory.Exists(path))
 		{
-			_appfolder = "";
+			FileManager._appfolder = "";
 		}
 		else
 		{
-			_appfolder = path;
+			FileManager._appfolder = path;
 		}
 	}
 
 	public static void SetConfigFolder(string path)
 	{
-		path = StripPath(path);
+		path = FileManager.StripPath(path);
 		if (!Directory.Exists(path))
 		{
-			_configfolder = "";
+			FileManager._configfolder = "";
 		}
 		else
 		{
-			_configfolder = path;
+			FileManager._configfolder = path;
 		}
 	}
 
 	public static string ReplacePathSeparators(string path)
 	{
-		return path.Replace('/', GetPathSeparator()).Replace('\\', GetPathSeparator());
+		return path.Replace('/', FileManager.GetPathSeparator()).Replace('\\', FileManager.GetPathSeparator());
 	}
 
 	public static char GetPathSeparator()
@@ -215,7 +215,7 @@ public static class FileManager
 
 	public static void AppendFile(string data, string path, bool newLine = true)
 	{
-		string[] array = ReadAllLines(path);
+		string[] array = FileManager.ReadAllLines(path);
 		if (!newLine || array.Length == 0 || array[^1].EndsWith(Environment.NewLine) || array[^1].EndsWith("\n"))
 		{
 			File.AppendAllText(path, data, Misc.Utf8Encoding);
@@ -245,19 +245,19 @@ public static class FileManager
 
 	public static void ReplaceLine(int line, string text, string path)
 	{
-		string[] array = ReadAllLines(path);
+		string[] array = FileManager.ReadAllLines(path);
 		array[line] = text;
-		WriteToFile(array, path);
+		FileManager.WriteToFile(array, path);
 	}
 
 	public static void RemoveEmptyLines(string path)
 	{
-		string[] array = ReadAllLines(path);
+		string[] array = FileManager.ReadAllLines(path);
 		string[] array2 = array.Where((string s) => !string.IsNullOrWhiteSpace(s.Replace(Environment.NewLine, "").Replace("\r\n", "").Replace("\n", "")
 			.Replace(" ", ""))).ToArray();
 		if (array != array2)
 		{
-			WriteToFile(array2, path);
+			FileManager.WriteToFile(array2, path);
 		}
 	}
 
@@ -286,7 +286,7 @@ public static class FileManager
 			foreach (DirectoryInfo directoryInfo2 in array)
 			{
 				string destDirName2 = Path.Combine(destDirName, directoryInfo2.Name);
-				DirectoryCopy(directoryInfo2.FullName, destDirName2, overwrite);
+				FileManager.DirectoryCopy(directoryInfo2.FullName, destDirName2, overwrite);
 			}
 		}
 	}

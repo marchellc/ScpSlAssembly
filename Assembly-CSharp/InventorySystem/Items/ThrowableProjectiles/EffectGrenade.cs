@@ -19,38 +19,38 @@ public class EffectGrenade : TimeGrenade
 	public override void ToggleRenderers(bool state)
 	{
 		base.ToggleRenderers(state);
-		_resyncAudio = state;
+		this._resyncAudio = state;
 	}
 
 	protected override void Update()
 	{
 		base.Update();
 		double time = NetworkTime.time;
-		if (!_resyncAudio || base.TargetTime < time)
+		if (!this._resyncAudio || base.TargetTime < time)
 		{
 			return;
 		}
-		_resyncAudio = false;
-		if (!(_src == null))
+		this._resyncAudio = false;
+		if (!(this._src == null))
 		{
-			float length = _src.clip.length;
+			float length = this._src.clip.length;
 			float num = (float)(base.TargetTime - time);
 			if (num > length)
 			{
-				_src.PlayDelayed(num - length);
+				this._src.PlayDelayed(num - length);
 				return;
 			}
-			_src.Play();
-			_src.time = length - num;
+			this._src.Play();
+			this._src.time = length - num;
 		}
 	}
 
 	public virtual void PlayExplosionEffects(Vector3 position)
 	{
-		Transform obj = Object.Instantiate(Effect).transform;
+		Transform obj = Object.Instantiate(this.Effect).transform;
 		obj.position = position;
 		obj.localScale = Vector3.one;
-		Object.Destroy(obj.gameObject, _destroyTime);
+		Object.Destroy(obj.gameObject, this._destroyTime);
 	}
 
 	public override bool ServerFuseEnd()
@@ -59,8 +59,8 @@ public class EffectGrenade : TimeGrenade
 		{
 			return false;
 		}
-		ExplosionUtils.ServerSpawnEffect(base.transform.position, Info.ItemId);
-		DestroySelf();
+		ExplosionUtils.ServerSpawnEffect(base.transform.position, base.Info.ItemId);
+		base.DestroySelf();
 		return true;
 	}
 

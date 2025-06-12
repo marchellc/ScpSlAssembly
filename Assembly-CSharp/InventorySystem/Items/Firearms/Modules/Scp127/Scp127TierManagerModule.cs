@@ -25,12 +25,12 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 
 		public OwnerStats GetStats(ReferenceHub hub)
 		{
-			return GetStats(hub.netId);
+			return this.GetStats(hub.netId);
 		}
 
 		public OwnerStats GetStats(uint netId)
 		{
-			return Data.GetOrAdd(netId, () => new OwnerStats());
+			return this.Data.GetOrAdd(netId, () => new OwnerStats());
 		}
 	}
 
@@ -46,11 +46,11 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 		{
 			get
 			{
-				return (byte)Mathf.FloorToInt(Progress * 255f);
+				return (byte)Mathf.FloorToInt(this.Progress * 255f);
 			}
 			set
 			{
-				Progress = (float)(int)value / 255f;
+				this.Progress = (float)(int)value / 255f;
 			}
 		}
 	}
@@ -73,9 +73,9 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 	[field: SerializeField]
 	public TierThreshold[] Thresholds { get; private set; }
 
-	public Scp127Tier CurTier => GetTierForItem(base.Item);
+	public Scp127Tier CurTier => Scp127TierManagerModule.GetTierForItem(base.Item);
 
-	public AlertContent Alert => _hint.Alert;
+	public AlertContent Alert => this._hint.Alert;
 
 	public static event Action<Firearm> ServerOnDamaged;
 
@@ -85,12 +85,12 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 
 	public static Scp127Tier GetTierForItem(ItemBase item)
 	{
-		return GetStats(item).Tier;
+		return Scp127TierManagerModule.GetStats(item).Tier;
 	}
 
 	public static void GetTierAndProgressForItem(ItemBase item, out Scp127Tier tier, out float progress)
 	{
-		OwnerStats stats = GetStats(item);
+		OwnerStats stats = Scp127TierManagerModule.GetStats(item);
 		tier = stats.Tier;
 		progress = stats.Progress;
 	}
@@ -98,7 +98,7 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 	public Scp127Tier GetTierForExp(float exp)
 	{
 		Scp127Tier scp127Tier = Scp127Tier.Tier1;
-		TierThreshold[] thresholds = Thresholds;
+		TierThreshold[] thresholds = this.Thresholds;
 		for (int i = 0; i < thresholds.Length; i++)
 		{
 			TierThreshold tierThreshold = thresholds[i];
@@ -112,7 +112,7 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 
 	public float GetExpForTier(Scp127Tier tier)
 	{
-		TierThreshold[] thresholds = Thresholds;
+		TierThreshold[] thresholds = this.Thresholds;
 		for (int i = 0; i < thresholds.Length; i++)
 		{
 			TierThreshold tierThreshold = thresholds[i];
@@ -126,8 +126,8 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 
 	public float GetProgress(Scp127Tier curTier, float curExp)
 	{
-		float expForTier = GetExpForTier(curTier);
-		float expForTier2 = GetExpForTier(curTier + 1);
+		float expForTier = this.GetExpForTier(curTier);
+		float expForTier2 = this.GetExpForTier(curTier + 1);
 		if (expForTier2 != 0f)
 		{
 			return Mathf.InverseLerp(expForTier, expForTier2, curExp);
@@ -142,7 +142,7 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 		{
 			ushort serial2 = reader.ReadUShort();
 			uint netId = reader.ReadUInt();
-			OwnerStats stats = GetRecord(serial2).GetStats(netId);
+			OwnerStats stats = Scp127TierManagerModule.GetRecord(serial2).GetStats(netId);
 			stats.Tier = (Scp127Tier)reader.ReadByte();
 			stats.CompressedProgress = reader.ReadByte();
 		}
@@ -155,7 +155,7 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 		{
 			if (instance is Firearm firearm && firearm.ItemTypeId == base.Item.ItemTypeId && firearm.HasOwner && firearm.TryGetModule<Scp127TierManagerModule>(out var module))
 			{
-				OwnerStats stats = GetStats(firearm);
+				OwnerStats stats = Scp127TierManagerModule.GetStats(firearm);
 				module.ServerSendStats(firearm.ItemSerial, firearm.Owner, stats.Tier, stats.CompressedProgress);
 			}
 		}
@@ -175,7 +175,7 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		ProgressDatabase.Clear();
+		Scp127TierManagerModule.ProgressDatabase.Clear();
 	}
 
 	internal override void OnAdded()
@@ -183,28 +183,28 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 		base.OnAdded();
 		if (NetworkServer.active)
 		{
-			OwnerStats stats = GetStats(base.Firearm);
-			ServerSendStats(base.ItemSerial, base.Item.Owner, stats.Tier, stats.CompressedProgress);
+			OwnerStats stats = Scp127TierManagerModule.GetStats(base.Firearm);
+			this.ServerSendStats(base.ItemSerial, base.Item.Owner, stats.Tier, stats.CompressedProgress);
 		}
 	}
 
 	internal override void OnEquipped()
 	{
 		base.OnEquipped();
-		_remainingInterval = PassiveExpInterval;
+		this._remainingInterval = this.PassiveExpInterval;
 	}
 
 	internal override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		_hint.Update(forceHide: false);
+		this._hint.Update(forceHide: false);
 		if (NetworkServer.active)
 		{
-			_remainingInterval -= PassiveExpInterval * Time.deltaTime;
-			if (_remainingInterval <= 0f)
+			this._remainingInterval -= this.PassiveExpInterval * Time.deltaTime;
+			if (this._remainingInterval <= 0f)
 			{
-				ServerIncreaseExp(base.Firearm, PassiveExpAmount);
-				_remainingInterval += PassiveExpInterval;
+				this.ServerIncreaseExp(base.Firearm, this.PassiveExpAmount);
+				this._remainingInterval += this.PassiveExpInterval;
 			}
 		}
 	}
@@ -216,7 +216,7 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 			return;
 		}
 		uint netId = hub.netId;
-		foreach (KeyValuePair<ushort, InstanceRecord> item in ProgressDatabase)
+		foreach (KeyValuePair<ushort, InstanceRecord> item in Scp127TierManagerModule.ProgressDatabase)
 		{
 			item.Value.Data.Remove(netId);
 		}
@@ -228,19 +228,19 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 		{
 			return;
 		}
-		if (ServerTryProcessDamageAward(handler, KillBonus))
+		if (this.ServerTryProcessDamageAward(handler, this.KillBonus))
 		{
 			FirearmDamageHandler firearmDamageHandler = handler as FirearmDamageHandler;
 			Scp127TierManagerModule.ServerOnKilled?.Invoke(firearmDamageHandler.Firearm, deadPlayer);
 		}
 		uint netId = deadPlayer.netId;
-		foreach (KeyValuePair<ushort, InstanceRecord> item in ProgressDatabase)
+		foreach (KeyValuePair<ushort, InstanceRecord> item in Scp127TierManagerModule.ProgressDatabase)
 		{
 			Dictionary<uint, OwnerStats> data = item.Value.Data;
 			if (data.ContainsKey(netId))
 			{
 				data.Remove(netId);
-				ServerSendStats(item.Key, deadPlayer, Scp127Tier.Tier1, 0);
+				this.ServerSendStats(item.Key, deadPlayer, Scp127Tier.Tier1, 0);
 			}
 		}
 	}
@@ -249,7 +249,7 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 	{
 		if (NetworkServer.active && handler is AttackerDamageHandler attackerDamageHandler)
 		{
-			ServerTryProcessDamageAward(attackerDamageHandler, attackerDamageHandler.TotalDamageDealt);
+			this.ServerTryProcessDamageAward(attackerDamageHandler, attackerDamageHandler.TotalDamageDealt);
 		}
 	}
 
@@ -272,23 +272,23 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 		{
 			return false;
 		}
-		ServerIncreaseExp(firearm, amount);
+		this.ServerIncreaseExp(firearm, amount);
 		Scp127TierManagerModule.ServerOnDamaged?.Invoke(firearm);
 		return true;
 	}
 
 	private void ServerIncreaseExp(Firearm firearm, float amount)
 	{
-		OwnerStats stats = GetStats(firearm);
+		OwnerStats stats = Scp127TierManagerModule.GetStats(firearm);
 		Scp127Tier tier = stats.Tier;
 		byte compressedProgress = stats.CompressedProgress;
 		stats.ServerExp += amount;
-		stats.Tier = GetTierForExp(stats.ServerExp);
-		stats.Progress = GetProgress(stats.Tier, stats.ServerExp);
+		stats.Tier = this.GetTierForExp(stats.ServerExp);
+		stats.Progress = this.GetProgress(stats.Tier, stats.ServerExp);
 		bool flag = tier != stats.Tier;
 		if (flag || compressedProgress != stats.CompressedProgress)
 		{
-			ServerSendStats(firearm.ItemSerial, firearm.Owner, stats.Tier, stats.CompressedProgress);
+			this.ServerSendStats(firearm.ItemSerial, firearm.Owner, stats.Tier, stats.CompressedProgress);
 			if (flag)
 			{
 				Scp127TierManagerModule.ServerOnLevelledUp?.Invoke(firearm);
@@ -298,7 +298,7 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 
 	private void ServerSendStats(ushort serial, ReferenceHub owner, Scp127Tier tier, byte progress)
 	{
-		SendRpc(delegate(NetworkWriter x)
+		this.SendRpc(delegate(NetworkWriter x)
 		{
 			x.WriteUShort(serial);
 			x.WriteUInt(owner.netId);
@@ -309,11 +309,11 @@ public class Scp127TierManagerModule : ModuleBase, IItemAlertDrawer, IItemDrawer
 
 	private static InstanceRecord GetRecord(ushort serial)
 	{
-		return ProgressDatabase.GetOrAdd(serial, () => new InstanceRecord());
+		return Scp127TierManagerModule.ProgressDatabase.GetOrAdd(serial, () => new InstanceRecord());
 	}
 
 	private static OwnerStats GetStats(ItemBase instance)
 	{
-		return GetRecord(instance.ItemSerial).GetStats(instance.Owner);
+		return Scp127TierManagerModule.GetRecord(instance.ItemSerial).GetStats(instance.Owner);
 	}
 }

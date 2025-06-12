@@ -35,7 +35,7 @@ public class Scp079ElevatorStateChanger : Scp079KeyAbilityBase
 			}
 			if (OverconManager.Singleton.HighlightedOvercon is ElevatorOvercon elevatorOvercon && elevatorOvercon != null)
 			{
-				_lastElevator = elevatorOvercon.Target;
+				this._lastElevator = elevatorOvercon.Target;
 				return true;
 			}
 			return false;
@@ -46,7 +46,7 @@ public class Scp079ElevatorStateChanger : Scp079KeyAbilityBase
 	{
 		get
 		{
-			if (ErrorCode == Scp079HudTranslation.Zoom && ElevatorChamber.TryGetChamber(_lastElevator.Group, out var chamber))
+			if (this.ErrorCode == Scp079HudTranslation.Zoom && ElevatorChamber.TryGetChamber(this._lastElevator.Group, out var chamber))
 			{
 				return chamber.IsReady;
 			}
@@ -54,26 +54,26 @@ public class Scp079ElevatorStateChanger : Scp079KeyAbilityBase
 		}
 	}
 
-	public override string FailMessage => _failedReason switch
+	public override string FailMessage => this._failedReason switch
 	{
 		Scp079HudTranslation.Zoom => null, 
-		Scp079HudTranslation.NotEnoughAux => GetNoAuxMessage(_cost), 
-		_ => Translations.Get(_failedReason), 
+		Scp079HudTranslation.NotEnoughAux => base.GetNoAuxMessage(this._cost), 
+		_ => Translations.Get(this._failedReason), 
 	};
 
 	public override ActionName ActivationKey => ActionName.Shoot;
 
-	public override string AbilityName => string.Format(_abilityName, _cost);
+	public override string AbilityName => string.Format(this._abilityName, this._cost);
 
 	private Scp079HudTranslation ErrorCode
 	{
 		get
 		{
-			if (base.AuxManager.CurrentAux < (float)_cost)
+			if (base.AuxManager.CurrentAux < (float)this._cost)
 			{
 				return Scp079HudTranslation.NotEnoughAux;
 			}
-			if (!ValidateLastElevator)
+			if (!this.ValidateLastElevator)
 			{
 				return Scp079HudTranslation.ElevatorAccessDenied;
 			}
@@ -85,11 +85,11 @@ public class Scp079ElevatorStateChanger : Scp079KeyAbilityBase
 	{
 		get
 		{
-			if (_lastElevator == null)
+			if (this._lastElevator == null)
 			{
 				return false;
 			}
-			return ElevatorDoor.GetDoorsForGroup(_lastElevator.Group).Any((ElevatorDoor x) => x.ActiveLocks == 0);
+			return ElevatorDoor.GetDoorsForGroup(this._lastElevator.Group).Any((ElevatorDoor x) => x.ActiveLocks == 0);
 		}
 	}
 
@@ -98,37 +98,37 @@ public class Scp079ElevatorStateChanger : Scp079KeyAbilityBase
 	protected override void Start()
 	{
 		base.Start();
-		_abilityName = Translations.Get(Scp079HudTranslation.SendElevator);
+		this._abilityName = Translations.Get(Scp079HudTranslation.SendElevator);
 		base.CurrentCamSync.OnCameraChanged += delegate
 		{
-			_failedReason = Scp079HudTranslation.Zoom;
+			this._failedReason = Scp079HudTranslation.Zoom;
 		};
 	}
 
 	protected override void Trigger()
 	{
-		ClientSendCmd();
+		base.ClientSendCmd();
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteByte((byte)_lastElevator.Group);
+		writer.WriteByte((byte)this._lastElevator.Group);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (base.AuxManager.CurrentAux < (float)_cost || base.LostSignalHandler.Lost)
+		if (base.AuxManager.CurrentAux < (float)this._cost || base.LostSignalHandler.Lost)
 		{
 			return;
 		}
-		ElevatorGroup group = (ElevatorGroup)reader.ReadByte();
-		if (!ElevatorChamber.TryGetChamber(group, out var chamber) || !chamber.IsReadyForUserInput)
+		ElevatorGroup elevatorGroup = (ElevatorGroup)reader.ReadByte();
+		if (!ElevatorChamber.TryGetChamber(elevatorGroup, out var chamber) || !chamber.IsReadyForUserInput)
 		{
 			return;
 		}
-		List<ElevatorDoor> doorsForGroup = ElevatorDoor.GetDoorsForGroup(group);
+		List<ElevatorDoor> doorsForGroup = ElevatorDoor.GetDoorsForGroup(elevatorGroup);
 		if (doorsForGroup.All((ElevatorDoor x) => x.ActiveLocks != 0))
 		{
 			return;
@@ -138,12 +138,12 @@ public class Scp079ElevatorStateChanger : Scp079KeyAbilityBase
 		{
 			bool targetState = first.TargetState;
 			chamber.ServerSetDestination(chamber.NextLevel, allowQueueing: false);
-			base.AuxManager.CurrentAux -= _cost;
+			base.AuxManager.CurrentAux -= this._cost;
 			doorsForGroup.ForEach(delegate(ElevatorDoor x)
 			{
 				base.RewardManager.MarkRooms(x.Rooms);
 			});
-			ServerSendRpc(toAll: false);
+			base.ServerSendRpc(toAll: false);
 			if (targetState)
 			{
 				Scp079ElevatorStateChanger.OnServerElevatorDoorClosed?.Invoke(base.CastRole, first);
@@ -154,11 +154,11 @@ public class Scp079ElevatorStateChanger : Scp079KeyAbilityBase
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		AudioSourcePoolManager.Play2D(_confirmationSound);
+		AudioSourcePoolManager.Play2D(this._confirmationSound);
 	}
 
 	public override void OnFailMessageAssigned()
 	{
-		_failedReason = ErrorCode;
+		this._failedReason = this.ErrorCode;
 	}
 }

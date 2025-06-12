@@ -6,6 +6,6 @@ public class Rotate : MonoBehaviour
 
 	private void Update()
 	{
-		base.transform.Rotate(speed * Time.deltaTime);
+		base.transform.Rotate(this.speed * Time.deltaTime);
 	}
 }

@@ -22,19 +22,19 @@ public class VariableGFXUsableItemThirdperson : UsableItemThirdperson
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		RestoreMainGfx();
+		this.RestoreMainGfx();
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		if (base.IsUsing && !_alreadyReplaced)
+		if (base.IsUsing && !this._alreadyReplaced)
 		{
-			_remainingToReplace -= Time.deltaTime;
-			if (_remainingToReplace < 0f)
+			this._remainingToReplace -= Time.deltaTime;
+			if (this._remainingToReplace < 0f)
 			{
-				ReplaceGfx();
-				_alreadyReplaced = true;
+				this.ReplaceGfx();
+				this._alreadyReplaced = true;
 			}
 		}
 	}
@@ -44,13 +44,13 @@ public class VariableGFXUsableItemThirdperson : UsableItemThirdperson
 		base.OnUsingStatusChanged();
 		if (base.IsUsing)
 		{
-			_remainingToReplace = _replacementTime;
+			this._remainingToReplace = this._replacementTime;
 		}
 		else
 		{
-			RestoreMainGfx();
+			this.RestoreMainGfx();
 		}
-		_alreadyReplaced = false;
+		this._alreadyReplaced = false;
 	}
 
 	protected virtual void SetupLeftHandedInstance(GameObject instance, Transform leftHand)
@@ -63,27 +63,27 @@ public class VariableGFXUsableItemThirdperson : UsableItemThirdperson
 
 	private void RestoreMainGfx()
 	{
-		MainGfx.SetActive(value: true);
-		if (_alreadyReplaced && _lastInstance != null)
+		this.MainGfx.SetActive(value: true);
+		if (this._alreadyReplaced && this._lastInstance != null)
 		{
-			_lastInstance.transform.SetParent(null);
-			_lastInstance.SetActive(value: false);
+			this._lastInstance.transform.SetParent(null);
+			this._lastInstance.SetActive(value: false);
 		}
 	}
 
 	private void ReplaceGfx()
 	{
-		MainGfx.SetActive(value: false);
-		if (!(LeftHandedGfx == null))
+		this.MainGfx.SetActive(value: false);
+		if (!(this.LeftHandedGfx == null))
 		{
-			if (_lastInstance == null)
+			if (this._lastInstance == null)
 			{
-				_lastInstance = Object.Instantiate(LeftHandedGfx);
+				this._lastInstance = Object.Instantiate(this.LeftHandedGfx);
 			}
 			Transform boneTransform = base.Animator.GetBoneTransform(HumanBodyBones.LeftHand);
 			if (boneTransform != null)
 			{
-				SetupLeftHandedInstance(_lastInstance, boneTransform);
+				this.SetupLeftHandedInstance(this._lastInstance, boneTransform);
 			}
 		}
 	}

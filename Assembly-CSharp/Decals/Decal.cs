@@ -23,22 +23,22 @@ public class Decal : CullableBehaviour
 
 		public void SetReference(Decal decal)
 		{
-			_decalRef = decal;
+			this._decalRef = decal;
 		}
 
 		public void ProcessAttachment()
 		{
-			if (Enabled)
+			if (this.Enabled)
 			{
-				int num = UnityEngine.Random.Range(0, DecalsNum);
-				int num2 = num % GridSize;
-				int num3 = num / GridSize;
-				num3 = GridSize - 1 - num3;
-				_decalRef.UVOffset = new Vector2(num2, num3) / GridSize;
-				if (!_tilingSet)
+				int num = UnityEngine.Random.Range(0, this.DecalsNum);
+				int num2 = num % this.GridSize;
+				int num3 = num / this.GridSize;
+				num3 = this.GridSize - 1 - num3;
+				this._decalRef.UVOffset = new Vector2(num2, num3) / this.GridSize;
+				if (!this._tilingSet)
 				{
-					_decalRef.UVTiling = Vector2.one / GridSize;
-					_tilingSet = true;
+					this._decalRef.UVTiling = Vector2.one / this.GridSize;
+					this._tilingSet = true;
 				}
 			}
 		}
@@ -70,17 +70,17 @@ public class Decal : CullableBehaviour
 	{
 		get
 		{
-			return _instancedColor;
+			return this._instancedColor;
 		}
 		set
 		{
-			if (_materialInstance == null)
+			if (this._materialInstance == null)
 			{
-				_materialInstance = new Material(_projector.material);
-				_projector.material = _materialInstance;
+				this._materialInstance = new Material(this._projector.material);
+				this._projector.material = this._materialInstance;
 			}
-			_instancedColor = value;
-			_projector.material.SetColor("_BaseColor", _instancedColor);
+			this._instancedColor = value;
+			this._projector.material.SetColor("_BaseColor", this._instancedColor);
 		}
 	}
 
@@ -88,11 +88,11 @@ public class Decal : CullableBehaviour
 	{
 		get
 		{
-			return _projector.material;
+			return this._projector.material;
 		}
 		set
 		{
-			_projector.material = value;
+			this._projector.material = value;
 		}
 	}
 
@@ -100,11 +100,11 @@ public class Decal : CullableBehaviour
 	{
 		get
 		{
-			return _projector.size;
+			return this._projector.size;
 		}
 		set
 		{
-			_projector.size = value;
+			this._projector.size = value;
 		}
 	}
 
@@ -112,11 +112,11 @@ public class Decal : CullableBehaviour
 	{
 		get
 		{
-			return _projector.uvBias;
+			return this._projector.uvBias;
 		}
 		set
 		{
-			_projector.uvBias = value;
+			this._projector.uvBias = value;
 		}
 	}
 
@@ -124,68 +124,68 @@ public class Decal : CullableBehaviour
 	{
 		get
 		{
-			return _projector.uvScale;
+			return this._projector.uvScale;
 		}
 		set
 		{
-			_projector.uvScale = value;
+			this._projector.uvScale = value;
 		}
 	}
 
 	public Transform CachedTransform { get; private set; }
 
-	public override bool ShouldBeVisible => CullingCamera.CheckBoundsVisibility(new Bounds(CachedTransform.position, DecalSize));
+	public override bool ShouldBeVisible => CullingCamera.CheckBoundsVisibility(new Bounds(this.CachedTransform.position, this.DecalSize));
 
 	public virtual void AttachToSurface(RaycastHit hitSurface)
 	{
 		Transform transform = hitSurface.collider.transform;
-		CachedTransform.SetParent(transform);
-		CachedTransform.SetPositionAndRotation(hitSurface.point + hitSurface.normal * 0.02f, Quaternion.LookRotation(-hitSurface.normal));
-		if (transform.TryGetComponentInParent<CullableRoom>(out _parentCullableRoom))
+		this.CachedTransform.SetParent(transform);
+		this.CachedTransform.SetPositionAndRotation(hitSurface.point + hitSurface.normal * 0.02f, Quaternion.LookRotation(-hitSurface.normal));
+		if (transform.TryGetComponentInParent<CullableRoom>(out this._parentCullableRoom))
 		{
-			_parentCullableRoom.AddChildCullable(this);
-			_attachedToSurface = true;
+			this._parentCullableRoom.AddChildCullable(this);
+			this._attachedToSurface = true;
 		}
-		_gridSettings.ProcessAttachment();
-		if (_sizeMaxRandomMultiplier > 0f)
+		this._gridSettings.ProcessAttachment();
+		if (this._sizeMaxRandomMultiplier > 0f)
 		{
-			DecalSize = _defaultSize * (UnityEngine.Random.value * _sizeMaxRandomMultiplier + 1f);
+			this.DecalSize = this._defaultSize * (UnityEngine.Random.value * this._sizeMaxRandomMultiplier + 1f);
 		}
 	}
 
 	public virtual void Detach()
 	{
-		if (_attachedToSurface)
+		if (this._attachedToSurface)
 		{
-			_attachedToSurface = false;
-			if (_parentCullableRoom != null)
+			this._attachedToSurface = false;
+			if (this._parentCullableRoom != null)
 			{
-				_parentCullableRoom.RemoveChildSullable(this);
+				this._parentCullableRoom.RemoveChildSullable(this);
 			}
 		}
 	}
 
 	public void SetRandomRotation()
 	{
-		CachedTransform.Rotate(0f, 0f, UnityEngine.Random.value * 360f, Space.Self);
+		this.CachedTransform.Rotate(0f, 0f, UnityEngine.Random.value * 360f, Space.Self);
 	}
 
 	protected virtual void Awake()
 	{
-		_projector = GetComponent<DecalProjector>();
-		CachedTransform = base.transform;
-		_gridSettings.SetReference(this);
-		_defaultSize = DecalSize;
+		this._projector = base.GetComponent<DecalProjector>();
+		this.CachedTransform = base.transform;
+		this._gridSettings.SetReference(this);
+		this._defaultSize = this.DecalSize;
 	}
 
 	protected virtual void OnEnable()
 	{
-		_projector.enabled = true;
+		this._projector.enabled = true;
 	}
 
 	protected virtual void OnDisable()
 	{
-		_projector.enabled = false;
+		this._projector.enabled = false;
 	}
 
 	protected override void OnVisibilityChanged(bool isVisible)

@@ -17,19 +17,19 @@ public class SSPlaintextSetting : ServerSpecificSettingBase, ISSUpdatable
 
 	public int CharacterLimit { get; private set; }
 
-	public override string DebugValue => SyncInputText;
+	public override string DebugValue => this.SyncInputText;
 
 	private int CharacterLimitOriginal
 	{
 		get
 		{
-			int valueOrDefault = _characterLimitOriginalCache.GetValueOrDefault();
-			if (!_characterLimitOriginalCache.HasValue)
+			int valueOrDefault = this._characterLimitOriginalCache.GetValueOrDefault();
+			if (!this._characterLimitOriginalCache.HasValue)
 			{
 				valueOrDefault = (base.OriginalDefinition as SSPlaintextSetting).CharacterLimit;
-				_characterLimitOriginalCache = valueOrDefault;
+				this._characterLimitOriginalCache = valueOrDefault;
 			}
-			return _characterLimitOriginalCache.Value;
+			return this._characterLimitOriginalCache.Value;
 		}
 	}
 
@@ -37,12 +37,12 @@ public class SSPlaintextSetting : ServerSpecificSettingBase, ISSUpdatable
 
 	public SSPlaintextSetting(int? id, string label, string placeholder = "...", int characterLimit = 64, TMP_InputField.ContentType contentType = TMP_InputField.ContentType.Standard, string hint = null)
 	{
-		SetId(id, label);
+		base.SetId(id, label);
 		base.Label = label;
 		base.HintDescription = hint;
-		Placeholder = placeholder;
-		CharacterLimit = characterLimit;
-		ContentType = contentType;
+		this.Placeholder = placeholder;
+		this.CharacterLimit = characterLimit;
+		this.ContentType = contentType;
 	}
 
 	public void SendClearRequest(Func<ReferenceHub, bool> receiveFilter = null)
@@ -60,35 +60,35 @@ public class SSPlaintextSetting : ServerSpecificSettingBase, ISSUpdatable
 
 	public override void ApplyDefaultValues()
 	{
-		SyncInputText = string.Empty;
+		this.SyncInputText = string.Empty;
 	}
 
 	public override void SerializeEntry(NetworkWriter writer)
 	{
 		base.SerializeEntry(writer);
-		writer.WriteString(Placeholder);
-		writer.WriteUShort((ushort)CharacterLimit);
-		writer.WriteByte((byte)ContentType);
+		writer.WriteString(this.Placeholder);
+		writer.WriteUShort((ushort)this.CharacterLimit);
+		writer.WriteByte((byte)this.ContentType);
 	}
 
 	public override void DeserializeEntry(NetworkReader reader)
 	{
 		base.DeserializeEntry(reader);
-		Placeholder = reader.ReadString();
-		CharacterLimit = reader.ReadUShort();
-		ContentType = (TMP_InputField.ContentType)reader.ReadByte();
+		this.Placeholder = reader.ReadString();
+		this.CharacterLimit = reader.ReadUShort();
+		this.ContentType = (TMP_InputField.ContentType)reader.ReadByte();
 	}
 
 	public override void SerializeValue(NetworkWriter writer)
 	{
 		base.SerializeValue(writer);
-		writer.WriteString(SyncInputText);
+		writer.WriteString(this.SyncInputText);
 	}
 
 	public override void DeserializeValue(NetworkReader reader)
 	{
 		base.DeserializeValue(reader);
-		SyncInputText = ValidateInputText(reader.ReadString());
+		this.SyncInputText = this.ValidateInputText(reader.ReadString());
 	}
 
 	public void DeserializeUpdate(NetworkReader reader)
@@ -102,7 +102,7 @@ public class SSPlaintextSetting : ServerSpecificSettingBase, ISSUpdatable
 		{
 			return string.Empty;
 		}
-		int characterLimitOriginal = CharacterLimitOriginal;
+		int characterLimitOriginal = this.CharacterLimitOriginal;
 		if (text.Length > characterLimitOriginal)
 		{
 			text = text.Remove(characterLimitOriginal);

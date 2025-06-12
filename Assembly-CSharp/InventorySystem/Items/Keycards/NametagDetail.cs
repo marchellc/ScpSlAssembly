@@ -39,39 +39,39 @@ public class NametagDetail : SyncedDetail, ICustomizableDetail
 
 	public void ParseArguments(ArraySegment<string> args)
 	{
-		_customNametag = args.At(0).Replace('_', ' ');
+		NametagDetail._customNametag = args.At(0).Replace('_', ' ');
 	}
 
 	public void SetArguments(ArraySegment<object> args)
 	{
-		_customNametag = (string)args.At(0);
+		NametagDetail._customNametag = (string)args.At(0);
 	}
 
 	public override void WriteDefault(NetworkWriter writer)
 	{
-		WriteNameWithPrefix(writer, "Name Not Set", RoleTypeId.None);
+		this.WriteNameWithPrefix(writer, "Name Not Set", RoleTypeId.None);
 	}
 
 	public override void WriteNewItem(KeycardItem item, NetworkWriter writer)
 	{
 		if (item.Customizable)
 		{
-			writer.WriteString(_customNametag);
+			writer.WriteString(NametagDetail._customNametag);
 			return;
 		}
 		ReferenceHub owner = item.Owner;
-		WriteNameWithPrefix(writer, owner.nicknameSync.DisplayName, owner.GetRoleId());
+		this.WriteNameWithPrefix(writer, owner.nicknameSync.DisplayName, owner.GetRoleId());
 	}
 
 	public override void WriteNewPickup(KeycardPickup pickup, NetworkWriter writer)
 	{
 		if (pickup.Position.TryGetRoom(out var room) && room.Name == RoomName.Lcz914)
 		{
-			writer.WriteString(_fakeNamesScp914.NextRandomWord());
+			writer.WriteString(this._fakeNamesScp914.NextRandomWord());
 		}
 		else
 		{
-			WriteNameWithPrefix(writer, _fakeNamesPeople.NextRandomWord(), RoleTypeId.None);
+			this.WriteNameWithPrefix(writer, this._fakeNamesPeople.NextRandomWord(), RoleTypeId.None);
 		}
 	}
 
@@ -87,8 +87,8 @@ public class NametagDetail : SyncedDetail, ICustomizableDetail
 
 	private void WriteNameWithPrefix(NetworkWriter writer, string name, RoleTypeId role)
 	{
-		KeycardWordsCollection keycardWordsCollection = _fallbackPrefix;
-		RolePrefixOverride[] roleBasedPrefixes = _roleBasedPrefixes;
+		KeycardWordsCollection keycardWordsCollection = this._fallbackPrefix;
+		RolePrefixOverride[] roleBasedPrefixes = this._roleBasedPrefixes;
 		for (int i = 0; i < roleBasedPrefixes.Length; i++)
 		{
 			RolePrefixOverride rolePrefixOverride = roleBasedPrefixes[i];

@@ -20,10 +20,10 @@ public class LiteNetLib4MirrorDiscovery : MonoBehaviour
 
 	protected virtual void Awake()
 	{
-		if (Singleton == null)
+		if (LiteNetLib4MirrorDiscovery.Singleton == null)
 		{
-			GetComponent<LiteNetLib4MirrorTransport>().InitializeTransport();
-			Singleton = this;
+			base.GetComponent<LiteNetLib4MirrorTransport>().InitializeTransport();
+			LiteNetLib4MirrorDiscovery.Singleton = this;
 		}
 	}
 
@@ -55,11 +55,11 @@ public class LiteNetLib4MirrorDiscovery : MonoBehaviour
 	{
 		if (LiteNetLib4MirrorCore.State == LiteNetLib4MirrorCore.States.Discovery)
 		{
-			LiteNetLib4MirrorUtils.ReusePutDiscovery(DataWriter, text, ref _lastDiscoveryMessage);
-			ushort[] array = Singleton.ports;
+			LiteNetLib4MirrorUtils.ReusePutDiscovery(LiteNetLib4MirrorDiscovery.DataWriter, text, ref LiteNetLib4MirrorDiscovery._lastDiscoveryMessage);
+			ushort[] array = LiteNetLib4MirrorDiscovery.Singleton.ports;
 			foreach (ushort port in array)
 			{
-				LiteNetLib4MirrorCore.Host.SendBroadcast(DataWriter, port);
+				LiteNetLib4MirrorCore.Host.SendBroadcast(LiteNetLib4MirrorDiscovery.DataWriter, port);
 			}
 		}
 	}
@@ -76,16 +76,16 @@ public class LiteNetLib4MirrorDiscovery : MonoBehaviour
 	{
 		if (messagetype == UnconnectedMessageType.BasicMessage && reader.TryGetString(out var result) && result == Application.productName)
 		{
-			Singleton.onDiscoveryResponse.Invoke(remoteendpoint, LiteNetLib4MirrorUtils.FromBase64(reader.GetString()));
+			LiteNetLib4MirrorDiscovery.Singleton.onDiscoveryResponse.Invoke(remoteendpoint, LiteNetLib4MirrorUtils.FromBase64(reader.GetString()));
 		}
 		reader.Recycle();
 	}
 
 	internal static void OnDiscoveryRequest(IPEndPoint remoteendpoint, NetPacketReader reader, UnconnectedMessageType messagetype)
 	{
-		if (messagetype == UnconnectedMessageType.Broadcast && reader.TryGetString(out var result) && result == Application.productName && Singleton.ProcessDiscoveryRequest(remoteendpoint, LiteNetLib4MirrorUtils.FromBase64(reader.GetString()), out var response))
+		if (messagetype == UnconnectedMessageType.Broadcast && reader.TryGetString(out var result) && result == Application.productName && LiteNetLib4MirrorDiscovery.Singleton.ProcessDiscoveryRequest(remoteendpoint, LiteNetLib4MirrorUtils.FromBase64(reader.GetString()), out var response))
 		{
-			LiteNetLib4MirrorCore.Host.SendUnconnectedMessage(LiteNetLib4MirrorUtils.ReusePutDiscovery(DataWriter, response, ref _lastDiscoveryMessage), remoteendpoint);
+			LiteNetLib4MirrorCore.Host.SendUnconnectedMessage(LiteNetLib4MirrorUtils.ReusePutDiscovery(LiteNetLib4MirrorDiscovery.DataWriter, response, ref LiteNetLib4MirrorDiscovery._lastDiscoveryMessage), remoteendpoint);
 		}
 		reader.Recycle();
 	}

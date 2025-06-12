@@ -18,21 +18,21 @@ public class CameraOverconRenderer : PooledOverconRenderer
 
 	public void SpawnOvercon(Scp079Camera newCamera, Scp079InteractableBase target)
 	{
-		if (CheckVisibility(newCamera, target))
+		if (this.CheckVisibility(newCamera, target))
 		{
-			CameraOvercon fromPool = GetFromPool<CameraOvercon>();
+			CameraOvercon fromPool = base.GetFromPool<CameraOvercon>();
 			fromPool.Setup(newCamera, target as Scp079Camera, isElevator: false);
-			VisibleOvercons.Add(fromPool);
+			CameraOverconRenderer.VisibleOvercons.Add(fromPool);
 		}
 	}
 
 	internal override void SpawnOvercons(Scp079Camera newCamera)
 	{
-		ReturnAll();
-		VisibleOvercons.Clear();
+		base.ReturnAll();
+		CameraOverconRenderer.VisibleOvercons.Clear();
 		foreach (Scp079InteractableBase allInstance in Scp079InteractableBase.AllInstances)
 		{
-			SpawnOvercon(newCamera, allInstance);
+			this.SpawnOvercon(newCamera, allInstance);
 		}
 		if (!DoorVariant.DoorsByRoom.TryGetValue(newCamera.Room, out var value))
 		{
@@ -46,11 +46,11 @@ public class CameraOverconRenderer : PooledOverconRenderer
 				ElevatorDoor targetElevator = doorsForGroup[(doorsForGroup.IndexOf(elevatorDoor) + 1) % doorsForGroup.Count];
 				if (targetElevator.Rooms.Length == 1 && Scp079Camera.TryGetClosestCamera(targetElevator.transform.position, (Scp079Camera x) => x.Room == targetElevator.Rooms[0], out var closest2))
 				{
-					CameraOvercon fromPool = GetFromPool<CameraOvercon>();
+					CameraOvercon fromPool = base.GetFromPool<CameraOvercon>();
 					fromPool.Setup(newCamera, closest2, isElevator: true);
 					fromPool.Position = elevatorDoor.transform.position + Vector3.up * 3f;
 					fromPool.Rescale(newCamera);
-					VisibleOvercons.Add(fromPool);
+					CameraOverconRenderer.VisibleOvercons.Add(fromPool);
 				}
 			}
 		}

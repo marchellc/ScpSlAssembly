@@ -34,8 +34,8 @@ public class Scp3114Inventory : SubroutineBase, IInteractionBlocker, IPoolSpawna
 	protected override void Awake()
 	{
 		base.Awake();
-		_scpRole = base.Role as Scp3114Role;
-		_scpRole.CurIdentity.OnStatusChanged += OnStatusChanged;
+		this._scpRole = base.Role as Scp3114Role;
+		this._scpRole.CurIdentity.OnStatusChanged += OnStatusChanged;
 	}
 
 	private void OnStatusChanged()
@@ -49,16 +49,16 @@ public class Scp3114Inventory : SubroutineBase, IInteractionBlocker, IPoolSpawna
 	public void SpawnObject()
 	{
 		base.Role.TryGetOwner(out var hub);
-		_lastCoordinator = hub.interCoordinator;
-		_lastCoordinator.AddBlocker(this);
+		this._lastCoordinator = hub.interCoordinator;
+		this._lastCoordinator.AddBlocker(this);
 	}
 
 	public void ResetObject()
 	{
-		if (!(_lastCoordinator == null))
+		if (!(this._lastCoordinator == null))
 		{
-			_lastCoordinator.RemoveBlocker(this);
-			_lastCoordinator = null;
+			this._lastCoordinator.RemoveBlocker(this);
+			this._lastCoordinator = null;
 		}
 	}
 }

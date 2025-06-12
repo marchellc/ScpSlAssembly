@@ -12,10 +12,10 @@ public readonly struct CentralAuthPreauthToken
 
 	public CentralAuthPreauthToken(string userId, byte flags, string country, long expiration, string signature)
 	{
-		UserId = userId;
-		Flags = flags;
-		Country = country;
-		Expiration = expiration;
-		Signature = signature;
+		this.UserId = userId;
+		this.Flags = flags;
+		this.Country = country;
+		this.Expiration = expiration;
+		this.Signature = signature;
 	}
 }

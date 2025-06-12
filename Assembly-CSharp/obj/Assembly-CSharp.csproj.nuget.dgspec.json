@@ -1,23 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\mcx\\Documents\\Development\\ScpSlAssembly\\Assembly-CSharp\\Assembly-CSharp.csproj": {}
+    "/home/mcx/Documents/Development/ScpSlAssembly/Assembly-CSharp/Assembly-CSharp.csproj": {}
   },
   "projects": {
-    "C:\\Users\\mcx\\Documents\\Development\\ScpSlAssembly\\Assembly-CSharp\\Assembly-CSharp.csproj": {
+    "/home/mcx/Documents/Development/ScpSlAssembly/Assembly-CSharp/Assembly-CSharp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\mcx\\Documents\\Development\\ScpSlAssembly\\Assembly-CSharp\\Assembly-CSharp.csproj",
+        "projectUniqueName": "/home/mcx/Documents/Development/ScpSlAssembly/Assembly-CSharp/Assembly-CSharp.csproj",
         "projectName": "Assembly-CSharp",
-        "projectPath": "C:\\Users\\mcx\\Documents\\Development\\ScpSlAssembly\\Assembly-CSharp\\Assembly-CSharp.csproj",
-        "packagesPath": "C:\\Users\\mcx\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\mcx\\Documents\\Development\\ScpSlAssembly\\Assembly-CSharp\\obj\\",
+        "projectPath": "/home/mcx/Documents/Development/ScpSlAssembly/Assembly-CSharp/Assembly-CSharp.csproj",
+        "packagesPath": "/home/mcx/.nuget/packages/",
+        "outputPath": "/home/mcx/Documents/Development/ScpSlAssembly/Assembly-CSharp/obj/",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
-        ],
         "configFilePaths": [
-          "C:\\Users\\mcx\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/home/mcx/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net40"
@@ -54,7 +51,7 @@
               "autoReferenced": true
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100-preview.2.25164.34\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/home/mcx/.dotnet/sdk/10.0.100-preview.1.25120.13/RuntimeIdentifierGraph.json"
         }
       }
     }

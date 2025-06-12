@@ -65,35 +65,35 @@ internal static class DoubleToStringConverter
 
 	private static byte[] GetDecimalRepBuffer(int size)
 	{
-		if (decimalRepBuffer == null)
+		if (DoubleToStringConverter.decimalRepBuffer == null)
 		{
-			decimalRepBuffer = new byte[size];
+			DoubleToStringConverter.decimalRepBuffer = new byte[size];
 		}
-		return decimalRepBuffer;
+		return DoubleToStringConverter.decimalRepBuffer;
 	}
 
 	private static byte[] GetExponentialRepBuffer(int size)
 	{
-		if (exponentialRepBuffer == null)
+		if (DoubleToStringConverter.exponentialRepBuffer == null)
 		{
-			exponentialRepBuffer = new byte[size];
+			DoubleToStringConverter.exponentialRepBuffer = new byte[size];
 		}
-		return exponentialRepBuffer;
+		return DoubleToStringConverter.exponentialRepBuffer;
 	}
 
 	private static byte[] GetToStringBuffer()
 	{
-		if (toStringBuffer == null)
+		if (DoubleToStringConverter.toStringBuffer == null)
 		{
-			toStringBuffer = new byte[24];
+			DoubleToStringConverter.toStringBuffer = new byte[24];
 		}
-		return toStringBuffer;
+		return DoubleToStringConverter.toStringBuffer;
 	}
 
 	public static int GetBytes(ref byte[] buffer, int offset, float value)
 	{
 		StringBuilder result_builder = new StringBuilder(buffer, offset);
-		if (!ToShortestIeeeNumber(value, ref result_builder, DtoaMode.SHORTEST_SINGLE))
+		if (!DoubleToStringConverter.ToShortestIeeeNumber(value, ref result_builder, DtoaMode.SHORTEST_SINGLE))
 		{
 			throw new InvalidOperationException("not support float value:" + value);
 		}
@@ -104,7 +104,7 @@ internal static class DoubleToStringConverter
 	public static int GetBytes(ref byte[] buffer, int offset, double value)
 	{
 		StringBuilder result_builder = new StringBuilder(buffer, offset);
-		if (!ToShortestIeeeNumber(value, ref result_builder, DtoaMode.SHORTEST))
+		if (!DoubleToStringConverter.ToShortestIeeeNumber(value, ref result_builder, DtoaMode.SHORTEST))
 		{
 			throw new InvalidOperationException("not support double value:" + value);
 		}
@@ -136,11 +136,11 @@ internal static class DoubleToStringConverter
 	{
 		int num = (number_bits + 1) * 1233 >> 12;
 		num++;
-		if (number < kSmallPowersOfTen[num])
+		if (number < DoubleToStringConverter.kSmallPowersOfTen[num])
 		{
 			num--;
 		}
-		power = kSmallPowersOfTen[num];
+		power = DoubleToStringConverter.kSmallPowersOfTen[num];
 		exponent_plus_one = num;
 	}
 
@@ -153,7 +153,7 @@ internal static class DoubleToStringConverter
 		DiyFp diyFp2 = new DiyFp((ulong)(1L << -w.e), w.e);
 		uint num2 = (uint)(a.f >> -diyFp2.e);
 		ulong num3 = a.f & (diyFp2.f - 1);
-		BiggestPowerTen(num2, 64 - -diyFp2.e, out var power, out var exponent_plus_one);
+		DoubleToStringConverter.BiggestPowerTen(num2, 64 - -diyFp2.e, out var power, out var exponent_plus_one);
 		kappa = exponent_plus_one;
 		length = 0;
 		while (kappa > 0)
@@ -166,7 +166,7 @@ internal static class DoubleToStringConverter
 			ulong num5 = ((ulong)num2 << -diyFp2.e) + num3;
 			if (num5 < diyFp.f)
 			{
-				return RoundWeed(buffer, length, DiyFp.Minus(ref a, ref w).f, diyFp.f, num5, (ulong)power << -diyFp2.e, num);
+				return DoubleToStringConverter.RoundWeed(buffer, length, DiyFp.Minus(ref a, ref w).f, diyFp.f, num5, (ulong)power << -diyFp2.e, num);
 			}
 			power /= 10;
 		}
@@ -182,7 +182,7 @@ internal static class DoubleToStringConverter
 			kappa--;
 		}
 		while (num3 >= diyFp.f);
-		return RoundWeed(buffer, length, DiyFp.Minus(ref a, ref w).f * num, diyFp.f, num3, diyFp2.f, num);
+		return DoubleToStringConverter.RoundWeed(buffer, length, DiyFp.Minus(ref a, ref w).f * num, diyFp.f, num3, diyFp2.f, num);
 	}
 
 	private static bool Grisu3(double v, FastDtoaMode mode, byte[] buffer, out int length, out int decimal_exponent)
@@ -208,7 +208,7 @@ internal static class DoubleToStringConverter
 		DiyFp low = DiyFp.Times(ref out_m_minus, ref power);
 		DiyFp high = DiyFp.Times(ref out_m_plus, ref power);
 		int kappa;
-		bool result = DigitGen(low, w, high, buffer, out length, out kappa);
+		bool result = DoubleToStringConverter.DigitGen(low, w, high, buffer, out length, out kappa);
 		decimal_exponent = -decimal_exponent2 + kappa;
 		return result;
 	}
@@ -219,7 +219,7 @@ internal static class DoubleToStringConverter
 		int decimal_exponent = 0;
 		if ((uint)mode <= 1u)
 		{
-			flag = Grisu3(v, mode, buffer, out length, out decimal_exponent);
+			flag = DoubleToStringConverter.Grisu3(v, mode, buffer, out length, out decimal_exponent);
 			if (flag)
 			{
 				decimal_point = length + decimal_exponent;
@@ -235,10 +235,10 @@ internal static class DoubleToStringConverter
 
 	private static bool HandleSpecialValues(double value, ref StringBuilder result_builder)
 	{
-		Double @double = new Double(value);
-		if (@double.IsInfinite())
+		Double obj = new Double(value);
+		if (obj.IsInfinite())
 		{
-			if (infinity_symbol_ == null)
+			if (DoubleToStringConverter.infinity_symbol_ == null)
 			{
 				return false;
 			}
@@ -246,16 +246,16 @@ internal static class DoubleToStringConverter
 			{
 				result_builder.AddCharacter(45);
 			}
-			result_builder.AddString(infinity_symbol_);
+			result_builder.AddString(DoubleToStringConverter.infinity_symbol_);
 			return true;
 		}
-		if (@double.IsNan())
+		if (obj.IsNan())
 		{
-			if (nan_symbol_ == null)
+			if (DoubleToStringConverter.nan_symbol_ == null)
 			{
 				return false;
 			}
-			result_builder.AddString(nan_symbol_);
+			result_builder.AddString(DoubleToStringConverter.nan_symbol_);
 			return true;
 		}
 		return false;
@@ -265,28 +265,28 @@ internal static class DoubleToStringConverter
 	{
 		if (new Double(value).IsSpecial())
 		{
-			return HandleSpecialValues(value, ref result_builder);
+			return DoubleToStringConverter.HandleSpecialValues(value, ref result_builder);
 		}
-		byte[] array = GetDecimalRepBuffer(18);
-		if (!DoubleToAscii(value, mode, 0, array, out var sign, out var length, out var point))
+		byte[] array = DoubleToStringConverter.GetDecimalRepBuffer(18);
+		if (!DoubleToStringConverter.DoubleToAscii(value, mode, 0, array, out var sign, out var length, out var point))
 		{
 			string str = value.ToString("G17", CultureInfo.InvariantCulture);
 			result_builder.AddStringSlow(str);
 			return true;
 		}
-		bool flag = (flags_ & Flags.UNIQUE_ZERO) != 0;
+		bool flag = (DoubleToStringConverter.flags_ & Flags.UNIQUE_ZERO) != 0;
 		if (sign && (value != 0.0 || !flag))
 		{
 			result_builder.AddCharacter(45);
 		}
 		int num = point - 1;
-		if (decimal_in_shortest_low_ <= num && num < decimal_in_shortest_high_)
+		if (DoubleToStringConverter.decimal_in_shortest_low_ <= num && num < DoubleToStringConverter.decimal_in_shortest_high_)
 		{
-			CreateDecimalRepresentation(array, length, point, Math.Max(0, length - point), ref result_builder);
+			DoubleToStringConverter.CreateDecimalRepresentation(array, length, point, Math.Max(0, length - point), ref result_builder);
 		}
 		else
 		{
-			CreateExponentialRepresentation(array, length, num, ref result_builder);
+			DoubleToStringConverter.CreateExponentialRepresentation(array, length, num, ref result_builder);
 		}
 		return true;
 	}
@@ -325,11 +325,11 @@ internal static class DoubleToStringConverter
 		}
 		if (digits_after_point == 0)
 		{
-			if ((flags_ & Flags.EMIT_TRAILING_DECIMAL_POINT) != 0)
+			if ((DoubleToStringConverter.flags_ & Flags.EMIT_TRAILING_DECIMAL_POINT) != Flags.NO_FLAGS)
 			{
 				result_builder.AddCharacter(46);
 			}
-			if ((flags_ & Flags.EMIT_TRAILING_ZERO_AFTER_POINT) != 0)
+			if ((DoubleToStringConverter.flags_ & Flags.EMIT_TRAILING_ZERO_AFTER_POINT) != Flags.NO_FLAGS)
 			{
 				result_builder.AddCharacter(48);
 			}
@@ -344,13 +344,13 @@ internal static class DoubleToStringConverter
 			result_builder.AddCharacter(46);
 			result_builder.AddSubstring(decimal_digits, 1, length - 1);
 		}
-		result_builder.AddCharacter((byte)exponent_character_);
+		result_builder.AddCharacter((byte)DoubleToStringConverter.exponent_character_);
 		if (exponent < 0)
 		{
 			result_builder.AddCharacter(45);
 			exponent = -exponent;
 		}
-		else if ((flags_ & Flags.EMIT_POSITIVE_EXPONENT_SIGN) != 0)
+		else if ((DoubleToStringConverter.flags_ & Flags.EMIT_POSITIVE_EXPONENT_SIGN) != Flags.NO_FLAGS)
 		{
 			result_builder.AddCharacter(43);
 		}
@@ -359,7 +359,7 @@ internal static class DoubleToStringConverter
 			result_builder.AddCharacter(48);
 			return;
 		}
-		byte[] array = GetExponentialRepBuffer(6);
+		byte[] array = DoubleToStringConverter.GetExponentialRepBuffer(6);
 		array[5] = 0;
 		int num = 5;
 		while (exponent > 0)
@@ -391,9 +391,9 @@ internal static class DoubleToStringConverter
 		switch (mode)
 		{
 		case DtoaMode.SHORTEST:
-			return FastDtoa(v, FastDtoaMode.FAST_DTOA_SHORTEST, vector, out length, out point);
+			return DoubleToStringConverter.FastDtoa(v, FastDtoaMode.FAST_DTOA_SHORTEST, vector, out length, out point);
 		case DtoaMode.SHORTEST_SINGLE:
-			return FastDtoa(v, FastDtoaMode.FAST_DTOA_SHORTEST_SINGLE, vector, out length, out point);
+			return DoubleToStringConverter.FastDtoa(v, FastDtoaMode.FAST_DTOA_SHORTEST_SINGLE, vector, out length, out point);
 		default:
 		{
 			bool flag = false;

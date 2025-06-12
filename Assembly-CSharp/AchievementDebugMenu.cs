@@ -17,22 +17,22 @@ public class AchievementDebugMenu : MonoBehaviour
 
 	public void ResetQueuedAchievements()
 	{
-		for (int i = 0; i < QueuedAchievements.Count; i++)
+		for (int i = 0; i < AchievementDebugMenu.QueuedAchievements.Count; i++)
 		{
-			QueuedAchievements.Dequeue().Reset();
+			AchievementDebugMenu.QueuedAchievements.Dequeue().Reset();
 		}
 	}
 
 	private void Awake()
 	{
-		foreach (AchievementName allowedAchievement in AllowedAchievements)
+		foreach (AchievementName allowedAchievement in this.AllowedAchievements)
 		{
-			Object.Instantiate(_buttonPrefab, _targetParent).TargetAchievement = allowedAchievement;
+			Object.Instantiate(this._buttonPrefab, this._targetParent).TargetAchievement = allowedAchievement;
 		}
 	}
 
 	private void OnDisable()
 	{
-		QueuedAchievements.Clear();
+		AchievementDebugMenu.QueuedAchievements.Clear();
 	}
 }

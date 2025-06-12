@@ -15,43 +15,43 @@ public class DynamicChildController : MonoBehaviour
 	{
 		child.SetActive(child.activeInHierarchy);
 		child.transform.GetPositionAndRotation(out var position, out var rotation);
-		child.transform.parent = ((_dynamicRoot == null) ? CreateDynamicRoot() : _dynamicRoot);
+		child.transform.parent = ((DynamicChildController._dynamicRoot == null) ? DynamicChildController.CreateDynamicRoot() : DynamicChildController._dynamicRoot);
 		child.transform.SetPositionAndRotation(position, rotation);
-		Child = child;
+		this.Child = child;
 	}
 
 	private static Transform CreateDynamicRoot()
 	{
-		_dynamicRoot = new GameObject("DynamicChild Container").transform;
-		return _dynamicRoot;
+		DynamicChildController._dynamicRoot = new GameObject("DynamicChild Container").transform;
+		return DynamicChildController._dynamicRoot;
 	}
 
 	private void Awake()
 	{
-		if (!(spawnPrefab == null))
+		if (!(this.spawnPrefab == null))
 		{
-			SetChild(Object.Instantiate(spawnPrefab, base.transform.position, base.transform.rotation, base.transform));
+			this.SetChild(Object.Instantiate(this.spawnPrefab, base.transform.position, base.transform.rotation, base.transform));
 		}
 	}
 
 	private void OnEnable()
 	{
-		if (!(Child == null))
+		if (!(this.Child == null))
 		{
-			Child.SetActive(value: true);
+			this.Child.SetActive(value: true);
 		}
 	}
 
 	private void OnDisable()
 	{
-		if (!(Child == null))
+		if (!(this.Child == null))
 		{
-			Child.SetActive(value: false);
+			this.Child.SetActive(value: false);
 		}
 	}
 
 	private void OnDestroy()
 	{
-		Object.Destroy(Child);
+		Object.Destroy(this.Child);
 	}
 }

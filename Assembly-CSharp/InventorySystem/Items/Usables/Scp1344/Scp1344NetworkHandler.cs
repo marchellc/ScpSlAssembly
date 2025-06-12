@@ -19,8 +19,8 @@ public static class Scp1344NetworkHandler
 	{
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			AlreadySyncedJoinNetIds.Clear();
-			ReceivedStatuses.Clear();
+			Scp1344NetworkHandler.AlreadySyncedJoinNetIds.Clear();
+			Scp1344NetworkHandler.ReceivedStatuses.Clear();
 			NetworkClient.ReplaceHandler<Scp1344StatusMessage>(ClientProcessStatusMessage);
 			NetworkServer.ReplaceHandler<Scp1344StatusMessage>(ServerProcessStatusMessage);
 		};
@@ -35,13 +35,13 @@ public static class Scp1344NetworkHandler
 		msg.SendToAuthenticated();
 		if (!NetworkClient.activeHost)
 		{
-			ClientProcessStatusMessage(msg);
+			Scp1344NetworkHandler.ClientProcessStatusMessage(msg);
 		}
 	}
 
 	public static Scp1344Status GetSavedStatus(ushort serial)
 	{
-		return ReceivedStatuses.GetValueOrDefault(serial, Scp1344Status.Idle);
+		return Scp1344NetworkHandler.ReceivedStatuses.GetValueOrDefault(serial, Scp1344Status.Idle);
 	}
 
 	private static void ClientProcessStatusMessage(Scp1344StatusMessage msg)
@@ -53,7 +53,7 @@ public static class Scp1344NetworkHandler
 		}
 		else
 		{
-			ReceivedStatuses[msg.Serial] = msg.NewState;
+			Scp1344NetworkHandler.ReceivedStatuses[msg.Serial] = msg.NewState;
 		}
 	}
 
@@ -66,13 +66,13 @@ public static class Scp1344NetworkHandler
 		switch (msg.NewState)
 		{
 		case Scp1344Status.Idle:
-			if (msg.Serial == 0 && AlreadySyncedJoinNetIds.Add(hub.netId))
+			if (msg.Serial == 0 && Scp1344NetworkHandler.AlreadySyncedJoinNetIds.Add(hub.netId))
 			{
-				SyncAllInstances(conn);
+				Scp1344NetworkHandler.SyncAllInstances(conn);
 			}
 			break;
 		case Scp1344Status.Inspecting:
-			TryInspect(hub);
+			Scp1344NetworkHandler.TryInspect(hub);
 			break;
 		}
 	}
@@ -81,7 +81,7 @@ public static class Scp1344NetworkHandler
 	{
 		if (hub.inventory.CurInstance is Scp1344Item scp1344Item && !(scp1344Item == null) && scp1344Item.AllowInspect)
 		{
-			ServerSendMessage(new Scp1344StatusMessage(scp1344Item.ItemSerial, Scp1344Status.Inspecting));
+			Scp1344NetworkHandler.ServerSendMessage(new Scp1344StatusMessage(scp1344Item.ItemSerial, Scp1344Status.Inspecting));
 		}
 	}
 
@@ -89,7 +89,7 @@ public static class Scp1344NetworkHandler
 	{
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			if (allHub.inventory.CurInstance is Scp1344Item scp1344Item && !(scp1344Item == null) && scp1344Item.Status != 0)
+			if (allHub.inventory.CurInstance is Scp1344Item scp1344Item && !(scp1344Item == null) && scp1344Item.Status != Scp1344Status.Idle)
 			{
 				conn.Send(new Scp1344StatusMessage(scp1344Item.ItemSerial, scp1344Item.Status));
 			}

@@ -19,12 +19,12 @@ public class StructurePositionSync : NetworkBehaviour
 	{
 		get
 		{
-			return _rotationY;
+			return this._rotationY;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _rotationY, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._rotationY, 1uL, null);
 		}
 	}
 
@@ -32,12 +32,12 @@ public class StructurePositionSync : NetworkBehaviour
 	{
 		get
 		{
-			return _position;
+			return this._position;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _position, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._position, 2uL, null);
 		}
 	}
 
@@ -46,13 +46,13 @@ public class StructurePositionSync : NetworkBehaviour
 		Transform transform = base.transform;
 		if (NetworkServer.active)
 		{
-			transform.GetPositionAndRotation(out _position, out var rotation);
-			Network_rotationY = (sbyte)Mathf.RoundToInt(rotation.eulerAngles.y / 5.625f);
+			transform.GetPositionAndRotation(out this._position, out var rotation);
+			this.Network_rotationY = (sbyte)Mathf.RoundToInt(rotation.eulerAngles.y / 5.625f);
 		}
 		else
 		{
-			Quaternion rotation2 = Quaternion.Euler((float)_rotationY * 5.625f * Vector3.up);
-			transform.SetPositionAndRotation(_position, rotation2);
+			Quaternion rotation2 = Quaternion.Euler((float)this._rotationY * 5.625f * Vector3.up);
+			transform.SetPositionAndRotation(this._position, rotation2);
 		}
 	}
 
@@ -66,18 +66,18 @@ public class StructurePositionSync : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteSByte(_rotationY);
-			writer.WriteVector3(_position);
+			writer.WriteSByte(this._rotationY);
+			writer.WriteVector3(this._position);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteSByte(_rotationY);
+			writer.WriteSByte(this._rotationY);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteVector3(_position);
+			writer.WriteVector3(this._position);
 		}
 	}
 
@@ -86,18 +86,18 @@ public class StructurePositionSync : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _rotationY, null, reader.ReadSByte());
-			GeneratedSyncVarDeserialize(ref _position, null, reader.ReadVector3());
+			base.GeneratedSyncVarDeserialize(ref this._rotationY, null, reader.ReadSByte());
+			base.GeneratedSyncVarDeserialize(ref this._position, null, reader.ReadVector3());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _rotationY, null, reader.ReadSByte());
+			base.GeneratedSyncVarDeserialize(ref this._rotationY, null, reader.ReadSByte());
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _position, null, reader.ReadVector3());
+			base.GeneratedSyncVarDeserialize(ref this._position, null, reader.ReadVector3());
 		}
 	}
 }

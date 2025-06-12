@@ -12,8 +12,8 @@ public abstract class ParentDangerBase : DangerStackBase
 	{
 		get
 		{
-			ProcessChildren();
-			return ChildDangers.Count > 0;
+			this.ProcessChildren();
+			return this.ChildDangers.Count > 0;
 		}
 		protected set
 		{
@@ -23,16 +23,16 @@ public abstract class ParentDangerBase : DangerStackBase
 
 	private void ProcessChildren()
 	{
-		DangerValue = 0f;
-		for (int num = ChildDangers.Count - 1; num >= 0; num--)
+		this.DangerValue = 0f;
+		for (int num = this.ChildDangers.Count - 1; num >= 0; num--)
 		{
-			if (!ChildDangers[num].IsActive)
+			if (!this.ChildDangers[num].IsActive)
 			{
-				ChildDangers.RemoveAt(num);
+				this.ChildDangers.RemoveAt(num);
 			}
 			else
 			{
-				DangerValue += ChildDangers[num].DangerValue;
+				this.DangerValue += this.ChildDangers[num].DangerValue;
 			}
 		}
 	}
@@ -40,6 +40,6 @@ public abstract class ParentDangerBase : DangerStackBase
 	public override void Dispose()
 	{
 		base.Dispose();
-		ChildDangers.Clear();
+		this.ChildDangers.Clear();
 	}
 }

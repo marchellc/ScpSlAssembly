@@ -47,11 +47,11 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 	{
 		get
 		{
-			if (!IsReloading && !IsUnloading)
+			if (!this.IsReloading && !this.IsUnloading)
 			{
 				if (base.IsLocalPlayer)
 				{
-					return _requestTimer.Busy;
+					return this._requestTimer.Busy;
 				}
 				return false;
 			}
@@ -76,19 +76,19 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 				return;
 			}
 		}
-		if (IsReloading)
+		if (this.IsReloading)
 		{
 			PlayerEvents.OnReloadedWeapon(new PlayerReloadedWeaponEventArgs(base.Firearm.Owner, base.Firearm));
 		}
-		if (IsUnloading)
+		if (this.IsUnloading)
 		{
 			PlayerEvents.OnUnloadedWeapon(new PlayerUnloadedWeaponEventArgs(base.Firearm.Owner, base.Firearm));
 		}
-		IsReloading = false;
-		IsUnloading = false;
+		this.IsReloading = false;
+		this.IsUnloading = false;
 		if (base.IsServer)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(ReloaderMessageHeader.Stop);
 			});
@@ -97,7 +97,7 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 
 	public bool GetDisplayReloadingOrUnloading(ushort serial)
 	{
-		if (LastReceivedRpcs.TryGetValue(serial, out var value))
+		if (AnimatorReloaderModuleBase.LastReceivedRpcs.TryGetValue(serial, out var value))
 		{
 			return value.Header != ReloaderMessageHeader.Stop;
 		}
@@ -108,7 +108,7 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 	{
 		base.ServerProcessCmd(reader);
 		ReloaderMessageHeader header = (ReloaderMessageHeader)reader.ReadByte();
-		if (!TryContinueDeserialization(reader, base.ItemSerial, header, AutosyncMessageType.Cmd))
+		if (!this.TryContinueDeserialization(reader, base.ItemSerial, header, AutosyncMessageType.Cmd))
 		{
 			return;
 		}
@@ -127,41 +127,41 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 		flag = flag && !base.Firearm.AnyModuleBusy();
 		if (header == ReloaderMessageHeader.Reload)
 		{
-			PlayerReloadingWeaponEventArgs playerReloadingWeaponEventArgs = new PlayerReloadingWeaponEventArgs(base.Firearm.Owner, base.Firearm);
-			PlayerEvents.OnReloadingWeapon(playerReloadingWeaponEventArgs);
-			if (!playerReloadingWeaponEventArgs.IsAllowed)
+			PlayerReloadingWeaponEventArgs e = new PlayerReloadingWeaponEventArgs(base.Firearm.Owner, base.Firearm);
+			PlayerEvents.OnReloadingWeapon(e);
+			if (!e.IsAllowed)
 			{
 				flag = false;
 			}
 		}
 		else if (header == ReloaderMessageHeader.Unload)
 		{
-			PlayerUnloadingWeaponEventArgs playerUnloadingWeaponEventArgs = new PlayerUnloadingWeaponEventArgs(base.Firearm.Owner, base.Firearm);
-			PlayerEvents.OnUnloadingWeapon(playerUnloadingWeaponEventArgs);
-			if (!playerUnloadingWeaponEventArgs.IsAllowed)
+			PlayerUnloadingWeaponEventArgs e2 = new PlayerUnloadingWeaponEventArgs(base.Firearm.Owner, base.Firearm);
+			PlayerEvents.OnUnloadingWeapon(e2);
+			if (!e2.IsAllowed)
 			{
 				flag = false;
 			}
 		}
 		if (!flag)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(ReloaderMessageHeader.RequestRejected);
 			}, toAll: false);
-			if (!IsReloading && !IsUnloading)
+			if (!this.IsReloading && !this.IsUnloading)
 			{
-				SendRpc(delegate(NetworkWriter x)
+				this.SendRpc(delegate(NetworkWriter x)
 				{
 					x.WriteSubheader(ReloaderMessageHeader.Stop);
 				});
 			}
 			return;
 		}
-		SendRpc(delegate(NetworkWriter writer)
+		this.SendRpc(delegate(NetworkWriter writer)
 		{
 			writer.WriteSubheader(header);
-			if (_randomize)
+			if (this._randomize)
 			{
 				int num = UnityEngine.Random.Range(0, 256);
 				writer.WriteByte((byte)num);
@@ -173,50 +173,50 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 	{
 		base.ClientProcessRpcInstance(reader);
 		ReloaderMessageHeader reloaderMessageHeader = (ReloaderMessageHeader)reader.ReadByte();
-		if (!TryContinueDeserialization(reader, base.ItemSerial, reloaderMessageHeader, AutosyncMessageType.RpcInstance))
+		if (!this.TryContinueDeserialization(reader, base.ItemSerial, reloaderMessageHeader, AutosyncMessageType.RpcInstance))
 		{
 			return;
 		}
 		switch (reloaderMessageHeader)
 		{
 		case ReloaderMessageHeader.RequestRejected:
-			_requestTimer.Reset();
+			this._requestTimer.Reset();
 			return;
 		case ReloaderMessageHeader.Unload:
-			if (!_randomize)
+			if (!this._randomize)
 			{
 				break;
 			}
 			goto IL_0058;
 		case ReloaderMessageHeader.Reload:
 			{
-				if (!_randomize)
+				if (!this._randomize)
 				{
 					break;
 				}
 				goto IL_0058;
 			}
 			IL_0058:
-			Randomize(reader.ReadByte());
+			this.Randomize(reader.ReadByte());
 			break;
 		}
-		IsReloading = false;
-		IsUnloading = false;
-		_targetLayer = null;
+		this.IsReloading = false;
+		this.IsUnloading = false;
+		this._targetLayer = null;
 		switch (reloaderMessageHeader)
 		{
 		case ReloaderMessageHeader.Reload:
-			IsReloading = true;
-			StartReloading();
-			_requestTimer.Reset();
+			this.IsReloading = true;
+			this.StartReloading();
+			this._requestTimer.Reset();
 			break;
 		case ReloaderMessageHeader.Unload:
-			IsUnloading = true;
-			StartUnloading();
-			_requestTimer.Reset();
+			this.IsUnloading = true;
+			this.StartUnloading();
+			this._requestTimer.Reset();
 			break;
 		case ReloaderMessageHeader.Stop:
-			OnStopReloadingAndUnloading();
+			this.OnStopReloadingAndUnloading();
 			break;
 		}
 	}
@@ -225,9 +225,9 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 	{
 		base.ClientProcessRpcTemplate(reader, serial);
 		ReloaderMessageHeader reloaderMessageHeader = (ReloaderMessageHeader)reader.ReadByte();
-		if (TryContinueDeserialization(reader, serial, reloaderMessageHeader, AutosyncMessageType.RpcTemplate) && reloaderMessageHeader <= ReloaderMessageHeader.Stop)
+		if (this.TryContinueDeserialization(reader, serial, reloaderMessageHeader, AutosyncMessageType.RpcTemplate) && reloaderMessageHeader <= ReloaderMessageHeader.Stop)
 		{
-			LastRpcInfo orAdd = LastReceivedRpcs.GetOrAdd(serial, () => new LastRpcInfo());
+			LastRpcInfo orAdd = AnimatorReloaderModuleBase.LastReceivedRpcs.GetOrAdd(serial, () => new LastRpcInfo());
 			orAdd.NetTime = NetworkTime.time;
 			orAdd.Header = reloaderMessageHeader;
 		}
@@ -237,11 +237,11 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 	{
 		if (IReloadUnloadValidatorModule.ValidateReload(base.Firearm))
 		{
-			SendCmd(delegate(NetworkWriter x)
+			this.SendCmd(delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(ReloaderMessageHeader.Reload);
 			});
-			ClientOnRequestSent();
+			this.ClientOnRequestSent();
 		}
 	}
 
@@ -249,53 +249,53 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 	{
 		if (IReloadUnloadValidatorModule.ValidateUnload(base.Firearm))
 		{
-			SendCmd(delegate(NetworkWriter x)
+			this.SendCmd(delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(ReloaderMessageHeader.Unload);
 			});
-			ClientOnRequestSent();
+			this.ClientOnRequestSent();
 		}
 	}
 
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		LastReceivedRpcs.Clear();
+		AnimatorReloaderModuleBase.LastReceivedRpcs.Clear();
 	}
 
 	internal override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (IsReloading || IsUnloading)
+		if (this.IsReloading || this.IsUnloading)
 		{
-			DetectEnd();
+			this.DetectEnd();
 		}
 		if (!base.IsControllable)
 		{
 			return;
 		}
-		bool isHoldingKey = _isHoldingKey;
-		if (GetActionDown(ActionName.Reload))
+		bool isHoldingKey = this._isHoldingKey;
+		if (base.GetActionDown(ActionName.Reload))
 		{
-			_keyHoldTime = 0f;
-			_isHoldingKey = true;
+			this._keyHoldTime = 0f;
+			this._isHoldingKey = true;
 		}
-		else if (_isHoldingKey && !GetAction(ActionName.Reload))
+		else if (this._isHoldingKey && !base.GetAction(ActionName.Reload))
 		{
-			_isHoldingKey = false;
+			this._isHoldingKey = false;
 		}
-		if (_isHoldingKey)
+		if (this._isHoldingKey)
 		{
-			_keyHoldTime += Time.deltaTime;
-			if (!(_keyHoldTime < 1f))
+			this._keyHoldTime += Time.deltaTime;
+			if (!(this._keyHoldTime < 1f))
 			{
-				_isHoldingKey = false;
-				ClientTryUnload();
+				this._isHoldingKey = false;
+				this.ClientTryUnload();
 			}
 		}
 		else if (isHoldingKey)
 		{
-			ClientTryReload();
+			this.ClientTryReload();
 		}
 	}
 
@@ -304,9 +304,9 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 		base.OnHolstered();
 		if (base.IsServer)
 		{
-			if (IsReloading || IsUnloading)
+			if (this.IsReloading || this.IsUnloading)
 			{
-				StopReloadingAndUnloading();
+				this.StopReloadingAndUnloading();
 			}
 			BodyArmorUtils.SetPlayerDirty(base.Item.Owner);
 		}
@@ -333,18 +333,18 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 
 	protected virtual void ClientOnRequestSent()
 	{
-		_requestTimer.Trigger();
+		this._requestTimer.Trigger();
 	}
 
 	protected virtual void OnAnimEndDetected()
 	{
-		StopReloadingAndUnloading();
+		this.StopReloadingAndUnloading();
 	}
 
 	private bool TryContinueDeserialization(NetworkReader reader, ushort serial, ReloaderMessageHeader header, AutosyncMessageType scenario)
 	{
 		int position = reader.Position;
-		MessageInterceptionResult messageInterceptionResult = InterceptMessage(reader, serial, header, scenario);
+		MessageInterceptionResult messageInterceptionResult = this.InterceptMessage(reader, serial, header, scenario);
 		switch (messageInterceptionResult)
 		{
 		case MessageInterceptionResult.ResetAndContinue:
@@ -361,11 +361,11 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 
 	private void DetectEnd()
 	{
-		if (_targetLayer.HasValue)
+		if (this._targetLayer.HasValue)
 		{
-			if (base.Firearm.AnimGetCurStateInfo(_targetLayer.Value).tagHash != FirearmAnimatorHashes.Reload)
+			if (base.Firearm.AnimGetCurStateInfo(this._targetLayer.Value).tagHash != FirearmAnimatorHashes.Reload)
 			{
-				OnAnimEndDetected();
+				this.OnAnimEndDetected();
 			}
 			return;
 		}
@@ -374,7 +374,7 @@ public abstract class AnimatorReloaderModuleBase : ModuleBase, IReloaderModule, 
 		{
 			if (base.Firearm.AnimGetCurStateInfo(i).tagHash == FirearmAnimatorHashes.Reload)
 			{
-				_targetLayer = i;
+				this._targetLayer = i;
 				break;
 			}
 		}

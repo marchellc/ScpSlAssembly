@@ -21,32 +21,32 @@ public abstract class SubcomponentBase : MonoBehaviour, IAutosyncReceiver, IIden
 
 	public byte SyncId { get; private set; }
 
-	protected bool IsLocalPlayer => Item.IsLocalPlayer;
+	protected bool IsLocalPlayer => this.Item.IsLocalPlayer;
 
-	protected bool IsSpectator => Item.IsSpectator;
+	protected bool IsSpectator => this.Item.IsSpectator;
 
-	protected bool IsControllable => Item.IsControllable;
+	protected bool IsControllable => this.Item.IsControllable;
 
-	protected ushort ItemSerial => Item.ItemSerial;
+	protected ushort ItemSerial => this.Item.ItemSerial;
 
-	protected bool IsServer => Item.IsServer;
+	protected bool IsServer => this.Item.IsServer;
 
-	protected bool HasViewmodel => Item.HasViewmodel;
+	protected bool HasViewmodel => this.Item.HasViewmodel;
 
-	protected bool PrimaryActionBlocked => Item.PrimaryActionBlocked;
+	protected bool PrimaryActionBlocked => this.Item.PrimaryActionBlocked;
 
-	protected bool ItemUsageBlocked => Item.ItemUsageBlocked;
+	protected bool ItemUsageBlocked => this.Item.ItemUsageBlocked;
 
-	public ItemIdentifier ItemId => Item.ItemId;
+	public ItemIdentifier ItemId => this.Item.ItemId;
 
 	protected bool GetActionDown(ActionName action)
 	{
-		return Item.GetActionDown(action);
+		return this.Item.GetActionDown(action);
 	}
 
 	protected bool GetAction(ActionName action)
 	{
-		return Item.GetAction(action);
+		return this.Item.GetAction(action);
 	}
 
 	protected virtual void SendRpc(Action<NetworkWriter> writerFunc = null, bool toAll = true)
@@ -54,22 +54,22 @@ public abstract class SubcomponentBase : MonoBehaviour, IAutosyncReceiver, IIden
 		NetworkWriter writer;
 		if (toAll)
 		{
-			using (new AutosyncRpc(ItemId, out writer))
+			using (new AutosyncRpc(this.ItemId, out writer))
 			{
-				writer.WriteByte(SyncId);
+				writer.WriteByte(this.SyncId);
 				writerFunc?.Invoke(writer);
 				return;
 			}
 		}
-		SendRpc(Item.Owner, writerFunc);
+		this.SendRpc(this.Item.Owner, writerFunc);
 	}
 
 	protected virtual void SendRpc(Func<ReferenceHub, bool> condition, Action<NetworkWriter> writerFunc = null)
 	{
 		NetworkWriter writer;
-		using (new AutosyncRpc(ItemId, condition, out writer))
+		using (new AutosyncRpc(this.ItemId, condition, out writer))
 		{
-			writer.WriteByte(SyncId);
+			writer.WriteByte(this.SyncId);
 			writerFunc?.Invoke(writer);
 		}
 	}
@@ -77,9 +77,9 @@ public abstract class SubcomponentBase : MonoBehaviour, IAutosyncReceiver, IIden
 	protected virtual void SendRpc(ReferenceHub targetPlayer, Action<NetworkWriter> writerFunc = null)
 	{
 		NetworkWriter writer;
-		using (new AutosyncRpc(ItemId, targetPlayer, out writer))
+		using (new AutosyncRpc(this.ItemId, targetPlayer, out writer))
 		{
-			writer.WriteByte(SyncId);
+			writer.WriteByte(this.SyncId);
 			writerFunc?.Invoke(writer);
 		}
 	}
@@ -87,32 +87,32 @@ public abstract class SubcomponentBase : MonoBehaviour, IAutosyncReceiver, IIden
 	protected virtual void SendCmd(Action<NetworkWriter> writerFunc = null)
 	{
 		NetworkWriter writer;
-		using (new AutosyncCmd(ItemId, out writer))
+		using (new AutosyncCmd(this.ItemId, out writer))
 		{
-			writer.WriteByte(SyncId);
+			writer.WriteByte(this.SyncId);
 			writerFunc?.Invoke(writer);
 		}
 	}
 
 	protected virtual void OnValidate()
 	{
-		if (UniqueComponentId == 0 && base.transform.TryGetComponentInParent<ModularAutosyncItem>(out var comp))
+		if (this.UniqueComponentId == 0 && base.transform.TryGetComponentInParent<ModularAutosyncItem>(out var comp))
 		{
 			SubcomponentBase[] componentsInChildren = comp.GetComponentsInChildren<SubcomponentBase>();
 			int newId;
-			for (newId = GetInstanceID(); newId == 0 || componentsInChildren.Any((SubcomponentBase x) => x.UniqueComponentId == newId); newId++)
+			for (newId = base.GetInstanceID(); newId == 0 || componentsInChildren.Any((SubcomponentBase x) => x.UniqueComponentId == newId); newId++)
 			{
 			}
-			UniqueComponentId = newId;
+			this.UniqueComponentId = newId;
 		}
 	}
 
 	internal void Init(ModularAutosyncItem item, byte syncIndex)
 	{
-		Item = item;
-		SyncId = syncIndex;
-		Initialized = true;
-		OnInit();
+		this.Item = item;
+		this.SyncId = syncIndex;
+		this.Initialized = true;
+		this.OnInit();
 	}
 
 	internal virtual void SpectatorInit()

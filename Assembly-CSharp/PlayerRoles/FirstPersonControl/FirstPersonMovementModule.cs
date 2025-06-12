@@ -72,17 +72,17 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 
 	public FpcSyncData LastSentData { get; internal set; }
 
-	public float MaxMovementSpeed => VelocityForState(ValidateMovementState(_speedState), applyCrouch: true);
+	public float MaxMovementSpeed => this.VelocityForState(this.ValidateMovementState(this._speedState), applyCrouch: true);
 
 	public PlayerMovementState CurrentMovementState
 	{
 		get
 		{
-			return ValidateMovementState(SyncMovementState);
+			return this.ValidateMovementState(this.SyncMovementState);
 		}
 		set
 		{
-			SyncMovementState = value;
+			this.SyncMovementState = value;
 		}
 	}
 
@@ -92,20 +92,20 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 	{
 		get
 		{
-			if (CharControllerSet ? CharController.isGrounded : _syncGrounded)
+			if (this.CharControllerSet ? this.CharController.isGrounded : this._syncGrounded)
 			{
-				return !Noclip.IsActive;
+				return !this.Noclip.IsActive;
 			}
 			return false;
 		}
 		set
 		{
-			if (_syncGrounded != value)
+			if (this._syncGrounded != value)
 			{
-				_syncGrounded = value;
+				this._syncGrounded = value;
 				if (value)
 				{
-					OnGrounded?.Invoke();
+					this.OnGrounded?.Invoke();
 				}
 			}
 		}
@@ -115,15 +115,15 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 	{
 		get
 		{
-			return _cachedPosition;
+			return this._cachedPosition;
 		}
 		set
 		{
-			_transform.position = value;
-			_cachedPosition = value;
-			if (!_movementUpdateCycle && ModuleReady)
+			this._transform.position = value;
+			this._cachedPosition = value;
+			if (!FirstPersonMovementModule._movementUpdateCycle && this.ModuleReady)
 			{
-				CharacterModelInstance.OnPlayerMove();
+				this.CharacterModelInstance.OnPlayerMove();
 			}
 		}
 	}
@@ -132,13 +132,13 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 
 	protected PlayerRoleBase Role { get; private set; }
 
-	protected virtual FpcMotor NewMotor => new FpcMotor(Hub, this, FallDamageSettings);
+	protected virtual FpcMotor NewMotor => new FpcMotor(this.Hub, this, this.FallDamageSettings);
 
-	protected virtual FpcNoclip NewNoclip => new FpcNoclip(Hub, this);
+	protected virtual FpcNoclip NewNoclip => new FpcNoclip(this.Hub, this);
 
-	protected virtual FpcMouseLook NewMouseLook => new FpcMouseLook(Hub, this);
+	protected virtual FpcMouseLook NewMouseLook => new FpcMouseLook(this.Hub, this);
 
-	protected virtual FpcStateProcessor NewStateProcessor => new FpcStateProcessor(Hub, this);
+	protected virtual FpcStateProcessor NewStateProcessor => new FpcStateProcessor(this.Hub, this);
 
 	public bool DummyActionsDirty { get; set; }
 
@@ -146,37 +146,37 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 
 	protected virtual void UpdateMovement()
 	{
-		SyncMovementState = StateProcessor.UpdateMovementState(CurrentMovementState);
-		Motor.UpdatePosition(out var sendJump);
-		Noclip.UpdateNoclip();
-		MouseLook.UpdateRotation();
-		if (SyncMovementState != 0)
+		this.SyncMovementState = this.StateProcessor.UpdateMovementState(this.CurrentMovementState);
+		this.Motor.UpdatePosition(out var sendJump);
+		this.Noclip.UpdateNoclip();
+		this.MouseLook.UpdateRotation();
+		if (this.SyncMovementState != PlayerMovementState.Crouching)
 		{
-			_speedState = SyncMovementState;
+			this._speedState = this.SyncMovementState;
 		}
-		if (Hub.isLocalPlayer)
+		if (this.Hub.isLocalPlayer)
 		{
-			float walkSpeed = VelocityForState(PlayerMovementState.Walking, applyCrouch: false);
-			StateProcessor.ClientUpdateInput(this, walkSpeed, out var valueToSend);
-			Motor.ReceivedPosition = new RelativePosition(Position);
-			NetworkClient.Send(new FpcFromClientMessage(Motor.ReceivedPosition, valueToSend, sendJump, MouseLook));
+			float walkSpeed = this.VelocityForState(PlayerMovementState.Walking, applyCrouch: false);
+			this.StateProcessor.ClientUpdateInput(this, walkSpeed, out var valueToSend);
+			this.Motor.ReceivedPosition = new RelativePosition(this.Position);
+			NetworkClient.Send(new FpcFromClientMessage(this.Motor.ReceivedPosition, valueToSend, sendJump, this.MouseLook));
 		}
-		CharacterModelInstance.OnPlayerMove();
+		this.CharacterModelInstance.OnPlayerMove();
 	}
 
 	private void FixedUpdate()
 	{
 		if (NetworkServer.active)
 		{
-			Tracer.Record(Position);
+			this.Tracer.Record(this.Position);
 		}
 	}
 
 	private void OnRoleDisabled(RoleTypeId rid)
 	{
-		CharControllerSet = false;
-		CharacterModelInstance.ReturnToPool();
-		Noclip.ShutdownModule();
+		this.CharControllerSet = false;
+		this.CharacterModelInstance.ReturnToPool();
+		this.Noclip.ShutdownModule();
 	}
 
 	protected virtual PlayerMovementState ValidateMovementState(PlayerMovementState state)
@@ -184,20 +184,20 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 		switch (state)
 		{
 		case PlayerMovementState.Crouching:
-			if (CrouchSpeed != 0f)
+			if (this.CrouchSpeed != 0f)
 			{
 				break;
 			}
 			goto IL_0045;
 		case PlayerMovementState.Sneaking:
-			if (SneakSpeed != 0f)
+			if (this.SneakSpeed != 0f)
 			{
 				break;
 			}
 			goto IL_0045;
 		case PlayerMovementState.Sprinting:
 			{
-				if (SprintSpeed != 0f)
+				if (this.SprintSpeed != 0f)
 				{
 					break;
 				}
@@ -211,16 +211,16 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 
 	public void ServerOverridePosition(Vector3 position)
 	{
-		Position = position;
-		Hub.connectionToClient.Send(new FpcPositionOverrideMessage(position));
-		OnServerPositionOverwritten();
+		this.Position = position;
+		this.Hub.connectionToClient.Send(new FpcPositionOverrideMessage(position));
+		this.OnServerPositionOverwritten();
 	}
 
 	public void ServerOverrideRotation(Vector2 rotation)
 	{
-		MouseLook.CurrentVertical = rotation.x;
-		MouseLook.CurrentHorizontal = rotation.y;
-		Hub.connectionToClient.Send(new FpcRotationOverrideMessage(rotation));
+		this.MouseLook.CurrentVertical = rotation.x;
+		this.MouseLook.CurrentHorizontal = rotation.y;
+		this.Hub.connectionToClient.Send(new FpcRotationOverrideMessage(rotation));
 	}
 
 	public virtual float VelocityForState(PlayerMovementState state, bool applyCrouch)
@@ -229,27 +229,27 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 		switch (state)
 		{
 		case PlayerMovementState.Crouching:
-			num = CrouchSpeed;
+			num = this.CrouchSpeed;
 			break;
 		case PlayerMovementState.Sneaking:
-			num = SneakSpeed;
+			num = this.SneakSpeed;
 			break;
 		case PlayerMovementState.Sprinting:
-			num = SprintSpeed;
+			num = this.SprintSpeed;
 			break;
 		case PlayerMovementState.Walking:
-			num = WalkSpeed;
+			num = this.WalkSpeed;
 			break;
 		}
 		if (applyCrouch)
 		{
-			num = Mathf.Lerp(num, CrouchSpeed, StateProcessor.CrouchPercent);
+			num = Mathf.Lerp(num, this.CrouchSpeed, this.StateProcessor.CrouchPercent);
 		}
-		num *= Hub.inventory.MovementSpeedMultiplier;
-		float num2 = Hub.inventory.MovementSpeedLimit;
-		for (int i = 0; i < Hub.playerEffectsController.EffectsLength; i++)
+		num *= this.Hub.inventory.MovementSpeedMultiplier;
+		float num2 = this.Hub.inventory.MovementSpeedLimit;
+		for (int i = 0; i < this.Hub.playerEffectsController.EffectsLength; i++)
 		{
-			if (Hub.playerEffectsController.AllEffects[i] is IMovementSpeedModifier { MovementModifierActive: not false } movementSpeedModifier)
+			if (this.Hub.playerEffectsController.AllEffects[i] is IMovementSpeedModifier { MovementModifierActive: not false } movementSpeedModifier)
 			{
 				num2 = Mathf.Min(num2, movementSpeedModifier.MovementSpeedLimit);
 				num *= movementSpeedModifier.MovementSpeedMultiplier;
@@ -260,44 +260,44 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 
 	public virtual void SpawnObject()
 	{
-		if (!TryGetComponent<PlayerRoleBase>(out var component) || !component.TryGetOwner(out var hub))
+		if (!base.TryGetComponent<PlayerRoleBase>(out var component) || !component.TryGetOwner(out var hub))
 		{
 			throw new InvalidOperationException("Movement module failed to initiate. Unable to find owner of the role.");
 		}
-		_activeUpdates = (Action)Delegate.Combine(_activeUpdates, new Action(UpdateMovement));
-		Hub = hub;
-		Role = component;
-		_transform = Hub.transform;
-		_cachedPosition = base.transform.position;
-		_speedState = PlayerMovementState.Walking;
-		SyncMovementState = PlayerMovementState.Walking;
-		if (NetworkServer.active || Hub.isLocalPlayer)
+		FirstPersonMovementModule._activeUpdates = (Action)Delegate.Combine(FirstPersonMovementModule._activeUpdates, new Action(UpdateMovement));
+		this.Hub = hub;
+		this.Role = component;
+		this._transform = this.Hub.transform;
+		this._cachedPosition = base.transform.position;
+		this._speedState = PlayerMovementState.Walking;
+		this.SyncMovementState = PlayerMovementState.Walking;
+		if (NetworkServer.active || this.Hub.isLocalPlayer)
 		{
-			CharController = Hub.GetComponent<CharacterController>();
-			CharacterControllerSettings.Apply(CharController);
-			CharControllerSet = true;
+			this.CharController = this.Hub.GetComponent<CharacterController>();
+			this.CharacterControllerSettings.Apply(this.CharController);
+			this.CharControllerSet = true;
 			if (NetworkServer.active)
 			{
-				Tracer = new MovementTracer(15, 3, 50f);
+				this.Tracer = new MovementTracer(15, 3, 50f);
 			}
-			if (Hub.isLocalPlayer)
+			if (this.Hub.isLocalPlayer)
 			{
 				CursorManager.Register(this);
 			}
 		}
 		else
 		{
-			CharControllerSet = false;
+			this.CharControllerSet = false;
 		}
-		Motor = NewMotor;
-		Noclip = NewNoclip;
-		MouseLook = NewMouseLook;
-		StateProcessor = NewStateProcessor;
-		PlayerRoleBase role = Role;
+		this.Motor = this.NewMotor;
+		this.Noclip = this.NewNoclip;
+		this.MouseLook = this.NewMouseLook;
+		this.StateProcessor = this.NewStateProcessor;
+		PlayerRoleBase role = this.Role;
 		role.OnRoleDisabled = (Action<RoleTypeId>)Delegate.Combine(role.OnRoleDisabled, new Action<RoleTypeId>(OnRoleDisabled));
-		ElevatorChamber.OnElevatorMoved += Motor.OnElevatorMoved;
-		SetModel(CharacterModelTemplate);
-		ModuleReady = true;
+		ElevatorChamber.OnElevatorMoved += this.Motor.OnElevatorMoved;
+		this.SetModel(this.CharacterModelTemplate);
+		this.ModuleReady = true;
 	}
 
 	protected virtual void SetModel(GameObject template)
@@ -305,10 +305,10 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 		if (PoolManager.Singleton.TryGetPoolObject(template, null, out var poolObject) && poolObject is CharacterModel characterModel)
 		{
 			SceneManager.MoveGameObjectToScene(poolObject.gameObject, SceneManager.GetActiveScene());
-			CharacterModelInstance = characterModel;
+			this.CharacterModelInstance = characterModel;
 			Transform transform = template.transform;
-			characterModel.Setup(Hub, Role as IFpcRole, transform.localPosition, transform.localRotation);
-			characterModel.transform.SetParent(Hub.transform, worldPositionStays: false);
+			characterModel.Setup(this.Hub, this.Role as IFpcRole, transform.localPosition, transform.localRotation);
+			characterModel.transform.SetParent(this.Hub.transform, worldPositionStays: false);
 		}
 		else
 		{
@@ -319,11 +319,11 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 	public virtual void ResetObject()
 	{
 		CursorManager.Unregister(this);
-		_activeUpdates = (Action)Delegate.Remove(_activeUpdates, new Action(UpdateMovement));
-		PlayerRoleBase role = Role;
+		FirstPersonMovementModule._activeUpdates = (Action)Delegate.Remove(FirstPersonMovementModule._activeUpdates, new Action(UpdateMovement));
+		PlayerRoleBase role = this.Role;
 		role.OnRoleDisabled = (Action<RoleTypeId>)Delegate.Remove(role.OnRoleDisabled, new Action<RoleTypeId>(OnRoleDisabled));
-		ElevatorChamber.OnElevatorMoved -= Motor.OnElevatorMoved;
-		ModuleReady = false;
+		ElevatorChamber.OnElevatorMoved -= this.Motor.OnElevatorMoved;
+		this.ModuleReady = false;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -331,11 +331,11 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 	{
 		StaticUnityMethods.OnUpdate += delegate
 		{
-			if (_activeUpdates != null)
+			if (FirstPersonMovementModule._activeUpdates != null)
 			{
-				_movementUpdateCycle = true;
-				_activeUpdates();
-				_movementUpdateCycle = false;
+				FirstPersonMovementModule._movementUpdateCycle = true;
+				FirstPersonMovementModule._activeUpdates();
+				FirstPersonMovementModule._movementUpdateCycle = false;
 				FirstPersonMovementModule.OnPositionUpdated?.Invoke();
 			}
 		};
@@ -343,10 +343,10 @@ public class FirstPersonMovementModule : MonoBehaviour, IPoolSpawnable, IPoolRes
 
 	public void PopulateDummyActions(Action<DummyAction> actionAdder, Action<string> categoryAdder)
 	{
-		DummyActionsDirty = false;
+		this.DummyActionsDirty = false;
 		categoryAdder("MouseLook");
-		MouseLook.PopulateDummyActions(actionAdder);
+		this.MouseLook.PopulateDummyActions(actionAdder);
 		categoryAdder("Motor");
-		Motor.PopulateDummyActions(actionAdder);
+		this.Motor.PopulateDummyActions(actionAdder);
 	}
 }

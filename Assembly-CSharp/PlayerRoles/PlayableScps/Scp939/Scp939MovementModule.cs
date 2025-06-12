@@ -12,7 +12,7 @@ public class Scp939MovementModule : FirstPersonMovementModule
 
 	private const float StaminaRampupTime = 0.1f;
 
-	protected override FpcMotor NewMotor => new Scp939Motor(base.Hub, base.Role as Scp939Role, FallDamageSettings);
+	protected override FpcMotor NewMotor => new Scp939Motor(base.Hub, base.Role as Scp939Role, base.FallDamageSettings);
 
 	protected override FpcMouseLook NewMouseLook => new Scp939MouseLook(base.Hub, this);
 

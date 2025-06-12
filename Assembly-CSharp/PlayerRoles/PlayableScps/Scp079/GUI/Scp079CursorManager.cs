@@ -22,28 +22,28 @@ public class Scp079CursorManager : Scp079GuiElementBase, ICursorOverride
 
 	public static bool LockCameras { get; private set; }
 
-	public CursorOverrideMode CursorOverride => CurrentMode;
+	public CursorOverrideMode CursorOverride => Scp079CursorManager.CurrentMode;
 
-	public bool LockMovement => LockCameras;
+	public bool LockMovement => Scp079CursorManager.LockCameras;
 
 	private void Update()
 	{
-		if (_lostSignalHandler.Lost || Scp079IntroCutscene.IsPlaying)
+		if (this._lostSignalHandler.Lost || Scp079IntroCutscene.IsPlaying)
 		{
-			LockCameras = true;
-			CurrentMode = CursorOverrideMode.Free;
+			Scp079CursorManager.LockCameras = true;
+			Scp079CursorManager.CurrentMode = CursorOverrideMode.Free;
 			return;
 		}
-		CurrentMode = (FreeLookMode.IsActive ? CursorOverrideMode.Centered : CursorOverrideMode.Confined);
-		LockCameras = false;
-		if (_curCamSync.CurClientSwitchState != 0 || Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen)
+		Scp079CursorManager.CurrentMode = (Scp079CursorManager.FreeLookMode.IsActive ? CursorOverrideMode.Centered : CursorOverrideMode.Confined);
+		Scp079CursorManager.LockCameras = false;
+		if (this._curCamSync.CurClientSwitchState != Scp079CurrentCameraSync.ClientSwitchState.None || Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen)
 		{
-			LockCameras = true;
-			CurrentMode = ((!Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>.IsOpen) ? CursorOverrideMode.Centered : CursorOverrideMode.Free);
+			Scp079CursorManager.LockCameras = true;
+			Scp079CursorManager.CurrentMode = ((!Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>.IsOpen) ? CursorOverrideMode.Centered : CursorOverrideMode.Free);
 		}
 		if (Cursor.lockState == CursorLockMode.None || !Application.isFocused)
 		{
-			LockCameras = true;
+			Scp079CursorManager.LockCameras = true;
 		}
 	}
 
@@ -54,8 +54,8 @@ public class Scp079CursorManager : Scp079GuiElementBase, ICursorOverride
 		{
 			CursorManager.Register(this);
 		}
-		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out _curCamSync);
-		role.SubroutineModule.TryGetSubroutine<Scp079LostSignalHandler>(out _lostSignalHandler);
+		role.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out this._curCamSync);
+		role.SubroutineModule.TryGetSubroutine<Scp079LostSignalHandler>(out this._lostSignalHandler);
 	}
 
 	private void OnDestroy()

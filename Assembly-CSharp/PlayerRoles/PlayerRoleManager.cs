@@ -38,16 +38,16 @@ public sealed class PlayerRoleManager : NetworkBehaviour, IRootDummyActionProvid
 	{
 		get
 		{
-			if (!_anySet)
+			if (!this._anySet)
 			{
-				InitializeNewRole(RoleTypeId.None, RoleChangeReason.None);
+				this.InitializeNewRole(RoleTypeId.None, RoleChangeReason.None);
 			}
-			return _curRole;
+			return this._curRole;
 		}
 		set
 		{
-			_curRole = value;
-			_anySet = true;
+			this._curRole = value;
+			this._anySet = true;
 		}
 	}
 
@@ -57,11 +57,11 @@ public sealed class PlayerRoleManager : NetworkBehaviour, IRootDummyActionProvid
 	{
 		get
 		{
-			if (!_hubSet && ReferenceHub.TryGetHub(base.gameObject, out _hub))
+			if (!this._hubSet && ReferenceHub.TryGetHub(base.gameObject, out this._hub))
 			{
-				_hubSet = true;
+				this._hubSet = true;
 			}
-			return _hub;
+			return this._hub;
 		}
 	}
 
@@ -71,34 +71,34 @@ public sealed class PlayerRoleManager : NetworkBehaviour, IRootDummyActionProvid
 
 	private void Update()
 	{
-		if (!NetworkServer.active || !_sendNextFrame)
+		if (!NetworkServer.active || !this._sendNextFrame)
 		{
 			return;
 		}
-		_sendNextFrame = false;
+		this._sendNextFrame = false;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allHub.isLocalPlayer)
 			{
 				continue;
 			}
-			RoleTypeId roleTypeId = CurrentRole.RoleTypeId;
-			if (CurrentRole is IObfuscatedRole obfuscatedRole)
+			RoleTypeId roleTypeId = this.CurrentRole.RoleTypeId;
+			if (this.CurrentRole is IObfuscatedRole obfuscatedRole)
 			{
 				roleTypeId = obfuscatedRole.GetRoleForUser(allHub);
-				if (PreviouslySentRole.TryGetValue(allHub.netId, out var value) && value == roleTypeId)
+				if (this.PreviouslySentRole.TryGetValue(allHub.netId, out var value) && value == roleTypeId)
 				{
 					continue;
 				}
 			}
-			allHub.connectionToClient.Send(new RoleSyncInfo(Hub, roleTypeId, allHub));
-			PreviouslySentRole[allHub.netId] = roleTypeId;
+			allHub.connectionToClient.Send(new RoleSyncInfo(this.Hub, roleTypeId, allHub));
+			this.PreviouslySentRole[allHub.netId] = roleTypeId;
 		}
 	}
 
 	private void OnDestroy()
 	{
-		if (CurrentRole is DestroyedRole destroyedRole && destroyedRole != null)
+		if (this.CurrentRole is DestroyedRole destroyedRole && destroyedRole != null)
 		{
 			destroyedRole.DisableRole(RoleTypeId.Destroyed);
 		}
@@ -107,14 +107,14 @@ public sealed class PlayerRoleManager : NetworkBehaviour, IRootDummyActionProvid
 	public override void OnStopClient()
 	{
 		base.OnStopClient();
-		InitializeNewRole(RoleTypeId.Destroyed, RoleChangeReason.Destroyed);
+		this.InitializeNewRole(RoleTypeId.Destroyed, RoleChangeReason.Destroyed);
 	}
 
 	private PlayerRoleBase GetRoleBase(RoleTypeId targetId)
 	{
 		if (!PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(targetId, out var result))
 		{
-			Debug.LogError($"Role #{targetId} could not be found. Player with ID {Hub.PlayerId} will receive the default role ({RoleTypeId.None}).");
+			Debug.LogError($"Role #{targetId} could not be found. Player with ID {this.Hub.PlayerId} will receive the default role ({RoleTypeId.None}).");
 			if (!PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(RoleTypeId.None, out result))
 			{
 				throw new NotImplementedException("Role change failed. Default role is not correctly implemented.");
@@ -131,9 +131,9 @@ public sealed class PlayerRoleManager : NetworkBehaviour, IRootDummyActionProvid
 	{
 		PlayerRoleBase playerRoleBase;
 		bool flag;
-		if (_anySet)
+		if (this._anySet)
 		{
-			playerRoleBase = CurrentRole;
+			playerRoleBase = this.CurrentRole;
 			playerRoleBase.DisableRole(targetId);
 			flag = true;
 		}
@@ -142,30 +142,30 @@ public sealed class PlayerRoleManager : NetworkBehaviour, IRootDummyActionProvid
 			playerRoleBase = null;
 			flag = false;
 		}
-		PlayerRoleBase roleBase = GetRoleBase(targetId);
+		PlayerRoleBase roleBase = this.GetRoleBase(targetId);
 		Transform transform = roleBase.transform;
 		if (targetId != RoleTypeId.Destroyed || reason != RoleChangeReason.Destroyed)
 		{
 			transform.parent = base.transform;
 			transform.ResetLocalPose();
 		}
-		CurrentRole = roleBase;
-		roleBase.Init(Hub, reason, spawnFlags);
-		RoleSpawnpointManager.SetPosition(Hub, CurrentRole);
+		this.CurrentRole = roleBase;
+		roleBase.Init(this.Hub, reason, spawnFlags);
+		RoleSpawnpointManager.SetPosition(this.Hub, this.CurrentRole);
 		roleBase.SetupPoolObject();
-		if (CurrentRole is ISpawnDataReader spawnDataReader && data != null && targetId != RoleTypeId.Spectator && !base.isLocalPlayer)
+		if (this.CurrentRole is ISpawnDataReader spawnDataReader && data != null && targetId != RoleTypeId.Spectator && !base.isLocalPlayer)
 		{
 			spawnDataReader.ReadSpawnData(data);
 		}
 		if (flag)
 		{
-			PlayerRoleManager.OnRoleChanged?.Invoke(Hub, playerRoleBase, CurrentRole);
+			PlayerRoleManager.OnRoleChanged?.Invoke(this.Hub, playerRoleBase, this.CurrentRole);
 		}
-		SpawnProtected.TryGiveProtection(Hub);
-		if (Hub.IsDummy)
+		SpawnProtected.TryGiveProtection(this.Hub);
+		if (this.Hub.IsDummy)
 		{
-			_dummyProviders = roleBase.GetComponentsInChildren<IRootDummyActionProvider>();
-			DummyActionsDirty = true;
+			this._dummyProviders = roleBase.GetComponentsInChildren<IRootDummyActionProvider>();
+			this.DummyActionsDirty = true;
 		}
 	}
 
@@ -177,29 +177,29 @@ public sealed class PlayerRoleManager : NetworkBehaviour, IRootDummyActionProvid
 			Debug.LogWarning("[Server] function 'System.Void PlayerRoles.PlayerRoleManager::ServerSetRole(PlayerRoles.RoleTypeId,PlayerRoles.RoleChangeReason,PlayerRoles.RoleSpawnFlags)' called when server was not active");
 			return;
 		}
-		PlayerChangingRoleEventArgs playerChangingRoleEventArgs = new PlayerChangingRoleEventArgs(Hub, CurrentRole, newRole, reason, spawnFlags);
-		PlayerEvents.OnChangingRole(playerChangingRoleEventArgs);
-		if (playerChangingRoleEventArgs.IsAllowed)
+		PlayerChangingRoleEventArgs e = new PlayerChangingRoleEventArgs(this.Hub, this.CurrentRole, newRole, reason, spawnFlags);
+		PlayerEvents.OnChangingRole(e);
+		if (e.IsAllowed)
 		{
-			newRole = playerChangingRoleEventArgs.NewRole;
-			reason = playerChangingRoleEventArgs.ChangeReason;
-			spawnFlags = playerChangingRoleEventArgs.SpawnFlags;
-			RoleTypeId roleTypeId = CurrentRole.RoleTypeId;
-			PlayerRoleManager.OnServerRoleSet?.Invoke(Hub, newRole, reason);
-			InitializeNewRole(newRole, reason, spawnFlags);
-			_sendNextFrame = true;
-			PlayerEvents.OnChangedRole(new PlayerChangedRoleEventArgs(_hub, roleTypeId, CurrentRole, reason, spawnFlags));
+			newRole = e.NewRole;
+			reason = e.ChangeReason;
+			spawnFlags = e.SpawnFlags;
+			RoleTypeId roleTypeId = this.CurrentRole.RoleTypeId;
+			PlayerRoleManager.OnServerRoleSet?.Invoke(this.Hub, newRole, reason);
+			this.InitializeNewRole(newRole, reason, spawnFlags);
+			this._sendNextFrame = true;
+			PlayerEvents.OnChangedRole(new PlayerChangedRoleEventArgs(this._hub, roleTypeId, this.CurrentRole, reason, spawnFlags));
 		}
 	}
 
 	public void PopulateDummyActions(Action<DummyAction> actionAdder, Action<string> categoryAdder)
 	{
-		IRootDummyActionProvider[] dummyProviders = _dummyProviders;
+		IRootDummyActionProvider[] dummyProviders = this._dummyProviders;
 		for (int i = 0; i < dummyProviders.Length; i++)
 		{
 			dummyProviders[i].PopulateDummyActions(actionAdder, categoryAdder);
 		}
-		DummyActionsDirty = false;
+		this.DummyActionsDirty = false;
 	}
 
 	public override bool Weaved()

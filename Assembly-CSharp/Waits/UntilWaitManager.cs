@@ -11,15 +11,15 @@ public abstract class UntilWaitManager : WaitManager
 	protected override void Awake()
 	{
 		base.Awake();
-		allocatedKeepRunning = KeepRunning;
+		this.allocatedKeepRunning = KeepRunning;
 	}
 
 	protected abstract bool KeepRunning();
 
 	public override IEnumerator<float> _Run()
 	{
-		StartAll();
+		base.StartAll();
 		yield return float.NegativeInfinity;
-		yield return Timing.WaitUntilFalse(allocatedKeepRunning);
+		yield return Timing.WaitUntilFalse(this.allocatedKeepRunning);
 	}
 }

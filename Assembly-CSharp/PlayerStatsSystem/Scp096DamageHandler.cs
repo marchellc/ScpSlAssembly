@@ -27,9 +27,9 @@ public class Scp096DamageHandler : ScpDamageHandler
 
 	private readonly AttackType _attackType;
 
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
-	public override string RagdollInspectText => _ragdollInspectText;
+	public override string RagdollInspectText => this._ragdollInspectText;
 
 	public override string DeathScreenText => string.Empty;
 
@@ -37,46 +37,46 @@ public class Scp096DamageHandler : ScpDamageHandler
 
 	public override Footprint Attacker { get; protected set; }
 
-	public override string ServerLogsText => LogReasons[_attackType] + " (" + Attacker.Nickname + ").";
+	public override string ServerLogsText => Scp096DamageHandler.LogReasons[this._attackType] + " (" + this.Attacker.Nickname + ").";
 
 	public override bool AllowSelfDamage => false;
 
 	public Scp096DamageHandler(Scp096Role attacker, float damage, AttackType attackType)
 	{
-		Damage = damage;
+		this.Damage = damage;
 		if (!(attacker == null) && attacker.TryGetOwner(out var hub))
 		{
-			_attackType = attackType;
-			Attacker = new Footprint(hub);
+			this._attackType = attackType;
+			this.Attacker = new Footprint(hub);
 		}
 	}
 
 	public override HandlerOutput ApplyDamage(ReferenceHub ply)
 	{
 		HandlerOutput result = base.ApplyDamage(ply);
-		Vector3 normalized = (ply.transform.position - Attacker.Hub.transform.position).normalized;
-		switch (_attackType)
+		Vector3 normalized = (ply.transform.position - this.Attacker.Hub.transform.position).normalized;
+		switch (this._attackType)
 		{
 		case AttackType.Charge:
-			StartVelocity = normalized * 8f;
-			StartVelocity.y = 3.5f;
+			base.StartVelocity = normalized * 8f;
+			base.StartVelocity.y = 3.5f;
 			break;
 		case AttackType.SlapLeft:
 		case AttackType.SlapRight:
 		{
-			Vector3 right = Attacker.Hub.PlayerCameraReference.right;
-			if (_attackType == AttackType.SlapLeft)
+			Vector3 right = this.Attacker.Hub.PlayerCameraReference.right;
+			if (this._attackType == AttackType.SlapLeft)
 			{
 				right *= -1f;
 			}
-			right += Attacker.Hub.transform.forward;
+			right += this.Attacker.Hub.transform.forward;
 			right += Vector3.up;
-			StartVelocity = right * (Random.value + 1.5f) * 3f;
+			base.StartVelocity = right * (Random.value + 1.5f) * 3f;
 			break;
 		}
 		case AttackType.GateKill:
-			StartVelocity = normalized * 2f;
-			StartVelocity.y = -10f;
+			base.StartVelocity = normalized * 2f;
+			base.StartVelocity.y = -10f;
 			break;
 		}
 		return result;
@@ -84,6 +84,6 @@ public class Scp096DamageHandler : ScpDamageHandler
 
 	public Scp096DamageHandler()
 	{
-		_ragdollInspectText = DeathTranslations.Scp096.RagdollTranslation;
+		this._ragdollInspectText = DeathTranslations.Scp096.RagdollTranslation;
 	}
 }

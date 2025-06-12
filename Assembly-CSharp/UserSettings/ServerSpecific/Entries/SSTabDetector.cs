@@ -11,13 +11,13 @@ public class SSTabDetector : MonoBehaviour
 	{
 		get
 		{
-			return _active;
+			return SSTabDetector._active;
 		}
 		private set
 		{
-			if (_active != value)
+			if (SSTabDetector._active != value)
 			{
-				_active = value;
+				SSTabDetector._active = value;
 				SSTabDetector.OnStatusChanged?.Invoke();
 			}
 		}
@@ -27,11 +27,11 @@ public class SSTabDetector : MonoBehaviour
 
 	private void OnEnable()
 	{
-		IsOpen = true;
+		SSTabDetector.IsOpen = true;
 	}
 
 	private void OnDisable()
 	{
-		IsOpen = false;
+		SSTabDetector.IsOpen = false;
 	}
 }

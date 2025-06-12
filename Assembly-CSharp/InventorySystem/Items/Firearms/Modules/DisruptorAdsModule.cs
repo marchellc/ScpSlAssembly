@@ -24,33 +24,33 @@ public class DisruptorAdsModule : LinearAdsModule, ILightEmittingItem
 	{
 		get
 		{
-			if (base.AllowAds && !_disruptorAction.IsReloading)
+			if (base.AllowAds && !this._disruptorAction.IsReloading)
 			{
-				return !_preventAds;
+				return !this._preventAds;
 			}
 			return false;
 		}
 	}
 
-	public override float BaseZoomAmount => _zoomAmount;
+	public override float BaseZoomAmount => this._zoomAmount;
 
-	public override float AdditionalSensitivityModifier => _sensitivtyScale;
+	public override float AdditionalSensitivityModifier => this._sensitivtyScale;
 
-	public override float BaseAdsInaccuracy => base.BaseAdsInaccuracy * _inaccuracyScale;
+	public override float BaseAdsInaccuracy => base.BaseAdsInaccuracy * this._inaccuracyScale;
 
-	public override float BaseHipInaccuracy => base.BaseHipInaccuracy * _inaccuracyScale;
+	public override float BaseHipInaccuracy => base.BaseHipInaccuracy * this._inaccuracyScale;
 
 	public bool IsEmittingLight => base.AdsAmount > 0.6f;
 
 	protected override void OnInit()
 	{
 		base.OnInit();
-		base.Firearm.TryGetModule<DisruptorActionModule>(out _disruptorAction);
+		base.Firearm.TryGetModule<DisruptorActionModule>(out this._disruptorAction);
 	}
 
 	[ExposedFirearmEvent]
 	public void ForceExitAds()
 	{
-		_preventAds = true;
+		this._preventAds = true;
 	}
 }

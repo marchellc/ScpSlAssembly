@@ -40,12 +40,12 @@ public class FpcSpectatableModule : SpectatableModuleBase, IViewmodelRole
 
 	internal override void OnBeganSpectating()
 	{
-		FpcModule.CharacterModelInstance.SetVisibility(newState: false);
+		this.FpcModule.CharacterModelInstance.SetVisibility(newState: false);
 		Inventory.OnCurrentItemChanged += OnCurrentItemChanged;
 		ItemIdentifier curItem = base.TargetHub.inventory.CurItem;
-		OnCurrentItemChanged(base.TargetHub, curItem, curItem);
+		this.OnCurrentItemChanged(base.TargetHub, curItem, curItem);
 		SharedHandsController.SetRoleGloves(base.TargetHub.GetRoleId());
-		if (FpcModule.CharacterModelInstance is AnimatedCharacterModel model)
+		if (this.FpcModule.CharacterModelInstance is AnimatedCharacterModel model)
 		{
 			CameraShakeController.AddEffect(new HeadbobShake(model));
 		}
@@ -53,16 +53,16 @@ public class FpcSpectatableModule : SpectatableModuleBase, IViewmodelRole
 
 	internal override void OnStoppedSpectating()
 	{
-		CharacterModel characterModelInstance = FpcModule.CharacterModelInstance;
+		CharacterModel characterModelInstance = this.FpcModule.CharacterModelInstance;
 		ReferenceHub ownerHub = characterModelInstance.OwnerHub;
 		if (!(ownerHub != null) || !ownerHub.isLocalPlayer)
 		{
 			characterModelInstance.SetVisibility(newState: true);
 		}
 		Inventory.OnCurrentItemChanged -= OnCurrentItemChanged;
-		if (SpawnedViewmodel != null)
+		if (this.SpawnedViewmodel != null)
 		{
-			Object.Destroy(SpawnedViewmodel.gameObject);
+			Object.Destroy(this.SpawnedViewmodel.gameObject);
 		}
 		SharedHandsController.UpdateInstance(null);
 	}
@@ -71,19 +71,19 @@ public class FpcSpectatableModule : SpectatableModuleBase, IViewmodelRole
 	{
 		if (base.MainRole.TryGetOwner(out var hub2) && !(hub != hub2))
 		{
-			if (SpawnedViewmodel != null)
+			if (this.SpawnedViewmodel != null)
 			{
-				Object.Destroy(SpawnedViewmodel.gameObject);
+				Object.Destroy(this.SpawnedViewmodel.gameObject);
 			}
 			if (InventoryItemLoader.TryGetItem<ItemBase>(newItem.TypeId, out var result) && result.ViewModel != null)
 			{
-				SpawnedViewmodel = Object.Instantiate(result.ViewModel, SharedHandsController.Singleton.transform);
-				SharedHandsController.UpdateInstance(SpawnedViewmodel);
-				SpawnedViewmodel.InitSpectator(hub, newItem, oldItem == newItem);
+				this.SpawnedViewmodel = Object.Instantiate(result.ViewModel, SharedHandsController.Singleton.transform);
+				SharedHandsController.UpdateInstance(this.SpawnedViewmodel);
+				this.SpawnedViewmodel.InitSpectator(hub, newItem, oldItem == newItem);
 			}
 			else
 			{
-				SpawnedViewmodel = null;
+				this.SpawnedViewmodel = null;
 				SharedHandsController.UpdateInstance(null);
 			}
 		}
@@ -91,9 +91,9 @@ public class FpcSpectatableModule : SpectatableModuleBase, IViewmodelRole
 
 	public bool TryGetViewmodelFov(out float fov)
 	{
-		if (SpawnedViewmodel != null)
+		if (this.SpawnedViewmodel != null)
 		{
-			fov = SpawnedViewmodel.ViewmodelCameraFOV;
+			fov = this.SpawnedViewmodel.ViewmodelCameraFOV;
 			return true;
 		}
 		if (base.MainRole is IViewmodelRole viewmodelRole)

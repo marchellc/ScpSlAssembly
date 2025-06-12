@@ -21,12 +21,12 @@ public abstract class BroadcastCommandBase : ICommand, IUsageProvider
 		{
 			return false;
 		}
-		if (arguments.Count < MinimumArguments)
+		if (arguments.Count < this.MinimumArguments)
 		{
-			response = $"To execute this command provide at least {MinimumArguments} arguments!\nUsage: {arguments.Array[0]} {this.DisplayCommandUsage()}";
+			response = $"To execute this command provide at least {this.MinimumArguments} arguments!\nUsage: {arguments.Array[0]} {this.DisplayCommandUsage()}";
 			return false;
 		}
-		return OnExecute(arguments, sender, out response);
+		return this.OnExecute(arguments, sender, out response);
 	}
 
 	public abstract bool OnExecute(ArraySegment<string> arguments, ICommandSender sender, out string response);
@@ -35,7 +35,7 @@ public abstract class BroadcastCommandBase : ICommand, IUsageProvider
 	{
 		bool num = RAUtils.IsDigit.IsMatch(inputFlag);
 		broadcastFlag = Broadcast.BroadcastFlags.Normal;
-		if (!num && argumentCount >= MinimumArguments + 1)
+		if (!num && argumentCount >= this.MinimumArguments + 1)
 		{
 			return Enum.TryParse<Broadcast.BroadcastFlags>(inputFlag, ignoreCase: true, out broadcastFlag);
 		}

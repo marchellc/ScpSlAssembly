@@ -13,25 +13,25 @@ public readonly struct ServerList : IEquatable<ServerList>, IJsonSerializable
 
 	public bool Equals(ServerList other)
 	{
-		return servers == other.servers;
+		return this.servers == other.servers;
 	}
 
 	public override bool Equals(object obj)
 	{
 		if (obj is ServerList other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		if (servers == null)
+		if (this.servers == null)
 		{
 			return 0;
 		}
-		return servers.GetHashCode();
+		return this.servers.GetHashCode();
 	}
 
 	public static bool operator ==(ServerList left, ServerList right)

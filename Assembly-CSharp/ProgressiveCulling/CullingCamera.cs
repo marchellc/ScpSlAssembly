@@ -30,7 +30,7 @@ public class CullingCamera : MonoBehaviour
 	{
 		get
 		{
-			if (!_pauseCulling)
+			if (!CullingCamera._pauseCulling)
 			{
 				return false;
 			}
@@ -53,7 +53,7 @@ public class CullingCamera : MonoBehaviour
 
 	private void Awake()
 	{
-		_camera = GetComponent<Camera>();
+		this._camera = base.GetComponent<Camera>();
 	}
 
 	private void OnEnable()
@@ -82,7 +82,7 @@ public class CullingCamera : MonoBehaviour
 		{
 			return;
 		}
-		foreach (IRootCullable rootCullable in RootCullables)
+		foreach (IRootCullable rootCullable in CullingCamera.RootCullables)
 		{
 			rootCullable.SetupCache();
 		}
@@ -118,21 +118,21 @@ public class CullingCamera : MonoBehaviour
 				return false;
 			}
 		}
-		return bounds.SqrDistance(LastCamPosition) < maxDistanceSqr;
+		return bounds.SqrDistance(CullingCamera.LastCamPosition) < maxDistanceSqr;
 	}
 
 	public static bool CheckBoundsVisibility(Bounds bounds)
 	{
-		if (LastPlanes != null)
+		if (CullingCamera.LastPlanes != null)
 		{
-			return CheckBoundsVisibility(LastPlanes, _lastFarPlaneSqr, bounds);
+			return CullingCamera.CheckBoundsVisibility(CullingCamera.LastPlanes, CullingCamera._lastFarPlaneSqr, bounds);
 		}
 		return true;
 	}
 
 	public static void RegisterRootCullable(IRootCullable cullable)
 	{
-		RootCullables.Add(cullable);
+		CullingCamera.RootCullables.Add(cullable);
 		if (SeedSynchronizer.MapGenerated)
 		{
 			cullable.SetupCache();
@@ -141,12 +141,12 @@ public class CullingCamera : MonoBehaviour
 
 	public static void UnregisterRootCullable(IRootCullable cullable)
 	{
-		RootCullables.Remove(cullable);
+		CullingCamera.RootCullables.Remove(cullable);
 	}
 
 	public static bool TogglePause()
 	{
-		_pauseCulling = !_pauseCulling;
-		return CullingPaused;
+		CullingCamera._pauseCulling = !CullingCamera._pauseCulling;
+		return CullingCamera.CullingPaused;
 	}
 }

@@ -26,7 +26,7 @@ public class Scp127Hitscan : SingleBulletHitscan
 	{
 		get
 		{
-			if (!TryGetCurPair(out var ret))
+			if (!this.TryGetCurPair(out var ret))
 			{
 				return base.BaseDamage;
 			}
@@ -42,7 +42,7 @@ public class Scp127Hitscan : SingleBulletHitscan
 	{
 		get
 		{
-			if (!TryGetCurPair(out var ret))
+			if (!this.TryGetCurPair(out var ret))
 			{
 				return base.BasePenetration;
 			}
@@ -58,7 +58,7 @@ public class Scp127Hitscan : SingleBulletHitscan
 	{
 		get
 		{
-			if (!TryGetCurPair(out var ret))
+			if (!this.TryGetCurPair(out var ret))
 			{
 				return base.BaseBulletInaccuracy;
 			}
@@ -68,13 +68,13 @@ public class Scp127Hitscan : SingleBulletHitscan
 
 	protected override AttackerDamageHandler GetHandler(float damageDealt)
 	{
-		return new CustomReasonFirearmDamageHandler(DeathTranslations.Scp127Bullets, base.Firearm, damageDealt, EffectivePenetration, UseHitboxMultipliers);
+		return new CustomReasonFirearmDamageHandler(DeathTranslations.Scp127Bullets, base.Firearm, damageDealt, this.EffectivePenetration, this.UseHitboxMultipliers);
 	}
 
 	private bool TryGetCurPair(out StatsTierPair ret)
 	{
 		Scp127Tier tierForItem = Scp127TierManagerModule.GetTierForItem(base.Item);
-		StatsTierPair[] statPairs = _statPairs;
+		StatsTierPair[] statPairs = this._statPairs;
 		for (int i = 0; i < statPairs.Length; i++)
 		{
 			StatsTierPair statsTierPair = statPairs[i];

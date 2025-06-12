@@ -35,12 +35,12 @@ public class StareCommand : ICommand
 		}
 		if (arguments.Count < 1)
 		{
-			response = "To execute this command provide at least 1 argument!\nUsage: " + arguments.Array[0] + " " + Usage[0];
+			response = "To execute this command provide at least 1 argument!\nUsage: " + arguments.Array[0] + " " + this.Usage[0];
 			return false;
 		}
 		if (!float.TryParse(arguments.Array[1], out var result))
 		{
-			response = $"To execute this command provide the duration!\nUsage: {arguments.Array[0]} {Usage}";
+			response = $"To execute this command provide the duration!\nUsage: {arguments.Array[0]} {this.Usage}";
 			return false;
 		}
 		PlayerRoleBase currentRole = playerCommandSender.ReferenceHub.roleManager.CurrentRole;
@@ -50,14 +50,14 @@ public class StareCommand : ICommand
 			{
 				if (currentRole is Scp096Role scp3)
 				{
-					return ShyStare(scp3, result, out response);
+					return this.ShyStare(scp3, result, out response);
 				}
 				ServerLogs.AddLog(ServerLogs.Modules.Administrative, sender.LogName + "'s " + response, ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
 				return true;
 			}
-			return ZombieStare(scp2, result, out response);
+			return this.ZombieStare(scp2, result, out response);
 		}
-		return PeanutStare(scp, result, out response);
+		return this.PeanutStare(scp, result, out response);
 	}
 
 	private bool PeanutStare(Scp173Role scp173, float duration, out string response)

@@ -13,30 +13,30 @@ public class SubroutineInfluencedFpcStateProcessor : FpcStateProcessor
 	{
 		get
 		{
-			if (_modifiers != null)
+			if (this._modifiers != null)
 			{
-				return _modifiers;
+				return this._modifiers;
 			}
-			_modifiers = new List<IStaminaModifier>();
+			this._modifiers = new List<IStaminaModifier>();
 			PlayerRoleBase currentRole = base.Hub.roleManager.CurrentRole;
 			if (!(currentRole is IFpcRole fpcRole) || !(currentRole is ISubroutinedRole subroutinedRole))
 			{
-				Debug.LogError("Attempting to create " + GetType().Name + " for an invalid role.");
-				return _modifiers;
+				Debug.LogError("Attempting to create " + base.GetType().Name + " for an invalid role.");
+				return this._modifiers;
 			}
 			SubroutineBase[] allSubroutines = subroutinedRole.SubroutineModule.AllSubroutines;
 			for (int i = 0; i < allSubroutines.Length; i++)
 			{
 				if (allSubroutines[i] is IStaminaModifier item)
 				{
-					_modifiers.Add(item);
+					this._modifiers.Add(item);
 				}
 			}
 			if (fpcRole.FpcModule is IStaminaModifier item2)
 			{
-				_modifiers.Add(item2);
+				this._modifiers.Add(item2);
 			}
-			return _modifiers;
+			return this._modifiers;
 		}
 	}
 
@@ -45,9 +45,9 @@ public class SubroutineInfluencedFpcStateProcessor : FpcStateProcessor
 		get
 		{
 			float num = base.ServerUseRate;
-			for (int i = 0; i < Modifiers.Count; i++)
+			for (int i = 0; i < this.Modifiers.Count; i++)
 			{
-				IStaminaModifier staminaModifier = Modifiers[i];
+				IStaminaModifier staminaModifier = this.Modifiers[i];
 				if (staminaModifier.StaminaModifierActive)
 				{
 					num *= staminaModifier.StaminaUsageMultiplier;
@@ -62,9 +62,9 @@ public class SubroutineInfluencedFpcStateProcessor : FpcStateProcessor
 		get
 		{
 			float num = base.ServerRegenRate;
-			for (int i = 0; i < Modifiers.Count; i++)
+			for (int i = 0; i < this.Modifiers.Count; i++)
 			{
-				IStaminaModifier staminaModifier = Modifiers[i];
+				IStaminaModifier staminaModifier = this.Modifiers[i];
 				if (staminaModifier.StaminaModifierActive)
 				{
 					num *= staminaModifier.StaminaRegenMultiplier;
@@ -82,7 +82,7 @@ public class SubroutineInfluencedFpcStateProcessor : FpcStateProcessor
 			{
 				return true;
 			}
-			return Modifiers.Any(IsDisabled);
+			return this.Modifiers.Any(IsDisabled);
 			static bool IsDisabled(IStaminaModifier fx)
 			{
 				if (fx.StaminaModifierActive)

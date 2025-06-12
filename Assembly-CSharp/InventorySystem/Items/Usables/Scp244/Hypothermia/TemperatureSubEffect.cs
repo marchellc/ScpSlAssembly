@@ -14,30 +14,30 @@ public class TemperatureSubEffect : HypothermiaSubEffectBase
 
 	public float CurTemperature { get; private set; }
 
-	public override bool IsActive => CurTemperature > 0f;
+	public override bool IsActive => this.CurTemperature > 0f;
 
 	internal override void UpdateEffect(float curExposure)
 	{
 		if (!base.Hub.IsAlive())
 		{
-			DisableEffect();
+			this.DisableEffect();
 		}
 		else if (curExposure == 0f)
 		{
-			if (CurTemperature != 0f)
+			if (this.CurTemperature != 0f)
 			{
-				float value = CurTemperature - _temperatureDrop * Time.deltaTime;
-				CurTemperature = Mathf.Clamp(value, 0f, _maxExitTemp);
+				float value = this.CurTemperature - this._temperatureDrop * Time.deltaTime;
+				this.CurTemperature = Mathf.Clamp(value, 0f, this._maxExitTemp);
 			}
 		}
 		else
 		{
-			CurTemperature += curExposure * RainbowTaste.CurrentMultiplier(base.Hub) * Time.deltaTime;
+			this.CurTemperature += curExposure * RainbowTaste.CurrentMultiplier(base.Hub) * Time.deltaTime;
 		}
 	}
 
 	public override void DisableEffect()
 	{
-		CurTemperature = 0f;
+		this.CurTemperature = 0f;
 	}
 }

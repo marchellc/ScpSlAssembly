@@ -12,9 +12,9 @@ public struct Offset : IEquatable<Offset>
 
 	public bool Equals(Offset other)
 	{
-		if (position == other.position && rotation == other.rotation)
+		if (this.position == other.position && this.rotation == other.rotation)
 		{
-			return scale == other.scale;
+			return this.scale == other.scale;
 		}
 		return false;
 	}
@@ -23,21 +23,21 @@ public struct Offset : IEquatable<Offset>
 	{
 		if (obj is Offset other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((position.GetHashCode() * 397) ^ rotation.GetHashCode()) * 397) ^ scale.GetHashCode();
+		return (((this.position.GetHashCode() * 397) ^ this.rotation.GetHashCode()) * 397) ^ this.scale.GetHashCode();
 	}
 
 	public Offset(Transform t, bool local)
 	{
-		position = (local ? t.localPosition : t.position);
-		rotation = (local ? t.localEulerAngles : t.eulerAngles);
-		scale = t.localScale;
+		this.position = (local ? t.localPosition : t.position);
+		this.rotation = (local ? t.localEulerAngles : t.eulerAngles);
+		this.scale = t.localScale;
 	}
 
 	public static bool operator ==(Offset left, Offset right)

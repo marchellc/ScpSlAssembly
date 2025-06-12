@@ -25,9 +25,9 @@ public class Scp049DamageHandler : ScpDamageHandler
 
 	private readonly string _ragdollInspectText;
 
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
-	public override string RagdollInspectText => _ragdollInspectText;
+	public override string RagdollInspectText => this._ragdollInspectText;
 
 	public override string DeathScreenText => string.Empty;
 
@@ -35,7 +35,7 @@ public class Scp049DamageHandler : ScpDamageHandler
 
 	public override Footprint Attacker { get; protected set; }
 
-	public override string ServerLogsText => LogReasons[DamageSubType] + " (" + Attacker.Nickname + ").";
+	public override string ServerLogsText => Scp049DamageHandler.LogReasons[this.DamageSubType] + " (" + this.Attacker.Nickname + ").";
 
 	public override bool AllowSelfDamage => false;
 
@@ -43,21 +43,21 @@ public class Scp049DamageHandler : ScpDamageHandler
 
 	public Scp049DamageHandler(ReferenceHub attacker, float damage, AttackType attackType)
 	{
-		Damage = damage;
-		DamageSubType = attackType;
-		Attacker = new Footprint(attacker);
+		this.Damage = damage;
+		this.DamageSubType = attackType;
+		this.Attacker = new Footprint(attacker);
 	}
 
 	public Scp049DamageHandler(Footprint attacker, float damage, AttackType attackType)
 	{
-		Damage = damage;
-		DamageSubType = attackType;
-		Attacker = attacker;
+		this.Damage = damage;
+		this.DamageSubType = attackType;
+		this.Attacker = attacker;
 	}
 
 	public Scp049DamageHandler()
 	{
-		_ragdollInspectText = DeathTranslations.Scp049.RagdollTranslation;
+		this._ragdollInspectText = DeathTranslations.Scp049.RagdollTranslation;
 	}
 
 	public override HandlerOutput ApplyDamage(ReferenceHub ply)
@@ -79,22 +79,22 @@ public class Scp049DamageHandler : ScpDamageHandler
 
 	public override void WriteDeathScreen(NetworkWriter writer)
 	{
-		RoleTypeId role = ((Attacker.Role != RoleTypeId.Scp0492) ? RoleTypeId.Scp049 : RoleTypeId.Scp0492);
+		RoleTypeId role = ((this.Attacker.Role != RoleTypeId.Scp0492) ? RoleTypeId.Scp049 : RoleTypeId.Scp0492);
 		writer.WriteSpawnReason(SpectatorSpawnReason.KilledByPlayer);
-		writer.WriteUInt(Attacker.NetId);
-		writer.WriteString(Attacker.Nickname);
+		writer.WriteUInt(this.Attacker.NetId);
+		writer.WriteString(this.Attacker.Nickname);
 		writer.WriteRoleType(role);
 	}
 
 	public override void WriteAdditionalData(NetworkWriter writer)
 	{
 		base.WriteAdditionalData(writer);
-		writer.WriteByte((byte)DamageSubType);
+		writer.WriteByte((byte)this.DamageSubType);
 	}
 
 	public override void ReadAdditionalData(NetworkReader reader)
 	{
 		base.ReadAdditionalData(reader);
-		DamageSubType = (AttackType)reader.ReadByte();
+		this.DamageSubType = (AttackType)reader.ReadByte();
 	}
 }

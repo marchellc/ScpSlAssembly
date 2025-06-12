@@ -17,10 +17,10 @@ public struct RecoilSettings
 
 	public RecoilSettings(float animationTime, float zAxis, float fovKick, float upKick, float sideKick)
 	{
-		AnimationTime = animationTime;
-		ZAxis = zAxis;
-		FovKick = fovKick;
-		UpKick = upKick;
-		SideKick = sideKick;
+		this.AnimationTime = animationTime;
+		this.ZAxis = zAxis;
+		this.FovKick = fovKick;
+		this.UpKick = upKick;
+		this.SideKick = sideKick;
 	}
 }

@@ -41,7 +41,7 @@ public class ElevatorSendCommand : ICommand
 				response = "Elevator \"" + text + "\" not found.";
 				return false;
 			}
-			return SendElevator(group, result, out response, sender);
+			return ElevatorSendCommand.SendElevator(group, result, out response, sender);
 		}
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
 		bool result2 = true;
@@ -50,7 +50,7 @@ public class ElevatorSendCommand : ICommand
 			ElevatorGroup[] values = EnumUtils<ElevatorGroup>.Values;
 			for (int i = 0; i < values.Length; i++)
 			{
-				if (!SendElevator(values[i], -1, out var response2, sender))
+				if (!ElevatorSendCommand.SendElevator(values[i], -1, out var response2, sender))
 				{
 					result2 = false;
 				}

@@ -31,28 +31,28 @@ public class FlipbookPlayer : MonoBehaviour
 
 	private void Awake()
 	{
-		_rect = _image.uvRect;
+		this._rect = this._image.uvRect;
 	}
 
 	private void FixedUpdate()
 	{
-		if (_remainingCooldown > 0)
+		if (this._remainingCooldown > 0)
 		{
-			_remainingCooldown--;
+			this._remainingCooldown--;
 			return;
 		}
-		_rect.position = _elapsedPrimary * _primaryOffset + _elapsedSecondary * _secondaryOffset;
-		_elapsedPrimary++;
-		if (_elapsedPrimary >= _primaryCycles)
+		this._rect.position = this._elapsedPrimary * this._primaryOffset + this._elapsedSecondary * this._secondaryOffset;
+		this._elapsedPrimary++;
+		if (this._elapsedPrimary >= this._primaryCycles)
 		{
-			_elapsedSecondary++;
-			_elapsedPrimary = 0;
-			if (_elapsedSecondary >= _secondaryCycles)
+			this._elapsedSecondary++;
+			this._elapsedPrimary = 0;
+			if (this._elapsedSecondary >= this._secondaryCycles)
 			{
-				_elapsedSecondary = 0;
+				this._elapsedSecondary = 0;
 			}
 		}
-		_remainingCooldown = _updateCooldown;
-		_image.uvRect = _rect;
+		this._remainingCooldown = this._updateCooldown;
+		this._image.uvRect = this._rect;
 	}
 }

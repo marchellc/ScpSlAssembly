@@ -26,30 +26,30 @@ public static class ScpPlayerPicker
 	{
 		using (ScpTicketsLoader scpTicketsLoader = new ScpTicketsLoader())
 		{
-			GenerateList(scpTicketsLoader, targetScps);
+			ScpPlayerPicker.GenerateList(scpTicketsLoader, targetScps);
 			foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 			{
-				if (RoleAssigner.CheckPlayer(allHub) && !IsOptedOutOfScp(allHub))
+				if (RoleAssigner.CheckPlayer(allHub) && !ScpPlayerPicker.IsOptedOutOfScp(allHub))
 				{
 					int tickets = scpTicketsLoader.GetTickets(allHub, 10);
 					scpTicketsLoader.ModifyTickets(allHub, tickets + 2);
 				}
 			}
-			foreach (ReferenceHub item in ScpsToSpawn)
+			foreach (ReferenceHub item in ScpPlayerPicker.ScpsToSpawn)
 			{
 				scpTicketsLoader.ModifyTickets(item, 10);
 			}
 		}
-		if (targetScps != ScpsToSpawn.Count)
+		if (targetScps != ScpPlayerPicker.ScpsToSpawn.Count)
 		{
 			throw new InvalidOperationException("Failed to meet target number of SCPs.");
 		}
-		return ScpsToSpawn;
+		return ScpPlayerPicker.ScpsToSpawn;
 	}
 
 	private static void GenerateList(ScpTicketsLoader loader, int scpsToAssign)
 	{
-		ScpsToSpawn.Clear();
+		ScpPlayerPicker.ScpsToSpawn.Clear();
 		if (scpsToAssign <= 0)
 		{
 			return;
@@ -66,19 +66,19 @@ public static class ScpPlayerPicker
 			{
 				if (tickets > num)
 				{
-					ScpsToSpawn.Clear();
+					ScpPlayerPicker.ScpsToSpawn.Clear();
 				}
 				num = tickets;
-				ScpsToSpawn.Add(allHub);
+				ScpPlayerPicker.ScpsToSpawn.Add(allHub);
 			}
 		}
-		if (ScpsToSpawn.Count > 1)
+		if (ScpPlayerPicker.ScpsToSpawn.Count > 1)
 		{
-			ReferenceHub item = ScpsToSpawn.RandomItem();
-			ScpsToSpawn.Clear();
-			ScpsToSpawn.Add(item);
+			ReferenceHub item = ScpPlayerPicker.ScpsToSpawn.RandomItem();
+			ScpPlayerPicker.ScpsToSpawn.Clear();
+			ScpPlayerPicker.ScpsToSpawn.Add(item);
 		}
-		scpsToAssign -= ScpsToSpawn.Count;
+		scpsToAssign -= ScpPlayerPicker.ScpsToSpawn.Count;
 		if (scpsToAssign <= 0)
 		{
 			return;
@@ -87,7 +87,7 @@ public static class ScpPlayerPicker
 		long num2 = 0L;
 		foreach (ReferenceHub allHub2 in ReferenceHub.AllHubs)
 		{
-			if (!ScpsToSpawn.Contains(allHub2) && RoleAssigner.CheckPlayer(allHub2))
+			if (!ScpPlayerPicker.ScpsToSpawn.Contains(allHub2) && RoleAssigner.CheckPlayer(allHub2))
 			{
 				long num3 = 1L;
 				int tickets2 = loader.GetTickets(allHub2, 10);
@@ -113,7 +113,7 @@ public static class ScpPlayerPicker
 				if (!(num4 > 0.0))
 				{
 					scpsToAssign--;
-					ScpsToSpawn.Add(potentialScp.Player);
+					ScpPlayerPicker.ScpsToSpawn.Add(potentialScp.Player);
 					list.RemoveAt(j);
 					num2 -= potentialScp.Weight;
 					break;

@@ -12,8 +12,8 @@ public readonly struct WearableGameObject
 
 	public WearableGameObject(GameObject source)
 	{
-		Source = source;
-		SourceTr = Source.transform;
-		GlobalScale = SourceTr.lossyScale;
+		this.Source = source;
+		this.SourceTr = this.Source.transform;
+		this.GlobalScale = this.SourceTr.lossyScale;
 	}
 }

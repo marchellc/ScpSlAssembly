@@ -12,6 +12,6 @@ public class PrimaryWaveConfig<T> : StandardWaveConfig<T> where T : SpawnableWav
 	protected override void OnConfigRefresh()
 	{
 		base.OnConfigRefresh();
-		SizePercentage = ConfigFile.ServerConfig.GetFloat(GetConfigPath("size_percentage"), 0.75f);
+		this.SizePercentage = ConfigFile.ServerConfig.GetFloat(base.GetConfigPath("size_percentage"), 0.75f);
 	}
 }

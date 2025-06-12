@@ -19,17 +19,17 @@ public class BipolarTransform
 	{
 		get
 		{
-			return _polarity;
+			return this._polarity;
 		}
 		set
 		{
-			if (_polarity != value)
+			if (this._polarity != value)
 			{
-				_polarity = value;
-				Offset offset = (value ? TruePole : FalsePole);
+				this._polarity = value;
+				Offset offset = (value ? this.TruePole : this.FalsePole);
 				Quaternion localRotation = Quaternion.Euler(offset.rotation);
-				TargetTransform.localScale = offset.scale;
-				TargetTransform.SetLocalPositionAndRotation(offset.position, localRotation);
+				this.TargetTransform.localScale = offset.scale;
+				this.TargetTransform.SetLocalPositionAndRotation(offset.position, localRotation);
 			}
 		}
 	}

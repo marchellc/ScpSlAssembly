@@ -20,52 +20,52 @@ public abstract class PickupSearchCompletor : ISearchCompletor
 
 	protected PickupSearchCompletor(ReferenceHub hub, ItemPickupBase targetPickup, double maxDistanceSquared)
 	{
-		Hub = hub;
-		TargetPickup = targetPickup;
-		TargetItemType = targetPickup.Info.ItemId;
-		MaxDistanceSqr = maxDistanceSquared;
+		this.Hub = hub;
+		this.TargetPickup = targetPickup;
+		this.TargetItemType = targetPickup.Info.ItemId;
+		this.MaxDistanceSqr = maxDistanceSquared;
 	}
 
 	protected bool ValidateDistance()
 	{
-		return (double)(TargetPickup.transform.position - Hub.transform.position).sqrMagnitude <= MaxDistanceSqr;
+		return (double)(this.TargetPickup.transform.position - this.Hub.transform.position).sqrMagnitude <= this.MaxDistanceSqr;
 	}
 
 	protected virtual bool ValidateAny()
 	{
-		if (Hub.roleManager.CurrentRole is IInventoryRole && !TargetPickup.Info.Locked && !Hub.inventory.IsDisarmed())
+		if (this.Hub.roleManager.CurrentRole is IInventoryRole && !this.TargetPickup.Info.Locked && !this.Hub.inventory.IsDisarmed())
 		{
-			return !Hub.interCoordinator.AnyBlocker(BlockedInteraction.GrabItems);
+			return !this.Hub.interCoordinator.AnyBlocker(BlockedInteraction.GrabItems);
 		}
 		return false;
 	}
 
 	public virtual bool ValidateStart()
 	{
-		PlayerSearchingPickupEventArgs playerSearchingPickupEventArgs = new PlayerSearchingPickupEventArgs(Hub, TargetPickup);
-		PlayerEvents.OnSearchingPickup(playerSearchingPickupEventArgs);
-		if (!playerSearchingPickupEventArgs.IsAllowed)
+		PlayerSearchingPickupEventArgs e = new PlayerSearchingPickupEventArgs(this.Hub, this.TargetPickup);
+		PlayerEvents.OnSearchingPickup(e);
+		if (!e.IsAllowed)
 		{
 			return false;
 		}
-		if (ValidateAny())
+		if (this.ValidateAny())
 		{
-			return ValidateDistance();
+			return this.ValidateDistance();
 		}
 		return false;
 	}
 
 	public virtual bool ValidateUpdate()
 	{
-		if (TargetPickup != null && ValidateAny())
+		if (this.TargetPickup != null && this.ValidateAny())
 		{
-			return ValidateDistance();
+			return this.ValidateDistance();
 		}
 		return false;
 	}
 
 	public virtual void Complete()
 	{
-		PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(Hub, TargetPickup));
+		PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(this.Hub, this.TargetPickup));
 	}
 }

@@ -8,9 +8,9 @@ public class CreditText : MonoBehaviour
 
 	private void FixedUpdate()
 	{
-		if (move)
+		if (this.move)
 		{
-			base.transform.Translate(Vector3.up * speed);
+			base.transform.Translate(Vector3.up * this.speed);
 		}
 	}
 }

@@ -6,6 +6,6 @@ public abstract class ShotEvent
 
 	public ShotEvent(ItemIdentifier shotFirearm)
 	{
-		ItemId = shotFirearm;
+		this.ItemId = shotFirearm;
 	}
 }

@@ -47,10 +47,10 @@ public static class FirearmIconGenerator
 		}
 		RectTransform rectTransform = rootImage.rectTransform;
 		Bounds b = new Bounds(rectTransform.localPosition, Vector3.zero);
-		EncapsulateRect(ref b, rectTransform);
+		FirearmIconGenerator.EncapsulateRect(ref b, rectTransform);
 		for (int k = 0; k < num; k++)
 		{
-			EncapsulateRect(ref b, imagePool[k].rectTransform);
+			FirearmIconGenerator.EncapsulateRect(ref b, imagePool[k].rectTransform);
 		}
 		return b;
 	}

@@ -14,13 +14,13 @@ public class JailbirdDamageHandler : AttackerDamageHandler
 
 	private const float HorizontalForce = 0.1f;
 
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
 	public override Footprint Attacker { get; protected set; }
 
 	public override bool AllowSelfDamage => false;
 
-	public override string ServerLogsText => "Jailbirded by " + Attacker.Nickname;
+	public override string ServerLogsText => "Jailbirded by " + this.Attacker.Nickname;
 
 	public override string RagdollInspectText => "Blunt force trauma.";
 
@@ -28,32 +28,32 @@ public class JailbirdDamageHandler : AttackerDamageHandler
 
 	public JailbirdDamageHandler()
 	{
-		Attacker = default(Footprint);
-		Damage = 0f;
-		_moveDirection = Vector3.zero;
+		this.Attacker = default(Footprint);
+		this.Damage = 0f;
+		this._moveDirection = Vector3.zero;
 	}
 
 	public JailbirdDamageHandler(ReferenceHub attacker, float damage, Vector3 moveDirection)
 	{
-		Attacker = new Footprint(attacker);
-		Damage = damage;
-		_moveDirection = moveDirection;
+		this.Attacker = new Footprint(attacker);
+		this.Damage = damage;
+		this._moveDirection = moveDirection;
 	}
 
 	public override HandlerOutput ApplyDamage(ReferenceHub ply)
 	{
 		HealthStat module = ply.playerStats.GetModule<HealthStat>();
-		ProcessDamage(ply);
-		if (Damage <= 0f)
+		this.ProcessDamage(ply);
+		if (this.Damage <= 0f)
 		{
 			return HandlerOutput.Nothing;
 		}
 		if (ply.GetRoleId() == RoleTypeId.Scp0492)
 		{
-			Damage *= 4f;
+			this.Damage *= 4f;
 		}
-		module.CurValue -= Damage;
-		StartVelocity += (_moveDirection.NormalizeIgnoreY() * 0.1f + Vector3.up * 0.02f) * Damage;
+		module.CurValue -= this.Damage;
+		base.StartVelocity += (this._moveDirection.NormalizeIgnoreY() * 0.1f + Vector3.up * 0.02f) * this.Damage;
 		if (!(module.CurValue <= 0f))
 		{
 			return HandlerOutput.Damaged;

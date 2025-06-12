@@ -13,17 +13,17 @@ public class KeycardMaterialHandler
 
 	public KeycardMaterialHandler(Renderer rend)
 	{
-		_template = rend.sharedMaterial;
-		if (!Pool.TryGetValue(_template, out var value) || !value.TryPop(out Instance))
+		this._template = rend.sharedMaterial;
+		if (!KeycardMaterialHandler.Pool.TryGetValue(this._template, out var value) || !value.TryPop(out this.Instance))
 		{
-			Instance = new Material(_template);
+			this.Instance = new Material(this._template);
 		}
-		rend.sharedMaterial = Instance;
+		rend.sharedMaterial = this.Instance;
 	}
 
 	public void Cleanup()
 	{
-		Instance.CopyPropertiesFromMaterial(_template);
-		Pool.GetOrAddNew(_template).Push(Instance);
+		this.Instance.CopyPropertiesFromMaterial(this._template);
+		KeycardMaterialHandler.Pool.GetOrAddNew(this._template).Push(this.Instance);
 	}
 }

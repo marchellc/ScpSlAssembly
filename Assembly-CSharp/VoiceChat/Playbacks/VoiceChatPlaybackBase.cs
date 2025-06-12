@@ -37,26 +37,26 @@ public abstract class VoiceChatPlaybackBase : MonoBehaviour
 		get
 		{
 			int num = 48000;
-			return AudioClip.Create(string.Empty, num, Channels, num, stream: true, delegate(float[] buf)
+			return AudioClip.Create(string.Empty, num, this.Channels, num, stream: true, delegate(float[] buf)
 			{
 				int num2 = buf.Length;
-				if (_flatlinePcmLen < num2)
+				if (VoiceChatPlaybackBase._flatlinePcmLen < num2)
 				{
-					_flatlinePcm = new float[num2];
+					VoiceChatPlaybackBase._flatlinePcm = new float[num2];
 					for (int i = 0; i < num2; i++)
 					{
-						_flatlinePcm[i] = 1f;
+						VoiceChatPlaybackBase._flatlinePcm[i] = 1f;
 					}
-					_flatlinePcmLen = num2;
+					VoiceChatPlaybackBase._flatlinePcmLen = num2;
 				}
-				Array.Copy(_flatlinePcm, buf, num2);
+				Array.Copy(VoiceChatPlaybackBase._flatlinePcm, buf, num2);
 			});
 		}
 	}
 
 	private void OnAudioFilterRead(float[] data, int channels)
 	{
-		int num = MaxSamples * channels;
+		int num = this.MaxSamples * channels;
 		int num2 = data.Length;
 		if (num <= 0)
 		{
@@ -68,49 +68,49 @@ public abstract class VoiceChatPlaybackBase : MonoBehaviour
 		int num4 = (flag ? num : num2);
 		while (num3 < num4)
 		{
-			float num5 = ReadSample();
+			float num5 = this.ReadSample();
 			for (int i = 0; i < channels; i++)
 			{
-				data[num3] *= num5 * VolumeScale;
+				data[num3] *= num5 * this.VolumeScale;
 				num3++;
 			}
-			_collectedLoudness += Mathf.Abs(num5);
+			this._collectedLoudness += Mathf.Abs(num5);
 		}
 		if (flag)
 		{
 			Array.Clear(data, num, num2 - num);
 		}
-		_collectedSamples += num2;
+		this._collectedSamples += num2;
 	}
 
 	protected virtual void OnDisable()
 	{
-		Source.Stop();
+		this.Source.Stop();
 	}
 
 	protected virtual void OnEnable()
 	{
-		Source.Play();
+		this.Source.Play();
 	}
 
 	protected virtual void Awake()
 	{
-		Source = GetComponent<AudioSource>();
-		Source.clip = Flatline;
-		Source.loop = true;
-		Source.bypassReverbZones = true;
+		this.Source = base.GetComponent<AudioSource>();
+		this.Source.clip = this.Flatline;
+		this.Source.loop = true;
+		this.Source.bypassReverbZones = true;
 	}
 
 	protected virtual void Update()
 	{
-		if (_collectedSamples >= 1200)
+		if (this._collectedSamples >= 1200)
 		{
-			float num = _collectedLoudness * 5f;
-			_targetLoudness = Mathf.Sqrt(num / (float)_collectedSamples);
-			_collectedLoudness = 0f;
-			_collectedSamples = 0;
+			float num = this._collectedLoudness * 5f;
+			this._targetLoudness = Mathf.Sqrt(num / (float)this._collectedSamples);
+			this._collectedLoudness = 0f;
+			this._collectedSamples = 0;
 		}
-		Loudness = Mathf.Lerp(Loudness, _targetLoudness, Time.deltaTime * 40f);
+		this.Loudness = Mathf.Lerp(this.Loudness, this._targetLoudness, Time.deltaTime * 40f);
 	}
 
 	protected abstract float ReadSample();

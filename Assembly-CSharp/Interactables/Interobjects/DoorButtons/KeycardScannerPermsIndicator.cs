@@ -16,24 +16,24 @@ public class KeycardScannerPermsIndicator : MonoBehaviour
 
 		public MaterialVariant(Color32 color, Vector2 offset)
 		{
-			Offset = offset;
-			Color = new Color32(color.r, color.g, color.b, byte.MaxValue);
+			this.Offset = offset;
+			this.Color = new Color32(color.r, color.g, color.b, byte.MaxValue);
 		}
 
 		public Material CreateVariant(Material template)
 		{
 			Material material = new Material(template);
-			material.SetTextureOffset(EmissionTextureHash, Offset);
-			material.SetColor(EmissionColorHash, Color);
-			material.mainTextureOffset = Offset;
+			material.SetTextureOffset(KeycardScannerPermsIndicator.EmissionTextureHash, this.Offset);
+			material.SetColor(KeycardScannerPermsIndicator.EmissionColorHash, this.Color);
+			material.mainTextureOffset = this.Offset;
 			return material;
 		}
 
 		public bool Equals(MaterialVariant other)
 		{
-			if (Color.Equals(other.Color))
+			if (this.Color.Equals(other.Color))
 			{
-				return Offset == other.Offset;
+				return this.Offset == other.Offset;
 			}
 			return false;
 		}
@@ -42,14 +42,14 @@ public class KeycardScannerPermsIndicator : MonoBehaviour
 		{
 			if (obj is MaterialVariant other)
 			{
-				return Equals(other);
+				return this.Equals(other);
 			}
 			return false;
 		}
 
 		public override int GetHashCode()
 		{
-			return HashCode.Combine(Color, Offset);
+			return HashCode.Combine(this.Color, this.Offset);
 		}
 	}
 
@@ -107,117 +107,117 @@ public class KeycardScannerPermsIndicator : MonoBehaviour
 
 	public void Register(IDoorPermissionRequester requester)
 	{
-		_requiredPerms = requester.PermissionsPolicy.RequiredPermissions;
-		KeycardLevels keycardLevels = new KeycardLevels((DoorPermissionFlags)((uint)_requiredPerms & (uint)(ushort)(~(int)_ignoredPerms)));
+		this._requiredPerms = requester.PermissionsPolicy.RequiredPermissions;
+		KeycardLevels keycardLevels = new KeycardLevels((DoorPermissionFlags)((uint)this._requiredPerms & (uint)(ushort)(~(int)this._ignoredPerms)));
 		Vector2 offset;
 		if (keycardLevels.Containment > 0)
 		{
-			_requiredLevel = keycardLevels.Containment;
-			offset = PermsOffsetContainment;
+			this._requiredLevel = keycardLevels.Containment;
+			offset = KeycardScannerPermsIndicator.PermsOffsetContainment;
 		}
 		else if (keycardLevels.Armory > 0)
 		{
-			_requiredLevel = keycardLevels.Armory;
-			offset = PermsOffsetArmory;
+			this._requiredLevel = keycardLevels.Armory;
+			offset = KeycardScannerPermsIndicator.PermsOffsetArmory;
 		}
 		else
 		{
-			_requiredLevel = keycardLevels.Admin;
-			offset = PermsOffsetAdmin;
+			this._requiredLevel = keycardLevels.Admin;
+			offset = KeycardScannerPermsIndicator.PermsOffsetAdmin;
 		}
-		_defaultMat = GetSharedMaterial(DefaultColor, offset);
-		_redMat = GetSharedMaterial(RedColor, offset);
-		_greenMat = GetSharedMaterial(GreenColor, offset);
-		_inactiveMat = GetSharedMaterial(InactiveColor, offset);
-		ShowIdle();
+		this._defaultMat = this.GetSharedMaterial(KeycardScannerPermsIndicator.DefaultColor, offset);
+		this._redMat = this.GetSharedMaterial(KeycardScannerPermsIndicator.RedColor, offset);
+		this._greenMat = this.GetSharedMaterial(KeycardScannerPermsIndicator.GreenColor, offset);
+		this._inactiveMat = this.GetSharedMaterial(KeycardScannerPermsIndicator.InactiveColor, offset);
+		this.ShowIdle();
 	}
 
 	public void ShowIdle()
 	{
-		if (_lastHandle.IsRunning)
+		if (this._lastHandle.IsRunning)
 		{
-			Timing.KillCoroutines(_lastHandle);
+			Timing.KillCoroutines(this._lastHandle);
 		}
-		for (int i = 0; i < _targetIcons.Length; i++)
+		for (int i = 0; i < this._targetIcons.Length; i++)
 		{
-			Material sharedMaterial = ((i >= _requiredLevel) ? _inactiveMat : _defaultMat);
-			_targetIcons[i].sharedMaterial = sharedMaterial;
+			Material sharedMaterial = ((i >= this._requiredLevel) ? this._inactiveMat : this._defaultMat);
+			this._targetIcons[i].sharedMaterial = sharedMaterial;
 		}
 		base.enabled = false;
 	}
 
 	public void PlayAccepted(float? duration)
 	{
-		_lastAccepted = true;
-		_lastAnimLevel = _requiredLevel;
-		_lastAnimTime = duration;
-		Play();
+		this._lastAccepted = true;
+		this._lastAnimLevel = this._requiredLevel;
+		this._lastAnimTime = duration;
+		this.Play();
 	}
 
 	public void PlayDenied(DoorPermissionFlags flags, float? duration)
 	{
-		KeycardLevels keycardLevels = new KeycardLevels(new KeycardLevels((DoorPermissionFlags)((uint)_requiredPerms & (uint)(ushort)(~(int)_ignoredPerms))).Permissions & flags);
-		_lastAccepted = false;
-		_lastAnimLevel = keycardLevels.HighestLevelValue;
-		_lastAnimTime = duration;
-		Play();
+		KeycardLevels keycardLevels = new KeycardLevels(new KeycardLevels((DoorPermissionFlags)((uint)this._requiredPerms & (uint)(ushort)(~(int)this._ignoredPerms))).Permissions & flags);
+		this._lastAccepted = false;
+		this._lastAnimLevel = keycardLevels.HighestLevelValue;
+		this._lastAnimTime = duration;
+		this.Play();
 	}
 
 	private void Play()
 	{
 		base.enabled = true;
-		if (_lastHandle.IsRunning)
+		if (this._lastHandle.IsRunning)
 		{
-			Timing.KillCoroutines(_lastHandle);
+			Timing.KillCoroutines(this._lastHandle);
 		}
-		_lastHandle = Timing.RunCoroutine(PlayAnimation().CancelWith(base.gameObject), Segment.Update);
+		this._lastHandle = Timing.RunCoroutine(this.PlayAnimation().CancelWith(base.gameObject), Segment.Update);
 	}
 
 	private IEnumerator<float> PlayAnimation()
 	{
 		double timestamp = Time.timeAsDouble;
-		Renderer[] targetIcons = _targetIcons;
+		Renderer[] targetIcons = this._targetIcons;
 		for (int i = 0; i < targetIcons.Length; i++)
 		{
-			targetIcons[i].sharedMaterial = _inactiveMat;
+			targetIcons[i].sharedMaterial = this._inactiveMat;
 		}
 		yield return Timing.WaitForSeconds(0.1f);
-		Material targetMat = (_lastAccepted ? _greenMat : _redMat);
-		for (int j = 0; j < Mathf.Max(_lastAnimLevel, _minBlinkDelay); j++)
+		Material targetMat = (this._lastAccepted ? this._greenMat : this._redMat);
+		for (int j = 0; j < Mathf.Max(this._lastAnimLevel, this._minBlinkDelay); j++)
 		{
-			if (j < _lastAnimLevel && _targetIcons.TryGet(j, out var element))
+			if (j < this._lastAnimLevel && this._targetIcons.TryGet(j, out var element))
 			{
 				element.sharedMaterial = targetMat;
 			}
 			yield return Timing.WaitForSeconds(0.1f);
 		}
-		int blinkStartIndex = ((!_lastAccepted) ? _lastAnimLevel : 0);
-		int blinkEndIndex = Mathf.Min(_targetIcons.Length, _requiredLevel);
+		int blinkStartIndex = ((!this._lastAccepted) ? this._lastAnimLevel : 0);
+		int blinkEndIndex = Mathf.Min(this._targetIcons.Length, this._requiredLevel);
 		for (int j = 0; j < 6; j++)
 		{
-			Material sharedMaterial = ((j % 2 == 1) ? targetMat : _inactiveMat);
+			Material sharedMaterial = ((j % 2 == 1) ? targetMat : this._inactiveMat);
 			for (int k = blinkStartIndex; k < blinkEndIndex; k++)
 			{
-				_targetIcons[k].sharedMaterial = sharedMaterial;
+				this._targetIcons[k].sharedMaterial = sharedMaterial;
 			}
 			yield return Timing.WaitForSeconds(0.1f);
 		}
-		if (_lastAnimTime.HasValue)
+		if (this._lastAnimTime.HasValue)
 		{
 			double num = Time.timeAsDouble - timestamp;
-			double num2 = (double)_lastAnimTime.Value - num;
+			double num2 = (double)this._lastAnimTime.Value - num;
 			yield return Timing.WaitForSeconds((float)num2);
-			ShowIdle();
+			this.ShowIdle();
 		}
 	}
 
 	private Material GetSharedMaterial(Color32 color, Vector2 offset)
 	{
 		MaterialVariant key = new MaterialVariant(color, offset);
-		if (!MaterialVariants.TryGetValue(key, out var value))
+		if (!KeycardScannerPermsIndicator.MaterialVariants.TryGetValue(key, out var value))
 		{
-			value = key.CreateVariant(_trimMaterialTemplate);
-			MaterialVariants.Add(key, value);
+			value = key.CreateVariant(this._trimMaterialTemplate);
+			KeycardScannerPermsIndicator.MaterialVariants.Add(key, value);
 		}
 		return value;
 	}

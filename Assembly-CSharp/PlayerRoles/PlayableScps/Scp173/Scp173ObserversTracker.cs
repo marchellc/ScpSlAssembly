@@ -38,31 +38,31 @@ public class Scp173ObserversTracker : StandardSubroutine<Scp173Role>
 	{
 		get
 		{
-			return _curObservers;
+			return this._curObservers;
 		}
 		private set
 		{
-			if (value != _curObservers)
+			if (value != this._curObservers)
 			{
-				int curObservers = _curObservers;
-				_curObservers = value;
+				int curObservers = this._curObservers;
+				this._curObservers = value;
 				this.OnObserversChanged?.Invoke(curObservers, value);
 			}
 		}
 	}
 
-	public bool IsObserved => CurrentObservers > 0;
+	public bool IsObserved => this.CurrentObservers > 0;
 
 	public float SimulatedStare
 	{
 		get
 		{
-			return Mathf.Max(0f, _simulatedStareTime - (float)_simulatedStareSw.Elapsed.TotalSeconds);
+			return Mathf.Max(0f, this._simulatedStareTime - (float)this._simulatedStareSw.Elapsed.TotalSeconds);
 		}
 		set
 		{
-			_simulatedStareTime = value;
-			_simulatedStareSw.Restart();
+			this._simulatedStareTime = value;
+			this._simulatedStareSw.Restart();
 		}
 	}
 
@@ -70,14 +70,14 @@ public class Scp173ObserversTracker : StandardSubroutine<Scp173Role>
 
 	private void Update()
 	{
-		UpdateObservers();
+		this.UpdateObservers();
 	}
 
 	private void CheckRemovedPlayer(ReferenceHub ply)
 	{
-		if (NetworkServer.active && Observers.Remove(ply))
+		if (NetworkServer.active && this.Observers.Remove(ply))
 		{
-			CurrentObservers--;
+			this.CurrentObservers--;
 		}
 	}
 
@@ -85,27 +85,27 @@ public class Scp173ObserversTracker : StandardSubroutine<Scp173Role>
 	{
 		if (!HitboxIdentity.IsEnemy(base.Owner, targetHub))
 		{
-			if (!Observers.Remove(targetHub))
+			if (!this.Observers.Remove(targetHub))
 			{
 				return 0;
 			}
 			return -1;
 		}
-		bool num = IsObservedBy(targetHub, 0.2f);
-		bool flag = Observers.Contains(targetHub);
+		bool num = this.IsObservedBy(targetHub, 0.2f);
+		bool flag = this.Observers.Contains(targetHub);
 		if (num)
 		{
 			if (flag)
 			{
 				return 0;
 			}
-			Scp173AddingObserverEventArgs scp173AddingObserverEventArgs = new Scp173AddingObserverEventArgs(targetHub, base.Owner);
-			Scp173Events.OnAddingObserver(scp173AddingObserverEventArgs);
-			if (!scp173AddingObserverEventArgs.IsAllowed)
+			Scp173AddingObserverEventArgs e = new Scp173AddingObserverEventArgs(targetHub, base.Owner);
+			Scp173Events.OnAddingObserver(e);
+			if (!e.IsAllowed)
 			{
 				return 0;
 			}
-			Observers.Add(targetHub);
+			this.Observers.Add(targetHub);
 			Scp173Events.OnAddedObserver(new Scp173AddedObserverEventArgs(targetHub, base.Owner));
 			return 1;
 		}
@@ -113,13 +113,13 @@ public class Scp173ObserversTracker : StandardSubroutine<Scp173Role>
 		{
 			return 0;
 		}
-		Scp173RemovingObserverEventArgs scp173RemovingObserverEventArgs = new Scp173RemovingObserverEventArgs(targetHub, base.Owner);
-		Scp173Events.OnRemovingObserver(scp173RemovingObserverEventArgs);
-		if (!scp173RemovingObserverEventArgs.IsAllowed)
+		Scp173RemovingObserverEventArgs e2 = new Scp173RemovingObserverEventArgs(targetHub, base.Owner);
+		Scp173Events.OnRemovingObserver(e2);
+		if (!e2.IsAllowed)
 		{
 			return 0;
 		}
-		Observers.Remove(targetHub);
+		this.Observers.Remove(targetHub);
 		Scp173Events.OnRemovedObserver(new Scp173RemovedObserverEventArgs(targetHub, base.Owner));
 		return -1;
 	}
@@ -133,18 +133,18 @@ public class Scp173ObserversTracker : StandardSubroutine<Scp173Role>
 	public bool IsObservedBy(ReferenceHub target, float widthMultiplier = 1f)
 	{
 		Vector3 position = base.CastRole.FpcModule.Position;
-		float num = _maxViewDistance;
+		float num = this._maxViewDistance;
 		if (base.Owner.GetCurrentZone() == FacilityZone.Surface)
 		{
 			num *= 2f;
 		}
-		if (!VisionInformation.GetVisionInformation(target, target.PlayerCameraReference, position, _modelWidth, num, checkFog: false, checkLineOfSight: false).IsLooking)
+		if (!VisionInformation.GetVisionInformation(target, target.PlayerCameraReference, position, this._modelWidth, num, checkFog: false, checkLineOfSight: false).IsLooking)
 		{
 			return false;
 		}
 		Vector3 position2 = target.PlayerCameraReference.position;
 		Vector3 vector = target.PlayerCameraReference.TransformDirection(Vector3.right);
-		Vector2[] visibilityReferencePoints = _visibilityReferencePoints;
+		Vector2[] visibilityReferencePoints = this._visibilityReferencePoints;
 		for (int i = 0; i < visibilityReferencePoints.Length; i++)
 		{
 			Vector2 vector2 = visibilityReferencePoints[i];
@@ -162,42 +162,42 @@ public class Scp173ObserversTracker : StandardSubroutine<Scp173Role>
 		{
 			return;
 		}
-		int num = CurrentObservers;
-		int num2 = ((SimulatedStare > 0f) ? 1 : 0);
-		if (_simulatedTargets != num2)
+		int num = this.CurrentObservers;
+		int num2 = ((this.SimulatedStare > 0f) ? 1 : 0);
+		if (this._simulatedTargets != num2)
 		{
-			num += num2 - _simulatedTargets;
-			_simulatedTargets = num2;
+			num += num2 - this._simulatedTargets;
+			this._simulatedTargets = num2;
 		}
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			num += UpdateObserver(allHub);
+			num += this.UpdateObserver(allHub);
 		}
-		CurrentObservers = num;
+		this.CurrentObservers = num;
 		if (!base.Owner.isLocalPlayer)
 		{
-			ServerSendRpc(toAll: true);
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte((byte)Mathf.Clamp(CurrentObservers, 0, 255));
+		writer.WriteByte((byte)Mathf.Clamp(this.CurrentObservers, 0, 255));
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		CurrentObservers = reader.ReadByte();
+		this.CurrentObservers = reader.ReadByte();
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_curObservers = 0;
-		_simulatedTargets = 0;
-		_simulatedStareTime = 0f;
-		Observers.Clear();
+		this._curObservers = 0;
+		this._simulatedTargets = 0;
+		this._simulatedStareTime = 0f;
+		this.Observers.Clear();
 	}
 }

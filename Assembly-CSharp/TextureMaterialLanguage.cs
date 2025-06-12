@@ -8,6 +8,6 @@ public class TextureMaterialLanguage : MonoBehaviour
 
 	private void Start()
 	{
-		mat.mainTexture = englishVersion;
+		this.mat.mainTexture = this.englishVersion;
 	}
 }

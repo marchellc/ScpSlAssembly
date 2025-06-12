@@ -41,18 +41,18 @@ public class Scp079SimpleNotification : IScp079Notification
 
 	private float CurrentTime => Time.timeSinceLevelLoad;
 
-	private float Elapsed => CurrentTime - _startTime;
+	private float Elapsed => this.CurrentTime - this._startTime;
 
-	protected virtual StringBuilder WrittenText => _writtenText;
+	protected virtual StringBuilder WrittenText => this._writtenText;
 
-	public virtual float Opacity => Mathf.Min(1f, 1f - (CurrentTime - _endTime) / 0.18f);
+	public virtual float Opacity => Mathf.Min(1f, 1f - (this.CurrentTime - this._endTime) / 0.18f);
 
 	public float Height
 	{
 		get
 		{
-			float t = ((Opacity > 0f) ? (Elapsed / 0.08f) : (1f + Opacity));
-			return Mathf.Lerp(-5f, _totalHeight, t);
+			float t = ((this.Opacity > 0f) ? (this.Elapsed / 0.08f) : (1f + this.Opacity));
+			return Mathf.Lerp(-5f, this._totalHeight, t);
 		}
 	}
 
@@ -60,8 +60,8 @@ public class Scp079SimpleNotification : IScp079Notification
 	{
 		get
 		{
-			WriteLetters();
-			return WrittenText.ToString();
+			this.WriteLetters();
+			return this.WrittenText.ToString();
 		}
 	}
 
@@ -69,13 +69,13 @@ public class Scp079SimpleNotification : IScp079Notification
 	{
 		get
 		{
-			int num = Mathf.CeilToInt((float)(_totalWritten - _lettersOffset) * 0.2f);
-			if (num <= _prevPlayed)
+			int num = Mathf.CeilToInt((float)(this._totalWritten - this._lettersOffset) * 0.2f);
+			if (num <= this._prevPlayed)
 			{
 				return NotificationSound.None;
 			}
-			_prevPlayed = num;
-			if (!_mute)
+			this._prevPlayed = num;
+			if (!this._mute)
 			{
 				return NotificationSound.Standard;
 			}
@@ -83,30 +83,30 @@ public class Scp079SimpleNotification : IScp079Notification
 		}
 	}
 
-	public virtual bool Delete => Opacity < -1f;
+	public virtual bool Delete => this.Opacity < -1f;
 
 	public Scp079SimpleNotification(string targetContent, bool mute = false)
 	{
-		_mute = mute;
-		_writtenText = new StringBuilder();
-		_targetContent = targetContent;
-		_length = _targetContent.Length;
-		_startTime = CurrentTime;
-		_endTime = _startTime + 4.2f + 0.05f * (float)_length;
-		Scp079NotificationManager.TryGetTextHeight(targetContent, out _totalHeight);
+		this._mute = mute;
+		this._writtenText = new StringBuilder();
+		this._targetContent = targetContent;
+		this._length = this._targetContent.Length;
+		this._startTime = this.CurrentTime;
+		this._endTime = this._startTime + 4.2f + 0.05f * (float)this._length;
+		Scp079NotificationManager.TryGetTextHeight(targetContent, out this._totalHeight);
 	}
 
 	private void WriteLetters()
 	{
-		int num = Mathf.RoundToInt((Elapsed - 0.08f) * 100f) + _lettersOffset;
+		int num = Mathf.RoundToInt((this.Elapsed - 0.08f) * 100f) + this._lettersOffset;
 		if (num <= 0)
 		{
 			return;
 		}
 		bool flag = false;
-		while (_totalWritten < _length && (_totalWritten < num || flag))
+		while (this._totalWritten < this._length && (this._totalWritten < num || flag))
 		{
-			char c = _targetContent[_totalWritten];
+			char c = this._targetContent[this._totalWritten];
 			switch (c)
 			{
 			case '<':
@@ -116,11 +116,11 @@ public class Scp079SimpleNotification : IScp079Notification
 				flag = false;
 				break;
 			}
-			_writtenText.Append(c);
-			_totalWritten++;
+			this._writtenText.Append(c);
+			this._totalWritten++;
 			if (flag)
 			{
-				_lettersOffset++;
+				this._lettersOffset++;
 			}
 		}
 	}

@@ -14,9 +14,9 @@ public class HideHUDController : MonoBehaviour
 	{
 		get
 		{
-			if (!(_singleton == null))
+			if (!(HideHUDController._singleton == null))
 			{
-				return _singleton._showHUDElements;
+				return HideHUDController._singleton._showHUDElements;
 			}
 			return true;
 		}
@@ -26,7 +26,7 @@ public class HideHUDController : MonoBehaviour
 
 	private void Awake()
 	{
-		_singleton = this;
+		HideHUDController._singleton = this;
 	}
 
 	private void Update()
@@ -35,7 +35,7 @@ public class HideHUDController : MonoBehaviour
 		{
 			return;
 		}
-		if (_showHUDElements)
+		if (this._showHUDElements)
 		{
 			InputField[] array = UnityEngine.Object.FindObjectsOfType<InputField>();
 			for (int i = 0; i < array.Length; i++)
@@ -54,8 +54,8 @@ public class HideHUDController : MonoBehaviour
 				}
 			}
 		}
-		_showHUDElements = !_showHUDElements;
-		HideHUDController.ToggleHUD?.Invoke(_showHUDElements);
-		GameMenu.singleton.hideHUDText.SetActive(!_showHUDElements);
+		this._showHUDElements = !this._showHUDElements;
+		HideHUDController.ToggleHUD?.Invoke(this._showHUDElements);
+		GameMenu.singleton.hideHUDText.SetActive(!this._showHUDElements);
 	}
 }

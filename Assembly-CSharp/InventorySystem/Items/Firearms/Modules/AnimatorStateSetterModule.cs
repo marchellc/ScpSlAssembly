@@ -43,20 +43,20 @@ public class AnimatorStateSetterModule : ModuleBase
 	[ExposedFirearmEvent]
 	public void SetAttachmentReady(Attachment attachment)
 	{
-		_activeFlags.Add(attachment);
+		this._activeFlags.Add(attachment);
 	}
 
 	public bool GetReadyFlag(Attachment attachment)
 	{
-		return _activeFlags.Contains(attachment);
+		return this._activeFlags.Contains(attachment);
 	}
 
 	internal override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		ExposeParameters();
-		ExposeAttachments();
-		if (_setRoleId)
+		this.ExposeParameters();
+		this.ExposeAttachments();
+		if (this._setRoleId)
 		{
 			base.Firearm.AnimSetInt(FirearmAnimatorHashes.RoleId, (int)base.Firearm.Owner.GetRoleId());
 		}
@@ -65,15 +65,15 @@ public class AnimatorStateSetterModule : ModuleBase
 	internal override void OnHolstered()
 	{
 		base.OnHolstered();
-		_activeFlags.Clear();
+		this._activeFlags.Clear();
 	}
 
 	private void ExposeParameters()
 	{
-		AttachmentParam[] exposedParams = _exposedParams;
+		AttachmentParam[] exposedParams = this._exposedParams;
 		foreach (AttachmentParam attachmentParam in exposedParams)
 		{
-			int hash = EnumToHash(attachmentParam, ParamHash, Animator.StringToHash);
+			int hash = AnimatorStateSetterModule.EnumToHash(attachmentParam, AnimatorStateSetterModule.ParamHash, Animator.StringToHash);
 			base.Firearm.AnimSetFloat(hash, base.Firearm.AttachmentsValue(attachmentParam));
 		}
 	}
@@ -81,7 +81,7 @@ public class AnimatorStateSetterModule : ModuleBase
 	private void ExposeAttachments()
 	{
 		Attachment[] attachments = base.Firearm.Attachments;
-		AttachmentSlot[] exposedSlots = _exposedSlots;
+		AttachmentSlot[] exposedSlots = this._exposedSlots;
 		foreach (AttachmentSlot attachmentSlot in exposedSlots)
 		{
 			int num = -1;
@@ -98,7 +98,7 @@ public class AnimatorStateSetterModule : ModuleBase
 			}
 			if (num >= 0)
 			{
-				int hash = EnumToHash(attachmentSlot, SlotHash, GenerateAttachmentIdHash);
+				int hash = AnimatorStateSetterModule.EnumToHash(attachmentSlot, AnimatorStateSetterModule.SlotHash, GenerateAttachmentIdHash);
 				base.Firearm.AnimSetInt(hash, num);
 			}
 		}

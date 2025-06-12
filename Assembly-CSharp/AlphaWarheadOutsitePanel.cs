@@ -11,10 +11,10 @@ public class AlphaWarheadOutsitePanel : NetworkBehaviour
 
 	private void Update()
 	{
-		if (!(nukeside == null))
+		if (!(AlphaWarheadOutsitePanel.nukeside == null))
 		{
 			base.transform.localPosition = new Vector3(0f, 0f, 9f);
-			panelButtonCoverAnim.SetBool(Enabled, AlphaWarheadActivationPanel.IsUnlocked);
+			this.panelButtonCoverAnim.SetBool(AlphaWarheadOutsitePanel.Enabled, AlphaWarheadActivationPanel.IsUnlocked);
 		}
 	}
 

@@ -13,46 +13,46 @@ public struct RecyclablePlayerId : IEquatable<RecyclablePlayerId>
 
 	public RecyclablePlayerId(int newId)
 	{
-		Value = newId;
+		this.Value = newId;
 	}
 
 	public RecyclablePlayerId(ReferenceHub hub)
 	{
-		Value = hub.PlayerId;
+		this.Value = hub.PlayerId;
 	}
 
 	public RecyclablePlayerId(bool useMinQueue)
 	{
 		int num = (useMinQueue ? 16 : 0);
-		int value = ((FreeIds.Count >= num) ? FreeIds.Dequeue() : (++_autoIncrement));
-		Value = value;
+		int value = ((RecyclablePlayerId.FreeIds.Count >= num) ? RecyclablePlayerId.FreeIds.Dequeue() : (++RecyclablePlayerId._autoIncrement));
+		this.Value = value;
 	}
 
 	public void Destroy()
 	{
-		if (Value != 0)
+		if (this.Value != 0)
 		{
-			FreeIds.Enqueue(Value);
+			RecyclablePlayerId.FreeIds.Enqueue(this.Value);
 		}
 	}
 
 	public bool Equals(RecyclablePlayerId other)
 	{
-		return Value == other.Value;
+		return this.Value == other.Value;
 	}
 
 	public override bool Equals(object obj)
 	{
 		if (obj is RecyclablePlayerId other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return Value;
+		return this.Value;
 	}
 
 	public static bool operator ==(RecyclablePlayerId left, RecyclablePlayerId right)

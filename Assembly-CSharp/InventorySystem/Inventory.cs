@@ -61,17 +61,17 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		get
 		{
-			return _curInstance;
+			return this._curInstance;
 		}
 		set
 		{
-			if (value == _curInstance)
+			if (value == this._curInstance)
 			{
 				return;
 			}
-			ItemBase curInstance = _curInstance;
-			_curInstance = value;
-			bool flag = _curInstance == null;
+			ItemBase curInstance = this._curInstance;
+			this._curInstance = value;
+			bool flag = this._curInstance == null;
 			if (curInstance != null)
 			{
 				curInstance.OnHolstered();
@@ -85,21 +85,21 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 					}
 				}
 			}
-			if (_curInstance != null)
+			if (this._curInstance != null)
 			{
 				if (base.isLocalPlayer)
 				{
-					_curInstance.ViewModel.gameObject.SetActive(value: true);
-					SharedHandsController.UpdateInstance(_curInstance.ViewModel);
-					_curInstance.ViewModel.OnEquipped();
+					this._curInstance.ViewModel.gameObject.SetActive(value: true);
+					SharedHandsController.UpdateInstance(this._curInstance.ViewModel);
+					this._curInstance.ViewModel.OnEquipped();
 				}
-				_curInstance.OnEquipped();
-				_curInstance.IsEquipped = true;
+				this._curInstance.OnEquipped();
+				this._curInstance.IsEquipped = true;
 			}
 		}
 	}
 
-	public float LastItemSwitch => (float)_lastEquipSw.Elapsed.TotalSeconds;
+	public float LastItemSwitch => (float)this._lastEquipSw.Elapsed.TotalSeconds;
 
 	private Transform ItemWorkspace => SharedHandsController.Singleton.transform;
 
@@ -111,11 +111,11 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		get
 		{
-			if (!IsObserver)
+			if (!this.IsObserver)
 			{
-				return _staminaModifier;
+				return this._staminaModifier;
 			}
-			return _syncStaminaModifier;
+			return this._syncStaminaModifier;
 		}
 	}
 
@@ -125,9 +125,9 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		get
 		{
-			if (!IsObserver)
+			if (!this.IsObserver)
 			{
-				return _sprintingDisabled;
+				return this._sprintingDisabled;
 			}
 			return false;
 		}
@@ -137,11 +137,11 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		get
 		{
-			if (!IsObserver)
+			if (!this.IsObserver)
 			{
-				return _movementMultiplier;
+				return this._movementMultiplier;
 			}
-			return _syncMovementMultiplier;
+			return this._syncMovementMultiplier;
 		}
 	}
 
@@ -149,11 +149,11 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		get
 		{
-			if (!IsObserver)
+			if (!this.IsObserver)
 			{
-				return _movementLimiter;
+				return this._movementLimiter;
 			}
-			return _syncMovementLimiter;
+			return this._syncMovementLimiter;
 		}
 	}
 
@@ -173,9 +173,9 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		get
 		{
-			if (base.isLocalPlayer && CurInstance != null)
+			if (base.isLocalPlayer && this.CurInstance != null)
 			{
-				return CurInstance.ViewModel != null;
+				return this.CurInstance.ViewModel != null;
 			}
 			return false;
 		}
@@ -187,12 +187,12 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		get
 		{
-			return CurItem;
+			return this.CurItem;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref CurItem, 1uL, OnItemUpdated);
+			base.GeneratedSyncVarSetter(value, ref this.CurItem, 1uL, OnItemUpdated);
 		}
 	}
 
@@ -200,12 +200,12 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		get
 		{
-			return _syncStaminaModifier;
+			return this._syncStaminaModifier;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _syncStaminaModifier, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._syncStaminaModifier, 2uL, null);
 		}
 	}
 
@@ -213,12 +213,12 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		get
 		{
-			return _syncMovementLimiter;
+			return this._syncMovementLimiter;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _syncMovementLimiter, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._syncMovementLimiter, 4uL, null);
 		}
 	}
 
@@ -226,12 +226,12 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		get
 		{
-			return _syncMovementMultiplier;
+			return this._syncMovementMultiplier;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _syncMovementMultiplier, 8uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._syncMovementMultiplier, 8uL, null);
 		}
 	}
 
@@ -249,13 +249,13 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		if (prev != cur)
 		{
-			_lastEquipSw.Restart();
+			this._lastEquipSw.Restart();
 		}
 	}
 
 	private void Awake()
 	{
-		_hub = ReferenceHub.GetHub(base.gameObject);
+		this._hub = ReferenceHub.GetHub(base.gameObject);
 	}
 
 	public override void OnStopClient()
@@ -266,7 +266,7 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 			return;
 		}
 		HashSet<ushort> hashSet = HashSetPool<ushort>.Shared.Rent();
-		foreach (KeyValuePair<ushort, ItemBase> item in UserInventory.Items)
+		foreach (KeyValuePair<ushort, ItemBase> item in this.UserInventory.Items)
 		{
 			hashSet.Add(item.Key);
 		}
@@ -294,69 +294,69 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		if (NetworkServer.active)
 		{
-			if (SendItemsNextFrame)
+			if (this.SendItemsNextFrame)
 			{
-				DummyActionsDirty = true;
-				SendItemsNextFrame = false;
-				Inventory.OnItemsModified?.Invoke(_hub);
-				ServerSendItems();
+				this.DummyActionsDirty = true;
+				this.SendItemsNextFrame = false;
+				Inventory.OnItemsModified?.Invoke(this._hub);
+				this.ServerSendItems();
 			}
-			if (SendAmmoNextFrame)
+			if (this.SendAmmoNextFrame)
 			{
-				DummyActionsDirty = true;
-				SendAmmoNextFrame = false;
-				Inventory.OnAmmoModified?.Invoke(_hub);
-				ServerSendAmmo();
+				this.DummyActionsDirty = true;
+				this.SendAmmoNextFrame = false;
+				Inventory.OnAmmoModified?.Invoke(this._hub);
+				this.ServerSendAmmo();
 			}
 		}
-		UpdateCurItem();
-		if (!IsObserver)
+		this.UpdateCurItem();
+		if (!this.IsObserver)
 		{
-			UpdateObserverItems();
-			RefreshModifiers();
-			if (HasViewmodel && Input.GetKeyDown(NewInput.GetKey(ActionName.ThrowItem)) && CurInstance.AllowDropping && InventoryGuiController.ItemsSafeForInteraction)
+			this.UpdateObserverItems();
+			this.RefreshModifiers();
+			if (this.HasViewmodel && Input.GetKeyDown(NewInput.GetKey(ActionName.ThrowItem)) && this.CurInstance.AllowDropping && InventoryGuiController.ItemsSafeForInteraction)
 			{
-				CmdDropItem(CurItem.SerialNumber, tryThrow: true);
+				this.CmdDropItem(this.CurItem.SerialNumber, tryThrow: true);
 			}
 		}
 	}
 
 	private void UpdateCurItem()
 	{
-		if (_prevCurItem == CurItem)
+		if (this._prevCurItem == this.CurItem)
 		{
 			return;
 		}
-		DummyActionsDirty = true;
+		this.DummyActionsDirty = true;
 		if (base.isLocalPlayer)
 		{
-			if (CurItem.TypeId != ItemType.None)
+			if (this.CurItem.TypeId != ItemType.None)
 			{
-				if (!UserInventory.Items.TryGetValue(CurItem.SerialNumber, out var value))
+				if (!this.UserInventory.Items.TryGetValue(this.CurItem.SerialNumber, out var value))
 				{
 					return;
 				}
-				CurInstance = value;
+				this.CurInstance = value;
 			}
 			else
 			{
-				CurInstance = null;
+				this.CurInstance = null;
 			}
 		}
-		Inventory.OnCurrentItemChanged?.Invoke(_hub, _prevCurItem, CurItem);
-		_prevCurItem = new ItemIdentifier(CurItem.TypeId, CurItem.SerialNumber);
+		Inventory.OnCurrentItemChanged?.Invoke(this._hub, this._prevCurItem, this.CurItem);
+		this._prevCurItem = new ItemIdentifier(this.CurItem.TypeId, this.CurItem.SerialNumber);
 	}
 
 	private void UpdateObserverItems()
 	{
 		List<ushort> list = ListPool<ushort>.Shared.Rent();
-		foreach (KeyValuePair<ushort, ItemBase> item in UserInventory.Items)
+		foreach (KeyValuePair<ushort, ItemBase> item in this.UserInventory.Items)
 		{
 			list.Add(item.Key);
 		}
 		foreach (ushort item2 in list)
 		{
-			if (UserInventory.Items.TryGetValue(item2, out var value) && value.enabled)
+			if (this.UserInventory.Items.TryGetValue(item2, out var value) && value.enabled)
 			{
 				if (value.IsEquipped)
 				{
@@ -370,29 +370,29 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 
 	private void RefreshModifiers()
 	{
-		_staminaModifier = 1f;
-		_movementLimiter = float.MaxValue;
-		_movementMultiplier = 1f;
-		_sprintingDisabled = false;
-		foreach (KeyValuePair<ushort, ItemBase> item in UserInventory.Items)
+		this._staminaModifier = 1f;
+		this._movementLimiter = float.MaxValue;
+		this._movementMultiplier = 1f;
+		this._sprintingDisabled = false;
+		foreach (KeyValuePair<ushort, ItemBase> item in this.UserInventory.Items)
 		{
 			object mobilityController = item.Value.GetMobilityController();
 			if (mobilityController is IStaminaModifier { StaminaModifierActive: not false } staminaModifier)
 			{
-				_staminaModifier *= staminaModifier.StaminaUsageMultiplier;
-				_sprintingDisabled |= staminaModifier.SprintingDisabled;
+				this._staminaModifier *= staminaModifier.StaminaUsageMultiplier;
+				this._sprintingDisabled |= staminaModifier.SprintingDisabled;
 			}
 			if (mobilityController is IMovementSpeedModifier { MovementModifierActive: not false } movementSpeedModifier)
 			{
-				_movementLimiter = Mathf.Min(_movementLimiter, movementSpeedModifier.MovementSpeedLimit);
-				_movementMultiplier *= movementSpeedModifier.MovementSpeedMultiplier;
+				this._movementLimiter = Mathf.Min(this._movementLimiter, movementSpeedModifier.MovementSpeedLimit);
+				this._movementMultiplier *= movementSpeedModifier.MovementSpeedMultiplier;
 			}
 		}
 		if (NetworkServer.active)
 		{
-			Network_syncStaminaModifier = _staminaModifier;
-			Network_syncMovementMultiplier = _movementMultiplier;
-			Network_syncMovementLimiter = _movementLimiter;
+			this.Network_syncStaminaModifier = this._staminaModifier;
+			this.Network_syncMovementMultiplier = this._movementMultiplier;
+			this.Network_syncMovementLimiter = this._movementLimiter;
 		}
 	}
 
@@ -405,49 +405,49 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 		}
 		else
 		{
-			if (itemSerial == CurItem.SerialNumber)
+			if (itemSerial == this.CurItem.SerialNumber)
 			{
 				return;
 			}
 			ItemBase value = null;
 			ItemBase value2 = null;
-			bool flag = CurItem.SerialNumber == 0 || (UserInventory.Items.TryGetValue(CurItem.SerialNumber, out value) && CurInstance != null);
-			if (itemSerial == 0 || UserInventory.Items.TryGetValue(itemSerial, out value2))
+			bool flag = this.CurItem.SerialNumber == 0 || (this.UserInventory.Items.TryGetValue(this.CurItem.SerialNumber, out value) && this.CurInstance != null);
+			if (itemSerial == 0 || this.UserInventory.Items.TryGetValue(itemSerial, out value2))
 			{
-				if ((CurItem.SerialNumber != 0 && flag && !value.AllowHolster) || (itemSerial != 0 && !value2.AllowEquip))
+				if ((this.CurItem.SerialNumber != 0 && flag && !value.AllowHolster) || (itemSerial != 0 && !value2.AllowEquip))
 				{
 					return;
 				}
-				PlayerChangingItemEventArgs playerChangingItemEventArgs = new PlayerChangingItemEventArgs(_hub, value, value2);
-				PlayerEvents.OnChangingItem(playerChangingItemEventArgs);
-				if (!playerChangingItemEventArgs.IsAllowed)
+				PlayerChangingItemEventArgs e = new PlayerChangingItemEventArgs(this._hub, value, value2);
+				PlayerEvents.OnChangingItem(e);
+				if (!e.IsAllowed)
 				{
 					return;
 				}
 				if (itemSerial == 0)
 				{
-					NetworkCurItem = ItemIdentifier.None;
+					this.NetworkCurItem = ItemIdentifier.None;
 					if (!base.isLocalPlayer)
 					{
-						CurInstance = null;
+						this.CurInstance = null;
 					}
 				}
 				else
 				{
-					NetworkCurItem = new ItemIdentifier(value2.ItemTypeId, itemSerial);
+					this.NetworkCurItem = new ItemIdentifier(value2.ItemTypeId, itemSerial);
 					if (!base.isLocalPlayer)
 					{
-						CurInstance = value2;
+						this.CurInstance = value2;
 					}
 				}
-				PlayerEvents.OnChangedItem(new PlayerChangedItemEventArgs(_hub, value, value2));
+				PlayerEvents.OnChangedItem(new PlayerChangedItemEventArgs(this._hub, value, value2));
 			}
 			else if (!flag)
 			{
-				NetworkCurItem = ItemIdentifier.None;
+				this.NetworkCurItem = ItemIdentifier.None;
 				if (!base.isLocalPlayer)
 				{
-					CurInstance = null;
+					this.CurInstance = null;
 				}
 			}
 		}
@@ -455,20 +455,20 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 
 	public void ClientSelectItem(ushort itemSerial)
 	{
-		if (CurInstance != null && CurInstance.ItemSerial != itemSerial)
+		if (this.CurInstance != null && this.CurInstance.ItemSerial != itemSerial)
 		{
-			CurInstance.OnHolsterRequestSent();
+			this.CurInstance.OnHolsterRequestSent();
 		}
-		CmdSelectItem(itemSerial);
+		this.CmdSelectItem(itemSerial);
 	}
 
 	public void ClientDropItem(ushort itemSerial, bool tryThrow)
 	{
-		if (CurInstance != null && CurInstance.ItemSerial == itemSerial)
+		if (this.CurInstance != null && this.CurInstance.ItemSerial == itemSerial)
 		{
-			CurInstance.OnHolsterRequestSent();
+			this.CurInstance.OnHolsterRequestSent();
 		}
-		CmdDropItem(itemSerial, tryThrow);
+		this.CmdDropItem(itemSerial, tryThrow);
 	}
 
 	[Server]
@@ -485,11 +485,11 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 				return;
 			}
 			HashSet<ItemIdentifier> hashSet = HashSetPool<ItemIdentifier>.Shared.Rent();
-			foreach (KeyValuePair<ushort, ItemBase> item in UserInventory.Items)
+			foreach (KeyValuePair<ushort, ItemBase> item in this.UserInventory.Items)
 			{
 				hashSet.Add(new ItemIdentifier(item.Value.ItemTypeId, item.Key));
 			}
-			TargetRefreshItems(hashSet.ToArray());
+			this.TargetRefreshItems(hashSet.ToArray());
 			HashSetPool<ItemIdentifier>.Shared.Return(hashSet);
 		}
 	}
@@ -509,12 +509,12 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 			}
 			List<byte> list = ListPool<byte>.Shared.Rent();
 			List<ushort> list2 = ListPool<ushort>.Shared.Rent();
-			foreach (KeyValuePair<ItemType, ushort> item in UserInventory.ReserveAmmo)
+			foreach (KeyValuePair<ItemType, ushort> item in this.UserInventory.ReserveAmmo)
 			{
 				list.Add((byte)item.Key);
 				list2.Add(item.Value);
 			}
-			TargetRefreshAmmo(list.ToArray(), list2.ToArray());
+			this.TargetRefreshAmmo(list.ToArray(), list2.ToArray());
 			ListPool<byte>.Shared.Return(list);
 			ListPool<ushort>.Shared.Return(list2);
 		}
@@ -525,7 +525,7 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		GeneratedNetworkCode._Write_InventorySystem_002EItems_002EItemIdentifier_005B_005D(writer, ids);
-		SendTargetRPCInternal(null, "System.Void InventorySystem.Inventory::TargetRefreshItems(InventorySystem.Items.ItemIdentifier[])", 924996253, writer, 0);
+		this.SendTargetRPCInternal(null, "System.Void InventorySystem.Inventory::TargetRefreshItems(InventorySystem.Items.ItemIdentifier[])", 924996253, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -535,7 +535,7 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteBytesAndSize(keys);
 		GeneratedNetworkCode._Write_System_002EUInt16_005B_005D(writer, values);
-		SendTargetRPCInternal(null, "System.Void InventorySystem.Inventory::TargetRefreshAmmo(System.Byte[],System.UInt16[])", 1974569553, writer, 0);
+		this.SendTargetRPCInternal(null, "System.Void InventorySystem.Inventory::TargetRefreshAmmo(System.Byte[],System.UInt16[])", 1974569553, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -544,7 +544,7 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteUShort(itemSerial);
-		SendCommandInternal("System.Void InventorySystem.Inventory::CmdSelectItem(System.UInt16)", 599991551, writer, 0);
+		base.SendCommandInternal("System.Void InventorySystem.Inventory::CmdSelectItem(System.UInt16)", 599991551, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -553,7 +553,7 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		GeneratedNetworkCode._Write_System_002EUInt16_005B_005D(writer, itemSerials);
-		SendCommandInternal("System.Void InventorySystem.Inventory::CmdConfirmAcquisition(System.UInt16[])", 1903294111, writer, 4);
+		base.SendCommandInternal("System.Void InventorySystem.Inventory::CmdConfirmAcquisition(System.UInt16[])", 1903294111, writer, 4);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -563,7 +563,7 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteUShort(itemSerial);
 		writer.WriteBool(tryThrow);
-		SendCommandInternal("System.Void InventorySystem.Inventory::CmdDropItem(System.UInt16,System.Boolean)", -146885871, writer, 4);
+		base.SendCommandInternal("System.Void InventorySystem.Inventory::CmdDropItem(System.UInt16,System.Boolean)", -146885871, writer, 4);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -573,7 +573,7 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		NetworkWriterExtensions.WriteByte(writer, ammoType);
 		writer.WriteUShort(amount);
-		SendCommandInternal("System.Void InventorySystem.Inventory::CmdDropAmmo(System.Byte,System.UInt16)", 1230737334, writer, 4);
+		base.SendCommandInternal("System.Void InventorySystem.Inventory::CmdDropAmmo(System.Byte,System.UInt16)", 1230737334, writer, 4);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -583,10 +583,10 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 		{
 			return null;
 		}
-		ItemBase itemBase = UnityEngine.Object.Instantiate(value, ItemWorkspace);
+		ItemBase itemBase = UnityEngine.Object.Instantiate(value, this.ItemWorkspace);
 		itemBase.transform.localPosition = Vector3.zero;
 		itemBase.transform.localRotation = Quaternion.identity;
-		itemBase.Owner = _hub;
+		itemBase.Owner = this._hub;
 		itemBase.ItemSerial = identifier.SerialNumber;
 		if (updateViewmodel && itemBase.ViewModel != null)
 		{
@@ -602,14 +602,14 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 
 	public bool DestroyItemInstance(ushort targetInstance, ItemPickupBase pickup, out ItemBase foundItem)
 	{
-		if (!UserInventory.Items.TryGetValue(targetInstance, out foundItem))
+		if (!this.UserInventory.Items.TryGetValue(targetInstance, out foundItem))
 		{
 			return false;
 		}
 		foundItem.OnRemoved(pickup);
-		if (CurInstance == foundItem)
+		if (this.CurInstance == foundItem)
 		{
-			CurInstance = null;
+			this.CurInstance = null;
 		}
 		UnityEngine.Object.Destroy(foundItem.gameObject);
 		return true;
@@ -617,15 +617,15 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 
 	public void PopulateDummyActions(Action<DummyAction> actionAdder, Action<string> categoryAdder)
 	{
-		DummyActionsDirty = false;
-		foreach (KeyValuePair<ushort, ItemBase> item in UserInventory.Items)
+		this.DummyActionsDirty = false;
+		foreach (KeyValuePair<ushort, ItemBase> item in this.UserInventory.Items)
 		{
 			ItemBase value = item.Value;
 			IDummyActionProvider[] componentsInChildren = value.GetComponentsInChildren<IDummyActionProvider>();
 			categoryAdder($"{value.ItemTypeId} (#{value.ItemSerial})");
-			PopulateDummnyAction(value, componentsInChildren, actionAdder);
+			this.PopulateDummnyAction(value, componentsInChildren, actionAdder);
 			categoryAdder($"{value.ItemTypeId} (ANY)");
-			PopulateDummnyAction(value, componentsInChildren, actionAdder);
+			this.PopulateDummnyAction(value, componentsInChildren, actionAdder);
 		}
 	}
 
@@ -635,14 +635,14 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 		{
 			actionAdder(new DummyAction("Equip", delegate
 			{
-				ServerSelectItem(ib.ItemSerial);
+				this.ServerSelectItem(ib.ItemSerial);
 			}));
 		}
 		if (ib.AllowHolster && ib.IsEquipped)
 		{
 			actionAdder(new DummyAction("Holster", delegate
 			{
-				ServerSelectItem(0);
+				this.ServerSelectItem(0);
 			}));
 		}
 		if (ib.AllowDropping)
@@ -652,9 +652,9 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 				ib.ServerDropItem(spawn: true);
 			}));
 		}
-		for (int i = 0; i < providers.Length; i++)
+		for (int num = 0; num < providers.Length; num++)
 		{
-			providers[i].PopulateDummyActions(actionAdder);
+			providers[num].PopulateDummyActions(actionAdder);
 		}
 	}
 
@@ -685,12 +685,12 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	protected void UserCode_TargetRefreshItems__ItemIdentifier_005B_005D(ItemIdentifier[] ids)
 	{
 		Queue<ItemIdentifier> queue = new Queue<ItemIdentifier>();
-		List<ushort> list = UserInventory.Items.Keys.ToList();
+		List<ushort> list = this.UserInventory.Items.Keys.ToList();
 		int num = 0;
 		for (int i = 0; i < ids.Length; i++)
 		{
 			ItemIdentifier item = ids[i];
-			if (!UserInventory.Items.Keys.Contains(item.SerialNumber))
+			if (!this.UserInventory.Items.Keys.Contains(item.SerialNumber))
 			{
 				queue.Enqueue(item);
 			}
@@ -701,8 +701,8 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 		}
 		while (list.Count > 0)
 		{
-			DestroyItemInstance(list[0], null, out var _);
-			UserInventory.Items.Remove(list[0]);
+			this.DestroyItemInstance(list[0], null, out var _);
+			this.UserInventory.Items.Remove(list[0]);
 			list.RemoveAt(0);
 			num++;
 		}
@@ -710,27 +710,27 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 		while (queue.Count > 0)
 		{
 			ItemIdentifier itemIdentifier = queue.Dequeue();
-			ItemBase itemBase = CreateItemInstance(itemIdentifier, updateViewmodel: true);
-			UserInventory.Items[itemIdentifier.SerialNumber] = itemBase;
+			ItemBase itemBase = this.CreateItemInstance(itemIdentifier, updateViewmodel: true);
+			this.UserInventory.Items[itemIdentifier.SerialNumber] = itemBase;
 			itemBase.OnAdded(null);
 			if (itemBase is IAcquisitionConfirmationTrigger)
 			{
 				list2.Add(itemIdentifier.SerialNumber);
 			}
-			if (itemIdentifier == CurItem)
+			if (itemIdentifier == this.CurItem)
 			{
-				CurInstance = itemBase;
+				this.CurInstance = itemBase;
 			}
 			num++;
 		}
 		if (list2.Count > 0)
 		{
-			CmdConfirmAcquisition(list2.ToArray());
+			this.CmdConfirmAcquisition(list2.ToArray());
 		}
 		ListPool<ushort>.Shared.Return(list2);
 		if (num > 0 && base.isLocalPlayer)
 		{
-			Inventory.OnItemsModified?.Invoke(_hub);
+			Inventory.OnItemsModified?.Invoke(this._hub);
 		}
 	}
 
@@ -750,12 +750,12 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		if (keys.Length == values.Length)
 		{
-			UserInventory.ReserveAmmo.Clear();
+			this.UserInventory.ReserveAmmo.Clear();
 			for (int i = 0; i < keys.Length; i++)
 			{
-				UserInventory.ReserveAmmo[(ItemType)keys[i]] = values[i];
+				this.UserInventory.ReserveAmmo[(ItemType)keys[i]] = values[i];
 			}
-			Inventory.OnAmmoModified?.Invoke(_hub);
+			Inventory.OnAmmoModified?.Invoke(this._hub);
 		}
 	}
 
@@ -773,9 +773,9 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 
 	protected void UserCode_CmdSelectItem__UInt16(ushort itemSerial)
 	{
-		if (!_hub.interCoordinator.AnyBlocker(BlockedInteraction.OpenInventory))
+		if (!this._hub.interCoordinator.AnyBlocker(BlockedInteraction.OpenInventory))
 		{
-			ServerSelectItem(itemSerial);
+			this.ServerSelectItem(itemSerial);
 		}
 	}
 
@@ -795,7 +795,7 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 	{
 		foreach (ushort key in itemSerials)
 		{
-			if (UserInventory.Items.TryGetValue(key, out var value) && value is IAcquisitionConfirmationTrigger { AcquisitionAlreadyReceived: false } acquisitionConfirmationTrigger)
+			if (this.UserInventory.Items.TryGetValue(key, out var value) && value is IAcquisitionConfirmationTrigger { AcquisitionAlreadyReceived: false } acquisitionConfirmationTrigger)
 			{
 				acquisitionConfirmationTrigger.ServerConfirmAcqusition();
 				acquisitionConfirmationTrigger.AcquisitionAlreadyReceived = true;
@@ -817,33 +817,36 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 
 	protected void UserCode_CmdDropItem__UInt16__Boolean(ushort itemSerial, bool tryThrow)
 	{
-		if (!UserInventory.Items.TryGetValue(itemSerial, out var value) || !value.AllowDropping)
+		if (!this.UserInventory.Items.TryGetValue(itemSerial, out var value) || !value.AllowDropping)
 		{
 			return;
 		}
-		PlayerDroppingItemEventArgs playerDroppingItemEventArgs = new PlayerDroppingItemEventArgs(_hub, value);
-		PlayerEvents.OnDroppingItem(playerDroppingItemEventArgs);
-		if (!playerDroppingItemEventArgs.IsAllowed)
+		PlayerDroppingItemEventArgs e = new PlayerDroppingItemEventArgs(this._hub, value, tryThrow);
+		PlayerEvents.OnDroppingItem(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
+		tryThrow = e.Throw;
 		ItemPickupBase itemPickupBase = this.ServerDropItem(itemSerial);
-		PlayerEvents.OnDroppedItem(new PlayerDroppedItemEventArgs(_hub, itemPickupBase));
-		SendItemsNextFrame = true;
+		PlayerDroppedItemEventArgs e2 = new PlayerDroppedItemEventArgs(this._hub, itemPickupBase, tryThrow);
+		PlayerEvents.OnDroppedItem(e2);
+		tryThrow = e2.Throw;
+		this.SendItemsNextFrame = true;
 		if (!tryThrow || itemPickupBase == null || !itemPickupBase.TryGetComponent<Rigidbody>(out var component))
 		{
 			return;
 		}
-		PlayerThrowingItemEventArgs playerThrowingItemEventArgs = new PlayerThrowingItemEventArgs(_hub, itemPickupBase, component);
-		PlayerEvents.OnThrowingItem(playerThrowingItemEventArgs);
-		if (playerThrowingItemEventArgs.IsAllowed)
+		PlayerThrowingItemEventArgs e3 = new PlayerThrowingItemEventArgs(this._hub, itemPickupBase, component);
+		PlayerEvents.OnThrowingItem(e3);
+		if (e3.IsAllowed)
 		{
-			Vector3 velocity = _hub.GetVelocity();
-			Vector3 linearVelocity = velocity / 3f + _hub.PlayerCameraReference.forward * 6f * (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, component.mass)) + 0.3f);
+			Vector3 velocity = this._hub.GetVelocity();
+			Vector3 linearVelocity = velocity / 3f + this._hub.PlayerCameraReference.forward * 6f * (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, component.mass)) + 0.3f);
 			linearVelocity.x = Mathf.Max(Mathf.Abs(velocity.x), Mathf.Abs(linearVelocity.x)) * (float)((!(linearVelocity.x < 0f)) ? 1 : (-1));
 			linearVelocity.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(linearVelocity.y)) * (float)((!(linearVelocity.y < 0f)) ? 1 : (-1));
 			linearVelocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(linearVelocity.z)) * (float)((!(linearVelocity.z < 0f)) ? 1 : (-1));
-			component.position = _hub.PlayerCameraReference.position;
+			component.position = this._hub.PlayerCameraReference.position;
 			component.linearVelocity = linearVelocity;
 			component.angularVelocity = Vector3.Lerp(value.ThrowSettings.RandomTorqueA, value.ThrowSettings.RandomTorqueB, UnityEngine.Random.value);
 			float magnitude = component.angularVelocity.magnitude;
@@ -851,7 +854,7 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 			{
 				component.maxAngularVelocity = magnitude;
 			}
-			PlayerEvents.OnThrewItem(new PlayerThrewItemEventArgs(_hub, itemPickupBase, component));
+			PlayerEvents.OnThrewItem(new PlayerThrewItemEventArgs(this._hub, itemPickupBase, component));
 		}
 	}
 
@@ -889,28 +892,28 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EItemIdentifier(writer, CurItem);
-			writer.WriteFloat(_syncStaminaModifier);
-			writer.WriteFloat(_syncMovementLimiter);
-			writer.WriteFloat(_syncMovementMultiplier);
+			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EItemIdentifier(writer, this.CurItem);
+			writer.WriteFloat(this._syncStaminaModifier);
+			writer.WriteFloat(this._syncMovementLimiter);
+			writer.WriteFloat(this._syncMovementMultiplier);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EItemIdentifier(writer, CurItem);
+			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EItemIdentifier(writer, this.CurItem);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteFloat(_syncStaminaModifier);
+			writer.WriteFloat(this._syncStaminaModifier);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			writer.WriteFloat(_syncMovementLimiter);
+			writer.WriteFloat(this._syncMovementLimiter);
 		}
 		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			writer.WriteFloat(_syncMovementMultiplier);
+			writer.WriteFloat(this._syncMovementMultiplier);
 		}
 	}
 
@@ -919,28 +922,28 @@ public class Inventory : NetworkBehaviour, IStaminaModifier, IMovementSpeedModif
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref CurItem, OnItemUpdated, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EItemIdentifier(reader));
-			GeneratedSyncVarDeserialize(ref _syncStaminaModifier, null, reader.ReadFloat());
-			GeneratedSyncVarDeserialize(ref _syncMovementLimiter, null, reader.ReadFloat());
-			GeneratedSyncVarDeserialize(ref _syncMovementMultiplier, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this.CurItem, OnItemUpdated, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EItemIdentifier(reader));
+			base.GeneratedSyncVarDeserialize(ref this._syncStaminaModifier, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._syncMovementLimiter, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._syncMovementMultiplier, null, reader.ReadFloat());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref CurItem, OnItemUpdated, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EItemIdentifier(reader));
+			base.GeneratedSyncVarDeserialize(ref this.CurItem, OnItemUpdated, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EItemIdentifier(reader));
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _syncStaminaModifier, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._syncStaminaModifier, null, reader.ReadFloat());
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _syncMovementLimiter, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._syncMovementLimiter, null, reader.ReadFloat());
 		}
 		if ((num & 8L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _syncMovementMultiplier, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._syncMovementMultiplier, null, reader.ReadFloat());
 		}
 	}
 }

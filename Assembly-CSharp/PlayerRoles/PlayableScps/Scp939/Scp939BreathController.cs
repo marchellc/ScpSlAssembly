@@ -38,31 +38,31 @@ public class Scp939BreathController : StandardSubroutine<Scp939Role>
 
 		public void SetVolume(bool isOn, float lerp)
 		{
-			SetVolume(isOn ? 1 : 0, lerp);
+			this.SetVolume(isOn ? 1 : 0, lerp);
 		}
 
 		public void SetOwner(bool isLocalPlayer)
 		{
-			_local = isLocalPlayer;
-			SetVolume(CurVolume);
+			this._local = isLocalPlayer;
+			this.SetVolume(this.CurVolume);
 		}
 
 		public void SetVolume(float vol, float lerp = 1f)
 		{
-			if (!_cacheSet)
+			if (!this._cacheSet)
 			{
-				_has3rd = _thirdperson != null;
-				_has1st = _firstperson != null;
-				_cacheSet = true;
+				this._has3rd = this._thirdperson != null;
+				this._has1st = this._firstperson != null;
+				this._cacheSet = true;
 			}
-			CurVolume = Mathf.Lerp(CurVolume, vol, lerp);
-			if (_has3rd)
+			this.CurVolume = Mathf.Lerp(this.CurVolume, vol, lerp);
+			if (this._has3rd)
 			{
-				_thirdperson.volume = (_local ? 0f : (CurVolume * _thirdpersonVolume));
+				this._thirdperson.volume = (this._local ? 0f : (this.CurVolume * this._thirdpersonVolume));
 			}
-			if (_has1st)
+			if (this._has1st)
 			{
-				_firstperson.volume = (_local ? (CurVolume * _firstPersonVolume) : 0f);
+				this._firstperson.volume = (this._local ? (this.CurVolume * this._firstPersonVolume) : 0f);
 			}
 		}
 	}
@@ -114,36 +114,36 @@ public class Scp939BreathController : StandardSubroutine<Scp939Role>
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		RefreshPerspective();
-		ForEachLoop(delegate(IdleLoop939 x)
+		this.RefreshPerspective();
+		this.ForEachLoop(delegate(IdleLoop939 x)
 		{
 			x.SetVolume(0f);
 		});
-		_stamina = base.Owner.playerStats.GetModule<StaminaStat>();
+		this._stamina = base.Owner.playerStats.GetModule<StaminaStat>();
 		SpectatorTargetTracker.OnTargetChanged += RefreshPerspective;
 		if (NetworkServer.active)
 		{
-			_stamina.ChangeSyncMode(SyncedStatBase.SyncMode.Public);
+			this._stamina.ChangeSyncMode(SyncedStatBase.SyncMode.Public);
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_curExhaustion = 0f;
+		this._curExhaustion = 0f;
 		SpectatorTargetTracker.OnTargetChanged -= RefreshPerspective;
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp939FocusAbility>(out _focus);
+		base.GetSubroutine<Scp939FocusAbility>(out this._focus);
 	}
 
 	private void RefreshPerspective()
 	{
 		bool isLocal = base.Owner.IsLocallySpectated() || base.Owner.isLocalPlayer;
-		ForEachLoop(delegate(IdleLoop939 x)
+		this.ForEachLoop(delegate(IdleLoop939 x)
 		{
 			x.SetOwner(isLocal);
 		});
@@ -151,32 +151,32 @@ public class Scp939BreathController : StandardSubroutine<Scp939Role>
 
 	private void ForEachLoop(Action<IdleLoop939> action)
 	{
-		action(_focusLoop);
-		action(_breathLoop);
-		action(_exhaustionLoop);
-		action(_focusGrowlLoop);
+		action(this._focusLoop);
+		action(this._breathLoop);
+		action(this._exhaustionLoop);
+		action(this._focusGrowlLoop);
 	}
 
 	private void Update()
 	{
-		float num = Mathf.Clamp01(1f - _stamina.CurValue);
-		_curExhaustion = Mathf.Lerp(_curExhaustion, num, Time.deltaTime * ((num > _curExhaustion) ? _exhaustionGainLerp : _exhaustionDropLerp));
-		_exhaustionLoop.SetVolume(_exhaustionVolume.Evaluate(_curExhaustion));
-		bool flag = _curExhaustion > _exhaustionMuteLoopsThreshold;
-		bool flag2 = !flag && _focus.TargetState;
-		if (_focus.TargetState)
+		float num = Mathf.Clamp01(1f - this._stamina.CurValue);
+		this._curExhaustion = Mathf.Lerp(this._curExhaustion, num, Time.deltaTime * ((num > this._curExhaustion) ? this._exhaustionGainLerp : this._exhaustionDropLerp));
+		this._exhaustionLoop.SetVolume(this._exhaustionVolume.Evaluate(this._curExhaustion));
+		bool flag = this._curExhaustion > this._exhaustionMuteLoopsThreshold;
+		bool flag2 = !flag && this._focus.TargetState;
+		if (this._focus.TargetState)
 		{
-			_timeFromLastFocus = 0f;
+			this._timeFromLastFocus = 0f;
 		}
 		else
 		{
-			_timeFromLastFocus += Time.deltaTime;
+			this._timeFromLastFocus += Time.deltaTime;
 		}
-		if (_timeFromLastFocus == 0f || _timeFromLastFocus > _dropFocusAfter)
+		if (this._timeFromLastFocus == 0f || this._timeFromLastFocus > this._dropFocusAfter)
 		{
-			_focusGrowlLoop.SetVolume(flag2, Time.deltaTime * (flag2 ? _focusGrowlGainLerp : _focusGrowlDropLerp));
+			this._focusGrowlLoop.SetVolume(flag2, Time.deltaTime * (flag2 ? this._focusGrowlGainLerp : this._focusGrowlDropLerp));
 		}
-		_focusLoop.SetVolume(flag2, Time.deltaTime * _breathLerp);
-		_breathLoop.SetVolume(!flag && !_focus.TargetState, Time.deltaTime * _breathLerp);
+		this._focusLoop.SetVolume(flag2, Time.deltaTime * this._breathLerp);
+		this._breathLoop.SetVolume(!flag && !this._focus.TargetState, Time.deltaTime * this._breathLerp);
 	}
 }

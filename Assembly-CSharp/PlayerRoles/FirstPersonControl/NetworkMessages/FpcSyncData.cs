@@ -22,74 +22,74 @@ public readonly struct FpcSyncData : IEquatable<FpcSyncData>
 
 	public FpcSyncData(NetworkReader reader)
 	{
-		Misc.ByteToBools(reader.ReadByte(), out var @bool, out var bool2, out var bool3, out var bool4, out var bool5, out _bitMouseLook, out _bitPosition, out _bitCustom);
-		_state = (PlayerMovementState)Misc.BoolsToByte(@bool, bool2, bool3, bool4, bool5);
-		_position = (_bitPosition ? reader.ReadRelativePosition() : new RelativePosition(0, 0, 0, 0, outOfRange: true));
-		if (_bitMouseLook)
+		Misc.ByteToBools(reader.ReadByte(), out var @bool, out var bool2, out var bool3, out var bool4, out var bool5, out this._bitMouseLook, out this._bitPosition, out this._bitCustom);
+		this._state = (PlayerMovementState)Misc.BoolsToByte(@bool, bool2, bool3, bool4, bool5);
+		this._position = (this._bitPosition ? reader.ReadRelativePosition() : new RelativePosition(0, 0, 0, 0, outOfRange: true));
+		if (this._bitMouseLook)
 		{
-			_rotH = reader.ReadUShort();
-			_rotV = reader.ReadUShort();
+			this._rotH = reader.ReadUShort();
+			this._rotV = reader.ReadUShort();
 		}
 		else
 		{
-			_rotH = 0;
-			_rotV = 0;
+			this._rotH = 0;
+			this._rotV = 0;
 		}
 	}
 
 	public FpcSyncData(FpcSyncData prev, PlayerMovementState state, bool bit, RelativePosition pos, FpcMouseLook mLook)
 	{
-		_state = state;
-		_bitCustom = bit;
-		_position = pos;
-		mLook.GetSyncValues(pos.WaypointId, out _rotH, out _rotV);
-		_bitPosition = prev._position != _position;
-		_bitMouseLook = _rotH != prev._rotH || _rotV != prev._rotV;
+		this._state = state;
+		this._bitCustom = bit;
+		this._position = pos;
+		mLook.GetSyncValues(pos.WaypointId, out this._rotH, out this._rotV);
+		this._bitPosition = prev._position != this._position;
+		this._bitMouseLook = this._rotH != prev._rotH || this._rotV != prev._rotV;
 	}
 
 	public void Write(NetworkWriter writer)
 	{
-		Misc.ByteToBools((byte)_state, out var @bool, out var bool2, out var bool3, out var bool4, out var bool5, out var _, out var _, out var _);
-		writer.WriteByte(Misc.BoolsToByte(@bool, bool2, bool3, bool4, bool5, _bitMouseLook, _bitPosition, _bitCustom));
-		if (_bitPosition)
+		Misc.ByteToBools((byte)this._state, out var @bool, out var bool2, out var bool3, out var bool4, out var bool5, out var _, out var _, out var _);
+		writer.WriteByte(Misc.BoolsToByte(@bool, bool2, bool3, bool4, bool5, this._bitMouseLook, this._bitPosition, this._bitCustom));
+		if (this._bitPosition)
 		{
-			writer.WriteRelativePosition(_position);
+			writer.WriteRelativePosition(this._position);
 		}
-		if (_bitMouseLook)
+		if (this._bitMouseLook)
 		{
-			writer.WriteUShort(_rotH);
-			writer.WriteUShort(_rotV);
+			writer.WriteUShort(this._rotH);
+			writer.WriteUShort(this._rotV);
 		}
 	}
 
 	public bool TryApply(ReferenceHub hub, out FirstPersonMovementModule module, out bool bit)
 	{
-		bit = _bitCustom;
+		bit = this._bitCustom;
 		if (!(hub.roleManager.CurrentRole is IFpcRole fpcRole) || !fpcRole.FpcModule.ModuleReady)
 		{
 			module = null;
 			return false;
 		}
 		module = fpcRole.FpcModule;
-		module.CurrentMovementState = _state;
+		module.CurrentMovementState = this._state;
 		FpcMotor motor = module.Motor;
-		motor.MovementDetected = _bitPosition;
-		if (_bitPosition)
+		motor.MovementDetected = this._bitPosition;
+		if (this._bitPosition)
 		{
-			motor.ReceivedPosition = _position;
+			motor.ReceivedPosition = this._position;
 		}
-		if (_bitMouseLook)
+		if (this._bitMouseLook)
 		{
-			module.MouseLook.ApplySyncValues(_rotH, _rotV);
+			module.MouseLook.ApplySyncValues(this._rotH, this._rotV);
 		}
 		return true;
 	}
 
 	public bool Equals(FpcSyncData other)
 	{
-		if (_state == other._state && _position == other._position && _rotH == other._rotH)
+		if (this._state == other._state && this._position == other._position && this._rotH == other._rotH)
 		{
-			return _rotV == other._rotV;
+			return this._rotV == other._rotV;
 		}
 		return false;
 	}
@@ -115,6 +115,6 @@ public readonly struct FpcSyncData : IEquatable<FpcSyncData>
 
 	public override int GetHashCode()
 	{
-		return (int)((((((uint)(_position.GetHashCode() * 397) ^ (uint)_state) * 397) ^ _rotH) * 397) ^ _rotV);
+		return (int)((((((uint)(this._position.GetHashCode() * 397) ^ (uint)this._state) * 397) ^ this._rotH) * 397) ^ this._rotV);
 	}
 }

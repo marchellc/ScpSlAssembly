@@ -18,21 +18,21 @@ public class CullableRig : DynamicCullableBase
 	{
 		get
 		{
-			if (!(_rootBone == null))
+			if (!(this._rootBone == null))
 			{
-				return _rootBone.position;
+				return this._rootBone.position;
 			}
 			return base.transform.position;
 		}
 	}
 
-	protected override float BoundsSize => _boundsSize;
+	protected override float BoundsSize => this._boundsSize;
 
 	public event Action OnVisibleAgain;
 
 	protected override void OnVisibilityChanged(bool isVisible)
 	{
-		GameObject[] targetRenderers = _targetRenderers;
+		GameObject[] targetRenderers = this._targetRenderers;
 		foreach (GameObject gameObject in targetRenderers)
 		{
 			if (!(gameObject == null))
@@ -48,6 +48,6 @@ public class CullableRig : DynamicCullableBase
 
 	public void SetTargetRenderers(GameObject[] newTargetRenderers)
 	{
-		_targetRenderers = newTargetRenderers;
+		this._targetRenderers = newTargetRenderers;
 	}
 }

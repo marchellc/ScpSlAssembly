@@ -56,15 +56,15 @@ public class MarshmallowEffect : StatusEffectBase, IDamageModifierEffect, IMovem
 	{
 		get
 		{
-			return _progress;
+			return this._progress;
 		}
 		set
 		{
 			float num = Mathf.Clamp01(value);
-			if (num != _progress)
+			if (num != this._progress)
 			{
-				_progress = num;
-				UpdateMaterials();
+				this._progress = num;
+				this.UpdateMaterials();
 			}
 		}
 	}
@@ -104,7 +104,7 @@ public class MarshmallowEffect : StatusEffectBase, IDamageModifierEffect, IMovem
 	protected override void Enabled()
 	{
 		base.Enabled();
-		SetupLink();
+		this.SetupLink();
 		MarshmallowItem.OnSwing += OnSwing;
 		MarshmallowItem.OnHolsterRequested += OnHolsterRequested;
 		if (!NetworkServer.active)
@@ -127,10 +127,10 @@ public class MarshmallowEffect : StatusEffectBase, IDamageModifierEffect, IMovem
 		base.Disabled();
 		MarshmallowItem.OnSwing -= OnSwing;
 		MarshmallowItem.OnHolsterRequested -= OnHolsterRequested;
-		Unlink();
-		_progress = 0f;
-		_turningBack = false;
-		_mirrorAttack = false;
+		this.Unlink();
+		this._progress = 0f;
+		this._turningBack = false;
+		this._mirrorAttack = false;
 		if (NetworkServer.active)
 		{
 			Inventory inventory = base.Hub.inventory;
@@ -144,21 +144,21 @@ public class MarshmallowEffect : StatusEffectBase, IDamageModifierEffect, IMovem
 	protected override void OnEffectUpdate()
 	{
 		base.OnEffectUpdate();
-		if (_instanceSet)
+		if (this._instanceSet)
 		{
-			_marshmallowAudio.Setup(base.Hub.inventory.CurItem.SerialNumber, _parent);
+			this._marshmallowAudio.Setup(base.Hub.inventory.CurItem.SerialNumber, this._parent);
 		}
 		else
 		{
-			SetupLink();
+			this.SetupLink();
 		}
-		if (_turningBack)
+		if (this._turningBack)
 		{
-			DeployProgress -= Time.deltaTime / _turnBackTime;
+			this.DeployProgress -= Time.deltaTime / this._turnBackTime;
 		}
 		else
 		{
-			DeployProgress += Time.deltaTime / _deployTime;
+			this.DeployProgress += Time.deltaTime / this._deployTime;
 		}
 		if (NetworkServer.active && base.Duration != 0f && !(base.TimeLeft > 1.1f) && base.IsEnabled)
 		{
@@ -177,48 +177,48 @@ public class MarshmallowEffect : StatusEffectBase, IDamageModifierEffect, IMovem
 
 	private void OnDestroy()
 	{
-		Unlink();
+		this.Unlink();
 	}
 
 	private void SetupLink()
 	{
 		if (base.Hub.roleManager.CurrentRole is IFpcRole fpcRole && fpcRole.FpcModule.CharacterModelInstance is AnimatedCharacterModel originalCharacterModel)
 		{
-			_instanceSet = true;
-			_originalCharacterModel = originalCharacterModel;
-			_parent = base.Hub.transform;
-			_marshmallowModelInstance = Object.Instantiate(_marshmallowModelTemplate, _parent);
-			_marshmallowAudio = _marshmallowModelInstance.GetComponent<MarshmallowAudio>();
-			_marshmallowModelInstance.Pooled = false;
-			_marshmallowModelInstance.Setup(base.Hub, fpcRole, _marshmallowModelTemplate.transform.position, _marshmallowModelTemplate.transform.rotation);
-			_originalCharacterModel.OnVisibilityChanged += OnVisibilityChanged;
-			_originalCharacterModel.OnFadeChanged += OnFadeChanged;
-			UpdateMaterials();
-			OnVisibilityChanged();
+			this._instanceSet = true;
+			this._originalCharacterModel = originalCharacterModel;
+			this._parent = base.Hub.transform;
+			this._marshmallowModelInstance = Object.Instantiate(this._marshmallowModelTemplate, this._parent);
+			this._marshmallowAudio = this._marshmallowModelInstance.GetComponent<MarshmallowAudio>();
+			this._marshmallowModelInstance.Pooled = false;
+			this._marshmallowModelInstance.Setup(base.Hub, fpcRole, this._marshmallowModelTemplate.transform.position, this._marshmallowModelTemplate.transform.rotation);
+			this._originalCharacterModel.OnVisibilityChanged += OnVisibilityChanged;
+			this._originalCharacterModel.OnFadeChanged += OnFadeChanged;
+			this.UpdateMaterials();
+			this.OnVisibilityChanged();
 		}
 	}
 
 	private void Unlink()
 	{
-		if (_instanceSet)
+		if (this._instanceSet)
 		{
-			_originalCharacterModel.OnVisibilityChanged -= OnVisibilityChanged;
-			_originalCharacterModel.OnFadeChanged -= OnFadeChanged;
-			SetShaderFloat(_originalCharacterModel, FadeHash, _originalCharacterModel.Fade);
-			_marshmallowModelInstance.Pooled = true;
-			_marshmallowModelInstance.ResetObject();
-			Object.Destroy(_marshmallowModelInstance.gameObject);
-			_instanceSet = false;
+			this._originalCharacterModel.OnVisibilityChanged -= OnVisibilityChanged;
+			this._originalCharacterModel.OnFadeChanged -= OnFadeChanged;
+			this.SetShaderFloat(this._originalCharacterModel, MarshmallowEffect.FadeHash, this._originalCharacterModel.Fade);
+			this._marshmallowModelInstance.Pooled = true;
+			this._marshmallowModelInstance.ResetObject();
+			Object.Destroy(this._marshmallowModelInstance.gameObject);
+			this._instanceSet = false;
 		}
 	}
 
 	private void UpdateMaterials()
 	{
-		if (_instanceSet)
+		if (this._instanceSet)
 		{
-			float deployProgress = DeployProgress;
-			SetShaderFloat(_marshmallowModelInstance, DeployAnimHash, deployProgress);
-			SetShaderFloat(_originalCharacterModel, FadeHash, _originalFadeOverProgress.Evaluate(deployProgress));
+			float deployProgress = this.DeployProgress;
+			this.SetShaderFloat(this._marshmallowModelInstance, MarshmallowEffect.DeployAnimHash, deployProgress);
+			this.SetShaderFloat(this._originalCharacterModel, MarshmallowEffect.FadeHash, this._originalFadeOverProgress.Evaluate(deployProgress));
 		}
 	}
 
@@ -234,7 +234,7 @@ public class MarshmallowEffect : StatusEffectBase, IDamageModifierEffect, IMovem
 	{
 		if (serial == base.Hub.inventory.CurItem.SerialNumber)
 		{
-			_turningBack = true;
+			this._turningBack = true;
 		}
 	}
 
@@ -242,26 +242,26 @@ public class MarshmallowEffect : StatusEffectBase, IDamageModifierEffect, IMovem
 	{
 		if (serial == base.Hub.inventory.CurItem.SerialNumber)
 		{
-			_marshmallowModelInstance.Animator.SetBool(AttackMirrorHash, _mirrorAttack);
-			_marshmallowModelInstance.Animator.SetTrigger(AttackTriggerHash);
-			_mirrorAttack = !_mirrorAttack;
+			this._marshmallowModelInstance.Animator.SetBool(MarshmallowEffect.AttackMirrorHash, this._mirrorAttack);
+			this._marshmallowModelInstance.Animator.SetTrigger(MarshmallowEffect.AttackTriggerHash);
+			this._mirrorAttack = !this._mirrorAttack;
 		}
 	}
 
 	private void OnVisibilityChanged()
 	{
-		if (_instanceSet)
+		if (this._instanceSet)
 		{
-			_marshmallowModelInstance.SetVisibility(_originalCharacterModel.IsVisible);
+			this._marshmallowModelInstance.SetVisibility(this._originalCharacterModel.IsVisible);
 		}
 	}
 
 	private void OnFadeChanged()
 	{
-		if (_instanceSet)
+		if (this._instanceSet)
 		{
-			_marshmallowModelInstance.Fade = _originalCharacterModel.Fade;
-			UpdateMaterials();
+			this._marshmallowModelInstance.Fade = this._originalCharacterModel.Fade;
+			this.UpdateMaterials();
 		}
 	}
 }

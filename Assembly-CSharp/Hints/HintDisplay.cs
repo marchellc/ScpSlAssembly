@@ -24,7 +24,7 @@ public class HintDisplay : NetworkBehaviour
 		if (NetworkServer.active)
 		{
 			NetworkConnection networkConnection = base.netIdentity.connectionToClient;
-			if (!SuppressedReceivers.Contains(networkConnection))
+			if (!HintDisplay.SuppressedReceivers.Contains(networkConnection))
 			{
 				networkConnection.Send(new HintMessage(hint));
 			}

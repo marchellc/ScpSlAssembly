@@ -44,27 +44,27 @@ public class MicroHIDMonitor : MonoBehaviour
 
 		public void Update()
 		{
-			bool flag = Active;
-			if (flag && Blinking)
+			bool flag = this.Active;
+			if (flag && this.Blinking)
 			{
-				_remainingBlinking -= Time.deltaTime;
-				flag = _remainingBlinking <= 0f || GetBlinkActive(BlinkFrequency, BlinkRatio, BlinkOffset);
+				this._remainingBlinking -= Time.deltaTime;
+				flag = this._remainingBlinking <= 0f || MicroHIDMonitor.GetBlinkActive(this.BlinkFrequency, this.BlinkRatio, this.BlinkOffset);
 			}
-			float num = (flag ? 1f : (0.22f * DisabledAlphaMultiplier));
-			if (_prevAlpha != num)
+			float num = (flag ? 1f : (0.22f * this.DisabledAlphaMultiplier));
+			if (this._prevAlpha != num)
 			{
-				_prevAlpha = num;
-				Color color = _target.color;
+				this._prevAlpha = num;
+				Color color = this._target.color;
 				color.a = num;
-				_target.color = color;
+				this._target.color = color;
 			}
-			if (_prevActive != Active)
+			if (this._prevActive != this.Active)
 			{
-				_prevActive = Active;
-				if (Active)
+				this._prevActive = this.Active;
+				if (this.Active)
 				{
-					BlinkOffset = Time.timeAsDouble;
-					_remainingBlinking = ((BlinkDuration < 0f) ? float.MaxValue : BlinkDuration);
+					this.BlinkOffset = Time.timeAsDouble;
+					this._remainingBlinking = ((this.BlinkDuration < 0f) ? float.MaxValue : this.BlinkDuration);
 				}
 			}
 		}
@@ -131,47 +131,47 @@ public class MicroHIDMonitor : MonoBehaviour
 
 	private readonly Dictionary<LcdElementType, LcdElementInstance> _lcdElements = new Dictionary<LcdElementType, LcdElementInstance>();
 
-	private bool BlinkNoBattery => GetBlinkActive(1.2f, 0.4f);
+	private bool BlinkNoBattery => MicroHIDMonitor.GetBlinkActive(1.2f, 0.4f);
 
 	private void Start()
 	{
-		if (!base.transform.TryGetComponentInParent<IIdentifierProvider>(out _identifierProvider))
+		if (!base.transform.TryGetComponentInParent<IIdentifierProvider>(out this._identifierProvider))
 		{
 			return;
 		}
-		if (_identifierProvider is MicroHIDViewmodel)
+		if (this._identifierProvider is MicroHIDViewmodel)
 		{
-			_worldmodelMode = false;
-			_lcdElementInstances.ForEach(delegate(LcdElementInstance x)
+			this._worldmodelMode = false;
+			this._lcdElementInstances.ForEach(delegate(LcdElementInstance x)
 			{
-				_lcdElements.Add(x.Type, x);
+				this._lcdElements.Add(x.Type, x);
 			});
 		}
 		else
 		{
-			_worldmodelMode = true;
+			this._worldmodelMode = true;
 		}
 	}
 
 	private void OnDisable()
 	{
-		_serial = 0;
+		this._serial = 0;
 	}
 
 	private void Update()
 	{
-		if (_serial != _identifierProvider.ItemId.SerialNumber)
+		if (this._serial != this._identifierProvider.ItemId.SerialNumber)
 		{
-			_serial = _identifierProvider.ItemId.SerialNumber;
-			_cycle = CycleSyncModule.GetCycleController(_serial);
+			this._serial = this._identifierProvider.ItemId.SerialNumber;
+			this._cycle = CycleSyncModule.GetCycleController(this._serial);
 		}
-		UpdateBattery();
-		if (!_worldmodelMode)
+		this.UpdateBattery();
+		if (!this._worldmodelMode)
 		{
-			UpdateWindup();
-			UpdatePhase();
-			UpdateJeff();
-			LcdElementInstance[] lcdElementInstances = _lcdElementInstances;
+			this.UpdateWindup();
+			this.UpdatePhase();
+			this.UpdateJeff();
+			LcdElementInstance[] lcdElementInstances = this._lcdElementInstances;
 			for (int i = 0; i < lcdElementInstances.Length; i++)
 			{
 				lcdElementInstances[i].Update();
@@ -181,41 +181,41 @@ public class MicroHIDMonitor : MonoBehaviour
 
 	private void UpdateBattery()
 	{
-		float energy = EnergyManagerModule.GetEnergy(_serial);
-		int num = Mathf.CeilToInt(energy * (float)_batteryIndicators.Length);
-		_remainingCharge.enabled = num > 0 || BlinkNoBattery;
+		float energy = EnergyManagerModule.GetEnergy(this._serial);
+		int num = Mathf.CeilToInt(energy * (float)this._batteryIndicators.Length);
+		this._remainingCharge.enabled = num > 0 || this.BlinkNoBattery;
 		int num2 = Mathf.CeilToInt(energy * 100f);
-		if (num2 != _lastEnergyMultiplied)
+		if (num2 != this._lastEnergyMultiplied)
 		{
-			_remainingCharge.text = num2.ToString();
-			_lastEnergyMultiplied = num2;
+			this._remainingCharge.text = num2.ToString();
+			this._lastEnergyMultiplied = num2;
 		}
-		bool flag = num > 1 || BlinkNoBattery || _cycle.Phase == MicroHidPhase.Firing;
-		for (int i = 0; i < _batteryIndicators.Length; i++)
+		bool flag = num > 1 || this.BlinkNoBattery || this._cycle.Phase == MicroHidPhase.Firing;
+		for (int i = 0; i < this._batteryIndicators.Length; i++)
 		{
-			_batteryIndicators[i].SetActive(i < num && flag);
+			this._batteryIndicators[i].SetActive(i < num && flag);
 		}
 	}
 
 	private void UpdateWindup()
 	{
-		int num = Mathf.CeilToInt(WindupSyncModule.GetProgress(_serial) * (float)_maxWindupLen);
-		_sharedSb.Clear();
+		int num = Mathf.CeilToInt(WindupSyncModule.GetProgress(this._serial) * (float)this._maxWindupLen);
+		this._sharedSb.Clear();
 		for (int i = 0; i < num; i++)
 		{
-			_sharedSb.Append(_windupChar);
+			this._sharedSb.Append(this._windupChar);
 		}
-		LcdElementInstance lcdElementInstance = _lcdElements[LcdElementType.ReadyToFire];
-		bool blinkActive = GetBlinkActive(lcdElementInstance.BlinkFrequency, lcdElementInstance.BlinkRatio, lcdElementInstance.BlinkOffset);
-		_windupProgress.text = _sharedSb.ToString();
-		_windupProgress.enabled = _cycle.Phase != MicroHidPhase.WoundUpSustain || blinkActive;
+		LcdElementInstance lcdElementInstance = this._lcdElements[LcdElementType.ReadyToFire];
+		bool blinkActive = MicroHIDMonitor.GetBlinkActive(lcdElementInstance.BlinkFrequency, lcdElementInstance.BlinkRatio, lcdElementInstance.BlinkOffset);
+		this._windupProgress.text = this._sharedSb.ToString();
+		this._windupProgress.enabled = this._cycle.Phase != MicroHidPhase.WoundUpSustain || blinkActive;
 	}
 
 	private void UpdatePhase()
 	{
-		bool broken = BrokenSyncModule.GetBroken(_serial);
-		_lcdElements[LcdElementType.Broken].Active = broken;
-		_lcdElementInstances.ForEach(UpdatePhaseLcd);
+		bool broken = BrokenSyncModule.GetBroken(this._serial);
+		this._lcdElements[LcdElementType.Broken].Active = broken;
+		this._lcdElementInstances.ForEach(UpdatePhaseLcd);
 	}
 
 	private void UpdatePhaseLcd(LcdElementInstance inst)
@@ -223,38 +223,38 @@ public class MicroHIDMonitor : MonoBehaviour
 		switch (inst.Type)
 		{
 		case LcdElementType.Windup:
-			inst.Active = _cycle.Phase == MicroHidPhase.WindingUp;
+			inst.Active = this._cycle.Phase == MicroHidPhase.WindingUp;
 			break;
 		case LcdElementType.Winddown:
-			inst.Active = _cycle.Phase == MicroHidPhase.WindingDown;
+			inst.Active = this._cycle.Phase == MicroHidPhase.WindingDown;
 			break;
 		case LcdElementType.ReadyToFire:
-			inst.Active = _cycle.Phase == MicroHidPhase.WoundUpSustain;
+			inst.Active = this._cycle.Phase == MicroHidPhase.WoundUpSustain;
 			break;
 		case LcdElementType.Firing:
-			inst.Active = _cycle.Phase == MicroHidPhase.Firing;
+			inst.Active = this._cycle.Phase == MicroHidPhase.Firing;
 			break;
 		case LcdElementType.Standby:
-			inst.Active = _cycle.Phase == MicroHidPhase.Standby;
+			inst.Active = this._cycle.Phase == MicroHidPhase.Standby;
 			break;
 		}
 	}
 
 	private void UpdateJeff()
 	{
-		if (EnergyManagerModule.GetEnergy(_serial) == 0f)
+		if (EnergyManagerModule.GetEnergy(this._serial) == 0f)
 		{
-			_jeffRenderer.sprite = _jeffDead;
+			this._jeffRenderer.sprite = this._jeffDead;
 			return;
 		}
-		if (BrokenSyncModule.GetBroken(_serial))
+		if (BrokenSyncModule.GetBroken(this._serial))
 		{
-			_jeffRenderer.sprite = _jeffSad;
+			this._jeffRenderer.sprite = this._jeffSad;
 			return;
 		}
 		float num = 8f;
-		bool flag = _cycle.Phase == MicroHidPhase.WoundUpSustain && _cycle.CurrentPhaseElapsed > num;
-		_jeffRenderer.sprite = (flag ? _jeffConcerned : _jeffHappy);
+		bool flag = this._cycle.Phase == MicroHidPhase.WoundUpSustain && this._cycle.CurrentPhaseElapsed > num;
+		this._jeffRenderer.sprite = (flag ? this._jeffConcerned : this._jeffHappy);
 	}
 
 	private static bool GetBlinkActive(float frequency, float ratio, double offset = 0.0)

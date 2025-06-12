@@ -1,3 +1,4 @@
+using CentralAuth;
 using PlayerRoles.Spectating;
 using VoiceChat;
 
@@ -9,7 +10,7 @@ public class LobbyVoiceModule : SpectatorVoiceModule
 
 	private VoiceChatChannel ValidateAuth(VoiceChatChannel channelToValidate)
 	{
-		if (base.Owner.authManager.InstanceMode != 0)
+		if (base.Owner.authManager.InstanceMode != ClientInstanceMode.Unverified)
 		{
 			return channelToValidate;
 		}
@@ -18,7 +19,7 @@ public class LobbyVoiceModule : SpectatorVoiceModule
 
 	public override VoiceChatChannel ValidateSend(VoiceChatChannel channel)
 	{
-		return ValidateAuth(base.ValidateSend(channel));
+		return this.ValidateAuth(base.ValidateSend(channel));
 	}
 
 	public override VoiceChatChannel ValidateReceive(ReferenceHub sp, VoiceChatChannel ch)
@@ -27,10 +28,10 @@ public class LobbyVoiceModule : SpectatorVoiceModule
 		{
 			return VoiceChatChannel.None;
 		}
-		if ((base.ReceiveFlags & GroupMuteFlags.Lobby) != 0)
+		if ((base.ReceiveFlags & GroupMuteFlags.Lobby) != GroupMuteFlags.None)
 		{
 			return VoiceChatChannel.None;
 		}
-		return ValidateAuth(base.ValidateReceive(sp, ch));
+		return this.ValidateAuth(base.ValidateReceive(sp, ch));
 	}
 }

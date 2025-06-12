@@ -110,7 +110,7 @@ internal static class PowersOfTenCache
 		int num = 64;
 		double num2 = Math.Ceiling((double)(min_exponent + num - 1) * 0.30102999566398114);
 		int num3 = (348 + (int)num2 - 1) / 8 + 1;
-		CachedPower cachedPower = kCachedPowers[num3];
+		CachedPower cachedPower = PowersOfTenCache.kCachedPowers[num3];
 		decimal_exponent = cachedPower.decimal_exponent;
 		power = new DiyFp(cachedPower.significand, cachedPower.binary_exponent);
 	}
@@ -118,7 +118,7 @@ internal static class PowersOfTenCache
 	public static void GetCachedPowerForDecimalExponent(int requested_exponent, out DiyFp power, out int found_exponent)
 	{
 		int num = (requested_exponent + 348) / 8;
-		CachedPower cachedPower = kCachedPowers[num];
+		CachedPower cachedPower = PowersOfTenCache.kCachedPowers[num];
 		power = new DiyFp(cachedPower.significand, cachedPower.binary_exponent);
 		found_exponent = cachedPower.decimal_exponent;
 	}

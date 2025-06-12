@@ -21,7 +21,7 @@ public class Scp3114Reveal : KeySubroutine<Scp3114Role>
 		{
 			if (base.KeyPressable && base.CastRole.Disguised)
 			{
-				return _holdTimer < 0.65f;
+				return this._holdTimer < 0.65f;
 			}
 			return false;
 		}
@@ -34,13 +34,13 @@ public class Scp3114Reveal : KeySubroutine<Scp3114Role>
 		base.Update();
 		if (base.Role.IsLocalPlayer)
 		{
-			if (IsKeyHeld && base.CastRole.Disguised)
+			if (this.IsKeyHeld && base.CastRole.Disguised)
 			{
-				_holdTimer += Time.deltaTime;
+				this._holdTimer += Time.deltaTime;
 			}
 			else
 			{
-				_holdTimer = 0f;
+				this._holdTimer = 0f;
 			}
 		}
 	}
@@ -50,9 +50,9 @@ public class Scp3114Reveal : KeySubroutine<Scp3114Role>
 		base.OnKeyUp();
 		if (base.CastRole.Disguised)
 		{
-			if (_holdTimer >= 0.65f)
+			if (this._holdTimer >= 0.65f)
 			{
-				ClientSendCmd();
+				base.ClientSendCmd();
 			}
 			else
 			{

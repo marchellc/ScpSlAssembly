@@ -29,15 +29,15 @@ public class KeybindEntry : KeycodeField
 
 	public void Init(ActionName action)
 	{
-		_action = action;
-		_key = NewInput.GetKey(action);
-		RefreshKey();
+		this._action = action;
+		this._key = NewInput.GetKey(action);
+		this.RefreshKey();
 		NewInput.OnKeyModified += OnKeyModified;
-		RefreshLabel();
+		this.RefreshLabel();
 		TranslationReader.OnTranslationsRefreshed += RefreshLabel;
-		_undoImage.GetComponent<Button>().onClick.AddListener(delegate
+		this._undoImage.GetComponent<Button>().onClick.AddListener(delegate
 		{
-			NewInput.ChangeKeybind(_action, KeyCode.None);
+			NewInput.ChangeKeybind(this._action, KeyCode.None);
 		});
 	}
 
@@ -45,7 +45,7 @@ public class KeybindEntry : KeycodeField
 	{
 		if (key == KeyCode.Mouse0)
 		{
-			return !BlacklistedLMBs.Contains(_action);
+			return !KeybindEntry.BlacklistedLMBs.Contains(this._action);
 		}
 		return true;
 	}
@@ -53,7 +53,7 @@ public class KeybindEntry : KeycodeField
 	protected override void ApplyPressedKey(KeyCode key)
 	{
 		base.ApplyPressedKey(key);
-		NewInput.ChangeKeybind(_action, key);
+		NewInput.ChangeKeybind(this._action, key);
 	}
 
 	private void OnDestroy()
@@ -64,21 +64,21 @@ public class KeybindEntry : KeycodeField
 
 	private void RefreshLabel()
 	{
-		_labelText.text = TranslationReader.Get("Keybinds", (int)_action, _action.ToString());
+		this._labelText.text = TranslationReader.Get("Keybinds", (int)this._action, this._action.ToString());
 	}
 
 	private void RefreshKey()
 	{
-		SetDisplayedKey(_key);
-		_undoImage.enabled = NewInput.DefaultKeybinds.TryGetValue(_action, out var value) && value != _key;
+		base.SetDisplayedKey(this._key);
+		this._undoImage.enabled = NewInput.DefaultKeybinds.TryGetValue(this._action, out var value) && value != this._key;
 	}
 
 	private void OnKeyModified(ActionName action, KeyCode key)
 	{
-		if (_action == action)
+		if (this._action == action)
 		{
-			_key = key;
-			RefreshKey();
+			this._key = key;
+			this.RefreshKey();
 		}
 	}
 }

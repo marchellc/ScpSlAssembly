@@ -27,11 +27,11 @@ public class Scp173SnapAbility : KeySubroutine<Scp173Role>
 	{
 		get
 		{
-			if (_snapMask == 0)
+			if (Scp173SnapAbility._snapMask == 0)
 			{
-				_snapMask = LayerMask.GetMask("Default", "Hitbox", "Glass", "Door");
+				Scp173SnapAbility._snapMask = LayerMask.GetMask("Default", "Hitbox", "Glass", "Door");
 			}
-			return _snapMask;
+			return Scp173SnapAbility._snapMask;
 		}
 	}
 
@@ -52,16 +52,16 @@ public class Scp173SnapAbility : KeySubroutine<Scp173Role>
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		if (!IsSpeeding && TryHitTarget(base.Owner.PlayerCameraReference, out _targetHub))
+		if (!this.IsSpeeding && Scp173SnapAbility.TryHitTarget(base.Owner.PlayerCameraReference, out this._targetHub))
 		{
-			ClientSendCmd();
+			base.ClientSendCmd();
 		}
 	}
 
 	private static bool TryHitTarget(Transform origin, out ReferenceHub target)
 	{
 		target = null;
-		if (!Physics.Raycast(origin.position, origin.forward, out var hitInfo, 1.5f, SnapMask))
+		if (!Physics.Raycast(origin.position, origin.forward, out var hitInfo, 1.5f, Scp173SnapAbility.SnapMask))
 		{
 			return false;
 		}
@@ -76,14 +76,14 @@ public class Scp173SnapAbility : KeySubroutine<Scp173Role>
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp173ObserversTracker>(out _observersTracker);
+		base.GetSubroutine<Scp173ObserversTracker>(out this._observersTracker);
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteReferenceHub(_targetHub);
-		writer.WriteRelativePosition(new RelativePosition(_targetHub.transform.position));
+		writer.WriteReferenceHub(this._targetHub);
+		writer.WriteRelativePosition(new RelativePosition(this._targetHub.transform.position));
 		writer.WriteRelativePosition(new RelativePosition(base.Owner.transform.position));
 		writer.WriteLowPrecisionQuaternion(new LowPrecisionQuaternion(base.Owner.PlayerCameraReference.rotation));
 	}
@@ -91,8 +91,8 @@ public class Scp173SnapAbility : KeySubroutine<Scp173Role>
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		_targetHub = reader.ReadReferenceHub();
-		if (_observersTracker.IsObserved || _targetHub == null || !(_targetHub.roleManager.CurrentRole is IFpcRole fpcRole) || IsSpeeding)
+		this._targetHub = reader.ReadReferenceHub();
+		if (this._observersTracker.IsObserved || this._targetHub == null || !(this._targetHub.roleManager.CurrentRole is IFpcRole fpcRole) || this.IsSpeeding)
 		{
 			return;
 		}
@@ -107,7 +107,7 @@ public class Scp173SnapAbility : KeySubroutine<Scp173Role>
 		bounds.Encapsulate(fpcModule.Position + fpcModule.Motor.Velocity * 0.2f);
 		fpcModule.Position = bounds.ClosestPoint(reader.ReadRelativePosition().Position);
 		playerCameraReference.rotation = reader.ReadLowPrecisionQuaternion().Value;
-		if (TryHitTarget(playerCameraReference, out var target) && target.playerStats.DealDamage(base.CastRole.DamageHandler))
+		if (Scp173SnapAbility.TryHitTarget(playerCameraReference, out var target) && target.playerStats.DealDamage(base.CastRole.DamageHandler))
 		{
 			Hitmarker.SendHitmarkerDirectly(base.Owner, 1f);
 			if (base.CastRole.SubroutineModule.TryGetSubroutine<Scp173AudioPlayer>(out var subroutine))

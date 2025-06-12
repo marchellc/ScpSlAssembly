@@ -8,7 +8,7 @@ public abstract class PacketLayerBase
 
 	protected PacketLayerBase(int extraPacketSizeForLayer)
 	{
-		ExtraPacketSizeForLayer = extraPacketSizeForLayer;
+		this.ExtraPacketSizeForLayer = extraPacketSizeForLayer;
 	}
 
 	public abstract void ProcessInboundPacket(ref IPEndPoint endPoint, ref byte[] data, ref int offset, ref int length);

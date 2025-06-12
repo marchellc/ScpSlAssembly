@@ -22,44 +22,44 @@ public class AutoCuller
 
 	public void Generate(GameObject root, Predicate<GameObject> cullFilter = null, Predicate<GameObject> deactivationRule = null, bool ignoreDoNotCullTag = false)
 	{
-		_cullableGameObjects.Clear();
-		_cullableRenderers.Clear();
-		_cullableBehaviors.Clear();
-		ProcessGameObject(root, cullFilter, deactivationRule, !ignoreDoNotCullTag);
+		this._cullableGameObjects.Clear();
+		this._cullableRenderers.Clear();
+		this._cullableBehaviors.Clear();
+		this.ProcessGameObject(root, cullFilter, deactivationRule, !ignoreDoNotCullTag);
 	}
 
 	public void SetVisibility(bool isVisible)
 	{
-		for (int num = _cullableGameObjects.Count - 1; num >= 0; num--)
+		for (int num = this._cullableGameObjects.Count - 1; num >= 0; num--)
 		{
-			GameObject gameObject = _cullableGameObjects[num];
+			GameObject gameObject = this._cullableGameObjects[num];
 			if (gameObject == null)
 			{
-				_cullableGameObjects.RemoveAt(num);
+				this._cullableGameObjects.RemoveAt(num);
 			}
 			else
 			{
 				gameObject.SetActive(isVisible);
 			}
 		}
-		for (int num2 = _cullableBehaviors.Count - 1; num2 >= 0; num2--)
+		for (int num2 = this._cullableBehaviors.Count - 1; num2 >= 0; num2--)
 		{
-			Behaviour behaviour = _cullableBehaviors[num2];
+			Behaviour behaviour = this._cullableBehaviors[num2];
 			if (behaviour == null)
 			{
-				_cullableBehaviors.RemoveAt(num2);
+				this._cullableBehaviors.RemoveAt(num2);
 			}
 			else
 			{
 				behaviour.enabled = isVisible;
 			}
 		}
-		for (int num3 = _cullableRenderers.Count - 1; num3 >= 0; num3--)
+		for (int num3 = this._cullableRenderers.Count - 1; num3 >= 0; num3--)
 		{
-			Renderer renderer = _cullableRenderers[num3];
+			Renderer renderer = this._cullableRenderers[num3];
 			if (renderer == null)
 			{
-				_cullableRenderers.RemoveAt(num3);
+				this._cullableRenderers.RemoveAt(num3);
 			}
 			else
 			{
@@ -76,7 +76,7 @@ public class AutoCuller
 		}
 		if (deactivationFilter != null && deactivationFilter(root))
 		{
-			_cullableGameObjects.Add(root);
+			this._cullableGameObjects.Add(root);
 			return;
 		}
 		Transform transform = root.transform;
@@ -84,18 +84,18 @@ public class AutoCuller
 		for (int i = 0; i < childCount; i++)
 		{
 			GameObject gameObject = transform.GetChild(i).gameObject;
-			ProcessGameObject(gameObject, cullFilter, deactivationFilter, checkTag);
+			this.ProcessGameObject(gameObject, cullFilter, deactivationFilter, checkTag);
 		}
 		Component[] components = root.GetComponents<Component>();
 		foreach (Component component2 in components)
 		{
 			if (component2 is Renderer item)
 			{
-				_cullableRenderers.Add(item);
+				this._cullableRenderers.Add(item);
 			}
 			if (component2 is Behaviour item2 && (component2 is Light || component2 is Canvas || component2 is CanvasScaler || component2 is UIBehaviour || component2 is ReflectionProbe))
 			{
-				_cullableBehaviors.Add(item2);
+				this._cullableBehaviors.Add(item2);
 			}
 		}
 	}

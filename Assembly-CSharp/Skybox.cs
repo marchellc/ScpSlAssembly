@@ -12,7 +12,7 @@ public class Skybox : MonoBehaviour
 
 	private void Awake()
 	{
-		_rend = _cubemapTr.GetComponent<Renderer>();
+		this._rend = this._cubemapTr.GetComponent<Renderer>();
 		MainCameraController.OnUpdated += OnCamUpdated;
 	}
 
@@ -24,17 +24,17 @@ public class Skybox : MonoBehaviour
 	private void OnDrawGizmosSelected()
 	{
 		Gizmos.color = Color.white;
-		Gizmos.DrawWireCube(_bounds.center, _bounds.size);
+		Gizmos.DrawWireCube(this._bounds.center, this._bounds.size);
 	}
 
 	private void OnCamUpdated()
 	{
 		Vector3 position = MainCameraController.CurrentCamera.position;
-		bool flag = _bounds.Contains(position);
-		_rend.enabled = flag;
+		bool flag = this._bounds.Contains(position);
+		this._rend.enabled = flag;
 		if (flag)
 		{
-			_cubemapTr.position = position;
+			this._cubemapTr.position = position;
 		}
 	}
 }

@@ -58,26 +58,26 @@ public class RoomRoleSpawnpoint : ISpawnpointHandler
 	{
 		get
 		{
-			if (_spawnpointsCache == null || _lastSeed != SeedSynchronizer.Seed)
+			if (this._spawnpointsCache == null || this._lastSeed != SeedSynchronizer.Seed)
 			{
-				RefreshSpawnpoints();
+				this.RefreshSpawnpoints();
 			}
-			return _spawnpointsCache;
+			return this._spawnpointsCache;
 		}
 	}
 
 	public RoomRoleSpawnpoint(Vector3 localPoint, float lookRotation, float lookAngleVariation, float boundsWidth, float boundsLength, int spawnpointsInWidth, int spawnpointsInLength, RoomName nameFilter = RoomName.Unnamed, FacilityZone zoneFilter = FacilityZone.None, RoomShape shapeFilter = RoomShape.Undefined)
 	{
-		_fName = nameFilter;
-		_fZone = zoneFilter;
-		_fShape = shapeFilter;
-		_localPoint = localPoint;
-		_lookAngle = lookRotation;
-		_angleVar = lookAngleVariation;
-		_width = boundsWidth;
-		_length = boundsLength;
-		_wNum = spawnpointsInWidth;
-		_lNum = spawnpointsInLength;
+		this._fName = nameFilter;
+		this._fZone = zoneFilter;
+		this._fShape = shapeFilter;
+		this._localPoint = localPoint;
+		this._lookAngle = lookRotation;
+		this._angleVar = lookAngleVariation;
+		this._width = boundsWidth;
+		this._length = boundsLength;
+		this._wNum = spawnpointsInWidth;
+		this._lNum = spawnpointsInLength;
 	}
 
 	public RoomRoleSpawnpoint(RoomRoleSpawnpoint t)
@@ -87,48 +87,48 @@ public class RoomRoleSpawnpoint : ISpawnpointHandler
 
 	public bool TryGetSpawnpoint(out Vector3 position, out float horizontalRot)
 	{
-		if (Spawnpoints.Count == 0)
+		if (this.Spawnpoints.Count == 0)
 		{
 			position = Vector3.zero;
 			horizontalRot = 0f;
 			return false;
 		}
-		return Spawnpoints.RandomItem().TryGetSpawnpoint(out position, out horizontalRot);
+		return this.Spawnpoints.RandomItem().TryGetSpawnpoint(out position, out horizontalRot);
 	}
 
 	public bool TryGetSpawnpoint(out Vector3 position, out float horizontalRot, int spawnpointIndex)
 	{
 		position = default(Vector3);
 		horizontalRot = 0f;
-		if (spawnpointIndex > Spawnpoints.Count - 1)
+		if (spawnpointIndex > this.Spawnpoints.Count - 1)
 		{
 			Debug.LogWarning("Provided spawnpointIndex was too high.");
 			return false;
 		}
-		return Spawnpoints[spawnpointIndex].TryGetSpawnpoint(out position, out horizontalRot);
+		return this.Spawnpoints[spawnpointIndex].TryGetSpawnpoint(out position, out horizontalRot);
 	}
 
 	public void FilterSpawnpointsByDistance()
 	{
-		if (_distanceRequiredMeters <= 0 || _requireDistanceFrom.Length == 0)
+		if (this._distanceRequiredMeters <= 0 || this._requireDistanceFrom.Length == 0)
 		{
 			return;
 		}
-		BoundsRoleSpawnpoint[] array = Spawnpoints.ToArray();
-		Spawnpoints.Clear();
+		BoundsRoleSpawnpoint[] array = this.Spawnpoints.ToArray();
+		this.Spawnpoints.Clear();
 		List<RoomIdentifier> list = ListPool<RoomIdentifier>.Shared.Rent();
 		foreach (RoomIdentifier allRoomIdentifier in RoomIdentifier.AllRoomIdentifiers)
 		{
-			if (_requireDistanceFrom.Contains(allRoomIdentifier.Name))
+			if (this._requireDistanceFrom.Contains(allRoomIdentifier.Name))
 			{
 				list.Add(allRoomIdentifier);
 			}
 		}
 		for (int i = 0; i < array.Length; i++)
 		{
-			if (array[i].TryGetSpawnpoint(out var spawnpointPosition, out var _) && list.Any((RoomIdentifier roomType) => roomType != null && (roomType.transform.position - spawnpointPosition).sqrMagnitude < (float)(_distanceRequiredMeters * _distanceRequiredMeters)))
+			if (array[i].TryGetSpawnpoint(out var spawnpointPosition, out var _) && list.Any((RoomIdentifier roomType) => roomType != null && (roomType.transform.position - spawnpointPosition).sqrMagnitude < (float)(this._distanceRequiredMeters * this._distanceRequiredMeters)))
 			{
-				Spawnpoints.Add(array[i]);
+				this.Spawnpoints.Add(array[i]);
 			}
 		}
 		ListPool<RoomIdentifier>.Shared.Return(list);
@@ -136,35 +136,35 @@ public class RoomRoleSpawnpoint : ISpawnpointHandler
 
 	public int GetRoomAmount()
 	{
-		return Spawnpoints.Count;
+		return this.Spawnpoints.Count;
 	}
 
 	private void RefreshSpawnpoints()
 	{
-		if (_spawnpointsCache != null)
+		if (this._spawnpointsCache != null)
 		{
-			_spawnpointsCache.Clear();
+			this._spawnpointsCache.Clear();
 		}
 		else
 		{
-			_spawnpointsCache = new List<BoundsRoleSpawnpoint>();
+			this._spawnpointsCache = new List<BoundsRoleSpawnpoint>();
 		}
-		_lastSeed = SeedSynchronizer.Seed;
-		RoomName? name = ((_fName == RoomName.Unnamed) ? ((RoomName?)null) : new RoomName?(_fName));
-		FacilityZone? zone = ((_fZone == FacilityZone.None) ? ((FacilityZone?)null) : new FacilityZone?(_fZone));
-		RoomShape? shape = ((_fShape == RoomShape.Undefined) ? ((RoomShape?)null) : new RoomShape?(_fShape));
+		this._lastSeed = SeedSynchronizer.Seed;
+		RoomName? name = ((this._fName == RoomName.Unnamed) ? ((RoomName?)null) : new RoomName?(this._fName));
+		FacilityZone? zone = ((this._fZone == FacilityZone.None) ? ((FacilityZone?)null) : new FacilityZone?(this._fZone));
+		RoomShape? shape = ((this._fShape == RoomShape.Undefined) ? ((RoomShape?)null) : new RoomShape?(this._fShape));
 		foreach (RoomIdentifier item in RoomUtils.FindRooms(name, zone, shape))
 		{
-			if (!ExcludedRooms.Contains(item.Name))
+			if (!RoomRoleSpawnpoint.ExcludedRooms.Contains(item.Name))
 			{
 				Transform transform = item.transform;
-				Bounds bounds = new Bounds(transform.TransformPoint(_localPoint), transform.rotation * new Vector3(_width, 0f, _length));
-				Vector3 vector = transform.rotation * new Vector3(_wNum, 0f, _lNum);
+				Bounds bounds = new Bounds(transform.TransformPoint(this._localPoint), transform.rotation * new Vector3(this._width, 0f, this._length));
+				Vector3 vector = transform.rotation * new Vector3(this._wNum, 0f, this._lNum);
 				Vector3Int size = new Vector3Int(Mathf.RoundToInt(Mathf.Abs(vector.x)), 1, Mathf.RoundToInt(Mathf.Abs(vector.z)));
-				float num = transform.rotation.eulerAngles.y + _lookAngle;
-				_spawnpointsCache.Add(new BoundsRoleSpawnpoint(bounds, num - _angleVar, num + _angleVar, size));
+				float num = transform.rotation.eulerAngles.y + this._lookAngle;
+				this._spawnpointsCache.Add(new BoundsRoleSpawnpoint(bounds, num - this._angleVar, num + this._angleVar, size));
 			}
 		}
-		FilterSpawnpointsByDistance();
+		this.FilterSpawnpointsByDistance();
 	}
 }

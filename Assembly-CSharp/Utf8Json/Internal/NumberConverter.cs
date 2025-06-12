@@ -39,17 +39,17 @@ public static class NumberConverter
 
 	public static sbyte ReadSByte(byte[] bytes, int offset, out int readCount)
 	{
-		return checked((sbyte)ReadInt64(bytes, offset, out readCount));
+		return checked((sbyte)NumberConverter.ReadInt64(bytes, offset, out readCount));
 	}
 
 	public static short ReadInt16(byte[] bytes, int offset, out int readCount)
 	{
-		return checked((short)ReadInt64(bytes, offset, out readCount));
+		return checked((short)NumberConverter.ReadInt64(bytes, offset, out readCount));
 	}
 
 	public static int ReadInt32(byte[] bytes, int offset, out int readCount)
 	{
-		return checked((int)ReadInt64(bytes, offset, out readCount));
+		return checked((int)NumberConverter.ReadInt64(bytes, offset, out readCount));
 	}
 
 	public static long ReadInt64(byte[] bytes, int offset, out int readCount)
@@ -65,7 +65,7 @@ public static class NumberConverter
 		{
 			if (num3 < bytes.Length)
 			{
-				if (!IsNumber(bytes[num3]))
+				if (!NumberConverter.IsNumber(bytes[num3]))
 				{
 					readCount = num3 - offset;
 					break;
@@ -82,17 +82,17 @@ public static class NumberConverter
 
 	public static byte ReadByte(byte[] bytes, int offset, out int readCount)
 	{
-		return checked((byte)ReadUInt64(bytes, offset, out readCount));
+		return checked((byte)NumberConverter.ReadUInt64(bytes, offset, out readCount));
 	}
 
 	public static ushort ReadUInt16(byte[] bytes, int offset, out int readCount)
 	{
-		return checked((ushort)ReadUInt64(bytes, offset, out readCount));
+		return checked((ushort)NumberConverter.ReadUInt64(bytes, offset, out readCount));
 	}
 
 	public static uint ReadUInt32(byte[] bytes, int offset, out int readCount)
 	{
-		return checked((uint)ReadUInt64(bytes, offset, out readCount));
+		return checked((uint)NumberConverter.ReadUInt64(bytes, offset, out readCount));
 	}
 
 	public static ulong ReadUInt64(byte[] bytes, int offset, out int readCount)
@@ -103,7 +103,7 @@ public static class NumberConverter
 		{
 			if (num2 < bytes.Length)
 			{
-				if (!IsNumber(bytes[num2]))
+				if (!NumberConverter.IsNumber(bytes[num2]))
 				{
 					readCount = num2 - offset;
 					break;
@@ -130,17 +130,17 @@ public static class NumberConverter
 
 	public static int WriteByte(ref byte[] buffer, int offset, byte value)
 	{
-		return WriteUInt64(ref buffer, offset, value);
+		return NumberConverter.WriteUInt64(ref buffer, offset, value);
 	}
 
 	public static int WriteUInt16(ref byte[] buffer, int offset, ushort value)
 	{
-		return WriteUInt64(ref buffer, offset, value);
+		return NumberConverter.WriteUInt64(ref buffer, offset, value);
 	}
 
 	public static int WriteUInt32(ref byte[] buffer, int offset, uint value)
 	{
-		return WriteUInt64(ref buffer, offset, value);
+		return NumberConverter.WriteUInt64(ref buffer, offset, value);
 	}
 
 	public static int WriteUInt64(ref byte[] buffer, int offset, ulong value)
@@ -333,17 +333,17 @@ public static class NumberConverter
 
 	public static int WriteSByte(ref byte[] buffer, int offset, sbyte value)
 	{
-		return WriteInt64(ref buffer, offset, value);
+		return NumberConverter.WriteInt64(ref buffer, offset, value);
 	}
 
 	public static int WriteInt16(ref byte[] buffer, int offset, short value)
 	{
-		return WriteInt64(ref buffer, offset, value);
+		return NumberConverter.WriteInt64(ref buffer, offset, value);
 	}
 
 	public static int WriteInt32(ref byte[] buffer, int offset, int value)
 	{
-		return WriteInt64(ref buffer, offset, value);
+		return NumberConverter.WriteInt64(ref buffer, offset, value);
 	}
 
 	public static int WriteInt64(ref byte[] buffer, int offset, long value)

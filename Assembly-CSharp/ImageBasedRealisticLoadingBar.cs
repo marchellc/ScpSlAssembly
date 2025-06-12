@@ -28,12 +28,12 @@ public class ImageBasedRealisticLoadingBar : MonoBehaviour
 
 	private void OnEnable()
 	{
-		_targetImage.fillAmount = 0f;
-		_bar = new RealisticLoadingBar(_targetTime, Random.Range(_minNumOfSteps, _maxNumOfSteps + 1), _stepVar, _tickVar);
+		this._targetImage.fillAmount = 0f;
+		this._bar = new RealisticLoadingBar(this._targetTime, Random.Range(this._minNumOfSteps, this._maxNumOfSteps + 1), this._stepVar, this._tickVar);
 	}
 
 	private void Update()
 	{
-		_targetImage.fillAmount = Mathf.Lerp(_targetImage.fillAmount, _bar.Progress, Time.deltaTime * _smoothing);
+		this._targetImage.fillAmount = Mathf.Lerp(this._targetImage.fillAmount, this._bar.Progress, Time.deltaTime * this._smoothing);
 	}
 }

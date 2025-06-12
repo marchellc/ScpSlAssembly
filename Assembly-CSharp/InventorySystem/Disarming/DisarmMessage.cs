@@ -12,8 +12,8 @@ public readonly struct DisarmMessage : NetworkMessage
 
 	public DisarmMessage(ReferenceHub playerToDisarm, bool disarm, bool isNull)
 	{
-		PlayerToDisarm = playerToDisarm;
-		Disarm = disarm;
-		PlayerIsNull = isNull;
+		this.PlayerToDisarm = playerToDisarm;
+		this.Disarm = disarm;
+		this.PlayerIsNull = isNull;
 	}
 }

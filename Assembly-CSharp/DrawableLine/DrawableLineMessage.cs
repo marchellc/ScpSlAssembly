@@ -13,27 +13,27 @@ public readonly struct DrawableLineMessage : NetworkMessage
 
 	public DrawableLineMessage(float? duration, Color? color, Vector3[] positions)
 	{
-		_duration = duration;
-		_color = color;
-		_positions = positions;
+		this._duration = duration;
+		this._color = color;
+		this._positions = positions;
 	}
 
 	public DrawableLineMessage(NetworkReader reader)
 	{
-		_duration = reader.ReadFloatNullable();
-		_color = reader.ReadColorNullable();
-		_positions = reader.ReadArray<Vector3>();
+		this._duration = reader.ReadFloatNullable();
+		this._color = reader.ReadColorNullable();
+		this._positions = reader.ReadArray<Vector3>();
 	}
 
 	public void WriteMessage(NetworkWriter writer)
 	{
-		writer.WriteFloatNullable(_duration);
-		writer.WriteColorNullable(_color);
-		writer.WriteArray(_positions);
+		writer.WriteFloatNullable(this._duration);
+		writer.WriteColorNullable(this._color);
+		writer.WriteArray(this._positions);
 	}
 
 	public void GenerateLine()
 	{
-		DrawableLines.ClientGenerateLine(_duration, _color, _positions);
+		DrawableLines.ClientGenerateLine(this._duration, this._color, this._positions);
 	}
 }

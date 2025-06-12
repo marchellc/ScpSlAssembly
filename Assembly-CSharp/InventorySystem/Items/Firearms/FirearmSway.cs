@@ -29,55 +29,55 @@ public class FirearmSway : WalkSway
 	{
 		get
 		{
-			if (!_supportsAds || !_adsModule.AdsTarget)
+			if (!this._supportsAds || !this._adsModule.AdsTarget)
 			{
 				return base.Settings;
 			}
-			return _adsExtension.AdsSway;
+			return this._adsExtension.AdsSway;
 		}
 	}
 
-	protected override float OverallBobMultiplier => base.OverallBobMultiplier * _bobScale;
+	protected override float OverallBobMultiplier => base.OverallBobMultiplier * this._bobScale;
 
-	protected override float JumpSwayWeightMultiplier => base.JumpSwayWeightMultiplier * _jumpScale;
+	protected override float JumpSwayWeightMultiplier => base.JumpSwayWeightMultiplier * this._jumpScale;
 
-	protected override float WalkSwayWeightMultiplier => base.WalkSwayWeightMultiplier * _walkScale;
+	protected override float WalkSwayWeightMultiplier => base.WalkSwayWeightMultiplier * this._walkScale;
 
 	public FirearmSway(GoopSwaySettings hipSettings, AnimatedFirearmViewmodel vm)
 		: base(hipSettings, vm)
 	{
-		_viewmodel = vm;
-		_firearm = vm.ParentFirearm;
-		_supportsAds = TryInitAds(out _adsExtension, out _adsModule);
-		_swayModifiers = new List<ISwayModifierModule>();
-		ModuleBase[] modules = _firearm.Modules;
+		this._viewmodel = vm;
+		this._firearm = vm.ParentFirearm;
+		this._supportsAds = this.TryInitAds(out this._adsExtension, out this._adsModule);
+		this._swayModifiers = new List<ISwayModifierModule>();
+		ModuleBase[] modules = this._firearm.Modules;
 		for (int i = 0; i < modules.Length; i++)
 		{
 			if (modules[i] is ISwayModifierModule item)
 			{
-				_swayModifiers.Add(item);
+				this._swayModifiers.Add(item);
 			}
 		}
 	}
 
 	private bool TryInitAds(out ViewmodelAdsExtension extension, out IAdsModule module)
 	{
-		bool num = _viewmodel.TryGetExtension<ViewmodelAdsExtension>(out extension);
-		bool flag = _firearm.TryGetModule<IAdsModule>(out module);
+		bool num = this._viewmodel.TryGetExtension<ViewmodelAdsExtension>(out extension);
+		bool flag = this._firearm.TryGetModule<IAdsModule>(out module);
 		return num && flag;
 	}
 
 	public override void UpdateSway()
 	{
 		base.UpdateSway();
-		_bobScale = 1f;
-		_jumpScale = 1f;
-		_walkScale = 1f;
-		foreach (ISwayModifierModule swayModifier in _swayModifiers)
+		this._bobScale = 1f;
+		this._jumpScale = 1f;
+		this._walkScale = 1f;
+		foreach (ISwayModifierModule swayModifier in this._swayModifiers)
 		{
-			_bobScale *= swayModifier.BobbingSwayScale;
-			_jumpScale *= swayModifier.JumpSwayScale;
-			_walkScale *= swayModifier.WalkSwayScale;
+			this._bobScale *= swayModifier.BobbingSwayScale;
+			this._jumpScale *= swayModifier.JumpSwayScale;
+			this._walkScale *= swayModifier.WalkSwayScale;
 		}
 	}
 }

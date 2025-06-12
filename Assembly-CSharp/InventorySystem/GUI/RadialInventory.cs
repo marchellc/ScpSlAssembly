@@ -25,11 +25,11 @@ public class RadialInventory : RadialMenuBase, IInventoryGuiDisplayType
 		{
 			if (item == null)
 			{
-				_iconSlot.enabled = false;
+				this._iconSlot.enabled = false;
 				return;
 			}
-			_iconSlot.enabled = true;
-			_iconSlot.texture = item.Icon;
+			this._iconSlot.enabled = true;
+			this._iconSlot.texture = item.Icon;
 		}
 	}
 
@@ -88,9 +88,9 @@ public class RadialInventory : RadialMenuBase, IInventoryGuiDisplayType
 
 	private RoleTypeId _prevRole;
 
-	public override int Slots => _slots.Length;
+	public override int Slots => this._slots.Length;
 
-	private static bool AllowDropping => DragWatch.Elapsed.TotalMilliseconds > 90.0;
+	private static bool AllowDropping => RadialInventory.DragWatch.Elapsed.TotalMilliseconds > 90.0;
 
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
@@ -100,82 +100,82 @@ public class RadialInventory : RadialMenuBase, IInventoryGuiDisplayType
 
 	public void InventoryToggled(bool newState)
 	{
-		_originalDragPosition = Vector3.zero;
+		this._originalDragPosition = Vector3.zero;
 		if (newState)
 		{
-			_descriptionGroup.alpha = 0f;
+			this._descriptionGroup.alpha = 0f;
 			return;
 		}
-		_draggedId = -1;
-		_dragCursorIcon.enabled = false;
-		_cursorDropIcon.enabled = false;
+		this._draggedId = -1;
+		this._dragCursorIcon.enabled = false;
+		this._cursorDropIcon.enabled = false;
 	}
 
 	public InventoryGuiAction DisplayAndSelectItems(Inventory targetInventory, out ushort itemSerial)
 	{
 		bool flag = targetInventory == null;
-		RingImage.color = _circleColor.Color;
+		base.RingImage.color = this._circleColor.Color;
 		try
 		{
-			RefreshItemColors(targetInventory, flag);
-			RefreshDescriptions(targetInventory, flag);
+			this.RefreshItemColors(targetInventory, flag);
+			this.RefreshDescriptions(targetInventory, flag);
 		}
 		catch (Exception exception)
 		{
 			UnityEngine.Debug.Log("Error occured at the system inventory: " + ((targetInventory == null) ? "null" : targetInventory.isLocalPlayer.ToString()));
 			UnityEngine.Debug.LogException(exception);
 		}
-		itemSerial = _highlightedSerial;
+		itemSerial = this._highlightedSerial;
 		if (Input.GetKeyDown(KeyCode.Mouse0))
 		{
-			_draggedId = base.HighlightedSlot;
-			if (_draggedId >= 0 && !flag && targetInventory.UserInventory.Items.TryGetValue(OrganizedContent[_draggedId], out var value))
+			this._draggedId = base.HighlightedSlot;
+			if (this._draggedId >= 0 && !flag && targetInventory.UserInventory.Items.TryGetValue(this.OrganizedContent[this._draggedId], out var value))
 			{
-				_originalDragPosition = Input.mousePosition;
-				_dragCursorIcon.texture = value.Icon;
-				_dragCursorIcon.transform.position = Input.mousePosition;
-				_cursorDropIcon.color = RingImage.color;
+				this._originalDragPosition = Input.mousePosition;
+				this._dragCursorIcon.texture = value.Icon;
+				this._dragCursorIcon.transform.position = Input.mousePosition;
+				this._cursorDropIcon.color = base.RingImage.color;
 			}
 			else
 			{
-				_originalDragPosition = Vector2.zero;
+				this._originalDragPosition = Vector2.zero;
 			}
 		}
 		if (Input.GetKeyUp(KeyCode.Mouse0))
 		{
-			_dragCursorIcon.enabled = false;
-			_cursorDropIcon.enabled = false;
-			_originalDragPosition = Vector3.zero;
-			if (_draggedId >= 0 && OrganizedContent[_draggedId] != 0 && base.HighlightedSlot < 0 && AllowDropping)
+			this._dragCursorIcon.enabled = false;
+			this._cursorDropIcon.enabled = false;
+			this._originalDragPosition = Vector3.zero;
+			if (this._draggedId >= 0 && this.OrganizedContent[this._draggedId] != 0 && base.HighlightedSlot < 0 && RadialInventory.AllowDropping)
 			{
-				itemSerial = OrganizedContent[_draggedId];
+				itemSerial = this.OrganizedContent[this._draggedId];
 				return InventoryGuiAction.Drop;
 			}
-			if (base.HighlightedSlot == _draggedId || Mathf.Min(base.HighlightedSlot, _draggedId) < 0 || OrganizedContent[_draggedId] == 0)
+			if (base.HighlightedSlot == this._draggedId || Mathf.Min(base.HighlightedSlot, this._draggedId) < 0 || this.OrganizedContent[this._draggedId] == 0)
 			{
-				if (_organizedAmmo.Any((KeyValuePair<ItemType, AmmoElement> x) => x.Value.IsHovering()))
+				if (this._organizedAmmo.Any((KeyValuePair<ItemType, AmmoElement> x) => x.Value.IsHovering()))
 				{
 					return InventoryGuiAction.None;
 				}
 				InventoryGuiController.InventoryVisible = false;
 				return InventoryGuiAction.Select;
 			}
-			ushort num = OrganizedContent[base.HighlightedSlot];
-			OrganizedContent[base.HighlightedSlot] = OrganizedContent[_draggedId];
-			OrganizedContent[_draggedId] = num;
+			ushort num = this.OrganizedContent[base.HighlightedSlot];
+			this.OrganizedContent[base.HighlightedSlot] = this.OrganizedContent[this._draggedId];
+			this.OrganizedContent[this._draggedId] = num;
 		}
-		if (_dragCursorIcon.enabled)
+		if (this._dragCursorIcon.enabled)
 		{
-			_dragCursorIcon.transform.position = Input.mousePosition;
-			_cursorDropIcon.enabled = !InRingRange(out var _) && AllowDropping;
+			this._dragCursorIcon.transform.position = Input.mousePosition;
+			this._cursorDropIcon.enabled = !base.InRingRange(out var _) && RadialInventory.AllowDropping;
 		}
-		else if (_draggedId >= 0 && _originalDragPosition != Vector2.zero && Vector2.Distance(_originalDragPosition, Input.mousePosition) > 5f && OrganizedContent[_draggedId] > 0)
+		else if (this._draggedId >= 0 && this._originalDragPosition != Vector2.zero && Vector2.Distance(this._originalDragPosition, Input.mousePosition) > 5f && this.OrganizedContent[this._draggedId] > 0)
 		{
-			DragWatch.Restart();
-			_dragCursorIcon.enabled = true;
-			_cursorDropIcon.enabled = false;
+			RadialInventory.DragWatch.Restart();
+			this._dragCursorIcon.enabled = true;
+			this._cursorDropIcon.enabled = false;
 		}
-		if (RightClickToDrop.Value && Input.GetKeyDown(KeyCode.Mouse1))
+		if (RadialInventory.RightClickToDrop.Value && Input.GetKeyDown(KeyCode.Mouse1))
 		{
 			return InventoryGuiAction.Drop;
 		}
@@ -188,54 +188,54 @@ public class RadialInventory : RadialMenuBase, IInventoryGuiDisplayType
 		{
 			return;
 		}
-		if (_visibleDescriptionSerial != _highlightedSerial || !inv.UserInventory.Items.TryGetValue(_highlightedSerial, out var value))
+		if (this._visibleDescriptionSerial != this._highlightedSerial || !inv.UserInventory.Items.TryGetValue(this._highlightedSerial, out var value))
 		{
-			if (_descriptionGroup.alpha > 0f)
+			if (this._descriptionGroup.alpha > 0f)
 			{
-				_descriptionGroup.alpha -= Time.deltaTime * 15f;
+				this._descriptionGroup.alpha -= Time.deltaTime * 15f;
 			}
 			else
 			{
-				_visibleDescriptionSerial = _highlightedSerial;
+				this._visibleDescriptionSerial = this._highlightedSerial;
 			}
 			return;
 		}
-		RadialDescriptionBase[] descriptionTypes = _descriptionTypes;
+		RadialDescriptionBase[] descriptionTypes = this._descriptionTypes;
 		foreach (RadialDescriptionBase radialDescriptionBase in descriptionTypes)
 		{
 			bool flag = radialDescriptionBase.DescriptionType == value.DescriptionType;
 			radialDescriptionBase.gameObject.SetActive(flag);
 			if (flag)
 			{
-				radialDescriptionBase.UpdateInfo(value, _circleColor.Color);
+				radialDescriptionBase.UpdateInfo(value, this._circleColor.Color);
 			}
 		}
-		if (_descriptionGroup.alpha < 1f)
+		if (this._descriptionGroup.alpha < 1f)
 		{
-			_descriptionGroup.alpha += Time.deltaTime * 15f;
+			this._descriptionGroup.alpha += Time.deltaTime * 15f;
 		}
 	}
 
 	public void ItemsModified(Inventory targetInventory)
 	{
-		for (int i = 0; i < OrganizedContent.Length; i++)
+		for (int i = 0; i < this.OrganizedContent.Length; i++)
 		{
-			if (OrganizedContent[i] > 0 && !targetInventory.UserInventory.Items.ContainsKey(OrganizedContent[i]))
+			if (this.OrganizedContent[i] > 0 && !targetInventory.UserInventory.Items.ContainsKey(this.OrganizedContent[i]))
 			{
-				OrganizedContent[i] = 0;
+				this.OrganizedContent[i] = 0;
 			}
 		}
 		foreach (KeyValuePair<ushort, ItemBase> item in targetInventory.UserInventory.Items)
 		{
-			if (OrganizedContent.Contains(item.Key))
+			if (this.OrganizedContent.Contains(item.Key))
 			{
 				continue;
 			}
-			for (int j = 0; j < OrganizedContent.Length; j++)
+			for (int j = 0; j < this.OrganizedContent.Length; j++)
 			{
-				if (OrganizedContent[j] == 0)
+				if (this.OrganizedContent[j] == 0)
 				{
-					OrganizedContent[j] = item.Key;
+					this.OrganizedContent[j] = item.Key;
 					break;
 				}
 			}
@@ -246,12 +246,12 @@ public class RadialInventory : RadialMenuBase, IInventoryGuiDisplayType
 	{
 		PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
 		bool flag = false;
-		if (_prevRole != currentRole.RoleTypeId)
+		if (this._prevRole != currentRole.RoleTypeId)
 		{
 			flag = true;
-			_prevRole = currentRole.RoleTypeId;
+			this._prevRole = currentRole.RoleTypeId;
 		}
-		foreach (KeyValuePair<ItemType, AmmoElement> item in _organizedAmmo)
+		foreach (KeyValuePair<ItemType, AmmoElement> item in this._organizedAmmo)
 		{
 			if (flag)
 			{
@@ -264,18 +264,18 @@ public class RadialInventory : RadialMenuBase, IInventoryGuiDisplayType
 		}
 		if (flag)
 		{
-			_organizedAmmo.Clear();
+			this._organizedAmmo.Clear();
 		}
 		Color roleColor = currentRole.RoleColor;
 		foreach (KeyValuePair<ItemType, ushort> item2 in hub.inventory.UserInventory.ReserveAmmo)
 		{
-			if (!_organizedAmmo.TryGetValue(item2.Key, out var value))
+			if (!this._organizedAmmo.TryGetValue(item2.Key, out var value))
 			{
-				value = UnityEngine.Object.Instantiate(_ammoElementTemplate);
-				value.transform.SetParent(_ammoElementTemplate.transform.parent);
+				value = UnityEngine.Object.Instantiate(this._ammoElementTemplate);
+				value.transform.SetParent(this._ammoElementTemplate.transform.parent);
 				value.transform.localScale = Vector3.one;
 				value.Setup(item2.Key, roleColor);
-				_organizedAmmo[item2.Key] = value;
+				this._organizedAmmo[item2.Key] = value;
 			}
 			value.UpdateAmount(item2.Value);
 		}
@@ -283,32 +283,32 @@ public class RadialInventory : RadialMenuBase, IInventoryGuiDisplayType
 
 	private void RefreshItemColors(Inventory inv, bool invNull)
 	{
-		_highlightedSerial = 0;
-		if (_slots == null)
+		this._highlightedSerial = 0;
+		if (this._slots == null)
 		{
 			return;
 		}
-		for (int i = 0; i < _slots.Length; i++)
+		for (int i = 0; i < this._slots.Length; i++)
 		{
-			bool flag = (_dragCursorIcon.enabled ? _draggedId : base.HighlightedSlot) == i;
+			bool flag = (this._dragCursorIcon.enabled ? this._draggedId : base.HighlightedSlot) == i;
 			Color b;
-			if (OrganizedContent[i] > 0 && !invNull && inv.UserInventory.Items.TryGetValue(OrganizedContent[i], out var value))
+			if (this.OrganizedContent[i] > 0 && !invNull && inv.UserInventory.Items.TryGetValue(this.OrganizedContent[i], out var value))
 			{
-				bool flag2 = OrganizedContent[i] == inv.CurItem.SerialNumber;
-				Color color = ((value is IWearableItem { IsWorn: not false }) ? _wornColor.Color : (value.AllowEquip ? Color.clear : _blockedColor.Color));
-				b = ((flag2 || flag) ? Color.Lerp(_heldColor.Color, _highlightColor.Color, (!flag) ? 0f : (flag2 ? 0.5f : 1f)) : color);
-				_slots[i].UpdateVisuals(value);
+				bool flag2 = this.OrganizedContent[i] == inv.CurItem.SerialNumber;
+				Color color = ((value is IWearableItem { IsWorn: not false }) ? this._wornColor.Color : (value.AllowEquip ? Color.clear : this._blockedColor.Color));
+				b = ((flag2 || flag) ? Color.Lerp(this._heldColor.Color, this._highlightColor.Color, (!flag) ? 0f : (flag2 ? 0.5f : 1f)) : color);
+				this._slots[i].UpdateVisuals(value);
 				if (flag)
 				{
-					_highlightedSerial = OrganizedContent[i];
+					this._highlightedSerial = this.OrganizedContent[i];
 				}
 			}
 			else
 			{
-				if (invNull && flag && OrganizedContent[i] > 0)
+				if (invNull && flag && this.OrganizedContent[i] > 0)
 				{
-					b = _highlightColor.Color;
-					_highlightedSerial = OrganizedContent[i];
+					b = this._highlightColor.Color;
+					this._highlightedSerial = this.OrganizedContent[i];
 				}
 				else
 				{
@@ -316,10 +316,10 @@ public class RadialInventory : RadialMenuBase, IInventoryGuiDisplayType
 				}
 				if (!invNull)
 				{
-					_slots[i].UpdateVisuals(null);
+					this._slots[i].UpdateVisuals(null);
 				}
 			}
-			Image highlightSafe = GetHighlightSafe(i);
+			Image highlightSafe = base.GetHighlightSafe(i);
 			highlightSafe.color = Color.Lerp(highlightSafe.color, b, 15f * Time.deltaTime);
 		}
 	}

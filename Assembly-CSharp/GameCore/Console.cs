@@ -40,9 +40,9 @@ public class Console : SimpleToggleableMenu
 	{
 		base.Awake();
 		UnityEngine.Object.DontDestroyOnLoad(base.gameObject);
-		if (singleton == null)
+		if (Console.singleton == null)
 		{
-			singleton = this;
+			Console.singleton = this;
 		}
 		else
 		{
@@ -53,24 +53,24 @@ public class Console : SimpleToggleableMenu
 	private void Start()
 	{
 		SceneManager.sceneLoaded += OnSceneLoaded;
-		AddLog("Hi there! Initializing console...", new Color32(0, byte.MaxValue, 0, byte.MaxValue));
-		AddLog("Done! Type 'help' to print the list of available commands.", new Color32(0, byte.MaxValue, 0, byte.MaxValue));
+		Console.AddLog("Hi there! Initializing console...", new Color32(0, byte.MaxValue, 0, byte.MaxValue));
+		Console.AddLog("Done! Type 'help' to print the list of available commands.", new Color32(0, byte.MaxValue, 0, byte.MaxValue));
 		CentralAuthManager.InitAuth();
 		if (StartupArgs.Args.Any((string arg) => string.Equals(arg, "-tdm", StringComparison.OrdinalIgnoreCase)))
 		{
-			TranslationDebugMode = true;
-			AddLog("Translation debug mode has been enabled (startup argument).", new Color32(0, byte.MaxValue, 0, byte.MaxValue));
+			Console.TranslationDebugMode = true;
+			Console.AddLog("Translation debug mode has been enabled (startup argument).", new Color32(0, byte.MaxValue, 0, byte.MaxValue));
 		}
 		else
 		{
-			TranslationDebugMode = false;
+			Console.TranslationDebugMode = false;
 		}
 	}
 
 	private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
 	{
-		AddLog("Scene Manager: Loaded scene '" + scene.name + "' [" + scene.path + "]", new Color32(0, byte.MaxValue, 0, byte.MaxValue));
-		RefreshConsoleScreen();
+		Console.AddLog("Scene Manager: Loaded scene '" + scene.name + "' [" + scene.path + "]", new Color32(0, byte.MaxValue, 0, byte.MaxValue));
+		this.RefreshConsoleScreen();
 	}
 
 	private void Update()
@@ -93,7 +93,7 @@ public class Console : SimpleToggleableMenu
 	{
 		if (ConsoleDebugMode.CheckImportance(debugKey, importance, out var color))
 		{
-			AddLog("[DEBUG_" + debugKey + "] " + message, color, nospace);
+			Console.AddLog("[DEBUG_" + debugKey + "] " + message, color, nospace);
 		}
 	}
 
@@ -132,7 +132,7 @@ public class Console : SimpleToggleableMenu
 		{
 			if (!NetworkClient.active && !NetworkServer.active)
 			{
-				AddLog("You must be connected to a server to use this command.", Color.red);
+				Console.AddLog("You must be connected to a server to use this command.", Color.red);
 				return "You must be connected to a server to use remote admin commands!";
 			}
 			string text = cmd;
@@ -179,17 +179,17 @@ public class Console : SimpleToggleableMenu
 		string[] array = cmd.Trim().Split(QueryProcessor.SpaceArray, 512, StringSplitOptions.RemoveEmptyEntries);
 		cmd = array[0];
 		ICommand command;
-		bool flag2 = ConsoleCommandHandler.TryGetCommand(cmd, out command);
+		bool flag2 = this.ConsoleCommandHandler.TryGetCommand(cmd, out command);
 		ArraySegment<string> arguments = array.Segment(1);
-		CommandExecutingEventArgs commandExecutingEventArgs = new CommandExecutingEventArgs(sender, CommandType.Console, flag2, command, arguments);
-		ServerEvents.OnCommandExecuting(commandExecutingEventArgs);
-		if (!commandExecutingEventArgs.IsAllowed)
+		CommandExecutingEventArgs e = new CommandExecutingEventArgs(sender, CommandType.Console, flag2, command, arguments);
+		ServerEvents.OnCommandExecuting(e);
+		if (!e.IsAllowed)
 		{
 			return null;
 		}
-		arguments = commandExecutingEventArgs.Arguments;
-		sender = commandExecutingEventArgs.Sender;
-		command = commandExecutingEventArgs.Command;
+		arguments = e.Arguments;
+		sender = e.Sender;
+		command = e.Command;
 		if (!flag2)
 		{
 			string text6 = "Command " + cmd + " does not exist!";
@@ -200,10 +200,10 @@ public class Console : SimpleToggleableMenu
 		{
 			bool successful = command.Execute(array.Segment(1), sender, out var response);
 			response = Misc.CloseAllRichTextTags(response);
-			CommandExecutedEventArgs commandExecutedEventArgs = new CommandExecutedEventArgs(sender, CommandType.Console, command, arguments, successful, response);
-			ServerEvents.OnCommandExecuted(commandExecutedEventArgs);
-			response = commandExecutedEventArgs.Response;
-			successful = commandExecutedEventArgs.ExecutedSuccessfully;
+			CommandExecutedEventArgs e2 = new CommandExecutedEventArgs(sender, CommandType.Console, command, arguments, successful, response);
+			ServerEvents.OnCommandExecuted(e2);
+			response = e2.Response;
+			successful = e2.ExecutedSuccessfully;
 			if (string.IsNullOrWhiteSpace(response))
 			{
 				return null;
@@ -214,9 +214,9 @@ public class Console : SimpleToggleableMenu
 		catch (Exception ex)
 		{
 			string response2 = "Command execution failed! Error: " + Misc.RemoveStacktraceZeroes(ex.ToString());
-			CommandExecutedEventArgs commandExecutedEventArgs2 = new CommandExecutedEventArgs(sender, CommandType.Console, command, arguments, successful: false, response2);
-			ServerEvents.OnCommandExecuted(commandExecutedEventArgs2);
-			response2 = commandExecutedEventArgs2.Response;
+			CommandExecutedEventArgs e3 = new CommandExecutedEventArgs(sender, CommandType.Console, command, arguments, successful: false, response2);
+			ServerEvents.OnCommandExecuted(e3);
+			response2 = e3.Response;
 			sender?.Print(response2, ConsoleColor.Red);
 			return response2;
 		}

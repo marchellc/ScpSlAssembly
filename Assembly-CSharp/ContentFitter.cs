@@ -11,27 +11,27 @@ public class ContentFitter : MonoBehaviour
 
 	private void LateUpdate()
 	{
-		if (continuousUpdate)
+		if (this.continuousUpdate)
 		{
-			continuousUpdate = false;
-			Fit();
+			this.continuousUpdate = false;
+			this.Fit();
 		}
 	}
 
 	public void Fit()
 	{
-		transforms.Clear();
-		RectTransform[] componentsInChildren = GetComponentsInChildren<RectTransform>();
+		this.transforms.Clear();
+		RectTransform[] componentsInChildren = base.GetComponentsInChildren<RectTransform>();
 		foreach (RectTransform rectTransform in componentsInChildren)
 		{
-			if (rectTransform != GetComponent<RectTransform>())
+			if (rectTransform != base.GetComponent<RectTransform>())
 			{
-				transforms.Add(rectTransform);
+				this.transforms.Add(rectTransform);
 			}
 		}
 		Vector2 vector = new Vector2(1E+09f, -1E+09f);
 		Vector2 vector2 = new Vector2(-1E+09f, 1E+09f);
-		foreach (RectTransform transform in transforms)
+		foreach (RectTransform transform in this.transforms)
 		{
 			Vector2 vector3 = new Vector2(transform.localPosition.x - transform.sizeDelta.x * transform.pivot.x, transform.localPosition.y + transform.sizeDelta.y * transform.pivot.y);
 			Vector2 vector4 = new Vector2(transform.localPosition.x + transform.sizeDelta.x * (1f - transform.pivot.x), transform.localPosition.y - transform.sizeDelta.y * (1f - transform.pivot.y));
@@ -53,7 +53,7 @@ public class ContentFitter : MonoBehaviour
 			}
 		}
 		Vector2 sizeDelta = new Vector2(Mathf.Abs(vector.x - vector2.x), Mathf.Abs(vector.y - vector2.y));
-		targetTransform.localPosition = vector;
-		targetTransform.sizeDelta = sizeDelta;
+		this.targetTransform.localPosition = vector;
+		this.targetTransform.sizeDelta = sizeDelta;
 	}
 }

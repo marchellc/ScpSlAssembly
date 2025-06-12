@@ -14,12 +14,12 @@ public class CustomSerialNumberDetail : SerialNumberDetail, ICustomizableDetail
 
 	public void ParseArguments(ArraySegment<string> args)
 	{
-		_customVal = args.At(0);
+		CustomSerialNumberDetail._customVal = args.At(0);
 	}
 
 	public void SetArguments(ArraySegment<object> args)
 	{
-		_customVal = (string)args.At(0);
+		CustomSerialNumberDetail._customVal = (string)args.At(0);
 	}
 
 	public override void WriteDefault(NetworkWriter writer)
@@ -29,12 +29,12 @@ public class CustomSerialNumberDetail : SerialNumberDetail, ICustomizableDetail
 
 	public override void WriteNewItem(KeycardItem item, NetworkWriter writer)
 	{
-		writer.WriteString(_customVal);
+		writer.WriteString(CustomSerialNumberDetail._customVal);
 	}
 
 	public override void WriteNewPickup(KeycardPickup pickup, NetworkWriter writer)
 	{
-		writer.WriteString(_customVal);
+		writer.WriteString(CustomSerialNumberDetail._customVal);
 	}
 
 	protected override void ApplyDetail(KeycardGfx target, NetworkReader reader, KeycardItem template)
@@ -44,7 +44,7 @@ public class CustomSerialNumberDetail : SerialNumberDetail, ICustomizableDetail
 		text = text.PadLeft(serialNumberDigits.Length, '0');
 		for (int i = 0; i < serialNumberDigits.Length; i++)
 		{
-			serialNumberDigits[i].sharedMaterial = GetDigitMaterial(text[i] - 48);
+			serialNumberDigits[i].sharedMaterial = base.GetDigitMaterial(text[i] - 48);
 		}
 	}
 }

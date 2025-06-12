@@ -71,15 +71,15 @@ public class Scp018Projectile : TimeGrenade
 	[SerializeField]
 	private ParticleSystem _trail;
 
-	public float CurrentDamage => _damageOverVelocity.Evaluate(_lastVelocity);
+	public float CurrentDamage => this._damageOverVelocity.Evaluate(this._lastVelocity);
 
 	private bool IgnoreFriendlyFire
 	{
 		get
 		{
-			if (PreviousOwner.IsSet)
+			if (base.PreviousOwner.IsSet)
 			{
-				return NetworkTime.time > _activationTime + (double)_friendlyFireTime;
+				return NetworkTime.time > this._activationTime + (double)this._friendlyFireTime;
 			}
 			return true;
 		}
@@ -89,9 +89,9 @@ public class Scp018Projectile : TimeGrenade
 	{
 		get
 		{
-			if (_bypassBounceSoundCooldown)
+			if (this._bypassBounceSoundCooldown)
 			{
-				_bypassBounceSoundCooldown = false;
+				this._bypassBounceSoundCooldown = false;
 				return Time.deltaTime;
 			}
 			return base.MinSoundCooldown;
@@ -107,7 +107,7 @@ public class Scp018Projectile : TimeGrenade
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteFloat(velSqr);
-		SendRPCInternal("System.Void InventorySystem.Items.ThrowableProjectiles.Scp018Projectile::RpcPlayBounce(System.Single)", -734142472, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void InventorySystem.Items.ThrowableProjectiles.Scp018Projectile::RpcPlayBounce(System.Single)", -734142472, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -121,12 +121,12 @@ public class Scp018Projectile : TimeGrenade
 		if (NetworkServer.active)
 		{
 			float sqrMagnitude = collision.relativeVelocity.sqrMagnitude;
-			RpcPlayBounce(sqrMagnitude);
-			if (!(sqrMagnitude < _activationVelocitySqr))
+			this.RpcPlayBounce(sqrMagnitude);
+			if (!(sqrMagnitude < this._activationVelocitySqr))
 			{
-				SetupModule();
-				ServerActivate();
-				PickupSyncInfo info = Info;
+				this.SetupModule();
+				this.ServerActivate();
+				PickupSyncInfo info = base.Info;
 				info.Locked = true;
 				base.NetworkInfo = info;
 			}
@@ -136,7 +136,7 @@ public class Scp018Projectile : TimeGrenade
 	protected override void Start()
 	{
 		base.Start();
-		_tr = base.transform;
+		this._tr = base.transform;
 	}
 
 	protected override void Update()
@@ -146,34 +146,34 @@ public class Scp018Projectile : TimeGrenade
 		{
 			return;
 		}
-		Vector3 vector = position - _prevTrPos;
-		_tr.position = position;
-		_prevTrPos = position;
-		RecreatedVelocity = vector / Time.deltaTime;
+		Vector3 vector = position - this._prevTrPos;
+		this._tr.position = position;
+		this._prevTrPos = position;
+		this.RecreatedVelocity = vector / Time.deltaTime;
 		if (!NetworkServer.active)
 		{
 			return;
 		}
-		if (!_prevFlybyPos.HasValue)
+		if (!this._prevFlybyPos.HasValue)
 		{
-			_prevFlybyPos = new RelativePosition(position);
+			this._prevFlybyPos = new RelativePosition(position);
 			return;
 		}
-		DrawableLines.GenerateSphere(position, _flybyHitregRadius);
-		int num = Physics.OverlapCapsuleNonAlloc(_prevFlybyPos.Value.Position, position, _flybyHitregRadius, HitregDetections, FlybyHitregMask);
+		DrawableLines.GenerateSphere(position, this._flybyHitregRadius);
+		int num = Physics.OverlapCapsuleNonAlloc(this._prevFlybyPos.Value.Position, position, this._flybyHitregRadius, Scp018Projectile.HitregDetections, Scp018Projectile.FlybyHitregMask);
 		while (num-- > 0)
 		{
-			if (HitregDetections[num].TryGetComponent<HitboxIdentity>(out var component) && _damagedPlayersSinceLastBounce.Add(component.NetworkId))
+			if (Scp018Projectile.HitregDetections[num].TryGetComponent<HitboxIdentity>(out var component) && this._damagedPlayersSinceLastBounce.Add(component.NetworkId))
 			{
-				float num2 = CurrentDamage;
+				float num2 = this.CurrentDamage;
 				if (component.TargetHub.IsSCP())
 				{
-					num2 *= _scpDamageMultiplier;
+					num2 *= this._scpDamageMultiplier;
 				}
-				component.Damage(num2, new Scp018DamageHandler(this, num2, IgnoreFriendlyFire), position);
+				component.Damage(num2, new Scp018DamageHandler(this, num2, this.IgnoreFriendlyFire), position);
 			}
 		}
-		_prevFlybyPos = new RelativePosition(position);
+		this._prevFlybyPos = new RelativePosition(position);
 	}
 
 	public override bool ServerFuseEnd()
@@ -182,9 +182,9 @@ public class Scp018Projectile : TimeGrenade
 		{
 			return false;
 		}
-		ExplosionUtils.ServerExplode(_tr.position, PreviousOwner, ExplosionType.SCP018);
-		DestroySelf();
-		ServerEvents.OnProjectileExploded(new ProjectileExplodedEventArgs(this, PreviousOwner.Hub, base.transform.position));
+		ExplosionUtils.ServerExplode(this._tr.position, base.PreviousOwner, ExplosionType.SCP018);
+		base.DestroySelf();
+		ServerEvents.OnProjectileExploded(new ProjectileExplodedEventArgs(this, base.PreviousOwner.Hub, base.transform.position));
 		return true;
 	}
 
@@ -193,50 +193,50 @@ public class Scp018Projectile : TimeGrenade
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteArraySegmentAndSize(arrSeg);
-		SendRPCInternal("System.Void InventorySystem.Items.ThrowableProjectiles.Scp018Projectile::SendPhysicsModuleRpc(System.ArraySegment`1<System.Byte>)", 1041392993, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void InventorySystem.Items.ThrowableProjectiles.Scp018Projectile::SendPhysicsModuleRpc(System.ArraySegment`1<System.Byte>)", 1041392993, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	internal void RegisterBounce(float velocity, Vector3 point)
 	{
-		_lastVelocity = velocity;
-		_bypassBounceSoundCooldown = true;
+		this._lastVelocity = velocity;
+		this._bypassBounceSoundCooldown = true;
 		float b = velocity * velocity;
-		MakeCollisionSound(Mathf.Max(10f, b));
+		base.MakeCollisionSound(Mathf.Max(10f, b));
 		if (!NetworkServer.active)
 		{
 			return;
 		}
-		int num = Physics.OverlapSphereNonAlloc(point, _bounceHitregRadius, HitregDetections, BounceHitregMask);
+		int num = Physics.OverlapSphereNonAlloc(point, this._bounceHitregRadius, Scp018Projectile.HitregDetections, Scp018Projectile.BounceHitregMask);
 		while (num-- > 0)
 		{
-			Collider collider = HitregDetections[num];
+			Collider collider = Scp018Projectile.HitregDetections[num];
 			InteractableCollider component2;
 			if (collider.TryGetComponent<BreakableWindow>(out var component))
 			{
-				component.Damage(CurrentDamage, new Scp018DamageHandler(this, CurrentDamage, IgnoreFriendlyFire), point);
+				component.Damage(this.CurrentDamage, new Scp018DamageHandler(this, this.CurrentDamage, this.IgnoreFriendlyFire), point);
 			}
 			else if (collider.TryGetComponent<InteractableCollider>(out component2) && component2.Target is IDamageableDoor damageableDoor)
 			{
-				damageableDoor.ServerDamage(CurrentDamage * _doorDamageMultiplier, DoorDamageType.Grenade, PreviousOwner);
+				damageableDoor.ServerDamage(this.CurrentDamage * this._doorDamageMultiplier, DoorDamageType.Grenade, base.PreviousOwner);
 			}
 		}
-		_damagedPlayersSinceLastBounce.Clear();
+		this._damagedPlayersSinceLastBounce.Clear();
 	}
 
 	private void SetupModule()
 	{
-		_activationTime = NetworkTime.time;
-		_damagedPlayersSinceLastBounce = new HashSet<uint>();
+		this._activationTime = NetworkTime.time;
+		this._damagedPlayersSinceLastBounce = new HashSet<uint>();
 		base.PhysicsModule.DestroyModule();
-		base.PhysicsModule = new Scp018Physics(this, _trail, _radius, _maximumVelocity, _onBounceVelocityAddition);
+		base.PhysicsModule = new Scp018Physics(this, this._trail, this._radius, this._maximumVelocity, this._onBounceVelocityAddition);
 	}
 
 	static Scp018Projectile()
 	{
-		BounceHitregMask = new CachedLayerMask("Door", "Glass");
-		FlybyHitregMask = new CachedLayerMask("Hitbox");
-		HitregDetections = new Collider[8];
+		Scp018Projectile.BounceHitregMask = new CachedLayerMask("Door", "Glass");
+		Scp018Projectile.FlybyHitregMask = new CachedLayerMask("Hitbox");
+		Scp018Projectile.HitregDetections = new Collider[8];
 		RemoteProcedureCalls.RegisterRpc(typeof(Scp018Projectile), "System.Void InventorySystem.Items.ThrowableProjectiles.Scp018Projectile::RpcPlayBounce(System.Single)", InvokeUserCode_RpcPlayBounce__Single);
 		RemoteProcedureCalls.RegisterRpc(typeof(Scp018Projectile), "System.Void InventorySystem.Items.ThrowableProjectiles.Scp018Projectile::SendPhysicsModuleRpc(System.ArraySegment`1<System.Byte>)", InvokeUserCode_SendPhysicsModuleRpc__ArraySegment_00601);
 	}
@@ -250,7 +250,7 @@ public class Scp018Projectile : TimeGrenade
 	{
 		if (!NetworkServer.active)
 		{
-			MakeCollisionSound(velSqr);
+			base.MakeCollisionSound(velSqr);
 		}
 	}
 
@@ -270,7 +270,7 @@ public class Scp018Projectile : TimeGrenade
 	{
 		if (arrSeg.Count == 19 && !(base.PhysicsModule is Scp018Physics))
 		{
-			SetupModule();
+			this.SetupModule();
 		}
 		base.UserCode_SendPhysicsModuleRpc__ArraySegment_00601(arrSeg);
 	}

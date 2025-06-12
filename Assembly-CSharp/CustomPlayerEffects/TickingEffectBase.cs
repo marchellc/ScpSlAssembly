@@ -14,17 +14,17 @@ public abstract class TickingEffectBase : StatusEffectBase
 	protected override void Enabled()
 	{
 		base.Enabled();
-		_timeTillTick = TimeBetweenTicks;
+		this._timeTillTick = this.TimeBetweenTicks;
 	}
 
 	protected override void OnEffectUpdate()
 	{
 		base.OnEffectUpdate();
-		_timeTillTick -= Time.deltaTime;
-		if (!(_timeTillTick > 0f))
+		this._timeTillTick -= Time.deltaTime;
+		if (!(this._timeTillTick > 0f))
 		{
-			_timeTillTick += TimeBetweenTicks;
-			OnTick();
+			this._timeTillTick += this.TimeBetweenTicks;
+			this.OnTick();
 		}
 	}
 }

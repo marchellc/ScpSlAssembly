@@ -29,9 +29,9 @@ public class VoiceChatRippleTrigger : RippleTriggerBase
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_cooldowns.Clear();
-		_prevLoudness.Clear();
-		_radioCooldown.Clear();
+		this._cooldowns.Clear();
+		this._prevLoudness.Clear();
+		this._radioCooldown.Clear();
 		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
 	}
 
@@ -48,16 +48,16 @@ public class VoiceChatRippleTrigger : RippleTriggerBase
 			return;
 		}
 		PlayerRolesUtils.ForEachRole<HumanRole>(UpdateHuman);
-		if (!_radioCooldown.IsReady)
+		if (!this._radioCooldown.IsReady)
 		{
 			return;
 		}
-		_radioCooldown.Trigger(_radioCooldownDuration);
+		this._radioCooldown.Trigger(this._radioCooldownDuration);
 		foreach (SpatializedRadioPlaybackBase allInstance in SpatializedRadioPlaybackBase.AllInstances)
 		{
 			if (!allInstance.NoiseSource.mute)
 			{
-				PlayInRange(allInstance.LastPosition, allInstance.Source.maxDistance, Color.red);
+				base.PlayInRange(allInstance.LastPosition, allInstance.Source.maxDistance, Color.red);
 			}
 		}
 	}
@@ -66,35 +66,35 @@ public class VoiceChatRippleTrigger : RippleTriggerBase
 	{
 		if (newRole is HumanRole key)
 		{
-			_prevLoudness[key] = 0f;
+			this._prevLoudness[key] = 0f;
 		}
 	}
 
 	private void UpdateHuman(HumanRole human)
 	{
 		HumanVoiceModule humanVoiceModule = human.VoiceModule as HumanVoiceModule;
-		float a = (_prevLoudness.TryGetValue(human, out var value) ? value : 0f);
+		float a = (this._prevLoudness.TryGetValue(human, out var value) ? value : 0f);
 		a = Mathf.Max(a, humanVoiceModule.FirstProxPlayback.Loudness);
-		if (a > _minLoudness)
+		if (a > this._minLoudness)
 		{
-			AbilityCooldown orAdd = _cooldowns.GetOrAdd(human, () => new AbilityCooldown());
+			AbilityCooldown orAdd = this._cooldowns.GetOrAdd(human, () => new AbilityCooldown());
 			float maxDistance = humanVoiceModule.FirstProxPlayback.Source.maxDistance;
 			Vector3 position = human.FpcModule.Position;
 			if (orAdd.IsReady && (base.CastRole.FpcModule.Position - position).sqrMagnitude < maxDistance * maxDistance)
 			{
-				if (!human.TryGetOwner(out var hub) || CheckVisibility(hub))
+				if (!human.TryGetOwner(out var hub) || base.CheckVisibility(hub))
 				{
 					return;
 				}
 				base.Player.Play(human);
 				if (human.TryGetOwner(out var hub2))
 				{
-					OnPlayedRipple(hub2);
+					base.OnPlayedRipple(hub2);
 				}
-				orAdd.Trigger(_cooldownPerLoudness.Evaluate(a));
+				orAdd.Trigger(this._cooldownPerLoudness.Evaluate(a));
 			}
 		}
-		a -= Time.deltaTime * _loudnessDecayRate;
-		_prevLoudness[human] = Mathf.Max(0f, a);
+		a -= Time.deltaTime * this._loudnessDecayRate;
+		this._prevLoudness[human] = Mathf.Max(0f, a);
 	}
 }

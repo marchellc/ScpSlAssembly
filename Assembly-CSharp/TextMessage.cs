@@ -14,7 +14,7 @@ public class TextMessage : MonoBehaviour
 
 	private Vector3 GetPosition()
 	{
-		return new Vector3(xOffset, spacing * position, 0f);
+		return new Vector3(this.xOffset, this.spacing * this.position, 0f);
 	}
 
 	private void Start()
@@ -23,6 +23,6 @@ public class TextMessage : MonoBehaviour
 
 	private void Update()
 	{
-		remainingLife -= Time.deltaTime;
+		this.remainingLife -= Time.deltaTime;
 	}
 }

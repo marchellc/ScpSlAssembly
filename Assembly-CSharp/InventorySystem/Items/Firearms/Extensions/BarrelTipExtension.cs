@@ -37,20 +37,20 @@ public class BarrelTipExtension : MixedExtension
 
 	private bool _transformCacheSet;
 
-	public Vector3 WorldspaceDirection => CachedTr.TransformDirection(_localDirection);
+	public Vector3 WorldspaceDirection => this.CachedTr.TransformDirection(this._localDirection);
 
-	public Vector3 WorldspacePosition => CachedTr.TransformPoint(_curTipPosition);
+	public Vector3 WorldspacePosition => this.CachedTr.TransformPoint(this._curTipPosition);
 
 	private Transform CachedTr
 	{
 		get
 		{
-			if (!_transformCacheSet)
+			if (!this._transformCacheSet)
 			{
-				_cachedTr = base.transform;
-				_transformCacheSet = true;
+				this._cachedTr = base.transform;
+				this._transformCacheSet = true;
 			}
-			return _cachedTr;
+			return this._cachedTr;
 		}
 	}
 
@@ -67,57 +67,57 @@ public class BarrelTipExtension : MixedExtension
 	public override void SetupWorldmodel(FirearmWorldmodel worldmodel)
 	{
 		base.SetupWorldmodel(worldmodel);
-		SetAttachments(worldmodel.AttachmentCode);
+		this.SetAttachments(worldmodel.AttachmentCode);
 	}
 
 	public override void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
 		base.InitViewmodel(viewmodel);
 		viewmodel.OnAttachmentsUpdated += UpdateViewmodel;
-		UpdateViewmodel();
+		this.UpdateViewmodel();
 	}
 
 	private void UpdateViewmodel()
 	{
-		SetAttachments(base.Viewmodel.ParentFirearm.GetCurrentAttachmentsCode());
+		this.SetAttachments(base.Viewmodel.ParentFirearm.GetCurrentAttachmentsCode());
 	}
 
 	private void ValidateCache()
 	{
-		if (_cachedFilters != null)
+		if (this._cachedFilters != null)
 		{
 			return;
 		}
-		_cachedFilters = new uint[_attachmentOffsets.Length];
-		for (int i = 0; i < _cachedFilters.Length; i++)
+		this._cachedFilters = new uint[this._attachmentOffsets.Length];
+		for (int i = 0; i < this._cachedFilters.Length; i++)
 		{
-			if (!_attachmentOffsets[i].Attachment.TryGetFilter(base.Identifier.TypeId, out var filter))
+			if (!this._attachmentOffsets[i].Attachment.TryGetFilter(base.Identifier.TypeId, out var filter))
 			{
 				throw new InvalidOperationException($"Cannot generate filter for barrel tip {i}.");
 			}
-			_cachedFilters[i] = filter;
+			this._cachedFilters[i] = filter;
 		}
 	}
 
 	private void SetAttachments(uint attCode)
 	{
-		ValidateCache();
-		_curTipPosition = _baselineOffset;
-		for (int i = 0; i < _cachedFilters.Length; i++)
+		this.ValidateCache();
+		this._curTipPosition = this._baselineOffset;
+		for (int i = 0; i < this._cachedFilters.Length; i++)
 		{
-			if ((_cachedFilters[i] & attCode) != 0)
+			if ((this._cachedFilters[i] & attCode) != 0)
 			{
-				_curTipPosition += _attachmentOffsets[i].Position;
+				this._curTipPosition += this._attachmentOffsets[i].Position;
 			}
 		}
-		_curTipPosition *= 0.001f;
-		int num = _followers.Length;
+		this._curTipPosition *= 0.001f;
+		int num = this._followers.Length;
 		if (num > 0)
 		{
-			Vector3 worldspacePosition = WorldspacePosition;
+			Vector3 worldspacePosition = this.WorldspacePosition;
 			for (int j = 0; j < num; j++)
 			{
-				_followers[j].position = worldspacePosition;
+				this._followers[j].position = worldspacePosition;
 			}
 		}
 	}

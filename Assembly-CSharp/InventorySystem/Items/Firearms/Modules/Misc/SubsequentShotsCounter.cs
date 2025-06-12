@@ -26,11 +26,11 @@ public class SubsequentShotsCounter
 	{
 		get
 		{
-			return Mathf.CeilToInt(_counter);
+			return Mathf.CeilToInt(this._counter);
 		}
 		private set
 		{
-			_counter = value;
+			this._counter = value;
 		}
 	}
 
@@ -40,15 +40,15 @@ public class SubsequentShotsCounter
 
 	private void OnShot(ShotEvent ev)
 	{
-		if (ev.ItemId.SerialNumber == _firearm.ItemSerial)
+		if (ev.ItemId.SerialNumber == this._firearm.ItemSerial)
 		{
-			SubsequentShots++;
+			this.SubsequentShots++;
 			IActionModule module;
-			float num = (_firearm.TryGetModule<IActionModule>(out module) ? (1f / module.DisplayCyclicRate) : 0f);
-			_remainingSustain = num * _sustainMultiplier + _sustainAddition;
-			if (_decayTime > 0f)
+			float num = (this._firearm.TryGetModule<IActionModule>(out module) ? (1f / module.DisplayCyclicRate) : 0f);
+			this._remainingSustain = num * this._sustainMultiplier + this._sustainAddition;
+			if (this._decayTime > 0f)
 			{
-				_decaySpeed = _counter / _decayTime;
+				this._decaySpeed = this._counter / this._decayTime;
 			}
 			this.OnShotRecorded?.Invoke();
 		}
@@ -56,49 +56,49 @@ public class SubsequentShotsCounter
 
 	public void Update()
 	{
-		if (_remainingSustain > 0f)
+		if (this._remainingSustain > 0f)
 		{
-			_remainingSustain -= Time.deltaTime;
+			this._remainingSustain -= Time.deltaTime;
 		}
 		else
 		{
-			if (SubsequentShots == 0)
+			if (this.SubsequentShots == 0)
 			{
 				return;
 			}
-			if (_decayTime > 0f)
+			if (this._decayTime > 0f)
 			{
-				_counter -= _decaySpeed * Time.deltaTime;
-				if (_counter > 0f)
+				this._counter -= this._decaySpeed * Time.deltaTime;
+				if (this._counter > 0f)
 				{
 					return;
 				}
 			}
-			_counter = 0f;
+			this._counter = 0f;
 			this.OnReset?.Invoke();
 		}
 	}
 
 	public void Destruct()
 	{
-		if (!_destructed)
+		if (!this._destructed)
 		{
-			_destructed = true;
+			this._destructed = true;
 			ShotEventManager.OnShot -= OnShot;
 		}
 	}
 
 	public SubsequentShotsCounter(Firearm firearm, float sustainCycleTimeMultiplier = 1f, float sustainAdditionSeconds = 0.1f, float decayTimeSeconds = 0.4f)
 	{
-		_firearm = firearm;
-		_sustainMultiplier = sustainCycleTimeMultiplier;
-		_sustainAddition = sustainAdditionSeconds;
-		_decayTime = decayTimeSeconds;
+		this._firearm = firearm;
+		this._sustainMultiplier = sustainCycleTimeMultiplier;
+		this._sustainAddition = sustainAdditionSeconds;
+		this._decayTime = decayTimeSeconds;
 		ShotEventManager.OnShot += OnShot;
 	}
 
 	~SubsequentShotsCounter()
 	{
-		Destruct();
+		this.Destruct();
 	}
 }

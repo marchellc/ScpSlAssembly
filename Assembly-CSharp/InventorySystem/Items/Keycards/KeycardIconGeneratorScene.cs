@@ -17,24 +17,24 @@ public class KeycardIconGeneratorScene : AutoIconGeneratorScene, IIdentifierProv
 
 	protected override void SetupScene(ItemBase item)
 	{
-		if (_prevActive != null)
+		if (this._prevActive != null)
 		{
-			_prevActive.SetActive(value: false);
+			this._prevActive.SetActive(value: false);
 		}
 		KeycardItem keycardItem = item as KeycardItem;
 		KeycardGfx keycardGfx = keycardItem.KeycardGfx;
-		if (!_prevInstances.TryGetValue(keycardGfx, out var value))
+		if (!this._prevInstances.TryGetValue(keycardGfx, out var value))
 		{
-			value = Object.Instantiate(keycardGfx, _gfxSpawnpoint);
+			value = Object.Instantiate(keycardGfx, this._gfxSpawnpoint);
 			value.SetAsIconSubject();
-			_prevInstances.Add(keycardGfx, value);
+			this._prevInstances.Add(keycardGfx, value);
 		}
 		else
 		{
 			value.gameObject.SetActive(value: true);
 		}
-		ItemId = keycardItem.ItemId;
-		if (ItemId.SerialNumber == 0)
+		this.ItemId = keycardItem.ItemId;
+		if (this.ItemId.SerialNumber == 0)
 		{
 			KeycardDetailSynchronizer.ApplyTemplateDetails(keycardItem, value);
 		}
@@ -42,6 +42,6 @@ public class KeycardIconGeneratorScene : AutoIconGeneratorScene, IIdentifierProv
 		{
 			KeycardDetailSynchronizer.TryReapplyDetails(value);
 		}
-		_prevActive = value.gameObject;
+		this._prevActive = value.gameObject;
 	}
 }

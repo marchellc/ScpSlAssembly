@@ -25,20 +25,20 @@ public class FeetStabilizerSubcontroller : SubcontrollerBehaviour
 
 		public void Init(Animator anim)
 		{
-			_footTr = anim.GetBoneTransform(_bone);
+			this._footTr = anim.GetBoneTransform(this._bone);
 		}
 
 		public void OnIK(AnimatedCharacterModel model, float weight)
 		{
 			Transform cachedTransform = model.CachedTransform;
-			if (_calibrate)
+			if (this._calibrate)
 			{
-				_modelspacePosition = cachedTransform.InverseTransformPoint(_footTr.position);
+				this._modelspacePosition = cachedTransform.InverseTransformPoint(this._footTr.position);
 				return;
 			}
-			Vector3 goalPosition = cachedTransform.TransformPoint(_modelspacePosition);
-			model.Animator.SetIKPosition(_goal, goalPosition);
-			model.Animator.SetIKPositionWeight(_goal, weight);
+			Vector3 goalPosition = cachedTransform.TransformPoint(this._modelspacePosition);
+			model.Animator.SetIKPosition(this._goal, goalPosition);
+			model.Animator.SetIKPositionWeight(this._goal, weight);
 		}
 	}
 
@@ -63,7 +63,7 @@ public class FeetStabilizerSubcontroller : SubcontrollerBehaviour
 	public override void Init(AnimatedCharacterModel model, int index)
 	{
 		base.Init(model, index);
-		if (!model.TryGetSubcontroller<IRotationRetainer>(out _rotationRetainer))
+		if (!model.TryGetSubcontroller<IRotationRetainer>(out this._rotationRetainer))
 		{
 			throw new InvalidOperationException("FeetStabilizerSubcontroller requires IRotationRetainer to operate!");
 		}
@@ -71,7 +71,7 @@ public class FeetStabilizerSubcontroller : SubcontrollerBehaviour
 		{
 			base.Culler.OnAnimatorUpdated += UpdateWeight;
 		}
-		Foot[] feet = _feet;
+		Foot[] feet = this._feet;
 		for (int i = 0; i < feet.Length; i++)
 		{
 			feet[i].Init(model.Animator);
@@ -80,13 +80,13 @@ public class FeetStabilizerSubcontroller : SubcontrollerBehaviour
 
 	private void OnAnimatorIK(int layerIndex)
 	{
-		if (layerIndex == base.Model.LayerManager.GetLayerIndex(_ikLayer) && !base.Culled && (!base.HasOwner || !(base.OwnerHub.transform.localScale != Vector3.one)))
+		if (layerIndex == base.Model.LayerManager.GetLayerIndex(this._ikLayer) && !base.Culled && (!base.HasOwner || !(base.OwnerHub.transform.localScale != Vector3.one)))
 		{
-			_lastRetentionWeight = _rotationRetainer.RetentionWeight;
-			Foot[] feet = _feet;
+			this._lastRetentionWeight = this._rotationRetainer.RetentionWeight;
+			Foot[] feet = this._feet;
 			for (int i = 0; i < feet.Length; i++)
 			{
-				feet[i].OnIK(base.Model, Mathf.Min(_lastRetentionWeight, _maxWeight));
+				feet[i].OnIK(base.Model, Mathf.Min(this._lastRetentionWeight, this._maxWeight));
 			}
 		}
 	}
@@ -94,17 +94,17 @@ public class FeetStabilizerSubcontroller : SubcontrollerBehaviour
 	private void UpdateWeight()
 	{
 		float lastMovedDeltaT = base.Model.LastMovedDeltaT;
-		if (_rotationRetainer.IsTurning)
+		if (this._rotationRetainer.IsTurning)
 		{
-			_maxWeight -= _maxWeightTurnDecreaseSpeed * lastMovedDeltaT;
-			if (_maxWeight < 0f)
+			this._maxWeight -= this._maxWeightTurnDecreaseSpeed * lastMovedDeltaT;
+			if (this._maxWeight < 0f)
 			{
-				_maxWeight = 0f;
+				this._maxWeight = 0f;
 			}
 		}
 		else
 		{
-			_maxWeight = Mathf.MoveTowards(_maxWeight, _lastRetentionWeight, lastMovedDeltaT * _maxWeightAdjustSpeed);
+			this._maxWeight = Mathf.MoveTowards(this._maxWeight, this._lastRetentionWeight, lastMovedDeltaT * this._maxWeightAdjustSpeed);
 		}
 	}
 
@@ -112,7 +112,7 @@ public class FeetStabilizerSubcontroller : SubcontrollerBehaviour
 	{
 		if (!base.HasCuller)
 		{
-			UpdateWeight();
+			this.UpdateWeight();
 		}
 	}
 }

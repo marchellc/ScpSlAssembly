@@ -24,12 +24,12 @@ public class JailbirdPickup : CollisionDetectionPickup, IUpgradeTrigger
 	{
 		get
 		{
-			return Wear;
+			return this.Wear;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Wear, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.Wear, 2uL, null);
 		}
 	}
 
@@ -39,38 +39,38 @@ public class JailbirdPickup : CollisionDetectionPickup, IUpgradeTrigger
 		{
 			if (setting == Scp914KnobSetting.Coarse)
 			{
-				TotalCharges = JailbirdDeteriorationTracker.Scp914CoarseCharges;
-				TotalMelee = JailbirdDeteriorationTracker.Scp914CoarseDamage;
-				NetworkWear = JailbirdWearState.AlmostBroken;
+				this.TotalCharges = JailbirdDeteriorationTracker.Scp914CoarseCharges;
+				this.TotalMelee = JailbirdDeteriorationTracker.Scp914CoarseDamage;
+				this.NetworkWear = JailbirdWearState.AlmostBroken;
 			}
 			else
 			{
-				TotalCharges = 0;
-				TotalMelee = 0f;
-				NetworkWear = JailbirdWearState.Healthy;
+				this.TotalCharges = 0;
+				this.TotalMelee = 0f;
+				this.NetworkWear = JailbirdWearState.Healthy;
 			}
 		}
 	}
 
 	private void Update()
 	{
-		if (_prevWear != Wear)
+		if (this._prevWear != this.Wear)
 		{
-			UpdateWearFromSyncvar();
+			this.UpdateWearFromSyncvar();
 		}
 	}
 
 	private void UpdateWearFromSyncvar()
 	{
-		_prevWear = Wear;
-		JailbirdDeteriorationTracker.ReceivedStates[Info.Serial] = Wear;
+		this._prevWear = this.Wear;
+		JailbirdDeteriorationTracker.ReceivedStates[base.Info.Serial] = this.Wear;
 	}
 
 	protected override void Start()
 	{
 		base.Start();
-		UpdateWearFromSyncvar();
-		_materialController.SetSerial(Info.Serial);
+		this.UpdateWearFromSyncvar();
+		this._materialController.SetSerial(base.Info.Serial);
 	}
 
 	public override bool Weaved()
@@ -83,13 +83,13 @@ public class JailbirdPickup : CollisionDetectionPickup, IUpgradeTrigger
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EJailbird_002EJailbirdWearState(writer, Wear);
+			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EJailbird_002EJailbirdWearState(writer, this.Wear);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EJailbird_002EJailbirdWearState(writer, Wear);
+			GeneratedNetworkCode._Write_InventorySystem_002EItems_002EJailbird_002EJailbirdWearState(writer, this.Wear);
 		}
 	}
 
@@ -98,13 +98,13 @@ public class JailbirdPickup : CollisionDetectionPickup, IUpgradeTrigger
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref Wear, null, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EJailbird_002EJailbirdWearState(reader));
+			base.GeneratedSyncVarDeserialize(ref this.Wear, null, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EJailbird_002EJailbirdWearState(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Wear, null, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EJailbird_002EJailbirdWearState(reader));
+			base.GeneratedSyncVarDeserialize(ref this.Wear, null, GeneratedNetworkCode._Read_InventorySystem_002EItems_002EJailbird_002EJailbirdWearState(reader));
 		}
 	}
 }

@@ -16,15 +16,15 @@ public class SpectatableListElementBase : PoolObject
 	{
 		get
 		{
-			if (!_transformCacheSet)
+			if (!this._transformCacheSet)
 			{
-				if (!TryGetComponent<RectTransform>(out _cachedTransform))
+				if (!base.TryGetComponent<RectTransform>(out this._cachedTransform))
 				{
 					throw new InvalidOperationException("SpectatableListElementBase of name '" + base.name + "' does not have a rect transform!");
 				}
-				_transformCacheSet = true;
+				this._transformCacheSet = true;
 			}
-			return _cachedTransform;
+			return this._cachedTransform;
 		}
 	}
 
@@ -32,22 +32,22 @@ public class SpectatableListElementBase : PoolObject
 	{
 		get
 		{
-			return _target;
+			return this._target;
 		}
 		internal set
 		{
-			SpectatableModuleBase target = _target;
+			SpectatableModuleBase target = this._target;
 			if (value != target)
 			{
-				_target = value;
-				OnTargetChanged(target, value);
+				this._target = value;
+				this.OnTargetChanged(target, value);
 			}
 		}
 	}
 
 	public int Index { get; internal set; }
 
-	public float Height => CachedRectTransform.sizeDelta.y;
+	public float Height => this.CachedRectTransform.sizeDelta.y;
 
 	public bool IsCurrent
 	{
@@ -55,7 +55,7 @@ public class SpectatableListElementBase : PoolObject
 		{
 			if (!base.Pooled)
 			{
-				return Target == SpectatorTargetTracker.CurrentTarget;
+				return this.Target == SpectatorTargetTracker.CurrentTarget;
 			}
 			return false;
 		}
@@ -67,6 +67,6 @@ public class SpectatableListElementBase : PoolObject
 
 	public void BeginSpectating()
 	{
-		SpectatorTargetTracker.CurrentTarget = Target;
+		SpectatorTargetTracker.CurrentTarget = this.Target;
 	}
 }

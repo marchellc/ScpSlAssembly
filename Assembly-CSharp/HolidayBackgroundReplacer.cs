@@ -28,10 +28,10 @@ public class HolidayBackgroundReplacer : MonoBehaviour
 
 	private void Awake()
 	{
-		BackgroundInfo[] backgrounds = _backgrounds;
+		BackgroundInfo[] backgrounds = this._backgrounds;
 		foreach (BackgroundInfo info in backgrounds)
 		{
-			RefreshBackground(info);
+			this.RefreshBackground(info);
 		}
 	}
 

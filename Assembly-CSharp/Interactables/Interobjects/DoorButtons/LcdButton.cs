@@ -19,7 +19,7 @@ public class LcdButton : SimpleButton
 
 		public readonly void SetStatus(float openPercent)
 		{
-			_mover.position = Vector3.Lerp(_closedReference.position, _openReference.position, openPercent);
+			this._mover.position = Vector3.Lerp(this._closedReference.position, this._openReference.position, openPercent);
 		}
 	}
 
@@ -52,52 +52,52 @@ public class LcdButton : SimpleButton
 	protected override void SetIdle()
 	{
 		base.SetIdle();
-		_openState.SetActive(base.ParentDoor.TargetState);
-		_closedState.SetActive(!base.ParentDoor.TargetState);
-		_movingState.SetActive(value: false);
+		this._openState.SetActive(base.ParentDoor.TargetState);
+		this._closedState.SetActive(!base.ParentDoor.TargetState);
+		this._movingState.SetActive(value: false);
 	}
 
 	protected override void SetAsDestroyed()
 	{
 		base.SetAsDestroyed();
-		_broken.SetActive(value: true);
-		_nonBroken.SetActive(value: false);
+		this._broken.SetActive(value: true);
+		this._nonBroken.SetActive(value: false);
 	}
 
 	protected override void RestoreNonDestroyed()
 	{
 		base.RestoreNonDestroyed();
-		_broken.SetActive(value: false);
-		_nonBroken.SetActive(value: true);
+		this._broken.SetActive(value: false);
+		this._nonBroken.SetActive(value: true);
 	}
 
 	protected override void UpdateMoving()
 	{
 		base.UpdateMoving();
-		if (_remainingCooldown > 0f)
+		if (this._remainingCooldown > 0f)
 		{
-			_remainingCooldown -= Time.deltaTime;
+			this._remainingCooldown -= Time.deltaTime;
 		}
 		else
 		{
-			UpdateIndicators();
+			this.UpdateIndicators();
 		}
 	}
 
 	protected override void SetMoving()
 	{
 		base.SetMoving();
-		_openState.SetActive(value: false);
-		_closedState.SetActive(value: false);
-		_movingState.SetActive(value: true);
-		UpdateIndicators();
+		this._openState.SetActive(value: false);
+		this._closedState.SetActive(value: false);
+		this._movingState.SetActive(value: true);
+		this.UpdateIndicators();
 	}
 
 	private void UpdateIndicators()
 	{
 		float exactState = base.ParentDoor.GetExactState();
-		_leftIndicator.SetStatus(exactState);
-		_rightIndicator.SetStatus(exactState);
-		_remainingCooldown = _refreshCooldown;
+		this._leftIndicator.SetStatus(exactState);
+		this._rightIndicator.SetStatus(exactState);
+		this._remainingCooldown = this._refreshCooldown;
 	}
 }

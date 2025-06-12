@@ -11,7 +11,7 @@ public sealed class DiscordWebhookFormatter : IJsonFormatter<DiscordWebhook>, IJ
 
 	public DiscordWebhookFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("content"),
@@ -34,7 +34,7 @@ public sealed class DiscordWebhookFormatter : IJsonFormatter<DiscordWebhook>, IJ
 				4
 			}
 		};
-		____stringByteKeys = new byte[5][]
+		this.____stringByteKeys = new byte[5][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("content"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("username"),
@@ -46,15 +46,15 @@ public sealed class DiscordWebhookFormatter : IJsonFormatter<DiscordWebhook>, IJ
 
 	public void Serialize(ref JsonWriter writer, DiscordWebhook value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.content);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.username);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteString(value.avatar_url);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		writer.WriteBoolean(value.tts);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		formatterResolver.GetFormatterWithVerify<DiscordEmbed[]>().Serialize(ref writer, value.embeds, formatterResolver);
 		writer.WriteEndObject();
 	}
@@ -75,7 +75,7 @@ public sealed class DiscordWebhookFormatter : IJsonFormatter<DiscordWebhook>, IJ
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

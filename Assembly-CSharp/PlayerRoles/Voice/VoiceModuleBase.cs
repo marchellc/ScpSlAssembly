@@ -36,9 +36,9 @@ public abstract class VoiceModuleBase : MonoBehaviour, IPoolResettable, IPoolSpa
 
 	private static bool _receiveBufferSet;
 
-	protected ReferenceHub Owner => _owner;
+	protected ReferenceHub Owner => this._owner;
 
-	protected virtual OpusDecoder Decoder => _defaultDecoder;
+	protected virtual OpusDecoder Decoder => this._defaultDecoder;
 
 	public PlayerRoleBase Role { get; private set; }
 
@@ -50,14 +50,14 @@ public abstract class VoiceModuleBase : MonoBehaviour, IPoolResettable, IPoolSpa
 	{
 		get
 		{
-			return _lastChannel;
+			return this._lastChannel;
 		}
 		internal set
 		{
-			if (_lastChannel != value)
+			if (this._lastChannel != value)
 			{
-				_lastChannel = value;
-				OnChannelChanged();
+				this._lastChannel = value;
+				this.OnChannelChanged();
 			}
 		}
 	}
@@ -68,26 +68,26 @@ public abstract class VoiceModuleBase : MonoBehaviour, IPoolResettable, IPoolSpa
 
 	protected virtual void Awake()
 	{
-		Role = GetComponent<PlayerRoleBase>();
+		this.Role = base.GetComponent<PlayerRoleBase>();
 	}
 
 	protected virtual void Update()
 	{
-		if (_sentPackets > _prevSent)
+		if (this._sentPackets > this._prevSent)
 		{
-			ServerIsSending = true;
-			_silenceStopwatch.Restart();
+			this.ServerIsSending = true;
+			this._silenceStopwatch.Restart();
 		}
-		else if (ServerIsSending && _silenceStopwatch.Elapsed.TotalSeconds > 0.10000000149011612)
+		else if (this.ServerIsSending && this._silenceStopwatch.Elapsed.TotalSeconds > 0.10000000149011612)
 		{
-			ServerIsSending = false;
+			this.ServerIsSending = false;
 		}
-		if (_rateStopwatch.Elapsed.TotalSeconds >= 0.5)
+		if (this._rateStopwatch.Elapsed.TotalSeconds >= 0.5)
 		{
-			_sentPackets = 0;
-			_rateStopwatch.Restart();
+			this._sentPackets = 0;
+			this._rateStopwatch.Restart();
 		}
-		_prevSent = _sentPackets;
+		this._prevSent = this._sentPackets;
 	}
 
 	protected virtual void OnChannelChanged()
@@ -110,45 +110,45 @@ public abstract class VoiceModuleBase : MonoBehaviour, IPoolResettable, IPoolSpa
 
 	public virtual void ResetObject()
 	{
-		_lastChannel = VoiceChatChannel.None;
-		_defaultDecoder?.Dispose();
-		ReceiveFlags = GroupMuteFlags.None;
+		this._lastChannel = VoiceChatChannel.None;
+		this._defaultDecoder?.Dispose();
+		this.ReceiveFlags = GroupMuteFlags.None;
 	}
 
 	public virtual void SpawnObject()
 	{
-		if (Role.TryGetOwner(out _owner))
+		if (this.Role.TryGetOwner(out this._owner))
 		{
-			_defaultDecoder = new OpusDecoder();
-			if (Owner.isLocalPlayer)
+			this._defaultDecoder = new OpusDecoder();
+			if (this.Owner.isLocalPlayer)
 			{
 				VoiceChatMicCapture.StartRecording();
 			}
 			if (NetworkServer.active)
 			{
-				ReceiveFlags = VoiceChatReceivePrefs.GetFlagsForUser(Owner);
+				this.ReceiveFlags = VoiceChatReceivePrefs.GetFlagsForUser(this.Owner);
 			}
 		}
 	}
 
 	public bool CheckRateLimit()
 	{
-		return _sentPackets++ < 128;
+		return this._sentPackets++ < 128;
 	}
 
 	public void ProcessMessage(VoiceMessage msg)
 	{
-		CurrentChannel = msg.Channel;
-		if (!_receiveBufferSet)
+		this.CurrentChannel = msg.Channel;
+		if (!VoiceModuleBase._receiveBufferSet)
 		{
-			_receiveBufferSet = true;
-			_receiveBuffer = new float[24000];
+			VoiceModuleBase._receiveBufferSet = true;
+			VoiceModuleBase._receiveBuffer = new float[24000];
 		}
-		int len = Decoder.Decode(msg.Data, msg.DataLength, _receiveBuffer);
-		if (Owner.isLocalPlayer || VoiceChatMutes.GetFlags(Owner) == VcMuteFlags.None)
+		int len = this.Decoder.Decode(msg.Data, msg.DataLength, VoiceModuleBase._receiveBuffer);
+		if (this.Owner.isLocalPlayer || VoiceChatMutes.GetFlags(this.Owner) == VcMuteFlags.None)
 		{
-			ProcessSamples(_receiveBuffer, len);
-			this.OnSamplesReceived?.Invoke(_receiveBuffer, len);
+			this.ProcessSamples(VoiceModuleBase._receiveBuffer, len);
+			this.OnSamplesReceived?.Invoke(VoiceModuleBase._receiveBuffer, len);
 		}
 	}
 }

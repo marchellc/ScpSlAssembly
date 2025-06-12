@@ -40,9 +40,9 @@ public class Scp079GeneratorNotification : Scp079SimpleNotification
 	{
 		get
 		{
-			if (_generator != null)
+			if (this._generator != null)
 			{
-				return _generator.Activating;
+				return this._generator.Activating;
 			}
 			return false;
 		}
@@ -52,8 +52,8 @@ public class Scp079GeneratorNotification : Scp079SimpleNotification
 	{
 		get
 		{
-			float num = (IsActivating ? 1f : (-1f));
-			return _opacity = Mathf.Min(1f, _opacity + num * Time.deltaTime / 0.18f);
+			float num = (this.IsActivating ? 1f : (-1f));
+			return this._opacity = Mathf.Min(1f, this._opacity + num * Time.deltaTime / 0.18f);
 		}
 	}
 
@@ -63,7 +63,7 @@ public class Scp079GeneratorNotification : Scp079SimpleNotification
 		{
 			if (base.Delete)
 			{
-				TrackedGens.Remove(_generator);
+				Scp079GeneratorNotification.TrackedGens.Remove(this._generator);
 				return true;
 			}
 			return false;
@@ -74,31 +74,31 @@ public class Scp079GeneratorNotification : Scp079SimpleNotification
 	{
 		get
 		{
-			float num = (float)_activeStopwatch.Elapsed.TotalSeconds;
+			float num = (float)this._activeStopwatch.Elapsed.TotalSeconds;
 			if (num < 2.5f && Mathf.RoundToInt(num * 9f) % 2 != 0)
 			{
-				return _emptyBuilder;
+				return this._emptyBuilder;
 			}
 			StringBuilder writtenText = base.WrittenText;
-			if (!IsActivating)
+			if (!this.IsActivating)
 			{
 				return writtenText;
 			}
-			int remainingTime = _generator.RemainingTime;
-			OverrideStringBuilder(writtenText, 11, remainingTime / 60 + 48);
-			OverrideStringBuilder(writtenText, 14, remainingTime % 60 / 10 + 48);
-			OverrideStringBuilder(writtenText, 15, remainingTime % 60 % 10 + 48);
+			int remainingTime = this._generator.RemainingTime;
+			Scp079GeneratorNotification.OverrideStringBuilder(writtenText, 11, remainingTime / 60 + 48);
+			Scp079GeneratorNotification.OverrideStringBuilder(writtenText, 14, remainingTime % 60 / 10 + 48);
+			Scp079GeneratorNotification.OverrideStringBuilder(writtenText, 15, remainingTime % 60 % 10 + 48);
 			return writtenText;
 		}
 	}
 
 	public Scp079GeneratorNotification(Scp079Generator generator, bool skipAnimation)
-		: base($"<color=red>0m 00s - {GetGeneratorCamera(generator)}</color>")
+		: base($"<color=red>0m 00s - {Scp079GeneratorNotification.GetGeneratorCamera(generator)}</color>")
 	{
-		_activeStopwatch = (skipAnimation ? new Stopwatch() : Stopwatch.StartNew());
-		_emptyBuilder = new StringBuilder();
-		_generator = generator;
-		_opacity = 1f;
+		this._activeStopwatch = (skipAnimation ? new Stopwatch() : Stopwatch.StartNew());
+		this._emptyBuilder = new StringBuilder();
+		this._generator = generator;
+		this._opacity = 1f;
 	}
 
 	private static void OverrideStringBuilder(StringBuilder sb, int place, int character)
@@ -155,7 +155,7 @@ public class Scp079GeneratorNotification : Scp079SimpleNotification
 		{
 			if (x.isLocalPlayer)
 			{
-				TrackedGens.Clear();
+				Scp079GeneratorNotification.TrackedGens.Clear();
 			}
 		};
 	}

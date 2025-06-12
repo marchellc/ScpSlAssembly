@@ -40,16 +40,16 @@ public class FirearmWorldmodel : MonoBehaviour
 
 	private void Unlink()
 	{
-		if (Instances.TryGetValue(Identifier.SerialNumber, out var value) && !(value != this))
+		if (FirearmWorldmodel.Instances.TryGetValue(this.Identifier.SerialNumber, out var value) && !(value != this))
 		{
-			Instances.Remove(Identifier.SerialNumber);
+			FirearmWorldmodel.Instances.Remove(this.Identifier.SerialNumber);
 		}
 	}
 
 	private void OnDestroy()
 	{
-		Unlink();
-		Component[] extensions = Extensions;
+		this.Unlink();
+		Component[] extensions = this.Extensions;
 		for (int i = 0; i < extensions.Length; i++)
 		{
 			if (extensions[i] is IDestroyExtensionReceiver destroyExtensionReceiver)
@@ -61,9 +61,9 @@ public class FirearmWorldmodel : MonoBehaviour
 
 	private void OnValidate()
 	{
-		Colliders = GetComponentsInChildren<Collider>(includeInactive: true);
-		Renderers = GetComponentsInChildren<Renderer>(includeInactive: true);
-		Extensions = (from x in GetComponentsInChildren<Component>(includeInactive: true)
+		this.Colliders = base.GetComponentsInChildren<Collider>(includeInactive: true);
+		this.Renderers = base.GetComponentsInChildren<Renderer>(includeInactive: true);
+		this.Extensions = (from x in base.GetComponentsInChildren<Component>(includeInactive: true)
 			where x is IWorldmodelExtension
 			select x).ToArray();
 	}
@@ -72,7 +72,7 @@ public class FirearmWorldmodel : MonoBehaviour
 	{
 		bool flag;
 		bool flag2;
-		switch (WorldmodelType)
+		switch (this.WorldmodelType)
 		{
 		default:
 			return;
@@ -89,7 +89,7 @@ public class FirearmWorldmodel : MonoBehaviour
 			flag2 = false;
 			break;
 		}
-		Collider[] colliders = Colliders;
+		Collider[] colliders = this.Colliders;
 		for (int i = 0; i < colliders.Length; i++)
 		{
 			colliders[i].enabled = flag;
@@ -97,31 +97,31 @@ public class FirearmWorldmodel : MonoBehaviour
 		Renderer[] renderers;
 		if (!flag2)
 		{
-			if (_prevLayers == null)
+			if (this._prevLayers == null)
 			{
 				return;
 			}
-			renderers = Renderers;
+			renderers = this.Renderers;
 			foreach (Renderer renderer in renderers)
 			{
-				if (_prevLayers.TryGetValue(renderer, out var value))
+				if (this._prevLayers.TryGetValue(renderer, out var value))
 				{
 					renderer.gameObject.layer = value;
 				}
 			}
 			return;
 		}
-		if (_prevLayers == null)
+		if (this._prevLayers == null)
 		{
-			_prevLayers = new Dictionary<Renderer, int>();
+			this._prevLayers = new Dictionary<Renderer, int>();
 		}
-		renderers = Renderers;
+		renderers = this.Renderers;
 		foreach (Renderer renderer2 in renderers)
 		{
 			if (renderer2 is MeshRenderer || renderer2 is SkinnedMeshRenderer)
 			{
 				GameObject gameObject = renderer2.gameObject;
-				_prevLayers[renderer2] = gameObject.layer;
+				this._prevLayers[renderer2] = gameObject.layer;
 				gameObject.layer = 13;
 			}
 		}
@@ -137,53 +137,53 @@ public class FirearmWorldmodel : MonoBehaviour
 			}
 			code = result.ValidateAttachmentsCode(0u);
 		}
-		Setup(identifier, worldmodelType, code);
+		this.Setup(identifier, worldmodelType, code);
 	}
 
 	public void Setup(ItemIdentifier identifier, FirearmWorldmodelType worldmodelType, uint attachmentCode)
 	{
-		if (Identifier != identifier)
+		if (this.Identifier != identifier)
 		{
-			Unlink();
-			Identifier = identifier;
-			Instances[Identifier.SerialNumber] = this;
+			this.Unlink();
+			this.Identifier = identifier;
+			FirearmWorldmodel.Instances[this.Identifier.SerialNumber] = this;
 		}
-		if (WorldmodelType != worldmodelType || !_wasEverSetup)
+		if (this.WorldmodelType != worldmodelType || !this._wasEverSetup)
 		{
-			WorldmodelType = worldmodelType;
-			UpdateWorldmodelContext();
+			this.WorldmodelType = worldmodelType;
+			this.UpdateWorldmodelContext();
 		}
-		if (AttachmentCode == attachmentCode && _wasEverSetup)
+		if (this.AttachmentCode == attachmentCode && this._wasEverSetup)
 		{
 			return;
 		}
-		AttachmentCode = attachmentCode;
-		AttachmentGameObjectGroup[] attachments = Attachments;
+		this.AttachmentCode = attachmentCode;
+		AttachmentGameObjectGroup[] attachments = this.Attachments;
 		foreach (AttachmentGameObjectGroup attachmentGameObjectGroup in attachments)
 		{
 			attachmentGameObjectGroup.SetActive(state: false);
 		}
 		uint num = 1u;
-		for (int j = 0; j < Attachments.Length; j++)
+		for (int j = 0; j < this.Attachments.Length; j++)
 		{
 			if ((attachmentCode & num) == num)
 			{
-				Attachments[j].SetActive(state: true);
+				this.Attachments[j].SetActive(state: true);
 			}
 			num *= 2;
 		}
-		Component[] extensions = Extensions;
+		Component[] extensions = this.Extensions;
 		for (int i = 0; i < extensions.Length; i++)
 		{
 			(extensions[i] as IWorldmodelExtension).SetupWorldmodel(this);
 		}
-		_wasEverSetup = true;
+		this._wasEverSetup = true;
 		FirearmWorldmodel.OnSetup?.Invoke(this);
 	}
 
 	public bool TryGetExtension<T>(out T extension)
 	{
-		Component[] extensions = Extensions;
+		Component[] extensions = this.Extensions;
 		for (int i = 0; i < extensions.Length; i++)
 		{
 			if (extensions[i] is T val)

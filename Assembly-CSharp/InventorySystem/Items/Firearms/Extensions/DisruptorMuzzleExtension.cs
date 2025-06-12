@@ -19,10 +19,10 @@ public class DisruptorMuzzleExtension : ShootingEffectsExtensionBase
 			switch (state)
 			{
 			case DisruptorActionModule.FiringState.FiringSingle:
-				_singleShotEffects.Play();
+				this._singleShotEffects.Play();
 				break;
 			case DisruptorActionModule.FiringState.FiringRapid:
-				_rapidFireEffects.Play();
+				this._rapidFireEffects.Play();
 				break;
 			}
 		}

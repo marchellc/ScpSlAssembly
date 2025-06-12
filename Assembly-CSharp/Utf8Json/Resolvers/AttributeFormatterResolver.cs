@@ -20,11 +20,11 @@ public sealed class AttributeFormatterResolver : IJsonFormatterResolver
 			{
 				if (customAttribute.FormatterType.IsGenericType && !customAttribute.FormatterType.GetTypeInfo().IsConstructedGenericType())
 				{
-					formatter = (IJsonFormatter<T>)Activator.CreateInstance(customAttribute.FormatterType.MakeGenericType(typeof(T)), customAttribute.Arguments);
+					FormatterCache<T>.formatter = (IJsonFormatter<T>)Activator.CreateInstance(customAttribute.FormatterType.MakeGenericType(typeof(T)), customAttribute.Arguments);
 				}
 				else
 				{
-					formatter = (IJsonFormatter<T>)Activator.CreateInstance(customAttribute.FormatterType, customAttribute.Arguments);
+					FormatterCache<T>.formatter = (IJsonFormatter<T>)Activator.CreateInstance(customAttribute.FormatterType, customAttribute.Arguments);
 				}
 			}
 			catch (Exception innerException)

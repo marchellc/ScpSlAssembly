@@ -21,18 +21,18 @@ public class TextHint : FormattableHint<TextHint>
 	public TextHint(string text, HintParameter[] parameters = null, HintEffect[] effects = null, float durationScalar = 3f)
 		: base(parameters, effects, durationScalar)
 	{
-		Text = text;
+		this.Text = text;
 	}
 
 	public override void Deserialize(NetworkReader reader)
 	{
 		base.Deserialize(reader);
-		Text = reader.ReadString();
+		this.Text = reader.ReadString();
 	}
 
 	public override void Serialize(NetworkWriter writer)
 	{
 		base.Serialize(writer);
-		writer.WriteString(Text);
+		writer.WriteString(this.Text);
 	}
 }

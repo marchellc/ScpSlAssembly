@@ -26,12 +26,12 @@ public class GroupCommand : ParentCommand
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new DisableCoverCommand());
-		RegisterCommand(new EnableCoverCommand());
-		RegisterCommand(new GrantCommand());
-		RegisterCommand(new InfoCommand());
-		RegisterCommand(new RevokeCommand());
-		RegisterCommand(new SetColorCommand());
-		RegisterCommand(new SetTagCommand());
+		this.RegisterCommand(new DisableCoverCommand());
+		this.RegisterCommand(new EnableCoverCommand());
+		this.RegisterCommand(new GrantCommand());
+		this.RegisterCommand(new InfoCommand());
+		this.RegisterCommand(new RevokeCommand());
+		this.RegisterCommand(new SetColorCommand());
+		this.RegisterCommand(new SetTagCommand());
 	}
 }

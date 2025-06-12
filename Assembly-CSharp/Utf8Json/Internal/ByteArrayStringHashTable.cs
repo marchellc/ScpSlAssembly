@@ -18,12 +18,12 @@ internal class ByteArrayStringHashTable<T> : IEnumerable<KeyValuePair<string, T>
 			string[] obj = new string[5]
 			{
 				"(",
-				Encoding.UTF8.GetString(Key),
+				Encoding.UTF8.GetString(this.Key),
 				", ",
 				null,
 				null
 			};
-			T value = Value;
+			T value = this.Value;
 			obj[3] = value?.ToString();
 			obj[4] = ")";
 			return string.Concat(obj);
@@ -41,14 +41,14 @@ internal class ByteArrayStringHashTable<T> : IEnumerable<KeyValuePair<string, T>
 
 	public ByteArrayStringHashTable(int capacity, float loadFactor)
 	{
-		int num = CalculateCapacity(capacity, loadFactor);
-		buckets = new Entry[num][];
-		indexFor = (ulong)buckets.Length - 1uL;
+		int num = ByteArrayStringHashTable<T>.CalculateCapacity(capacity, loadFactor);
+		this.buckets = new Entry[num][];
+		this.indexFor = (ulong)this.buckets.Length - 1uL;
 	}
 
 	public void Add(string key, T value)
 	{
-		if (!TryAddInternal(Encoding.UTF8.GetBytes(key), value))
+		if (!this.TryAddInternal(Encoding.UTF8.GetBytes(key), value))
 		{
 			throw new ArgumentException("Key was already exists. Key:" + key);
 		}
@@ -56,7 +56,7 @@ internal class ByteArrayStringHashTable<T> : IEnumerable<KeyValuePair<string, T>
 
 	public void Add(byte[] key, T value)
 	{
-		if (!TryAddInternal(key, value))
+		if (!this.TryAddInternal(key, value))
 		{
 			throw new ArgumentException("Key was already exists. Key:" + key);
 		}
@@ -64,15 +64,16 @@ internal class ByteArrayStringHashTable<T> : IEnumerable<KeyValuePair<string, T>
 
 	private bool TryAddInternal(byte[] key, T value)
 	{
-		ulong num = ByteArrayGetHashCode(key, 0, key.Length);
-		Entry entry = default(Entry);
-		entry.Key = key;
-		entry.Value = value;
-		Entry entry2 = entry;
-		Entry[] array = buckets[num & indexFor];
+		ulong num = ByteArrayStringHashTable<T>.ByteArrayGetHashCode(key, 0, key.Length);
+		Entry entry = new Entry
+		{
+			Key = key,
+			Value = value
+		};
+		Entry[] array = this.buckets[num & this.indexFor];
 		if (array == null)
 		{
-			buckets[num & indexFor] = new Entry[1] { entry2 };
+			this.buckets[num & this.indexFor] = new Entry[1] { entry };
 		}
 		else
 		{
@@ -87,17 +88,17 @@ internal class ByteArrayStringHashTable<T> : IEnumerable<KeyValuePair<string, T>
 			Entry[] array2 = new Entry[array.Length + 1];
 			Array.Copy(array, array2, array.Length);
 			array = array2;
-			array[^1] = entry2;
-			buckets[num & indexFor] = array;
+			array[^1] = entry;
+			this.buckets[num & this.indexFor] = array;
 		}
 		return true;
 	}
 
 	public bool TryGetValue(ArraySegment<byte> key, out T value)
 	{
-		Entry[][] array = buckets;
-		ulong num = ByteArrayGetHashCode(key.Array, key.Offset, key.Count);
-		Entry[] array2 = array[num & indexFor];
+		Entry[][] array = this.buckets;
+		ulong num = ByteArrayStringHashTable<T>.ByteArrayGetHashCode(key.Array, key.Offset, key.Count);
+		Entry[] array2 = array[num & this.indexFor];
 		if (array2 != null)
 		{
 			Entry entry = array2[0];
@@ -151,7 +152,7 @@ internal class ByteArrayStringHashTable<T> : IEnumerable<KeyValuePair<string, T>
 
 	public IEnumerator<KeyValuePair<string, T>> GetEnumerator()
 	{
-		Entry[][] array = buckets;
+		Entry[][] array = this.buckets;
 		Entry[][] array2 = array;
 		foreach (Entry[] array3 in array2)
 		{
@@ -169,6 +170,6 @@ internal class ByteArrayStringHashTable<T> : IEnumerable<KeyValuePair<string, T>
 
 	IEnumerator IEnumerable.GetEnumerator()
 	{
-		return GetEnumerator();
+		return this.GetEnumerator();
 	}
 }

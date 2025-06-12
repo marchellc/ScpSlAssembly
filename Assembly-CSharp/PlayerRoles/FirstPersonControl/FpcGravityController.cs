@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 using Utils.Networking;
@@ -7,9 +6,7 @@ namespace PlayerRoles.FirstPersonControl;
 
 public class FpcGravityController
 {
-	public static Dictionary<ReferenceHub, Vector3> AllSyncedGravities = new Dictionary<ReferenceHub, Vector3>();
-
-	private Vector3 _gravity = DefaultGravity;
+	private Vector3 _gravity = FpcGravityController.DefaultGravity;
 
 	public static Vector3 DefaultGravity => new Vector3(0f, -19.6f, 0f);
 
@@ -17,53 +14,35 @@ public class FpcGravityController
 	{
 		get
 		{
-			return _gravity;
+			return this._gravity;
 		}
 		set
 		{
-			if (value == _gravity)
+			if (!(value == this._gravity))
 			{
-				return;
-			}
-			_gravity = value;
-			if (NetworkServer.active && !(Motor.Hub == null))
-			{
-				if (_gravity == DefaultGravity)
+				this._gravity = value;
+				if (NetworkServer.active && !(this.Motor.Hub == null))
 				{
-					AllSyncedGravities.Remove(Hub);
+					new SyncedGravityMessages.GravityMessage(this._gravity, this.Hub).SendToAuthenticated();
 				}
-				else
-				{
-					AllSyncedGravities[Hub] = _gravity;
-				}
-				new SyncedGravityMessages.GravityMessage(_gravity, Hub).SendToAuthenticated();
 			}
 		}
 	}
 
 	public FpcMotor Motor { get; set; }
 
-	public ReferenceHub Hub => Motor.Hub;
+	public ReferenceHub Hub => this.Motor.Hub;
 
 	public FpcGravityController(FpcMotor fpcMotor)
 	{
-		Motor = fpcMotor;
+		this.Motor = fpcMotor;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		PlayerRoleManager.OnRoleChanged += PlayerRoleChanged;
 		CustomNetworkManager.OnClientReady += RegisterHandler;
 		ReferenceHub.OnPlayerAdded += OnPlayerAdded;
-	}
-
-	private static void PlayerRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
-	{
-		if (NetworkServer.active)
-		{
-			AllSyncedGravities.Remove(userHub);
-		}
 	}
 
 	private static void RegisterHandler()
@@ -83,9 +62,12 @@ public class FpcGravityController
 		{
 			return;
 		}
-		foreach (KeyValuePair<ReferenceHub, Vector3> allSyncedGravity in AllSyncedGravities)
+		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			hub.connectionToClient.Send(new SyncedGravityMessages.GravityMessage(allSyncedGravity.Value, allSyncedGravity.Key));
+			if (allHub.roleManager.CurrentRole is IFpcRole fpcRole && !(fpcRole.FpcModule.Motor.GravityController.Gravity == FpcGravityController.DefaultGravity))
+			{
+				hub.connectionToClient.Send(new SyncedGravityMessages.GravityMessage(fpcRole.FpcModule.Motor.GravityController.Gravity, allHub));
+			}
 		}
 	}
 }

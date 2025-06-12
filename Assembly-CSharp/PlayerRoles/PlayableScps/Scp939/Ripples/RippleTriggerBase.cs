@@ -17,13 +17,13 @@ public class RippleTriggerBase : StandardSubroutine<Scp939Role>
 	{
 		get
 		{
-			if (_playerSet)
+			if (this._playerSet)
 			{
-				return _player;
+				return this._player;
 			}
-			_player = base.CastRole.SubroutineModule.AllSubroutines[PlayerIndex] as RipplePlayer;
-			_playerSet = true;
-			return _player;
+			this._player = base.CastRole.SubroutineModule.AllSubroutines[this.PlayerIndex] as RipplePlayer;
+			this._playerSet = true;
+			return this._player;
 		}
 	}
 
@@ -43,16 +43,16 @@ public class RippleTriggerBase : StandardSubroutine<Scp939Role>
 	{
 		get
 		{
-			if (_playerIndex > 0)
+			if (RippleTriggerBase._playerIndex > 0)
 			{
-				return _playerIndex;
+				return RippleTriggerBase._playerIndex;
 			}
 			SubroutineManagerModule subroutineModule = base.CastRole.SubroutineModule;
 			for (int i = 0; i < subroutineModule.AllSubroutines.Length; i++)
 			{
 				if (subroutineModule.AllSubroutines[i] is RipplePlayer)
 				{
-					return _playerIndex = i;
+					return RippleTriggerBase._playerIndex = i;
 				}
 			}
 			throw new InvalidOperationException("SCP-939 has no RipplePlayer subroutine!");
@@ -63,14 +63,14 @@ public class RippleTriggerBase : StandardSubroutine<Scp939Role>
 
 	protected void PlayInRange(Vector3 pos, float maxRange, Color color)
 	{
-		PlayInRangeSqr(pos, maxRange * maxRange, color);
+		this.PlayInRangeSqr(pos, maxRange * maxRange, color);
 	}
 
 	protected void PlayInRangeSqr(Vector3 pos, float maxRangeSqr, Color color)
 	{
 		if (!((pos - base.CastRole.FpcModule.Position).sqrMagnitude > maxRangeSqr))
 		{
-			Player.Play(pos, color);
+			this.Player.Play(pos, color);
 		}
 	}
 
@@ -81,7 +81,7 @@ public class RippleTriggerBase : StandardSubroutine<Scp939Role>
 
 	protected void ServerSendRpcToObservers()
 	{
-		ServerSendRpc((ReferenceHub x) => x == base.Owner || base.Owner.IsSpectatedBy(x));
+		base.ServerSendRpc((ReferenceHub x) => x == base.Owner || base.Owner.IsSpectatedBy(x));
 	}
 
 	protected bool CheckVisibility(ReferenceHub ply)

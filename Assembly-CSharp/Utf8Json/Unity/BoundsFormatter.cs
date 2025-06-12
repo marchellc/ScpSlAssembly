@@ -12,7 +12,7 @@ public sealed class BoundsFormatter : IJsonFormatter<Bounds>, IJsonFormatter
 
 	public BoundsFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("center"),
@@ -23,7 +23,7 @@ public sealed class BoundsFormatter : IJsonFormatter<Bounds>, IJsonFormatter
 				1
 			}
 		};
-		____stringByteKeys = new byte[2][]
+		this.____stringByteKeys = new byte[2][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("center"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("size")
@@ -32,9 +32,9 @@ public sealed class BoundsFormatter : IJsonFormatter<Bounds>, IJsonFormatter
 
 	public void Serialize(ref JsonWriter writer, Bounds value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		formatterResolver.GetFormatterWithVerify<Vector3>().Serialize(ref writer, value.center, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		formatterResolver.GetFormatterWithVerify<Vector3>().Serialize(ref writer, value.size, formatterResolver);
 		writer.WriteEndObject();
 	}
@@ -52,7 +52,7 @@ public sealed class BoundsFormatter : IJsonFormatter<Bounds>, IJsonFormatter
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

@@ -23,14 +23,14 @@ public class FilmmakerRole : PlayerRoleBase, IShakeEffect, IAdvancedCameraContro
 	{
 		get
 		{
-			return Quaternion.Euler(VerticalRotation, HorizontalRotation, RollRotation);
+			return Quaternion.Euler(this.VerticalRotation, this.HorizontalRotation, this.RollRotation);
 		}
 		set
 		{
 			Vector3 eulerAngles = value.eulerAngles;
-			VerticalRotation = eulerAngles.x;
-			HorizontalRotation = eulerAngles.y;
-			RollRotation = eulerAngles.z;
+			this.VerticalRotation = eulerAngles.x;
+			this.HorizontalRotation = eulerAngles.y;
+			this.RollRotation = eulerAngles.z;
 		}
 	}
 
@@ -46,7 +46,7 @@ public class FilmmakerRole : PlayerRoleBase, IShakeEffect, IAdvancedCameraContro
 
 	private void OnDestroy()
 	{
-		ResetObject();
+		this.ResetObject();
 	}
 
 	internal override void Init(ReferenceHub hub, RoleChangeReason spawnReason, RoleSpawnFlags spawnFlags)
@@ -55,26 +55,26 @@ public class FilmmakerRole : PlayerRoleBase, IShakeEffect, IAdvancedCameraContro
 		if (hub.isLocalPlayer)
 		{
 			Transform currentCamera = MainCameraController.CurrentCamera;
-			CameraPosition = currentCamera.position;
-			CameraRotation = currentCamera.rotation;
-			ZoomScale = 1f;
+			this.CameraPosition = currentCamera.position;
+			this.CameraRotation = currentCamera.rotation;
+			FilmmakerRole.ZoomScale = 1f;
 			CameraShakeController.AddEffect(this);
-			_toolsInstance = Object.Instantiate(_filmmakerTools);
+			this._toolsInstance = Object.Instantiate(this._filmmakerTools);
 		}
 	}
 
 	public bool GetEffect(ReferenceHub ply, out ShakeEffectValues shakeValues)
 	{
-		float fovPercent = 1f / ZoomScale;
+		float fovPercent = 1f / FilmmakerRole.ZoomScale;
 		shakeValues = new ShakeEffectValues(null, null, null, fovPercent);
 		return base.IsLocalPlayer;
 	}
 
 	public void ResetObject()
 	{
-		if (!(_toolsInstance == null))
+		if (!(this._toolsInstance == null))
 		{
-			Object.Destroy(_toolsInstance);
+			Object.Destroy(this._toolsInstance);
 		}
 	}
 }

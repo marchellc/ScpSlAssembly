@@ -61,7 +61,7 @@ public class BrokenFireModeModule : FiringModeControllerModule
 		base.ServerUpdateSelected(status);
 		if (status == MicroHidPhase.Firing)
 		{
-			ServerRequestBacktrack(ServerFire);
+			base.ServerRequestBacktrack(ServerFire);
 		}
 	}
 
@@ -71,7 +71,7 @@ public class BrokenFireModeModule : FiringModeControllerModule
 		{
 			return;
 		}
-		HitregUtils.OverlapSphere(fpcRole.FpcModule.Position, FiringRange, out var _, CheckAngle);
+		HitregUtils.OverlapSphere(fpcRole.FpcModule.Position, this.FiringRange, out var _, CheckAngle);
 		foreach (IDestructible detectedDestructible in HitregUtils.DetectedDestructibles)
 		{
 			detectedDestructible.ServerDealDamage(this, 400f * Time.deltaTime);
@@ -88,6 +88,6 @@ public class BrokenFireModeModule : FiringModeControllerModule
 			return true;
 		}
 		Vector3 forward = playerCameraReference.forward;
-		return Vector3.Dot(vector / Mathf.Sqrt(sqrMagnitude), forward) >= FiringConeDot;
+		return Vector3.Dot(vector / Mathf.Sqrt(sqrMagnitude), forward) >= BrokenFireModeModule.FiringConeDot;
 	}
 }

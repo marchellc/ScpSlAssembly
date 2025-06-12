@@ -15,13 +15,13 @@ public class DecalPool
 
 	public readonly DecalPoolType Type;
 
-	public int Instances => _spawned.Count;
+	public int Instances => this._spawned.Count;
 
 	private Decal PrepareInstance(Decal inst)
 	{
 		if (inst == null)
 		{
-			inst = Object.Instantiate(_template);
+			inst = Object.Instantiate(this._template);
 		}
 		else
 		{
@@ -32,25 +32,25 @@ public class DecalPool
 
 	public Decal Get()
 	{
-		Decal result = ((!_disabled.TryDequeue(out result)) ? Object.Instantiate(_template) : PrepareInstance(result));
-		_spawned.Enqueue(result);
-		return result;
+		Decal decal = ((!this._disabled.TryDequeue(out decal)) ? Object.Instantiate(this._template) : this.PrepareInstance(decal));
+		this._spawned.Enqueue(decal);
+		return decal;
 	}
 
 	public void DisableLast()
 	{
-		if (_spawned.TryDequeue(out var result) && !(result == null))
+		if (this._spawned.TryDequeue(out var result) && !(result == null))
 		{
 			result.gameObject.SetActive(value: false);
-			_disabled.Enqueue(result);
+			this._disabled.Enqueue(result);
 		}
 	}
 
 	public void SetLimit(int limit)
 	{
-		while (_spawned.Count > limit)
+		while (this._spawned.Count > limit)
 		{
-			Decal decal = _spawned.Dequeue();
+			Decal decal = this._spawned.Dequeue();
 			if (!(decal == null))
 			{
 				decal.Detach();
@@ -61,9 +61,9 @@ public class DecalPool
 
 	public DecalPool(Decal template)
 	{
-		Type = template.DecalPoolType;
-		_template = template;
-		_spawned = new Queue<Decal>(5000);
-		_disabled = new Queue<Decal>(5000);
+		this.Type = template.DecalPoolType;
+		this._template = template;
+		this._spawned = new Queue<Decal>(5000);
+		this._disabled = new Queue<Decal>(5000);
 	}
 }

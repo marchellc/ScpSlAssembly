@@ -14,32 +14,32 @@ public abstract class PooledOverconRenderer : OverconRendererBase
 
 	protected T GetFromPool<T>() where T : OverconBase
 	{
-		if (!_queue.TryDequeue(out var result))
+		if (!this._queue.TryDequeue(out var result))
 		{
-			result = Object.Instantiate(_template);
+			result = Object.Instantiate(this._template);
 		}
 		result.gameObject.SetActive(value: true);
-		_spawned.Add(result);
+		this._spawned.Add(result);
 		return result as T;
 	}
 
 	protected void ReturnToPool(OverconBase instance)
 	{
-		_spawned.Remove(instance);
-		_queue.Enqueue(instance);
+		this._spawned.Remove(instance);
+		this._queue.Enqueue(instance);
 		instance.gameObject.SetActive(value: false);
 	}
 
 	protected void ReturnAll()
 	{
-		foreach (OverconBase item in _spawned)
+		foreach (OverconBase item in this._spawned)
 		{
 			if (!(item == null))
 			{
 				item.gameObject.SetActive(value: false);
-				_queue.Enqueue(item);
+				this._queue.Enqueue(item);
 			}
 		}
-		_spawned.Clear();
+		this._spawned.Clear();
 	}
 }

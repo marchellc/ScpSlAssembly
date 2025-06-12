@@ -12,7 +12,7 @@ internal sealed class DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameM
 
 		static FormatterCache()
 		{
-			formatter = (IJsonFormatter<T>)DynamicObjectTypeBuilder.BuildFormatterToAssembly<T>(assembly, Instance, nameMutator, excludeNull);
+			FormatterCache<T>.formatter = (IJsonFormatter<T>)DynamicObjectTypeBuilder.BuildFormatterToAssembly<T>(DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal.assembly, DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal.Instance, DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal.nameMutator, DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal.excludeNull);
 		}
 	}
 
@@ -28,10 +28,10 @@ internal sealed class DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameM
 
 	static DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal()
 	{
-		Instance = new DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal();
-		nameMutator = StringMutator.Original;
-		excludeNull = true;
-		assembly = new DynamicAssembly("Utf8Json.Resolvers.DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal");
+		DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal.Instance = new DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal();
+		DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal.nameMutator = StringMutator.Original;
+		DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal.excludeNull = true;
+		DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal.assembly = new DynamicAssembly("Utf8Json.Resolvers.DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal");
 	}
 
 	private DynamicObjectResolverAllowPrivateFalseExcludeNullTrueNameMutateOriginal()

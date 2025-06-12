@@ -31,7 +31,7 @@ public static class KeycardDetailSynchronizer
 	public static bool TryReapplyDetails(KeycardGfx target)
 	{
 		ItemIdentifier parentId = target.ParentId;
-		if (!Database.TryGetValue(parentId.SerialNumber, out var value))
+		if (!KeycardDetailSynchronizer.Database.TryGetValue(parentId.SerialNumber, out var value))
 		{
 			return false;
 		}
@@ -39,34 +39,34 @@ public static class KeycardDetailSynchronizer
 		{
 			return false;
 		}
-		ClientApplyDetails(value, item, target);
+		KeycardDetailSynchronizer.ClientApplyDetails(value, item, target);
 		return true;
 	}
 
 	public static void RegisterReceiver(KeycardGfx target)
 	{
 		ushort serialNumber = target.ParentId.SerialNumber;
-		RegisteredReceivers[serialNumber] = target;
-		TryReapplyDetails(target);
+		KeycardDetailSynchronizer.RegisteredReceivers[serialNumber] = target;
+		KeycardDetailSynchronizer.TryReapplyDetails(target);
 	}
 
 	public static void UnregisterReceiver(KeycardGfx target)
 	{
 		ushort serialNumber = target.ParentId.SerialNumber;
-		if (RegisteredReceivers.TryGetValue(serialNumber, out var value) && !(value != target))
+		if (KeycardDetailSynchronizer.RegisteredReceivers.TryGetValue(serialNumber, out var value) && !(value != target))
 		{
-			RegisteredReceivers.Remove(serialNumber);
+			KeycardDetailSynchronizer.RegisteredReceivers.Remove(serialNumber);
 		}
 	}
 
 	public static void ServerProcessPickup(KeycardPickup pickup)
 	{
 		ushort serialNumber = pickup.ItemId.SerialNumber;
-		if (Database.ContainsKey(serialNumber) || !pickup.TryGetTemplate<KeycardItem>(out var item))
+		if (KeycardDetailSynchronizer.Database.ContainsKey(serialNumber) || !pickup.TryGetTemplate<KeycardItem>(out var item))
 		{
 			return;
 		}
-		NetworkWriter payloadWriter = GetPayloadWriter();
+		NetworkWriter payloadWriter = KeycardDetailSynchronizer.GetPayloadWriter();
 		DetailBase[] details = item.Details;
 		for (int i = 0; i < details.Length; i++)
 		{
@@ -75,16 +75,16 @@ public static class KeycardDetailSynchronizer
 				syncedDetail.WriteNewPickup(pickup, payloadWriter);
 			}
 		}
-		ServerAddDatabaseEntry(serialNumber, payloadWriter.ToArraySegment());
+		KeycardDetailSynchronizer.ServerAddDatabaseEntry(serialNumber, payloadWriter.ToArraySegment());
 	}
 
 	public static void ServerProcessItem(KeycardItem item)
 	{
-		if (Database.ContainsKey(item.ItemSerial))
+		if (KeycardDetailSynchronizer.Database.ContainsKey(item.ItemSerial))
 		{
 			return;
 		}
-		NetworkWriter payloadWriter = GetPayloadWriter();
+		NetworkWriter payloadWriter = KeycardDetailSynchronizer.GetPayloadWriter();
 		DetailBase[] details = item.Details;
 		for (int i = 0; i < details.Length; i++)
 		{
@@ -93,12 +93,12 @@ public static class KeycardDetailSynchronizer
 				syncedDetail.WriteNewItem(item, payloadWriter);
 			}
 		}
-		ServerAddDatabaseEntry(item.ItemSerial, payloadWriter.ToArraySegment());
+		KeycardDetailSynchronizer.ServerAddDatabaseEntry(item.ItemSerial, payloadWriter.ToArraySegment());
 	}
 
 	public static void ApplyTemplateDetails(KeycardItem template, KeycardGfx gfx)
 	{
-		NetworkWriter payloadWriter = GetPayloadWriter();
+		NetworkWriter payloadWriter = KeycardDetailSynchronizer.GetPayloadWriter();
 		DetailBase[] details = template.Details;
 		for (int i = 0; i < details.Length; i++)
 		{
@@ -107,13 +107,13 @@ public static class KeycardDetailSynchronizer
 				syncedDetail.WriteDefault(payloadWriter);
 			}
 		}
-		ClientApplyDetails(payloadWriter.ToArraySegment(), template, gfx);
-		PayloadPool.Push(payloadWriter.buffer);
+		KeycardDetailSynchronizer.ClientApplyDetails(payloadWriter.ToArraySegment(), template, gfx);
+		KeycardDetailSynchronizer.PayloadPool.Push(payloadWriter.buffer);
 	}
 
 	private static void ClientApplyDetails(ArraySegment<byte> payload, KeycardItem template, KeycardGfx target)
 	{
-		using (PayloadReader = NetworkReaderPool.Get(payload))
+		using (KeycardDetailSynchronizer.PayloadReader = NetworkReaderPool.Get(payload))
 		{
 			DetailBase[] details = template.Details;
 			foreach (DetailBase detailBase in details)
@@ -125,7 +125,7 @@ public static class KeycardDetailSynchronizer
 				catch (Exception exception)
 				{
 					string arg = string.Concat(detailBase.GetType(), '@', template.name);
-					Debug.LogError($"Error applying detail: '{arg}' Payload: {PayloadReader}");
+					Debug.LogError($"Error applying detail: '{arg}' Payload: {KeycardDetailSynchronizer.PayloadReader}");
 					Debug.LogException(exception);
 				}
 			}
@@ -146,7 +146,7 @@ public static class KeycardDetailSynchronizer
 		{
 			return;
 		}
-		foreach (KeyValuePair<ushort, ArraySegment<byte>> item in Database)
+		foreach (KeyValuePair<ushort, ArraySegment<byte>> item in KeycardDetailSynchronizer.Database)
 		{
 			hub.connectionToClient.Send(new DetailsSyncMsg
 			{
@@ -159,44 +159,45 @@ public static class KeycardDetailSynchronizer
 	private static void OnClientReady()
 	{
 		NetworkClient.ReplaceHandler<DetailsSyncMsg>(ClientReceiveMessage);
-		foreach (KeyValuePair<ushort, ArraySegment<byte>> item in Database)
+		foreach (KeyValuePair<ushort, ArraySegment<byte>> item in KeycardDetailSynchronizer.Database)
 		{
-			if (PayloadPool.Count >= 512)
+			if (KeycardDetailSynchronizer.PayloadPool.Count >= 512)
 			{
 				break;
 			}
-			PayloadPool.Push(item.Value.Array);
+			KeycardDetailSynchronizer.PayloadPool.Push(item.Value.Array);
 		}
-		Database.Clear();
-		RegisteredReceivers.Clear();
+		KeycardDetailSynchronizer.Database.Clear();
+		KeycardDetailSynchronizer.RegisteredReceivers.Clear();
 	}
 
 	private static void ServerAddDatabaseEntry(ushort serial, ArraySegment<byte> entry)
 	{
-		Database.Add(serial, entry);
-		DetailsSyncMsg message = default(DetailsSyncMsg);
-		message.Serial = serial;
-		message.Payload = entry;
-		NetworkServer.SendToAll(message);
+		KeycardDetailSynchronizer.Database.Add(serial, entry);
+		NetworkServer.SendToAll(new DetailsSyncMsg
+		{
+			Serial = serial,
+			Payload = entry
+		});
 	}
 
 	private static NetworkWriter GetPayloadWriter()
 	{
-		if (!PayloadPool.TryPop(out var result))
+		if (!KeycardDetailSynchronizer.PayloadPool.TryPop(out var result))
 		{
 			result = new byte[2048];
 		}
-		PayloadWriterNonAlloc.buffer = result;
-		PayloadWriterNonAlloc.Reset();
-		return PayloadWriterNonAlloc;
+		KeycardDetailSynchronizer.PayloadWriterNonAlloc.buffer = result;
+		KeycardDetailSynchronizer.PayloadWriterNonAlloc.Reset();
+		return KeycardDetailSynchronizer.PayloadWriterNonAlloc;
 	}
 
 	private static void ClientReceiveMessage(DetailsSyncMsg msg)
 	{
-		Database[msg.Serial] = msg.Payload;
-		if (RegisteredReceivers.TryGetValue(msg.Serial, out var value) && !(value == null) && value.ParentId.TryGetTemplate<KeycardItem>(out var item))
+		KeycardDetailSynchronizer.Database[msg.Serial] = msg.Payload;
+		if (KeycardDetailSynchronizer.RegisteredReceivers.TryGetValue(msg.Serial, out var value) && !(value == null) && value.ParentId.TryGetTemplate<KeycardItem>(out var item))
 		{
-			ClientApplyDetails(msg.Payload, item, value);
+			KeycardDetailSynchronizer.ClientApplyDetails(msg.Payload, item, value);
 		}
 	}
 
@@ -210,19 +211,20 @@ public static class KeycardDetailSynchronizer
 	{
 		ushort num = reader.ReadUShort();
 		byte[] result;
-		if (Database.TryGetValue(num, out var value))
+		if (KeycardDetailSynchronizer.Database.TryGetValue(num, out var value))
 		{
 			result = value.Array;
 		}
-		else if (!PayloadPool.TryPop(out result))
+		else if (!KeycardDetailSynchronizer.PayloadPool.TryPop(out result))
 		{
 			result = new byte[2048];
 		}
 		int count = reader.ReadInt();
 		reader.ReadBytes(result, count);
-		DetailsSyncMsg result2 = default(DetailsSyncMsg);
-		result2.Serial = num;
-		result2.Payload = new ArraySegment<byte>(result, 0, count);
-		return result2;
+		return new DetailsSyncMsg
+		{
+			Serial = num,
+			Payload = new ArraySegment<byte>(result, 0, count)
+		};
 	}
 }

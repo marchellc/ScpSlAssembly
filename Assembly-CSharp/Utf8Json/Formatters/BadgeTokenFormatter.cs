@@ -11,7 +11,7 @@ public sealed class BadgeTokenFormatter : IJsonFormatter<BadgeToken>, IJsonForma
 
 	public BadgeTokenFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("BadgeText"),
@@ -86,7 +86,7 @@ public sealed class BadgeTokenFormatter : IJsonFormatter<BadgeToken>, IJsonForma
 				17
 			}
 		};
-		____stringByteKeys = new byte[18][]
+		this.____stringByteKeys = new byte[18][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("BadgeText"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("BadgeColor"),
@@ -116,41 +116,41 @@ public sealed class BadgeTokenFormatter : IJsonFormatter<BadgeToken>, IJsonForma
 			writer.WriteNull();
 			return;
 		}
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.BadgeText);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.BadgeColor);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteInt32(value.BadgeType);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		writer.WriteBoolean(value.Staff);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		writer.WriteBoolean(value.RemoteAdmin);
-		writer.WriteRaw(____stringByteKeys[5]);
+		writer.WriteRaw(this.____stringByteKeys[5]);
 		writer.WriteBoolean(value.Management);
-		writer.WriteRaw(____stringByteKeys[6]);
+		writer.WriteRaw(this.____stringByteKeys[6]);
 		writer.WriteBoolean(value.OverwatchMode);
-		writer.WriteRaw(____stringByteKeys[7]);
+		writer.WriteRaw(this.____stringByteKeys[7]);
 		writer.WriteBoolean(value.GlobalBanning);
-		writer.WriteRaw(____stringByteKeys[8]);
+		writer.WriteRaw(this.____stringByteKeys[8]);
 		writer.WriteUInt64(value.RaPermissions);
-		writer.WriteRaw(____stringByteKeys[9]);
+		writer.WriteRaw(this.____stringByteKeys[9]);
 		writer.WriteString(value.UserId);
-		writer.WriteRaw(____stringByteKeys[10]);
+		writer.WriteRaw(this.____stringByteKeys[10]);
 		writer.WriteString(value.Nickname);
-		writer.WriteRaw(____stringByteKeys[11]);
+		writer.WriteRaw(this.____stringByteKeys[11]);
 		formatterResolver.GetFormatterWithVerify<DateTimeOffset>().Serialize(ref writer, value.IssuanceTime, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[12]);
+		writer.WriteRaw(this.____stringByteKeys[12]);
 		formatterResolver.GetFormatterWithVerify<DateTimeOffset>().Serialize(ref writer, value.ExpirationTime, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[13]);
+		writer.WriteRaw(this.____stringByteKeys[13]);
 		writer.WriteString(value.Usage);
-		writer.WriteRaw(____stringByteKeys[14]);
+		writer.WriteRaw(this.____stringByteKeys[14]);
 		writer.WriteString(value.IssuedBy);
-		writer.WriteRaw(____stringByteKeys[15]);
+		writer.WriteRaw(this.____stringByteKeys[15]);
 		writer.WriteString(value.Serial);
-		writer.WriteRaw(____stringByteKeys[16]);
+		writer.WriteRaw(this.____stringByteKeys[16]);
 		writer.WriteBoolean(value.TestSignature);
-		writer.WriteRaw(____stringByteKeys[17]);
+		writer.WriteRaw(this.____stringByteKeys[17]);
 		writer.WriteInt32(value.TokenVersion);
 		writer.WriteEndObject();
 	}
@@ -184,7 +184,7 @@ public sealed class BadgeTokenFormatter : IJsonFormatter<BadgeToken>, IJsonForma
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

@@ -8,7 +8,7 @@ public struct PreauthChallengeItem
 
 	public PreauthChallengeItem(ArraySegment<byte> response)
 	{
-		ValidResponse = response;
-		Added = DateTime.Now.Ticks;
+		this.ValidResponse = response;
+		this.Added = DateTime.Now.Ticks;
 	}
 }

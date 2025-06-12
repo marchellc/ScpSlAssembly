@@ -17,32 +17,32 @@ internal static class ExpressionUtility
 
 	public static MethodInfo GetMethodInfo<T>(Expression<Func<T>> expression)
 	{
-		return GetMethodInfoCore(expression);
+		return ExpressionUtility.GetMethodInfoCore(expression);
 	}
 
 	public static MethodInfo GetMethodInfo(Expression<Action> expression)
 	{
-		return GetMethodInfoCore(expression);
+		return ExpressionUtility.GetMethodInfoCore(expression);
 	}
 
 	public static MethodInfo GetMethodInfo<T, TR>(Expression<Func<T, TR>> expression)
 	{
-		return GetMethodInfoCore(expression);
+		return ExpressionUtility.GetMethodInfoCore(expression);
 	}
 
 	public static MethodInfo GetMethodInfo<T>(Expression<Action<T>> expression)
 	{
-		return GetMethodInfoCore(expression);
+		return ExpressionUtility.GetMethodInfoCore(expression);
 	}
 
 	public static MethodInfo GetMethodInfo<TArg1, TArg2>(Expression<Action<TArg1, TArg2>> expression)
 	{
-		return GetMethodInfoCore(expression);
+		return ExpressionUtility.GetMethodInfoCore(expression);
 	}
 
 	public static MethodInfo GetMethodInfo<T, TArg1, TR>(Expression<Func<T, TArg1, TR>> expression)
 	{
-		return GetMethodInfoCore(expression);
+		return ExpressionUtility.GetMethodInfoCore(expression);
 	}
 
 	private static MemberInfo GetMemberInfoCore<T>(Expression<T> source)
@@ -56,11 +56,11 @@ internal static class ExpressionUtility
 
 	public static PropertyInfo GetPropertyInfo<T, TR>(Expression<Func<T, TR>> expression)
 	{
-		return GetMemberInfoCore(expression) as PropertyInfo;
+		return ExpressionUtility.GetMemberInfoCore(expression) as PropertyInfo;
 	}
 
 	public static FieldInfo GetFieldInfo<T, TR>(Expression<Func<T, TR>> expression)
 	{
-		return GetMemberInfoCore(expression) as FieldInfo;
+		return ExpressionUtility.GetMemberInfoCore(expression) as FieldInfo;
 	}
 }

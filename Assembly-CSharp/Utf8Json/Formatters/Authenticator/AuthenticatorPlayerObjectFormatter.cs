@@ -12,7 +12,7 @@ public sealed class AuthenticatorPlayerObjectFormatter : IJsonFormatter<Authenti
 
 	public AuthenticatorPlayerObjectFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("Id"),
@@ -39,7 +39,7 @@ public sealed class AuthenticatorPlayerObjectFormatter : IJsonFormatter<Authenti
 				5
 			}
 		};
-		____stringByteKeys = new byte[6][]
+		this.____stringByteKeys = new byte[6][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("Id"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("Ip"),
@@ -52,17 +52,17 @@ public sealed class AuthenticatorPlayerObjectFormatter : IJsonFormatter<Authenti
 
 	public void Serialize(ref JsonWriter writer, AuthenticatorPlayerObject value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.Id);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.Ip);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteString(value.RequestIp);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		writer.WriteString(value.Asn);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		writer.WriteString(value.AuthSerial);
-		writer.WriteRaw(____stringByteKeys[5]);
+		writer.WriteRaw(this.____stringByteKeys[5]);
 		writer.WriteString(value.VacSession);
 		writer.WriteEndObject();
 	}
@@ -84,7 +84,7 @@ public sealed class AuthenticatorPlayerObjectFormatter : IJsonFormatter<Authenti
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

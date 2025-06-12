@@ -21,18 +21,18 @@ public class Scp096StateController : StandardSubroutine<Scp096Role>
 	{
 		get
 		{
-			return _rageState;
+			return this._rageState;
 		}
 		set
 		{
-			if (_rageState != value)
+			if (this._rageState != value)
 			{
 				this.OnRageUpdate?.Invoke(value);
-				_rageState = value;
-				_rageChangeSw.Restart();
+				this._rageState = value;
+				this._rageChangeSw.Restart();
 				if (NetworkServer.active)
 				{
-					ServerSendRpc(toAll: true);
+					base.ServerSendRpc(toAll: true);
 				}
 			}
 		}
@@ -42,26 +42,26 @@ public class Scp096StateController : StandardSubroutine<Scp096Role>
 	{
 		get
 		{
-			return _abilityState;
+			return this._abilityState;
 		}
 		set
 		{
-			if (_abilityState != value)
+			if (this._abilityState != value)
 			{
 				this.OnAbilityUpdate?.Invoke(value);
-				_abilityState = value;
-				_abilityChangeSw.Restart();
+				this._abilityState = value;
+				this._abilityChangeSw.Restart();
 				if (NetworkServer.active)
 				{
-					ServerSendRpc(toAll: true);
+					base.ServerSendRpc(toAll: true);
 				}
 			}
 		}
 	}
 
-	public float LastRageUpdate => (float)_rageChangeSw.Elapsed.TotalSeconds;
+	public float LastRageUpdate => (float)this._rageChangeSw.Elapsed.TotalSeconds;
 
-	public float LastAbilityUpdate => (float)_abilityChangeSw.Elapsed.TotalSeconds;
+	public float LastAbilityUpdate => (float)this._abilityChangeSw.Elapsed.TotalSeconds;
 
 	public event Action<Scp096RageState> OnRageUpdate;
 
@@ -70,8 +70,8 @@ public class Scp096StateController : StandardSubroutine<Scp096Role>
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte((byte)RageState);
-		writer.WriteByte((byte)AbilityState);
+		writer.WriteByte((byte)this.RageState);
+		writer.WriteByte((byte)this.AbilityState);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
@@ -79,26 +79,26 @@ public class Scp096StateController : StandardSubroutine<Scp096Role>
 		base.ClientProcessRpc(reader);
 		if (!NetworkServer.active)
 		{
-			RageState = (Scp096RageState)reader.ReadByte();
-			AbilityState = (Scp096AbilityState)reader.ReadByte();
+			this.RageState = (Scp096RageState)reader.ReadByte();
+			this.AbilityState = (Scp096AbilityState)reader.ReadByte();
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		RageState = Scp096RageState.Docile;
-		AbilityState = Scp096AbilityState.None;
-		_rageChangeSw.Stop();
-		_abilityChangeSw.Stop();
+		this.RageState = Scp096RageState.Docile;
+		this.AbilityState = Scp096AbilityState.None;
+		this._rageChangeSw.Stop();
+		this._abilityChangeSw.Stop();
 		ReferenceHub.OnPlayerAdded -= OnPlayerJoin;
 	}
 
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_rageChangeSw.Start();
-		_abilityChangeSw.Start();
+		this._rageChangeSw.Start();
+		this._abilityChangeSw.Start();
 		ReferenceHub.OnPlayerAdded += OnPlayerJoin;
 	}
 
@@ -106,24 +106,24 @@ public class Scp096StateController : StandardSubroutine<Scp096Role>
 	{
 		if (NetworkServer.active)
 		{
-			ServerSendRpc(hub);
+			base.ServerSendRpc(hub);
 		}
 	}
 
 	public void SetRageState(Scp096RageState state)
 	{
-		Scp096ChangingStateEventArgs scp096ChangingStateEventArgs = new Scp096ChangingStateEventArgs(base.Owner, state);
-		Scp096Events.OnChangingState(scp096ChangingStateEventArgs);
-		if (scp096ChangingStateEventArgs.IsAllowed)
+		Scp096ChangingStateEventArgs e = new Scp096ChangingStateEventArgs(base.Owner, state);
+		Scp096Events.OnChangingState(e);
+		if (e.IsAllowed)
 		{
-			state = scp096ChangingStateEventArgs.State;
-			RageState = state;
+			state = e.State;
+			this.RageState = state;
 			Scp096Events.OnChangedState(new Scp096ChangedStateEventArgs(base.Owner, state));
 		}
 	}
 
 	public void SetAbilityState(Scp096AbilityState state)
 	{
-		AbilityState = state;
+		this.AbilityState = state;
 	}
 }

@@ -31,76 +31,76 @@ public class ConditionalSerializableAttachment : SerializableAttachment
 	{
 		get
 		{
-			if (!_lastAppliedOverride.HasValue)
+			if (!this._lastAppliedOverride.HasValue)
 			{
 				return null;
 			}
-			return _overrides[_lastAppliedOverride.Value];
+			return this._overrides[this._lastAppliedOverride.Value];
 		}
 	}
 
-	public override AttachmentDescriptiveAdvantages DescriptivePros => LastOverride?.ExtraPros ?? base.DescriptivePros;
+	public override AttachmentDescriptiveAdvantages DescriptivePros => this.LastOverride?.ExtraPros ?? base.DescriptivePros;
 
-	public override AttachmentDescriptiveDownsides DescriptiveCons => LastOverride?.ExtraCons ?? base.DescriptiveCons;
+	public override AttachmentDescriptiveDownsides DescriptiveCons => this.LastOverride?.ExtraCons ?? base.DescriptiveCons;
 
 	protected override void OnInit()
 	{
 		base.OnInit();
-		ConditionalOverride[] overrides = _overrides;
+		ConditionalOverride[] overrides = this._overrides;
 		for (int i = 0; i < overrides.Length; i++)
 		{
 			overrides[i].Condition.InitInstance(base.Firearm);
 		}
-		if (_needsRefreshing)
+		if (this._needsRefreshing)
 		{
-			RefreshOverrides();
+			this.RefreshOverrides();
 		}
-		_initialized = true;
+		this._initialized = true;
 	}
 
 	internal override void OnAttachmentsApplied()
 	{
 		base.OnAttachmentsApplied();
-		if (_initialized)
+		if (this._initialized)
 		{
-			RefreshOverrides();
+			this.RefreshOverrides();
 		}
 		else
 		{
-			_needsRefreshing = true;
+			this._needsRefreshing = true;
 		}
 	}
 
 	private void RefreshOverrides()
 	{
-		for (int i = 0; i < _overrides.Length; i++)
+		for (int i = 0; i < this._overrides.Length; i++)
 		{
-			if (_overrides[i].Condition.Evaluate())
+			if (this._overrides[i].Condition.Evaluate())
 			{
-				if (_lastAppliedOverride != i)
+				if (this._lastAppliedOverride != i)
 				{
-					ApplyOverride(i);
+					this.ApplyOverride(i);
 				}
 				return;
 			}
 		}
-		if (_lastAppliedOverride.HasValue)
+		if (this._lastAppliedOverride.HasValue)
 		{
-			ApplyOverride(null);
+			this.ApplyOverride(null);
 		}
 	}
 
 	private void ApplyOverride(int? index)
 	{
-		ClearAllParameters();
+		base.ClearAllParameters();
 		if (!index.HasValue)
 		{
-			SetDefaultParameters();
+			base.SetDefaultParameters();
 		}
 		else
 		{
-			_overrides[index.Value].Params.ForEach(base.SetParameter);
+			this._overrides[index.Value].Params.ForEach(base.SetParameter);
 		}
-		_lastAppliedOverride = index;
+		this._lastAppliedOverride = index;
 	}
 }

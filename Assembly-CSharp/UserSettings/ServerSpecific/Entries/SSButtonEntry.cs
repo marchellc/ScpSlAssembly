@@ -15,7 +15,7 @@ public class SSButtonEntry : HoldableButton, ISSEntry
 
 	private SSButton _setting;
 
-	public override float HoldTime => _holdTime;
+	public override float HoldTime => this._holdTime;
 
 	public bool CheckCompatibility(ServerSpecificSettingBase setting)
 	{
@@ -24,10 +24,10 @@ public class SSButtonEntry : HoldableButton, ISSEntry
 
 	public void Init(ServerSpecificSettingBase settingBase)
 	{
-		_setting = settingBase as SSButton;
-		_label.Set(_setting);
-		_holdTime = _setting.HoldTimeSeconds;
-		if (_holdTime > 0f)
+		this._setting = settingBase as SSButton;
+		this._label.Set(this._setting);
+		this._holdTime = this._setting.HoldTimeSeconds;
+		if (this._holdTime > 0f)
 		{
 			base.OnHeld.AddListener(OnTrigger);
 		}
@@ -35,11 +35,11 @@ public class SSButtonEntry : HoldableButton, ISSEntry
 		{
 			base.onClick.AddListener(OnTrigger);
 		}
-		_buttonText.text = _setting.ButtonText;
+		this._buttonText.text = this._setting.ButtonText;
 	}
 
 	private void OnTrigger()
 	{
-		_setting.ClientSendValue();
+		this._setting.ClientSendValue();
 	}
 }

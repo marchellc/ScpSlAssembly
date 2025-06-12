@@ -17,9 +17,9 @@ public static class NewInput
 
 		public ActionDefinition(ActionName actionName, KeyCode k, ActionCategory c)
 		{
-			Name = actionName;
-			Category = c;
-			DefaultKey = k;
+			this.Name = actionName;
+			this.Category = c;
+			this.DefaultKey = k;
 		}
 	}
 
@@ -75,11 +75,11 @@ public static class NewInput
 
 	public static KeyCode GetKey(ActionName actionName, KeyCode fallbackKeycode = KeyCode.None)
 	{
-		if (!_loaded)
+		if (!NewInput._loaded)
 		{
-			Load();
+			NewInput.Load();
 		}
-		if (!UserKeybinds.TryGetValue(actionName, out var value))
+		if (!NewInput.UserKeybinds.TryGetValue(actionName, out var value))
 		{
 			return fallbackKeycode;
 		}
@@ -89,44 +89,44 @@ public static class NewInput
 	public static void Save()
 	{
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-		foreach (KeyValuePair<ActionName, KeyCode> userKeybind in UserKeybinds)
+		foreach (KeyValuePair<ActionName, KeyCode> userKeybind in NewInput.UserKeybinds)
 		{
 			stringBuilder.Append((int)userKeybind.Key);
 			stringBuilder.Append(':');
 			stringBuilder.Append((int)userKeybind.Value);
 			stringBuilder.Append(';');
 		}
-		File.WriteAllText(SaveFilePath, stringBuilder.ToString(0, stringBuilder.Length - 1));
+		File.WriteAllText(NewInput.SaveFilePath, stringBuilder.ToString(0, stringBuilder.Length - 1));
 		StringBuilderPool.Shared.Return(stringBuilder);
 	}
 
 	public static void Load()
 	{
-		ResetToDefault();
-		if (!File.Exists(SaveFilePath))
+		NewInput.ResetToDefault();
+		if (!File.Exists(NewInput.SaveFilePath))
 		{
-			Save();
+			NewInput.Save();
 		}
-		string[] array = File.ReadAllText(SaveFilePath).Split(';');
+		string[] array = File.ReadAllText(NewInput.SaveFilePath).Split(';');
 		for (int i = 0; i < array.Length; i++)
 		{
 			string[] array2 = array[i].Split(':');
-			if (array2.Length == 2 && TryParseActionName(array2[0], out var actionName) && TryParseKeycode(array2[1], out var keyCode))
+			if (array2.Length == 2 && NewInput.TryParseActionName(array2[0], out var actionName) && NewInput.TryParseKeycode(array2[1], out var keyCode))
 			{
-				UserKeybinds[actionName] = keyCode;
+				NewInput.UserKeybinds[actionName] = keyCode;
 			}
 		}
-		_loaded = true;
+		NewInput._loaded = true;
 	}
 
 	public static void ChangeKeybind(ActionName action, KeyCode key)
 	{
-		if (key != 0 || DefaultKeybinds.TryGetValue(action, out key))
+		if (key != KeyCode.None || NewInput.DefaultKeybinds.TryGetValue(action, out key))
 		{
-			UserKeybinds[action] = key;
+			NewInput.UserKeybinds[action] = key;
 			NewInput.OnAnyModified?.Invoke();
 			NewInput.OnKeyModified?.Invoke(action, key);
-			Save();
+			NewInput.Save();
 		}
 	}
 
@@ -155,19 +155,19 @@ public static class NewInput
 
 	public static void ResetToDefault()
 	{
-		UserKeybinds.Clear();
-		ActionDefinition[] definedActions = DefinedActions;
+		NewInput.UserKeybinds.Clear();
+		ActionDefinition[] definedActions = NewInput.DefinedActions;
 		foreach (ActionDefinition actionDefinition in definedActions)
 		{
 			KeyCode defaultKey = actionDefinition.DefaultKey;
-			UserKeybinds[actionDefinition.Name] = defaultKey;
-			DefaultKeybinds[actionDefinition.Name] = defaultKey;
+			NewInput.UserKeybinds[actionDefinition.Name] = defaultKey;
+			NewInput.DefaultKeybinds[actionDefinition.Name] = defaultKey;
 		}
 	}
 
 	public static bool TryGetCategory(this ActionName sourceAction, out ActionCategory cat)
 	{
-		ActionDefinition[] definedActions = DefinedActions;
+		ActionDefinition[] definedActions = NewInput.DefinedActions;
 		foreach (ActionDefinition actionDefinition in definedActions)
 		{
 			if (actionDefinition.Name == sourceAction)

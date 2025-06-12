@@ -30,9 +30,9 @@ public static class ItemTranslationReader
 		{
 			num = Mathf.Max(num, (int)availableItem.Key);
 		}
-		if (_cachedTranslations == null)
+		if (ItemTranslationReader._cachedTranslations == null)
 		{
-			_cachedTranslations = new NameDescriptionPair[num + 1];
+			ItemTranslationReader._cachedTranslations = new NameDescriptionPair[num + 1];
 		}
 		string val;
 		for (int i = 0; TranslationReader.TryGet("Items", i, out val); i++)
@@ -42,8 +42,8 @@ public static class ItemTranslationReader
 			{
 				string name = array[1];
 				string description = ((array.Length > 2) ? array[2] : string.Empty);
-				EnsureCapacity(result);
-				_cachedTranslations[result] = new NameDescriptionPair
+				ItemTranslationReader.EnsureCapacity(result);
+				ItemTranslationReader._cachedTranslations[result] = new NameDescriptionPair
 				{
 					Name = name,
 					Description = description
@@ -54,9 +54,9 @@ public static class ItemTranslationReader
 
 	private static void EnsureCapacity(int cap)
 	{
-		if (cap >= _cachedTranslations.Length)
+		if (cap >= ItemTranslationReader._cachedTranslations.Length)
 		{
-			Array.Resize(ref _cachedTranslations, cap * 2);
+			Array.Resize(ref ItemTranslationReader._cachedTranslations, cap * 2);
 		}
 	}
 
@@ -67,29 +67,29 @@ public static class ItemTranslationReader
 		{
 			throw new InvalidOperationException($"Cannot load translation for item {it}");
 		}
-		if (_cachedTranslations == null)
+		if (ItemTranslationReader._cachedTranslations == null)
 		{
-			ReloadTranslations();
+			ItemTranslationReader.ReloadTranslations();
 		}
-		NameDescriptionPair nameDescriptionPair = _cachedTranslations[num];
+		NameDescriptionPair nameDescriptionPair = ItemTranslationReader._cachedTranslations[num];
 		if (nameDescriptionPair == null)
 		{
 			nameDescriptionPair = new NameDescriptionPair
 			{
 				Name = it.ToString()
 			};
-			_cachedTranslations[num] = nameDescriptionPair;
+			ItemTranslationReader._cachedTranslations[num] = nameDescriptionPair;
 		}
 		return nameDescriptionPair;
 	}
 
 	public static string GetName(this ItemType it)
 	{
-		return GetTranslation(it).Name;
+		return ItemTranslationReader.GetTranslation(it).Name;
 	}
 
 	public static string GetDescription(this ItemType it)
 	{
-		return GetTranslation(it).Description;
+		return ItemTranslationReader.GetTranslation(it).Description;
 	}
 }

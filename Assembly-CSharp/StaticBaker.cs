@@ -17,7 +17,7 @@ public class StaticBaker : MonoBehaviour
 
 	private void Awake()
 	{
-		_currentRoot = base.gameObject;
+		StaticBaker._currentRoot = base.gameObject;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -30,11 +30,11 @@ public class StaticBaker : MonoBehaviour
 	{
 		if (stage == MapGenerationPhase.StaticBatching)
 		{
-			GameObject currentRoot = _currentRoot;
-			Type[] extractedTypes = ExtractedTypes;
+			GameObject currentRoot = StaticBaker._currentRoot;
+			Type[] extractedTypes = StaticBaker.ExtractedTypes;
 			foreach (Type type in extractedTypes)
 			{
-				ExtractType(currentRoot, type);
+				StaticBaker.ExtractType(currentRoot, type);
 			}
 			StaticBatchingUtility.Combine(currentRoot);
 		}
@@ -45,7 +45,7 @@ public class StaticBaker : MonoBehaviour
 		Component[] componentsInChildren = rootObject.GetComponentsInChildren(type, includeInactive: true);
 		foreach (Component component in componentsInChildren)
 		{
-			if (ShouldExtract(component))
+			if (StaticBaker.ShouldExtract(component))
 			{
 				component.transform.parent.gameObject.AddComponent<DynamicChildController>().SetChild(component.gameObject);
 			}
@@ -58,7 +58,7 @@ public class StaticBaker : MonoBehaviour
 		{
 			return false;
 		}
-		Type[] extractedTypes = ExtractedTypes;
+		Type[] extractedTypes = StaticBaker.ExtractedTypes;
 		foreach (Type t in extractedTypes)
 		{
 			if (component.transform.parent.GetComponentInParent(t, includeInactive: true) != null)

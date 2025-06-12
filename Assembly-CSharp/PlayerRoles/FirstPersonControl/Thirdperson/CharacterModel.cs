@@ -46,29 +46,29 @@ public class CharacterModel : PoolObject, IPoolResettable
 
 	public IFpcRole LastRole { get; private set; }
 
-	public ReadOnlySpan<Renderer> Renderers => _renderers;
+	public ReadOnlySpan<Renderer> Renderers => this._renderers;
 
 	public Transform CachedTransform { get; private set; }
 
-	public bool HasOwner => !_ownerless;
+	public bool HasOwner => !this._ownerless;
 
 	public virtual float Fade
 	{
 		get
 		{
-			return Mathf.Clamp01(_lastFade);
+			return Mathf.Clamp01(this._lastFade);
 		}
 		set
 		{
 			value = Mathf.Clamp01(value);
-			if (Fade != value)
+			if (this.Fade != value)
 			{
-				int num = FadeableMaterials.Length;
+				int num = this.FadeableMaterials.Length;
 				for (int i = 0; i < num; i++)
 				{
-					_fadeableMaterials[i].SetFloat(FadeHash, value);
+					this._fadeableMaterials[i].SetFloat(CharacterModel.FadeHash, value);
 				}
-				_lastFade = value;
+				this._lastFade = value;
 				this.OnFadeChanged?.Invoke();
 			}
 		}
@@ -78,17 +78,17 @@ public class CharacterModel : PoolObject, IPoolResettable
 	{
 		get
 		{
-			if (_fadeableMaterials == null)
+			if (this._fadeableMaterials == null)
 			{
-				PrepareFadeableMaterials();
+				this.PrepareFadeableMaterials();
 			}
-			return _fadeableMaterials;
+			return this._fadeableMaterials;
 		}
 	}
 
-	protected virtual Vector3 ModelPositionOffset => _localPos;
+	protected virtual Vector3 ModelPositionOffset => this._localPos;
 
-	protected virtual Quaternion ModelRotationOffset => _localRot;
+	protected virtual Quaternion ModelRotationOffset => this._localRot;
 
 	public event Action OnVisibilityChanged;
 
@@ -121,44 +121,44 @@ public class CharacterModel : PoolObject, IPoolResettable
 
 	private void PrepareFadeableMaterials()
 	{
-		int num = _renderers.Length;
-		if (_originalMaterials == null)
+		int num = this._renderers.Length;
+		if (this._originalMaterials == null)
 		{
-			SetOriginalMaterials();
+			this.SetOriginalMaterials();
 		}
 		int total = 0;
-		_previouslyDuplicatedMats.Clear();
+		CharacterModel._previouslyDuplicatedMats.Clear();
 		for (int i = 0; i < num; i++)
 		{
-			Renderer renderer = _renderers[i];
-			renderer.GetSharedMaterials(_sharedMaterialsNonAlloc);
-			switch (_sharedMaterialsNonAlloc.Count)
+			Renderer renderer = this._renderers[i];
+			renderer.GetSharedMaterials(CharacterModel._sharedMaterialsNonAlloc);
+			switch (CharacterModel._sharedMaterialsNonAlloc.Count)
 			{
 			case 1:
-				renderer.sharedMaterial = InstantiateFadeableMaterialSingle(_sharedMaterialsNonAlloc[0], ref total);
+				renderer.sharedMaterial = this.InstantiateFadeableMaterialSingle(CharacterModel._sharedMaterialsNonAlloc[0], ref total);
 				break;
 			default:
-				renderer.sharedMaterials = InstantiateAllFadeableMaterialList(ref total);
+				renderer.sharedMaterials = this.InstantiateAllFadeableMaterialList(ref total);
 				break;
 			case 0:
 				break;
 			}
 		}
-		_fadeableMaterials = new Material[total];
-		Array.Copy(_copyMaterialsNonAlloc, _fadeableMaterials, total);
+		this._fadeableMaterials = new Material[total];
+		Array.Copy(CharacterModel._copyMaterialsNonAlloc, this._fadeableMaterials, total);
 	}
 
 	private Material InstantiateFadeableMaterialSingle(Material originalMat, ref int total)
 	{
-		if (!originalMat.HasFloat(FadeHash))
+		if (!originalMat.HasFloat(CharacterModel.FadeHash))
 		{
 			return originalMat;
 		}
-		if (!_previouslyDuplicatedMats.TryGetValue(originalMat, out var value))
+		if (!CharacterModel._previouslyDuplicatedMats.TryGetValue(originalMat, out var value))
 		{
 			value = new Material(originalMat);
-			_previouslyDuplicatedMats[originalMat] = value;
-			_copyMaterialsNonAlloc[total] = value;
+			CharacterModel._previouslyDuplicatedMats[originalMat] = value;
+			CharacterModel._copyMaterialsNonAlloc[total] = value;
 			total++;
 		}
 		return value;
@@ -166,49 +166,49 @@ public class CharacterModel : PoolObject, IPoolResettable
 
 	private Material[] InstantiateAllFadeableMaterialList(ref int total)
 	{
-		Material[] array = new Material[_sharedMaterialsNonAlloc.Count];
+		Material[] array = new Material[CharacterModel._sharedMaterialsNonAlloc.Count];
 		for (int i = 0; i < array.Length; i++)
 		{
-			array[i] = InstantiateFadeableMaterialSingle(_sharedMaterialsNonAlloc[i], ref total);
+			array[i] = this.InstantiateFadeableMaterialSingle(CharacterModel._sharedMaterialsNonAlloc[i], ref total);
 		}
 		return array;
 	}
 
 	protected virtual void Awake()
 	{
-		CachedTransform = base.transform;
+		this.CachedTransform = base.transform;
 	}
 
 	protected virtual void OnValidate()
 	{
-		Hitboxes = GetComponentsInChildren<HitboxIdentity>();
-		MeshRenderer[] componentsInChildren = GetComponentsInChildren<MeshRenderer>();
-		SkinnedMeshRenderer[] componentsInChildren2 = GetComponentsInChildren<SkinnedMeshRenderer>();
+		this.Hitboxes = base.GetComponentsInChildren<HitboxIdentity>();
+		MeshRenderer[] componentsInChildren = base.GetComponentsInChildren<MeshRenderer>();
+		SkinnedMeshRenderer[] componentsInChildren2 = base.GetComponentsInChildren<SkinnedMeshRenderer>();
 		int num = componentsInChildren.Length;
 		int num2 = componentsInChildren2.Length;
-		_renderers = new Renderer[num + num2];
-		Array.Copy(componentsInChildren, _renderers, num);
-		Array.Copy(componentsInChildren2, 0, _renderers, num, num2);
+		this._renderers = new Renderer[num + num2];
+		Array.Copy(componentsInChildren, this._renderers, num);
+		Array.Copy(componentsInChildren2, 0, this._renderers, num, num2);
 	}
 
 	public virtual void OnPlayerMove()
 	{
-		CachedTransform.SetPositionAndRotation(_ownerTr.TransformPoint(ModelPositionOffset), ModelRotationOffset * _ownerTr.rotation);
+		this.CachedTransform.SetPositionAndRotation(this._ownerTr.TransformPoint(this.ModelPositionOffset), this.ModelRotationOffset * this._ownerTr.rotation);
 		this.OnPlayerMoved?.Invoke();
 	}
 
 	public virtual void Setup(ReferenceHub owner, IFpcRole role, Vector3 localPos, Quaternion localRot)
 	{
-		OwnerHub = owner;
-		LastRole = role;
-		_localPos = localPos;
-		_localRot = localRot;
-		_ownerTr = owner.transform;
-		HitboxIdentity[] hitboxes = Hitboxes;
+		this.OwnerHub = owner;
+		this.LastRole = role;
+		this._localPos = localPos;
+		this._localRot = localRot;
+		this._ownerTr = owner.transform;
+		HitboxIdentity[] hitboxes = this.Hitboxes;
 		foreach (HitboxIdentity hitboxIdentity in hitboxes)
 		{
 			HitboxIdentity.Instances.Add(hitboxIdentity);
-			hitboxIdentity.SetColliders(!OwnerHub.isLocalPlayer);
+			hitboxIdentity.SetColliders(!this.OwnerHub.isLocalPlayer);
 		}
 	}
 
@@ -218,14 +218,14 @@ public class CharacterModel : PoolObject, IPoolResettable
 
 	public virtual void PlayShotEffects(HitboxIdentity hitbox, Vector3 shotDirection)
 	{
-		_onShotSettings.PlayOnShotSound(hitbox, OwnerHub.isLocalPlayer || OwnerHub.IsLocallySpectated());
+		this._onShotSettings.PlayOnShotSound(hitbox, this.OwnerHub.isLocalPlayer || this.OwnerHub.IsLocallySpectated());
 	}
 
 	public virtual void ResetObject()
 	{
-		RestoreOriginalMaterials();
-		Fade = 1f;
-		HitboxIdentity[] hitboxes = Hitboxes;
+		this.RestoreOriginalMaterials();
+		this.Fade = 1f;
+		HitboxIdentity[] hitboxes = this.Hitboxes;
 		foreach (HitboxIdentity item in hitboxes)
 		{
 			HitboxIdentity.Instances.Remove(item);
@@ -234,40 +234,40 @@ public class CharacterModel : PoolObject, IPoolResettable
 
 	public void SetOriginalMaterials()
 	{
-		int num = _renderers.Length;
-		if (_originalMaterials == null)
+		int num = this._renderers.Length;
+		if (this._originalMaterials == null)
 		{
-			_originalMaterials = new RendererMaterialPair[num];
+			this._originalMaterials = new RendererMaterialPair[num];
 		}
 		for (int i = 0; i < num; i++)
 		{
-			Renderer renderer = _renderers[i];
-			renderer.GetSharedMaterials(_sharedMaterialsNonAlloc);
+			Renderer renderer = this._renderers[i];
+			renderer.GetSharedMaterials(CharacterModel._sharedMaterialsNonAlloc);
 			Material singleMaterial;
 			Material[] multipleMaterials;
-			if (_sharedMaterialsNonAlloc.Count > 1)
+			if (CharacterModel._sharedMaterialsNonAlloc.Count > 1)
 			{
 				singleMaterial = null;
-				multipleMaterials = _sharedMaterialsNonAlloc.ToArray();
+				multipleMaterials = CharacterModel._sharedMaterialsNonAlloc.ToArray();
 			}
 			else
 			{
-				singleMaterial = _sharedMaterialsNonAlloc[0];
+				singleMaterial = CharacterModel._sharedMaterialsNonAlloc[0];
 				multipleMaterials = null;
 			}
-			_originalMaterials[i] = new RendererMaterialPair(renderer, singleMaterial, multipleMaterials);
+			this._originalMaterials[i] = new RendererMaterialPair(renderer, singleMaterial, multipleMaterials);
 		}
 	}
 
 	public void RestoreOriginalMaterials()
 	{
-		if (_originalMaterials == null)
+		if (this._originalMaterials == null)
 		{
 			return;
 		}
-		for (int i = 0; i < _originalMaterials.Length; i++)
+		for (int i = 0; i < this._originalMaterials.Length; i++)
 		{
-			RendererMaterialPair rendererMaterialPair = _originalMaterials[i];
+			RendererMaterialPair rendererMaterialPair = this._originalMaterials[i];
 			if (rendererMaterialPair.MultipleMaterials == null)
 			{
 				rendererMaterialPair.Rend.sharedMaterial = rendererMaterialPair.SingleMaterial;
@@ -277,18 +277,18 @@ public class CharacterModel : PoolObject, IPoolResettable
 				rendererMaterialPair.Rend.sharedMaterials = rendererMaterialPair.MultipleMaterials;
 			}
 		}
-		_fadeableMaterials = null;
+		this._fadeableMaterials = null;
 	}
 
 	public void ReplaceOriginalMaterials(Func<Material, Material> replacer)
 	{
-		if (_originalMaterials == null)
+		if (this._originalMaterials == null)
 		{
 			return;
 		}
-		for (int i = 0; i < _originalMaterials.Length; i++)
+		for (int i = 0; i < this._originalMaterials.Length; i++)
 		{
-			RendererMaterialPair rendererMaterialPair = _originalMaterials[i];
+			RendererMaterialPair rendererMaterialPair = this._originalMaterials[i];
 			if (rendererMaterialPair.MultipleMaterials == null)
 			{
 				Material material = replacer(rendererMaterialPair.SingleMaterial);
@@ -305,11 +305,11 @@ public class CharacterModel : PoolObject, IPoolResettable
 			}
 			rendererMaterialPair.Rend.sharedMaterials = array;
 		}
-		_fadeableMaterials = null;
+		this._fadeableMaterials = null;
 	}
 
 	public virtual void SetAsOwnerless()
 	{
-		_ownerless = true;
+		this._ownerless = true;
 	}
 }

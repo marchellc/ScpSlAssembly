@@ -29,58 +29,58 @@ public class AnimatorLayerManager : MonoBehaviour
 	{
 		get
 		{
-			if (_animFound)
+			if (this._animFound)
 			{
-				return _animCache;
+				return this._animCache;
 			}
-			_animCache = GetComponent<Animator>();
-			_animFound = true;
-			return _animCache;
+			this._animCache = base.GetComponent<Animator>();
+			this._animFound = true;
+			return this._animCache;
 		}
 	}
 
 	private void Awake()
 	{
-		if (_rebuildOnAwake)
+		if (this._rebuildOnAwake)
 		{
-			RebuildPairCache();
+			this.RebuildPairCache();
 		}
 	}
 
 	public void RebuildPairCache()
 	{
-		_lookupCache.Clear();
-		int layerCount = Anim.layerCount;
-		if (_pairs == null)
+		this._lookupCache.Clear();
+		int layerCount = this.Anim.layerCount;
+		if (this._pairs == null)
 		{
-			_pairs = new List<RefIdIndexPair>(layerCount);
+			this._pairs = new List<RefIdIndexPair>(layerCount);
 		}
 		else
 		{
-			_pairs.Clear();
-			_pairs.EnsureCapacity(layerCount);
+			this._pairs.Clear();
+			this._pairs.EnsureCapacity(layerCount);
 		}
 		for (int i = 0; i < layerCount; i++)
 		{
-			if (TryUnpackFormat(Anim.GetLayerName(i), out var _, out var refId))
+			if (AnimatorLayerManager.TryUnpackFormat(this.Anim.GetLayerName(i), out var _, out var refId))
 			{
-				_pairs.Add(new RefIdIndexPair(refId, i));
+				this._pairs.Add(new RefIdIndexPair(refId, i));
 			}
 		}
 	}
 
 	public int GetLayerIndex(LayerRefId refId)
 	{
-		if (_lookupCache.TryGetValue(refId.Value, out var value))
+		if (this._lookupCache.TryGetValue(refId.Value, out var value))
 		{
 			return value;
 		}
-		for (int i = 0; i < _pairs.Count; i++)
+		for (int i = 0; i < this._pairs.Count; i++)
 		{
-			RefIdIndexPair refIdIndexPair = _pairs[i];
+			RefIdIndexPair refIdIndexPair = this._pairs[i];
 			if (refIdIndexPair.RefId.Value == refId.Value)
 			{
-				_lookupCache[refId.Value] = refIdIndexPair.LayerIndex;
+				this._lookupCache[refId.Value] = refIdIndexPair.LayerIndex;
 				return refIdIndexPair.LayerIndex;
 			}
 		}
@@ -89,17 +89,17 @@ public class AnimatorLayerManager : MonoBehaviour
 
 	public float GetLayerWeight(LayerRefId refId)
 	{
-		return Anim.GetLayerWeight(GetLayerIndex(refId));
+		return this.Anim.GetLayerWeight(this.GetLayerIndex(refId));
 	}
 
 	public void SetLayerWeight(LayerRefId refId, float weight)
 	{
-		Anim.SetLayerWeight(GetLayerIndex(refId), weight);
+		this.Anim.SetLayerWeight(this.GetLayerIndex(refId), weight);
 	}
 
 	public static bool TryUnpackFormat(string layerName, out string originalName, out LayerRefId refId)
 	{
-		Match match = RegexUnpacker.Match(layerName);
+		Match match = AnimatorLayerManager.RegexUnpacker.Match(layerName);
 		if (!match.Success)
 		{
 			originalName = null;

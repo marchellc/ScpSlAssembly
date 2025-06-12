@@ -42,19 +42,19 @@ public class Scp106StalkVisibilityController : StandardSubroutine<Scp106Role>
 	{
 		if (base.Owner.isLocalPlayer)
 		{
-			UpdateClient();
+			this.UpdateClient();
 		}
 		else if (base.Owner.IsLocallySpectated())
 		{
-			UpdateSpectator();
+			this.UpdateSpectator();
 		}
-		else if (_anyFaded)
+		else if (this._anyFaded)
 		{
-			CleanupFade();
+			this.CleanupFade();
 		}
 		if (NetworkServer.active)
 		{
-			UpdateServer();
+			this.UpdateServer();
 		}
 	}
 
@@ -66,20 +66,20 @@ public class Scp106StalkVisibilityController : StandardSubroutine<Scp106Role>
 			{
 				continue;
 			}
-			float num = (GetVisibilityForPlayer(allHub, fpcStandardRoleBase) ? 11.5f : (-11.5f));
+			float num = (this.GetVisibilityForPlayer(allHub, fpcStandardRoleBase) ? 11.5f : (-11.5f));
 			FirstPersonMovementModule fpcModule = fpcStandardRoleBase.FpcModule;
 			CharacterModel characterModelInstance = fpcModule.CharacterModelInstance;
 			bool flag = characterModelInstance.Fade == 0f;
 			characterModelInstance.Fade += num * Time.deltaTime;
 			if (characterModelInstance.Fade < 1f)
 			{
-				_affectedModels.Add(characterModelInstance);
+				this._affectedModels.Add(characterModelInstance);
 			}
 			else
 			{
-				_affectedModels.Remove(characterModelInstance);
+				this._affectedModels.Remove(characterModelInstance);
 			}
-			_anyFaded = true;
+			this._anyFaded = true;
 			if (!NetworkServer.active)
 			{
 				if (characterModelInstance.Fade == 0f)
@@ -96,29 +96,29 @@ public class Scp106StalkVisibilityController : StandardSubroutine<Scp106Role>
 
 	private void UpdateSpectator()
 	{
-		RefreshDamageDictionary();
-		UpdateClient();
+		this.RefreshDamageDictionary();
+		this.UpdateClient();
 	}
 
 	private void CleanupFade()
 	{
-		_affectedModels.ForEach(delegate(CharacterModel x)
+		this._affectedModels.ForEach(delegate(CharacterModel x)
 		{
 			x.Fade = 1f;
 		});
-		_affectedModels.Clear();
-		_anyFaded = false;
+		this._affectedModels.Clear();
+		this._anyFaded = false;
 	}
 
 	private void UpdateServer()
 	{
-		if (_stalk.StalkActive)
+		if (this._stalk.StalkActive)
 		{
-			RefreshDamageDictionary();
-			if (!(_sendStopwatch.Elapsed.TotalSeconds < 0.07999999821186066))
+			this.RefreshDamageDictionary();
+			if (!(this._sendStopwatch.Elapsed.TotalSeconds < 0.07999999821186066))
 			{
-				_sendStopwatch.Restart();
-				ServerSendRpc(toAll: false);
+				this._sendStopwatch.Restart();
+				base.ServerSendRpc(toAll: false);
 			}
 		}
 	}
@@ -130,7 +130,7 @@ public class Scp106StalkVisibilityController : StandardSubroutine<Scp106Role>
 		{
 			return false;
 		}
-		if (!_stalk.StalkActive || base.CastRole.Sinkhole.SubmergeProgress < 0.8f)
+		if (!this._stalk.StalkActive || base.CastRole.Sinkhole.SubmergeProgress < 0.8f)
 		{
 			return true;
 		}
@@ -142,7 +142,7 @@ public class Scp106StalkVisibilityController : StandardSubroutine<Scp106Role>
 		{
 			return true;
 		}
-		if (!SyncDamage.TryGetValue(hub.PlayerId, out var value))
+		if (!this.SyncDamage.TryGetValue(hub.PlayerId, out var value))
 		{
 			value = 0;
 		}
@@ -151,7 +151,7 @@ public class Scp106StalkVisibilityController : StandardSubroutine<Scp106Role>
 
 	private void RefreshDamageDictionary()
 	{
-		SyncDamage.Clear();
+		this.SyncDamage.Clear();
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (!HitboxIdentity.IsEnemy(base.Owner, allHub) || !(allHub.roleManager.CurrentRole is IFpcRole fpcRole))
@@ -160,14 +160,14 @@ public class Scp106StalkVisibilityController : StandardSubroutine<Scp106Role>
 			}
 			if (allHub.playerEffectsController.GetEffect<Traumatized>().IsEnabled)
 			{
-				SyncDamage[allHub.PlayerId] = 0;
+				this.SyncDamage[allHub.PlayerId] = 0;
 				continue;
 			}
 			HealthStat module = allHub.playerStats.GetModule<HealthStat>();
 			int num = Mathf.FloorToInt(module.MaxValue - module.CurValue);
 			if (num != 0 && !(Vector3.Distance(fpcRole.FpcModule.Position, base.CastRole.FpcModule.Position) - 5f > (float)num * 0.3f + 4f))
 			{
-				SyncDamage[allHub.PlayerId] = (byte)Mathf.Clamp(num, 0, 255);
+				this.SyncDamage[allHub.PlayerId] = (byte)Mathf.Clamp(num, 0, 255);
 			}
 		}
 	}
@@ -175,14 +175,14 @@ public class Scp106StalkVisibilityController : StandardSubroutine<Scp106Role>
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp106StalkAbility>(out _stalk);
+		base.GetSubroutine<Scp106StalkAbility>(out this._stalk);
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte((byte)SyncDamage.Count);
-		foreach (KeyValuePair<int, byte> item in SyncDamage)
+		writer.WriteByte((byte)this.SyncDamage.Count);
+		foreach (KeyValuePair<int, byte> item in this.SyncDamage)
 		{
 			writer.WriteRecyclablePlayerId(new RecyclablePlayerId(item.Key));
 			writer.WriteByte(item.Value);
@@ -192,12 +192,12 @@ public class Scp106StalkVisibilityController : StandardSubroutine<Scp106Role>
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		SyncDamage.Clear();
+		this.SyncDamage.Clear();
 		byte b = reader.ReadByte();
 		for (int i = 0; i < b; i++)
 		{
 			int value = reader.ReadRecyclablePlayerId().Value;
-			SyncDamage[value] = reader.ReadByte();
+			this.SyncDamage[value] = reader.ReadByte();
 		}
 	}
 
@@ -210,7 +210,7 @@ public class Scp106StalkVisibilityController : StandardSubroutine<Scp106Role>
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		CleanupFade();
+		this.CleanupFade();
 		FirstPersonMovementModule.OnPositionUpdated -= UpdateAll;
 	}
 }

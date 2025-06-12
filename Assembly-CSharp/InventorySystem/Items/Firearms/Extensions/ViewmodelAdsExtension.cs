@@ -34,22 +34,22 @@ public class ViewmodelAdsExtension : MonoBehaviour, IViewmodelExtension
 
 		public void Combine(OffsetSettings toCombine)
 		{
-			AdsFov += toCombine.AdsFov;
-			HipPosition += toCombine.HipPosition;
-			AdsPosition += toCombine.AdsPosition;
-			AdsRotation += toCombine.AdsRotation;
-			AdsSpeedMultiplierOffset += toCombine.AdsSpeedMultiplierOffset;
-			ShotAnimIntensity *= toCombine.ShotAnimIntensity;
+			this.AdsFov += toCombine.AdsFov;
+			this.HipPosition += toCombine.HipPosition;
+			this.AdsPosition += toCombine.AdsPosition;
+			this.AdsRotation += toCombine.AdsRotation;
+			this.AdsSpeedMultiplierOffset += toCombine.AdsSpeedMultiplierOffset;
+			this.ShotAnimIntensity *= toCombine.ShotAnimIntensity;
 		}
 
 		public void SetFrom(OffsetSettings source)
 		{
-			AdsFov = source.AdsFov;
-			HipPosition = source.HipPosition;
-			AdsPosition = source.AdsPosition;
-			AdsRotation = source.AdsRotation;
-			AdsSpeedMultiplierOffset = source.AdsSpeedMultiplierOffset;
-			ShotAnimIntensity = source.ShotAnimIntensity;
+			this.AdsFov = source.AdsFov;
+			this.HipPosition = source.HipPosition;
+			this.AdsPosition = source.AdsPosition;
+			this.AdsRotation = source.AdsRotation;
+			this.AdsSpeedMultiplierOffset = source.AdsSpeedMultiplierOffset;
+			this.ShotAnimIntensity = source.ShotAnimIntensity;
 		}
 	}
 
@@ -125,42 +125,42 @@ public class ViewmodelAdsExtension : MonoBehaviour, IViewmodelExtension
 
 	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_firearm = viewmodel.ParentFirearm;
-		_viewmodelTr = viewmodel.transform;
-		_viewmodel = viewmodel;
-		AdsAttachmentOffset[] attachmentOffsets = _attachmentOffsets;
+		this._firearm = viewmodel.ParentFirearm;
+		this._viewmodelTr = viewmodel.transform;
+		this._viewmodel = viewmodel;
+		AdsAttachmentOffset[] attachmentOffsets = this._attachmentOffsets;
 		for (int i = 0; i < attachmentOffsets.Length; i++)
 		{
-			attachmentOffsets[i].TargetAttachment.InitCache(_firearm);
+			attachmentOffsets[i].TargetAttachment.InitCache(this._firearm);
 		}
-		if (_firearm.TryGetModule<IAdsModule>(out _adsModule))
+		if (this._firearm.TryGetModule<IAdsModule>(out this._adsModule))
 		{
-			RefreshAttachments();
-			_initialized = true;
-			_viewmodel.OnAttachmentsUpdated += RefreshAttachments;
+			this.RefreshAttachments();
+			this._initialized = true;
+			this._viewmodel.OnAttachmentsUpdated += RefreshAttachments;
 			if (viewmodel.IsSpectator)
 			{
-				_animationTime = (_prevAdsAmount = LinearAdsModule.GetAdsAmountForSerial(_firearm.ItemSerial));
-				_returnAnimation = false;
+				this._animationTime = (this._prevAdsAmount = LinearAdsModule.GetAdsAmountForSerial(this._firearm.ItemSerial));
+				this._returnAnimation = false;
 			}
 		}
 	}
 
 	private void RefreshAttachments()
 	{
-		_combinedSettings.SetFrom(_defaultOffset);
-		for (int i = 0; i < _attachmentOffsets.Length; i++)
+		this._combinedSettings.SetFrom(this._defaultOffset);
+		for (int i = 0; i < this._attachmentOffsets.Length; i++)
 		{
-			AdsAttachmentOffset adsAttachmentOffset = _attachmentOffsets[i];
+			AdsAttachmentOffset adsAttachmentOffset = this._attachmentOffsets[i];
 			if (adsAttachmentOffset.TargetAttachment.Instance.IsEnabled)
 			{
 				if (adsAttachmentOffset.OverridePrevious)
 				{
-					_combinedSettings.SetFrom(adsAttachmentOffset.OffsetSettings);
+					this._combinedSettings.SetFrom(adsAttachmentOffset.OffsetSettings);
 				}
 				else
 				{
-					_combinedSettings.Combine(adsAttachmentOffset.OffsetSettings);
+					this._combinedSettings.Combine(adsAttachmentOffset.OffsetSettings);
 				}
 			}
 		}
@@ -168,101 +168,101 @@ public class ViewmodelAdsExtension : MonoBehaviour, IViewmodelExtension
 
 	private void OnValidate()
 	{
-		if (_initialized)
+		if (this._initialized)
 		{
-			RefreshAttachments();
+			this.RefreshAttachments();
 		}
 	}
 
 	private void Update()
 	{
-		if (_initialized)
+		if (this._initialized)
 		{
-			UpdateOffset();
-			UpdateSounds();
-			int[] layers = _adsAnimsLayer.Layers;
+			this.UpdateOffset();
+			this.UpdateSounds();
+			int[] layers = this._adsAnimsLayer.Layers;
 			foreach (int layer in layers)
 			{
-				UpdateAnims(layer);
+				this.UpdateAnims(layer);
 			}
 		}
 	}
 
 	private void UpdateOffset()
 	{
-		float num = CorrectionCurve.Evaluate(_adsModule.AdsAmount);
-		Vector3 localPosition = Vector3.Lerp(_combinedSettings.HipPosition, _combinedSettings.AdsPosition, num);
-		Quaternion localRotation = Quaternion.Euler(_combinedSettings.AdsRotation * num);
-		_viewmodelTr.SetLocalPositionAndRotation(localPosition, localRotation);
-		_viewmodel.FovOffset = _combinedSettings.AdsFov * num;
+		float num = ViewmodelAdsExtension.CorrectionCurve.Evaluate(this._adsModule.AdsAmount);
+		Vector3 localPosition = Vector3.Lerp(this._combinedSettings.HipPosition, this._combinedSettings.AdsPosition, num);
+		Quaternion localRotation = Quaternion.Euler(this._combinedSettings.AdsRotation * num);
+		this._viewmodelTr.SetLocalPositionAndRotation(localPosition, localRotation);
+		this._viewmodel.FovOffset = this._combinedSettings.AdsFov * num;
 	}
 
 	private void UpdateSounds()
 	{
-		if (_firearm.TryGetModule<AudioModule>(out var module))
+		if (this._firearm.TryGetModule<AudioModule>(out var module))
 		{
-			float adsAmount = _adsModule.AdsAmount;
+			float adsAmount = this._adsModule.AdsAmount;
 			bool flag = adsAmount > 0f && adsAmount < 1f;
-			if (flag && !_wasTransitioning)
+			if (flag && !this._wasTransitioning)
 			{
-				module.PlayClientside(_adsModule.AdsTarget ? _adsInSound : _adsOutSound);
+				module.PlayClientside(this._adsModule.AdsTarget ? this._adsInSound : this._adsOutSound);
 			}
-			_wasTransitioning = flag;
+			this._wasTransitioning = flag;
 		}
 	}
 
 	private void UpdateAnims(int layer)
 	{
-		float adsAmount = _adsModule.AdsAmount;
-		bool adsTarget = _adsModule.AdsTarget;
-		if (_prevAdsTarget != adsTarget)
+		float adsAmount = this._adsModule.AdsAmount;
+		bool adsTarget = this._adsModule.AdsTarget;
+		if (this._prevAdsTarget != adsTarget)
 		{
-			if (adsTarget && _prevAdsAmount <= 0f)
+			if (adsTarget && this._prevAdsAmount <= 0f)
 			{
-				_animationTime = 0f;
-				_returnAnimation = false;
-				Randomize();
+				this._animationTime = 0f;
+				this._returnAnimation = false;
+				this.Randomize();
 			}
-			else if (!adsTarget && _prevAdsAmount >= 1f)
+			else if (!adsTarget && this._prevAdsAmount >= 1f)
 			{
-				_animationTime = 1f;
-				_returnAnimation = true;
+				this._animationTime = 1f;
+				this._returnAnimation = true;
 			}
 		}
 		float target = (adsTarget ? 1 : 0);
-		float num = _adsInAnimationSpeed + _combinedSettings.AdsSpeedMultiplierOffset.x;
-		float num2 = _adsOutAnimationSpeed + _combinedSettings.AdsSpeedMultiplierOffset.y;
-		float num3 = (_returnAnimation ? num2 : num);
-		float num4 = _firearm.AttachmentsValue(AttachmentParam.AdsSpeedMultiplier) * 5f * num3;
-		_animationTime = Mathf.MoveTowards(_animationTime, target, Time.deltaTime * num4);
-		if (_returnAnimation)
+		float num = this._adsInAnimationSpeed + this._combinedSettings.AdsSpeedMultiplierOffset.x;
+		float num2 = this._adsOutAnimationSpeed + this._combinedSettings.AdsSpeedMultiplierOffset.y;
+		float num3 = (this._returnAnimation ? num2 : num);
+		float num4 = this._firearm.AttachmentsValue(AttachmentParam.AdsSpeedMultiplier) * 5f * num3;
+		this._animationTime = Mathf.MoveTowards(this._animationTime, target, Time.deltaTime * num4);
+		if (this._returnAnimation)
 		{
-			_viewmodel.AnimatorPlay(FirearmAnimatorHashes.AdsOutState, layer, 1f - _animationTime);
-			if (_animationTime == 1f && adsTarget)
+			this._viewmodel.AnimatorPlay(FirearmAnimatorHashes.AdsOutState, layer, 1f - this._animationTime);
+			if (this._animationTime == 1f && adsTarget)
 			{
-				_returnAnimation = false;
+				this._returnAnimation = false;
 			}
 		}
 		else
 		{
-			_viewmodel.AnimatorPlay(FirearmAnimatorHashes.AdsInState, layer, _animationTime);
+			this._viewmodel.AnimatorPlay(FirearmAnimatorHashes.AdsInState, layer, this._animationTime);
 		}
-		_prevAdsTarget = adsTarget;
-		_prevAdsAmount = adsAmount;
-		_viewmodel.AnimatorSetFloat(FirearmAnimatorHashes.AdsCurrent, adsAmount);
-		if (_enableShootingAnimReduction)
+		this._prevAdsTarget = adsTarget;
+		this._prevAdsAmount = adsAmount;
+		this._viewmodel.AnimatorSetFloat(FirearmAnimatorHashes.AdsCurrent, adsAmount);
+		if (this._enableShootingAnimReduction)
 		{
-			float num5 = Mathf.Lerp(_noShootingAnimBlendWeight, adsAmount, _combinedSettings.ShotAnimIntensity);
-			_viewmodel.AnimatorSetFloat(FirearmAnimatorHashes.AdsShotBlend, adsAmount * num5);
+			float num5 = Mathf.Lerp(this._noShootingAnimBlendWeight, adsAmount, this._combinedSettings.ShotAnimIntensity);
+			this._viewmodel.AnimatorSetFloat(FirearmAnimatorHashes.AdsShotBlend, adsAmount * num5);
 		}
 	}
 
 	private void Randomize()
 	{
-		if (_randomizerSettings.Randomize)
+		if (this._randomizerSettings.Randomize)
 		{
-			int num = UnityEngine.Random.Range(0, _randomizerSettings.TotalSights);
-			_viewmodel.AnimatorSetFloat(FirearmAnimatorHashes.AdsRandom, num);
+			int num = UnityEngine.Random.Range(0, this._randomizerSettings.TotalSights);
+			this._viewmodel.AnimatorSetFloat(FirearmAnimatorHashes.AdsRandom, num);
 		}
 	}
 }

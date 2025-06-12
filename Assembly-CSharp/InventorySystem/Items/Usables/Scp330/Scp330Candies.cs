@@ -24,23 +24,23 @@ public static class Scp330Candies
 	{
 		get
 		{
-			if (!_dictionarySet)
+			if (!Scp330Candies._dictionarySet)
 			{
-				ICandy[] allCandies = AllCandies;
+				ICandy[] allCandies = Scp330Candies.AllCandies;
 				foreach (ICandy candy in allCandies)
 				{
-					DictionarizedCandies[candy.Kind] = candy;
+					Scp330Candies.DictionarizedCandies[candy.Kind] = candy;
 				}
-				_dictionarySet = true;
+				Scp330Candies._dictionarySet = true;
 			}
-			return DictionarizedCandies;
+			return Scp330Candies.DictionarizedCandies;
 		}
 	}
 
 	public static CandyKindID GetRandom(CandyKindID ignoredKind = CandyKindID.None)
 	{
 		float num = 0f;
-		ICandy[] allCandies = AllCandies;
+		ICandy[] allCandies = Scp330Candies.AllCandies;
 		foreach (ICandy candy in allCandies)
 		{
 			if (candy.Kind != ignoredKind)
@@ -49,7 +49,7 @@ public static class Scp330Candies
 			}
 		}
 		float num2 = Random.Range(0f, num);
-		allCandies = AllCandies;
+		allCandies = Scp330Candies.AllCandies;
 		foreach (ICandy candy2 in allCandies)
 		{
 			if (candy2.Kind != ignoredKind)

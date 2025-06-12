@@ -136,11 +136,11 @@ public class Scp956Pinata : NetworkBehaviour
 	{
 		get
 		{
-			return _instance._spawned;
+			return Scp956Pinata._instance._spawned;
 		}
 		set
 		{
-			_instance.Network_spawned = value;
+			Scp956Pinata._instance.Network_spawned = value;
 		}
 	}
 
@@ -150,12 +150,12 @@ public class Scp956Pinata : NetworkBehaviour
 	{
 		get
 		{
-			return _spawned;
+			return this._spawned;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _spawned, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._spawned, 1uL, null);
 		}
 	}
 
@@ -163,12 +163,12 @@ public class Scp956Pinata : NetworkBehaviour
 	{
 		get
 		{
-			return _syncPos;
+			return this._syncPos;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _syncPos, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._syncPos, 2uL, null);
 		}
 	}
 
@@ -176,12 +176,12 @@ public class Scp956Pinata : NetworkBehaviour
 	{
 		get
 		{
-			return _syncRot;
+			return this._syncRot;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _syncRot, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._syncRot, 4uL, null);
 		}
 	}
 
@@ -189,12 +189,12 @@ public class Scp956Pinata : NetworkBehaviour
 	{
 		get
 		{
-			return _flying;
+			return this._flying;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _flying, 8uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._flying, 8uL, null);
 		}
 	}
 
@@ -202,18 +202,18 @@ public class Scp956Pinata : NetworkBehaviour
 	{
 		get
 		{
-			return _carpincho;
+			return this._carpincho;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _carpincho, 16uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._carpincho, 16uL, null);
 		}
 	}
 
 	public static bool TryGetInstance(out Scp956Pinata instance)
 	{
-		instance = _instance;
+		instance = Scp956Pinata._instance;
 		return instance != null;
 	}
 
@@ -221,115 +221,115 @@ public class Scp956Pinata : NetworkBehaviour
 	private void RpcAttack()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void Scp956Pinata::RpcAttack()", 977535511, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Scp956Pinata::RpcAttack()", 977535511, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	private void Awake()
 	{
-		_tr = base.transform;
-		_instance = this;
+		this._tr = base.transform;
+		Scp956Pinata._instance = this;
 	}
 
 	private void Update()
 	{
-		UpdateVisual();
+		this.UpdateVisual();
 		if (NetworkServer.active)
 		{
-			UpdateAi();
+			this.UpdateAi();
 		}
-		UpdatePos();
+		this.UpdatePos();
 	}
 
 	private void UpdateVisual()
 	{
-		_attackTimer += Time.deltaTime;
-		_attackMover.localPosition = Vector3.forward * _attackCurve.Evaluate(_attackTimer);
-		float num = Mathf.Clamp01(_fade + _appearSpeed * Time.deltaTime * (float)(_spawned ? 1 : (-1)));
-		if (num == _fade)
+		this._attackTimer += Time.deltaTime;
+		this._attackMover.localPosition = Vector3.forward * this._attackCurve.Evaluate(this._attackTimer);
+		float num = Mathf.Clamp01(this._fade + this._appearSpeed * Time.deltaTime * (float)(this._spawned ? 1 : (-1)));
+		if (num == this._fade)
 		{
 			return;
 		}
-		_fade = num;
-		_appearMat.SetFloat(Scp559Cake.ShaderDissolveProperty, 1f - _fade);
-		bool flag = _carpincho == 69;
-		if (_fade > 0f)
+		this._fade = num;
+		this._appearMat.SetFloat(Scp559Cake.ShaderDissolveProperty, 1f - this._fade);
+		bool flag = this._carpincho == 69;
+		if (this._fade > 0f)
 		{
 			if (flag)
 			{
-				_capybara.SetActive(value: true);
+				this._capybara.SetActive(value: true);
 			}
 			else
 			{
-				_visuals.SetActive(value: true);
+				this._visuals.SetActive(value: true);
 			}
 		}
-		_tr.rotation = Quaternion.Euler(Vector3.up * _syncRot);
+		this._tr.rotation = Quaternion.Euler(Vector3.up * this._syncRot);
 	}
 
 	private void UpdateAi()
 	{
-		_respawnTimer -= Time.deltaTime;
-		if (!_spawned && !_hasBeenGiftSpawned)
+		this._respawnTimer -= Time.deltaTime;
+		if (!this._spawned && !Scp956Pinata._hasBeenGiftSpawned)
 		{
-			if (!(_respawnTimer > 0f))
+			if (!(this._respawnTimer > 0f))
 			{
-				if (!TryGetSpawnPos(out var pos))
+				if (!this.TryGetSpawnPos(out var pos))
 				{
-					_respawnTimer = _changePositionCooldown;
+					this._respawnTimer = this._changePositionCooldown;
 					return;
 				}
-				Network_carpincho = (byte)Random.Range(0, 255);
-				Network_syncPos = pos;
-				_spawnPos = pos;
-				Network_syncRot = Random.value * 360f;
-				Network_spawned = true;
-				Network_flying = false;
-				_respawnTimer = _huntingTime;
+				this.Network_carpincho = (byte)Random.Range(0, 255);
+				this.Network_syncPos = pos;
+				this._spawnPos = pos;
+				this.Network_syncRot = Random.value * 360f;
+				this.Network_spawned = true;
+				this.Network_flying = false;
+				this._respawnTimer = this._huntingTime;
 			}
 			return;
 		}
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			Scp956Target.EffectReason effectReason = CheckSpawnCondition(allHub);
-			if (effectReason == Scp956Target.EffectReason.None || !CheckPlayer(allHub))
+			Scp956Target.EffectReason effectReason = this.CheckSpawnCondition(allHub);
+			if (effectReason == Scp956Target.EffectReason.None || !this.CheckPlayer(allHub))
 			{
-				if (ActiveTargets.Remove(allHub))
+				if (Scp956Pinata.ActiveTargets.Remove(allHub))
 				{
 					allHub.playerEffectsController.DisableEffect<Scp956Target>();
 				}
 			}
 			else
 			{
-				ActiveTargets.Add(allHub);
+				Scp956Pinata.ActiveTargets.Add(allHub);
 				allHub.playerEffectsController.GetEffect<Scp956Target>().Intensity = (byte)effectReason;
-				_respawnTimer = _huntingTime;
+				this._respawnTimer = this._huntingTime;
 			}
 		}
-		if (_respawnTimer < 0f)
+		if (this._respawnTimer < 0f)
 		{
-			TryDespawn();
+			this.TryDespawn();
 			return;
 		}
-		bool flag = _foundTarget == null;
-		if (!flag && (CheckSpawnCondition(_foundTarget.Hub) == Scp956Target.EffectReason.None || !ActiveTargets.Contains(_foundTarget.Hub)))
+		bool flag = this._foundTarget == null;
+		if (!flag && (this.CheckSpawnCondition(this._foundTarget.Hub) == Scp956Target.EffectReason.None || !Scp956Pinata.ActiveTargets.Contains(this._foundTarget.Hub)))
 		{
-			_foundTarget = null;
+			this._foundTarget = null;
 			flag = true;
 		}
 		if (flag)
 		{
 			float num = float.MaxValue;
 			bool flag2 = false;
-			foreach (ReferenceHub activeTarget in ActiveTargets)
+			foreach (ReferenceHub activeTarget in Scp956Pinata.ActiveTargets)
 			{
 				Scp956Target effect = activeTarget.playerEffectsController.GetEffect<Scp956Target>();
 				if (effect.IsAffected)
 				{
-					float sqrMagnitude = (effect.Position - _tr.position).sqrMagnitude;
+					float sqrMagnitude = (effect.Position - this._tr.position).sqrMagnitude;
 					if (!(sqrMagnitude > num))
 					{
-						_foundTarget = effect;
+						this._foundTarget = effect;
 						num = sqrMagnitude;
 						flag2 = true;
 					}
@@ -339,83 +339,83 @@ public class Scp956Pinata : NetworkBehaviour
 			{
 				return;
 			}
-			_sequenceTimer = 0f;
-			_initialRot = _syncRot;
-			_initialPos = _syncPos;
-			_attackTriggered = false;
+			this._sequenceTimer = 0f;
+			this._initialRot = this._syncRot;
+			this._initialPos = this._syncPos;
+			this._attackTriggered = false;
 		}
-		_sequenceTimer += Time.deltaTime;
-		Vector3 normalized = (_foundTarget.Position - _tr.position).normalized;
+		this._sequenceTimer += Time.deltaTime;
+		Vector3 normalized = (this._foundTarget.Position - this._tr.position).normalized;
 		float b = Vector3.Angle(normalized, Vector3.forward) * Mathf.Sign(Vector3.Dot(normalized, Vector3.right));
-		Network_syncRot = Mathf.LerpAngle(_initialRot, b, (_sequenceTimer - 1f) / 4f);
-		if (_sequenceTimer < 6f)
+		this.Network_syncRot = Mathf.LerpAngle(this._initialRot, b, (this._sequenceTimer - 1f) / 4f);
+		if (this._sequenceTimer < 6f)
 		{
 			return;
 		}
-		Vector3 b2 = _foundTarget.Position - _tr.forward.NormalizeIgnoreY();
-		if (Mathf.Abs(_spawnPos.y - _foundTarget.Position.y) < _heightTolerance)
+		Vector3 b2 = this._foundTarget.Position - this._tr.forward.NormalizeIgnoreY();
+		if (Mathf.Abs(this._spawnPos.y - this._foundTarget.Position.y) < this._heightTolerance)
 		{
-			b2.y = _spawnPos.y;
-			Network_flying = false;
+			b2.y = this._spawnPos.y;
+			this.Network_flying = false;
 		}
 		else
 		{
-			b2.y = _foundTarget.Position.y;
-			Network_flying = true;
+			b2.y = this._foundTarget.Position.y;
+			this.Network_flying = true;
 		}
-		Network_syncPos = Vector3.Lerp(_initialPos, b2, (_sequenceTimer - 6f) / 7f);
-		if (!(_sequenceTimer < 13.3f))
+		this.Network_syncPos = Vector3.Lerp(this._initialPos, b2, (this._sequenceTimer - 6f) / 7f);
+		if (!(this._sequenceTimer < 13.3f))
 		{
-			if (!_attackTriggered)
+			if (!this._attackTriggered)
 			{
-				RpcAttack();
-				_attackTriggered = true;
+				this.RpcAttack();
+				this._attackTriggered = true;
 			}
-			if (!(_sequenceTimer < 13.5f))
+			if (!(this._sequenceTimer < 13.5f))
 			{
-				_foundTarget.Hub.playerStats.DealDamage(new Scp956DamageHandler(normalized));
-				_foundTarget = null;
+				this._foundTarget.Hub.playerStats.DealDamage(new Scp956DamageHandler(normalized));
+				this._foundTarget = null;
 			}
 		}
 	}
 
 	public void SpawnBehindTarget(ReferenceHub target)
 	{
-		ActiveTargets.Add(target);
-		_foundTarget = target.playerEffectsController.EnableEffect<Scp956Target>();
-		_foundTarget.Intensity = 254;
-		_respawnTimer = _huntingTime;
+		Scp956Pinata.ActiveTargets.Add(target);
+		this._foundTarget = target.playerEffectsController.EnableEffect<Scp956Target>();
+		this._foundTarget.Intensity = 254;
+		this._respawnTimer = this._huntingTime;
 		Transform transform = target.transform;
-		Vector3 initialPos = (Network_syncPos = (_spawnPos = transform.position - transform.forward * 2f));
-		_initialPos = initialPos;
-		float initialRot = (Network_syncRot = Random.value * 360f);
-		_initialRot = initialRot;
-		_respawnTimer = _huntingTime;
-		_attackTriggered = false;
-		bool hasBeenGiftSpawned = (Network_spawned = true);
-		_hasBeenGiftSpawned = hasBeenGiftSpawned;
+		Vector3 initialPos = (this.Network_syncPos = (this._spawnPos = transform.position - transform.forward * 2f));
+		this._initialPos = initialPos;
+		float initialRot = (this.Network_syncRot = Random.value * 360f);
+		this._initialRot = initialRot;
+		this._respawnTimer = this._huntingTime;
+		this._attackTriggered = false;
+		bool hasBeenGiftSpawned = (this.Network_spawned = true);
+		Scp956Pinata._hasBeenGiftSpawned = hasBeenGiftSpawned;
 	}
 
 	private void TryDespawn()
 	{
-		Vector3 thisPos = _tr.position;
-		if (!ReferenceHub.AllHubs.Any((ReferenceHub x) => x.roleManager.CurrentRole is IFpcRole fpcRole && CheckVisibility(thisPos, fpcRole.FpcModule.Position)))
+		Vector3 thisPos = this._tr.position;
+		if (!ReferenceHub.AllHubs.Any((ReferenceHub x) => x.roleManager.CurrentRole is IFpcRole fpcRole && this.CheckVisibility(thisPos, fpcRole.FpcModule.Position)))
 		{
-			Network_spawned = false;
-			_respawnTimer = _changePositionCooldown;
+			this.Network_spawned = false;
+			this._respawnTimer = this._changePositionCooldown;
 		}
 	}
 
 	private bool CheckPlayer(ReferenceHub hub)
 	{
-		Vector3 position = _tr.position;
+		Vector3 position = this._tr.position;
 		Vector3 position2 = (hub.roleManager.CurrentRole as HumanRole).FpcModule.Position;
-		float num = _targettingRange * _targettingRange;
+		float num = this._targettingRange * this._targettingRange;
 		if ((position - position2).sqrMagnitude > num)
 		{
 			return false;
 		}
-		if (!CheckVisibility(position, position2))
+		if (!this.CheckVisibility(position, position2))
 		{
 			return false;
 		}
@@ -429,22 +429,22 @@ public class Scp956Pinata : NetworkBehaviour
 	private bool TryGetSpawnPos(out Vector3 pos)
 	{
 		pos = default(Vector3);
-		ZonesByIntensity.Clear();
+		Scp956Pinata.ZonesByIntensity.Clear();
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			if (CheckSpawnCondition(allHub) == Scp956Target.EffectReason.Child && allHub.roleManager.CurrentRole is HumanRole && allHub.TryGetCurrentRoom(out var room) && _spawnableZones.Contains(room.Zone))
+			if (this.CheckSpawnCondition(allHub) == Scp956Target.EffectReason.Child && allHub.roleManager.CurrentRole is HumanRole && allHub.TryGetCurrentRoom(out var room) && this._spawnableZones.Contains(room.Zone))
 			{
-				ZonesByIntensity.TryGetValue(room.Zone, out var value);
-				ZonesByIntensity[room.Zone] = value + 1;
+				Scp956Pinata.ZonesByIntensity.TryGetValue(room.Zone, out var value);
+				Scp956Pinata.ZonesByIntensity[room.Zone] = value + 1;
 			}
 		}
-		if (ZonesByIntensity.Count == 0)
+		if (Scp956Pinata.ZonesByIntensity.Count == 0)
 		{
 			return false;
 		}
 		FacilityZone facilityZone = FacilityZone.None;
 		int num = 0;
-		foreach (KeyValuePair<FacilityZone, int> item in ZonesByIntensity)
+		foreach (KeyValuePair<FacilityZone, int> item in Scp956Pinata.ZonesByIntensity)
 		{
 			if (item.Value >= num)
 			{
@@ -452,26 +452,26 @@ public class Scp956Pinata : NetworkBehaviour
 				num = item.Value;
 			}
 		}
-		CompatibleDoors.Clear();
+		Scp956Pinata.CompatibleDoors.Clear();
 		foreach (DoorVariant allDoor in DoorVariant.AllDoors)
 		{
 			if (allDoor is BreakableDoor && allDoor.Rooms != null && allDoor.Rooms.Length != 0 && allDoor.Rooms[0].Zone == facilityZone)
 			{
-				CompatibleDoors.Add(allDoor);
+				Scp956Pinata.CompatibleDoors.Add(allDoor);
 			}
 		}
-		while (CompatibleDoors.Count > 0)
+		while (Scp956Pinata.CompatibleDoors.Count > 0)
 		{
-			int index = Random.Range(0, CompatibleDoors.Count);
-			Transform transform = CompatibleDoors[index].transform;
-			CompatibleDoors.RemoveAt(index);
-			pos = transform.position + _doorOffset * RandomSign * transform.forward + Vector3.up * _raycastHeight;
-			if (Physics.SphereCast(pos, _pinataRadius, transform.right * RandomSign, out var hitInfo, _raycastRange, FpcStateProcessor.Mask) && !(hitInfo.distance < _minDistance))
+			int index = Random.Range(0, Scp956Pinata.CompatibleDoors.Count);
+			Transform transform = Scp956Pinata.CompatibleDoors[index].transform;
+			Scp956Pinata.CompatibleDoors.RemoveAt(index);
+			pos = transform.position + this._doorOffset * Scp956Pinata.RandomSign * transform.forward + Vector3.up * this._raycastHeight;
+			if (Physics.SphereCast(pos, this._pinataRadius, transform.right * Scp956Pinata.RandomSign, out var hitInfo, this._raycastRange, FpcStateProcessor.Mask) && !(hitInfo.distance < this._minDistance))
 			{
-				Vector3 vector = hitInfo.point + hitInfo.normal * _pinataRadius;
-				pos = new Vector3(vector.x, transform.position.y + _floorHeight, vector.z);
+				Vector3 vector = hitInfo.point + hitInfo.normal * this._pinataRadius;
+				pos = new Vector3(vector.x, transform.position.y + this._floorHeight, vector.z);
 				Vector3 checkPos = pos;
-				if (!ReferenceHub.AllHubs.Any((ReferenceHub x) => x.roleManager.CurrentRole is IFpcRole fpcRole && CheckVisibility(checkPos, fpcRole.FpcModule.Position)))
+				if (!ReferenceHub.AllHubs.Any((ReferenceHub x) => x.roleManager.CurrentRole is IFpcRole fpcRole && this.CheckVisibility(checkPos, fpcRole.FpcModule.Position)))
 				{
 					return true;
 				}
@@ -482,7 +482,7 @@ public class Scp956Pinata : NetworkBehaviour
 
 	private bool CheckVisibility(Vector3 checkPos, Vector3 humanPos)
 	{
-		return !Physics.CheckCapsule(checkPos, humanPos, _targettingThickness, FpcStateProcessor.Mask);
+		return !Physics.CheckCapsule(checkPos, humanPos, this._targettingThickness, FpcStateProcessor.Mask);
 	}
 
 	private Scp956Target.EffectReason CheckSpawnCondition(ReferenceHub hub)
@@ -504,18 +504,18 @@ public class Scp956Pinata : NetworkBehaviour
 
 	private void UpdatePos()
 	{
-		Vector3 position = _tr.position;
-		Vector3 syncPos = _syncPos;
-		if (_flying)
+		Vector3 position = this._tr.position;
+		Vector3 syncPos = this._syncPos;
+		if (this._flying)
 		{
-			syncPos.y += Mathf.Sin(Time.timeSinceLevelLoad * _flyingSinSpeed) * _flyingSinIntensity;
+			syncPos.y += Mathf.Sin(Time.timeSinceLevelLoad * this._flyingSinSpeed) * this._flyingSinIntensity;
 		}
 		if ((position - syncPos).sqrMagnitude > 9f)
 		{
-			_tr.position = _syncPos;
+			this._tr.position = this._syncPos;
 		}
-		_tr.SetPositionAndRotation(Vector3.Lerp(position, syncPos, Time.deltaTime * _positionLerp), Quaternion.Lerp(_tr.rotation, Quaternion.Euler(Vector3.up * _syncRot), Time.deltaTime * _rotationLerp));
-		LastPosition = position;
+		this._tr.SetPositionAndRotation(Vector3.Lerp(position, syncPos, Time.deltaTime * this._positionLerp), Quaternion.Lerp(this._tr.rotation, Quaternion.Euler(Vector3.up * this._syncRot), Time.deltaTime * this._rotationLerp));
+		Scp956Pinata.LastPosition = position;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -523,16 +523,16 @@ public class Scp956Pinata : NetworkBehaviour
 	{
 		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub hub)
 		{
-			ActiveTargets.Remove(hub);
+			Scp956Pinata.ActiveTargets.Remove(hub);
 		};
 	}
 
 	static Scp956Pinata()
 	{
-		ActiveTargets = new HashSet<ReferenceHub>();
-		ZonesByIntensity = new Dictionary<FacilityZone, int>();
-		CompatibleDoors = new List<DoorVariant>();
-		_hasBeenGiftSpawned = false;
+		Scp956Pinata.ActiveTargets = new HashSet<ReferenceHub>();
+		Scp956Pinata.ZonesByIntensity = new Dictionary<FacilityZone, int>();
+		Scp956Pinata.CompatibleDoors = new List<DoorVariant>();
+		Scp956Pinata._hasBeenGiftSpawned = false;
 		RemoteProcedureCalls.RegisterRpc(typeof(Scp956Pinata), "System.Void Scp956Pinata::RpcAttack()", InvokeUserCode_RpcAttack);
 	}
 
@@ -543,8 +543,8 @@ public class Scp956Pinata : NetworkBehaviour
 
 	protected void UserCode_RpcAttack()
 	{
-		_attackTimer = 0f;
-		_attackSound.Play();
+		this._attackTimer = 0f;
+		this._attackSound.Play();
 	}
 
 	protected static void InvokeUserCode_RpcAttack(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -564,33 +564,33 @@ public class Scp956Pinata : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(_spawned);
-			writer.WriteVector3(_syncPos);
-			writer.WriteFloat(_syncRot);
-			writer.WriteBool(_flying);
-			NetworkWriterExtensions.WriteByte(writer, _carpincho);
+			writer.WriteBool(this._spawned);
+			writer.WriteVector3(this._syncPos);
+			writer.WriteFloat(this._syncRot);
+			writer.WriteBool(this._flying);
+			NetworkWriterExtensions.WriteByte(writer, this._carpincho);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteBool(_spawned);
+			writer.WriteBool(this._spawned);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteVector3(_syncPos);
+			writer.WriteVector3(this._syncPos);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			writer.WriteFloat(_syncRot);
+			writer.WriteFloat(this._syncRot);
 		}
 		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			writer.WriteBool(_flying);
+			writer.WriteBool(this._flying);
 		}
 		if ((base.syncVarDirtyBits & 0x10L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _carpincho);
+			NetworkWriterExtensions.WriteByte(writer, this._carpincho);
 		}
 	}
 
@@ -599,33 +599,33 @@ public class Scp956Pinata : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _spawned, null, reader.ReadBool());
-			GeneratedSyncVarDeserialize(ref _syncPos, null, reader.ReadVector3());
-			GeneratedSyncVarDeserialize(ref _syncRot, null, reader.ReadFloat());
-			GeneratedSyncVarDeserialize(ref _flying, null, reader.ReadBool());
-			GeneratedSyncVarDeserialize(ref _carpincho, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._spawned, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._syncPos, null, reader.ReadVector3());
+			base.GeneratedSyncVarDeserialize(ref this._syncRot, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._flying, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._carpincho, null, NetworkReaderExtensions.ReadByte(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _spawned, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._spawned, null, reader.ReadBool());
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _syncPos, null, reader.ReadVector3());
+			base.GeneratedSyncVarDeserialize(ref this._syncPos, null, reader.ReadVector3());
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _syncRot, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._syncRot, null, reader.ReadFloat());
 		}
 		if ((num & 8L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _flying, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._flying, null, reader.ReadBool());
 		}
 		if ((num & 0x10L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _carpincho, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._carpincho, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 	}
 }

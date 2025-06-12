@@ -50,7 +50,7 @@ public class ElevatorTeleportCommand : ICommand
 			response = "No players have been selected.";
 			return false;
 		}
-		Vector3 position = chamber.transform.position + Vector3.up * PositionOffset;
+		Vector3 position = chamber.transform.position + Vector3.up * ElevatorTeleportCommand.PositionOffset;
 		string text = "inside";
 		if (newargs != null && newargs.Length > 0)
 		{

@@ -18,7 +18,7 @@ public class NetPacketProcessor
 				num ^= text[i];
 				num *= 1099511628211L;
 			}
-			Id = num;
+			HashCache<T>.Id = num;
 		}
 	}
 
@@ -30,12 +30,12 @@ public class NetPacketProcessor
 
 	public NetPacketProcessor()
 	{
-		_netSerializer = new NetSerializer();
+		this._netSerializer = new NetSerializer();
 	}
 
 	public NetPacketProcessor(int maxStringLength)
 	{
-		_netSerializer = new NetSerializer(maxStringLength);
+		this._netSerializer = new NetSerializer(maxStringLength);
 	}
 
 	protected virtual ulong GetHash<T>()
@@ -46,7 +46,7 @@ public class NetPacketProcessor
 	protected virtual SubscribeDelegate GetCallbackFromData(NetDataReader reader)
 	{
 		ulong uLong = reader.GetULong();
-		if (!_callbacks.TryGetValue(uLong, out var value))
+		if (!this._callbacks.TryGetValue(uLong, out var value))
 		{
 			throw new ParseException("Undefined packet in NetDataReader");
 		}
@@ -55,29 +55,29 @@ public class NetPacketProcessor
 
 	protected virtual void WriteHash<T>(NetDataWriter writer)
 	{
-		writer.Put(GetHash<T>());
+		writer.Put(this.GetHash<T>());
 	}
 
 	public void RegisterNestedType<T>() where T : struct, INetSerializable
 	{
-		_netSerializer.RegisterNestedType<T>();
+		this._netSerializer.RegisterNestedType<T>();
 	}
 
 	public void RegisterNestedType<T>(Action<NetDataWriter, T> writeDelegate, Func<NetDataReader, T> readDelegate)
 	{
-		_netSerializer.RegisterNestedType(writeDelegate, readDelegate);
+		this._netSerializer.RegisterNestedType(writeDelegate, readDelegate);
 	}
 
 	public void RegisterNestedType<T>(Func<T> constructor) where T : class, INetSerializable
 	{
-		_netSerializer.RegisterNestedType(constructor);
+		this._netSerializer.RegisterNestedType(constructor);
 	}
 
 	public void ReadAllPackets(NetDataReader reader)
 	{
 		while (reader.AvailableBytes > 0)
 		{
-			ReadPacket(reader);
+			this.ReadPacket(reader);
 		}
 	}
 
@@ -85,79 +85,79 @@ public class NetPacketProcessor
 	{
 		while (reader.AvailableBytes > 0)
 		{
-			ReadPacket(reader, userData);
+			this.ReadPacket(reader, userData);
 		}
 	}
 
 	public void ReadPacket(NetDataReader reader)
 	{
-		ReadPacket(reader, null);
+		this.ReadPacket(reader, null);
 	}
 
 	public void Write<T>(NetDataWriter writer, T packet) where T : class, new()
 	{
-		WriteHash<T>(writer);
-		_netSerializer.Serialize(writer, packet);
+		this.WriteHash<T>(writer);
+		this._netSerializer.Serialize(writer, packet);
 	}
 
 	public void WriteNetSerializable<T>(NetDataWriter writer, ref T packet) where T : INetSerializable
 	{
-		WriteHash<T>(writer);
+		this.WriteHash<T>(writer);
 		packet.Serialize(writer);
 	}
 
 	public void ReadPacket(NetDataReader reader, object userData)
 	{
-		GetCallbackFromData(reader)(reader, userData);
+		this.GetCallbackFromData(reader)(reader, userData);
 	}
 
 	public void Subscribe<T>(Action<T> onReceive, Func<T> packetConstructor) where T : class, new()
 	{
-		_netSerializer.Register<T>();
-		_callbacks[GetHash<T>()] = delegate(NetDataReader reader, object userData)
+		this._netSerializer.Register<T>();
+		this._callbacks[this.GetHash<T>()] = delegate(NetDataReader reader, object userData)
 		{
 			T val = packetConstructor();
-			_netSerializer.Deserialize(reader, val);
+			this._netSerializer.Deserialize(reader, val);
 			onReceive(val);
 		};
 	}
 
 	public void Subscribe<T, TUserData>(Action<T, TUserData> onReceive, Func<T> packetConstructor) where T : class, new()
 	{
-		_netSerializer.Register<T>();
-		_callbacks[GetHash<T>()] = delegate(NetDataReader reader, object userData)
+		this._netSerializer.Register<T>();
+		this._callbacks[this.GetHash<T>()] = delegate(NetDataReader reader, object userData)
 		{
 			T val = packetConstructor();
-			_netSerializer.Deserialize(reader, val);
+			this._netSerializer.Deserialize(reader, val);
 			onReceive(val, (TUserData)userData);
 		};
 	}
 
 	public void SubscribeReusable<T>(Action<T> onReceive) where T : class, new()
 	{
-		_netSerializer.Register<T>();
+		this._netSerializer.Register<T>();
 		T reference = new T();
-		_callbacks[GetHash<T>()] = delegate(NetDataReader reader, object userData)
+		this._callbacks[this.GetHash<T>()] = delegate(NetDataReader reader, object userData)
 		{
-			_netSerializer.Deserialize(reader, reference);
+			this._netSerializer.Deserialize(reader, reference);
 			onReceive(reference);
 		};
 	}
 
 	public void SubscribeReusable<T, TUserData>(Action<T, TUserData> onReceive) where T : class, new()
 	{
-		_netSerializer.Register<T>();
+		this._netSerializer.Register<T>();
 		T reference = new T();
-		_callbacks[GetHash<T>()] = delegate(NetDataReader reader, object userData)
+		this._callbacks[this.GetHash<T>()] = delegate(NetDataReader reader, object userData)
 		{
-			_netSerializer.Deserialize(reader, reference);
+			this._netSerializer.Deserialize(reader, reference);
 			onReceive(reference, (TUserData)userData);
 		};
 	}
 
 	public void SubscribeNetSerializable<T, TUserData>(Action<T, TUserData> onReceive, Func<T> packetConstructor) where T : INetSerializable
 	{
-		_callbacks[GetHash<T>()] = delegate(NetDataReader reader, object userData)
+		this._callbacks[this.GetHash<T>()] = delegate(NetDataReader reader, object userData)
 		{
 			T arg = packetConstructor();
 			arg.Deserialize(reader);
@@ -167,7 +167,7 @@ public class NetPacketProcessor
 
 	public void SubscribeNetSerializable<T>(Action<T> onReceive, Func<T> packetConstructor) where T : INetSerializable
 	{
-		_callbacks[GetHash<T>()] = delegate(NetDataReader reader, object userData)
+		this._callbacks[this.GetHash<T>()] = delegate(NetDataReader reader, object userData)
 		{
 			T obj = packetConstructor();
 			obj.Deserialize(reader);
@@ -178,7 +178,7 @@ public class NetPacketProcessor
 	public void SubscribeNetSerializable<T, TUserData>(Action<T, TUserData> onReceive) where T : INetSerializable, new()
 	{
 		T reference = new T();
-		_callbacks[GetHash<T>()] = delegate(NetDataReader reader, object userData)
+		this._callbacks[this.GetHash<T>()] = delegate(NetDataReader reader, object userData)
 		{
 			reference.Deserialize(reader);
 			onReceive(reference, (TUserData)userData);
@@ -188,7 +188,7 @@ public class NetPacketProcessor
 	public void SubscribeNetSerializable<T>(Action<T> onReceive) where T : INetSerializable, new()
 	{
 		T reference = new T();
-		_callbacks[GetHash<T>()] = delegate(NetDataReader reader, object userData)
+		this._callbacks[this.GetHash<T>()] = delegate(NetDataReader reader, object userData)
 		{
 			reference.Deserialize(reader);
 			onReceive(reference);
@@ -197,6 +197,6 @@ public class NetPacketProcessor
 
 	public bool RemoveSubscription<T>()
 	{
-		return _callbacks.Remove(GetHash<T>());
+		return this._callbacks.Remove(this.GetHash<T>());
 	}
 }

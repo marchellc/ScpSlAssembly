@@ -15,11 +15,11 @@ public class AdminFlagsStat : SyncedStatBase
 	{
 		get
 		{
-			return _maxValue;
+			return this._maxValue;
 		}
 		set
 		{
-			_maxValue = value;
+			this._maxValue = value;
 		}
 	}
 
@@ -27,28 +27,28 @@ public class AdminFlagsStat : SyncedStatBase
 	{
 		get
 		{
-			return (AdminFlags)Mathf.RoundToInt(CurValue);
+			return (AdminFlags)Mathf.RoundToInt(this.CurValue);
 		}
 		set
 		{
-			CurValue = (float)value;
+			this.CurValue = (float)value;
 		}
 	}
 
 	public bool HasFlag(AdminFlags flag)
 	{
-		return (flag & Flags) == flag;
+		return (flag & this.Flags) == flag;
 	}
 
 	public void InvertFlag(AdminFlags flag)
 	{
-		AdminFlags flags = Flags;
-		Flags = (((flag & flags) != flag) ? (flags | flag) : (flags & ~flag));
+		AdminFlags flags = this.Flags;
+		this.Flags = (((flag & flags) != flag) ? (flags | flag) : (flags & ~flag));
 	}
 
 	public void SetFlag(AdminFlags flag, bool status)
 	{
-		Flags = (status ? (Flags | flag) : (Flags & ~flag));
+		this.Flags = (status ? (this.Flags | flag) : (this.Flags & ~flag));
 	}
 
 	public override float ReadValue(SyncedStatMessages.StatMessageType type, NetworkReader reader)
@@ -58,7 +58,7 @@ public class AdminFlagsStat : SyncedStatBase
 
 	public override void WriteValue(SyncedStatMessages.StatMessageType type, NetworkWriter writer)
 	{
-		byte value = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? ((byte)Flags) : ((byte)MaxValue));
+		byte value = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? ((byte)this.Flags) : ((byte)this.MaxValue));
 		writer.WriteByte(value);
 	}
 

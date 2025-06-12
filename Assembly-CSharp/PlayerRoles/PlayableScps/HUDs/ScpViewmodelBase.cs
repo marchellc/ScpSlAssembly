@@ -47,65 +47,65 @@ public abstract class ScpViewmodelBase : MonoBehaviour
 				throw new NullReferenceException(string.Format("{0} failed to get component {1} for game object {2}", this, "ScpHudBase", base.name));
 			}
 		}
-		Hud = component;
-		Owner = Hud.Hub;
-		Role = Owner.roleManager.CurrentRole;
+		this.Hud = component;
+		this.Owner = this.Hud.Hub;
+		this.Role = this.Owner.roleManager.CurrentRole;
 		Transform obj = base.transform;
 		Transform transform = SharedHandsController.Singleton.transform;
 		obj.SetParent(transform);
 		obj.localScale = Vector3.one;
-		obj.localEulerAngles = _localRotation;
-		obj.position += transform.position - _cameraBone.position;
-		Hud.OnDestroyed += DestroySelf;
+		obj.localEulerAngles = this._localRotation;
+		obj.position += transform.position - this._cameraBone.position;
+		this.Hud.OnDestroyed += DestroySelf;
 		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
-		_sway = new GoopSway(_swaySettings, Owner);
-		CameraShakeController.AddEffect(new TrackerShake(_cameraBone, _trackerOffset));
+		this._sway = new GoopSway(this._swaySettings, this.Owner);
+		CameraShakeController.AddEffect(new TrackerShake(this._cameraBone, this._trackerOffset));
 	}
 
 	protected virtual void SkipAnimations(float totalTime, int steps = 3)
 	{
 		totalTime -= Time.deltaTime;
-		Anim.Update(Time.deltaTime);
-		UpdateAnimations();
+		this.Anim.Update(Time.deltaTime);
+		this.UpdateAnimations();
 		totalTime /= (float)steps;
 		for (int i = 0; i < steps; i++)
 		{
-			Anim.Update(totalTime);
+			this.Anim.Update(totalTime);
 		}
 	}
 
 	protected virtual void OnDestroy()
 	{
-		_destroyed = true;
-		if (Hud != null)
+		this._destroyed = true;
+		if (this.Hud != null)
 		{
-			Hud.OnDestroyed -= DestroySelf;
+			this.Hud.OnDestroyed -= DestroySelf;
 		}
 		PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
 	}
 
 	protected virtual void LateUpdate()
 	{
-		UpdateAnimations();
-		_sway.UpdateSway();
+		this.UpdateAnimations();
+		this._sway.UpdateSway();
 	}
 
 	protected abstract void UpdateAnimations();
 
 	private void OnRoleChanged(ReferenceHub hub, PlayerRoleBase oldRole, PlayerRoleBase newRole)
 	{
-		if (!(hub != Owner))
+		if (!(hub != this.Owner))
 		{
-			DestroySelf();
+			this.DestroySelf();
 		}
 	}
 
 	private void DestroySelf()
 	{
-		if (!_destroyed)
+		if (!this._destroyed)
 		{
 			UnityEngine.Object.Destroy(base.gameObject);
-			_destroyed = true;
+			this._destroyed = true;
 		}
 	}
 }

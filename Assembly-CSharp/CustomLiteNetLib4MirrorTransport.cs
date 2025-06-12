@@ -93,37 +93,37 @@ public class CustomLiteNetLib4MirrorTransport : LiteNetLib4MirrorTransport
 	{
 		get
 		{
-			return _delayConnections;
+			return CustomLiteNetLib4MirrorTransport._delayConnections;
 		}
 		set
 		{
-			if (_delayConnections != value)
+			if (CustomLiteNetLib4MirrorTransport._delayConnections != value)
 			{
 				if (!value)
 				{
-					UserIds.Clear();
+					CustomLiteNetLib4MirrorTransport.UserIds.Clear();
 				}
-				_delayConnections = value;
-				ServerConsole.AddLog(value ? $"Incoming connections will be now delayed by {DelayTime} seconds." : "Incoming connections will be no longer delayed.");
+				CustomLiteNetLib4MirrorTransport._delayConnections = value;
+				ServerConsole.AddLog(value ? $"Incoming connections will be now delayed by {CustomLiteNetLib4MirrorTransport.DelayTime} seconds." : "Incoming connections will be no longer delayed.");
 			}
 		}
 	}
 
 	static CustomLiteNetLib4MirrorTransport()
 	{
-		RequestWriter = new NetDataWriter();
-		Geoblocking = GeoblockingMode.None;
-		ChallengeMode = ChallengeType.Reply;
-		UserIds = new Dictionary<IPEndPoint, PreauthItem>();
-		UserIdFastReload = new HashSet<string>(StringComparer.Ordinal);
-		Challenges = new Dictionary<string, PreauthChallengeItem>();
-		_delayConnections = true;
-		DelayTime = 3;
-		UserRateLimit = new HashSet<string>(StringComparer.Ordinal);
-		IpRateLimit = new HashSet<IPAddress>();
-		GeoblockingList = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		RejectionThreshold = 60u;
-		IssuedThreshold = 50u;
+		CustomLiteNetLib4MirrorTransport.RequestWriter = new NetDataWriter();
+		CustomLiteNetLib4MirrorTransport.Geoblocking = GeoblockingMode.None;
+		CustomLiteNetLib4MirrorTransport.ChallengeMode = ChallengeType.Reply;
+		CustomLiteNetLib4MirrorTransport.UserIds = new Dictionary<IPEndPoint, PreauthItem>();
+		CustomLiteNetLib4MirrorTransport.UserIdFastReload = new HashSet<string>(StringComparer.Ordinal);
+		CustomLiteNetLib4MirrorTransport.Challenges = new Dictionary<string, PreauthChallengeItem>();
+		CustomLiteNetLib4MirrorTransport._delayConnections = true;
+		CustomLiteNetLib4MirrorTransport.DelayTime = 3;
+		CustomLiteNetLib4MirrorTransport.UserRateLimit = new HashSet<string>(StringComparer.Ordinal);
+		CustomLiteNetLib4MirrorTransport.IpRateLimit = new HashSet<IPAddress>();
+		CustomLiteNetLib4MirrorTransport.GeoblockingList = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		CustomLiteNetLib4MirrorTransport.RejectionThreshold = 60u;
+		CustomLiteNetLib4MirrorTransport.IssuedThreshold = 50u;
 	}
 
 	protected internal override void ProcessConnectionRequest(ConnectionRequest request)
@@ -132,51 +132,51 @@ public class CustomLiteNetLib4MirrorTransport : LiteNetLib4MirrorTransport
 		{
 			if (!request.Data.TryGetByte(out var result) || result >= 2)
 			{
-				RequestWriter.Reset();
-				RequestWriter.Put((byte)2);
-				request.RejectForce(RequestWriter);
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)2);
+				request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 				return;
 			}
 			if (result == 1)
 			{
-				if (VerificationChallenge != null && request.Data.TryGetString(out var result2) && result2 == VerificationChallenge)
+				if (CustomLiteNetLib4MirrorTransport.VerificationChallenge != null && request.Data.TryGetString(out var result2) && result2 == CustomLiteNetLib4MirrorTransport.VerificationChallenge)
 				{
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)18);
-					RequestWriter.Put(VerificationResponse);
-					request.Reject(RequestWriter);
-					VerificationChallenge = null;
-					VerificationResponse = null;
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)18);
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put(CustomLiteNetLib4MirrorTransport.VerificationResponse);
+					request.Reject(CustomLiteNetLib4MirrorTransport.RequestWriter);
+					CustomLiteNetLib4MirrorTransport.VerificationChallenge = null;
+					CustomLiteNetLib4MirrorTransport.VerificationResponse = null;
 					ServerConsole.AddLog("Verification challenge and response have been sent.\nThe system has successfully checked your server, a verification response will be printed to your console shortly, please allow up to 5 minutes.", ConsoleColor.Green);
 					return;
 				}
-				Rejected++;
-				if (Rejected > RejectionThreshold)
+				CustomLiteNetLib4MirrorTransport.Rejected++;
+				if (CustomLiteNetLib4MirrorTransport.Rejected > CustomLiteNetLib4MirrorTransport.RejectionThreshold)
 				{
-					SuppressRejections = true;
+					CustomLiteNetLib4MirrorTransport.SuppressRejections = true;
 				}
-				if (!SuppressRejections && DisplayPreauthLogs)
+				if (!CustomLiteNetLib4MirrorTransport.SuppressRejections && CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 				{
 					ServerConsole.AddLog($"Invalid verification challenge has been received from endpoint {request.RemoteEndPoint}.");
 				}
-				RequestWriter.Reset();
-				RequestWriter.Put((byte)19);
-				request.RejectForce(RequestWriter);
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)19);
+				request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 				return;
 			}
 			byte result3 = 0;
 			if (!request.Data.TryGetByte(out var result4) || !request.Data.TryGetByte(out var result5) || !request.Data.TryGetByte(out var result6) || !request.Data.TryGetBool(out var result7) || (result7 && !request.Data.TryGetByte(out result3)))
 			{
-				RequestWriter.Reset();
-				RequestWriter.Put((byte)3);
-				request.RejectForce(RequestWriter);
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)3);
+				request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 				return;
 			}
 			if (!GameCore.Version.CompatibilityCheck(GameCore.Version.Major, GameCore.Version.Minor, GameCore.Version.Revision, result4, result5, result6, result7, result3))
 			{
-				RequestWriter.Reset();
-				RequestWriter.Put((byte)3);
-				request.RejectForce(RequestWriter);
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)3);
+				request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 				return;
 			}
 			int result8;
@@ -187,44 +187,44 @@ public class CustomLiteNetLib4MirrorTransport : LiteNetLib4MirrorTransport
 			}
 			if (!flag)
 			{
-				RequestWriter.Reset();
-				RequestWriter.Put((byte)15);
-				request.RejectForce(RequestWriter);
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)15);
+				request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 				return;
 			}
-			if (DelayConnections)
+			if (CustomLiteNetLib4MirrorTransport.DelayConnections)
 			{
-				PreauthDisableIdleMode();
-				RequestWriter.Reset();
-				RequestWriter.Put((byte)17);
-				RequestWriter.Put(DelayTime);
-				if (DelayVolume < byte.MaxValue)
+				CustomLiteNetLib4MirrorTransport.PreauthDisableIdleMode();
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)17);
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Put(CustomLiteNetLib4MirrorTransport.DelayTime);
+				if (CustomLiteNetLib4MirrorTransport.DelayVolume < byte.MaxValue)
 				{
-					DelayVolume++;
+					CustomLiteNetLib4MirrorTransport.DelayVolume++;
 				}
-				if (DelayVolume < DelayVolumeThreshold)
+				if (CustomLiteNetLib4MirrorTransport.DelayVolume < CustomLiteNetLib4MirrorTransport.DelayVolumeThreshold)
 				{
-					if (DisplayPreauthLogs)
+					if (CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 					{
-						ServerConsole.AddLog($"Delayed connection incoming from endpoint {request.RemoteEndPoint} by {DelayTime} seconds.");
+						ServerConsole.AddLog($"Delayed connection incoming from endpoint {request.RemoteEndPoint} by {CustomLiteNetLib4MirrorTransport.DelayTime} seconds.");
 					}
-					request.Reject(RequestWriter);
+					request.Reject(CustomLiteNetLib4MirrorTransport.RequestWriter);
 				}
 				else
 				{
-					if (DisplayPreauthLogs)
+					if (CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 					{
-						ServerConsole.AddLog($"Force delayed connection incoming from endpoint {request.RemoteEndPoint} by {DelayTime} seconds.");
+						ServerConsole.AddLog($"Force delayed connection incoming from endpoint {request.RemoteEndPoint} by {CustomLiteNetLib4MirrorTransport.DelayTime} seconds.");
 					}
-					request.RejectForce(RequestWriter);
+					request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 				}
 				return;
 			}
-			if (UseChallenge)
+			if (CustomLiteNetLib4MirrorTransport.UseChallenge)
 			{
 				if (result8 == 0 || result9 == null || result9.Length == 0)
 				{
-					if (!CheckIpRateLimit(request))
+					if (!CustomLiteNetLib4MirrorTransport.CheckIpRateLimit(request))
 					{
 						return;
 					}
@@ -238,101 +238,101 @@ public class CustomLiteNetLib4MirrorTransport : LiteNetLib4MirrorTransport
 							num = 1;
 						}
 						key = request.RemoteEndPoint.Address?.ToString() + "-" + num;
-						if (!Challenges.ContainsKey(key))
+						if (!CustomLiteNetLib4MirrorTransport.Challenges.ContainsKey(key))
 						{
 							break;
 						}
 						if (b == 2)
 						{
-							RequestWriter.Reset();
-							RequestWriter.Put((byte)4);
-							request.RejectForce(RequestWriter);
-							if (DisplayPreauthLogs)
+							CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+							CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)4);
+							request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
+							if (CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 							{
 								ServerConsole.AddLog($"Failed to generate ID for challenge for incoming connection from endpoint {request.RemoteEndPoint}.");
 							}
 							return;
 						}
 					}
-					byte[] bytes = RandomGenerator.GetBytes(ChallengeInitLen + ChallengeSecretLen, secure: true);
-					ChallengeIssued++;
-					if (ChallengeIssued > IssuedThreshold)
+					byte[] bytes = RandomGenerator.GetBytes(CustomLiteNetLib4MirrorTransport.ChallengeInitLen + CustomLiteNetLib4MirrorTransport.ChallengeSecretLen, secure: true);
+					CustomLiteNetLib4MirrorTransport.ChallengeIssued++;
+					if (CustomLiteNetLib4MirrorTransport.ChallengeIssued > CustomLiteNetLib4MirrorTransport.IssuedThreshold)
 					{
-						SuppressIssued = true;
+						CustomLiteNetLib4MirrorTransport.SuppressIssued = true;
 					}
-					if (!SuppressIssued && DisplayPreauthLogs)
+					if (!CustomLiteNetLib4MirrorTransport.SuppressIssued && CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 					{
 						ServerConsole.AddLog($"Requested challenge for incoming connection from endpoint {request.RemoteEndPoint}.");
 					}
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)13);
-					RequestWriter.Put((byte)ChallengeMode);
-					RequestWriter.Put(num);
-					switch (ChallengeMode)
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)13);
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)CustomLiteNetLib4MirrorTransport.ChallengeMode);
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put(num);
+					switch (CustomLiteNetLib4MirrorTransport.ChallengeMode)
 					{
 					case ChallengeType.MD5:
-						RequestWriter.PutBytesWithLength(bytes, 0, ChallengeInitLen);
-						RequestWriter.Put(ChallengeSecretLen);
-						RequestWriter.PutBytesWithLength(Md.Md5(bytes));
-						Challenges.Add(key, new PreauthChallengeItem(new ArraySegment<byte>(bytes, ChallengeInitLen, ChallengeSecretLen)));
+						CustomLiteNetLib4MirrorTransport.RequestWriter.PutBytesWithLength(bytes, 0, CustomLiteNetLib4MirrorTransport.ChallengeInitLen);
+						CustomLiteNetLib4MirrorTransport.RequestWriter.Put(CustomLiteNetLib4MirrorTransport.ChallengeSecretLen);
+						CustomLiteNetLib4MirrorTransport.RequestWriter.PutBytesWithLength(Md.Md5(bytes));
+						CustomLiteNetLib4MirrorTransport.Challenges.Add(key, new PreauthChallengeItem(new ArraySegment<byte>(bytes, CustomLiteNetLib4MirrorTransport.ChallengeInitLen, CustomLiteNetLib4MirrorTransport.ChallengeSecretLen)));
 						break;
 					case ChallengeType.SHA1:
-						RequestWriter.PutBytesWithLength(bytes, 0, ChallengeInitLen);
-						RequestWriter.Put(ChallengeSecretLen);
-						RequestWriter.PutBytesWithLength(Sha.Sha1(bytes));
-						Challenges.Add(key, new PreauthChallengeItem(new ArraySegment<byte>(bytes, ChallengeInitLen, ChallengeSecretLen)));
+						CustomLiteNetLib4MirrorTransport.RequestWriter.PutBytesWithLength(bytes, 0, CustomLiteNetLib4MirrorTransport.ChallengeInitLen);
+						CustomLiteNetLib4MirrorTransport.RequestWriter.Put(CustomLiteNetLib4MirrorTransport.ChallengeSecretLen);
+						CustomLiteNetLib4MirrorTransport.RequestWriter.PutBytesWithLength(Sha.Sha1(bytes));
+						CustomLiteNetLib4MirrorTransport.Challenges.Add(key, new PreauthChallengeItem(new ArraySegment<byte>(bytes, CustomLiteNetLib4MirrorTransport.ChallengeInitLen, CustomLiteNetLib4MirrorTransport.ChallengeSecretLen)));
 						break;
 					default:
-						RequestWriter.PutBytesWithLength(bytes);
-						Challenges.Add(key, new PreauthChallengeItem(new ArraySegment<byte>(bytes)));
+						CustomLiteNetLib4MirrorTransport.RequestWriter.PutBytesWithLength(bytes);
+						CustomLiteNetLib4MirrorTransport.Challenges.Add(key, new PreauthChallengeItem(new ArraySegment<byte>(bytes)));
 						break;
 					}
-					request.Reject(RequestWriter);
-					PreauthDisableIdleMode();
+					request.Reject(CustomLiteNetLib4MirrorTransport.RequestWriter);
+					CustomLiteNetLib4MirrorTransport.PreauthDisableIdleMode();
 					return;
 				}
 				string key2 = request.RemoteEndPoint.Address?.ToString() + "-" + result8;
-				if (!Challenges.ContainsKey(key2))
+				if (!CustomLiteNetLib4MirrorTransport.Challenges.ContainsKey(key2))
 				{
-					Rejected++;
-					if (Rejected > RejectionThreshold)
+					CustomLiteNetLib4MirrorTransport.Rejected++;
+					if (CustomLiteNetLib4MirrorTransport.Rejected > CustomLiteNetLib4MirrorTransport.RejectionThreshold)
 					{
-						SuppressRejections = true;
+						CustomLiteNetLib4MirrorTransport.SuppressRejections = true;
 					}
-					if (!SuppressRejections && DisplayPreauthLogs)
+					if (!CustomLiteNetLib4MirrorTransport.SuppressRejections && CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 					{
 						ServerConsole.AddLog($"Security challenge response of incoming connection from endpoint {request.RemoteEndPoint} has been REJECTED (invalid Challenge ID).");
 					}
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)14);
-					request.RejectForce(RequestWriter);
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)14);
+					request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 					return;
 				}
-				ArraySegment<byte> validResponse = Challenges[key2].ValidResponse;
+				ArraySegment<byte> validResponse = CustomLiteNetLib4MirrorTransport.Challenges[key2].ValidResponse;
 				if (!result9.SequenceEqual(validResponse))
 				{
-					Rejected++;
-					if (Rejected > RejectionThreshold)
+					CustomLiteNetLib4MirrorTransport.Rejected++;
+					if (CustomLiteNetLib4MirrorTransport.Rejected > CustomLiteNetLib4MirrorTransport.RejectionThreshold)
 					{
-						SuppressRejections = true;
+						CustomLiteNetLib4MirrorTransport.SuppressRejections = true;
 					}
-					if (!SuppressRejections && DisplayPreauthLogs)
+					if (!CustomLiteNetLib4MirrorTransport.SuppressRejections && CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 					{
 						ServerConsole.AddLog($"Security challenge response of incoming connection from endpoint {request.RemoteEndPoint} has been REJECTED (invalid response).");
 					}
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)15);
-					request.RejectForce(RequestWriter);
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)15);
+					request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 					return;
 				}
-				Challenges.Remove(key2);
-				PreauthDisableIdleMode();
-				if (DisplayPreauthLogs)
+				CustomLiteNetLib4MirrorTransport.Challenges.Remove(key2);
+				CustomLiteNetLib4MirrorTransport.PreauthDisableIdleMode();
+				if (CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 				{
 					ServerConsole.AddLog($"Security challenge response of incoming connection from endpoint {request.RemoteEndPoint} has been accepted.");
 				}
 			}
-			else if (!CheckIpRateLimit(request))
+			else if (!CustomLiteNetLib4MirrorTransport.CheckIpRateLimit(request))
 			{
 				return;
 			}
@@ -342,305 +342,305 @@ public class CustomLiteNetLib4MirrorTransport : LiteNetLib4MirrorTransport
 				KeyValuePair<BanDetails, BanDetails> keyValuePair = BanHandler.QueryBan(null, request.RemoteEndPoint.Address.ToString());
 				if (keyValuePair.Value != null)
 				{
-					if (DisplayPreauthLogs)
+					if (CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 					{
 						ServerConsole.AddLog($"Player tried to connect from banned endpoint {request.RemoteEndPoint}.");
 					}
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)6);
-					RequestWriter.Put(keyValuePair.Value.Expires);
-					RequestWriter.Put(keyValuePair.Value?.Reason ?? string.Empty);
-					request.RejectForce(RequestWriter);
-					ResetIdleMode();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)6);
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put(keyValuePair.Value.Expires);
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put(keyValuePair.Value?.Reason ?? string.Empty);
+					request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
+					CustomLiteNetLib4MirrorTransport.ResetIdleMode();
 					return;
 				}
-				PlayerPreAuthenticatingEventArgs playerPreAuthenticatingEventArgs = new PlayerPreAuthenticatingEventArgs(!IsServerFull(), string.Empty, request.RemoteEndPoint.Address.ToString(), 0L, CentralAuthPreauthFlags.None, string.Empty, null, request, position);
-				PlayerEvents.OnPreAuthenticating(playerPreAuthenticatingEventArgs);
-				if (!playerPreAuthenticatingEventArgs.IsAllowed)
+				PlayerPreAuthenticatingEventArgs e = new PlayerPreAuthenticatingEventArgs(!CustomLiteNetLib4MirrorTransport.IsServerFull(), string.Empty, request.RemoteEndPoint.Address.ToString(), 0L, CentralAuthPreauthFlags.None, string.Empty, null, request, position);
+				PlayerEvents.OnPreAuthenticating(e);
+				if (!e.IsAllowed)
 				{
-					if (playerPreAuthenticatingEventArgs.CustomReject != null)
+					if (e.CustomReject != null)
 					{
-						if (playerPreAuthenticatingEventArgs.ForceReject)
+						if (e.ForceReject)
 						{
-							request.RejectForce(playerPreAuthenticatingEventArgs.CustomReject);
+							request.RejectForce(e.CustomReject);
 						}
 						else
 						{
-							request.Reject(playerPreAuthenticatingEventArgs.CustomReject);
+							request.Reject(e.CustomReject);
 						}
 					}
 					else
 					{
-						RequestWriter.Reset();
-						RequestWriter.Put((byte)4);
-						request.RejectForce(RequestWriter);
+						CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+						CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)4);
+						request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 					}
 				}
-				else if (playerPreAuthenticatingEventArgs.CanJoin)
+				else if (e.CanJoin)
 				{
 					request.Accept();
-					PreauthDisableIdleMode();
+					CustomLiteNetLib4MirrorTransport.PreauthDisableIdleMode();
 					PlayerEvents.OnPreAuthenticated(new PlayerPreAuthenticatedEventArgs(string.Empty, request.RemoteEndPoint.Address.ToString(), 0L, CentralAuthPreauthFlags.None, string.Empty, null, request, position));
 				}
 				else
 				{
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)1);
-					request.Reject(RequestWriter);
-					ResetIdleMode();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)1);
+					request.Reject(CustomLiteNetLib4MirrorTransport.RequestWriter);
+					CustomLiteNetLib4MirrorTransport.ResetIdleMode();
 				}
 				return;
 			}
 			if (!request.Data.TryGetString(out var result10) || result10 == string.Empty)
 			{
-				RequestWriter.Reset();
-				RequestWriter.Put((byte)5);
-				request.RejectForce(RequestWriter);
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)5);
+				request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 				return;
 			}
 			if (!request.Data.TryGetLong(out var result11) || !request.Data.TryGetByte(out var result12) || !request.Data.TryGetString(out var result13) || !request.Data.TryGetBytesWithLength(out var result14))
 			{
-				RequestWriter.Reset();
-				RequestWriter.Put((byte)4);
-				request.RejectForce(RequestWriter);
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)4);
+				request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 				return;
 			}
 			string result15 = null;
-			string text = ((IpPassthroughEnabled && TrustedProxies.Contains(request.RemoteEndPoint.Address) && request.Data.TryGetString(out result15)) ? $"{result15} [routed via {request.RemoteEndPoint}]" : request.RemoteEndPoint.ToString());
+			string text = ((CustomLiteNetLib4MirrorTransport.IpPassthroughEnabled && CustomLiteNetLib4MirrorTransport.TrustedProxies.Contains(request.RemoteEndPoint.Address) && request.Data.TryGetString(out result15)) ? $"{result15} [routed via {request.RemoteEndPoint}]" : request.RemoteEndPoint.ToString());
 			CentralAuthPreauthFlags flags = (CentralAuthPreauthFlags)result12;
 			try
 			{
 				if (!ECDSA.VerifyBytes($"{result10};{result12};{result13};{result11}", result14, ServerConsole.PublicKey))
 				{
-					Rejected++;
-					if (Rejected > RejectionThreshold)
+					CustomLiteNetLib4MirrorTransport.Rejected++;
+					if (CustomLiteNetLib4MirrorTransport.Rejected > CustomLiteNetLib4MirrorTransport.RejectionThreshold)
 					{
-						SuppressRejections = true;
+						CustomLiteNetLib4MirrorTransport.SuppressRejections = true;
 					}
-					if (!SuppressRejections && DisplayPreauthLogs)
+					if (!CustomLiteNetLib4MirrorTransport.SuppressRejections && CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 					{
 						ServerConsole.AddLog("Player from endpoint " + text + " sent preauthentication token with invalid digital signature.");
 					}
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)2);
-					request.RejectForce(RequestWriter);
-					ResetIdleMode();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)2);
+					request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
+					CustomLiteNetLib4MirrorTransport.ResetIdleMode();
 					return;
 				}
 				if (TimeBehaviour.CurrentUnixTimestamp > result11)
 				{
-					Rejected++;
-					if (Rejected > RejectionThreshold)
+					CustomLiteNetLib4MirrorTransport.Rejected++;
+					if (CustomLiteNetLib4MirrorTransport.Rejected > CustomLiteNetLib4MirrorTransport.RejectionThreshold)
 					{
-						SuppressRejections = true;
+						CustomLiteNetLib4MirrorTransport.SuppressRejections = true;
 					}
-					if (!SuppressRejections && DisplayPreauthLogs)
+					if (!CustomLiteNetLib4MirrorTransport.SuppressRejections && CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 					{
 						ServerConsole.AddLog("Player from endpoint " + text + " sent expired preauthentication token.");
 						ServerConsole.AddLog("Make sure that time and timezone set on server is correct. We recommend synchronizing the time.");
 					}
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)11);
-					request.RejectForce(RequestWriter);
-					ResetIdleMode();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)11);
+					request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
+					CustomLiteNetLib4MirrorTransport.ResetIdleMode();
 					return;
 				}
-				if (UserRateLimiting)
+				if (CustomLiteNetLib4MirrorTransport.UserRateLimiting)
 				{
-					if (UserRateLimit.Contains(result10))
+					if (CustomLiteNetLib4MirrorTransport.UserRateLimit.Contains(result10))
 					{
-						Rejected++;
-						if (Rejected > RejectionThreshold)
+						CustomLiteNetLib4MirrorTransport.Rejected++;
+						if (CustomLiteNetLib4MirrorTransport.Rejected > CustomLiteNetLib4MirrorTransport.RejectionThreshold)
 						{
-							SuppressRejections = true;
+							CustomLiteNetLib4MirrorTransport.SuppressRejections = true;
 						}
-						if (!SuppressRejections && DisplayPreauthLogs)
+						if (!CustomLiteNetLib4MirrorTransport.SuppressRejections && CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 						{
 							ServerConsole.AddLog("Incoming connection from " + result10 + " (" + text + ") rejected due to exceeding the rate limit.");
 						}
-						RequestWriter.Reset();
-						RequestWriter.Put((byte)12);
-						request.RejectForce(RequestWriter);
-						ResetIdleMode();
+						CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+						CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)12);
+						request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
+						CustomLiteNetLib4MirrorTransport.ResetIdleMode();
 						return;
 					}
-					UserRateLimit.Add(result10);
+					CustomLiteNetLib4MirrorTransport.UserRateLimit.Add(result10);
 				}
 				if (!flags.HasFlagFast(CentralAuthPreauthFlags.IgnoreBans) || !CustomNetworkManager.IsVerified)
 				{
 					KeyValuePair<BanDetails, BanDetails> keyValuePair2 = BanHandler.QueryBan(result10, result15 ?? request.RemoteEndPoint.Address.ToString());
 					if (keyValuePair2.Key != null || keyValuePair2.Value != null)
 					{
-						Rejected++;
-						if (Rejected > RejectionThreshold)
+						CustomLiteNetLib4MirrorTransport.Rejected++;
+						if (CustomLiteNetLib4MirrorTransport.Rejected > CustomLiteNetLib4MirrorTransport.RejectionThreshold)
 						{
-							SuppressRejections = true;
+							CustomLiteNetLib4MirrorTransport.SuppressRejections = true;
 						}
-						if (!SuppressRejections && DisplayPreauthLogs)
+						if (!CustomLiteNetLib4MirrorTransport.SuppressRejections && CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 						{
 							ServerConsole.AddLog(((keyValuePair2.Key == null) ? "Player" : "Banned player") + " " + result10 + " tried to connect from" + ((keyValuePair2.Value == null) ? "" : " banned") + " endpoint " + text + ".");
 							ServerLogs.AddLog(ServerLogs.Modules.Networking, ((keyValuePair2.Key == null) ? "Player" : "Banned player") + " " + result10 + " tried to connect from" + ((keyValuePair2.Value == null) ? "" : " banned") + " endpoint " + text + ".", ServerLogs.ServerLogType.ConnectionUpdate);
 						}
-						RequestWriter.Reset();
-						RequestWriter.Put((byte)6);
-						RequestWriter.Put(keyValuePair2.Key?.Expires ?? keyValuePair2.Value.Expires);
-						RequestWriter.Put(keyValuePair2.Key?.Reason ?? keyValuePair2.Value?.Reason ?? string.Empty);
-						request.Reject(RequestWriter);
-						ResetIdleMode();
+						CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+						CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)6);
+						CustomLiteNetLib4MirrorTransport.RequestWriter.Put(keyValuePair2.Key?.Expires ?? keyValuePair2.Value.Expires);
+						CustomLiteNetLib4MirrorTransport.RequestWriter.Put(keyValuePair2.Key?.Reason ?? keyValuePair2.Value?.Reason ?? string.Empty);
+						request.Reject(CustomLiteNetLib4MirrorTransport.RequestWriter);
+						CustomLiteNetLib4MirrorTransport.ResetIdleMode();
 						return;
 					}
 				}
 				if (flags.HasFlagFast(CentralAuthPreauthFlags.AuthRejected))
 				{
-					if (DisplayPreauthLogs)
+					if (CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 					{
 						ServerConsole.AddLog("Player " + result10 + " (" + text + ") kicked due to auth rejection by central server.");
 					}
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)20);
-					request.Reject(RequestWriter);
-					ResetIdleMode();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)20);
+					request.Reject(CustomLiteNetLib4MirrorTransport.RequestWriter);
+					CustomLiteNetLib4MirrorTransport.ResetIdleMode();
 					return;
 				}
-				if (flags.HasFlagFast(CentralAuthPreauthFlags.GloballyBanned) && (CustomNetworkManager.IsVerified || UseGlobalBans))
+				if (flags.HasFlagFast(CentralAuthPreauthFlags.GloballyBanned) && (CustomNetworkManager.IsVerified || CustomLiteNetLib4MirrorTransport.UseGlobalBans))
 				{
-					if (DisplayPreauthLogs)
+					if (CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 					{
 						ServerConsole.AddLog("Player " + result10 + " (" + text + ") kicked due to an active global ban.");
 					}
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)8);
-					request.Reject(RequestWriter);
-					ResetIdleMode();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)8);
+					request.Reject(CustomLiteNetLib4MirrorTransport.RequestWriter);
+					CustomLiteNetLib4MirrorTransport.ResetIdleMode();
 					return;
 				}
 				if ((!flags.HasFlagFast(CentralAuthPreauthFlags.IgnoreWhitelist) || !CustomNetworkManager.IsVerified) && !WhiteList.IsWhitelisted(result10))
 				{
-					if (DisplayPreauthLogs)
+					if (CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 					{
 						ServerConsole.AddLog("Player " + result10 + " tried joined from endpoint " + text + ", but is not whitelisted.");
 					}
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)7);
-					request.Reject(RequestWriter);
-					ResetIdleMode();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)7);
+					request.Reject(CustomLiteNetLib4MirrorTransport.RequestWriter);
+					CustomLiteNetLib4MirrorTransport.ResetIdleMode();
 					return;
 				}
-				if (Geoblocking != 0 && (!flags.HasFlagFast(CentralAuthPreauthFlags.IgnoreGeoblock) || !ServerStatic.PermissionsHandler.BanTeamBypassGeo) && (!GeoblockIgnoreWhitelisted || !WhiteList.IsOnWhitelist(result10)) && ((Geoblocking == GeoblockingMode.Whitelist && !GeoblockingList.Contains(result13)) || (Geoblocking == GeoblockingMode.Blacklist && GeoblockingList.Contains(result13))))
+				if (CustomLiteNetLib4MirrorTransport.Geoblocking != GeoblockingMode.None && (!flags.HasFlagFast(CentralAuthPreauthFlags.IgnoreGeoblock) || !ServerStatic.PermissionsHandler.BanTeamBypassGeo) && (!CustomLiteNetLib4MirrorTransport.GeoblockIgnoreWhitelisted || !WhiteList.IsOnWhitelist(result10)) && ((CustomLiteNetLib4MirrorTransport.Geoblocking == GeoblockingMode.Whitelist && !CustomLiteNetLib4MirrorTransport.GeoblockingList.Contains(result13)) || (CustomLiteNetLib4MirrorTransport.Geoblocking == GeoblockingMode.Blacklist && CustomLiteNetLib4MirrorTransport.GeoblockingList.Contains(result13))))
 				{
-					Rejected++;
-					if (Rejected > RejectionThreshold)
+					CustomLiteNetLib4MirrorTransport.Rejected++;
+					if (CustomLiteNetLib4MirrorTransport.Rejected > CustomLiteNetLib4MirrorTransport.RejectionThreshold)
 					{
-						SuppressRejections = true;
+						CustomLiteNetLib4MirrorTransport.SuppressRejections = true;
 					}
-					if (!SuppressRejections && DisplayPreauthLogs)
+					if (!CustomLiteNetLib4MirrorTransport.SuppressRejections && CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 					{
 						ServerConsole.AddLog("Player " + result10 + " (" + text + ") tried joined from blocked country " + result13 + ".");
 					}
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)9);
-					request.RejectForce(RequestWriter);
-					ResetIdleMode();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)9);
+					request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
+					CustomLiteNetLib4MirrorTransport.ResetIdleMode();
 					return;
 				}
-				if (UserIdFastReload.Contains(result10))
+				if (CustomLiteNetLib4MirrorTransport.UserIdFastReload.Contains(result10))
 				{
-					UserIdFastReload.Remove(result10);
+					CustomLiteNetLib4MirrorTransport.UserIdFastReload.Remove(result10);
 				}
-				PlayerPreAuthenticatingEventArgs playerPreAuthenticatingEventArgs2 = new PlayerPreAuthenticatingEventArgs(!IsServerFull(result10, flags), result10, (result15 == null) ? request.RemoteEndPoint.Address.ToString() : result15, result11, flags, result13, result14, request, position);
-				PlayerEvents.OnPreAuthenticating(playerPreAuthenticatingEventArgs2);
-				if (!playerPreAuthenticatingEventArgs2.IsAllowed)
+				PlayerPreAuthenticatingEventArgs e2 = new PlayerPreAuthenticatingEventArgs(!CustomLiteNetLib4MirrorTransport.IsServerFull(result10, flags), result10, (result15 == null) ? request.RemoteEndPoint.Address.ToString() : result15, result11, flags, result13, result14, request, position);
+				PlayerEvents.OnPreAuthenticating(e2);
+				if (!e2.IsAllowed)
 				{
-					if (playerPreAuthenticatingEventArgs2.CustomReject != null)
+					if (e2.CustomReject != null)
 					{
-						if (playerPreAuthenticatingEventArgs2.ForceReject)
+						if (e2.ForceReject)
 						{
-							request.RejectForce(playerPreAuthenticatingEventArgs2.CustomReject);
+							request.RejectForce(e2.CustomReject);
 						}
 						else
 						{
-							request.Reject(playerPreAuthenticatingEventArgs2.CustomReject);
+							request.Reject(e2.CustomReject);
 						}
 					}
 					else
 					{
-						RequestWriter.Reset();
-						RequestWriter.Put((byte)4);
-						request.RejectForce(RequestWriter);
+						CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+						CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)4);
+						request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 					}
 				}
-				else if (playerPreAuthenticatingEventArgs2.CanJoin)
+				else if (e2.CanJoin)
 				{
-					if (UserIds.ContainsKey(request.RemoteEndPoint))
+					if (CustomLiteNetLib4MirrorTransport.UserIds.ContainsKey(request.RemoteEndPoint))
 					{
-						UserIds[request.RemoteEndPoint].SetUserId(result10);
+						CustomLiteNetLib4MirrorTransport.UserIds[request.RemoteEndPoint].SetUserId(result10);
 					}
 					else
 					{
-						UserIds.Add(request.RemoteEndPoint, new PreauthItem(result10));
+						CustomLiteNetLib4MirrorTransport.UserIds.Add(request.RemoteEndPoint, new PreauthItem(result10));
 					}
 					NetPeer netPeer = request.Accept();
 					if (result15 != null)
 					{
-						if (RealIpAddresses.ContainsKey(netPeer.Id))
+						if (CustomLiteNetLib4MirrorTransport.RealIpAddresses.ContainsKey(netPeer.Id))
 						{
-							RealIpAddresses[netPeer.Id] = result15;
+							CustomLiteNetLib4MirrorTransport.RealIpAddresses[netPeer.Id] = result15;
 						}
 						else
 						{
-							RealIpAddresses.Add(netPeer.Id, result15);
+							CustomLiteNetLib4MirrorTransport.RealIpAddresses.Add(netPeer.Id, result15);
 						}
 					}
 					ServerConsole.AddLog("Player " + result10 + " preauthenticated from endpoint " + text + ".");
 					ServerLogs.AddLog(ServerLogs.Modules.Networking, result10 + " preauthenticated from endpoint " + text + ".", ServerLogs.ServerLogType.ConnectionUpdate);
-					PreauthDisableIdleMode();
+					CustomLiteNetLib4MirrorTransport.PreauthDisableIdleMode();
 					PlayerEvents.OnPreAuthenticated(new PlayerPreAuthenticatedEventArgs(result10, (result15 == null) ? request.RemoteEndPoint.Address.ToString() : result15, result11, flags, result13, result14, request, position));
 				}
 				else
 				{
-					RequestWriter.Reset();
-					RequestWriter.Put((byte)1);
-					request.Reject(RequestWriter);
-					ResetIdleMode();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+					CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)1);
+					request.Reject(CustomLiteNetLib4MirrorTransport.RequestWriter);
+					CustomLiteNetLib4MirrorTransport.ResetIdleMode();
 				}
 			}
 			catch (Exception ex)
 			{
-				Rejected++;
-				if (Rejected > RejectionThreshold)
+				CustomLiteNetLib4MirrorTransport.Rejected++;
+				if (CustomLiteNetLib4MirrorTransport.Rejected > CustomLiteNetLib4MirrorTransport.RejectionThreshold)
 				{
-					SuppressRejections = true;
+					CustomLiteNetLib4MirrorTransport.SuppressRejections = true;
 				}
-				if (!SuppressRejections && DisplayPreauthLogs)
+				if (!CustomLiteNetLib4MirrorTransport.SuppressRejections && CustomLiteNetLib4MirrorTransport.DisplayPreauthLogs)
 				{
 					ServerConsole.AddLog("Player from endpoint " + text + " sent an invalid preauthentication token. " + ex.Message);
 				}
-				RequestWriter.Reset();
-				RequestWriter.Put((byte)2);
-				request.RejectForce(RequestWriter);
-				ResetIdleMode();
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+				CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)2);
+				request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
+				CustomLiteNetLib4MirrorTransport.ResetIdleMode();
 			}
 		}
 		catch (Exception ex2)
 		{
-			Rejected++;
-			if (Rejected > RejectionThreshold)
+			CustomLiteNetLib4MirrorTransport.Rejected++;
+			if (CustomLiteNetLib4MirrorTransport.Rejected > CustomLiteNetLib4MirrorTransport.RejectionThreshold)
 			{
-				SuppressRejections = true;
+				CustomLiteNetLib4MirrorTransport.SuppressRejections = true;
 			}
-			if (!SuppressRejections)
+			if (!CustomLiteNetLib4MirrorTransport.SuppressRejections)
 			{
 				ServerConsole.AddLog($"Player from endpoint {request.RemoteEndPoint} failed to preauthenticate: {ex2.Message}");
 			}
-			RequestWriter.Reset();
-			RequestWriter.Put((byte)4);
-			request.RejectForce(RequestWriter);
+			CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+			CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)4);
+			request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 		}
 	}
 
 	private static bool IsServerFull(string userId = null, CentralAuthPreauthFlags flags = CentralAuthPreauthFlags.None)
 	{
-		if (!string.IsNullOrEmpty(userId) && HasReservedSlot(userId, flags))
+		if (!string.IsNullOrEmpty(userId) && CustomLiteNetLib4MirrorTransport.HasReservedSlot(userId, flags))
 		{
 			return false;
 		}
@@ -666,28 +666,28 @@ public class CustomLiteNetLib4MirrorTransport : LiteNetLib4MirrorTransport
 
 	private static bool CheckIpRateLimit(ConnectionRequest request)
 	{
-		if (!IpRateLimiting)
+		if (!CustomLiteNetLib4MirrorTransport.IpRateLimiting)
 		{
 			return true;
 		}
-		if (IpRateLimit.Contains(request.RemoteEndPoint.Address))
+		if (CustomLiteNetLib4MirrorTransport.IpRateLimit.Contains(request.RemoteEndPoint.Address))
 		{
-			Rejected++;
-			if (Rejected > RejectionThreshold)
+			CustomLiteNetLib4MirrorTransport.Rejected++;
+			if (CustomLiteNetLib4MirrorTransport.Rejected > CustomLiteNetLib4MirrorTransport.RejectionThreshold)
 			{
-				SuppressRejections = true;
+				CustomLiteNetLib4MirrorTransport.SuppressRejections = true;
 			}
-			if (!SuppressRejections)
+			if (!CustomLiteNetLib4MirrorTransport.SuppressRejections)
 			{
 				ServerConsole.AddLog($"Incoming connection from endpoint {request.RemoteEndPoint} rejected due to exceeding the rate limit.");
 				ServerLogs.AddLog(ServerLogs.Modules.Networking, $"Incoming connection from endpoint {request.RemoteEndPoint} rejected due to exceeding the rate limit.", ServerLogs.ServerLogType.AuthRateLimit);
 			}
-			RequestWriter.Reset();
-			RequestWriter.Put((byte)12);
-			request.RejectForce(RequestWriter);
+			CustomLiteNetLib4MirrorTransport.RequestWriter.Reset();
+			CustomLiteNetLib4MirrorTransport.RequestWriter.Put((byte)12);
+			request.RejectForce(CustomLiteNetLib4MirrorTransport.RequestWriter);
 			return false;
 		}
-		IpRateLimit.Add(request.RemoteEndPoint.Address);
+		CustomLiteNetLib4MirrorTransport.IpRateLimit.Add(request.RemoteEndPoint.Address);
 		return true;
 	}
 
@@ -699,11 +699,11 @@ public class CustomLiteNetLib4MirrorTransport : LiteNetLib4MirrorTransport
 	{
 		if (disconnectinfo.AdditionalData.TryGetByte(out var result))
 		{
-			LastRejectionReason = (RejectionReason)result;
+			CustomLiteNetLib4MirrorTransport.LastRejectionReason = (RejectionReason)result;
 		}
 		else
 		{
-			LastRejectionReason = RejectionReason.NotSpecified;
+			CustomLiteNetLib4MirrorTransport.LastRejectionReason = RejectionReason.NotSpecified;
 		}
 	}
 
@@ -726,23 +726,23 @@ public class CustomLiteNetLib4MirrorTransport : LiteNetLib4MirrorTransport
 
 	public static void ReloadChallengeOptions()
 	{
-		UseChallenge = ConfigFile.ServerConfig.GetBool("preauth_challenge", def: true);
-		ChallengeInitLen = ConfigFile.ServerConfig.GetUShort("preauth_challenge_base_length", 16);
-		ChallengeSecretLen = ConfigFile.ServerConfig.GetUShort("preauth_challenge_secret_length", 5);
+		CustomLiteNetLib4MirrorTransport.UseChallenge = ConfigFile.ServerConfig.GetBool("preauth_challenge", def: true);
+		CustomLiteNetLib4MirrorTransport.ChallengeInitLen = ConfigFile.ServerConfig.GetUShort("preauth_challenge_base_length", 16);
+		CustomLiteNetLib4MirrorTransport.ChallengeSecretLen = ConfigFile.ServerConfig.GetUShort("preauth_challenge_secret_length", 5);
 		string text = ConfigFile.ServerConfig.GetString("preauth_challenge_mode", "reply").ToLower();
 		if (!(text == "md5"))
 		{
 			if (text == "sha1")
 			{
-				ChallengeMode = ChallengeType.SHA1;
+				CustomLiteNetLib4MirrorTransport.ChallengeMode = ChallengeType.SHA1;
 				return;
 			}
-			ChallengeMode = ChallengeType.Reply;
-			ChallengeSecretLen = 0;
+			CustomLiteNetLib4MirrorTransport.ChallengeMode = ChallengeType.Reply;
+			CustomLiteNetLib4MirrorTransport.ChallengeSecretLen = 0;
 		}
 		else
 		{
-			ChallengeMode = ChallengeType.MD5;
+			CustomLiteNetLib4MirrorTransport.ChallengeMode = ChallengeType.MD5;
 		}
 	}
 }

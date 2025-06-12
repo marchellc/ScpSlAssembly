@@ -8,14 +8,14 @@ public class DetectorBlink : MonoBehaviour
 
 	private void Start()
 	{
-		Blink();
+		this.Blink();
 	}
 
 	private void Blink()
 	{
-		state = !state;
-		int num = (state ? 2 : 0);
-		mat.SetColor("_EmissionColor", new Color(num, num, num));
-		Invoke("Blink", state ? 0.2f : 1.3f);
+		this.state = !this.state;
+		int num = (this.state ? 2 : 0);
+		this.mat.SetColor("_EmissionColor", new Color(num, num, num));
+		base.Invoke("Blink", this.state ? 0.2f : 1.3f);
 	}
 }

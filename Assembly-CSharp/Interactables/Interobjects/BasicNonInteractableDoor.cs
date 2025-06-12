@@ -17,19 +17,19 @@ public class BasicNonInteractableDoor : BasicDoor, INonInteractableDoor, IScp106
 	[SyncVar]
 	private bool _blockScp106;
 
-	public bool IgnoreLockdowns => _ignoreLockdowns;
+	public bool IgnoreLockdowns => this._ignoreLockdowns;
 
-	public bool IgnoreRemoteAdmin => _ignoreRemoteAdmin;
+	public bool IgnoreRemoteAdmin => this._ignoreRemoteAdmin;
 
 	public bool IsScp106Passable
 	{
 		get
 		{
-			return !_blockScp106;
+			return !this._blockScp106;
 		}
 		set
 		{
-			Network_blockScp106 = !value;
+			this.Network_blockScp106 = !value;
 		}
 	}
 
@@ -37,12 +37,12 @@ public class BasicNonInteractableDoor : BasicDoor, INonInteractableDoor, IScp106
 	{
 		get
 		{
-			return _blockScp106;
+			return this._blockScp106;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _blockScp106, 8uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._blockScp106, 8uL, null);
 		}
 	}
 
@@ -56,13 +56,13 @@ public class BasicNonInteractableDoor : BasicDoor, INonInteractableDoor, IScp106
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(_blockScp106);
+			writer.WriteBool(this._blockScp106);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			writer.WriteBool(_blockScp106);
+			writer.WriteBool(this._blockScp106);
 		}
 	}
 
@@ -71,13 +71,13 @@ public class BasicNonInteractableDoor : BasicDoor, INonInteractableDoor, IScp106
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _blockScp106, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._blockScp106, null, reader.ReadBool());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 8L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _blockScp106, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._blockScp106, null, reader.ReadBool());
 		}
 	}
 }

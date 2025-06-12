@@ -21,19 +21,19 @@ public abstract class TracerBase : MonoBehaviour
 	{
 		get
 		{
-			if (_origin.HasValue)
+			if (this._origin.HasValue)
 			{
-				return _origin.Value;
+				return this._origin.Value;
 			}
-			if (BarrelTipExtension.TryFindWorldmodelBarrelTip(Serial, out var foundExtension))
+			if (BarrelTipExtension.TryFindWorldmodelBarrelTip(this.Serial, out var foundExtension))
 			{
-				_origin = foundExtension.WorldspacePosition;
+				this._origin = foundExtension.WorldspacePosition;
 			}
 			else
 			{
-				_origin = _fallbackOrigin;
+				this._origin = this._fallbackOrigin;
 			}
-			return _origin.Value;
+			return this._origin.Value;
 		}
 	}
 
@@ -61,47 +61,47 @@ public abstract class TracerBase : MonoBehaviour
 
 	public void Fire(RelativePosition hitPosition, ushort serial, Vector3 fallbackOriginPosition, NetworkReader extraData, Firearm template)
 	{
-		if (!_isInstance)
+		if (!this._isInstance)
 		{
 			throw new InvalidOperationException("Attempting to fire a template or non-pooled tracer. Please get an instance using the GetFromPool method.");
 		}
-		RelativeHitPosition = hitPosition;
-		Serial = serial;
-		Template = template;
-		_origin = null;
-		_fallbackOrigin = fallbackOriginPosition;
-		OnFired(extraData);
+		this.RelativeHitPosition = hitPosition;
+		this.Serial = serial;
+		this.Template = template;
+		this._origin = null;
+		this._fallbackOrigin = fallbackOriginPosition;
+		this.OnFired(extraData);
 	}
 
 	public TracerBase GetFromPool()
 	{
-		if (_isInstance)
+		if (this._isInstance)
 		{
 			throw new InvalidOperationException("GetFromPool can only be called on the prefab tracer object.");
 		}
-		if (_instancesPool == null)
+		if (this._instancesPool == null)
 		{
-			_instancesPool = new Queue<TracerBase>();
+			this._instancesPool = new Queue<TracerBase>();
 		}
 		TracerBase result;
-		while (_instancesPool.TryPeek(out result))
+		while (this._instancesPool.TryPeek(out result))
 		{
 			if (result == null)
 			{
-				_instancesPool.Dequeue();
+				this._instancesPool.Dequeue();
 				continue;
 			}
 			if (result.IsBusy)
 			{
 				break;
 			}
-			TracerBase tracerBase = _instancesPool.Dequeue();
+			TracerBase tracerBase = this._instancesPool.Dequeue();
 			tracerBase.OnDequeued();
-			_instancesPool.Enqueue(tracerBase);
+			this._instancesPool.Enqueue(tracerBase);
 			return tracerBase;
 		}
 		TracerBase tracerBase2 = UnityEngine.Object.Instantiate(this);
-		_instancesPool.Enqueue(tracerBase2);
+		this._instancesPool.Enqueue(tracerBase2);
 		tracerBase2._isInstance = true;
 		tracerBase2.OnCreated();
 		return tracerBase2;

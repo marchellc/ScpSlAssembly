@@ -17,20 +17,20 @@ public class AmmoSearchCompletor : PickupSearchCompletor
 	{
 		get
 		{
-			return base.Hub.inventory.GetCurAmmo(_ammoType);
+			return base.Hub.inventory.GetCurAmmo(this._ammoType);
 		}
 		set
 		{
-			base.Hub.inventory.ServerSetAmmo(_ammoType, value);
+			base.Hub.inventory.ServerSetAmmo(this._ammoType, value);
 		}
 	}
 
-	private ushort MaxAmmo => InventoryLimits.GetAmmoLimit(_ammoType, base.Hub);
+	private ushort MaxAmmo => InventoryLimits.GetAmmoLimit(this._ammoType, base.Hub);
 
 	public AmmoSearchCompletor(ReferenceHub hub, ItemPickupBase targetPickup, double maxDistanceSquared)
 		: base(hub, targetPickup, maxDistanceSquared)
 	{
-		_ammoType = targetPickup.Info.ItemId;
+		this._ammoType = targetPickup.Info.ItemId;
 	}
 
 	public override bool ValidateStart()
@@ -39,9 +39,9 @@ public class AmmoSearchCompletor : PickupSearchCompletor
 		{
 			return false;
 		}
-		PlayerSearchingAmmoEventArgs playerSearchingAmmoEventArgs = new PlayerSearchingAmmoEventArgs(base.Hub, TargetPickup as AmmoPickup);
-		PlayerEvents.OnSearchingAmmo(playerSearchingAmmoEventArgs);
-		if (!playerSearchingAmmoEventArgs.IsAllowed)
+		PlayerSearchingAmmoEventArgs e = new PlayerSearchingAmmoEventArgs(base.Hub, base.TargetPickup as AmmoPickup);
+		PlayerEvents.OnSearchingAmmo(e);
+		if (!e.IsAllowed)
 		{
 			return false;
 		}
@@ -54,12 +54,12 @@ public class AmmoSearchCompletor : PickupSearchCompletor
 		{
 			return false;
 		}
-		uint maxAmmo = MaxAmmo;
-		if (CurrentAmmo >= maxAmmo)
+		uint maxAmmo = this.MaxAmmo;
+		if (this.CurrentAmmo >= maxAmmo)
 		{
 			base.Hub.hints.Show(new TranslationHint(HintTranslations.MaxAmmoAlreadyReached, new HintParameter[2]
 			{
-				new AmmoHintParameter((byte)_ammoType),
+				new AmmoHintParameter((byte)this._ammoType),
 				new PackedULongHintParameter(maxAmmo)
 			}, new HintEffect[1] { HintEffectPresets.TrailingPulseAlpha(0.5f, 1f, 0.5f, 2f, 0f, 2) }, 2f));
 			return false;
@@ -69,37 +69,37 @@ public class AmmoSearchCompletor : PickupSearchCompletor
 
 	public override void Complete()
 	{
-		PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(base.Hub, TargetPickup));
-		if (!(TargetPickup is AmmoPickup ammoPickup))
+		PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(base.Hub, base.TargetPickup));
+		if (!(base.TargetPickup is AmmoPickup ammoPickup))
 		{
 			Debug.LogError("The pickup needs to derive from AmmoPickup");
 			return;
 		}
-		ushort currentAmmo = CurrentAmmo;
-		ushort ammoAmount = (ushort)(Math.Min(currentAmmo + ammoPickup.SavedAmmo, MaxAmmo) - currentAmmo);
-		PlayerPickingUpAmmoEventArgs playerPickingUpAmmoEventArgs = new PlayerPickingUpAmmoEventArgs(base.Hub, _ammoType, ammoAmount, TargetPickup as AmmoPickup);
-		PlayerEvents.OnPickingUpAmmo(playerPickingUpAmmoEventArgs);
-		if (playerPickingUpAmmoEventArgs.IsAllowed)
+		ushort currentAmmo = this.CurrentAmmo;
+		ushort ammoAmount = (ushort)(Math.Min(currentAmmo + ammoPickup.SavedAmmo, this.MaxAmmo) - currentAmmo);
+		PlayerPickingUpAmmoEventArgs e = new PlayerPickingUpAmmoEventArgs(base.Hub, this._ammoType, ammoAmount, base.TargetPickup as AmmoPickup);
+		PlayerEvents.OnPickingUpAmmo(e);
+		if (e.IsAllowed)
 		{
-			ammoAmount = playerPickingUpAmmoEventArgs.AmmoAmount;
+			ammoAmount = e.AmmoAmount;
 			if (ammoAmount >= ammoPickup.SavedAmmo)
 			{
-				TargetPickup.DestroySelf();
+				base.TargetPickup.DestroySelf();
 			}
 			else
 			{
 				ammoPickup.NetworkSavedAmmo = (ushort)(ammoPickup.SavedAmmo - ammoAmount);
-				PickupSyncInfo info = TargetPickup.Info;
+				PickupSyncInfo info = base.TargetPickup.Info;
 				info.InUse = false;
-				TargetPickup.NetworkInfo = info;
+				base.TargetPickup.NetworkInfo = info;
 				base.Hub.hints.Show(new TranslationHint(HintTranslations.MaxAmmoReached, new HintParameter[2]
 				{
-					new AmmoHintParameter((byte)_ammoType),
-					new PackedULongHintParameter(MaxAmmo)
+					new AmmoHintParameter((byte)this._ammoType),
+					new PackedULongHintParameter(this.MaxAmmo)
 				}, HintEffectPresets.FadeInAndOut(0.25f), 1.5f));
 			}
-			CurrentAmmo += ammoAmount;
-			PlayerEvents.OnPickedUpAmmo(new PlayerPickedUpAmmoEventArgs(base.Hub, _ammoType, ammoAmount, TargetPickup as AmmoPickup));
+			this.CurrentAmmo += ammoAmount;
+			PlayerEvents.OnPickedUpAmmo(new PlayerPickedUpAmmoEventArgs(base.Hub, this._ammoType, ammoAmount, base.TargetPickup as AmmoPickup));
 		}
 	}
 }

@@ -6,7 +6,7 @@ public class SSTwoButtonsSetting : ServerSpecificSettingBase
 {
 	public bool SyncIsB { get; internal set; }
 
-	public bool SyncIsA => !SyncIsB;
+	public bool SyncIsA => !this.SyncIsB;
 
 	public string OptionA { get; private set; }
 
@@ -18,7 +18,7 @@ public class SSTwoButtonsSetting : ServerSpecificSettingBase
 	{
 		get
 		{
-			if (!SyncIsB)
+			if (!this.SyncIsB)
 			{
 				return "A";
 			}
@@ -28,42 +28,42 @@ public class SSTwoButtonsSetting : ServerSpecificSettingBase
 
 	public SSTwoButtonsSetting(int? id, string label, string optionA, string optionB, bool defaultIsB = false, string hint = null)
 	{
-		SetId(id, label);
+		base.SetId(id, label);
 		base.Label = label;
-		OptionA = optionA;
-		OptionB = optionB;
-		DefaultIsB = defaultIsB;
+		this.OptionA = optionA;
+		this.OptionB = optionB;
+		this.DefaultIsB = defaultIsB;
 		base.HintDescription = hint;
 	}
 
 	public override void ApplyDefaultValues()
 	{
-		SyncIsB = DefaultIsB;
+		this.SyncIsB = this.DefaultIsB;
 	}
 
 	public override void DeserializeValue(NetworkReader reader)
 	{
-		SyncIsB = reader.ReadBool();
+		this.SyncIsB = reader.ReadBool();
 	}
 
 	public override void SerializeValue(NetworkWriter writer)
 	{
-		writer.WriteBool(SyncIsB);
+		writer.WriteBool(this.SyncIsB);
 	}
 
 	public override void DeserializeEntry(NetworkReader reader)
 	{
 		base.DeserializeEntry(reader);
-		OptionA = reader.ReadString();
-		OptionB = reader.ReadString();
-		DefaultIsB = reader.ReadBool();
+		this.OptionA = reader.ReadString();
+		this.OptionB = reader.ReadString();
+		this.DefaultIsB = reader.ReadBool();
 	}
 
 	public override void SerializeEntry(NetworkWriter writer)
 	{
 		base.SerializeEntry(writer);
-		writer.WriteString(OptionA);
-		writer.WriteString(OptionB);
-		writer.WriteBool(DefaultIsB);
+		writer.WriteString(this.OptionA);
+		writer.WriteString(this.OptionB);
+		writer.WriteBool(this.DefaultIsB);
 	}
 }

@@ -65,19 +65,19 @@ public class FilmmakerFly : MonoBehaviour, ICursorOverride
 
 	public bool LockMovement => false;
 
-	private bool WantsToFly => Input.GetKey(_keyFly);
+	private bool WantsToFly => Input.GetKey(this._keyFly);
 
 	private void Start()
 	{
 		CursorManager.Register(this);
-		_role = ReferenceHub.LocalHub.roleManager.CurrentRole as FilmmakerRole;
-		_keyFwd = NewInput.GetKey(ActionName.MoveForward);
-		_keyBwd = NewInput.GetKey(ActionName.MoveBackward);
-		_keyLft = NewInput.GetKey(ActionName.MoveLeft);
-		_keyRgt = NewInput.GetKey(ActionName.MoveRight);
-		_keyUpw = NewInput.GetKey(ActionName.Jump);
-		_keyDnw = NewInput.GetKey(ActionName.Sneak);
-		_mLook = new FpcMouseLook(ReferenceHub.LocalHub, null);
+		FilmmakerFly._role = ReferenceHub.LocalHub.roleManager.CurrentRole as FilmmakerRole;
+		FilmmakerFly._keyFwd = NewInput.GetKey(ActionName.MoveForward);
+		FilmmakerFly._keyBwd = NewInput.GetKey(ActionName.MoveBackward);
+		FilmmakerFly._keyLft = NewInput.GetKey(ActionName.MoveLeft);
+		FilmmakerFly._keyRgt = NewInput.GetKey(ActionName.MoveRight);
+		FilmmakerFly._keyUpw = NewInput.GetKey(ActionName.Jump);
+		FilmmakerFly._keyDnw = NewInput.GetKey(ActionName.Sneak);
+		FilmmakerFly._mLook = new FpcMouseLook(ReferenceHub.LocalHub, null);
 	}
 
 	private void OnDestroy()
@@ -93,45 +93,45 @@ public class FilmmakerFly : MonoBehaviour, ICursorOverride
 	{
 		Transform currentCamera = MainCameraController.CurrentCamera;
 		Vector3 zero = Vector3.zero;
-		if (Input.GetKey(_keyFwd))
+		if (Input.GetKey(FilmmakerFly._keyFwd))
 		{
 			zero += currentCamera.forward;
 		}
-		if (Input.GetKey(_keyBwd))
+		if (Input.GetKey(FilmmakerFly._keyBwd))
 		{
 			zero -= currentCamera.forward;
 		}
-		if (Input.GetKey(_keyRgt))
+		if (Input.GetKey(FilmmakerFly._keyRgt))
 		{
 			zero += currentCamera.right;
 		}
-		if (Input.GetKey(_keyLft))
+		if (Input.GetKey(FilmmakerFly._keyLft))
 		{
 			zero -= currentCamera.right;
 		}
-		if (Input.GetKey(_keyUpw))
+		if (Input.GetKey(FilmmakerFly._keyUpw))
 		{
 			zero += currentCamera.up;
 		}
-		if (Input.GetKey(_keyDnw))
+		if (Input.GetKey(FilmmakerFly._keyDnw))
 		{
 			zero -= currentCamera.up;
 		}
-		_role.CameraPosition += movementSpeed * Time.deltaTime * zero;
+		FilmmakerFly._role.CameraPosition += movementSpeed * Time.deltaTime * zero;
 	}
 
 	private void UpdateRotation(float rollStep)
 	{
-		_mLook.GetMouseInput(out var hRot, out var vRot);
-		_role.HorizontalRotation += hRot;
-		_role.VerticalRotation -= vRot;
-		if (Input.GetKeyDown(_keyRollLeft))
+		FilmmakerFly._mLook.GetMouseInput(out var hRot, out var vRot);
+		FilmmakerFly._role.HorizontalRotation += hRot;
+		FilmmakerFly._role.VerticalRotation -= vRot;
+		if (Input.GetKeyDown(this._keyRollLeft))
 		{
-			_role.RollRotation += rollStep;
+			FilmmakerFly._role.RollRotation += rollStep;
 		}
-		if (Input.GetKeyDown(_keyRollRight))
+		if (Input.GetKeyDown(this._keyRollRight))
 		{
-			_role.RollRotation -= rollStep;
+			FilmmakerFly._role.RollRotation -= rollStep;
 		}
 	}
 
@@ -140,7 +140,7 @@ public class FilmmakerFly : MonoBehaviour, ICursorOverride
 		float axisRaw = Input.GetAxisRaw("Mouse ScrollWheel");
 		if (axisRaw != 0f)
 		{
-			FilmmakerRole.ZoomScale = Mathf.Max(_minZoom, FilmmakerRole.ZoomScale + Mathf.Sign(axisRaw) * step);
+			FilmmakerRole.ZoomScale = Mathf.Max(this._minZoom, FilmmakerRole.ZoomScale + Mathf.Sign(axisRaw) * step);
 		}
 	}
 }

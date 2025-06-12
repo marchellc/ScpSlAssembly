@@ -74,15 +74,15 @@ public class SimpleInspectorModule : ModuleBase, ITriggerPressPreventerModule, I
 	{
 		get
 		{
-			if (!ValidateStart)
+			if (!this.ValidateStart)
 			{
 				return false;
 			}
-			if (_idleElapsed < 0.365f)
+			if (this._idleElapsed < 0.365f)
 			{
 				return true;
 			}
-			int[] layers = _inspectLayer.Layers;
+			int[] layers = this._inspectLayer.Layers;
 			foreach (int layer in layers)
 			{
 				if (base.Firearm.AnimGetCurStateInfo(layer).tagHash == FirearmAnimatorHashes.Idle)
@@ -102,29 +102,29 @@ public class SimpleInspectorModule : ModuleBase, ITriggerPressPreventerModule, I
 
 	public float BobbingSwayScale { get; private set; }
 
-	public bool DisplayInspecting => _isInspecting;
+	public bool DisplayInspecting => this._isInspecting;
 
 	private void SetInspecting(bool val)
 	{
-		bool isInspecting = _isInspecting;
-		_isInspecting = val;
-		_idleElapsed = 0f;
-		if (_isInspecting)
+		bool isInspecting = this._isInspecting;
+		this._isInspecting = val;
+		this._idleElapsed = 0f;
+		if (this._isInspecting)
 		{
 			if (!isInspecting)
 			{
-				_capturedClips.Clear();
+				this._capturedClips.Clear();
 				base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.StartInspect, checkIfExists: true);
 			}
 		}
 		else
 		{
-			ReleaseTriggerLock();
+			this.ReleaseTriggerLock();
 		}
 		base.Firearm.AnimSetBool(FirearmAnimatorHashes.Inspect, val);
 		if (NetworkServer.active)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteBool(val);
 			});
@@ -136,11 +136,11 @@ public class SimpleInspectorModule : ModuleBase, ITriggerPressPreventerModule, I
 		float b;
 		float b2;
 		float b3;
-		if (_isInspecting)
+		if (this._isInspecting)
 		{
-			b = _walkSwayScale;
-			b2 = _jumpSwayScale;
-			b3 = _bobbingScale;
+			b = this._walkSwayScale;
+			b2 = this._jumpSwayScale;
+			b3 = this._bobbingScale;
 		}
 		else
 		{
@@ -149,23 +149,23 @@ public class SimpleInspectorModule : ModuleBase, ITriggerPressPreventerModule, I
 			b3 = 1f;
 		}
 		float t = 5f * Time.deltaTime;
-		WalkSwayScale = Mathf.Lerp(WalkSwayScale, b, t);
-		JumpSwayScale = Mathf.Lerp(JumpSwayScale, b2, t);
-		BobbingSwayScale = Mathf.Lerp(BobbingSwayScale, b3, t);
+		this.WalkSwayScale = Mathf.Lerp(this.WalkSwayScale, b, t);
+		this.JumpSwayScale = Mathf.Lerp(this.JumpSwayScale, b2, t);
+		this.BobbingSwayScale = Mathf.Lerp(this.BobbingSwayScale, b3, t);
 	}
 
 	private void InterceptNewSound(ItemIdentifier id, PlayerRoleBase role, PooledAudioSource src)
 	{
-		if (_isInspecting && base.Firearm.ItemSerial == id.SerialNumber && base.Firearm.ItemTypeId == id.TypeId && _clipsToStopOnInterrupt.Contains(src.Source.clip))
+		if (this._isInspecting && base.Firearm.ItemSerial == id.SerialNumber && base.Firearm.ItemTypeId == id.TypeId && this._clipsToStopOnInterrupt.Contains(src.Source.clip))
 		{
-			_capturedClips.Add(new AudioPoolSession(src));
+			this._capturedClips.Add(new AudioPoolSession(src));
 		}
 	}
 
 	private void StopInspectSounds()
 	{
 		bool flag = false;
-		foreach (AudioPoolSession capturedClip in _capturedClips)
+		foreach (AudioPoolSession capturedClip in this._capturedClips)
 		{
 			if (capturedClip.SameSession && !(capturedClip.Source.volume <= 0f))
 			{
@@ -175,15 +175,15 @@ public class SimpleInspectorModule : ModuleBase, ITriggerPressPreventerModule, I
 		}
 		if (!flag)
 		{
-			_capturedClips.Clear();
+			this._capturedClips.Clear();
 		}
 	}
 
 	private void OnDestroy()
 	{
-		if (_eventListenerSet)
+		if (this._eventListenerSet)
 		{
-			_eventListenerSet = false;
+			this._eventListenerSet = false;
 			AudioModule.OnSoundPlayed -= InterceptNewSound;
 		}
 	}
@@ -191,58 +191,58 @@ public class SimpleInspectorModule : ModuleBase, ITriggerPressPreventerModule, I
 	internal override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		UpdateSwayScale();
-		if (_isInspecting)
+		this.UpdateSwayScale();
+		if (this._isInspecting)
 		{
-			if (!ValidateUpdate)
+			if (!this.ValidateUpdate)
 			{
-				SetInspecting(val: false);
+				this.SetInspecting(val: false);
 			}
 		}
-		else if (_capturedClips.Count > 0)
+		else if (this._capturedClips.Count > 0)
 		{
-			StopInspectSounds();
+			this.StopInspectSounds();
 		}
-		if (ValidateStart)
+		if (this.ValidateStart)
 		{
-			_idleElapsed += Time.deltaTime;
+			this._idleElapsed += Time.deltaTime;
 		}
 		else
 		{
-			_idleElapsed = 0f;
+			this._idleElapsed = 0f;
 		}
-		if (base.IsControllable && !_isInspecting && !(_idleElapsed < 0.15f) && GetActionDown(ActionName.InspectItem) && !base.ItemUsageBlocked)
+		if (base.IsControllable && !this._isInspecting && !(this._idleElapsed < 0.15f) && base.GetActionDown(ActionName.InspectItem) && !base.ItemUsageBlocked)
 		{
-			SendCmd();
-			SetInspecting(val: true);
+			this.SendCmd();
+			this.SetInspecting(val: true);
 		}
 	}
 
 	internal override void OnEquipped()
 	{
 		base.OnEquipped();
-		_idleElapsed = 0f;
-		ReleaseTriggerLock();
+		this._idleElapsed = 0f;
+		this.ReleaseTriggerLock();
 	}
 
 	internal override void OnHolstered()
 	{
 		base.OnHolstered();
-		SetInspecting(val: false);
+		this.SetInspecting(val: false);
 	}
 
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		SpectatorInspectingFirearms.Clear();
+		SimpleInspectorModule.SpectatorInspectingFirearms.Clear();
 	}
 
 	internal override void SpectatorInit()
 	{
 		base.SpectatorInit();
-		if (SpectatorInspectingFirearms.Contains(base.Firearm.ItemSerial))
+		if (SimpleInspectorModule.SpectatorInspectingFirearms.Contains(base.Firearm.ItemSerial))
 		{
-			_isInspecting = true;
+			this._isInspecting = true;
 			base.Firearm.AnimSetBool(FirearmAnimatorHashes.Inspect, b: true);
 		}
 	}
@@ -250,28 +250,28 @@ public class SimpleInspectorModule : ModuleBase, ITriggerPressPreventerModule, I
 	protected override void OnInit()
 	{
 		base.OnInit();
-		if (!_eventListenerSet)
+		if (!this._eventListenerSet)
 		{
 			AudioModule.OnSoundPlayed += InterceptNewSound;
-			_eventListenerSet = true;
+			this._eventListenerSet = true;
 		}
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (ValidateStart)
+		if (this.ValidateStart)
 		{
-			SetInspecting(val: true);
+			this.SetInspecting(val: true);
 		}
 	}
 
 	public override void ClientProcessRpcInstance(NetworkReader reader)
 	{
 		base.ClientProcessRpcInstance(reader);
-		if (base.Firearm.IsSpectator && _isInspecting != reader.ReadBool())
+		if (base.Firearm.IsSpectator && this._isInspecting != reader.ReadBool())
 		{
-			SetInspecting(!_isInspecting);
+			this.SetInspecting(!this._isInspecting);
 		}
 	}
 
@@ -280,11 +280,11 @@ public class SimpleInspectorModule : ModuleBase, ITriggerPressPreventerModule, I
 		base.ClientProcessRpcTemplate(reader, serial);
 		if (reader.ReadBool())
 		{
-			SpectatorInspectingFirearms.Add(serial);
+			SimpleInspectorModule.SpectatorInspectingFirearms.Add(serial);
 		}
 		else
 		{
-			SpectatorInspectingFirearms.Remove(serial);
+			SimpleInspectorModule.SpectatorInspectingFirearms.Remove(serial);
 		}
 	}
 
@@ -293,13 +293,13 @@ public class SimpleInspectorModule : ModuleBase, ITriggerPressPreventerModule, I
 	{
 		if (base.IsLocalPlayer && (!base.Firearm.TryGetModule<IActionModule>(out var module) || !module.IsLoaded))
 		{
-			ClientBlockTrigger = true;
+			this.ClientBlockTrigger = true;
 		}
 	}
 
 	[ExposedFirearmEvent]
 	public void ReleaseTriggerLock()
 	{
-		ClientBlockTrigger = false;
+		this.ClientBlockTrigger = false;
 	}
 }

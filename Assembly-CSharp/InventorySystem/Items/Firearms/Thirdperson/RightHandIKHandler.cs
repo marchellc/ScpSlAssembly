@@ -32,12 +32,13 @@ public class RightHandIKHandler : IHandPoseModifier
 			{
 				return target;
 			}
-			RightHandSettings result = default(RightHandSettings);
-			result.IKPositionWeight = Mathf.Lerp(IKPositionWeight, target.IKPositionWeight, weight);
-			result.IKPosition = Vector3.Lerp(IKPosition, target.IKPosition, weight);
-			result.PoseTime = Mathf.Lerp(PoseTime, target.PoseTime, weight);
-			result.PoseWeight = Mathf.Lerp(PoseWeight, target.PoseWeight, weight);
-			return result;
+			return new RightHandSettings
+			{
+				IKPositionWeight = Mathf.Lerp(this.IKPositionWeight, target.IKPositionWeight, weight),
+				IKPosition = Vector3.Lerp(this.IKPosition, target.IKPosition, weight),
+				PoseTime = Mathf.Lerp(this.PoseTime, target.PoseTime, weight),
+				PoseWeight = Mathf.Lerp(this.PoseWeight, target.PoseWeight, weight)
+			};
 		}
 	}
 
@@ -67,7 +68,7 @@ public class RightHandIKHandler : IHandPoseModifier
 
 	public HandPoseData ProcessHandPose(HandPoseData data)
 	{
-		RightHandSettings curSettings = GetCurSettings(_lastAdsBlend);
+		RightHandSettings curSettings = this.GetCurSettings(this._lastAdsBlend);
 		data.RightHandPose = curSettings.PoseTime;
 		data.RightHandWeight = curSettings.PoseWeight;
 		return data;
@@ -75,13 +76,13 @@ public class RightHandIKHandler : IHandPoseModifier
 
 	public void Initialize(FirearmWorldmodel woldmodel, AnimatedCharacterModel model)
 	{
-		_model = model;
-		RightHandSettings[] adsSettings = _adsSettings;
+		this._model = model;
+		RightHandSettings[] adsSettings = this._adsSettings;
 		for (int i = 0; i < adsSettings.Length; i++)
 		{
 			adsSettings[i].Condition.InitWorldmodel(woldmodel);
 		}
-		adsSettings = _hipSettings;
+		adsSettings = this._hipSettings;
 		for (int i = 0; i < adsSettings.Length; i++)
 		{
 			adsSettings[i].Condition.InitWorldmodel(woldmodel);
@@ -90,11 +91,11 @@ public class RightHandIKHandler : IHandPoseModifier
 
 	public void IKUpdateRightHandRotation(float ikScale, float adsBlend)
 	{
-		_lastAdsBlend = adsBlend;
-		Animator animator = _model.Animator;
-		Transform transform = (_model.HasOwner ? _model.OwnerHub.PlayerCameraReference : _model.transform);
+		this._lastAdsBlend = adsBlend;
+		Animator animator = this._model.Animator;
+		Transform transform = (this._model.HasOwner ? this._model.OwnerHub.PlayerCameraReference : this._model.transform);
 		Transform boneTransform = animator.GetBoneTransform(HumanBodyBones.RightHand);
-		Vector3 vector = (_model.HasOwner ? MainCameraController.CurrentCamera.position : _model.transform.position);
+		Vector3 vector = (this._model.HasOwner ? MainCameraController.CurrentCamera.position : this._model.transform.position);
 		Vector3 vector2 = transform.forward.NormalizeIgnoreY();
 		Vector2 vector3 = new Vector2(vector.x, vector.z);
 		Vector2 vector4 = new Vector2(transform.position.x, transform.position.z);
@@ -110,13 +111,13 @@ public class RightHandIKHandler : IHandPoseModifier
 		{
 			float blend = Mathf.InverseLerp(0.1f, 0.04f, sqrMagnitude);
 			float aimDistance = Vector2.Distance(vector3, vector4);
-			b = CalculateAimCorrection(blend, aimDistance, transform, boneTransform);
+			b = this.CalculateAimCorrection(blend, aimDistance, transform, boneTransform);
 		}
-		float t = 9f * _model.LastMovedDeltaT;
-		Vector2 vector6 = Vector2.Lerp(_prevCorrection, b, t);
-		ApplyIKRotation(transform, vector6, ikScale);
-		ApplyIKPosition(transform, boneTransform, ikScale);
-		_prevCorrection = vector6;
+		float t = 9f * this._model.LastMovedDeltaT;
+		Vector2 vector6 = Vector2.Lerp(this._prevCorrection, b, t);
+		this.ApplyIKRotation(transform, vector6, ikScale);
+		this.ApplyIKPosition(transform, boneTransform, ikScale);
+		this._prevCorrection = vector6;
 	}
 
 	private Vector2 CalculateAimCorrection(float blend, float aimDistance, Transform cam, Transform rightHand)
@@ -132,24 +133,24 @@ public class RightHandIKHandler : IHandPoseModifier
 		}
 		Vector3 vector = cam.InverseTransformPoint(rightHand.position);
 		Vector2 vector2 = new Vector2(Mathf.Atan2(aimDistance, vector.x) * 57.29578f - 90f, Mathf.Atan2(aimDistance, vector.y) * 57.29578f - 90f);
-		return _aimCorrectionIntensity * blend * vector2;
+		return this._aimCorrectionIntensity * blend * vector2;
 	}
 
 	private void ApplyIKRotation(Transform cam, Vector2 correction, float ikScale)
 	{
-		Quaternion quaternion = cam.rotation * Quaternion.Euler(_handRotation);
+		Quaternion quaternion = cam.rotation * Quaternion.Euler(this._handRotation);
 		Quaternion goalRotation = Quaternion.Euler(0f - correction.x, (0f - correction.y) / 2f, 0f) * quaternion;
-		_model.Animator.SetIKRotation(AvatarIKGoal.RightHand, goalRotation);
-		_model.Animator.SetIKRotationWeight(AvatarIKGoal.RightHand, ikScale);
+		this._model.Animator.SetIKRotation(AvatarIKGoal.RightHand, goalRotation);
+		this._model.Animator.SetIKRotationWeight(AvatarIKGoal.RightHand, ikScale);
 	}
 
 	private void ApplyIKPosition(Transform cam, Transform rightHand, float ikScale)
 	{
-		RightHandSettings curSettings = GetCurSettings(_lastAdsBlend);
+		RightHandSettings curSettings = this.GetCurSettings(this._lastAdsBlend);
 		if (curSettings.IKPositionWeight > 0f)
 		{
-			_model.Animator.SetIKPosition(AvatarIKGoal.RightHand, rightHand.position + cam.TransformDirection(curSettings.IKPosition));
-			_model.Animator.SetIKPositionWeight(AvatarIKGoal.RightHand, curSettings.IKPositionWeight * ikScale);
+			this._model.Animator.SetIKPosition(AvatarIKGoal.RightHand, rightHand.position + cam.TransformDirection(curSettings.IKPosition));
+			this._model.Animator.SetIKPositionWeight(AvatarIKGoal.RightHand, curSettings.IKPositionWeight * ikScale);
 		}
 	}
 
@@ -157,7 +158,7 @@ public class RightHandIKHandler : IHandPoseModifier
 	{
 		RightHandSettings? rightHandSettings = null;
 		RightHandSettings? rightHandSettings2 = null;
-		RightHandSettings[] hipSettings = _hipSettings;
+		RightHandSettings[] hipSettings = this._hipSettings;
 		for (int i = 0; i < hipSettings.Length; i++)
 		{
 			RightHandSettings value = hipSettings[i];
@@ -167,7 +168,7 @@ public class RightHandIKHandler : IHandPoseModifier
 				break;
 			}
 		}
-		hipSettings = _adsSettings;
+		hipSettings = this._adsSettings;
 		for (int i = 0; i < hipSettings.Length; i++)
 		{
 			RightHandSettings value2 = hipSettings[i];

@@ -9,25 +9,25 @@ public abstract class LayerProcessorBase : MonoBehaviour
 
 	protected ThirdpersonItemBase Source { get; private set; }
 
-	public AnimatedCharacterModel TargetModel => Source.TargetModel;
+	public AnimatedCharacterModel TargetModel => this.Source.TargetModel;
 
-	protected Animator Animator => TargetModel.Animator;
+	protected Animator Animator => this.TargetModel.Animator;
 
-	protected ReferenceHub OwnerHub => TargetModel.OwnerHub;
+	protected ReferenceHub OwnerHub => this.TargetModel.OwnerHub;
 
 	public ThirdpersonLayerWeight GetWeightForLayer(ThirdpersonItemBase source, AnimItemLayer3p layer)
 	{
-		if (!_alreadyInit)
+		if (!this._alreadyInit)
 		{
-			Init(source);
-			_alreadyInit = true;
+			this.Init(source);
+			this._alreadyInit = true;
 		}
-		return GetWeightForLayer(layer);
+		return this.GetWeightForLayer(layer);
 	}
 
 	protected virtual void Init(ThirdpersonItemBase source)
 	{
-		Source = source;
+		this.Source = source;
 	}
 
 	protected abstract ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer);

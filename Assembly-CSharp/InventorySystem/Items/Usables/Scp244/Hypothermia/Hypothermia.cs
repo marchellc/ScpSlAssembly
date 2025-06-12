@@ -57,26 +57,26 @@ public class Hypothermia : ParentEffectBase<HypothermiaSubEffectBase>, IWeaponMo
 	protected override void Update()
 	{
 		base.Update();
-		_curExposure = 0f;
-		CheckForceState();
+		this._curExposure = 0f;
+		this.CheckForceState();
 		if (!Vitality.CheckPlayer(base.Hub) && !SpawnProtected.CheckPlayer(base.Hub))
 		{
-			UpdateExposure();
+			this.UpdateExposure();
 		}
 		bool flag = false;
-		ParamsActive = false;
-		MuteSoundtrack = false;
-		MovementSpeedLimit = float.MaxValue;
-		MovementSpeedMultiplier = 1f;
+		this.ParamsActive = false;
+		this.MuteSoundtrack = false;
+		this.MovementSpeedLimit = float.MaxValue;
+		this.MovementSpeedMultiplier = 1f;
 		HypothermiaSubEffectBase[] subEffects = base.SubEffects;
 		foreach (HypothermiaSubEffectBase hypothermiaSubEffectBase in subEffects)
 		{
 			flag |= hypothermiaSubEffectBase.IsActive;
-			UpdateSubEffect(hypothermiaSubEffectBase, _curExposure);
+			this.UpdateSubEffect(hypothermiaSubEffectBase, this._curExposure);
 		}
 		if (NetworkServer.active)
 		{
-			float a = (flag ? (1f + _curExposure / 0.1f) : 0f);
+			float a = (flag ? (1f + this._curExposure / 0.1f) : 0f);
 			base.Intensity = (byte)Mathf.RoundToInt(Mathf.Min(a, 255f));
 		}
 	}
@@ -86,17 +86,17 @@ public class Hypothermia : ParentEffectBase<HypothermiaSubEffectBase>, IWeaponMo
 		subEffect.UpdateEffect(curExposure);
 		if (subEffect is IWeaponModifierPlayerEffect weaponModifierPlayerEffect)
 		{
-			ParamsActive |= weaponModifierPlayerEffect.ParamsActive;
-			_weaponModifier = weaponModifierPlayerEffect;
+			this.ParamsActive |= weaponModifierPlayerEffect.ParamsActive;
+			this._weaponModifier = weaponModifierPlayerEffect;
 		}
 		if (subEffect is ISoundtrackMutingEffect soundtrackMutingEffect)
 		{
-			MuteSoundtrack |= soundtrackMutingEffect.MuteSoundtrack;
+			this.MuteSoundtrack |= soundtrackMutingEffect.MuteSoundtrack;
 		}
 		if (subEffect is IMovementSpeedModifier movementSpeedModifier)
 		{
-			MovementSpeedLimit = Mathf.Min(MovementSpeedLimit, movementSpeedModifier.MovementSpeedLimit);
-			MovementSpeedMultiplier *= movementSpeedModifier.MovementSpeedMultiplier;
+			this.MovementSpeedLimit = Mathf.Min(this.MovementSpeedLimit, movementSpeedModifier.MovementSpeedLimit);
+			this.MovementSpeedMultiplier *= movementSpeedModifier.MovementSpeedMultiplier;
 		}
 	}
 
@@ -104,43 +104,45 @@ public class Hypothermia : ParentEffectBase<HypothermiaSubEffectBase>, IWeaponMo
 	{
 		foreach (Scp244DeployablePickup instance in Scp244DeployablePickup.Instances)
 		{
-			_curExposure += instance.FogPercentForPoint(base.Hub.PlayerCameraReference.position);
+			this._curExposure += instance.FogPercentForPoint(base.Hub.PlayerCameraReference.position);
 		}
-		if (_isForced)
+		if (this._isForced)
 		{
-			_curExposure += _forcedExposure;
+			this._curExposure += this._forcedExposure;
 		}
 	}
 
 	public bool TryGetWeaponParam(AttachmentParam param, out float val)
 	{
-		return _weaponModifier.TryGetWeaponParam(param, out val);
+		return this._weaponModifier.TryGetWeaponParam(param, out val);
 	}
 
 	private void CheckForceState()
 	{
 		if (NetworkServer.active)
 		{
-			_isForced = base.TimeLeft > 0f;
-			if (_isForced && !_wasForcedLastFrame)
+			this._isForced = base.TimeLeft > 0f;
+			if (this._isForced && !this._wasForcedLastFrame)
 			{
-				_forcedExposure = (float)(int)base.Intensity / 100f;
-				ForcedHypothermiaMessage message = default(ForcedHypothermiaMessage);
-				message.IsForced = true;
-				message.PlayerHub = base.Hub;
-				message.Exposure = _forcedExposure;
-				message.SendToAuthenticated();
+				this._forcedExposure = (float)(int)base.Intensity / 100f;
+				new ForcedHypothermiaMessage
+				{
+					IsForced = true,
+					PlayerHub = base.Hub,
+					Exposure = this._forcedExposure
+				}.SendToAuthenticated();
 			}
-			else if (!_isForced && _wasForcedLastFrame)
+			else if (!this._isForced && this._wasForcedLastFrame)
 			{
-				_forcedExposure = 0f;
-				ForcedHypothermiaMessage message = default(ForcedHypothermiaMessage);
-				message.IsForced = false;
-				message.PlayerHub = base.Hub;
-				message.Exposure = 0f;
-				message.SendToAuthenticated();
+				this._forcedExposure = 0f;
+				new ForcedHypothermiaMessage
+				{
+					IsForced = false,
+					PlayerHub = base.Hub,
+					Exposure = 0f
+				}.SendToAuthenticated();
 			}
-			_wasForcedLastFrame = _isForced;
+			this._wasForcedLastFrame = this._isForced;
 		}
 	}
 

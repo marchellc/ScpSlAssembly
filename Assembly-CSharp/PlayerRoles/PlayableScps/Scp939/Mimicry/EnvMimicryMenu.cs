@@ -22,31 +22,31 @@ public class EnvMimicryMenu : MimicryMenuBase
 	protected override void Setup(Scp939Role role)
 	{
 		base.Setup(role);
-		role.SubroutineModule.TryGetSubroutine<EnvironmentalMimicry>(out _envMimicry);
+		role.SubroutineModule.TryGetSubroutine<EnvironmentalMimicry>(out this._envMimicry);
 	}
 
 	private void UpdateFade(bool instant)
 	{
-		bool isReady = _envMimicry.Cooldown.IsReady;
-		float maxDelta = (instant ? 1f : (Time.deltaTime * _fadeSpeed));
-		float target = (isReady ? 1f : _fadedAlpha);
-		_fader.alpha = Mathf.MoveTowards(_fader.alpha, target, maxDelta);
-		_fader.blocksRaycasts = isReady;
+		bool isReady = this._envMimicry.Cooldown.IsReady;
+		float maxDelta = (instant ? 1f : (Time.deltaTime * this._fadeSpeed));
+		float target = (isReady ? 1f : this._fadedAlpha);
+		this._fader.alpha = Mathf.MoveTowards(this._fader.alpha, target, maxDelta);
+		this._fader.blocksRaycasts = isReady;
 		float target2 = ((!isReady) ? 1 : 0);
-		_cooldownText.alpha = Mathf.MoveTowards(_cooldownText.alpha, target2, maxDelta);
+		this._cooldownText.alpha = Mathf.MoveTowards(this._cooldownText.alpha, target2, maxDelta);
 		if (!isReady)
 		{
-			_cooldownText.text = _envMimicry.CooldownText;
+			this._cooldownText.text = this._envMimicry.CooldownText;
 		}
 	}
 
 	private void OnEnable()
 	{
-		UpdateFade(instant: true);
+		this.UpdateFade(instant: true);
 	}
 
 	private void Update()
 	{
-		UpdateFade(instant: false);
+		this.UpdateFade(instant: false);
 	}
 }

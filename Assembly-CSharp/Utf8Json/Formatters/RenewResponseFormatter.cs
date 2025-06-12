@@ -11,7 +11,7 @@ public sealed class RenewResponseFormatter : IJsonFormatter<RenewResponse>, IJso
 
 	public RenewResponseFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("success"),
@@ -54,7 +54,7 @@ public sealed class RenewResponseFormatter : IJsonFormatter<RenewResponse>, IJso
 				9
 			}
 		};
-		____stringByteKeys = new byte[10][]
+		this.____stringByteKeys = new byte[10][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("success"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("error"),
@@ -71,25 +71,25 @@ public sealed class RenewResponseFormatter : IJsonFormatter<RenewResponse>, IJso
 
 	public void Serialize(ref JsonWriter writer, RenewResponse value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteBoolean(value.success);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.error);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteString(value.id);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		writer.WriteString(value.nonce);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		writer.WriteString(value.country);
-		writer.WriteRaw(____stringByteKeys[5]);
+		writer.WriteRaw(this.____stringByteKeys[5]);
 		writer.WriteByte(value.flags);
-		writer.WriteRaw(____stringByteKeys[6]);
+		writer.WriteRaw(this.____stringByteKeys[6]);
 		writer.WriteInt64(value.expiration);
-		writer.WriteRaw(____stringByteKeys[7]);
+		writer.WriteRaw(this.____stringByteKeys[7]);
 		writer.WriteString(value.preauth);
-		writer.WriteRaw(____stringByteKeys[8]);
+		writer.WriteRaw(this.____stringByteKeys[8]);
 		writer.WriteString(value.globalBan);
-		writer.WriteRaw(____stringByteKeys[9]);
+		writer.WriteRaw(this.____stringByteKeys[9]);
 		writer.WriteUInt16(value.lifetime);
 		writer.WriteEndObject();
 	}
@@ -115,7 +115,7 @@ public sealed class RenewResponseFormatter : IJsonFormatter<RenewResponse>, IJso
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

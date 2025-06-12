@@ -14,19 +14,19 @@ public abstract class OverheatExtensionBase : MixedExtension, IDestroyExtensionR
 	public override void SetupWorldmodel(FirearmWorldmodel worldmodel)
 	{
 		base.SetupWorldmodel(worldmodel);
-		if (!_worldmodelSetup)
+		if (!this._worldmodelSetup)
 		{
-			_worldmodelSetup = true;
-			WorldmodelInstances.Add(this);
-			WorldmodelUpdateQueue.Enqueue(this);
+			this._worldmodelSetup = true;
+			OverheatExtensionBase.WorldmodelInstances.Add(this);
+			OverheatExtensionBase.WorldmodelUpdateQueue.Enqueue(this);
 		}
 	}
 
 	public virtual void OnDestroyExtension()
 	{
-		if (_worldmodelSetup)
+		if (this._worldmodelSetup)
 		{
-			WorldmodelInstances.Remove(this);
+			OverheatExtensionBase.WorldmodelInstances.Remove(this);
 		}
 	}
 
@@ -36,13 +36,13 @@ public abstract class OverheatExtensionBase : MixedExtension, IDestroyExtensionR
 	{
 		if (base.ViewmodelMode)
 		{
-			UpdateInstance();
+			this.UpdateInstance();
 		}
 	}
 
 	private void UpdateInstance()
 	{
-		OnTemperatureChanged(TemperatureTrackerModule.GetTemperature(base.Identifier));
+		this.OnTemperatureChanged(TemperatureTrackerModule.GetTemperature(base.Identifier));
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -54,7 +54,7 @@ public abstract class OverheatExtensionBase : MixedExtension, IDestroyExtensionR
 
 	private static void OnTemperatureSet(ItemIdentifier id)
 	{
-		foreach (OverheatExtensionBase worldmodelInstance in WorldmodelInstances)
+		foreach (OverheatExtensionBase worldmodelInstance in OverheatExtensionBase.WorldmodelInstances)
 		{
 			if (!(worldmodelInstance.Identifier != id))
 			{
@@ -65,10 +65,10 @@ public abstract class OverheatExtensionBase : MixedExtension, IDestroyExtensionR
 
 	private static void UpdateWorldmodels()
 	{
-		if (WorldmodelUpdateQueue.TryDequeue(out var result) && !(result == null))
+		if (OverheatExtensionBase.WorldmodelUpdateQueue.TryDequeue(out var result) && !(result == null))
 		{
 			result.UpdateInstance();
-			WorldmodelUpdateQueue.Enqueue(result);
+			OverheatExtensionBase.WorldmodelUpdateQueue.Enqueue(result);
 		}
 	}
 }

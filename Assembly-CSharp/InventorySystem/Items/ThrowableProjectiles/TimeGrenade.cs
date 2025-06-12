@@ -21,11 +21,11 @@ public abstract class TimeGrenade : ThrownProjectile
 	{
 		get
 		{
-			return _syncTargetTime;
+			return this._syncTargetTime;
 		}
 		set
 		{
-			Network_syncTargetTime = value;
+			this.Network_syncTargetTime = value;
 		}
 	}
 
@@ -33,42 +33,42 @@ public abstract class TimeGrenade : ThrownProjectile
 	{
 		get
 		{
-			return _syncTargetTime;
+			return this._syncTargetTime;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _syncTargetTime, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._syncTargetTime, 2uL, null);
 		}
 	}
 
 	public virtual bool ServerFuseEnd()
 	{
-		ProjectileExplodingEventArgs projectileExplodingEventArgs = new ProjectileExplodingEventArgs(this, PreviousOwner.Hub, base.transform.position);
-		ServerEvents.OnProjectileExploding(projectileExplodingEventArgs);
-		if (!projectileExplodingEventArgs.IsAllowed)
+		ProjectileExplodingEventArgs e = new ProjectileExplodingEventArgs(this, base.PreviousOwner.Hub, base.transform.position);
+		ServerEvents.OnProjectileExploding(e);
+		if (!e.IsAllowed)
 		{
 			return false;
 		}
-		if (PreviousOwner.Hub != projectileExplodingEventArgs.Player?.ReferenceHub)
+		if (base.PreviousOwner.Hub != e.Player?.ReferenceHub)
 		{
-			PreviousOwner = new Footprint(projectileExplodingEventArgs.Player?.ReferenceHub);
+			base.PreviousOwner = new Footprint(e.Player?.ReferenceHub);
 		}
-		base.transform.position = projectileExplodingEventArgs.Position;
+		base.transform.position = e.Position;
 		return true;
 	}
 
 	public override void ServerActivate()
 	{
-		Network_syncTargetTime = NetworkTime.time + (double)_fuseTime;
+		this.Network_syncTargetTime = NetworkTime.time + (double)this._fuseTime;
 	}
 
 	protected virtual void Update()
 	{
-		if (NetworkServer.active && !_alreadyDetonated && TargetTime != 0.0 && !(NetworkTime.time < TargetTime))
+		if (NetworkServer.active && !this._alreadyDetonated && this.TargetTime != 0.0 && !(NetworkTime.time < this.TargetTime))
 		{
-			ServerFuseEnd();
-			_alreadyDetonated = true;
+			this.ServerFuseEnd();
+			this._alreadyDetonated = true;
 		}
 	}
 
@@ -82,13 +82,13 @@ public abstract class TimeGrenade : ThrownProjectile
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteDouble(_syncTargetTime);
+			writer.WriteDouble(this._syncTargetTime);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteDouble(_syncTargetTime);
+			writer.WriteDouble(this._syncTargetTime);
 		}
 	}
 
@@ -97,13 +97,13 @@ public abstract class TimeGrenade : ThrownProjectile
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _syncTargetTime, null, reader.ReadDouble());
+			base.GeneratedSyncVarDeserialize(ref this._syncTargetTime, null, reader.ReadDouble());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _syncTargetTime, null, reader.ReadDouble());
+			base.GeneratedSyncVarDeserialize(ref this._syncTargetTime, null, reader.ReadDouble());
 		}
 	}
 }

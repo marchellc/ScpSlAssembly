@@ -1,3 +1,5 @@
+using LabApi.Events.Arguments.Scp079Events;
+using LabApi.Events.Handlers;
 using Mirror;
 using PlayerRoles.PlayableScps.Scp079.GUI;
 using PlayerRoles.Spectating;
@@ -57,9 +59,9 @@ public class Scp079PingAbility : Scp079KeyAbilityBase
 	{
 		get
 		{
-			if (base.AuxManager.CurrentAux >= (float)_cost)
+			if (base.AuxManager.CurrentAux >= (float)this._cost)
 			{
-				return _rateLimiter.AllReady;
+				return this._rateLimiter.AllReady;
 			}
 			return false;
 		}
@@ -67,21 +69,21 @@ public class Scp079PingAbility : Scp079KeyAbilityBase
 
 	public override bool IsVisible => !Scp079CursorManager.LockCameras;
 
-	public override string AbilityName => string.Format(_abilityName, _cost);
+	public override string AbilityName => string.Format(this._abilityName, this._cost);
 
 	public override string FailMessage
 	{
 		get
 		{
-			if (!(base.AuxManager.CurrentAux < (float)_cost))
+			if (!(base.AuxManager.CurrentAux < (float)this._cost))
 			{
-				if (!_rateLimiter.RateReady)
+				if (!this._rateLimiter.RateReady)
 				{
-					return _cooldownMsg;
+					return this._cooldownMsg;
 				}
 				return null;
 			}
-			return GetNoAuxMessage(_cost);
+			return base.GetNoAuxMessage(this._cost);
 		}
 	}
 
@@ -91,9 +93,9 @@ public class Scp079PingAbility : Scp079KeyAbilityBase
 
 	private void WriteSyncVars(NetworkWriter writer)
 	{
-		writer.WriteByte(_syncProcessorIndex);
-		writer.WriteRelativePosition(_syncPos);
-		writer.WriteVector3(_syncNormal);
+		writer.WriteByte(this._syncProcessorIndex);
+		writer.WriteRelativePosition(this._syncPos);
+		writer.WriteVector3(this._syncNormal);
 	}
 
 	private bool ServerCheckReceiver(ReferenceHub hub, Vector3 point, int processorIndex)
@@ -107,7 +109,7 @@ public class Scp079PingAbility : Scp079KeyAbilityBase
 			}
 			return true;
 		}
-		float range = PingProcessors[processorIndex].Range;
+		float range = Scp079PingAbility.PingProcessors[processorIndex].Range;
 		float num = range * range;
 		return (fpcStandardScp.FpcModule.Position - point).sqrMagnitude < num;
 	}
@@ -115,9 +117,9 @@ public class Scp079PingAbility : Scp079KeyAbilityBase
 	protected override void Start()
 	{
 		base.Start();
-		_rateLimiter = new RateLimiter(_instantCooldown, _groupSize, _groupCooldown);
-		_abilityName = Translations.Get(Scp079HudTranslation.PingLocation);
-		_cooldownMsg = Translations.Get(Scp079HudTranslation.PingRateLimited);
+		this._rateLimiter = new RateLimiter(this._instantCooldown, this._groupSize, this._groupCooldown);
+		this._abilityName = Translations.Get(Scp079HudTranslation.PingLocation);
+		this._cooldownMsg = Translations.Get(Scp079HudTranslation.PingRateLimited);
 	}
 
 	protected override void Trigger()
@@ -126,35 +128,45 @@ public class Scp079PingAbility : Scp079KeyAbilityBase
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
-		WriteSyncVars(writer);
+		this.WriteSyncVars(writer);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (!IsReady || !base.Role.TryGetOwner(out var _) || base.LostSignalHandler.Lost)
+		if (!this.IsReady || !base.Role.TryGetOwner(out var _) || base.LostSignalHandler.Lost)
 		{
 			return;
 		}
-		_syncProcessorIndex = reader.ReadByte();
-		if (_syncProcessorIndex < PingProcessors.Length)
+		this._syncProcessorIndex = reader.ReadByte();
+		if (this._syncProcessorIndex >= Scp079PingAbility.PingProcessors.Length)
 		{
-			_syncPos = reader.ReadRelativePosition();
-			_syncNormal = reader.ReadVector3();
-			ServerSendRpc((ReferenceHub x) => ServerCheckReceiver(x, _syncPos.Position, _syncProcessorIndex));
-			base.AuxManager.CurrentAux -= _cost;
-			_rateLimiter.RegisterInput();
+			return;
+		}
+		this._syncPos = reader.ReadRelativePosition();
+		this._syncNormal = reader.ReadVector3();
+		Scp079PingingEventArgs e = new Scp079PingingEventArgs(base.Owner, this._syncPos.Position, this._syncNormal, this._syncProcessorIndex);
+		Scp079Events.OnPinging(e);
+		if (e.IsAllowed)
+		{
+			this._syncPos = new RelativePosition(e.Position);
+			this._syncNormal = e.Normal;
+			this._syncProcessorIndex = (byte)e.PingType;
+			base.ServerSendRpc((ReferenceHub x) => this.ServerCheckReceiver(x, this._syncPos.Position, this._syncProcessorIndex));
+			base.AuxManager.CurrentAux -= this._cost;
+			this._rateLimiter.RegisterInput();
+			Scp079Events.OnPinged(new Scp079PingedEventArgs(base.Owner, this._syncPos.Position, this._syncNormal, this._syncProcessorIndex));
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
-		WriteSyncVars(writer);
+		this.WriteSyncVars(writer);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		SpawnIndicator(reader.ReadByte(), reader.ReadRelativePosition(), reader.ReadVector3());
+		this.SpawnIndicator(reader.ReadByte(), reader.ReadRelativePosition(), reader.ReadVector3());
 	}
 }

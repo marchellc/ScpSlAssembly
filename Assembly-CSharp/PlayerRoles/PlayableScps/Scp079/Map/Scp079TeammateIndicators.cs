@@ -40,7 +40,7 @@ public class Scp079TeammateIndicators : Scp079GuiElementBase
 	{
 		get
 		{
-			int accessTierLevel = _tierManager.AccessTierLevel;
+			int accessTierLevel = this._tierManager.AccessTierLevel;
 			if (accessTierLevel <= 2)
 			{
 				return IndicatorType.Low;
@@ -56,18 +56,18 @@ public class Scp079TeammateIndicators : Scp079GuiElementBase
 	internal override void Init(Scp079Role role, ReferenceHub owner)
 	{
 		base.Init(role, owner);
-		role.SubroutineModule.TryGetSubroutine<Scp079TierManager>(out _tierManager);
-		Scp079TierManager tierManager = _tierManager;
+		role.SubroutineModule.TryGetSubroutine<Scp079TierManager>(out this._tierManager);
+		Scp079TierManager tierManager = this._tierManager;
 		tierManager.OnLevelledUp = (Action)Delegate.Combine(tierManager.OnLevelledUp, new Action(Rebuild));
 		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
 		ReferenceHub.OnPlayerRemoved += OnPlayerRemoved;
-		_maps = GetComponentsInChildren<IZoneMap>(includeInactive: true);
-		Rebuild();
+		this._maps = base.GetComponentsInChildren<IZoneMap>(includeInactive: true);
+		this.Rebuild();
 	}
 
 	private void OnDestroy()
 	{
-		Scp079TierManager tierManager = _tierManager;
+		Scp079TierManager tierManager = this._tierManager;
 		tierManager.OnLevelledUp = (Action)Delegate.Remove(tierManager.OnLevelledUp, new Action(Rebuild));
 		PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
 		ReferenceHub.OnPlayerRemoved -= OnPlayerRemoved;
@@ -75,17 +75,17 @@ public class Scp079TeammateIndicators : Scp079GuiElementBase
 
 	private void OnRoleChanged(ReferenceHub hub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
 	{
-		RefreshPlayerIndicator(hub);
+		this.RefreshPlayerIndicator(hub);
 	}
 
 	private void OnPlayerRemoved(ReferenceHub hub)
 	{
-		RemovePlayerIndicator(hub);
+		this.RemovePlayerIndicator(hub);
 	}
 
 	private void RemovePlayerIndicator(ReferenceHub hub)
 	{
-		if (_instances.Remove(hub, out var value))
+		if (this._instances.Remove(hub, out var value))
 		{
 			UnityEngine.Object.Destroy(value.gameObject);
 		}
@@ -93,8 +93,8 @@ public class Scp079TeammateIndicators : Scp079GuiElementBase
 
 	private void RefreshPlayerIndicator(ReferenceHub hub)
 	{
-		RemovePlayerIndicator(hub);
-		SetupPlayer(hub);
+		this.RemovePlayerIndicator(hub);
+		this.SetupPlayer(hub);
 	}
 
 	private void SetupPlayer(ReferenceHub hub)
@@ -104,19 +104,19 @@ public class Scp079TeammateIndicators : Scp079GuiElementBase
 			return;
 		}
 		RectTransform rectTransform;
-		switch (CurType)
+		switch (this.CurType)
 		{
 		default:
 			return;
 		case IndicatorType.Low:
-			rectTransform = UnityEngine.Object.Instantiate(_templateLow);
+			rectTransform = UnityEngine.Object.Instantiate(this._templateLow);
 			break;
 		case IndicatorType.Medium:
-			rectTransform = UnityEngine.Object.Instantiate(_templateMid);
+			rectTransform = UnityEngine.Object.Instantiate(this._templateMid);
 			break;
 		case IndicatorType.High:
 		{
-			rectTransform = UnityEngine.Object.Instantiate(_templateHigh);
+			rectTransform = UnityEngine.Object.Instantiate(this._templateHigh);
 			string text = hub.roleManager.CurrentRole.RoleTypeId.ToString();
 			if (text.Length > 3)
 			{
@@ -126,16 +126,16 @@ public class Scp079TeammateIndicators : Scp079GuiElementBase
 		}
 		}
 		rectTransform.localScale = Vector3.one;
-		_instances[hub] = rectTransform;
+		this._instances[hub] = rectTransform;
 	}
 
 	private void Rebuild()
 	{
-		_instances.ForEachValue(delegate(RectTransform x)
+		this._instances.ForEachValue(delegate(RectTransform x)
 		{
 			UnityEngine.Object.Destroy(x.gameObject);
 		});
-		_instances.Clear();
+		this._instances.Clear();
 		ReferenceHub.AllHubs.ForEach(SetupPlayer);
 	}
 
@@ -145,19 +145,19 @@ public class Scp079TeammateIndicators : Scp079GuiElementBase
 		{
 			return;
 		}
-		IndicatorType curType = CurType;
+		IndicatorType curType = this.CurType;
 		if (curType == IndicatorType.Low)
 		{
-			if (!_nonExactCooldown.IsReady)
+			if (!this._nonExactCooldown.IsReady)
 			{
 				return;
 			}
-			_nonExactCooldown.Trigger(1.5);
+			this._nonExactCooldown.Trigger(1.5);
 		}
-		foreach (KeyValuePair<ReferenceHub, RectTransform> instance in _instances)
+		foreach (KeyValuePair<ReferenceHub, RectTransform> instance in this._instances)
 		{
 			bool flag = false;
-			IZoneMap[] maps = _maps;
+			IZoneMap[] maps = this._maps;
 			for (int i = 0; i < maps.Length; i++)
 			{
 				if (maps[i].TrySetPlayerIndicator(instance.Key, instance.Value, curType != IndicatorType.Low))
@@ -168,7 +168,7 @@ public class Scp079TeammateIndicators : Scp079GuiElementBase
 			instance.Value.gameObject.SetActive(flag);
 			if (flag && curType == IndicatorType.High)
 			{
-				instance.Value.GetComponentInChildren<TextMeshProUGUI>().rectTransform.rotation = _templateHigh.rotation;
+				instance.Value.GetComponentInChildren<TextMeshProUGUI>().rectTransform.rotation = this._templateHigh.rotation;
 			}
 		}
 	}

@@ -9,14 +9,14 @@ internal class RoundFriendlyFireDetector : FriendlyFireDetector
 
 	public override bool RegisterDamage(float damage)
 	{
-		if (!FriendlyFireConfig.RoundEnabled || _triggered)
+		if (!FriendlyFireConfig.RoundEnabled || base._triggered)
 		{
 			return false;
 		}
 		base.RegisterDamage(damage);
 		if (FriendlyFireConfig.RoundDamageThreshold != 0 && base.Damage >= (float)FriendlyFireConfig.RoundDamageThreshold)
 		{
-			TakeAction(ref FriendlyFireConfig.RoundAction, "Round", ref FriendlyFireConfig.RoundBanTime, ref FriendlyFireConfig.RoundBanReason, ref FriendlyFireConfig.RoundKillReason, ref FriendlyFireConfig.RoundAdminMessage, ref FriendlyFireConfig.RoundBroadcastMessage, ref FriendlyFireConfig.RoundWebhook);
+			base.TakeAction(ref FriendlyFireConfig.RoundAction, "Round", ref FriendlyFireConfig.RoundBanTime, ref FriendlyFireConfig.RoundBanReason, ref FriendlyFireConfig.RoundKillReason, ref FriendlyFireConfig.RoundAdminMessage, ref FriendlyFireConfig.RoundBroadcastMessage, ref FriendlyFireConfig.RoundWebhook);
 			return true;
 		}
 		return false;
@@ -24,14 +24,14 @@ internal class RoundFriendlyFireDetector : FriendlyFireDetector
 
 	public override bool RegisterKill()
 	{
-		if (!FriendlyFireConfig.RoundEnabled || _triggered)
+		if (!FriendlyFireConfig.RoundEnabled || base._triggered)
 		{
 			return false;
 		}
 		base.RegisterKill();
 		if (FriendlyFireConfig.RoundKillThreshold != 0 && base.Kills >= FriendlyFireConfig.RoundKillThreshold)
 		{
-			TakeAction(ref FriendlyFireConfig.RoundAction, "Round", ref FriendlyFireConfig.RoundBanTime, ref FriendlyFireConfig.RoundBanReason, ref FriendlyFireConfig.RoundKillReason, ref FriendlyFireConfig.RoundAdminMessage, ref FriendlyFireConfig.RoundBroadcastMessage, ref FriendlyFireConfig.RoundWebhook);
+			base.TakeAction(ref FriendlyFireConfig.RoundAction, "Round", ref FriendlyFireConfig.RoundBanTime, ref FriendlyFireConfig.RoundBanReason, ref FriendlyFireConfig.RoundKillReason, ref FriendlyFireConfig.RoundAdminMessage, ref FriendlyFireConfig.RoundBroadcastMessage, ref FriendlyFireConfig.RoundWebhook);
 			return true;
 		}
 		return false;

@@ -19,41 +19,41 @@ public class BoundsRoleSpawnpoint : ISpawnpointHandler
 	{
 		get
 		{
-			if (++_lastIndex >= _positions.Length)
+			if (++this._lastIndex >= this._positions.Length)
 			{
-				_lastIndex = 0;
+				this._lastIndex = 0;
 			}
-			return _lastIndex;
+			return this._lastIndex;
 		}
 	}
 
 	public BoundsRoleSpawnpoint(Vector3 pos, float rot)
 	{
-		_positions = new Vector3[1] { pos };
-		_rotMin = rot;
-		_rotMax = rot;
+		this._positions = new Vector3[1] { pos };
+		this._rotMin = rot;
+		this._rotMax = rot;
 	}
 
 	public BoundsRoleSpawnpoint(Vector3 posMin, Vector3 posMax, float rotMin, float rotMax, Vector3Int size)
 	{
-		_positions = GeneratePositions(posMin, posMax, size);
-		_rotMin = rotMin;
-		_rotMax = rotMax;
+		this._positions = this.GeneratePositions(posMin, posMax, size);
+		this._rotMin = rotMin;
+		this._rotMax = rotMax;
 	}
 
 	public BoundsRoleSpawnpoint(Bounds bounds, float rotMin, float rotMax, Vector3Int size)
 	{
-		_positions = GeneratePositions(bounds.min, bounds.max, size);
-		_rotMin = rotMin;
-		_rotMax = rotMax;
+		this._positions = this.GeneratePositions(bounds.min, bounds.max, size);
+		this._rotMin = rotMin;
+		this._rotMax = rotMax;
 	}
 
 	public bool TryGetSpawnpoint(out Vector3 position, out float horizontalRot)
 	{
-		horizontalRot = Random.Range(_rotMin, _rotMax);
-		if (_positions.Length != 0)
+		horizontalRot = Random.Range(this._rotMin, this._rotMax);
+		if (this._positions.Length != 0)
 		{
-			position = _positions[NextIndex];
+			position = this._positions[this.NextIndex];
 			return true;
 		}
 		position = Vector3.zero;
@@ -75,7 +75,7 @@ public class BoundsRoleSpawnpoint : ISpawnpointHandler
 			{
 				for (int k = 0; k < size.z; k++)
 				{
-					list.Add(GeneratePosition(stepSize, i, j, k, min, max));
+					list.Add(this.GeneratePosition(stepSize, i, j, k, min, max));
 				}
 			}
 		}

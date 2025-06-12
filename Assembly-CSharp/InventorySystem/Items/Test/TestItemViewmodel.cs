@@ -8,6 +8,6 @@ public class TestItemViewmodel : ItemViewmodelBase
 
 	public void UpdateText(string stringUwU)
 	{
-		Text.text = stringUwU;
+		this.Text.text = stringUwU;
 	}
 }

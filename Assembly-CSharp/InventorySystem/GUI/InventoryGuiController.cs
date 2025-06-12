@@ -31,17 +31,17 @@ public class InventoryGuiController : ToggleableMenuBase, IHoldableMenu
 	{
 		get
 		{
-			if (Singleton != null)
+			if (InventoryGuiController.Singleton != null)
 			{
-				return Singleton.IsEnabled;
+				return InventoryGuiController.Singleton.IsEnabled;
 			}
 			return false;
 		}
 		set
 		{
-			if (!(Singleton == null))
+			if (!(InventoryGuiController.Singleton == null))
 			{
-				Singleton.IsEnabled = value;
+				InventoryGuiController.Singleton.IsEnabled = value;
 			}
 		}
 	}
@@ -50,21 +50,21 @@ public class InventoryGuiController : ToggleableMenuBase, IHoldableMenu
 	{
 		get
 		{
-			if (Singleton._toggleablePart.alpha > 0f || Cursor.visible)
+			if (InventoryGuiController.Singleton._toggleablePart.alpha > 0f || Cursor.visible)
 			{
-				if (!CooldownStopwatch.IsRunning)
+				if (!InventoryGuiController.CooldownStopwatch.IsRunning)
 				{
-					CooldownStopwatch.Restart();
+					InventoryGuiController.CooldownStopwatch.Restart();
 				}
 				return false;
 			}
-			if (CooldownStopwatch.IsRunning)
+			if (InventoryGuiController.CooldownStopwatch.IsRunning)
 			{
-				if (CooldownStopwatch.Elapsed.TotalSeconds < 0.10000000149011612)
+				if (InventoryGuiController.CooldownStopwatch.Elapsed.TotalSeconds < 0.10000000149011612)
 				{
 					return false;
 				}
-				CooldownStopwatch.Stop();
+				InventoryGuiController.CooldownStopwatch.Stop();
 			}
 			return true;
 		}
@@ -74,19 +74,19 @@ public class InventoryGuiController : ToggleableMenuBase, IHoldableMenu
 	{
 		get
 		{
-			if (!IsEnabled)
+			if (!this.IsEnabled)
 			{
-				return CanInventoryBeDisplayed();
+				return InventoryGuiController.CanInventoryBeDisplayed();
 			}
 			return true;
 		}
 	}
 
-	public static IInventoryGuiDisplayType DisplayController => Singleton._displaySettings;
+	public static IInventoryGuiDisplayType DisplayController => InventoryGuiController.Singleton._displaySettings;
 
 	private static Inventory UserInventory => ReferenceHub.LocalHub.inventory;
 
-	public bool IsHoldable => !ToggleInventory.Value;
+	public bool IsHoldable => !InventoryGuiController.ToggleInventory.Value;
 
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
@@ -98,7 +98,7 @@ public class InventoryGuiController : ToggleableMenuBase, IHoldableMenu
 	{
 		if (hub.isLocalPlayer)
 		{
-			DisplayController.ItemsModified(hub.inventory);
+			InventoryGuiController.DisplayController.ItemsModified(hub.inventory);
 		}
 	}
 
@@ -106,7 +106,7 @@ public class InventoryGuiController : ToggleableMenuBase, IHoldableMenu
 	{
 		if (hub.isLocalPlayer)
 		{
-			DisplayController.AmmoModified(hub);
+			InventoryGuiController.DisplayController.AmmoModified(hub);
 		}
 	}
 
@@ -114,16 +114,16 @@ public class InventoryGuiController : ToggleableMenuBase, IHoldableMenu
 	{
 		if (hub.isLocalPlayer)
 		{
-			DisplayController.ItemsModified(hub.inventory);
-			DisplayController.AmmoModified(hub);
+			InventoryGuiController.DisplayController.ItemsModified(hub.inventory);
+			InventoryGuiController.DisplayController.AmmoModified(hub);
 		}
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		Singleton = this;
-		IsEnabled = false;
+		InventoryGuiController.Singleton = this;
+		this.IsEnabled = false;
 		Inventory.OnItemsModified += ItemsModified;
 		Inventory.OnAmmoModified += AmmoModified;
 		PlayerRoleManager.OnRoleChanged += RoleChanged;
@@ -139,60 +139,60 @@ public class InventoryGuiController : ToggleableMenuBase, IHoldableMenu
 
 	private void Update()
 	{
-		RefreshAnimations(forceNoAnimations: false);
-		if (InventoryVisible)
+		this.RefreshAnimations(forceNoAnimations: false);
+		if (InventoryGuiController.InventoryVisible)
 		{
-			if (!CanInventoryBeDisplayed())
+			if (!InventoryGuiController.CanInventoryBeDisplayed())
 			{
-				IsEnabled = false;
+				this.IsEnabled = false;
 			}
 			ushort itemSerial;
-			switch (DisplayController.DisplayAndSelectItems(UserInventory, out itemSerial))
+			switch (InventoryGuiController.DisplayController.DisplayAndSelectItems(InventoryGuiController.UserInventory, out itemSerial))
 			{
 			case InventoryGuiAction.Select:
-				UserInventory.ClientSelectItem(itemSerial);
+				InventoryGuiController.UserInventory.ClientSelectItem(itemSerial);
 				break;
 			case InventoryGuiAction.Drop:
-				UserInventory.ClientDropItem(itemSerial, tryThrow: false);
+				InventoryGuiController.UserInventory.ClientDropItem(itemSerial, tryThrow: false);
 				break;
 			}
 		}
-		if (_prevVisible != InventoryVisible)
+		if (this._prevVisible != InventoryGuiController.InventoryVisible)
 		{
-			DisplayController.InventoryToggled(InventoryVisible);
-			_prevVisible = InventoryVisible;
+			InventoryGuiController.DisplayController.InventoryToggled(InventoryGuiController.InventoryVisible);
+			this._prevVisible = InventoryGuiController.InventoryVisible;
 		}
 	}
 
 	private void RefreshAnimations(bool forceNoAnimations)
 	{
-		if (InventoryVisible)
+		if (InventoryGuiController.InventoryVisible)
 		{
-			if (!_toggleablePart.gameObject.activeSelf)
+			if (!this._toggleablePart.gameObject.activeSelf)
 			{
-				_toggleablePart.gameObject.SetActive(value: true);
+				this._toggleablePart.gameObject.SetActive(value: true);
 			}
-			if (_toggleablePart.alpha < 1f)
+			if (this._toggleablePart.alpha < 1f)
 			{
-				_toggleablePart.alpha = (forceNoAnimations ? 1f : Mathf.Clamp01(_toggleablePart.alpha + Time.deltaTime * (float)(int)InventoryFadeSpeed));
+				this._toggleablePart.alpha = (forceNoAnimations ? 1f : Mathf.Clamp01(this._toggleablePart.alpha + Time.deltaTime * (float)(int)InventoryGuiController.InventoryFadeSpeed));
 			}
 		}
 		else
 		{
-			if (!_toggleablePart.gameObject.activeSelf)
+			if (!this._toggleablePart.gameObject.activeSelf)
 			{
 				return;
 			}
 			if (forceNoAnimations)
 			{
-				_toggleablePart.alpha = 0f;
-				_toggleablePart.gameObject.SetActive(value: false);
+				this._toggleablePart.alpha = 0f;
+				this._toggleablePart.gameObject.SetActive(value: false);
 				return;
 			}
-			_toggleablePart.alpha = Mathf.Clamp01(_toggleablePart.alpha - Time.deltaTime * (float)(int)InventoryFadeSpeed);
-			if (_toggleablePart.alpha <= 0f)
+			this._toggleablePart.alpha = Mathf.Clamp01(this._toggleablePart.alpha - Time.deltaTime * (float)(int)InventoryGuiController.InventoryFadeSpeed);
+			if (this._toggleablePart.alpha <= 0f)
 			{
-				_toggleablePart.gameObject.SetActive(value: false);
+				this._toggleablePart.gameObject.SetActive(value: false);
 			}
 		}
 	}
@@ -207,7 +207,7 @@ public class InventoryGuiController : ToggleableMenuBase, IHoldableMenu
 		{
 			return false;
 		}
-		if (UserInventory.CurInstance != null && !UserInventory.CurInstance.AllowHolster)
+		if (InventoryGuiController.UserInventory.CurInstance != null && !InventoryGuiController.UserInventory.CurInstance.AllowHolster)
 		{
 			return false;
 		}
@@ -216,6 +216,6 @@ public class InventoryGuiController : ToggleableMenuBase, IHoldableMenu
 
 	protected override void OnToggled()
 	{
-		RefreshAnimations(!CanInventoryBeDisplayed());
+		this.RefreshAnimations(!InventoryGuiController.CanInventoryBeDisplayed());
 	}
 }

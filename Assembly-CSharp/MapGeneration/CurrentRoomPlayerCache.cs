@@ -22,46 +22,46 @@ public class CurrentRoomPlayerCache : MonoBehaviour
 
 	private void Awake()
 	{
-		_tr = base.transform;
+		this._tr = base.transform;
 	}
 
 	private void Update()
 	{
-		if (NetworkServer.active || _roleManager.isLocalPlayer)
+		if (NetworkServer.active || this._roleManager.isLocalPlayer)
 		{
-			ValidateCache();
+			this.ValidateCache();
 		}
 	}
 
 	private void ValidateCache()
 	{
-		if (_lastFrame != Time.frameCount && !RoundRestart.IsRoundRestarting)
+		if (this._lastFrame != Time.frameCount && !RoundRestart.IsRoundRestarting)
 		{
-			if (((_roleManager.CurrentRole is ICameraController cameraController) ? cameraController.CameraPosition : _tr.position).TryGetRoom(out var room))
+			if (((this._roleManager.CurrentRole is ICameraController cameraController) ? cameraController.CameraPosition : this._tr.position).TryGetRoom(out var room))
 			{
-				_lastDetected = room;
-				_lastValid = true;
-				_hasAnyValidRoom = true;
+				this._lastDetected = room;
+				this._lastValid = true;
+				this._hasAnyValidRoom = true;
 			}
 			else
 			{
-				_lastValid = false;
+				this._lastValid = false;
 			}
-			_lastFrame = Time.frameCount;
+			this._lastFrame = Time.frameCount;
 		}
 	}
 
 	public bool TryGetCurrent(out RoomIdentifier rid)
 	{
-		ValidateCache();
-		rid = _lastDetected;
-		return _lastValid;
+		this.ValidateCache();
+		rid = this._lastDetected;
+		return this._lastValid;
 	}
 
 	public bool TryGetLastValid(out RoomIdentifier rid)
 	{
-		ValidateCache();
-		rid = _lastDetected;
-		return _hasAnyValidRoom;
+		this.ValidateCache();
+		rid = this._lastDetected;
+		return this._hasAnyValidRoom;
 	}
 }

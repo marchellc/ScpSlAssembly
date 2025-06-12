@@ -10,19 +10,19 @@ public readonly struct SSSUserStatusReport : NetworkMessage
 
 	public SSSUserStatusReport(NetworkReader reader)
 	{
-		Version = reader.ReadInt();
-		TabOpen = reader.ReadBool();
+		this.Version = reader.ReadInt();
+		this.TabOpen = reader.ReadBool();
 	}
 
 	public SSSUserStatusReport(int ver, bool tabOpen)
 	{
-		Version = ver;
-		TabOpen = tabOpen;
+		this.Version = ver;
+		this.TabOpen = tabOpen;
 	}
 
 	public void Serialize(NetworkWriter writer)
 	{
-		writer.WriteInt(Version);
-		writer.WriteBool(TabOpen);
+		writer.WriteInt(this.Version);
+		writer.WriteBool(this.TabOpen);
 	}
 }

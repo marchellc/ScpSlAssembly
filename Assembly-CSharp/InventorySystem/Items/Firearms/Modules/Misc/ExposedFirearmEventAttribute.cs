@@ -15,6 +15,6 @@ public class ExposedFirearmEventAttribute : Attribute
 
 	public ExposedFirearmEventAttribute(UnityEventCallState callState)
 	{
-		CallState = callState;
+		this.CallState = callState;
 	}
 }

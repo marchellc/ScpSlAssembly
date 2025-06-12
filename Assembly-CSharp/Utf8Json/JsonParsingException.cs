@@ -21,22 +21,22 @@ public class JsonParsingException : Exception
 	public JsonParsingException(string message, byte[] underlyingBytes, int offset, int limit, string actualChar)
 		: base(message)
 	{
-		underyingBytes = new WeakReference(underlyingBytes);
-		Offset = offset;
-		ActualChar = actualChar;
+		this.underyingBytes = new WeakReference(underlyingBytes);
+		this.Offset = offset;
+		this.ActualChar = actualChar;
 		this.limit = limit;
 	}
 
 	public byte[] GetUnderlyingByteArrayUnsafe()
 	{
-		return underyingBytes.Target as byte[];
+		return this.underyingBytes.Target as byte[];
 	}
 
 	public string GetUnderlyingStringUnsafe()
 	{
-		if (underyingBytes.Target is byte[] bytes)
+		if (this.underyingBytes.Target is byte[] bytes)
 		{
-			return StringEncoding.UTF8.GetString(bytes, 0, limit) + "...";
+			return StringEncoding.UTF8.GetString(bytes, 0, this.limit) + "...";
 		}
 		return null;
 	}

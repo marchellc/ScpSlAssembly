@@ -13,25 +13,25 @@ public readonly struct CreditsList : IEquatable<CreditsList>, IJsonSerializable
 
 	public bool Equals(CreditsList other)
 	{
-		return credits == other.credits;
+		return this.credits == other.credits;
 	}
 
 	public override bool Equals(object obj)
 	{
 		if (obj is CreditsList other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		if (credits == null)
+		if (this.credits == null)
 		{
 			return 0;
 		}
-		return credits.GetHashCode();
+		return this.credits.GetHashCode();
 	}
 
 	public static bool operator ==(CreditsList left, CreditsList right)

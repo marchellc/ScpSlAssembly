@@ -27,11 +27,11 @@ public class StackableGradientSky : MonoBehaviour
 	{
 		get
 		{
-			if (!_volume.enabled)
+			if (!this._volume.enabled)
 			{
 				return 0f;
 			}
-			return _volume.weight;
+			return this._volume.weight;
 		}
 	}
 
@@ -41,7 +41,7 @@ public class StackableGradientSky : MonoBehaviour
 		mid = Color.black;
 		bottom = Color.black;
 		diffusion = 1f;
-		foreach (StackableGradientSky activeInstance in ActiveInstances)
+		foreach (StackableGradientSky activeInstance in StackableGradientSky.ActiveInstances)
 		{
 			float weight = activeInstance.Weight;
 			top = Color.Lerp(top, activeInstance._top, weight);
@@ -53,20 +53,20 @@ public class StackableGradientSky : MonoBehaviour
 
 	private void Awake()
 	{
-		_volume = GetComponent<Volume>();
-		for (int i = 0; i < ActiveInstances.Count; i++)
+		this._volume = base.GetComponent<Volume>();
+		for (int i = 0; i < StackableGradientSky.ActiveInstances.Count; i++)
 		{
-			if (!(_volume.priority > ActiveInstances[i]._volume.priority))
+			if (!(this._volume.priority > StackableGradientSky.ActiveInstances[i]._volume.priority))
 			{
-				ActiveInstances.Insert(i, this);
+				StackableGradientSky.ActiveInstances.Insert(i, this);
 				return;
 			}
 		}
-		ActiveInstances.Add(this);
+		StackableGradientSky.ActiveInstances.Add(this);
 	}
 
 	private void OnDestroy()
 	{
-		ActiveInstances.Remove(this);
+		StackableGradientSky.ActiveInstances.Remove(this);
 	}
 }

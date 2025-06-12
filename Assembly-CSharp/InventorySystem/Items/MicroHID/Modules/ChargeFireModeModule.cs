@@ -83,18 +83,18 @@ public class ChargeFireModeModule : FiringModeControllerModule
 	public override void ServerUpdateSelected(MicroHidPhase status)
 	{
 		base.ServerUpdateSelected(status);
-		if (status != _prevStatus)
+		if (status != this._prevStatus)
 		{
-			ServerOnModeChanged(status);
-			_prevStatus = status;
+			this.ServerOnModeChanged(status);
+			this._prevStatus = status;
 		}
 		switch (status)
 		{
 		case MicroHidPhase.WoundUpSustain:
-			ServerUpdateWoundUp();
+			this.ServerUpdateWoundUp();
 			break;
 		case MicroHidPhase.Firing:
-			ServerRequestBacktrack(ServerFire);
+			base.ServerRequestBacktrack(ServerFire);
 			break;
 		}
 	}
@@ -107,27 +107,27 @@ public class ChargeFireModeModule : FiringModeControllerModule
 			base.Energy -= 0.1f;
 			break;
 		case MicroHidPhase.WoundUpSustain:
-			_woundUpElapsed = 0f;
+			this._woundUpElapsed = 0f;
 			break;
 		}
 	}
 
 	private void ServerUpdateWoundUp()
 	{
-		_woundUpElapsed += Time.deltaTime;
-		if (!(_woundUpElapsed < 10f))
+		this._woundUpElapsed += Time.deltaTime;
+		if (!(this._woundUpElapsed < 10f))
 		{
-			ServerExplode();
+			this.ServerExplode();
 		}
 	}
 
 	private void ServerExplode()
 	{
-		if (_alreadyExploded)
+		if (this._alreadyExploded)
 		{
 			return;
 		}
-		_alreadyExploded = true;
+		this._alreadyExploded = true;
 		base.MicroHid.BrokenSync.ServerSetBroken();
 		ReferenceHub owner = base.Item.Owner;
 		if (!(owner.roleManager.CurrentRole is IFpcRole fpcRole))
@@ -139,7 +139,7 @@ public class ChargeFireModeModule : FiringModeControllerModule
 		HitregUtils.OverlapSphere(position, 10f, out var detections);
 		for (int i = 0; i < detections; i++)
 		{
-			if (HitregUtils.DetectionsNonAlloc[i].TryGetComponent<InteractableCollider>(out var component) && component.Target is IDamageableDoor damageableDoor && CheckIntercolLineOfSight(position, component))
+			if (HitregUtils.DetectionsNonAlloc[i].TryGetComponent<InteractableCollider>(out var component) && component.Target is IDamageableDoor damageableDoor && this.CheckIntercolLineOfSight(position, component))
 			{
 				damageableDoor.ServerDamage(350f, DoorDamageType.Grenade, new Footprint(owner));
 			}
@@ -161,23 +161,23 @@ public class ChargeFireModeModule : FiringModeControllerModule
 	private void ServerFire()
 	{
 		Transform playerCameraReference = base.Item.Owner.PlayerCameraReference;
-		HitregUtils.Raycast(playerCameraReference, 0.65f, FiringRange, out var detections);
+		HitregUtils.Raycast(playerCameraReference, 0.65f, this.FiringRange, out var detections);
 		foreach (IDestructible detectedDestructible in HitregUtils.DetectedDestructibles)
 		{
 			detectedDestructible.ServerDealDamage(this, 1000f * Time.deltaTime);
 		}
 		for (int i = 0; i < detections; i++)
 		{
-			if (HitregUtils.DetectionsNonAlloc[i].TryGetComponent<InteractableCollider>(out var component) && CheckIntercolLineOfSight(playerCameraReference.position, component))
+			if (HitregUtils.DetectionsNonAlloc[i].TryGetComponent<InteractableCollider>(out var component) && this.CheckIntercolLineOfSight(playerCameraReference.position, component))
 			{
-				HandlePotentialDoor(component);
+				this.HandlePotentialDoor(component);
 			}
 		}
 	}
 
 	private void HandlePotentialDoor(InteractableCollider interactable)
 	{
-		if (interactable.Target is BreakableDoor { TargetState: false } breakableDoor && breakableDoor.AllowInteracting(base.Item.Owner, interactable.ColliderId) && (breakableDoor.ActiveLocks & (ushort)(~(int)BypassableLocks)) == 0)
+		if (interactable.Target is BreakableDoor { TargetState: false } breakableDoor && breakableDoor.AllowInteracting(base.Item.Owner, interactable.ColliderId) && (breakableDoor.ActiveLocks & (ushort)(~(int)ChargeFireModeModule.BypassableLocks)) == 0)
 		{
 			breakableDoor.NetworkTargetState = true;
 		}

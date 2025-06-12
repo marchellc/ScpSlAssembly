@@ -16,11 +16,11 @@ public static class SensitivitySettings
 	{
 		get
 		{
-			return _sensMultiplier.Value;
+			return SensitivitySettings._sensMultiplier.Value;
 		}
 		set
 		{
-			_sensMultiplier.Value = value;
+			SensitivitySettings._sensMultiplier.Value = value;
 		}
 	}
 
@@ -28,11 +28,11 @@ public static class SensitivitySettings
 	{
 		get
 		{
-			return _adsReductionMultiplier.Value;
+			return SensitivitySettings._adsReductionMultiplier.Value;
 		}
 		set
 		{
-			_adsReductionMultiplier.Value = value;
+			SensitivitySettings._adsReductionMultiplier.Value = value;
 		}
 	}
 
@@ -40,11 +40,11 @@ public static class SensitivitySettings
 	{
 		get
 		{
-			return _invert.Value;
+			return SensitivitySettings._invert.Value;
 		}
 		set
 		{
-			_invert.Value = value;
+			SensitivitySettings._invert.Value = value;
 		}
 	}
 
@@ -53,8 +53,8 @@ public static class SensitivitySettings
 	{
 		UserSetting<float>.SetDefaultValue(SensitivitySetting.SensMultiplier, 1f);
 		UserSetting<float>.SetDefaultValue(SensitivitySetting.AdsReductionMultiplier, 1f);
-		_sensMultiplier = new CachedUserSetting<float>(SensitivitySetting.SensMultiplier);
-		_adsReductionMultiplier = new CachedUserSetting<float>(SensitivitySetting.AdsReductionMultiplier);
-		_invert = new CachedUserSetting<bool>(SensitivitySetting.Invert);
+		SensitivitySettings._sensMultiplier = new CachedUserSetting<float>(SensitivitySetting.SensMultiplier);
+		SensitivitySettings._adsReductionMultiplier = new CachedUserSetting<float>(SensitivitySetting.AdsReductionMultiplier);
+		SensitivitySettings._invert = new CachedUserSetting<bool>(SensitivitySetting.Invert);
 	}
 }

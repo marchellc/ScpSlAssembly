@@ -1,16 +1,24 @@
-using System;
 using System.Runtime.InteropServices;
+using Interactables;
 using Interactables.Interobjects.DoorUtils;
+using Interactables.Verification;
 using Mirror;
+using Mirror.RemoteCalls;
 using UnityEngine;
 
-public class AlphaWarheadNukesitePanel : NetworkBehaviour
+public class AlphaWarheadNukesitePanel : NetworkBehaviour, IServerInteractable, IInteractable
 {
 	private enum DiodeType
 	{
 		InProgress,
 		BlastDoor,
 		OutsideDoor
+	}
+
+	private enum PanelColliderId
+	{
+		Cancel = 1,
+		Lever
 	}
 
 	public Transform lever;
@@ -68,75 +76,95 @@ public class AlphaWarheadNukesitePanel : NetworkBehaviour
 	{
 		get
 		{
-			if (!_doorFound)
+			if (!this._doorFound)
 			{
-				_doorFound = DoorNametagExtension.NamedDoors.TryGetValue("SURFACE_NUKE", out _outsideDoor);
+				this._doorFound = DoorNametagExtension.NamedDoors.TryGetValue("SURFACE_NUKE", out this._outsideDoor);
 			}
-			if (_doorFound)
+			if (this._doorFound)
 			{
-				return _outsideDoor.TargetDoor.TargetState;
+				return this._outsideDoor.TargetDoor.TargetState;
 			}
 			return false;
 		}
 	}
 
+	public IVerificationRule VerificationRule => StandardDistanceVerification.Default;
+
 	public bool Networkenabled
 	{
 		get
 		{
-			return enabled;
+			return this.enabled;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref enabled, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.enabled, 1uL, null);
 		}
 	}
 
 	private void Awake()
 	{
-		Singleton = this;
-		int num = _ledRenderer.sharedMaterials.Length;
-		_matSet = new Material[num];
-		_prevMats = new bool[num];
+		AlphaWarheadNukesitePanel.Singleton = this;
+		int num = this._ledRenderer.sharedMaterials.Length;
+		this._matSet = new Material[num];
+		this._prevMats = new bool[num];
 		for (int i = 0; i < num; i++)
 		{
-			_matSet[i] = _offMat;
+			this._matSet[i] = this._offMat;
 		}
 	}
 
-	public bool AllowChangeLevelState()
+	public void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
-		if (!(Math.Abs(_leverStatus) < 0.001f))
+		switch ((PanelColliderId)colliderId)
 		{
-			return Math.Abs(_leverStatus - 1f) < 0.001f;
+		case PanelColliderId.Cancel:
+			AlphaWarheadController.Singleton.CancelDetonation(ply);
+			ServerLogs.AddLog(ServerLogs.Modules.Warhead, ply.LoggedNameFromRefHub() + " cancelled the Alpha Warhead detonation.", ServerLogs.ServerLogType.GameEvent);
+			break;
+		case PanelColliderId.Lever:
+			if (!(this._leverStatus > 0f) || !(this._leverStatus < 1f))
+			{
+				this.Networkenabled = !this.enabled;
+				this.RpcLeverSound();
+				ServerLogs.AddLog(ServerLogs.Modules.Warhead, ply.LoggedNameFromRefHub() + " set the Alpha Warhead status to " + this.enabled + ".", ServerLogs.ServerLogType.GameEvent);
+			}
+			break;
 		}
-		return true;
 	}
 
 	private void SetDiode(DiodeType diode, bool status)
 	{
-		if (_prevMats[(int)diode] != status)
+		if (this._prevMats[(int)diode] != status)
 		{
-			_matSet[(int)diode] = (status ? _onMat : _offMat);
-			_prevMats[(int)diode] = status;
-			_anyModified = true;
+			this._matSet[(int)diode] = (status ? this._onMat : this._offMat);
+			this._prevMats[(int)diode] = status;
+			this._anyModified = true;
 		}
 	}
 
 	private void Update()
 	{
-		_anyModified = false;
-		SetDiode(DiodeType.InProgress, AlphaWarheadController.InProgress);
-		SetDiode(DiodeType.OutsideDoor, OutsideDoorOpen);
-		SetDiode(DiodeType.BlastDoor, AnyBlastdoorClosed);
-		if (_anyModified)
+		this._anyModified = false;
+		this.SetDiode(DiodeType.InProgress, AlphaWarheadController.InProgress);
+		this.SetDiode(DiodeType.OutsideDoor, this.OutsideDoorOpen);
+		this.SetDiode(DiodeType.BlastDoor, this.AnyBlastdoorClosed);
+		if (this._anyModified)
 		{
-			_ledRenderer.sharedMaterials = _matSet;
+			this._ledRenderer.sharedMaterials = this._matSet;
 		}
-		_leverStatus += (enabled ? 0.04f : (-0.04f));
-		_leverStatus = Mathf.Clamp01(_leverStatus);
-		lever.localRotation = Quaternion.Slerp(_disabledLeverRotation, _enabledLeverRotation, _leverStatus);
+		this._leverStatus += (this.enabled ? 0.04f : (-0.04f));
+		this._leverStatus = Mathf.Clamp01(this._leverStatus);
+		this.lever.localRotation = Quaternion.Slerp(this._disabledLeverRotation, this._enabledLeverRotation, this._leverStatus);
+	}
+
+	[ClientRpc]
+	private void RpcLeverSound()
+	{
+		NetworkWriterPooled writer = NetworkWriterPool.Get();
+		this.SendRPCInternal("System.Void AlphaWarheadNukesitePanel::RpcLeverSound()", 791711933, writer, 0, includeOwner: true);
+		NetworkWriterPool.Return(writer);
 	}
 
 	public override bool Weaved()
@@ -144,18 +172,39 @@ public class AlphaWarheadNukesitePanel : NetworkBehaviour
 		return true;
 	}
 
+	protected void UserCode_RpcLeverSound()
+	{
+	}
+
+	protected static void InvokeUserCode_RpcLeverSound(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+	{
+		if (!NetworkClient.active)
+		{
+			Debug.LogError("RPC RpcLeverSound called on server.");
+		}
+		else
+		{
+			((AlphaWarheadNukesitePanel)obj).UserCode_RpcLeverSound();
+		}
+	}
+
+	static AlphaWarheadNukesitePanel()
+	{
+		RemoteProcedureCalls.RegisterRpc(typeof(AlphaWarheadNukesitePanel), "System.Void AlphaWarheadNukesitePanel::RpcLeverSound()", InvokeUserCode_RpcLeverSound);
+	}
+
 	public override void SerializeSyncVars(NetworkWriter writer, bool forceAll)
 	{
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(enabled);
+			writer.WriteBool(this.enabled);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteBool(enabled);
+			writer.WriteBool(this.enabled);
 		}
 	}
 
@@ -164,13 +213,13 @@ public class AlphaWarheadNukesitePanel : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref enabled, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.enabled, null, reader.ReadBool());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref enabled, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.enabled, null, reader.ReadBool());
 		}
 	}
 }

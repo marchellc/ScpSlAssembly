@@ -44,12 +44,12 @@ public class CharacterClassManager : NetworkBehaviour
 	{
 		get
 		{
-			return _godMode;
+			return this._godMode;
 		}
 		set
 		{
-			_godMode = value;
-			_hub.playerStats.GetModule<AdminFlagsStat>().SetFlag(AdminFlags.GodMode, value);
+			this._godMode = value;
+			this._hub.playerStats.GetModule<AdminFlagsStat>().SetFlag(AdminFlags.GodMode, value);
 		}
 	}
 
@@ -57,12 +57,12 @@ public class CharacterClassManager : NetworkBehaviour
 	{
 		get
 		{
-			return Pastebin;
+			return this.Pastebin;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Pastebin, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.Pastebin, 1uL, null);
 		}
 	}
 
@@ -70,12 +70,12 @@ public class CharacterClassManager : NetworkBehaviour
 	{
 		get
 		{
-			return MaxPlayers;
+			return this.MaxPlayers;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref MaxPlayers, 2uL, MaxPlayersHook);
+			base.GeneratedSyncVarSetter(value, ref this.MaxPlayers, 2uL, MaxPlayersHook);
 		}
 	}
 
@@ -83,12 +83,12 @@ public class CharacterClassManager : NetworkBehaviour
 	{
 		get
 		{
-			return RoundStarted;
+			return this.RoundStarted;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref RoundStarted, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.RoundStarted, 4uL, null);
 		}
 	}
 
@@ -100,12 +100,12 @@ public class CharacterClassManager : NetworkBehaviour
 
 	private void Start()
 	{
-		_hub = ReferenceHub.GetHub(this);
+		this._hub = ReferenceHub.GetHub(this);
 		if (!NetworkServer.active)
 		{
 			return;
 		}
-		_commandRateLimit = _hub.playerRateLimitHandler.RateLimits[1];
+		this._commandRateLimit = this._hub.playerRateLimitHandler.RateLimits[1];
 		if (base.isLocalPlayer)
 		{
 			ServerLogs.StartLogging();
@@ -113,21 +113,21 @@ public class CharacterClassManager : NetworkBehaviour
 			CustomLiteNetLib4MirrorTransport.DelayConnections = false;
 			IdleMode.PauseIdleMode = false;
 			ServerConsole.AddOutputEntry(default(RoundRestartedEntry));
-			NetworkPastebin = ConfigFile.ServerConfig.GetString("serverinfo_pastebin_id");
+			this.NetworkPastebin = ConfigFile.ServerConfig.GetString("serverinfo_pastebin_id");
 			if (ServerStatic.IsDedicated)
 			{
 				ServerEvents.OnWaitingForPlayers();
 				ServerConsole.AddLog("Waiting for players...");
 			}
-			StartCoroutine(Init());
+			base.StartCoroutine(this.Init());
 		}
 	}
 
 	private void Update()
 	{
-		if (base.isLocalPlayer && NetworkServer.active && MaxPlayers != (ushort)CustomNetworkManager.slots)
+		if (base.isLocalPlayer && NetworkServer.active && this.MaxPlayers != (ushort)CustomNetworkManager.slots)
 		{
-			NetworkMaxPlayers = (ushort)CustomNetworkManager.slots;
+			this.NetworkMaxPlayers = (ushort)CustomNetworkManager.slots;
 		}
 	}
 
@@ -141,7 +141,7 @@ public class CharacterClassManager : NetworkBehaviour
 
 	public void SyncServerCmdBinding()
 	{
-		if (!base.isServer || !EnableSyncServerCmdBinding)
+		if (!base.isServer || !CharacterClassManager.EnableSyncServerCmdBinding)
 		{
 			return;
 		}
@@ -149,7 +149,7 @@ public class CharacterClassManager : NetworkBehaviour
 		{
 			if (binding.Command.StartsWith('.') || binding.Command.StartsWith('/'))
 			{
-				TargetChangeCmdBinding(binding.Key, binding.Command);
+				this.TargetChangeCmdBinding(binding.Key, binding.Command);
 			}
 		}
 	}
@@ -160,7 +160,7 @@ public class CharacterClassManager : NetworkBehaviour
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		GeneratedNetworkCode._Write_UnityEngine_002EKeyCode(writer, code);
 		writer.WriteString(cmd);
-		SendTargetRPCInternal(null, "System.Void CharacterClassManager::TargetChangeCmdBinding(UnityEngine.KeyCode,System.String)", -1033122126, writer, 0);
+		this.SendTargetRPCInternal(null, "System.Void CharacterClassManager::TargetChangeCmdBinding(UnityEngine.KeyCode,System.String)", -1033122126, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -168,7 +168,7 @@ public class CharacterClassManager : NetworkBehaviour
 	{
 		if (NonFacilityCompatibility.currentSceneSettings.roundAutostart)
 		{
-			ForceRoundStart();
+			CharacterClassManager.ForceRoundStart();
 		}
 		else
 		{
@@ -206,7 +206,7 @@ public class CharacterClassManager : NetworkBehaviour
 					}
 					if (timeLeft == -1)
 					{
-						ForceRoundStart();
+						CharacterClassManager.ForceRoundStart();
 					}
 				}
 				else
@@ -220,10 +220,10 @@ public class CharacterClassManager : NetworkBehaviour
 				yield return new WaitForSeconds(1f);
 			}
 		}
-		NetworkRoundStarted = true;
+		this.NetworkRoundStarted = true;
 		ServerEvents.OnRoundStarted();
 		CharacterClassManager.ServerOnRoundStartTriggered?.Invoke();
-		RpcRoundStarted();
+		this.RpcRoundStarted();
 	}
 
 	public static bool ForceRoundStart()
@@ -232,9 +232,9 @@ public class CharacterClassManager : NetworkBehaviour
 		{
 			return false;
 		}
-		RoundStartingEventArgs roundStartingEventArgs = new RoundStartingEventArgs();
-		ServerEvents.OnRoundStarting(roundStartingEventArgs);
-		if (!roundStartingEventArgs.IsAllowed)
+		RoundStartingEventArgs e = new RoundStartingEventArgs();
+		ServerEvents.OnRoundStarting(e);
+		if (!e.IsAllowed)
 		{
 			return false;
 		}
@@ -250,7 +250,7 @@ public class CharacterClassManager : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteString(message);
-		SendTargetRPCInternal(conn, "System.Void CharacterClassManager::TargetSetDisconnectError(Mirror.NetworkConnection,System.String)", -2106075371, writer, 0);
+		this.SendTargetRPCInternal(conn, "System.Void CharacterClassManager::TargetSetDisconnectError(Mirror.NetworkConnection,System.String)", -2106075371, writer, 0);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -258,14 +258,14 @@ public class CharacterClassManager : NetworkBehaviour
 	private void CmdConfirmDisconnect()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendCommandInternal("System.Void CharacterClassManager::CmdConfirmDisconnect()", 460932189, writer, 4);
+		base.SendCommandInternal("System.Void CharacterClassManager::CmdConfirmDisconnect()", 460932189, writer, 4);
 		NetworkWriterPool.Return(writer);
 	}
 
 	public void DisconnectClient(NetworkConnection conn, string message)
 	{
-		TargetSetDisconnectError(conn, message);
-		Timing.RunCoroutine(_DisconnectAfterTimeout(conn), Segment.FixedUpdate);
+		this.TargetSetDisconnectError(conn, message);
+		Timing.RunCoroutine(CharacterClassManager._DisconnectAfterTimeout(conn), Segment.FixedUpdate);
 	}
 
 	private static IEnumerator<float> _DisconnectAfterTimeout(NetworkConnection conn)
@@ -281,13 +281,13 @@ public class CharacterClassManager : NetworkBehaviour
 	private void RpcRoundStarted()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void CharacterClassManager::RpcRoundStarted()", -2093950497, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void CharacterClassManager::RpcRoundStarted()", -2093950497, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	static CharacterClassManager()
 	{
-		CuffedChangeTeam = true;
+		CharacterClassManager.CuffedChangeTeam = true;
 		RemoteProcedureCalls.RegisterCommand(typeof(CharacterClassManager), "System.Void CharacterClassManager::CmdConfirmDisconnect()", InvokeUserCode_CmdConfirmDisconnect, requiresAuthority: true);
 		RemoteProcedureCalls.RegisterRpc(typeof(CharacterClassManager), "System.Void CharacterClassManager::RpcRoundStarted()", InvokeUserCode_RpcRoundStarted);
 		RemoteProcedureCalls.RegisterRpc(typeof(CharacterClassManager), "System.Void CharacterClassManager::TargetChangeCmdBinding(UnityEngine.KeyCode,System.String)", InvokeUserCode_TargetChangeCmdBinding__KeyCode__String);
@@ -318,7 +318,7 @@ public class CharacterClassManager : NetworkBehaviour
 	protected void UserCode_TargetSetDisconnectError__NetworkConnection__String(NetworkConnection conn, string message)
 	{
 		((CustomNetworkManager)LiteNetLib4MirrorNetworkManager.singleton).disconnectMessage = message;
-		CmdConfirmDisconnect();
+		this.CmdConfirmDisconnect();
 	}
 
 	protected static void InvokeUserCode_TargetSetDisconnectError__NetworkConnection__String(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -372,23 +372,23 @@ public class CharacterClassManager : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteString(Pastebin);
-			writer.WriteUShort(MaxPlayers);
-			writer.WriteBool(RoundStarted);
+			writer.WriteString(this.Pastebin);
+			writer.WriteUShort(this.MaxPlayers);
+			writer.WriteBool(this.RoundStarted);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteString(Pastebin);
+			writer.WriteString(this.Pastebin);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteUShort(MaxPlayers);
+			writer.WriteUShort(this.MaxPlayers);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			writer.WriteBool(RoundStarted);
+			writer.WriteBool(this.RoundStarted);
 		}
 	}
 
@@ -397,23 +397,23 @@ public class CharacterClassManager : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref Pastebin, null, reader.ReadString());
-			GeneratedSyncVarDeserialize(ref MaxPlayers, MaxPlayersHook, reader.ReadUShort());
-			GeneratedSyncVarDeserialize(ref RoundStarted, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.Pastebin, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.MaxPlayers, MaxPlayersHook, reader.ReadUShort());
+			base.GeneratedSyncVarDeserialize(ref this.RoundStarted, null, reader.ReadBool());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Pastebin, null, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.Pastebin, null, reader.ReadString());
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref MaxPlayers, MaxPlayersHook, reader.ReadUShort());
+			base.GeneratedSyncVarDeserialize(ref this.MaxPlayers, MaxPlayersHook, reader.ReadUShort());
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref RoundStarted, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.RoundStarted, null, reader.ReadBool());
 		}
 	}
 }

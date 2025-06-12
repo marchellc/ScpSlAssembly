@@ -29,7 +29,7 @@ public class FlashlightThirdpersonItem : IdleThirdpersonItem
 		FlashlightNetworkHandler.OnStatusReceived += ProcesReceivedStatus;
 		if (FlashlightNetworkHandler.ReceivedStatuses.TryGetValue(id.SerialNumber, out var value))
 		{
-			SetState(value);
+			this.SetState(value);
 		}
 	}
 
@@ -42,21 +42,21 @@ public class FlashlightThirdpersonItem : IdleThirdpersonItem
 	{
 		if (msg.Serial == base.ItemId.SerialNumber)
 		{
-			SetState(msg.NewState);
+			this.SetState(msg.NewState);
 		}
 	}
 
 	private void SetState(bool newState)
 	{
-		if (_lightSource.enabled != newState)
+		if (this._lightSource.enabled != newState)
 		{
-			_lightSource.enabled = newState;
-			Renderer[] targetRenderers = _targetRenderers;
+			this._lightSource.enabled = newState;
+			Renderer[] targetRenderers = this._targetRenderers;
 			for (int i = 0; i < targetRenderers.Length; i++)
 			{
-				targetRenderers[i].sharedMaterial = (newState ? _onMat : _offMat);
+				targetRenderers[i].sharedMaterial = (newState ? this._onMat : this._offMat);
 			}
-			AudioSourcePoolManager.PlayOnTransform(newState ? Template.OnClip : Template.OffClip, base.transform, 3.2f);
+			AudioSourcePoolManager.PlayOnTransform(newState ? FlashlightThirdpersonItem.Template.OnClip : FlashlightThirdpersonItem.Template.OffClip, base.transform, 3.2f);
 		}
 	}
 }

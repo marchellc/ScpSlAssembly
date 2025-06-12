@@ -21,17 +21,17 @@ public struct RelativePosition : NetworkMessage, IEquatable<RelativePosition>
 
 	public bool OutOfRange;
 
-	public Vector3 Position => WaypointBase.GetWorldPosition(WaypointId, Relative);
+	public Vector3 Position => WaypointBase.GetWorldPosition(this.WaypointId, this.Relative);
 
-	internal Vector3 Relative => new Vector3((float)PositionX * InverseAccuracy, (float)PositionY * InverseAccuracy, (float)PositionZ * InverseAccuracy);
+	internal Vector3 Relative => new Vector3((float)this.PositionX * RelativePosition.InverseAccuracy, (float)this.PositionY * RelativePosition.InverseAccuracy, (float)this.PositionZ * RelativePosition.InverseAccuracy);
 
 	public RelativePosition(Vector3 targetPos)
 	{
-		WaypointBase.GetRelativePosition(targetPos, out WaypointId, out var rel);
-		bool flag = TryCompressPosition(rel.x, out PositionX);
-		bool flag2 = TryCompressPosition(rel.y, out PositionY);
-		bool flag3 = TryCompressPosition(rel.z, out PositionZ);
-		OutOfRange = !flag || !flag2 || !flag3;
+		WaypointBase.GetRelativePosition(targetPos, out this.WaypointId, out var rel);
+		bool flag = RelativePosition.TryCompressPosition(rel.x, out this.PositionX);
+		bool flag2 = RelativePosition.TryCompressPosition(rel.y, out this.PositionY);
+		bool flag3 = RelativePosition.TryCompressPosition(rel.z, out this.PositionZ);
+		this.OutOfRange = !flag || !flag2 || !flag3;
 	}
 
 	public RelativePosition(IFpcRole fpc)
@@ -46,39 +46,39 @@ public struct RelativePosition : NetworkMessage, IEquatable<RelativePosition>
 
 	public RelativePosition(NetworkReader reader)
 	{
-		WaypointId = reader.ReadByte();
-		if (WaypointId > 0)
+		this.WaypointId = reader.ReadByte();
+		if (this.WaypointId > 0)
 		{
-			PositionX = reader.ReadShort();
-			PositionY = reader.ReadShort();
-			PositionZ = reader.ReadShort();
+			this.PositionX = reader.ReadShort();
+			this.PositionY = reader.ReadShort();
+			this.PositionZ = reader.ReadShort();
 		}
 		else
 		{
-			PositionX = 0;
-			PositionY = 0;
-			PositionZ = 0;
+			this.PositionX = 0;
+			this.PositionY = 0;
+			this.PositionZ = 0;
 		}
-		OutOfRange = false;
+		this.OutOfRange = false;
 	}
 
 	public RelativePosition(byte waypoint, short x, short y, short z, bool outOfRange)
 	{
-		WaypointId = waypoint;
-		PositionX = x;
-		PositionY = y;
-		PositionZ = z;
-		OutOfRange = outOfRange;
+		this.WaypointId = waypoint;
+		this.PositionX = x;
+		this.PositionY = y;
+		this.PositionZ = z;
+		this.OutOfRange = outOfRange;
 	}
 
 	public void Write(NetworkWriter writer)
 	{
-		writer.WriteByte(WaypointId);
-		if (WaypointId > 0)
+		writer.WriteByte(this.WaypointId);
+		if (this.WaypointId > 0)
 		{
-			writer.WriteShort(PositionX);
-			writer.WriteShort(PositionY);
-			writer.WriteShort(PositionZ);
+			writer.WriteShort(this.PositionX);
+			writer.WriteShort(this.PositionY);
+			writer.WriteShort(this.PositionZ);
 		}
 	}
 
@@ -101,9 +101,9 @@ public struct RelativePosition : NetworkMessage, IEquatable<RelativePosition>
 
 	public bool Equals(RelativePosition other)
 	{
-		if (PositionX == other.PositionX && PositionY == other.PositionY && PositionZ == other.PositionZ)
+		if (this.PositionX == other.PositionX && this.PositionY == other.PositionY && this.PositionZ == other.PositionZ)
 		{
-			return WaypointId == other.WaypointId;
+			return this.WaypointId == other.WaypointId;
 		}
 		return false;
 	}
@@ -129,6 +129,6 @@ public struct RelativePosition : NetworkMessage, IEquatable<RelativePosition>
 
 	public override int GetHashCode()
 	{
-		return (((((WaypointId * 397) ^ PositionX) * 397) ^ PositionZ) * 397) ^ PositionY;
+		return (((((this.WaypointId * 397) ^ this.PositionX) * 397) ^ this.PositionZ) * 397) ^ this.PositionY;
 	}
 }

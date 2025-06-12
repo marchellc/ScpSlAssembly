@@ -66,6 +66,6 @@ public interface IHumeShieldProvider
 	static void GetForHub(ReferenceHub hub, out HumeShieldStat stat, out bool isBarVisible, out float hsMax, out float hsRegen, out Color? warningColor)
 	{
 		stat = hub.playerStats.GetModule<HumeShieldStat>();
-		GetForHub(hub, out isBarVisible, out hsMax, out hsRegen, out warningColor);
+		IHumeShieldProvider.GetForHub(hub, out isBarVisible, out hsMax, out hsRegen, out warningColor);
 	}
 }

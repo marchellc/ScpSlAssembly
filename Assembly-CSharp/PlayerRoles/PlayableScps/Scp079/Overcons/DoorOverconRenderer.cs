@@ -11,7 +11,7 @@ public class DoorOverconRenderer : PooledOverconRenderer
 
 	internal override void SpawnOvercons(Scp079Camera newCamera)
 	{
-		ReturnAll();
+		base.ReturnAll();
 		if (!DoorVariant.DoorsByRoom.TryGetValue(newCamera.Room, out var value))
 		{
 			return;
@@ -37,7 +37,7 @@ public class DoorOverconRenderer : PooledOverconRenderer
 			{
 				vector = item.transform.position;
 			}
-			DoorOvercon fromPool = GetFromPool<DoorOvercon>();
+			DoorOvercon fromPool = base.GetFromPool<DoorOvercon>();
 			fromPool.Target = item;
 			fromPool.transform.position = vector + Vector3.up * 1.25f;
 			fromPool.Rescale(newCamera);

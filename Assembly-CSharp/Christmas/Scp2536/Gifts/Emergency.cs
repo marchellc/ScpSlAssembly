@@ -35,7 +35,7 @@ public class Emergency : Scp2536ItemGift
 			return true;
 		}
 		int uniqueLifeIdentifier = hub.roleManager.CurrentRole.UniqueLifeIdentifier;
-		if (TargetTracker.TryGetValue(uniqueLifeIdentifier, out var value) && Time.time <= value)
+		if (Emergency.TargetTracker.TryGetValue(uniqueLifeIdentifier, out var value) && Time.time <= value)
 		{
 			return true;
 		}
@@ -48,7 +48,7 @@ public class Emergency : Scp2536ItemGift
 
 	public override void ServerGrant(ReferenceHub hub)
 	{
-		GrantAllRewards(hub);
+		base.GrantAllRewards(hub);
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -60,6 +60,6 @@ public class Emergency : Scp2536ItemGift
 	private static void OnTargetAdded(ReferenceHub scp096, ReferenceHub target)
 	{
 		int uniqueLifeIdentifier = target.roleManager.CurrentRole.UniqueLifeIdentifier;
-		TargetTracker[uniqueLifeIdentifier] = Time.time + 30f;
+		Emergency.TargetTracker[uniqueLifeIdentifier] = Time.time + 30f;
 	}
 }

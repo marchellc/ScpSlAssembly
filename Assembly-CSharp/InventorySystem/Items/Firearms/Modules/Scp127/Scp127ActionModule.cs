@@ -35,7 +35,7 @@ public class Scp127ActionModule : AutomaticActionModule, IReloadUnloadValidatorM
 		get
 		{
 			Scp127Tier tierForItem = Scp127TierManagerModule.GetTierForItem(base.Item);
-			FireRateTierPair[] fireRates = _fireRates;
+			FireRateTierPair[] fireRates = this._fireRates;
 			for (int i = 0; i < fireRates.Length; i++)
 			{
 				FireRateTierPair fireRateTierPair = fireRates[i];

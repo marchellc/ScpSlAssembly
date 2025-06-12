@@ -38,35 +38,35 @@ public class PhantomProjectile : MonoBehaviour
 	public void Init(ushort serial)
 	{
 		ThrownProjectile.OnProjectileSpawned += OnSpawned;
-		_projectileSerial = serial;
+		this._projectileSerial = serial;
 		base.gameObject.SetActive(value: false);
 	}
 
 	public void Activate(Transform cam, Vector3 relativePosition)
 	{
 		base.gameObject.SetActive(value: true);
-		_replaceTime = CurTime + _minimalExistenceTime;
-		_scaleFactor = -1f;
-		_transitionFactor = -1f;
-		Object.Destroy(base.gameObject, _minimalExistenceTime + _transitionTime + 0.5f);
+		this._replaceTime = this.CurTime + this._minimalExistenceTime;
+		this._scaleFactor = -1f;
+		this._transitionFactor = -1f;
+		Object.Destroy(base.gameObject, this._minimalExistenceTime + this._transitionTime + 0.5f);
 		base.transform.SetParent(null);
 		base.transform.position = cam.TransformPoint(relativePosition);
-		base.transform.localScale = _startScale;
+		base.transform.localScale = this._startScale;
 	}
 
 	public void Replace()
 	{
-		if (_pickupToReplace != null)
+		if (this._pickupToReplace != null)
 		{
-			if (_transitionFactor < 1f && _pickupToReplace.TryGetComponent<Rigidbody>(out var component))
+			if (this._transitionFactor < 1f && this._pickupToReplace.TryGetComponent<Rigidbody>(out var component))
 			{
-				_transitionFactor = Mathf.Clamp01(_transitionFactor + Time.deltaTime / _transitionTime);
-				Rigidbody.MovePosition(Vector3.Lerp(Rigidbody.position, component.position, _transitionFactor));
-				Rigidbody.linearVelocity = Vector3.Lerp(Rigidbody.linearVelocity, component.linearVelocity, _transitionFactor);
-				Rigidbody.rotation = Quaternion.Lerp(Rigidbody.rotation, component.rotation, _transitionFactor);
+				this._transitionFactor = Mathf.Clamp01(this._transitionFactor + Time.deltaTime / this._transitionTime);
+				this.Rigidbody.MovePosition(Vector3.Lerp(this.Rigidbody.position, component.position, this._transitionFactor));
+				this.Rigidbody.linearVelocity = Vector3.Lerp(this.Rigidbody.linearVelocity, component.linearVelocity, this._transitionFactor);
+				this.Rigidbody.rotation = Quaternion.Lerp(this.Rigidbody.rotation, component.rotation, this._transitionFactor);
 				return;
 			}
-			_pickupToReplace.ToggleRenderers(state: true);
+			this._pickupToReplace.ToggleRenderers(state: true);
 		}
 		Object.Destroy(base.gameObject);
 	}
@@ -78,30 +78,30 @@ public class PhantomProjectile : MonoBehaviour
 
 	private void Update()
 	{
-		if (_scaleFactor < 1f)
+		if (this._scaleFactor < 1f)
 		{
-			_scaleFactor = Mathf.Clamp01(_scaleFactor + Time.deltaTime / _minimalExistenceTime);
-			base.transform.localScale = Vector3.Lerp(_startScale, _targetScale, _scaleFactor);
+			this._scaleFactor = Mathf.Clamp01(this._scaleFactor + Time.deltaTime / this._minimalExistenceTime);
+			base.transform.localScale = Vector3.Lerp(this._startScale, this._targetScale, this._scaleFactor);
 		}
-		if (_hasPickup && !(CurTime < _replaceTime))
+		if (this._hasPickup && !(this.CurTime < this._replaceTime))
 		{
-			Replace();
+			this.Replace();
 		}
 	}
 
 	private void OnSpawned(ThrownProjectile projectile)
 	{
-		if (projectile.Info.Serial == _projectileSerial)
+		if (projectile.Info.Serial == this._projectileSerial)
 		{
-			_hasPickup = true;
-			_pickupToReplace = projectile;
+			this._hasPickup = true;
+			this._pickupToReplace = projectile;
 			if (!NetworkServer.active)
 			{
 				projectile.ToggleRenderers(state: false);
 			}
 			else
 			{
-				Replace();
+				this.Replace();
 			}
 		}
 	}

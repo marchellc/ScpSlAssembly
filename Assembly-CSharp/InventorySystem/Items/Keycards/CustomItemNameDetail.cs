@@ -15,12 +15,12 @@ public class CustomItemNameDetail : SyncedDetail, ICustomizableDetail, IItemName
 
 	public void ParseArguments(ArraySegment<string> args)
 	{
-		_customText = args.At(0).Replace('_', ' ');
+		CustomItemNameDetail._customText = args.At(0).Replace('_', ' ');
 	}
 
 	public void SetArguments(ArraySegment<object> args)
 	{
-		_customText = (string)args.At(0);
+		CustomItemNameDetail._customText = (string)args.At(0);
 	}
 
 	public override void WriteDefault(NetworkWriter writer)
@@ -30,12 +30,12 @@ public class CustomItemNameDetail : SyncedDetail, ICustomizableDetail, IItemName
 
 	public override void WriteNewItem(KeycardItem item, NetworkWriter writer)
 	{
-		writer.WriteString(_customText);
+		writer.WriteString(CustomItemNameDetail._customText);
 	}
 
 	public override void WriteNewPickup(KeycardPickup pickup, NetworkWriter writer)
 	{
-		writer.WriteString(_customText);
+		writer.WriteString(CustomItemNameDetail._customText);
 	}
 
 	protected override void ApplyDetail(KeycardGfx target, NetworkReader reader, KeycardItem template)

@@ -19,21 +19,21 @@ public readonly struct NewsList : IEquatable<NewsList>, IJsonSerializable
 
 	public bool Equals(NewsList other)
 	{
-		return appid == other.appid;
+		return this.appid == other.appid;
 	}
 
 	public override bool Equals(object obj)
 	{
 		if (obj is NewsList other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		int num = appid;
+		int num = this.appid;
 		return num.GetHashCode();
 	}
 

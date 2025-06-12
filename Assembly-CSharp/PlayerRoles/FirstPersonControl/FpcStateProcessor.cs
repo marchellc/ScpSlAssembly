@@ -55,18 +55,18 @@ public class FpcStateProcessor
 	{
 		get
 		{
-			if (_layerMask == 0)
+			if (FpcStateProcessor._layerMask == 0)
 			{
 				int layer = LayerMask.NameToLayer("Player");
 				for (int i = 0; i < 32; i++)
 				{
 					if (!Physics.GetIgnoreLayerCollision(layer, i))
 					{
-						_layerMask |= 1 << i;
+						FpcStateProcessor._layerMask |= 1 << i;
 					}
 				}
 			}
-			return _layerMask;
+			return FpcStateProcessor._layerMask;
 		}
 	}
 
@@ -74,14 +74,14 @@ public class FpcStateProcessor
 	{
 		get
 		{
-			if (Hub.roleManager.CurrentRole.ActiveTime <= _respawnImmunity)
+			if (this.Hub.roleManager.CurrentRole.ActiveTime <= this._respawnImmunity)
 			{
 				return 0f;
 			}
-			float num = _useRate * Hub.inventory.StaminaUsageMultiplier;
-			for (int i = 0; i < Hub.playerEffectsController.EffectsLength; i++)
+			float num = this._useRate * this.Hub.inventory.StaminaUsageMultiplier;
+			for (int i = 0; i < this.Hub.playerEffectsController.EffectsLength; i++)
 			{
-				if (Hub.playerEffectsController.AllEffects[i] is IStaminaModifier { StaminaModifierActive: not false } staminaModifier)
+				if (this.Hub.playerEffectsController.AllEffects[i] is IStaminaModifier { StaminaModifierActive: not false } staminaModifier)
 				{
 					num *= staminaModifier.StaminaUsageMultiplier;
 				}
@@ -94,10 +94,10 @@ public class FpcStateProcessor
 	{
 		get
 		{
-			float num = _regenerationOverTime.Evaluate((float)_regenStopwatch.Elapsed.TotalSeconds);
-			for (int i = 0; i < Hub.playerEffectsController.EffectsLength; i++)
+			float num = this._regenerationOverTime.Evaluate((float)this._regenStopwatch.Elapsed.TotalSeconds);
+			for (int i = 0; i < this.Hub.playerEffectsController.EffectsLength; i++)
 			{
-				if (Hub.playerEffectsController.AllEffects[i] is IStaminaModifier { StaminaModifierActive: not false } staminaModifier)
+				if (this.Hub.playerEffectsController.AllEffects[i] is IStaminaModifier { StaminaModifierActive: not false } staminaModifier)
 				{
 					num *= staminaModifier.StaminaRegenMultiplier;
 				}
@@ -110,19 +110,19 @@ public class FpcStateProcessor
 	{
 		get
 		{
-			for (int i = 0; i < Hub.playerEffectsController.EffectsLength; i++)
+			for (int i = 0; i < this.Hub.playerEffectsController.EffectsLength; i++)
 			{
-				if (Hub.playerEffectsController.AllEffects[i] is IStaminaModifier { StaminaModifierActive: not false, SprintingDisabled: not false })
+				if (this.Hub.playerEffectsController.AllEffects[i] is IStaminaModifier { StaminaModifierActive: not false, SprintingDisabled: not false })
 				{
 					return true;
 				}
 			}
-			return Hub.inventory.SprintingDisabled;
+			return this.Hub.inventory.SprintingDisabled;
 		}
 	}
 
 	public FpcStateProcessor(ReferenceHub hub, FirstPersonMovementModule module)
-		: this(hub, module, hub.IsHuman() ? DefaultUseRate : 0f, DefaultSpawnImmunity, DefaultRegenCooldown, DefaultRegenSpeed, 3.11f)
+		: this(hub, module, hub.IsHuman() ? FpcStateProcessor.DefaultUseRate : 0f, FpcStateProcessor.DefaultSpawnImmunity, FpcStateProcessor.DefaultRegenCooldown, FpcStateProcessor.DefaultRegenSpeed, 3.11f)
 	{
 	}
 
@@ -133,56 +133,56 @@ public class FpcStateProcessor
 
 	public FpcStateProcessor(ReferenceHub hub, FirstPersonMovementModule module, float useRate, float spawnImmunity, AnimationCurve regenCurve)
 	{
-		Hub = hub;
-		_mod = module;
-		_camPivot = Hub.PlayerCameraReference.parent;
-		_stat = Hub.playerStats.GetModule<StaminaStat>();
-		_firstUpdate = NetworkServer.active || Hub.isLocalPlayer;
-		CrouchPercent = 0f;
-		_useRate = useRate;
-		_respawnImmunity = spawnImmunity;
-		_regenerationOverTime = regenCurve;
+		this.Hub = hub;
+		this._mod = module;
+		this._camPivot = this.Hub.PlayerCameraReference.parent;
+		this._stat = this.Hub.playerStats.GetModule<StaminaStat>();
+		this._firstUpdate = NetworkServer.active || this.Hub.isLocalPlayer;
+		this.CrouchPercent = 0f;
+		this._useRate = useRate;
+		this._respawnImmunity = spawnImmunity;
+		this._regenerationOverTime = regenCurve;
 		if (NetworkServer.active)
 		{
-			_regenStopwatch = Stopwatch.StartNew();
+			this._regenStopwatch = Stopwatch.StartNew();
 		}
 	}
 
 	public virtual void ClientUpdateInput(FirstPersonMovementModule moduleRef, float walkSpeed, out PlayerMovementState valueToSend)
 	{
-		if (SprintInput.KeyDown)
+		if (FpcStateProcessor.SprintInput.KeyDown)
 		{
-			SneakInput.ResetToggle();
+			FpcStateProcessor.SneakInput.ResetToggle();
 		}
-		if (SneakInput.KeyDown)
+		if (FpcStateProcessor.SneakInput.KeyDown)
 		{
-			SprintInput.ResetToggle();
+			FpcStateProcessor.SprintInput.ResetToggle();
 		}
 		bool flag = moduleRef.CurrentMovementState == PlayerMovementState.Sprinting;
 		bool flag2 = false;
-		if (SneakInput.IsActive || flag2)
+		if (FpcStateProcessor.SneakInput.IsActive || flag2)
 		{
 			valueToSend = ((!flag2) ? PlayerMovementState.Sneaking : PlayerMovementState.Crouching);
 			moduleRef.CurrentMovementState = valueToSend;
 			return;
 		}
-		if (!SprintInput.IsActive)
+		if (!FpcStateProcessor.SprintInput.IsActive)
 		{
 			valueToSend = PlayerMovementState.Walking;
 			moduleRef.CurrentMovementState = valueToSend;
 			return;
 		}
-		bool flag3 = _stat.CurValue > 0f;
-		if (flag3 && !SprintingDisabled && (flag || _stat.CurValue > 0.05f))
+		bool flag3 = this._stat.CurValue > 0f;
+		if (flag3 && !this.SprintingDisabled && (flag || this._stat.CurValue > 0.05f))
 		{
-			bool flag4 = _mod.Motor.Velocity.SqrMagnitudeIgnoreY() < walkSpeed * walkSpeed;
+			bool flag4 = this._mod.Motor.Velocity.SqrMagnitudeIgnoreY() < walkSpeed * walkSpeed;
 			valueToSend = (flag4 ? PlayerMovementState.Walking : PlayerMovementState.Sprinting);
 			moduleRef.CurrentMovementState = PlayerMovementState.Sprinting;
 			return;
 		}
 		if (!flag3)
 		{
-			SprintInput.ResetAll();
+			FpcStateProcessor.SprintInput.ResetAll();
 		}
 		valueToSend = PlayerMovementState.Walking;
 		moduleRef.CurrentMovementState = valueToSend;
@@ -191,81 +191,81 @@ public class FpcStateProcessor
 	public virtual PlayerMovementState UpdateMovementState(PlayerMovementState state)
 	{
 		bool isCrouching = state == PlayerMovementState.Crouching;
-		float height = _mod.CharacterControllerSettings.Height;
-		float num = height * _mod.CrouchHeightRatio;
-		if (UpdateCrouching(isCrouching, num, height) || _firstUpdate)
+		float height = this._mod.CharacterControllerSettings.Height;
+		float num = height * this._mod.CrouchHeightRatio;
+		if (this.UpdateCrouching(isCrouching, num, height) || this._firstUpdate)
 		{
-			_firstUpdate = false;
-			float num2 = Mathf.Lerp(0f, (height - num) / 2f, CrouchPercent);
-			float num3 = Mathf.Lerp(height, num, CrouchPercent);
-			float radius = _mod.CharController.radius;
-			_mod.CharController.height = num3;
-			_mod.CharController.center = Vector3.down * num2;
-			_camPivot.localPosition = Vector3.up * (num3 / 2f - num2 - radius + 0.088f);
+			this._firstUpdate = false;
+			float num2 = Mathf.Lerp(0f, (height - num) / 2f, this.CrouchPercent);
+			float num3 = Mathf.Lerp(height, num, this.CrouchPercent);
+			float radius = this._mod.CharController.radius;
+			this._mod.CharController.height = num3;
+			this._mod.CharController.center = Vector3.down * num2;
+			this._camPivot.localPosition = Vector3.up * (num3 / 2f - num2 - radius + 0.088f);
 		}
-		if (!NetworkServer.active || _useRate == 0f)
+		if (!NetworkServer.active || this._useRate == 0f)
 		{
 			return state;
 		}
 		if (state == PlayerMovementState.Sprinting)
 		{
-			if (_stat.CurValue > 0f && !SprintingDisabled)
+			if (this._stat.CurValue > 0f && !this.SprintingDisabled)
 			{
-				float value = _stat.CurValue - Time.deltaTime * ServerUseRate;
-				_stat.CurValue = Mathf.Clamp01(value);
-				_regenStopwatch.Restart();
+				float value = this._stat.CurValue - Time.deltaTime * this.ServerUseRate;
+				this._stat.CurValue = Mathf.Clamp01(value);
+				this._regenStopwatch.Restart();
 				return PlayerMovementState.Sprinting;
 			}
 			state = PlayerMovementState.Walking;
 		}
-		if (_stat.CurValue >= 1f)
+		if (this._stat.CurValue >= 1f)
 		{
 			return state;
 		}
-		_stat.CurValue = Mathf.Clamp01(_stat.CurValue + ServerRegenRate * Time.deltaTime);
+		this._stat.CurValue = Mathf.Clamp01(this._stat.CurValue + this.ServerRegenRate * Time.deltaTime);
 		return state;
 	}
 
 	private bool UpdateCrouching(bool isCrouching, float cH, float nH)
 	{
-		if (CrouchPercent <= 0f && !isCrouching)
+		if (this.CrouchPercent <= 0f && !isCrouching)
 		{
 			return false;
 		}
-		if (isCrouching && cH < nH && _mod.CrouchSpeed != 0f)
+		if (isCrouching && cH < nH && this._mod.CrouchSpeed != 0f)
 		{
-			CrouchPercent = IncreasedCrouch();
+			this.CrouchPercent = this.IncreasedCrouch();
 		}
 		else
 		{
-			float maxHeight = GetMaxHeight(Hub.transform.position, cH, nH);
-			CrouchPercent = Mathf.Max(DecreasedCrouch(), Mathf.InverseLerp(nH, cH, maxHeight));
+			float maxHeight = this.GetMaxHeight(this.Hub.transform.position, cH, nH);
+			this.CrouchPercent = Mathf.Max(this.DecreasedCrouch(), Mathf.InverseLerp(nH, cH, maxHeight));
 		}
 		if (!NetworkServer.active)
 		{
-			return Hub.isLocalPlayer;
+			return this.Hub.isLocalPlayer;
 		}
 		return true;
 	}
 
 	private float DecreasedCrouch()
 	{
-		float t = Mathf.Abs(CrouchPercent - 0.5f) * 2f;
+		float t = Mathf.Abs(this.CrouchPercent - 0.5f) * 2f;
 		float num = Mathf.Lerp(5f, 0.4f, t);
-		return Math.Max(0f, CrouchPercent - Time.deltaTime * num);
+		return Math.Max(0f, this.CrouchPercent - Time.deltaTime * num);
 	}
 
 	private float IncreasedCrouch()
 	{
-		float num = Mathf.SmoothStep(4.5f, 0.8f, CrouchPercent);
-		return Mathf.Min(1f, CrouchPercent + Time.deltaTime * num);
+		float num = Mathf.SmoothStep(4.5f, 0.8f, this.CrouchPercent);
+		return Mathf.Min(1f, this.CrouchPercent + Time.deltaTime * num);
 	}
 
 	private float GetMaxHeight(Vector3 pos, float cH, float nH)
 	{
-		float radius = _mod.CharacterControllerSettings.Radius;
+		float radius = this._mod.CharacterControllerSettings.Radius;
 		pos.y -= nH / 2f - radius;
-		if (!Physics.SphereCast(pos, radius, Vector3.up, out var hitInfo, nH, Mask))
+		if (!Physics.SphereCast(pos, radius, Vector3.up, out var hitInfo, nH, FpcStateProcessor.Mask))
 		{
 			return nH;
 		}

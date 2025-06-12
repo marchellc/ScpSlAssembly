@@ -61,7 +61,7 @@ public static class PlayerRolesUtils
 	public static bool IsHuman(this RoleTypeId role)
 	{
 		Team team = role.GetTeam();
-		if (team != Team.Dead && team != 0)
+		if (team != Team.Dead && team != Team.SCPs)
 		{
 			return !role.IsFlamingo();
 		}
@@ -117,7 +117,7 @@ public static class PlayerRolesUtils
 	public static bool IsSCP(this ReferenceHub hub, bool includeZombies = true)
 	{
 		PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
-		if (currentRole.Team != 0)
+		if (currentRole.Team != Team.SCPs)
 		{
 			return false;
 		}
@@ -146,7 +146,7 @@ public static class PlayerRolesUtils
 
 	public static void ForEachRole<T>(Action<T> action) where T : PlayerRoleBase
 	{
-		ForEachRole(delegate(ReferenceHub x, T y)
+		PlayerRolesUtils.ForEachRole(delegate(ReferenceHub x, T y)
 		{
 			action?.Invoke(y);
 		});
@@ -154,7 +154,7 @@ public static class PlayerRolesUtils
 
 	public static void ForEachRole<T>(Action<ReferenceHub> action) where T : PlayerRoleBase
 	{
-		ForEachRole(delegate(ReferenceHub x, T y)
+		PlayerRolesUtils.ForEachRole(delegate(ReferenceHub x, T y)
 		{
 			action?.Invoke(x);
 		});

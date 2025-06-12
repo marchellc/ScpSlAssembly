@@ -22,10 +22,10 @@ public class PostProcessSubEffect : HypothermiaSubEffectBase
 			{
 				return 0f;
 			}
-			float num = _effectCurve.Evaluate(fx._temperature);
+			float num = this._effectCurve.Evaluate(fx._temperature);
 			if (fx._isSCP)
 			{
-				num *= _scpIntensityMultiplier;
+				num *= this._scpIntensityMultiplier;
 			}
 			return num;
 		}
@@ -52,15 +52,15 @@ public class PostProcessSubEffect : HypothermiaSubEffectBase
 	[SerializeField]
 	private TemperatureSubEffect _temp;
 
-	public override bool IsActive => _temp.IsActive;
+	public override bool IsActive => this._temp.IsActive;
 
 	internal override void UpdateEffect(float curExposure)
 	{
 		if (base.Hub.isLocalPlayer || base.MainEffect.IsSpectated)
 		{
-			_isAlive = base.Hub.IsAlive();
-			_isSCP = base.Hub.IsSCP();
-			_temperature = _temp.CurTemperature;
+			this._isAlive = base.Hub.IsAlive();
+			this._isSCP = base.Hub.IsSCP();
+			this._temperature = this._temp.CurTemperature;
 		}
 	}
 

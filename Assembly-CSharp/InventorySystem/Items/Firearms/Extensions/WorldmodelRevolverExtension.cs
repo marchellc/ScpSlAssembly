@@ -27,39 +27,39 @@ public class WorldmodelRevolverExtension : MonoBehaviour, IWorldmodelExtension, 
 
 		public void Init(Firearm fa)
 		{
-			_attachment.InitCache(fa);
-			_worldmodelMode = false;
+			this._attachment.InitCache(fa);
+			this._worldmodelMode = false;
 		}
 
 		public void Init(FirearmWorldmodel worldmodel)
 		{
-			_worldmodelMode = true;
-			if (!_filter.HasValue)
+			this._worldmodelMode = true;
+			if (!this._filter.HasValue)
 			{
-				_attachment.TryGetFilter(worldmodel.Identifier.TypeId, out var filter);
-				_filter = filter;
+				this._attachment.TryGetFilter(worldmodel.Identifier.TypeId, out var filter);
+				this._filter = filter;
 			}
-			_attachmentActive = (worldmodel.AttachmentCode & _filter.Value) != 0;
+			this._attachmentActive = (worldmodel.AttachmentCode & this._filter.Value) != 0;
 		}
 
 		public void UpdateAmount(int amt, int offset)
 		{
-			if (Setup())
+			if (this.Setup())
 			{
 				for (int i = 0; i < amt; i++)
 				{
-					GetSafe(_liveRounds, i + offset).SetActive(value: true);
+					this.GetSafe(this._liveRounds, i + offset).SetActive(value: true);
 				}
 			}
 		}
 
 		public void UpdateAmount(ushort serial, int offset)
 		{
-			if (!Setup())
+			if (!this.Setup())
 			{
 				return;
 			}
-			int num = Mathf.Min(_liveRounds.Length, _dischargedRounds.Length);
+			int num = Mathf.Min(this._liveRounds.Length, this._dischargedRounds.Length);
 			CylinderAmmoModule.Chamber[] chambersArrayForSerial = CylinderAmmoModule.GetChambersArrayForSerial(serial, num);
 			for (int i = 0; i < num; i++)
 			{
@@ -67,10 +67,10 @@ public class WorldmodelRevolverExtension : MonoBehaviour, IWorldmodelExtension, 
 				switch (chambersArrayForSerial[i].ContextState)
 				{
 				case CylinderAmmoModule.ChamberState.Live:
-					GetSafe(_liveRounds, index).SetActive(value: true);
+					this.GetSafe(this._liveRounds, index).SetActive(value: true);
 					break;
 				case CylinderAmmoModule.ChamberState.Discharged:
-					GetSafe(_dischargedRounds, index).SetActive(value: true);
+					this.GetSafe(this._dischargedRounds, index).SetActive(value: true);
 					break;
 				}
 			}
@@ -78,21 +78,21 @@ public class WorldmodelRevolverExtension : MonoBehaviour, IWorldmodelExtension, 
 
 		private bool Setup()
 		{
-			GameObject[] liveRounds = _liveRounds;
+			GameObject[] liveRounds = this._liveRounds;
 			for (int i = 0; i < liveRounds.Length; i++)
 			{
 				liveRounds[i].SetActive(value: false);
 			}
-			liveRounds = _dischargedRounds;
+			liveRounds = this._dischargedRounds;
 			for (int i = 0; i < liveRounds.Length; i++)
 			{
 				liveRounds[i].SetActive(value: false);
 			}
-			if (!_worldmodelMode)
+			if (!this._worldmodelMode)
 			{
-				return _attachment.Instance.IsEnabled;
+				return this._attachment.Instance.IsEnabled;
 			}
-			return _attachmentActive;
+			return this._attachmentActive;
 		}
 
 		private GameObject GetSafe(GameObject[] arr, int index)
@@ -117,7 +117,7 @@ public class WorldmodelRevolverExtension : MonoBehaviour, IWorldmodelExtension, 
 
 	public void OnDestroyExtension()
 	{
-		if (_eventsAssigned)
+		if (this._eventsAssigned)
 		{
 			DoubleActionModule.OnCockedChanged -= OnCockedChanged;
 			CylinderAmmoModule.OnChambersModified -= UpdateChambers;
@@ -126,36 +126,36 @@ public class WorldmodelRevolverExtension : MonoBehaviour, IWorldmodelExtension, 
 
 	public void SetupWorldmodel(FirearmWorldmodel worldmodel)
 	{
-		RoundsSet[] roundsSets = _roundsSets;
+		RoundsSet[] roundsSets = this._roundsSets;
 		for (int i = 0; i < roundsSets.Length; i++)
 		{
 			roundsSets[i].Init(worldmodel);
 		}
-		_serial = worldmodel.Identifier.SerialNumber;
-		_hammer.Polarity = DoubleActionModule.GetCocked(_serial);
-		if (!_eventsAssigned)
+		this._serial = worldmodel.Identifier.SerialNumber;
+		this._hammer.Polarity = DoubleActionModule.GetCocked(this._serial);
+		if (!this._eventsAssigned)
 		{
-			_eventsAssigned = true;
+			this._eventsAssigned = true;
 			DoubleActionModule.OnCockedChanged += OnCockedChanged;
 			CylinderAmmoModule.OnChambersModified += UpdateChambers;
-			UpdateChambers(worldmodel.Identifier.SerialNumber);
+			this.UpdateChambers(worldmodel.Identifier.SerialNumber);
 		}
 	}
 
 	private void UpdateChambers(ushort serial)
 	{
-		RoundsSet[] roundsSets = _roundsSets;
+		RoundsSet[] roundsSets = this._roundsSets;
 		for (int i = 0; i < roundsSets.Length; i++)
 		{
-			roundsSets[i].UpdateAmount(serial, _chambersOffset);
+			roundsSets[i].UpdateAmount(serial, this._chambersOffset);
 		}
 	}
 
 	private void OnCockedChanged(ushort serial, bool cocked)
 	{
-		if (serial == _serial)
+		if (serial == this._serial)
 		{
-			_hammer.Polarity = cocked;
+			this._hammer.Polarity = cocked;
 		}
 	}
 }

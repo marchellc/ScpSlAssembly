@@ -23,29 +23,29 @@ public class CameraShakeController : MonoBehaviour
 	{
 		get
 		{
-			return _camera.fieldOfView;
+			return this._camera.fieldOfView;
 		}
 		private set
 		{
-			_camera.fieldOfView = value;
+			this._camera.fieldOfView = value;
 		}
 	}
 
 	public static void AddEffect(IShakeEffect effect)
 	{
-		Singleton._effects.Add(effect);
+		CameraShakeController.Singleton._effects.Add(effect);
 	}
 
 	private void Start()
 	{
-		_startPos = base.transform.localPosition;
-		Singleton = this;
-		_viewmodelRoot = GetComponentInChildren<SharedHandsController>().transform;
+		this._startPos = base.transform.localPosition;
+		CameraShakeController.Singleton = this;
+		this._viewmodelRoot = base.GetComponentInChildren<SharedHandsController>().transform;
 	}
 
 	private void OnDisable()
 	{
-		_effects.Clear();
+		this._effects.Clear();
 	}
 
 	private void LateUpdate()
@@ -54,23 +54,23 @@ public class CameraShakeController : MonoBehaviour
 		{
 			return;
 		}
-		if (_effects.Count == 0)
+		if (this._effects.Count == 0)
 		{
 			if (hub.inventory.CurInstance is IZoomModifyingItem zoomModifyingItem)
 			{
-				CamerasFOV = 70f / zoomModifyingItem.ZoomAmount;
+				this.CamerasFOV = 70f / zoomModifyingItem.ZoomAmount;
 			}
 			return;
 		}
 		HashSet<float> hashSet = HashSetPool<float>.Shared.Rent();
 		Quaternion identity = Quaternion.identity;
 		Quaternion identity2 = Quaternion.identity;
-		Vector3 startPos = _startPos;
-		for (int num = _effects.Count - 1; num >= 0; num--)
+		Vector3 startPos = this._startPos;
+		for (int num = this._effects.Count - 1; num >= 0; num--)
 		{
-			if (!_effects[num].GetEffect(hub, out var shakeValues))
+			if (!this._effects[num].GetEffect(hub, out var shakeValues))
 			{
-				_effects.RemoveAt(num);
+				this._effects.RemoveAt(num);
 			}
 			else
 			{
@@ -101,19 +101,19 @@ public class CameraShakeController : MonoBehaviour
 			{
 				num2 += item - 1f;
 			}
-			CamerasFOV = 70f * (num2 + 1f);
+			this.CamerasFOV = 70f * (num2 + 1f);
 		}
 		else
 		{
-			CamerasFOV = 70f;
+			this.CamerasFOV = 70f;
 		}
 		if (hub.inventory.CurInstance is IZoomModifyingItem zoomModifyingItem2)
 		{
-			CamerasFOV /= zoomModifyingItem2.ZoomAmount;
+			this.CamerasFOV /= zoomModifyingItem2.ZoomAmount;
 		}
 		HashSetPool<float>.Shared.Return(hashSet);
 		base.transform.SetLocalPositionAndRotation(Vector3.zero, identity);
 		base.transform.position += startPos;
-		_viewmodelRoot.localRotation = identity2;
+		this._viewmodelRoot.localRotation = identity2;
 	}
 }

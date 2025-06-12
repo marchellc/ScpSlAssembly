@@ -33,7 +33,7 @@ public class SharedHandsController : MonoBehaviour
 
 		public readonly void Disable()
 		{
-			GameObject[] gameObjects = GameObjects;
+			GameObject[] gameObjects = this.GameObjects;
 			for (int i = 0; i < gameObjects.Length; i++)
 			{
 				gameObjects[i].SetActive(value: false);
@@ -42,12 +42,12 @@ public class SharedHandsController : MonoBehaviour
 
 		public readonly void Select()
 		{
-			Renderer[] renderers = Renderers;
+			Renderer[] renderers = this.Renderers;
 			for (int i = 0; i < renderers.Length; i++)
 			{
-				renderers[i].sharedMaterial = Material;
+				renderers[i].sharedMaterial = this.Material;
 			}
-			GameObject[] gameObjects = GameObjects;
+			GameObject[] gameObjects = this.GameObjects;
 			for (int i = 0; i < gameObjects.Length; i++)
 			{
 				gameObjects[i].SetActive(value: true);
@@ -68,12 +68,12 @@ public class SharedHandsController : MonoBehaviour
 
 		public readonly void UpdateIK()
 		{
-			Vector3 position = Wrist.position;
-			Vector3 vector = Forearm.TransformPoint(WristOffset) - position;
-			Vector3 position2 = MovablePart.position;
+			Vector3 position = this.Wrist.position;
+			Vector3 vector = this.Forearm.TransformPoint(this.WristOffset) - position;
+			Vector3 position2 = this.MovablePart.position;
 			if (!float.IsNaN(position2.x))
 			{
-				MovablePart.position = position2 - vector;
+				this.MovablePart.position = position2 - vector;
 			}
 		}
 	}
@@ -104,27 +104,27 @@ public class SharedHandsController : MonoBehaviour
 
 	public static void UpdateInstance(ItemViewmodelBase ivb)
 	{
-		if (_singletonSet)
+		if (SharedHandsController._singletonSet)
 		{
 			if (ivb is AnimatedViewmodelBase animatedViewmodelBase && animatedViewmodelBase != null && !animatedViewmodelBase.DisableSharedHands)
 			{
-				Singleton.Hands.gameObject.SetActive(value: true);
-				Singleton.Hands.avatar = animatedViewmodelBase.AnimatorAvatar;
-				Singleton.Hands.runtimeAnimatorController = animatedViewmodelBase.AnimatorRuntimeController;
-				Singleton._trackedPosition = animatedViewmodelBase.AnimatorTransform;
-				Singleton.Hands.Rebind();
+				SharedHandsController.Singleton.Hands.gameObject.SetActive(value: true);
+				SharedHandsController.Singleton.Hands.avatar = animatedViewmodelBase.AnimatorAvatar;
+				SharedHandsController.Singleton.Hands.runtimeAnimatorController = animatedViewmodelBase.AnimatorRuntimeController;
+				SharedHandsController.Singleton._trackedPosition = animatedViewmodelBase.AnimatorTransform;
+				SharedHandsController.Singleton.Hands.Rebind();
 			}
 			else
 			{
-				Singleton.Hands.gameObject.SetActive(value: false);
+				SharedHandsController.Singleton.Hands.gameObject.SetActive(value: false);
 			}
 		}
 	}
 
 	private void LateUpdate()
 	{
-		UpdateTrackedPosition();
-		IKWristArmPair[] ikWrists = _ikWrists;
+		this.UpdateTrackedPosition();
+		IKWristArmPair[] ikWrists = this._ikWrists;
 		foreach (IKWristArmPair iKWristArmPair in ikWrists)
 		{
 			iKWristArmPair.UpdateIK();
@@ -133,75 +133,75 @@ public class SharedHandsController : MonoBehaviour
 
 	private void UpdateTrackedPosition()
 	{
-		if (!(_trackedPosition == null))
+		if (!(this._trackedPosition == null))
 		{
-			Hands.transform.localScale = _trackedPosition.localScale;
-			Hands.transform.SetPositionAndRotation(_trackedPosition.position, _trackedPosition.rotation);
+			this.Hands.transform.localScale = this._trackedPosition.localScale;
+			this.Hands.transform.SetPositionAndRotation(this._trackedPosition.position, this._trackedPosition.rotation);
 		}
 	}
 
 	private void Awake()
 	{
-		Singleton = this;
-		_singletonSet = true;
-		Hands.fireEvents = false;
+		SharedHandsController.Singleton = this;
+		SharedHandsController._singletonSet = true;
+		this.Hands.fireEvents = false;
 		AnimatedViewmodelBase.OnSwayUpdated += UpdateTrackedPosition;
-		if (!_eventAssigned)
+		if (!SharedHandsController._eventAssigned)
 		{
 			PlayerRoleManager.OnRoleChanged += RoleChanged;
-			_eventAssigned = true;
+			SharedHandsController._eventAssigned = true;
 		}
 	}
 
 	private void OnDestroy()
 	{
 		AnimatedViewmodelBase.OnSwayUpdated -= UpdateTrackedPosition;
-		_singletonSet = false;
+		SharedHandsController._singletonSet = false;
 	}
 
 	private static void RoleChanged(ReferenceHub hub, PlayerRoleBase oldRole, PlayerRoleBase newRole)
 	{
-		if (hub.isLocalPlayer && !(Singleton == null))
+		if (hub.isLocalPlayer && !(SharedHandsController.Singleton == null))
 		{
-			SetRoleGloves(newRole.RoleTypeId);
+			SharedHandsController.SetRoleGloves(newRole.RoleTypeId);
 		}
 	}
 
 	private void SetVisuals(HandsVisuals visuals)
 	{
-		_lastSet?.Disable();
-		_lastSet = visuals;
+		this._lastSet?.Disable();
+		this._lastSet = visuals;
 		visuals.Select();
 	}
 
 	private void SetVisuals(RoleTypeId role, Team team)
 	{
-		_defaultVisuals.Disable();
-		RoleOverride[] roleOverrides = _roleOverrides;
+		this._defaultVisuals.Disable();
+		RoleOverride[] roleOverrides = this._roleOverrides;
 		for (int i = 0; i < roleOverrides.Length; i++)
 		{
 			RoleOverride roleOverride = roleOverrides[i];
 			if (roleOverride.Role == role)
 			{
-				SetVisuals(roleOverride.Visuals);
+				this.SetVisuals(roleOverride.Visuals);
 				return;
 			}
 		}
-		TeamOverride[] teamOverrides = _teamOverrides;
+		TeamOverride[] teamOverrides = this._teamOverrides;
 		for (int i = 0; i < teamOverrides.Length; i++)
 		{
 			TeamOverride teamOverride = teamOverrides[i];
 			if (teamOverride.Team == team)
 			{
-				SetVisuals(teamOverride.Visuals);
+				this.SetVisuals(teamOverride.Visuals);
 				return;
 			}
 		}
-		SetVisuals(_defaultVisuals);
+		this.SetVisuals(this._defaultVisuals);
 	}
 
 	public static void SetRoleGloves(RoleTypeId id)
 	{
-		Singleton.SetVisuals(id, id.GetTeam());
+		SharedHandsController.Singleton.SetVisuals(id, id.GetTeam());
 	}
 }

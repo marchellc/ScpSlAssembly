@@ -56,18 +56,18 @@ public class Scp106Minimap : MonoBehaviour, ICursorOverride
 
 	private float CurTime => Time.timeSinceLevelLoad;
 
-	private bool InElevator => CurTime - _lastElevatorRide < 0.2f;
+	private bool InElevator => this.CurTime - this._lastElevatorRide < 0.2f;
 
 	private float Scale
 	{
 		get
 		{
-			return _scaleCache;
+			return this._scaleCache;
 		}
 		set
 		{
-			_scaleCache = Mathf.Clamp01(value);
-			_tr.localScale = Vector3.one * _scaleCache;
+			this._scaleCache = Mathf.Clamp01(value);
+			this._tr.localScale = Vector3.one * this._scaleCache;
 		}
 	}
 
@@ -75,7 +75,7 @@ public class Scp106Minimap : MonoBehaviour, ICursorOverride
 	{
 		get
 		{
-			if (!IsVisible)
+			if (!this.IsVisible)
 			{
 				return CursorOverrideMode.NoOverride;
 			}
@@ -93,25 +93,25 @@ public class Scp106Minimap : MonoBehaviour, ICursorOverride
 
 	private void Setup()
 	{
-		_poolSize = RoomIdentifier.AllRoomIdentifiers.Count;
-		if (_pool == null || _poolSize > _pool.Length)
+		this._poolSize = RoomIdentifier.AllRoomIdentifiers.Count;
+		if (Scp106Minimap._pool == null || this._poolSize > Scp106Minimap._pool.Length)
 		{
-			_pool = new Scp106MinimapElement[_poolSize];
+			Scp106Minimap._pool = new Scp106MinimapElement[this._poolSize];
 		}
-		for (int i = 0; i < _poolSize; i++)
+		for (int i = 0; i < this._poolSize; i++)
 		{
-			Scp106MinimapElement scp106MinimapElement = Object.Instantiate(_template, _offsetTransform);
+			Scp106MinimapElement scp106MinimapElement = Object.Instantiate(this._template, this._offsetTransform);
 			scp106MinimapElement.Rt.localScale = Vector3.one;
-			_pool[i] = scp106MinimapElement;
+			Scp106Minimap._pool[i] = scp106MinimapElement;
 		}
-		_setUp = true;
+		this._setUp = true;
 	}
 
 	private void OnElevatorMoved(Bounds elevatorBounds, ElevatorChamber chamber, Vector3 deltaPos, Quaternion deltaRot)
 	{
 		if (elevatorBounds.Contains(MainCameraController.CurrentCamera.position))
 		{
-			_lastElevatorRide = CurTime;
+			this._lastElevatorRide = this.CurTime;
 		}
 	}
 
@@ -119,8 +119,8 @@ public class Scp106Minimap : MonoBehaviour, ICursorOverride
 	{
 		CursorManager.Register(this);
 		ElevatorChamber.OnElevatorMoved += OnElevatorMoved;
-		Singleton = this;
-		_tr = base.transform;
+		Scp106Minimap.Singleton = this;
+		this._tr = base.transform;
 	}
 
 	private void OnDestroy()
@@ -135,51 +135,51 @@ public class Scp106Minimap : MonoBehaviour, ICursorOverride
 		{
 			return;
 		}
-		if (!_setUp)
+		if (!this._setUp)
 		{
-			Setup();
+			this.Setup();
 		}
 		if (Scp106MinimapElement.AnyHighlighted)
 		{
 			RectTransform rt = Scp106MinimapElement.LastHighlighted.Rt;
-			_cursor.SetParent(rt);
-			_cursor.position = Input.mousePosition;
-			_cursor.gameObject.SetActive(value: true);
+			this._cursor.SetParent(rt);
+			this._cursor.position = Input.mousePosition;
+			this._cursor.gameObject.SetActive(value: true);
 		}
 		else
 		{
-			_cursor.gameObject.SetActive(value: false);
+			this._cursor.gameObject.SetActive(value: false);
 		}
-		Scale = Mathf.MoveTowards(Scale, IsVisible ? 1 : 0, 19f * Time.deltaTime);
-		if (!(Scale <= 0f))
+		this.Scale = Mathf.MoveTowards(this.Scale, this.IsVisible ? 1 : 0, 19f * Time.deltaTime);
+		if (!(this.Scale <= 0f))
 		{
 			Transform currentCamera = MainCameraController.CurrentCamera;
 			Vector3 position = currentCamera.position;
-			int usedRooms = _usedRooms;
-			_usedRooms = 0;
-			if (InElevator)
+			int usedRooms = this._usedRooms;
+			this._usedRooms = 0;
+			if (this.InElevator)
 			{
-				_errorSurface.SetActive(value: false);
-				_errorElevator.SetActive(value: true);
+				this._errorSurface.SetActive(value: false);
+				this._errorElevator.SetActive(value: true);
 			}
 			else if (position.GetZone() == FacilityZone.Surface)
 			{
-				_errorSurface.SetActive(value: true);
-				_errorElevator.SetActive(value: false);
+				this._errorSurface.SetActive(value: true);
+				this._errorElevator.SetActive(value: false);
 			}
 			else
 			{
-				_errorSurface.SetActive(value: false);
-				_errorElevator.SetActive(value: false);
-				SetupRooms(currentCamera, position);
-				RefreshRange();
+				this._errorSurface.SetActive(value: false);
+				this._errorElevator.SetActive(value: false);
+				this.SetupRooms(currentCamera, position);
+				this.RefreshRange();
 			}
-			for (int i = _usedRooms; i < usedRooms; i++)
+			for (int i = this._usedRooms; i < usedRooms; i++)
 			{
-				_pool[i].Img.enabled = false;
+				Scp106Minimap._pool[i].Img.enabled = false;
 			}
-			Vector3 vector = _template.Rt.InverseTransformPoint(Input.mousePosition) / _gridScale;
-			LastWorldPos = new Vector3(0f - vector.x, position.y, 0f - vector.y);
+			Vector3 vector = this._template.Rt.InverseTransformPoint(Input.mousePosition) / this._gridScale;
+			this.LastWorldPos = new Vector3(0f - vector.x, position.y, 0f - vector.y);
 		}
 	}
 
@@ -188,7 +188,7 @@ public class Scp106Minimap : MonoBehaviour, ICursorOverride
 		if (ReferenceHub.TryGetLocalHub(out var hub) && hub.playerStats.TryGetModule<VigorStat>(out var module))
 		{
 			float num = module.NormalizedValue / 0.019f;
-			_rangeTransform.localScale = Vector3.one / (_radiusScale * num);
+			this._rangeTransform.localScale = Vector3.one / (this._radiusScale * num);
 		}
 	}
 
@@ -198,19 +198,19 @@ public class Scp106Minimap : MonoBehaviour, ICursorOverride
 		{
 			Transform transform = allRoomIdentifier.transform;
 			Vector3 position = transform.position;
-			if (allRoomIdentifier.Zone != 0 && !(Mathf.Abs(position.y - camPos.y) > 100f))
+			if (allRoomIdentifier.Zone != FacilityZone.None && !(Mathf.Abs(position.y - camPos.y) > 100f))
 			{
-				Scp106MinimapElement obj = _pool[_usedRooms];
+				Scp106MinimapElement obj = Scp106Minimap._pool[this._usedRooms];
 				obj.Room = allRoomIdentifier;
 				obj.Img.sprite = allRoomIdentifier.Icon;
 				obj.Img.enabled = true;
 				obj.Rt.localEulerAngles = Vector3.back * transform.eulerAngles.y;
-				obj.Rt.localPosition = new Vector3(position.x, position.z, 0f) * _gridScale;
-				_usedRooms++;
+				obj.Rt.localPosition = new Vector3(position.x, position.z, 0f) * this._gridScale;
+				this._usedRooms++;
 			}
 		}
-		Vector3 vector = camPos * _gridScale;
-		_offsetTransform.localPosition = -new Vector3(vector.x, vector.z, 0f);
-		_rotorTransform.localEulerAngles = Vector3.forward * camTr.eulerAngles.y;
+		Vector3 vector = camPos * this._gridScale;
+		this._offsetTransform.localPosition = -new Vector3(vector.x, vector.z, 0f);
+		this._rotorTransform.localEulerAngles = Vector3.forward * camTr.eulerAngles.y;
 	}
 }

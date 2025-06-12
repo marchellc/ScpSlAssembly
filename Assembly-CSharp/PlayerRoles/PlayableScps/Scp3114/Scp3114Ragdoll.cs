@@ -40,37 +40,37 @@ public class Scp3114Ragdoll : DynamicRagdoll
 	{
 		get
 		{
-			return _disguiseRole;
+			return this._disguiseRole;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _disguiseRole, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._disguiseRole, 2uL, null);
 		}
 	}
 
 	protected override void Start()
 	{
 		base.Start();
-		if (Info.Handler is DisruptorDamageHandler || !PlayerRoleLoader.TryGetRoleTemplate<HumanRole>(_disguiseRole, out var result) || !(result.Ragdoll.ServerInstantiateSelf(Info.OwnerHub, _disguiseRole) is DynamicRagdoll dynamicRagdoll))
+		if (base.Info.Handler is DisruptorDamageHandler || !PlayerRoleLoader.TryGetRoleTemplate<HumanRole>(this._disguiseRole, out var result) || !(result.Ragdoll.ServerInstantiateSelf(base.Info.OwnerHub, this._disguiseRole) is DynamicRagdoll dynamicRagdoll))
 		{
 			return;
 		}
-		_ownRenderer.sharedMaterial = new Material(_ownRenderer.sharedMaterial);
-		_trackedBones = dynamicRagdoll.LinkedRigidbodiesTransforms;
-		_playingAnimation = true;
-		_humanRagdollRoot = dynamicRagdoll.transform;
-		_humanRagdollRoot.ResetTransform();
+		this._ownRenderer.sharedMaterial = new Material(this._ownRenderer.sharedMaterial);
+		this._trackedBones = dynamicRagdoll.LinkedRigidbodiesTransforms;
+		this._playingAnimation = true;
+		this._humanRagdollRoot = dynamicRagdoll.transform;
+		this._humanRagdollRoot.ResetTransform();
 		List<SkinnedMeshRenderer> list = ListPool<SkinnedMeshRenderer>.Shared.Rent();
 		dynamicRagdoll.GetComponentsInChildren(includeInactive: true, list);
-		_humanMaterials = new Material[list.Count];
-		for (int i = 0; i < _humanMaterials.Length; i++)
+		this._humanMaterials = new Material[list.Count];
+		for (int i = 0; i < this._humanMaterials.Length; i++)
 		{
 			SkinnedMeshRenderer skinnedMeshRenderer = list[i];
-			Material material2 = (skinnedMeshRenderer.sharedMaterial = new Material(Scp3114FakeModelManager.GetVariant(skinnedMeshRenderer.sharedMaterial, Scp3114FakeModelManager.VariantType.Reveal)));
-			material2.SetFloat(ProgressHash, 0f);
-			_humanMaterials[i] = material2;
-			skinnedMeshRenderer.sharedMaterial = material2;
+			Material material = (skinnedMeshRenderer.sharedMaterial = new Material(Scp3114FakeModelManager.GetVariant(skinnedMeshRenderer.sharedMaterial, Scp3114FakeModelManager.VariantType.Reveal)));
+			material.SetFloat(Scp3114Ragdoll.ProgressHash, 0f);
+			this._humanMaterials[i] = material;
+			skinnedMeshRenderer.sharedMaterial = material;
 		}
 		ListPool<SkinnedMeshRenderer>.Shared.Return(list);
 		dynamicRagdoll.FreezeRagdoll();
@@ -86,32 +86,32 @@ public class Scp3114Ragdoll : DynamicRagdoll
 	protected override void Update()
 	{
 		base.Update();
-		if (!_playingAnimation)
+		if (!this._playingAnimation)
 		{
 			return;
 		}
-		for (int i = 0; i < _trackedBones.Length; i++)
+		for (int i = 0; i < this._trackedBones.Length; i++)
 		{
-			Transform transform = LinkedRigidbodiesTransforms[i];
-			_trackedBones[i].SetPositionAndRotation(transform.position, transform.rotation);
+			Transform transform = base.LinkedRigidbodiesTransforms[i];
+			this._trackedBones[i].SetPositionAndRotation(transform.position, transform.rotation);
 		}
-		if (_revealDelay > 0f)
+		if (this._revealDelay > 0f)
 		{
-			_revealDelay -= Time.deltaTime;
+			this._revealDelay -= Time.deltaTime;
 			return;
 		}
-		if (_revealElapsed > _revealDuration)
+		if (this._revealElapsed > this._revealDuration)
 		{
-			_playingAnimation = false;
-			Object.Destroy(_humanRagdollRoot.gameObject);
+			this._playingAnimation = false;
+			Object.Destroy(this._humanRagdollRoot.gameObject);
 			return;
 		}
-		_revealElapsed += Time.deltaTime;
-		float progress = Mathf.Clamp01(_revealElapsed / _revealDuration);
-		_ownRenderer.sharedMaterial.SetFloat(FadeHash, progress);
-		_humanMaterials.ForEach(delegate(Material x)
+		this._revealElapsed += Time.deltaTime;
+		float progress = Mathf.Clamp01(this._revealElapsed / this._revealDuration);
+		this._ownRenderer.sharedMaterial.SetFloat(Scp3114Ragdoll.FadeHash, progress);
+		this._humanMaterials.ForEach(delegate(Material x)
 		{
-			x.SetFloat(ProgressHash, progress);
+			x.SetFloat(Scp3114Ragdoll.ProgressHash, progress);
 		});
 	}
 
@@ -143,13 +143,13 @@ public class Scp3114Ragdoll : DynamicRagdoll
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteRoleType(_disguiseRole);
+			writer.WriteRoleType(this._disguiseRole);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteRoleType(_disguiseRole);
+			writer.WriteRoleType(this._disguiseRole);
 		}
 	}
 
@@ -158,13 +158,13 @@ public class Scp3114Ragdoll : DynamicRagdoll
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _disguiseRole, null, reader.ReadRoleType());
+			base.GeneratedSyncVarDeserialize(ref this._disguiseRole, null, reader.ReadRoleType());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _disguiseRole, null, reader.ReadRoleType());
+			base.GeneratedSyncVarDeserialize(ref this._disguiseRole, null, reader.ReadRoleType());
 		}
 	}
 }

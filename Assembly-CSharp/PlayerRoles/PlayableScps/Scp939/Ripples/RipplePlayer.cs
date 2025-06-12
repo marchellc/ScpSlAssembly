@@ -19,48 +19,48 @@ public class RipplePlayer : SubroutineBase, IPoolSpawnable
 
 	private readonly Queue<RippleInstance> _pool = new Queue<RippleInstance>();
 
-	private bool CanHear => !_deafened.IsEnabled;
+	private bool CanHear => !this._deafened.IsEnabled;
 
 	public void Play(Vector3 position, Color color)
 	{
-		if (CanHear && base.Role.IsPOV)
+		if (this.CanHear && base.Role.IsPOV)
 		{
 			bool flag = false;
 			RippleInstance rippleInstance = null;
-			while (_poolCount != 0 && !(flag = (rippleInstance = _pool.Peek()) != null))
+			while (this._poolCount != 0 && !(flag = (rippleInstance = this._pool.Peek()) != null))
 			{
-				_pool.Dequeue();
-				_poolCount--;
+				this._pool.Dequeue();
+				this._poolCount--;
 			}
 			if (flag && !rippleInstance.InUse)
 			{
-				_pool.Dequeue();
-				_poolCount--;
+				this._pool.Dequeue();
+				this._poolCount--;
 			}
 			else
 			{
-				rippleInstance = Object.Instantiate(_rippleTemplate);
+				rippleInstance = Object.Instantiate(this._rippleTemplate);
 			}
-			rippleInstance.Set(position, (_focus.State < 1f) ? Color.red : color);
-			_pool.Enqueue(rippleInstance);
-			_poolCount++;
+			rippleInstance.Set(position, (this._focus.State < 1f) ? Color.red : color);
+			this._pool.Enqueue(rippleInstance);
+			this._poolCount++;
 		}
 	}
 
 	public void Play(HumanRole human)
 	{
-		Play(human.FpcModule.Position, human.RoleColor);
+		this.Play(human.FpcModule.Position, human.RoleColor);
 	}
 
 	public void SpawnObject()
 	{
 		base.Role.TryGetOwner(out var hub);
-		_deafened = hub.playerEffectsController.GetEffect<Deafened>();
+		this._deafened = hub.playerEffectsController.GetEffect<Deafened>();
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		(base.Role as ISubroutinedRole).SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out _focus);
+		(base.Role as ISubroutinedRole).SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out this._focus);
 	}
 }

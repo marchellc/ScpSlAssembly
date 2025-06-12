@@ -57,43 +57,43 @@ public class Scp559Effect : StatusEffectBase, IMovementSpeedModifier, IStaminaMo
 
 	private void UpdateSize()
 	{
-		_offset.localPosition = Vector3.up * (0.628f - _heightReduction * _state);
-		ModelScale = _scaleReduction * _state;
+		this._offset.localPosition = Vector3.up * (0.628f - this._heightReduction * this._state);
+		this.ModelScale = this._scaleReduction * this._state;
 		if (base.IsLocalPlayer)
 		{
-			LocallyActive = _state > 0f;
-			LocalPitchMultiplier = Mathf.Lerp(1f, _voicePitch, _state);
+			Scp559Effect.LocallyActive = this._state > 0f;
+			Scp559Effect.LocalPitchMultiplier = Mathf.Lerp(1f, this._voicePitch, this._state);
 		}
 		if (base.Hub.roleManager.CurrentRole is IFpcRole fpcRole)
 		{
 			Transform transform = fpcRole.FpcModule.CharacterModelInstance.transform;
 			Vector3 localScale = fpcRole.FpcModule.CharacterModelTemplate.transform.localScale;
-			transform.localScale = Vector3.Lerp(localScale, localScale * _scaleReduction, _state);
+			transform.localScale = Vector3.Lerp(localScale, localScale * this._scaleReduction, this._state);
 		}
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		_offset = base.Hub.PlayerCameraReference.parent;
-		ModelScale = 1f;
+		this._offset = base.Hub.PlayerCameraReference.parent;
+		this.ModelScale = 1f;
 	}
 
 	internal override void OnRoleChanged(PlayerRoleBase previousRole, PlayerRoleBase newRole)
 	{
 		base.OnRoleChanged(previousRole, newRole);
-		_state = 0f;
-		UpdateSize();
+		this._state = 0f;
+		this.UpdateSize();
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		float num = Mathf.MoveTowards(_state, base.IsEnabled ? 1 : 0, _adjustSpeed * Time.deltaTime);
-		if (num != _state)
+		float num = Mathf.MoveTowards(this._state, base.IsEnabled ? 1 : 0, this._adjustSpeed * Time.deltaTime);
+		if (num != this._state)
 		{
-			_state = num;
-			UpdateSize();
+			this._state = num;
+			this.UpdateSize();
 		}
 	}
 

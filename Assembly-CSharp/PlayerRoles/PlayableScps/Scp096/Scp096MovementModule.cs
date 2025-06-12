@@ -32,9 +32,9 @@ public class Scp096MovementModule : FirstPersonMovementModule
 
 	private readonly Stopwatch _gatePrySw = Stopwatch.StartNew();
 
-	private readonly AnimationCurve _gatePryX = new AnimationCurve(TemplateKeyframes);
+	private readonly AnimationCurve _gatePryX = new AnimationCurve(Scp096MovementModule.TemplateKeyframes);
 
-	private readonly AnimationCurve _gatePryZ = new AnimationCurve(TemplateKeyframes);
+	private readonly AnimationCurve _gatePryZ = new AnimationCurve(Scp096MovementModule.TemplateKeyframes);
 
 	private readonly List<Transform> _pryablePoints = new List<Transform>();
 
@@ -49,9 +49,9 @@ public class Scp096MovementModule : FirstPersonMovementModule
 	{
 		set
 		{
-			SneakSpeed = value;
-			WalkSpeed = value;
-			SprintSpeed = value;
+			base.SneakSpeed = value;
+			base.WalkSpeed = value;
+			base.SprintSpeed = value;
 		}
 	}
 
@@ -63,7 +63,7 @@ public class Scp096MovementModule : FirstPersonMovementModule
 			{
 				return false;
 			}
-			Scp096AbilityState abilityState = _stateController.AbilityState;
+			Scp096AbilityState abilityState = this._stateController.AbilityState;
 			if (abilityState - 3 <= Scp096AbilityState.TryingNotToCry)
 			{
 				return true;
@@ -72,83 +72,83 @@ public class Scp096MovementModule : FirstPersonMovementModule
 		}
 	}
 
-	protected override FpcMotor NewMotor => new Scp096Motor(base.Hub, base.Role as Scp096Role, FallDamageSettings);
+	protected override FpcMotor NewMotor => new Scp096Motor(base.Hub, base.Role as Scp096Role, base.FallDamageSettings);
 
 	protected override void UpdateMovement()
 	{
-		UpdateSpeedAndOverrides();
+		this.UpdateSpeedAndOverrides();
 		base.UpdateMovement();
 	}
 
 	private void UpdateSpeedAndOverrides()
 	{
-		switch (_stateController.AbilityState)
+		switch (this._stateController.AbilityState)
 		{
 		case Scp096AbilityState.Charging:
-			MovementSpeed = 18.5f;
+			this.MovementSpeed = 18.5f;
 			(base.Motor as Scp096Motor).SetOverride(base.transform.forward);
 			return;
 		case Scp096AbilityState.PryingGate:
-			MovementSpeed = 3.9f;
-			UpdateGatePrying();
+			this.MovementSpeed = 3.9f;
+			this.UpdateGatePrying();
 			return;
 		}
-		switch (_stateController.RageState)
+		switch (this._stateController.RageState)
 		{
 		case Scp096RageState.Distressed:
 		case Scp096RageState.Calming:
-			MovementSpeed = 3.3f;
-			JumpSpeed = _normalJumpSpeed;
+			this.MovementSpeed = 3.3f;
+			base.JumpSpeed = this._normalJumpSpeed;
 			break;
 		case Scp096RageState.Enraged:
-			MovementSpeed = 8f;
-			JumpSpeed = _jumpSpeedRage;
+			this.MovementSpeed = 8f;
+			base.JumpSpeed = this._jumpSpeedRage;
 			break;
 		default:
-			MovementSpeed = 3.9f;
-			JumpSpeed = _normalJumpSpeed;
+			this.MovementSpeed = 3.9f;
+			base.JumpSpeed = this._normalJumpSpeed;
 			break;
 		}
 	}
 
 	private void UpdateGatePrying()
 	{
-		float num = (float)_gatePrySw.Elapsed.TotalSeconds;
+		float num = (float)this._gatePrySw.Elapsed.TotalSeconds;
 		if (num > 2f)
 		{
 			if (NetworkServer.active)
 			{
-				_stateController.SetAbilityState(Scp096AbilityState.None);
+				this._stateController.SetAbilityState(Scp096AbilityState.None);
 			}
 		}
 		else if (base.Role.IsLocalPlayer)
 		{
 			num /= 2f;
-			base.Position = new Vector3(_gatePryX.Evaluate(num), base.Position.y, _gatePryZ.Evaluate(num));
-			base.MouseLook.CurrentHorizontal = Mathf.MoveTowardsAngle(base.MouseLook.CurrentHorizontal, _gateLookAngle, Time.deltaTime * 120f);
+			base.Position = new Vector3(this._gatePryX.Evaluate(num), base.Position.y, this._gatePryZ.Evaluate(num));
+			base.MouseLook.CurrentHorizontal = Mathf.MoveTowardsAngle(base.MouseLook.CurrentHorizontal, this._gateLookAngle, Time.deltaTime * 120f);
 			base.MouseLook.CurrentVertical = Mathf.MoveTowardsAngle(base.MouseLook.CurrentVertical, 0f, Time.deltaTime * 120f);
 		}
 	}
 
 	private void SetGatePryCurves(int index, Vector3 pos)
 	{
-		Keyframe[] keys = _gatePryX.keys;
+		Keyframe[] keys = this._gatePryX.keys;
 		keys[index].value = pos.x;
-		_gatePryX.keys = keys;
-		Keyframe[] keys2 = _gatePryZ.keys;
+		this._gatePryX.keys = keys;
+		Keyframe[] keys2 = this._gatePryZ.keys;
 		keys2[index].value = pos.z;
-		_gatePryZ.keys = keys2;
+		this._gatePryZ.keys = keys2;
 	}
 
 	private void Awake()
 	{
-		_normalJumpSpeed = JumpSpeed;
+		this._normalJumpSpeed = base.JumpSpeed;
 	}
 
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_stateController = (base.Role as Scp096Role).StateController;
+		this._stateController = (base.Role as Scp096Role).StateController;
 	}
 
 	public void SetTargetGate(PryableDoor door)
@@ -157,28 +157,28 @@ public class Scp096MovementModule : FirstPersonMovementModule
 		{
 			return;
 		}
-		_gatePrySw.Restart();
+		this._gatePrySw.Restart();
 		if (base.Role.IsLocalPlayer)
 		{
-			SetGatePryCurves(0, base.Position);
-			_pryablePoints.Clear();
-			_pryablePoints.AddRange(door.PryPositions);
-			_pryablePoints.Sort(delegate(Transform x, Transform y)
+			this.SetGatePryCurves(0, base.Position);
+			this._pryablePoints.Clear();
+			this._pryablePoints.AddRange(door.PryPositions);
+			this._pryablePoints.Sort(delegate(Transform x, Transform y)
 			{
 				float sqrMagnitude = (base.Position - x.position).sqrMagnitude;
 				float sqrMagnitude2 = (base.Position - y.position).sqrMagnitude;
 				return sqrMagnitude.CompareTo(sqrMagnitude2);
 			});
-			Transform transform = _pryablePoints[0];
-			Transform transform2 = _pryablePoints[_pryablePoints.Count - 1];
-			SetGatePryCurves(1, transform.position);
-			SetGatePryCurves(2, transform2.position);
+			Transform transform = this._pryablePoints[0];
+			Transform transform2 = this._pryablePoints[this._pryablePoints.Count - 1];
+			this.SetGatePryCurves(1, transform.position);
+			this.SetGatePryCurves(2, transform2.position);
 			Vector3 normalized = (transform2.position - transform.position).normalized;
-			_gateLookAngle = Vector3.Angle(normalized, Vector3.forward) * Mathf.Sign(Vector3.Dot(normalized, Vector3.right));
+			this._gateLookAngle = Vector3.Angle(normalized, Vector3.forward) * Mathf.Sign(Vector3.Dot(normalized, Vector3.right));
 		}
 		if (NetworkServer.active)
 		{
-			_stateController.SetAbilityState(Scp096AbilityState.PryingGate);
+			this._stateController.SetAbilityState(Scp096AbilityState.PryingGate);
 		}
 	}
 }

@@ -25,34 +25,34 @@ public class BePoliteBeEfficientHandler : AchievementHandlerBase
 
 	internal override void OnRoundStarted()
 	{
-		Kills.Clear();
-		Timers.Clear();
-		AlreadyAchieved.Clear();
+		BePoliteBeEfficientHandler.Kills.Clear();
+		BePoliteBeEfficientHandler.Timers.Clear();
+		BePoliteBeEfficientHandler.AlreadyAchieved.Clear();
 	}
 
 	private static void HandleDeath(ReferenceHub deadPlayer, DamageHandlerBase handler)
 	{
-		if (NetworkServer.active && handler is FirearmDamageHandler { Attacker: { Hub: var hub } attacker } && HitboxIdentity.IsEnemy(attacker.Role, deadPlayer.GetRoleId()) && !AlreadyAchieved.Contains(attacker.NetId) && !(hub == null))
+		if (NetworkServer.active && handler is FirearmDamageHandler { Attacker: { Hub: var hub } attacker } && HitboxIdentity.IsEnemy(attacker.Role, deadPlayer.GetRoleId()) && !BePoliteBeEfficientHandler.AlreadyAchieved.Contains(attacker.NetId) && !(hub == null))
 		{
-			if (!Kills.TryGetValue(hub, out var value))
+			if (!BePoliteBeEfficientHandler.Kills.TryGetValue(hub, out var value))
 			{
 				value = 0;
 			}
-			value = (Kills[hub] = value + 1);
-			if (!Timers.TryGetValue(hub, out var value2))
+			value = (BePoliteBeEfficientHandler.Kills[hub] = value + 1);
+			if (!BePoliteBeEfficientHandler.Timers.TryGetValue(hub, out var value2))
 			{
-				Timers.Add(hub, Stopwatch.StartNew());
+				BePoliteBeEfficientHandler.Timers.Add(hub, Stopwatch.StartNew());
 			}
 			else if (value2.Elapsed.TotalSeconds > 30.0)
 			{
-				Timers[hub].Restart();
-				Kills[hub] = 1;
+				BePoliteBeEfficientHandler.Timers[hub].Restart();
+				BePoliteBeEfficientHandler.Kills[hub] = 1;
 			}
 			else if (value >= 5)
 			{
-				AlreadyAchieved.Add(attacker.NetId);
-				Kills.Remove(attacker.Hub);
-				Timers.Remove(attacker.Hub);
+				BePoliteBeEfficientHandler.AlreadyAchieved.Add(attacker.NetId);
+				BePoliteBeEfficientHandler.Kills.Remove(attacker.Hub);
+				BePoliteBeEfficientHandler.Timers.Remove(attacker.Hub);
 				AchievementHandlerBase.ServerAchieve(attacker.Hub.networkIdentity.connectionToClient, AchievementName.BePoliteBeEfficient);
 			}
 		}

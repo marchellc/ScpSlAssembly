@@ -25,9 +25,9 @@ public readonly struct ServerListSigned : IEquatable<ServerListSigned>, IJsonSer
 
 	public bool Equals(ServerListSigned other)
 	{
-		if (payload == other.payload && timestamp == other.timestamp && signature == other.signature && nonce == other.nonce)
+		if (this.payload == other.payload && this.timestamp == other.timestamp && this.signature == other.signature && this.nonce == other.nonce)
 		{
-			return error == other.error;
+			return this.error == other.error;
 		}
 		return false;
 	}
@@ -36,16 +36,16 @@ public readonly struct ServerListSigned : IEquatable<ServerListSigned>, IJsonSer
 	{
 		if (obj is ServerListSigned other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		int num = ((payload != null) ? payload.GetHashCode() : 0) * 397;
-		long num2 = timestamp;
-		return ((((((num ^ num2.GetHashCode()) * 397) ^ ((signature != null) ? signature.GetHashCode() : 0)) * 397) ^ ((nonce != null) ? nonce.GetHashCode() : 0)) * 397) ^ ((error != null) ? error.GetHashCode() : 0);
+		int num = ((this.payload != null) ? this.payload.GetHashCode() : 0) * 397;
+		long num2 = this.timestamp;
+		return ((((((num ^ num2.GetHashCode()) * 397) ^ ((this.signature != null) ? this.signature.GetHashCode() : 0)) * 397) ^ ((this.nonce != null) ? this.nonce.GetHashCode() : 0)) * 397) ^ ((this.error != null) ? this.error.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(ServerListSigned left, ServerListSigned right)

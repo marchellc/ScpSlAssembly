@@ -35,7 +35,7 @@ public abstract class Scp079DoorAbility : Scp079KeyAbilityBase
 			}
 			if (OverconManager.Singleton.HighlightedOvercon is DoorOvercon doorOvercon && doorOvercon != null)
 			{
-				LastDoor = doorOvercon.Target;
+				this.LastDoor = doorOvercon.Target;
 				return true;
 			}
 			return false;
@@ -46,12 +46,12 @@ public abstract class Scp079DoorAbility : Scp079KeyAbilityBase
 	{
 		get
 		{
-			DoorAction targetAction = TargetAction;
-			_lastActionValid = ValidateAction(targetAction, LastDoor, base.CurrentCamSync.CurrentCamera);
-			_lastCost = GetCostForDoor(targetAction, LastDoor);
-			if (_lastActionValid)
+			DoorAction targetAction = this.TargetAction;
+			this._lastActionValid = Scp079DoorAbility.ValidateAction(targetAction, this.LastDoor, base.CurrentCamSync.CurrentCamera);
+			this._lastCost = this.GetCostForDoor(targetAction, this.LastDoor);
+			if (this._lastActionValid)
 			{
-				return (float)_lastCost <= base.AuxManager.CurrentAux;
+				return (float)this._lastCost <= base.AuxManager.CurrentAux;
 			}
 			return false;
 		}
@@ -61,15 +61,15 @@ public abstract class Scp079DoorAbility : Scp079KeyAbilityBase
 	{
 		get
 		{
-			if (!_failMessageDenied)
+			if (!this._failMessageDenied)
 			{
-				if (!(base.AuxManager.CurrentAux < (float)_failMessageAux))
+				if (!(base.AuxManager.CurrentAux < (float)this._failMessageAux))
 				{
 					return null;
 				}
-				return GetNoAuxMessage(_failMessageAux);
+				return base.GetNoAuxMessage(this._failMessageAux);
 			}
-			return _deniedText;
+			return Scp079DoorAbility._deniedText;
 		}
 	}
 
@@ -81,24 +81,24 @@ public abstract class Scp079DoorAbility : Scp079KeyAbilityBase
 
 	protected override void Trigger()
 	{
-		ClientSendCmd();
+		base.ClientSendCmd();
 	}
 
 	protected override void Start()
 	{
 		base.Start();
-		_deniedText = Translations.Get(Scp079HudTranslation.DoorAccessDenied);
+		Scp079DoorAbility._deniedText = Translations.Get(Scp079HudTranslation.DoorAccessDenied);
 		base.CurrentCamSync.OnCameraChanged += delegate
 		{
-			_failMessageAux = 0;
-			_failMessageDenied = false;
+			this._failMessageAux = 0;
+			this._failMessageDenied = false;
 		};
 	}
 
 	public override void OnFailMessageAssigned()
 	{
-		_failMessageDenied = !_lastActionValid;
-		_failMessageAux = _lastCost;
+		this._failMessageDenied = !this._lastActionValid;
+		this._failMessageAux = this._lastCost;
 	}
 
 	public void PlayConfirmationSound(AudioClip sound)
@@ -111,7 +111,7 @@ public abstract class Scp079DoorAbility : Scp079KeyAbilityBase
 
 	public static bool ValidateAction(DoorAction action, DoorVariant door, Scp079Camera currentCamera)
 	{
-		if (!CheckVisibility(door, currentCamera))
+		if (!Scp079DoorAbility.CheckVisibility(door, currentCamera))
 		{
 			return false;
 		}
@@ -136,7 +136,7 @@ public abstract class Scp079DoorAbility : Scp079KeyAbilityBase
 		case DoorAction.Closed:
 			return mode.HasFlagFast(DoorLockMode.CanClose);
 		case DoorAction.Locked:
-			if (mode != 0)
+			if (mode != DoorLockMode.FullLock)
 			{
 				return !(door is CheckpointDoor);
 			}

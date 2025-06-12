@@ -22,9 +22,9 @@ public struct WaveUpdateMessage : NetworkMessage
 
 	public SpawnableWaveBase Wave { get; private set; }
 
-	public bool IsTrigger => HasFlagFast(_flags, UpdateMessageFlags.Trigger);
+	public bool IsTrigger => WaveUpdateMessage.HasFlagFast(this._flags, UpdateMessageFlags.Trigger);
 
-	public bool IsSpawn => HasFlagFast(_flags, UpdateMessageFlags.Spawn);
+	public bool IsSpawn => WaveUpdateMessage.HasFlagFast(this._flags, UpdateMessageFlags.Spawn);
 
 	public static void ServerSendUpdate(SpawnableWaveBase wave, UpdateMessageFlags flags)
 	{
@@ -36,71 +36,71 @@ public struct WaveUpdateMessage : NetworkMessage
 
 	public WaveUpdateMessage(NetworkReader reader)
 	{
-		_index = reader.ReadInt();
-		_flags = (UpdateMessageFlags)reader.ReadByte();
-		if (!WaveManager.Waves.TryGet(_index, out var element))
+		this._index = reader.ReadInt();
+		this._flags = (UpdateMessageFlags)reader.ReadByte();
+		if (!WaveManager.Waves.TryGet(this._index, out var element))
 		{
-			throw new ArgumentOutOfRangeException($"Failed to get spawnable wave of index: {_index}.");
+			throw new ArgumentOutOfRangeException($"Failed to get spawnable wave of index: {this._index}.");
 		}
-		Wave = element;
-		RespawnTokens = null;
-		SpawnIntervalSeconds = null;
-		TimePassed = null;
-		PauseDuration = null;
-		if (HasFlagFast(_flags, UpdateMessageFlags.Tokens) && Wave is ILimitedWave)
+		this.Wave = element;
+		this.RespawnTokens = null;
+		this.SpawnIntervalSeconds = null;
+		this.TimePassed = null;
+		this.PauseDuration = null;
+		if (WaveUpdateMessage.HasFlagFast(this._flags, UpdateMessageFlags.Tokens) && this.Wave is ILimitedWave)
 		{
-			RespawnTokens = reader.ReadInt();
+			this.RespawnTokens = reader.ReadInt();
 		}
-		if (Wave is TimeBasedWave)
+		if (this.Wave is TimeBasedWave)
 		{
-			if (HasFlagFast(_flags, UpdateMessageFlags.Timer))
+			if (WaveUpdateMessage.HasFlagFast(this._flags, UpdateMessageFlags.Timer))
 			{
-				SpawnIntervalSeconds = reader.ReadFloat();
-				TimePassed = reader.ReadFloat();
+				this.SpawnIntervalSeconds = reader.ReadFloat();
+				this.TimePassed = reader.ReadFloat();
 			}
-			if (HasFlagFast(_flags, UpdateMessageFlags.Pause))
+			if (WaveUpdateMessage.HasFlagFast(this._flags, UpdateMessageFlags.Pause))
 			{
-				PauseDuration = reader.ReadFloat();
+				this.PauseDuration = reader.ReadFloat();
 			}
 		}
 	}
 
 	private WaveUpdateMessage(SpawnableWaveBase wave, UpdateMessageFlags flags)
 	{
-		Wave = wave;
-		_flags = flags;
-		_index = WaveManager.Waves.IndexOf(wave);
-		RespawnTokens = ((wave is ILimitedWave limitedWave) ? new int?(limitedWave.RespawnTokens) : ((int?)null));
-		if (Wave is TimeBasedWave timeBasedWave)
+		this.Wave = wave;
+		this._flags = flags;
+		this._index = WaveManager.Waves.IndexOf(wave);
+		this.RespawnTokens = ((wave is ILimitedWave limitedWave) ? new int?(limitedWave.RespawnTokens) : ((int?)null));
+		if (this.Wave is TimeBasedWave timeBasedWave)
 		{
-			SpawnIntervalSeconds = timeBasedWave.Timer.SpawnIntervalSeconds;
-			TimePassed = timeBasedWave.Timer.TimePassed;
-			PauseDuration = timeBasedWave.Timer.PauseTimeLeft;
+			this.SpawnIntervalSeconds = timeBasedWave.Timer.SpawnIntervalSeconds;
+			this.TimePassed = timeBasedWave.Timer.TimePassed;
+			this.PauseDuration = timeBasedWave.Timer.PauseTimeLeft;
 		}
 		else
 		{
-			SpawnIntervalSeconds = null;
-			TimePassed = null;
-			PauseDuration = null;
+			this.SpawnIntervalSeconds = null;
+			this.TimePassed = null;
+			this.PauseDuration = null;
 		}
 	}
 
 	public void Write(NetworkWriter writer)
 	{
-		writer.WriteInt(_index);
-		writer.WriteByte((byte)_flags);
-		if (HasFlagFast(_flags, UpdateMessageFlags.Tokens) && Wave is ILimitedWave limitedWave)
+		writer.WriteInt(this._index);
+		writer.WriteByte((byte)this._flags);
+		if (WaveUpdateMessage.HasFlagFast(this._flags, UpdateMessageFlags.Tokens) && this.Wave is ILimitedWave limitedWave)
 		{
 			writer.WriteInt(limitedWave.RespawnTokens);
 		}
-		if (Wave is TimeBasedWave timeBasedWave)
+		if (this.Wave is TimeBasedWave timeBasedWave)
 		{
-			if (HasFlagFast(_flags, UpdateMessageFlags.Timer))
+			if (WaveUpdateMessage.HasFlagFast(this._flags, UpdateMessageFlags.Timer))
 			{
 				writer.WriteFloat(timeBasedWave.Timer.SpawnIntervalSeconds);
 				writer.WriteFloat(timeBasedWave.Timer.TimePassed);
 			}
-			if (HasFlagFast(_flags, UpdateMessageFlags.Pause))
+			if (WaveUpdateMessage.HasFlagFast(this._flags, UpdateMessageFlags.Pause))
 			{
 				writer.WriteFloat(timeBasedWave.Timer.PauseTimeLeft);
 			}

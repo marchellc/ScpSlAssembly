@@ -25,20 +25,20 @@ public class PickupRippleTrigger : RippleTriggerBase
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		ActiveInstances.Add(this);
-		_anyInstances = true;
+		PickupRippleTrigger.ActiveInstances.Add(this);
+		PickupRippleTrigger._anyInstances = true;
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		RemoveSelf();
+		this.RemoveSelf();
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteRelativePosition(_syncPos);
+		writer.WriteRelativePosition(this._syncPos);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
@@ -52,14 +52,14 @@ public class PickupRippleTrigger : RippleTriggerBase
 
 	private void OnDestroy()
 	{
-		RemoveSelf();
+		this.RemoveSelf();
 	}
 
 	private void RemoveSelf()
 	{
-		if (ActiveInstances.Remove(this))
+		if (PickupRippleTrigger.ActiveInstances.Remove(this))
 		{
-			_anyInstances = ActiveInstances.Count > 0;
+			PickupRippleTrigger._anyInstances = PickupRippleTrigger.ActiveInstances.Count > 0;
 		}
 	}
 
@@ -76,14 +76,14 @@ public class PickupRippleTrigger : RippleTriggerBase
 		{
 			cdp.OnCollided += delegate(Collision col)
 			{
-				OnCollided(cdp, col);
+				PickupRippleTrigger.OnCollided(cdp, col);
 			};
 		}
 	}
 
 	private static void OnCollided(CollisionDetectionPickup cdp, Collision collision)
 	{
-		if (!_anyInstances || !NetworkServer.active)
+		if (!PickupRippleTrigger._anyInstances || !NetworkServer.active)
 		{
 			return;
 		}
@@ -94,7 +94,7 @@ public class PickupRippleTrigger : RippleTriggerBase
 		}
 		float a = Mathf.Max(4f, cdp.Info.WeightKg * 0.75f);
 		a = Mathf.Max(a, cdp.GetRangeOfCollisionVelocity(sqrMagnitude));
-		foreach (PickupRippleTrigger activeInstance in ActiveInstances)
+		foreach (PickupRippleTrigger activeInstance in PickupRippleTrigger.ActiveInstances)
 		{
 			if (activeInstance._rateLimiter.RateReady)
 			{

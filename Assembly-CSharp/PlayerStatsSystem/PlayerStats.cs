@@ -6,9 +6,11 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 using Mirror;
 using PlayerRoles;
+using PlayerRoles.FirstPersonControl;
 using PlayerRoles.PlayableScps.Scp106;
 using PlayerRoles.Ragdolls;
 using PlayerRoles.Spectating;
+using UnityEngine;
 
 namespace PlayerStatsSystem;
 
@@ -36,17 +38,17 @@ public class PlayerStats : NetworkBehaviour
 	{
 		get
 		{
-			if (_statModules != null)
+			if (this._statModules != null)
 			{
-				return _statModules;
+				return this._statModules;
 			}
-			_statModules = new StatBase[DefinedModules.Length];
-			for (int i = 0; i < DefinedModules.Length; i++)
+			this._statModules = new StatBase[PlayerStats.DefinedModules.Length];
+			for (int i = 0; i < PlayerStats.DefinedModules.Length; i++)
 			{
-				object obj = Activator.CreateInstance(DefinedModules[i]);
-				_statModules[i] = obj as StatBase;
+				object obj = Activator.CreateInstance(PlayerStats.DefinedModules[i]);
+				this._statModules[i] = obj as StatBase;
 			}
-			return _statModules;
+			return this._statModules;
 		}
 	}
 
@@ -64,40 +66,40 @@ public class PlayerStats : NetworkBehaviour
 
 	private void Awake()
 	{
-		StatBase[] statModules = StatModules;
+		StatBase[] statModules = this.StatModules;
 		foreach (StatBase statBase in statModules)
 		{
-			_dictionarizedTypes.Add(statBase.GetType(), statBase);
+			this._dictionarizedTypes.Add(statBase.GetType(), statBase);
 		}
-		_hub = ReferenceHub.GetHub(base.gameObject);
-		statModules = StatModules;
+		this._hub = ReferenceHub.GetHub(base.gameObject);
+		statModules = this.StatModules;
 		for (int i = 0; i < statModules.Length; i++)
 		{
-			statModules[i].Init(_hub);
+			statModules[i].Init(this._hub);
 		}
 	}
 
 	private void Start()
 	{
-		if (_hub.isLocalPlayer)
+		if (this._hub.isLocalPlayer)
 		{
 			PlayerRoleManager.OnRoleChanged += OnClassChanged;
-			_eventAssigned = true;
+			this._eventAssigned = true;
 		}
 	}
 
 	private void OnDestroy()
 	{
-		if (_eventAssigned)
+		if (this._eventAssigned)
 		{
 			PlayerRoleManager.OnRoleChanged -= OnClassChanged;
-			_eventAssigned = false;
+			this._eventAssigned = false;
 		}
 	}
 
 	private void Update()
 	{
-		StatBase[] statModules = StatModules;
+		StatBase[] statModules = this.StatModules;
 		for (int i = 0; i < statModules.Length; i++)
 		{
 			statModules[i].Update();
@@ -106,12 +108,12 @@ public class PlayerStats : NetworkBehaviour
 
 	public T GetModule<T>() where T : StatBase
 	{
-		return _dictionarizedTypes[typeof(T)] as T;
+		return this._dictionarizedTypes[typeof(T)] as T;
 	}
 
 	public bool TryGetModule<T>(out T module) where T : StatBase
 	{
-		if (_dictionarizedTypes.TryGetValue(typeof(T), out var value) && value is T val)
+		if (this._dictionarizedTypes.TryGetValue(typeof(T), out var value) && value is T val)
 		{
 			module = val;
 			return true;
@@ -122,15 +124,15 @@ public class PlayerStats : NetworkBehaviour
 
 	public bool DealDamage(DamageHandlerBase handler)
 	{
-		if (_hub.characterClassManager.GodMode)
+		if (this._hub.characterClassManager.GodMode)
 		{
 			return false;
 		}
-		if (_hub.playerEffectsController.TryGetEffect<SpawnProtected>(out var playerEffect) && playerEffect.IsEnabled)
+		if (this._hub.playerEffectsController.TryGetEffect<SpawnProtected>(out var playerEffect) && playerEffect.IsEnabled)
 		{
 			return false;
 		}
-		if (_hub.roleManager.CurrentRole is IDamageHandlerProcessingRole damageHandlerProcessingRole)
+		if (this._hub.roleManager.CurrentRole is IDamageHandlerProcessingRole damageHandlerProcessingRole)
 		{
 			handler = damageHandlerProcessingRole.ProcessDamageHandler(handler);
 		}
@@ -139,43 +141,47 @@ public class PlayerStats : NetworkBehaviour
 		{
 			attacker = attackerDamageHandler.Attacker.Hub;
 		}
-		PlayerHurtingEventArgs playerHurtingEventArgs = new PlayerHurtingEventArgs(attacker, _hub, handler);
-		PlayerEvents.OnHurting(playerHurtingEventArgs);
-		if (!playerHurtingEventArgs.IsAllowed)
+		PlayerHurtingEventArgs e = new PlayerHurtingEventArgs(attacker, this._hub, handler);
+		PlayerEvents.OnHurting(e);
+		if (!e.IsAllowed)
 		{
 			return false;
 		}
-		DamageHandlerBase.HandlerOutput handlerOutput = handler.ApplyDamage(_hub);
-		PlayerEvents.OnHurt(new PlayerHurtEventArgs(attacker, _hub, handler));
+		DamageHandlerBase.HandlerOutput handlerOutput = handler.ApplyDamage(this._hub);
+		PlayerEvents.OnHurt(new PlayerHurtEventArgs(attacker, this._hub, handler));
 		if (handlerOutput == DamageHandlerBase.HandlerOutput.Nothing)
 		{
 			return false;
 		}
-		PlayerStats.OnAnyPlayerDamaged?.Invoke(_hub, handler);
+		PlayerStats.OnAnyPlayerDamaged?.Invoke(this._hub, handler);
 		this.OnThisPlayerDamaged?.Invoke(handler);
 		if (handlerOutput == DamageHandlerBase.HandlerOutput.Death)
 		{
-			PlayerDyingEventArgs playerDyingEventArgs = new PlayerDyingEventArgs(_hub, attacker, handler);
-			PlayerEvents.OnDying(playerDyingEventArgs);
-			if (!playerDyingEventArgs.IsAllowed)
+			PlayerDyingEventArgs e2 = new PlayerDyingEventArgs(this._hub, attacker, handler);
+			PlayerEvents.OnDying(e2);
+			if (!e2.IsAllowed)
 			{
 				return false;
 			}
-			PlayerStats.OnAnyPlayerDied?.Invoke(_hub, handler);
+			RoleTypeId roleId = this._hub.GetRoleId();
+			Vector3 position = this._hub.GetPosition();
+			Vector3 velocity = this._hub.GetVelocity();
+			Quaternion rotation = this._hub.PlayerCameraReference.rotation;
+			PlayerStats.OnAnyPlayerDied?.Invoke(this._hub, handler);
 			this.OnThisPlayerDied?.Invoke(handler);
-			KillPlayer(handler);
-			PlayerEvents.OnDeath(new PlayerDeathEventArgs(_hub, attacker, handler));
+			this.KillPlayer(handler);
+			PlayerEvents.OnDeath(new PlayerDeathEventArgs(this._hub, attacker, handler, roleId, position, velocity, rotation));
 		}
 		return true;
 	}
 
 	private void KillPlayer(DamageHandlerBase handler)
 	{
-		RagdollManager.ServerSpawnRagdoll(_hub, handler);
-		_hub.inventory.ServerDropEverything();
-		_hub.roleManager.ServerSetRole(RoleTypeId.Spectator, RoleChangeReason.Died);
-		_hub.gameConsoleTransmission.SendToClient("You died. Reason: " + handler.ServerLogsText, "yellow");
-		if (_hub.roleManager.CurrentRole is SpectatorRole spectatorRole)
+		RagdollManager.ServerSpawnRagdoll(this._hub, handler);
+		this._hub.inventory.ServerDropEverything();
+		this._hub.roleManager.ServerSetRole(RoleTypeId.Spectator, RoleChangeReason.Died);
+		this._hub.gameConsoleTransmission.SendToClient("You died. Reason: " + handler.ServerLogsText, "yellow");
+		if (this._hub.roleManager.CurrentRole is SpectatorRole spectatorRole)
 		{
 			spectatorRole.ServerSetData(handler);
 		}

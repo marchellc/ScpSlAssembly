@@ -19,10 +19,10 @@ public class DistributorScenario : ScriptableObject
 
 	public void SelectProcessors()
 	{
-		if (_scenarioProcessors.Count != 0)
+		if (this._scenarioProcessors.Count != 0)
 		{
-			List<IScenarioProcessor> list = ListPool<IScenarioProcessor>.Shared.Rent(_scenarioProcessors);
-			int num = Mathf.RoundToInt(Random.Range(MinSelections, MaxSelections));
+			List<IScenarioProcessor> list = ListPool<IScenarioProcessor>.Shared.Rent(this._scenarioProcessors);
+			int num = Mathf.RoundToInt(Random.Range(this.MinSelections, this.MaxSelections));
 			for (int i = 0; i < num; i++)
 			{
 				IScenarioProcessor scenarioProcessor = list.RandomItem();
@@ -35,24 +35,24 @@ public class DistributorScenario : ScriptableObject
 
 	public void Register(IScenarioProcessor processor)
 	{
-		_scenarioProcessors.Add(processor);
+		this._scenarioProcessors.Add(processor);
 	}
 
 	public void Unregister(IScenarioProcessor processor)
 	{
-		_scenarioProcessors.Remove(processor);
+		this._scenarioProcessors.Remove(processor);
 	}
 
 	private void OnEnable()
 	{
-		if (!Instances.Contains(this))
+		if (!DistributorScenario.Instances.Contains(this))
 		{
-			Instances.Add(this);
+			DistributorScenario.Instances.Add(this);
 		}
 	}
 
 	private void OnDisable()
 	{
-		Instances.Remove(this);
+		DistributorScenario.Instances.Remove(this);
 	}
 }

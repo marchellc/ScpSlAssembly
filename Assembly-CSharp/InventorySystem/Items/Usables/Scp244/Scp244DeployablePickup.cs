@@ -112,9 +112,9 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 
 	private readonly Stopwatch _lifeTime = Stopwatch.StartNew();
 
-	private float GrowSpeed => Time.deltaTime * (MaxDiameter / TimeToGrow);
+	private float GrowSpeed => Time.deltaTime * (this.MaxDiameter / this.TimeToGrow);
 
-	private float TimeToGrow => 1f / _growSpeedOverLifetime.Evaluate((float)_lifeTime.Elapsed.TotalSeconds);
+	private float TimeToGrow => 1f / this._growSpeedOverLifetime.Evaluate((float)this._lifeTime.Elapsed.TotalSeconds);
 
 	private float CurTime => Time.timeSinceLevelLoad;
 
@@ -124,9 +124,9 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 	{
 		get
 		{
-			if (State != Scp244State.Destroyed)
+			if (this.State != Scp244State.Destroyed)
 			{
-				return State == Scp244State.PickedUp;
+				return this.State == Scp244State.PickedUp;
 			}
 			return true;
 		}
@@ -136,11 +136,11 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 	{
 		get
 		{
-			if (State == Scp244State.Active)
+			if (this.State == Scp244State.Active)
 			{
-				_lastActiveSize = CurrentSizePercent * MaxDiameter;
+				this._lastActiveSize = this.CurrentSizePercent * this.MaxDiameter;
 			}
-			return _lastActiveSize;
+			return this._lastActiveSize;
 		}
 	}
 
@@ -154,28 +154,28 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 	{
 		get
 		{
-			return (Scp244State)_syncState;
+			return (Scp244State)this._syncState;
 		}
 		set
 		{
-			Network_syncState = (byte)value;
+			this.Network_syncState = (byte)value;
 		}
 	}
 
 	public uint NetworkId => base.netId;
 
-	public Vector3 CenterOfMass => Rb.worldCenterOfMass;
+	public Vector3 CenterOfMass => this.Rb.worldCenterOfMass;
 
 	public byte Network_syncSizePercent
 	{
 		get
 		{
-			return _syncSizePercent;
+			return this._syncSizePercent;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _syncSizePercent, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._syncSizePercent, 2uL, null);
 		}
 	}
 
@@ -183,18 +183,18 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 	{
 		get
 		{
-			return _syncState;
+			return this._syncState;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _syncState, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._syncState, 4uL, null);
 		}
 	}
 
 	public override PickupSearchCompletor GetPickupSearchCompletor(SearchCoordinator coordinator, float sqrDistance)
 	{
-		if (!InventoryItemLoader.TryGetItem<ItemBase>(Info.ItemId, out var result))
+		if (!InventoryItemLoader.TryGetItem<ItemBase>(base.Info.ItemId, out var result))
 		{
 			return null;
 		}
@@ -203,10 +203,10 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 
 	private void Update()
 	{
-		UpdateCurrentRoom();
-		UpdateConditions();
-		UpdateRange();
-		UpdateEffects();
+		this.UpdateCurrentRoom();
+		this.UpdateConditions();
+		this.UpdateRange();
+		this.UpdateEffects();
 	}
 
 	protected override void Awake()
@@ -215,7 +215,7 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 		(base.PhysicsModule as PickupStandardPhysics).OnParentSetByElevator += delegate
 		{
 			Transform parent = base.transform.parent;
-			ParticleSystem.MainModule main = _mainEffect.main;
+			ParticleSystem.MainModule main = this._mainEffect.main;
 			if (parent == null)
 			{
 				main.simulationSpace = ParticleSystemSimulationSpace.World;
@@ -231,37 +231,37 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 	protected override void Start()
 	{
 		base.Start();
-		Instances.Add(this);
-		SetupEffects();
+		Scp244DeployablePickup.Instances.Add(this);
+		this.SetupEffects();
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		Instances.Remove(this);
+		Scp244DeployablePickup.Instances.Remove(this);
 	}
 
 	private void UpdateCurrentRoom()
 	{
 		Vector3 position = base.transform.position;
-		if (!((position - _previousPos).sqrMagnitude < 1f) && !(_lastUpdateTime + 2.2f > CurTime) && SeedSynchronizer.MapGenerated)
+		if (!((position - this._previousPos).sqrMagnitude < 1f) && !(this._lastUpdateTime + 2.2f > this.CurTime) && SeedSynchronizer.MapGenerated)
 		{
-			Conditions = Scp244TransferCondition.GenerateTransferConditions(this);
-			_previousPos = position;
-			_lastUpdateTime = CurTime;
-			_conditionsSet = true;
+			this.Conditions = Scp244TransferCondition.GenerateTransferConditions(this);
+			this._previousPos = position;
+			this._lastUpdateTime = this.CurTime;
+			this._conditionsSet = true;
 		}
 	}
 
 	private void UpdateConditions()
 	{
-		if (!_conditionsSet)
+		if (!this._conditionsSet)
 		{
 			return;
 		}
 		bool flag = true;
 		Bounds currentBounds = default(Bounds);
-		Scp244TransferCondition[] conditions = Conditions;
+		Scp244TransferCondition[] conditions = this.Conditions;
 		foreach (Scp244TransferCondition scp244TransferCondition in conditions)
 		{
 			bool flag2 = true;
@@ -287,62 +287,62 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 				flag = false;
 			}
 		}
-		Bounds bounds = new Bounds(base.transform.position, Vector3.one * CurrentDiameter);
+		Bounds bounds = new Bounds(base.transform.position, Vector3.one * this.CurrentDiameter);
 		currentBounds.SetMinMax(Vector3.Max(bounds.min, currentBounds.min), Vector3.Min(bounds.max, currentBounds.max));
-		if ((CurrentBounds.center - currentBounds.center).sqrMagnitude < 100f)
+		if ((this.CurrentBounds.center - currentBounds.center).sqrMagnitude < 100f)
 		{
-			Vector3 vector = CurrentBounds.size - currentBounds.size;
-			float growSpeed = GrowSpeed;
+			Vector3 vector = this.CurrentBounds.size - currentBounds.size;
+			float growSpeed = this.GrowSpeed;
 			growSpeed = ((vector.x == 0f || vector.z == 0f) ? (growSpeed / 2f) : (growSpeed * 2f));
-			Vector3 center = Vector3.MoveTowards(CurrentBounds.center, currentBounds.center, growSpeed / 2f);
-			Vector3 size = Vector3.MoveTowards(CurrentBounds.size, currentBounds.size, growSpeed);
-			CurrentBounds = new Bounds(center, size);
+			Vector3 center = Vector3.MoveTowards(this.CurrentBounds.center, currentBounds.center, growSpeed / 2f);
+			Vector3 size = Vector3.MoveTowards(this.CurrentBounds.size, currentBounds.size, growSpeed);
+			this.CurrentBounds = new Bounds(center, size);
 		}
 		else
 		{
-			CurrentBounds = currentBounds;
+			this.CurrentBounds = currentBounds;
 		}
 	}
 
 	private void UpdateRange()
 	{
-		if (ModelDestroyed && _visibleModel.activeSelf)
+		if (this.ModelDestroyed && this._visibleModel.activeSelf)
 		{
-			Rb.constraints = RigidbodyConstraints.FreezeAll;
-			_visibleModel.SetActive(value: false);
-			_emissionSoundSource.enabled = false;
-			if (State == Scp244State.Destroyed)
+			this.Rb.constraints = RigidbodyConstraints.FreezeAll;
+			this._visibleModel.SetActive(value: false);
+			this._emissionSoundSource.enabled = false;
+			if (this.State == Scp244State.Destroyed)
 			{
-				AudioSourcePoolManager.PlayOnTransform(_destroyClips.RandomItem(), base.transform, MaxDiameter, 1f, FalloffType.Exponential, MixerChannel.Weapons);
-				Transform obj = Object.Instantiate(_destroyedModel).transform;
+				AudioSourcePoolManager.PlayOnTransform(this._destroyClips.RandomItem(), base.transform, this.MaxDiameter, 1f, FalloffType.Exponential, MixerChannel.Weapons);
+				Transform obj = Object.Instantiate(this._destroyedModel).transform;
 				obj.transform.SetPositionAndRotation(base.transform.position, base.transform.rotation);
 				obj.localScale = Vector3.one;
 				Rigidbody[] componentsInChildren = obj.GetComponentsInChildren<Rigidbody>();
 				foreach (Rigidbody obj2 in componentsInChildren)
 				{
-					Object.Destroy(obj2.GetComponent<Collider>(), _timeToDecay);
-					Object.Destroy(obj2, _timeToDecay);
+					Object.Destroy(obj2.GetComponent<Collider>(), this._timeToDecay);
+					Object.Destroy(obj2, this._timeToDecay);
 				}
 			}
 		}
 		if (!NetworkServer.active)
 		{
-			CurrentSizePercent = (int)_syncSizePercent;
-			CurrentSizePercent /= 255f;
+			this.CurrentSizePercent = (int)this._syncSizePercent;
+			this.CurrentSizePercent /= 255f;
 			return;
 		}
-		if (State == Scp244State.Idle && Vector3.Dot(base.transform.up, Vector3.up) < _activationDot)
+		if (this.State == Scp244State.Idle && Vector3.Dot(base.transform.up, Vector3.up) < this._activationDot)
 		{
-			State = Scp244State.Active;
-			_lifeTime.Restart();
+			this.State = Scp244State.Active;
+			this._lifeTime.Restart();
 		}
-		float num = ((State == Scp244State.Active) ? TimeToGrow : (0f - _timeToDecay));
-		CurrentSizePercent = Mathf.Clamp01(CurrentSizePercent + Time.deltaTime / num);
-		Network_syncSizePercent = (byte)Mathf.RoundToInt(CurrentSizePercent * 255f);
-		if (ModelDestroyed && !(CurrentSizePercent > 0f))
+		float num = ((this.State == Scp244State.Active) ? this.TimeToGrow : (0f - this._timeToDecay));
+		this.CurrentSizePercent = Mathf.Clamp01(this.CurrentSizePercent + Time.deltaTime / num);
+		this.Network_syncSizePercent = (byte)Mathf.RoundToInt(this.CurrentSizePercent * 255f);
+		if (this.ModelDestroyed && !(this.CurrentSizePercent > 0f))
 		{
-			_timeToDecay -= Time.deltaTime;
-			if (_timeToDecay <= 0f)
+			this._timeToDecay -= Time.deltaTime;
+			if (this._timeToDecay <= 0f)
 			{
 				NetworkServer.Destroy(base.gameObject);
 			}
@@ -351,85 +351,85 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 
 	private void SetupEffects()
 	{
-		_templateVerticles = _referenceMesh.vertices;
-		_updatedVerticles = _referenceMesh.vertices;
-		_meshVertsCount = _templateVerticles.Length;
-		ParticleSystem.MainModule main = _mainEffect.main;
-		_initialSize = new Vector2(main.startSize.constantMin, main.startSize.constantMax);
-		_generatedMesh = new Mesh
+		this._templateVerticles = this._referenceMesh.vertices;
+		this._updatedVerticles = this._referenceMesh.vertices;
+		this._meshVertsCount = this._templateVerticles.Length;
+		ParticleSystem.MainModule main = this._mainEffect.main;
+		this._initialSize = new Vector2(main.startSize.constantMin, main.startSize.constantMax);
+		this._generatedMesh = new Mesh
 		{
-			vertices = new Vector3[_meshVertsCount],
-			triangles = _referenceMesh.triangles,
-			normals = _referenceMesh.normals
+			vertices = new Vector3[this._meshVertsCount],
+			triangles = this._referenceMesh.triangles,
+			normals = this._referenceMesh.normals
 		};
-		ParticleSystem.ShapeModule shape = _mainEffect.shape;
-		shape.mesh = _generatedMesh;
+		ParticleSystem.ShapeModule shape = this._mainEffect.shape;
+		shape.mesh = this._generatedMesh;
 	}
 
 	private void UpdateEffects()
 	{
-		bool num = _emissionSoundSource.enabled;
-		bool flag = State == Scp244State.Active;
+		bool num = this._emissionSoundSource.enabled;
+		bool flag = this.State == Scp244State.Active;
 		if (num != flag)
 		{
-			_emissionSoundSource.enabled = flag;
-			_lifeTime.Restart();
+			this._emissionSoundSource.enabled = flag;
+			this._lifeTime.Restart();
 		}
-		ParticleSystem.EmissionModule emission = _mainEffect.emission;
-		emission.rateOverTimeMultiplier = _emissionOverPercent.Evaluate(CurrentSizePercent);
-		float num2 = CurrentDiameter / 2f - 3.5f;
-		float num3 = _sizeOverDiameter.Evaluate(CurrentDiameter);
-		ParticleSystem.MainModule main = _mainEffect.main;
-		main.startSize = new ParticleSystem.MinMaxCurve(_initialSize.x * num3, _initialSize.y * num3);
-		if (State == Scp244State.Idle)
+		ParticleSystem.EmissionModule emission = this._mainEffect.emission;
+		emission.rateOverTimeMultiplier = this._emissionOverPercent.Evaluate(this.CurrentSizePercent);
+		float num2 = this.CurrentDiameter / 2f - 3.5f;
+		float num3 = this._sizeOverDiameter.Evaluate(this.CurrentDiameter);
+		ParticleSystem.MainModule main = this._mainEffect.main;
+		main.startSize = new ParticleSystem.MinMaxCurve(this._initialSize.x * num3, this._initialSize.y * num3);
+		if (this.State == Scp244State.Idle)
 		{
 			return;
 		}
-		Bounds currentBounds = CurrentBounds;
+		Bounds currentBounds = this.CurrentBounds;
 		currentBounds.size -= new Vector3(3.5f, 0f, 3.5f);
 		currentBounds.center -= base.transform.position;
 		for (int i = 0; i < 30; i++)
 		{
-			Vector3 point = _templateVerticles[_particleTimer] * num2;
-			_updatedVerticles[_particleTimer] = currentBounds.ClosestPoint(point);
-			if (++_particleTimer >= _meshVertsCount)
+			Vector3 point = this._templateVerticles[this._particleTimer] * num2;
+			this._updatedVerticles[this._particleTimer] = currentBounds.ClosestPoint(point);
+			if (++this._particleTimer >= this._meshVertsCount)
 			{
-				_particleTimer = 0;
+				this._particleTimer = 0;
 			}
 		}
-		_generatedMesh.vertices = _updatedVerticles;
-		_mainEffect.transform.rotation = Quaternion.identity;
+		this._generatedMesh.vertices = this._updatedVerticles;
+		this._mainEffect.transform.rotation = Quaternion.identity;
 	}
 
 	public float FogPercentForPoint(Vector3 worldPoint)
 	{
-		if (State == Scp244State.Idle)
+		if (this.State == Scp244State.Idle)
 		{
 			return 0f;
 		}
 		Vector3 vector = base.transform.position - worldPoint;
 		float sqrMagnitude = vector.sqrMagnitude;
-		float num = CurrentDiameter * 0.5f;
-		float num2 = num + _transitionDistance;
+		float num = this.CurrentDiameter * 0.5f;
+		float num2 = num + this._transitionDistance;
 		if (sqrMagnitude > num2 * num2)
 		{
 			return 0f;
 		}
 		float num3 = Mathf.Sqrt(sqrMagnitude);
 		Vector3 vector2 = ((num3 == 0f) ? Vector3.zero : (vector / num3));
-		float num4 = Mathf.LerpUnclamped(num, num * _heightRadiusRatio, Mathf.Abs(vector2.y));
-		Bounds bounds = new Bounds(CurrentBounds.center, CurrentBounds.size);
-		bounds.Expand(0f - _fullSubmergeDistance);
+		float num4 = Mathf.LerpUnclamped(num, num * this._heightRadiusRatio, Mathf.Abs(vector2.y));
+		Bounds bounds = new Bounds(this.CurrentBounds.center, this.CurrentBounds.size);
+		bounds.Expand(0f - this._fullSubmergeDistance);
 		float a = Vector3.Distance(bounds.ClosestPoint(worldPoint), worldPoint);
-		float b = num3 - num4 + _fullSubmergeDistance;
-		float num5 = 1f - Mathf.Clamp01(Mathf.Max(a, b) / _transitionDistance);
-		if (ModelDestroyed)
+		float b = num3 - num4 + this._fullSubmergeDistance;
+		float num5 = 1f - Mathf.Clamp01(Mathf.Max(a, b) / this._transitionDistance);
+		if (this.ModelDestroyed)
 		{
-			num5 *= CurrentSizePercent;
+			num5 *= this.CurrentSizePercent;
 		}
-		if (num < _minimalInfluenceDistance)
+		if (num < this._minimalInfluenceDistance)
 		{
-			num5 *= num / _minimalInfluenceDistance;
+			num5 *= num / this._minimalInfluenceDistance;
 		}
 		return num5;
 	}
@@ -440,14 +440,14 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 		{
 			return false;
 		}
-		if (_health <= 0f || ModelDestroyed)
+		if (this._health <= 0f || this.ModelDestroyed)
 		{
 			return false;
 		}
-		_health -= damage;
-		if (_health <= 0f)
+		this._health -= damage;
+		if (this._health <= 0f)
 		{
-			State = Scp244State.Destroyed;
+			this.State = Scp244State.Destroyed;
 		}
 		return true;
 	}
@@ -455,9 +455,9 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 	public override float SearchTimeForPlayer(ReferenceHub hub)
 	{
 		float num = base.SearchTimeForPlayer(hub);
-		if (State == Scp244State.Active)
+		if (this.State == Scp244State.Active)
 		{
-			num += _deployedPickupTime;
+			num += this._deployedPickupTime;
 		}
 		return num;
 	}
@@ -472,18 +472,18 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _syncSizePercent);
-			NetworkWriterExtensions.WriteByte(writer, _syncState);
+			NetworkWriterExtensions.WriteByte(writer, this._syncSizePercent);
+			NetworkWriterExtensions.WriteByte(writer, this._syncState);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _syncSizePercent);
+			NetworkWriterExtensions.WriteByte(writer, this._syncSizePercent);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _syncState);
+			NetworkWriterExtensions.WriteByte(writer, this._syncState);
 		}
 	}
 
@@ -492,18 +492,18 @@ public class Scp244DeployablePickup : CollisionDetectionPickup, IDestructible, I
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _syncSizePercent, null, NetworkReaderExtensions.ReadByte(reader));
-			GeneratedSyncVarDeserialize(ref _syncState, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._syncSizePercent, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._syncState, null, NetworkReaderExtensions.ReadByte(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _syncSizePercent, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._syncSizePercent, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _syncState, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._syncState, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 	}
 }

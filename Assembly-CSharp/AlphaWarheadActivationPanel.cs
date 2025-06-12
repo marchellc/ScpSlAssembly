@@ -45,24 +45,24 @@ public class AlphaWarheadActivationPanel : NetworkBehaviour, IServerInteractable
 	{
 		get
 		{
-			if (Instance != null)
+			if (AlphaWarheadActivationPanel.Instance != null)
 			{
-				return Instance._unlocked;
+				return AlphaWarheadActivationPanel.Instance._unlocked;
 			}
 			return false;
 		}
 		set
 		{
-			if (!(Instance == null))
+			if (!(AlphaWarheadActivationPanel.Instance == null))
 			{
-				Instance.Network_unlocked = value;
+				AlphaWarheadActivationPanel.Instance.Network_unlocked = value;
 				if (value)
 				{
-					Instance.RpcGranted();
+					AlphaWarheadActivationPanel.Instance.RpcGranted();
 				}
 				else
 				{
-					Instance.RpcReset();
+					AlphaWarheadActivationPanel.Instance.RpcReset();
 				}
 			}
 		}
@@ -79,33 +79,33 @@ public class AlphaWarheadActivationPanel : NetworkBehaviour, IServerInteractable
 	{
 		get
 		{
-			return _unlocked;
+			return this._unlocked;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _unlocked, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._unlocked, 1uL, null);
 		}
 	}
 
 	public void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
-		if (colliderId == _activatorColliderId)
+		if (colliderId == this._activatorColliderId)
 		{
-			ServerInteractActivator(ply);
+			this.ServerInteractActivator(ply);
 		}
-		else if (colliderId == _keycardColliderId)
+		else if (colliderId == this._keycardColliderId)
 		{
-			ServerInteractKeycard(ply);
+			this.ServerInteractKeycard(ply);
 		}
 	}
 
 	private void ServerInteractKeycard(ReferenceHub ply)
 	{
-		if (!_unlocked)
+		if (!this._unlocked)
 		{
 			PermissionUsed callback;
-			bool isAllowed = PermissionsPolicy.CheckPermissions(ply, this, out callback);
+			bool isAllowed = this.PermissionsPolicy.CheckPermissions(ply, this, out callback);
 			PlayerUnlockingWarheadButtonEventArgs obj = new PlayerUnlockingWarheadButtonEventArgs(ply)
 			{
 				IsAllowed = isAllowed
@@ -113,14 +113,14 @@ public class AlphaWarheadActivationPanel : NetworkBehaviour, IServerInteractable
 			PlayerEvents.OnUnlockingWarheadButton(obj);
 			if (obj.IsAllowed)
 			{
-				IsUnlocked = true;
+				AlphaWarheadActivationPanel.IsUnlocked = true;
 				callback?.Invoke(this, this);
 				PlayerEvents.OnUnlockedWarheadButton(new PlayerUnlockedWarheadButtonEventArgs(ply));
 			}
-			else if (_deniedCooldownSw.Elapsed.TotalSeconds > (double)_deniedCooldownDuration)
+			else if (this._deniedCooldownSw.Elapsed.TotalSeconds > (double)this._deniedCooldownDuration)
 			{
-				_deniedCooldownSw.Restart();
-				RpcDenied(ply.GetCombinedPermissions(this));
+				this._deniedCooldownSw.Restart();
+				this.RpcDenied(ply.GetCombinedPermissions(this));
 				callback?.Invoke(this, success: false);
 			}
 		}
@@ -128,7 +128,7 @@ public class AlphaWarheadActivationPanel : NetworkBehaviour, IServerInteractable
 
 	private void ServerInteractActivator(ReferenceHub ply)
 	{
-		if (_unlocked && !AlphaWarheadController.Singleton.IsLocked && AlphaWarheadOutsitePanel.nukeside.enabled)
+		if (this._unlocked && !AlphaWarheadController.Singleton.IsLocked && AlphaWarheadOutsitePanel.nukeside.enabled)
 		{
 			AlphaWarheadController.Singleton.StartDetonation(isAutomatic: false, suppressSubtitles: false, ply);
 			ServerLogs.AddLog(ServerLogs.Modules.Warhead, ply.LoggedNameFromRefHub() + " started the Alpha Warhead detonation.", ServerLogs.ServerLogType.GameEvent);
@@ -137,28 +137,28 @@ public class AlphaWarheadActivationPanel : NetworkBehaviour, IServerInteractable
 
 	private void Start()
 	{
-		_permsIndicator.Register(this);
-		if (_unlocked)
+		this._permsIndicator.Register(this);
+		if (this._unlocked)
 		{
-			_nfcScanner.SetGranted();
-			_permsIndicator.PlayAccepted(null);
+			this._nfcScanner.SetGranted();
+			this._permsIndicator.PlayAccepted(null);
 		}
 		else
 		{
-			_nfcScanner.SetRegular();
+			this._nfcScanner.SetRegular();
 		}
 	}
 
 	private void Awake()
 	{
-		Instance = this;
+		AlphaWarheadActivationPanel.Instance = this;
 	}
 
 	[ClientRpc]
 	private void RpcGranted()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void AlphaWarheadActivationPanel::RpcGranted()", 1769627351, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void AlphaWarheadActivationPanel::RpcGranted()", 1769627351, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -167,7 +167,7 @@ public class AlphaWarheadActivationPanel : NetworkBehaviour, IServerInteractable
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		GeneratedNetworkCode._Write_Interactables_002EInterobjects_002EDoorUtils_002EDoorPermissionFlags(writer, flags);
-		SendRPCInternal("System.Void AlphaWarheadActivationPanel::RpcDenied(Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", -1577515699, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void AlphaWarheadActivationPanel::RpcDenied(Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", -1577515699, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -175,7 +175,7 @@ public class AlphaWarheadActivationPanel : NetworkBehaviour, IServerInteractable
 	private void RpcReset()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void AlphaWarheadActivationPanel::RpcReset()", 58845995, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void AlphaWarheadActivationPanel::RpcReset()", 58845995, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -191,9 +191,9 @@ public class AlphaWarheadActivationPanel : NetworkBehaviour, IServerInteractable
 
 	protected void UserCode_RpcGranted()
 	{
-		PlayBeep(_grantedClip);
-		_nfcScanner.SetGranted();
-		_permsIndicator.PlayAccepted(null);
+		this.PlayBeep(this._grantedClip);
+		this._nfcScanner.SetGranted();
+		this._permsIndicator.PlayAccepted(null);
 	}
 
 	protected static void InvokeUserCode_RpcGranted(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -210,9 +210,9 @@ public class AlphaWarheadActivationPanel : NetworkBehaviour, IServerInteractable
 
 	protected void UserCode_RpcDenied__DoorPermissionFlags(DoorPermissionFlags flags)
 	{
-		PlayBeep(_deniedClip);
-		_nfcScanner.SetTemporaryDenied(_deniedCooldownDuration);
-		_permsIndicator.PlayDenied(flags, _deniedCooldownDuration);
+		this.PlayBeep(this._deniedClip);
+		this._nfcScanner.SetTemporaryDenied(this._deniedCooldownDuration);
+		this._permsIndicator.PlayDenied(flags, this._deniedCooldownDuration);
 	}
 
 	protected static void InvokeUserCode_RpcDenied__DoorPermissionFlags(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -229,8 +229,8 @@ public class AlphaWarheadActivationPanel : NetworkBehaviour, IServerInteractable
 
 	protected void UserCode_RpcReset()
 	{
-		_nfcScanner.SetRegular();
-		_permsIndicator.ShowIdle();
+		this._nfcScanner.SetRegular();
+		this._permsIndicator.ShowIdle();
 	}
 
 	protected static void InvokeUserCode_RpcReset(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -257,13 +257,13 @@ public class AlphaWarheadActivationPanel : NetworkBehaviour, IServerInteractable
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(_unlocked);
+			writer.WriteBool(this._unlocked);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteBool(_unlocked);
+			writer.WriteBool(this._unlocked);
 		}
 	}
 
@@ -272,13 +272,13 @@ public class AlphaWarheadActivationPanel : NetworkBehaviour, IServerInteractable
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _unlocked, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._unlocked, null, reader.ReadBool());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _unlocked, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._unlocked, null, reader.ReadBool());
 		}
 	}
 }

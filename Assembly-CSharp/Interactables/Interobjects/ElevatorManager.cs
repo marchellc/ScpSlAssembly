@@ -23,10 +23,10 @@ public class ElevatorManager : MonoBehaviour
 
 	private void Awake()
 	{
-		RegisterElevatorPrefab(_defaultChamber);
-		_customChambers.ForEach(delegate(ChamberTypePair x)
+		this.RegisterElevatorPrefab(this._defaultChamber);
+		this._customChambers.ForEach(delegate(ChamberTypePair x)
 		{
-			RegisterElevatorPrefab(x.Prefab);
+			this.RegisterElevatorPrefab(x.Prefab);
 		});
 	}
 
@@ -40,7 +40,7 @@ public class ElevatorManager : MonoBehaviour
 		SeedSynchronizer.OnGenerationFinished += SpawnAllChambers;
 		if (SeedSynchronizer.MapGenerated)
 		{
-			SpawnAllChambers();
+			this.SpawnAllChambers();
 		}
 	}
 
@@ -63,8 +63,8 @@ public class ElevatorManager : MonoBehaviour
 		{
 			return;
 		}
-		ElevatorChamber original = _defaultChamber;
-		ChamberTypePair[] customChambers = _customChambers;
+		ElevatorChamber original = this._defaultChamber;
+		ChamberTypePair[] customChambers = this._customChambers;
 		for (int i = 0; i < customChambers.Length; i++)
 		{
 			ChamberTypePair chamberTypePair = customChambers[i];

@@ -17,7 +17,7 @@ public static class ThirdpersonItemPoolManager
 
 	private static void SetupPools()
 	{
-		if (_poolsInitiated)
+		if (ThirdpersonItemPoolManager._poolsInitiated)
 		{
 			return;
 		}
@@ -29,7 +29,7 @@ public static class ThirdpersonItemPoolManager
 				PoolManager.Singleton.TryAddPool(thirdpersonModel);
 			}
 		}
-		_poolsInitiated = true;
+		ThirdpersonItemPoolManager._poolsInitiated = true;
 	}
 
 	public static bool TryGet(InventorySubcontroller targetParent, ItemIdentifier item, out ThirdpersonItemBase result, bool restrictPoolingToItem = false)
@@ -45,7 +45,7 @@ public static class ThirdpersonItemPoolManager
 		}
 		else
 		{
-			SetupPools();
+			ThirdpersonItemPoolManager.SetupPools();
 		}
 		result = null;
 		if (targetParent.ItemSpawnpoint == null)

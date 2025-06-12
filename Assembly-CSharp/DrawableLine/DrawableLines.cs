@@ -23,9 +23,9 @@ public static class DrawableLines
 		{
 			if (!NetworkServer.active)
 			{
-				return ClientDefaultDuration;
+				return DrawableLines.ClientDefaultDuration;
 			}
-			return ServerDefaultDuration;
+			return DrawableLines.ServerDefaultDuration;
 		}
 	}
 
@@ -35,9 +35,9 @@ public static class DrawableLines
 		{
 			if (!NetworkServer.active)
 			{
-				return ClientDefaultColor;
+				return DrawableLines.ClientDefaultColor;
 			}
-			return ServerDefaultColor;
+			return DrawableLines.ServerDefaultColor;
 		}
 	}
 
@@ -47,32 +47,32 @@ public static class DrawableLines
 
 	public static void ClientGenerateLine(params Vector3[] positions)
 	{
-		ClientGenerateLine(ClientDefaultDuration, ClientDefaultColor, positions);
+		DrawableLines.ClientGenerateLine(DrawableLines.ClientDefaultDuration, DrawableLines.ClientDefaultColor, positions);
 	}
 
 	public static void ClientGenerateLine(float? duration, params Vector3[] positions)
 	{
-		ClientGenerateLine(duration, ClientDefaultColor, positions);
+		DrawableLines.ClientGenerateLine(duration, DrawableLines.ClientDefaultColor, positions);
 	}
 
 	public static void ClientGenerateLine(Color? color, params Vector3[] positions)
 	{
-		ClientGenerateLine(ClientDefaultDuration, color, positions);
+		DrawableLines.ClientGenerateLine(DrawableLines.ClientDefaultDuration, color, positions);
 	}
 
 	public static void ClientGenerateLine(float? duration, Color? color, params Vector3[] positions)
 	{
 		if (!color.HasValue)
 		{
-			color = ClientDefaultColor;
+			color = DrawableLines.ClientDefaultColor;
 		}
-		if (DurationOverride.HasValue)
+		if (DrawableLines.DurationOverride.HasValue)
 		{
-			duration = DurationOverride.Value;
+			duration = DrawableLines.DurationOverride.Value;
 		}
 		else if (!duration.HasValue)
 		{
-			duration = ClientDefaultDuration;
+			duration = DrawableLines.ClientDefaultDuration;
 		}
 		for (int i = 0; i < positions.Length - 1; i++)
 		{
@@ -84,53 +84,53 @@ public static class DrawableLines
 
 	public static void GenerateLine(params Vector3[] positions)
 	{
-		GenerateLine(DefaultDuration, DefaultColor, positions);
+		DrawableLines.GenerateLine(DrawableLines.DefaultDuration, DrawableLines.DefaultColor, positions);
 	}
 
 	public static void GenerateLine(Color? color, params Vector3[] positions)
 	{
-		GenerateLine(DefaultDuration, color, positions);
+		DrawableLines.GenerateLine(DrawableLines.DefaultDuration, color, positions);
 	}
 
 	public static void GenerateLine(float? duration, params Vector3[] positions)
 	{
-		GenerateLine(duration, DefaultColor, positions);
+		DrawableLines.GenerateLine(duration, DrawableLines.DefaultColor, positions);
 	}
 
 	public static void GenerateLine(float? duration, Color? color, params Vector3[] positions)
 	{
-		if (IsDebugModeEnabled)
+		if (DrawableLines.IsDebugModeEnabled)
 		{
 			if (NetworkServer.active)
 			{
-				ServerGenerateLine(duration, color, positions);
+				DrawableLines.ServerGenerateLine(duration, color, positions);
 			}
 			else
 			{
-				ClientGenerateLine(duration, color, positions);
+				DrawableLines.ClientGenerateLine(duration, color, positions);
 			}
 		}
 	}
 
 	public static void GenerateSphere(Vector3 origin, float radius, int segments = 8)
 	{
-		GenerateSphere(origin, radius, DefaultDuration, segments);
+		DrawableLines.GenerateSphere(origin, radius, DrawableLines.DefaultDuration, segments);
 	}
 
 	public static void GenerateSphere(Vector3 origin, float radius, float? duration, int segments = 8)
 	{
-		GenerateSphere(origin, radius, duration, DefaultColor, segments);
+		DrawableLines.GenerateSphere(origin, radius, duration, DrawableLines.DefaultColor, segments);
 	}
 
 	public static void GenerateSphere(Vector3 origin, float radius, Color? color, int segments = 8)
 	{
-		GenerateSphere(origin, radius, DefaultDuration, color, segments);
+		DrawableLines.GenerateSphere(origin, radius, DrawableLines.DefaultDuration, color, segments);
 	}
 
 	public static void GenerateSphere(Vector3 origin, float radius, float? duration, Color? color, int segments = 8)
 	{
-		GenerateLine(duration, color, GetCircle(origin, radius, horizontalAxis: true, segments));
-		GenerateLine(duration, color, GetCircle(origin, radius, horizontalAxis: false, segments));
+		DrawableLines.GenerateLine(duration, color, DrawableLines.GetCircle(origin, radius, horizontalAxis: true, segments));
+		DrawableLines.GenerateLine(duration, color, DrawableLines.GetCircle(origin, radius, horizontalAxis: false, segments));
 	}
 
 	public static Vector3[] GetCircle(Vector3 origin, float radius, bool horizontalAxis = true, int segments = 8)
@@ -158,63 +158,63 @@ public static class DrawableLines
 
 	public static void ServerGenerateLine(params Vector3[] positions)
 	{
-		ServerGenerateLine(ServerDefaultDuration, ServerDefaultColor, positions);
+		DrawableLines.ServerGenerateLine(DrawableLines.ServerDefaultDuration, DrawableLines.ServerDefaultColor, positions);
 	}
 
 	public static void ServerGenerateLine(float? duration, params Vector3[] positions)
 	{
-		ServerGenerateLine(duration, ServerDefaultColor, positions);
+		DrawableLines.ServerGenerateLine(duration, DrawableLines.ServerDefaultColor, positions);
 	}
 
 	public static void ServerGenerateLine(Color? color, params Vector3[] positions)
 	{
-		ServerGenerateLine(ServerDefaultDuration, color, positions);
+		DrawableLines.ServerGenerateLine(DrawableLines.ServerDefaultDuration, color, positions);
 	}
 
 	public static void ServerGenerateLine(float? duration, Color? color, params Vector3[] positions)
 	{
-		if (NetworkServer.active && IsDebugModeEnabled)
+		if (NetworkServer.active && DrawableLines.IsDebugModeEnabled)
 		{
-			ServerGenerateMessage(duration, color, positions).SendToAuthenticated();
+			DrawableLines.ServerGenerateMessage(duration, color, positions).SendToAuthenticated();
 		}
 	}
 
 	public static void ServerGenerateLine(ReferenceHub hub, params Vector3[] positions)
 	{
-		ServerGenerateLine(hub, ServerDefaultDuration, ServerDefaultColor, positions);
+		DrawableLines.ServerGenerateLine(hub, DrawableLines.ServerDefaultDuration, DrawableLines.ServerDefaultColor, positions);
 	}
 
 	public static void ServerGenerateLine(ReferenceHub hub, float? duration, params Vector3[] positions)
 	{
-		ServerGenerateLine(hub, duration, ServerDefaultColor, positions);
+		DrawableLines.ServerGenerateLine(hub, duration, DrawableLines.ServerDefaultColor, positions);
 	}
 
 	public static void ServerGenerateLine(ReferenceHub hub, Color? color, params Vector3[] positions)
 	{
-		ServerGenerateLine(hub, ServerDefaultDuration, color, positions);
+		DrawableLines.ServerGenerateLine(hub, DrawableLines.ServerDefaultDuration, color, positions);
 	}
 
 	public static void ServerGenerateLine(ReferenceHub hub, float? duration, Color? color, params Vector3[] positions)
 	{
-		if (NetworkServer.active && IsDebugModeEnabled)
+		if (NetworkServer.active && DrawableLines.IsDebugModeEnabled)
 		{
-			hub.connectionToServer.Send(ServerGenerateMessage(duration, color, positions));
+			hub.connectionToServer.Send(DrawableLines.ServerGenerateMessage(duration, color, positions));
 		}
 	}
 
 	private static DrawableLineMessage ServerGenerateMessage(float? duration, Color? color, Vector3[] positions)
 	{
-		if (DurationOverride.HasValue)
+		if (DrawableLines.DurationOverride.HasValue)
 		{
-			duration = DurationOverride.Value;
+			duration = DrawableLines.DurationOverride.Value;
 		}
 		else if (!duration.HasValue)
 		{
-			duration = ServerDefaultDuration;
+			duration = DrawableLines.ServerDefaultDuration;
 		}
 		if (!color.HasValue)
 		{
-			color = ServerDefaultColor;
+			color = DrawableLines.ServerDefaultColor;
 		}
 		return new DrawableLineMessage(duration, color, positions);
 	}

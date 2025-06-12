@@ -12,7 +12,7 @@ public struct DamageIndicatorMessage : NetworkMessage
 
 	public DamageIndicatorMessage(float damage, Vector3 position)
 	{
-		ReceivedDamage = (byte)Mathf.Clamp(Mathf.RoundToInt(damage), 1, 255);
-		DamagePosition = new RelativePosition(position);
+		this.ReceivedDamage = (byte)Mathf.Clamp(Mathf.RoundToInt(damage), 1, 255);
+		this.DamagePosition = new RelativePosition(position);
 	}
 }

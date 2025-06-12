@@ -10,14 +10,14 @@ public class DoorNametagExtension : DoorVariantExtension
 	[SerializeField]
 	private string _nametag;
 
-	public string GetName => _nametag;
+	public string GetName => this._nametag;
 
 	private void Start()
 	{
-		UpdateName(_nametag);
-		if (TryGetComponent<DoorVariant>(out var component))
+		this.UpdateName(this._nametag);
+		if (base.TryGetComponent<DoorVariant>(out var component))
 		{
-			component.DoorName = _nametag;
+			component.DoorName = this._nametag;
 		}
 	}
 
@@ -33,8 +33,8 @@ public class DoorNametagExtension : DoorVariantExtension
 		}
 		else
 		{
-			_nametag = newName;
-			NamedDoors[newName] = this;
+			this._nametag = newName;
+			DoorNametagExtension.NamedDoors[newName] = this;
 		}
 	}
 }

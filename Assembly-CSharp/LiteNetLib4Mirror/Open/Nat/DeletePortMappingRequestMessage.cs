@@ -8,7 +8,7 @@ internal class DeletePortMappingRequestMessage : RequestMessageBase
 
 	public DeletePortMappingRequestMessage(Mapping mapping)
 	{
-		_mapping = mapping;
+		this._mapping = mapping;
 	}
 
 	public override IDictionary<string, object> ToXml()
@@ -19,10 +19,13 @@ internal class DeletePortMappingRequestMessage : RequestMessageBase
 				"NewRemoteHost",
 				string.Empty
 			},
-			{ "NewExternalPort", _mapping.PublicPort },
+			{
+				"NewExternalPort",
+				this._mapping.PublicPort
+			},
 			{
 				"NewProtocol",
-				(_mapping.NetworkProtocolType == NetworkProtocolType.Tcp) ? "TCP" : "UDP"
+				(this._mapping.NetworkProtocolType == NetworkProtocolType.Tcp) ? "TCP" : "UDP"
 			}
 		};
 	}

@@ -23,7 +23,7 @@ public static class BinaryUtil
 		if (num3 < 256)
 		{
 			num3 = 256;
-			FastResize(ref bytes, num3);
+			BinaryUtil.FastResize(ref bytes, num3);
 			return;
 		}
 		if (num2 == 2147483591)
@@ -39,7 +39,7 @@ public static class BinaryUtil
 		{
 			num3 = num4;
 		}
-		FastResize(ref bytes, num3);
+		BinaryUtil.FastResize(ref bytes, num3);
 	}
 
 	public static void FastResize(ref byte[] array, int newSize)

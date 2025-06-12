@@ -33,17 +33,17 @@ public class Scp939Motor : FpcMotor
 
 	private static readonly HashSet<FpcStandardRoleBase> DetectedTargets = new HashSet<FpcStandardRoleBase>();
 
-	private bool IsLocalPlayer => ViewMode == FpcViewMode.LocalPlayer;
+	private bool IsLocalPlayer => base.ViewMode == FpcViewMode.LocalPlayer;
 
 	private bool IsControllable
 	{
 		get
 		{
-			if (!IsLocalPlayer)
+			if (!this.IsLocalPlayer)
 			{
 				if (NetworkServer.active)
 				{
-					return Hub.IsDummy;
+					return base.Hub.IsDummy;
 				}
 				return false;
 			}
@@ -55,9 +55,9 @@ public class Scp939Motor : FpcMotor
 	{
 		get
 		{
-			if (_lunge.IsReady)
+			if (this._lunge.IsReady)
 			{
-				if (!_lunge.LungeRequested)
+				if (!this._lunge.LungeRequested)
 				{
 					return base.WantsToJump;
 				}
@@ -67,24 +67,24 @@ public class Scp939Motor : FpcMotor
 		}
 	}
 
-	private bool IsLunging => _lunge.State == Scp939LungeState.Triggered;
+	private bool IsLunging => this._lunge.State == Scp939LungeState.Triggered;
 
 	protected override float Speed
 	{
 		get
 		{
-			if (IsLunging)
+			if (this.IsLunging)
 			{
-				return _lunge.LungeForwardSpeed;
+				return this._lunge.LungeForwardSpeed;
 			}
-			if (IsLocalPlayer && _cloud.TargetState)
+			if (this.IsLocalPlayer && this._cloud.TargetState)
 			{
-				return base.Speed * Mathf.Clamp01(1f - _cloud.HoldDuration);
+				return base.Speed * Mathf.Clamp01(1f - this._cloud.HoldDuration);
 			}
-			float num = _focus.State;
-			if (NetworkServer.active && !IsLocalPlayer && _focus.TargetState)
+			float num = this._focus.State;
+			if (NetworkServer.active && !this.IsLocalPlayer && this._focus.TargetState)
 			{
-				if (_focus.FrozenTime > 3.5f)
+				if (this._focus.FrozenTime > 3.5f)
 				{
 					return 0f;
 				}
@@ -98,11 +98,11 @@ public class Scp939Motor : FpcMotor
 	{
 		get
 		{
-			if (!IsLocalPlayer || !IsLunging)
+			if (!this.IsLocalPlayer || !this.IsLunging)
 			{
 				return base.DesiredMove;
 			}
-			return CachedTransform.forward;
+			return base.CachedTransform.forward;
 		}
 	}
 
@@ -110,11 +110,11 @@ public class Scp939Motor : FpcMotor
 	{
 		get
 		{
-			if (!NetworkServer.active || Hub.isLocalPlayer || !IsLunging)
+			if (!NetworkServer.active || base.Hub.isLocalPlayer || !this.IsLunging)
 			{
 				return base.Velocity;
 			}
-			return CachedTransform.forward * _lunge.LungeForwardSpeed;
+			return base.CachedTransform.forward * this._lunge.LungeForwardSpeed;
 		}
 	}
 
@@ -122,9 +122,9 @@ public class Scp939Motor : FpcMotor
 	{
 		get
 		{
-			if (IsLocalPlayer)
+			if (this.IsLocalPlayer)
 			{
-				return Vector3.Dot(base.MoveDirection.NormalizeIgnoreY(), CachedTransform.forward) > 0.4f;
+				return Vector3.Dot(base.MoveDirection.NormalizeIgnoreY(), base.CachedTransform.forward) > 0.4f;
 			}
 			return true;
 		}
@@ -132,9 +132,9 @@ public class Scp939Motor : FpcMotor
 
 	private void ProcessHitboxCollision(HitboxIdentity hid)
 	{
-		if (IsControllable && HitboxIdentity.IsEnemy(Hub, hid.TargetHub) && hid.TargetHub.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase && !((MainModule.Position - fpcStandardRoleBase.FpcModule.Position).SqrMagnitudeIgnoreY() < 0.4f))
+		if (this.IsControllable && HitboxIdentity.IsEnemy(base.Hub, hid.TargetHub) && hid.TargetHub.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase && !((base.MainModule.Position - fpcStandardRoleBase.FpcModule.Position).SqrMagnitudeIgnoreY() < 0.4f))
 		{
-			DetectedTargets.Add(fpcStandardRoleBase);
+			Scp939Motor.DetectedTargets.Add(fpcStandardRoleBase);
 		}
 	}
 
@@ -142,7 +142,7 @@ public class Scp939Motor : FpcMotor
 	{
 		if (NetworkServer.active)
 		{
-			window.Damage(window.health, new Scp939DamageHandler(_role, 120f, Scp939DamageType.LungeTarget), default(Vector3));
+			window.Damage(window.health, new Scp939DamageHandler(this._role, 120f, Scp939DamageType.LungeTarget), default(Vector3));
 			return;
 		}
 		Collider[] componentsInChildren = window.GetComponentsInChildren<Collider>();
@@ -154,18 +154,18 @@ public class Scp939Motor : FpcMotor
 
 	private void OverlapCapsule(Vector3 point1, Vector3 point2)
 	{
-		int num = Physics.OverlapCapsuleNonAlloc(point1, point2, 0.6f, Detections, Mask);
+		int num = Physics.OverlapCapsuleNonAlloc(point1, point2, 0.6f, Scp939Motor.Detections, Scp939Motor.Mask);
 		for (int i = 0; i < num; i++)
 		{
-			if (Detections[i].TryGetComponent<IDestructible>(out var component))
+			if (Scp939Motor.Detections[i].TryGetComponent<IDestructible>(out var component))
 			{
 				if (component is HitboxIdentity hid)
 				{
-					ProcessHitboxCollision(hid);
+					this.ProcessHitboxCollision(hid);
 				}
 				else if (component is BreakableWindow window)
 				{
-					ProcessWindowCollision(window);
+					this.ProcessWindowCollision(window);
 				}
 			}
 		}
@@ -173,10 +173,10 @@ public class Scp939Motor : FpcMotor
 
 	protected override void UpdateFloating()
 	{
-		if (_focus.State == 1f && _lunge.State != Scp939LungeState.Triggered)
+		if (this._focus.State == 1f && this._lunge.State != Scp939LungeState.Triggered)
 		{
 			Vector3 moveDirection = base.MoveDirection;
-			moveDirection.y = Mathf.Min(moveDirection.y, 0f - _lunge.LungeJumpSpeed);
+			moveDirection.y = Mathf.Min(moveDirection.y, 0f - this._lunge.LungeJumpSpeed);
 			base.MoveDirection = moveDirection;
 		}
 		base.UpdateFloating();
@@ -184,13 +184,13 @@ public class Scp939Motor : FpcMotor
 
 	protected override void UpdateGrounded(ref bool sendJump, float jumpSpeed)
 	{
-		if (WantsToLunge)
+		if (this.WantsToLunge)
 		{
-			_lunge.TriggerLunge();
-			jumpSpeed = _lunge.LungeJumpSpeed;
+			this._lunge.TriggerLunge();
+			jumpSpeed = this._lunge.LungeJumpSpeed;
 			base.WantsToJump = true;
 		}
-		else if (_focus.State > 0f || _cloud.TargetState)
+		else if (this._focus.State > 0f || this._cloud.TargetState)
 		{
 			jumpSpeed = 0f;
 		}
@@ -200,24 +200,24 @@ public class Scp939Motor : FpcMotor
 	protected override Vector3 GetFrameMove()
 	{
 		Vector3 frameMove = base.GetFrameMove();
-		if (!IsLunging || (!NetworkServer.active && !IsLocalPlayer))
+		if (!this.IsLunging || (!NetworkServer.active && !this.IsLocalPlayer))
 		{
 			return frameMove;
 		}
-		DetectedTargets.Clear();
-		Vector3 position = MainModule.Position;
+		Scp939Motor.DetectedTargets.Clear();
+		Vector3 position = base.MainModule.Position;
 		Vector3 vector = position + frameMove;
 		Vector3 vector2 = Vector3.down * 0.6f;
-		OverlapCapsule(position, vector);
-		OverlapCapsule(position + vector2, vector + vector2);
-		if (!IsControllable)
+		this.OverlapCapsule(position, vector);
+		this.OverlapCapsule(position + vector2, vector + vector2);
+		if (!this.IsControllable)
 		{
 			return frameMove;
 		}
 		FpcStandardRoleBase targetRole = null;
 		float num = float.MaxValue;
 		bool flag = false;
-		foreach (FpcStandardRoleBase detectedTarget in DetectedTargets)
+		foreach (FpcStandardRoleBase detectedTarget in Scp939Motor.DetectedTargets)
 		{
 			float sqrMagnitude = (detectedTarget.FpcModule.Position - vector).sqrMagnitude;
 			if (!(sqrMagnitude >= num))
@@ -234,16 +234,16 @@ public class Scp939Motor : FpcMotor
 		{
 			return frameMove;
 		}
-		_lunge.ClientSendHit(targetRole);
-		return _lunge.LungeJumpSpeed * Time.deltaTime * Vector3.down;
+		this._lunge.ClientSendHit(targetRole);
+		return this._lunge.LungeJumpSpeed * Time.deltaTime * Vector3.down;
 	}
 
 	public Scp939Motor(ReferenceHub hub, Scp939Role role, FallDamageSettings fallDamageSettings)
 		: base(hub, role.FpcModule, fallDamageSettings)
 	{
-		_role = role;
-		role.SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out _focus);
-		role.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out _lunge);
-		role.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out _cloud);
+		this._role = role;
+		role.SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out this._focus);
+		role.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out this._lunge);
+		role.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out this._cloud);
 	}
 }

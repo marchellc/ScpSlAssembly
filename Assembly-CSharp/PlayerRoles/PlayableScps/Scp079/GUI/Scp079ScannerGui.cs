@@ -107,15 +107,15 @@ public class Scp079ScannerGui : Scp079GuiElementBase
 
 	private static CachedValue<Vector3> _pos;
 
-	public static float MapZoom => _pos?.Value.z ?? 1f;
+	public static float MapZoom => Scp079ScannerGui._pos?.Value.z ?? 1f;
 
-	public static Vector2 MapPos => _pos?.Value ?? ((Vector3)Vector2.zero);
+	public static Vector2 MapPos => Scp079ScannerGui._pos?.Value ?? ((Vector3)Vector2.zero);
 
 	public static float AnimInterpolant { get; private set; }
 
 	private Bounds GenerateCombinedBounds()
 	{
-		int num = _zoneMaps.Value.Length;
+		int num = this._zoneMaps.Value.Length;
 		if (num == 0)
 		{
 			throw new InvalidOperationException("Cannot set cache of Breach Scanner zone maps before they are generated.");
@@ -124,7 +124,7 @@ public class Scp079ScannerGui : Scp079GuiElementBase
 		Bounds result = default(Bounds);
 		for (int i = 0; i < num; i++)
 		{
-			IZoneMap obj = _zoneMaps.Value[i];
+			IZoneMap obj = this._zoneMaps.Value[i];
 			Bounds rectBounds = obj.RectBounds;
 			if (!flag)
 			{
@@ -137,22 +137,22 @@ public class Scp079ScannerGui : Scp079GuiElementBase
 			}
 			if (!obj.Ready)
 			{
-				_combinedBounds.SetDirty();
+				this._combinedBounds.SetDirty();
 			}
 		}
-		result.SetMinMax(new Vector2(result.min.x - (float)_padding.left, result.min.y - (float)_padding.bottom), new Vector2(result.max.x + (float)_padding.right, result.max.y + (float)_padding.top));
+		result.SetMinMax(new Vector2(result.min.x - (float)this._padding.left, result.min.y - (float)this._padding.bottom), new Vector2(result.max.x + (float)this._padding.right, result.max.y + (float)this._padding.top));
 		return result;
 	}
 
 	private ToggleInstance[] GenerateToggleInstances()
 	{
-		IZoneMap[] value = _zoneMaps.Value;
+		IZoneMap[] value = this._zoneMaps.Value;
 		ToggleInstance[] array = new ToggleInstance[value.Length];
 		for (int i = 0; i < value.Length; i++)
 		{
 			if (value[i] is MonoBehaviour monoBehaviour)
 			{
-				GameObject gameObject = UnityEngine.Object.Instantiate(_toggleInstanceTemplate, monoBehaviour.transform);
+				GameObject gameObject = UnityEngine.Object.Instantiate(this._toggleInstanceTemplate, monoBehaviour.transform);
 				Button component = gameObject.GetComponent<Button>();
 				RectTransform rectTransform = component.transform as RectTransform;
 				array[i] = new ToggleInstance
@@ -165,11 +165,11 @@ public class Scp079ScannerGui : Scp079GuiElementBase
 				int iCopy = i;
 				component.onClick.AddListener(delegate
 				{
-					ProcessButtonEvent(iCopy);
+					this.ProcessButtonEvent(iCopy);
 				});
 				Bounds rectBounds = value[i].RectBounds;
 				rectTransform.anchoredPosition = rectBounds.center;
-				rectTransform.sizeDelta = rectBounds.size + Vector3.one * _zoneBorderWidth;
+				rectTransform.sizeDelta = rectBounds.size + Vector3.one * this._zoneBorderWidth;
 			}
 		}
 		return array;
@@ -177,92 +177,92 @@ public class Scp079ScannerGui : Scp079GuiElementBase
 
 	private void ProcessButtonEvent(int instanceId)
 	{
-		_zoneSelector.ToggleZoneStatus(_zoneMaps.Value[instanceId].Zone);
-		RefreshZoneToggles();
+		this._zoneSelector.ToggleZoneStatus(this._zoneMaps.Value[instanceId].Zone);
+		this.RefreshZoneToggles();
 	}
 
 	private void RefreshZoneToggles()
 	{
-		ToggleInstance[] value = _toggleInstances.Value;
+		ToggleInstance[] value = this._toggleInstances.Value;
 		for (int i = 0; i < value.Length; i++)
 		{
 			ToggleInstance toggleInstance = value[i];
 			if (toggleInstance.IsSet)
 			{
-				bool zoneStatus = _zoneSelector.GetZoneStatus(_zoneMaps.Value[i].Zone);
-				toggleInstance.Outline.color = (zoneStatus ? _onOutlineColor : _offOutlineColor);
-				toggleInstance.ToggleImage.sprite = (zoneStatus ? _onIcon : _offIcon);
+				bool zoneStatus = this._zoneSelector.GetZoneStatus(this._zoneMaps.Value[i].Zone);
+				toggleInstance.Outline.color = (zoneStatus ? this._onOutlineColor : this._offOutlineColor);
+				toggleInstance.ToggleImage.sprite = (zoneStatus ? this._onIcon : this._offIcon);
 			}
 		}
-		int selectedZonesCnt = _zoneSelector.SelectedZonesCnt;
+		int selectedZonesCnt = this._zoneSelector.SelectedZonesCnt;
 		Scp079HudTranslation val = ((selectedZonesCnt == 0) ? Scp079HudTranslation.ScannerNoZoneSelectedLabel : Scp079HudTranslation.ScannerSelectedZoneCntLabel);
-		_selectionText.text = string.Format(Translations.Get(val), selectedZonesCnt);
-		if (_prevZoneCnt != selectedZonesCnt)
+		this._selectionText.text = string.Format(Translations.Get(val), selectedZonesCnt);
+		if (this._prevZoneCnt != selectedZonesCnt)
 		{
-			PlaySound(_zoneSelectClips[Mathf.Min(selectedZonesCnt, _zoneSelectClips.Length - 1)]);
-			_prevZoneCnt = selectedZonesCnt;
+			base.PlaySound(this._zoneSelectClips[Mathf.Min(selectedZonesCnt, this._zoneSelectClips.Length - 1)]);
+			this._prevZoneCnt = selectedZonesCnt;
 		}
 	}
 
 	private void RefreshFilters()
 	{
 		int num = 0;
-		TeamFilter[] teamFilters = _teamFilters;
+		TeamFilter[] teamFilters = this._teamFilters;
 		for (int i = 0; i < teamFilters.Length; i++)
 		{
 			TeamFilter teamFilter = teamFilters[i];
-			bool teamStatus = _teamSelector.GetTeamStatus(teamFilter.Team);
+			bool teamStatus = this._teamSelector.GetTeamStatus(teamFilter.Team);
 			teamFilter.Checkbox.SetIsOnWithoutNotify(teamStatus);
 			if (teamStatus)
 			{
 				num++;
 			}
 		}
-		_filtersWarningText.enabled = num == 0;
-		if (num != _prevTeamsCnt)
+		this._filtersWarningText.enabled = num == 0;
+		if (num != this._prevTeamsCnt)
 		{
-			if (_wasOpen)
+			if (this._wasOpen)
 			{
-				PlaySound(_toggleFliterSound);
+				base.PlaySound(this._toggleFliterSound);
 			}
-			_prevTeamsCnt = num;
+			this._prevTeamsCnt = num;
 		}
 	}
 
 	private void OnHumanDetected(ReferenceHub hub)
 	{
-		PlaySound(_detectedHumanSound);
-		Scp079DetectedPlayerIndicator scp079DetectedPlayerIndicator = UnityEngine.Object.Instantiate(_indicator);
-		scp079DetectedPlayerIndicator.Setup(hub, _zoneMaps.Value, base.transform as RectTransform);
+		base.PlaySound(this._detectedHumanSound);
+		Scp079DetectedPlayerIndicator scp079DetectedPlayerIndicator = UnityEngine.Object.Instantiate(this._indicator);
+		scp079DetectedPlayerIndicator.Setup(hub, this._zoneMaps.Value, base.transform as RectTransform);
 		scp079DetectedPlayerIndicator.gameObject.SetActive(value: true);
 	}
 
 	internal override void Init(Scp079Role role, ReferenceHub owner)
 	{
 		base.Init(role, owner);
-		AnimInterpolant = 0f;
-		role.SubroutineModule.TryGetSubroutine<Scp079ScannerTracker>(out _tracker);
-		role.SubroutineModule.TryGetSubroutine<Scp079ScannerZoneSelector>(out _zoneSelector);
-		role.SubroutineModule.TryGetSubroutine<Scp079ScannerTeamFilterSelector>(out _teamSelector);
-		_tracker.OnDetected += OnHumanDetected;
-		_prevZoneCnt = _zoneSelector.SelectedZonesCnt;
-		_combinedBounds = new CachedValue<Bounds>(GenerateCombinedBounds);
-		_toggleInstances = new CachedValue<ToggleInstance[]>(GenerateToggleInstances);
-		_zoneMaps = new CachedValue<IZoneMap[]>(() => GetComponentsInChildren<IZoneMap>());
-		_pos = new CachedValue<Vector3>(delegate
+		Scp079ScannerGui.AnimInterpolant = 0f;
+		role.SubroutineModule.TryGetSubroutine<Scp079ScannerTracker>(out this._tracker);
+		role.SubroutineModule.TryGetSubroutine<Scp079ScannerZoneSelector>(out this._zoneSelector);
+		role.SubroutineModule.TryGetSubroutine<Scp079ScannerTeamFilterSelector>(out this._teamSelector);
+		this._tracker.OnDetected += OnHumanDetected;
+		this._prevZoneCnt = this._zoneSelector.SelectedZonesCnt;
+		this._combinedBounds = new CachedValue<Bounds>(GenerateCombinedBounds);
+		this._toggleInstances = new CachedValue<ToggleInstance[]>(GenerateToggleInstances);
+		this._zoneMaps = new CachedValue<IZoneMap[]>(() => base.GetComponentsInChildren<IZoneMap>());
+		Scp079ScannerGui._pos = new CachedValue<Vector3>(delegate
 		{
-			Bounds value = _combinedBounds.Value;
-			Vector2 vector = _fillRect.rect.size / value.size;
-			float num = Mathf.Min(vector.x, vector.y);
-			float num2 = 1f / num;
-			Vector3 vector2 = _fillRect.localPosition * num2;
-			Vector2 vector3 = _fillRect.rect.size * num2 / 2f;
-			return new Vector3(0f - value.center.x - vector3.x, 0f - value.center.y, num) + vector2;
+			Bounds value = this._combinedBounds.Value;
+			Vector2 vector = this._fillRect.rect.size / value.size;
+			float num2 = Mathf.Min(vector.x, vector.y);
+			float num3 = 1f / num2;
+			Vector3 vector2 = this._fillRect.localPosition * num3;
+			Vector2 vector3 = this._fillRect.rect.size * num3 / 2f;
+			return new Vector3(0f - value.center.x - vector3.x, 0f - value.center.y, num2) + vector2;
 		});
-		TeamFilter[] teamFilters = _teamFilters;
-		for (int i = 0; i < teamFilters.Length; i++)
+		TeamFilter[] teamFilters = this._teamFilters;
+		for (int num = 0; num < teamFilters.Length; num++)
 		{
-			TeamFilter filter = teamFilters[i];
+			TeamFilter filter = teamFilters[num];
 			if (!role.IsLocalPlayer)
 			{
 				filter.Checkbox.interactable = false;
@@ -270,38 +270,38 @@ public class Scp079ScannerGui : Scp079GuiElementBase
 			}
 			filter.Checkbox.onValueChanged.AddListener(delegate(bool isOn)
 			{
-				_teamSelector.SetTeamStatus(filter.Team, isOn);
-				RefreshFilters();
+				this._teamSelector.SetTeamStatus(filter.Team, isOn);
+				this.RefreshFilters();
 			});
 		}
 	}
 
 	private void OnDestroy()
 	{
-		_tracker.OnDetected -= OnHumanDetected;
+		this._tracker.OnDetected -= OnHumanDetected;
 	}
 
 	private void Update()
 	{
 		bool visible = Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>.Visible;
 		float target = (visible ? 1 : 0);
-		float animInterpolant = AnimInterpolant;
-		AnimInterpolant = Mathf.MoveTowards(animInterpolant, target, Time.deltaTime * _lerpSpeed);
+		float animInterpolant = Scp079ScannerGui.AnimInterpolant;
+		Scp079ScannerGui.AnimInterpolant = Mathf.MoveTowards(animInterpolant, target, Time.deltaTime * this._lerpSpeed);
 		if (visible)
 		{
-			UpdateOpen();
+			this.UpdateOpen();
 		}
-		_wasOpen = visible;
-		_centerCursor.SetActive(!visible);
-		if (animInterpolant != AnimInterpolant)
+		this._wasOpen = visible;
+		this._centerCursor.SetActive(!visible);
+		if (animInterpolant != Scp079ScannerGui.AnimInterpolant)
 		{
-			UpdateLayout();
+			this.UpdateLayout();
 		}
 	}
 
 	private void UpdateOpen()
 	{
-		IZoneMap[] value = _zoneMaps.Value;
+		IZoneMap[] value = this._zoneMaps.Value;
 		for (int i = 0; i < value.Length; i++)
 		{
 			if (!value[i].Ready)
@@ -310,30 +310,30 @@ public class Scp079ScannerGui : Scp079GuiElementBase
 			}
 		}
 		bool flag = !Scp079Role.LocalInstanceActive;
-		if (!_wasOpen || flag)
+		if (!this._wasOpen || flag)
 		{
-			_pos?.SetDirty();
-			RefreshZoneToggles();
-			RefreshFilters();
+			Scp079ScannerGui._pos?.SetDirty();
+			this.RefreshZoneToggles();
+			this.RefreshFilters();
 		}
-		_nextScanText.text = _tracker.StatusText;
+		this._nextScanText.text = this._tracker.StatusText;
 	}
 
 	private void UpdateLayout()
 	{
 		bool blocksRaycasts = Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>.Visible && Scp079Role.LocalInstanceActive;
-		_uiFader.alpha = AnimInterpolant;
-		_uiFader.blocksRaycasts = blocksRaycasts;
-		ToggleInstance[] value = _toggleInstances.Value;
+		this._uiFader.alpha = Scp079ScannerGui.AnimInterpolant;
+		this._uiFader.blocksRaycasts = blocksRaycasts;
+		ToggleInstance[] value = this._toggleInstances.Value;
 		for (int i = 0; i < value.Length; i++)
 		{
 			ToggleInstance toggleInstance = value[i];
 			if (toggleInstance.IsSet)
 			{
 				toggleInstance.Fader.blocksRaycasts = blocksRaycasts;
-				toggleInstance.Fader.alpha = AnimInterpolant;
+				toggleInstance.Fader.alpha = Scp079ScannerGui.AnimInterpolant;
 			}
 		}
-		_targetCounterText.alpha = 1f - AnimInterpolant;
+		this._targetCounterText.alpha = 1f - Scp079ScannerGui.AnimInterpolant;
 	}
 }

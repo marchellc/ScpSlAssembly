@@ -14,31 +14,31 @@ public class Scp1507MovementModule : FirstPersonMovementModule
 
 	private float _cachedDefaultSpeed;
 
-	private float SpeedBoost => Mathf.Min((float)_swarmAbility.FlockSize * 0.2f, 1.4f);
+	private float SpeedBoost => Mathf.Min((float)this._swarmAbility.FlockSize * 0.2f, 1.4f);
 
 	private float MovementSpeed
 	{
 		get
 		{
-			return WalkSpeed;
+			return base.WalkSpeed;
 		}
 		set
 		{
-			WalkSpeed = value;
-			SprintSpeed = value;
-			CrouchSpeed = value;
+			base.WalkSpeed = value;
+			base.SprintSpeed = value;
+			base.CrouchSpeed = value;
 		}
 	}
 
 	protected override void UpdateMovement()
 	{
 		base.UpdateMovement();
-		MovementSpeed = _cachedDefaultSpeed + SpeedBoost;
+		this.MovementSpeed = this._cachedDefaultSpeed + this.SpeedBoost;
 	}
 
 	private void Awake()
 	{
-		_scp1507.SubroutineModule.TryGetSubroutine<Scp1507SwarmAbility>(out _swarmAbility);
-		_cachedDefaultSpeed = MovementSpeed;
+		this._scp1507.SubroutineModule.TryGetSubroutine<Scp1507SwarmAbility>(out this._swarmAbility);
+		this._cachedDefaultSpeed = this.MovementSpeed;
 	}
 }

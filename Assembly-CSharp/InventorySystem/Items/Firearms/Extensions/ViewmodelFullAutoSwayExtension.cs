@@ -49,42 +49,42 @@ public class ViewmodelFullAutoSwayExtension : MonoBehaviour, IViewmodelExtension
 
 	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_firearm = viewmodel.ParentFirearm;
-		_viewmodel = viewmodel;
-		_statesByLayer = new AnimatorStateInfo[_recoilLayers.Layers.Length];
-		_shotsCounter = new SubsequentShotsCounter(_firearm);
-		for (int i = 0; i < _statesByLayer.Length; i++)
+		this._firearm = viewmodel.ParentFirearm;
+		this._viewmodel = viewmodel;
+		this._statesByLayer = new AnimatorStateInfo[this._recoilLayers.Layers.Length];
+		this._shotsCounter = new SubsequentShotsCounter(this._firearm);
+		for (int i = 0; i < this._statesByLayer.Length; i++)
 		{
-			int layer = _recoilLayers.Layers[i];
-			_statesByLayer[i] = viewmodel.AnimatorStateInfo(layer);
+			int layer = this._recoilLayers.Layers[i];
+			this._statesByLayer[i] = viewmodel.AnimatorStateInfo(layer);
 		}
 	}
 
 	private void LateUpdate()
 	{
-		_shotsCounter.Update();
+		this._shotsCounter.Update();
 		ITriggerControllerModule module;
-		bool targetIncrease = _firearm.TryGetModule<ITriggerControllerModule>(out module) && module.TriggerHeld;
-		UpdateWeight(ref _weightTrigger, targetIncrease, 10f, 5f);
-		bool targetIncrease2 = _shotsCounter.SubsequentShots > 0;
-		UpdateWeight(ref _weightRecentlyFired, targetIncrease2, 10f, 1.5f);
-		bool targetIncrease3 = IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(_firearm).Total > 0;
-		UpdateWeight(ref _weightLoaded, targetIncrease3, 1.5f, 5f);
-		float num = _weightTrigger * _weightLoaded * _weightRecentlyFired;
+		bool targetIncrease = this._firearm.TryGetModule<ITriggerControllerModule>(out module) && module.TriggerHeld;
+		this.UpdateWeight(ref this._weightTrigger, targetIncrease, 10f, 5f);
+		bool targetIncrease2 = this._shotsCounter.SubsequentShots > 0;
+		this.UpdateWeight(ref this._weightRecentlyFired, targetIncrease2, 10f, 1.5f);
+		bool targetIncrease3 = IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(this._firearm).Total > 0;
+		this.UpdateWeight(ref this._weightLoaded, targetIncrease3, 1.5f, 5f);
+		float num = this._weightTrigger * this._weightLoaded * this._weightRecentlyFired;
 		if (num > 0f)
 		{
-			_elapsed += num * Time.deltaTime;
+			this._elapsed += num * Time.deltaTime;
 		}
 		else
 		{
-			_elapsed = 0f;
+			this._elapsed = 0f;
 		}
 		IAdsModule module2;
-		float t = (_firearm.TryGetModule<IAdsModule>(out module2) ? module2.AdsAmount : 0f);
-		float weight = num * Mathf.Lerp(1f, _adsMultiplier, t);
-		for (int i = 0; i < _statesByLayer.Length; i++)
+		float t = (this._firearm.TryGetModule<IAdsModule>(out module2) ? module2.AdsAmount : 0f);
+		float weight = num * Mathf.Lerp(1f, this._adsMultiplier, t);
+		for (int i = 0; i < this._statesByLayer.Length; i++)
 		{
-			UpdateLayer(_recoilLayers.Layers[i], _statesByLayer[i], weight);
+			this.UpdateLayer(this._recoilLayers.Layers[i], this._statesByLayer[i], weight);
 		}
 	}
 
@@ -97,8 +97,8 @@ public class ViewmodelFullAutoSwayExtension : MonoBehaviour, IViewmodelExtension
 
 	private void UpdateLayer(int layerId, AnimatorStateInfo state, float weight)
 	{
-		float time = _elapsed / state.length;
-		_viewmodel.AnimatorPlay(state.shortNameHash, layerId, time);
-		_viewmodel.AnimatorSetLayerWeight(layerId, weight);
+		float time = this._elapsed / state.length;
+		this._viewmodel.AnimatorPlay(state.shortNameHash, layerId, time);
+		this._viewmodel.AnimatorSetLayerWeight(layerId, weight);
 	}
 }

@@ -34,16 +34,16 @@ public class ForceRoleCommand : ICommand, IUsageProvider
 		string[] newargs;
 		List<ReferenceHub> list = RAUtils.ProcessPlayerIdOrNamesList(arguments, 0, out newargs);
 		bool self = list.Count == 1 && sender is PlayerCommandSender playerCommandSender && playerCommandSender.ReferenceHub == list[0];
-		if (!TryParseRole(newargs[0], out var prb))
+		if (!this.TryParseRole(newargs[0], out var prb))
 		{
 			response = "Invalid role ID / name.";
 			return false;
 		}
-		if (!HasPerms(prb.RoleTypeId, self, sender, out response))
+		if (!this.HasPerms(prb.RoleTypeId, self, sender, out response))
 		{
 			return false;
 		}
-		ProvideRoleFlag(newargs, out var spawnFlags);
+		this.ProvideRoleFlag(newargs, out var spawnFlags);
 		bool flag = list.Any((ReferenceHub p) => p.GetRoleId() != RoleTypeId.Overwatch);
 		int num = 0;
 		foreach (ReferenceHub item in list)

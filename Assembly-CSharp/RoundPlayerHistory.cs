@@ -30,12 +30,12 @@ public class RoundPlayerHistory : MonoBehaviour
 
 	private void Awake()
 	{
-		singleton = this;
+		RoundPlayerHistory.singleton = this;
 	}
 
 	public PlayerHistoryLog GetData(int playerId)
 	{
-		foreach (PlayerHistoryLog historyLog in historyLogs)
+		foreach (PlayerHistoryLog historyLog in this.historyLogs)
 		{
 			if (historyLog.PlayerId == playerId)
 			{
@@ -50,7 +50,7 @@ public class RoundPlayerHistory : MonoBehaviour
 		int num = -1;
 		if (playerId == -1)
 		{
-			historyLogs.Add(new PlayerHistoryLog
+			this.historyLogs.Add(new PlayerHistoryLog
 			{
 				Nickname = "Player",
 				PlayerId = 0,
@@ -61,13 +61,13 @@ public class RoundPlayerHistory : MonoBehaviour
 				ConnectionStart = DateTime.Now,
 				ConnectionStop = new DateTime(0, 0, 0)
 			});
-			num = historyLogs.Count - 1;
+			num = this.historyLogs.Count - 1;
 		}
 		else
 		{
-			for (int i = 0; i < historyLogs.Count; i++)
+			for (int i = 0; i < this.historyLogs.Count; i++)
 			{
-				if (historyLogs[i].PlayerId == playerId)
+				if (this.historyLogs[i].PlayerId == playerId)
 				{
 					num = i;
 				}
@@ -77,35 +77,35 @@ public class RoundPlayerHistory : MonoBehaviour
 		{
 			if (newNick != string.Empty)
 			{
-				historyLogs[num].Nickname = newNick;
+				this.historyLogs[num].Nickname = newNick;
 			}
 			if (newPlayerId != 0)
 			{
-				historyLogs[num].PlayerId = newPlayerId;
+				this.historyLogs[num].PlayerId = newPlayerId;
 			}
 			if (newUserId != string.Empty)
 			{
-				historyLogs[num].UserId = newUserId;
+				this.historyLogs[num].UserId = newUserId;
 			}
 			if (newConnectionStatus != 0)
 			{
-				historyLogs[num].ConnectionStatus = newConnectionStatus;
+				this.historyLogs[num].ConnectionStatus = newConnectionStatus;
 			}
 			if (newAliveClass != 0)
 			{
-				historyLogs[num].LastAliveClass = newAliveClass;
+				this.historyLogs[num].LastAliveClass = newAliveClass;
 			}
 			if (newCurrentClass != 0)
 			{
-				historyLogs[num].CurrentClass = newCurrentClass;
+				this.historyLogs[num].CurrentClass = newCurrentClass;
 			}
 			if (newStartTime.Year != 0)
 			{
-				historyLogs[num].ConnectionStart = newStartTime;
+				this.historyLogs[num].ConnectionStart = newStartTime;
 			}
 			if (newStopTime.Year != 0)
 			{
-				historyLogs[num].ConnectionStop = newStopTime;
+				this.historyLogs[num].ConnectionStop = newStopTime;
 			}
 		}
 	}

@@ -22,15 +22,15 @@ public class DecontaminationCommand : ParentCommand, IUsageProvider
 
 	protected override bool ExecuteParent(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
-		response = "Please specify a valid subcommand (" + Usage[0] + ")!";
+		response = "Please specify a valid subcommand (" + this.Usage[0] + ")!";
 		return false;
 	}
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new DisableCommand());
-		RegisterCommand(new EnableCommand());
-		RegisterCommand(new ForceCommand());
-		RegisterCommand(new StatusCommand());
+		this.RegisterCommand(new DisableCommand());
+		this.RegisterCommand(new EnableCommand());
+		this.RegisterCommand(new ForceCommand());
+		this.RegisterCommand(new StatusCommand());
 	}
 }

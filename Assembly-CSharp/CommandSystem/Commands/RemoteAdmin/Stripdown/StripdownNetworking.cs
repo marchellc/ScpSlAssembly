@@ -31,16 +31,16 @@ public static class StripdownNetworking
 		{
 			Debug.Log(x);
 		});
-		if (FileExportEnabled)
+		if (StripdownNetworking.FileExportEnabled)
 		{
 			long num = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-			if (num == _lastTime)
+			if (num == StripdownNetworking._lastTime)
 			{
 				Debug.LogError("Stripdown file creation rate limited.");
 				return;
 			}
 			File.WriteAllLines($"{Application.dataPath}/{num}.txt", file.Lines);
-			_lastTime = num;
+			StripdownNetworking._lastTime = num;
 		}
 	}
 }

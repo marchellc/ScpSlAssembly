@@ -15,9 +15,9 @@ internal class MetaMember
 
 	public string MemberName { get; private set; }
 
-	public bool IsProperty => PropertyInfo != null;
+	public bool IsProperty => this.PropertyInfo != null;
 
-	public bool IsField => FieldInfo != null;
+	public bool IsField => this.FieldInfo != null;
 
 	public bool IsWritable { get; private set; }
 
@@ -33,35 +33,35 @@ internal class MetaMember
 
 	protected MetaMember(Type type, string name, string memberName, bool isWritable, bool isReadable)
 	{
-		Name = name;
-		MemberName = memberName;
-		Type = type;
-		IsWritable = isWritable;
-		IsReadable = isReadable;
+		this.Name = name;
+		this.MemberName = memberName;
+		this.Type = type;
+		this.IsWritable = isWritable;
+		this.IsReadable = isReadable;
 	}
 
 	public MetaMember(FieldInfo info, string name, bool allowPrivate)
 	{
-		Name = name;
-		MemberName = info.Name;
-		FieldInfo = info;
-		Type = info.FieldType;
-		IsReadable = allowPrivate || info.IsPublic;
-		IsWritable = allowPrivate || (info.IsPublic && !info.IsInitOnly);
-		ShouldSerializeMethodInfo = GetShouldSerialize(info);
+		this.Name = name;
+		this.MemberName = info.Name;
+		this.FieldInfo = info;
+		this.Type = info.FieldType;
+		this.IsReadable = allowPrivate || info.IsPublic;
+		this.IsWritable = allowPrivate || (info.IsPublic && !info.IsInitOnly);
+		this.ShouldSerializeMethodInfo = MetaMember.GetShouldSerialize(info);
 	}
 
 	public MetaMember(PropertyInfo info, string name, bool allowPrivate)
 	{
-		getMethod = info.GetGetMethod(nonPublic: true);
-		setMethod = info.GetSetMethod(nonPublic: true);
-		Name = name;
-		MemberName = info.Name;
-		PropertyInfo = info;
-		Type = info.PropertyType;
-		IsReadable = getMethod != null && (allowPrivate || getMethod.IsPublic) && !getMethod.IsStatic;
-		IsWritable = setMethod != null && (allowPrivate || setMethod.IsPublic) && !setMethod.IsStatic;
-		ShouldSerializeMethodInfo = GetShouldSerialize(info);
+		this.getMethod = info.GetGetMethod(nonPublic: true);
+		this.setMethod = info.GetSetMethod(nonPublic: true);
+		this.Name = name;
+		this.MemberName = info.Name;
+		this.PropertyInfo = info;
+		this.Type = info.PropertyType;
+		this.IsReadable = this.getMethod != null && (allowPrivate || this.getMethod.IsPublic) && !this.getMethod.IsStatic;
+		this.IsWritable = this.setMethod != null && (allowPrivate || this.setMethod.IsPublic) && !this.setMethod.IsStatic;
+		this.ShouldSerializeMethodInfo = MetaMember.GetShouldSerialize(info);
 	}
 
 	private static MethodInfo GetShouldSerialize(MemberInfo info)
@@ -74,38 +74,38 @@ internal class MetaMember
 
 	public T GetCustomAttribute<T>(bool inherit) where T : Attribute
 	{
-		if (IsProperty)
+		if (this.IsProperty)
 		{
-			return PropertyInfo.GetCustomAttribute<T>(inherit);
+			return this.PropertyInfo.GetCustomAttribute<T>(inherit);
 		}
-		if (FieldInfo != null)
+		if (this.FieldInfo != null)
 		{
-			return FieldInfo.GetCustomAttribute<T>(inherit);
+			return this.FieldInfo.GetCustomAttribute<T>(inherit);
 		}
 		return null;
 	}
 
 	public virtual void EmitLoadValue(ILGenerator il)
 	{
-		if (IsProperty)
+		if (this.IsProperty)
 		{
-			il.EmitCall(getMethod);
+			il.EmitCall(this.getMethod);
 		}
 		else
 		{
-			il.Emit(OpCodes.Ldfld, FieldInfo);
+			il.Emit(OpCodes.Ldfld, this.FieldInfo);
 		}
 	}
 
 	public virtual void EmitStoreValue(ILGenerator il)
 	{
-		if (IsProperty)
+		if (this.IsProperty)
 		{
-			il.EmitCall(setMethod);
+			il.EmitCall(this.setMethod);
 		}
 		else
 		{
-			il.Emit(OpCodes.Stfld, FieldInfo);
+			il.Emit(OpCodes.Stfld, this.FieldInfo);
 		}
 	}
 }

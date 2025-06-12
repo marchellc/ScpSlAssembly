@@ -121,7 +121,7 @@ public class Scp939Model : AnimatedCharacterModel
 				return true;
 			}
 			Vector3 position = fpcRole.FpcModule.Position;
-			if (Vector3.Distance(position, _scp939.FpcModule.Position) < _amnesiaVisibleRange)
+			if (Vector3.Distance(position, this._scp939.FpcModule.Position) < this._amnesiaVisibleRange)
 			{
 				return true;
 			}
@@ -164,9 +164,9 @@ public class Scp939Model : AnimatedCharacterModel
 
 	private void PlayClawAttack(AttackResult attackRes)
 	{
-		if (attackRes != 0)
+		if (attackRes != AttackResult.None)
 		{
-			_animator.SetTrigger(ClawHash);
+			this._animator.SetTrigger(Scp939Model.ClawHash);
 		}
 	}
 
@@ -175,33 +175,33 @@ public class Scp939Model : AnimatedCharacterModel
 		switch (newState)
 		{
 		case Scp939LungeState.Triggered:
-			_lungeStopwatch.Restart();
+			this._lungeStopwatch.Restart();
 			break;
 		case Scp939LungeState.None:
-			_isLunging = false;
+			this._isLunging = false;
 			return;
 		}
-		_isLunging = true;
-		_animator.SetInteger(LungeStateHash, (int)newState);
-		_animator.SetTrigger(LungeTriggerHash);
+		this._isLunging = true;
+		this._animator.SetInteger(Scp939Model.LungeStateHash, (int)newState);
+		this._animator.SetTrigger(Scp939Model.LungeTriggerHash);
 	}
 
 	private void OnSpectatorTargetChanged()
 	{
-		ForceFade(1f);
+		this.ForceFade(1f);
 	}
 
 	private void UpdateFade()
 	{
-		ForceFade(_fadeSpeed * Time.deltaTime);
+		this.ForceFade(this._fadeSpeed * Time.deltaTime);
 	}
 
 	private void ForceFade(float delta)
 	{
-		Fade += (Visible ? delta : (0f - delta));
-		if (!(Fade > 0f) && !base.Role.IsLocalPlayer && !NetworkServer.active)
+		this.Fade += (this.Visible ? delta : (0f - delta));
+		if (!(this.Fade > 0f) && !base.Role.IsLocalPlayer && !NetworkServer.active)
 		{
-			_fadeoutStopwatch.Restart();
+			this._fadeoutStopwatch.Restart();
 			base.FpcModule.Position = Vector3.up * -3000f;
 		}
 	}
@@ -209,46 +209,46 @@ public class Scp939Model : AnimatedCharacterModel
 	protected override void Awake()
 	{
 		base.Awake();
-		_trModel = base.transform;
+		this._trModel = base.transform;
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		base.Animator.SetBool(GroundedHash, base.FpcModule.IsGrounded);
-		base.Animator.SetBool(AmnesticChargingHash, _amnesticAbility.TargetState);
-		float state = _focusAbility.State;
-		base.Animator.SetFloat(FocusStateHash, state);
+		base.Animator.SetBool(Scp939Model.GroundedHash, base.FpcModule.IsGrounded);
+		base.Animator.SetBool(Scp939Model.AmnesticChargingHash, this._amnesticAbility.TargetState);
+		float state = this._focusAbility.State;
+		base.Animator.SetFloat(Scp939Model.FocusStateHash, state);
 		base.Animator.SetLayerWeight(6, state);
-		if (_isLunging)
+		if (this._isLunging)
 		{
 			base.Animator.SetLayerWeight(4, 1f);
 		}
 		else
 		{
-			base.Animator.SetLayerWeight(4, _focusOverrideAnim.Evaluate(state));
+			base.Animator.SetLayerWeight(4, this._focusOverrideAnim.Evaluate(state));
 		}
 	}
 
 	public void PlayDamagedEffect(int rand)
 	{
-		rand %= _damagedVariants.Length;
-		_animator.SetFloat(DamagedVariantHash, rand);
-		_animator.SetTrigger(DamagedTriggerHash);
-		AudioSourcePoolManager.PlayOnTransform(_damagedVariants[rand], base.transform, 19f, 1f, FalloffType.Exponential, MixerChannel.NoDucking);
+		rand %= this._damagedVariants.Length;
+		this._animator.SetFloat(Scp939Model.DamagedVariantHash, rand);
+		this._animator.SetTrigger(Scp939Model.DamagedTriggerHash);
+		AudioSourcePoolManager.PlayOnTransform(this._damagedVariants[rand], base.transform, 19f, 1f, FalloffType.Exponential, MixerChannel.NoDucking);
 	}
 
 	public void PlayCloudRelease()
 	{
-		_animator.SetTrigger(AmnesticTriggerHash);
-		AudioSourcePoolManager.PlayOnTransform(_cloudPlaceSound, base.transform, 8f);
+		this._animator.SetTrigger(Scp939Model.AmnesticTriggerHash);
+		AudioSourcePoolManager.PlayOnTransform(this._cloudPlaceSound, base.transform, 8f);
 	}
 
 	public override void UpdateAnimatorParameters(Vector2 movementDirection, float normalizedVelocity, float dampTime)
 	{
-		if (_focusAbility.State > 0f)
+		if (this._focusAbility.State > 0f)
 		{
-			float b = _focusParamsCorrectionCurve.Evaluate(_focusAbility.State);
+			float b = this._focusParamsCorrectionCurve.Evaluate(this._focusAbility.State);
 			float f = Vector3.Dot(movementDirection.normalized, Vector2.up);
 			normalizedVelocity *= Mathf.Lerp(1f, b, Mathf.Abs(f));
 		}
@@ -257,71 +257,71 @@ public class Scp939Model : AnimatedCharacterModel
 
 	private void LateUpdate()
 	{
-		float t = Time.deltaTime * _tiltLerp;
-		if (_lungeAbility.State == Scp939LungeState.Triggered)
+		float t = Time.deltaTime * this._tiltLerp;
+		if (this._lungeAbility.State == Scp939LungeState.Triggered)
 		{
-			double totalSeconds = _lungeStopwatch.Elapsed.TotalSeconds;
-			float b = _tiltOverTime.Evaluate((float)totalSeconds);
-			_curTilt = Mathf.Lerp(_curTilt, b, t);
+			double totalSeconds = this._lungeStopwatch.Elapsed.TotalSeconds;
+			float b = this._tiltOverTime.Evaluate((float)totalSeconds);
+			this._curTilt = Mathf.Lerp(this._curTilt, b, t);
 		}
 		else
 		{
-			_curTilt = Mathf.Lerp(_curTilt, 0f, t);
+			this._curTilt = Mathf.Lerp(this._curTilt, 0f, t);
 		}
-		if (_focusAbility.State == 0f)
+		if (this._focusAbility.State == 0f)
 		{
-			if (_prevFocus)
+			if (this._prevFocus)
 			{
-				_trModel.localRotation = Quaternion.identity;
-				_prevFocus = false;
+				this._trModel.localRotation = Quaternion.identity;
+				this._prevFocus = false;
 			}
 			return;
 		}
-		if (!_prevFocus)
+		if (!this._prevFocus)
 		{
-			_prevFocus = true;
+			this._prevFocus = true;
 			return;
 		}
 		float t2;
-		if (_isLunging)
+		if (this._isLunging)
 		{
-			double totalSeconds2 = _lungeStopwatch.Elapsed.TotalSeconds;
+			double totalSeconds2 = this._lungeStopwatch.Elapsed.TotalSeconds;
 			t2 = 1f - (float)totalSeconds2 * 7.5f;
 		}
 		else
 		{
-			t2 = _focusAbility.State * 3f;
+			t2 = this._focusAbility.State * 3f;
 		}
-		Quaternion b2 = Quaternion.Euler(0f, _focusAbility.FrozenRotation, 0f);
-		_trModel.rotation = Quaternion.Slerp(_trHub.rotation, b2, t2);
-		_trModel.Rotate(Vector3.right, _curTilt, Space.Self);
-		float value = Mathf.DeltaAngle(_trHub.eulerAngles.y, _trModel.eulerAngles.y);
-		base.Animator.SetFloat(FocusHeadDirHash, value, 0.4f, Time.deltaTime);
+		Quaternion b2 = Quaternion.Euler(0f, this._focusAbility.FrozenRotation, 0f);
+		this._trModel.rotation = Quaternion.Slerp(this._trHub.rotation, b2, t2);
+		this._trModel.Rotate(Vector3.right, this._curTilt, Space.Self);
+		float value = Mathf.DeltaAngle(this._trHub.eulerAngles.y, this._trModel.eulerAngles.y);
+		base.Animator.SetFloat(Scp939Model.FocusHeadDirHash, value, 0.4f, Time.deltaTime);
 	}
 
 	protected override Animator SetupAnimator()
 	{
-		return _animator;
+		return this._animator;
 	}
 
 	protected override PooledAudioSource PlayFootstepAudioClip(AudioClip clip, float dis, float vol)
 	{
 		PooledAudioSource pooledAudioSource = base.PlayFootstepAudioClip(clip, dis, vol);
-		pooledAudioSource.Source.pitch = Random.Range(_footstepPitchRand.x, _footstepPitchRand.y);
+		pooledAudioSource.Source.pitch = Random.Range(this._footstepPitchRand.x, this._footstepPitchRand.y);
 		return pooledAudioSource;
 	}
 
 	public override void Setup(ReferenceHub owner, IFpcRole role, Vector3 localPos, Quaternion localRot)
 	{
 		base.Setup(owner, role, localPos, localRot);
-		_trHub = base.OwnerHub.transform;
-		_scp939 = base.OwnerHub.roleManager.CurrentRole as Scp939Role;
-		_scp939.SubroutineModule.TryGetSubroutine<Scp939ClawAbility>(out _clawAbility);
-		_scp939.SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out _focusAbility);
-		_scp939.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out _lungeAbility);
-		_scp939.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out _amnesticAbility);
-		_clawAbility.OnAttacked += PlayClawAttack;
-		_lungeAbility.OnStateChanged += ProcessLungeState;
+		this._trHub = base.OwnerHub.transform;
+		this._scp939 = base.OwnerHub.roleManager.CurrentRole as Scp939Role;
+		this._scp939.SubroutineModule.TryGetSubroutine<Scp939ClawAbility>(out this._clawAbility);
+		this._scp939.SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out this._focusAbility);
+		this._scp939.SubroutineModule.TryGetSubroutine<Scp939LungeAbility>(out this._lungeAbility);
+		this._scp939.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out this._amnesticAbility);
+		this._clawAbility.OnAttacked += PlayClawAttack;
+		this._lungeAbility.OnStateChanged += ProcessLungeState;
 		FirstPersonMovementModule.OnPositionUpdated += UpdateFade;
 		SpectatorTargetTracker.OnTargetChanged += OnSpectatorTargetChanged;
 	}
@@ -329,11 +329,11 @@ public class Scp939Model : AnimatedCharacterModel
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_clawAbility.OnAttacked -= PlayClawAttack;
-		_lungeAbility.OnStateChanged -= ProcessLungeState;
-		_curTilt = 0f;
-		_prevFocus = false;
-		_isLunging = false;
+		this._clawAbility.OnAttacked -= PlayClawAttack;
+		this._lungeAbility.OnStateChanged -= ProcessLungeState;
+		this._curTilt = 0f;
+		this._prevFocus = false;
+		this._isLunging = false;
 		FirstPersonMovementModule.OnPositionUpdated -= UpdateFade;
 		SpectatorTargetTracker.OnTargetChanged -= OnSpectatorTargetChanged;
 	}

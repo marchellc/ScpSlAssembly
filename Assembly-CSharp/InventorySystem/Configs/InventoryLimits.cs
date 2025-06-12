@@ -33,19 +33,19 @@ public static class InventoryLimits
 	public static ushort GetAmmoLimit(ItemType ammoType, ReferenceHub player)
 	{
 		BodyArmor bodyArmor;
-		return GetAmmoLimit((player != null && player.inventory.TryGetBodyArmor(out bodyArmor)) ? bodyArmor : null, ammoType);
+		return InventoryLimits.GetAmmoLimit((player != null && player.inventory.TryGetBodyArmor(out bodyArmor)) ? bodyArmor : null, ammoType);
 	}
 
 	public static sbyte GetCategoryLimit(ItemCategory category, ReferenceHub player)
 	{
 		BodyArmor bodyArmor;
-		return GetCategoryLimit((player != null && player.inventory.TryGetBodyArmor(out bodyArmor)) ? bodyArmor : null, category);
+		return InventoryLimits.GetCategoryLimit((player != null && player.inventory.TryGetBodyArmor(out bodyArmor)) ? bodyArmor : null, category);
 	}
 
 	public static ushort GetAmmoLimit(BodyArmor armor, ItemType ammoType)
 	{
 		int num = -1;
-		foreach (ServerConfigSynchronizer.AmmoLimit item in Config.AmmoLimitsSync)
+		foreach (ServerConfigSynchronizer.AmmoLimit item in InventoryLimits.Config.AmmoLimitsSync)
 		{
 			if (item.AmmoType == ammoType)
 			{
@@ -59,7 +59,7 @@ public static class InventoryLimits
 		}
 		if (num == -1)
 		{
-			if (!StandardAmmoLimits.TryGetValue(ammoType, out var value))
+			if (!InventoryLimits.StandardAmmoLimits.TryGetValue(ammoType, out var value))
 			{
 				return ushort.MaxValue;
 			}
@@ -83,7 +83,7 @@ public static class InventoryLimits
 
 	public static sbyte GetCategoryLimit(BodyArmor armor, ItemCategory category)
 	{
-		int num = Config.CategoryLimits.Count;
+		int num = InventoryLimits.Config.CategoryLimits.Count;
 		int i = 0;
 		int num2 = 0;
 		for (; Enum.IsDefined(typeof(ItemCategory), (ItemCategory)i); i++)
@@ -94,19 +94,19 @@ public static class InventoryLimits
 				num = num2;
 				break;
 			}
-			if (StandardCategoryLimits.TryGetValue(itemCategory, out var value) && value >= 0)
+			if (InventoryLimits.StandardCategoryLimits.TryGetValue(itemCategory, out var value) && value >= 0)
 			{
 				num2++;
 			}
 		}
 		int num3;
-		if (num < Config.CategoryLimits.Count)
+		if (num < InventoryLimits.Config.CategoryLimits.Count)
 		{
-			num3 = Config.CategoryLimits[num];
+			num3 = InventoryLimits.Config.CategoryLimits[num];
 		}
 		else
 		{
-			if (!StandardCategoryLimits.TryGetValue(category, out var value2))
+			if (!InventoryLimits.StandardCategoryLimits.TryGetValue(category, out var value2))
 			{
 				return 8;
 			}

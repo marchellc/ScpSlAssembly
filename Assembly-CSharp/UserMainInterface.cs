@@ -8,7 +8,7 @@ public class UserMainInterface : MonoBehaviour
 
 	private void Awake()
 	{
-		singleton = this;
+		UserMainInterface.singleton = this;
 	}
 
 	private void Start()

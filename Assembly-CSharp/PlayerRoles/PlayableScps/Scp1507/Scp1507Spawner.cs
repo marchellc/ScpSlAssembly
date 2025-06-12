@@ -47,9 +47,9 @@ public static class Scp1507Spawner
 	{
 		get
 		{
-			if (CurState != 0)
+			if (Scp1507Spawner.CurState != State.Idle)
 			{
-				return CurState == State.Spawned;
+				return Scp1507Spawner.CurState == State.Spawned;
 			}
 			return true;
 		}
@@ -57,35 +57,35 @@ public static class Scp1507Spawner
 
 	public static void StartSpawning(ReferenceHub newAlpha)
 	{
-		_alpha = newAlpha;
-		if (Inactive)
+		Scp1507Spawner._alpha = newAlpha;
+		if (Scp1507Spawner.Inactive)
 		{
-			_elapsed = 0f;
+			Scp1507Spawner._elapsed = 0f;
 			StaticUnityMethods.OnUpdate += Update;
 			ReferenceHub.OnPlayerRemoved += OnPlayerRemoved;
-			CurState = State.WaitForRespawnCycle;
+			Scp1507Spawner.CurState = State.WaitForRespawnCycle;
 		}
 	}
 
 	public static void Restore()
 	{
-		if (!Inactive)
+		if (!Scp1507Spawner.Inactive)
 		{
 			StaticUnityMethods.OnUpdate -= Update;
 			ReferenceHub.OnPlayerRemoved -= OnPlayerRemoved;
 		}
-		CurState = State.Idle;
+		Scp1507Spawner.CurState = State.Idle;
 	}
 
 	private static void Spawn()
 	{
-		Restore();
-		CurState = State.Spawned;
-		_alpha.inventory.ServerDropEverything();
-		SpawnPlayer(_alpha, RoleTypeId.AlphaFlamingo);
+		Scp1507Spawner.Restore();
+		Scp1507Spawner.CurState = State.Spawned;
+		Scp1507Spawner._alpha.inventory.ServerDropEverything();
+		SpawnPlayer(Scp1507Spawner._alpha, RoleTypeId.AlphaFlamingo);
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			if (ValidatePlayer(allHub))
+			if (Scp1507Spawner.ValidatePlayer(allHub))
 			{
 				SpawnPlayer(allHub, RoleTypeId.Flamingo);
 			}
@@ -103,9 +103,9 @@ public static class Scp1507Spawner
 			if (AlphaWarheadController.Detonated)
 			{
 				hub.roleManager.ServerSetRole(role, RoleChangeReason.ItemUsage, ~RoleSpawnFlags.UseSpawnpoint);
-				hub.TryOverridePosition(PostDetonationSpawnpoint);
+				hub.TryOverridePosition(Scp1507Spawner.PostDetonationSpawnpoint);
 				hub.TryOverrideRotation(Vector3.zero);
-				HandleEscapeDoor();
+				Scp1507Spawner.HandleEscapeDoor();
 			}
 			else
 			{
@@ -126,43 +126,43 @@ public static class Scp1507Spawner
 	{
 		if (candidate.roleManager.CurrentRole is SpectatorRole { ReadyToRespawn: not false })
 		{
-			return candidate != _alpha;
+			return candidate != Scp1507Spawner._alpha;
 		}
 		return false;
 	}
 
 	private static void OnPlayerRemoved(ReferenceHub hub)
 	{
-		if (!(hub != _alpha))
+		if (!(hub != Scp1507Spawner._alpha))
 		{
-			Restore();
+			Scp1507Spawner.Restore();
 		}
 	}
 
 	private static void Update()
 	{
-		_elapsed += Time.deltaTime;
-		switch (CurState)
+		Scp1507Spawner._elapsed += Time.deltaTime;
+		switch (Scp1507Spawner.CurState)
 		{
 		case State.WaitForRespawnCycle:
-			UpdateWaitForRespawnCycle();
+			Scp1507Spawner.UpdateWaitForRespawnCycle();
 			break;
 		case State.WaitForSpectators:
-			UpdateWaitForSpectators();
+			Scp1507Spawner.UpdateWaitForSpectators();
 			break;
 		case State.Spawning:
-			UpdateSpawning();
+			Scp1507Spawner.UpdateSpawning();
 			break;
 		}
 	}
 
 	private static void UpdateWaitForRespawnCycle()
 	{
-		if (WaveManager.State != 0)
+		if (WaveManager.State != WaveQueueState.Idle)
 		{
 			return;
 		}
-		CurState = State.WaitForSpectators;
+		Scp1507Spawner.CurState = State.WaitForSpectators;
 		foreach (TimeBasedWave wave in WaveManager.Waves)
 		{
 			float num = 240f;
@@ -177,24 +177,24 @@ public static class Scp1507Spawner
 
 	private static void UpdateWaitForSpectators()
 	{
-		if (!(_elapsed < 7f))
+		if (!(Scp1507Spawner._elapsed < 7f))
 		{
 			float num = ReferenceHub.AllHubs.Count(ValidatePlayer);
 			float num2 = ReferenceHub.AllHubs.Count - 2;
-			if (!(((num2 <= 0f) ? 1f : (num / num2)) < 0.3f) || !(_elapsed < 180f))
+			if (!(((num2 <= 0f) ? 1f : (num / num2)) < 0.3f) || !(Scp1507Spawner._elapsed < 180f))
 			{
-				_elapsed = 0f;
-				CurState = State.Spawning;
-				_alpha.playerEffectsController.EnableEffect<BecomingFlamingo>();
+				Scp1507Spawner._elapsed = 0f;
+				Scp1507Spawner.CurState = State.Spawning;
+				Scp1507Spawner._alpha.playerEffectsController.EnableEffect<BecomingFlamingo>();
 			}
 		}
 	}
 
 	private static void UpdateSpawning()
 	{
-		if (!(_elapsed < 5f))
+		if (!(Scp1507Spawner._elapsed < 5f))
 		{
-			Spawn();
+			Scp1507Spawner.Spawn();
 		}
 	}
 

@@ -31,7 +31,7 @@ public class SSDropdownSetting : ServerSpecificSettingBase
 				return string.Empty;
 			}
 			int max = sSDropdownSetting.Options.Length - 1;
-			int num = Mathf.Clamp(SyncSelectionIndexRaw, 0, max);
+			int num = Mathf.Clamp(this.SyncSelectionIndexRaw, 0, max);
 			return sSDropdownSetting.Options[num];
 		}
 	}
@@ -45,69 +45,69 @@ public class SSDropdownSetting : ServerSpecificSettingBase
 				return 0;
 			}
 			int max = sSDropdownSetting.Options.Length - 1;
-			return Mathf.Clamp(SyncSelectionIndexRaw, 0, max);
+			return Mathf.Clamp(this.SyncSelectionIndexRaw, 0, max);
 		}
 	}
 
-	public override string DebugValue => $"{SyncSelectionIndexRaw} ({SyncSelectionText})";
+	public override string DebugValue => $"{this.SyncSelectionIndexRaw} ({this.SyncSelectionText})";
 
 	public SSDropdownSetting(int? id, string label, string[] options, int defaultOptionIndex = 0, DropdownEntryType entryType = DropdownEntryType.Regular, string hint = null)
 	{
-		SetId(id, label);
+		base.SetId(id, label);
 		if (options == null || options.Length == 0)
 		{
 			options = new string[0];
 		}
 		base.Label = label;
 		base.HintDescription = hint;
-		Options = options;
-		EntryType = entryType;
-		DefaultOptionIndex = defaultOptionIndex;
+		this.Options = options;
+		this.EntryType = entryType;
+		this.DefaultOptionIndex = defaultOptionIndex;
 	}
 
 	public override void ApplyDefaultValues()
 	{
-		SyncSelectionIndexRaw = 0;
+		this.SyncSelectionIndexRaw = 0;
 	}
 
 	public override void SerializeEntry(NetworkWriter writer)
 	{
 		base.SerializeEntry(writer);
-		writer.WriteByte((byte)DefaultOptionIndex);
-		writer.WriteByte((byte)EntryType);
-		writer.WriteByte((byte)Options.Length);
-		Options.ForEach(writer.WriteString);
+		writer.WriteByte((byte)this.DefaultOptionIndex);
+		writer.WriteByte((byte)this.EntryType);
+		writer.WriteByte((byte)this.Options.Length);
+		this.Options.ForEach(writer.WriteString);
 	}
 
 	public override void DeserializeEntry(NetworkReader reader)
 	{
 		base.DeserializeEntry(reader);
-		DefaultOptionIndex = reader.ReadByte();
-		EntryType = (DropdownEntryType)reader.ReadByte();
+		this.DefaultOptionIndex = reader.ReadByte();
+		this.EntryType = (DropdownEntryType)reader.ReadByte();
 		int num = reader.ReadByte();
 		if (num > 0)
 		{
-			Options = new string[num];
-			for (int i = 0; i < Options.Length; i++)
+			this.Options = new string[num];
+			for (int i = 0; i < this.Options.Length; i++)
 			{
-				Options[i] = reader.ReadString();
+				this.Options[i] = reader.ReadString();
 			}
 		}
 		else
 		{
-			Options = new string[1] { string.Empty };
+			this.Options = new string[1] { string.Empty };
 		}
 	}
 
 	public override void SerializeValue(NetworkWriter writer)
 	{
 		base.SerializeValue(writer);
-		writer.WriteByte((byte)SyncSelectionIndexRaw);
+		writer.WriteByte((byte)this.SyncSelectionIndexRaw);
 	}
 
 	public override void DeserializeValue(NetworkReader reader)
 	{
 		base.DeserializeValue(reader);
-		SyncSelectionIndexRaw = reader.ReadByte();
+		this.SyncSelectionIndexRaw = reader.ReadByte();
 	}
 }

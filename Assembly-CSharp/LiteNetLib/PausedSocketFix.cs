@@ -19,29 +19,29 @@ public class PausedSocketFix
 
 	public PausedSocketFix(NetManager netManager, IPAddress ipv4, IPAddress ipv6, int port, bool manualMode)
 	{
-		_netManager = netManager;
-		_ipv4 = ipv4;
-		_ipv6 = ipv6;
-		_port = port;
-		_manualMode = manualMode;
+		this._netManager = netManager;
+		this._ipv4 = ipv4;
+		this._ipv6 = ipv6;
+		this._port = port;
+		this._manualMode = manualMode;
 		Application.focusChanged += Application_focusChanged;
-		_initialized = true;
+		this._initialized = true;
 	}
 
 	public void Deinitialize()
 	{
-		if (_initialized)
+		if (this._initialized)
 		{
 			Application.focusChanged -= Application_focusChanged;
 		}
-		_initialized = false;
+		this._initialized = false;
 	}
 
 	private void Application_focusChanged(bool focused)
 	{
-		if (focused && _initialized && _netManager.IsRunning && _netManager.NotConnected && !_netManager.Start(_ipv4, _ipv6, _port, _manualMode))
+		if (focused && this._initialized && this._netManager.IsRunning && this._netManager.NotConnected && !this._netManager.Start(this._ipv4, this._ipv6, this._port, this._manualMode))
 		{
-			NetDebug.WriteError($"[S] Cannot restore connection. Ipv4 {_ipv4}, Ipv6 {_ipv6}, Port {_port}, ManualMode {_manualMode}");
+			NetDebug.WriteError($"[S] Cannot restore connection. Ipv4 {this._ipv4}, Ipv6 {this._ipv6}, Port {this._port}, ManualMode {this._manualMode}");
 		}
 	}
 }

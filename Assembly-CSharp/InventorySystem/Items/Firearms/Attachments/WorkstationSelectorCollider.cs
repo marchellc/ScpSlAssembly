@@ -32,17 +32,17 @@ public class WorkstationSelectorCollider : InteractableCollider, IAttachmentSele
 
 	private bool _prevHighlighted;
 
-	public RectTransform RectTransform => _image.rectTransform;
+	public RectTransform RectTransform => this._image.rectTransform;
 
 	public byte ButtonId
 	{
 		get
 		{
-			return ColliderId;
+			return base.ColliderId;
 		}
 		set
 		{
-			ColliderId = value;
+			base.ColliderId = value;
 		}
 	}
 
@@ -50,19 +50,19 @@ public class WorkstationSelectorCollider : InteractableCollider, IAttachmentSele
 	{
 		if (icon != null)
 		{
-			_firearm = fa;
-			_mySlot = slot;
-			_image.texture = icon;
-			_image.rectTransform.sizeDelta = new Vector2(icon.width, icon.height);
+			this._firearm = fa;
+			this._mySlot = slot;
+			this._image.texture = icon;
+			this._image.rectTransform.sizeDelta = new Vector2(icon.width, icon.height);
 			if (pos.HasValue)
 			{
-				_image.rectTransform.localPosition = pos.Value;
+				this._image.rectTransform.localPosition = pos.Value;
 			}
 		}
 		else
 		{
-			_image.rectTransform.sizeDelta = Vector2.zero;
-			_collider.size = Vector3.zero;
+			this._image.rectTransform.sizeDelta = Vector2.zero;
+			this._collider.size = Vector3.zero;
 		}
 	}
 
@@ -72,23 +72,23 @@ public class WorkstationSelectorCollider : InteractableCollider, IAttachmentSele
 		{
 			return;
 		}
-		Vector2 sizeDelta = _image.rectTransform.sizeDelta;
-		_collider.size = new Vector3(Mathf.Max(sizeDelta.x * 1f, 40f), Mathf.Max(sizeDelta.y * 1f, 40f), 0.2f);
-		bool flag = InteractionCoordinator.LastRaycastHit.collider == _collider && InteractionCoordinator.LastRaycastHit.distance < 3.35f;
-		bool flag2 = slot == _mySlot || (_firearm != null && ColliderId < _firearm.Attachments.Length && _firearm.Attachments[ColliderId].IsEnabled);
-		if (_prevHighlighted != flag && ButtonId < _firearm.Attachments.Length && Target.TryGetComponent<AttachmentSelectorBase>(out var component))
+		Vector2 sizeDelta = this._image.rectTransform.sizeDelta;
+		this._collider.size = new Vector3(Mathf.Max(sizeDelta.x * 1f, 40f), Mathf.Max(sizeDelta.y * 1f, 40f), 0.2f);
+		bool flag = CenterScreenRaycast.LastRaycastHit.collider == this._collider && CenterScreenRaycast.LastRaycastHit.distance < 3.35f;
+		bool flag2 = slot == this._mySlot || (this._firearm != null && base.ColliderId < this._firearm.Attachments.Length && this._firearm.Attachments[base.ColliderId].IsEnabled);
+		if (this._prevHighlighted != flag && this.ButtonId < this._firearm.Attachments.Length && base.Target.TryGetComponent<AttachmentSelectorBase>(out var component))
 		{
 			if (flag)
 			{
-				component.ShowStats(ButtonId);
+				component.ShowStats(this.ButtonId);
 			}
 			else
 			{
 				component.ShowStats(-1);
 			}
-			_prevHighlighted = flag;
+			this._prevHighlighted = flag;
 		}
 		float t = (flag ? 0.71f : (flag2 ? 0.54f : 0.38f));
-		_image.color = Color.Lerp(_image.color, Color.Lerp(Color.black, Color.white, t), 12f * Time.deltaTime);
+		this._image.color = Color.Lerp(this._image.color, Color.Lerp(Color.black, Color.white, t), 12f * Time.deltaTime);
 	}
 }

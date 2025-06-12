@@ -12,9 +12,9 @@ public class Hemorrhage : TickingEffectBase
 
 	protected override void OnTick()
 	{
-		if (NetworkServer.active && _isSprinting)
+		if (NetworkServer.active && this._isSprinting)
 		{
-			float damage = damagePerTick * RainbowTaste.CurrentMultiplier(base.Hub);
+			float damage = this.damagePerTick * RainbowTaste.CurrentMultiplier(base.Hub);
 			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(damage, DeathTranslations.Bleeding));
 		}
 	}
@@ -24,7 +24,7 @@ public class Hemorrhage : TickingEffectBase
 		base.OnEffectUpdate();
 		if (base.Hub.roleManager.CurrentRole is IFpcRole fpcRole)
 		{
-			_isSprinting = fpcRole.FpcModule.CurrentMovementState == PlayerMovementState.Sprinting;
+			this._isSprinting = fpcRole.FpcModule.CurrentMovementState == PlayerMovementState.Sprinting;
 		}
 	}
 }

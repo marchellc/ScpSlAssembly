@@ -12,35 +12,35 @@ public sealed class NetPacketReader : NetDataReader
 
 	internal NetPacketReader(NetManager manager, NetEvent evt)
 	{
-		_manager = manager;
-		_evt = evt;
+		this._manager = manager;
+		this._evt = evt;
 	}
 
 	internal void SetSource(NetPacket packet, int headerSize)
 	{
 		if (packet != null)
 		{
-			_packet = packet;
-			SetSource(packet.RawData, headerSize, packet.Size);
+			this._packet = packet;
+			base.SetSource(packet.RawData, headerSize, packet.Size);
 		}
 	}
 
 	internal void RecycleInternal()
 	{
-		Clear();
-		if (_packet != null)
+		base.Clear();
+		if (this._packet != null)
 		{
-			_manager.PoolRecycle(_packet);
+			this._manager.PoolRecycle(this._packet);
 		}
-		_packet = null;
-		_manager.RecycleEvent(_evt);
+		this._packet = null;
+		this._manager.RecycleEvent(this._evt);
 	}
 
 	public void Recycle()
 	{
-		if (!_manager.AutoRecycle)
+		if (!this._manager.AutoRecycle)
 		{
-			RecycleInternal();
+			this.RecycleInternal();
 		}
 	}
 }

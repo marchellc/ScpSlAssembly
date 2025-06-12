@@ -21,12 +21,12 @@ public class CapybaraToy : AdminToyBase
 	{
 		get
 		{
-			return _collisionsEnabled;
+			return this._collisionsEnabled;
 		}
 		set
 		{
-			SetCollidersState(value);
-			Network_collisionsEnabled = value;
+			this.SetCollidersState(value);
+			this.Network_collisionsEnabled = value;
 		}
 	}
 
@@ -34,12 +34,12 @@ public class CapybaraToy : AdminToyBase
 	{
 		get
 		{
-			return _collisionsEnabled;
+			return this._collisionsEnabled;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _collisionsEnabled, 32uL, SetCollisionsEnabled);
+			base.GeneratedSyncVarSetter(value, ref this._collisionsEnabled, 32uL, SetCollisionsEnabled);
 		}
 	}
 
@@ -63,7 +63,7 @@ public class CapybaraToy : AdminToyBase
 
 	private void SetCollidersState(bool active)
 	{
-		foreach (Collider collider in _colliders)
+		foreach (Collider collider in this._colliders)
 		{
 			collider.enabled = active;
 		}
@@ -71,18 +71,18 @@ public class CapybaraToy : AdminToyBase
 
 	private void SetCollisionsEnabled(bool oldValue, bool newValue)
 	{
-		SetCollidersState(newValue);
+		this.SetCollidersState(newValue);
 	}
 
 	private void Awake()
 	{
-		_colliders = ListPool<Collider>.Shared.Rent();
-		GetComponentsInChildren(includeInactive: true, _colliders);
+		this._colliders = ListPool<Collider>.Shared.Rent();
+		base.GetComponentsInChildren(includeInactive: true, this._colliders);
 	}
 
 	private new void OnDestroy()
 	{
-		ListPool<Collider>.Shared.Return(_colliders);
+		ListPool<Collider>.Shared.Return(this._colliders);
 	}
 
 	public override bool Weaved()
@@ -95,13 +95,13 @@ public class CapybaraToy : AdminToyBase
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(_collisionsEnabled);
+			writer.WriteBool(this._collisionsEnabled);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 0x20L) != 0L)
 		{
-			writer.WriteBool(_collisionsEnabled);
+			writer.WriteBool(this._collisionsEnabled);
 		}
 	}
 
@@ -110,13 +110,13 @@ public class CapybaraToy : AdminToyBase
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _collisionsEnabled, SetCollisionsEnabled, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._collisionsEnabled, SetCollisionsEnabled, reader.ReadBool());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 0x20L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _collisionsEnabled, SetCollisionsEnabled, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._collisionsEnabled, SetCollisionsEnabled, reader.ReadBool());
 		}
 	}
 }

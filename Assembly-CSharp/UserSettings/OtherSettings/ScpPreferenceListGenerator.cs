@@ -24,20 +24,20 @@ public class ScpPreferenceListGenerator : MonoBehaviour
 
 	private void Awake()
 	{
-		_prevSiblings = new Transform[_columns.Length];
+		this._prevSiblings = new Transform[this._columns.Length];
 		int num = 0;
-		foreach (PlayerRoleBase item in SpawnableScps.OrderBy((PlayerRoleBase x) => x.RoleName))
+		foreach (PlayerRoleBase item in this.SpawnableScps.OrderBy((PlayerRoleBase x) => x.RoleName))
 		{
-			int num2 = num++ % _columns.Length;
-			GameObject gameObject = Object.Instantiate(_template, _columns[num2]);
-			Transform transform = _prevSiblings[num2];
+			int num2 = num++ % this._columns.Length;
+			GameObject gameObject = Object.Instantiate(this._template, this._columns[num2]);
+			Transform transform = this._prevSiblings[num2];
 			if (transform != null)
 			{
 				gameObject.transform.SetSiblingIndex(transform.GetSiblingIndex() + 1);
 			}
 			gameObject.GetComponentInChildren<TMP_Text>().text = item.RoleName;
 			gameObject.GetComponentInChildren<ScpPreferenceSlider>().SetRole(item.RoleTypeId);
-			_prevSiblings[num2] = gameObject.transform;
+			this._prevSiblings[num2] = gameObject.transform;
 		}
 	}
 }

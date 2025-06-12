@@ -14,7 +14,7 @@ public abstract class ShootingEffectsExtensionBase : MixedExtension
 
 		public readonly void Play()
 		{
-			ParticleSystem[] particleSystems = ParticleSystems;
+			ParticleSystem[] particleSystems = this.ParticleSystems;
 			for (int i = 0; i < particleSystems.Length; i++)
 			{
 				particleSystems[i].Play(withChildren: true);
@@ -23,7 +23,7 @@ public abstract class ShootingEffectsExtensionBase : MixedExtension
 
 		public readonly void ConvertLights()
 		{
-			ParticleSystems.ForEach(WorldspaceLightParticleConverter.Convert);
+			this.ParticleSystems.ForEach(WorldspaceLightParticleConverter.Convert);
 		}
 	}
 
@@ -33,22 +33,22 @@ public abstract class ShootingEffectsExtensionBase : MixedExtension
 
 	protected virtual void OnEnable()
 	{
-		_standbyMode = false;
+		this._standbyMode = false;
 	}
 
 	protected virtual void OnDisable()
 	{
-		_standbyMode = true;
+		this._standbyMode = true;
 	}
 
 	protected virtual void Awake()
 	{
-		Instances.Add(this);
+		ShootingEffectsExtensionBase.Instances.Add(this);
 	}
 
 	protected virtual void OnDestroy()
 	{
-		Instances.Remove(this);
+		ShootingEffectsExtensionBase.Instances.Remove(this);
 	}
 
 	protected abstract void PlayEffects(ShotEvent ev);
@@ -61,7 +61,7 @@ public abstract class ShootingEffectsExtensionBase : MixedExtension
 
 	public static void Play(ShotEvent ev)
 	{
-		foreach (ShootingEffectsExtensionBase instance in Instances)
+		foreach (ShootingEffectsExtensionBase instance in ShootingEffectsExtensionBase.Instances)
 		{
 			if (!instance._standbyMode && !(instance.Identifier != ev.ItemId))
 			{

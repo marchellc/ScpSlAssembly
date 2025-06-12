@@ -9,6 +9,6 @@ public struct LayerRefId
 
 	public LayerRefId(int refId)
 	{
-		Value = refId;
+		this.Value = refId;
 	}
 }

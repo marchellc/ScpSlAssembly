@@ -45,13 +45,13 @@ public class AudioModule : ModuleBase
 	[field: SerializeField]
 	public float BaseGunshotRange { get; private set; }
 
-	public float FinalGunshotRange => BaseGunshotRange * base.Firearm.AttachmentsValue(AttachmentParam.GunshotLoudnessMultiplier);
+	public float FinalGunshotRange => this.BaseGunshotRange * base.Firearm.AttachmentsValue(AttachmentParam.GunshotLoudnessMultiplier);
 
 	private float RandomPitch
 	{
 		get
 		{
-			float gunshotSoundRandomization = _gunshotSoundRandomization;
+			float gunshotSoundRandomization = this._gunshotSoundRandomization;
 			float num = UnityEngine.Random.Range(0f - gunshotSoundRandomization, gunshotSoundRandomization);
 			return 1f + num;
 		}
@@ -64,56 +64,56 @@ public class AudioModule : ModuleBase
 		base.ClientProcessRpcTemplate(reader, serial);
 		if (InventoryExtensions.TryGetHubHoldingSerial(serial, out var hub))
 		{
-			ClientReceiveThirdperson(serial, hub.roleManager.CurrentRole, reader);
+			this.ClientReceiveThirdperson(serial, hub.roleManager.CurrentRole, reader);
 		}
 	}
 
 	[ExposedFirearmEvent(UnityEventCallState.EditorAndRuntime)]
 	public void PlayQuiet(AudioClip clip)
 	{
-		ProcessEvent(clip, MixerChannel.DefaultSfx, 5f, sync: true, applyPitch: true);
+		this.ProcessEvent(clip, MixerChannel.DefaultSfx, 5f, sync: true, applyPitch: true);
 	}
 
 	[ExposedFirearmEvent(UnityEventCallState.EditorAndRuntime)]
 	public void PlayNormal(AudioClip clip)
 	{
-		ProcessEvent(clip, MixerChannel.DefaultSfx, 12f, sync: true, applyPitch: true);
+		this.ProcessEvent(clip, MixerChannel.DefaultSfx, 12f, sync: true, applyPitch: true);
 	}
 
 	[ExposedFirearmEvent(UnityEventCallState.EditorAndRuntime)]
 	public void PlayClientside(AudioClip clip)
 	{
-		ProcessEvent(clip, MixerChannel.DefaultSfx, 5f, sync: false, applyPitch: true);
+		this.ProcessEvent(clip, MixerChannel.DefaultSfx, 5f, sync: false, applyPitch: true);
 	}
 
 	public void PlayGunshot(AudioClip clip)
 	{
-		ProcessEvent(clip, MixerChannel.Weapons, FinalGunshotRange, sync: true, applyPitch: false);
+		this.ProcessEvent(clip, MixerChannel.Weapons, this.FinalGunshotRange, sync: true, applyPitch: false);
 	}
 
 	public void PlayCustom(AudioClip clip, MixerChannel channel, float range, bool applyPitch = true)
 	{
-		ProcessEvent(clip, channel, range, sync: true, applyPitch);
+		this.ProcessEvent(clip, channel, range, sync: true, applyPitch);
 	}
 
 	internal void RegisterClip(AudioClip clip)
 	{
-		if (!(clip == null) && !_clipToIndex.ContainsKey(clip))
+		if (!(clip == null) && !this._clipToIndex.ContainsKey(clip))
 		{
-			_registeredClips.Add(clip);
-			_clipToIndex[clip] = _registeredClips.Count - 1;
+			this._registeredClips.Add(clip);
+			this._clipToIndex[clip] = this._registeredClips.Count - 1;
 		}
 	}
 
 	protected override void OnInit()
 	{
 		base.OnInit();
-		int count = _registeredClips.Count;
-		AudioClip[] eventClips = _eventClips;
+		int count = this._registeredClips.Count;
+		AudioClip[] eventClips = this._eventClips;
 		foreach (AudioClip audioClip in eventClips)
 		{
-			_registeredClips.Add(audioClip);
-			_clipToIndex[audioClip] = count++;
+			this._registeredClips.Add(audioClip);
+			this._clipToIndex[audioClip] = count++;
 		}
 	}
 
@@ -131,7 +131,7 @@ public class AudioModule : ModuleBase
 			Transform parent;
 			if (mixerChannel == MixerChannel.Weapons)
 			{
-				num2 *= RandomPitch;
+				num2 *= this.RandomPitch;
 				parent = base.Firearm.Owner.transform;
 			}
 			else
@@ -142,9 +142,9 @@ public class AudioModule : ModuleBase
 			pooledAudioSource.Source.maxDistance = audioRange;
 			AudioModule.OnSoundPlayed?.Invoke(new ItemIdentifier(base.Firearm), base.Firearm.Owner.roleManager.CurrentRole, pooledAudioSource);
 		}
-		if (base.IsServer && sync && _clipToIndex.TryGetValue(clip, out var value))
+		if (base.IsServer && sync && this._clipToIndex.TryGetValue(clip, out var value))
 		{
-			ServerSendToNearbyPlayers(value, mixerChannel, audioRange, num);
+			this.ServerSendToNearbyPlayers(value, mixerChannel, audioRange, num);
 		}
 	}
 
@@ -161,10 +161,10 @@ public class AudioModule : ModuleBase
 		{
 			if (!(receiver == base.Firearm.Owner) && (!(receiver.roleManager.CurrentRole is IFpcRole target) || !(target.SqrDistanceTo(ownPos) > num2)))
 			{
-				SendRpc(receiver, delegate(NetworkWriter writer)
+				this.SendRpc(receiver, delegate(NetworkWriter writer)
 				{
 					bool shooterVisible = !(receiver.roleManager.CurrentRole is ICustomVisibilityRole customVisibilityRole) || customVisibilityRole.VisibilityController.ValidateVisibility(base.Firearm.Owner);
-					ServerSend(writer, index, pitch, channel, audioRange, ownPos, shooterVisible);
+					this.ServerSend(writer, index, pitch, channel, audioRange, ownPos, shooterVisible);
 				});
 			}
 		}
@@ -188,11 +188,11 @@ public class AudioModule : ModuleBase
 		MixerChannel mixerChannel = (MixerChannel)reader.ReadByte();
 		float maxDistance = (float)(int)reader.ReadUShort() / 20f;
 		float num = Mathf.Lerp(0.3f, 3f, (float)(int)reader.ReadByte() / 255f);
-		if (_registeredClips.TryGet(index, out var element))
+		if (this._registeredClips.TryGet(index, out var element))
 		{
 			if (mixerChannel == MixerChannel.Weapons)
 			{
-				num *= RandomPitch;
+				num *= this.RandomPitch;
 			}
 			PooledAudioSource pooledAudioSource;
 			if (shooter is IFpcRole fpcRole && fpcRole.FpcModule.Motor.IsInvisible && reader.Remaining > 0)
@@ -202,7 +202,7 @@ public class AudioModule : ModuleBase
 			}
 			else
 			{
-				pooledAudioSource = AudioSourcePoolManager.PlayOnTransform(element, GetAudioSourceParent(mixerChannel, shooter), maxDistance, 1f, FalloffType.Exponential, mixerChannel, num);
+				pooledAudioSource = AudioSourcePoolManager.PlayOnTransform(element, this.GetAudioSourceParent(mixerChannel, shooter), maxDistance, 1f, FalloffType.Exponential, mixerChannel, num);
 			}
 			if (mixerChannel == MixerChannel.Weapons)
 			{

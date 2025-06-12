@@ -26,54 +26,54 @@ public class RoundStart : NetworkBehaviour
 	{
 		get
 		{
-			if (_singletonSet)
+			if (RoundStart._singletonSet)
 			{
-				return singleton.Timer == -1;
+				return RoundStart.singleton.Timer == -1;
 			}
 			return false;
 		}
 	}
 
-	public static TimeSpan RoundLength => RoundStartTimer.Elapsed;
+	public static TimeSpan RoundLength => RoundStart.RoundStartTimer.Elapsed;
 
 	public short NetworkTimer
 	{
 		get
 		{
-			return Timer;
+			return this.Timer;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Timer, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.Timer, 1uL, null);
 		}
 	}
 
 	static RoundStart()
 	{
-		RoundStartTimer = new Stopwatch();
+		RoundStart.RoundStartTimer = new Stopwatch();
 		SceneManager.sceneLoaded += OnSceneLoaded;
 	}
 
 	private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
 	{
-		RoundStartTimer.Reset();
+		RoundStart.RoundStartTimer.Reset();
 	}
 
 	private void Start()
 	{
-		GetComponent<RectTransform>().localPosition = Vector3.zero;
+		base.GetComponent<RectTransform>().localPosition = Vector3.zero;
 	}
 
 	private void Awake()
 	{
-		singleton = this;
-		_singletonSet = true;
+		RoundStart.singleton = this;
+		RoundStart._singletonSet = true;
 	}
 
 	private void OnDestroy()
 	{
-		_singletonSet = false;
+		RoundStart._singletonSet = false;
 	}
 
 	private void Update()
@@ -90,13 +90,13 @@ public class RoundStart : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteShort(Timer);
+			writer.WriteShort(this.Timer);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteShort(Timer);
+			writer.WriteShort(this.Timer);
 		}
 	}
 
@@ -105,13 +105,13 @@ public class RoundStart : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref Timer, null, reader.ReadShort());
+			base.GeneratedSyncVarDeserialize(ref this.Timer, null, reader.ReadShort());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Timer, null, reader.ReadShort());
+			base.GeneratedSyncVarDeserialize(ref this.Timer, null, reader.ReadShort());
 		}
 	}
 }

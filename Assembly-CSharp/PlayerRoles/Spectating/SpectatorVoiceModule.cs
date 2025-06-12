@@ -23,13 +23,13 @@ public class SpectatorVoiceModule : GlobalVoiceModuleBase
 		case VoiceChatChannel.Radio:
 		case VoiceChatChannel.Intercom:
 		case VoiceChatChannel.Scp1576:
-			if ((base.ReceiveFlags & GroupMuteFlags.Alive) != 0)
+			if ((base.ReceiveFlags & GroupMuteFlags.Alive) != GroupMuteFlags.None)
 			{
 				return VoiceChatChannel.None;
 			}
 			break;
 		case VoiceChatChannel.Spectator:
-			if ((base.ReceiveFlags & GroupMuteFlags.Spectators) != 0)
+			if ((base.ReceiveFlags & GroupMuteFlags.Spectators) != GroupMuteFlags.None)
 			{
 				return VoiceChatChannel.None;
 			}

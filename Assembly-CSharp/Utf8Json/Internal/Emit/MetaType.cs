@@ -13,7 +13,7 @@ internal class MetaType
 
 	public bool IsClass { get; private set; }
 
-	public bool IsStruct => !IsClass;
+	public bool IsStruct => !this.IsClass;
 
 	public bool IsConcreteClass { get; private set; }
 
@@ -27,7 +27,7 @@ internal class MetaType
 	{
 		TypeInfo typeInfo = type.GetTypeInfo();
 		bool flag = typeInfo.IsClass || typeInfo.IsInterface || typeInfo.IsAbstract;
-		Type = type;
+		this.Type = type;
 		Dictionary<string, MetaMember> dictionary = new Dictionary<string, MetaMember>();
 		foreach (PropertyInfo allProperty in type.GetAllProperties())
 		{
@@ -118,13 +118,13 @@ internal class MetaType
 					throw new InvalidOperationException("duplicate matched constructor parameter name:" + type.FullName + " parameterName:" + parameterInfo.Name + " paramterType:" + parameterInfo.ParameterType.Name);
 				}
 			}
-			while (TryGetNextConstructor(enumerator3, ref ctor));
+			while (MetaType.TryGetNextConstructor(enumerator3, ref ctor));
 		}
-		IsClass = flag;
-		IsConcreteClass = flag && !typeInfo.IsAbstract && !typeInfo.IsInterface;
-		BestmatchConstructor = ctor;
-		ConstructorParameters = list.ToArray();
-		Members = dictionary.Values.ToArray();
+		this.IsClass = flag;
+		this.IsConcreteClass = flag && !typeInfo.IsAbstract && !typeInfo.IsInterface;
+		this.BestmatchConstructor = ctor;
+		this.ConstructorParameters = list.ToArray();
+		this.Members = dictionary.Values.ToArray();
 	}
 
 	private static bool TryGetNextConstructor(IEnumerator<ConstructorInfo> ctorEnumerator, ref ConstructorInfo ctor)

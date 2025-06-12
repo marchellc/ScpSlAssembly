@@ -28,13 +28,13 @@ public class WarheadCommand : ParentCommand, IUsageProvider
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new CancelCommand());
-		RegisterCommand(new DetonateCommand());
-		RegisterCommand(new DisableCommand());
-		RegisterCommand(new EnableCommand());
-		RegisterCommand(new InstantCommand());
-		RegisterCommand(new LockCommand());
-		RegisterCommand(new SetTimeCommand());
-		RegisterCommand(new StatusCommand());
+		this.RegisterCommand(new CancelCommand());
+		this.RegisterCommand(new DetonateCommand());
+		this.RegisterCommand(new DisableCommand());
+		this.RegisterCommand(new EnableCommand());
+		this.RegisterCommand(new InstantCommand());
+		this.RegisterCommand(new LockCommand());
+		this.RegisterCommand(new SetTimeCommand());
+		this.RegisterCommand(new StatusCommand());
 	}
 }

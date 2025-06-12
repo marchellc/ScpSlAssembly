@@ -23,37 +23,37 @@ public class EnvironmentalMimicry : StandardSubroutine<Scp939Role>
 	[field: SerializeField]
 	public EnvMimicrySequence[] Sequences { get; private set; }
 
-	public string CooldownText => string.Format(Translations.Get(Scp939HudTranslation.EnvMimicryCooldown), ((float)Mathf.RoundToInt(Cooldown.Remaining * 10f) / 10f).ToString("0.0"));
+	public string CooldownText => string.Format(Translations.Get(Scp939HudTranslation.EnvMimicryCooldown), ((float)Mathf.RoundToInt(this.Cooldown.Remaining * 10f) / 10f).ToString("0.0"));
 
 	public event Action OnSoundPlayed;
 
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<MimicPointController>(out _mimicPoint);
+		base.GetSubroutine<MimicPointController>(out this._mimicPoint);
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		Cooldown.Clear();
-		_hasSound = false;
-		if (!(_currentlyPlayed == null))
+		this.Cooldown.Clear();
+		this._hasSound = false;
+		if (!(this._currentlyPlayed == null))
 		{
-			UnityEngine.Object.Destroy(_currentlyPlayed);
-			_currentlyPlayed = null;
+			UnityEngine.Object.Destroy(this._currentlyPlayed);
+			this._currentlyPlayed = null;
 		}
 	}
 
 	public void ClientSelect(EnvMimicrySequence sequence)
 	{
-		int num = Sequences.Length;
+		int num = this.Sequences.Length;
 		for (int i = 0; i < num; i++)
 		{
-			if (!(Sequences[i] != sequence))
+			if (!(this.Sequences[i] != sequence))
 			{
-				_syncOption = (byte)i;
-				ClientSendCmd();
+				this._syncOption = (byte)i;
+				base.ClientSendCmd();
 				return;
 			}
 		}
@@ -63,46 +63,46 @@ public class EnvironmentalMimicry : StandardSubroutine<Scp939Role>
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteByte(_syncOption);
+		writer.WriteByte(this._syncOption);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (Cooldown.IsReady)
+		if (this.Cooldown.IsReady)
 		{
-			_syncOption = reader.ReadByte();
-			Cooldown.Trigger(_activationCooldown);
-			ServerSendRpc(toAll: true);
+			this._syncOption = reader.ReadByte();
+			this.Cooldown.Trigger(this._activationCooldown);
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte(_syncOption);
-		Cooldown.WriteCooldown(writer);
+		writer.WriteByte(this._syncOption);
+		this.Cooldown.WriteCooldown(writer);
 		writer.WriteInt(UnityEngine.Random.Range(int.MinValue, int.MaxValue));
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_syncOption = (byte)(reader.ReadByte() % Sequences.Length);
-		Cooldown.ReadCooldown(reader);
-		_currentlyPlayed = UnityEngine.Object.Instantiate(Sequences[_syncOption]);
-		_currentlyPlayed.EnqueueAll(reader.ReadInt());
-		_hasSound = true;
+		this._syncOption = (byte)(reader.ReadByte() % this.Sequences.Length);
+		this.Cooldown.ReadCooldown(reader);
+		this._currentlyPlayed = UnityEngine.Object.Instantiate(this.Sequences[this._syncOption]);
+		this._currentlyPlayed.EnqueueAll(reader.ReadInt());
+		this._hasSound = true;
 		this.OnSoundPlayed?.Invoke();
 	}
 
 	private void Update()
 	{
-		if (_hasSound && !(_currentlyPlayed == null) && !_currentlyPlayed.UpdateSequence(_mimicPoint.MimicPointTransform))
+		if (this._hasSound && !(this._currentlyPlayed == null) && !this._currentlyPlayed.UpdateSequence(this._mimicPoint.MimicPointTransform))
 		{
-			_hasSound = false;
-			_currentlyPlayed = null;
-			UnityEngine.Object.Destroy(_currentlyPlayed);
+			this._hasSound = false;
+			this._currentlyPlayed = null;
+			UnityEngine.Object.Destroy(this._currentlyPlayed);
 		}
 	}
 }

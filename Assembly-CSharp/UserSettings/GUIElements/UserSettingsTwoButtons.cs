@@ -33,41 +33,41 @@ public class UserSettingsTwoButtons : UserSettingsUIBase<Toggle, bool>, IPointer
 
 	private void Update()
 	{
-		UpdateColors(instant: false);
+		this.UpdateColors(instant: false);
 	}
 
 	private void OnEnable()
 	{
-		UpdateColors(instant: true);
+		this.UpdateColors(instant: true);
 	}
 
 	private void OnDisable()
 	{
-		_isHighlighted = false;
+		this._isHighlighted = false;
 	}
 
 	protected void UpdateColors(bool instant)
 	{
-		if (_transitionTime <= 0f || instant)
+		if (this._transitionTime <= 0f || instant)
 		{
-			_curAnim = (base.TargetUI.isOn ? 1 : 0);
+			this._curAnim = (base.TargetUI.isOn ? 1 : 0);
 		}
 		else
 		{
-			float num = Time.deltaTime / _transitionTime;
+			float num = Time.deltaTime / this._transitionTime;
 			if (base.TargetUI.isOn)
 			{
-				_curAnim += num;
+				this._curAnim += num;
 			}
 			else
 			{
-				_curAnim -= num;
+				this._curAnim -= num;
 			}
-			_curAnim = Mathf.Clamp01(_curAnim);
+			this._curAnim = Mathf.Clamp01(this._curAnim);
 		}
-		RoleAccentColor roleAccentColor = (_isHighlighted ? _highlightColor : _inactiveColor);
-		_trueImage.color = Color.Lerp(roleAccentColor.Color, _activeColor.Color, _curAnim);
-		_falseImage.color = Color.Lerp(_activeColor.Color, roleAccentColor.Color, _curAnim);
+		RoleAccentColor roleAccentColor = (this._isHighlighted ? this._highlightColor : this._inactiveColor);
+		this._trueImage.color = Color.Lerp(roleAccentColor.Color, this._activeColor.Color, this._curAnim);
+		this._falseImage.color = Color.Lerp(this._activeColor.Color, roleAccentColor.Color, this._curAnim);
 	}
 
 	protected override void SetValueAndTriggerEvent(bool val)
@@ -82,11 +82,11 @@ public class UserSettingsTwoButtons : UserSettingsUIBase<Toggle, bool>, IPointer
 
 	public void OnPointerEnter(PointerEventData eventData)
 	{
-		_isHighlighted = true;
+		this._isHighlighted = true;
 	}
 
 	public void OnPointerExit(PointerEventData eventData)
 	{
-		_isHighlighted = false;
+		this._isHighlighted = false;
 	}
 }

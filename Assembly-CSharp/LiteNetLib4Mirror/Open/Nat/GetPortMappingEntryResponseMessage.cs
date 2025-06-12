@@ -24,21 +24,21 @@ internal class GetPortMappingEntryResponseMessage : ResponseMessageBase
 	internal GetPortMappingEntryResponseMessage(XmlDocument response, string serviceType, bool genericMapping)
 		: base(response, serviceType, genericMapping ? "GetGenericPortMappingEntryResponseMessage" : "GetSpecificPortMappingEntryResponseMessage")
 	{
-		XmlNode node = GetNode();
-		RemoteHost = (genericMapping ? node.GetXmlElementText("NewRemoteHost") : string.Empty);
-		ExternalPort = (genericMapping ? Convert.ToInt32(node.GetXmlElementText("NewExternalPort")) : 65535);
+		XmlNode node = base.GetNode();
+		this.RemoteHost = (genericMapping ? node.GetXmlElementText("NewRemoteHost") : string.Empty);
+		this.ExternalPort = (genericMapping ? Convert.ToInt32(node.GetXmlElementText("NewExternalPort")) : 65535);
 		if (genericMapping)
 		{
-			NetworkProtocolType = ((!node.GetXmlElementText("NewProtocol").Equals("TCP", StringComparison.InvariantCultureIgnoreCase)) ? NetworkProtocolType.Udp : NetworkProtocolType.Tcp);
+			this.NetworkProtocolType = ((!node.GetXmlElementText("NewProtocol").Equals("TCP", StringComparison.InvariantCultureIgnoreCase)) ? NetworkProtocolType.Udp : NetworkProtocolType.Tcp);
 		}
 		else
 		{
-			NetworkProtocolType = NetworkProtocolType.Udp;
+			this.NetworkProtocolType = NetworkProtocolType.Udp;
 		}
-		InternalPort = Convert.ToInt32(node.GetXmlElementText("NewInternalPort"));
-		InternalClient = node.GetXmlElementText("NewInternalClient");
-		Enabled = node.GetXmlElementText("NewEnabled") == "1";
-		PortMappingDescription = node.GetXmlElementText("NewPortMappingDescription");
-		LeaseDuration = Convert.ToInt32(node.GetXmlElementText("NewLeaseDuration"));
+		this.InternalPort = Convert.ToInt32(node.GetXmlElementText("NewInternalPort"));
+		this.InternalClient = node.GetXmlElementText("NewInternalClient");
+		this.Enabled = node.GetXmlElementText("NewEnabled") == "1";
+		this.PortMappingDescription = node.GetXmlElementText("NewPortMappingDescription");
+		this.LeaseDuration = Convert.ToInt32(node.GetXmlElementText("NewLeaseDuration"));
 	}
 }

@@ -9,6 +9,6 @@ public class AchievementDebugOpener : MonoBehaviour
 	private void Awake()
 	{
 		bool active = Version.BuildType == Version.VersionType.Development || Version.PublicBeta || Version.PrivateBeta;
-		_buttonObj.SetActive(active);
+		this._buttonObj.SetActive(active);
 	}
 }

@@ -41,12 +41,12 @@ public class GripControllerModule : ModuleBase
 	[ExposedFirearmEvent]
 	public void EnableGripLayer(float transitionDurationFrames)
 	{
-		_activeSafeguard = null;
-		ModifyGripSpeed(transitionDurationFrames, targetEnable: true);
-		_safeguardEvent = null;
+		this._activeSafeguard = null;
+		this.ModifyGripSpeed(transitionDurationFrames, targetEnable: true);
+		this._safeguardEvent = null;
 		if (base.IsServer)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteBool(value: true);
 			});
@@ -56,10 +56,10 @@ public class GripControllerModule : ModuleBase
 	[ExposedFirearmEvent]
 	public void DisableGripLayer(float transitionDurationFrames)
 	{
-		ModifyGripSpeed(transitionDurationFrames, targetEnable: false);
+		this.ModifyGripSpeed(transitionDurationFrames, targetEnable: false);
 		if (base.IsServer)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteBool(value: false);
 			});
@@ -69,16 +69,16 @@ public class GripControllerModule : ModuleBase
 	[ExposedFirearmEvent]
 	public void SetSafeguards(float transitionDurationFrames)
 	{
-		_safeguardEvent = FirearmEvent.CurrentlyInvokedEvent;
-		_activeSafeguard = _safeguardEvent?.NameHash;
-		_safeguardDuration = transitionDurationFrames;
+		this._safeguardEvent = FirearmEvent.CurrentlyInvokedEvent;
+		this._activeSafeguard = this._safeguardEvent?.NameHash;
+		this._safeguardDuration = transitionDurationFrames;
 	}
 
 	internal override void SpectatorPostprocessSkip()
 	{
 		base.SpectatorPostprocessSkip();
-		bool flag = SyncEnabledGrips.Contains(base.ItemSerial);
-		ForceWeight(flag ? 1 : 0);
+		bool flag = GripControllerModule.SyncEnabledGrips.Contains(base.ItemSerial);
+		this.ForceWeight(flag ? 1 : 0);
 	}
 
 	internal override void EquipUpdate()
@@ -86,26 +86,26 @@ public class GripControllerModule : ModuleBase
 		base.EquipUpdate();
 		if (base.HasViewmodel)
 		{
-			UpdateSafeguard();
-			UpdateWeight();
+			this.UpdateSafeguard();
+			this.UpdateWeight();
 		}
 	}
 
 	protected override void OnInit()
 	{
 		base.OnInit();
-		_gripAttachmentLink.InitCache(base.Firearm);
+		this._gripAttachmentLink.InitCache(base.Firearm);
 	}
 
 	internal override void OnHolstered()
 	{
 		base.OnHolstered();
-		_lastWeight = 0f;
-		_adjustSpeed = 0f;
-		_activeSafeguard = null;
+		this._lastWeight = 0f;
+		this._adjustSpeed = 0f;
+		this._activeSafeguard = null;
 		if (base.IsServer)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteBool(value: false);
 			});
@@ -115,7 +115,7 @@ public class GripControllerModule : ModuleBase
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		SyncEnabledGrips.Clear();
+		GripControllerModule.SyncEnabledGrips.Clear();
 	}
 
 	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
@@ -125,9 +125,9 @@ public class GripControllerModule : ModuleBase
 		{
 			return;
 		}
-		foreach (ushort serial in SyncEnabledGrips)
+		foreach (ushort serial in GripControllerModule.SyncEnabledGrips)
 		{
-			SendRpc(hub, delegate(NetworkWriter x)
+			this.SendRpc(hub, delegate(NetworkWriter x)
 			{
 				x.WriteUShort(serial);
 			});
@@ -140,17 +140,17 @@ public class GripControllerModule : ModuleBase
 		byte b = 2;
 		while (reader.Remaining >= b)
 		{
-			SyncEnabledGrips.Add(reader.ReadUShort());
+			GripControllerModule.SyncEnabledGrips.Add(reader.ReadUShort());
 		}
 		if (reader.Remaining > 0)
 		{
 			if (reader.ReadBool())
 			{
-				SyncEnabledGrips.Add(serial);
+				GripControllerModule.SyncEnabledGrips.Add(serial);
 			}
 			else
 			{
-				SyncEnabledGrips.Remove(serial);
+				GripControllerModule.SyncEnabledGrips.Remove(serial);
 			}
 		}
 	}
@@ -160,53 +160,53 @@ public class GripControllerModule : ModuleBase
 		FirearmEvent firearmEvent = FirearmEvent.CurrentlyInvokedEvent;
 		if (firearmEvent == null)
 		{
-			if (!targetEnable || _safeguardEvent == null)
+			if (!targetEnable || this._safeguardEvent == null)
 			{
 				return;
 			}
-			firearmEvent = _safeguardEvent;
+			firearmEvent = this._safeguardEvent;
 		}
 		float totalSpeedMultiplier = firearmEvent.LastInvocation.TotalSpeedMultiplier;
 		float num = transitionDurationFrames / firearmEvent.Clip.frameRate;
-		if (totalSpeedMultiplier <= 0f || num <= 0f || SkippingForward)
+		if (totalSpeedMultiplier <= 0f || num <= 0f || this.SkippingForward)
 		{
-			ForceWeight(targetEnable ? 1 : 0);
+			this.ForceWeight(targetEnable ? 1 : 0);
 			return;
 		}
-		_adjustSpeed = 1f / num;
+		this._adjustSpeed = 1f / num;
 		if (!targetEnable)
 		{
-			_adjustSpeed *= -1f;
+			this._adjustSpeed *= -1f;
 		}
 	}
 
 	private void ForceWeight(float weight)
 	{
-		_adjustSpeed = 0f;
-		_lastWeight = weight;
-		UpdateWeight();
+		this._adjustSpeed = 0f;
+		this._lastWeight = weight;
+		this.UpdateWeight();
 	}
 
 	private void UpdateWeight()
 	{
-		_lastWeight = Mathf.Clamp01(_lastWeight + _adjustSpeed * Time.deltaTime);
+		this._lastWeight = Mathf.Clamp01(this._lastWeight + this._adjustSpeed * Time.deltaTime);
 		if (base.Firearm.HasViewmodel)
 		{
-			float num = (_gripAttachmentLink.Instance.IsEnabled ? _lastWeight : 0f);
+			float num = (this._gripAttachmentLink.Instance.IsEnabled ? this._lastWeight : 0f);
 			AnimatedFirearmViewmodel clientViewmodelInstance = base.Firearm.ClientViewmodelInstance;
-			_layers.SetWeight(clientViewmodelInstance.AnimatorSetLayerWeight, num);
+			this._layers.SetWeight(clientViewmodelInstance.AnimatorSetLayerWeight, num);
 			base.Firearm.AnimSetFloat(FirearmAnimatorHashes.GripWeight, num, checkIfExists: true);
 		}
 	}
 
 	private void UpdateSafeguard()
 	{
-		if (!_activeSafeguard.HasValue || !base.Firearm.TryGetModule<EventManagerModule>(out var module))
+		if (!this._activeSafeguard.HasValue || !base.Firearm.TryGetModule<EventManagerModule>(out var module))
 		{
 			return;
 		}
 		AnimatedFirearmViewmodel clientViewmodelInstance = base.Firearm.ClientViewmodelInstance;
-		int value = _activeSafeguard.Value;
+		int value = this._activeSafeguard.Value;
 		int[] layers = module.AffectedLayers.Layers;
 		foreach (int layer in layers)
 		{
@@ -215,6 +215,6 @@ public class GripControllerModule : ModuleBase
 				return;
 			}
 		}
-		EnableGripLayer(_safeguardDuration);
+		this.EnableGripLayer(this._safeguardDuration);
 	}
 }

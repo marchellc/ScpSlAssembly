@@ -15,45 +15,45 @@ public class BlastDoor : NetworkBehaviour
 	[SyncVar(hook = "SetDoorState")]
 	private bool _isOpen = true;
 
-	public bool IsOpen => _isOpen;
+	public bool IsOpen => this._isOpen;
 
 	public bool Network_isOpen
 	{
 		get
 		{
-			return _isOpen;
+			return this._isOpen;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _isOpen, 1uL, SetDoorState);
+			base.GeneratedSyncVarSetter(value, ref this._isOpen, 1uL, SetDoorState);
 		}
 	}
 
 	public override void OnStartClient()
 	{
 		base.OnStartClient();
-		SetDoorState(_: true, _isOpen);
+		this.SetDoorState(_: true, this._isOpen);
 	}
 
 	private void Start()
 	{
-		Instances.Add(this);
+		BlastDoor.Instances.Add(this);
 	}
 
 	private void OnDestroy()
 	{
-		Instances.Remove(this);
+		BlastDoor.Instances.Remove(this);
 	}
 
 	private void SetDoorState(bool _, bool newState)
 	{
-		Network_isOpen = newState;
-		if (_animator == null)
+		this.Network_isOpen = newState;
+		if (this._animator == null)
 		{
-			_animator = GetComponent<Animator>();
+			this._animator = base.GetComponent<Animator>();
 		}
-		_animator.SetBool(_isOpenId, newState);
+		this._animator.SetBool(BlastDoor._isOpenId, newState);
 	}
 
 	[Server]
@@ -65,7 +65,7 @@ public class BlastDoor : NetworkBehaviour
 		}
 		else
 		{
-			SetDoorState(_isOpen, isOpen);
+			this.SetDoorState(this._isOpen, isOpen);
 		}
 	}
 
@@ -79,13 +79,13 @@ public class BlastDoor : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(_isOpen);
+			writer.WriteBool(this._isOpen);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteBool(_isOpen);
+			writer.WriteBool(this._isOpen);
 		}
 	}
 
@@ -94,13 +94,13 @@ public class BlastDoor : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _isOpen, SetDoorState, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._isOpen, SetDoorState, reader.ReadBool());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _isOpen, SetDoorState, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this._isOpen, SetDoorState, reader.ReadBool());
 		}
 	}
 }

@@ -51,9 +51,9 @@ public class ZombieConsumeAbility : RagdollAbilityBase<ZombieRole>
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		if (_attackAbility.Cooldown.IsReady)
+		if (this._attackAbility.Cooldown.IsReady)
 		{
-			ClientTryStart();
+			base.ClientTryStart();
 		}
 	}
 
@@ -68,9 +68,9 @@ public class ZombieConsumeAbility : RagdollAbilityBase<ZombieRole>
 		if (base.IsInProgress && base.CastRole.FpcModule is ZombieMovementModule zombieMovementModule)
 		{
 			zombieMovementModule.ForceBloodlustSpeed();
-			if (NetworkServer.active && !(_bloodlustAbility.SimulatedStare > 0f))
+			if (NetworkServer.active && !(this._bloodlustAbility.SimulatedStare > 0f))
 			{
-				_bloodlustAbility.SimulatedStare = Duration + 5f - 5f;
+				this._bloodlustAbility.SimulatedStare = this.Duration + 5f - 5f;
 			}
 		}
 	}
@@ -88,7 +88,7 @@ public class ZombieConsumeAbility : RagdollAbilityBase<ZombieRole>
 	protected override byte ServerValidateBegin(BasicRagdoll ragdoll)
 	{
 		ConsumeError error = ConsumeError.None;
-		if (ConsumedRagdolls.Contains(ragdoll))
+		if (ZombieConsumeAbility.ConsumedRagdolls.Contains(ragdoll))
 		{
 			error = ConsumeError.AlreadyConsumed;
 		}
@@ -102,7 +102,7 @@ public class ZombieConsumeAbility : RagdollAbilityBase<ZombieRole>
 		}
 		else
 		{
-			foreach (ZombieConsumeAbility allAbility in AllAbilities)
+			foreach (ZombieConsumeAbility allAbility in ZombieConsumeAbility.AllAbilities)
 			{
 				if (allAbility.IsInProgress && allAbility.CurRagdoll == ragdoll)
 				{
@@ -111,9 +111,9 @@ public class ZombieConsumeAbility : RagdollAbilityBase<ZombieRole>
 				}
 			}
 		}
-		Scp0492StartingConsumingCorpseEventArgs scp0492StartingConsumingCorpseEventArgs = new Scp0492StartingConsumingCorpseEventArgs(base.Owner, ragdoll, error);
-		Scp0492Events.OnStartingConsumingCorpse(scp0492StartingConsumingCorpseEventArgs);
-		return (byte)scp0492StartingConsumingCorpseEventArgs.Error;
+		Scp0492StartingConsumingCorpseEventArgs e = new Scp0492StartingConsumingCorpseEventArgs(base.Owner, ragdoll, error);
+		Scp0492Events.OnStartingConsumingCorpse(e);
+		return (byte)e.Error;
 	}
 
 	protected override bool ServerValidateAny()
@@ -124,65 +124,65 @@ public class ZombieConsumeAbility : RagdollAbilityBase<ZombieRole>
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<ZombieAttackAbility>(out _attackAbility);
-		GetSubroutine<ZombieBloodlustAbility>(out _bloodlustAbility);
+		base.GetSubroutine<ZombieAttackAbility>(out this._attackAbility);
+		base.GetSubroutine<ZombieBloodlustAbility>(out this._bloodlustAbility);
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		_headRotationDirty = true;
+		this._headRotationDirty = true;
 	}
 
 	protected override void ServerComplete()
 	{
-		Scp0492ConsumingCorpseEventArgs scp0492ConsumingCorpseEventArgs = new Scp0492ConsumingCorpseEventArgs(base.Owner, base.CurRagdoll, 100f);
-		Scp0492Events.OnConsumingCorpse(scp0492ConsumingCorpseEventArgs);
-		if (!scp0492ConsumingCorpseEventArgs.IsAllowed)
+		Scp0492ConsumingCorpseEventArgs e = new Scp0492ConsumingCorpseEventArgs(base.Owner, base.CurRagdoll, 100f);
+		Scp0492Events.OnConsumingCorpse(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
 		if (base.CurRagdoll != null)
 		{
-			bool num = ConsumedRagdolls.Contains(base.CurRagdoll);
-			if (scp0492ConsumingCorpseEventArgs.AddToConsumedRagdollList)
+			bool num = ZombieConsumeAbility.ConsumedRagdolls.Contains(base.CurRagdoll);
+			if (e.AddToConsumedRagdollList)
 			{
-				ConsumedRagdolls.Add(base.CurRagdoll);
+				ZombieConsumeAbility.ConsumedRagdolls.Add(base.CurRagdoll);
 			}
-			if (num && !scp0492ConsumingCorpseEventArgs.HealIfAlreadyConsumed)
+			if (num && !e.HealIfAlreadyConsumed)
 			{
 				return;
 			}
 		}
-		base.Owner.playerStats.GetModule<HealthStat>().ServerHeal(scp0492ConsumingCorpseEventArgs.HealAmount);
+		base.Owner.playerStats.GetModule<HealthStat>().ServerHeal(e.HealAmount);
 		Scp0492Events.OnConsumedCorpse(new Scp0492ConsumedCorpseEventArgs(base.Owner, base.CurRagdoll));
 	}
 
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		AllAbilities.Add(this);
-		_headTransform = (base.CastRole.FpcModule.CharacterModelInstance as ZombieModel).HeadObject;
+		ZombieConsumeAbility.AllAbilities.Add(this);
+		this._headTransform = (base.CastRole.FpcModule.CharacterModelInstance as ZombieModel).HeadObject;
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		AllAbilities.Remove(this);
+		ZombieConsumeAbility.AllAbilities.Remove(this);
 	}
 
 	public Vector3 ProcessCamPos(Vector3 original)
 	{
-		return Vector3.Lerp(original, _headTransform.position, _eatAnimPositionFade.Evaluate(base.ProgressStatus));
+		return Vector3.Lerp(original, this._headTransform.position, this._eatAnimPositionFade.Evaluate(base.ProgressStatus));
 	}
 
 	public Vector3 ProcessRotation()
 	{
-		if (_headRotationDirty)
+		if (this._headRotationDirty)
 		{
-			_headRotation = Quaternion.Lerp(base.Owner.PlayerCameraReference.rotation, _headTransform.rotation, _eatAnimRotationFade.Evaluate(base.ProgressStatus)).eulerAngles;
-			_headRotationDirty = false;
+			this._headRotation = Quaternion.Lerp(base.Owner.PlayerCameraReference.rotation, this._headTransform.rotation, this._eatAnimRotationFade.Evaluate(base.ProgressStatus)).eulerAngles;
+			this._headRotationDirty = false;
 		}
-		return _headRotation;
+		return this._headRotation;
 	}
 }

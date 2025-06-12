@@ -18,17 +18,17 @@ public class ClientCommandHandler : CommandHandler
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new AudioPoolDebug());
-		RegisterCommand(new ContactCommand());
-		RegisterCommand(new EchoCommand());
-		RegisterCommand(new GlobalTagCommand());
-		RegisterCommand(new GroupsCommand());
-		RegisterCommand(new HelloCommand());
-		RegisterCommand(new HelpCommand(this));
-		RegisterCommand(new HideTagCommand());
-		RegisterCommand(new NoopCommand());
-		RegisterCommand(new ShowTagCommand());
-		RegisterCommand(new SrvCfgCommand());
-		RegisterCommand(OverwatchCommand.Create());
+		this.RegisterCommand(new AudioPoolDebug());
+		this.RegisterCommand(new ContactCommand());
+		this.RegisterCommand(new EchoCommand());
+		this.RegisterCommand(new GlobalTagCommand());
+		this.RegisterCommand(new GroupsCommand());
+		this.RegisterCommand(new HelloCommand());
+		this.RegisterCommand(new HelpCommand(this));
+		this.RegisterCommand(new HideTagCommand());
+		this.RegisterCommand(new NoopCommand());
+		this.RegisterCommand(new ShowTagCommand());
+		this.RegisterCommand(new SrvCfgCommand());
+		this.RegisterCommand(OverwatchCommand.Create());
 	}
 }

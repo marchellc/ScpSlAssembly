@@ -14,6 +14,6 @@ public abstract class WaveInterfaceBase<TWave> : MonoBehaviour where TWave : Spa
 		{
 			throw new NullReferenceException("Unable to find reference to " + typeof(TWave).Name + ".");
 		}
-		Wave = spawnWave;
+		this.Wave = spawnWave;
 	}
 }

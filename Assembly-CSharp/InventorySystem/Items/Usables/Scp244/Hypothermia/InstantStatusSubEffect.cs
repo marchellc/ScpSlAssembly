@@ -33,58 +33,58 @@ public class InstantStatusSubEffect : HypothermiaSubEffectBase, IWeaponModifierP
 	[SerializeField]
 	private AttachmentParameterValuePair[] _weaponStats;
 
-	private float CurIntensity => _currentIntensity * RainbowTaste.CurrentMultiplier(base.Hub);
+	private float CurIntensity => this._currentIntensity * RainbowTaste.CurrentMultiplier(base.Hub);
 
 	private float VitalityMultiplier => (!Vitality.CheckPlayer(base.Hub)) ? 1 : 0;
 
-	public override bool IsActive => _currentIntensity > 0f;
+	public override bool IsActive => this._currentIntensity > 0f;
 
 	public bool ParamsActive => true;
 
 	public bool MovementModifierActive => true;
 
-	public float MovementSpeedMultiplier => Mathf.LerpUnclamped(1f, _movementSpeedMultiplier, VitalityMultiplier * CurIntensity);
+	public float MovementSpeedMultiplier => Mathf.LerpUnclamped(1f, this._movementSpeedMultiplier, this.VitalityMultiplier * this.CurIntensity);
 
 	public float MovementSpeedLimit => float.MaxValue;
 
 	public float ProcessSearchTime(float val)
 	{
-		float num = Mathf.LerpUnclamped(1f, _searchTimeMultiplierIncrease, CurIntensity);
-		return val * num + _searchTimeAdditionIncrease * CurIntensity;
+		float num = Mathf.LerpUnclamped(1f, this._searchTimeMultiplierIncrease, this.CurIntensity);
+		return val * num + this._searchTimeAdditionIncrease * this.CurIntensity;
 	}
 
 	internal override void UpdateEffect(float curExposure)
 	{
-		_currentIntensity -= _decaySpeed * Time.deltaTime;
-		if (_currentIntensity < curExposure)
+		this._currentIntensity -= this._decaySpeed * Time.deltaTime;
+		if (this._currentIntensity < curExposure)
 		{
-			_currentIntensity = curExposure;
+			this._currentIntensity = curExposure;
 		}
-		if (_currentIntensity > _maxExposure)
+		if (this._currentIntensity > this._maxExposure)
 		{
-			_currentIntensity = _maxExposure;
+			this._currentIntensity = this._maxExposure;
 		}
-		float num = CurIntensity * VitalityMultiplier;
-		if (num != _statsPrevIntensity)
+		float num = this.CurIntensity * this.VitalityMultiplier;
+		if (num != this._statsPrevIntensity)
 		{
-			AttachmentParameterValuePair[] weaponStats = _weaponStats;
+			AttachmentParameterValuePair[] weaponStats = this._weaponStats;
 			for (int i = 0; i < weaponStats.Length; i++)
 			{
 				AttachmentParameterValuePair attachmentParameterValuePair = weaponStats[i];
-				_dictionarized[attachmentParameterValuePair.Parameter] = Mathf.LerpUnclamped(1f, attachmentParameterValuePair.Value, num);
+				this._dictionarized[attachmentParameterValuePair.Parameter] = Mathf.LerpUnclamped(1f, attachmentParameterValuePair.Value, num);
 			}
-			_statsPrevIntensity = num;
+			this._statsPrevIntensity = num;
 		}
 	}
 
 	public override void DisableEffect()
 	{
-		_currentIntensity = 0f;
-		_dictionarized.Clear();
+		this._currentIntensity = 0f;
+		this._dictionarized.Clear();
 	}
 
 	public bool TryGetWeaponParam(AttachmentParam param, out float val)
 	{
-		return _dictionarized.TryGetValue(param, out val);
+		return this._dictionarized.TryGetValue(param, out val);
 	}
 }

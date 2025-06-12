@@ -33,37 +33,37 @@ public class ElevatorPanel : InteractableCollider
 
 	protected override void Awake()
 	{
-		AllPanels.Add(this);
+		ElevatorPanel.AllPanels.Add(this);
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
 		ElevatorDoor.OnLocksChanged -= RefreshPanelConditionally;
-		AllPanels.Remove(this);
+		ElevatorPanel.AllPanels.Remove(this);
 	}
 
 	private void Update()
 	{
-		if (!_chamberFound)
+		if (!this._chamberFound)
 		{
-			if (_door == null)
+			if (this._door == null)
 			{
-				FindChamberInternal();
+				this.FindChamberInternal();
 			}
 			else
 			{
-				FindChamberRegular();
+				this.FindChamberRegular();
 			}
 		}
 	}
 
 	private void FindChamberRegular()
 	{
-		if (ElevatorChamber.TryGetChamber(_door.Group, out var chamber))
+		if (ElevatorChamber.TryGetChamber(this._door.Group, out var chamber))
 		{
-			ColliderId = GetHashFromHeight(base.transform.position.y);
-			AssignChamber(chamber);
+			base.ColliderId = this.GetHashFromHeight(base.transform.position.y);
+			this.AssignChamber(chamber);
 		}
 	}
 
@@ -73,60 +73,60 @@ public class ElevatorPanel : InteractableCollider
 		{
 			Debug.LogError("This panel has chamber assigned despite being an internal panel.", base.gameObject);
 		}
-		_isInternal = true;
-		AssignChamber(comp);
+		this._isInternal = true;
+		this.AssignChamber(comp);
 	}
 
 	private void AssignChamber(ElevatorChamber chamber)
 	{
-		if (_isInternal)
+		if (this._isInternal)
 		{
-			Target = chamber;
+			base.Target = chamber;
 		}
 		else
 		{
-			_door.Chamber = chamber;
-			Target = _door;
+			this._door.Chamber = chamber;
+			base.Target = this._door;
 		}
-		AssignedChamber = chamber;
-		_chamberFound = true;
+		this.AssignedChamber = chamber;
+		this._chamberFound = true;
 		base.Awake();
-		RefreshPanel();
+		this.RefreshPanel();
 		chamber.OnSequenceChanged += RefreshPanel;
 		ElevatorDoor.OnLocksChanged += RefreshPanelConditionally;
 	}
 
 	private void RefreshPanelConditionally(ElevatorGroup group)
 	{
-		if (_chamberFound && AssignedChamber.AssignedGroup == group)
+		if (this._chamberFound && this.AssignedChamber.AssignedGroup == group)
 		{
-			RefreshPanel();
+			this.RefreshPanel();
 		}
 	}
 
 	private void RefreshPanel()
 	{
-		ElevatorChamber.ElevatorSequence curSequence = AssignedChamber.CurSequence;
+		ElevatorChamber.ElevatorSequence curSequence = this.AssignedChamber.CurSequence;
 		if ((uint)(curSequence - 4) <= 1u)
 		{
-			RefreshStationary();
+			this.RefreshStationary();
 		}
 		else
 		{
-			RefreshMoving();
+			this.RefreshMoving();
 		}
 	}
 
 	private void RefreshStationary()
 	{
-		bool flag = (_isInternal ? AssignedChamber.DestinationDoor : _door).ActiveLocks != 0;
-		int destinationLevel = AssignedChamber.DestinationLevel;
-		_targetRenderer.sharedMaterial = (flag ? _disabledMat : _levelMats[destinationLevel]);
+		bool flag = (this._isInternal ? this.AssignedChamber.DestinationDoor : this._door).ActiveLocks != 0;
+		int destinationLevel = this.AssignedChamber.DestinationLevel;
+		this._targetRenderer.sharedMaterial = (flag ? this._disabledMat : this._levelMats[destinationLevel]);
 	}
 
 	private void RefreshMoving()
 	{
-		_targetRenderer.sharedMaterial = (AssignedChamber.GoingUp ? _movingUpMat : _movingDownMat);
+		this._targetRenderer.sharedMaterial = (this.AssignedChamber.GoingUp ? this._movingUpMat : this._movingDownMat);
 	}
 
 	private byte GetHashFromHeight(float y)

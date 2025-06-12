@@ -18,27 +18,27 @@ public class LanternJointFix : MonoBehaviour
 
 	private void Awake()
 	{
-		_transform = base.transform;
-		_initialLocalRotation = _transform.localRotation;
-		_initialLocalPosition = _transform.localPosition;
+		this._transform = base.transform;
+		this._initialLocalRotation = this._transform.localRotation;
+		this._initialLocalPosition = this._transform.localPosition;
 	}
 
 	private void OnDisable()
 	{
-		_localRotationOnDisable = _transform.localRotation;
-		_transform.localRotation = _initialLocalRotation;
-		_localPositionOnDisable = _transform.localPosition;
-		_transform.localPosition = _initialLocalPosition;
-		_hasDisabled = true;
+		this._localRotationOnDisable = this._transform.localRotation;
+		this._transform.localRotation = this._initialLocalRotation;
+		this._localPositionOnDisable = this._transform.localPosition;
+		this._transform.localPosition = this._initialLocalPosition;
+		this._hasDisabled = true;
 	}
 
 	private void Update()
 	{
-		if (_hasDisabled)
+		if (this._hasDisabled)
 		{
-			_hasDisabled = false;
-			_transform.localRotation = _localRotationOnDisable;
-			_transform.localPosition = _localPositionOnDisable;
+			this._hasDisabled = false;
+			this._transform.localRotation = this._localRotationOnDisable;
+			this._transform.localPosition = this._localPositionOnDisable;
 		}
 	}
 }

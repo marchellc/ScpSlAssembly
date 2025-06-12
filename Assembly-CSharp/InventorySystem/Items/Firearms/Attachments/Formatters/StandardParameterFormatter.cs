@@ -12,21 +12,21 @@ public class StandardParameterFormatter : IAttachmentsParameterFormatter
 
 	private readonly string _suffix;
 
-	public float DefaultValue => _isMultiplier ? 1 : 0;
+	public float DefaultValue => this._isMultiplier ? 1 : 0;
 
 	public StandardParameterFormatter(bool moreIsBetter, bool isMultiplier = true, bool formatAsPercent = true, string suffix = null)
 	{
-		_isMultiplier = isMultiplier;
-		_moreIsBetter = moreIsBetter;
-		_formatAsPrecent = formatAsPercent;
-		_suffix = suffix;
+		this._isMultiplier = isMultiplier;
+		this._moreIsBetter = moreIsBetter;
+		this._formatAsPrecent = formatAsPercent;
+		this._suffix = suffix;
 	}
 
 	public bool FormatParameter(AttachmentParam param, Firearm firearm, int attId, float statsValue, out string formattedText, out bool isGood)
 	{
 		formattedText = null;
 		isGood = false;
-		float num = DefaultValue;
+		float num = this.DefaultValue;
 		for (int i = 0; i < firearm.Attachments.Length; i++)
 		{
 			if (attId >= 0 && firearm.Attachments[attId].Slot == firearm.Attachments[i].Slot)
@@ -42,9 +42,9 @@ public class StandardParameterFormatter : IAttachmentsParameterFormatter
 		{
 			return false;
 		}
-		isGood = (_moreIsBetter ? (statsValue > num) : (statsValue < num));
+		isGood = (this._moreIsBetter ? (statsValue > num) : (statsValue < num));
 		string text = ((statsValue > num) ? "+" : "-");
-		if (_formatAsPrecent)
+		if (this._formatAsPrecent)
 		{
 			float f = ((num == 0f) ? (statsValue - num) : (1f - statsValue / num));
 			formattedText = text + Mathf.Round(Mathf.Abs(f) * 1000f) / 10f + "%";
@@ -53,9 +53,9 @@ public class StandardParameterFormatter : IAttachmentsParameterFormatter
 		{
 			formattedText = text + Mathf.Round(Mathf.Abs(statsValue - num) * 10f) / 10f;
 		}
-		if (!string.IsNullOrEmpty(_suffix))
+		if (!string.IsNullOrEmpty(this._suffix))
 		{
-			formattedText += _suffix;
+			formattedText += this._suffix;
 		}
 		return true;
 	}

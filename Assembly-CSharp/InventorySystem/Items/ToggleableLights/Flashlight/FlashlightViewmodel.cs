@@ -11,31 +11,31 @@ public class FlashlightViewmodel : StandardAnimatedViemodel
 
 	public void PlayAnimation()
 	{
-		AnimatorSetTrigger(ToggleHash);
+		this.AnimatorSetTrigger(FlashlightViewmodel.ToggleHash);
 	}
 
 	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
 	{
 		base.InitSpectator(ply, id, wasEquipped);
-		_light = GetComponentInChildren<Light>(includeInactive: true);
+		this._light = base.GetComponentInChildren<Light>(includeInactive: true);
 		FlashlightNetworkHandler.OnStatusReceived += OnStatusReceived;
 		if (FlashlightNetworkHandler.ReceivedStatuses.TryGetValue(base.ItemId.SerialNumber, out var value))
 		{
-			_light.enabled = value;
+			this._light.enabled = value;
 		}
 		if (wasEquipped)
 		{
-			AnimatorForceUpdate(base.SkipEquipTime);
-			GetComponent<AudioSource>().mute = true;
+			this.AnimatorForceUpdate(base.SkipEquipTime);
+			base.GetComponent<AudioSource>().mute = true;
 		}
 	}
 
 	private void OnStatusReceived(FlashlightNetworkHandler.FlashlightMessage msg)
 	{
-		if (msg.Serial == base.ItemId.SerialNumber && _light.enabled != msg.NewState)
+		if (msg.Serial == base.ItemId.SerialNumber && this._light.enabled != msg.NewState)
 		{
-			PlayAnimation();
-			_light.enabled = msg.NewState;
+			this.PlayAnimation();
+			this._light.enabled = msg.NewState;
 			AudioSourcePoolManager.Play2D(msg.NewState ? FlashlightItem.Template.OnClip : FlashlightItem.Template.OffClip);
 		}
 	}

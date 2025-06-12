@@ -33,13 +33,13 @@ public class VisualizeCollidersCommand : ICommand
 
 	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
-		if (!TryPrevalidate(sender, out response, out var rid, out var primitiveTemplate))
+		if (!VisualizeCollidersCommand.TryPrevalidate(sender, out response, out var rid, out var primitiveTemplate))
 		{
 			return false;
 		}
-		ClearNullInstances();
+		VisualizeCollidersCommand.ClearNullInstances();
 		bool flag = false;
-		foreach (RoomInstancePair activeInstance in ActiveInstances)
+		foreach (RoomInstancePair activeInstance in VisualizeCollidersCommand.ActiveInstances)
 		{
 			if (!(activeInstance.Room != rid))
 			{
@@ -58,7 +58,7 @@ public class VisualizeCollidersCommand : ICommand
 		foreach (BoxCollider boxCollider in array)
 		{
 			string key = LayerMask.LayerToName(boxCollider.gameObject.layer);
-			Color valueOrDefault = LayerToColor.GetValueOrDefault(key, Color.white);
+			Color valueOrDefault = VisualizeCollidersCommand.LayerToColor.GetValueOrDefault(key, Color.white);
 			PrimitiveObjectToy primitiveObjectToy = UnityEngine.Object.Instantiate(primitiveTemplate);
 			primitiveObjectToy.NetworkPrimitiveType = PrimitiveType.Cube;
 			primitiveObjectToy.NetworkPrimitiveFlags = PrimitiveFlags.Visible;
@@ -70,7 +70,7 @@ public class VisualizeCollidersCommand : ICommand
 			transform.SetPositionAndRotation(position + vector, rotation);
 			transform.localScale = Vector3.Scale(transform2.lossyScale, boxCollider.size);
 			num++;
-			ActiveInstances.Add(new RoomInstancePair(rid, primitiveObjectToy));
+			VisualizeCollidersCommand.ActiveInstances.Add(new RoomInstancePair(rid, primitiveObjectToy));
 			NetworkServer.Spawn(primitiveObjectToy.gameObject);
 		}
 		response = $"Successfully visualized {num} box colliders.";
@@ -113,12 +113,12 @@ public class VisualizeCollidersCommand : ICommand
 
 	private static void ClearNullInstances()
 	{
-		for (int num = ActiveInstances.Count - 1; num >= 0; num--)
+		for (int num = VisualizeCollidersCommand.ActiveInstances.Count - 1; num >= 0; num--)
 		{
-			RoomInstancePair roomInstancePair = ActiveInstances[num];
+			RoomInstancePair roomInstancePair = VisualizeCollidersCommand.ActiveInstances[num];
 			if (!(roomInstancePair.Instance != null) || !(roomInstancePair.Room != null))
 			{
-				ActiveInstances.RemoveAt(num);
+				VisualizeCollidersCommand.ActiveInstances.RemoveAt(num);
 			}
 		}
 	}

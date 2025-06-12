@@ -15,22 +15,22 @@ public class OverheatSmokeExtension : OverheatExtensionBase
 	public override void SetupAny()
 	{
 		base.SetupAny();
-		UpdateParticleSystem(TemperatureTrackerModule.GetTemperature(base.Identifier), forceUpdate: true);
+		this.UpdateParticleSystem(TemperatureTrackerModule.GetTemperature(base.Identifier), forceUpdate: true);
 	}
 
 	protected override void OnTemperatureChanged(float temp)
 	{
-		UpdateParticleSystem(temp, forceUpdate: false);
+		this.UpdateParticleSystem(temp, forceUpdate: false);
 	}
 
 	private void UpdateParticleSystem(float curTemp, bool forceUpdate)
 	{
-		bool flag = curTemp > _temperatureThreshold;
-		if (_lastExceeded != flag || forceUpdate)
+		bool flag = curTemp > this._temperatureThreshold;
+		if (this._lastExceeded != flag || forceUpdate)
 		{
-			ParticleSystem.EmissionModule emission = _particleSystem.emission;
+			ParticleSystem.EmissionModule emission = this._particleSystem.emission;
 			emission.enabled = flag;
-			_lastExceeded = flag;
+			this._lastExceeded = flag;
 		}
 	}
 }

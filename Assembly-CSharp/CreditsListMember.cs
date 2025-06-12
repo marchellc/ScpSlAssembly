@@ -19,9 +19,9 @@ public readonly struct CreditsListMember : IEquatable<CreditsListMember>, IJsonS
 
 	public bool Equals(CreditsListMember other)
 	{
-		if (name == other.name && title == other.title)
+		if (this.name == other.name && this.title == other.title)
 		{
-			return color == other.color;
+			return this.color == other.color;
 		}
 		return false;
 	}
@@ -30,18 +30,18 @@ public readonly struct CreditsListMember : IEquatable<CreditsListMember>, IJsonS
 	{
 		if (obj is CreditsListMember other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		if (name == null)
+		if (this.name == null)
 		{
 			return 0;
 		}
-		return name.GetHashCode();
+		return this.name.GetHashCode();
 	}
 
 	public static bool operator ==(CreditsListMember left, CreditsListMember right)

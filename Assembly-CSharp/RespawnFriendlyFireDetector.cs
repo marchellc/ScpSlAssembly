@@ -13,14 +13,14 @@ internal class RespawnFriendlyFireDetector : FriendlyFireDetector
 
 	public override bool RegisterDamage(float damage)
 	{
-		if (!FriendlyFireConfig.RespawnEnabled || _triggered || Time.unscaledTime > _lastReset + (float)FriendlyFireConfig.RespawnWindow)
+		if (!FriendlyFireConfig.RespawnEnabled || base._triggered || Time.unscaledTime > this._lastReset + (float)FriendlyFireConfig.RespawnWindow)
 		{
 			return false;
 		}
 		base.RegisterDamage(damage);
 		if (FriendlyFireConfig.RespawnDamageThreshold != 0 && base.Damage >= (float)FriendlyFireConfig.RespawnDamageThreshold)
 		{
-			TakeAction(ref FriendlyFireConfig.RespawnAction, "Respawn", ref FriendlyFireConfig.RespawnBanTime, ref FriendlyFireConfig.RespawnBanReason, ref FriendlyFireConfig.RespawnKillReason, ref FriendlyFireConfig.RespawnAdminMessage, ref FriendlyFireConfig.RespawnBroadcastMessage, ref FriendlyFireConfig.RespawnWebhook);
+			base.TakeAction(ref FriendlyFireConfig.RespawnAction, "Respawn", ref FriendlyFireConfig.RespawnBanTime, ref FriendlyFireConfig.RespawnBanReason, ref FriendlyFireConfig.RespawnKillReason, ref FriendlyFireConfig.RespawnAdminMessage, ref FriendlyFireConfig.RespawnBroadcastMessage, ref FriendlyFireConfig.RespawnWebhook);
 			return true;
 		}
 		return false;
@@ -28,14 +28,14 @@ internal class RespawnFriendlyFireDetector : FriendlyFireDetector
 
 	public override bool RegisterKill()
 	{
-		if (!FriendlyFireConfig.RespawnEnabled || _triggered || Time.unscaledTime > _lastReset + (float)FriendlyFireConfig.RespawnWindow)
+		if (!FriendlyFireConfig.RespawnEnabled || base._triggered || Time.unscaledTime > this._lastReset + (float)FriendlyFireConfig.RespawnWindow)
 		{
 			return false;
 		}
 		base.RegisterKill();
 		if (FriendlyFireConfig.RespawnKillThreshold != 0 && base.Kills >= FriendlyFireConfig.RespawnKillThreshold)
 		{
-			TakeAction(ref FriendlyFireConfig.RespawnAction, "Respawn", ref FriendlyFireConfig.RespawnBanTime, ref FriendlyFireConfig.RespawnBanReason, ref FriendlyFireConfig.RespawnKillReason, ref FriendlyFireConfig.RespawnAdminMessage, ref FriendlyFireConfig.RespawnBroadcastMessage, ref FriendlyFireConfig.RespawnWebhook);
+			base.TakeAction(ref FriendlyFireConfig.RespawnAction, "Respawn", ref FriendlyFireConfig.RespawnBanTime, ref FriendlyFireConfig.RespawnBanReason, ref FriendlyFireConfig.RespawnKillReason, ref FriendlyFireConfig.RespawnAdminMessage, ref FriendlyFireConfig.RespawnBroadcastMessage, ref FriendlyFireConfig.RespawnWebhook);
 			return true;
 		}
 		return false;
@@ -44,6 +44,6 @@ internal class RespawnFriendlyFireDetector : FriendlyFireDetector
 	public override void Reset()
 	{
 		base.Reset();
-		_lastReset = Time.unscaledTime;
+		this._lastReset = Time.unscaledTime;
 	}
 }

@@ -20,7 +20,7 @@ public static class CommandProcessor
 
 	internal static void ProcessAdminChat(string q, CommandSender sender)
 	{
-		if (!CheckPermissions(sender, "Admin Chat", PlayerPermissions.AdminChat, string.Empty))
+		if (!CommandProcessor.CheckPermissions(sender, "Admin Chat", PlayerPermissions.AdminChat, string.Empty))
 		{
 			if (sender is PlayerCommandSender playerCommandSender)
 			{
@@ -48,9 +48,9 @@ public static class CommandProcessor
 		{
 			q = q.Substring(0, 2000) + "...";
 		}
-		SendingAdminChatEventArgs sendingAdminChatEventArgs = new SendingAdminChatEventArgs(sender, q);
-		ServerEvents.OnSendingAdminChat(sendingAdminChatEventArgs);
-		if (!sendingAdminChatEventArgs.IsAllowed)
+		SendingAdminChatEventArgs e = new SendingAdminChatEventArgs(sender, q);
+		ServerEvents.OnSendingAdminChat(e);
+		if (!e.IsAllowed)
 		{
 			if (sender is PlayerCommandSender playerCommandSender3)
 			{
@@ -59,7 +59,7 @@ public static class CommandProcessor
 			}
 			return;
 		}
-		q = sendingAdminChatEventArgs.Message;
+		q = e.Message;
 		string content = num + "!" + q;
 		if (ServerStatic.IsDedicated)
 		{
@@ -69,7 +69,7 @@ public static class CommandProcessor
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			ClientInstanceMode mode = allHub.Mode;
-			if (mode != 0 && mode != ClientInstanceMode.DedicatedServer && allHub.serverRoles.AdminChatPerms)
+			if (mode != ClientInstanceMode.Unverified && mode != ClientInstanceMode.DedicatedServer && allHub.serverRoles.AdminChatPerms)
 			{
 				allHub.encryptedChannelManager.TrySendMessageToClient(content, EncryptedChannelManager.EncryptedChannel.AdminChat);
 			}
@@ -98,27 +98,27 @@ public static class CommandProcessor
 		}
 		string[] array2 = q.Trim().Split(QueryProcessor.SpaceArray, 512, StringSplitOptions.RemoveEmptyEntries);
 		ICommand command;
-		bool flag = RemoteAdminCommandHandler.TryGetCommand(array2[0], out command);
+		bool flag = CommandProcessor.RemoteAdminCommandHandler.TryGetCommand(array2[0], out command);
 		ArraySegment<string> arguments = array2.Segment(1);
-		CommandExecutingEventArgs commandExecutingEventArgs = new CommandExecutingEventArgs(sender, CommandType.RemoteAdmin, flag, command, arguments);
-		ServerEvents.OnCommandExecuting(commandExecutingEventArgs);
-		if (!commandExecutingEventArgs.IsAllowed)
+		CommandExecutingEventArgs e = new CommandExecutingEventArgs(sender, CommandType.RemoteAdmin, flag, command, arguments);
+		ServerEvents.OnCommandExecuting(e);
+		if (!e.IsAllowed)
 		{
 			return null;
 		}
-		arguments = commandExecutingEventArgs.Arguments;
-		sender = commandExecutingEventArgs.Sender;
-		command = commandExecutingEventArgs.Command;
+		arguments = e.Arguments;
+		sender = e.Sender;
+		command = e.Command;
 		if (flag)
 		{
 			try
 			{
 				bool successful = command.Execute(array2.Segment(1), sender, out var response);
 				response = Misc.CloseAllRichTextTags(response);
-				CommandExecutedEventArgs commandExecutedEventArgs = new CommandExecutedEventArgs(sender, CommandType.RemoteAdmin, command, arguments, successful, response);
-				ServerEvents.OnCommandExecuted(commandExecutedEventArgs);
-				response = commandExecutedEventArgs.Response;
-				successful = commandExecutedEventArgs.ExecutedSuccessfully;
+				CommandExecutedEventArgs e2 = new CommandExecutedEventArgs(sender, CommandType.RemoteAdmin, command, arguments, successful, response);
+				ServerEvents.OnCommandExecuted(e2);
+				response = e2.Response;
+				successful = e2.ExecutedSuccessfully;
 				if (!string.IsNullOrEmpty(response))
 				{
 					sender.RaReply(array2[0].ToUpperInvariant() + "#" + response, successful, logToConsole: true, "");
@@ -128,9 +128,9 @@ public static class CommandProcessor
 			catch (Exception ex)
 			{
 				string response2 = "Command execution failed! Error: " + Misc.RemoveStacktraceZeroes(ex.ToString());
-				CommandExecutedEventArgs commandExecutedEventArgs2 = new CommandExecutedEventArgs(sender, CommandType.RemoteAdmin, command, arguments, successful: false, response2);
-				ServerEvents.OnCommandExecuted(commandExecutedEventArgs2);
-				response2 = commandExecutedEventArgs2.Response;
+				CommandExecutedEventArgs e3 = new CommandExecutedEventArgs(sender, CommandType.RemoteAdmin, command, arguments, successful: false, response2);
+				ServerEvents.OnCommandExecuted(e3);
+				response2 = e3.Response;
 				sender.RaReply(response2, success: false, logToConsole: true, array2[0].ToUpperInvariant() + "#" + response2);
 				return response2;
 			}
@@ -146,7 +146,7 @@ public static class CommandProcessor
 
 	internal static List<ICommand> GetAllCommands()
 	{
-		return RemoteAdminCommandHandler.AllCommands.ToList();
+		return CommandProcessor.RemoteAdminCommandHandler.AllCommands.ToList();
 	}
 
 	private static bool CheckPermissions(CommandSender sender, string queryZero, PlayerPermissions perm, string replyScreen = "", bool reply = true)

@@ -18,7 +18,7 @@ public class Sinkhole : StatusEffectBase, IStaminaModifier, IMovementSpeedModifi
 
 	public bool MovementModifierActive => base.IsEnabled;
 
-	public float MovementSpeedMultiplier => 1f - _slowAmount * 0.01f;
+	public float MovementSpeedMultiplier => 1f - this._slowAmount * 0.01f;
 
 	public float MovementSpeedLimit => float.MaxValue;
 
@@ -34,7 +34,7 @@ public class Sinkhole : StatusEffectBase, IStaminaModifier, IMovementSpeedModifi
 
 	public float ProcessFootstepOverrides(float dis)
 	{
-		AudioSourcePoolManager.PlayOnTransform(_footstepSounds.RandomItem(), base.transform, dis);
-		return _originalLoudness;
+		AudioSourcePoolManager.PlayOnTransform(this._footstepSounds.RandomItem(), base.transform, dis);
+		return this._originalLoudness;
 	}
 }

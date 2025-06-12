@@ -32,5 +32,6 @@ public enum PlayerPermissions : ulong
 	Effects = 0x4000000uL,
 	FriendlyFireDetectorImmunity = 0x8000000uL,
 	FriendlyFireDetectorTempDisable = 0x10000000uL,
-	ServerLogLiveFeed = 0x20000000uL
+	ServerLogLiveFeed = 0x20000000uL,
+	ExecuteAs = 0x40000000uL
 }

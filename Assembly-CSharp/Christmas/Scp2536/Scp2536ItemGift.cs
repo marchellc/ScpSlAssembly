@@ -14,12 +14,12 @@ public abstract class Scp2536ItemGift : Scp2536GiftBase
 
 	protected Scp2536ItemGift()
 	{
-		_chanceSum = Rewards.Sum((Scp2536Reward r) => r.Weight);
+		this._chanceSum = this.Rewards.Sum((Scp2536Reward r) => r.Weight);
 	}
 
 	protected void GrantAllRewards(ReferenceHub hub)
 	{
-		Scp2536Reward[] rewards = Rewards;
+		Scp2536Reward[] rewards = this.Rewards;
 		for (int i = 0; i < rewards.Length; i++)
 		{
 			ItemType reward = rewards[i].Reward;
@@ -34,9 +34,9 @@ public abstract class Scp2536ItemGift : Scp2536GiftBase
 
 	protected ItemType GenerateRandomReward()
 	{
-		float num = Random.Range(0f, _chanceSum);
+		float num = Random.Range(0f, this._chanceSum);
 		ItemType result = ItemType.Coin;
-		Scp2536Reward[] rewards = Rewards;
+		Scp2536Reward[] rewards = this.Rewards;
 		for (int i = 0; i < rewards.Length; i++)
 		{
 			Scp2536Reward scp2536Reward = rewards[i];

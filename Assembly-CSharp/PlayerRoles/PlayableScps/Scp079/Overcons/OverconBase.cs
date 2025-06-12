@@ -11,11 +11,11 @@ public abstract class OverconBase : MonoBehaviour
 
 	protected virtual void OnEnable()
 	{
-		ActiveInstances.Add(this);
+		OverconBase.ActiveInstances.Add(this);
 	}
 
 	protected virtual void OnDisable()
 	{
-		ActiveInstances.Remove(this);
+		OverconBase.ActiveInstances.Remove(this);
 	}
 }

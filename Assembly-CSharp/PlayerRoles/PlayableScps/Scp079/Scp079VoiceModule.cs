@@ -16,25 +16,25 @@ public class Scp079VoiceModule : StandardScpVoiceModule
 	protected override void Awake()
 	{
 		base.Awake();
-		(base.Role as Scp079Role).SubroutineModule.TryGetSubroutine<Scp079SpeakerAbility>(out _speakerAbility);
+		(base.Role as Scp079Role).SubroutineModule.TryGetSubroutine<Scp079SpeakerAbility>(out this._speakerAbility);
 	}
 
 	protected override VoiceChatChannel ProcessInputs(bool primary, bool alt)
 	{
-		if (alt && _speakerAbility.CanTransmit)
+		if (alt && this._speakerAbility.CanTransmit)
 		{
 			return VoiceChatChannel.Proximity;
 		}
 		if (primary)
 		{
-			return PrimaryChannel;
+			return this.PrimaryChannel;
 		}
 		return VoiceChatChannel.None;
 	}
 
 	public override VoiceChatChannel ValidateSend(VoiceChatChannel channel)
 	{
-		if (channel != VoiceChatChannel.Proximity || !_speakerAbility.CanTransmit)
+		if (channel != VoiceChatChannel.Proximity || !this._speakerAbility.CanTransmit)
 		{
 			return base.ValidateSend(channel);
 		}
@@ -45,7 +45,7 @@ public class Scp079VoiceModule : StandardScpVoiceModule
 	{
 		if (base.CurrentChannel == VoiceChatChannel.Proximity)
 		{
-			ProximityPlayback.Buffer.Write(data, len);
+			this.ProximityPlayback.Buffer.Write(data, len);
 		}
 		else
 		{

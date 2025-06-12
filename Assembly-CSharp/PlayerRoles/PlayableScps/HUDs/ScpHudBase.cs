@@ -22,7 +22,7 @@ public abstract class ScpHudBase : MonoBehaviour
 
 	protected virtual void ToggleHud(bool b)
 	{
-		Canvas[] componentsInChildren = GetComponentsInChildren<Canvas>();
+		Canvas[] componentsInChildren = base.GetComponentsInChildren<Canvas>();
 		for (int i = 0; i < componentsInChildren.Length; i++)
 		{
 			componentsInChildren[i].enabled = b;
@@ -31,15 +31,15 @@ public abstract class ScpHudBase : MonoBehaviour
 
 	protected virtual void Update()
 	{
-		if (_useCounter && !((_updateCounterTimer -= Time.deltaTime) > 0f))
+		if (this._useCounter && !((this._updateCounterTimer -= Time.deltaTime) > 0f))
 		{
-			UpdateCounter();
+			this.UpdateCounter();
 		}
 	}
 
 	protected virtual void OnDestroy()
 	{
-		if (_eventAssigned)
+		if (this._eventAssigned)
 		{
 			HideHUDController.ToggleHUD -= ToggleHud;
 			this.OnDestroyed?.Invoke();
@@ -54,8 +54,8 @@ public abstract class ScpHudBase : MonoBehaviour
 			return faction == Faction.FoundationStaff || faction == Faction.FoundationEnemy || faction == Faction.Flamingos;
 		});
 		int extraTargets = RoundSummary.singleton.ExtraTargets;
-		ResetTimer();
-		TargetCounter.text = (num + extraTargets).ToString();
+		this.ResetTimer();
+		this.TargetCounter.text = (num + extraTargets).ToString();
 	}
 
 	internal virtual void OnDied()
@@ -64,13 +64,13 @@ public abstract class ScpHudBase : MonoBehaviour
 
 	internal virtual void Init(ReferenceHub hub)
 	{
-		Hub = hub;
-		_eventAssigned = true;
-		_useCounter = TargetCounter != null;
+		this.Hub = hub;
+		this._eventAssigned = true;
+		this._useCounter = this.TargetCounter != null;
 		HideHUDController.ToggleHUD += ToggleHud;
 		if (!HideHUDController.IsHUDVisible)
 		{
-			ToggleHud(b: false);
+			this.ToggleHud(b: false);
 		}
 	}
 

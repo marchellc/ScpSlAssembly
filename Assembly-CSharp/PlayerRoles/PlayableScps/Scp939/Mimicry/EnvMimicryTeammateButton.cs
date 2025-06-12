@@ -16,11 +16,11 @@ public class EnvMimicryTeammateButton : EnvMimicryStandardButton
 	{
 		get
 		{
-			return _eventAssigned;
+			return this._eventAssigned;
 		}
 		set
 		{
-			if (EventAssigned != value)
+			if (this.EventAssigned != value)
 			{
 				if (value)
 				{
@@ -30,38 +30,38 @@ public class EnvMimicryTeammateButton : EnvMimicryStandardButton
 				{
 					PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
 				}
-				_eventAssigned = value;
+				this._eventAssigned = value;
 			}
 		}
 	}
 
-	protected override bool IsAvailable => _isActive;
+	protected override bool IsAvailable => this._isActive;
 
 	protected override void Awake()
 	{
 		base.Awake();
-		if (ReferenceHub.AllHubs.Any((ReferenceHub x) => x.GetRoleId() == _targetRole))
+		if (ReferenceHub.AllHubs.Any((ReferenceHub x) => x.GetRoleId() == this._targetRole))
 		{
-			_isActive = true;
+			this._isActive = true;
 		}
 		else
 		{
-			EventAssigned = true;
+			this.EventAssigned = true;
 		}
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		EventAssigned = false;
+		this.EventAssigned = false;
 	}
 
 	private void OnRoleChanged(ReferenceHub hub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
 	{
-		if (newRole.RoleTypeId == _targetRole)
+		if (newRole.RoleTypeId == this._targetRole)
 		{
-			_isActive = true;
-			EventAssigned = false;
+			this._isActive = true;
+			this.EventAssigned = false;
 		}
 	}
 }

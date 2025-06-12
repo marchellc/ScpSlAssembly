@@ -21,22 +21,22 @@ public class ExternalRoundsExtension : MixedExtension
 
 	private void Update()
 	{
-		DisplayAmmoValues displayAmmoValues = _fetcher?.Invoke() ?? default(DisplayAmmoValues);
+		DisplayAmmoValues displayAmmoValues = this._fetcher?.Invoke() ?? default(DisplayAmmoValues);
 		int num = 0;
-		if (_countChamberedRounds)
+		if (this._countChamberedRounds)
 		{
 			num += displayAmmoValues.Chambered;
 		}
-		if (_countMagazineRounds)
+		if (this._countMagazineRounds)
 		{
 			num += displayAmmoValues.Magazines;
 		}
-		if (!_prevValue.HasValue || num != _prevValue)
+		if (!this._prevValue.HasValue || num != this._prevValue)
 		{
-			_prevValue = num;
-			for (int i = 0; i < _rounds.Length; i++)
+			this._prevValue = num;
+			for (int i = 0; i < this._rounds.Length; i++)
 			{
-				_rounds[i].SetActive(i < num);
+				this._rounds[i].SetActive(i < num);
 			}
 		}
 	}
@@ -44,12 +44,12 @@ public class ExternalRoundsExtension : MixedExtension
 	public override void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
 		base.InitViewmodel(viewmodel);
-		_fetcher = () => IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(viewmodel.ParentFirearm);
+		this._fetcher = () => IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(viewmodel.ParentFirearm);
 	}
 
 	public override void SetupWorldmodel(FirearmWorldmodel worldmodel)
 	{
 		base.SetupWorldmodel(worldmodel);
-		_fetcher = () => IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(worldmodel.Identifier);
+		this._fetcher = () => IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(worldmodel.Identifier);
 	}
 }

@@ -16,23 +16,23 @@ public class InteractableCollider : MonoBehaviour, IBlockStaticBatching
 
 	protected virtual void Awake()
 	{
-		if (Target is IInteractable key)
+		if (this.Target is IInteractable key)
 		{
-			if (!AllInstances.ContainsKey(key))
+			if (!InteractableCollider.AllInstances.ContainsKey(key))
 			{
-				AllInstances[key] = new Dictionary<byte, InteractableCollider>();
+				InteractableCollider.AllInstances[key] = new Dictionary<byte, InteractableCollider>();
 			}
-			AllInstances[key][ColliderId] = this;
+			InteractableCollider.AllInstances[key][this.ColliderId] = this;
 		}
 		else
 		{
-			Debug.LogError("Fatal error: '" + Target.name + "' is not IInteractable.");
+			Debug.LogError("Fatal error: '" + this.Target.name + "' is not IInteractable.", base.gameObject);
 		}
 	}
 
 	public static bool TryGetCollider(IInteractable target, byte colliderId, out InteractableCollider res)
 	{
-		if (AllInstances.TryGetValue(target, out var value) && value.TryGetValue(colliderId, out res))
+		if (InteractableCollider.AllInstances.TryGetValue(target, out var value) && value.TryGetValue(colliderId, out res))
 		{
 			return true;
 		}
@@ -42,12 +42,12 @@ public class InteractableCollider : MonoBehaviour, IBlockStaticBatching
 
 	protected virtual void OnDestroy()
 	{
-		if (Target is IInteractable key && AllInstances.TryGetValue(key, out var value))
+		if (this.Target is IInteractable key && InteractableCollider.AllInstances.TryGetValue(key, out var value))
 		{
-			value.Remove(ColliderId);
+			value.Remove(this.ColliderId);
 			if (value.Count == 0)
 			{
-				AllInstances.Remove(key);
+				InteractableCollider.AllInstances.Remove(key);
 			}
 		}
 	}

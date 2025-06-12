@@ -9,35 +9,35 @@ public struct SearchInvalidation : ISearchIdentifiable, NetworkMessage, IEquatab
 
 	public SearchInvalidation(byte id)
 	{
-		Id = id;
+		this.Id = id;
 	}
 
 	public void Deserialize(NetworkReader reader)
 	{
-		Id = reader.ReadByte();
+		this.Id = reader.ReadByte();
 	}
 
 	public void Serialize(NetworkWriter writer)
 	{
-		writer.WriteByte(Id);
+		writer.WriteByte(this.Id);
 	}
 
 	public bool Equals(SearchInvalidation other)
 	{
-		return Id == other.Id;
+		return this.Id == other.Id;
 	}
 
 	public override bool Equals(object obj)
 	{
 		if (obj is SearchInvalidation other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return Id.GetHashCode();
+		return this.Id.GetHashCode();
 	}
 }

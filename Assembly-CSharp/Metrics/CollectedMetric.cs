@@ -13,8 +13,8 @@ public struct CollectedMetric : IJsonSerializable
 
 	public CollectedMetric(Type type, string jsonData)
 	{
-		Type = type.Name;
-		Data = jsonData;
-		RoundTime = (float)RoundStart.RoundLength.TotalSeconds;
+		this.Type = type.Name;
+		this.Data = jsonData;
+		this.RoundTime = (float)RoundStart.RoundLength.TotalSeconds;
 	}
 }

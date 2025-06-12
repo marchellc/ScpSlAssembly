@@ -15,7 +15,7 @@ public class PlayerDamagedDanger : ParentDangerBase
 	public override void Initialize(ReferenceHub target)
 	{
 		base.Initialize(target);
-		_leftoverDamage = 0f;
+		this._leftoverDamage = 0f;
 		PlayerStats.OnAnyPlayerDamaged += UpdateState;
 	}
 
@@ -44,12 +44,12 @@ public class PlayerDamagedDanger : ParentDangerBase
 		}
 		if (damageHandler is StandardDamageHandler standardDamageHandler)
 		{
-			float num = Mathf.Floor((standardDamageHandler.DealtHealthDamage + _leftoverDamage) / 10f) * 0.25f;
-			if (standardDamageHandler.DealtHealthDamage % 10f + _leftoverDamage >= 10f)
+			float num = Mathf.Floor((standardDamageHandler.DealtHealthDamage + this._leftoverDamage) / 10f) * 0.25f;
+			if (standardDamageHandler.DealtHealthDamage % 10f + this._leftoverDamage >= 10f)
 			{
-				_leftoverDamage = 0f;
+				this._leftoverDamage = 0f;
 			}
-			_leftoverDamage += standardDamageHandler.DealtHealthDamage % 10f;
+			this._leftoverDamage += standardDamageHandler.DealtHealthDamage % 10f;
 			if (!(num < 0.25f))
 			{
 				base.ChildDangers.Add(new ExpiringDanger(num, base.Owner));

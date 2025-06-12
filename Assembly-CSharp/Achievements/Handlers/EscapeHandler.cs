@@ -18,16 +18,16 @@ public class EscapeHandler : AchievementHandlerBase
 
 	private static void OnRoleSet(ReferenceHub userHub, RoleTypeId newId, RoleChangeReason reason)
 	{
-		if (NetworkServer.active && !_escapeFired && reason == RoleChangeReason.Escaped)
+		if (NetworkServer.active && !EscapeHandler._escapeFired && reason == RoleChangeReason.Escaped)
 		{
 			AchievementHandlerBase.ServerAchieve(userHub.networkIdentity.connectionToClient, AchievementName.EscapeArtist);
-			_escapeFired = true;
+			EscapeHandler._escapeFired = true;
 		}
 	}
 
 	internal override void OnRoundStarted()
 	{
-		_escapeFired = false;
+		EscapeHandler._escapeFired = false;
 	}
 
 	private static void OnEscaped(ReferenceHub userHub)

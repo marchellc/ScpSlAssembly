@@ -15,10 +15,10 @@ public class ItemLayerLink
 
 	public int GetLayerIndex(AnimatedCharacterModel model)
 	{
-		if (!_cachedIndex.HasValue)
+		if (!this._cachedIndex.HasValue)
 		{
-			_cachedIndex = model.LayerManager.GetLayerIndex(LayerRef);
+			this._cachedIndex = model.LayerManager.GetLayerIndex(this.LayerRef);
 		}
-		return _cachedIndex.Value;
+		return this._cachedIndex.Value;
 	}
 }

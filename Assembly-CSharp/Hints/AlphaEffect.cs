@@ -20,18 +20,18 @@ public class AlphaEffect : HintEffect
 	public AlphaEffect(float alpha, float startScalar = 0f, float durationScalar = 1f)
 		: base(startScalar, durationScalar)
 	{
-		Alpha = alpha;
+		this.Alpha = alpha;
 	}
 
 	public override void Deserialize(NetworkReader reader)
 	{
 		base.Deserialize(reader);
-		Alpha = reader.ReadFloat();
+		this.Alpha = reader.ReadFloat();
 	}
 
 	public override void Serialize(NetworkWriter writer)
 	{
 		base.Serialize(writer);
-		writer.WriteFloat(Alpha);
+		writer.WriteFloat(this.Alpha);
 	}
 }

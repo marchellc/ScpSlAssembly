@@ -10,7 +10,7 @@ public readonly struct InventoryRoleInfo
 
 	public InventoryRoleInfo(ItemType[] items, Dictionary<ItemType, ushort> ammo)
 	{
-		Items = items;
-		Ammo = ammo;
+		this.Items = items;
+		this.Ammo = ammo;
 	}
 }

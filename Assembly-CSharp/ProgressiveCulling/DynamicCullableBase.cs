@@ -12,23 +12,23 @@ public abstract class DynamicCullableBase : CullableBehaviour, IRootCullable, IC
 	{
 		get
 		{
-			if (!(_tr == null))
+			if (!(this._tr == null))
 			{
-				return _tr.position;
+				return this._tr.position;
 			}
 			return base.transform.position;
 		}
 	}
 
-	public override bool ShouldBeVisible => CullingCamera.CheckBoundsVisibility(WorldspaceBounds);
+	public override bool ShouldBeVisible => CullingCamera.CheckBoundsVisibility(this.WorldspaceBounds);
 
 	public RootCullablePriority Priority => RootCullablePriority.Dynamic;
 
-	public Bounds WorldspaceBounds => new Bounds(BoundsOrigin, Vector3.one * BoundsSize);
+	public Bounds WorldspaceBounds => new Bounds(this.BoundsOrigin, Vector3.one * this.BoundsSize);
 
 	protected virtual void Awake()
 	{
-		_tr = base.transform;
+		this._tr = base.transform;
 		CullingCamera.RegisterRootCullable(this);
 	}
 
@@ -39,7 +39,7 @@ public abstract class DynamicCullableBase : CullableBehaviour, IRootCullable, IC
 
 	protected override void OnDrawGizmosSelected()
 	{
-		_tr = base.transform;
+		this._tr = base.transform;
 		base.OnDrawGizmosSelected();
 	}
 

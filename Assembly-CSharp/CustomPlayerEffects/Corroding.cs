@@ -20,12 +20,12 @@ public class Corroding : TickingEffectBase, IStaminaModifier
 
 	protected override void OnTick()
 	{
-		if (NetworkServer.active && !(AttackerHub == null) && !Vitality.CheckPlayer(base.Hub))
+		if (NetworkServer.active && !(this.AttackerHub == null) && !Vitality.CheckPlayer(base.Hub))
 		{
-			base.Hub.playerStats.DealDamage(new ScpDamageHandler(AttackerHub, 2.1f, DeathTranslations.PocketDecay));
-			if (StaminaDrainPercentage > 0f)
+			base.Hub.playerStats.DealDamage(new ScpDamageHandler(this.AttackerHub, 2.1f, DeathTranslations.PocketDecay));
+			if (Corroding.StaminaDrainPercentage > 0f)
 			{
-				base.Hub.playerStats.GetModule<StaminaStat>().CurValue -= StaminaDrainPercentage * 0.01f;
+				base.Hub.playerStats.GetModule<StaminaStat>().CurValue -= Corroding.StaminaDrainPercentage * 0.01f;
 			}
 		}
 	}

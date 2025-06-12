@@ -27,12 +27,12 @@ public abstract class ElevatorFollowerBase : MonoBehaviour
 
 	protected virtual void OnElevatorMoved(Bounds elevatorBounds, ElevatorChamber chamber, Vector3 deltaPos, Quaternion deltaRot)
 	{
-		bool flag = InElevator && chamber == TrackedChamber;
-		if (!elevatorBounds.Contains(LastPosition))
+		bool flag = this.InElevator && chamber == this.TrackedChamber;
+		if (!elevatorBounds.Contains(this.LastPosition))
 		{
 			if (flag)
 			{
-				InElevator = false;
+				this.InElevator = false;
 				base.transform.position -= deltaPos;
 				base.transform.SetParent(null);
 			}
@@ -41,8 +41,8 @@ public abstract class ElevatorFollowerBase : MonoBehaviour
 		{
 			base.transform.SetParent(chamber.transform);
 			base.transform.position += deltaPos;
-			TrackedChamber = chamber;
-			InElevator = true;
+			this.TrackedChamber = chamber;
+			this.InElevator = true;
 		}
 	}
 }

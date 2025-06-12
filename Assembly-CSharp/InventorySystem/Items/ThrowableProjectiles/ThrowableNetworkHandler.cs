@@ -24,20 +24,20 @@ public static class ThrowableNetworkHandler
 
 		public ThrowableItemRequestMessage(ushort serial, RequestType type, Quaternion rotation, RelativePosition position, Vector3 startVel)
 		{
-			Serial = serial;
-			Request = type;
-			CameraRotation = rotation;
-			CameraPosition = position;
-			PlayerVelocity = startVel;
+			this.Serial = serial;
+			this.Request = type;
+			this.CameraRotation = rotation;
+			this.CameraPosition = position;
+			this.PlayerVelocity = startVel;
 		}
 
 		public ThrowableItemRequestMessage(ThrowableItem item, RequestType type, Vector3 startVel = default(Vector3))
 		{
-			Serial = item.ItemSerial;
-			Request = type;
-			CameraRotation = item.Owner.PlayerCameraReference.rotation;
-			CameraPosition = new RelativePosition(item.Owner.PlayerCameraReference.position);
-			PlayerVelocity = startVel;
+			this.Serial = item.ItemSerial;
+			this.Request = type;
+			this.CameraRotation = item.Owner.PlayerCameraReference.rotation;
+			this.CameraPosition = new RelativePosition(item.Owner.PlayerCameraReference.position);
+			this.PlayerVelocity = startVel;
 		}
 	}
 
@@ -51,9 +51,9 @@ public static class ThrowableNetworkHandler
 
 		public ThrowableItemAudioMessage(ushort itemSerial, RequestType rt)
 		{
-			Serial = itemSerial;
-			Request = rt;
-			Time = UnityEngine.Time.timeSinceLevelLoad;
+			this.Serial = itemSerial;
+			this.Request = rt;
+			this.Time = UnityEngine.Time.timeSinceLevelLoad;
 		}
 	}
 
@@ -144,7 +144,7 @@ public static class ThrowableNetworkHandler
 
 	private static void ClientProcessAudio(ThrowableItemAudioMessage msg)
 	{
-		ReceivedRequests[msg.Serial] = msg;
+		ThrowableNetworkHandler.ReceivedRequests[msg.Serial] = msg;
 		ThrowableNetworkHandler.OnAudioMessageReceived?.Invoke(msg);
 		if (InventoryExtensions.TryGetHubHoldingSerial(msg.Serial, out var hub) && !hub.isLocalPlayer && InventoryItemLoader.TryGetItem<ThrowableItem>(hub.inventory.CurItem.TypeId, out var result))
 		{
@@ -196,7 +196,7 @@ public static class ThrowableNetworkHandler
 	{
 		writer.WriteUShort(value.Serial);
 		writer.WriteByte((byte)value.Request);
-		if (RequiresAdditionalData(value.Request))
+		if (ThrowableNetworkHandler.RequiresAdditionalData(value.Request))
 		{
 			writer.WriteLowPrecisionQuaternion(new LowPrecisionQuaternion(value.CameraRotation));
 			writer.WriteRelativePosition(value.CameraPosition);
@@ -208,7 +208,7 @@ public static class ThrowableNetworkHandler
 	{
 		ushort serial = reader.ReadUShort();
 		RequestType requestType = (RequestType)reader.ReadByte();
-		bool num = RequiresAdditionalData(requestType);
+		bool num = ThrowableNetworkHandler.RequiresAdditionalData(requestType);
 		Quaternion rotation = (num ? reader.ReadLowPrecisionQuaternion().Value : default(Quaternion));
 		RelativePosition position = (num ? reader.ReadRelativePosition() : default(RelativePosition));
 		Vector3 startVel = (num ? reader.ReadVector3() : default(Vector3));

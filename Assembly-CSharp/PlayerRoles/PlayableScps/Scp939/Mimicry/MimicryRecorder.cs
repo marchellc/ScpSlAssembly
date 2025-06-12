@@ -22,9 +22,9 @@ public class MimicryRecorder : StandardSubroutine<Scp939Role>
 
 		public MimicryRecording(ReferenceHub owner, PlaybackBuffer buffer)
 		{
-			Owner = new Footprint(owner);
-			Buffer = buffer;
-			Buffer.Reorganize();
+			this.Owner = new Footprint(owner);
+			this.Buffer = buffer;
+			this.Buffer.Reorganize();
 		}
 	}
 
@@ -72,58 +72,58 @@ public class MimicryRecorder : StandardSubroutine<Scp939Role>
 	{
 		if (prevRole is HumanRole role)
 		{
-			UnregisterRole(role);
+			this.UnregisterRole(role);
 		}
 		if (newRole is HumanRole role2)
 		{
-			RegisterRole(role2);
+			this.RegisterRole(role2);
 		}
 	}
 
 	private void ServerRemoveClient(ReferenceHub ply)
 	{
-		_syncMute = true;
-		_syncPlayer = ply;
-		ServerSendRpc(toAll: false);
-		RemoveRecordingsOfPlayer(ply);
+		this._syncMute = true;
+		this._syncPlayer = ply;
+		base.ServerSendRpc(toAll: false);
+		this.RemoveRecordingsOfPlayer(ply);
 	}
 
 	private void RemoveRecordingsOfPlayer(ReferenceHub ply)
 	{
-		_serverSentVoices.Remove(ply);
-		for (int i = 0; i < SavedVoices.Count; i++)
+		this._serverSentVoices.Remove(ply);
+		for (int i = 0; i < this.SavedVoices.Count; i++)
 		{
-			if (!(SavedVoices[i].Owner.Hub != ply))
+			if (!(this.SavedVoices[i].Owner.Hub != ply))
 			{
-				RemoveIndex(i--);
+				this.RemoveIndex(i--);
 			}
 		}
 	}
 
 	private void OnAnyPlayerWasDamaged(ReferenceHub ply, DamageHandlerBase dh)
 	{
-		if (!VoiceChatMutes.IsMuted(ply) && IsPrivacyAccepted(ply) && dh is Scp939DamageHandler scp939DamageHandler && !(scp939DamageHandler.Attacker.Hub != base.Owner))
+		if (!VoiceChatMutes.IsMuted(ply) && this.IsPrivacyAccepted(ply) && dh is Scp939DamageHandler scp939DamageHandler && !(scp939DamageHandler.Attacker.Hub != base.Owner))
 		{
-			_lastAttackedPlayers.Add(new Footprint(ply));
+			this._lastAttackedPlayers.Add(new Footprint(ply));
 		}
 	}
 
 	private void ClearExpiredTargets()
 	{
-		for (int num = _lastAttackedPlayers.Count - 1; num >= 0; num--)
+		for (int num = this._lastAttackedPlayers.Count - 1; num >= 0; num--)
 		{
-			Footprint footprint = _lastAttackedPlayers[num];
+			Footprint footprint = this._lastAttackedPlayers[num];
 			if (footprint.Hub == null || (double)footprint.Stopwatch.Elapsed.Seconds > 5.0)
 			{
-				_lastAttackedPlayers.RemoveAt(num);
+				this._lastAttackedPlayers.RemoveAt(num);
 			}
 		}
 	}
 
 	private bool WasAttackedRecently(ReferenceHub ply)
 	{
-		ClearExpiredTargets();
-		foreach (Footprint lastAttackedPlayer in _lastAttackedPlayers)
+		this.ClearExpiredTargets();
+		foreach (Footprint lastAttackedPlayer in this._lastAttackedPlayers)
 		{
 			if (lastAttackedPlayer.Hub == ply)
 			{
@@ -135,20 +135,20 @@ public class MimicryRecorder : StandardSubroutine<Scp939Role>
 
 	private void OnAnyPlayerKilled(ReferenceHub ply, DamageHandlerBase dh)
 	{
-		if (!VoiceChatMutes.IsMuted(ply) && IsPrivacyAccepted(ply) && WasAttackedRecently(ply) && ply.roleManager.CurrentRole is HumanRole ply2 && WasKilledByTeammate(ply2, dh))
+		if (!VoiceChatMutes.IsMuted(ply) && this.IsPrivacyAccepted(ply) && this.WasAttackedRecently(ply) && ply.roleManager.CurrentRole is HumanRole ply2 && this.WasKilledByTeammate(ply2, dh))
 		{
-			_syncPlayer = ply;
-			_syncMute = false;
+			this._syncPlayer = ply;
+			this._syncMute = false;
 			if (base.Owner.isLocalPlayer)
 			{
-				SaveRecording(ply);
+				this.SaveRecording(ply);
 			}
 			else
 			{
-				ServerSendRpc(toAll: false);
+				base.ServerSendRpc(toAll: false);
 			}
-			_serverSentVoices.Add(ply);
-			_serverSentConfirmations.Remove(ply);
+			this._serverSentVoices.Add(ply);
+			this._serverSentConfirmations.Remove(ply);
 		}
 	}
 
@@ -176,17 +176,17 @@ public class MimicryRecorder : StandardSubroutine<Scp939Role>
 
 	private void OnPlayerMuteChanges(ReferenceHub ply, VcMuteFlags _)
 	{
-		if (VoiceChatMutes.IsMuted(ply) && _serverSentVoices.Remove(ply))
+		if (VoiceChatMutes.IsMuted(ply) && this._serverSentVoices.Remove(ply))
 		{
-			ServerRemoveClient(ply);
+			this.ServerRemoveClient(ply);
 		}
 	}
 
 	private void OnPlayerPrivacyChanges(ReferenceHub ply)
 	{
-		if (!IsPrivacyAccepted(ply) && _serverSentVoices.Remove(ply))
+		if (!this.IsPrivacyAccepted(ply) && this._serverSentVoices.Remove(ply))
 		{
-			ServerRemoveClient(ply);
+			this.ServerRemoveClient(ply);
 		}
 	}
 
@@ -197,94 +197,94 @@ public class MimicryRecorder : StandardSubroutine<Scp939Role>
 
 	private void UnregisterRole(HumanRole role)
 	{
-		if (_received.TryGetValue(role, out var value))
+		if (this._received.TryGetValue(role, out var value))
 		{
 			role.VoiceModule.OnSamplesReceived -= value.Write;
-			_received.Remove(role);
+			this._received.Remove(role);
 		}
 	}
 
 	private void RegisterRole(HumanRole role)
 	{
-		PlaybackBuffer playbackBuffer = new PlaybackBuffer(_maxDurationSamples, endlessTapeMode: true);
-		_received[role] = playbackBuffer;
+		PlaybackBuffer playbackBuffer = new PlaybackBuffer(this._maxDurationSamples, endlessTapeMode: true);
+		this._received[role] = playbackBuffer;
 		role.VoiceModule.OnSamplesReceived += playbackBuffer.Write;
 	}
 
 	private void SaveRecording(ReferenceHub ply)
 	{
-		if (ply.roleManager.CurrentRole is HumanRole key && _received.TryGetValue(key, out var value) && value.Length >= _minDurationSamples)
+		if (ply.roleManager.CurrentRole is HumanRole key && this._received.TryGetValue(key, out var value) && value.Length >= this._minDurationSamples)
 		{
-			SavedVoices.Add(new MimicryRecording(ply, value));
+			this.SavedVoices.Add(new MimicryRecording(ply, value));
 			this.OnSavedVoicesItemAdded?.Invoke(Scp939HudTranslation.YouGotAVoicelinePopup);
 			this.OnSavedVoicesModified?.Invoke();
-			ClientSendCmd();
+			base.ClientSendCmd();
 		}
 	}
 
 	public void RemoveVoice(PlaybackBuffer voiceRecord)
 	{
-		for (int i = 0; i < SavedVoices.Count; i++)
+		for (int i = 0; i < this.SavedVoices.Count; i++)
 		{
-			if (SavedVoices[i].Buffer == voiceRecord)
+			if (this.SavedVoices[i].Buffer == voiceRecord)
 			{
-				RemoveIndex(i--);
+				this.RemoveIndex(i--);
 			}
 		}
 	}
 
 	public void RemoveIndex(int id)
 	{
-		SavedVoices.RemoveAt(id);
+		this.SavedVoices.RemoveAt(id);
 		this.OnSavedVoicesModified?.Invoke();
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteBool(_syncMute);
-		writer.WriteReferenceHub(_syncPlayer);
+		writer.WriteBool(this._syncMute);
+		writer.WriteReferenceHub(this._syncPlayer);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_syncMute = reader.ReadBool();
-		_syncPlayer = reader.ReadReferenceHub();
-		if (_syncPlayer == null)
+		this._syncMute = reader.ReadBool();
+		this._syncPlayer = reader.ReadReferenceHub();
+		if (this._syncPlayer == null)
 		{
 			return;
 		}
-		if (_syncPlayer.isLocalPlayer)
+		if (this._syncPlayer.isLocalPlayer)
 		{
 			if (!MimicryConfirmationBox.Remember)
 			{
-				UnityEngine.Object.Instantiate(_confirmationBox);
+				UnityEngine.Object.Instantiate(this._confirmationBox);
 			}
 		}
-		else if (_syncMute)
+		else if (this._syncMute)
 		{
-			RemoveRecordingsOfPlayer(_syncPlayer);
+			this.RemoveRecordingsOfPlayer(this._syncPlayer);
 		}
 		else
 		{
-			SaveRecording(_syncPlayer);
+			this.SaveRecording(this._syncPlayer);
 		}
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteReferenceHub(_syncPlayer);
+		writer.WriteReferenceHub(this._syncPlayer);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
 		ReferenceHub rh = reader.ReadReferenceHub();
-		if (_serverSentVoices.Contains(rh) && _serverSentConfirmations.Add(rh))
+		if (this._serverSentVoices.Contains(rh) && this._serverSentConfirmations.Add(rh))
 		{
-			ServerSendRpc((ReferenceHub x) => x == rh);
+			base.ServerSendRpc((ReferenceHub x) => x == rh);
 		}
 	}
 
@@ -303,10 +303,10 @@ public class MimicryRecorder : StandardSubroutine<Scp939Role>
 		{
 			if (allHub.roleManager.CurrentRole is HumanRole role)
 			{
-				RegisterRole(role);
+				this.RegisterRole(role);
 			}
 		}
-		_wasLocal = true;
+		this._wasLocal = true;
 		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
 		ReferenceHub.OnPlayerRemoved += RemoveRecordingsOfPlayer;
 	}
@@ -318,14 +318,14 @@ public class MimicryRecorder : StandardSubroutine<Scp939Role>
 		PlayerStats.OnAnyPlayerDied -= OnAnyPlayerKilled;
 		VoiceChatMutes.OnFlagsSet -= OnPlayerMuteChanges;
 		VoiceChatPrivacySettings.OnUserFlagsChanged -= OnPlayerPrivacyChanges;
-		_serverSentVoices.Clear();
-		_serverSentConfirmations.Clear();
-		if (_wasLocal)
+		this._serverSentVoices.Clear();
+		this._serverSentConfirmations.Clear();
+		if (this._wasLocal)
 		{
-			_wasLocal = false;
-			SavedVoices.Clear();
-			_received.Clear();
-			PreviewPlayback.StopPreview();
+			this._wasLocal = false;
+			this.SavedVoices.Clear();
+			this._received.Clear();
+			this.PreviewPlayback.StopPreview();
 			PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
 			ReferenceHub.OnPlayerRemoved -= RemoveRecordingsOfPlayer;
 		}

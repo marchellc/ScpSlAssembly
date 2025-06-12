@@ -19,9 +19,9 @@ public readonly struct DiscordEmbedField : IEquatable<DiscordEmbedField>, IJsonS
 
 	public bool Equals(DiscordEmbedField other)
 	{
-		if (name == other.name && value == other.value)
+		if (this.name == other.name && this.value == other.value)
 		{
-			return inline == other.inline;
+			return this.inline == other.inline;
 		}
 		return false;
 	}
@@ -30,15 +30,15 @@ public readonly struct DiscordEmbedField : IEquatable<DiscordEmbedField>, IJsonS
 	{
 		if (obj is DiscordEmbedField other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		int num = ((((name != null) ? name.GetHashCode() : 0) * 397) ^ ((value != null) ? value.GetHashCode() : 0)) * 397;
-		bool flag = inline;
+		int num = ((((this.name != null) ? this.name.GetHashCode() : 0) * 397) ^ ((this.value != null) ? this.value.GetHashCode() : 0)) * 397;
+		bool flag = this.inline;
 		return num ^ flag.GetHashCode();
 	}
 

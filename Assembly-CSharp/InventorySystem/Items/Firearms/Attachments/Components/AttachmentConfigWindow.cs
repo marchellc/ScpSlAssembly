@@ -23,17 +23,17 @@ public abstract class AttachmentConfigWindow : MonoBehaviour
 
 	private bool Validate()
 	{
-		if (Attachment == null)
+		if (this.Attachment == null)
 		{
 			return false;
 		}
-		if (_wasActive)
+		if (this._wasActive)
 		{
-			if (!Attachment.IsEnabled)
+			if (!this.Attachment.IsEnabled)
 			{
 				return false;
 			}
-			Firearm firearm = Attachment.Firearm;
+			Firearm firearm = this.Attachment.Firearm;
 			if (firearm.HasOwner && firearm.OwnerInventory.CurInstance != firearm)
 			{
 				return false;
@@ -44,25 +44,25 @@ public abstract class AttachmentConfigWindow : MonoBehaviour
 
 	protected virtual void OnDestroy()
 	{
-		AttachmentSelectorBase selector = Selector;
+		AttachmentSelectorBase selector = this.Selector;
 		selector.OnSummaryToggled = (Action)Delegate.Remove(selector.OnSummaryToggled, new Action(DestroySelf));
-		OnDestroyed?.Invoke();
+		this.OnDestroyed?.Invoke();
 	}
 
 	protected virtual void OnDisable()
 	{
-		DestroySelf();
+		this.DestroySelf();
 	}
 
 	protected virtual void Update()
 	{
-		if (!Validate())
+		if (!this.Validate())
 		{
-			DestroySelf();
+			this.DestroySelf();
 			return;
 		}
-		_wasActive = Attachment.IsEnabled;
-		SafeUpdate();
+		this._wasActive = this.Attachment.IsEnabled;
+		this.SafeUpdate();
 	}
 
 	protected virtual void SafeUpdate()
@@ -71,20 +71,20 @@ public abstract class AttachmentConfigWindow : MonoBehaviour
 
 	public virtual void Setup(AttachmentSelectorBase selector, Attachment attachment, RectTransform transformToFit)
 	{
-		Selector = selector;
-		Attachment = attachment;
-		AttachmentSelectorBase selector2 = Selector;
+		this.Selector = selector;
+		this.Attachment = attachment;
+		AttachmentSelectorBase selector2 = this.Selector;
 		selector2.OnSummaryToggled = (Action)Delegate.Combine(selector2.OnSummaryToggled, new Action(DestroySelf));
-		Selector.RegisterAction(_exitTransform, delegate
+		this.Selector.RegisterAction(this._exitTransform, delegate
 		{
-			DestroySelf();
+			this.DestroySelf();
 		});
-		SetLayout(transformToFit);
+		this.SetLayout(transformToFit);
 	}
 
 	protected virtual void SetLayout(RectTransform transformToFit)
 	{
-		RectTransform component = GetComponent<RectTransform>();
+		RectTransform component = base.GetComponent<RectTransform>();
 		float num = transformToFit.sizeDelta.y / component.sizeDelta.y;
 		component.localPosition = transformToFit.localPosition;
 		component.localRotation = Quaternion.identity;

@@ -34,15 +34,15 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 
 	public PickupPhysicsModule PhysicsModule { get; protected set; }
 
-	public ItemIdentifier ItemId => new ItemIdentifier(Info.ItemId, Info.Serial);
+	public ItemIdentifier ItemId => new ItemIdentifier(this.Info.ItemId, this.Info.Serial);
 
 	public bool CanSearch
 	{
 		get
 		{
-			if (!Info.Locked)
+			if (!this.Info.Locked)
 			{
-				return !Info.InUse;
+				return !this.Info.InUse;
 			}
 			return false;
 		}
@@ -52,11 +52,11 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 	{
 		get
 		{
-			return CachedTransform.position;
+			return this.CachedTransform.position;
 		}
 		set
 		{
-			CachedTransform.position = value;
+			this.CachedTransform.position = value;
 		}
 	}
 
@@ -64,11 +64,11 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 	{
 		get
 		{
-			return CachedTransform.rotation;
+			return this.CachedTransform.rotation;
 		}
 		set
 		{
-			CachedTransform.rotation = value;
+			this.CachedTransform.rotation = value;
 		}
 	}
 
@@ -76,12 +76,12 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 	{
 		get
 		{
-			if (!_transformCacheSet)
+			if (!this._transformCacheSet)
 			{
-				_transformCacheSet = true;
-				_transform = base.transform;
+				this._transformCacheSet = true;
+				this._transform = base.transform;
 			}
-			return _transform;
+			return this._transform;
 		}
 	}
 
@@ -89,12 +89,12 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 	{
 		get
 		{
-			return Info;
+			return this.Info;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Info, 1uL, InfoReceivedHook);
+			base.GeneratedSyncVarSetter(value, ref this.Info, 1uL, InfoReceivedHook);
 		}
 	}
 
@@ -116,7 +116,7 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 
 	public virtual float SearchTimeForPlayer(ReferenceHub hub)
 	{
-		float num = 0.245f + 0.175f * Info.WeightKg;
+		float num = 0.245f + 0.175f * this.Info.WeightKg;
 		StatusEffectBase[] allEffects = hub.playerEffectsController.AllEffects;
 		foreach (StatusEffectBase statusEffectBase in allEffects)
 		{
@@ -134,12 +134,12 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 
 	public ISearchCompletor GetSearchCompletor(SearchCoordinator coordinator, float sqrDistance)
 	{
-		return GetPickupSearchCompletor(coordinator, sqrDistance);
+		return this.GetPickupSearchCompletor(coordinator, sqrDistance);
 	}
 
 	public virtual PickupSearchCompletor GetPickupSearchCompletor(SearchCoordinator coordinator, float sqrDistance)
 	{
-		if (!InventoryItemLoader.TryGetItem<ItemBase>(Info.ItemId, out var result))
+		if (!InventoryItemLoader.TryGetItem<ItemBase>(this.Info.ItemId, out var result))
 		{
 			return null;
 		}
@@ -148,29 +148,29 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 
 	public bool ServerValidateRequest(NetworkConnection source, SearchSessionPipe session)
 	{
-		if (Info.Locked)
+		if (this.Info.Locked)
 		{
 			session.Invalidate();
 			source?.identity.GetComponent<GameConsoleTransmission>().SendToClient("Pickup request rejected - target is locked.", "red");
 			return false;
 		}
-		if (Info.InUse)
+		if (this.Info.InUse)
 		{
 			session.Invalidate();
 			source?.identity.GetComponent<GameConsoleTransmission>().SendToClient("Pickup request rejected - target is in use.", "red");
 			return false;
 		}
-		PickupSyncInfo info = Info;
+		PickupSyncInfo info = this.Info;
 		info.InUse = true;
-		NetworkInfo = info;
+		this.NetworkInfo = info;
 		return true;
 	}
 
 	public void ServerHandleAbort(ReferenceHub hub)
 	{
-		PickupSyncInfo info = Info;
+		PickupSyncInfo info = this.Info;
 		info.InUse = false;
-		NetworkInfo = info;
+		this.NetworkInfo = info;
 	}
 
 	[Server]
@@ -191,13 +191,13 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteArraySegmentAndSize(arrSeg);
-		SendRPCInternal("System.Void InventorySystem.Items.Pickups.ItemPickupBase::SendPhysicsModuleRpc(System.ArraySegment`1<System.Byte>)", 254399230, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void InventorySystem.Items.Pickups.ItemPickupBase::SendPhysicsModuleRpc(System.ArraySegment`1<System.Byte>)", 254399230, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	protected virtual void Awake()
 	{
-		PhysicsModule = DefaultPhysicsModule;
+		this.PhysicsModule = this.DefaultPhysicsModule;
 	}
 
 	protected virtual void Start()
@@ -205,16 +205,16 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 		ItemPickupBase.OnPickupAdded?.Invoke(this);
 		if (NetworkServer.active)
 		{
-			_wasServer = true;
+			this._wasServer = true;
 			RoundRestart.OnRestartTriggered += DestroySelf;
 		}
 	}
 
 	protected virtual void OnDestroy()
 	{
-		PhysicsModule?.DestroyModule();
+		this.PhysicsModule?.DestroyModule();
 		ItemPickupBase.OnPickupDestroyed?.Invoke(this);
-		if (_wasServer)
+		if (this._wasServer)
 		{
 			RoundRestart.OnRestartTriggered -= DestroySelf;
 		}
@@ -228,7 +228,7 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 
 	protected ItemPickupBase()
 	{
-		InitSyncObject(PhysicsModuleSyncData);
+		base.InitSyncObject(this.PhysicsModuleSyncData);
 	}
 
 	NetworkIdentity ISearchable.get_netIdentity()
@@ -244,7 +244,7 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 	protected virtual void UserCode_SendPhysicsModuleRpc__ArraySegment_00601(ArraySegment<byte> arrSeg)
 	{
 		using NetworkReaderPooled rpcData = NetworkReaderPool.Get(arrSeg);
-		PhysicsModule?.ClientProcessRpc(rpcData);
+		this.PhysicsModule?.ClientProcessRpc(rpcData);
 	}
 
 	protected static void InvokeUserCode_SendPhysicsModuleRpc__ArraySegment_00601(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
@@ -269,13 +269,13 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WritePickupSyncInfo(Info);
+			writer.WritePickupSyncInfo(this.Info);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WritePickupSyncInfo(Info);
+			writer.WritePickupSyncInfo(this.Info);
 		}
 	}
 
@@ -284,13 +284,13 @@ public abstract class ItemPickupBase : NetworkBehaviour, IIdentifierProvider, IS
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref Info, InfoReceivedHook, reader.ReadPickupSyncInfo());
+			base.GeneratedSyncVarDeserialize(ref this.Info, InfoReceivedHook, reader.ReadPickupSyncInfo());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Info, InfoReceivedHook, reader.ReadPickupSyncInfo());
+			base.GeneratedSyncVarDeserialize(ref this.Info, InfoReceivedHook, reader.ReadPickupSyncInfo());
 		}
 	}
 }

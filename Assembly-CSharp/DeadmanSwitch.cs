@@ -30,15 +30,15 @@ public static class DeadmanSwitch
 	{
 		get
 		{
-			return _forceCountdownToggle;
+			return DeadmanSwitch._forceCountdownToggle;
 		}
 		set
 		{
 			if (!value)
 			{
-				Reset();
+				DeadmanSwitch.Reset();
 			}
-			_forceCountdownToggle = value;
+			DeadmanSwitch._forceCountdownToggle = value;
 		}
 	}
 
@@ -50,11 +50,11 @@ public static class DeadmanSwitch
 	{
 		get
 		{
-			return _countdownTimer;
+			return DeadmanSwitch._countdownTimer;
 		}
 		set
 		{
-			_countdownTimer = Mathf.Min(value, CountdownMaxTime);
+			DeadmanSwitch._countdownTimer = Mathf.Min(value, DeadmanSwitch.CountdownMaxTime);
 		}
 	}
 
@@ -62,10 +62,10 @@ public static class DeadmanSwitch
 
 	public static void Reset(bool resetSequence = true)
 	{
-		_countdownTimer = ConfigFile.ServerConfig.GetFloat("dms_activation_time", 240f);
+		DeadmanSwitch._countdownTimer = ConfigFile.ServerConfig.GetFloat("dms_activation_time", 240f);
 		if (resetSequence)
 		{
-			IsSequenceActive = false;
+			DeadmanSwitch.IsSequenceActive = false;
 		}
 	}
 
@@ -75,8 +75,8 @@ public static class DeadmanSwitch
 		float num = NineTailedFoxAnnouncer.singleton.CalculateDuration(text, rawNumber: true) + 3f;
 		RespawnEffectsController.ClearQueue();
 		RespawnEffectsController.PlayCassieAnnouncement(text, makeHold: true, makeNoise: true, customAnnouncement: true);
-		_dmsAnnouncementDelay = num + Time.time;
-		IsSequenceActive = true;
+		DeadmanSwitch._dmsAnnouncementDelay = num + Time.time;
+		DeadmanSwitch.IsSequenceActive = true;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -84,10 +84,10 @@ public static class DeadmanSwitch
 	{
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			ReloadConfigs();
-			_forceCountdownToggle = false;
-			_dmsAnnouncementDelay = 0f;
-			IsSequenceActive = false;
+			DeadmanSwitch.ReloadConfigs();
+			DeadmanSwitch._forceCountdownToggle = false;
+			DeadmanSwitch._dmsAnnouncementDelay = 0f;
+			DeadmanSwitch.IsSequenceActive = false;
 		};
 		StaticUnityMethods.OnUpdate += OnUpdate;
 		WaveManager.OnWaveTrigger += OnWaveSpawned;
@@ -99,19 +99,19 @@ public static class DeadmanSwitch
 	{
 		if (wave is IMiniWave)
 		{
-			CountdownTimeLeft += 40f;
+			DeadmanSwitch.CountdownTimeLeft += 40f;
 		}
-		else if (!IsSequenceActive && !(CountdownTimeLeft >= 160f))
+		else if (!DeadmanSwitch.IsSequenceActive && !(DeadmanSwitch.CountdownTimeLeft >= 160f))
 		{
-			CountdownTimeLeft = 160f;
+			DeadmanSwitch.CountdownTimeLeft = 160f;
 		}
 	}
 
 	private static void ReloadConfigs()
 	{
-		IsDeadmanSwitchEnabled = ConfigFile.ServerConfig.GetBool("dms_enabled", def: true);
-		CountdownMaxTime = ConfigFile.ServerConfig.GetFloat("dms_activation_time", 240f);
-		Reset(resetSequence: false);
+		DeadmanSwitch.IsDeadmanSwitchEnabled = ConfigFile.ServerConfig.GetBool("dms_enabled", def: true);
+		DeadmanSwitch.CountdownMaxTime = ConfigFile.ServerConfig.GetFloat("dms_activation_time", 240f);
+		DeadmanSwitch.Reset(resetSequence: false);
 	}
 
 	private static void OnUpdate()
@@ -120,14 +120,14 @@ public static class DeadmanSwitch
 		{
 			return;
 		}
-		if (IsSequenceActive)
+		if (DeadmanSwitch.IsSequenceActive)
 		{
-			StartWarhead();
+			DeadmanSwitch.StartWarhead();
 			return;
 		}
-		if (!ForceCountdownToggle)
+		if (!DeadmanSwitch.ForceCountdownToggle)
 		{
-			if (!IsDeadmanSwitchEnabled || !WaveManager.TryGet<NtfSpawnWave>(out var spawnWave) || !WaveManager.TryGet<ChaosSpawnWave>(out var spawnWave2))
+			if (!DeadmanSwitch.IsDeadmanSwitchEnabled || !WaveManager.TryGet<NtfSpawnWave>(out var spawnWave) || !WaveManager.TryGet<ChaosSpawnWave>(out var spawnWave2))
 			{
 				return;
 			}
@@ -142,16 +142,16 @@ public static class DeadmanSwitch
 				return;
 			}
 		}
-		_countdownTimer -= Time.deltaTime;
-		if (!(_countdownTimer >= 0f))
+		DeadmanSwitch._countdownTimer -= Time.deltaTime;
+		if (!(DeadmanSwitch._countdownTimer >= 0f))
 		{
-			InitiateProtocol();
+			DeadmanSwitch.InitiateProtocol();
 		}
 	}
 
 	private static void StartWarhead()
 	{
-		if (!(_dmsAnnouncementDelay > Time.time))
+		if (!(DeadmanSwitch._dmsAnnouncementDelay > Time.time))
 		{
 			AlphaWarheadController singleton = AlphaWarheadController.Singleton;
 			AlphaWarheadSyncInfo info = singleton.Info;
@@ -159,7 +159,7 @@ public static class DeadmanSwitch
 			{
 				info.ScenarioType = WarheadScenarioType.DeadmanSwitch;
 				singleton.NetworkInfo = info;
-				OnActivationHeal();
+				DeadmanSwitch.OnActivationHeal();
 				singleton.InstantPrepare();
 				singleton.StartDetonation(isAutomatic: false, suppressSubtitles: true);
 				singleton.IsLocked = true;

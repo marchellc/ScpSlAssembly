@@ -18,22 +18,22 @@ public class ChaosSnakeDisplay : MonoBehaviour
 
 	private void Awake()
 	{
-		_firstTime = true;
-		_idProvider = GetComponentInParent<IIdentifierProvider>();
+		this._firstTime = true;
+		this._idProvider = base.GetComponentInParent<IIdentifierProvider>();
 	}
 
 	private void Update()
 	{
-		if (_idProvider == null)
+		if (this._idProvider == null)
 		{
 			return;
 		}
-		ushort serialNumber = _idProvider.ItemId.SerialNumber;
-		if (_checkForActiveInspect)
+		ushort serialNumber = this._idProvider.ItemId.SerialNumber;
+		if (this._checkForActiveInspect)
 		{
 			double value;
 			bool flag = KeycardItem.StartInspectTimes.TryGetValue(serialNumber, out value) && NetworkTime.time - value > 1.7000000476837158;
-			_display.gameObject.SetActive(flag);
+			this._display.gameObject.SetActive(flag);
 			if (!flag)
 			{
 				return;
@@ -41,8 +41,8 @@ public class ChaosSnakeDisplay : MonoBehaviour
 		}
 		if (ChaosKeycardItem.SnakeSessions.TryGetValue(serialNumber, out var value2))
 		{
-			value2.UpdateDisplay(_display, _firstTime);
-			_firstTime = false;
+			value2.UpdateDisplay(this._display, this._firstTime);
+			this._firstTime = false;
 		}
 	}
 }

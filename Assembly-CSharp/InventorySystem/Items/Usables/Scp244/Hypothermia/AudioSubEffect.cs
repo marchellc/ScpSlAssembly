@@ -45,9 +45,9 @@ public class AudioSubEffect : HypothermiaSubEffectBase, ISoundtrackMutingEffect
 		{
 			curTemp = 0f;
 		}
-		float num = _shakingOverTemperature.Evaluate(curTemp);
-		float num2 = (base.IsLocalPlayer ? 1f : _thirdpersonShakeVolume);
-		_shakingSoundSource.volume = num * num2;
+		float num = this._shakingOverTemperature.Evaluate(curTemp);
+		float num2 = (base.IsLocalPlayer ? 1f : this._thirdpersonShakeVolume);
+		this._shakingSoundSource.volume = num * num2;
 	}
 
 	private void UpdateExposure(bool isExposed)
@@ -56,29 +56,29 @@ public class AudioSubEffect : HypothermiaSubEffectBase, ISoundtrackMutingEffect
 		{
 			isExposed = false;
 		}
-		MuteSoundtrack = isExposed;
-		_fogSoundtrack.volume = Mathf.Lerp(_fogSoundtrack.volume, isExposed ? 1 : 0, Time.deltaTime * _soundtrackFadeSpeed);
-		if (isExposed == _prevExposed)
+		this.MuteSoundtrack = isExposed;
+		this._fogSoundtrack.volume = Mathf.Lerp(this._fogSoundtrack.volume, isExposed ? 1 : 0, Time.deltaTime * this._soundtrackFadeSpeed);
+		if (isExposed == this._prevExposed)
 		{
 			return;
 		}
-		_prevExposed = isExposed;
+		this._prevExposed = isExposed;
 		if (isExposed)
 		{
-			if (_enterSfxCooldown.Elapsed.TotalSeconds > 1.5)
+			if (this._enterSfxCooldown.Elapsed.TotalSeconds > 1.5)
 			{
-				AudioSourcePoolManager.Play2D(_enterFogSound);
+				AudioSourcePoolManager.Play2D(this._enterFogSound);
 			}
 		}
 		else
 		{
-			_enterSfxCooldown.Restart();
+			this._enterSfxCooldown.Restart();
 		}
 	}
 
 	internal override void UpdateEffect(float curExposure)
 	{
-		UpdateExposure(curExposure > 0f);
-		UpdateShake(_temperature.CurTemperature);
+		this.UpdateExposure(curExposure > 0f);
+		this.UpdateShake(this._temperature.CurTemperature);
 	}
 }

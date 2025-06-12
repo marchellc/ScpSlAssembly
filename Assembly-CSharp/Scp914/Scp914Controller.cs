@@ -53,7 +53,7 @@ public class Scp914Controller : NetworkBehaviour, IServerInteractable, IInteract
 
 	public static Scp914Controller Singleton { get; private set; }
 
-	public static Vector3 MoveVector => Singleton.OutputChamber.position - Singleton.IntakeChamber.position;
+	public static Vector3 MoveVector => Scp914Controller.Singleton.OutputChamber.position - Scp914Controller.Singleton.IntakeChamber.position;
 
 	[field: SerializeField]
 	public Transform IntakeChamber { get; private set; }
@@ -65,31 +65,31 @@ public class Scp914Controller : NetworkBehaviour, IServerInteractable, IInteract
 	{
 		get
 		{
-			Vector3 vector = IntakeChamber.rotation * ChamberSize / 2f;
+			Vector3 vector = this.IntakeChamber.rotation * this.ChamberSize / 2f;
 			return new Vector3(Mathf.Abs(vector.z), Mathf.Abs(vector.y), Mathf.Abs(vector.x));
 		}
 	}
 
 	public IVerificationRule VerificationRule => StandardDistanceVerification.Default;
 
-	public Scp914KnobSetting KnobSetting => _knobSetting;
+	public Scp914KnobSetting KnobSetting => this._knobSetting;
 
 	public Scp914KnobSetting Network_knobSetting
 	{
 		get
 		{
-			return _knobSetting;
+			return this._knobSetting;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _knobSetting, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._knobSetting, 1uL, null);
 		}
 	}
 
 	public void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
-		if (RemainingCooldown > 0f)
+		if (this.RemainingCooldown > 0f)
 		{
 			return;
 		}
@@ -97,33 +97,33 @@ public class Scp914Controller : NetworkBehaviour, IServerInteractable, IInteract
 		{
 		case Scp914InteractCode.ChangeMode:
 		{
-			Scp914KnobSetting scp914KnobSetting = _knobSetting + 1;
+			Scp914KnobSetting scp914KnobSetting = this._knobSetting + 1;
 			if (!Enum.IsDefined(typeof(Scp914KnobSetting), scp914KnobSetting))
 			{
 				scp914KnobSetting = Scp914KnobSetting.Rough;
 			}
-			Scp914KnobSetting knobSetting = _knobSetting;
-			Scp914KnobChangingEventArgs scp914KnobChangingEventArgs = new Scp914KnobChangingEventArgs(knobSetting, scp914KnobSetting, ply);
-			Scp914Events.OnKnobChanging(scp914KnobChangingEventArgs);
-			if (scp914KnobChangingEventArgs.IsAllowed)
+			Scp914KnobSetting knobSetting = this._knobSetting;
+			Scp914KnobChangingEventArgs e2 = new Scp914KnobChangingEventArgs(knobSetting, scp914KnobSetting, ply);
+			Scp914Events.OnKnobChanging(e2);
+			if (e2.IsAllowed)
 			{
-				scp914KnobSetting = scp914KnobChangingEventArgs.KnobSetting;
-				RemainingCooldown = KnobChangeCooldown;
-				Network_knobSetting = scp914KnobSetting;
-				RpcPlaySound(0);
+				scp914KnobSetting = e2.KnobSetting;
+				this.RemainingCooldown = this.KnobChangeCooldown;
+				this.Network_knobSetting = scp914KnobSetting;
+				this.RpcPlaySound(0);
 				Scp914Events.OnKnobChanged(new Scp914KnobChangedEventArgs(knobSetting, scp914KnobSetting, ply));
 			}
 			break;
 		}
 		case Scp914InteractCode.Activate:
 		{
-			Scp914ActivatingEventArgs scp914ActivatingEventArgs = new Scp914ActivatingEventArgs(_knobSetting, ply);
-			Scp914Events.OnActivating(scp914ActivatingEventArgs);
-			if (scp914ActivatingEventArgs.IsAllowed)
+			Scp914ActivatingEventArgs e = new Scp914ActivatingEventArgs(this._knobSetting, ply);
+			Scp914Events.OnActivating(e);
+			if (e.IsAllowed)
 			{
-				Network_knobSetting = scp914ActivatingEventArgs.KnobSetting;
-				Upgrade();
-				Scp914Events.OnActivated(new Scp914ActivatedEventArgs(_knobSetting, ply));
+				this.Network_knobSetting = e.KnobSetting;
+				this.Upgrade();
+				Scp914Events.OnActivated(new Scp914ActivatedEventArgs(this._knobSetting, ply));
 			}
 			break;
 		}
@@ -138,23 +138,23 @@ public class Scp914Controller : NetworkBehaviour, IServerInteractable, IInteract
 			Debug.LogWarning("[Server] function 'System.Void Scp914.Scp914Controller::Upgrade()' called when server was not active");
 			return;
 		}
-		RemainingCooldown = TotalSequenceTime;
-		IsUpgrading = true;
-		_itemsAlreadyUpgraded = false;
-		RpcPlaySound(1);
+		this.RemainingCooldown = this.TotalSequenceTime;
+		this.IsUpgrading = true;
+		this._itemsAlreadyUpgraded = false;
+		this.RpcPlaySound(1);
 	}
 
 	private void Start()
 	{
-		Singleton = this;
+		Scp914Controller.Singleton = this;
 		if (Scp914Upgrader.SolidObjectMask == 0)
 		{
 			Scp914Upgrader.SolidObjectMask = LayerMask.GetMask("Default", "Door");
 		}
 		if (NetworkServer.active)
 		{
-			ConfigMode = new ConfigEntry<Scp914Mode>("914_mode", Scp914Mode.DroppedAndHeld, "SCP-914 Mode", "The behavior SCP-914 should use when upgrading items.");
-			ConfigFile.ServerConfig.RegisterConfig(ConfigMode);
+			this.ConfigMode = new ConfigEntry<Scp914Mode>("914_mode", Scp914Mode.DroppedAndHeld, "SCP-914 Mode", "The behavior SCP-914 should use when upgrading items.");
+			ConfigFile.ServerConfig.RegisterConfig(this.ConfigMode);
 		}
 	}
 
@@ -162,7 +162,7 @@ public class Scp914Controller : NetworkBehaviour, IServerInteractable, IInteract
 	{
 		if (NetworkServer.active)
 		{
-			ConfigFile.ServerConfig.UnRegisterConfig(ConfigMode);
+			ConfigFile.ServerConfig.UnRegisterConfig(this.ConfigMode);
 		}
 	}
 
@@ -170,7 +170,7 @@ public class Scp914Controller : NetworkBehaviour, IServerInteractable, IInteract
 	{
 		if (NetworkServer.active)
 		{
-			UpdateServerside();
+			this.UpdateServerside();
 		}
 	}
 
@@ -182,37 +182,37 @@ public class Scp914Controller : NetworkBehaviour, IServerInteractable, IInteract
 			Debug.LogWarning("[Server] function 'System.Void Scp914.Scp914Controller::UpdateServerside()' called when server was not active");
 			return;
 		}
-		if (IsUpgrading)
+		if (this.IsUpgrading)
 		{
-			float num = TotalSequenceTime - RemainingCooldown;
-			if (num >= DoorCloseTime && num < DoorOpenTime && Doors[0].TargetState)
+			float num = this.TotalSequenceTime - this.RemainingCooldown;
+			if (num >= this.DoorCloseTime && num < this.DoorOpenTime && this.Doors[0].TargetState)
 			{
-				DoorVariant[] doors = Doors;
+				DoorVariant[] doors = this.Doors;
 				for (int i = 0; i < doors.Length; i++)
 				{
 					doors[i].NetworkTargetState = false;
 				}
 			}
-			else if (num >= ItemUpgradeTime && !_itemsAlreadyUpgraded)
+			else if (num >= this.ItemUpgradeTime && !this._itemsAlreadyUpgraded)
 			{
-				Scp914Upgrader.Upgrade(Physics.OverlapBox(IntakeChamber.position, IntakeChamberSize), ConfigMode.Value, _knobSetting);
-				_itemsAlreadyUpgraded = true;
+				Scp914Upgrader.Upgrade(Physics.OverlapBox(this.IntakeChamber.position, this.IntakeChamberSize), this.ConfigMode.Value, this._knobSetting);
+				this._itemsAlreadyUpgraded = true;
 			}
-			else if (num >= DoorOpenTime && !Doors[0].TargetState)
+			else if (num >= this.DoorOpenTime && !this.Doors[0].TargetState)
 			{
-				DoorVariant[] doors = Doors;
+				DoorVariant[] doors = this.Doors;
 				for (int i = 0; i < doors.Length; i++)
 				{
 					doors[i].NetworkTargetState = true;
 				}
 			}
 		}
-		if (RemainingCooldown >= 0f)
+		if (this.RemainingCooldown >= 0f)
 		{
-			RemainingCooldown -= Time.deltaTime;
-			if (RemainingCooldown < 0f)
+			this.RemainingCooldown -= Time.deltaTime;
+			if (this.RemainingCooldown < 0f)
 			{
-				IsUpgrading = false;
+				this.IsUpgrading = false;
 			}
 		}
 	}
@@ -220,8 +220,8 @@ public class Scp914Controller : NetworkBehaviour, IServerInteractable, IInteract
 	private void OnDrawGizmosSelected()
 	{
 		Gizmos.color = Color.green;
-		Gizmos.DrawCube(IntakeChamber.position, IntakeChamberSize * 2f);
-		Gizmos.DrawCube(OutputChamber.position, IntakeChamberSize * 2f);
+		Gizmos.DrawCube(this.IntakeChamber.position, this.IntakeChamberSize * 2f);
+		Gizmos.DrawCube(this.OutputChamber.position, this.IntakeChamberSize * 2f);
 	}
 
 	[ClientRpc]
@@ -229,7 +229,7 @@ public class Scp914Controller : NetworkBehaviour, IServerInteractable, IInteract
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		NetworkWriterExtensions.WriteByte(writer, soundId);
-		SendRPCInternal("System.Void Scp914.Scp914Controller::RpcPlaySound(System.Byte)", 1143347406, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Scp914.Scp914Controller::RpcPlaySound(System.Byte)", 1143347406, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -243,12 +243,12 @@ public class Scp914Controller : NetworkBehaviour, IServerInteractable, IInteract
 		switch ((Scp914Sound)soundId)
 		{
 		case Scp914Sound.KnobChange:
-			_knobSoundSource.Stop();
-			_knobSoundSource.Play();
+			this._knobSoundSource.Stop();
+			this._knobSoundSource.Play();
 			break;
 		case Scp914Sound.Upgrading:
-			_upgradingSoundSource.Stop();
-			_upgradingSoundSource.Play();
+			this._upgradingSoundSource.Stop();
+			this._upgradingSoundSource.Play();
 			break;
 		}
 	}
@@ -275,13 +275,13 @@ public class Scp914Controller : NetworkBehaviour, IServerInteractable, IInteract
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			GeneratedNetworkCode._Write_Scp914_002EScp914KnobSetting(writer, _knobSetting);
+			GeneratedNetworkCode._Write_Scp914_002EScp914KnobSetting(writer, this._knobSetting);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			GeneratedNetworkCode._Write_Scp914_002EScp914KnobSetting(writer, _knobSetting);
+			GeneratedNetworkCode._Write_Scp914_002EScp914KnobSetting(writer, this._knobSetting);
 		}
 	}
 
@@ -290,13 +290,13 @@ public class Scp914Controller : NetworkBehaviour, IServerInteractable, IInteract
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _knobSetting, null, GeneratedNetworkCode._Read_Scp914_002EScp914KnobSetting(reader));
+			base.GeneratedSyncVarDeserialize(ref this._knobSetting, null, GeneratedNetworkCode._Read_Scp914_002EScp914KnobSetting(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _knobSetting, null, GeneratedNetworkCode._Read_Scp914_002EScp914KnobSetting(reader));
+			base.GeneratedSyncVarDeserialize(ref this._knobSetting, null, GeneratedNetworkCode._Read_Scp914_002EScp914KnobSetting(reader));
 		}
 	}
 }

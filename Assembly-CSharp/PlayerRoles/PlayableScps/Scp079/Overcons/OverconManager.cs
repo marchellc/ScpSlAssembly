@@ -22,11 +22,11 @@ public class OverconManager : MonoBehaviour
 	{
 		get
 		{
-			if (_raycastMask == 0)
+			if (OverconManager._raycastMask == 0)
 			{
-				_raycastMask = LayerMask.GetMask("Viewmodel");
+				OverconManager._raycastMask = LayerMask.GetMask("Viewmodel");
 			}
-			return _raycastMask;
+			return OverconManager._raycastMask;
 		}
 	}
 
@@ -36,8 +36,8 @@ public class OverconManager : MonoBehaviour
 
 	private void OnCameraChanged()
 	{
-		Scp079Camera currentCamera = _curCamSync.CurrentCamera;
-		OverconRendererBase[] renderers = _renderers;
+		Scp079Camera currentCamera = this._curCamSync.CurrentCamera;
+		OverconRendererBase[] renderers = this._renderers;
 		for (int i = 0; i < renderers.Length; i++)
 		{
 			renderers[i].SpawnOvercons(currentCamera);
@@ -46,10 +46,10 @@ public class OverconManager : MonoBehaviour
 
 	private void Start()
 	{
-		Singleton = this;
-		Scp079Hud.Instance.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out _curCamSync);
-		_curCamSync.OnCameraChanged += OnCameraChanged;
-		OnCameraChanged();
+		OverconManager.Singleton = this;
+		Scp079Hud.Instance.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out this._curCamSync);
+		this._curCamSync.OnCameraChanged += OnCameraChanged;
+		this.OnCameraChanged();
 	}
 
 	private void OnDestroy()
@@ -63,9 +63,9 @@ public class OverconManager : MonoBehaviour
 			}
 		}
 		OverconBase.ActiveInstances.Clear();
-		if (_curCamSync != null)
+		if (this._curCamSync != null)
 		{
-			_curCamSync.OnCameraChanged -= OnCameraChanged;
+			this._curCamSync.OnCameraChanged -= OnCameraChanged;
 		}
 	}
 
@@ -76,18 +76,18 @@ public class OverconManager : MonoBehaviour
 			return;
 		}
 		RaycastHit hitInfo;
-		OverconBase overconBase = (Physics.Raycast(Scp079Hud.MainCamera.ScreenPointToRay(Input.mousePosition), out hitInfo, 200f, RaycastMask) ? hitInfo.collider.GetComponent<OverconBase>() : null);
-		if (!(overconBase == HighlightedOvercon))
+		OverconBase overconBase = (Physics.Raycast(Scp079Hud.MainCamera.ScreenPointToRay(Input.mousePosition), out hitInfo, 200f, OverconManager.RaycastMask) ? hitInfo.collider.GetComponent<OverconBase>() : null);
+		if (!(overconBase == this.HighlightedOvercon))
 		{
-			if (HighlightedOvercon != null)
+			if (this.HighlightedOvercon != null)
 			{
-				HighlightedOvercon.IsHighlighted = false;
+				this.HighlightedOvercon.IsHighlighted = false;
 			}
 			if (overconBase != null)
 			{
 				overconBase.IsHighlighted = true;
 			}
-			HighlightedOvercon = overconBase;
+			this.HighlightedOvercon = overconBase;
 		}
 	}
 }

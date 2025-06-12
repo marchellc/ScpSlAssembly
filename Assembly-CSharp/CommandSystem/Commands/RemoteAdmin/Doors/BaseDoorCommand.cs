@@ -91,9 +91,9 @@ public abstract class BaseDoorCommand : ICommand, IUsageProvider
 			case "**":
 				break;
 			}
-			if (AllowNonDamageableTargets || allDoor is IDamageableDoor)
+			if (this.AllowNonDamageableTargets || allDoor is IDamageableDoor)
 			{
-				OnTargetFound(allDoor);
+				this.OnTargetFound(allDoor);
 				if (!string.IsNullOrEmpty(text2))
 				{
 					stringBuilder.Append(", " + text2);
@@ -105,7 +105,7 @@ public abstract class BaseDoorCommand : ICommand, IUsageProvider
 		if (flag)
 		{
 			text3 = text3.Substring(2);
-			ServerLogs.AddLog(ServerLogs.Modules.Administrative, sender.LogName + " ran " + Command + " on the following door(s): " + text3, ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
+			ServerLogs.AddLog(ServerLogs.Modules.Administrative, sender.LogName + " ran " + this.Command + " on the following door(s): " + text3, ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
 		}
 		response = (flag ? ("Affected the following door(s): " + text3) : ("Can't find any door(s) using \"" + text.Replace(".", ", ") + "\"."));
 		return flag;

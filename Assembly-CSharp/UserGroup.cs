@@ -25,15 +25,15 @@ public class UserGroup
 	{
 		return new UserGroup
 		{
-			Name = Name,
-			BadgeColor = BadgeColor,
-			BadgeText = BadgeText,
-			Permissions = Permissions,
-			Cover = Cover,
-			HiddenByDefault = HiddenByDefault,
-			Shared = Shared,
-			KickPower = KickPower,
-			RequiredKickPower = RequiredKickPower
+			Name = this.Name,
+			BadgeColor = this.BadgeColor,
+			BadgeText = this.BadgeText,
+			Permissions = this.Permissions,
+			Cover = this.Cover,
+			HiddenByDefault = this.HiddenByDefault,
+			Shared = this.Shared,
+			KickPower = this.KickPower,
+			RequiredKickPower = this.RequiredKickPower
 		};
 	}
 }

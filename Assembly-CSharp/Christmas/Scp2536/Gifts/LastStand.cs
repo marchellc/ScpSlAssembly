@@ -25,7 +25,7 @@ public class LastStand : Scp2536ItemGift
 
 	public override bool CanBeGranted(ReferenceHub hub)
 	{
-		if (_hasBeenGranted || !base.CanBeGranted(hub))
+		if (LastStand._hasBeenGranted || !base.CanBeGranted(hub))
 		{
 			return false;
 		}
@@ -35,8 +35,8 @@ public class LastStand : Scp2536ItemGift
 
 	public override void ServerGrant(ReferenceHub hub)
 	{
-		_hasBeenGranted = true;
-		ItemType type = GenerateRandomReward();
+		LastStand._hasBeenGranted = true;
+		ItemType type = base.GenerateRandomReward();
 		hub.inventory.ServerAddItem(type, ItemAddReason.Scp2536, 0).GrantAmmoReward();
 	}
 
@@ -45,7 +45,7 @@ public class LastStand : Scp2536ItemGift
 	{
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			_hasBeenGranted = false;
+			LastStand._hasBeenGranted = false;
 		};
 	}
 }

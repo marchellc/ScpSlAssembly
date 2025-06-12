@@ -40,48 +40,48 @@ public class AudioSourcePoolManager : MonoBehaviour
 
 	private void Awake()
 	{
-		_singleton = this;
-		_initialized = true;
+		AudioSourcePoolManager._singleton = this;
+		AudioSourcePoolManager._initialized = true;
 	}
 
 	private void OnDestroy()
 	{
-		_initialized = false;
-		_totalDestroyed += FreeSources.Count + UpdateQueue.Count;
-		FreeSources.Clear();
-		UpdateQueue.Clear();
+		AudioSourcePoolManager._initialized = false;
+		AudioSourcePoolManager._totalDestroyed += AudioSourcePoolManager.FreeSources.Count + AudioSourcePoolManager.UpdateQueue.Count;
+		AudioSourcePoolManager.FreeSources.Clear();
+		AudioSourcePoolManager.UpdateQueue.Clear();
 	}
 
 	private void Update()
 	{
-		UpdateNextInstance();
+		AudioSourcePoolManager.UpdateNextInstance();
 	}
 
 	private static void UpdateNextInstance()
 	{
-		if (UpdateQueue.TryDequeue(out var result))
+		if (AudioSourcePoolManager.UpdateQueue.TryDequeue(out var result))
 		{
 			if (result == null)
 			{
-				_totalRejected++;
+				AudioSourcePoolManager._totalRejected++;
 			}
 			else if (result.AllowRecycling)
 			{
 				result.FastTransform.SetParent(null, worldPositionStays: false);
-				FreeSources.Enqueue(result);
+				AudioSourcePoolManager.FreeSources.Enqueue(result);
 			}
 			else
 			{
-				UpdateQueue.Enqueue(result);
+				AudioSourcePoolManager.UpdateQueue.Enqueue(result);
 			}
 		}
 	}
 
 	public static PooledAudioSource CreateNewSource()
 	{
-		if (_initialized)
+		if (AudioSourcePoolManager._initialized)
 		{
-			return UnityEngine.Object.Instantiate(_singleton._template);
+			return UnityEngine.Object.Instantiate(AudioSourcePoolManager._singleton._template);
 		}
 		Debug.LogWarning("Attempting to create a source without pool manager present.");
 		return new GameObject("Fallback Audio Source", typeof(AudioSource)).AddComponent<PooledAudioSource>();
@@ -89,7 +89,7 @@ public class AudioSourcePoolManager : MonoBehaviour
 
 	public static PooledAudioSource Play2D(AudioClip sound, float volume = 1f, MixerChannel channel = MixerChannel.DefaultSfx, float pitchScale = 1f)
 	{
-		PooledAudioSource free = GetFree(sound, FalloffType.Linear, channel, 0f);
+		PooledAudioSource free = AudioSourcePoolManager.GetFree(sound, FalloffType.Linear, channel, 0f);
 		free.Source.volume = volume;
 		free.Source.pitch = pitchScale;
 		free.Source.Play();
@@ -98,7 +98,7 @@ public class AudioSourcePoolManager : MonoBehaviour
 
 	public static PooledAudioSource Play2DWithParent(AudioClip sound, Transform parent, float volume = 1f, MixerChannel channel = MixerChannel.DefaultSfx, float pitchScale = 1f)
 	{
-		PooledAudioSource free = GetFree(sound, FalloffType.Linear, channel, 0f);
+		PooledAudioSource free = AudioSourcePoolManager.GetFree(sound, FalloffType.Linear, channel, 0f);
 		free.FastTransform.SetParent(parent, worldPositionStays: false);
 		free.Source.volume = volume;
 		free.Source.pitch = pitchScale;
@@ -111,7 +111,7 @@ public class AudioSourcePoolManager : MonoBehaviour
 
 	public static PooledAudioSource PlayAtPosition(AudioClip sound, Vector3 position, float maxDistance = 10f, float volume = 1f, FalloffType falloffType = FalloffType.Exponential, MixerChannel channel = MixerChannel.DefaultSfx, float pitchScale = 1f)
 	{
-		PooledAudioSource free = GetFree(sound, falloffType, channel, 1f);
+		PooledAudioSource free = AudioSourcePoolManager.GetFree(sound, falloffType, channel, 1f);
 		free.FastTransform.position = position;
 		AudioSource source = free.Source;
 		source.maxDistance = maxDistance;
@@ -125,9 +125,9 @@ public class AudioSourcePoolManager : MonoBehaviour
 	{
 		if (!WaypointBase.TryGetWaypoint(relativePosition.WaypointId, out var wp))
 		{
-			return PlayAtPosition(sound, relativePosition.Relative, maxDistance, volume, falloffType, channel);
+			return AudioSourcePoolManager.PlayAtPosition(sound, relativePosition.Relative, maxDistance, volume, falloffType, channel);
 		}
-		PooledAudioSource free = GetFree(sound, falloffType, channel, 1f);
+		PooledAudioSource free = AudioSourcePoolManager.GetFree(sound, falloffType, channel, 1f);
 		free.FastTransform.SetParent(wp.transform, worldPositionStays: false);
 		free.FastTransform.position = wp.GetWorldspacePosition(relativePosition.Relative);
 		AudioSource source = free.Source;
@@ -143,7 +143,7 @@ public class AudioSourcePoolManager : MonoBehaviour
 
 	public static PooledAudioSource PlayOnTransform(AudioClip sound, Transform trackedTransform, float maxDistance = 10f, float volume = 1f, FalloffType falloffType = FalloffType.Exponential, MixerChannel channel = MixerChannel.DefaultSfx, float pitchScale = 1f)
 	{
-		PooledAudioSource free = GetFree(sound, falloffType, channel, 1f);
+		PooledAudioSource free = AudioSourcePoolManager.GetFree(sound, falloffType, channel, 1f);
 		free.FastTransform.SetParent(trackedTransform, worldPositionStays: false);
 		free.FastTransform.localPosition = Vector3.zero;
 		AudioSource source = free.Source;
@@ -159,9 +159,9 @@ public class AudioSourcePoolManager : MonoBehaviour
 
 	public static PooledAudioSource GetFree(AudioClip sound, FalloffType falloffType, MixerChannel channel, float spatial)
 	{
-		PooledAudioSource free = GetFree();
-		ApplyStandardSettings(free.Source, sound, falloffType, channel, spatial);
-		if (!_initialized)
+		PooledAudioSource free = AudioSourcePoolManager.GetFree();
+		AudioSourcePoolManager.ApplyStandardSettings(free.Source, sound, falloffType, channel, spatial);
+		if (!AudioSourcePoolManager._initialized)
 		{
 			free.Source.enabled = false;
 		}
@@ -171,26 +171,26 @@ public class AudioSourcePoolManager : MonoBehaviour
 	public static PooledAudioSource GetFree()
 	{
 		PooledAudioSource result;
-		while (FreeSources.TryDequeue(out result))
+		while (AudioSourcePoolManager.FreeSources.TryDequeue(out result))
 		{
 			if (!(result == null))
 			{
-				UpdateQueue.Enqueue(result);
+				AudioSourcePoolManager.UpdateQueue.Enqueue(result);
 				result.OnRecycled();
-				_totalRecycled++;
+				AudioSourcePoolManager._totalRecycled++;
 				return result;
 			}
 		}
-		_totalInstantiated++;
-		PooledAudioSource pooledAudioSource = CreateNewSource();
-		UpdateQueue.Enqueue(pooledAudioSource);
+		AudioSourcePoolManager._totalInstantiated++;
+		PooledAudioSource pooledAudioSource = AudioSourcePoolManager.CreateNewSource();
+		AudioSourcePoolManager.UpdateQueue.Enqueue(pooledAudioSource);
 		return pooledAudioSource;
 	}
 
 	public static void ApplyStandardSettings(AudioSource src, AudioClip sound, FalloffType falloffType, MixerChannel channel, float spatial, float maxDistance = 10f)
 	{
-		AnimationCurve falloffCurve = GetFalloffCurve(falloffType);
-		AudioMixerGroup mixerGroup = GetMixerGroup(channel);
+		AnimationCurve falloffCurve = AudioSourcePoolManager.GetFalloffCurve(falloffType);
+		AudioMixerGroup mixerGroup = AudioSourcePoolManager.GetMixerGroup(channel);
 		if (falloffCurve != null)
 		{
 			src.rolloffMode = AudioRolloffMode.Custom;
@@ -219,11 +219,11 @@ public class AudioSourcePoolManager : MonoBehaviour
 
 	public static AudioMixerGroup GetMixerGroup(MixerChannel channel)
 	{
-		if (!_initialized)
+		if (!AudioSourcePoolManager._initialized)
 		{
 			return null;
 		}
-		ChannelPreset[] channels = _singleton._channels;
+		ChannelPreset[] channels = AudioSourcePoolManager._singleton._channels;
 		for (int i = 0; i < channels.Length; i++)
 		{
 			ChannelPreset channelPreset = channels[i];
@@ -237,11 +237,11 @@ public class AudioSourcePoolManager : MonoBehaviour
 
 	public static AnimationCurve GetFalloffCurve(FalloffType falloffType)
 	{
-		if (!_initialized)
+		if (!AudioSourcePoolManager._initialized)
 		{
 			return null;
 		}
-		CurvePreset[] curves = _singleton._curves;
+		CurvePreset[] curves = AudioSourcePoolManager._singleton._curves;
 		foreach (CurvePreset curvePreset in curves)
 		{
 			if (curvePreset.Type == falloffType)
@@ -257,28 +257,28 @@ public class AudioSourcePoolManager : MonoBehaviour
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
 		if (forceUpdate)
 		{
-			int count = UpdateQueue.Count;
+			int count = AudioSourcePoolManager.UpdateQueue.Count;
 			for (int i = 0; i < count; i++)
 			{
-				UpdateNextInstance();
+				AudioSourcePoolManager.UpdateNextInstance();
 			}
 			stringBuilder.AppendLine("-- Returning free audio sources to the pool --");
 		}
 		stringBuilder.AppendLine("POOLABLE AUDIO SYSTEM DATA");
 		stringBuilder.AppendLine("\nThis scene:");
-		stringBuilder.AppendLine("  Active total: " + UpdateQueue.Count);
-		stringBuilder.AppendLine("  Active and locked: " + UpdateQueue.Count((PooledAudioSource x) => x != null && x.Locked));
-		stringBuilder.AppendLine("  Active and awaiting recycling: " + UpdateQueue.Count((PooledAudioSource x) => x != null && x.AllowRecycling));
-		stringBuilder.AppendLine("  Active and awaiting removal: " + UpdateQueue.Count((PooledAudioSource x) => x == null));
-		stringBuilder.AppendLine("  Available in pool: " + FreeSources.Count);
+		stringBuilder.AppendLine("  Active total: " + AudioSourcePoolManager.UpdateQueue.Count);
+		stringBuilder.AppendLine("  Active and locked: " + AudioSourcePoolManager.UpdateQueue.Count((PooledAudioSource x) => x != null && x.Locked));
+		stringBuilder.AppendLine("  Active and awaiting recycling: " + AudioSourcePoolManager.UpdateQueue.Count((PooledAudioSource x) => x != null && x.AllowRecycling));
+		stringBuilder.AppendLine("  Active and awaiting removal: " + AudioSourcePoolManager.UpdateQueue.Count((PooledAudioSource x) => x == null));
+		stringBuilder.AppendLine("  Available in pool: " + AudioSourcePoolManager.FreeSources.Count);
 		stringBuilder.AppendLine("\nTotal game session turnover:");
-		stringBuilder.AppendLine("  New instantiations: " + _totalInstantiated);
-		stringBuilder.AppendLine("  Recycled from pool: " + _totalRecycled);
-		stringBuilder.AppendLine("  Null rejections: " + _totalRejected);
-		stringBuilder.AppendLine("  Destroyed during scene swaps: " + _totalDestroyed);
-		if (_initialized)
+		stringBuilder.AppendLine("  New instantiations: " + AudioSourcePoolManager._totalInstantiated);
+		stringBuilder.AppendLine("  Recycled from pool: " + AudioSourcePoolManager._totalRecycled);
+		stringBuilder.AppendLine("  Null rejections: " + AudioSourcePoolManager._totalRejected);
+		stringBuilder.AppendLine("  Destroyed during scene swaps: " + AudioSourcePoolManager._totalDestroyed);
+		if (AudioSourcePoolManager._initialized)
 		{
-			bool flag = _singleton != null;
+			bool flag = AudioSourcePoolManager._singleton != null;
 			stringBuilder.AppendLine("\nSingleton status: " + (flag ? "Active" : "Null"));
 		}
 		else

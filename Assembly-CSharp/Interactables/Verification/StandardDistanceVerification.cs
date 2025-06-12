@@ -22,19 +22,19 @@ public class StandardDistanceVerification : IVerificationRule
 
 	public StandardDistanceVerification(float maxDistance = 2.42f, bool allowHandcuffedInteraction = false, bool cancelScp268 = true)
 	{
-		_maxDistance = maxDistance;
-		_allowHandcuffed = allowHandcuffedInteraction;
-		_cancel268 = cancelScp268;
+		this._maxDistance = maxDistance;
+		this._allowHandcuffed = allowHandcuffedInteraction;
+		this._cancel268 = cancelScp268;
 	}
 
 	public bool ClientCanInteract(InteractableCollider collider, RaycastHit hit)
 	{
-		return hit.distance < _maxDistance;
+		return hit.distance < this._maxDistance;
 	}
 
 	public bool ServerCanInteract(ReferenceHub hub, InteractableCollider collider)
 	{
-		if (!_allowHandcuffed && !PlayerInteract.CanDisarmedInteract && hub.inventory.IsDisarmed())
+		if (!this._allowHandcuffed && !InteractionCoordinator.CanDisarmedInteract && hub.inventory.IsDisarmed())
 		{
 			return false;
 		}
@@ -47,11 +47,11 @@ public class StandardDistanceVerification : IVerificationRule
 			return false;
 		}
 		Transform transform = collider.transform;
-		if (Vector3.Distance(fpcRole.FpcModule.Position, transform.position + transform.TransformDirection(collider.VerificationOffset)) > _maxDistance * 1.4f)
+		if (Vector3.Distance(fpcRole.FpcModule.Position, transform.position + transform.TransformDirection(collider.VerificationOffset)) > this._maxDistance * 1.4f)
 		{
 			return false;
 		}
-		if (_cancel268)
+		if (this._cancel268)
 		{
 			hub.playerEffectsController.DisableEffect<Invisible>();
 		}

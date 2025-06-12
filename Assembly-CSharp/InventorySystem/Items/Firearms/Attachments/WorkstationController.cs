@@ -65,12 +65,12 @@ public class WorkstationController : NetworkBehaviour, IClientInteractable, IInt
 	{
 		get
 		{
-			return Status;
+			return this.Status;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Status, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.Status, 1uL, null);
 		}
 	}
 
@@ -78,92 +78,92 @@ public class WorkstationController : NetworkBehaviour, IClientInteractable, IInt
 	{
 		if (collider is WorkstationSelectorCollider workstationSelectorCollider)
 		{
-			_selector.ProcessCollider(workstationSelectorCollider.ColliderId);
+			this._selector.ProcessCollider(workstationSelectorCollider.ColliderId);
 		}
 	}
 
 	public void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
-		if (colliderId == ActivateCollider.ColliderId && Status == 0)
+		if (colliderId == this.ActivateCollider.ColliderId && this.Status == 0)
 		{
-			NetworkStatus = 1;
-			ServerStopwatch.Restart();
+			this.NetworkStatus = 1;
+			this.ServerStopwatch.Restart();
 		}
 	}
 
 	private void Start()
 	{
-		AllWorkstations.Add(this);
+		WorkstationController.AllWorkstations.Add(this);
 	}
 
 	private void OnDestroy()
 	{
-		AllWorkstations.Remove(this);
+		WorkstationController.AllWorkstations.Remove(this);
 	}
 
 	private void Update()
 	{
 		if (NetworkServer.active)
 		{
-			if (Status == 0)
+			if (this.Status == 0)
 			{
 				return;
 			}
-			switch ((WorkstationStatus)Status)
+			switch ((WorkstationStatus)this.Status)
 			{
 			case WorkstationStatus.PoweringUp:
-				if (ServerStopwatch.Elapsed.TotalSeconds > 1.0)
+				if (this.ServerStopwatch.Elapsed.TotalSeconds > 1.0)
 				{
-					NetworkStatus = 3;
-					ServerStopwatch.Restart();
+					this.NetworkStatus = 3;
+					this.ServerStopwatch.Restart();
 				}
 				break;
 			case WorkstationStatus.PoweringDown:
-				if (ServerStopwatch.Elapsed.TotalSeconds > 2.5)
+				if (this.ServerStopwatch.Elapsed.TotalSeconds > 2.5)
 				{
-					NetworkStatus = 0;
-					ServerStopwatch.Stop();
+					this.NetworkStatus = 0;
+					this.ServerStopwatch.Stop();
 				}
 				break;
 			case WorkstationStatus.Online:
-				if (ServerStopwatch.Elapsed.TotalSeconds < 30.0)
+				if (this.ServerStopwatch.Elapsed.TotalSeconds < 30.0)
 				{
-					if (!(ServerStopwatch.Elapsed.TotalSeconds > 5.0))
+					if (!(this.ServerStopwatch.Elapsed.TotalSeconds > 5.0))
 					{
 						break;
 					}
-					if (IsInRange(KnownUser))
+					if (this.IsInRange(this.KnownUser))
 					{
-						ServerStopwatch.Restart();
+						this.ServerStopwatch.Restart();
 						break;
 					}
 					foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 					{
-						if (IsInRange(allHub))
+						if (this.IsInRange(allHub))
 						{
-							KnownUser = allHub;
-							ServerStopwatch.Restart();
+							this.KnownUser = allHub;
+							this.ServerStopwatch.Restart();
 							break;
 						}
 					}
 				}
 				else
 				{
-					NetworkStatus = 2;
-					ServerStopwatch.Restart();
+					this.NetworkStatus = 2;
+					this.ServerStopwatch.Restart();
 				}
 				break;
 			}
 		}
-		if (_prevStatus != Status)
+		if (this._prevStatus != this.Status)
 		{
-			WorkstationStatus status = (WorkstationStatus)Status;
-			_selector.enabled = status == WorkstationStatus.Online;
-			_selectorScreen.SetActive(status == WorkstationStatus.Online);
-			_idleScreen.SetActive(status == WorkstationStatus.Offline);
-			_powerupScreen.SetActive(status == WorkstationStatus.PoweringUp);
-			_powerdownScreen.SetActive(status == WorkstationStatus.PoweringDown);
-			_prevStatus = Status;
+			WorkstationStatus status = (WorkstationStatus)this.Status;
+			this._selector.enabled = status == WorkstationStatus.Online;
+			this._selectorScreen.SetActive(status == WorkstationStatus.Online);
+			this._idleScreen.SetActive(status == WorkstationStatus.Offline);
+			this._powerupScreen.SetActive(status == WorkstationStatus.PoweringUp);
+			this._powerdownScreen.SetActive(status == WorkstationStatus.PoweringDown);
+			this._prevStatus = this.Status;
 		}
 	}
 
@@ -186,13 +186,13 @@ public class WorkstationController : NetworkBehaviour, IClientInteractable, IInt
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			NetworkWriterExtensions.WriteByte(writer, Status);
+			NetworkWriterExtensions.WriteByte(writer, this.Status);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, Status);
+			NetworkWriterExtensions.WriteByte(writer, this.Status);
 		}
 	}
 
@@ -201,13 +201,13 @@ public class WorkstationController : NetworkBehaviour, IClientInteractable, IInt
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref Status, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this.Status, null, NetworkReaderExtensions.ReadByte(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Status, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this.Status, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 	}
 }

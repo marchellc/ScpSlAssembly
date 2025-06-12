@@ -114,37 +114,37 @@ public class JailbirdViewmodel : StandardAnimatedViemodel
 	{
 		base.InitAny();
 		JailbirdItem.OnRpcReceived += RpcReceived;
-		_materialController.SetSerial(base.ItemId.SerialNumber);
+		this._materialController.SetSerial(base.ItemId.SerialNumber);
 	}
 
 	internal override void OnEquipped()
 	{
 		base.OnEquipped();
-		AnimatorSetBool(SkipPickupHash, _alreadyPickedUp);
-		PlaySound(_alreadyPickedUp ? _normalEquipSound : _firstEquipSound, base.SkipEquipTime);
-		_alreadyPickedUp = true;
+		this.AnimatorSetBool(JailbirdViewmodel.SkipPickupHash, JailbirdViewmodel._alreadyPickedUp);
+		this.PlaySound(JailbirdViewmodel._alreadyPickedUp ? this._normalEquipSound : this._firstEquipSound, base.SkipEquipTime);
+		JailbirdViewmodel._alreadyPickedUp = true;
 	}
 
 	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
 	{
 		base.InitSpectator(ply, id, wasEquipped);
-		if (BrokenJailbirds.Contains(id.SerialNumber))
+		if (JailbirdViewmodel.BrokenJailbirds.Contains(id.SerialNumber))
 		{
-			SetBroken();
+			this.SetBroken();
 		}
-		AnimatorForceUpdate(base.SkipEquipTime);
-		if (LastRpcs.TryGetValue(id.SerialNumber, out var value) && LastUpdates.TryGetValue(id.SerialNumber, out var value2))
+		this.AnimatorForceUpdate(base.SkipEquipTime);
+		if (JailbirdViewmodel.LastRpcs.TryGetValue(id.SerialNumber, out var value) && JailbirdViewmodel.LastUpdates.TryGetValue(id.SerialNumber, out var value2))
 		{
 			float num = (float)(NetworkTime.time - value2);
-			ProcessRpc(value, num);
+			this.ProcessRpc(value, num);
 			if (num > 1.5f)
 			{
-				AnimatorForceUpdate(1.5f, fastMode: false);
-				AnimatorForceUpdate(num - 1.5f);
+				this.AnimatorForceUpdate(1.5f, fastMode: false);
+				this.AnimatorForceUpdate(num - 1.5f);
 			}
 			else
 			{
-				AnimatorForceUpdate(num, fastMode: false);
+				this.AnimatorForceUpdate(num, fastMode: false);
 			}
 		}
 	}
@@ -162,18 +162,18 @@ public class JailbirdViewmodel : StandardAnimatedViemodel
 
 	private void Update()
 	{
-		int tagHash = AnimatorStateInfo(0).tagHash;
-		_particlesSmall.SetActive(tagHash == AttackTriggerHash);
-		_particlesTrail.SetActive(tagHash == ChargingHash);
-		_particlesLarge.SetActive(tagHash == ChargeLoadHash || tagHash == ChargingHash);
-		_inspectParticlesRoot.SetActive(tagHash == InspectTriggerHash);
+		int tagHash = this.AnimatorStateInfo(0).tagHash;
+		this._particlesSmall.SetActive(tagHash == JailbirdViewmodel.AttackTriggerHash);
+		this._particlesTrail.SetActive(tagHash == JailbirdViewmodel.ChargingHash);
+		this._particlesLarge.SetActive(tagHash == JailbirdViewmodel.ChargeLoadHash || tagHash == JailbirdViewmodel.ChargingHash);
+		this._inspectParticlesRoot.SetActive(tagHash == JailbirdViewmodel.InspectTriggerHash);
 	}
 
 	private void RpcReceived(ushort serial, JailbirdMessageType rpc)
 	{
 		if (serial == base.ItemId.SerialNumber)
 		{
-			ProcessRpc(rpc, 0f);
+			this.ProcessRpc(rpc, 0f);
 		}
 	}
 
@@ -181,57 +181,57 @@ public class JailbirdViewmodel : StandardAnimatedViemodel
 	{
 		bool flag = rpc == JailbirdMessageType.ChargeStarted;
 		bool val = rpc == JailbirdMessageType.ChargeLoadTriggered;
-		AnimatorSetBool(ChargingHash, flag);
-		AnimatorSetBool(ChargeLoadHash, val);
-		if (_wasCharging && !flag)
+		this.AnimatorSetBool(JailbirdViewmodel.ChargingHash, flag);
+		this.AnimatorSetBool(JailbirdViewmodel.ChargeLoadHash, val);
+		if (this._wasCharging && !flag)
 		{
-			PlaySound(_chargeHitSound, delay);
+			this.PlaySound(this._chargeHitSound, delay);
 		}
 		switch (rpc)
 		{
 		case JailbirdMessageType.AttackTriggered:
 			if (base.IsSpectator)
 			{
-				PlayAttackAnim(delay);
+				this.PlayAttackAnim(delay);
 			}
 			break;
 		case JailbirdMessageType.ChargeLoadTriggered:
-			PlaySound(_chargeLoadSound, delay);
+			this.PlaySound(this._chargeLoadSound, delay);
 			break;
 		case JailbirdMessageType.ChargeStarted:
-			PlaySound(_chargingSound, delay);
+			this.PlaySound(this._chargingSound, delay);
 			break;
 		case JailbirdMessageType.ChargeFailed:
-			PlaySound(null, delay);
+			this.PlaySound(null, delay);
 			break;
 		case JailbirdMessageType.Broken:
-			SetBroken();
-			PlaySound(_brokenSound, delay, stopPrev: false);
+			this.SetBroken();
+			this.PlaySound(this._brokenSound, delay, stopPrev: false);
 			break;
 		case JailbirdMessageType.Inspect:
 		{
-			if (AnimatorStateInfo(0).tagHash != IdleTagHash || _nextInspect > NetworkTime.time)
+			if (this.AnimatorStateInfo(0).tagHash != JailbirdViewmodel.IdleTagHash || this._nextInspect > NetworkTime.time)
 			{
 				break;
 			}
 			JailbirdDeteriorationTracker.ReceivedStates.TryGetValue(base.ItemId.SerialNumber, out var value);
-			if (_presetsByWear == null)
+			if (JailbirdViewmodel._presetsByWear == null)
 			{
-				_presetsByWear = new Dictionary<JailbirdWearState, InspectPreset>();
-				_presetsByWear.FromArray(_inspectPresets, (InspectPreset x) => x.State);
+				JailbirdViewmodel._presetsByWear = new Dictionary<JailbirdWearState, InspectPreset>();
+				JailbirdViewmodel._presetsByWear.FromArray(this._inspectPresets, (InspectPreset x) => x.State);
 			}
-			if (_presetsByWear.TryGetValue(value, out var value2))
+			if (JailbirdViewmodel._presetsByWear.TryGetValue(value, out var value2))
 			{
-				PlaySound(value2.Sound, delay);
-				AnimatorSetTrigger(InspectTriggerHash);
-				AnimatorSetFloat(InspectSpeedHash, value2.Speed);
-				AnimatorSetFloat(InspectVariantHash, value2.VariantId);
-				_nextInspect = NetworkTime.time + 0.5;
+				this.PlaySound(value2.Sound, delay);
+				this.AnimatorSetTrigger(JailbirdViewmodel.InspectTriggerHash);
+				this.AnimatorSetFloat(JailbirdViewmodel.InspectSpeedHash, value2.Speed);
+				this.AnimatorSetFloat(JailbirdViewmodel.InspectVariantHash, value2.VariantId);
+				this._nextInspect = NetworkTime.time + 0.5;
 			}
 			break;
 		}
 		}
-		_wasCharging = flag;
+		this._wasCharging = flag;
 	}
 
 	private void PlaySound(AudioClip clip, float delay, bool stopPrev = true, float pitchRandom = 0f)
@@ -239,7 +239,7 @@ public class JailbirdViewmodel : StandardAnimatedViemodel
 		int num = 0;
 		if (stopPrev)
 		{
-			_targetAudioSource.Stop();
+			this._targetAudioSource.Stop();
 		}
 		if (delay > 0f)
 		{
@@ -249,34 +249,34 @@ public class JailbirdViewmodel : StandardAnimatedViemodel
 				return;
 			}
 		}
-		_targetAudioSource.PlayOneShot(clip);
-		_targetAudioSource.pitch = 1f + UnityEngine.Random.Range(0f - pitchRandom, pitchRandom);
+		this._targetAudioSource.PlayOneShot(clip);
+		this._targetAudioSource.pitch = 1f + UnityEngine.Random.Range(0f - pitchRandom, pitchRandom);
 		if (num != 0)
 		{
-			_targetAudioSource.timeSamples = num;
+			this._targetAudioSource.timeSamples = num;
 		}
 	}
 
 	private void SetBroken()
 	{
-		AnimatorSetBool(BrokenHash, val: true);
-		_particlesBroken.SetActive(value: true);
+		this.AnimatorSetBool(JailbirdViewmodel.BrokenHash, val: true);
+		this._particlesBroken.SetActive(value: true);
 	}
 
 	private void OnCmdSent(JailbirdMessageType cmd)
 	{
 		if (cmd == JailbirdMessageType.AttackTriggered)
 		{
-			PlayAttackAnim(0f);
+			this.PlayAttackAnim(0f);
 		}
 	}
 
 	private void PlayAttackAnim(float delay)
 	{
-		_wasLeftHand = !_wasLeftHand;
-		AnimatorSetBool(LeftHandHash, _wasLeftHand);
-		AnimatorSetTrigger(AttackTriggerHash);
-		PlaySound(_wasLeftHand ? _swipeSoundLeft : _swipeSoundRight, delay, stopPrev: true, 0.1f);
+		JailbirdViewmodel._wasLeftHand = !JailbirdViewmodel._wasLeftHand;
+		this.AnimatorSetBool(JailbirdViewmodel.LeftHandHash, JailbirdViewmodel._wasLeftHand);
+		this.AnimatorSetTrigger(JailbirdViewmodel.AttackTriggerHash);
+		this.PlaySound(JailbirdViewmodel._wasLeftHand ? this._swipeSoundLeft : this._swipeSoundRight, delay, stopPrev: true, 0.1f);
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -284,23 +284,23 @@ public class JailbirdViewmodel : StandardAnimatedViemodel
 	{
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			_alreadyPickedUp = false;
-			if (_anyCollectionModified)
+			JailbirdViewmodel._alreadyPickedUp = false;
+			if (JailbirdViewmodel._anyCollectionModified)
 			{
-				LastRpcs.Clear();
-				LastUpdates.Clear();
-				BrokenJailbirds.Clear();
-				_anyCollectionModified = false;
+				JailbirdViewmodel.LastRpcs.Clear();
+				JailbirdViewmodel.LastUpdates.Clear();
+				JailbirdViewmodel.BrokenJailbirds.Clear();
+				JailbirdViewmodel._anyCollectionModified = false;
 			}
 		};
 		JailbirdItem.OnRpcReceived += delegate(ushort serial, JailbirdMessageType rpc)
 		{
-			_anyCollectionModified = true;
-			LastRpcs[serial] = rpc;
-			LastUpdates[serial] = NetworkTime.time;
+			JailbirdViewmodel._anyCollectionModified = true;
+			JailbirdViewmodel.LastRpcs[serial] = rpc;
+			JailbirdViewmodel.LastUpdates[serial] = NetworkTime.time;
 			if (rpc == JailbirdMessageType.Broken)
 			{
-				BrokenJailbirds.Add(serial);
+				JailbirdViewmodel.BrokenJailbirds.Add(serial);
 			}
 		};
 	}

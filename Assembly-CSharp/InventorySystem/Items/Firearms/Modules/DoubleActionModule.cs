@@ -34,17 +34,17 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 
 		private double _pullEndTime;
 
-		private double InverseLerpTime => MoreMath.InverseLerp(_pullStartTime, _pullEndTime, NetworkTime.time);
+		private double InverseLerpTime => MoreMath.InverseLerp(this._pullStartTime, this._pullEndTime, NetworkTime.time);
 
 		public float PullProgress
 		{
 			get
 			{
-				if (!IsPulling)
+				if (!this.IsPulling)
 				{
 					return 0f;
 				}
-				return (float)InverseLerpTime;
+				return (float)this.InverseLerpTime;
 			}
 		}
 
@@ -52,14 +52,14 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 
 		public void Pull(float durationSeconds)
 		{
-			IsPulling = true;
-			_pullStartTime = NetworkTime.time;
-			_pullEndTime = NetworkTime.time + (double)durationSeconds;
+			this.IsPulling = true;
+			this._pullStartTime = NetworkTime.time;
+			this._pullEndTime = NetworkTime.time + (double)durationSeconds;
 		}
 
 		public void Reset()
 		{
-			IsPulling = false;
+			this.IsPulling = false;
 		}
 	}
 
@@ -116,9 +116,9 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 	{
 		get
 		{
-			if (!OnCooldown && !IsCocking)
+			if (!this.OnCooldown && !this.IsCocking)
 			{
-				return _triggerPull.IsPulling;
+				return this._triggerPull.IsPulling;
 			}
 			return true;
 		}
@@ -128,11 +128,11 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 	{
 		get
 		{
-			if (_cylinderModule.AmmoStored != 0)
+			if (this._cylinderModule.AmmoStored != 0)
 			{
-				return !IsBusy;
+				return !this.IsBusy;
 			}
-			return !IsCocking;
+			return !this.IsCocking;
 		}
 	}
 
@@ -142,46 +142,46 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 		{
 			if (!base.IsServer)
 			{
-				return _clientCocked.Value;
+				return this._clientCocked.Value;
 			}
-			return GetCocked(base.ItemSerial);
+			return DoubleActionModule.GetCocked(base.ItemSerial);
 		}
 		private set
 		{
 			if (!base.IsServer)
 			{
-				_clientCocked.Value = value;
+				this._clientCocked.Value = value;
 			}
 			else if (value)
 			{
-				CockedHashes.Add(base.ItemSerial);
-				SendRpc(MessageType.RpcSetCockedTrue);
+				DoubleActionModule.CockedHashes.Add(base.ItemSerial);
+				this.SendRpc(MessageType.RpcSetCockedTrue);
 			}
 			else
 			{
-				CockedHashes.Remove(base.ItemSerial);
-				SendRpc(MessageType.RpcSetCockedFalse);
+				DoubleActionModule.CockedHashes.Remove(base.ItemSerial);
+				this.SendRpc(MessageType.RpcSetCockedFalse);
 			}
 		}
 	}
 
-	public float TriggerPullProgress => _triggerPull.PullProgress;
+	public float TriggerPullProgress => this._triggerPull.PullProgress;
 
-	public float DisplayCyclicRate => 1f / (DoubleActionTime + TimeBetweenShots);
+	public float DisplayCyclicRate => 1f / (this.DoubleActionTime + this.TimeBetweenShots);
 
-	public bool IsLoaded => _cylinderModule.AmmoStored > 0;
+	public bool IsLoaded => this._cylinderModule.AmmoStored > 0;
 
-	private float DoubleActionTime => _baseDoubleActionTime / base.Firearm.AttachmentsValue(AttachmentParam.DoubleActionSpeedMultiplier);
+	private float DoubleActionTime => this._baseDoubleActionTime / base.Firearm.AttachmentsValue(AttachmentParam.DoubleActionSpeedMultiplier);
 
-	private float TimeBetweenShots => _basePostShotCooldown / base.Firearm.AttachmentsValue(AttachmentParam.FireRateMultiplier);
+	private float TimeBetweenShots => this._basePostShotCooldown / base.Firearm.AttachmentsValue(AttachmentParam.FireRateMultiplier);
 
 	private bool OnCooldown
 	{
 		get
 		{
-			if (_clientShotCooldown.Ready)
+			if (this._clientShotCooldown.Ready)
 			{
-				return !_serverShotCooldown.Ready;
+				return !this._serverShotCooldown.Ready;
 			}
 			return true;
 		}
@@ -191,9 +191,9 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 	{
 		get
 		{
-			if (!_cockingBusy)
+			if (!this._cockingBusy)
 			{
-				return _cockRequestTimer.Busy;
+				return this._cockRequestTimer.Busy;
 			}
 			return true;
 		}
@@ -203,76 +203,76 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 
 	public static bool GetCocked(ushort serial)
 	{
-		return CockedHashes.Contains(serial);
+		return DoubleActionModule.CockedHashes.Contains(serial);
 	}
 
 	public void TriggerDecocking(int? nextTriggerHash = null)
 	{
-		_audioModule.PlayQuiet(_decockingClip);
-		_cockingBusy = true;
-		_afterDecockTrigger = nextTriggerHash;
+		this._audioModule.PlayQuiet(this._decockingClip);
+		this._cockingBusy = true;
+		this._afterDecockTrigger = nextTriggerHash;
 		base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.DeCock);
 	}
 
 	public void TriggerCocking()
 	{
-		_audioModule.PlayNormal(_cockingClip);
-		_cockingBusy = true;
+		this._audioModule.PlayNormal(this._cockingClip);
+		this._cockingBusy = true;
 		base.Firearm.AnimSetTrigger(FirearmAnimatorHashes.Cock);
 		if (base.IsLocalPlayer)
 		{
-			_cylinderModule.ClientHoldPrediction();
+			this._cylinderModule.ClientHoldPrediction();
 		}
 	}
 
 	[ExposedFirearmEvent]
 	public void SetCocked(bool value)
 	{
-		Cocked = value;
+		this.Cocked = value;
 	}
 
 	[ExposedFirearmEvent]
 	public void OnDecockingAnimComplete()
 	{
-		_cockingBusy = false;
-		if (_afterDecockTrigger.HasValue)
+		this._cockingBusy = false;
+		if (this._afterDecockTrigger.HasValue)
 		{
-			base.Firearm.AnimSetTrigger(_afterDecockTrigger.Value);
-			_afterDecockTrigger = null;
+			base.Firearm.AnimSetTrigger(this._afterDecockTrigger.Value);
+			this._afterDecockTrigger = null;
 		}
 	}
 
 	[ExposedFirearmEvent]
 	public void OnCockingAnimComplete()
 	{
-		_cockingBusy = false;
+		this._cockingBusy = false;
 	}
 
 	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
 	{
 		base.ClientProcessRpcTemplate(reader, serial);
-		switch (DecodeHeader(reader))
+		switch (this.DecodeHeader(reader))
 		{
 		case MessageType.RpcNewPlayerResync:
-			foreach (ushort cockedHash in CockedHashes)
+			foreach (ushort cockedHash in DoubleActionModule.CockedHashes)
 			{
 				DoubleActionModule.OnCockedChanged?.Invoke(cockedHash, arg2: false);
 			}
-			CockedHashes.Clear();
-			CockedHashes.EnsureCapacity(reader.Remaining / 2);
+			DoubleActionModule.CockedHashes.Clear();
+			DoubleActionModule.CockedHashes.EnsureCapacity(reader.Remaining / 2);
 			while (reader.Remaining > 0)
 			{
 				ushort num = reader.ReadUShort();
-				CockedHashes.Add(num);
+				DoubleActionModule.CockedHashes.Add(num);
 				DoubleActionModule.OnCockedChanged?.Invoke(num, arg2: true);
 			}
 			break;
 		case MessageType.RpcSetCockedTrue:
-			CockedHashes.Add(serial);
+			DoubleActionModule.CockedHashes.Add(serial);
 			DoubleActionModule.OnCockedChanged?.Invoke(serial, arg2: true);
 			break;
 		case MessageType.RpcSetCockedFalse:
-			CockedHashes.Remove(serial);
+			DoubleActionModule.CockedHashes.Remove(serial);
 			DoubleActionModule.OnCockedChanged?.Invoke(serial, arg2: false);
 			break;
 		case MessageType.RpcFire:
@@ -284,29 +284,29 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 	public override void ClientProcessRpcInstance(NetworkReader reader)
 	{
 		base.ClientProcessRpcInstance(reader);
-		switch (DecodeHeader(reader))
+		switch (this.DecodeHeader(reader))
 		{
 		case MessageType.StartCocking:
-			TriggerCocking();
+			this.TriggerCocking();
 			break;
 		case MessageType.StartPulling:
 			if (base.IsSpectator)
 			{
-				_triggerPull.Pull(DoubleActionTime);
+				this._triggerPull.Pull(this.DoubleActionTime);
 			}
 			break;
 		case MessageType.RpcFire:
 			if (base.IsSpectator)
 			{
-				PlayFireAnims(FirearmAnimatorHashes.Fire);
-				_triggerPull.Reset();
+				this.PlayFireAnims(FirearmAnimatorHashes.Fire);
+				this._triggerPull.Reset();
 			}
 			break;
 		case MessageType.RpcDryFire:
 			if (base.IsSpectator)
 			{
-				PlayFireAnims(FirearmAnimatorHashes.DryFire);
-				_triggerPull.Reset();
+				this.PlayFireAnims(FirearmAnimatorHashes.DryFire);
+				this._triggerPull.Reset();
 			}
 			break;
 		case MessageType.CmdUpdatePulling:
@@ -322,29 +322,29 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 		{
 			return;
 		}
-		switch (DecodeHeader(reader))
+		switch (this.DecodeHeader(reader))
 		{
 		case MessageType.StartCocking:
-			if (!base.Firearm.AnyModuleBusy(this) && !Cocked && !_cockingBusy)
+			if (!base.Firearm.AnyModuleBusy(this) && !this.Cocked && !this._cockingBusy)
 			{
-				SendRpc(MessageType.StartCocking);
+				this.SendRpc(MessageType.StartCocking);
 			}
 			break;
 		case MessageType.StartPulling:
-			if (!_serverPullTokenUsed)
+			if (!this._serverPullTokenUsed)
 			{
-				_serverPullTokenUsed = true;
-				_audioModule.PlayQuiet(_doubleActionClip);
-				double targetTime = NetworkTime.time + (double)DoubleActionTime;
-				SendRpc(MessageType.StartPulling, delegate(NetworkWriter x)
+				this._serverPullTokenUsed = true;
+				this._audioModule.PlayQuiet(this._doubleActionClip);
+				double targetTime = NetworkTime.time + (double)this.DoubleActionTime;
+				this.SendRpc(MessageType.StartPulling, delegate(NetworkWriter x)
 				{
 					x.WriteDouble(targetTime);
 				});
 			}
 			break;
 		case MessageType.CmdShoot:
-			Fire(reader);
-			_cylinderModule.ServerResync();
+			this.Fire(reader);
+			this._cylinderModule.ServerResync();
 			break;
 		}
 	}
@@ -352,26 +352,26 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 	protected override void OnInit()
 	{
 		base.OnInit();
-		_clientCocked = new ClientPredictedValue<bool>(() => GetCocked(base.ItemSerial));
-		if (!base.Firearm.TryGetModules<AudioModule, CylinderAmmoModule, IHitregModule>(out _audioModule, out _cylinderModule, out _hitregModule))
+		this._clientCocked = new ClientPredictedValue<bool>(() => DoubleActionModule.GetCocked(base.ItemSerial));
+		if (!base.Firearm.TryGetModules<AudioModule, CylinderAmmoModule, IHitregModule>(out this._audioModule, out this._cylinderModule, out this._hitregModule))
 		{
 			throw new InvalidOperationException("The " + base.Firearm.name + " is missing one or more essential modules (required by " + base.name + ").");
 		}
-		_audioModule.RegisterClip(_dryFireClip);
-		_audioModule.RegisterClip(_doubleActionClip);
-		_audioModule.RegisterClip(_cockingClip);
-		_audioModule.RegisterClip(_decockingClip);
-		AudioClip[] fireClips = _fireClips;
+		this._audioModule.RegisterClip(this._dryFireClip);
+		this._audioModule.RegisterClip(this._doubleActionClip);
+		this._audioModule.RegisterClip(this._cockingClip);
+		this._audioModule.RegisterClip(this._decockingClip);
+		AudioClip[] fireClips = this._fireClips;
 		foreach (AudioClip clip in fireClips)
 		{
-			_audioModule.RegisterClip(clip);
+			this._audioModule.RegisterClip(clip);
 		}
 	}
 
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		CockedHashes.Clear();
+		DoubleActionModule.CockedHashes.Clear();
 	}
 
 	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstModule)
@@ -381,10 +381,10 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 		{
 			return;
 		}
-		SendRpc(hub, delegate(NetworkWriter writer)
+		this.SendRpc(hub, delegate(NetworkWriter writer)
 		{
 			writer.WriteSubheader(MessageType.RpcNewPlayerResync);
-			CockedHashes.ForEach(delegate(ushort x)
+			DoubleActionModule.CockedHashes.ForEach(delegate(ushort x)
 			{
 				writer.WriteUShort(x);
 			});
@@ -394,10 +394,10 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 	internal override void OnHolstered()
 	{
 		base.OnHolstered();
-		_cockingBusy = false;
-		_cockingKeyHoldTime = 0f;
-		_serverPullTokenUsed = false;
-		_triggerPull.Reset();
+		this._cockingBusy = false;
+		this._cockingKeyHoldTime = 0f;
+		this._serverPullTokenUsed = false;
+		this._triggerPull.Reset();
 	}
 
 	internal override void OnEquipped()
@@ -405,13 +405,13 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 		base.OnEquipped();
 		if (base.IsServer)
 		{
-			if (Cocked)
+			if (this.Cocked)
 			{
-				SendRpc(MessageType.RpcSetCockedTrue);
+				this.SendRpc(MessageType.RpcSetCockedTrue);
 			}
 			else
 			{
-				SendRpc(MessageType.RpcSetCockedFalse);
+				this.SendRpc(MessageType.RpcSetCockedFalse);
 			}
 		}
 	}
@@ -419,18 +419,18 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 	internal override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		_clientShotCooldown.Update();
-		_serverShotCooldown.Update();
+		this._clientShotCooldown.Update();
+		this._serverShotCooldown.Update();
 		if (base.IsControllable)
 		{
-			UpdateInputs();
-			if (_triggerPull.IsPulling && (TriggerPullProgress >= 1f || Cocked))
+			this.UpdateInputs();
+			if (this._triggerPull.IsPulling && (this.TriggerPullProgress >= 1f || this.Cocked))
 			{
-				Fire(null);
+				this.Fire(null);
 			}
 		}
-		base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsCocked, Cocked);
-		base.Firearm.AnimSetFloat(FirearmAnimatorHashes.TriggerState, TriggerPullProgress);
+		base.Firearm.AnimSetBool(FirearmAnimatorHashes.IsCocked, this.Cocked);
+		base.Firearm.AnimSetFloat(FirearmAnimatorHashes.TriggerState, this.TriggerPullProgress);
 	}
 
 	private void UpdateInputs()
@@ -439,26 +439,26 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 		{
 			return;
 		}
-		if (GetAction(ActionName.WeaponAlt))
+		if (base.GetAction(ActionName.WeaponAlt))
 		{
-			_cockingKeyHoldTime += Time.deltaTime;
+			this._cockingKeyHoldTime += Time.deltaTime;
 		}
-		else if (_cockingKeyHoldTime > 0f)
+		else if (this._cockingKeyHoldTime > 0f)
 		{
-			if (_cockingKeyHoldTime < 0.5f)
+			if (this._cockingKeyHoldTime < 0.5f)
 			{
-				_cockRequestTimer.Trigger();
-				SendCmd(MessageType.StartCocking);
+				this._cockRequestTimer.Trigger();
+				this.SendCmd(MessageType.StartCocking);
 			}
-			_cockingKeyHoldTime = 0f;
+			this._cockingKeyHoldTime = 0f;
 		}
 		if (base.Firearm.TryGetModule<ITriggerControllerModule>(out var module) && module.TriggerHeld)
 		{
-			_triggerPull.Pull(DoubleActionTime);
-			if (!Cocked)
+			this._triggerPull.Pull(this.DoubleActionTime);
+			if (!this.Cocked)
 			{
-				SendCmd(MessageType.StartPulling);
-				_audioModule.PlayClientside(_doubleActionClip);
+				this.SendCmd(MessageType.StartPulling);
+				this._audioModule.PlayClientside(this._doubleActionClip);
 			}
 		}
 	}
@@ -467,38 +467,38 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 	{
 		if (base.IsLocalPlayer)
 		{
-			_triggerPull.Reset();
-			_clientShotCooldown.Trigger(TimeBetweenShots);
+			this._triggerPull.Reset();
+			this._clientShotCooldown.Trigger(this.TimeBetweenShots);
 		}
 		else
 		{
-			if (!_serverShotCooldown.Ready)
+			if (!this._serverShotCooldown.Ready)
 			{
 				return;
 			}
-			_serverPullTokenUsed = false;
-			_serverShotCooldown.Trigger(TimeBetweenShots);
+			this._serverPullTokenUsed = false;
+			this._serverShotCooldown.Trigger(this.TimeBetweenShots);
 		}
-		if (!Cocked)
+		if (!this.Cocked)
 		{
-			_cylinderModule.RotateCylinder(1);
+			this._cylinderModule.RotateCylinder(1);
 		}
 		else
 		{
-			Cocked = false;
+			this.Cocked = false;
 		}
-		CylinderAmmoModule.Chamber chamber = _cylinderModule.Chambers[0];
+		CylinderAmmoModule.Chamber chamber = this._cylinderModule.Chambers[0];
 		if (chamber.ContextState == CylinderAmmoModule.ChamberState.Live)
 		{
-			FireLive(chamber, extraData);
+			this.FireLive(chamber, extraData);
 		}
 		else
 		{
-			FireDry();
+			this.FireDry();
 		}
 		if (base.IsLocalPlayer && !base.IsServer)
 		{
-			SendCmd(MessageType.CmdShoot, delegate(NetworkWriter x)
+			this.SendCmd(MessageType.CmdShoot, delegate(NetworkWriter x)
 			{
 				x.WriteBacktrackData(new ShotBacktrackData(base.Firearm));
 			});
@@ -510,47 +510,47 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 		BulletShotEvent shotEvent = new BulletShotEvent(new ItemIdentifier(base.Firearm));
 		if (base.IsServer)
 		{
-			PlayerShootingWeaponEventArgs playerShootingWeaponEventArgs = new PlayerShootingWeaponEventArgs(base.Firearm.Owner, base.Firearm);
-			PlayerEvents.OnShootingWeapon(playerShootingWeaponEventArgs);
-			if (!playerShootingWeaponEventArgs.IsAllowed)
+			PlayerShootingWeaponEventArgs e = new PlayerShootingWeaponEventArgs(base.Firearm.Owner, base.Firearm);
+			PlayerEvents.OnShootingWeapon(e);
+			if (!e.IsAllowed)
 			{
 				return;
 			}
 			(base.IsLocalPlayer ? new ShotBacktrackData(base.Firearm) : new ShotBacktrackData(extraData)).ProcessShot(base.Firearm, delegate(ReferenceHub target)
 			{
-				_hitregModule.Fire(target, shotEvent);
+				this._hitregModule.Fire(target, shotEvent);
 			});
-			SendRpc((ReferenceHub hub) => hub != base.Firearm.Owner && !hub.isLocalPlayer, delegate(NetworkWriter x)
+			this.SendRpc((ReferenceHub hub) => hub != base.Firearm.Owner && !hub.isLocalPlayer, delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(MessageType.RpcFire);
 			});
 			PlayerEvents.OnShotWeapon(new PlayerShotWeaponEventArgs(base.Firearm.Owner, base.Firearm));
 		}
 		float num = base.Firearm.AttachmentsValue(AttachmentParam.ShotClipIdOverride);
-		_audioModule.PlayGunshot(_fireClips[(int)num]);
+		this._audioModule.PlayGunshot(this._fireClips[(int)num]);
 		chamber.ContextState = CylinderAmmoModule.ChamberState.Discharged;
 		ShotEventManager.Trigger(shotEvent);
-		PlayFireAnims(FirearmAnimatorHashes.Fire);
+		this.PlayFireAnims(FirearmAnimatorHashes.Fire);
 	}
 
 	private void FireDry()
 	{
 		if (base.IsServer)
 		{
-			PlayerDryFiringWeaponEventArgs playerDryFiringWeaponEventArgs = new PlayerDryFiringWeaponEventArgs(base.Firearm.Owner, base.Firearm);
-			PlayerEvents.OnDryFiringWeapon(playerDryFiringWeaponEventArgs);
-			if (!playerDryFiringWeaponEventArgs.IsAllowed)
+			PlayerDryFiringWeaponEventArgs e = new PlayerDryFiringWeaponEventArgs(base.Firearm.Owner, base.Firearm);
+			PlayerEvents.OnDryFiringWeapon(e);
+			if (!e.IsAllowed)
 			{
 				return;
 			}
-			SendRpc(MessageType.RpcDryFire);
+			this.SendRpc(MessageType.RpcDryFire);
 			PlayerEvents.OnDryFiredWeapon(new PlayerDryFiredWeaponEventArgs(base.Firearm.Owner, base.Firearm));
 		}
 		if (base.IsLocalPlayer)
 		{
-			PlayFireAnims(FirearmAnimatorHashes.DryFire);
+			this.PlayFireAnims(FirearmAnimatorHashes.DryFire);
 		}
-		_audioModule.PlayNormal(_dryFireClip);
+		this._audioModule.PlayNormal(this._dryFireClip);
 	}
 
 	private void PlayFireAnims(int hash)
@@ -566,7 +566,7 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 
 	private void SendRpc(MessageType header, Action<NetworkWriter> writerFunc = null, bool toAll = true)
 	{
-		SendRpc(delegate(NetworkWriter x)
+		this.SendRpc(delegate(NetworkWriter x)
 		{
 			x.WriteSubheader(header);
 			writerFunc?.Invoke(x);
@@ -575,7 +575,7 @@ public class DoubleActionModule : ModuleBase, IActionModule, IBusyIndicatorModul
 
 	private void SendCmd(MessageType header, Action<NetworkWriter> writerFunc = null)
 	{
-		SendCmd(delegate(NetworkWriter x)
+		this.SendCmd(delegate(NetworkWriter x)
 		{
 			x.WriteSubheader(header);
 			writerFunc?.Invoke(x);

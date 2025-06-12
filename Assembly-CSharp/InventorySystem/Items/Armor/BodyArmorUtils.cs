@@ -17,7 +17,7 @@ public static class BodyArmorUtils
 
 	public static void SetPlayerDirty(ReferenceHub player)
 	{
-		DirtyArmorPlayers.Add(player);
+		BodyArmorUtils.DirtyArmorPlayers.Add(player);
 	}
 
 	public static bool TryGetBodyArmor(this Inventory inv, out BodyArmor bodyArmor)
@@ -43,12 +43,12 @@ public static class BodyArmorUtils
 
 	public static void RemoveEverythingExceedingLimits(this Inventory inv)
 	{
-		ItemsToRemoveNonAlloc.Clear();
-		CategoryCounterNonAlloc.Clear();
-		AmmoToRemoveNonAlloc.Clear();
-		HashSet<ushort> itemsToRemoveNonAlloc = ItemsToRemoveNonAlloc;
-		Dictionary<ItemCategory, int> categoryCounterNonAlloc = CategoryCounterNonAlloc;
-		Dictionary<ItemType, ushort> ammoToRemoveNonAlloc = AmmoToRemoveNonAlloc;
+		BodyArmorUtils.ItemsToRemoveNonAlloc.Clear();
+		BodyArmorUtils.CategoryCounterNonAlloc.Clear();
+		BodyArmorUtils.AmmoToRemoveNonAlloc.Clear();
+		HashSet<ushort> itemsToRemoveNonAlloc = BodyArmorUtils.ItemsToRemoveNonAlloc;
+		Dictionary<ItemCategory, int> categoryCounterNonAlloc = BodyArmorUtils.CategoryCounterNonAlloc;
+		Dictionary<ItemType, ushort> ammoToRemoveNonAlloc = BodyArmorUtils.AmmoToRemoveNonAlloc;
 		inv.TryGetBodyArmor(out var bodyArmor);
 		foreach (KeyValuePair<ushort, ItemBase> item in inv.UserInventory.Items)
 		{
@@ -90,13 +90,13 @@ public static class BodyArmorUtils
 
 	private static void UpdateDirty()
 	{
-		if (DirtyArmorPlayers.Count == 0)
+		if (BodyArmorUtils.DirtyArmorPlayers.Count == 0)
 		{
 			return;
 		}
 		if (NetworkServer.active)
 		{
-			foreach (ReferenceHub dirtyArmorPlayer in DirtyArmorPlayers)
+			foreach (ReferenceHub dirtyArmorPlayer in BodyArmorUtils.DirtyArmorPlayers)
 			{
 				if (!(dirtyArmorPlayer == null))
 				{
@@ -104,6 +104,6 @@ public static class BodyArmorUtils
 				}
 			}
 		}
-		DirtyArmorPlayers.Clear();
+		BodyArmorUtils.DirtyArmorPlayers.Clear();
 	}
 }

@@ -32,9 +32,10 @@ public static class SpectatorNetworking
 		};
 		SpectatorTargetTracker.OnTargetChanged += delegate
 		{
-			SpectatedNetIdSyncMessage message = default(SpectatedNetIdSyncMessage);
-			message.NetId = (SpectatorTargetTracker.TryGetTrackedPlayer(out var hub4) ? hub4.netId : 0u);
-			NetworkClient.Send(message);
+			NetworkClient.Send(new SpectatedNetIdSyncMessage
+			{
+				NetId = (SpectatorTargetTracker.TryGetTrackedPlayer(out var hub) ? hub.netId : 0u)
+			});
 		};
 	}
 

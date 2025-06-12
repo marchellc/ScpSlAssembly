@@ -20,40 +20,40 @@ public readonly struct MetricsCsvBuilder
 		{
 			filename = source.GetType().Name.Replace("Collector", string.Empty) + "/" + filename;
 		}
-		Filename = string.Format(filename.TrimEnd('.') + ".csv", TimestampNow);
-		StrBuilder = new StringBuilder();
+		this.Filename = string.Format(filename.TrimEnd('.') + ".csv", MetricsCsvBuilder.TimestampNow);
+		this.StrBuilder = new StringBuilder();
 	}
 
 	public void Append(string str)
 	{
-		StrBuilder.Append(str);
+		this.StrBuilder.Append(str);
 	}
 
 	public void Append(object obj)
 	{
-		StrBuilder.Append(obj);
+		this.StrBuilder.Append(obj);
 	}
 
 	public void Append(char ch)
 	{
-		StrBuilder.Append(ch);
+		this.StrBuilder.Append(ch);
 	}
 
 	public void AppendLine()
 	{
-		StrBuilder.AppendLine();
+		this.StrBuilder.AppendLine();
 	}
 
 	public void AppendColumn(string str)
 	{
-		StrBuilder.Append(str);
-		StrBuilder.Append(',');
+		this.StrBuilder.Append(str);
+		this.StrBuilder.Append(',');
 	}
 
 	public void AppendColumn(object obj)
 	{
-		StrBuilder.Append(obj);
-		StrBuilder.Append(',');
+		this.StrBuilder.Append(obj);
+		this.StrBuilder.Append(',');
 	}
 
 	public MetricsCsvBuilder[] ToArray()

@@ -20,13 +20,13 @@ public interface IRoomConnector
 
 	static IRoomConnector()
 	{
-		WorldDirections = new Vector3[4]
+		IRoomConnector.WorldDirections = new Vector3[4]
 		{
 			Vector3.forward,
 			Vector3.back,
 			Vector3.left,
 			Vector3.right
 		};
-		RoomsNonAlloc = new RoomIdentifier[WorldDirections.Length];
+		IRoomConnector.RoomsNonAlloc = new RoomIdentifier[IRoomConnector.WorldDirections.Length];
 	}
 }

@@ -16,13 +16,13 @@ public class SSEntryLabel
 
 	public void Set(ServerSpecificSettingBase setting)
 	{
-		_label.text = setting.Label;
+		this._label.text = setting.Label;
 		if (string.IsNullOrEmpty(setting.HintDescription))
 		{
-			_hint.gameObject.SetActive(value: false);
+			this._hint.gameObject.SetActive(value: false);
 			return;
 		}
-		_hint.gameObject.SetActive(value: true);
-		_hint.SetCustomText(setting.HintDescription);
+		this._hint.gameObject.SetActive(value: true);
+		this._hint.SetCustomText(setting.HintDescription);
 	}
 }

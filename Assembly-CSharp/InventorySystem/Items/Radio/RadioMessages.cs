@@ -31,7 +31,7 @@ public static class RadioMessages
 		{
 			NetworkClient.ReplaceHandler<RadioStatusMessage>(ClientStatusReceived);
 			NetworkServer.ReplaceHandler<ClientRadioCommandMessage>(ServerCommandReceived);
-			SyncedRangeLevels.Clear();
+			RadioMessages.SyncedRangeLevels.Clear();
 		};
 		ReferenceHub.OnPlayerAdded += delegate(ReferenceHub hub)
 		{
@@ -39,7 +39,7 @@ public static class RadioMessages
 			{
 				return;
 			}
-			foreach (KeyValuePair<uint, RadioStatusMessage> syncedRangeLevel in SyncedRangeLevels)
+			foreach (KeyValuePair<uint, RadioStatusMessage> syncedRangeLevel in RadioMessages.SyncedRangeLevels)
 			{
 				hub.connectionToClient.Send(syncedRangeLevel.Value);
 			}
@@ -48,7 +48,7 @@ public static class RadioMessages
 
 	private static void ServerCommandReceived(NetworkConnection conn, ClientRadioCommandMessage msg)
 	{
-		if (GetRadio(ReferenceHub.GetHub(conn.identity.gameObject), out var radio))
+		if (RadioMessages.GetRadio(ReferenceHub.GetHub(conn.identity.gameObject), out var radio))
 		{
 			radio.ServerProcessCmd(msg.Command);
 		}
@@ -56,8 +56,8 @@ public static class RadioMessages
 
 	private static void ClientStatusReceived(RadioStatusMessage msg)
 	{
-		SyncedRangeLevels[msg.Owner] = msg;
-		if (ReferenceHub.TryGetLocalHub(out var hub) && GetRadio(hub, out var radio) && radio.Owner.netId == msg.Owner)
+		RadioMessages.SyncedRangeLevels[msg.Owner] = msg;
+		if (ReferenceHub.TryGetLocalHub(out var hub) && RadioMessages.GetRadio(hub, out var radio) && radio.Owner.netId == msg.Owner)
 		{
 			radio.UserReceiveInfo(msg);
 		}

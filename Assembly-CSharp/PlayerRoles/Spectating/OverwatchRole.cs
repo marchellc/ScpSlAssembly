@@ -16,12 +16,12 @@ public class OverwatchRole : SpectatorRole, IObfuscatedRole
 
 	public RoleTypeId GetRoleForUser(ReferenceHub receiver)
 	{
-		TryGetOwner(out var hub);
+		base.TryGetOwner(out var hub);
 		if (!(hub == receiver) && !PermissionsHandler.IsPermitted(receiver.serverRoles.Permissions, PlayerPermissions.GameplayData))
 		{
 			return base.RoleTypeId;
 		}
-		return RoleTypeId;
+		return this.RoleTypeId;
 	}
 
 	public override void DisableRole(RoleTypeId newRole)

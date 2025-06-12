@@ -23,15 +23,15 @@ public abstract class RoomConnectorSpawnpointBase : MonoBehaviour
 
 	protected virtual void Awake()
 	{
-		_parentRoom = GetComponentInParent<RoomIdentifier>();
-		AllInstances.Enqueue(this);
+		this._parentRoom = base.GetComponentInParent<RoomIdentifier>();
+		RoomConnectorSpawnpointBase.AllInstances.Enqueue(this);
 	}
 
 	public abstract float GetSpawnChanceWeight(SpawnableRoomConnectorType type);
 
 	public virtual void SpawnFallback()
 	{
-		Spawn(FallbackType);
+		this.Spawn(this.FallbackType);
 	}
 
 	public void Spawn(SpawnableRoomConnectorType type)
@@ -39,9 +39,9 @@ public abstract class RoomConnectorSpawnpointBase : MonoBehaviour
 		if (RoomConnectorDistributorSettings.TryGetTemplate(type, out var result))
 		{
 			SpawnableRoomConnector spawnableRoomConnector = Object.Instantiate(result, base.transform.position, base.transform.rotation);
-			if (spawnableRoomConnector.TryGetComponent<DoorVariant>(out var component) && !string.IsNullOrEmpty(DesiredNametag))
+			if (spawnableRoomConnector.TryGetComponent<DoorVariant>(out var component) && !string.IsNullOrEmpty(this.DesiredNametag))
 			{
-				component.gameObject.AddComponent<DoorNametagExtension>().UpdateName(DesiredNametag);
+				component.gameObject.AddComponent<DoorNametagExtension>().UpdateName(this.DesiredNametag);
 			}
 			NetworkServer.Spawn(spawnableRoomConnector.gameObject);
 		}
@@ -55,7 +55,7 @@ public abstract class RoomConnectorSpawnpointBase : MonoBehaviour
 
 	public static void SetupAllRoomConnectors()
 	{
-		HashSet<RoomConnectorSpawnpointBase> readyToSpawn = ResolveConnectorConflicts();
+		HashSet<RoomConnectorSpawnpointBase> readyToSpawn = RoomConnectorSpawnpointBase.ResolveConnectorConflicts();
 		if (NetworkServer.active)
 		{
 			RoomConnectorSpawner.ServerSpawnAllConnectors(readyToSpawn);
@@ -65,9 +65,9 @@ public abstract class RoomConnectorSpawnpointBase : MonoBehaviour
 	private static HashSet<RoomConnectorSpawnpointBase> ResolveConnectorConflicts()
 	{
 		HashSet<RoomConnectorSpawnpointBase> hashSet = new HashSet<RoomConnectorSpawnpointBase>();
-		while (AllInstances.Count > 0)
+		while (RoomConnectorSpawnpointBase.AllInstances.Count > 0)
 		{
-			RoomConnectorSpawnpointBase roomConnectorSpawnpointBase = AllInstances.Dequeue();
+			RoomConnectorSpawnpointBase roomConnectorSpawnpointBase = RoomConnectorSpawnpointBase.AllInstances.Dequeue();
 			if (roomConnectorSpawnpointBase == null || !roomConnectorSpawnpointBase.gameObject.activeInHierarchy)
 			{
 				continue;
@@ -81,17 +81,17 @@ public abstract class RoomConnectorSpawnpointBase : MonoBehaviour
 				{
 					continue;
 				}
-				ConnectRooms(item, roomConnectorSpawnpointBase);
+				RoomConnectorSpawnpointBase.ConnectRooms(item, roomConnectorSpawnpointBase);
 				if (NetworkServer.active)
 				{
 					if (roomConnectorSpawnpointBase.ConnectorPriority > item.ConnectorPriority)
 					{
-						MergeRoomConnectors(roomConnectorSpawnpointBase, item);
+						RoomConnectorSpawnpointBase.MergeRoomConnectors(roomConnectorSpawnpointBase, item);
 						roomConnectorSpawnpointBase2 = item;
 					}
 					else
 					{
-						MergeRoomConnectors(item, roomConnectorSpawnpointBase);
+						RoomConnectorSpawnpointBase.MergeRoomConnectors(item, roomConnectorSpawnpointBase);
 						flag = false;
 					}
 					break;

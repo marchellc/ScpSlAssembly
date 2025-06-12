@@ -11,8 +11,8 @@ public class BroadcastMessage
 
 	public BroadcastMessage(string content, uint t, bool mono)
 	{
-		Text = content;
-		Time = t;
-		Truncated = mono;
+		this.Text = content;
+		this.Time = t;
+		this.Truncated = mono;
 	}
 }

@@ -78,7 +78,7 @@ public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverri
 
 	private static readonly float[] Heights = new float[3] { 0f, -0.4f, -0.9f };
 
-	private static readonly Vector3[] Offsets = new Vector3[RotationAngles.Length + 1];
+	private static readonly Vector3[] Offsets = new Vector3[Scp096TryNotToCryAbility.RotationAngles.Length + 1];
 
 	private static readonly Vector3[] GroundPoints = new Vector3[4];
 
@@ -88,20 +88,20 @@ public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverri
 	{
 		get
 		{
-			if (!base.Owner.isLocalPlayer || _canceled)
+			if (!base.Owner.isLocalPlayer || this._canceled)
 			{
 				return false;
 			}
-			if (IsActive)
+			if (this.IsActive)
 			{
 				return true;
 			}
-			if (!_freezeSw.IsRunning)
+			if (!this._freezeSw.IsRunning)
 			{
 				return false;
 			}
 			double num = NetworkTime.rtt + 0.10000000149011612;
-			return _freezeSw.Elapsed.TotalSeconds < num;
+			return this._freezeSw.Elapsed.TotalSeconds < num;
 		}
 	}
 
@@ -119,29 +119,29 @@ public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverri
 			{
 				throw new InvalidOperationException(string.Format("Cannot set {0}.{1} as client.", this, "IsActive"));
 			}
-			if (IsActive == value)
+			if (this.IsActive == value)
 			{
 				return;
 			}
 			if (value)
 			{
-				Scp096TryingNotToCryEventArgs scp096TryingNotToCryEventArgs = new Scp096TryingNotToCryEventArgs(base.Owner);
-				Scp096Events.OnTryingNotToCry(scp096TryingNotToCryEventArgs);
-				if (scp096TryingNotToCryEventArgs.IsAllowed)
+				Scp096TryingNotToCryEventArgs e = new Scp096TryingNotToCryEventArgs(base.Owner);
+				Scp096Events.OnTryingNotToCry(e);
+				if (e.IsAllowed)
 				{
 					base.CastRole.StateController.SetAbilityState(Scp096AbilityState.TryingNotToCry);
-					_dhs.RegenerationRate = _cachedBaseRegen * 2f;
+					this._dhs.RegenerationRate = this._cachedBaseRegen * 2f;
 					Scp096Events.OnTriedNotToCry(new Scp096TriedNotToCryEventArgs(base.Owner));
 				}
 			}
-			else if (IsActive)
+			else if (this.IsActive)
 			{
-				Scp096StartCryingEventArgs scp096StartCryingEventArgs = new Scp096StartCryingEventArgs(base.Owner);
-				Scp096Events.OnStartCrying(scp096StartCryingEventArgs);
-				if (scp096StartCryingEventArgs.IsAllowed)
+				Scp096StartCryingEventArgs e2 = new Scp096StartCryingEventArgs(base.Owner);
+				Scp096Events.OnStartCrying(e2);
+				if (e2.IsAllowed)
 				{
 					base.CastRole.ResetAbilityState();
-					_dhs.RegenerationRate = _cachedBaseRegen;
+					this._dhs.RegenerationRate = this._cachedBaseRegen;
 					Scp096Events.OnStartedCrying(new Scp096StartedCryingEventArgs(base.Owner));
 				}
 			}
@@ -151,15 +151,15 @@ public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverri
 	protected override void Update()
 	{
 		base.Update();
-		if (IsActive)
+		if (this.IsActive)
 		{
 			if (base.Owner.isLocalPlayer)
 			{
-				UpdateClient();
+				this.UpdateClient();
 			}
-			if (NetworkServer.active && !ServerValidate())
+			if (NetworkServer.active && !this.ServerValidate())
 			{
-				IsActive = false;
+				this.IsActive = false;
 			}
 		}
 	}
@@ -167,18 +167,18 @@ public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverri
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		if (!IsActive && ValidatePoint())
+		if (!this.IsActive && this.ValidatePoint())
 		{
-			_canceled = false;
-			_freezeSw.Restart();
-			ClientSendCmd();
+			this._canceled = false;
+			this._freezeSw.Restart();
+			base.ClientSendCmd();
 		}
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		if (!_canceled)
+		if (!this._canceled)
 		{
 			RelativePosition msg = new RelativePosition(base.CastRole.FpcModule.Position);
 			if (WaypointBase.TryGetWaypoint(msg.WaypointId, out var wp))
@@ -194,12 +194,12 @@ public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverri
 		base.ServerProcessCmd(reader);
 		if (reader.Position >= reader.Capacity)
 		{
-			IsActive = false;
+			this.IsActive = false;
 			return;
 		}
-		_syncPoint = reader.ReadRelativePosition();
-		_syncRot = reader.ReadQuaternion();
-		IsActive = ServerValidate();
+		this._syncPoint = reader.ReadRelativePosition();
+		this._syncRot = reader.ReadQuaternion();
+		this.IsActive = this.ServerValidate();
 	}
 
 	public override void SpawnObject()
@@ -208,32 +208,32 @@ public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverri
 		CursorManager.Register(this);
 		if (base.CastRole.HumeShieldModule is DynamicHumeShieldController dynamicHumeShieldController)
 		{
-			_cachedBaseRegen = dynamicHumeShieldController.RegenerationRate;
-			_dhs = dynamicHumeShieldController;
+			this._cachedBaseRegen = dynamicHumeShieldController.RegenerationRate;
+			this._dhs = dynamicHumeShieldController;
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_freezeSw.Reset();
-		_dhs.RegenerationRate = _cachedBaseRegen;
+		this._freezeSw.Reset();
+		this._dhs.RegenerationRate = this._cachedBaseRegen;
 		CursorManager.Unregister(this);
 	}
 
 	private void UpdateClient()
 	{
-		if (_canceled)
+		if (this._canceled)
 		{
 			return;
 		}
-		ActionName[] cancelKeys = CancelKeys;
+		ActionName[] cancelKeys = Scp096TryNotToCryAbility.CancelKeys;
 		for (int i = 0; i < cancelKeys.Length; i++)
 		{
 			if (Input.GetKeyDown(NewInput.GetKey(cancelKeys[i])))
 			{
-				_canceled = true;
-				ClientSendCmd();
+				this._canceled = true;
+				base.ClientSendCmd();
 				break;
 			}
 		}
@@ -241,27 +241,27 @@ public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverri
 
 	private bool ServerValidate()
 	{
-		if (base.CastRole.StateController.RageState != 0)
+		if (base.CastRole.StateController.RageState != Scp096RageState.Docile)
 		{
 			return false;
 		}
-		if (!WaypointBase.TryGetWaypoint(_syncPoint.WaypointId, out var wp))
+		if (!WaypointBase.TryGetWaypoint(this._syncPoint.WaypointId, out var wp))
 		{
 			return false;
 		}
-		Vector3 worldspacePosition = wp.GetWorldspacePosition(_syncPoint.Relative);
-		Quaternion worldspaceRotation = wp.GetWorldspaceRotation(_syncRot);
+		Vector3 worldspacePosition = wp.GetWorldspacePosition(this._syncPoint.Relative);
+		Quaternion worldspaceRotation = wp.GetWorldspaceRotation(this._syncRot);
 		using (new FpcBacktracker(base.Owner, worldspacePosition, worldspaceRotation))
 		{
-			return ValidatePoint();
+			return this.ValidatePoint();
 		}
 	}
 
 	private bool ValidatePoint()
 	{
-		if (ValidateGround())
+		if (this.ValidateGround())
 		{
-			return ValidateWall();
+			return this.ValidateWall();
 		}
 		return false;
 	}
@@ -275,15 +275,15 @@ public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverri
 		Transform transform = base.Owner.transform;
 		float height = base.CastRole.FpcModule.CharController.height;
 		float num = base.CastRole.FpcModule.CharController.radius * 0.9f;
-		GroundPoints[0] = transform.position + transform.forward * num;
-		GroundPoints[1] = transform.position + transform.right * num;
-		GroundPoints[2] = transform.position - transform.forward * num;
-		GroundPoints[3] = transform.position - transform.right * num;
+		Scp096TryNotToCryAbility.GroundPoints[0] = transform.position + transform.forward * num;
+		Scp096TryNotToCryAbility.GroundPoints[1] = transform.position + transform.right * num;
+		Scp096TryNotToCryAbility.GroundPoints[2] = transform.position - transform.forward * num;
+		Scp096TryNotToCryAbility.GroundPoints[3] = transform.position - transform.right * num;
 		float num2 = float.MaxValue;
 		float num3 = 0f;
-		for (int i = 0; i < GroundPoints.Length; i++)
+		for (int i = 0; i < Scp096TryNotToCryAbility.GroundPoints.Length; i++)
 		{
-			if (!Physics.Raycast(GroundPoints[i], Vector3.down, out var hitInfo, height, Mask))
+			if (!Physics.Raycast(Scp096TryNotToCryAbility.GroundPoints[i], Vector3.down, out var hitInfo, height, Scp096TryNotToCryAbility.Mask))
 			{
 				return false;
 			}
@@ -296,7 +296,7 @@ public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverri
 			{
 				num3 = distance;
 			}
-			if (num3 - num2 > _groundLevelMaxDiff)
+			if (num3 - num2 > this._groundLevelMaxDiff)
 			{
 				return false;
 			}
@@ -308,7 +308,7 @@ public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverri
 	{
 		Vector3 position = base.Owner.PlayerCameraReference.position;
 		Vector3 forward = base.Owner.PlayerCameraReference.forward;
-		if (base.Owner.isLocalPlayer && Mathf.Abs(base.CastRole.FpcModule.MouseLook.CurrentVertical) > _maxVerticalAngle)
+		if (base.Owner.isLocalPlayer && Mathf.Abs(base.CastRole.FpcModule.MouseLook.CurrentVertical) > this._maxVerticalAngle)
 		{
 			return false;
 		}
@@ -319,35 +319,35 @@ public class Scp096TryNotToCryAbility : KeySubroutine<Scp096Role>, ICursorOverri
 			return false;
 		}
 		forward /= magnitude;
-		if (!Physics.Raycast(position, forward, out var hitInfo, _maxDistance, Mask))
+		if (!Physics.Raycast(position, forward, out var hitInfo, this._maxDistance, Scp096TryNotToCryAbility.Mask))
 		{
 			return false;
 		}
-		float num = (base.Owner.isLocalPlayer ? _clientDotTolerance : _serverDotTolerance);
+		float num = (base.Owner.isLocalPlayer ? this._clientDotTolerance : this._serverDotTolerance);
 		Vector3 normal = hitInfo.normal;
 		if (Vector3.Dot(forward, normal) > num)
 		{
 			return false;
 		}
-		Vector3 vector = position + normal * _minWidth;
-		Vector3 start = vector + Vector3.down * _sideOffset;
-		Vector3 end = vector + Vector3.up * (Heights[Heights.Length - 1] + _sideOffset);
-		if (Physics.CheckCapsule(start, end, _sideOffset, Mask))
+		Vector3 vector = position + normal * this._minWidth;
+		Vector3 start = vector + Vector3.down * this._sideOffset;
+		Vector3 end = vector + Vector3.up * (Scp096TryNotToCryAbility.Heights[Scp096TryNotToCryAbility.Heights.Length - 1] + this._sideOffset);
+		if (Physics.CheckCapsule(start, end, this._sideOffset, Scp096TryNotToCryAbility.Mask))
 		{
 			return false;
 		}
-		float num2 = (base.Owner.isLocalPlayer ? _clientDisTolerance : _serverDisTolerance);
+		float num2 = (base.Owner.isLocalPlayer ? this._clientDisTolerance : this._serverDisTolerance);
 		float num3 = float.MaxValue;
 		float num4 = 0f;
-		for (int i = 0; i < RotationAngles.Length; i++)
+		for (int i = 0; i < Scp096TryNotToCryAbility.RotationAngles.Length; i++)
 		{
-			Offsets[i] = RotationAngles[i] * normal;
+			Scp096TryNotToCryAbility.Offsets[i] = Scp096TryNotToCryAbility.RotationAngles[i] * normal;
 		}
-		for (int j = 0; j < Offsets.Length; j++)
+		for (int j = 0; j < Scp096TryNotToCryAbility.Offsets.Length; j++)
 		{
-			for (int k = 0; k < Heights.Length; k++)
+			for (int k = 0; k < Scp096TryNotToCryAbility.Heights.Length; k++)
 			{
-				if (!Physics.Raycast(Offsets[j] * _sideOffset + normal + position + Vector3.up * Heights[k], -normal, out var hitInfo2, _maxDistance, Mask))
+				if (!Physics.Raycast(Scp096TryNotToCryAbility.Offsets[j] * this._sideOffset + normal + position + Vector3.up * Scp096TryNotToCryAbility.Heights[k], -normal, out var hitInfo2, this._maxDistance, Scp096TryNotToCryAbility.Mask))
 				{
 					return false;
 				}

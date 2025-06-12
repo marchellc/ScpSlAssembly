@@ -30,25 +30,26 @@ public static class Scp1576SpectatorWarningHandler
 	{
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			CurrentlyUsed.Clear();
-			_stopSoundScheduled = false;
+			Scp1576SpectatorWarningHandler.CurrentlyUsed.Clear();
+			Scp1576SpectatorWarningHandler._stopSoundScheduled = false;
 			NetworkClient.ReplaceHandler<SpectatorWarningMessage>(HandleMessage);
 		};
 		StaticUnityMethods.OnUpdate += delegate
 		{
-			if (_stopSoundScheduled && NetworkServer.active && !(CooldownTimer.Elapsed.TotalSeconds < 2.0))
+			if (Scp1576SpectatorWarningHandler._stopSoundScheduled && NetworkServer.active && !(Scp1576SpectatorWarningHandler.CooldownTimer.Elapsed.TotalSeconds < 2.0))
 			{
-				SendMessage(isStop: true);
-				_stopSoundScheduled = false;
+				Scp1576SpectatorWarningHandler.SendMessage(isStop: true);
+				Scp1576SpectatorWarningHandler._stopSoundScheduled = false;
 			}
 		};
 	}
 
 	private static void SendMessage(bool isStop)
 	{
-		SpectatorWarningMessage msg = default(SpectatorWarningMessage);
-		msg.IsStop = isStop;
-		msg.SendToHubsConditionally((ReferenceHub x) => x.roleManager.CurrentRole is SpectatorRole);
+		new SpectatorWarningMessage
+		{
+			IsStop = isStop
+		}.SendToHubsConditionally((ReferenceHub x) => x.roleManager.CurrentRole is SpectatorRole);
 	}
 
 	private static void HandleMessage(SpectatorWarningMessage msg)
@@ -65,20 +66,20 @@ public static class Scp1576SpectatorWarningHandler
 
 	public static void TriggerStart(Scp1576Item item)
 	{
-		_stopSoundScheduled = false;
-		if (CurrentlyUsed.Count == 0)
+		Scp1576SpectatorWarningHandler._stopSoundScheduled = false;
+		if (Scp1576SpectatorWarningHandler.CurrentlyUsed.Count == 0)
 		{
-			CooldownTimer.Restart();
-			SendMessage(isStop: false);
+			Scp1576SpectatorWarningHandler.CooldownTimer.Restart();
+			Scp1576SpectatorWarningHandler.SendMessage(isStop: false);
 		}
-		CurrentlyUsed.Add(item.ItemSerial);
+		Scp1576SpectatorWarningHandler.CurrentlyUsed.Add(item.ItemSerial);
 	}
 
 	public static void TriggerStop(Scp1576Item item)
 	{
-		if (CurrentlyUsed.Remove(item.ItemSerial))
+		if (Scp1576SpectatorWarningHandler.CurrentlyUsed.Remove(item.ItemSerial))
 		{
-			_stopSoundScheduled = CurrentlyUsed.Count == 0;
+			Scp1576SpectatorWarningHandler._stopSoundScheduled = Scp1576SpectatorWarningHandler.CurrentlyUsed.Count == 0;
 		}
 	}
 }

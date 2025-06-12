@@ -48,9 +48,9 @@ public class Scp106HeartbeatSoundtrack : SoundtrackLayerBase
 
 	private double _sustainTimer;
 
-	public override bool Additive => !_isStaring;
+	public override bool Additive => !this._isStaring;
 
-	public override float Weight => _weight;
+	public override float Weight => this._weight;
 
 	private void Awake()
 	{
@@ -70,9 +70,9 @@ public class Scp106HeartbeatSoundtrack : SoundtrackLayerBase
 	{
 		if (userHub.isLocalPlayer)
 		{
-			_weight = 0f;
-			_traumatized = userHub.playerEffectsController.GetEffect<Traumatized>();
-			_traumatized.PPVolume.profile.TryGet<ColorAdjustments>(out _saturationVolume);
+			this._weight = 0f;
+			this._traumatized = userHub.playerEffectsController.GetEffect<Traumatized>();
+			this._traumatized.PPVolume.profile.TryGet<ColorAdjustments>(out this._saturationVolume);
 		}
 	}
 
@@ -83,6 +83,6 @@ public class Scp106HeartbeatSoundtrack : SoundtrackLayerBase
 
 	public override void UpdateVolume(float volumeScale)
 	{
-		_audioSources[0].volume = volumeScale;
+		this._audioSources[0].volume = volumeScale;
 	}
 }

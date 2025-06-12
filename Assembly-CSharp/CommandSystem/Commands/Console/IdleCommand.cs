@@ -91,7 +91,7 @@ public class IdleCommand : ICommand, IUsageProvider
 			IdleMode.SetIdleMode(state: false);
 			return true;
 		default:
-			response = "Unknown subcommand.\nUsage: " + Command + " " + this.DisplayCommandUsage() + ".";
+			response = "Unknown subcommand.\nUsage: " + this.Command + " " + this.DisplayCommandUsage() + ".";
 			return false;
 		}
 	}

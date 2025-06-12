@@ -17,29 +17,29 @@ internal class PmpSearcher : Searcher
 
 	internal PmpSearcher(IIPAddressesProvider ipprovider)
 	{
-		_ipprovider = ipprovider;
-		_timeout = 250;
-		CreateSocketsAndAddGateways();
+		this._ipprovider = ipprovider;
+		this._timeout = 250;
+		this.CreateSocketsAndAddGateways();
 	}
 
 	private void CreateSocketsAndAddGateways()
 	{
-		UdpClients = new List<UdpClient>();
-		_gatewayLists = new Dictionary<UdpClient, IEnumerable<IPEndPoint>>();
+		base.UdpClients = new List<UdpClient>();
+		this._gatewayLists = new Dictionary<UdpClient, IEnumerable<IPEndPoint>>();
 		try
 		{
-			List<IPEndPoint> list = (from ip in _ipprovider.GatewayAddresses()
+			List<IPEndPoint> list = (from ip in this._ipprovider.GatewayAddresses()
 				select new IPEndPoint(ip, 5351)).ToList();
 			if (!list.Any())
 			{
-				list.AddRange(from ip in _ipprovider.DnsAddresses()
+				list.AddRange(from ip in this._ipprovider.DnsAddresses()
 					select new IPEndPoint(ip, 5351));
 			}
 			if (!list.Any())
 			{
 				return;
 			}
-			foreach (IPAddress item in _ipprovider.UnicastAddresses())
+			foreach (IPAddress item in this._ipprovider.UnicastAddresses())
 			{
 				UdpClient udpClient;
 				try
@@ -50,8 +50,8 @@ internal class PmpSearcher : Searcher
 				{
 					continue;
 				}
-				_gatewayLists.Add(udpClient, list);
-				UdpClients.Add(udpClient);
+				this._gatewayLists.Add(udpClient, list);
+				base.UdpClients.Add(udpClient);
 			}
 		}
 		catch (Exception ex2)
@@ -62,16 +62,16 @@ internal class PmpSearcher : Searcher
 
 	protected override void Discover(UdpClient client, CancellationToken cancelationToken)
 	{
-		NextSearch = DateTime.UtcNow.AddMilliseconds(_timeout);
-		_timeout *= 2;
-		if (_timeout >= 3000)
+		base.NextSearch = DateTime.UtcNow.AddMilliseconds(this._timeout);
+		this._timeout *= 2;
+		if (this._timeout >= 3000)
 		{
-			_timeout = 250;
-			NextSearch = DateTime.UtcNow.AddSeconds(10.0);
+			this._timeout = 250;
+			base.NextSearch = DateTime.UtcNow.AddSeconds(10.0);
 			return;
 		}
 		byte[] array = new byte[2];
-		foreach (IPEndPoint item in _gatewayLists[client])
+		foreach (IPEndPoint item in this._gatewayLists[client])
 		{
 			if (cancelationToken.IsCancellationRequested)
 			{
@@ -83,12 +83,12 @@ internal class PmpSearcher : Searcher
 
 	private bool IsSearchAddress(IPAddress address)
 	{
-		return _gatewayLists.Values.SelectMany((IEnumerable<IPEndPoint> x) => x).Any((IPEndPoint x) => x.Address.Equals(address));
+		return this._gatewayLists.Values.SelectMany((IEnumerable<IPEndPoint> x) => x).Any((IPEndPoint x) => x.Address.Equals(address));
 	}
 
 	public override NatDevice AnalyseReceivedResponse(IPAddress localAddress, byte[] response, IPEndPoint endpoint)
 	{
-		if (!IsSearchAddress(endpoint.Address) || response.Length != 12 || response[0] != 0 || response[1] != 128)
+		if (!this.IsSearchAddress(endpoint.Address) || response.Length != 12 || response[0] != 0 || response[1] != 128)
 		{
 			return null;
 		}
@@ -104,7 +104,7 @@ internal class PmpSearcher : Searcher
 			response[10],
 			response[11]
 		});
-		_timeout = 250;
+		this._timeout = 250;
 		return new PmpNatDevice(endpoint.Address, publicAddress);
 	}
 }

@@ -61,11 +61,11 @@ public class NicknameSync : NetworkBehaviour
 	{
 		get
 		{
-			if (!HasCustomName)
+			if (!this.HasCustomName)
 			{
-				return MyNick;
+				return this.MyNick;
 			}
-			return _cleanDisplayName + " (" + MyNick + ")";
+			return this._cleanDisplayName + " (" + this.MyNick + ")";
 		}
 	}
 
@@ -73,21 +73,21 @@ public class NicknameSync : NetworkBehaviour
 	{
 		get
 		{
-			if (NickSet)
+			if (this.NickSet)
 			{
-				return _firstNickname;
+				return this._firstNickname;
 			}
-			if (_myNickSync == null)
+			if (this._myNickSync == null)
 			{
 				return "(null)";
 			}
-			NickSet = true;
-			_firstNickname = Misc.SanitizeRichText(_myNickSync.Replace("\n", string.Empty).Replace("\r", string.Empty), "＜", "＞");
-			if (_firstNickname.Length > 48)
+			this.NickSet = true;
+			this._firstNickname = Misc.SanitizeRichText(this._myNickSync.Replace("\n", string.Empty).Replace("\r", string.Empty), "＜", "＞");
+			if (this._firstNickname.Length > 48)
 			{
-				_firstNickname = _firstNickname.Substring(0, 48);
+				this._firstNickname = this._firstNickname.Substring(0, 48);
 			}
-			return _firstNickname;
+			return this._firstNickname;
 		}
 		set
 		{
@@ -96,11 +96,11 @@ public class NicknameSync : NetworkBehaviour
 				value = "(null)";
 			}
 			string text = Misc.SanitizeRichText(value, "＜", "＞");
-			Network_myNickSync = ((value.Length > 48) ? text.Substring(0, 48) : text);
+			this.Network_myNickSync = ((value.Length > 48) ? text.Substring(0, 48) : text);
 			if (NetworkServer.active)
 			{
-				NickSet = true;
-				_firstNickname = _myNickSync;
+				this.NickSet = true;
+				this._firstNickname = this._myNickSync;
 			}
 		}
 	}
@@ -109,20 +109,20 @@ public class NicknameSync : NetworkBehaviour
 	{
 		get
 		{
-			return (HasCustomName ? _cleanDisplayName : MyNick) ?? string.Empty;
+			return (this.HasCustomName ? this._cleanDisplayName : this.MyNick) ?? string.Empty;
 		}
 		set
 		{
 			string newNickname = value;
-			PlayerChangingNicknameEventArgs playerChangingNicknameEventArgs = new PlayerChangingNicknameEventArgs(_hub, _displayName, newNickname);
-			PlayerEvents.OnChangingNickname(playerChangingNicknameEventArgs);
-			if (playerChangingNicknameEventArgs.IsAllowed)
+			PlayerChangingNicknameEventArgs e = new PlayerChangingNicknameEventArgs(this._hub, this._displayName, newNickname);
+			PlayerEvents.OnChangingNickname(e);
+			if (e.IsAllowed)
 			{
-				string cleanDisplayName = _cleanDisplayName;
-				newNickname = playerChangingNicknameEventArgs.NewNickname;
-				Network_displayName = newNickname;
-				UpdatePlayerlistInstance(null, _displayName);
-				PlayerEvents.OnChangedNickname(new PlayerChangedNicknameEventArgs(_hub, cleanDisplayName, _displayName));
+				string cleanDisplayName = this._cleanDisplayName;
+				newNickname = e.NewNickname;
+				this.Network_displayName = newNickname;
+				this.UpdatePlayerlistInstance(null, this._displayName);
+				PlayerEvents.OnChangedNickname(new PlayerChangedNicknameEventArgs(this._hub, cleanDisplayName, this._displayName));
 			}
 		}
 	}
@@ -131,13 +131,13 @@ public class NicknameSync : NetworkBehaviour
 	{
 		get
 		{
-			return _playerInfoToShow;
+			return this._playerInfoToShow;
 		}
 		set
 		{
 			if (NetworkServer.active)
 			{
-				Network_playerInfoToShow = value;
+				this.Network_playerInfoToShow = value;
 			}
 		}
 	}
@@ -146,31 +146,31 @@ public class NicknameSync : NetworkBehaviour
 	{
 		get
 		{
-			return _customPlayerInfoString;
+			return this._customPlayerInfoString;
 		}
 		set
 		{
 			if (NetworkServer.active)
 			{
-				Network_customPlayerInfoString = value;
+				this.Network_customPlayerInfoString = value;
 			}
 		}
 	}
 
 	public bool NickSet { get; private set; }
 
-	public bool HasCustomName => _cleanDisplayName != null;
+	public bool HasCustomName => this._cleanDisplayName != null;
 
 	public float NetworkViewRange
 	{
 		get
 		{
-			return ViewRange;
+			return this.ViewRange;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref ViewRange, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.ViewRange, 1uL, null);
 		}
 	}
 
@@ -178,12 +178,12 @@ public class NicknameSync : NetworkBehaviour
 	{
 		get
 		{
-			return _customPlayerInfoString;
+			return this._customPlayerInfoString;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _customPlayerInfoString, 2uL, SetCustomInfo);
+			base.GeneratedSyncVarSetter(value, ref this._customPlayerInfoString, 2uL, SetCustomInfo);
 		}
 	}
 
@@ -191,12 +191,12 @@ public class NicknameSync : NetworkBehaviour
 	{
 		get
 		{
-			return _playerInfoToShow;
+			return this._playerInfoToShow;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _playerInfoToShow, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._playerInfoToShow, 4uL, null);
 		}
 	}
 
@@ -204,12 +204,12 @@ public class NicknameSync : NetworkBehaviour
 	{
 		get
 		{
-			return _myNickSync;
+			return this._myNickSync;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _myNickSync, 8uL, UpdatePlayerlistInstance);
+			base.GeneratedSyncVarSetter(value, ref this._myNickSync, 8uL, UpdatePlayerlistInstance);
 		}
 	}
 
@@ -217,12 +217,12 @@ public class NicknameSync : NetworkBehaviour
 	{
 		get
 		{
-			return _displayName;
+			return this._displayName;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _displayName, 16uL, UpdateCustomName);
+			base.GeneratedSyncVarSetter(value, ref this._displayName, 16uL, UpdateCustomName);
 		}
 	}
 
@@ -323,55 +323,55 @@ public class NicknameSync : NetworkBehaviour
 		{
 			return;
 		}
-		NickSet = true;
+		this.NickSet = true;
 		if (n == null)
 		{
 			ServerConsole.AddLog("Banned " + base.connectionToClient.address + " for passing null name.");
-			BanPlayer.BanUser(_hub, "Null name", 1577847600L);
-			SetNick("(null)");
+			BanPlayer.BanUser(this._hub, "Null name", 1577847600L);
+			this.SetNick("(null)");
 			return;
 		}
 		if (n.Length > 1024)
 		{
 			ServerConsole.AddLog("Banned " + base.connectionToClient.address + " for passing a too long name.");
-			BanPlayer.BanUser(_hub, "Too long name", 1577847600L);
-			SetNick("(too long)");
+			BanPlayer.BanUser(this._hub, "Too long name", 1577847600L);
+			this.SetNick("(too long)");
 			return;
 		}
 		bool printable;
-		string text = CleanNickName(n, out printable);
+		string text = this.CleanNickName(n, out printable);
 		if (!printable)
 		{
 			ServerConsole.AddLog("Kicked " + base.connectionToClient.address + " for having an empty name.");
 			ServerConsole.Disconnect(base.connectionToClient, "You may not have an empty name.");
-			SetNick("Empty Name");
+			this.SetNick("Empty Name");
 			return;
 		}
 		if (text.Length > 48)
 		{
 			text = text.Substring(0, 48);
 		}
-		SetNick(text);
+		this.SetNick(text);
 	}
 
 	private void Start()
 	{
-		_hub = ReferenceHub.GetHub(base.gameObject);
-		_nickFilter = null;
-		_replacement = "";
+		this._hub = ReferenceHub.GetHub(base.gameObject);
+		this._nickFilter = null;
+		this._replacement = "";
 		if (NetworkServer.active)
 		{
-			NetworkViewRange = ConfigFile.ServerConfig.GetFloat("player_info_range", 10f);
+			this.NetworkViewRange = ConfigFile.ServerConfig.GetFloat("player_info_range", 10f);
 			string text = ConfigFile.ServerConfig.GetString("nickname_filter") ?? string.Empty;
 			if (!string.IsNullOrEmpty(text))
 			{
-				_nickFilter = new Regex(text, RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromMilliseconds(500.0));
-				_replacement = ConfigFile.ServerConfig.GetString("nickname_filter_replacement") ?? string.Empty;
+				this._nickFilter = new Regex(text, RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromMilliseconds(500.0));
+				this._replacement = ConfigFile.ServerConfig.GetString("nickname_filter_replacement") ?? string.Empty;
 			}
 		}
 		if (base.isLocalPlayer)
 		{
-			SetNick("Dedicated Server");
+			this.SetNick("Dedicated Server");
 		}
 	}
 
@@ -383,25 +383,25 @@ public class NicknameSync : NetworkBehaviour
 	{
 		if (string.IsNullOrWhiteSpace(username))
 		{
-			_cleanDisplayName = null;
+			this._cleanDisplayName = null;
 		}
 		else
 		{
-			_cleanDisplayName = Misc.SanitizeRichText(username.Replace("\n", string.Empty).Replace("\r", string.Empty)).Trim();
-			if (_cleanDisplayName.Length > 48)
+			this._cleanDisplayName = Misc.SanitizeRichText(username.Replace("\n", string.Empty).Replace("\r", string.Empty)).Trim();
+			if (this._cleanDisplayName.Length > 48)
 			{
-				_cleanDisplayName = _cleanDisplayName.Substring(0, 48);
+				this._cleanDisplayName = this._cleanDisplayName.Substring(0, 48);
 			}
-			_cleanDisplayName += "<color=#855439>*</color>";
+			this._cleanDisplayName += "<color=#855439>*</color>";
 		}
-		UpdatePlayerlistInstance(p, username);
+		this.UpdatePlayerlistInstance(p, username);
 	}
 
 	private bool TryGetRayTransform(out Transform tr)
 	{
-		if (_hub.roleManager.CurrentRole is IFpcRole)
+		if (this._hub.roleManager.CurrentRole is IFpcRole)
 		{
-			tr = _hub.PlayerCameraReference;
+			tr = this._hub.PlayerCameraReference;
 			return true;
 		}
 		if (SpectatorTargetTracker.TryGetTrackedPlayer(out var hub) && hub.roleManager.CurrentRole is IFpcRole)
@@ -426,7 +426,7 @@ public class NicknameSync : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteString(n);
-		SendCommandInternal("System.Void NicknameSync::CmdSetNick(System.String)", -1313630199, writer, 4);
+		base.SendCommandInternal("System.Void NicknameSync::CmdSetNick(System.String)", -1313630199, writer, 4);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -438,11 +438,11 @@ public class NicknameSync : NetworkBehaviour
 			Debug.LogWarning("[Server] function 'System.Void NicknameSync::SetNick(System.String)' called when server was not active");
 			return;
 		}
-		MyNick = nick;
+		this.MyNick = nick;
 		string text;
 		try
 		{
-			text = _nickFilter?.Replace(nick, _replacement) ?? nick;
+			text = this._nickFilter?.Replace(nick, this._replacement) ?? nick;
 		}
 		catch (Exception arg)
 		{
@@ -451,12 +451,12 @@ public class NicknameSync : NetworkBehaviour
 		}
 		if (nick != text)
 		{
-			DisplayName = text;
+			this.DisplayName = text;
 		}
 		if (!base.isLocalPlayer || !ServerStatic.IsDedicated)
 		{
-			ServerConsole.AddLog("Nickname of " + _hub.authManager.UserId + " is now " + nick + ".");
-			ServerLogs.AddLog(ServerLogs.Modules.Networking, "Nickname of " + _hub.authManager.UserId + " is now " + nick + ".", ServerLogs.ServerLogType.ConnectionUpdate);
+			ServerConsole.AddLog("Nickname of " + this._hub.authManager.UserId + " is now " + nick + ".");
+			ServerLogs.AddLog(ServerLogs.Modules.Networking, "Nickname of " + this._hub.authManager.UserId + " is now " + nick + ".", ServerLogs.ServerLogType.ConnectionUpdate);
 		}
 	}
 
@@ -499,35 +499,35 @@ public class NicknameSync : NetworkBehaviour
 	{
 		if (base.isLocalPlayer)
 		{
-			MyNick = n;
+			this.MyNick = n;
 		}
 		else
 		{
-			if (NickSet || PlayerAuthenticationManager.OnlineMode)
+			if (this.NickSet || PlayerAuthenticationManager.OnlineMode)
 			{
 				return;
 			}
-			NickSet = true;
+			this.NickSet = true;
 			if (n == null)
 			{
 				ServerConsole.AddLog("Banned " + base.connectionToClient.address + " for passing null name.");
-				BanPlayer.BanUser(_hub, "Null name", 1577847600L);
-				SetNick("(null)");
+				BanPlayer.BanUser(this._hub, "Null name", 1577847600L);
+				this.SetNick("(null)");
 				return;
 			}
 			if (n.Length > 1024)
 			{
 				ServerConsole.AddLog("Banned " + base.connectionToClient.address + " for passing a too long name.");
-				BanPlayer.BanUser(_hub, "Too long name", 1577847600L);
-				SetNick("(too long)");
+				BanPlayer.BanUser(this._hub, "Too long name", 1577847600L);
+				this.SetNick("(too long)");
 				return;
 			}
-			string content = CleanNickName(n, out var printable);
+			string content = this.CleanNickName(n, out var printable);
 			if (!printable)
 			{
 				ServerConsole.AddLog("Kicked " + base.connectionToClient.address + " for having an empty name.");
 				ServerConsole.Disconnect(base.connectionToClient, "You may not have an empty name.");
-				SetNick("Empty Name");
+				this.SetNick("Empty Name");
 				return;
 			}
 			content = Misc.SanitizeRichText(content, "＜", "＞");
@@ -537,9 +537,9 @@ public class NicknameSync : NetworkBehaviour
 			{
 				content = content.Substring(0, 48);
 			}
-			SetNick(content);
-			_hub.characterClassManager.SyncServerCmdBinding();
-			PlayerEvents.OnJoined(new PlayerJoinedEventArgs(_hub));
+			this.SetNick(content);
+			this._hub.characterClassManager.SyncServerCmdBinding();
+			PlayerEvents.OnJoined(new PlayerJoinedEventArgs(this._hub));
 		}
 	}
 
@@ -565,33 +565,33 @@ public class NicknameSync : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteFloat(ViewRange);
-			writer.WriteString(_customPlayerInfoString);
-			GeneratedNetworkCode._Write_PlayerInfoArea(writer, _playerInfoToShow);
-			writer.WriteString(_myNickSync);
-			writer.WriteString(_displayName);
+			writer.WriteFloat(this.ViewRange);
+			writer.WriteString(this._customPlayerInfoString);
+			GeneratedNetworkCode._Write_PlayerInfoArea(writer, this._playerInfoToShow);
+			writer.WriteString(this._myNickSync);
+			writer.WriteString(this._displayName);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteFloat(ViewRange);
+			writer.WriteFloat(this.ViewRange);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteString(_customPlayerInfoString);
+			writer.WriteString(this._customPlayerInfoString);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			GeneratedNetworkCode._Write_PlayerInfoArea(writer, _playerInfoToShow);
+			GeneratedNetworkCode._Write_PlayerInfoArea(writer, this._playerInfoToShow);
 		}
 		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			writer.WriteString(_myNickSync);
+			writer.WriteString(this._myNickSync);
 		}
 		if ((base.syncVarDirtyBits & 0x10L) != 0L)
 		{
-			writer.WriteString(_displayName);
+			writer.WriteString(this._displayName);
 		}
 	}
 
@@ -600,33 +600,33 @@ public class NicknameSync : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref ViewRange, null, reader.ReadFloat());
-			GeneratedSyncVarDeserialize(ref _customPlayerInfoString, SetCustomInfo, reader.ReadString());
-			GeneratedSyncVarDeserialize(ref _playerInfoToShow, null, GeneratedNetworkCode._Read_PlayerInfoArea(reader));
-			GeneratedSyncVarDeserialize(ref _myNickSync, UpdatePlayerlistInstance, reader.ReadString());
-			GeneratedSyncVarDeserialize(ref _displayName, UpdateCustomName, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.ViewRange, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._customPlayerInfoString, SetCustomInfo, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._playerInfoToShow, null, GeneratedNetworkCode._Read_PlayerInfoArea(reader));
+			base.GeneratedSyncVarDeserialize(ref this._myNickSync, UpdatePlayerlistInstance, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._displayName, UpdateCustomName, reader.ReadString());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref ViewRange, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this.ViewRange, null, reader.ReadFloat());
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _customPlayerInfoString, SetCustomInfo, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._customPlayerInfoString, SetCustomInfo, reader.ReadString());
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _playerInfoToShow, null, GeneratedNetworkCode._Read_PlayerInfoArea(reader));
+			base.GeneratedSyncVarDeserialize(ref this._playerInfoToShow, null, GeneratedNetworkCode._Read_PlayerInfoArea(reader));
 		}
 		if ((num & 8L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _myNickSync, UpdatePlayerlistInstance, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._myNickSync, UpdatePlayerlistInstance, reader.ReadString());
 		}
 		if ((num & 0x10L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _displayName, UpdateCustomName, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._displayName, UpdateCustomName, reader.ReadString());
 		}
 	}
 }

@@ -14,25 +14,25 @@ public class FixedSway : IItemSwayController
 
 	public FixedSway(Transform targetTransform, Vector3 fixedPosition, Vector3 fixedRotation)
 	{
-		_transform = targetTransform;
-		_fixedPosition = fixedPosition;
-		_fixedRotation = Quaternion.Euler(fixedRotation);
-		_update = true;
+		this._transform = targetTransform;
+		this._fixedPosition = fixedPosition;
+		this._fixedRotation = Quaternion.Euler(fixedRotation);
+		this._update = true;
 	}
 
 	public void SetTransform(Transform targetTransform)
 	{
-		_transform = targetTransform;
-		_update = true;
+		this._transform = targetTransform;
+		this._update = true;
 	}
 
 	public void UpdateSway()
 	{
-		if (_update && !(_transform == null))
+		if (this._update && !(this._transform == null))
 		{
-			_transform.localPosition = _fixedPosition;
-			_transform.localRotation = _fixedRotation;
-			_update = false;
+			this._transform.localPosition = this._fixedPosition;
+			this._transform.localRotation = this._fixedRotation;
+			this._update = false;
 		}
 	}
 }

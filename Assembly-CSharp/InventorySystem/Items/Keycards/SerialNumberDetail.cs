@@ -42,14 +42,14 @@ public class SerialNumberDetail : SyncedDetail
 
 	public override void WriteNewItem(KeycardItem item, NetworkWriter writer)
 	{
-		ulong numberForPlayer = GetNumberForPlayer(item.Owner);
-		WriteUniqueSerial(numberForPlayer, writer);
+		ulong numberForPlayer = this.GetNumberForPlayer(item.Owner);
+		this.WriteUniqueSerial(numberForPlayer, writer);
 	}
 
 	public override void WriteNewPickup(KeycardPickup pickup, NetworkWriter writer)
 	{
-		ulong serial = (ulong)(Randomizer.NextDouble() * 1.8446744073709552E+19);
-		WriteUniqueSerial(serial, writer);
+		ulong serial = (ulong)(SerialNumberDetail.Randomizer.NextDouble() * 1.8446744073709552E+19);
+		this.WriteUniqueSerial(serial, writer);
 	}
 
 	protected override void ApplyDetail(KeycardGfx target, NetworkReader reader, KeycardItem template)
@@ -59,17 +59,17 @@ public class SerialNumberDetail : SyncedDetail
 		Renderer[] serialNumberDigits = target.SerialNumberDigits;
 		for (int i = 0; i < serialNumberDigits.Length; i++)
 		{
-			serialNumberDigits[i].sharedMaterial = GetDigitMaterial(null);
+			serialNumberDigits[i].sharedMaterial = this.GetDigitMaterial(null);
 		}
-		for (int j = 0; j < _serialLen; j++)
+		for (int j = 0; j < this._serialLen; j++)
 		{
-			int digitFromRight = GetDigitFromRight(value, j);
-			serialNumberDigits[_serialLen - j - 1].sharedMaterial = GetDigitMaterial(digitFromRight);
+			int digitFromRight = SerialNumberDetail.GetDigitFromRight(value, j);
+			serialNumberDigits[this._serialLen - j - 1].sharedMaterial = this.GetDigitMaterial(digitFromRight);
 		}
-		for (int k = 0; k < _suffixLen; k++)
+		for (int k = 0; k < this._suffixLen; k++)
 		{
-			int digitFromRight2 = GetDigitFromRight(b, k);
-			serialNumberDigits[^(1 + k)].sharedMaterial = GetDigitMaterial(digitFromRight2);
+			int digitFromRight2 = SerialNumberDetail.GetDigitFromRight(b, k);
+			serialNumberDigits[^(1 + k)].sharedMaterial = this.GetDigitMaterial(digitFromRight2);
 		}
 	}
 
@@ -80,34 +80,34 @@ public class SerialNumberDetail : SyncedDetail
 		{
 			num = 10;
 		}
-		if (DigitMats.TryGetValue(_sourceMaterial, out var value))
+		if (SerialNumberDetail.DigitMats.TryGetValue(this._sourceMaterial, out var value))
 		{
 			return value[num];
 		}
 		value = new Material[11];
 		for (int i = 0; i < value.Length; i++)
 		{
-			Material material = new Material(_sourceMaterial);
-			Vector2 vector = i * _uvOffsetMultiplier;
-			material.mainTextureOffset = _uvBaselineOffset + vector;
+			Material material = new Material(this._sourceMaterial);
+			Vector2 vector = i * this._uvOffsetMultiplier;
+			material.mainTextureOffset = this._uvBaselineOffset + vector;
 			value[i] = material;
 		}
-		DigitMats.Add(_sourceMaterial, value);
+		SerialNumberDetail.DigitMats.Add(this._sourceMaterial, value);
 		return value[num];
 	}
 
 	private void WriteUniqueSerial(ulong serial, NetworkWriter writer)
 	{
-		int valueOrDefault = DuplicateCounter.GetValueOrDefault(serial);
-		int num = valueOrDefault % (int)DigitsToModuloMask(_suffixLen);
+		int valueOrDefault = SerialNumberDetail.DuplicateCounter.GetValueOrDefault(serial);
+		int num = valueOrDefault % (int)SerialNumberDetail.DigitsToModuloMask(this._suffixLen);
 		writer.WriteULong(serial);
 		writer.WriteByte((byte)num);
-		DuplicateCounter[serial] = valueOrDefault + 1;
+		SerialNumberDetail.DuplicateCounter[serial] = valueOrDefault + 1;
 	}
 
 	private ulong GetNumberForPlayer(ReferenceHub hub)
 	{
-		if (ConstantNumbers.TryGetValue(hub.authManager.UserId, out var value))
+		if (SerialNumberDetail.ConstantNumbers.TryGetValue(hub.authManager.UserId, out var value))
 		{
 			return value;
 		}
@@ -118,7 +118,7 @@ public class SerialNumberDetail : SyncedDetail
 			int num2 = c * c;
 			num = num * 571 + (ulong)num2;
 		}
-		return num % DigitsToModuloMask(_serialLen);
+		return num % SerialNumberDetail.DigitsToModuloMask(this._serialLen);
 	}
 
 	private static ulong DigitsToModuloMask(int digits)
@@ -151,6 +151,6 @@ public class SerialNumberDetail : SyncedDetail
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		CustomNetworkManager.OnClientReady += DuplicateCounter.Clear;
+		CustomNetworkManager.OnClientReady += SerialNumberDetail.DuplicateCounter.Clear;
 	}
 }

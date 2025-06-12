@@ -27,13 +27,13 @@ public class SeveredHands : TickingEffectBase, IInteractionBlocker
 	{
 		base.Enabled();
 		base.Hub.interCoordinator.AddBlocker(this);
-		ChangeHandsState(handsCut: true);
+		this.ChangeHandsState(handsCut: true);
 	}
 
 	protected override void Disabled()
 	{
 		base.Disabled();
-		ChangeHandsState(handsCut: false);
+		this.ChangeHandsState(handsCut: false);
 	}
 
 	protected override void OnTick()
@@ -41,15 +41,15 @@ public class SeveredHands : TickingEffectBase, IInteractionBlocker
 		if (NetworkServer.active)
 		{
 			base.Hub.inventory.ServerDropItem(base.Hub.inventory.CurItem.SerialNumber);
-			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(_tickDamage, DeathTranslations.SeveredHands));
+			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(this._tickDamage, DeathTranslations.SeveredHands));
 		}
 	}
 
 	private void ChangeHandsState(bool handsCut)
 	{
-		if (base.Hub.roleManager.CurrentRole is HumanRole humanRole && humanRole.FpcModule.CharacterModelInstance is AnimatedCharacterModel animatedCharacterModel && animatedCharacterModel.HasParameter(HashSeveredHands))
+		if (base.Hub.roleManager.CurrentRole is HumanRole humanRole && humanRole.FpcModule.CharacterModelInstance is AnimatedCharacterModel animatedCharacterModel && animatedCharacterModel.HasParameter(SeveredHands.HashSeveredHands))
 		{
-			animatedCharacterModel.Animator.SetBool(HashSeveredHands, handsCut);
+			animatedCharacterModel.Animator.SetBool(SeveredHands.HashSeveredHands, handsCut);
 		}
 	}
 }

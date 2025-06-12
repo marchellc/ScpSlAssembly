@@ -23,7 +23,7 @@ public class OverwatchVoiceChannelSelector : MonoBehaviour
 	private static uint SerializeChannels()
 	{
 		uint num = 0u;
-		foreach (VoiceChatChannel activeMute in ActiveMutes)
+		foreach (VoiceChatChannel activeMute in OverwatchVoiceChannelSelector.ActiveMutes)
 		{
 			uint num2 = 1u;
 			for (int i = 0; i < (int)activeMute; i++)
@@ -37,8 +37,8 @@ public class OverwatchVoiceChannelSelector : MonoBehaviour
 
 	private static void DeserializeChannels(uint channels)
 	{
-		ActiveMutes.Clear();
-		VoiceChatChannel[] value = AllChannels.Value;
+		OverwatchVoiceChannelSelector.ActiveMutes.Clear();
+		VoiceChatChannel[] value = OverwatchVoiceChannelSelector.AllChannels.Value;
 		foreach (VoiceChatChannel voiceChatChannel in value)
 		{
 			uint num = 1u;
@@ -48,7 +48,7 @@ public class OverwatchVoiceChannelSelector : MonoBehaviour
 			}
 			if ((channels & num) != 0)
 			{
-				ActiveMutes.Add(voiceChatChannel);
+				OverwatchVoiceChannelSelector.ActiveMutes.Add(voiceChatChannel);
 			}
 		}
 	}
@@ -66,8 +66,8 @@ public class OverwatchVoiceChannelSelector : MonoBehaviour
 	{
 		if (!(conn.identity == null) && ReferenceHub.TryGetHubNetID(conn.identity.netId, out var hub) && hub.roleManager.CurrentRole is OverwatchRole { VoiceModule: OverwatchVoiceModule voiceModule })
 		{
-			DeserializeChannels(msg.EnabledChannels);
-			voiceModule.DisabledChannels = ActiveMutes.ToArray();
+			OverwatchVoiceChannelSelector.DeserializeChannels(msg.EnabledChannels);
+			voiceModule.DisabledChannels = OverwatchVoiceChannelSelector.ActiveMutes.ToArray();
 			voiceModule.UseSpatialAudio = msg.SpatialAudio;
 		}
 	}

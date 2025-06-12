@@ -43,13 +43,13 @@ public class LineTestCommand : ICommand
 			switch (i)
 			{
 			case 1:
-				position += playerCameraReference.forward * GetRandomDistance(allowNegativeValues: false);
+				position += playerCameraReference.forward * LineTestCommand.GetRandomDistance(allowNegativeValues: false);
 				break;
 			default:
 			{
-				Vector3 vector = playerCameraReference.forward * GetRandomDistance(allowNegativeValues: false);
-				Vector3 vector2 = playerCameraReference.up * GetRandomDistance();
-				Vector3 vector3 = playerCameraReference.right * GetRandomDistance();
+				Vector3 vector = playerCameraReference.forward * LineTestCommand.GetRandomDistance(allowNegativeValues: false);
+				Vector3 vector2 = playerCameraReference.up * LineTestCommand.GetRandomDistance();
+				Vector3 vector3 = playerCameraReference.right * LineTestCommand.GetRandomDistance();
 				position += vector + vector2 + vector3;
 				break;
 			}

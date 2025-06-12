@@ -22,41 +22,41 @@ public class InvisibleInteractableToy : AdminToyBase, IServerInteractable, IInte
 
 		public InteractableToySearchCompletor(ReferenceHub hub, InvisibleInteractableToy target, double sqrDistance)
 		{
-			Hub = hub;
-			_target = target;
-			_maxDistanceSqr = sqrDistance;
+			this.Hub = hub;
+			this._target = target;
+			this._maxDistanceSqr = sqrDistance;
 		}
 
 		public bool ValidateStart()
 		{
-			PlayerSearchingToyEventArgs playerSearchingToyEventArgs = new PlayerSearchingToyEventArgs(Hub, _target);
-			PlayerEvents.OnSearchingToy(playerSearchingToyEventArgs);
-			if (!playerSearchingToyEventArgs.IsAllowed)
+			PlayerSearchingToyEventArgs e = new PlayerSearchingToyEventArgs(this.Hub, this._target);
+			PlayerEvents.OnSearchingToy(e);
+			if (!e.IsAllowed)
 			{
 				return false;
 			}
-			_target.OnSearching?.Invoke(Hub);
-			if (!_target.IsLocked)
+			this._target.OnSearching?.Invoke(this.Hub);
+			if (!this._target.IsLocked)
 			{
-				return ValidateDistance();
+				return this.ValidateDistance();
 			}
 			return false;
 		}
 
 		public bool ValidateUpdate()
 		{
-			return ValidateDistance();
+			return this.ValidateDistance();
 		}
 
 		public void Complete()
 		{
-			_target.OnSearched?.Invoke(Hub);
-			PlayerEvents.OnSearchedToy(new PlayerSearchedToyEventArgs(Hub, _target));
+			this._target.OnSearched?.Invoke(this.Hub);
+			PlayerEvents.OnSearchedToy(new PlayerSearchedToyEventArgs(this.Hub, this._target));
 		}
 
 		private bool ValidateDistance()
 		{
-			return (double)(_target.transform.position - Hub.transform.position).sqrMagnitude <= _maxDistanceSqr;
+			return (double)(this._target.transform.position - this.Hub.transform.position).sqrMagnitude <= this._maxDistanceSqr;
 		}
 	}
 
@@ -86,9 +86,9 @@ public class InvisibleInteractableToy : AdminToyBase, IServerInteractable, IInte
 	{
 		get
 		{
-			if (InteractionDuration > 0f)
+			if (this.InteractionDuration > 0f)
 			{
-				return !IsLocked;
+				return !this.IsLocked;
 			}
 			return false;
 		}
@@ -98,12 +98,12 @@ public class InvisibleInteractableToy : AdminToyBase, IServerInteractable, IInte
 	{
 		get
 		{
-			return Shape;
+			return this.Shape;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Shape, 32uL, SetCollider);
+			base.GeneratedSyncVarSetter(value, ref this.Shape, 32uL, SetCollider);
 		}
 	}
 
@@ -111,12 +111,12 @@ public class InvisibleInteractableToy : AdminToyBase, IServerInteractable, IInte
 	{
 		get
 		{
-			return InteractionDuration;
+			return this.InteractionDuration;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref InteractionDuration, 64uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.InteractionDuration, 64uL, null);
 		}
 	}
 
@@ -124,12 +124,12 @@ public class InvisibleInteractableToy : AdminToyBase, IServerInteractable, IInte
 	{
 		get
 		{
-			return IsLocked;
+			return this.IsLocked;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref IsLocked, 128uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.IsLocked, 128uL, null);
 		}
 	}
 
@@ -144,25 +144,25 @@ public class InvisibleInteractableToy : AdminToyBase, IServerInteractable, IInte
 	public override void OnSpawned(ReferenceHub admin, ArraySegment<string> arguments)
 	{
 		string[] array = arguments.Array;
-		NetworkShape = ((array.Length > 2 && Enum.TryParse<ColliderShape>(array[2], ignoreCase: true, out var result)) ? result : ColliderShape.Box);
-		NetworkInteractionDuration = ((array.Length > 3 && float.TryParse(array[3], out var result2)) ? result2 : 0f);
+		this.NetworkShape = ((array.Length > 2 && Enum.TryParse<ColliderShape>(array[2], ignoreCase: true, out var result)) ? result : ColliderShape.Box);
+		this.NetworkInteractionDuration = ((array.Length > 3 && float.TryParse(array[3], out var result2)) ? result2 : 0f);
 		float result3;
 		float num = ((array.Length > 4 && float.TryParse(array[4], out result3)) ? result3 : 1f);
 		base.transform.SetPositionAndRotation(admin.PlayerCameraReference.position, admin.PlayerCameraReference.rotation);
 		base.transform.localScale = base.transform.localScale * num;
-		OnInteracted += delegate(ReferenceHub x)
+		this.OnInteracted += delegate(ReferenceHub x)
 		{
 			admin.gameConsoleTransmission.SendToClient($"{x} triggered OnInteraction", "green");
 		};
-		OnSearching += delegate(ReferenceHub x)
+		this.OnSearching += delegate(ReferenceHub x)
 		{
 			admin.gameConsoleTransmission.SendToClient($"{x} triggered OnSearching", "green");
 		};
-		OnSearched += delegate(ReferenceHub x)
+		this.OnSearched += delegate(ReferenceHub x)
 		{
 			admin.gameConsoleTransmission.SendToClient($"{x} triggered OnSearched", "green");
 		};
-		OnSearchAborted += delegate(ReferenceHub x)
+		this.OnSearchAborted += delegate(ReferenceHub x)
 		{
 			admin.gameConsoleTransmission.SendToClient($"{x} triggered OnSearchAborted", "green");
 		};
@@ -171,12 +171,12 @@ public class InvisibleInteractableToy : AdminToyBase, IServerInteractable, IInte
 
 	protected new void Start()
 	{
-		SetCollider(ColliderShape.Box, Shape);
+		this.SetCollider(ColliderShape.Box, this.Shape);
 	}
 
 	public void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
-		if (!(InteractionDuration > 0f))
+		if (!(this.InteractionDuration > 0f))
 		{
 			this.OnInteracted?.Invoke(ply);
 			PlayerEvents.OnInteractedToy(new PlayerInteractedToyEventArgs(ply, this));
@@ -190,12 +190,12 @@ public class InvisibleInteractableToy : AdminToyBase, IServerInteractable, IInte
 
 	public float SearchTimeForPlayer(ReferenceHub hub)
 	{
-		return InteractionDuration;
+		return this.InteractionDuration;
 	}
 
 	public bool ServerValidateRequest(NetworkConnection source, SearchSessionPipe session)
 	{
-		if (!CanSearch)
+		if (!this.CanSearch)
 		{
 			session.Invalidate();
 			return false;
@@ -211,24 +211,24 @@ public class InvisibleInteractableToy : AdminToyBase, IServerInteractable, IInte
 
 	private void SetCollider(ColliderShape _, ColliderShape newShape)
 	{
-		if (_collider != null)
+		if (this._collider != null)
 		{
-			UnityEngine.Object.Destroy(_collider);
+			UnityEngine.Object.Destroy(this._collider);
 		}
 		switch (newShape)
 		{
 		case ColliderShape.Box:
-			_collider = base.gameObject.AddComponent<BoxCollider>();
+			this._collider = base.gameObject.AddComponent<BoxCollider>();
 			break;
 		case ColliderShape.Sphere:
-			_collider = base.gameObject.AddComponent<SphereCollider>();
+			this._collider = base.gameObject.AddComponent<SphereCollider>();
 			break;
 		case ColliderShape.Capsule:
 		{
 			CapsuleCollider capsuleCollider = base.gameObject.AddComponent<CapsuleCollider>();
 			capsuleCollider.height = 2f;
 			capsuleCollider.radius = 0.5f;
-			_collider = capsuleCollider;
+			this._collider = capsuleCollider;
 			break;
 		}
 		}
@@ -249,23 +249,23 @@ public class InvisibleInteractableToy : AdminToyBase, IServerInteractable, IInte
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			GeneratedNetworkCode._Write_AdminToys_002EInvisibleInteractableToy_002FColliderShape(writer, Shape);
-			writer.WriteFloat(InteractionDuration);
-			writer.WriteBool(IsLocked);
+			GeneratedNetworkCode._Write_AdminToys_002EInvisibleInteractableToy_002FColliderShape(writer, this.Shape);
+			writer.WriteFloat(this.InteractionDuration);
+			writer.WriteBool(this.IsLocked);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 0x20L) != 0L)
 		{
-			GeneratedNetworkCode._Write_AdminToys_002EInvisibleInteractableToy_002FColliderShape(writer, Shape);
+			GeneratedNetworkCode._Write_AdminToys_002EInvisibleInteractableToy_002FColliderShape(writer, this.Shape);
 		}
 		if ((base.syncVarDirtyBits & 0x40L) != 0L)
 		{
-			writer.WriteFloat(InteractionDuration);
+			writer.WriteFloat(this.InteractionDuration);
 		}
 		if ((base.syncVarDirtyBits & 0x80L) != 0L)
 		{
-			writer.WriteBool(IsLocked);
+			writer.WriteBool(this.IsLocked);
 		}
 	}
 
@@ -274,23 +274,23 @@ public class InvisibleInteractableToy : AdminToyBase, IServerInteractable, IInte
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref Shape, SetCollider, GeneratedNetworkCode._Read_AdminToys_002EInvisibleInteractableToy_002FColliderShape(reader));
-			GeneratedSyncVarDeserialize(ref InteractionDuration, null, reader.ReadFloat());
-			GeneratedSyncVarDeserialize(ref IsLocked, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.Shape, SetCollider, GeneratedNetworkCode._Read_AdminToys_002EInvisibleInteractableToy_002FColliderShape(reader));
+			base.GeneratedSyncVarDeserialize(ref this.InteractionDuration, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this.IsLocked, null, reader.ReadBool());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 0x20L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Shape, SetCollider, GeneratedNetworkCode._Read_AdminToys_002EInvisibleInteractableToy_002FColliderShape(reader));
+			base.GeneratedSyncVarDeserialize(ref this.Shape, SetCollider, GeneratedNetworkCode._Read_AdminToys_002EInvisibleInteractableToy_002FColliderShape(reader));
 		}
 		if ((num & 0x40L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref InteractionDuration, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this.InteractionDuration, null, reader.ReadFloat());
 		}
 		if ((num & 0x80L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref IsLocked, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.IsLocked, null, reader.ReadBool());
 		}
 	}
 }

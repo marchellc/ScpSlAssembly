@@ -22,7 +22,7 @@ public class Scp2176ItemProcessor : StandardItemProcessor
 		{
 			throw new InvalidOperationException(string.Format("Attempted to use {0} on item with type {1}", "Scp2176ItemProcessor", sourcePickup.Info.ItemId));
 		}
-		ClearCombiner();
+		base.ClearCombiner();
 		switch (setting)
 		{
 		case Scp914KnobSetting.Rough:
@@ -32,7 +32,7 @@ public class Scp2176ItemProcessor : StandardItemProcessor
 		{
 			for (int j = 0; (float)j < 12f; j++)
 			{
-				SpawnItem(ItemType.Coin, sourcePickup);
+				this.SpawnItem(ItemType.Coin, sourcePickup);
 			}
 			sourcePickup.DestroySelf();
 			break;
@@ -42,7 +42,7 @@ public class Scp2176ItemProcessor : StandardItemProcessor
 			{
 				for (int i = 0; (float)i < 1f; i++)
 				{
-					SpawnItem(ItemType.Flashlight, sourcePickup);
+					this.SpawnItem(ItemType.Flashlight, sourcePickup);
 				}
 				sourcePickup.DestroySelf();
 			}
@@ -50,21 +50,22 @@ public class Scp2176ItemProcessor : StandardItemProcessor
 		default:
 			return base.UpgradePickup(setting, sourcePickup);
 		}
-		return GenerateResultFromCombiner(sourcePickup);
+		return base.GenerateResultFromCombiner(sourcePickup);
 	}
 
 	private void SpawnItem(ItemType itemType, ItemPickupBase sourcePickup)
 	{
 		if (InventoryItemLoader.AvailableItems.TryGetValue(itemType, out var value))
 		{
-			PickupSyncInfo pickupSyncInfo = default(PickupSyncInfo);
-			pickupSyncInfo.ItemId = itemType;
-			pickupSyncInfo.Serial = ItemSerialGenerator.GenerateNext();
-			pickupSyncInfo.WeightKg = value.Weight;
-			PickupSyncInfo value2 = pickupSyncInfo;
+			PickupSyncInfo value2 = new PickupSyncInfo
+			{
+				ItemId = itemType,
+				Serial = ItemSerialGenerator.GenerateNext(),
+				WeightKg = value.Weight
+			};
 			bool spawn = NetworkServer.spawned.ContainsKey(sourcePickup.netId);
 			ItemPickupBase resultingPickup = InventoryExtensions.ServerCreatePickup(value, value2, sourcePickup.Position + Scp914Controller.MoveVector, sourcePickup.Rotation, spawn);
-			AddResultToCombiner(resultingPickup);
+			base.AddResultToCombiner(resultingPickup);
 		}
 	}
 }

@@ -31,25 +31,25 @@ public abstract class ToggleableLightItemBase : ItemBase, IItemDescription, IIte
 
 	public override float Weight => 0.7f;
 
-	public string Name => ItemTypeId.GetName();
+	public string Name => base.ItemTypeId.GetName();
 
-	public string Description => ItemTypeId.GetDescription();
+	public string Description => base.ItemTypeId.GetDescription();
 
 	public virtual bool IsEmittingLight
 	{
 		get
 		{
-			return _isEmitting;
+			return this._isEmitting;
 		}
 		set
 		{
-			if (_isEmitting != value)
+			if (this._isEmitting != value)
 			{
-				_isEmitting = value;
-				if (IsLocalPlayer)
+				this._isEmitting = value;
+				if (this.IsLocalPlayer)
 				{
-					SetLightSourceStatus(value);
-					AudioSourcePoolManager.Play2D(value ? OnClip : OffClip);
+					this.SetLightSourceStatus(value);
+					AudioSourcePoolManager.Play2D(value ? this.OnClip : this.OffClip);
 				}
 			}
 		}
@@ -59,31 +59,31 @@ public abstract class ToggleableLightItemBase : ItemBase, IItemDescription, IIte
 
 	public override void OnEquipped()
 	{
-		ForceEnable();
+		this.ForceEnable();
 		if (NetworkServer.active)
 		{
-			new FlashlightNetworkHandler.FlashlightMessage(base.ItemSerial, IsEmittingLight).SendToAuthenticated();
+			new FlashlightNetworkHandler.FlashlightMessage(base.ItemSerial, this.IsEmittingLight).SendToAuthenticated();
 		}
 	}
 
 	private void ForceEnable()
 	{
-		NextAllowedTime = Time.timeSinceLevelLoad + 0.6f;
-		IsEmittingLight = true;
+		this.NextAllowedTime = Time.timeSinceLevelLoad + 0.6f;
+		this.IsEmittingLight = true;
 	}
 
 	public override void EquipUpdate()
 	{
-		if (!IsLocalPlayer || !InventoryGuiController.ItemsSafeForInteraction || Time.timeSinceLevelLoad < NextAllowedTime)
+		if (!this.IsLocalPlayer || !InventoryGuiController.ItemsSafeForInteraction || Time.timeSinceLevelLoad < this.NextAllowedTime)
 		{
 			return;
 		}
-		ActionName[] toggleKeys = ToggleKeys;
+		ActionName[] toggleKeys = ToggleableLightItemBase.ToggleKeys;
 		for (int i = 0; i < toggleKeys.Length; i++)
 		{
 			if (Input.GetKeyDown(NewInput.GetKey(toggleKeys[i])))
 			{
-				OnToggled();
+				this.OnToggled();
 			}
 		}
 	}
@@ -94,9 +94,9 @@ public abstract class ToggleableLightItemBase : ItemBase, IItemDescription, IIte
 
 	public void ClientSendRequest(bool value)
 	{
-		if (IsLocalPlayer && value != IsEmittingLight)
+		if (this.IsLocalPlayer && value != this.IsEmittingLight)
 		{
-			IsEmittingLight = value;
+			this.IsEmittingLight = value;
 			NetworkClient.Send(new FlashlightNetworkHandler.FlashlightMessage(base.ItemSerial, value));
 		}
 	}

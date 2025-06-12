@@ -36,7 +36,7 @@ public class SetLevelCommand : Scp079CommandBase
 				{
 					input2 = subroutine.AbsoluteThresholds[Mathf.Clamp(input, 0, subroutine.AbsoluteThresholds.Length - 1)];
 				}
-				ApplyChanges(subroutine, input2);
+				this.ApplyChanges(subroutine, input2);
 				num++;
 				stringBuilder.Append(", " + item.LoggedNameFromRefHub());
 			}
@@ -44,7 +44,7 @@ public class SetLevelCommand : Scp079CommandBase
 		if (num > 0)
 		{
 			string text = StringBuilderPool.Shared.ToStringReturn(stringBuilder).Substring(2);
-			ServerLogs.AddLog(ServerLogs.Modules.Administrative, string.Format("{0} used \"{1} ({2})\" command on player{3}{4}.", sender.LogName, Command, input, (num == 1) ? " " : "s ", text), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
+			ServerLogs.AddLog(ServerLogs.Modules.Administrative, string.Format("{0} used \"{1} ({2})\" command on player{3}{4}.", sender.LogName, this.Command, input, (num == 1) ? " " : "s ", text), ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);
 		}
 		else
 		{

@@ -42,17 +42,17 @@ public class ViewmodelTriggerExtension : MonoBehaviour, IViewmodelExtension
 	{
 		get
 		{
-			if (!_firearm.TryGetModule<ITriggerControllerModule>(out var module) || !module.TriggerHeld)
+			if (!this._firearm.TryGetModule<ITriggerControllerModule>(out var module) || !module.TriggerHeld)
 			{
 				return false;
 			}
-			if (!_firearm.TryGetModule<IActionModule>(out var module2))
+			if (!this._firearm.TryGetModule<IActionModule>(out var module2))
 			{
 				return true;
 			}
 			float num = 1f / module2.DisplayCyclicRate;
-			float num2 = (1f - _triggerVisualReleaseRate) * num;
-			double num3 = Time.timeSinceLevelLoad - _lastShotTime;
+			float num2 = (1f - this._triggerVisualReleaseRate) * num;
+			double num3 = Time.timeSinceLevelLoad - this._lastShotTime;
 			if (!(num3 < (double)num2))
 			{
 				return num3 > (double)(num + Time.deltaTime);
@@ -63,8 +63,8 @@ public class ViewmodelTriggerExtension : MonoBehaviour, IViewmodelExtension
 
 	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_viewmodel = viewmodel;
-		_firearm = viewmodel.ParentFirearm;
+		this._viewmodel = viewmodel;
+		this._firearm = viewmodel.ParentFirearm;
 	}
 
 	private void Awake()
@@ -79,29 +79,29 @@ public class ViewmodelTriggerExtension : MonoBehaviour, IViewmodelExtension
 
 	private void OnShot(ShotEvent ev)
 	{
-		if (!(_viewmodel.ItemId != ev.ItemId))
+		if (!(this._viewmodel.ItemId != ev.ItemId))
 		{
-			_lastShotTime = Time.timeSinceLevelLoad;
+			this._lastShotTime = Time.timeSinceLevelLoad;
 		}
 	}
 
 	private void Update()
 	{
-		if (TriggerHeld)
+		if (this.TriggerHeld)
 		{
-			if (_released)
+			if (this._released)
 			{
-				AudioSourcePoolManager.Play2D(_triggerSound);
-				_released = false;
+				AudioSourcePoolManager.Play2D(this._triggerSound);
+				this._released = false;
 			}
-			_weight += Time.deltaTime * _pullSpeed;
+			this._weight += Time.deltaTime * this._pullSpeed;
 		}
 		else
 		{
-			_weight -= Time.deltaTime * _releaseSpeed;
-			_released = true;
+			this._weight -= Time.deltaTime * this._releaseSpeed;
+			this._released = true;
 		}
-		_weight = Mathf.Clamp01(_weight);
-		_triggerOverrideLayer.SetWeight(_viewmodel.AnimatorSetLayerWeight, _weight);
+		this._weight = Mathf.Clamp01(this._weight);
+		this._triggerOverrideLayer.SetWeight(this._viewmodel.AnimatorSetLayerWeight, this._weight);
 	}
 }

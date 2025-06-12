@@ -26,15 +26,15 @@ public class ItemSerializedDummyAction : MonoBehaviour, IDummyActionProvider
 
 	public void PopulateDummyActions(Action<DummyAction> actionAdder)
 	{
-		if (_parentItem == null)
+		if (this._parentItem == null)
 		{
-			_parentItem = GetComponentInParent<ItemBase>();
+			this._parentItem = base.GetComponentInParent<ItemBase>();
 		}
-		DefinedAction[] actions = _actions;
+		DefinedAction[] actions = this._actions;
 		for (int i = 0; i < actions.Length; i++)
 		{
 			DefinedAction definedAction = actions[i];
-			if (definedAction.AllowWhileHolstered || _parentItem.IsEquipped)
+			if (definedAction.AllowWhileHolstered || this._parentItem.IsEquipped)
 			{
 				actionAdder(new DummyAction(definedAction.Name, definedAction.Action.Invoke));
 			}

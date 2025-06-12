@@ -172,9 +172,9 @@ public static class InventoryExtensions
 				}
 			}
 			int num2 = Mathf.Min(amount, value);
-			PlayerDroppingAmmoEventArgs playerDroppingAmmoEventArgs = new PlayerDroppingAmmoEventArgs(inv._hub, ammoType, num2);
-			PlayerEvents.OnDroppingAmmo(playerDroppingAmmoEventArgs);
-			if (!playerDroppingAmmoEventArgs.IsAllowed)
+			PlayerDroppingAmmoEventArgs e = new PlayerDroppingAmmoEventArgs(inv._hub, ammoType, num2);
+			PlayerEvents.OnDroppingAmmo(e);
+			if (!e.IsAllowed)
 			{
 				return list;
 			}
@@ -182,7 +182,7 @@ public static class InventoryExtensions
 			inv.SendAmmoNextFrame = true;
 			while (num2 > 0)
 			{
-				if (ServerCreatePickup(psi: new PickupSyncInfo(ammoType, value2.Weight, 0), inv: inv, item: value2) is AmmoPickup ammoPickup2)
+				if (InventoryExtensions.ServerCreatePickup(psi: new PickupSyncInfo(ammoType, value2.Weight, 0), inv: inv, item: value2) is AmmoPickup ammoPickup2)
 				{
 					list.Add(ammoPickup2);
 					ushort num3 = (ushort)Mathf.Min(ammoPickup2.MaxAmmo, num2);
@@ -204,12 +204,12 @@ public static class InventoryExtensions
 	{
 		Quaternion rotation = ReferenceHub.GetHub(inv.gameObject).PlayerCameraReference.rotation;
 		Quaternion rotation2 = item.PickupDropModel.transform.rotation;
-		return ServerCreatePickup(item, psi, inv.transform.position, rotation * rotation2, spawn, setupMethod);
+		return InventoryExtensions.ServerCreatePickup(item, psi, inv.transform.position, rotation * rotation2, spawn, setupMethod);
 	}
 
 	public static ItemPickupBase ServerCreatePickup(ItemBase item, PickupSyncInfo? psi, Vector3 position, bool spawn = true, Action<ItemPickupBase> setupMethod = null)
 	{
-		return ServerCreatePickup(item, psi, position, item.PickupDropModel.transform.rotation, spawn, setupMethod);
+		return InventoryExtensions.ServerCreatePickup(item, psi, position, item.PickupDropModel.transform.rotation, spawn, setupMethod);
 	}
 
 	public static ItemPickupBase ServerCreatePickup(ItemBase item, PickupSyncInfo? psi, Vector3 position, Quaternion rotation, bool spawn = true, Action<ItemPickupBase> setupMethod = null)
@@ -221,11 +221,12 @@ public static class InventoryExtensions
 		PickupSyncInfo valueOrDefault = psi.GetValueOrDefault();
 		if (!psi.HasValue)
 		{
-			PickupSyncInfo pickupSyncInfo = default(PickupSyncInfo);
-			pickupSyncInfo.ItemId = item.ItemTypeId;
-			pickupSyncInfo.Serial = ItemSerialGenerator.GenerateNext();
-			pickupSyncInfo.WeightKg = item.Weight;
-			valueOrDefault = pickupSyncInfo;
+			valueOrDefault = new PickupSyncInfo
+			{
+				ItemId = item.ItemTypeId,
+				Serial = ItemSerialGenerator.GenerateNext(),
+				WeightKg = item.Weight
+			};
 			psi = valueOrDefault;
 		}
 		ItemPickupBase itemPickupBase = UnityEngine.Object.Instantiate(item.PickupDropModel, position, rotation);

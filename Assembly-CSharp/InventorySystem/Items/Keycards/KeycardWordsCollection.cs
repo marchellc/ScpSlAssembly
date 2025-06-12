@@ -18,24 +18,24 @@ public class KeycardWordsCollection : ScriptableObject
 
 	public string NextRandomWord()
 	{
-		if (_ids == null || _lastSeed != SeedSynchronizer.Seed)
+		if (this._ids == null || this._lastSeed != SeedSynchronizer.Seed)
 		{
-			ReRandomize();
+			this.ReRandomize();
 		}
-		int num = _ids[_lastId++ % _ids.Length];
-		return Words[num % Words.Length];
+		int num = this._ids[this._lastId++ % this._ids.Length];
+		return this.Words[num % this.Words.Length];
 	}
 
 	public void ReRandomize()
 	{
-		int num = Words.Length;
-		if (_ids == null || _ids.Length != num)
+		int num = this.Words.Length;
+		if (this._ids == null || this._ids.Length != num)
 		{
-			_ids = new int[num];
+			this._ids = new int[num];
 		}
 		for (int i = 0; i < num; i++)
 		{
-			_ids[i] = i;
+			this._ids[i] = i;
 		}
 		System.Random random = new System.Random();
 		int num2 = num;
@@ -43,13 +43,13 @@ public class KeycardWordsCollection : ScriptableObject
 		{
 			num2--;
 			int num3 = random.Next(num2 + 1);
-			ref int reference = ref _ids[num2];
-			ref int reference2 = ref _ids[num3];
-			int num4 = _ids[num3];
-			int num5 = _ids[num2];
+			ref int reference = ref this._ids[num2];
+			ref int reference2 = ref this._ids[num3];
+			int num4 = this._ids[num3];
+			int num5 = this._ids[num2];
 			reference = num4;
 			reference2 = num5;
 		}
-		_lastSeed = SeedSynchronizer.Seed;
+		this._lastSeed = SeedSynchronizer.Seed;
 	}
 }

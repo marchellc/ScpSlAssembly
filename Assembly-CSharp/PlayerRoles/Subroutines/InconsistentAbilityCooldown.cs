@@ -6,7 +6,7 @@ public class InconsistentAbilityCooldown : AbilityCooldown
 {
 	public override void ReadCooldown(NetworkReader reader)
 	{
-		if (IsReady)
+		if (this.IsReady)
 		{
 			base.ReadCooldown(reader);
 			return;

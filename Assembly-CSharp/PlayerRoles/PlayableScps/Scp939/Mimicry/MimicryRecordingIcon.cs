@@ -68,21 +68,21 @@ public class MimicryRecordingIcon : MonoBehaviour
 	{
 		get
 		{
-			return _isFavorite;
+			return this._isFavorite;
 		}
 		private set
 		{
-			if (value != IsFavorite)
+			if (value != this.IsFavorite)
 			{
-				_isFavorite = value;
+				this._isFavorite = value;
 				if (value)
 				{
-					FavoritedEntries.Add(this);
+					MimicryRecordingIcon.FavoritedEntries.Add(this);
 					StaticUnityMethods.OnUpdate += UpdateFavoriteHotkey;
 				}
 				else
 				{
-					FavoritedEntries.Remove(this);
+					MimicryRecordingIcon.FavoritedEntries.Remove(this);
 					StaticUnityMethods.OnUpdate -= UpdateFavoriteHotkey;
 				}
 			}
@@ -93,15 +93,15 @@ public class MimicryRecordingIcon : MonoBehaviour
 	{
 		get
 		{
-			return _isEmpty;
+			return this._isEmpty;
 		}
 		set
 		{
-			_isEmpty = value;
-			_contentRoot.SetActive(!_isEmpty);
+			this._isEmpty = value;
+			this._contentRoot.SetActive(!this._isEmpty);
 			if (value)
 			{
-				IsFavorite = false;
+				this.IsFavorite = false;
 			}
 		}
 	}
@@ -110,119 +110,119 @@ public class MimicryRecordingIcon : MonoBehaviour
 	{
 		get
 		{
-			return _cachedRt.anchoredPosition.y;
+			return this._cachedRt.anchoredPosition.y;
 		}
 		set
 		{
-			_cachedRt.anchoredPosition = value * Vector2.up;
+			this._cachedRt.anchoredPosition = value * Vector2.up;
 		}
 	}
 
 	public void Setup(MimicryRecorder recorder, int id)
 	{
 		MimicryRecorder.MimicryRecording mimicryRecording = recorder.SavedVoices[id];
-		VoiceRecord = mimicryRecording.Buffer;
-		_assignedRecorder = recorder;
-		_transmitter = recorder.Transmitter;
-		_previewPlayback = recorder.PreviewPlayback;
-		_waveformVisualizer.Generate(VoiceRecord.Buffer, 0, VoiceRecord.Length);
+		this.VoiceRecord = mimicryRecording.Buffer;
+		this._assignedRecorder = recorder;
+		this._transmitter = recorder.Transmitter;
+		this._previewPlayback = recorder.PreviewPlayback;
+		this._waveformVisualizer.Generate(this.VoiceRecord.Buffer, 0, this.VoiceRecord.Length);
 		if (PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(mimicryRecording.Owner.Role, out var result))
 		{
-			_nickname.text = mimicryRecording.Owner.Nickname;
-			_rolename.text = result.RoleName;
-			_rolename.color = result.RoleColor;
+			this._nickname.text = mimicryRecording.Owner.Nickname;
+			this._rolename.text = result.RoleName;
+			this._rolename.color = result.RoleColor;
 		}
 	}
 
 	private void Update()
 	{
-		if (!IsEmpty)
+		if (!this.IsEmpty)
 		{
-			_removeProgress.fillAmount = _removeButton.HeldPercent;
-			_stopButton.interactable = _waveformVisualizer.IsPlaying;
-			if (_previewing && _previewPlayback.IsEmpty)
+			this._removeProgress.fillAmount = this._removeButton.HeldPercent;
+			this._stopButton.interactable = this._waveformVisualizer.IsPlaying;
+			if (this._previewing && this._previewPlayback.IsEmpty)
 			{
-				StopPlayback();
+				this.StopPlayback();
 			}
 		}
 	}
 
 	private void Awake()
 	{
-		_cachedRt = GetComponent<RectTransform>();
+		this._cachedRt = base.GetComponent<RectTransform>();
 	}
 
 	private void OnDestroy()
 	{
-		IsFavorite = false;
+		this.IsFavorite = false;
 	}
 
 	private void UpdateFavoriteHotkey()
 	{
-		if (Input.GetKeyDown(_assignedHotkey))
+		if (Input.GetKeyDown(this._assignedHotkey))
 		{
-			SendRecording();
+			this.SendRecording();
 		}
 	}
 
 	public void StartPreview()
 	{
-		if (_previewing)
+		if (this._previewing)
 		{
-			StopPreview();
+			this.StopPreview();
 		}
-		_waveformVisualizer.StartPlayback(VoiceRecord.Length, out var startSample, out var lengthSamples);
-		_previewing = true;
-		_transmitter.StopTransmission();
-		_previewPlayback.StartPreview(VoiceRecord, startSample, lengthSamples);
+		this._waveformVisualizer.StartPlayback(this.VoiceRecord.Length, out var startSample, out var lengthSamples);
+		this._previewing = true;
+		this._transmitter.StopTransmission();
+		this._previewPlayback.StartPreview(this.VoiceRecord, startSample, lengthSamples);
 	}
 
 	public void RemoveRecording()
 	{
-		if (_waveformVisualizer.IsPlaying)
+		if (this._waveformVisualizer.IsPlaying)
 		{
-			StopPlayback();
+			this.StopPlayback();
 		}
-		_assignedRecorder.RemoveVoice(VoiceRecord);
+		this._assignedRecorder.RemoveVoice(this.VoiceRecord);
 	}
 
 	public void SendRecording()
 	{
-		StopPreview();
-		_waveformVisualizer.StartPlayback(VoiceRecord.Length, out var startSample, out var lengthSamples);
-		_transmitter.SendVoice(VoiceRecord, startSample, lengthSamples);
+		this.StopPreview();
+		this._waveformVisualizer.StartPlayback(this.VoiceRecord.Length, out var startSample, out var lengthSamples);
+		this._transmitter.SendVoice(this.VoiceRecord, startSample, lengthSamples);
 	}
 
 	public void StopPlayback()
 	{
-		StopPreview();
-		_transmitter.StopTransmission();
-		_waveformVisualizer.StopPlayback();
+		this.StopPreview();
+		this._transmitter.StopTransmission();
+		this._waveformVisualizer.StopPlayback();
 	}
 
 	public void ToggleFavorite()
 	{
-		IsFavorite = !IsFavorite;
-		_favoriteFill.enabled = IsFavorite;
-		_favoriteLabel.enabled = IsFavorite;
-		if (IsFavorite)
+		this.IsFavorite = !this.IsFavorite;
+		this._favoriteFill.enabled = this.IsFavorite;
+		this._favoriteLabel.enabled = this.IsFavorite;
+		if (this.IsFavorite)
 		{
-			_assignedHotkey = KeyCode.Alpha1;
-			while (FavoritedEntries.Any((MimicryRecordingIcon x) => x.IsFavorite && x != this && x._assignedHotkey == _assignedHotkey))
+			this._assignedHotkey = KeyCode.Alpha1;
+			while (MimicryRecordingIcon.FavoritedEntries.Any((MimicryRecordingIcon x) => x.IsFavorite && x != this && x._assignedHotkey == this._assignedHotkey))
 			{
-				_assignedHotkey++;
+				this._assignedHotkey++;
 			}
-			string arg = $"[ {(int)(_assignedHotkey - 49 + 1)} ]";
-			_favoriteLabel.text = string.Format(Translations.Get(Scp939HudTranslation.HintAssignedHotkey, "Hotkey  {0}"), arg);
+			string arg = $"[ {(int)(this._assignedHotkey - 49 + 1)} ]";
+			this._favoriteLabel.text = string.Format(Translations.Get(Scp939HudTranslation.HintAssignedHotkey, "Hotkey  {0}"), arg);
 		}
 	}
 
 	private void StopPreview()
 	{
-		if (_previewing)
+		if (this._previewing)
 		{
-			_previewing = false;
-			_previewPlayback.StopPreview();
+			this._previewing = false;
+			this._previewPlayback.StopPreview();
 		}
 	}
 }

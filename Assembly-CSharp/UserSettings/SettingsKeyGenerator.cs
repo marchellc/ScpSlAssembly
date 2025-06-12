@@ -28,27 +28,27 @@ public static class SettingsKeyGenerator
 
 	public static string EnumToKey<T>(T val) where T : Enum, IConvertible
 	{
-		return TypeValueToKey(GetStableTypeHash(typeof(T)), val.ToUInt16(null));
+		return SettingsKeyGenerator.TypeValueToKey(SettingsKeyGenerator.GetStableTypeHash(typeof(T)), val.ToUInt16(null));
 	}
 
 	public static string TypeValueToKey(ushort typeHash, ushort value)
 	{
-		UshortToHex(typeHash);
+		SettingsKeyGenerator.UshortToHex(typeHash);
 		for (int i = 0; i < 4; i++)
 		{
-			KeyBuilder[13 + i] = HexNonAlloc32[i];
+			SettingsKeyGenerator.KeyBuilder[13 + i] = SettingsKeyGenerator.HexNonAlloc32[i];
 		}
-		UshortToHex(value);
+		SettingsKeyGenerator.UshortToHex(value);
 		for (int j = 0; j < 4; j++)
 		{
-			KeyBuilder[18 + j] = HexNonAlloc32[j];
+			SettingsKeyGenerator.KeyBuilder[18 + j] = SettingsKeyGenerator.HexNonAlloc32[j];
 		}
-		return KeyBuilder.ToString();
+		return SettingsKeyGenerator.KeyBuilder.ToString();
 	}
 
 	public static ushort GetStableTypeHash(Type type, bool preventCaching = false)
 	{
-		if (!preventCaching && TypeToHash.TryGetValue(type, out var value))
+		if (!preventCaching && SettingsKeyGenerator.TypeToHash.TryGetValue(type, out var value))
 		{
 			return value;
 		}
@@ -67,12 +67,12 @@ public static class SettingsKeyGenerator
 		{
 			return num2;
 		}
-		if (HashToType.TryGetValue(num2, out var value2))
+		if (SettingsKeyGenerator.HashToType.TryGetValue(num2, out var value2))
 		{
 			throw new InvalidOperationException("Type " + type.Name + " hash-collided with type " + value2.Name + ". Consider renaming one of the enums.");
 		}
-		HashToType[num2] = type;
-		TypeToHash[type] = num2;
+		SettingsKeyGenerator.HashToType[num2] = type;
+		SettingsKeyGenerator.TypeToHash[type] = num2;
 		return num2;
 	}
 
@@ -81,7 +81,7 @@ public static class SettingsKeyGenerator
 		int num = 0;
 		for (int i = 0; i < 4; i++)
 		{
-			HexNonAlloc32[i] = IntToHexArr[(val >> num) & 0xF];
+			SettingsKeyGenerator.HexNonAlloc32[i] = SettingsKeyGenerator.IntToHexArr[(val >> num) & 0xF];
 			num += 4;
 		}
 	}

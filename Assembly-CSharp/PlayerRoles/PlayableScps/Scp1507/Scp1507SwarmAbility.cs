@@ -28,30 +28,30 @@ public class Scp1507SwarmAbility : StandardSubroutine<Scp1507Role>
 
 	private HealthStat _healthStat;
 
-	public int FlockSize => _flockSize;
+	public int FlockSize => this._flockSize;
 
 	public float Multiplier { get; private set; }
 
 	private void UpdateMultiplier()
 	{
-		Multiplier = Mathf.MoveTowards(Multiplier, FlockSize, 0.6f * Time.deltaTime);
+		this.Multiplier = Mathf.MoveTowards(this.Multiplier, this.FlockSize, 0.6f * Time.deltaTime);
 	}
 
 	private void Update()
 	{
-		UpdateMultiplier();
+		this.UpdateMultiplier();
 		if (NetworkServer.active)
 		{
-			ServerUpdateNearby();
-			ServerUpdateFlock();
-			ServerUpdateHealthRegen();
+			this.ServerUpdateNearby();
+			this.ServerUpdateFlock();
+			this.ServerUpdateHealthRegen();
 		}
 	}
 
 	private void ServerUpdateNearby()
 	{
 		Vector3 position = base.CastRole.FpcModule.Position;
-		_nearbyFlamingos.Clear();
+		this._nearbyFlamingos.Clear();
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allHub.roleManager.CurrentRole is Scp1507Role { Team: Team.Flamingos } scp1507Role)
@@ -59,7 +59,7 @@ public class Scp1507SwarmAbility : StandardSubroutine<Scp1507Role>
 				Vector3 position2 = scp1507Role.FpcModule.Position;
 				if (!((position - position2).sqrMagnitude > 56.25f))
 				{
-					_nearbyFlamingos.Add(scp1507Role);
+					this._nearbyFlamingos.Add(scp1507Role);
 				}
 			}
 		}
@@ -67,36 +67,36 @@ public class Scp1507SwarmAbility : StandardSubroutine<Scp1507Role>
 
 	private void ServerUpdateFlock()
 	{
-		_entireFlock.Clear();
-		foreach (Scp1507Role nearbyFlamingo in _nearbyFlamingos)
+		this._entireFlock.Clear();
+		foreach (Scp1507Role nearbyFlamingo in this._nearbyFlamingos)
 		{
-			_entireFlock.Add(nearbyFlamingo);
+			this._entireFlock.Add(nearbyFlamingo);
 			if (!nearbyFlamingo.SubroutineModule.TryGetSubroutine<Scp1507SwarmAbility>(out var subroutine))
 			{
 				continue;
 			}
 			foreach (Scp1507Role nearbyFlamingo2 in subroutine._nearbyFlamingos)
 			{
-				_entireFlock.Add(nearbyFlamingo2);
+				this._entireFlock.Add(nearbyFlamingo2);
 			}
 		}
-		int num = Mathf.Max(0, _entireFlock.Count - 1);
-		if (num != _flockSize)
+		int num = Mathf.Max(0, this._entireFlock.Count - 1);
+		if (num != this._flockSize)
 		{
-			_flockSize = (byte)num;
-			ServerSendRpc(toAll: true);
+			this._flockSize = (byte)num;
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	private void ServerUpdateHealthRegen()
 	{
-		if (_regenCooldown >= 0.7f)
+		if (this._regenCooldown >= 0.7f)
 		{
-			_regenCooldown -= Time.deltaTime;
+			this._regenCooldown -= Time.deltaTime;
 		}
 		else
 		{
-			_healthStat.ServerHeal(Multiplier * 1f * Time.deltaTime);
+			this._healthStat.ServerHeal(this.Multiplier * 1f * Time.deltaTime);
 		}
 	}
 
@@ -104,29 +104,29 @@ public class Scp1507SwarmAbility : StandardSubroutine<Scp1507Role>
 	{
 		if (victim == base.Owner)
 		{
-			InitiateCombatTime();
+			this.InitiateCombatTime();
 		}
 		else if (dhb is AttackerDamageHandler attackerDamageHandler && !(attackerDamageHandler.Attacker.Hub != base.Owner))
 		{
-			InitiateCombatTime();
+			this.InitiateCombatTime();
 		}
 	}
 
 	private void InitiateCombatTime()
 	{
-		_regenCooldown = 0.7f;
+		this._regenCooldown = 0.7f;
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte(_flockSize);
+		writer.WriteByte(this._flockSize);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_flockSize = reader.ReadByte();
+		this._flockSize = reader.ReadByte();
 	}
 
 	public override void SpawnObject()
@@ -134,7 +134,7 @@ public class Scp1507SwarmAbility : StandardSubroutine<Scp1507Role>
 		base.SpawnObject();
 		if (NetworkServer.active)
 		{
-			_healthStat = base.Owner.playerStats.GetModule<HealthStat>();
+			this._healthStat = base.Owner.playerStats.GetModule<HealthStat>();
 			PlayerStats.OnAnyPlayerDamaged += OnPlayerDamaged;
 		}
 	}
@@ -142,10 +142,10 @@ public class Scp1507SwarmAbility : StandardSubroutine<Scp1507Role>
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_flockSize = 0;
-		Multiplier = 0f;
-		_nearbyFlamingos.Clear();
-		_entireFlock.Clear();
+		this._flockSize = 0;
+		this.Multiplier = 0f;
+		this._nearbyFlamingos.Clear();
+		this._entireFlock.Clear();
 		PlayerStats.OnAnyPlayerDamaged -= OnPlayerDamaged;
 	}
 }

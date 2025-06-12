@@ -27,18 +27,18 @@ public class TapeGift : Scp2536GiftBase
 
 	public override void ServerGrant(ReferenceHub hub)
 	{
-		LastGiven.Restart();
+		TapeGift.LastGiven.Restart();
 		hub.inventory.ServerAddItem(ItemType.SCP1507Tape, ItemAddReason.Scp2536, 0);
-		_spawnChances = 10f;
+		TapeGift._spawnChances = 10f;
 	}
 
 	public override bool CanBeGranted(ReferenceHub hub)
 	{
-		if (!_canSpawn)
+		if (!TapeGift._canSpawn)
 		{
 			return false;
 		}
-		if (RoundStart.RoundLength.TotalMinutes < 8.0 || LastGiven.Elapsed.TotalMinutes < 3.0)
+		if (RoundStart.RoundLength.TotalMinutes < 8.0 || TapeGift.LastGiven.Elapsed.TotalMinutes < 3.0)
 		{
 			return false;
 		}
@@ -53,10 +53,10 @@ public class TapeGift : Scp2536GiftBase
 		SeedSynchronizer.OnGenerationFinished += delegate
 		{
 			double num = new System.Random(SeedSynchronizer.Seed).NextDouble() * 100.0;
-			_canSpawn = (double)_spawnChances >= num;
-			if (!_canSpawn)
+			TapeGift._canSpawn = (double)TapeGift._spawnChances >= num;
+			if (!TapeGift._canSpawn)
 			{
-				_spawnChances += 15f;
+				TapeGift._spawnChances += 15f;
 			}
 		};
 	}

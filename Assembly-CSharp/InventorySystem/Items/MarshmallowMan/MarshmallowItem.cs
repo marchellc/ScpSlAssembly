@@ -49,7 +49,7 @@ public class MarshmallowItem : AutosyncItem, IInteractionBlocker, IHolidayItem
 
 	private readonly HashSet<ReferenceHub> _detectedPlayers = new HashSet<ReferenceHub>();
 
-	private UniversalDamageHandler NewDamageHandler => new UniversalDamageHandler(_attackDamage, DeathTranslations.MarshmallowMan, new DamageHandlerBase.CassieAnnouncement
+	private UniversalDamageHandler NewDamageHandler => new UniversalDamageHandler(this._attackDamage, DeathTranslations.MarshmallowMan, new DamageHandlerBase.CassieAnnouncement
 	{
 		Announcement = "TERMINATED BY MARSHMALLOW MAN",
 		SubtitleParts = new SubtitlePart[1]
@@ -76,7 +76,7 @@ public class MarshmallowItem : AutosyncItem, IInteractionBlocker, IHolidayItem
 
 	public void ServerRequestHolster()
 	{
-		ServerSendPublicRpc(delegate(NetworkWriter writer)
+		base.ServerSendPublicRpc(delegate(NetworkWriter writer)
 		{
 			writer.WriteByte(2);
 		});
@@ -95,17 +95,17 @@ public class MarshmallowItem : AutosyncItem, IInteractionBlocker, IHolidayItem
 		if (NetworkServer.active)
 		{
 			base.OwnerInventory.ServerSelectItem(base.ItemSerial);
-			_marshmallowEffect = base.Owner.playerEffectsController.GetEffect<MarshmallowEffect>();
-			_marshmallowEffect.IsEnabled = true;
+			this._marshmallowEffect = base.Owner.playerEffectsController.GetEffect<MarshmallowEffect>();
+			this._marshmallowEffect.IsEnabled = true;
 		}
 	}
 
 	public override void OnHolstered()
 	{
 		base.OnHolstered();
-		if (!_markedAsRemoved)
+		if (!this._markedAsRemoved)
 		{
-			_markedAsRemoved = true;
+			this._markedAsRemoved = true;
 			if (NetworkServer.active)
 			{
 				base.OwnerInventory.ServerRemoveItem(base.ItemSerial, null);
@@ -116,10 +116,10 @@ public class MarshmallowItem : AutosyncItem, IInteractionBlocker, IHolidayItem
 	public override void OnRemoved(ItemPickupBase pickup)
 	{
 		base.OnRemoved(pickup);
-		_markedAsRemoved = true;
+		this._markedAsRemoved = true;
 		if (NetworkServer.active)
 		{
-			_marshmallowEffect.IsEnabled = false;
+			this._marshmallowEffect.IsEnabled = false;
 		}
 	}
 
@@ -143,42 +143,42 @@ public class MarshmallowItem : AutosyncItem, IInteractionBlocker, IHolidayItem
 	public override void ClientProcessRpcInstance(NetworkReader reader)
 	{
 		base.ClientProcessRpcInstance(reader);
-		if (IsLocalPlayer && reader.ReadByte() == 2)
+		if (this.IsLocalPlayer && reader.ReadByte() == 2)
 		{
-			_preventAttacks = true;
+			this._preventAttacks = true;
 		}
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (!IsLocalPlayer)
+		if (!this.IsLocalPlayer)
 		{
-			if (!_cooldown.TolerantIsReady)
+			if (!this._cooldown.TolerantIsReady)
 			{
 				return;
 			}
-			_cooldown.Trigger(_attackCooldown);
+			this._cooldown.Trigger(this._attackCooldown);
 		}
 		RelativePosition relativePosition = reader.ReadRelativePosition();
 		Quaternion claimedRot = reader.ReadQuaternion();
 		FpcBacktracker fpcBacktracker;
-		if (reader.Remaining > 0 && reader.TryReadReferenceHub(out var hub2))
+		if (reader.Remaining > 0 && reader.TryReadReferenceHub(out var hub))
 		{
 			RelativePosition relativePosition2 = reader.ReadRelativePosition();
-			fpcBacktracker = new FpcBacktracker(hub2, relativePosition2.Position);
+			fpcBacktracker = new FpcBacktracker(hub, relativePosition2.Position);
 		}
 		else
 		{
-			hub2 = null;
+			hub = null;
 			fpcBacktracker = null;
 		}
 		using (new FpcBacktracker(base.Owner, relativePosition.Position, claimedRot))
 		{
-			ServerAttack(hub2);
+			this.ServerAttack(hub);
 		}
 		fpcBacktracker?.RestorePosition();
-		ServerSendConditionalRpc((ReferenceHub hub) => hub != base.Owner, delegate(NetworkWriter writer)
+		base.ServerSendConditionalRpc((ReferenceHub referenceHub) => referenceHub != base.Owner, delegate(NetworkWriter writer)
 		{
 			writer.WriteByte(0);
 		});
@@ -189,17 +189,17 @@ public class MarshmallowItem : AutosyncItem, IInteractionBlocker, IHolidayItem
 		base.EquipUpdate();
 		if (base.IsControllable)
 		{
-			UpdateClientInput();
+			this.UpdateClientInput();
 		}
 	}
 
 	private void UpdateClientInput()
 	{
-		if (_cooldown.IsReady && !_preventAttacks && GetActionDown(ActionName.Shoot))
+		if (this._cooldown.IsReady && !this._preventAttacks && base.GetActionDown(ActionName.Shoot))
 		{
 			MarshmallowItem.OnSwing?.Invoke(base.ItemSerial);
-			_cooldown.Trigger(_attackCooldown);
-			ClientSendCmd(ClientWriteAttackResult);
+			this._cooldown.Trigger(this._attackCooldown);
+			base.ClientSendCmd(ClientWriteAttackResult);
 		}
 	}
 
@@ -211,15 +211,15 @@ public class MarshmallowItem : AutosyncItem, IInteractionBlocker, IHolidayItem
 		}
 		writer.WriteRelativePosition(new RelativePosition(fpcRole.FpcModule.Position));
 		writer.WriteQuaternion(base.Owner.PlayerCameraReference.rotation);
-		_detectedPlayers.Clear();
-		foreach (IDestructible item in DetectDestructibles())
+		this._detectedPlayers.Clear();
+		foreach (IDestructible item in this.DetectDestructibles())
 		{
 			if (item is HitboxIdentity hitboxIdentity)
 			{
-				_detectedPlayers.Add(hitboxIdentity.TargetHub);
+				this._detectedPlayers.Add(hitboxIdentity.TargetHub);
 			}
 		}
-		ReferenceHub primaryTarget = _detectedPlayers.GetPrimaryTarget(base.Owner.PlayerCameraReference);
+		ReferenceHub primaryTarget = this._detectedPlayers.GetPrimaryTarget(base.Owner.PlayerCameraReference);
 		if (!(primaryTarget == null) && primaryTarget.roleManager.CurrentRole is IFpcRole fpcRole2)
 		{
 			writer.WriteReferenceHub(primaryTarget);
@@ -229,12 +229,12 @@ public class MarshmallowItem : AutosyncItem, IInteractionBlocker, IHolidayItem
 
 	private void ServerAttack(ReferenceHub syncTarget)
 	{
-		foreach (IDestructible item in DetectDestructibles())
+		foreach (IDestructible item in this.DetectDestructibles())
 		{
-			if ((!(item is HitboxIdentity hitboxIdentity) || !(hitboxIdentity.TargetHub != syncTarget)) && item.Damage(_attackDamage, NewDamageHandler, item.CenterOfMass))
+			if ((!(item is HitboxIdentity hitboxIdentity) || !(hitboxIdentity.TargetHub != syncTarget)) && item.Damage(this._attackDamage, this.NewDamageHandler, item.CenterOfMass))
 			{
 				Hitmarker.SendHitmarkerDirectly(base.Owner, 1f);
-				ServerSendPublicRpc(delegate(NetworkWriter writer)
+				base.ServerSendPublicRpc(delegate(NetworkWriter writer)
 				{
 					writer.WriteByte(1);
 				});
@@ -245,6 +245,6 @@ public class MarshmallowItem : AutosyncItem, IInteractionBlocker, IHolidayItem
 
 	private ArraySegment<IDestructible> DetectDestructibles()
 	{
-		return ScpAttackAbilityBase<HumanRole>.DetectDestructibles(base.Owner, _detectionOffset, _detectionRadius);
+		return ScpAttackAbilityBase<HumanRole>.DetectDestructibles(base.Owner, this._detectionOffset, this._detectionRadius);
 	}
 }

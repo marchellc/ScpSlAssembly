@@ -59,11 +59,11 @@ public static class WaveUtils
 		}
 		if (wave is TimeBasedWave timedWave)
 		{
-			AppendTimerData(stringBuilder, timedWave);
+			WaveUtils.AppendTimerData(stringBuilder, timedWave);
 		}
 		if (wave is ILimitedWave limitedWave)
 		{
-			AppendTokenData(stringBuilder, limitedWave);
+			WaveUtils.AppendTokenData(stringBuilder, limitedWave);
 		}
 		if (!(wave is IMiniWave))
 		{

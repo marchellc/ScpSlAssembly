@@ -13,24 +13,24 @@ public abstract class AutosyncWriterBase : IDisposable
 
 	public AutosyncWriterBase(ItemIdentifier item, out NetworkWriter writer)
 	{
-		_alreadySent = false;
-		_writer = NetworkWriterPool.Get();
-		_targetItem = item;
-		writer = _writer;
+		this._alreadySent = false;
+		this._writer = NetworkWriterPool.Get();
+		this._targetItem = item;
+		writer = this._writer;
 	}
 
 	public void Dispose()
 	{
-		Send();
+		this.Send();
 	}
 
 	public void Send()
 	{
-		if (!_alreadySent)
+		if (!this._alreadySent)
 		{
-			_alreadySent = true;
-			HandleSending(new AutosyncMessage(_writer, _targetItem));
-			_writer.Dispose();
+			this._alreadySent = true;
+			this.HandleSending(new AutosyncMessage(this._writer, this._targetItem));
+			this._writer.Dispose();
 		}
 	}
 

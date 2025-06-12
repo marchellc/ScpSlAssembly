@@ -15,24 +15,24 @@ public class Scp096Motor : FpcMotor
 	{
 		get
 		{
-			if (!_role.IsLocalPlayer || !_hasOverride)
+			if (!this._role.IsLocalPlayer || !this._hasOverride)
 			{
 				return base.DesiredMove;
 			}
-			_hasOverride = false;
-			return _overrideDir;
+			this._hasOverride = false;
+			return this._overrideDir;
 		}
 	}
 
 	public void SetOverride(Vector3 desiredMove)
 	{
-		_hasOverride = true;
-		_overrideDir = desiredMove;
+		this._hasOverride = true;
+		this._overrideDir = desiredMove;
 	}
 
 	public Scp096Motor(ReferenceHub hub, Scp096Role role, FallDamageSettings fallDamageSettings)
 		: base(hub, role.FpcModule, fallDamageSettings)
 	{
-		_role = role;
+		this._role = role;
 	}
 }

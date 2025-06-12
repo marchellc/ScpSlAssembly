@@ -21,51 +21,51 @@ public readonly struct SubroutineMessage : NetworkMessage
 
 	public SubroutineMessage(SubroutineBase subroutine, bool isConfirmation)
 	{
-		_reader = null;
-		_isConfirmation = isConfirmation;
-		_subroutine = subroutine;
-		_subroutineIndex = subroutine.SyncIndex;
-		_role = subroutine.Role.RoleTypeId;
-		subroutine.Role.TryGetOwner(out _target);
+		this._reader = null;
+		this._isConfirmation = isConfirmation;
+		this._subroutine = subroutine;
+		this._subroutineIndex = subroutine.SyncIndex;
+		this._role = subroutine.Role.RoleTypeId;
+		subroutine.Role.TryGetOwner(out this._target);
 	}
 
 	public SubroutineMessage(NetworkReader reader)
 	{
-		_subroutine = null;
-		_isConfirmation = null;
-		_subroutineIndex = reader.ReadByte();
-		if (_subroutineIndex == 0)
+		this._subroutine = null;
+		this._isConfirmation = null;
+		this._subroutineIndex = reader.ReadByte();
+		if (this._subroutineIndex == 0)
 		{
-			_reader = null;
-			_target = null;
-			_role = RoleTypeId.None;
+			this._reader = null;
+			this._target = null;
+			this._role = RoleTypeId.None;
 			return;
 		}
-		_target = reader.ReadReferenceHub();
-		_role = reader.ReadRoleType();
+		this._target = reader.ReadReferenceHub();
+		this._role = reader.ReadRoleType();
 		int num = reader.ReadByte();
 		if (num == 255)
 		{
 			num += reader.ReadUShort();
 		}
-		_reader = NetworkReaderPool.Get(reader.ReadBytesSegment(num));
+		this._reader = NetworkReaderPool.Get(reader.ReadBytesSegment(num));
 	}
 
 	public void Write(NetworkWriter writer)
 	{
-		writer.WriteByte((byte)_subroutineIndex);
-		if (_subroutineIndex != 0)
+		writer.WriteByte((byte)this._subroutineIndex);
+		if (this._subroutineIndex != 0)
 		{
-			writer.WriteReferenceHub(_target);
-			writer.WriteRoleType(_role);
+			writer.WriteReferenceHub(this._target);
+			writer.WriteRoleType(this._role);
 			NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
-			if (_isConfirmation == true)
+			if (this._isConfirmation == true)
 			{
-				_subroutine.ServerWriteRpc(networkWriterPooled);
+				this._subroutine.ServerWriteRpc(networkWriterPooled);
 			}
 			else
 			{
-				_subroutine.ClientWriteCmd(networkWriterPooled);
+				this._subroutine.ClientWriteCmd(networkWriterPooled);
 			}
 			int num = networkWriterPooled.Position;
 			if (num > 65790)
@@ -84,7 +84,7 @@ public readonly struct SubroutineMessage : NetworkMessage
 
 	public void ServerApplyTrigger(NetworkConnection conn)
 	{
-		if (_subroutineIndex == 0)
+		if (this._subroutineIndex == 0)
 		{
 			return;
 		}
@@ -92,32 +92,32 @@ public readonly struct SubroutineMessage : NetworkMessage
 		{
 			if (hub.isLocalPlayer)
 			{
-				hub = _target;
+				hub = this._target;
 			}
-			Apply(hub, server: true);
+			this.Apply(hub, server: true);
 		}
-		_reader.Dispose();
+		this._reader.Dispose();
 	}
 
 	public void ClientApplyConfirmation()
 	{
-		if (_subroutineIndex != 0)
+		if (this._subroutineIndex != 0)
 		{
-			if (_target != null)
+			if (this._target != null)
 			{
-				Apply(_target, server: false);
+				this.Apply(this._target, server: false);
 			}
-			_reader.Dispose();
+			this._reader.Dispose();
 		}
 	}
 
 	private void Apply(ReferenceHub hub, bool server)
 	{
-		if (!(hub.roleManager.CurrentRole is ISubroutinedRole subroutinedRole) || hub.GetRoleId() != _role)
+		if (!(hub.roleManager.CurrentRole is ISubroutinedRole subroutinedRole) || hub.GetRoleId() != this._role)
 		{
 			return;
 		}
-		int num = _subroutineIndex - 1;
+		int num = this._subroutineIndex - 1;
 		if (num < 0 || num >= subroutinedRole.SubroutineModule.AllSubroutines.Length)
 		{
 			return;
@@ -125,12 +125,12 @@ public readonly struct SubroutineMessage : NetworkMessage
 		SubroutineBase subroutineBase = subroutinedRole.SubroutineModule.AllSubroutines[num];
 		if (server)
 		{
-			subroutineBase.ServerProcessCmd(_reader);
+			subroutineBase.ServerProcessCmd(this._reader);
 			return;
 		}
 		try
 		{
-			subroutineBase.ClientProcessRpc(_reader);
+			subroutineBase.ClientProcessRpc(this._reader);
 		}
 		catch (Exception exception)
 		{

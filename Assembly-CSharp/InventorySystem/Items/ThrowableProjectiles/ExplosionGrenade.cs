@@ -74,10 +74,10 @@ public class ExplosionGrenade : EffectGrenade
 		if (MainCameraController.InstanceActive)
 		{
 			float time = Vector3.Distance(MainCameraController.CurrentCamera.position, pos);
-			ExplosionCameraShake.singleton.Shake(_shakeOverDistance.Evaluate(time));
+			ExplosionCameraShake.singleton.Shake(this._shakeOverDistance.Evaluate(time));
 			if (NetworkServer.active)
 			{
-				Explode(PreviousOwner, pos, this, ExplosionType.Grenade);
+				ExplosionGrenade.Explode(base.PreviousOwner, pos, this, ExplosionType.Grenade);
 			}
 		}
 	}
@@ -88,29 +88,29 @@ public class ExplosionGrenade : EffectGrenade
 		{
 			return false;
 		}
-		Explode(PreviousOwner, base.transform.position, this, ExplosionType.Grenade);
-		ServerEvents.OnProjectileExploded(new ProjectileExplodedEventArgs(this, PreviousOwner.Hub, base.transform.position));
+		ExplosionGrenade.Explode(base.PreviousOwner, base.transform.position, this, ExplosionType.Grenade);
+		ServerEvents.OnProjectileExploded(new ProjectileExplodedEventArgs(this, base.PreviousOwner.Hub, base.transform.position));
 		return true;
 	}
 
 	public static void Explode(Footprint attacker, Vector3 position, ExplosionGrenade settingsReference, ExplosionType explosionType)
 	{
 		bool destroyDoors = true;
-		ExplosionSpawningEventArgs explosionSpawningEventArgs = new ExplosionSpawningEventArgs(attacker.Hub, position, settingsReference, explosionType, destroyDoors);
-		ServerEvents.OnExplosionSpawning(explosionSpawningEventArgs);
-		if (!explosionSpawningEventArgs.IsAllowed)
+		ExplosionSpawningEventArgs e = new ExplosionSpawningEventArgs(attacker.Hub, position, settingsReference, explosionType, destroyDoors);
+		ServerEvents.OnExplosionSpawning(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
-		position = explosionSpawningEventArgs.Position;
-		settingsReference = explosionSpawningEventArgs.Settings;
-		destroyDoors = explosionSpawningEventArgs.DestroyDoors;
-		explosionType = explosionSpawningEventArgs.ExplosionType;
-		if (attacker.Hub != explosionSpawningEventArgs.Player?.ReferenceHub)
+		position = e.Position;
+		settingsReference = e.Settings;
+		destroyDoors = e.DestroyDoors;
+		explosionType = e.ExplosionType;
+		if (attacker.Hub != e.Player?.ReferenceHub)
 		{
-			attacker = new Footprint(explosionSpawningEventArgs.Player?.ReferenceHub);
+			attacker = new Footprint(e.Player?.ReferenceHub);
 		}
-		SetHostHitboxes(state: true);
+		ExplosionGrenade.SetHostHitboxes(state: true);
 		HashSet<uint> hashSet = HashSetPool<uint>.Shared.Rent();
 		HashSet<uint> hashSet2 = HashSetPool<uint>.Shared.Rent();
 		float maxRadius = settingsReference.MaxRadius;
@@ -126,7 +126,7 @@ public class ExplosionGrenade : EffectGrenade
 				}
 				if (collider.TryGetComponent<IDestructible>(out var component2))
 				{
-					if (!hashSet.Contains(component2.NetworkId) && ExplodeDestructible(component2, attacker, position, settingsReference, explosionType))
+					if (!hashSet.Contains(component2.NetworkId) && ExplosionGrenade.ExplodeDestructible(component2, attacker, position, settingsReference, explosionType))
 					{
 						hashSet.Add(component2.NetworkId);
 					}
@@ -145,20 +145,20 @@ public class ExplosionGrenade : EffectGrenade
 					}
 					if (((uint)num & (destroyDoors ? 1u : 0u)) != 0 && hashSet2.Add(doorVariant.netId))
 					{
-						ExplodeDoor(doorVariant, position, settingsReference, attacker);
+						ExplosionGrenade.ExplodeDoor(doorVariant, position, settingsReference, attacker);
 					}
 				}
 			}
 			if (collider.attachedRigidbody != null)
 			{
-				ExplodeRigidbody(collider.attachedRigidbody, position, maxRadius, settingsReference);
+				ExplosionGrenade.ExplodeRigidbody(collider.attachedRigidbody, position, maxRadius, settingsReference);
 			}
 		}
 		HashSetPool<uint>.Shared.Return(hashSet);
 		HashSetPool<uint>.Shared.Return(hashSet2);
 		ExplosionGrenade.OnExploded?.Invoke(attacker, position, settingsReference);
 		ServerEvents.OnExplosionSpawned(new ExplosionSpawnedEventArgs(attacker.Hub, position, settingsReference, explosionType, destroyDoors));
-		SetHostHitboxes(state: false);
+		ExplosionGrenade.SetHostHitboxes(state: false);
 	}
 
 	private static void SetHostHitboxes(bool state)
@@ -209,9 +209,9 @@ public class ExplosionGrenade : EffectGrenade
 			if (num2 > 0f && (flag2 || HitboxIdentity.IsDamageable(attacker.Role, hub.GetRoleId())))
 			{
 				float minimalDuration = setts._minimalDuration;
-				TriggerEffect<Burned>(hub, num2 * setts._burnedDuration, minimalDuration);
-				TriggerEffect<Deafened>(hub, num2 * setts._deafenedDuration, minimalDuration);
-				TriggerEffect<Concussed>(hub, num2 * setts._concussedDuration, minimalDuration);
+				ExplosionGrenade.TriggerEffect<Burned>(hub, num2 * setts._burnedDuration, minimalDuration);
+				ExplosionGrenade.TriggerEffect<Deafened>(hub, num2 * setts._deafenedDuration, minimalDuration);
+				ExplosionGrenade.TriggerEffect<Concussed>(hub, num2 * setts._concussedDuration, minimalDuration);
 			}
 			if (!flag2 && attacker.Hub != null)
 			{

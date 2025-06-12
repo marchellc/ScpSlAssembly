@@ -23,18 +23,18 @@ public class EffectCommand : ICommand, IUsageProvider
 		}
 		if (arguments.Count < 4)
 		{
-			response = "To execute this command provide at least 4 arguments!\nUsage: " + Command + " " + this.DisplayCommandUsage();
+			response = "To execute this command provide at least 4 arguments!\nUsage: " + this.Command + " " + this.DisplayCommandUsage();
 			return false;
 		}
 		string text = arguments.At(0);
 		if (!byte.TryParse(arguments.At(1), out var result))
 		{
-			response = "Effect intensity must be a byte value between 0-255.\nUsage: " + Command + " " + this.DisplayCommandUsage() + "'";
+			response = "Effect intensity must be a byte value between 0-255.\nUsage: " + this.Command + " " + this.DisplayCommandUsage() + "'";
 			return false;
 		}
 		if (!float.TryParse(arguments.At(2), out var result2))
 		{
-			response = "Effect duration must be a valid float value.\nUsage: " + Command + " " + this.DisplayCommandUsage() + "'";
+			response = "Effect duration must be a valid float value.\nUsage: " + this.Command + " " + this.DisplayCommandUsage() + "'";
 			return false;
 		}
 		string[] newargs;

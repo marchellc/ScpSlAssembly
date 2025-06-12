@@ -46,29 +46,29 @@ public class BasicDoor : DoorVariant
 
 	public override bool AllowInteracting(ReferenceHub ply, byte colliderId)
 	{
-		return _remainingAnimCooldown <= 0f;
+		return this._remainingAnimCooldown <= 0f;
 	}
 
 	public override float GetExactState()
 	{
-		Vector3 position = _stateMoveable.position;
-		Vector3 position2 = _stateStator.position;
+		Vector3 position = this._stateMoveable.position;
+		Vector3 position2 = this._stateStator.position;
 		float value = Mathf.Abs(position.x - position2.x) + Mathf.Abs(position.y - position2.y) + Mathf.Abs(position.z - position2.z);
-		return Mathf.Clamp01(Mathf.InverseLerp(_stateMinDis, _stateMaxDis, value));
+		return Mathf.Clamp01(Mathf.InverseLerp(this._stateMinDis, this._stateMaxDis, value));
 	}
 
 	public override bool IsConsideredOpen()
 	{
-		return GetExactState() > _consideredOpenThreshold;
+		return this.GetExactState() > this._consideredOpenThreshold;
 	}
 
 	public override bool AnticheatPassageApproved()
 	{
-		if (!IsConsideredOpen())
+		if (!this.IsConsideredOpen())
 		{
-			if (!TargetState)
+			if (!base.TargetState)
 			{
-				return GetExactState() > _anticheatPassableThreshold;
+				return this.GetExactState() > this._anticheatPassableThreshold;
 			}
 			return false;
 		}
@@ -77,20 +77,20 @@ public class BasicDoor : DoorVariant
 
 	public override void LockBypassDenied(ReferenceHub ply, byte colliderId)
 	{
-		RpcPlayBeepSound();
+		this.RpcPlayBeepSound();
 	}
 
 	public override void PermissionsDenied(ReferenceHub ply, byte colliderId)
 	{
-		RpcPlayBeepSound();
-		PlayDeniedButtonAnims(ply.GetCombinedPermissions(this));
+		this.RpcPlayBeepSound();
+		this.PlayDeniedButtonAnims(ply.GetCombinedPermissions(this));
 	}
 
 	[ClientRpc]
 	private void RpcPlayBeepSound()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void Interactables.Interobjects.BasicDoor::RpcPlayBeepSound()", 1846284446, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Interactables.Interobjects.BasicDoor::RpcPlayBeepSound()", 1846284446, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -99,36 +99,36 @@ public class BasicDoor : DoorVariant
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		GeneratedNetworkCode._Write_Interactables_002EInterobjects_002EDoorUtils_002EDoorPermissionFlags(writer, perms);
-		SendRPCInternal("System.Void Interactables.Interobjects.BasicDoor::PlayDeniedButtonAnims(Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", -2075370311, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Interactables.Interobjects.BasicDoor::PlayDeniedButtonAnims(Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", -2075370311, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		if (NetworkServer.active && _remainingAnimCooldown > 0f)
+		if (NetworkServer.active && this._remainingAnimCooldown > 0f)
 		{
-			_remainingAnimCooldown -= Time.deltaTime;
+			this._remainingAnimCooldown -= Time.deltaTime;
 		}
 	}
 
 	protected void Start()
 	{
-		MainAnimator.SetBool(AnimHash, TargetState);
+		this.MainAnimator.SetBool(BasicDoor.AnimHash, base.TargetState);
 	}
 
 	internal override void TargetStateChanged()
 	{
-		MainAnimator.SetBool(AnimHash, TargetState);
+		this.MainAnimator.SetBool(BasicDoor.AnimHash, base.TargetState);
 		if (NetworkServer.active)
 		{
-			_remainingAnimCooldown = _cooldownDuration;
+			this._remainingAnimCooldown = this._cooldownDuration;
 		}
 	}
 
 	static BasicDoor()
 	{
-		AnimHash = Animator.StringToHash("isOpen");
+		BasicDoor.AnimHash = Animator.StringToHash("isOpen");
 		RemoteProcedureCalls.RegisterRpc(typeof(BasicDoor), "System.Void Interactables.Interobjects.BasicDoor::RpcPlayBeepSound()", InvokeUserCode_RpcPlayBeepSound);
 		RemoteProcedureCalls.RegisterRpc(typeof(BasicDoor), "System.Void Interactables.Interobjects.BasicDoor::PlayDeniedButtonAnims(Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", InvokeUserCode_PlayDeniedButtonAnims__DoorPermissionFlags);
 	}
@@ -140,7 +140,7 @@ public class BasicDoor : DoorVariant
 
 	protected void UserCode_RpcPlayBeepSound()
 	{
-		MainSource.PlayOneShot(AudioSettings.AccessDenied);
+		this.MainSource.PlayOneShot(this.AudioSettings.AccessDenied);
 	}
 
 	protected static void InvokeUserCode_RpcPlayBeepSound(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)

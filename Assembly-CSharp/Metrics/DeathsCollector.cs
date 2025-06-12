@@ -48,7 +48,7 @@ public class DeathsCollector : MetricsCollectorBase
 		if (result == ExportPreset.DeathReasons)
 		{
 			errorMessage = null;
-			return PrintDeathReasons(toExport).ToArray();
+			return this.PrintDeathReasons(toExport).ToArray();
 		}
 		errorMessage = $"Undefined preset: {result}.";
 		return null;

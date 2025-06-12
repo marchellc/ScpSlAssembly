@@ -13,7 +13,7 @@ public class Scp330SearchCompletor : PickupSearchCompletor
 	public Scp330SearchCompletor(ReferenceHub hub, ItemPickupBase targetPickup, double maxDistanceSquared)
 		: base(hub, targetPickup, maxDistanceSquared)
 	{
-		Scp330Bag.TryGetBag(hub, out _playerBag);
+		Scp330Bag.TryGetBag(hub, out this._playerBag);
 	}
 
 	protected override bool ValidateAny()
@@ -22,13 +22,13 @@ public class Scp330SearchCompletor : PickupSearchCompletor
 		{
 			return false;
 		}
-		bool flag = _playerBag != null;
+		bool flag = this._playerBag != null;
 		int count = base.Hub.inventory.UserInventory.Items.Count;
-		if ((!flag && count < 8) || (flag && _playerBag.Candies.Count < 6))
+		if ((!flag && count < 8) || (flag && this._playerBag.Candies.Count < 6))
 		{
 			return true;
 		}
-		ShowOverloadHint(base.Hub, flag);
+		Scp330SearchCompletor.ShowOverloadHint(base.Hub, flag);
 		return false;
 	}
 
@@ -53,14 +53,14 @@ public class Scp330SearchCompletor : PickupSearchCompletor
 
 	public override void Complete()
 	{
-		if (!(TargetPickup is Scp330Pickup scp330Pickup))
+		if (!(base.TargetPickup is Scp330Pickup scp330Pickup))
 		{
 			return;
 		}
-		PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(base.Hub, TargetPickup));
-		PlayerPickingUpScp330EventArgs playerPickingUpScp330EventArgs = new PlayerPickingUpScp330EventArgs(base.Hub, scp330Pickup);
-		PlayerEvents.OnPickingUpScp330(playerPickingUpScp330EventArgs);
-		if (playerPickingUpScp330EventArgs.IsAllowed)
+		PlayerEvents.OnSearchedPickup(new PlayerSearchedPickupEventArgs(base.Hub, base.TargetPickup));
+		PlayerPickingUpScp330EventArgs e = new PlayerPickingUpScp330EventArgs(base.Hub, scp330Pickup);
+		PlayerEvents.OnPickingUpScp330(e);
+		if (e.IsAllowed)
 		{
 			Scp330Bag bag = null;
 			Scp330Bag.ServerProcessPickup(base.Hub, scp330Pickup, out bag);
@@ -70,9 +70,9 @@ public class Scp330SearchCompletor : PickupSearchCompletor
 			}
 			else
 			{
-				PickupSyncInfo info = TargetPickup.Info;
+				PickupSyncInfo info = base.TargetPickup.Info;
 				info.InUse = false;
-				TargetPickup.NetworkInfo = info;
+				base.TargetPickup.NetworkInfo = info;
 			}
 			PlayerEvents.OnPickedUpScp330(new PlayerPickedUpScp330EventArgs(base.Hub, scp330Pickup, bag));
 		}

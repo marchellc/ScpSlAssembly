@@ -69,9 +69,9 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 	{
 		get
 		{
-			if (!CanSeeThrough)
+			if (!this.CanSeeThrough)
 			{
-				return GetExactState() > 0f;
+				return this.GetExactState() > 0f;
 			}
 			return true;
 		}
@@ -88,12 +88,12 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 	{
 		get
 		{
-			float exactState = GetExactState();
-			if (!(exactState > 0f) || TargetState)
+			float exactState = this.GetExactState();
+			if (!(exactState > 0f) || this.TargetState)
 			{
 				if (exactState < 1f)
 				{
-					return TargetState;
+					return this.TargetState;
 				}
 				return false;
 			}
@@ -101,21 +101,21 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 		}
 	}
 
-	public DoorPermissionsPolicy PermissionsPolicy => RequiredPermissions;
+	public DoorPermissionsPolicy PermissionsPolicy => this.RequiredPermissions;
 
 	public string RequesterLogSignature
 	{
 		get
 		{
-			if (TryGetComponent<DoorNametagExtension>(out var component))
+			if (base.TryGetComponent<DoorNametagExtension>(out var component))
 			{
 				return "Door_" + component.GetName;
 			}
-			if (!RoomsAlreadyRegistered || Rooms.Length == 0)
+			if (!this.RoomsAlreadyRegistered || this.Rooms.Length == 0)
 			{
 				return "Door_UNKNOWN";
 			}
-			return "Door_" + Rooms[0].Name;
+			return "Door_" + this.Rooms[0].Name;
 		}
 	}
 
@@ -125,12 +125,12 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 	{
 		get
 		{
-			return TargetState;
+			return this.TargetState;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref TargetState, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.TargetState, 1uL, null);
 		}
 	}
 
@@ -138,12 +138,12 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 	{
 		get
 		{
-			return ActiveLocks;
+			return this.ActiveLocks;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref ActiveLocks, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.ActiveLocks, 2uL, null);
 		}
 	}
 
@@ -151,12 +151,12 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 	{
 		get
 		{
-			return DoorId;
+			return this.DoorId;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref DoorId, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.DoorId, 4uL, null);
 		}
 	}
 
@@ -178,53 +178,56 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 			Debug.LogWarning("[Server] function 'System.Void Interactables.Interobjects.DoorUtils.DoorVariant::ServerInteract(ReferenceHub,System.Byte)' called when server was not active");
 			return;
 		}
-		PermissionUsed callback;
-		bool flag = RequiredPermissions.CheckPermissions(ply, this, out callback);
+		bool canOpen = this.RequiredPermissions.CheckPermissions(ply, this, out var callback);
 		bool pluginRequestSent = false;
-		if (ActiveLocks > 0 && !TryResolveLock(ply, out pluginRequestSent))
+		if (this.ActiveLocks > 0 && !this.TryResolveLock(ply, out pluginRequestSent))
 		{
-			if (_remainingDeniedCooldown <= 0f)
+			if (this._remainingDeniedCooldown <= 0f)
 			{
-				_remainingDeniedCooldown = DeniedCooldown;
-				LockBypassDenied(ply, colliderId);
+				this._remainingDeniedCooldown = this.DeniedCooldown;
+				this.LockBypassDenied(ply, colliderId);
 				callback?.Invoke(this, success: false);
 			}
-			PlayerEvents.OnInteractedDoor(new PlayerInteractedDoorEventArgs(ply, this, flag));
+			PlayerEvents.OnInteractedDoor(new PlayerInteractedDoorEventArgs(ply, this, canOpen: false));
 		}
 		else
 		{
-			if (!AllowInteracting(ply, colliderId))
+			if (!this.AllowInteracting(ply, colliderId))
 			{
 				return;
 			}
 			if (!pluginRequestSent)
 			{
-				PlayerInteractingDoorEventArgs playerInteractingDoorEventArgs = new PlayerInteractingDoorEventArgs(ply, this, flag);
-				PlayerEvents.OnInteractingDoor(playerInteractingDoorEventArgs);
-				if (!playerInteractingDoorEventArgs.IsAllowed)
+				PlayerInteractingDoorEventArgs e = new PlayerInteractingDoorEventArgs(ply, this, canOpen);
+				PlayerEvents.OnInteractingDoor(e);
+				if (!e.IsAllowed)
 				{
 					return;
 				}
-				flag = playerInteractingDoorEventArgs.CanOpen;
+				canOpen = e.CanOpen;
 			}
-			if (flag)
+			else
 			{
-				NetworkTargetState = !TargetState;
-				_triggerPlayer = ply;
-				if (DoorName != null)
+				canOpen = true;
+			}
+			if (canOpen)
+			{
+				this.NetworkTargetState = !this.TargetState;
+				this._triggerPlayer = ply;
+				if (this.DoorName != null)
 				{
-					ServerLogs.AddLog(ServerLogs.Modules.Door, ply.LoggedNameFromRefHub() + " " + (TargetState ? "opened" : "closed") + " " + DoorName + ".", ServerLogs.ServerLogType.GameEvent);
+					ServerLogs.AddLog(ServerLogs.Modules.Door, ply.LoggedNameFromRefHub() + " " + (this.TargetState ? "opened" : "closed") + " " + this.DoorName + ".", ServerLogs.ServerLogType.GameEvent);
 				}
 				callback?.Invoke(this, success: true);
 			}
-			else if (_remainingDeniedCooldown <= 0f)
+			else if (this._remainingDeniedCooldown <= 0f)
 			{
-				_remainingDeniedCooldown = DeniedCooldown;
-				PermissionsDenied(ply, colliderId);
+				this._remainingDeniedCooldown = this.DeniedCooldown;
+				this.PermissionsDenied(ply, colliderId);
 				DoorEvents.TriggerAction(this, DoorAction.AccessDenied, ply);
 				callback?.Invoke(this, success: false);
 			}
-			PlayerEvents.OnInteractedDoor(new PlayerInteractedDoorEventArgs(ply, this, flag));
+			PlayerEvents.OnInteractedDoor(new PlayerInteractedDoorEventArgs(ply, this, canOpen));
 		}
 	}
 
@@ -236,23 +239,23 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 			Debug.LogWarning("[Server] function 'System.Void Interactables.Interobjects.DoorUtils.DoorVariant::ServerChangeLock(Interactables.Interobjects.DoorUtils.DoorLockReason,System.Boolean)' called when server was not active");
 			return;
 		}
-		DoorLockReason activeLocks = (DoorLockReason)ActiveLocks;
+		DoorLockReason activeLocks = (DoorLockReason)this.ActiveLocks;
 		activeLocks = ((!newState) ? ((DoorLockReason)((uint)activeLocks & (uint)(ushort)(~(int)reason))) : (activeLocks | reason));
-		if ((uint)ActiveLocks != (uint)activeLocks)
+		if ((uint)this.ActiveLocks != (uint)activeLocks)
 		{
 			if (newState)
 			{
-				if (ActiveLocks == 0)
+				if (this.ActiveLocks == 0)
 				{
 					DoorEvents.TriggerAction(this, DoorAction.Locked, null);
 				}
 			}
-			else if (ActiveLocks != 0)
+			else if (this.ActiveLocks != 0)
 			{
 				DoorEvents.TriggerAction(this, DoorAction.Unlocked, null);
 			}
 		}
-		NetworkActiveLocks = (ushort)activeLocks;
+		this.NetworkActiveLocks = (ushort)activeLocks;
 	}
 
 	public abstract void LockBypassDenied(ReferenceHub ply, byte colliderId);
@@ -277,40 +280,40 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 
 	protected virtual void Awake()
 	{
-		AllColliders = GetColliders();
-		ButtonVariant[] buttons = Buttons;
+		this.AllColliders = this.GetColliders();
+		ButtonVariant[] buttons = this.Buttons;
 		for (int i = 0; i < buttons.Length; i++)
 		{
 			buttons[i].Init(this);
 		}
 		if (NetworkServer.active)
 		{
-			_serverDoorIdClock++;
-			if (_serverDoorIdClock > 255)
+			DoorVariant._serverDoorIdClock++;
+			if (DoorVariant._serverDoorIdClock > 255)
 			{
-				_serverDoorIdClock = 1;
+				DoorVariant._serverDoorIdClock = 1;
 			}
-			NetworkDoorId = (byte)_serverDoorIdClock;
+			this.NetworkDoorId = (byte)DoorVariant._serverDoorIdClock;
 		}
-		AllDoors.Add(this);
+		DoorVariant.AllDoors.Add(this);
 		if (SeedSynchronizer.MapGenerated)
 		{
-			RegisterRooms();
+			this.RegisterRooms();
 		}
 		DoorVariant.OnInstanceCreated?.Invoke(this);
 	}
 
 	protected virtual void OnDestroy()
 	{
-		AllDoors.Remove(this);
-		if (Rooms == null)
+		DoorVariant.AllDoors.Remove(this);
+		if (this.Rooms == null)
 		{
 			return;
 		}
-		RoomIdentifier[] rooms = Rooms;
+		RoomIdentifier[] rooms = this.Rooms;
 		foreach (RoomIdentifier key in rooms)
 		{
-			if (DoorsByRoom.TryGetValue(key, out var value))
+			if (DoorVariant.DoorsByRoom.TryGetValue(key, out var value))
 			{
 				value.Remove(this);
 			}
@@ -320,49 +323,49 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 
 	protected virtual void Update()
 	{
-		if (_existenceCooldown == 0)
+		if (this._existenceCooldown == 0)
 		{
-			if (_prevLock != ActiveLocks)
+			if (this._prevLock != this.ActiveLocks)
 			{
-				LockChanged(_prevLock);
+				this.LockChanged(this._prevLock);
 				this.OnLockChanged?.Invoke();
-				_prevLock = ActiveLocks;
+				this._prevLock = this.ActiveLocks;
 			}
-			if (_prevState != TargetState)
+			if (this._prevState != this.TargetState)
 			{
-				TargetStateChanged();
+				this.TargetStateChanged();
 				this.OnStateChanged?.Invoke();
-				DoorEvents.TriggerAction(this, (!TargetState) ? DoorAction.Closed : DoorAction.Opened, _triggerPlayer);
-				_triggerPlayer = null;
+				DoorEvents.TriggerAction(this, (!this.TargetState) ? DoorAction.Closed : DoorAction.Opened, this._triggerPlayer);
+				this._triggerPlayer = null;
 				if (NetworkServer.active)
 				{
-					if (TargetState)
+					if (this.TargetState)
 					{
-						_collidersStatus &= ~CollisionsDisablingReasons.DoorClosing;
+						this._collidersStatus &= ~CollisionsDisablingReasons.DoorClosing;
 					}
 					else
 					{
-						_collidersStatus |= CollisionsDisablingReasons.DoorClosing;
-						_collidersActivationPending = true;
+						this._collidersStatus |= CollisionsDisablingReasons.DoorClosing;
+						this._collidersActivationPending = true;
 					}
-					SetColliders();
+					this.SetColliders();
 				}
-				_prevState = TargetState;
+				this._prevState = this.TargetState;
 			}
 		}
 		else
 		{
-			_existenceCooldown--;
+			this._existenceCooldown--;
 		}
-		if (NetworkServer.active && _remainingDeniedCooldown > 0f)
+		if (NetworkServer.active && this._remainingDeniedCooldown > 0f)
 		{
-			_remainingDeniedCooldown -= Time.deltaTime;
+			this._remainingDeniedCooldown -= Time.deltaTime;
 		}
-		if (_collidersActivationPending && !AnticheatPassageApproved())
+		if (this._collidersActivationPending && !this.AnticheatPassageApproved())
 		{
-			_collidersActivationPending = false;
-			_collidersStatus &= ~CollisionsDisablingReasons.DoorClosing;
-			SetColliders();
+			this._collidersActivationPending = false;
+			this._collidersStatus &= ~CollisionsDisablingReasons.DoorClosing;
+			this.SetColliders();
 		}
 	}
 
@@ -373,12 +376,12 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 		{
 			return true;
 		}
-		DoorLockMode mode = DoorLockUtils.GetMode((DoorLockReason)ActiveLocks);
-		if (mode.HasFlagFast(DoorLockMode.CanClose) && TargetState)
+		DoorLockMode mode = DoorLockUtils.GetMode((DoorLockReason)this.ActiveLocks);
+		if (mode.HasFlagFast(DoorLockMode.CanClose) && this.TargetState)
 		{
 			return true;
 		}
-		if (mode.HasFlagFast(DoorLockMode.CanOpen) && !TargetState)
+		if (mode.HasFlagFast(DoorLockMode.CanOpen) && !this.TargetState)
 		{
 			return true;
 		}
@@ -386,14 +389,14 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 		{
 			return true;
 		}
-		PlayerInteractingDoorEventArgs playerInteractingDoorEventArgs = new PlayerInteractingDoorEventArgs(ply, this, canOpen: false);
-		PlayerEvents.OnInteractingDoor(playerInteractingDoorEventArgs);
+		PlayerInteractingDoorEventArgs e = new PlayerInteractingDoorEventArgs(ply, this, canOpen: false);
+		PlayerEvents.OnInteractingDoor(e);
 		pluginRequestSent = true;
-		if (!playerInteractingDoorEventArgs.IsAllowed)
+		if (!e.IsAllowed)
 		{
 			return false;
 		}
-		if (playerInteractingDoorEventArgs.CanOpen)
+		if (e.CanOpen)
 		{
 			return true;
 		}
@@ -403,11 +406,11 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 	private BoxCollider[] GetColliders()
 	{
 		List<BoxCollider> list = ListPool<BoxCollider>.Shared.Rent();
-		GetComponentsInChildren(list);
+		base.GetComponentsInChildren(list);
 		for (int num = list.Count - 1; num >= 0; num--)
 		{
 			Collider collider = list[num];
-			Collider[] ignoredColliders = IgnoredColliders;
+			Collider[] ignoredColliders = this.IgnoredColliders;
 			if (ignoredColliders.Contains(collider) || collider.TryGetComponent<ButtonVariant>(out var _))
 			{
 				list.RemoveAt(num);
@@ -420,10 +423,10 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 
 	private void SetColliders()
 	{
-		BoxCollider[] allColliders = AllColliders;
+		BoxCollider[] allColliders = this.AllColliders;
 		for (int i = 0; i < allColliders.Length; i++)
 		{
-			allColliders[i].isTrigger = _collidersStatus != (CollisionsDisablingReasons)0;
+			allColliders[i].isTrigger = this._collidersStatus != (CollisionsDisablingReasons)0;
 		}
 	}
 
@@ -433,16 +436,16 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 		int num = 0;
 		for (int i = 0; i < IRoomConnector.WorldDirections.Length; i++)
 		{
-			if ((position + IRoomConnector.WorldDirections[i]).TryGetRoom(out var room) && DoorsByRoom.GetOrAddNew(room).Add(this))
+			if ((position + IRoomConnector.WorldDirections[i]).TryGetRoom(out var room) && DoorVariant.DoorsByRoom.GetOrAddNew(room).Add(this))
 			{
 				IRoomConnector.RoomsNonAlloc[num] = room;
 				num++;
 			}
 		}
-		Rooms = new RoomIdentifier[num];
-		Array.Copy(IRoomConnector.RoomsNonAlloc, Rooms, num);
+		this.Rooms = new RoomIdentifier[num];
+		Array.Copy(IRoomConnector.RoomsNonAlloc, this.Rooms, num);
 		this.OnRoomsRegistered?.Invoke();
-		RoomsAlreadyRegistered = true;
+		this.RoomsAlreadyRegistered = true;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -451,7 +454,7 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 		SeedSynchronizer.OnGenerationStage += OnMapStage;
 		RoomIdentifier.OnRemoved += delegate(RoomIdentifier x)
 		{
-			DoorsByRoom.Remove(x);
+			DoorVariant.DoorsByRoom.Remove(x);
 		};
 	}
 
@@ -461,7 +464,7 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 		{
 			return;
 		}
-		foreach (DoorVariant allDoor in AllDoors)
+		foreach (DoorVariant allDoor in DoorVariant.AllDoors)
 		{
 			allDoor.RegisterRooms();
 		}
@@ -477,23 +480,23 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(TargetState);
-			writer.WriteUShort(ActiveLocks);
-			NetworkWriterExtensions.WriteByte(writer, DoorId);
+			writer.WriteBool(this.TargetState);
+			writer.WriteUShort(this.ActiveLocks);
+			NetworkWriterExtensions.WriteByte(writer, this.DoorId);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteBool(TargetState);
+			writer.WriteBool(this.TargetState);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteUShort(ActiveLocks);
+			writer.WriteUShort(this.ActiveLocks);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, DoorId);
+			NetworkWriterExtensions.WriteByte(writer, this.DoorId);
 		}
 	}
 
@@ -502,23 +505,23 @@ public abstract class DoorVariant : NetworkBehaviour, IServerInteractable, IInte
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref TargetState, null, reader.ReadBool());
-			GeneratedSyncVarDeserialize(ref ActiveLocks, null, reader.ReadUShort());
-			GeneratedSyncVarDeserialize(ref DoorId, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this.TargetState, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.ActiveLocks, null, reader.ReadUShort());
+			base.GeneratedSyncVarDeserialize(ref this.DoorId, null, NetworkReaderExtensions.ReadByte(reader));
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref TargetState, null, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.TargetState, null, reader.ReadBool());
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref ActiveLocks, null, reader.ReadUShort());
+			base.GeneratedSyncVarDeserialize(ref this.ActiveLocks, null, reader.ReadUShort());
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref DoorId, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this.DoorId, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 	}
 }

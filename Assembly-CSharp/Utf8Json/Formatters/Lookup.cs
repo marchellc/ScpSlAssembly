@@ -8,9 +8,9 @@ internal class Lookup<TKey, TElement> : ILookup<TKey, TElement>, IEnumerable<IGr
 {
 	private readonly Dictionary<TKey, IGrouping<TKey, TElement>> groupings;
 
-	public IEnumerable<TElement> this[TKey key] => groupings[key];
+	public IEnumerable<TElement> this[TKey key] => this.groupings[key];
 
-	public int Count => groupings.Count;
+	public int Count => this.groupings.Count;
 
 	public Lookup(Dictionary<TKey, IGrouping<TKey, TElement>> groupings)
 	{
@@ -19,16 +19,16 @@ internal class Lookup<TKey, TElement> : ILookup<TKey, TElement>, IEnumerable<IGr
 
 	public bool Contains(TKey key)
 	{
-		return groupings.ContainsKey(key);
+		return this.groupings.ContainsKey(key);
 	}
 
 	public IEnumerator<IGrouping<TKey, TElement>> GetEnumerator()
 	{
-		return groupings.Values.GetEnumerator();
+		return this.groupings.Values.GetEnumerator();
 	}
 
 	IEnumerator IEnumerable.GetEnumerator()
 	{
-		return groupings.Values.GetEnumerator();
+		return this.groupings.Values.GetEnumerator();
 	}
 }

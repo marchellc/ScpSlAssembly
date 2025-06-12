@@ -22,7 +22,7 @@ public sealed class DecimalFormatter : IJsonFormatter<decimal>, IJsonFormatter
 
 	public void Serialize(ref JsonWriter writer, decimal value, IJsonFormatterResolver formatterResolver)
 	{
-		if (serializeAsString)
+		if (this.serializeAsString)
 		{
 			writer.WriteString(value.ToString(CultureInfo.InvariantCulture));
 		}

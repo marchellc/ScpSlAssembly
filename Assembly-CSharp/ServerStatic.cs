@@ -50,22 +50,22 @@ public class ServerStatic : MonoBehaviour
 	{
 		get
 		{
-			return _serverTickrate;
+			return ServerStatic._serverTickrate;
 		}
 		set
 		{
 			if (value < -1 || value == 0)
 			{
-				_serverTickrate = 60;
+				ServerStatic._serverTickrate = 60;
 			}
 			else
 			{
-				_serverTickrate = value;
+				ServerStatic._serverTickrate = value;
 			}
-			if (IsDedicated)
+			if (ServerStatic.IsDedicated)
 			{
-				Application.targetFrameRate = _serverTickrate;
-				ServerConsole.AddLog("Server tickrate set to: " + _serverTickrate);
+				Application.targetFrameRate = ServerStatic._serverTickrate;
+				ServerConsole.AddLog("Server tickrate set to: " + ServerStatic._serverTickrate);
 			}
 		}
 	}
@@ -74,26 +74,26 @@ public class ServerStatic : MonoBehaviour
 
 	private void Awake()
 	{
-		ProcessServerArgs();
-		if (!IsDedicated)
+		ServerStatic.ProcessServerArgs();
+		if (!ServerStatic.IsDedicated)
 		{
 			Shutdown.Quit();
 			return;
 		}
-		if (ServerOutput == null)
+		if (ServerStatic.ServerOutput == null)
 		{
 			Shutdown.Quit();
 			return;
 		}
-		ServerOutput.Start();
-		if (IsDedicated)
+		ServerStatic.ServerOutput.Start();
+		if (ServerStatic.IsDedicated)
 		{
 			AudioListener.volume = 0f;
 			AudioListener.pause = true;
 			QualitySettings.pixelLightCount = 0;
 			ServerConsole.AddLog("SCP Secret Laboratory process started. Creating match...", ConsoleColor.Green);
-			ServerTickrate = 60;
-			if (!_serverPortSet)
+			ServerStatic.ServerTickrate = 60;
+			if (!ServerStatic._serverPortSet)
 			{
 				ServerConsole.AddLog("\"-port\" argument is required for dedicated server. Aborting startup.", ConsoleColor.DarkRed);
 				ServerConsole.AddLog("Make sure you are using latest version of LocalAdmin.", ConsoleColor.DarkRed);
@@ -108,11 +108,11 @@ public class ServerStatic : MonoBehaviour
 	[RuntimeInitializeOnLoadMethod]
 	internal static void ProcessServerArgs()
 	{
-		if (_serverArgsProcessed)
+		if (ServerStatic._serverArgsProcessed)
 		{
 			return;
 		}
-		_serverArgsProcessed = true;
+		ServerStatic._serverArgsProcessed = true;
 		int result = 0;
 		int result2 = 0;
 		for (int i = 0; i < StartupArgs.Args.Length; i++)
@@ -121,13 +121,13 @@ public class ServerStatic : MonoBehaviour
 			switch (text)
 			{
 			case "-nographics":
-				IsDedicated = true;
+				ServerStatic.IsDedicated = true;
 				continue;
 			case "-keepsession":
-				KeepSession = true;
+				ServerStatic.KeepSession = true;
 				continue;
 			case "-heartbeat":
-				EnableConsoleHeartbeat = true;
+				ServerStatic.EnableConsoleHeartbeat = true;
 				continue;
 			case "-appdatapath":
 				if (i < StartupArgs.Args.Length - 1)
@@ -156,42 +156,42 @@ public class ServerStatic : MonoBehaviour
 				}
 				break;
 			case "-disableconfigvalidation":
-				DisableConfigValidation = true;
+				ServerStatic.DisableConfigValidation = true;
 				continue;
 			case "-stdout":
-				if (!_serverPortSet && ServerOutput == null)
+				if (!ServerStatic._serverPortSet && ServerStatic.ServerOutput == null)
 				{
-					ServerOutput = new StandardOutput();
+					ServerStatic.ServerOutput = new StandardOutput();
 					continue;
 				}
 				break;
 			}
-			if (text.StartsWith("-key", StringComparison.Ordinal) && text.Length > 4 && !_serverPortSet && ServerOutput == null)
+			if (text.StartsWith("-key", StringComparison.Ordinal) && text.Length > 4 && !ServerStatic._serverPortSet && ServerStatic.ServerOutput == null)
 			{
-				ServerOutput = new FileConsole(text.Remove(0, 4));
+				ServerStatic.ServerOutput = new FileConsole(text.Remove(0, 4));
 			}
-			else if (text.StartsWith("-console", StringComparison.Ordinal) && ServerOutput == null)
+			else if (text.StartsWith("-console", StringComparison.Ordinal) && ServerStatic.ServerOutput == null)
 			{
 				if (ushort.TryParse(text.Remove(0, 8), out var result3))
 				{
-					ServerOutput = new TcpConsole(result3, result2, result);
+					ServerStatic.ServerOutput = new TcpConsole(result3, result2, result);
 				}
 			}
-			else if (text.StartsWith("-id", StringComparison.Ordinal) && !ProcessIdPassed)
+			else if (text.StartsWith("-id", StringComparison.Ordinal) && !ServerStatic.ProcessIdPassed)
 			{
-				ProcessIdPassed = true;
+				ServerStatic.ProcessIdPassed = true;
 				if (int.TryParse(text.Remove(0, 3), out var result4))
 				{
 					ServerConsole.ConsoleProcess = Process.GetProcessById(result4);
 				}
 				if (ServerConsole.ConsoleProcess == null)
 				{
-					OnConsoleExited(null, null);
+					ServerStatic.OnConsoleExited(null, null);
 				}
 				ServerConsole.ConsoleProcess.EnableRaisingEvents = true;
 				ServerConsole.ConsoleProcess.Exited += OnConsoleExited;
 			}
-			else if (text.StartsWith("-port", StringComparison.Ordinal) && !_serverPortSet)
+			else if (text.StartsWith("-port", StringComparison.Ordinal) && !ServerStatic._serverPortSet)
 			{
 				if (!ushort.TryParse(text.Remove(0, 5), out var result5))
 				{
@@ -199,8 +199,8 @@ public class ServerStatic : MonoBehaviour
 					Shutdown.Quit();
 					break;
 				}
-				ServerPort = result5;
-				_serverPortSet = true;
+				ServerStatic.ServerPort = result5;
+				ServerStatic._serverPortSet = true;
 			}
 		}
 	}
@@ -208,7 +208,7 @@ public class ServerStatic : MonoBehaviour
 	private static void OnConsoleExited(object sender, EventArgs e)
 	{
 		ServerConsole.DisposeStatic();
-		IsDedicated = false;
+		ServerStatic.IsDedicated = false;
 		UnityEngine.Debug.Log("OnConsoleExited");
 		ServerConsole.ConsoleProcess?.Dispose();
 		ServerConsole.ConsoleProcess = null;
@@ -217,12 +217,12 @@ public class ServerStatic : MonoBehaviour
 
 	private void OnSceneWasLoaded(Scene scene, LoadSceneMode mode)
 	{
-		if (IsDedicated)
+		if (ServerStatic.IsDedicated)
 		{
 			int buildIndex = scene.buildIndex;
 			if (buildIndex == 3 || buildIndex == 4)
 			{
-				GetComponent<CustomNetworkManager>().CreateMatch();
+				base.GetComponent<CustomNetworkManager>().CreateMatch();
 			}
 		}
 	}

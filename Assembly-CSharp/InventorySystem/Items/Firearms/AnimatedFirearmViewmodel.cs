@@ -13,7 +13,7 @@ public class AnimatedFirearmViewmodel : StandardAnimatedViemodel
 	[SerializeField]
 	private GoopSway.GoopSwaySettings _hipSwaySettings;
 
-	public override float ViewmodelCameraFOV => base.ViewmodelCameraFOV - FovOffset;
+	public override float ViewmodelCameraFOV => base.ViewmodelCameraFOV - this.FovOffset;
 
 	public Firearm ParentFirearm => base.ParentItem as Firearm;
 
@@ -35,14 +35,14 @@ public class AnimatedFirearmViewmodel : StandardAnimatedViemodel
 		base.ParentItem = ply.inventory.CreateItemInstance(id, updateViewmodel: false) as Firearm;
 		uint code;
 		bool reValidate = AttachmentCodeSync.TryGet(id.SerialNumber, out code);
-		ParentFirearm.ViewModel = this;
-		ParentFirearm.IsEquipped = true;
-		ParentFirearm.InitializeSubcomponents();
-		ParentFirearm.ApplyAttachmentsCode(code, reValidate);
+		this.ParentFirearm.ViewModel = this;
+		this.ParentFirearm.IsEquipped = true;
+		this.ParentFirearm.InitializeSubcomponents();
+		this.ParentFirearm.ApplyAttachmentsCode(code, reValidate);
 		base.InitSpectator(ply, id, wasEquipped);
-		UpdateAttachments(ParentFirearm);
-		AnimatorRebind();
-		SubcomponentBase[] allSubcomponents = ParentFirearm.AllSubcomponents;
+		this.UpdateAttachments(this.ParentFirearm);
+		base.AnimatorRebind();
+		SubcomponentBase[] allSubcomponents = this.ParentFirearm.AllSubcomponents;
 		foreach (SubcomponentBase obj in allSubcomponents)
 		{
 			obj.SpectatorInit();
@@ -50,15 +50,15 @@ public class AnimatedFirearmViewmodel : StandardAnimatedViemodel
 		}
 		if (wasEquipped)
 		{
-			if (ParentFirearm.TryGetModule<ISpectatorSyncModule>(out var module))
+			if (this.ParentFirearm.TryGetModule<ISpectatorSyncModule>(out var module))
 			{
 				module.SetupViewmodel(this, base.SkipEquipTime);
 			}
 			else
 			{
-				AnimatorForceUpdate(base.SkipEquipTime, fastMode: false);
+				this.AnimatorForceUpdate(base.SkipEquipTime, fastMode: false);
 			}
-			allSubcomponents = ParentFirearm.AllSubcomponents;
+			allSubcomponents = this.ParentFirearm.AllSubcomponents;
 			for (int i = 0; i < allSubcomponents.Length; i++)
 			{
 				((FirearmSubcomponentBase)allSubcomponents[i]).SpectatorPostprocessSkip();
@@ -69,7 +69,7 @@ public class AnimatedFirearmViewmodel : StandardAnimatedViemodel
 	public override void InitAny()
 	{
 		base.InitAny();
-		Component[] extensions = Extensions;
+		Component[] extensions = this.Extensions;
 		foreach (Component component in extensions)
 		{
 			if (component is IViewmodelExtension viewmodelExtension)
@@ -86,12 +86,12 @@ public class AnimatedFirearmViewmodel : StandardAnimatedViemodel
 			}
 		}
 		AttachmentsUtils.OnAttachmentsApplied += UpdateAttachments;
-		Initialized = true;
+		this.Initialized = true;
 	}
 
 	public bool TryGetExtension<T>(out T extension)
 	{
-		Component[] extensions = Extensions;
+		Component[] extensions = this.Extensions;
 		for (int i = 0; i < extensions.Length; i++)
 		{
 			if (extensions[i] is T val)
@@ -107,12 +107,12 @@ public class AnimatedFirearmViewmodel : StandardAnimatedViemodel
 	internal override void OnEquipped()
 	{
 		base.OnEquipped();
-		UpdateAttachments(ParentFirearm);
+		this.UpdateAttachments(this.ParentFirearm);
 	}
 
 	protected override IItemSwayController GetNewSwayController()
 	{
-		return new FirearmSway(_hipSwaySettings, this);
+		return new FirearmSway(this._hipSwaySettings, this);
 	}
 
 	private void UpdateAttachments(Firearm fa)
@@ -121,16 +121,16 @@ public class AnimatedFirearmViewmodel : StandardAnimatedViemodel
 		{
 			return;
 		}
-		AttachmentGameObjectGroup[] attachments = Attachments;
+		AttachmentGameObjectGroup[] attachments = this.Attachments;
 		foreach (AttachmentGameObjectGroup attachmentGameObjectGroup in attachments)
 		{
 			attachmentGameObjectGroup.SetActive(state: false);
 		}
-		for (int j = 0; j < Attachments.Length; j++)
+		for (int j = 0; j < this.Attachments.Length; j++)
 		{
-			if (ParentFirearm.Attachments[j].IsEnabled)
+			if (this.ParentFirearm.Attachments[j].IsEnabled)
 			{
-				Attachments[j].SetActive(state: true);
+				this.Attachments[j].SetActive(state: true);
 			}
 		}
 		this.OnAttachmentsUpdated?.Invoke();
@@ -140,14 +140,14 @@ public class AnimatedFirearmViewmodel : StandardAnimatedViemodel
 	{
 		if (base.IsSpectator)
 		{
-			ParentFirearm.EquipUpdate();
+			this.ParentFirearm.EquipUpdate();
 		}
 	}
 
 	private void OnDestroy()
 	{
 		AttachmentsUtils.OnAttachmentsApplied -= UpdateAttachments;
-		Component[] extensions = Extensions;
+		Component[] extensions = this.Extensions;
 		for (int i = 0; i < extensions.Length; i++)
 		{
 			if (extensions[i] is IDestroyExtensionReceiver destroyExtensionReceiver)

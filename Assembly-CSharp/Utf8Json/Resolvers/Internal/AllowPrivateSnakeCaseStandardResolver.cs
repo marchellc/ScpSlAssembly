@@ -13,11 +13,11 @@ internal sealed class AllowPrivateSnakeCaseStandardResolver : IJsonFormatterReso
 		{
 			if (typeof(T) == typeof(object))
 			{
-				formatter = (IJsonFormatter<T>)fallbackFormatter;
+				FormatterCache<T>.formatter = (IJsonFormatter<T>)AllowPrivateSnakeCaseStandardResolver.fallbackFormatter;
 			}
 			else
 			{
-				formatter = InnerResolver.Instance.GetFormatter<T>();
+				FormatterCache<T>.formatter = InnerResolver.Instance.GetFormatter<T>();
 			}
 		}
 	}
@@ -36,7 +36,7 @@ internal sealed class AllowPrivateSnakeCaseStandardResolver : IJsonFormatterReso
 					IJsonFormatter<T> jsonFormatter = resolvers[i].GetFormatter<T>();
 					if (jsonFormatter != null)
 					{
-						formatter = jsonFormatter;
+						FormatterCache<T>.formatter = jsonFormatter;
 						break;
 					}
 				}

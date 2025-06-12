@@ -20,25 +20,25 @@ public class Clutter : MonoBehaviour
 	public void SpawnClutter()
 	{
 		Console.AddDebugLog("MGCLTR", "Spawning clutter component on object of name \"" + base.gameObject.name + "\"", MessageImportance.LeastImportant, nospace: true);
-		spawned = true;
-		if (!holderObject)
+		this.spawned = true;
+		if (!this.holderObject)
 		{
-			holderObject = base.gameObject;
+			this.holderObject = base.gameObject;
 		}
-		GameObject gameObject = Object.Instantiate((possiblePrefabs.Count > 0) ? possiblePrefabs[Random.Range(0, possiblePrefabs.Count)] : base.gameObject, holderObject.transform.position + spawnOffset * 0.72745f, holderObject.transform.rotation.normalized, holderObject.transform.parent);
-		if (clutterScale != Vector3.zero)
+		GameObject gameObject = Object.Instantiate((this.possiblePrefabs.Count > 0) ? this.possiblePrefabs[Random.Range(0, this.possiblePrefabs.Count)] : base.gameObject, this.holderObject.transform.position + this.spawnOffset * 0.72745f, this.holderObject.transform.rotation.normalized, this.holderObject.transform.parent);
+		if (this.clutterScale != Vector3.zero)
 		{
-			gameObject.transform.localScale = clutterScale;
+			gameObject.transform.localScale = this.clutterScale;
 		}
 		else
 		{
-			gameObject.transform.localScale = holderObject.transform.localScale;
+			gameObject.transform.localScale = this.holderObject.transform.localScale;
 		}
 		gameObject.SetActive(value: true);
 		if (gameObject.TryGetComponent<Clutter>(out var component))
 		{
 			Object.Destroy(component);
 		}
-		Object.Destroy(holderObject);
+		Object.Destroy(this.holderObject);
 	}
 }

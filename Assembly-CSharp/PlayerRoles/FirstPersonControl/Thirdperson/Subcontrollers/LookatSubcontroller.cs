@@ -25,14 +25,14 @@ public class LookatSubcontroller : SubcontrollerBehaviour
 	public override void Init(AnimatedCharacterModel model, int index)
 	{
 		base.Init(model, index);
-		_lookPassIndex = model.LayerManager.GetLayerIndex(_lookPassLayer);
+		this._lookPassIndex = model.LayerManager.GetLayerIndex(this._lookPassLayer);
 	}
 
 	private void OnAnimatorIK(int layerIndex)
 	{
-		if (!base.Culled && base.HasOwner && layerIndex == _lookPassIndex)
+		if (!base.Culled && base.HasOwner && layerIndex == this._lookPassIndex)
 		{
-			IKLookatPass();
+			this.IKLookatPass();
 		}
 	}
 
@@ -40,17 +40,18 @@ public class LookatSubcontroller : SubcontrollerBehaviour
 	{
 		Vector3 forward = base.ModelTr.forward;
 		Vector3 forward2 = base.Model.OwnerHub.PlayerCameraReference.forward;
-		Vector3 vector = ClampVertical(ClampHorizontal(forward2, forward));
+		Vector3 vector = this.ClampVertical(this.ClampHorizontal(forward2, forward));
 		Vector3 b = new Vector3(forward.x, vector.y, forward.z).NormalizeConstrained(Vector3.up);
 		float t = vector.MagnitudeOnlyY();
 		Vector3 vector2 = Vector3.Slerp(vector, b, t);
-		float bodyWeight = _bodyWeightOverDot.Evaluate(Vector3.Dot(forward, vector2));
-		LookatData lookatData = default(LookatData);
-		lookatData.LookDir = vector2;
-		lookatData.GlobalWeight = 1f;
-		lookatData.BodyWeight = bodyWeight;
-		lookatData.HeadWeight = 1f;
-		LookatData data = lookatData;
+		float bodyWeight = this._bodyWeightOverDot.Evaluate(Vector3.Dot(forward, vector2));
+		LookatData data = new LookatData
+		{
+			LookDir = vector2,
+			GlobalWeight = 1f,
+			BodyWeight = bodyWeight,
+			HeadWeight = 1f
+		};
 		ReadOnlySpan<IAnimatedModelSubcontroller> allSubcontrollers = base.Model.AllSubcontrollers;
 		for (int i = 0; i < allSubcontrollers.Length; i++)
 		{

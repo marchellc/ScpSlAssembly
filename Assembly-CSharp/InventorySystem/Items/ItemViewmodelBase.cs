@@ -17,17 +17,17 @@ public class ItemViewmodelBase : MonoBehaviour, IIdentifierProvider
 	{
 		get
 		{
-			if (_idSet)
+			if (this._idSet)
 			{
-				return _itemId;
+				return this._itemId;
 			}
-			if (!IsLocal || ParentItem.ItemSerial == 0)
+			if (!this.IsLocal || this.ParentItem.ItemSerial == 0)
 			{
 				throw new InvalidOperationException("ItemId could not be set.");
 			}
-			_idSet = true;
-			_itemId = new ItemIdentifier(ParentItem.ItemTypeId, ParentItem.ItemSerial);
-			return _itemId;
+			this._idSet = true;
+			this._itemId = new ItemIdentifier(this.ParentItem.ItemTypeId, this.ParentItem.ItemSerial);
+			return this._itemId;
 		}
 	}
 
@@ -45,23 +45,23 @@ public class ItemViewmodelBase : MonoBehaviour, IIdentifierProvider
 
 	public virtual void InitLocal(ItemBase ib)
 	{
-		Hub = ib.Owner;
-		ParentItem = ib;
-		IsLocal = true;
-		IsSpectator = false;
+		this.Hub = ib.Owner;
+		this.ParentItem = ib;
+		this.IsLocal = true;
+		this.IsSpectator = false;
 		ItemViewmodelBase.OnLocallyInitialized?.Invoke(this);
-		InitAny();
+		this.InitAny();
 	}
 
 	public virtual void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
 	{
-		Hub = ply;
-		IsLocal = false;
-		IsSpectator = true;
-		_itemId = id;
-		_idSet = true;
+		this.Hub = ply;
+		this.IsLocal = false;
+		this.IsSpectator = true;
+		this._itemId = id;
+		this._idSet = true;
 		ItemViewmodelBase.OnSpectatorInitialized?.Invoke(this);
-		InitAny();
+		this.InitAny();
 	}
 
 	public virtual void InitAny()

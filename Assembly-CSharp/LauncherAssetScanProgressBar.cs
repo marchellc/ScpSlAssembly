@@ -23,13 +23,13 @@ public class LauncherAssetScanProgressBar : MonoBehaviour
 
 	private void Awake()
 	{
-		_version.text = GetVersionName();
+		this._version.text = this.GetVersionName();
 	}
 
 	private void Update()
 	{
-		_throbber.fillAmount = Progress;
-		_text.text = $"{Text}\n{Mathf.RoundToInt(Progress * 100f)}%";
+		this._throbber.fillAmount = LauncherAssetScanProgressBar.Progress;
+		this._text.text = $"{LauncherAssetScanProgressBar.Text}\n{Mathf.RoundToInt(LauncherAssetScanProgressBar.Progress * 100f)}%";
 	}
 
 	private string GetVersionName()

@@ -28,11 +28,11 @@ public class SSTextArea : ServerSpecificSettingBase, ISSUpdatable
 
 	public SSTextArea(int? id, string content, FoldoutMode foldoutMode = FoldoutMode.NotCollapsable, string collapsedText = null, TextAlignmentOptions textAlignment = TextAlignmentOptions.TopLeft)
 	{
-		SetId(id, content);
+		base.SetId(id, content);
 		base.Label = content;
 		base.HintDescription = collapsedText;
-		Foldout = foldoutMode;
-		AlignmentOptions = textAlignment;
+		this.Foldout = foldoutMode;
+		this.AlignmentOptions = textAlignment;
 	}
 
 	public void SendTextUpdate(string newText, bool applyOverride = true, Func<ReferenceHub, bool> receiveFilter = null)
@@ -58,15 +58,15 @@ public class SSTextArea : ServerSpecificSettingBase, ISSUpdatable
 	public override void SerializeEntry(NetworkWriter writer)
 	{
 		base.SerializeEntry(writer);
-		writer.WriteByte((byte)Foldout);
-		writer.WriteInt((int)AlignmentOptions);
+		writer.WriteByte((byte)this.Foldout);
+		writer.WriteInt((int)this.AlignmentOptions);
 	}
 
 	public override void DeserializeEntry(NetworkReader reader)
 	{
 		base.DeserializeEntry(reader);
-		Foldout = (FoldoutMode)reader.ReadByte();
-		AlignmentOptions = (TextAlignmentOptions)reader.ReadInt();
+		this.Foldout = (FoldoutMode)reader.ReadByte();
+		this.AlignmentOptions = (TextAlignmentOptions)reader.ReadInt();
 	}
 
 	public override void ApplyDefaultValues()

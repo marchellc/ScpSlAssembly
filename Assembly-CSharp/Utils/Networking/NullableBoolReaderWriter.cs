@@ -24,7 +24,7 @@ public static class NullableBoolReaderWriter
 	public static bool? ReadNullableBool(this NetworkReader reader)
 	{
 		NullableBoolValue nullableBoolValue = (NullableBoolValue)reader.ReadByte();
-		if (nullableBoolValue != 0)
+		if (nullableBoolValue != NullableBoolValue.Null)
 		{
 			return nullableBoolValue == NullableBoolValue.True;
 		}

@@ -18,7 +18,7 @@ public abstract class FirearmCrosshairBase : MonoBehaviour
 		{
 			return 0f;
 		}
-		float adsAmount = GetAdsAmount(firearm);
+		float adsAmount = this.GetAdsAmount(firearm);
 		return 1f - adsAmount;
 	}
 
@@ -37,7 +37,7 @@ public abstract class FirearmCrosshairBase : MonoBehaviour
 		{
 			return;
 		}
-		_fadeGroup.alpha = GetAlpha(firearm);
+		this._fadeGroup.alpha = this.GetAlpha(firearm);
 		float num = 0f;
 		ModuleBase[] modules = firearm.Modules;
 		for (int i = 0; i < modules.Length; i++)
@@ -47,7 +47,7 @@ public abstract class FirearmCrosshairBase : MonoBehaviour
 				num += inaccuracyProviderModule.Inaccuracy;
 			}
 		}
-		UpdateCrosshair(firearm, num);
+		this.UpdateCrosshair(firearm, num);
 	}
 
 	protected abstract void UpdateCrosshair(Firearm firearm, float currentInaccuracy);

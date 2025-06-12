@@ -12,7 +12,7 @@ public sealed class Vector2Formatter : IJsonFormatter<Vector2>, IJsonFormatter
 
 	public Vector2Formatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("x"),
@@ -23,7 +23,7 @@ public sealed class Vector2Formatter : IJsonFormatter<Vector2>, IJsonFormatter
 				1
 			}
 		};
-		____stringByteKeys = new byte[2][]
+		this.____stringByteKeys = new byte[2][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("x"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("y")
@@ -32,9 +32,9 @@ public sealed class Vector2Formatter : IJsonFormatter<Vector2>, IJsonFormatter
 
 	public void Serialize(ref JsonWriter writer, Vector2 value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteSingle(value.x);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteSingle(value.y);
 		writer.WriteEndObject();
 	}
@@ -52,7 +52,7 @@ public sealed class Vector2Formatter : IJsonFormatter<Vector2>, IJsonFormatter
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

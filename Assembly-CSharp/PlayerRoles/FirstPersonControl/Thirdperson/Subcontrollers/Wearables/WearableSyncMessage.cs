@@ -22,80 +22,80 @@ public readonly struct WearableSyncMessage : NetworkMessage
 
 	public WearableSyncMessage(NetworkReader reader)
 	{
-		PlayerNetId = reader.ReadUInt();
-		Flags = (WearableElements)reader.ReadByte();
-		PayloadSize = reader.ReadByte();
-		if (PayloadSize > 0)
+		this.PlayerNetId = reader.ReadUInt();
+		this.Flags = (WearableElements)reader.ReadByte();
+		this.PayloadSize = reader.ReadByte();
+		if (this.PayloadSize > 0)
 		{
-			if (!PayloadPool.TryPop(out Payload))
+			if (!WearableSyncMessage.PayloadPool.TryPop(out this.Payload))
 			{
-				Payload = new byte[128];
+				this.Payload = new byte[128];
 			}
-			reader.ReadBytes(Payload, PayloadSize);
+			reader.ReadBytes(this.Payload, this.PayloadSize);
 		}
 		else
 		{
-			Payload = null;
+			this.Payload = null;
 		}
 	}
 
 	public WearableSyncMessage(ReferenceHub hub, WearableElements flags, NetworkWriter payloadWriter)
 	{
-		PlayerNetId = hub.netId;
-		Flags = flags;
-		PayloadSize = payloadWriter.Position;
-		if (PayloadSize > 128)
+		this.PlayerNetId = hub.netId;
+		this.Flags = flags;
+		this.PayloadSize = payloadWriter.Position;
+		if (this.PayloadSize > 128)
 		{
-			throw new InvalidOperationException(string.Format("Unable to create {0} with payload of {1}.", "WearableSyncMessage", PayloadSize));
+			throw new InvalidOperationException(string.Format("Unable to create {0} with payload of {1}.", "WearableSyncMessage", this.PayloadSize));
 		}
-		if (PayloadSize > 0)
+		if (this.PayloadSize > 0)
 		{
-			if (!PayloadPool.TryPop(out Payload))
+			if (!WearableSyncMessage.PayloadPool.TryPop(out this.Payload))
 			{
-				Payload = new byte[128];
+				this.Payload = new byte[128];
 			}
-			Array.Copy(payloadWriter.buffer, Payload, PayloadSize);
+			Array.Copy(payloadWriter.buffer, this.Payload, this.PayloadSize);
 		}
 		else
 		{
-			Payload = null;
+			this.Payload = null;
 		}
 	}
 
 	public WearableSyncMessage(ReferenceHub hub)
 	{
-		PlayerNetId = hub.netId;
-		Flags = WearableElements.None;
-		PayloadSize = 0;
-		Payload = null;
+		this.PlayerNetId = hub.netId;
+		this.Flags = WearableElements.None;
+		this.PayloadSize = 0;
+		this.Payload = null;
 	}
 
 	public void Free()
 	{
-		PayloadPool.Push(Payload);
+		WearableSyncMessage.PayloadPool.Push(this.Payload);
 	}
 
 	public NetworkReader GetPayloadReader()
 	{
-		if (Payload == null)
+		if (this.Payload == null)
 		{
-			PayloadReader.Position = PayloadReader.Capacity;
+			WearableSyncMessage.PayloadReader.Position = WearableSyncMessage.PayloadReader.Capacity;
 		}
 		else
 		{
-			PayloadReader.SetBuffer(new ArraySegment<byte>(Payload, 0, PayloadSize));
+			WearableSyncMessage.PayloadReader.SetBuffer(new ArraySegment<byte>(this.Payload, 0, this.PayloadSize));
 		}
-		return PayloadReader;
+		return WearableSyncMessage.PayloadReader;
 	}
 
 	public void SerializeAndFree(NetworkWriter writer)
 	{
-		writer.WriteUInt(PlayerNetId);
-		writer.WriteByte((byte)Flags);
-		writer.WriteByte((byte)PayloadSize);
-		if (Payload != null)
+		writer.WriteUInt(this.PlayerNetId);
+		writer.WriteByte((byte)this.Flags);
+		writer.WriteByte((byte)this.PayloadSize);
+		if (this.Payload != null)
 		{
-			writer.WriteBytes(Payload, 0, PayloadSize);
+			writer.WriteBytes(this.Payload, 0, this.PayloadSize);
 		}
 	}
 }

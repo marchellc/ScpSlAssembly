@@ -18,22 +18,22 @@ public class RandomAmbienceTrigger : MonoBehaviour
 
 	private void Start()
 	{
-		Rerandomize();
+		this.Rerandomize();
 	}
 
 	private void Update()
 	{
-		_timeUntilAmbience -= Time.deltaTime;
-		if (!(_timeUntilAmbience > 0f))
+		this._timeUntilAmbience -= Time.deltaTime;
+		if (!(this._timeUntilAmbience > 0f))
 		{
-			_ambientSource.clip = _ambientClips.RandomItem();
-			_ambientSource.Play();
-			Rerandomize();
+			this._ambientSource.clip = this._ambientClips.RandomItem();
+			this._ambientSource.Play();
+			this.Rerandomize();
 		}
 	}
 
 	private void Rerandomize()
 	{
-		_timeUntilAmbience = Random.Range(_minAmbienceTime, _maxAmbienceTime);
+		this._timeUntilAmbience = Random.Range(this._minAmbienceTime, this._maxAmbienceTime);
 	}
 }

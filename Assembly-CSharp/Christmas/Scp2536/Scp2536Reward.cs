@@ -8,7 +8,7 @@ public struct Scp2536Reward
 
 	public Scp2536Reward(ItemType reward, float weight)
 	{
-		Reward = reward;
-		Weight = weight;
+		this.Reward = reward;
+		this.Weight = weight;
 	}
 }

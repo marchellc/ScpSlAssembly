@@ -23,30 +23,30 @@ public class EventManagerModule : ModuleBase
 
 		public AnimatorEventProcessor(EventManagerModule eventManager, Animator animator)
 		{
-			_animator = animator;
-			_eventManager = eventManager;
-			_layers = eventManager.AffectedLayers.Layers;
-			int num = _layers.Length;
-			_currentLayers = new LayerEventProcessor[num];
-			_nextLayers = new LayerEventProcessor[num];
-			_continuationTimes = new Dictionary<int, float>[num];
+			this._animator = animator;
+			this._eventManager = eventManager;
+			this._layers = eventManager.AffectedLayers.Layers;
+			int num = this._layers.Length;
+			this._currentLayers = new LayerEventProcessor[num];
+			this._nextLayers = new LayerEventProcessor[num];
+			this._continuationTimes = new Dictionary<int, float>[num];
 			for (int i = 0; i < num; i++)
 			{
-				int layerIndex = _layers[i];
-				_currentLayers[i] = new LayerEventProcessor(_eventManager, isCurrent: true, layerIndex, animator);
-				_nextLayers[i] = new LayerEventProcessor(_eventManager, isCurrent: false, layerIndex, animator);
-				_continuationTimes[i] = new Dictionary<int, float>();
+				int layerIndex = this._layers[i];
+				this._currentLayers[i] = new LayerEventProcessor(this._eventManager, isCurrent: true, layerIndex, animator);
+				this._nextLayers[i] = new LayerEventProcessor(this._eventManager, isCurrent: false, layerIndex, animator);
+				this._continuationTimes[i] = new Dictionary<int, float>();
 			}
 		}
 
 		public void ProcessAll()
 		{
-			for (int i = 0; i < _layers.Length; i++)
+			for (int i = 0; i < this._layers.Length; i++)
 			{
-				int layerIndex = _layers[i];
-				Dictionary<int, float> continuationTimes = _continuationTimes[i];
-				_currentLayers[i].Process(_animator.GetCurrentAnimatorStateInfo(layerIndex), continuationTimes);
-				_nextLayers[i].Process(_animator.GetNextAnimatorStateInfo(layerIndex), continuationTimes);
+				int layerIndex = this._layers[i];
+				Dictionary<int, float> continuationTimes = this._continuationTimes[i];
+				this._currentLayers[i].Process(this._animator.GetCurrentAnimatorStateInfo(layerIndex), continuationTimes);
+				this._nextLayers[i].Process(this._animator.GetNextAnimatorStateInfo(layerIndex), continuationTimes);
 			}
 		}
 	}
@@ -71,43 +71,43 @@ public class EventManagerModule : ModuleBase
 
 		public LayerEventProcessor(EventManagerModule eventManager, bool isCurrent, int layerIndex, Animator anim)
 		{
-			_eventManager = eventManager;
-			_isCurrent = isCurrent;
-			_layerIndex = layerIndex;
-			_anim = anim;
+			this._eventManager = eventManager;
+			this._isCurrent = isCurrent;
+			this._layerIndex = layerIndex;
+			this._anim = anim;
 		}
 
 		public void Process(AnimatorStateInfo stateInfo, Dictionary<int, float> continuationTimes)
 		{
-			if (_curHash != stateInfo.shortNameHash)
+			if (this._curHash != stateInfo.shortNameHash)
 			{
-				_curHash = stateInfo.shortNameHash;
-				_lastFrame = (_isCurrent ? continuationTimes.GetValueOrDefault(_curHash) : 0f);
-				_hasEvents = _eventManager._nameHashesToIndexes.TryGetValue(_curHash, out _prevEvents);
-				continuationTimes[_curHash] = 0f;
+				this._curHash = stateInfo.shortNameHash;
+				this._lastFrame = (this._isCurrent ? continuationTimes.GetValueOrDefault(this._curHash) : 0f);
+				this._hasEvents = this._eventManager._nameHashesToIndexes.TryGetValue(this._curHash, out this._prevEvents);
+				continuationTimes[this._curHash] = 0f;
 			}
-			if (!_hasEvents || _curHash == 0)
+			if (!this._hasEvents || this._curHash == 0)
 			{
 				return;
 			}
-			float lastFrame = _lastFrame;
-			foreach (int prevEvent in _prevEvents)
+			float lastFrame = this._lastFrame;
+			foreach (int prevEvent in this._prevEvents)
 			{
-				FirearmEvent firearmEvent = _eventManager.Events[prevEvent];
+				FirearmEvent firearmEvent = this._eventManager.Events[prevEvent];
 				float num = stateInfo.normalizedTime;
 				if (stateInfo.loop)
 				{
 					num -= (float)(int)num;
 				}
-				_lastFrame = num * firearmEvent.LengthFrames;
-				if (lastFrame < firearmEvent.Frame && _lastFrame >= firearmEvent.Frame)
+				this._lastFrame = num * firearmEvent.LengthFrames;
+				if (lastFrame < firearmEvent.Frame && this._lastFrame >= firearmEvent.Frame)
 				{
-					EventInvocationDetails data = new EventInvocationDetails(stateInfo, _anim, _layerIndex);
+					EventInvocationDetails data = new EventInvocationDetails(stateInfo, this._anim, this._layerIndex);
 					firearmEvent.InvokeSafe(data);
 				}
-				if (!_isCurrent)
+				if (!this._isCurrent)
 				{
-					continuationTimes[_curHash] = _lastFrame;
+					continuationTimes[this._curHash] = this._lastFrame;
 				}
 			}
 		}
@@ -129,13 +129,13 @@ public class EventManagerModule : ModuleBase
 
 	public void AddEventsForClip(int hash, List<FirearmEvent> list)
 	{
-		if (!_nameHashesToIndexes.TryGetValue(hash, out var value))
+		if (!this._nameHashesToIndexes.TryGetValue(hash, out var value))
 		{
 			return;
 		}
 		foreach (int item in value)
 		{
-			list.Add(Events[item]);
+			list.Add(this.Events[item]);
 		}
 	}
 
@@ -148,36 +148,36 @@ public class EventManagerModule : ModuleBase
 	internal override void OnAdded()
 	{
 		base.OnAdded();
-		CacheIndexes();
+		this.CacheIndexes();
 		if (base.IsLocalPlayer)
 		{
-			_processor = new AnimatorEventProcessor(this, SharedHandsController.Singleton.Hands);
+			this._processor = new AnimatorEventProcessor(this, SharedHandsController.Singleton.Hands);
 		}
 		else if (base.IsServer)
 		{
-			_processor = new AnimatorEventProcessor(this, base.Firearm.ServerSideAnimator);
+			this._processor = new AnimatorEventProcessor(this, base.Firearm.ServerSideAnimator);
 		}
 	}
 
 	internal override void SpectatorInit()
 	{
 		base.SpectatorInit();
-		SkippingForward = true;
-		_processor = new AnimatorEventProcessor(this, SharedHandsController.Singleton.Hands);
-		CacheIndexes();
+		this.SkippingForward = true;
+		this._processor = new AnimatorEventProcessor(this, SharedHandsController.Singleton.Hands);
+		this.CacheIndexes();
 	}
 
 	private void CacheIndexes()
 	{
-		if (FirearmsToNameHashesToIndexes.TryGetValue(base.Firearm.ItemTypeId, out _nameHashesToIndexes))
+		if (EventManagerModule.FirearmsToNameHashesToIndexes.TryGetValue(base.Firearm.ItemTypeId, out this._nameHashesToIndexes))
 		{
 			return;
 		}
-		_nameHashesToIndexes = new Dictionary<int, List<int>>();
-		FirearmsToNameHashesToIndexes[base.Firearm.ItemTypeId] = _nameHashesToIndexes;
-		for (int i = 0; i < Events.Count; i++)
+		this._nameHashesToIndexes = new Dictionary<int, List<int>>();
+		EventManagerModule.FirearmsToNameHashesToIndexes[base.Firearm.ItemTypeId] = this._nameHashesToIndexes;
+		for (int i = 0; i < this.Events.Count; i++)
 		{
-			_nameHashesToIndexes.GetOrAdd(Events[i].NameHash, () => new List<int>()).Add(i);
+			this._nameHashesToIndexes.GetOrAdd(this.Events[i].NameHash, () => new List<int>()).Add(i);
 		}
 	}
 
@@ -185,15 +185,15 @@ public class EventManagerModule : ModuleBase
 	{
 		if (base.Firearm.IsEquipped)
 		{
-			_processor?.ProcessAll();
-			SkippingForward = false;
+			this._processor?.ProcessAll();
+			this.SkippingForward = false;
 		}
 	}
 
 	[ContextMenu("Clear event cache")]
 	private void ClearCache()
 	{
-		FirearmsToNameHashesToIndexes.Clear();
-		CacheIndexes();
+		EventManagerModule.FirearmsToNameHashesToIndexes.Clear();
+		this.CacheIndexes();
 	}
 }

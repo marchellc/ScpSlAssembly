@@ -38,16 +38,16 @@ public static class RoundRestart
 
 	private static void OnClientStarted()
 	{
-		IsRoundRestarting = false;
+		RoundRestart.IsRoundRestarting = false;
 		NetworkClient.ReplaceHandler<RoundRestartMessage>(OnMessageReceived);
 	}
 
 	private static void OnServerStarted()
 	{
-		TimeSpan timeSpan = DateTime.Now - _lastRestartTime;
+		TimeSpan timeSpan = DateTime.Now - RoundRestart._lastRestartTime;
 		if (!(timeSpan.TotalSeconds > 20.0))
 		{
-			PlayerPrefsSl.Set("LastRoundrestartTime", (LastRestartTime + (int)timeSpan.TotalMilliseconds) / 2);
+			PlayerPrefsSl.Set("LastRoundrestartTime", (RoundRestart.LastRestartTime + (int)timeSpan.TotalMilliseconds) / 2);
 		}
 	}
 
@@ -59,11 +59,11 @@ public static class RoundRestart
 		}
 		ServerEvents.OnRoundRestarted();
 		PoolManager.Singleton.ReturnAllPoolObjects();
-		if (IsRoundRestarting)
+		if (RoundRestart.IsRoundRestarting)
 		{
 			return;
 		}
-		IsRoundRestarting = true;
+		RoundRestart.IsRoundRestarting = true;
 		CustomLiteNetLib4MirrorTransport.DelayConnections = true;
 		CustomLiteNetLib4MirrorTransport.UserIdFastReload.Clear();
 		IdleMode.PauseIdleMode = true;
@@ -87,13 +87,13 @@ public static class RoundRestart
 					}
 				}
 				NetworkServer.SendToAll(new RoundRestartMessage(RoundRestartType.FastRestart, 0f, 0, reconnect: true, extendedReconnectionPeriod: true));
-				ChangeLevel(noShutdownMessage: false);
+				RoundRestart.ChangeLevel(noShutdownMessage: false);
 				return;
 			}
-			float offset = (float)LastRestartTime / 1000f;
+			float offset = (float)RoundRestart.LastRestartTime / 1000f;
 			NetworkServer.SendToAll(new RoundRestartMessage(RoundRestartType.FullRestart, offset, 0, reconnect: true, extendedReconnectionPeriod: true));
 		}
-		ChangeLevel(noShutdownMessage: false);
+		RoundRestart.ChangeLevel(noShutdownMessage: false);
 	}
 
 	internal static void ChangeLevel(bool noShutdownMessage)
@@ -108,8 +108,8 @@ public static class RoundRestart
 		RoundRestart.OnRestartTriggered?.Invoke();
 		try
 		{
-			int @int = ConfigFile.ServerConfig.GetInt("restart_after_rounds");
-			flag = @int > 0 && UptimeRounds >= @int;
+			int num = ConfigFile.ServerConfig.GetInt("restart_after_rounds");
+			flag = num > 0 && RoundRestart.UptimeRounds >= num;
 		}
 		catch (Exception ex)
 		{
@@ -159,8 +159,8 @@ public static class RoundRestart
 		}
 		DummyUtils.DestroyAllDummies();
 		GC.Collect();
-		_lastRestartTime = DateTime.Now;
-		UptimeRounds++;
+		RoundRestart._lastRestartTime = DateTime.Now;
+		RoundRestart.UptimeRounds++;
 		NetworkManager.singleton.ServerChangeScene(NetworkManager.singleton.onlineScene);
 	}
 }

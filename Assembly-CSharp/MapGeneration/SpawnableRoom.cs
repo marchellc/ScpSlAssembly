@@ -50,44 +50,44 @@ public class SpawnableRoom : MonoBehaviour
 	{
 		get
 		{
-			if (!_roomIdentifierSet)
+			if (!this._roomIdentifierSet)
 			{
-				_roomIdentifier = GetComponent<RoomIdentifier>();
-				_roomIdentifierSet = true;
+				this._roomIdentifier = base.GetComponent<RoomIdentifier>();
+				this._roomIdentifierSet = true;
 			}
-			return _roomIdentifier;
+			return this._roomIdentifier;
 		}
 	}
 
 	public void RegisterIdentities()
 	{
-		if (!_netIdCacheSet)
+		if (!this._netIdCacheSet)
 		{
-			NetworkIdentity[] componentsInChildren = GetComponentsInChildren<NetworkIdentity>(includeInactive: true);
-			OriginalIdentities = new OriginalNetIdentity[componentsInChildren.Length];
+			NetworkIdentity[] componentsInChildren = base.GetComponentsInChildren<NetworkIdentity>(includeInactive: true);
+			this.OriginalIdentities = new OriginalNetIdentity[componentsInChildren.Length];
 			for (int i = 0; i < componentsInChildren.Length; i++)
 			{
-				OriginalIdentities[i] = new OriginalNetIdentity
+				this.OriginalIdentities[i] = new OriginalNetIdentity
 				{
-					AssetId = (uint)(_nextAssetId + i),
+					AssetId = (uint)(SpawnableRoom._nextAssetId + i),
 					Target = componentsInChildren[i].gameObject
 				};
 			}
-			int num = Mathf.Clamp(MaxAmount, 1, 12);
-			_nextAssetId += (uint)(num * componentsInChildren.Length);
-			_netIdCacheSet = true;
+			int num = Mathf.Clamp(this.MaxAmount, 1, 12);
+			SpawnableRoom._nextAssetId += (uint)(num * componentsInChildren.Length);
+			this._netIdCacheSet = true;
 		}
 	}
 
 	public void SetupNetIdHandlers(int prevSpawnedCnt)
 	{
-		DuplicateId = prevSpawnedCnt;
-		int num = OriginalIdentities.Length;
-		_assetIdOffset = (uint)(num * prevSpawnedCnt);
+		this.DuplicateId = prevSpawnedCnt;
+		int num = this.OriginalIdentities.Length;
+		this._assetIdOffset = (uint)(num * prevSpawnedCnt);
 		for (int i = 0; i < num; i++)
 		{
-			OriginalNetIdentity originalNetIdentity = OriginalIdentities[i];
-			uint assetId = originalNetIdentity.AssetId + _assetIdOffset;
+			OriginalNetIdentity originalNetIdentity = this.OriginalIdentities[i];
+			uint assetId = originalNetIdentity.AssetId + this._assetIdOffset;
 			if (NetworkServer.active)
 			{
 				NetworkServer.Spawn(originalNetIdentity.Target, assetId);
@@ -101,11 +101,11 @@ public class SpawnableRoom : MonoBehaviour
 
 	private GameObject SpawnNetIdentity(SpawnMessage spawnMessage)
 	{
-		OriginalNetIdentity[] originalIdentities = OriginalIdentities;
+		OriginalNetIdentity[] originalIdentities = this.OriginalIdentities;
 		for (int i = 0; i < originalIdentities.Length; i++)
 		{
 			OriginalNetIdentity originalNetIdentity = originalIdentities[i];
-			if (originalNetIdentity.AssetId + _assetIdOffset == spawnMessage.assetId)
+			if (originalNetIdentity.AssetId + this._assetIdOffset == spawnMessage.assetId)
 			{
 				originalNetIdentity.Target.SetActive(value: true);
 				originalNetIdentity.Target.hideFlags = HideFlags.None;

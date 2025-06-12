@@ -13,24 +13,24 @@ public class ObjectiveFeedEntry : MonoBehaviour
 
 	public void CreateDisplay(string text)
 	{
-		_endTime = Time.time + 5f;
-		_textDisplay.text = text;
-		_textDisplay.alpha = 1f;
+		this._endTime = Time.time + 5f;
+		this._textDisplay.text = text;
+		this._textDisplay.alpha = 1f;
 		base.gameObject.SetActive(value: true);
 		base.transform.SetAsFirstSibling();
 	}
 
 	private void Awake()
 	{
-		_textDisplay = GetComponent<TextMeshProUGUI>();
+		this._textDisplay = base.GetComponent<TextMeshProUGUI>();
 	}
 
 	private void Update()
 	{
-		float num = _endTime - Time.time;
+		float num = this._endTime - Time.time;
 		if (num < 1f)
 		{
-			_textDisplay.alpha = num;
+			this._textDisplay.alpha = num;
 		}
 		if (num < 0f)
 		{

@@ -13,12 +13,12 @@ public static class WearableSync
 
 	public static bool TryGetData(ReferenceHub hub, out WearableSyncMessage data)
 	{
-		return Database.TryGetValue(hub.netId, out data);
+		return WearableSync.Database.TryGetValue(hub.netId, out data);
 	}
 
 	public static WearableElements GetFlags(ReferenceHub hub)
 	{
-		if (!TryGetData(hub, out var data))
+		if (!WearableSync.TryGetData(hub, out var data))
 		{
 			return WearableElements.None;
 		}
@@ -34,22 +34,22 @@ public static class WearableSync
 		if (!hub.TryGetWearableSubcontroller<WearableSubcontroller>(out var subcontroller) || newWearables == WearableElements.None)
 		{
 			WearableSyncMessage wearableSyncMessage = new WearableSyncMessage(hub);
-			UpdateDatabaseEntry(wearableSyncMessage);
+			WearableSync.UpdateDatabaseEntry(wearableSyncMessage);
 			NetworkServer.SendToAll(wearableSyncMessage);
 		}
 		else
 		{
-			PayloadWriter.Reset();
-			subcontroller.WriteWearableSyncvars(PayloadWriter, newWearables);
-			WearableSyncMessage wearableSyncMessage2 = new WearableSyncMessage(hub, newWearables, PayloadWriter);
-			UpdateDatabaseEntry(wearableSyncMessage2);
+			WearableSync.PayloadWriter.Reset();
+			subcontroller.WriteWearableSyncvars(WearableSync.PayloadWriter, newWearables);
+			WearableSyncMessage wearableSyncMessage2 = new WearableSyncMessage(hub, newWearables, WearableSync.PayloadWriter);
+			WearableSync.UpdateDatabaseEntry(wearableSyncMessage2);
 			NetworkServer.SendToAll(wearableSyncMessage2);
 		}
 	}
 
 	public static void EnableWearables(this ReferenceHub hub, WearableElements toEnable)
 	{
-		WearableElements flags = GetFlags(hub);
+		WearableElements flags = WearableSync.GetFlags(hub);
 		WearableElements wearableElements = flags | toEnable;
 		if (wearableElements != flags)
 		{
@@ -59,7 +59,7 @@ public static class WearableSync
 
 	public static void DisableWearables(this ReferenceHub hub, WearableElements toDisable)
 	{
-		WearableElements flags = GetFlags(hub);
+		WearableElements flags = WearableSync.GetFlags(hub);
 		WearableElements wearableElements = (WearableElements)((uint)flags & (uint)(byte)(~(int)toDisable));
 		if (wearableElements != flags)
 		{
@@ -70,11 +70,11 @@ public static class WearableSync
 	private static void UpdateDatabaseEntry(WearableSyncMessage newEntry)
 	{
 		uint playerNetId = newEntry.PlayerNetId;
-		if (Database.TryGetValue(playerNetId, out var value) && value.Payload != null)
+		if (WearableSync.Database.TryGetValue(playerNetId, out var value) && value.Payload != null)
 		{
 			value.Free();
 		}
-		Database[playerNetId] = newEntry;
+		WearableSync.Database[playerNetId] = newEntry;
 		if (ReferenceHub.TryGetHubNetID(playerNetId, out var hub) && hub.TryGetWearableSubcontroller<WearableSubcontroller>(out var subcontroller))
 		{
 			subcontroller.ClientReceiveWearables(newEntry.Flags, newEntry.GetPayloadReader());
@@ -92,13 +92,13 @@ public static class WearableSync
 
 	private static void OnClientReady()
 	{
-		Database.Clear();
+		WearableSync.Database.Clear();
 		NetworkClient.ReplaceHandler<WearableSyncMessage>(UpdateDatabaseEntry);
 	}
 
 	private static void OnHubRemoved(ReferenceHub hub)
 	{
-		Database.Remove(hub.netId);
+		WearableSync.Database.Remove(hub.netId);
 	}
 
 	private static void OnHubAdded(ReferenceHub hub)
@@ -107,12 +107,12 @@ public static class WearableSync
 		{
 			return;
 		}
-		foreach (KeyValuePair<uint, WearableSyncMessage> item in Database)
+		foreach (KeyValuePair<uint, WearableSyncMessage> item in WearableSync.Database)
 		{
-			if (item.Value.Flags != 0 && ReferenceHub.TryGetHubNetID(item.Key, out var hub2) && hub2.TryGetWearableSubcontroller<WearableSubcontroller>(out var subcontroller))
+			if (item.Value.Flags != WearableElements.None && ReferenceHub.TryGetHubNetID(item.Key, out var hub2) && hub2.TryGetWearableSubcontroller<WearableSubcontroller>(out var subcontroller))
 			{
-				subcontroller.WriteWearableSyncvars(PayloadWriter, item.Value.Flags);
-				WearableSyncMessage message = new WearableSyncMessage(hub2, item.Value.Flags, PayloadWriter);
+				subcontroller.WriteWearableSyncvars(WearableSync.PayloadWriter, item.Value.Flags);
+				WearableSyncMessage message = new WearableSyncMessage(hub2, item.Value.Flags, WearableSync.PayloadWriter);
 				hub.connectionToClient.Send(message);
 			}
 		}
@@ -120,7 +120,7 @@ public static class WearableSync
 
 	private static void OnServerRoleSet(ReferenceHub hub, RoleTypeId newRole, RoleChangeReason reason)
 	{
-		if (GetFlags(hub) != 0)
+		if (WearableSync.GetFlags(hub) != WearableElements.None)
 		{
 			hub.OverrideWearables(WearableElements.None);
 		}

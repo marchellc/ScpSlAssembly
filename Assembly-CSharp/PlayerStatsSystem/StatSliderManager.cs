@@ -14,14 +14,14 @@ public class StatSliderManager : MonoBehaviour
 
 	private void Awake()
 	{
-		_singleton = this;
+		StatSliderManager._singleton = this;
 		base.gameObject.ForEachComponentInChildren<StatSlider>(RegisterInstance, includeInactive: true);
 	}
 
 	private void RefreshRelations()
 	{
 		StatusBar masterBar = null;
-		foreach (SliderTypePair instance in _instances)
+		foreach (SliderTypePair instance in this._instances)
 		{
 			if (instance.StatSlider.TryGetComponent<StatusBar>(out var component))
 			{
@@ -37,22 +37,22 @@ public class StatSliderManager : MonoBehaviour
 		{
 			throw new InvalidOperationException("Attempting to register stat without a valid module.");
 		}
-		_instances.Add(new SliderTypePair(inst, PlayerStats.DefinedModules[val]));
+		this._instances.Add(new SliderTypePair(inst, PlayerStats.DefinedModules[val]));
 	}
 
 	public static bool TryAdd(StatSlider template, out StatSlider instance)
 	{
-		if (_singleton == null || template == null)
+		if (StatSliderManager._singleton == null || template == null)
 		{
 			instance = null;
 			return false;
 		}
-		instance = UnityEngine.Object.Instantiate(template, _singleton.transform);
-		_singleton.RegisterInstance(instance);
+		instance = UnityEngine.Object.Instantiate(template, StatSliderManager._singleton.transform);
+		StatSliderManager._singleton.RegisterInstance(instance);
 		Transform obj = instance.transform;
 		obj.localScale = Vector3.one;
 		obj.localRotation = Quaternion.identity;
-		_singleton.RefreshRelations();
+		StatSliderManager._singleton.RefreshRelations();
 		if (instance.TryGetComponent<StatusBar>(out var component))
 		{
 			component.UpdateBar(bypassAnims: true);
@@ -63,11 +63,11 @@ public class StatSliderManager : MonoBehaviour
 	public static bool TryRemove<T>() where T : StatBase
 	{
 		Type typeFromHandle = typeof(T);
-		if (_singleton == null || typeof(T).IsAbstract)
+		if (StatSliderManager._singleton == null || typeof(T).IsAbstract)
 		{
 			return false;
 		}
-		List<SliderTypePair> instances = _singleton._instances;
+		List<SliderTypePair> instances = StatSliderManager._singleton._instances;
 		for (int i = 0; i < instances.Count; i++)
 		{
 			SliderTypePair sliderTypePair = instances[i];
@@ -75,7 +75,7 @@ public class StatSliderManager : MonoBehaviour
 			{
 				UnityEngine.Object.Destroy(sliderTypePair.StatSlider.gameObject);
 				instances.RemoveAt(i--);
-				_singleton.RefreshRelations();
+				StatSliderManager._singleton.RefreshRelations();
 				return true;
 			}
 		}
@@ -84,11 +84,11 @@ public class StatSliderManager : MonoBehaviour
 
 	public static bool TryForEach(Action<StatSlider> action)
 	{
-		if (_singleton == null)
+		if (StatSliderManager._singleton == null)
 		{
 			return false;
 		}
-		_singleton._instances.ForEach(delegate(SliderTypePair x)
+		StatSliderManager._singleton._instances.ForEach(delegate(SliderTypePair x)
 		{
 			action(x.StatSlider);
 		});

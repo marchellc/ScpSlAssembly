@@ -10,7 +10,7 @@ public class Scp079ScannerMenuToggler : Scp079ToggleMenuAbilityBase<Scp079Scanne
 	[SerializeField]
 	private int _minimalTierIndex;
 
-	public bool IsUnlocked => base.TierManager.AccessTierIndex >= _minimalTierIndex;
+	public bool IsUnlocked => base.TierManager.AccessTierIndex >= this._minimalTierIndex;
 
 	public override ActionName ActivationKey => ActionName.Scp079BreachScanner;
 
@@ -18,7 +18,7 @@ public class Scp079ScannerMenuToggler : Scp079ToggleMenuAbilityBase<Scp079Scanne
 	{
 		get
 		{
-			if (IsUnlocked)
+			if (this.IsUnlocked)
 			{
 				return Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen;
 			}
@@ -32,7 +32,7 @@ public class Scp079ScannerMenuToggler : Scp079ToggleMenuAbilityBase<Scp079Scanne
 
 	public bool WriteLevelUpNotification(StringBuilder sb, int newLevel)
 	{
-		if (newLevel != _minimalTierIndex)
+		if (newLevel != this._minimalTierIndex)
 		{
 			return false;
 		}
@@ -43,6 +43,6 @@ public class Scp079ScannerMenuToggler : Scp079ToggleMenuAbilityBase<Scp079Scanne
 	protected override void Update()
 	{
 		base.Update();
-		Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>.IsOpen &= IsVisible;
+		Scp079ToggleMenuAbilityBase<Scp079ScannerMenuToggler>.IsOpen &= this.IsVisible;
 	}
 }

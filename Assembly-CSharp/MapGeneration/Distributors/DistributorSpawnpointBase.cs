@@ -13,15 +13,15 @@ public abstract class DistributorSpawnpointBase : MonoBehaviour
 	{
 		get
 		{
-			if (_roomSet)
+			if (this._roomSet)
 			{
-				return _roomName;
+				return this._roomName;
 			}
 			if (base.transform.position.TryGetRoom(out var room))
 			{
-				_roomName = room.Name;
-				_roomSet = true;
-				return _roomName;
+				this._roomName = room.Name;
+				this._roomSet = true;
+				return this._roomName;
 			}
 			Debug.LogError("This spawnpoint (" + base.transform.GetHierarchyPath() + ") has no valid room!", base.gameObject);
 			throw new InvalidOperationException("Misplaced spawnpoint detected!");

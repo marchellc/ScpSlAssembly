@@ -8,14 +8,14 @@ public abstract class DoorVariantExtension : MonoBehaviour
 
 	private void OnValidate()
 	{
-		TargetDoor = GetComponent<DoorVariant>();
+		this.TargetDoor = base.GetComponent<DoorVariant>();
 	}
 
 	private void Awake()
 	{
-		if (!TargetDoor)
+		if (!this.TargetDoor)
 		{
-			TargetDoor = GetComponent<DoorVariant>();
+			this.TargetDoor = base.GetComponent<DoorVariant>();
 		}
 	}
 }

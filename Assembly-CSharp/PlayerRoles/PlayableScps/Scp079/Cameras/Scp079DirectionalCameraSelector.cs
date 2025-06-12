@@ -43,27 +43,27 @@ public class Scp079DirectionalCameraSelector : Scp079KeyAbilityBase
 
 	private float _failMessageSwitchCost;
 
-	protected virtual bool AllowSwitchingBetweenZones => AllowKeybindZoneSwitching.Value;
+	protected virtual bool AllowSwitchingBetweenZones => Scp079DirectionalCameraSelector.AllowKeybindZoneSwitching.Value;
 
 	public override bool IsReady
 	{
 		get
 		{
-			_lastValid = TryGetCamera(out _lastCamera);
-			if (!_lastValid)
+			this._lastValid = this.TryGetCamera(out this._lastCamera);
+			if (!this._lastValid)
 			{
 				return false;
 			}
-			if (!AllowSwitchingBetweenZones && _lastCamera.Room.Zone != base.CurrentCamSync.CurrentCamera.Room.Zone)
+			if (!this.AllowSwitchingBetweenZones && this._lastCamera.Room.Zone != base.CurrentCamSync.CurrentCamera.Room.Zone)
 			{
 				return false;
 			}
-			_lastSwitchCost = base.CurrentCamSync.GetSwitchCost(_lastCamera);
-			return _lastSwitchCost <= base.AuxManager.CurrentAux;
+			this._lastSwitchCost = base.CurrentCamSync.GetSwitchCost(this._lastCamera);
+			return this._lastSwitchCost <= base.AuxManager.CurrentAux;
 		}
 	}
 
-	public override ActionName ActivationKey => _key;
+	public override ActionName ActivationKey => this._key;
 
 	public override bool IsVisible => !Scp079CursorManager.LockCameras;
 
@@ -71,11 +71,11 @@ public class Scp079DirectionalCameraSelector : Scp079KeyAbilityBase
 	{
 		get
 		{
-			if (!(base.AuxManager.CurrentAux < _failMessageSwitchCost))
+			if (!(base.AuxManager.CurrentAux < this._failMessageSwitchCost))
 			{
 				return null;
 			}
-			return GetNoAuxMessage(_failMessageSwitchCost);
+			return base.GetNoAuxMessage(this._failMessageSwitchCost);
 		}
 	}
 
@@ -83,11 +83,11 @@ public class Scp079DirectionalCameraSelector : Scp079KeyAbilityBase
 	{
 		get
 		{
-			if (!_lastValid)
+			if (!this._lastValid)
 			{
-				return _translationNoCamera;
+				return Scp079DirectionalCameraSelector._translationNoCamera;
 			}
-			return string.Format((_lastSwitchCost == 0f) ? _translationFreeSwitch : _translationPaidSwitch, _lastCamera.Label, _lastSwitchCost);
+			return string.Format((this._lastSwitchCost == 0f) ? Scp079DirectionalCameraSelector._translationFreeSwitch : Scp079DirectionalCameraSelector._translationPaidSwitch, this._lastCamera.Label, this._lastSwitchCost);
 		}
 	}
 
@@ -96,10 +96,10 @@ public class Scp079DirectionalCameraSelector : Scp079KeyAbilityBase
 		targetCamera = null;
 		bool result = false;
 		Transform currentCamera = MainCameraController.CurrentCamera;
-		Vector3 normalized = currentCamera.TransformDirection(_direction).normalized;
+		Vector3 normalized = currentCamera.TransformDirection(this._direction).normalized;
 		Vector3Int vector3Int = Vector3Int.zero;
 		float num = -1f;
-		Vector3Int[] worldDirections = WorldDirections;
+		Vector3Int[] worldDirections = Scp079DirectionalCameraSelector.WorldDirections;
 		foreach (Vector3Int vector3Int2 in worldDirections)
 		{
 			float num2 = Vector3.Dot(vector3Int2, normalized);
@@ -136,7 +136,7 @@ public class Scp079DirectionalCameraSelector : Scp079KeyAbilityBase
 
 	protected override void Trigger()
 	{
-		base.CurrentCamSync.ClientSwitchTo(_lastCamera);
+		base.CurrentCamSync.ClientSwitchTo(this._lastCamera);
 	}
 
 	protected override void Start()
@@ -144,17 +144,17 @@ public class Scp079DirectionalCameraSelector : Scp079KeyAbilityBase
 		base.Start();
 		base.CurrentCamSync.OnCameraChanged += delegate
 		{
-			_failMessageSwitchCost = 0f;
+			this._failMessageSwitchCost = 0f;
 		};
-		if (_translationsSet)
+		if (Scp079DirectionalCameraSelector._translationsSet)
 		{
 			return;
 		}
-		_translationsSet = true;
-		_translationNoCamera = Translations.Get(Scp079HudTranslation.NoCamera);
-		_translationPaidSwitch = Translations.Get(Scp079HudTranslation.GoToCamera);
+		Scp079DirectionalCameraSelector._translationsSet = true;
+		Scp079DirectionalCameraSelector._translationNoCamera = Translations.Get(Scp079HudTranslation.NoCamera);
+		Scp079DirectionalCameraSelector._translationPaidSwitch = Translations.Get(Scp079HudTranslation.GoToCamera);
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-		string[] array = _translationPaidSwitch.Split(' ');
+		string[] array = Scp079DirectionalCameraSelector._translationPaidSwitch.Split(' ');
 		foreach (string text in array)
 		{
 			if (!text.Contains("{1}"))
@@ -163,16 +163,16 @@ public class Scp079DirectionalCameraSelector : Scp079KeyAbilityBase
 				stringBuilder.Append(' ');
 			}
 		}
-		_translationFreeSwitch = StringBuilderPool.Shared.ToStringReturn(stringBuilder);
+		Scp079DirectionalCameraSelector._translationFreeSwitch = StringBuilderPool.Shared.ToStringReturn(stringBuilder);
 	}
 
 	private void OnDestroy()
 	{
-		_translationsSet = false;
+		Scp079DirectionalCameraSelector._translationsSet = false;
 	}
 
 	public override void OnFailMessageAssigned()
 	{
-		_failMessageSwitchCost = (_lastValid ? _lastSwitchCost : 0f);
+		this._failMessageSwitchCost = (this._lastValid ? this._lastSwitchCost : 0f);
 	}
 }

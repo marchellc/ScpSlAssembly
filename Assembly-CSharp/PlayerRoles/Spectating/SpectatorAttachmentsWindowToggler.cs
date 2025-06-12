@@ -15,7 +15,7 @@ public class SpectatorAttachmentsWindowToggler : SimpleToggleableMenu
 	protected override void Awake()
 	{
 		base.Awake();
-		_toggleHint.text = string.Format(Translations.Get(AttachmentEditorsTranslation.SpectatorEditorTip), new ReadableKeyCode(MenuActionKey));
+		this._toggleHint.text = string.Format(Translations.Get(AttachmentEditorsTranslation.SpectatorEditorTip), new ReadableKeyCode(base.MenuActionKey));
 	}
 
 	private void OnDisable()

@@ -16,14 +16,14 @@ public static class Scp330Translations
 
 	public static string GetEntryTranslation(Entry entry)
 	{
-		return GetSpecificTranslation((int)entry, entry.ToString());
+		return Scp330Translations.GetSpecificTranslation((int)entry, entry.ToString());
 	}
 
 	public static void GetCandyTranslation(CandyKindID candyKind, out string name, out string desc, out string fx)
 	{
 		int num = 1 + (int)candyKind * 3;
-		name = GetSpecificTranslation(num - 3, candyKind.ToString());
-		desc = GetSpecificTranslation(num - 2, "No Description");
-		fx = GetSpecificTranslation(num - 1, "Unknown effects");
+		name = Scp330Translations.GetSpecificTranslation(num - 3, candyKind.ToString());
+		desc = Scp330Translations.GetSpecificTranslation(num - 2, "No Description");
+		fx = Scp330Translations.GetSpecificTranslation(num - 1, "Unknown effects");
 	}
 }

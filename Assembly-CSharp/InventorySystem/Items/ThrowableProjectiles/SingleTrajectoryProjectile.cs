@@ -22,40 +22,40 @@ public class SingleTrajectoryProjectile : ThrownProjectile
 
 	protected TrajectoryPhysics TrajPhysics => base.PhysicsModule as TrajectoryPhysics;
 
-	protected virtual bool AlreadyCollided => TrajPhysics.DestinationReached;
+	protected virtual bool AlreadyCollided => this.TrajPhysics.DestinationReached;
 
 	protected override void Awake()
 	{
 		base.Awake();
-		TrajPhysics.ServerSetup(base.Position, Vector3.zero, ProjectileRadius, _collisionMask);
+		this.TrajPhysics.ServerSetup(base.Position, Vector3.zero, this.ProjectileRadius, this._collisionMask);
 	}
 
 	public override void ServerOnThrown(Vector3 torque, Vector3 velocity)
 	{
 		base.ServerOnThrown(torque, velocity);
-		TrajPhysics.ServerSetup(base.Position, velocity, ProjectileRadius, _collisionMask);
+		this.TrajPhysics.ServerSetup(base.Position, velocity, this.ProjectileRadius, this._collisionMask);
 	}
 
 	protected virtual void Update()
 	{
-		if (!AlreadyCollided)
+		if (!this.AlreadyCollided)
 		{
 			return;
 		}
-		if (!_destroyedObject.activeSelf)
+		if (!this._destroyedObject.activeSelf)
 		{
-			_destroyedObject.SetActive(value: true);
-			ToggleRenderers(state: false);
-			Vector3 fragmentVel = Vector3.ClampMagnitude(TrajPhysics.LastVelocity, 3f);
-			_destroyedObject.ForEachComponentInChildren(delegate(Rigidbody rb)
+			this._destroyedObject.SetActive(value: true);
+			this.ToggleRenderers(state: false);
+			Vector3 fragmentVel = Vector3.ClampMagnitude(this.TrajPhysics.LastVelocity, 3f);
+			this._destroyedObject.ForEachComponentInChildren(delegate(Rigidbody rb)
 			{
 				rb.linearVelocity = fragmentVel;
 			}, includeInactive: false);
 		}
 		if (NetworkServer.active)
 		{
-			_destroyTime -= Time.deltaTime;
-			if (!(_destroyTime > 0f))
+			this._destroyTime -= Time.deltaTime;
+			if (!(this._destroyTime > 0f))
 			{
 				NetworkServer.Destroy(base.gameObject);
 			}
@@ -64,7 +64,7 @@ public class SingleTrajectoryProjectile : ThrownProjectile
 
 	public override void ToggleRenderers(bool state)
 	{
-		if (_destroyedObject.activeSelf)
+		if (this._destroyedObject.activeSelf)
 		{
 			state = false;
 		}

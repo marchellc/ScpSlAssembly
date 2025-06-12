@@ -39,27 +39,27 @@ public class ProceduralZoneMap : MonoBehaviour, IZoneMap
 		{
 			get
 			{
-				if (SubNodes != null && SubNodes.Any((RoomNode x) => x.Highlighted))
+				if (this.SubNodes != null && this.SubNodes.Any((RoomNode x) => x.Highlighted))
 				{
 					return false;
 				}
-				Vector2 anchoredPosition = _map._rectParent.anchoredPosition;
+				Vector2 anchoredPosition = this._map._rectParent.anchoredPosition;
 				Vector2 vector;
-				if (_parentNode == null)
+				if (this._parentNode == null)
 				{
-					vector = Transform.anchoredPosition;
+					vector = this.Transform.anchoredPosition;
 				}
 				else
 				{
-					Vector2 vector2 = Transform.localPosition;
-					float z = _parentNode.Transform.localEulerAngles.z;
+					Vector2 vector2 = this.Transform.localPosition;
+					float z = this._parentNode.Transform.localEulerAngles.z;
 					Vector2 vector3 = vector2.RotateAroundZ(z);
-					vector = _parentNode.Transform.anchoredPosition + vector3;
+					vector = this._parentNode.Transform.anchoredPosition + vector3;
 				}
 				Vector2 vector4 = anchoredPosition + vector;
-				if (Mathf.Abs(vector4.x) < _halfBounds.x)
+				if (Mathf.Abs(vector4.x) < this._halfBounds.x)
 				{
-					return Mathf.Abs(vector4.y) < _halfBounds.y;
+					return Mathf.Abs(vector4.y) < this._halfBounds.y;
 				}
 				return false;
 			}
@@ -67,40 +67,40 @@ public class ProceduralZoneMap : MonoBehaviour, IZoneMap
 
 		public RoomNode(RoomIdentifier room, ProceduralZoneMap map)
 		{
-			Room = room;
-			Icon = UnityEngine.Object.Instantiate(map._iconTemplate, map._iconTemplate.rectTransform.parent);
-			Label = Icon.GetComponentInChildren<TextMeshProUGUI>();
-			Transform = Icon.rectTransform;
-			_halfBounds = Transform.sizeDelta / 2f;
-			_map = map;
+			this.Room = room;
+			this.Icon = UnityEngine.Object.Instantiate(map._iconTemplate, map._iconTemplate.rectTransform.parent);
+			this.Label = this.Icon.GetComponentInChildren<TextMeshProUGUI>();
+			this.Transform = this.Icon.rectTransform;
+			this._halfBounds = this.Transform.sizeDelta / 2f;
+			this._map = map;
 			if (map.TryGetIcon(room, out var result))
 			{
-				Label.text = result.Name;
-				map._spawnedTexts.Add(Label);
-				map._transformsToUpright.Add(Label.rectTransform);
-				Transform.localPosition = result.TextOffset;
-				Transform.localEulerAngles = Vector3.back * room.transform.eulerAngles.y;
+				this.Label.text = result.Name;
+				map._spawnedTexts.Add(this.Label);
+				map._transformsToUpright.Add(this.Label.rectTransform);
+				this.Transform.localPosition = result.TextOffset;
+				this.Transform.localEulerAngles = Vector3.back * room.transform.eulerAngles.y;
 			}
 			Vector3 position = room.transform.position;
-			Transform.localPosition = new Vector3(position.x, position.z, 0f);
-			Icon.sprite = room.Icon;
-			SubNodes = GenerateElevatorFastTravelSubnodes();
+			this.Transform.localPosition = new Vector3(position.x, position.z, 0f);
+			this.Icon.sprite = room.Icon;
+			this.SubNodes = this.GenerateElevatorFastTravelSubnodes();
 		}
 
 		private RoomNode(RoomNode parent, ProceduralZoneMap map, Scp079Camera targetCam, Sprite icon, int index)
 		{
-			Icon = UnityEngine.Object.Instantiate(map._subNodeTemplate, parent.Transform);
-			Transform = Icon.rectTransform;
-			Icon.sprite = icon;
-			CameraOverride = targetCam;
-			SubNodes = null;
-			_halfBounds = Transform.sizeDelta / 2f;
-			_parentNode = parent;
-			_map = map;
+			this.Icon = UnityEngine.Object.Instantiate(map._subNodeTemplate, parent.Transform);
+			this.Transform = this.Icon.rectTransform;
+			this.Icon.sprite = icon;
+			this.CameraOverride = targetCam;
+			this.SubNodes = null;
+			this._halfBounds = this.Transform.sizeDelta / 2f;
+			this._parentNode = parent;
+			this._map = map;
 			if (map.TryGetIcon(parent.Room, out var result))
 			{
-				map._transformsToUpright.Add(Transform);
-				Transform.localPosition = result.SubNodeFirstOffset + result.SubNodeNextOffset * index;
+				map._transformsToUpright.Add(this.Transform);
+				this.Transform.localPosition = result.SubNodeFirstOffset + result.SubNodeNextOffset * index;
 			}
 		}
 
@@ -112,13 +112,13 @@ public class ProceduralZoneMap : MonoBehaviour, IZoneMap
 			{
 				foreach (ElevatorDoor item in ElevatorDoor.GetDoorsForGroup(values[i]))
 				{
-					if (item.Rooms.Contains(Room))
+					if (item.Rooms.Contains(this.Room))
 					{
 						list.Add(item);
 					}
 				}
 			}
-			if (list.Count < 2 || !Scp079Camera.TryGetMainCamera(Room, out var main))
+			if (list.Count < 2 || !Scp079Camera.TryGetMainCamera(this.Room, out var main))
 			{
 				ListPool<ElevatorDoor>.Shared.Return(list);
 				return null;
@@ -137,8 +137,8 @@ public class ProceduralZoneMap : MonoBehaviour, IZoneMap
 					{
 						list2 = new List<RoomNode>();
 					}
-					Sprite icon = ((num < 0f) ? _map._iconElevatorDown : _map._iconElevatorUp);
-					list2.Add(new RoomNode(this, _map, closest, icon, list2.Count));
+					Sprite icon = ((num < 0f) ? this._map._iconElevatorDown : this._map._iconElevatorUp);
+					list2.Add(new RoomNode(this, this._map, closest, icon, list2.Count));
 				}
 			}
 			ListPool<ElevatorDoor>.Shared.Return(list);
@@ -210,11 +210,11 @@ public class ProceduralZoneMap : MonoBehaviour, IZoneMap
 
 	private readonly Queue<ProceduralZoneMap> _queuedPostProcessing = new Queue<ProceduralZoneMap>();
 
-	public static Color OtherZoneColor => Color.Lerp(new Color(0.5f, 0.5f, 0.5f, 0.042f), CurrentZoneColor, Scp079ScannerGui.AnimInterpolant);
+	public static Color OtherZoneColor => Color.Lerp(new Color(0.5f, 0.5f, 0.5f, 0.042f), ProceduralZoneMap.CurrentZoneColor, Scp079ScannerGui.AnimInterpolant);
 
-	public static Color CurrentRoomColor => Color.Lerp(new Color(0f, 1f, 0.4f, 0.15f), CurrentZoneColor, Scp079ScannerGui.AnimInterpolant);
+	public static Color CurrentRoomColor => Color.Lerp(new Color(0f, 1f, 0.4f, 0.15f), ProceduralZoneMap.CurrentZoneColor, Scp079ScannerGui.AnimInterpolant);
 
-	public static Color HighlightedColor => Color.Lerp(new Color(1f, 1f, 1f, 0.27f), CurrentZoneColor, Scp079ScannerGui.AnimInterpolant);
+	public static Color HighlightedColor => Color.Lerp(new Color(1f, 1f, 1f, 0.27f), ProceduralZoneMap.CurrentZoneColor, Scp079ScannerGui.AnimInterpolant);
 
 	public bool Ready { get; private set; }
 
@@ -225,7 +225,7 @@ public class ProceduralZoneMap : MonoBehaviour, IZoneMap
 
 	private void Update()
 	{
-		if (_queuedPostProcessing.TryDequeue(out var result))
+		if (this._queuedPostProcessing.TryDequeue(out var result))
 		{
 			result.PostProcessRooms();
 			result.Ready = true;
@@ -234,7 +234,7 @@ public class ProceduralZoneMap : MonoBehaviour, IZoneMap
 
 	private bool TryGetIcon(RoomIdentifier room, out IconDefinition result)
 	{
-		IconDefinition[] roomIcons = _roomIcons;
+		IconDefinition[] roomIcons = this._roomIcons;
 		for (int i = 0; i < roomIcons.Length; i++)
 		{
 			IconDefinition iconDefinition = roomIcons[i];
@@ -259,23 +259,23 @@ public class ProceduralZoneMap : MonoBehaviour, IZoneMap
 
 	private void UpdateNode(Scp079Camera curCam, RoomNode node)
 	{
-		bool flag = curCam.Room.Zone == Zone;
+		bool flag = curCam.Room.Zone == this.Zone;
 		Scp079Camera result = node.CameraOverride;
 		node.SubNodes?.ForEach(delegate(RoomNode subNode)
 		{
-			UpdateNode(curCam, subNode);
+			this.UpdateNode(curCam, subNode);
 		});
-		if (node.Highlighted && (result != null || TryGetCamOfRoom(curCam, node.Room, out result)))
+		if (node.Highlighted && (result != null || this.TryGetCamOfRoom(curCam, node.Room, out result)))
 		{
 			if (result != curCam)
 			{
-				_highlightedCamera = result;
+				this._highlightedCamera = result;
 			}
-			node.Icon.color = HighlightedColor;
+			node.Icon.color = ProceduralZoneMap.HighlightedColor;
 		}
 		else
 		{
-			node.Icon.color = (flag ? CurrentZoneColor : OtherZoneColor);
+			node.Icon.color = (flag ? ProceduralZoneMap.CurrentZoneColor : ProceduralZoneMap.OtherZoneColor);
 		}
 	}
 
@@ -283,37 +283,37 @@ public class ProceduralZoneMap : MonoBehaviour, IZoneMap
 	{
 		foreach (RoomIdentifier allRoomIdentifier in RoomIdentifier.AllRoomIdentifiers)
 		{
-			if (allRoomIdentifier.Zone == Zone)
+			if (allRoomIdentifier.Zone == this.Zone)
 			{
 				RoomNode roomNode = new RoomNode(allRoomIdentifier, this);
-				NodesByRoom.Add(allRoomIdentifier, roomNode);
-				AllNodes.Add(roomNode);
+				this.NodesByRoom.Add(allRoomIdentifier, roomNode);
+				this.AllNodes.Add(roomNode);
 			}
 		}
-		foreach (RoomNode value in NodesByRoom.Values)
+		foreach (RoomNode value in this.NodesByRoom.Values)
 		{
-			value.Transform.localPosition *= _positionScale;
+			value.Transform.localPosition *= this._positionScale;
 		}
 	}
 
 	protected virtual void PostProcessRooms()
 	{
-		foreach (TextMeshProUGUI spawnedText in _spawnedTexts)
+		foreach (TextMeshProUGUI spawnedText in this._spawnedTexts)
 		{
 			if (!string.IsNullOrEmpty(spawnedText.text))
 			{
 				spawnedText.GetComponentInChildren<LayoutGroup>(includeInactive: true).transform.localPosition = Vector3.down * spawnedText.rectTransform.sizeDelta.y / 2f;
 			}
 		}
-		foreach (RectTransform item in _transformsToUpright)
+		foreach (RectTransform item in this._transformsToUpright)
 		{
-			item.rotation = _rectParent.rotation;
+			item.rotation = this._rectParent.rotation;
 		}
-		UnityEngine.Object.Destroy(_iconTemplate.gameObject);
-		UnityEngine.Object.Destroy(_subNodeTemplate.gameObject);
+		UnityEngine.Object.Destroy(this._iconTemplate.gameObject);
+		UnityEngine.Object.Destroy(this._subNodeTemplate.gameObject);
 		Bounds rectBounds = default(Bounds);
 		bool flag = true;
-		foreach (RoomNode allNode in AllNodes)
+		foreach (RoomNode allNode in this.AllNodes)
 		{
 			RectTransform rectTransform = allNode.Transform;
 			Bounds bounds = new Bounds(rectTransform.anchoredPosition, rectTransform.sizeDelta);
@@ -327,44 +327,44 @@ public class ProceduralZoneMap : MonoBehaviour, IZoneMap
 			}
 			flag = false;
 		}
-		RectBounds = rectBounds;
-		RectTransform rectTransform2 = ZoneLabel.rectTransform;
+		this.RectBounds = rectBounds;
+		RectTransform rectTransform2 = this.ZoneLabel.rectTransform;
 		rectTransform2.anchoredPosition = (Vector2)rectBounds.center + Vector2.up * (rectBounds.extents.y + rectTransform2.sizeDelta.y);
-		ZoneLabel.text = Translations.Get(ZoneTranslations[Zone]);
+		this.ZoneLabel.text = Translations.Get(ProceduralZoneMap.ZoneTranslations[this.Zone]);
 	}
 
 	public void Generate()
 	{
-		PlaceRooms();
-		_queuedPostProcessing.Enqueue(this);
+		this.PlaceRooms();
+		this._queuedPostProcessing.Enqueue(this);
 	}
 
 	public virtual void UpdateOpened(Scp079Camera curCam)
 	{
-		_highlightedCamera = null;
-		foreach (RoomNode allNode in AllNodes)
+		this._highlightedCamera = null;
+		foreach (RoomNode allNode in this.AllNodes)
 		{
-			UpdateNode(curCam, allNode);
+			this.UpdateNode(curCam, allNode);
 		}
-		if (NodesByRoom.TryGetValue(curCam.Room, out var value))
+		if (this.NodesByRoom.TryGetValue(curCam.Room, out var value))
 		{
-			value.Icon.color = CurrentRoomColor;
+			value.Icon.color = ProceduralZoneMap.CurrentRoomColor;
 			value.SubNodes?.ForEach(delegate(RoomNode x)
 			{
-				x.Icon.color = CurrentRoomColor;
+				x.Icon.color = ProceduralZoneMap.CurrentRoomColor;
 			});
 		}
 	}
 
 	public bool TryGetCamera(out Scp079Camera target)
 	{
-		target = _highlightedCamera as Scp079Camera;
+		target = this._highlightedCamera as Scp079Camera;
 		return target != null;
 	}
 
 	public bool TryGetCenterTransform(Scp079Camera curCam, out Vector3 center)
 	{
-		if (NodesByRoom.TryGetValue(curCam.Room, out var value))
+		if (this.NodesByRoom.TryGetValue(curCam.Room, out var value))
 		{
 			center = -value.Transform.anchoredPosition;
 			return true;
@@ -384,7 +384,7 @@ public class ProceduralZoneMap : MonoBehaviour, IZoneMap
 		{
 			return false;
 		}
-		if (!NodesByRoom.TryGetValue(room, out var value))
+		if (!this.NodesByRoom.TryGetValue(room, out var value))
 		{
 			return false;
 		}
@@ -393,15 +393,15 @@ public class ProceduralZoneMap : MonoBehaviour, IZoneMap
 			RectTransform rectTransform = value.Transform;
 			Transform transform = room.transform;
 			Vector3 vector = transform.InverseTransformPoint(position);
-			Vector2 vector2 = new Vector3(vector.x, vector.z) * _positionScale;
+			Vector2 vector2 = new Vector3(vector.x, vector.z) * this._positionScale;
 			IconDefinition result;
-			Bounds bounds = (TryGetIcon(room, out result) ? result.IndicatorLimits : new Bounds(Vector3.zero, rectTransform.sizeDelta));
+			Bounds bounds = (this.TryGetIcon(room, out result) ? result.IndicatorLimits : new Bounds(Vector3.zero, rectTransform.sizeDelta));
 			indicator.SetParent(rectTransform);
 			vector2.x = Mathf.Clamp(vector2.x, bounds.min.x, bounds.max.x);
 			vector2.y = Mathf.Clamp(vector2.y, bounds.min.y, bounds.max.y);
 			indicator.localPosition = vector2;
 			indicator.localScale = Vector3.one;
-			indicator.rotation = _rectParent.rotation;
+			indicator.rotation = this._rectParent.rotation;
 			indicator.Rotate(Vector3.back * (fpcRole.FpcModule.MouseLook.CurrentHorizontal - transform.eulerAngles.y - rectTransform.localEulerAngles.z), Space.Self);
 		}
 		else

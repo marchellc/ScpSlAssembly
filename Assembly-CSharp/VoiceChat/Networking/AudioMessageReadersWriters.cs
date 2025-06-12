@@ -10,8 +10,8 @@ public static class AudioMessageReadersWriters
 	{
 		byte controllerId = reader.ReadByte();
 		int num = reader.ReadUShort();
-		reader.ReadBytes(ReceiveArray, num);
-		return new AudioMessage(controllerId, ReceiveArray, num);
+		reader.ReadBytes(AudioMessageReadersWriters.ReceiveArray, num);
+		return new AudioMessage(controllerId, AudioMessageReadersWriters.ReceiveArray, num);
 	}
 
 	public static void SerializeVoiceMessage(this NetworkWriter writer, AudioMessage msg)

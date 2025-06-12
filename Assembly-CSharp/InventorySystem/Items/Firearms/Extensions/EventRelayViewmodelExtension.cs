@@ -26,7 +26,7 @@ public class EventRelayViewmodelExtension : MonoBehaviour, IViewmodelExtension
 
 	private void OnTriggered(int guid)
 	{
-		Relay[] relays = _relays;
+		Relay[] relays = this._relays;
 		foreach (Relay relay in relays)
 		{
 			if (relay.GUID == guid)

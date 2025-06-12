@@ -40,7 +40,7 @@ public class Scp079PingInstance : MonoBehaviour
 	{
 		set
 		{
-			_spriteRenderer.sprite = value;
+			this._spriteRenderer.sprite = value;
 		}
 	}
 
@@ -60,7 +60,7 @@ public class Scp079PingInstance : MonoBehaviour
 			{
 				return false;
 			}
-			if ((_startPos - MainCameraController.CurrentCamera.position).sqrMagnitude > 3000f)
+			if ((this._startPos - MainCameraController.CurrentCamera.position).sqrMagnitude > 3000f)
 			{
 				return false;
 			}
@@ -72,42 +72,42 @@ public class Scp079PingInstance : MonoBehaviour
 
 	private void Start()
 	{
-		_startPos = base.transform.position;
-		UnityEngine.Object.Destroy(base.gameObject, _destroyTime);
-		_wasVisible = true;
-		UpdateVisibility();
-		Instances.Add(this);
+		this._startPos = base.transform.position;
+		UnityEngine.Object.Destroy(base.gameObject, this._destroyTime);
+		this._wasVisible = true;
+		this.UpdateVisibility();
+		Scp079PingInstance.Instances.Add(this);
 		Scp079PingInstance.OnSpawned?.Invoke(this);
 	}
 
 	private void OnDestroy()
 	{
-		Instances.Remove(this);
+		Scp079PingInstance.Instances.Remove(this);
 	}
 
 	private void Update()
 	{
 		Transform currentCamera = MainCameraController.CurrentCamera;
-		float num = Mathf.Max(_distanceCap, Vector3.Distance(currentCamera.position, _icon.position));
-		_icon.LookAt(currentCamera);
-		_icon.localScale = _sizeOverDistance.Evaluate(num) * num * Vector3.one;
-		UpdateVisibility();
+		float num = Mathf.Max(this._distanceCap, Vector3.Distance(currentCamera.position, this._icon.position));
+		this._icon.LookAt(currentCamera);
+		this._icon.localScale = this._sizeOverDistance.Evaluate(num) * num * Vector3.one;
+		this.UpdateVisibility();
 	}
 
 	private void OnValidate()
 	{
-		_renderers = GetComponentsInChildren<Renderer>();
+		this._renderers = base.GetComponentsInChildren<Renderer>();
 	}
 
 	private void UpdateVisibility()
 	{
-		if (_wasVisible != IsVisible)
+		if (this._wasVisible != this.IsVisible)
 		{
-			_src.mute = _wasVisible;
-			_wasVisible = !_wasVisible;
-			_renderers.ForEach(delegate(Renderer x)
+			this._src.mute = this._wasVisible;
+			this._wasVisible = !this._wasVisible;
+			this._renderers.ForEach(delegate(Renderer x)
 			{
-				x.enabled = _wasVisible;
+				x.enabled = this._wasVisible;
 			});
 		}
 	}

@@ -46,7 +46,7 @@ public class DoorTPCommand : ICommand, IUsageProvider
 			response = "Can't find door " + text + ".";
 			return false;
 		}
-		Vector3 position = EnsurePositionSafety(value.transform);
+		Vector3 position = DoorTPCommand.EnsurePositionSafety(value.transform);
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
 		int num = 0;
 		foreach (ReferenceHub item in list)

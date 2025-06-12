@@ -16,7 +16,7 @@ internal class StringConstantValueMetaMember : MetaMember
 	public override void EmitLoadValue(ILGenerator il)
 	{
 		il.Emit(OpCodes.Pop);
-		il.Emit(OpCodes.Ldstr, constant);
+		il.Emit(OpCodes.Ldstr, this.constant);
 	}
 
 	public override void EmitStoreValue(ILGenerator il)

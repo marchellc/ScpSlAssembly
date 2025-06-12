@@ -35,7 +35,7 @@ public class Scp956Target : StatusEffectBase, IMovementSpeedModifier, ICursorOve
 			float num2 = num;
 			if (base.IsEnabled)
 			{
-				return (double)_activeTime > (double)num2 - NetworkTime.rtt;
+				return (double)this._activeTime > (double)num2 - NetworkTime.rtt;
 			}
 			return false;
 		}
@@ -43,7 +43,7 @@ public class Scp956Target : StatusEffectBase, IMovementSpeedModifier, ICursorOve
 
 	public Vector3 Position => (base.Hub.roleManager.CurrentRole as HumanRole).FpcModule.Position;
 
-	public bool MovementModifierActive => IsAffected;
+	public bool MovementModifierActive => this.IsAffected;
 
 	public float MovementSpeedMultiplier => 0f;
 
@@ -57,7 +57,7 @@ public class Scp956Target : StatusEffectBase, IMovementSpeedModifier, ICursorOve
 		{
 			if (base.Hub.isLocalPlayer)
 			{
-				return IsAffected;
+				return this.IsAffected;
 			}
 			return false;
 		}
@@ -87,16 +87,16 @@ public class Scp956Target : StatusEffectBase, IMovementSpeedModifier, ICursorOve
 	protected override void Enabled()
 	{
 		base.Enabled();
-		_musicSource.Stop();
-		_musicSource.volume = 1f;
-		_musicSource.loop = false;
+		this._musicSource.Stop();
+		this._musicSource.volume = 1f;
+		this._musicSource.loop = false;
 		switch ((EffectReason)base.Intensity)
 		{
 		case EffectReason.HasCandy:
-			_musicSource.PlayOneShot(_longClip);
+			this._musicSource.PlayOneShot(this._longClip);
 			break;
 		case EffectReason.Child:
-			_musicSource.PlayOneShot(_shortClip);
+			this._musicSource.PlayOneShot(this._shortClip);
 			break;
 		}
 		Scp956Pinata.IsSpawned = true;
@@ -110,11 +110,11 @@ public class Scp956Target : StatusEffectBase, IMovementSpeedModifier, ICursorOve
 	protected override void Update()
 	{
 		base.Update();
-		_musicSource.mute = !base.IsLocalPlayer && !base.IsSpectated;
+		this._musicSource.mute = !base.IsLocalPlayer && !base.IsSpectated;
 		if (base.IsEnabled)
 		{
-			_activeTime += Time.deltaTime;
-			if (IsAffected)
+			this._activeTime += Time.deltaTime;
+			if (this.IsAffected)
 			{
 				if (NetworkServer.active || base.IsLocalPlayer)
 				{
@@ -126,21 +126,21 @@ public class Scp956Target : StatusEffectBase, IMovementSpeedModifier, ICursorOve
 				}
 				if (base.IsLocalPlayer)
 				{
-					LookAtPinata();
+					this.LookAtPinata();
 				}
-				if (!_musicSource.loop)
+				if (!this._musicSource.loop)
 				{
-					_musicSource.loop = true;
-					_musicSource.volume = 1f;
-					_musicSource.Stop();
-					_musicSource.Play();
+					this._musicSource.loop = true;
+					this._musicSource.volume = 1f;
+					this._musicSource.Stop();
+					this._musicSource.Play();
 				}
 			}
 		}
 		else
 		{
-			_activeTime = 0f;
-			_musicSource.volume -= Time.deltaTime * 3f;
+			this._activeTime = 0f;
+			this._musicSource.volume -= Time.deltaTime * 3f;
 		}
 	}
 

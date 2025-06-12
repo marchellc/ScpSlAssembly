@@ -8,11 +8,11 @@ public class AmnesiaVision : StatusEffectBase, ISoundtrackMutingEffect
 
 	public bool MuteSoundtrack => false;
 
-	public float LastActive => Time.timeSinceLevelLoad - _lastTime;
+	public float LastActive => Time.timeSinceLevelLoad - this._lastTime;
 
 	protected override void Enabled()
 	{
 		base.Enabled();
-		_lastTime = Time.timeSinceLevelLoad;
+		this._lastTime = Time.timeSinceLevelLoad;
 	}
 }

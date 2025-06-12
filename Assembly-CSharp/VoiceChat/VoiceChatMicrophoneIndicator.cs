@@ -32,31 +32,31 @@ public class VoiceChatMicrophoneIndicator : MonoBehaviour
 	{
 		get
 		{
-			return _loudnessIndicator.fillAmount;
+			return this._loudnessIndicator.fillAmount;
 		}
 		set
 		{
-			_loudnessIndicator.fillAmount = Mathf.Clamp01(value);
+			this._loudnessIndicator.fillAmount = Mathf.Clamp01(value);
 		}
 	}
 
 	private void Awake()
 	{
-		_singleton = this;
-		_singletonSet = true;
+		VoiceChatMicrophoneIndicator._singleton = this;
+		VoiceChatMicrophoneIndicator._singletonSet = true;
 		base.gameObject.SetActive(value: false);
 		PlayerRoleManager.OnRoleChanged += UpdateColor;
 	}
 
 	private void OnDestroy()
 	{
-		_singletonSet = false;
+		VoiceChatMicrophoneIndicator._singletonSet = false;
 		PlayerRoleManager.OnRoleChanged -= UpdateColor;
 	}
 
 	private void Update()
 	{
-		FillAmount -= Time.deltaTime * _dropSpeed;
+		this.FillAmount -= Time.deltaTime * this._dropSpeed;
 	}
 
 	private void UpdateColor(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
@@ -64,8 +64,8 @@ public class VoiceChatMicrophoneIndicator : MonoBehaviour
 		if (userHub.isLocalPlayer)
 		{
 			Color roleColor = newRole.RoleColor;
-			UpdateColor(_outline, roleColor);
-			UpdateColor(_loudnessIndicator, roleColor);
+			this.UpdateColor(this._outline, roleColor);
+			this.UpdateColor(this._loudnessIndicator, roleColor);
 		}
 	}
 
@@ -77,15 +77,15 @@ public class VoiceChatMicrophoneIndicator : MonoBehaviour
 	private void RefreshIndicator(bool isSpeaking, float loudness)
 	{
 		base.gameObject.SetActive(isSpeaking);
-		float num = Mathf.Pow(Mathf.InverseLerp(_minValue, _maxValue, loudness), _curvePower);
-		FillAmount = (isSpeaking ? Mathf.Max(FillAmount, num) : num);
+		float num = Mathf.Pow(Mathf.InverseLerp(this._minValue, this._maxValue, loudness), this._curvePower);
+		this.FillAmount = (isSpeaking ? Mathf.Max(this.FillAmount, num) : num);
 	}
 
 	public static void ShowIndicator(bool isSpeaking, float loudness)
 	{
-		if (_singletonSet)
+		if (VoiceChatMicrophoneIndicator._singletonSet)
 		{
-			_singleton.RefreshIndicator(isSpeaking, loudness);
+			VoiceChatMicrophoneIndicator._singleton.RefreshIndicator(isSpeaking, loudness);
 		}
 	}
 }

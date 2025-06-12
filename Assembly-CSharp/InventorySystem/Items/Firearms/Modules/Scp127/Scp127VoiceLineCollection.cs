@@ -46,11 +46,11 @@ public class Scp127VoiceLineCollection : ScriptableObject
 
 	public bool TryGetRandom(RoleTypeId playerRole, out AudioClip voiceLine)
 	{
-		CompatibleCombiner.Clear();
+		Scp127VoiceLineCollection.CompatibleCombiner.Clear();
 		bool flag = false;
 		bool flag2 = false;
 		bool flag3 = false;
-		RoleBased[] roleLines = RoleLines;
+		RoleBased[] roleLines = this.RoleLines;
 		for (int i = 0; i < roleLines.Length; i++)
 		{
 			RoleBased roleBased = roleLines[i];
@@ -59,13 +59,13 @@ public class Scp127VoiceLineCollection : ScriptableObject
 				flag |= roleBased.AllowTeam;
 				flag2 |= roleBased.AllowGeneric;
 				flag3 = true;
-				CompatibleCombiner.AddRange(roleBased.Lines);
+				Scp127VoiceLineCollection.CompatibleCombiner.AddRange(roleBased.Lines);
 			}
 		}
 		if (flag || !flag3)
 		{
 			Team team = playerRole.GetTeam();
-			TeamBased[] teamLines = TeamLines;
+			TeamBased[] teamLines = this.TeamLines;
 			for (int i = 0; i < teamLines.Length; i++)
 			{
 				TeamBased teamBased = teamLines[i];
@@ -73,41 +73,41 @@ public class Scp127VoiceLineCollection : ScriptableObject
 				{
 					flag2 |= teamBased.AllowGeneric;
 					flag3 = true;
-					CompatibleCombiner.AddRange(teamBased.Lines);
+					Scp127VoiceLineCollection.CompatibleCombiner.AddRange(teamBased.Lines);
 				}
 			}
 		}
 		if (flag2 || !flag3)
 		{
-			CompatibleCombiner.AddRange(GenericLines);
+			Scp127VoiceLineCollection.CompatibleCombiner.AddRange(this.GenericLines);
 		}
-		if (AvoidRepetition)
+		if (this.AvoidRepetition)
 		{
-			UnplayedCombiner.Clear();
-			foreach (AudioClip item in CompatibleCombiner)
+			Scp127VoiceLineCollection.UnplayedCombiner.Clear();
+			foreach (AudioClip item in Scp127VoiceLineCollection.CompatibleCombiner)
 			{
-				if (!_alreadyPlayed.Contains(item))
+				if (!this._alreadyPlayed.Contains(item))
 				{
-					UnplayedCombiner.Add(item);
+					Scp127VoiceLineCollection.UnplayedCombiner.Add(item);
 				}
 			}
-			if (UnplayedCombiner.TryGetRandomItem(out voiceLine))
+			if (Scp127VoiceLineCollection.UnplayedCombiner.TryGetRandomItem(out voiceLine))
 			{
-				_alreadyPlayed.Add(voiceLine);
+				this._alreadyPlayed.Add(voiceLine);
 				return true;
 			}
-			_alreadyPlayed.Clear();
+			this._alreadyPlayed.Clear();
 		}
-		return CompatibleCombiner.TryGetRandomItem(out voiceLine);
+		return Scp127VoiceLineCollection.CompatibleCombiner.TryGetRandomItem(out voiceLine);
 	}
 
 	public bool Contains(AudioClip clip)
 	{
-		if (GenericLines.Contains(clip))
+		if (this.GenericLines.Contains(clip))
 		{
 			return true;
 		}
-		RoleBased[] roleLines = RoleLines;
+		RoleBased[] roleLines = this.RoleLines;
 		for (int i = 0; i < roleLines.Length; i++)
 		{
 			if (roleLines[i].Lines.Contains(clip))
@@ -115,7 +115,7 @@ public class Scp127VoiceLineCollection : ScriptableObject
 				return true;
 			}
 		}
-		TeamBased[] teamLines = TeamLines;
+		TeamBased[] teamLines = this.TeamLines;
 		for (int i = 0; i < teamLines.Length; i++)
 		{
 			if (teamLines[i].Lines.Contains(clip))

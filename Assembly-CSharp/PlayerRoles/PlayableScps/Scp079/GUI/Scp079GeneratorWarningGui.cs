@@ -22,31 +22,31 @@ public class Scp079GeneratorWarningGui : Scp079GuiElementBase
 
 	private void Awake()
 	{
-		_headerText = Translations.Get(Scp079HudTranslation.YouAreBeingAttacked);
+		this._headerText = Translations.Get(Scp079HudTranslation.YouAreBeingAttacked);
 	}
 
 	private void Update()
 	{
 		int num = 0;
-		bool flag = _headerStopwatchTimer.Elapsed.TotalSeconds < (double)_headerCooldown;
+		bool flag = this._headerStopwatchTimer.Elapsed.TotalSeconds < (double)this._headerCooldown;
 		bool flag2 = flag && !Scp079Role.LocalInstanceActive;
 		foreach (Scp079Generator allGenerator in Scp079Recontainer.AllGenerators)
 		{
 			if (allGenerator.Activating && Scp079GeneratorNotification.TrackedGens.Add(allGenerator))
 			{
 				num++;
-				if (_lastAmount == 0 && !flag)
+				if (this._lastAmount == 0 && !flag)
 				{
-					Scp079NotificationManager.AddNotification($"<color=red>{_headerText}</color>");
-					_headerStopwatchTimer.Restart();
+					Scp079NotificationManager.AddNotification($"<color=red>{this._headerText}</color>");
+					this._headerStopwatchTimer.Restart();
 				}
 				Scp079NotificationManager.AddNotification(new Scp079GeneratorNotification(allGenerator, flag2));
 			}
 		}
-		if (num > _lastAmount && !flag2)
+		if (num > this._lastAmount && !flag2)
 		{
-			PlaySound(_warningSound);
+			base.PlaySound(this._warningSound);
 		}
-		_lastAmount = num;
+		this._lastAmount = num;
 	}
 }

@@ -16,6 +16,6 @@ public class ScpInterfaces : MonoBehaviour
 
 	private void Awake()
 	{
-		singleton = this;
+		ScpInterfaces.singleton = this;
 	}
 }

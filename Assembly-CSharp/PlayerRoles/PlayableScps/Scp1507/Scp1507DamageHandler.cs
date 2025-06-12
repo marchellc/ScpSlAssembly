@@ -5,13 +5,13 @@ namespace PlayerRoles.PlayableScps.Scp1507;
 
 public class Scp1507DamageHandler : AttackerDamageHandler
 {
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
 	public override Footprint Attacker { get; protected set; }
 
 	public override bool AllowSelfDamage => false;
 
-	public override string ServerLogsText => "Pecked by " + Attacker.Nickname;
+	public override string ServerLogsText => "Pecked by " + this.Attacker.Nickname;
 
 	public override string RagdollInspectText => DeathTranslations.Scp1507Peck.RagdollTranslation;
 
@@ -19,7 +19,7 @@ public class Scp1507DamageHandler : AttackerDamageHandler
 
 	public Scp1507DamageHandler(Footprint attacker, float damage)
 	{
-		Attacker = attacker;
-		Damage = damage;
+		this.Attacker = attacker;
+		this.Damage = damage;
 	}
 }

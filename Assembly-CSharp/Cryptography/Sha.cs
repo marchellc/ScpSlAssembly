@@ -23,7 +23,7 @@ public static class Sha
 	{
 		byte[] array = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(message.Length));
 		int bytes = Utf8.GetBytes(message, array);
-		byte[] result = Sha1(array, 0, bytes);
+		byte[] result = Sha.Sha1(array, 0, bytes);
 		ArrayPool<byte>.Shared.Return(array);
 		return result;
 	}
@@ -44,7 +44,7 @@ public static class Sha
 	{
 		byte[] array = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(message.Length));
 		int bytes = Utf8.GetBytes(message, array);
-		byte[] result = Sha256(array, 0, bytes);
+		byte[] result = Sha.Sha256(array, 0, bytes);
 		ArrayPool<byte>.Shared.Return(array);
 		return result;
 	}
@@ -59,7 +59,7 @@ public static class Sha
 	{
 		byte[] array = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(message.Length));
 		int bytes = Utf8.GetBytes(message, array);
-		byte[] result = Sha512(array, 0, bytes);
+		byte[] result = Sha.Sha512(array, 0, bytes);
 		ArrayPool<byte>.Shared.Return(array);
 		return result;
 	}
@@ -89,7 +89,7 @@ public static class Sha
 		{
 			array = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetByteCount(data));
 			int bytes = Utf8.GetBytes(data, array);
-			return Sha512Hmac(key, 0, bytes, array);
+			return Sha.Sha512Hmac(key, 0, bytes, array);
 		}
 		finally
 		{

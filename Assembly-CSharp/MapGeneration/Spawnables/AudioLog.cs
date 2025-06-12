@@ -35,26 +35,26 @@ public class AudioLog : NetworkBehaviour, IServerInteractable, IInteractable
 	{
 		get
 		{
-			if (!_audioSource.isPlaying)
+			if (!this._audioSource.isPlaying)
 			{
-				return _triggerTimestamp + 3.0 > NetworkTime.time;
+				return this._triggerTimestamp + 3.0 > NetworkTime.time;
 			}
 			return true;
 		}
 	}
 
-	public float MaxHearingRange => _audioSource.maxDistance;
+	public float MaxHearingRange => this._audioSource.maxDistance;
 
-	public float ClipDuration => (float)_audioDuration - _clipSkipSeconds;
+	public float ClipDuration => (float)this._audioDuration - this._clipSkipSeconds;
 
-	public Vector3 PlayingLocation => _audioTransform.position;
+	public Vector3 PlayingLocation => this._audioTransform.position;
 
 	public void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
-		if (!IsPlaying)
+		if (!this.IsPlaying)
 		{
-			RpcPlayLog(_clipSkipSeconds);
-			_triggerTimestamp = NetworkTime.time + (double)ClipDuration;
+			this.RpcPlayLog(this._clipSkipSeconds);
+			this._triggerTimestamp = NetworkTime.time + (double)this.ClipDuration;
 		}
 	}
 
@@ -63,7 +63,7 @@ public class AudioLog : NetworkBehaviour, IServerInteractable, IInteractable
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteFloat(playTime);
-		SendRPCInternal("System.Void MapGeneration.Spawnables.AudioLog::RpcPlayLog(System.Single)", 1831593247, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void MapGeneration.Spawnables.AudioLog::RpcPlayLog(System.Single)", 1831593247, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -71,28 +71,28 @@ public class AudioLog : NetworkBehaviour, IServerInteractable, IInteractable
 	{
 		if (playTime > 0f)
 		{
-			_audioSource.time = playTime;
+			this._audioSource.time = playTime;
 		}
-		_audioSource.Play();
+		this._audioSource.Play();
 	}
 
 	private void ServerSyncClip(ReferenceHub hub)
 	{
-		if (IsPlaying)
+		if (this.IsPlaying)
 		{
-			double num = _triggerTimestamp - (double)ClipDuration;
+			double num = this._triggerTimestamp - (double)this.ClipDuration;
 			float num2 = (float)(NetworkTime.time - num);
-			if (!(num2 >= ClipDuration))
+			if (!(num2 >= this.ClipDuration))
 			{
-				RpcPlayLog(num2);
+				this.RpcPlayLog(num2);
 			}
 		}
 	}
 
 	private void Awake()
 	{
-		_audioTransform = _audioSource.transform;
-		Instances.Add(this);
+		this._audioTransform = this._audioSource.transform;
+		AudioLog.Instances.Add(this);
 		if (NetworkServer.active)
 		{
 			ReferenceHub.OnPlayerAdded += ServerSyncClip;
@@ -101,7 +101,7 @@ public class AudioLog : NetworkBehaviour, IServerInteractable, IInteractable
 
 	private void OnDestroy()
 	{
-		Instances.Remove(this);
+		AudioLog.Instances.Remove(this);
 		if (NetworkServer.active)
 		{
 			ReferenceHub.OnPlayerAdded -= ServerSyncClip;
@@ -110,7 +110,7 @@ public class AudioLog : NetworkBehaviour, IServerInteractable, IInteractable
 
 	static AudioLog()
 	{
-		Instances = new List<AudioLog>();
+		AudioLog.Instances = new List<AudioLog>();
 		RemoteProcedureCalls.RegisterRpc(typeof(AudioLog), "System.Void MapGeneration.Spawnables.AudioLog::RpcPlayLog(System.Single)", InvokeUserCode_RpcPlayLog__Single);
 	}
 

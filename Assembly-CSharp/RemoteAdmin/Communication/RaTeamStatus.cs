@@ -13,7 +13,7 @@ public class RaTeamStatus : RaClientDataRequest
 		StringBuilderPool.Shared.Rent();
 		foreach (SpawnableWaveBase wave in WaveManager.Waves)
 		{
-			AppendData(wave.CreateDebugString().Replace(',', ';'));
+			base.AppendData(wave.CreateDebugString().Replace(',', ';'));
 		}
 	}
 }

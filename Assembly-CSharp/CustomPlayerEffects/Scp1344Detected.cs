@@ -25,41 +25,41 @@ public class Scp1344Detected : StatusEffectBase, ICustomRADisplay
 
 	public void ServerRegisterObserver(Scp1344HumanXrayProvider source)
 	{
-		if (!_seenBy.Contains(source) && ValidateObserver(source))
+		if (!this._seenBy.Contains(source) && this.ValidateObserver(source))
 		{
-			_seenBy.Add(source);
-			UpdateStatus();
+			this._seenBy.Add(source);
+			this.UpdateStatus();
 		}
 	}
 
 	protected override void Enabled()
 	{
 		base.Enabled();
-		if (base.IsPOV && !(_remainingReEnableCooldown > 0f))
+		if (base.IsPOV && !(this._remainingReEnableCooldown > 0f))
 		{
-			AudioSourcePoolManager.Play2D(_detectedClip, 1f, MixerChannel.NoDucking);
+			AudioSourcePoolManager.Play2D(this._detectedClip, 1f, MixerChannel.NoDucking);
 		}
 	}
 
 	protected override void Disabled()
 	{
 		base.Disabled();
-		_seenBy.Clear();
-		_remainingReEnableCooldown = _reEnableCooldown;
+		this._seenBy.Clear();
+		this._remainingReEnableCooldown = this._reEnableCooldown;
 	}
 
 	protected override void OnEffectUpdate()
 	{
 		base.OnEffectUpdate();
-		UpdateStatus();
+		this.UpdateStatus();
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		if (_remainingReEnableCooldown > 0f)
+		if (this._remainingReEnableCooldown > 0f)
 		{
-			_remainingReEnableCooldown -= Time.deltaTime;
+			this._remainingReEnableCooldown -= Time.deltaTime;
 		}
 	}
 
@@ -78,13 +78,13 @@ public class Scp1344Detected : StatusEffectBase, ICustomRADisplay
 		{
 			return;
 		}
-		for (int num = _seenBy.Count - 1; num >= 0; num--)
+		for (int num = this._seenBy.Count - 1; num >= 0; num--)
 		{
-			if (!ValidateObserver(_seenBy[num]))
+			if (!this.ValidateObserver(this._seenBy[num]))
 			{
-				_seenBy.RemoveAt(num);
+				this._seenBy.RemoveAt(num);
 			}
 		}
-		base.IsEnabled = _seenBy.Count > 0;
+		base.IsEnabled = this._seenBy.Count > 0;
 	}
 }

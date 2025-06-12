@@ -51,25 +51,25 @@ public class SpatialWaterfall : MonoBehaviour
 
 	public SpatialWaterfall()
 	{
-		_setVolumeMuffled = SetVolumeMuffled;
-		_setVolumeNormal = SetVolumeNormal;
+		this._setVolumeMuffled = SetVolumeMuffled;
+		this._setVolumeNormal = SetVolumeNormal;
 	}
 
 	private void Start()
 	{
-		_doorsHs = DoorVariant.DoorsByRoom.GetOrAddNew(_targetRoom);
+		this._doorsHs = DoorVariant.DoorsByRoom.GetOrAddNew(this._targetRoom);
 		Vector3 position = base.transform.position;
-		_boundsSilent = new Bounds(position, new Vector3(_areaSilent, 30f, _areaSilent));
-		_boundsFullVolume = new Bounds(position, new Vector3(_areaFullVolume, 30f, _areaFullVolume));
-		float num = (_areaSilent - _areaFullVolume) / 2f;
-		_fadeSqrDistance = num * num;
+		this._boundsSilent = new Bounds(position, new Vector3(this._areaSilent, 30f, this._areaSilent));
+		this._boundsFullVolume = new Bounds(position, new Vector3(this._areaFullVolume, 30f, this._areaFullVolume));
+		float num = (this._areaSilent - this._areaFullVolume) / 2f;
+		this._fadeSqrDistance = num * num;
 	}
 
 	private void Update()
 	{
-		CalculateTargetVolumes(out var muffledVolume, out var normalVolume);
-		MoveTowardsVolume(ref _prevMuffledVolume, muffledVolume, _setVolumeMuffled);
-		MoveTowardsVolume(ref _prevNormalVolume, normalVolume, _setVolumeNormal);
+		this.CalculateTargetVolumes(out var muffledVolume, out var normalVolume);
+		this.MoveTowardsVolume(ref this._prevMuffledVolume, muffledVolume, this._setVolumeMuffled);
+		this.MoveTowardsVolume(ref this._prevNormalVolume, normalVolume, this._setVolumeNormal);
 	}
 
 	private void MoveTowardsVolume(ref float prev, float target, Action<float> processor)
@@ -84,16 +84,16 @@ public class SpatialWaterfall : MonoBehaviour
 
 	private void SetVolumeNormal(float f)
 	{
-		AudioSource[] normalSources = _normalSources;
+		AudioSource[] normalSources = this._normalSources;
 		foreach (AudioSource src in normalSources)
 		{
-			SetSrcVolume(src, f);
+			this.SetSrcVolume(src, f);
 		}
 	}
 
 	private void SetVolumeMuffled(float f)
 	{
-		SetSrcVolume(_muffledSource, f);
+		this.SetSrcVolume(this._muffledSource, f);
 	}
 
 	private void SetSrcVolume(AudioSource src, float vol)
@@ -105,24 +105,24 @@ public class SpatialWaterfall : MonoBehaviour
 	private void CalculateTargetVolumes(out float muffledVolume, out float normalVolume)
 	{
 		Vector3 lastPosition = MainCameraController.LastPosition;
-		if (!_boundsSilent.Contains(lastPosition))
+		if (!this._boundsSilent.Contains(lastPosition))
 		{
 			muffledVolume = 0f;
 			normalVolume = 0f;
 			return;
 		}
-		if (_boundsFullVolume.Contains(lastPosition))
+		if (this._boundsFullVolume.Contains(lastPosition))
 		{
 			muffledVolume = 0f;
 			normalVolume = 1f;
 			return;
 		}
-		ValidateDoorCache();
+		this.ValidateDoorCache();
 		int? num = null;
 		float num2 = float.MaxValue;
-		for (int i = 0; i < _prevHsCnt; i++)
+		for (int i = 0; i < this._prevHsCnt; i++)
 		{
-			float sqrMagnitude = (_doorPositions[i] - lastPosition).sqrMagnitude;
+			float sqrMagnitude = (this._doorPositions[i] - lastPosition).sqrMagnitude;
 			if (!(sqrMagnitude > num2))
 			{
 				num2 = sqrMagnitude;
@@ -135,36 +135,36 @@ public class SpatialWaterfall : MonoBehaviour
 			normalVolume = 0f;
 			return;
 		}
-		float exactState = _doors[num.Value].GetExactState();
-		float num3 = Mathf.Clamp01(_boundsFullVolume.SqrDistance(lastPosition) / _fadeSqrDistance);
+		float exactState = this._doors[num.Value].GetExactState();
+		float num3 = Mathf.Clamp01(this._boundsFullVolume.SqrDistance(lastPosition) / this._fadeSqrDistance);
 		normalVolume = exactState * (1f - num3);
 		muffledVolume = 1f - normalVolume;
 	}
 
 	private void ValidateDoorCache()
 	{
-		int count = _doorsHs.Count;
-		if (_prevHsCnt == count)
+		int count = this._doorsHs.Count;
+		if (this._prevHsCnt == count)
 		{
 			return;
 		}
-		_doorPositions = new Vector3[count];
-		_doors = new DoorVariant[count];
+		this._doorPositions = new Vector3[count];
+		this._doors = new DoorVariant[count];
 		int num = 0;
-		foreach (DoorVariant doorsH in _doorsHs)
+		foreach (DoorVariant doorsH in this._doorsHs)
 		{
-			_doors[num] = doorsH;
-			_doorPositions[num] = doorsH.transform.position;
+			this._doors[num] = doorsH;
+			this._doorPositions[num] = doorsH.transform.position;
 			num++;
 		}
-		_prevHsCnt = count;
+		this._prevHsCnt = count;
 	}
 
 	private void OnDrawGizmosSelected()
 	{
 		Gizmos.color = Color.blue;
-		Gizmos.DrawWireCube(base.transform.position, Vector3.one * _areaFullVolume);
+		Gizmos.DrawWireCube(base.transform.position, Vector3.one * this._areaFullVolume);
 		Gizmos.color = Color.cyan;
-		Gizmos.DrawWireCube(base.transform.position, Vector3.one * _areaSilent);
+		Gizmos.DrawWireCube(base.transform.position, Vector3.one * this._areaSilent);
 	}
 }

@@ -39,15 +39,15 @@ public class Scp127GreetingsVoiceTrigger : Scp127VoiceTriggerBase
 
 	private const float OwnerDroppedRangeScale = 3f;
 
-	protected override float DefaultAudioRange => _rangeMultiplier * base.DefaultAudioRange;
+	protected override float DefaultAudioRange => this._rangeMultiplier * base.DefaultAudioRange;
 
 	internal override void ServerOnPickedUp(ItemPickupBase ipb)
 	{
 		base.ServerOnPickedUp(ipb);
 		if (ipb.transform.TryGetComponentInParent<Locker>(out var _))
 		{
-			_pickupTimestamp = NetworkTime.time;
-			_pickedUpFromLocker = true;
+			this._pickupTimestamp = NetworkTime.time;
+			this._pickedUpFromLocker = true;
 			base.Item.OwnerInventory.ServerSelectItem(base.ItemSerial);
 		}
 	}
@@ -56,14 +56,14 @@ public class Scp127GreetingsVoiceTrigger : Scp127VoiceTriggerBase
 	{
 		ReferenceHub hub;
 		bool flag = extraData.Remaining > 0 && extraData.TryReadReferenceHub(out hub) && hub.IsPOV;
-		_rangeMultiplier = (flag ? 3f : 1f);
+		this._rangeMultiplier = (flag ? 3f : 1f);
 		return base.OnVoiceLineRequested(serial, clip, extraData);
 	}
 
 	public override void OnFriendshipCreated()
 	{
 		base.OnFriendshipCreated();
-		_newFriendship = true;
+		this._newFriendship = true;
 	}
 
 	internal override void OnEquipped()
@@ -73,23 +73,23 @@ public class Scp127GreetingsVoiceTrigger : Scp127VoiceTriggerBase
 		{
 			return;
 		}
-		if (_newFriendship)
+		if (this._newFriendship)
 		{
-			double num = NetworkTime.time - _pickupTimestamp;
-			if (_pickedUpFromLocker && num < (double)_uniquePickupLineTimeout)
+			double num = NetworkTime.time - this._pickupTimestamp;
+			if (this._pickedUpFromLocker && num < (double)this._uniquePickupLineTimeout)
 			{
-				_pickedUpFromLocker = false;
-				ServerPlayVoiceLineFromCollection(_lockerEquipLines);
+				this._pickedUpFromLocker = false;
+				base.ServerPlayVoiceLineFromCollection(this._lockerEquipLines);
 			}
 			else
 			{
-				ServerPlayVoiceLineFromCollection(_firstTimeEquipLines);
+				base.ServerPlayVoiceLineFromCollection(this._firstTimeEquipLines);
 			}
-			_newFriendship = false;
+			this._newFriendship = false;
 		}
 		else
 		{
-			ServerPlayVoiceLineFromCollection(_reEquipLines, null, VoiceLinePriority.Low);
+			base.ServerPlayVoiceLineFromCollection(this._reEquipLines, null, VoiceLinePriority.Low);
 		}
 	}
 
@@ -98,7 +98,7 @@ public class Scp127GreetingsVoiceTrigger : Scp127VoiceTriggerBase
 		base.OnHolstered();
 		if (base.IsServer)
 		{
-			_remainingFramesHolster = 3;
+			this._remainingFramesHolster = 3;
 		}
 	}
 
@@ -107,26 +107,26 @@ public class Scp127GreetingsVoiceTrigger : Scp127VoiceTriggerBase
 		base.OnRemoved(pickup);
 		if (base.IsServer && !(pickup == null))
 		{
-			ServerPlayVoiceLineFromCollection(_droppedLines, WriteOwner);
+			base.ServerPlayVoiceLineFromCollection(this._droppedLines, WriteOwner);
 		}
 	}
 
 	internal override void AlwaysUpdate()
 	{
 		base.AlwaysUpdate();
-		if (!base.IsServer || _remainingFramesHolster == 0)
+		if (!base.IsServer || this._remainingFramesHolster == 0)
 		{
 			return;
 		}
 		if (base.Firearm.IsEquipped)
 		{
-			_remainingFramesHolster = 0;
+			this._remainingFramesHolster = 0;
 			return;
 		}
-		_remainingFramesHolster--;
-		if (_remainingFramesHolster <= 0)
+		this._remainingFramesHolster--;
+		if (this._remainingFramesHolster <= 0)
 		{
-			ServerPlayVoiceLineFromCollection(_holsterLines, null, VoiceLinePriority.Low);
+			base.ServerPlayVoiceLineFromCollection(this._holsterLines, null, VoiceLinePriority.Low);
 		}
 	}
 

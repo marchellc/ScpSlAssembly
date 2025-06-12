@@ -14,11 +14,12 @@ public static class PickupSyncInfoSerializer
 
 	public static PickupSyncInfo ReadPickupSyncInfo(this NetworkReader reader)
 	{
-		PickupSyncInfo result = default(PickupSyncInfo);
-		result.ItemId = (ItemType)reader.ReadSByte();
-		result.Serial = reader.ReadUShort();
-		result.WeightKg = reader.ReadFloat();
-		result.SyncedFlags = reader.ReadByte();
-		return result;
+		return new PickupSyncInfo
+		{
+			ItemId = (ItemType)reader.ReadSByte(),
+			Serial = reader.ReadUShort(),
+			WeightKg = reader.ReadFloat(),
+			SyncedFlags = reader.ReadByte()
+		};
 	}
 }

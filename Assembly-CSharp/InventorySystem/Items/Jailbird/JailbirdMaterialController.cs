@@ -18,12 +18,12 @@ public class JailbirdMaterialController : MonoBehaviour
 	private void Update()
 	{
 		JailbirdWearState value;
-		bool flag = JailbirdDeteriorationTracker.ReceivedStates.TryGetValue(_serial, out value) && value >= JailbirdWearState.AlmostBroken;
-		_emissionRend.sharedMaterial = (flag ? _almostDepletedMat : _normalMat);
+		bool flag = JailbirdDeteriorationTracker.ReceivedStates.TryGetValue(this._serial, out value) && value >= JailbirdWearState.AlmostBroken;
+		this._emissionRend.sharedMaterial = (flag ? this._almostDepletedMat : this._normalMat);
 	}
 
 	public void SetSerial(ushort serial)
 	{
-		_serial = serial;
+		this._serial = serial;
 	}
 }

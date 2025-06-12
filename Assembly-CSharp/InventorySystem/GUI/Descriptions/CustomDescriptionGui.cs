@@ -27,13 +27,13 @@ public class CustomDescriptionGui : RadialDescriptionBase
 			Debug.LogError(string.Format("Item {0} must implement {1} in order to use {2}.", targetItem.ItemTypeId, "ICustomDescriptionItem", "CustomDescriptionGui"));
 			return;
 		}
-		DisableAllInstances();
-		GetOrAdd(customDescriptionItem.CustomGuiPrefab).UpdateInstance(targetItem.ItemTypeId, customDescriptionItem);
+		this.DisableAllInstances();
+		this.GetOrAdd(customDescriptionItem.CustomGuiPrefab).UpdateInstance(targetItem.ItemTypeId, customDescriptionItem);
 	}
 
 	private void DisableAllInstances()
 	{
-		foreach (CustomDescriptionGui allInstance in _allInstances)
+		foreach (CustomDescriptionGui allInstance in this._allInstances)
 		{
 			allInstance.gameObject.SetActive(value: false);
 		}
@@ -41,33 +41,33 @@ public class CustomDescriptionGui : RadialDescriptionBase
 
 	private CustomDescriptionGui GetOrAdd(CustomDescriptionGui template)
 	{
-		if (_instancesByPrefab.TryGetValue(template, out var value))
+		if (this._instancesByPrefab.TryGetValue(template, out var value))
 		{
 			return value;
 		}
 		CustomDescriptionGui customDescriptionGui = Object.Instantiate(template, base.transform);
-		_allInstances.Add(customDescriptionGui);
-		_instancesByPrefab[template] = customDescriptionGui;
+		this._allInstances.Add(customDescriptionGui);
+		this._instancesByPrefab[template] = customDescriptionGui;
 		return customDescriptionGui;
 	}
 
 	private void UpdateInstance(ItemType itemType, ICustomDescriptionItem icd)
 	{
 		base.gameObject.SetActive(value: true);
-		if (_title != null)
+		if (this._title != null)
 		{
-			_title.text = itemType.GetName();
+			this._title.text = itemType.GetName();
 		}
-		if (_description != null)
+		if (this._description != null)
 		{
-			_description.text = itemType.GetDescription();
+			this._description.text = itemType.GetDescription();
 		}
 		string[] customDescriptionContent = icd.CustomDescriptionContent;
-		for (int i = 0; i < _dynamicTexts.Length; i++)
+		for (int i = 0; i < this._dynamicTexts.Length; i++)
 		{
 			if (customDescriptionContent.TryGet(i, out var element))
 			{
-				_dynamicTexts[i].text = element;
+				this._dynamicTexts[i].text = element;
 			}
 		}
 	}

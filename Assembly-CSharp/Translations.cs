@@ -15,16 +15,16 @@ public static class Translations
 
 		public LoadedTranslation(string[] fallbacks, string[] locals, bool hasLocal, int i)
 		{
-			Fallback = fallbacks[i];
+			this.Fallback = fallbacks[i];
 			if (hasLocal && i < locals.Length)
 			{
-				Localized = locals[i];
-				HasLocal = !string.IsNullOrWhiteSpace(Localized);
+				this.Localized = locals[i];
+				this.HasLocal = !string.IsNullOrWhiteSpace(this.Localized);
 			}
 			else
 			{
-				Localized = null;
-				HasLocal = false;
+				this.Localized = null;
+				this.HasLocal = false;
 			}
 		}
 	}
@@ -40,21 +40,21 @@ public static class Translations
 	private static void DefineKey(string key)
 	{
 		string formatted = key.Replace("_", string.Empty).ToLowerInvariant();
-		TypeToFilename[formatted] = key;
-		Suffixes.ForEach(delegate(string x)
+		Translations.TypeToFilename[formatted] = key;
+		Translations.Suffixes.ForEach(delegate(string x)
 		{
-			TypeToFilename[formatted + x] = key;
+			Translations.TypeToFilename[formatted + x] = key;
 		});
 	}
 
 	private static bool TryGenerate(Type enumType, out LoadedTranslation[] generated)
 	{
-		if (!_pascalCaseGenerated)
+		if (!Translations._pascalCaseGenerated)
 		{
-			_pascalCaseGenerated = true;
+			Translations._pascalCaseGenerated = true;
 			TranslationReader.Fallback.ForEachKey(DefineKey);
 		}
-		if (!TypeToFilename.TryGetValue(enumType.Name.ToLowerInvariant(), out var value))
+		if (!Translations.TypeToFilename.TryGetValue(enumType.Name.ToLowerInvariant(), out var value))
 		{
 			generated = new LoadedTranslation[0];
 			return false;
@@ -68,13 +68,13 @@ public static class Translations
 		{
 			generated[i] = new LoadedTranslation(array, value2, hasLocal, i);
 		}
-		AllTranslations[enumType] = generated;
+		Translations.AllTranslations[enumType] = generated;
 		return true;
 	}
 
 	public static bool TryGet(Type type, int index, out string str)
 	{
-		if (!AllTranslations.TryGetValue(type, out var value) && !TryGenerate(type, out value))
+		if (!Translations.AllTranslations.TryGetValue(type, out var value) && !Translations.TryGenerate(type, out value))
 		{
 			str = null;
 			return false;
@@ -91,14 +91,14 @@ public static class Translations
 
 	public static void ResetCache()
 	{
-		AllTranslations.Clear();
+		Translations.AllTranslations.Clear();
 	}
 
 	public static bool TryGet<T>(T val, out string tr) where T : Enum
 	{
 		Type typeFromHandle = typeof(T);
 		int index = ((IConvertible)val).ToInt32((IFormatProvider)null);
-		if (TryGet(typeFromHandle, index, out tr))
+		if (Translations.TryGet(typeFromHandle, index, out tr))
 		{
 			return true;
 		}
@@ -109,13 +109,13 @@ public static class Translations
 
 	public static string Get<T>(T val) where T : Enum
 	{
-		TryGet(val, out var tr);
+		Translations.TryGet(val, out var tr);
 		return tr;
 	}
 
 	public static string Get<T>(T val, string fallback) where T : Enum
 	{
-		if (!TryGet(val, out var tr))
+		if (!Translations.TryGet(val, out var tr))
 		{
 			return fallback;
 		}

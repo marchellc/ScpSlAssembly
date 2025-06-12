@@ -17,17 +17,17 @@ public class NtfWaveAnnouncement : WaveAnnouncementBase
 
 	public NtfWaveAnnouncement(Team team)
 	{
-		_team = team;
+		this._team = team;
 	}
 
 	public override void CreateAnnouncementString(StringBuilder builder)
 	{
-		if (!NamingRulesManager.TryGetNamingRule(_team, out var rule))
+		if (!NamingRulesManager.TryGetNamingRule(this._team, out var rule))
 		{
 			return;
 		}
 		string lastGeneratedName = rule.LastGeneratedName;
-		int scpsLeft = ScpsLeft;
+		int scpsLeft = this.ScpsLeft;
 		string value = rule.TranslateToCassie(lastGeneratedName);
 		if (HolidayUtils.IsHolidayActive(HolidayType.Christmas))
 		{
@@ -60,12 +60,12 @@ public class NtfWaveAnnouncement : WaveAnnouncementBase
 
 	public override void SendSubtitles()
 	{
-		if (NamingRulesManager.TryGetNamingRule(_team, out var rule))
+		if (NamingRulesManager.TryGetNamingRule(this._team, out var rule))
 		{
 			List<SubtitlePart> list = new List<SubtitlePart>();
 			list.Add(new SubtitlePart(SubtitleType.NTFEntrance, rule.LastGeneratedName));
 			List<SubtitlePart> list2 = list;
-			int scpsLeft = ScpsLeft;
+			int scpsLeft = this.ScpsLeft;
 			switch (scpsLeft)
 			{
 			case 0:

@@ -10,14 +10,14 @@ public class TeslaOverconRenderer : PooledOverconRenderer
 
 	internal override void SpawnOvercons(Scp079Camera newCamera)
 	{
-		ReturnAll();
+		base.ReturnAll();
 		foreach (TeslaGate allGate in TeslaGate.AllGates)
 		{
 			Vector3 position = allGate.transform.position;
 			if (newCamera.Position.CompareCoords(position))
 			{
-				TeslaOvercon fromPool = GetFromPool<TeslaOvercon>();
-				fromPool.transform.position = position + Offset;
+				TeslaOvercon fromPool = base.GetFromPool<TeslaOvercon>();
+				fromPool.transform.position = position + TeslaOverconRenderer.Offset;
 				fromPool.Rescale(newCamera);
 			}
 		}

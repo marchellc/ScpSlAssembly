@@ -15,7 +15,7 @@ public class SeveredEyes : TickingEffectBase
 	{
 		if (NetworkServer.active)
 		{
-			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(_damagePerTick, DeathTranslations.Scp1344));
+			base.Hub.playerStats.DealDamage(new UniversalDamageHandler(this._damagePerTick, DeathTranslations.Scp1344));
 		}
 	}
 }

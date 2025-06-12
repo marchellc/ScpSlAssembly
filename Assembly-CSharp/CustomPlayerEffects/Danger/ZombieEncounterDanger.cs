@@ -9,7 +9,7 @@ public class ZombieEncounterDanger : EncounterDangerBase
 	{
 		get
 		{
-			UpdateState();
+			this.UpdateState();
 			return base.IsActive;
 		}
 		protected set
@@ -28,13 +28,13 @@ public class ZombieEncounterDanger : EncounterDangerBase
 		{
 			if (!(allHub == base.Owner) && allHub.roleManager.CurrentRole.RoleTypeId == RoleTypeId.Scp0492 && VisionInformation.IsInView(base.Owner, allHub))
 			{
-				if (WasEncounteredRecently(allHub, out var cachedEncounter))
+				if (base.WasEncounteredRecently(allHub, out var cachedEncounter))
 				{
 					cachedEncounter.TimeTracker.Restart();
 				}
 				else
 				{
-					RegisterEncounter(allHub);
+					base.RegisterEncounter(allHub);
 				}
 			}
 		}

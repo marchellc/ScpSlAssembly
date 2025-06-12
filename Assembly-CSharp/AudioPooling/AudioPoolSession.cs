@@ -13,9 +13,9 @@ public readonly struct AudioPoolSession : IEquatable<AudioPoolSession>
 	{
 		get
 		{
-			if (HandledInstance != null && !HandledInstance.Pooled)
+			if (this.HandledInstance != null && !this.HandledInstance.Pooled)
 			{
-				return HandledInstance.TotalRecycles == _sessionId;
+				return this.HandledInstance.TotalRecycles == this._sessionId;
 			}
 			return false;
 		}
@@ -25,41 +25,41 @@ public readonly struct AudioPoolSession : IEquatable<AudioPoolSession>
 	{
 		get
 		{
-			if (SameSession)
+			if (this.SameSession)
 			{
-				return Source.isPlaying;
+				return this.Source.isPlaying;
 			}
 			return false;
 		}
 	}
 
-	public AudioSource Source => HandledInstance.Source;
+	public AudioSource Source => this.HandledInstance.Source;
 
 	public AudioPoolSession(PooledAudioSource subject)
 	{
-		HandledInstance = subject;
-		_sessionId = subject.TotalRecycles;
+		this.HandledInstance = subject;
+		this._sessionId = subject.TotalRecycles;
 	}
 
 	public bool Equals(AudioPoolSession other)
 	{
-		if (HandledInstance == other.HandledInstance)
+		if (this.HandledInstance == other.HandledInstance)
 		{
-			return _sessionId == other._sessionId;
+			return this._sessionId == other._sessionId;
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return HashCode.Combine(_sessionId, (!(HandledInstance == null)) ? HandledInstance.GetHashCode() : 0);
+		return HashCode.Combine(this._sessionId, (!(this.HandledInstance == null)) ? this.HandledInstance.GetHashCode() : 0);
 	}
 
 	public override bool Equals(object obj)
 	{
 		if (obj is AudioPoolSession other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}

@@ -12,7 +12,7 @@ public class WorldmodelConditionalBipolarExtension : MonoBehaviour, IWorldmodelE
 
 	public void SetupWorldmodel(FirearmWorldmodel worldmodel)
 	{
-		_conditions.InitWorldmodel(worldmodel);
-		_bipolar.Polarity = _conditions.Evaluate();
+		this._conditions.InitWorldmodel(worldmodel);
+		this._bipolar.Polarity = this._conditions.Evaluate();
 	}
 }

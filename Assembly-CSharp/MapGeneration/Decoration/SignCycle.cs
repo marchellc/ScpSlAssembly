@@ -26,16 +26,16 @@ public class SignCycle : MonoBehaviour
 
 	private void Update()
 	{
-		CycleData cycleData = _cycles[_currentIndex];
-		_timePassed += Time.deltaTime;
-		if (!(_timePassed < cycleData.Duration))
+		CycleData cycleData = this._cycles[this._currentIndex];
+		this._timePassed += Time.deltaTime;
+		if (!(this._timePassed < cycleData.Duration))
 		{
-			_timePassed = 0f;
-			if (++_currentIndex >= _cycles.Length)
+			this._timePassed = 0f;
+			if (++this._currentIndex >= this._cycles.Length)
 			{
-				_currentIndex = 0;
+				this._currentIndex = 0;
 			}
-			_targetText.text = _cycles[_currentIndex].Text;
+			this._targetText.text = this._cycles[this._currentIndex].Text;
 		}
 	}
 }

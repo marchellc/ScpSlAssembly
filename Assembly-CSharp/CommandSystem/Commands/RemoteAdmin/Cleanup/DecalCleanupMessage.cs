@@ -11,19 +11,19 @@ public readonly struct DecalCleanupMessage : NetworkMessage
 
 	public void Serialize(NetworkWriter writer)
 	{
-		writer.WriteByte((byte)DecalPoolType);
-		writer.WriteInt(Amount);
+		writer.WriteByte((byte)this.DecalPoolType);
+		writer.WriteInt(this.Amount);
 	}
 
 	public DecalCleanupMessage(NetworkReader reader)
 	{
-		DecalPoolType = (DecalPoolType)reader.ReadByte();
-		Amount = reader.ReadInt();
+		this.DecalPoolType = (DecalPoolType)reader.ReadByte();
+		this.Amount = reader.ReadInt();
 	}
 
 	public DecalCleanupMessage(DecalPoolType decalPoolType, int amount)
 	{
-		DecalPoolType = decalPoolType;
-		Amount = amount;
+		this.DecalPoolType = decalPoolType;
+		this.Amount = amount;
 	}
 }

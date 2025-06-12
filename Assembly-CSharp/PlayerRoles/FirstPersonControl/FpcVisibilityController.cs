@@ -20,7 +20,7 @@ public class FpcVisibilityController : VisibilityController
 		get
 		{
 			InvisibilityFlags invisibilityFlags = base.IgnoredFlags;
-			if (_scp1344Effect.IsEnabled)
+			if (this._scp1344Effect.IsEnabled)
 			{
 				invisibilityFlags |= (InvisibilityFlags)3u;
 			}
@@ -31,7 +31,7 @@ public class FpcVisibilityController : VisibilityController
 	public override InvisibilityFlags GetActiveFlags(ReferenceHub observer)
 	{
 		InvisibilityFlags invisibilityFlags = base.GetActiveFlags(observer);
-		if (_invisibleEffect.IsEnabled)
+		if (this._invisibleEffect.IsEnabled)
 		{
 			invisibilityFlags |= InvisibilityFlags.Scp268;
 		}
@@ -46,7 +46,7 @@ public class FpcVisibilityController : VisibilityController
 		Vector3 position = fpcRole.FpcModule.Position;
 		Vector3 position2 = fpcRole2.FpcModule.Position;
 		float sqrMagnitude = (position - position2).sqrMagnitude;
-		float num = ((observer.GetCurrentZone() == FacilityZone.Surface) ? SurfaceMaxRangeSqr : NormalMaxRangeSqr);
+		float num = ((observer.GetCurrentZone() == FacilityZone.Surface) ? this.SurfaceMaxRangeSqr : this.NormalMaxRangeSqr);
 		if (sqrMagnitude > num)
 		{
 			invisibilityFlags |= InvisibilityFlags.OutOfRange;
@@ -58,7 +58,7 @@ public class FpcVisibilityController : VisibilityController
 	{
 		base.SpawnObject();
 		PlayerEffectsController playerEffectsController = base.Owner.playerEffectsController;
-		_invisibleEffect = playerEffectsController.GetEffect<Invisible>();
-		_scp1344Effect = playerEffectsController.GetEffect<Scp1344>();
+		this._invisibleEffect = playerEffectsController.GetEffect<Invisible>();
+		this._scp1344Effect = playerEffectsController.GetEffect<Scp1344>();
 	}
 }

@@ -23,7 +23,7 @@ public class OverwatchCommand : ParentCommand
 	{
 		if (arguments.Count == 0)
 		{
-			return SetOverwatchStatus(sender, 2, out response);
+			return OverwatchCommand.SetOverwatchStatus(sender, 2, out response);
 		}
 		response = "SYNTAX: overwatch [enable/disable]";
 		return false;
@@ -31,8 +31,8 @@ public class OverwatchCommand : ParentCommand
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new DisableCommand());
-		RegisterCommand(new EnableCommand());
+		this.RegisterCommand(new DisableCommand());
+		this.RegisterCommand(new EnableCommand());
 	}
 
 	internal static bool SetOverwatchStatus(ICommandSender sender, int status, out string response)

@@ -25,37 +25,37 @@ public class Scp079NotificationManager : Scp079GuiElementBase
 
 	private void Awake()
 	{
-		_singleton = this;
-		_singletonSet = true;
+		Scp079NotificationManager._singleton = this;
+		Scp079NotificationManager._singletonSet = true;
 	}
 
 	private void OnDestroy()
 	{
-		if (!(_singleton != this))
+		if (!(Scp079NotificationManager._singleton != this))
 		{
-			_singletonSet = false;
+			Scp079NotificationManager._singletonSet = false;
 		}
 	}
 
 	private void Update()
 	{
-		for (int i = 0; i < _spawnedTexts.Count; i++)
+		for (int i = 0; i < this._spawnedTexts.Count; i++)
 		{
-			Scp079NotificationEntry scp079NotificationEntry = _spawnedTexts[i];
+			Scp079NotificationEntry scp079NotificationEntry = this._spawnedTexts[i];
 			IScp079Notification content = scp079NotificationEntry.Content;
 			scp079NotificationEntry.Text.text = content.DisplayedText;
 			scp079NotificationEntry.Text.alpha = Mathf.Clamp01(content.Opacity);
-			scp079NotificationEntry.Text.rectTransform.sizeDelta = new Vector2(_defaultSize.x, content.Height);
+			scp079NotificationEntry.Text.rectTransform.sizeDelta = new Vector2(this._defaultSize.x, content.Height);
 			NotificationSound sound = content.Sound;
 			if (sound != NotificationSound.None)
 			{
-				PlaySound(_sounds[(int)sound]);
+				base.PlaySound(this._sounds[(int)sound]);
 			}
 			if (content.Delete)
 			{
 				scp079NotificationEntry.gameObject.SetActive(value: false);
-				_textPool.Enqueue(scp079NotificationEntry);
-				_spawnedTexts.RemoveAt(i);
+				this._textPool.Enqueue(scp079NotificationEntry);
+				this._spawnedTexts.RemoveAt(i);
 				i--;
 			}
 		}
@@ -63,49 +63,49 @@ public class Scp079NotificationManager : Scp079GuiElementBase
 
 	private void SpawnNotification(IScp079Notification notification)
 	{
-		if (!_textPool.TryDequeue(out var result))
+		if (!this._textPool.TryDequeue(out var result))
 		{
-			result = Object.Instantiate(_template, _template.transform.parent);
+			result = Object.Instantiate(this._template, this._template.transform.parent);
 		}
-		_spawnedTexts.Add(result);
+		this._spawnedTexts.Add(result);
 		result.Content = notification;
 		result.Text.text = string.Empty;
-		result.Text.rectTransform.sizeDelta = _defaultSize;
+		result.Text.rectTransform.sizeDelta = this._defaultSize;
 		result.gameObject.SetActive(value: true);
 		result.transform.SetAsLastSibling();
 	}
 
 	public static void AddNotification(IScp079Notification handler)
 	{
-		if (_singletonSet)
+		if (Scp079NotificationManager._singletonSet)
 		{
-			_singleton.SpawnNotification(handler);
+			Scp079NotificationManager._singleton.SpawnNotification(handler);
 		}
 	}
 
 	public static void AddNotification(string notification)
 	{
-		AddNotification(new Scp079SimpleNotification(notification));
+		Scp079NotificationManager.AddNotification(new Scp079SimpleNotification(notification));
 	}
 
 	public static void AddNotification(Scp079HudTranslation translation)
 	{
-		AddNotification(Translations.Get(translation));
+		Scp079NotificationManager.AddNotification(Translations.Get(translation));
 	}
 
 	public static void AddNotification(Scp079HudTranslation translation, params object[] format)
 	{
-		AddNotification(string.Format(Translations.Get(translation), format));
+		Scp079NotificationManager.AddNotification(string.Format(Translations.Get(translation), format));
 	}
 
 	public static bool TryGetTextHeight(string content, out float height)
 	{
-		if (!_singletonSet)
+		if (!Scp079NotificationManager._singletonSet)
 		{
 			height = 0f;
 			return false;
 		}
-		TMP_Text text = _singleton._template.Text;
+		TMP_Text text = Scp079NotificationManager._singleton._template.Text;
 		text.text = content;
 		height = text.preferredHeight;
 		text.text = string.Empty;

@@ -15,96 +15,96 @@ public abstract class BasicDoorButton : ButtonVariant
 	public override void Init(DoorVariant door)
 	{
 		base.Init(door);
-		_initialized = true;
+		this._initialized = true;
 		door.OnStateChanged += OnStateChanged;
 		door.OnLockChanged += OnLockChanged;
 		if (door is IDamageableDoor damageableDoor)
 		{
 			damageableDoor.OnDestroyedChanged += OnDestroyedChanged;
 		}
-		UpdateMaterials();
+		this.UpdateMaterials();
 	}
 
 	public void TriggerDoorDenied(DoorPermissionFlags flags)
 	{
 		if (!base.enabled)
 		{
-			OnDenied(flags);
+			this.OnDenied(flags);
 		}
 	}
 
 	private void OnDestroyedChanged()
 	{
-		_isDestroyed = (base.ParentDoor as IDamageableDoor).IsDestroyed;
-		if (_isDestroyed)
+		this._isDestroyed = (base.ParentDoor as IDamageableDoor).IsDestroyed;
+		if (this._isDestroyed)
 		{
-			SetAsDestroyed();
+			this.SetAsDestroyed();
 		}
 		else
 		{
-			RestoreNonDestroyed();
+			this.RestoreNonDestroyed();
 		}
-		UpdateMaterials();
+		this.UpdateMaterials();
 	}
 
 	private void OnStateChanged()
 	{
-		if (!_isDestroyed && base.ParentDoor.ActiveLocks == 0)
+		if (!this._isDestroyed && base.ParentDoor.ActiveLocks == 0)
 		{
-			SetMoving();
+			this.SetMoving();
 			base.enabled = true;
 		}
 	}
 
 	private void OnLockChanged()
 	{
-		if (!_isDestroyed)
+		if (!this._isDestroyed)
 		{
-			if (_lockIcons != null)
+			if (this._lockIcons != null)
 			{
-				_lockIcons.UpdateIcon(base.ParentDoor);
+				this._lockIcons.UpdateIcon(base.ParentDoor);
 			}
 			if (base.ParentDoor.IsMoving)
 			{
-				SetMoving();
+				this.SetMoving();
 				base.enabled = true;
 			}
-			UpdateMaterials();
+			this.UpdateMaterials();
 		}
 	}
 
 	private void OnEnable()
 	{
-		if (_initialized)
+		if (this._initialized)
 		{
-			UpdateMaterials();
+			this.UpdateMaterials();
 		}
 	}
 
 	private void Update()
 	{
-		UpdateMaterials();
+		this.UpdateMaterials();
 	}
 
 	private void UpdateMaterials()
 	{
-		if (_isDestroyed)
+		if (this._isDestroyed)
 		{
 			base.enabled = false;
 		}
 		else if (base.ParentDoor.ActiveLocks != 0)
 		{
-			SetLocked();
+			this.SetLocked();
 			base.enabled = false;
 		}
 		else if (!base.ParentDoor.IsMoving)
 		{
-			SetIdle();
+			this.SetIdle();
 			base.enabled = false;
 		}
 		else
 		{
-			UpdateMoving();
+			this.UpdateMoving();
 		}
 	}
 

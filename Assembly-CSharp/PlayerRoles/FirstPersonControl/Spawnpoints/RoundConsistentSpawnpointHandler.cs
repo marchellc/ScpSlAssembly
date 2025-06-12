@@ -19,7 +19,7 @@ public class RoundConsistentSpawnpointHandler : StandardSpawnpointHandler
 	{
 		if (NetworkServer.active)
 		{
-			CachedRoleSpawnpoints.Clear();
+			RoundConsistentSpawnpointHandler.CachedRoleSpawnpoints.Clear();
 		}
 	}
 
@@ -27,17 +27,17 @@ public class RoundConsistentSpawnpointHandler : StandardSpawnpointHandler
 	{
 		position = default(Vector3);
 		horizontalRot = 0f;
-		RoomRoleSpawnpoint[] validSpawnpoints = GetValidSpawnpoints(Spawnpoints);
+		RoomRoleSpawnpoint[] validSpawnpoints = base.GetValidSpawnpoints(base.Spawnpoints);
 		if (validSpawnpoints.Length == 0)
 		{
 			return false;
 		}
-		if (!CachedRoleSpawnpoints.TryGetValue(base.Role.RoleTypeId, out var value))
+		if (!RoundConsistentSpawnpointHandler.CachedRoleSpawnpoints.TryGetValue(base.Role.RoleTypeId, out var value))
 		{
 			RoomRoleSpawnpoint roomRoleSpawnpoint = validSpawnpoints.RandomItem();
 			int roomIndex = Random.Range(0, roomRoleSpawnpoint.GetRoomAmount() - 1);
 			value = new CachedRoom(roomRoleSpawnpoint, roomIndex);
-			CachedRoleSpawnpoints.Add(base.Role.RoleTypeId, value);
+			RoundConsistentSpawnpointHandler.CachedRoleSpawnpoints.Add(base.Role.RoleTypeId, value);
 		}
 		return value.RoomType.TryGetSpawnpoint(out position, out horizontalRot, value.RoomIndex);
 	}

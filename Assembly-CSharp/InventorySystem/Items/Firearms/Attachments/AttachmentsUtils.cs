@@ -22,11 +22,11 @@ public static class AttachmentsUtils
 	{
 		get
 		{
-			if (_paramNumberCache <= 0)
+			if (AttachmentsUtils._paramNumberCache <= 0)
 			{
-				_paramNumberCache = EnumUtils<AttachmentParam>.Values.Length;
+				AttachmentsUtils._paramNumberCache = EnumUtils<AttachmentParam>.Values.Length;
 			}
-			return _paramNumberCache;
+			return AttachmentsUtils._paramNumberCache;
 		}
 	}
 
@@ -95,7 +95,7 @@ public static class AttachmentsUtils
 
 	public static float AttachmentsValue(this Firearm firearm, AttachmentParam param)
 	{
-		AttachmentParameterDefinition definitionOfParam = GetDefinitionOfParam(param);
+		AttachmentParameterDefinition definitionOfParam = AttachmentsUtils.GetDefinitionOfParam(param);
 		float num = definitionOfParam.DefaultValue;
 		int num2 = firearm.Attachments.Length;
 		for (int i = 0; i < num2; i++)
@@ -103,7 +103,7 @@ public static class AttachmentsUtils
 			Attachment attachment = firearm.Attachments[i];
 			if (attachment.IsEnabled && attachment.TryGetActiveValue(param, out var val))
 			{
-				num = MixValue(num, val, definitionOfParam.MixingMode);
+				num = AttachmentsUtils.MixValue(num, val, definitionOfParam.MixingMode);
 			}
 		}
 		if (!firearm.HasOwner)
@@ -114,16 +114,16 @@ public static class AttachmentsUtils
 		{
 			if (firearm.Owner.playerEffectsController.AllEffects[j] is IWeaponModifierPlayerEffect { ParamsActive: not false } weaponModifierPlayerEffect && weaponModifierPlayerEffect.TryGetWeaponParam(param, out var val2))
 			{
-				num = MixValue(num, val2, definitionOfParam.MixingMode);
+				num = AttachmentsUtils.MixValue(num, val2, definitionOfParam.MixingMode);
 			}
 		}
-		return ClampValue(num, definitionOfParam);
+		return AttachmentsUtils.ClampValue(num, definitionOfParam);
 	}
 
 	public static float ProcessValue(this Firearm firearm, float value, AttachmentParam param)
 	{
 		float num = firearm.AttachmentsValue(param);
-		return GetDefinitionOfParam(param).MixingMode switch
+		return AttachmentsUtils.GetDefinitionOfParam(param).MixingMode switch
 		{
 			ParameterMixingMode.Additive => value + num, 
 			ParameterMixingMode.Percent => value * num, 
@@ -184,22 +184,22 @@ public static class AttachmentsUtils
 
 	private static AttachmentParameterDefinition GetDefinitionOfParam(AttachmentParam param)
 	{
-		if (!_mixingModesCacheSet)
+		if (!AttachmentsUtils._mixingModesCacheSet)
 		{
-			_cachedDefitionons = new AttachmentParameterDefinition[TotalNumberOfParams];
-			_readyMixingModes = new bool[TotalNumberOfParams];
-			_mixingModesCacheSet = true;
+			AttachmentsUtils._cachedDefitionons = new AttachmentParameterDefinition[AttachmentsUtils.TotalNumberOfParams];
+			AttachmentsUtils._readyMixingModes = new bool[AttachmentsUtils.TotalNumberOfParams];
+			AttachmentsUtils._mixingModesCacheSet = true;
 		}
-		if (_readyMixingModes[(int)param])
+		if (AttachmentsUtils._readyMixingModes[(int)param])
 		{
-			return _cachedDefitionons[(int)param];
+			return AttachmentsUtils._cachedDefitionons[(int)param];
 		}
 		if (!AttachmentParameterDefinition.Definitions.TryGetValue(param, out var value))
 		{
 			throw new Exception($"Parameter {param} is not defined!");
 		}
-		_readyMixingModes[(int)param] = true;
-		_cachedDefitionons[(int)param] = value;
+		AttachmentsUtils._readyMixingModes[(int)param] = true;
+		AttachmentsUtils._cachedDefitionons[(int)param] = value;
 		return value;
 	}
 

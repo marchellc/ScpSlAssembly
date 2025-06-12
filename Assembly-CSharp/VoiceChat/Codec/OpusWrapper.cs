@@ -58,18 +58,18 @@ internal class OpusWrapper
 
 	public static IntPtr CreateEncoder(int samplingRate, int channels, OpusApplicationType application)
 	{
-		IntPtr intPtr = Marshal.AllocHGlobal(opus_encoder_get_size(channels));
-		OpusStatusCode statusCode = opus_encoder_init(intPtr, samplingRate, channels, application);
+		IntPtr intPtr = Marshal.AllocHGlobal(OpusWrapper.opus_encoder_get_size(channels));
+		OpusStatusCode statusCode = OpusWrapper.opus_encoder_init(intPtr, samplingRate, channels, application);
 		try
 		{
-			HandleStatusCode(statusCode);
+			OpusWrapper.HandleStatusCode(statusCode);
 			return intPtr;
 		}
 		catch (Exception ex)
 		{
 			if (intPtr != IntPtr.Zero)
 			{
-				Destroy(intPtr);
+				OpusWrapper.Destroy(intPtr);
 			}
 			throw ex;
 		}
@@ -81,10 +81,10 @@ internal class OpusWrapper
 		{
 			throw new ObjectDisposedException("Encoder is already disposed!");
 		}
-		int num = opus_encode_float(st, pcm, frameSize, data, data.Length);
+		int num = OpusWrapper.opus_encode_float(st, pcm, frameSize, data, data.Length);
 		if (num <= 0)
 		{
-			HandleStatusCode((OpusStatusCode)num);
+			OpusWrapper.HandleStatusCode((OpusStatusCode)num);
 		}
 		return num;
 	}
@@ -96,7 +96,7 @@ internal class OpusWrapper
 			throw new ObjectDisposedException("Encoder is already disposed!");
 		}
 		int value = 0;
-		HandleStatusCode((OpusStatusCode)opus_encoder_ctl(st, request, ref value));
+		OpusWrapper.HandleStatusCode((OpusStatusCode)OpusWrapper.opus_encoder_ctl(st, request, ref value));
 		return value;
 	}
 
@@ -106,23 +106,23 @@ internal class OpusWrapper
 		{
 			throw new ObjectDisposedException("Encoder is already disposed!");
 		}
-		HandleStatusCode((OpusStatusCode)opus_encoder_ctl(st, request, value));
+		OpusWrapper.HandleStatusCode((OpusStatusCode)OpusWrapper.opus_encoder_ctl(st, request, value));
 	}
 
 	public static IntPtr CreateDecoder(int samplingRate, int channels)
 	{
-		IntPtr intPtr = Marshal.AllocHGlobal(opus_decoder_get_size(channels));
-		OpusStatusCode statusCode = opus_decoder_init(intPtr, samplingRate, channels);
+		IntPtr intPtr = Marshal.AllocHGlobal(OpusWrapper.opus_decoder_get_size(channels));
+		OpusStatusCode statusCode = OpusWrapper.opus_decoder_init(intPtr, samplingRate, channels);
 		try
 		{
-			HandleStatusCode(statusCode);
+			OpusWrapper.HandleStatusCode(statusCode);
 			return intPtr;
 		}
 		catch (Exception ex)
 		{
 			if (intPtr != IntPtr.Zero)
 			{
-				Destroy(intPtr);
+				OpusWrapper.Destroy(intPtr);
 			}
 			throw ex;
 		}
@@ -136,21 +136,21 @@ internal class OpusWrapper
 		}
 		int decode_fec = (fec ? 1 : 0);
 		int frame_size = pcm.Length / channels;
-		int num = ((data != null) ? opus_decode_float(st, data, dataLength, pcm, frame_size, decode_fec) : opus_decode_float(st, IntPtr.Zero, 0, pcm, frame_size, decode_fec));
+		int num = ((data != null) ? OpusWrapper.opus_decode_float(st, data, dataLength, pcm, frame_size, decode_fec) : OpusWrapper.opus_decode_float(st, IntPtr.Zero, 0, pcm, frame_size, decode_fec));
 		if (num == -4)
 		{
 			return 0;
 		}
 		if (num <= 0)
 		{
-			HandleStatusCode((OpusStatusCode)num);
+			OpusWrapper.HandleStatusCode((OpusStatusCode)num);
 		}
 		return num;
 	}
 
 	public static int GetBandwidth(byte[] data)
 	{
-		return opus_packet_get_bandwidth(data);
+		return OpusWrapper.opus_packet_get_bandwidth(data);
 	}
 
 	public static void HandleStatusCode(OpusStatusCode statusCode)
@@ -159,7 +159,7 @@ internal class OpusWrapper
 		{
 			return;
 		}
-		throw new OpusException(statusCode, opus_strerror(statusCode));
+		throw new OpusException(statusCode, OpusWrapper.opus_strerror(statusCode));
 	}
 
 	public static void Destroy(IntPtr st)

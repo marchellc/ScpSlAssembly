@@ -11,7 +11,7 @@ public sealed class ServerListSignedFormatter : IJsonFormatter<ServerListSigned>
 
 	public ServerListSignedFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("payload"),
@@ -34,7 +34,7 @@ public sealed class ServerListSignedFormatter : IJsonFormatter<ServerListSigned>
 				4
 			}
 		};
-		____stringByteKeys = new byte[5][]
+		this.____stringByteKeys = new byte[5][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("payload"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("timestamp"),
@@ -46,15 +46,15 @@ public sealed class ServerListSignedFormatter : IJsonFormatter<ServerListSigned>
 
 	public void Serialize(ref JsonWriter writer, ServerListSigned value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.payload);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteInt64(value.timestamp);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteString(value.signature);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		writer.WriteString(value.nonce);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		writer.WriteString(value.error);
 		writer.WriteEndObject();
 	}
@@ -75,7 +75,7 @@ public sealed class ServerListSignedFormatter : IJsonFormatter<ServerListSigned>
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

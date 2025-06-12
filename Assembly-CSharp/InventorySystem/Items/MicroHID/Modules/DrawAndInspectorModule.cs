@@ -28,12 +28,12 @@ public class DrawAndInspectorModule : MicroHidModuleBase
 
 	public static bool CheckPickupPreference(ushort serial)
 	{
-		return PickupAnimSerials.Contains(serial);
+		return DrawAndInspectorModule.PickupAnimSerials.Contains(serial);
 	}
 
 	public void ServerRegisterSerial(ushort serial)
 	{
-		SendRpc(delegate(NetworkWriter x)
+		this.SendRpc(delegate(NetworkWriter x)
 		{
 			x.WriteByte(0);
 			x.WriteUShort(serial);
@@ -46,12 +46,12 @@ public class DrawAndInspectorModule : MicroHidModuleBase
 		switch ((RpcType)reader.ReadByte())
 		{
 		case RpcType.OnHolstered:
-			PickupAnimSerials.Remove(serial);
+			DrawAndInspectorModule.PickupAnimSerials.Remove(serial);
 			{
 				foreach (AudioPoolSession activeSession in AudioManagerModule.GetController(serial).ActiveSessions)
 				{
 					AudioClip clip = activeSession.Source.clip;
-					if (!(clip != _equipSound) || !(clip != _pickupSound))
+					if (!(clip != this._equipSound) || !(clip != this._pickupSound))
 					{
 						activeSession.Source.Stop();
 					}
@@ -59,12 +59,12 @@ public class DrawAndInspectorModule : MicroHidModuleBase
 				break;
 			}
 		case RpcType.OnEquipped:
-			AudioManagerModule.GetController(serial).PlayOneShot(CheckPickupPreference(serial) ? _pickupSound : _equipSound);
+			AudioManagerModule.GetController(serial).PlayOneShot(DrawAndInspectorModule.CheckPickupPreference(serial) ? this._pickupSound : this._equipSound);
 			break;
 		case RpcType.AddPickup:
 			while (reader.Remaining > 0)
 			{
-				PickupAnimSerials.Add(reader.ReadUShort());
+				DrawAndInspectorModule.PickupAnimSerials.Add(reader.ReadUShort());
 			}
 			break;
 		case RpcType.InspectRequested:
@@ -78,7 +78,7 @@ public class DrawAndInspectorModule : MicroHidModuleBase
 		base.OnEquipped();
 		if (base.IsServer)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteByte(1);
 			});
@@ -88,7 +88,7 @@ public class DrawAndInspectorModule : MicroHidModuleBase
 	internal override void OnHolstered()
 	{
 		base.OnHolstered();
-		SendRpc(delegate(NetworkWriter x)
+		this.SendRpc(delegate(NetworkWriter x)
 		{
 			x.WriteByte(2);
 		});
@@ -97,9 +97,9 @@ public class DrawAndInspectorModule : MicroHidModuleBase
 	internal override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (base.IsControllable && GetActionDown(ActionName.InspectItem))
+		if (base.IsControllable && base.GetActionDown(ActionName.InspectItem))
 		{
-			SendCmd();
+			this.SendCmd();
 		}
 	}
 
@@ -108,7 +108,7 @@ public class DrawAndInspectorModule : MicroHidModuleBase
 		base.ServerProcessCmd(reader);
 		if (!base.ItemUsageBlocked)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteByte(3);
 			});
@@ -118,16 +118,16 @@ public class DrawAndInspectorModule : MicroHidModuleBase
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		PickupAnimSerials.Clear();
+		DrawAndInspectorModule.PickupAnimSerials.Clear();
 	}
 
 	internal override void ServerOnPlayerConnected(ReferenceHub hub, bool firstSubcomponent)
 	{
 		base.ServerOnPlayerConnected(hub, firstSubcomponent);
-		SendRpc(hub, delegate(NetworkWriter x)
+		this.SendRpc(hub, delegate(NetworkWriter x)
 		{
 			x.WriteByte(0);
-			foreach (ushort pickupAnimSerial in PickupAnimSerials)
+			foreach (ushort pickupAnimSerial in DrawAndInspectorModule.PickupAnimSerials)
 			{
 				x.WriteUShort(pickupAnimSerial);
 			}

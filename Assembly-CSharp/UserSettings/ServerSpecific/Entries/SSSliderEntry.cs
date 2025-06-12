@@ -17,31 +17,31 @@ public class SSSliderEntry : UserSettingsSlider, ISSEntry, IPointerUpHandler, IE
 
 	private void UpdateFieldText(float value)
 	{
-		string arg = value.ToString(_setting.ValueToStringFormat);
-		_inputField.SetTextWithoutNotify(string.Format(_setting.FinalDisplayFormat, arg));
+		string arg = value.ToString(this._setting.ValueToStringFormat);
+		this._inputField.SetTextWithoutNotify(string.Format(this._setting.FinalDisplayFormat, arg));
 	}
 
 	private void OnDisable()
 	{
-		if (_setting != null && _setting.SyncDragging)
+		if (this._setting != null && this._setting.SyncDragging)
 		{
-			_setting.SyncDragging = false;
-			_setting.ClientSendValue();
+			this._setting.SyncDragging = false;
+			this._setting.ClientSendValue();
 		}
 	}
 
 	protected override void SaveValue(float val)
 	{
-		PlayerPrefsSl.Set(_setting.PlayerPrefsKey, val);
-		_setting.SyncDragging = true;
-		_setting.SyncFloatValue = val;
-		_setting.ClientSendValue();
+		PlayerPrefsSl.Set(this._setting.PlayerPrefsKey, val);
+		this._setting.SyncDragging = true;
+		this._setting.SyncFloatValue = val;
+		this._setting.ClientSendValue();
 	}
 
 	protected override float ReadSavedValue()
 	{
-		_setting.SyncFloatValue = PlayerPrefsSl.Get(_setting.PlayerPrefsKey, _setting.DefaultValue);
-		return _setting.SyncFloatValue;
+		this._setting.SyncFloatValue = PlayerPrefsSl.Get(this._setting.PlayerPrefsKey, this._setting.DefaultValue);
+		return this._setting.SyncFloatValue;
 	}
 
 	public bool CheckCompatibility(ServerSpecificSettingBase setting)
@@ -51,17 +51,17 @@ public class SSSliderEntry : UserSettingsSlider, ISSEntry, IPointerUpHandler, IE
 
 	public void Init(ServerSpecificSettingBase setting)
 	{
-		_setting = setting as SSSliderSetting;
-		_label.Set(_setting);
-		base.TargetUI.minValue = _setting.MinValue;
-		base.TargetUI.maxValue = _setting.MaxValue;
-		base.TargetUI.wholeNumbers = _setting.Integer;
-		_inputField.contentType = (_setting.Integer ? TMP_InputField.ContentType.IntegerNumber : TMP_InputField.ContentType.DecimalNumber);
-		_inputField.onEndEdit.AddListener(delegate(string str)
+		this._setting = setting as SSSliderSetting;
+		this._label.Set(this._setting);
+		base.TargetUI.minValue = this._setting.MinValue;
+		base.TargetUI.maxValue = this._setting.MaxValue;
+		base.TargetUI.wholeNumbers = this._setting.Integer;
+		this._inputField.contentType = (this._setting.Integer ? TMP_InputField.ContentType.IntegerNumber : TMP_InputField.ContentType.DecimalNumber);
+		this._inputField.onEndEdit.AddListener(delegate(string str)
 		{
 			if (!float.TryParse(str, out var result))
 			{
-				SetValueAndTriggerEvent(base.StoredValue);
+				this.SetValueAndTriggerEvent(base.StoredValue);
 			}
 			else
 			{
@@ -70,26 +70,26 @@ public class SSSliderEntry : UserSettingsSlider, ISSEntry, IPointerUpHandler, IE
 				{
 					current.SetSelectedGameObject(null);
 				}
-				result = Mathf.Clamp(result, _setting.MinValue, _setting.MaxValue);
-				SetValueAndTriggerEvent(result);
-				UpdateFieldText(result);
+				result = Mathf.Clamp(result, this._setting.MinValue, this._setting.MaxValue);
+				this.SetValueAndTriggerEvent(result);
+				this.UpdateFieldText(result);
 			}
 		});
-		_inputField.onSelect.AddListener(delegate
+		this._inputField.onSelect.AddListener(delegate
 		{
-			_inputField.SetTextWithoutNotify(base.TargetUI.value.ToString());
+			this._inputField.SetTextWithoutNotify(base.TargetUI.value.ToString());
 		});
 		base.TargetUI.onValueChanged.AddListener(UpdateFieldText);
-		Setup();
-		UpdateFieldText(base.TargetUI.value);
+		base.Setup();
+		this.UpdateFieldText(base.TargetUI.value);
 	}
 
 	public void OnPointerUp(PointerEventData eventData)
 	{
-		if (eventData.button == PointerEventData.InputButton.Left && _setting.SyncDragging)
+		if (eventData.button == PointerEventData.InputButton.Left && this._setting.SyncDragging)
 		{
-			_setting.SyncDragging = false;
-			_setting.ClientSendValue();
+			this._setting.SyncDragging = false;
+			this._setting.ClientSendValue();
 		}
 	}
 }

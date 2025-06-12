@@ -26,7 +26,7 @@ public class Scp127OnDieVoiceTrigger : Scp127VoiceTriggerBase
 	{
 		if (base.IsServer && !(deadHub != base.Item.Owner))
 		{
-			ServerPlayVoiceLineFromCollection(_ownerDiedLines, null, VoiceLinePriority.VeryHigh);
+			base.ServerPlayVoiceLineFromCollection(this._ownerDiedLines, null, VoiceLinePriority.VeryHigh);
 		}
 	}
 }

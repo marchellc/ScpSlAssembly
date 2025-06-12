@@ -21,7 +21,7 @@ public class NetSerializer
 
 		public virtual void Init(MethodInfo getMethod, MethodInfo setMethod, CallType type)
 		{
-			Type = type;
+			this.Type = type;
 		}
 
 		public abstract void Read(T inf, NetDataReader r);
@@ -74,15 +74,15 @@ public class NetSerializer
 		protected TProperty[] ReadArrayHelper(TClass inf, NetDataReader r)
 		{
 			ushort uShort = r.GetUShort();
-			TProperty[] array = GetterArr(inf);
+			TProperty[] array = this.GetterArr(inf);
 			array = ((array == null || array.Length != uShort) ? new TProperty[uShort] : array);
-			SetterArr(inf, array);
+			this.SetterArr(inf, array);
 			return array;
 		}
 
 		protected TProperty[] WriteArrayHelper(TClass inf, NetDataWriter w)
 		{
-			TProperty[] array = GetterArr(inf);
+			TProperty[] array = this.GetterArr(inf);
 			w.Put((ushort)array.Length);
 			return array;
 		}
@@ -90,18 +90,18 @@ public class NetSerializer
 		protected List<TProperty> ReadListHelper(TClass inf, NetDataReader r, out int len)
 		{
 			len = r.GetUShort();
-			List<TProperty> list = GetterList(inf);
+			List<TProperty> list = this.GetterList(inf);
 			if (list == null)
 			{
 				list = new List<TProperty>(len);
-				SetterList(inf, list);
+				this.SetterList(inf, list);
 			}
 			return list;
 		}
 
 		protected List<TProperty> WriteListHelper(TClass inf, NetDataWriter w, out int len)
 		{
-			List<TProperty> list = GetterList(inf);
+			List<TProperty> list = this.GetterList(inf);
 			if (list == null)
 			{
 				len = 0;
@@ -119,16 +119,16 @@ public class NetSerializer
 			switch (type)
 			{
 			case CallType.Array:
-				GetterArr = (Func<TClass, TProperty[]>)Delegate.CreateDelegate(typeof(Func<TClass, TProperty[]>), getMethod);
-				SetterArr = (Action<TClass, TProperty[]>)Delegate.CreateDelegate(typeof(Action<TClass, TProperty[]>), setMethod);
+				this.GetterArr = (Func<TClass, TProperty[]>)Delegate.CreateDelegate(typeof(Func<TClass, TProperty[]>), getMethod);
+				this.SetterArr = (Action<TClass, TProperty[]>)Delegate.CreateDelegate(typeof(Action<TClass, TProperty[]>), setMethod);
 				break;
 			case CallType.List:
-				GetterList = (Func<TClass, List<TProperty>>)Delegate.CreateDelegate(typeof(Func<TClass, List<TProperty>>), getMethod);
-				SetterList = (Action<TClass, List<TProperty>>)Delegate.CreateDelegate(typeof(Action<TClass, List<TProperty>>), setMethod);
+				this.GetterList = (Func<TClass, List<TProperty>>)Delegate.CreateDelegate(typeof(Func<TClass, List<TProperty>>), getMethod);
+				this.SetterList = (Action<TClass, List<TProperty>>)Delegate.CreateDelegate(typeof(Action<TClass, List<TProperty>>), setMethod);
 				break;
 			default:
-				Getter = (Func<TClass, TProperty>)Delegate.CreateDelegate(typeof(Func<TClass, TProperty>), getMethod);
-				Setter = (Action<TClass, TProperty>)Delegate.CreateDelegate(typeof(Action<TClass, TProperty>), setMethod);
+				this.Getter = (Func<TClass, TProperty>)Delegate.CreateDelegate(typeof(Func<TClass, TProperty>), getMethod);
+				this.Setter = (Action<TClass, TProperty>)Delegate.CreateDelegate(typeof(Action<TClass, TProperty>), setMethod);
 				break;
 			}
 		}
@@ -142,31 +142,31 @@ public class NetSerializer
 
 		public override void Read(TClass inf, NetDataReader r)
 		{
-			ElementRead(r, out var prop);
-			Setter(inf, prop);
+			this.ElementRead(r, out var prop);
+			base.Setter(inf, prop);
 		}
 
 		public override void Write(TClass inf, NetDataWriter w)
 		{
-			TProperty prop = Getter(inf);
-			ElementWrite(w, ref prop);
+			TProperty prop = base.Getter(inf);
+			this.ElementWrite(w, ref prop);
 		}
 
 		public override void ReadArray(TClass inf, NetDataReader r)
 		{
-			TProperty[] array = ReadArrayHelper(inf, r);
+			TProperty[] array = base.ReadArrayHelper(inf, r);
 			for (int i = 0; i < array.Length; i++)
 			{
-				ElementRead(r, out array[i]);
+				this.ElementRead(r, out array[i]);
 			}
 		}
 
 		public override void WriteArray(TClass inf, NetDataWriter w)
 		{
-			TProperty[] array = WriteArrayHelper(inf, w);
+			TProperty[] array = base.WriteArrayHelper(inf, w);
 			for (int i = 0; i < array.Length; i++)
 			{
-				ElementWrite(w, ref array[i]);
+				this.ElementWrite(w, ref array[i]);
 			}
 		}
 	}
@@ -179,34 +179,34 @@ public class NetSerializer
 
 		public FastCallStatic(Action<NetDataWriter, TProperty> write, Func<NetDataReader, TProperty> read)
 		{
-			_writer = write;
-			_reader = read;
+			this._writer = write;
+			this._reader = read;
 		}
 
 		public override void Read(TClass inf, NetDataReader r)
 		{
-			Setter(inf, _reader(r));
+			base.Setter(inf, this._reader(r));
 		}
 
 		public override void Write(TClass inf, NetDataWriter w)
 		{
-			_writer(w, Getter(inf));
+			this._writer(w, base.Getter(inf));
 		}
 
 		public override void ReadList(TClass inf, NetDataReader r)
 		{
 			int len;
-			List<TProperty> list = ReadListHelper(inf, r, out len);
+			List<TProperty> list = base.ReadListHelper(inf, r, out len);
 			int count = list.Count;
 			for (int i = 0; i < len; i++)
 			{
 				if (i < count)
 				{
-					list[i] = _reader(r);
+					list[i] = this._reader(r);
 				}
 				else
 				{
-					list.Add(_reader(r));
+					list.Add(this._reader(r));
 				}
 			}
 			if (len < count)
@@ -218,30 +218,30 @@ public class NetSerializer
 		public override void WriteList(TClass inf, NetDataWriter w)
 		{
 			int len;
-			List<TProperty> list = WriteListHelper(inf, w, out len);
+			List<TProperty> list = base.WriteListHelper(inf, w, out len);
 			for (int i = 0; i < len; i++)
 			{
-				_writer(w, list[i]);
+				this._writer(w, list[i]);
 			}
 		}
 
 		public override void ReadArray(TClass inf, NetDataReader r)
 		{
-			TProperty[] array = ReadArrayHelper(inf, r);
+			TProperty[] array = base.ReadArrayHelper(inf, r);
 			int num = array.Length;
 			for (int i = 0; i < num; i++)
 			{
-				array[i] = _reader(r);
+				array[i] = this._reader(r);
 			}
 		}
 
 		public override void WriteArray(TClass inf, NetDataWriter w)
 		{
-			TProperty[] array = WriteArrayHelper(inf, w);
+			TProperty[] array = base.WriteArrayHelper(inf, w);
 			int num = array.Length;
 			for (int i = 0; i < num; i++)
 			{
-				_writer(w, array[i]);
+				this._writer(w, array[i]);
 			}
 		}
 	}
@@ -252,20 +252,20 @@ public class NetSerializer
 
 		public override void Read(TClass inf, NetDataReader r)
 		{
-			_p.Deserialize(r);
-			Setter(inf, _p);
+			this._p.Deserialize(r);
+			base.Setter(inf, this._p);
 		}
 
 		public override void Write(TClass inf, NetDataWriter w)
 		{
-			_p = Getter(inf);
-			_p.Serialize(w);
+			this._p = base.Getter(inf);
+			this._p.Serialize(w);
 		}
 
 		public override void ReadList(TClass inf, NetDataReader r)
 		{
 			int len;
-			List<TProperty> list = ReadListHelper(inf, r, out len);
+			List<TProperty> list = base.ReadListHelper(inf, r, out len);
 			int count = list.Count;
 			for (int i = 0; i < len; i++)
 			{
@@ -289,7 +289,7 @@ public class NetSerializer
 		public override void WriteList(TClass inf, NetDataWriter w)
 		{
 			int len;
-			List<TProperty> list = WriteListHelper(inf, w, out len);
+			List<TProperty> list = base.WriteListHelper(inf, w, out len);
 			for (int i = 0; i < len; i++)
 			{
 				list[i].Serialize(w);
@@ -298,7 +298,7 @@ public class NetSerializer
 
 		public override void ReadArray(TClass inf, NetDataReader r)
 		{
-			TProperty[] array = ReadArrayHelper(inf, r);
+			TProperty[] array = base.ReadArrayHelper(inf, r);
 			int num = array.Length;
 			for (int i = 0; i < num; i++)
 			{
@@ -308,7 +308,7 @@ public class NetSerializer
 
 		public override void WriteArray(TClass inf, NetDataWriter w)
 		{
-			TProperty[] array = WriteArrayHelper(inf, w);
+			TProperty[] array = base.WriteArrayHelper(inf, w);
 			int num = array.Length;
 			for (int i = 0; i < num; i++)
 			{
@@ -323,25 +323,25 @@ public class NetSerializer
 
 		public FastCallClass(Func<TProperty> constructor)
 		{
-			_constructor = constructor;
+			this._constructor = constructor;
 		}
 
 		public override void Read(TClass inf, NetDataReader r)
 		{
-			TProperty val = _constructor();
+			TProperty val = this._constructor();
 			val.Deserialize(r);
-			Setter(inf, val);
+			base.Setter(inf, val);
 		}
 
 		public override void Write(TClass inf, NetDataWriter w)
 		{
-			Getter(inf)?.Serialize(w);
+			base.Getter(inf)?.Serialize(w);
 		}
 
 		public override void ReadList(TClass inf, NetDataReader r)
 		{
 			int len;
-			List<TProperty> list = ReadListHelper(inf, r, out len);
+			List<TProperty> list = base.ReadListHelper(inf, r, out len);
 			int count = list.Count;
 			for (int i = 0; i < len; i++)
 			{
@@ -350,7 +350,7 @@ public class NetSerializer
 					list[i].Deserialize(r);
 					continue;
 				}
-				TProperty val = _constructor();
+				TProperty val = this._constructor();
 				val.Deserialize(r);
 				list.Add(val);
 			}
@@ -363,7 +363,7 @@ public class NetSerializer
 		public override void WriteList(TClass inf, NetDataWriter w)
 		{
 			int len;
-			List<TProperty> list = WriteListHelper(inf, w, out len);
+			List<TProperty> list = base.WriteListHelper(inf, w, out len);
 			for (int i = 0; i < len; i++)
 			{
 				list[i].Serialize(w);
@@ -372,18 +372,18 @@ public class NetSerializer
 
 		public override void ReadArray(TClass inf, NetDataReader r)
 		{
-			TProperty[] array = ReadArrayHelper(inf, r);
+			TProperty[] array = base.ReadArrayHelper(inf, r);
 			int num = array.Length;
 			for (int i = 0; i < num; i++)
 			{
-				array[i] = _constructor();
+				array[i] = this._constructor();
 				array[i].Deserialize(r);
 			}
 		}
 
 		public override void WriteArray(TClass inf, NetDataWriter w)
 		{
-			TProperty[] array = WriteArrayHelper(inf, w);
+			TProperty[] array = base.WriteArrayHelper(inf, w);
 			int num = array.Length;
 			for (int i = 0; i < num; i++)
 			{
@@ -396,22 +396,22 @@ public class NetSerializer
 	{
 		public override void Read(T inf, NetDataReader r)
 		{
-			Setter(inf, r.GetInt());
+			base.Setter(inf, r.GetInt());
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put(Getter(inf));
+			w.Put(base.Getter(inf));
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
 		{
-			SetterArr(inf, r.GetIntArray());
+			base.SetterArr(inf, r.GetIntArray());
 		}
 
 		public override void WriteArray(T inf, NetDataWriter w)
 		{
-			w.PutArray(GetterArr(inf));
+			w.PutArray(base.GetterArr(inf));
 		}
 	}
 
@@ -419,22 +419,22 @@ public class NetSerializer
 	{
 		public override void Read(T inf, NetDataReader r)
 		{
-			Setter(inf, r.GetUInt());
+			base.Setter(inf, r.GetUInt());
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put(Getter(inf));
+			w.Put(base.Getter(inf));
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
 		{
-			SetterArr(inf, r.GetUIntArray());
+			base.SetterArr(inf, r.GetUIntArray());
 		}
 
 		public override void WriteArray(T inf, NetDataWriter w)
 		{
-			w.PutArray(GetterArr(inf));
+			w.PutArray(base.GetterArr(inf));
 		}
 	}
 
@@ -442,22 +442,22 @@ public class NetSerializer
 	{
 		public override void Read(T inf, NetDataReader r)
 		{
-			Setter(inf, r.GetShort());
+			base.Setter(inf, r.GetShort());
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put(Getter(inf));
+			w.Put(base.Getter(inf));
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
 		{
-			SetterArr(inf, r.GetShortArray());
+			base.SetterArr(inf, r.GetShortArray());
 		}
 
 		public override void WriteArray(T inf, NetDataWriter w)
 		{
-			w.PutArray(GetterArr(inf));
+			w.PutArray(base.GetterArr(inf));
 		}
 	}
 
@@ -465,22 +465,22 @@ public class NetSerializer
 	{
 		public override void Read(T inf, NetDataReader r)
 		{
-			Setter(inf, r.GetUShort());
+			base.Setter(inf, r.GetUShort());
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put(Getter(inf));
+			w.Put(base.Getter(inf));
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
 		{
-			SetterArr(inf, r.GetUShortArray());
+			base.SetterArr(inf, r.GetUShortArray());
 		}
 
 		public override void WriteArray(T inf, NetDataWriter w)
 		{
-			w.PutArray(GetterArr(inf));
+			w.PutArray(base.GetterArr(inf));
 		}
 	}
 
@@ -488,22 +488,22 @@ public class NetSerializer
 	{
 		public override void Read(T inf, NetDataReader r)
 		{
-			Setter(inf, r.GetLong());
+			base.Setter(inf, r.GetLong());
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put(Getter(inf));
+			w.Put(base.Getter(inf));
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
 		{
-			SetterArr(inf, r.GetLongArray());
+			base.SetterArr(inf, r.GetLongArray());
 		}
 
 		public override void WriteArray(T inf, NetDataWriter w)
 		{
-			w.PutArray(GetterArr(inf));
+			w.PutArray(base.GetterArr(inf));
 		}
 	}
 
@@ -511,22 +511,22 @@ public class NetSerializer
 	{
 		public override void Read(T inf, NetDataReader r)
 		{
-			Setter(inf, r.GetULong());
+			base.Setter(inf, r.GetULong());
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put(Getter(inf));
+			w.Put(base.Getter(inf));
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
 		{
-			SetterArr(inf, r.GetULongArray());
+			base.SetterArr(inf, r.GetULongArray());
 		}
 
 		public override void WriteArray(T inf, NetDataWriter w)
 		{
-			w.PutArray(GetterArr(inf));
+			w.PutArray(base.GetterArr(inf));
 		}
 	}
 
@@ -534,22 +534,22 @@ public class NetSerializer
 	{
 		public override void Read(T inf, NetDataReader r)
 		{
-			Setter(inf, r.GetByte());
+			base.Setter(inf, r.GetByte());
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put(Getter(inf));
+			w.Put(base.Getter(inf));
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
 		{
-			SetterArr(inf, r.GetBytesWithLength());
+			base.SetterArr(inf, r.GetBytesWithLength());
 		}
 
 		public override void WriteArray(T inf, NetDataWriter w)
 		{
-			w.PutBytesWithLength(GetterArr(inf));
+			w.PutBytesWithLength(base.GetterArr(inf));
 		}
 	}
 
@@ -557,22 +557,22 @@ public class NetSerializer
 	{
 		public override void Read(T inf, NetDataReader r)
 		{
-			Setter(inf, r.GetSByte());
+			base.Setter(inf, r.GetSByte());
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put(Getter(inf));
+			w.Put(base.Getter(inf));
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
 		{
-			SetterArr(inf, r.GetSBytesWithLength());
+			base.SetterArr(inf, r.GetSBytesWithLength());
 		}
 
 		public override void WriteArray(T inf, NetDataWriter w)
 		{
-			w.PutSBytesWithLength(GetterArr(inf));
+			w.PutSBytesWithLength(base.GetterArr(inf));
 		}
 	}
 
@@ -580,22 +580,22 @@ public class NetSerializer
 	{
 		public override void Read(T inf, NetDataReader r)
 		{
-			Setter(inf, r.GetFloat());
+			base.Setter(inf, r.GetFloat());
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put(Getter(inf));
+			w.Put(base.Getter(inf));
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
 		{
-			SetterArr(inf, r.GetFloatArray());
+			base.SetterArr(inf, r.GetFloatArray());
 		}
 
 		public override void WriteArray(T inf, NetDataWriter w)
 		{
-			w.PutArray(GetterArr(inf));
+			w.PutArray(base.GetterArr(inf));
 		}
 	}
 
@@ -603,22 +603,22 @@ public class NetSerializer
 	{
 		public override void Read(T inf, NetDataReader r)
 		{
-			Setter(inf, r.GetDouble());
+			base.Setter(inf, r.GetDouble());
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put(Getter(inf));
+			w.Put(base.Getter(inf));
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
 		{
-			SetterArr(inf, r.GetDoubleArray());
+			base.SetterArr(inf, r.GetDoubleArray());
 		}
 
 		public override void WriteArray(T inf, NetDataWriter w)
 		{
-			w.PutArray(GetterArr(inf));
+			w.PutArray(base.GetterArr(inf));
 		}
 	}
 
@@ -626,22 +626,22 @@ public class NetSerializer
 	{
 		public override void Read(T inf, NetDataReader r)
 		{
-			Setter(inf, r.GetBool());
+			base.Setter(inf, r.GetBool());
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put(Getter(inf));
+			w.Put(base.Getter(inf));
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
 		{
-			SetterArr(inf, r.GetBoolArray());
+			base.SetterArr(inf, r.GetBoolArray());
 		}
 
 		public override void WriteArray(T inf, NetDataWriter w)
 		{
-			w.PutArray(GetterArr(inf));
+			w.PutArray(base.GetterArr(inf));
 		}
 	}
 
@@ -677,27 +677,27 @@ public class NetSerializer
 
 		public StringSerializer(int maxLength)
 		{
-			_maxLength = ((maxLength > 0) ? maxLength : 32767);
+			this._maxLength = ((maxLength > 0) ? maxLength : 32767);
 		}
 
 		public override void Read(T inf, NetDataReader r)
 		{
-			Setter(inf, r.GetString(_maxLength));
+			base.Setter(inf, r.GetString(this._maxLength));
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put(Getter(inf), _maxLength);
+			w.Put(base.Getter(inf), this._maxLength);
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
 		{
-			SetterArr(inf, r.GetStringArray(_maxLength));
+			base.SetterArr(inf, r.GetStringArray(this._maxLength));
 		}
 
 		public override void WriteArray(T inf, NetDataWriter w)
 		{
-			w.PutArray(GetterArr(inf), _maxLength);
+			w.PutArray(base.GetterArr(inf), this._maxLength);
 		}
 	}
 
@@ -709,18 +709,18 @@ public class NetSerializer
 
 		public EnumByteSerializer(PropertyInfo property, Type propertyType)
 		{
-			Property = property;
-			PropertyType = propertyType;
+			this.Property = property;
+			this.PropertyType = propertyType;
 		}
 
 		public override void Read(T inf, NetDataReader r)
 		{
-			Property.SetValue(inf, Enum.ToObject(PropertyType, r.GetByte()), null);
+			this.Property.SetValue(inf, Enum.ToObject(this.PropertyType, r.GetByte()), null);
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put((byte)Property.GetValue(inf, null));
+			w.Put((byte)this.Property.GetValue(inf, null));
 		}
 
 		public override void ReadArray(T inf, NetDataReader r)
@@ -753,12 +753,12 @@ public class NetSerializer
 
 		public override void Read(T inf, NetDataReader r)
 		{
-			Property.SetValue(inf, Enum.ToObject(PropertyType, r.GetInt()), null);
+			base.Property.SetValue(inf, Enum.ToObject(base.PropertyType, r.GetInt()), null);
 		}
 
 		public override void Write(T inf, NetDataWriter w)
 		{
-			w.Put((int)Property.GetValue(inf, null));
+			w.Put((int)base.Property.GetValue(inf, null));
 		}
 	}
 
@@ -772,15 +772,15 @@ public class NetSerializer
 
 		public ClassInfo(List<FastCall<T>> serializers)
 		{
-			_membersCount = serializers.Count;
-			_serializers = serializers.ToArray();
+			this._membersCount = serializers.Count;
+			this._serializers = serializers.ToArray();
 		}
 
 		public void Write(T obj, NetDataWriter writer)
 		{
-			for (int i = 0; i < _membersCount; i++)
+			for (int i = 0; i < this._membersCount; i++)
 			{
-				FastCall<T> fastCall = _serializers[i];
+				FastCall<T> fastCall = this._serializers[i];
 				if (fastCall.Type == CallType.Basic)
 				{
 					fastCall.Write(obj, writer);
@@ -798,9 +798,9 @@ public class NetSerializer
 
 		public void Read(T obj, NetDataReader reader)
 		{
-			for (int i = 0; i < _membersCount; i++)
+			for (int i = 0; i < this._membersCount; i++)
 			{
-				FastCall<T> fastCall = _serializers[i];
+				FastCall<T> fastCall = this._serializers[i];
 				if (fastCall.Type == CallType.Basic)
 				{
 					fastCall.Read(obj, reader);
@@ -836,12 +836,12 @@ public class NetSerializer
 
 		public CustomTypeClass(Func<TProperty> constructor)
 		{
-			_constructor = constructor;
+			this._constructor = constructor;
 		}
 
 		public override FastCall<T> Get<T>()
 		{
-			return new FastCallClass<T, TProperty>(_constructor);
+			return new FastCallClass<T, TProperty>(this._constructor);
 		}
 	}
 
@@ -853,13 +853,13 @@ public class NetSerializer
 
 		public CustomTypeStatic(Action<NetDataWriter, TProperty> writer, Func<NetDataReader, TProperty> reader)
 		{
-			_writer = writer;
-			_reader = reader;
+			this._writer = writer;
+			this._reader = reader;
 		}
 
 		public override FastCall<T> Get<T>()
 		{
-			return new FastCallStatic<T, TProperty>(_writer, _reader);
+			return new FastCallStatic<T, TProperty>(this._writer, this._reader);
 		}
 	}
 
@@ -871,17 +871,17 @@ public class NetSerializer
 
 	public void RegisterNestedType<T>() where T : struct, INetSerializable
 	{
-		_registeredTypes.Add(typeof(T), new CustomTypeStruct<T>());
+		this._registeredTypes.Add(typeof(T), new CustomTypeStruct<T>());
 	}
 
 	public void RegisterNestedType<T>(Func<T> constructor) where T : class, INetSerializable
 	{
-		_registeredTypes.Add(typeof(T), new CustomTypeClass<T>(constructor));
+		this._registeredTypes.Add(typeof(T), new CustomTypeClass<T>(constructor));
 	}
 
 	public void RegisterNestedType<T>(Action<NetDataWriter, T> writer, Func<NetDataReader, T> reader)
 	{
-		_registeredTypes.Add(typeof(T), new CustomTypeStatic<T>(writer, reader));
+		this._registeredTypes.Add(typeof(T), new CustomTypeStatic<T>(writer, reader));
 	}
 
 	public NetSerializer()
@@ -891,7 +891,7 @@ public class NetSerializer
 
 	public NetSerializer(int maxStringLength)
 	{
-		_maxStringLength = maxStringLength;
+		this._maxStringLength = maxStringLength;
 	}
 
 	private ClassInfo<T> RegisterInternal<T>()
@@ -941,7 +941,7 @@ public class NetSerializer
 			}
 			else if (type == typeof(string))
 			{
-				fastCall = new StringSerializer<T>(_maxStringLength);
+				fastCall = new StringSerializer<T>(this._maxStringLength);
 			}
 			else if (type == typeof(bool))
 			{
@@ -997,7 +997,7 @@ public class NetSerializer
 			}
 			else
 			{
-				_registeredTypes.TryGetValue(type, out var value);
+				this._registeredTypes.TryGetValue(type, out var value);
 				if (value != null)
 				{
 					fastCall = value.Get<T>();
@@ -1017,12 +1017,12 @@ public class NetSerializer
 
 	public void Register<T>()
 	{
-		RegisterInternal<T>();
+		this.RegisterInternal<T>();
 	}
 
 	public T Deserialize<T>(NetDataReader reader) where T : class, new()
 	{
-		ClassInfo<T> classInfo = RegisterInternal<T>();
+		ClassInfo<T> classInfo = this.RegisterInternal<T>();
 		T val = new T();
 		try
 		{
@@ -1037,7 +1037,7 @@ public class NetSerializer
 
 	public bool Deserialize<T>(NetDataReader reader, T target) where T : class, new()
 	{
-		ClassInfo<T> classInfo = RegisterInternal<T>();
+		ClassInfo<T> classInfo = this.RegisterInternal<T>();
 		try
 		{
 			classInfo.Read(target, reader);
@@ -1051,17 +1051,17 @@ public class NetSerializer
 
 	public void Serialize<T>(NetDataWriter writer, T obj) where T : class, new()
 	{
-		RegisterInternal<T>().Write(obj, writer);
+		this.RegisterInternal<T>().Write(obj, writer);
 	}
 
 	public byte[] Serialize<T>(T obj) where T : class, new()
 	{
-		if (_writer == null)
+		if (this._writer == null)
 		{
-			_writer = new NetDataWriter();
+			this._writer = new NetDataWriter();
 		}
-		_writer.Reset();
-		Serialize(_writer, obj);
-		return _writer.CopyData();
+		this._writer.Reset();
+		this.Serialize(this._writer, obj);
+		return this._writer.CopyData();
 	}
 }

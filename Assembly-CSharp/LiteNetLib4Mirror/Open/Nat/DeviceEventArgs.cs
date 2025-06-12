@@ -8,6 +8,6 @@ internal class DeviceEventArgs : EventArgs
 
 	public DeviceEventArgs(NatDevice device)
 	{
-		Device = device;
+		this.Device = device;
 	}
 }

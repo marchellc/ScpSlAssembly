@@ -17,7 +17,7 @@ public class ZombieAttackAbility : SingleTargetAttackAbility<ZombieRole>
 	{
 		get
 		{
-			if (!_consumeAbility.IsInProgress)
+			if (!this._consumeAbility.IsInProgress)
 			{
 				return base.CanTriggerAbility;
 			}
@@ -35,6 +35,6 @@ public class ZombieAttackAbility : SingleTargetAttackAbility<ZombieRole>
 	protected override void Awake()
 	{
 		base.Awake();
-		base.CastRole.SubroutineModule.TryGetSubroutine<ZombieConsumeAbility>(out _consumeAbility);
+		base.CastRole.SubroutineModule.TryGetSubroutine<ZombieConsumeAbility>(out this._consumeAbility);
 	}
 }

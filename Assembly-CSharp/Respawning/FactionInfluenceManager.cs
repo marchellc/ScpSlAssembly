@@ -28,10 +28,10 @@ public static class FactionInfluenceManager
 
 	public static float Get(Faction faction)
 	{
-		if (!Influence.TryGetValue(faction, out var value))
+		if (!FactionInfluenceManager.Influence.TryGetValue(faction, out var value))
 		{
 			value = 0f;
-			Influence[faction] = value;
+			FactionInfluenceManager.Influence[faction] = value;
 		}
 		return value;
 	}
@@ -39,24 +39,25 @@ public static class FactionInfluenceManager
 	public static void Set(Faction faction, float influence)
 	{
 		FactionInfluenceManager.InfluenceModified?.Invoke(faction, influence);
-		Influence[faction] = influence;
+		FactionInfluenceManager.Influence[faction] = influence;
 		if (NetworkServer.active)
 		{
-			InfluenceUpdateMessage message = default(InfluenceUpdateMessage);
-			message.Faction = faction;
-			message.Influence = influence;
-			NetworkServer.SendToReady(message);
+			NetworkServer.SendToReady(new InfluenceUpdateMessage
+			{
+				Faction = faction,
+				Influence = influence
+			});
 		}
 	}
 
 	public static void Add(Faction faction, float influence)
 	{
-		Set(faction, Get(faction) + influence);
+		FactionInfluenceManager.Set(faction, FactionInfluenceManager.Get(faction) + influence);
 	}
 
 	public static void Remove(Faction faction, float influence)
 	{
-		Set(faction, Get(faction) - influence);
+		FactionInfluenceManager.Set(faction, FactionInfluenceManager.Get(faction) - influence);
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -67,7 +68,7 @@ public static class FactionInfluenceManager
 			NetworkClient.ReplaceHandler<InfluenceUpdateMessage>(ClientMessageReceived);
 			if (NetworkServer.active)
 			{
-				ServerResetInfluence();
+				FactionInfluenceManager.ServerResetInfluence();
 			}
 		};
 	}
@@ -76,7 +77,7 @@ public static class FactionInfluenceManager
 	{
 		foreach (Faction value in Enum.GetValues(typeof(Faction)))
 		{
-			Influence[value] = 0f;
+			FactionInfluenceManager.Influence[value] = 0f;
 		}
 	}
 
@@ -84,7 +85,7 @@ public static class FactionInfluenceManager
 	{
 		if (!NetworkServer.active)
 		{
-			Set(msg.Faction, msg.Influence);
+			FactionInfluenceManager.Set(msg.Faction, msg.Influence);
 		}
 	}
 }

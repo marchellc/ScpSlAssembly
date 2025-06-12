@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Windows;
 
 public static class Headless
 {
@@ -24,43 +23,43 @@ public static class Headless
 
 	public static string GetProfileName()
 	{
-		if (!IsHeadless())
+		if (!Headless.IsHeadless())
 		{
 			return null;
 		}
-		InitializeHeadless();
-		return currentProfile;
+		Headless.InitializeHeadless();
+		return Headless.currentProfile;
 	}
 
 	public static bool IsHeadless()
 	{
-		if (checkedHeadless)
+		if (Headless.checkedHeadless)
 		{
-			return isHeadless;
+			return Headless.isHeadless;
 		}
 		if (File.Exists(Application.dataPath + "/~HeadlessDebug.txt"))
 		{
-			debuggingHeadless = true;
-			isHeadless = true;
+			Headless.debuggingHeadless = true;
+			Headless.isHeadless = true;
 		}
 		else if (Array.IndexOf(Environment.GetCommandLineArgs(), "-batchmode") >= 0)
 		{
-			isHeadless = true;
+			Headless.isHeadless = true;
 		}
 		else if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
 		{
-			isHeadless = true;
+			Headless.isHeadless = true;
 		}
-		checkedHeadless = true;
-		return isHeadless;
+		Headless.checkedHeadless = true;
+		return Headless.isHeadless;
 	}
 
 	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
 	private static void OnBeforeSceneLoadRuntimeMethod()
 	{
-		if (IsHeadless())
+		if (Headless.IsHeadless())
 		{
-			InitializeHeadless();
+			Headless.InitializeHeadless();
 			HeadlessCallbacks.InvokeCallbacks("HeadlessBeforeSceneLoad");
 		}
 	}
@@ -68,11 +67,11 @@ public static class Headless
 	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
 	private static void OnAfterSceneLoadRuntimeMethod()
 	{
-		if (!IsHeadless())
+		if (!Headless.IsHeadless())
 		{
 			return;
 		}
-		if (headlessRuntime.valueCamera)
+		if (Headless.headlessRuntime.valueCamera)
 		{
 			GameObject gameObject = GameObject.Find("HeadlessBehaviour");
 			if (gameObject == null)
@@ -91,29 +90,22 @@ public static class Headless
 
 	private static void InitializeHeadless()
 	{
-		if (initializedHeadless)
+		if (Headless.initializedHeadless)
 		{
 			return;
 		}
-		headlessRuntime = Resources.Load("HeadlessRuntime") as HeadlessRuntime;
-		if (headlessRuntime != null)
+		Headless.headlessRuntime = Resources.Load("HeadlessRuntime") as HeadlessRuntime;
+		if (Headless.headlessRuntime != null)
 		{
-			currentProfile = headlessRuntime.profileName;
-			if (headlessRuntime.valueConsole && !Application.isEditor)
+			Headless.currentProfile = Headless.headlessRuntime.profileName;
+			if (Headless.headlessRuntime.valueLimitFramerate)
 			{
-				HeadlessConsole headlessConsole = new HeadlessConsole();
-				headlessConsole.Initialize();
-				headlessConsole.SetTitle(Application.productName);
-				Application.logMessageReceived += HandleLog;
-			}
-			if (headlessRuntime.valueLimitFramerate)
-			{
-				Application.targetFrameRate = headlessRuntime.valueFramerate;
+				Application.targetFrameRate = Headless.headlessRuntime.valueFramerate;
 				QualitySettings.vSyncCount = 0;
-				Debug.Log("Application target framerate set to " + headlessRuntime.valueFramerate);
+				Debug.Log("Application target framerate set to " + Headless.headlessRuntime.valueFramerate);
 			}
 		}
-		initializedHeadless = true;
+		Headless.initializedHeadless = true;
 		HeadlessCallbacks.InvokeCallbacks("HeadlessBeforeFirstSceneLoad");
 	}
 
@@ -128,7 +120,7 @@ public static class Headless
 
 	public static bool IsBuildingHeadless()
 	{
-		if (buildingHeadless)
+		if (Headless.buildingHeadless)
 		{
 			return true;
 		}
@@ -137,7 +129,7 @@ public static class Headless
 
 	public static bool IsDebuggingHeadless()
 	{
-		if (debuggingHeadless)
+		if (Headless.debuggingHeadless)
 		{
 			return true;
 		}
@@ -146,7 +138,7 @@ public static class Headless
 
 	public static void SetBuildingHeadless(bool value, string profileName)
 	{
-		buildingHeadless = value;
-		currentProfile = profileName;
+		Headless.buildingHeadless = value;
+		Headless.currentProfile = profileName;
 	}
 }

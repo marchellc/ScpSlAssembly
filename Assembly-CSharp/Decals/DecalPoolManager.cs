@@ -27,21 +27,21 @@ public class DecalPoolManager : MonoBehaviour
 
 		public void Setup()
 		{
-			_pools = new DecalPool[_templates.Length];
-			for (int i = 0; i < _pools.Length; i++)
+			this._pools = new DecalPool[this._templates.Length];
+			for (int i = 0; i < this._pools.Length; i++)
 			{
-				_pools[i] = new DecalPool(_templates[i]);
+				this._pools[i] = new DecalPool(this._templates[i]);
 			}
-			UserSetting<bool>.AddListener(_enabledSetting, OnSettingToggled);
-			UserSetting<float>.AddListener(_limitSetting, OnLimitChanged);
-			_decalsEnabled = UserSetting<bool>.Get(_enabledSetting);
-			_decalLimit = (int)UserSetting<float>.Get(_limitSetting);
+			UserSetting<bool>.AddListener(this._enabledSetting, OnSettingToggled);
+			UserSetting<float>.AddListener(this._limitSetting, OnLimitChanged);
+			this._decalsEnabled = UserSetting<bool>.Get(this._enabledSetting);
+			this._decalLimit = (int)UserSetting<float>.Get(this._limitSetting);
 		}
 
 		public void UnlinkListeners()
 		{
-			UserSetting<bool>.RemoveListener(_enabledSetting, OnSettingToggled);
-			UserSetting<float>.RemoveListener(_limitSetting, OnLimitChanged);
+			UserSetting<bool>.RemoveListener(this._enabledSetting, OnSettingToggled);
+			UserSetting<float>.RemoveListener(this._limitSetting, OnLimitChanged);
 		}
 
 		public bool TryGet(DecalPoolType type, out Decal decal)
@@ -50,9 +50,9 @@ public class DecalPoolManager : MonoBehaviour
 			int num2 = 0;
 			DecalPool decalPool = null;
 			DecalPool decalPool2 = null;
-			for (int i = 0; i < _pools.Length; i++)
+			for (int i = 0; i < this._pools.Length; i++)
 			{
-				DecalPool decalPool3 = _pools[i];
+				DecalPool decalPool3 = this._pools[i];
 				int instances = decalPool3.Instances;
 				num += instances;
 				if (decalPool3.Type == type)
@@ -70,7 +70,7 @@ public class DecalPoolManager : MonoBehaviour
 				decal = null;
 				return false;
 			}
-			while (num >= _decalLimit)
+			while (num >= this._decalLimit)
 			{
 				if (decalPool2 == null || decalPool2.Instances == 0)
 				{
@@ -88,7 +88,7 @@ public class DecalPoolManager : MonoBehaviour
 
 		internal void Clear(DecalPoolType decalPoolType, int amount)
 		{
-			DecalPool[] pools = _pools;
+			DecalPool[] pools = this._pools;
 			foreach (DecalPool decalPool in pools)
 			{
 				if (decalPool.Type == decalPoolType)
@@ -100,20 +100,20 @@ public class DecalPoolManager : MonoBehaviour
 
 		private void OnLimitChanged(float limit)
 		{
-			_decalLimit = (int)limit;
-			RefreshLimits();
+			this._decalLimit = (int)limit;
+			this.RefreshLimits();
 		}
 
 		private void OnSettingToggled(bool status)
 		{
-			_decalsEnabled = status;
-			RefreshLimits();
+			this._decalsEnabled = status;
+			this.RefreshLimits();
 		}
 
 		private void RefreshLimits()
 		{
-			int limit = (_decalsEnabled ? _decalLimit : 0);
-			_pools.ForEach(delegate(DecalPool x)
+			int limit = (this._decalsEnabled ? this._decalLimit : 0);
+			this._pools.ForEach(delegate(DecalPool x)
 			{
 				x.SetLimit(limit);
 			});
@@ -129,9 +129,9 @@ public class DecalPoolManager : MonoBehaviour
 
 	private void Awake()
 	{
-		_singleton = this;
-		_singletonSet = true;
-		_collections.ForEach(delegate(DecalCollection x)
+		DecalPoolManager._singleton = this;
+		DecalPoolManager._singletonSet = true;
+		this._collections.ForEach(delegate(DecalCollection x)
 		{
 			x.Setup();
 		});
@@ -139,8 +139,8 @@ public class DecalPoolManager : MonoBehaviour
 
 	private void OnDestroy()
 	{
-		_singletonSet = false;
-		_collections.ForEach(delegate(DecalCollection x)
+		DecalPoolManager._singletonSet = false;
+		this._collections.ForEach(delegate(DecalCollection x)
 		{
 			x.UnlinkListeners();
 		});
@@ -148,9 +148,9 @@ public class DecalPoolManager : MonoBehaviour
 
 	public static bool TryGet(DecalPoolType poolType, out Decal decal)
 	{
-		if (_singletonSet)
+		if (DecalPoolManager._singletonSet)
 		{
-			DecalCollection[] collections = _singleton._collections;
+			DecalCollection[] collections = DecalPoolManager._singleton._collections;
 			for (int i = 0; i < collections.Length; i++)
 			{
 				if (collections[i].TryGet(poolType, out decal))
@@ -165,7 +165,7 @@ public class DecalPoolManager : MonoBehaviour
 
 	public static void ClientClear(DecalPoolType decalPoolType, int amount)
 	{
-		DecalCollection[] collections = _singleton._collections;
+		DecalCollection[] collections = DecalPoolManager._singleton._collections;
 		for (int i = 0; i < collections.Length; i++)
 		{
 			collections[i].Clear(decalPoolType, amount);

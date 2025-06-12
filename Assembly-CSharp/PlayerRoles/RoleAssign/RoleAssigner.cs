@@ -47,8 +47,8 @@ public static class RoleAssigner
 	{
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			_spawned = false;
-			AlreadySpawnedPlayers.Clear();
+			RoleAssigner._spawned = false;
+			RoleAssigner.AlreadySpawnedPlayers.Clear();
 		};
 		PlayerAuthenticationManager.OnInstanceModeChanged += CheckLateJoin;
 		CharacterClassManager.OnRoundStarted += OnRoundStarted;
@@ -60,60 +60,60 @@ public static class RoleAssigner
 		{
 			return;
 		}
-		string @string = ConfigFile.ServerConfig.GetString("team_respawn_queue", "4014314031441404134041434414");
-		int length = @string.Length;
-		if (_prevQueueSize < length)
+		string text = ConfigFile.ServerConfig.GetString("team_respawn_queue", "4014314031441404134041434414");
+		int length = text.Length;
+		if (RoleAssigner._prevQueueSize < length)
 		{
-			_totalQueue = new Team[length];
-			_humanQueue = new Team[length];
-			_prevQueueSize = length;
+			RoleAssigner._totalQueue = new Team[length];
+			RoleAssigner._humanQueue = new Team[length];
+			RoleAssigner._prevQueueSize = length;
 		}
 		int queueLength = 0;
 		int num = 0;
-		string text = @string;
-		for (int i = 0; i < text.Length; i++)
+		string text2 = text;
+		for (int i = 0; i < text2.Length; i++)
 		{
-			Team team = (Team)(text[i] - 48);
+			Team team = (Team)(text2[i] - 48);
 			if (Enum.IsDefined(typeof(Team), team))
 			{
-				if (team != 0)
+				if (team != Team.SCPs)
 				{
-					_humanQueue[queueLength++] = team;
+					RoleAssigner._humanQueue[queueLength++] = team;
 				}
-				_totalQueue[num++] = team;
+				RoleAssigner._totalQueue[num++] = team;
 			}
 		}
 		if (num == 0)
 		{
 			throw new InvalidOperationException("Failed to assign roles, queue has failed to load.");
 		}
-		_spawned = true;
-		LateJoinTimer.Restart();
-		ScpsOverflowing = false;
-		bool @bool = ConfigFile.ServerConfig.GetBool("allow_scp_overflow");
+		RoleAssigner._spawned = true;
+		RoleAssigner.LateJoinTimer.Restart();
+		RoleAssigner.ScpsOverflowing = false;
+		bool flag = ConfigFile.ServerConfig.GetBool("allow_scp_overflow");
 		int maxSpawnableScps = ScpSpawner.MaxSpawnableScps;
-		int num2 = ReferenceHub.AllHubs.Count((ReferenceHub x) => CheckPlayer(x));
+		int num2 = ReferenceHub.AllHubs.Count((ReferenceHub x) => RoleAssigner.CheckPlayer(x));
 		int num3 = 0;
-		for (int j = 0; j < num2; j++)
+		for (int num4 = 0; num4 < num2; num4++)
 		{
-			if (_totalQueue[j % num] == Team.SCPs)
+			if (RoleAssigner._totalQueue[num4 % num] == Team.SCPs)
 			{
 				num3++;
-				if (!(num3 != maxSpawnableScps || @bool))
+				if (!(num3 != maxSpawnableScps || flag))
 				{
-					ScpOverflowMaxHsMultiplier = 1f + (float)(num2 - j) * 0.05f;
-					ScpsOverflowing = true;
+					RoleAssigner.ScpOverflowMaxHsMultiplier = 1f + (float)(num2 - num4) * 0.05f;
+					RoleAssigner.ScpsOverflowing = true;
 					break;
 				}
 			}
 		}
 		ScpSpawner.SpawnScps(num3);
-		HumanSpawner.SpawnHumans(_humanQueue, queueLength);
+		HumanSpawner.SpawnHumans(RoleAssigner._humanQueue, queueLength);
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (allHub.IsAlive())
 			{
-				AlreadySpawnedPlayers.Add(allHub.authManager.UserId);
+				RoleAssigner.AlreadySpawnedPlayers.Add(allHub.authManager.UserId);
 			}
 		}
 		RoleAssigner.OnPlayersSpawned?.Invoke();
@@ -121,10 +121,10 @@ public static class RoleAssigner
 
 	private static void CheckLateJoin(ReferenceHub hub, ClientInstanceMode cim)
 	{
-		if (NetworkServer.active && CheckPlayer(hub) && _spawned)
+		if (NetworkServer.active && RoleAssigner.CheckPlayer(hub) && RoleAssigner._spawned)
 		{
-			float @float = ConfigFile.ServerConfig.GetFloat("late_join_time");
-			if (!AlreadySpawnedPlayers.Add(hub.authManager.UserId) || LateJoinTimer.Elapsed.TotalSeconds > (double)@float)
+			float num = ConfigFile.ServerConfig.GetFloat("late_join_time");
+			if (!RoleAssigner.AlreadySpawnedPlayers.Add(hub.authManager.UserId) || RoleAssigner.LateJoinTimer.Elapsed.TotalSeconds > (double)num)
 			{
 				hub.roleManager.ServerSetRole(RoleTypeId.Spectator, RoleChangeReason.LateJoin);
 			}

@@ -6,7 +6,7 @@ public sealed class QeueueFormatter<T> : CollectionFormatterBase<T, Queue<T>, Qu
 {
 	private readonly CollectionDeserializeToBehaviour deserializeToBehaviour;
 
-	protected override CollectionDeserializeToBehaviour? SupportedOverwriteBehaviour => deserializeToBehaviour;
+	protected override CollectionDeserializeToBehaviour? SupportedOverwriteBehaviour => this.deserializeToBehaviour;
 
 	public QeueueFormatter()
 		: this(CollectionDeserializeToBehaviour.Add)

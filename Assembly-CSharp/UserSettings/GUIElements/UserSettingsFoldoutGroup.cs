@@ -46,81 +46,81 @@ public class UserSettingsFoldoutGroup : MonoBehaviour
 
 	private static UserSettingsFoldoutGroup _lastFoldedOut;
 
-	public float ExtendRate => Mathf.Clamp01(_animStatus / 0.15f);
+	public float ExtendRate => Mathf.Clamp01(this._animStatus / 0.15f);
 
 	private void Awake()
 	{
-		Initialize();
+		this.Initialize();
 	}
 
 	private void OnDisable()
 	{
-		if (_collapseOnDisable)
+		if (this._collapseOnDisable)
 		{
-			FoldInstantly();
+			this.FoldInstantly();
 		}
 	}
 
 	private void Initialize()
 	{
-		if (!_initialized)
+		if (!this._initialized)
 		{
-			_parentRt = GetComponent<RectTransform>();
-			_startSize = _parentRt.sizeDelta;
-			_fadeGroupRt = _fadeGroup.GetComponent<RectTransform>();
-			_initialized = true;
+			this._parentRt = base.GetComponent<RectTransform>();
+			this._startSize = this._parentRt.sizeDelta;
+			this._fadeGroupRt = this._fadeGroup.GetComponent<RectTransform>();
+			this._initialized = true;
 		}
 	}
 
 	private void LateUpdate()
 	{
-		bool isOn = _extendToggle.isOn;
+		bool isOn = this._extendToggle.isOn;
 		if (isOn)
 		{
-			if (_lastFoldedOut != this && _collapseOthers)
+			if (UserSettingsFoldoutGroup._lastFoldedOut != this && this._collapseOthers)
 			{
-				if (_lastFoldedOut != null)
+				if (UserSettingsFoldoutGroup._lastFoldedOut != null)
 				{
-					_lastFoldedOut._extendToggle.isOn = false;
+					UserSettingsFoldoutGroup._lastFoldedOut._extendToggle.isOn = false;
 				}
-				_lastFoldedOut = this;
+				UserSettingsFoldoutGroup._lastFoldedOut = this;
 			}
-			if (_animStatus < 0.15f)
+			if (this._animStatus < 0.15f)
 			{
-				_animStatus += Time.deltaTime;
+				this._animStatus += Time.deltaTime;
 			}
-			RefreshSize();
+			this.RefreshSize();
 		}
-		if (!isOn && _animStatus > 0f)
+		if (!isOn && this._animStatus > 0f)
 		{
-			_animStatus -= Time.deltaTime;
-			RefreshSize();
+			this._animStatus -= Time.deltaTime;
+			this.RefreshSize();
 		}
 	}
 
 	public void FoldInstantly()
 	{
-		_extendToggle.isOn = false;
-		_animStatus = 0f;
-		RefreshSize();
+		this._extendToggle.isOn = false;
+		this._animStatus = 0f;
+		this.RefreshSize();
 	}
 
 	public void ExtendInstantly()
 	{
-		_extendToggle.isOn = true;
-		_animStatus = 0.15f;
-		RefreshSize();
+		this._extendToggle.isOn = true;
+		this._animStatus = 0.15f;
+		this.RefreshSize();
 	}
 
 	public void RefreshSize()
 	{
-		Initialize();
-		float num = Mathf.Clamp01(_animStatus / 0.08f);
-		_parentRt.sizeDelta = _startSize + _fadeGroupRt.sizeDelta.y * num * Vector2.up;
-		_arrow.localRotation = Quaternion.Lerp(CollapsedRot, ExtendedRot, num);
-		float num2 = Mathf.InverseLerp(0.08f, 0.15f, _animStatus);
-		_fadeGroup.gameObject.SetActive(_animStatus > 0f || !_disableWhenInvisible);
-		_fadeGroup.blocksRaycasts = num2 >= 1f;
-		_fadeGroup.alpha = num2;
+		this.Initialize();
+		float num = Mathf.Clamp01(this._animStatus / 0.08f);
+		this._parentRt.sizeDelta = this._startSize + this._fadeGroupRt.sizeDelta.y * num * Vector2.up;
+		this._arrow.localRotation = Quaternion.Lerp(UserSettingsFoldoutGroup.CollapsedRot, UserSettingsFoldoutGroup.ExtendedRot, num);
+		float num2 = Mathf.InverseLerp(0.08f, 0.15f, this._animStatus);
+		this._fadeGroup.gameObject.SetActive(this._animStatus > 0f || !this._disableWhenInvisible);
+		this._fadeGroup.blocksRaycasts = num2 >= 1f;
+		this._fadeGroup.alpha = num2;
 	}
 }

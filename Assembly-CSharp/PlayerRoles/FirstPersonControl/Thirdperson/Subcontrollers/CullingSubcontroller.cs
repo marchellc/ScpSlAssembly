@@ -17,7 +17,7 @@ public class CullingSubcontroller : CullableSimpleDynamic, IAnimatedModelSubcont
 	{
 		get
 		{
-			if (_model.HasOwner)
+			if (this._model.HasOwner)
 			{
 				return CullingCamera.CheckBoundsVisibility(base.WorldspaceBounds);
 			}
@@ -33,12 +33,12 @@ public class CullingSubcontroller : CullableSimpleDynamic, IAnimatedModelSubcont
 
 	public void Init(AnimatedCharacterModel model, int index)
 	{
-		_model = model;
+		this._model = model;
 	}
 
 	public void OnReassigned()
 	{
-		_model.Animator.enabled = false;
+		this._model.Animator.enabled = false;
 	}
 
 	protected override bool AllowDeactivationFilter(GameObject go)
@@ -61,41 +61,41 @@ public class CullingSubcontroller : CullableSimpleDynamic, IAnimatedModelSubcont
 
 	private void EvaluateCulling(out bool allowCulling)
 	{
-		if (!_model.HasOwner)
+		if (!this._model.HasOwner)
 		{
 			allowCulling = false;
 			return;
 		}
-		float footstepLoudnessDistance = _model.FootstepLoudnessDistance;
+		float footstepLoudnessDistance = this._model.FootstepLoudnessDistance;
 		float num = footstepLoudnessDistance * footstepLoudnessDistance;
-		Vector3 position = _model.CachedTransform.position;
+		Vector3 position = this._model.CachedTransform.position;
 		Vector3 lastCamPosition = CullingCamera.LastCamPosition;
 		allowCulling = (position - lastCamPosition).sqrMagnitude > num;
 	}
 
 	private void LateUpdate()
 	{
-		EvaluateCulling(out var allowCulling);
+		this.EvaluateCulling(out var allowCulling);
 		bool flag = base.IsCulled && allowCulling;
-		double num = _model.LastMovedDeltaT;
-		if (flag != AnimCulled)
+		double num = this._model.LastMovedDeltaT;
+		if (flag != this.AnimCulled)
 		{
-			AnimCulled = flag;
+			this.AnimCulled = flag;
 			if (flag)
 			{
-				_culledElapsed.Restart();
+				this._culledElapsed.Restart();
 			}
 			else
 			{
-				num += _culledElapsed.Elapsed.TotalSeconds;
-				_culledElapsed.Reset();
+				num += this._culledElapsed.Elapsed.TotalSeconds;
+				this._culledElapsed.Reset();
 			}
 		}
-		if (!AnimCulled)
+		if (!this.AnimCulled)
 		{
 			this.OnBeforeAnimatorUpdated?.Invoke();
 			num = Math.Min(num, 5.0);
-			_model.Animator.Update((float)num);
+			this._model.Animator.Update((float)num);
 			this.OnAnimatorUpdated?.Invoke();
 		}
 	}

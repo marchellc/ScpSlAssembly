@@ -13,26 +13,26 @@ public readonly struct SSSClientResponse : NetworkMessage
 
 	public SSSClientResponse(NetworkReader reader)
 	{
-		SettingType = ServerSpecificSettingsSync.GetTypeFromCode(reader.ReadByte());
-		Id = reader.ReadInt();
+		this.SettingType = ServerSpecificSettingsSync.GetTypeFromCode(reader.ReadByte());
+		this.Id = reader.ReadInt();
 		int count = reader.ReadInt();
-		Payload = reader.ReadBytes(count);
+		this.Payload = reader.ReadBytes(count);
 	}
 
 	public SSSClientResponse(ServerSpecificSettingBase modifiedSetting)
 	{
-		SettingType = modifiedSetting.GetType();
-		Id = modifiedSetting.SettingId;
+		this.SettingType = modifiedSetting.GetType();
+		this.Id = modifiedSetting.SettingId;
 		using NetworkWriterPooled networkWriterPooled = NetworkWriterPool.Get();
 		modifiedSetting.SerializeValue(networkWriterPooled);
-		Payload = networkWriterPooled.ToArray();
+		this.Payload = networkWriterPooled.ToArray();
 	}
 
 	public void Serialize(NetworkWriter writer)
 	{
-		writer.WriteByte(ServerSpecificSettingsSync.GetCodeFromType(SettingType));
-		writer.WriteInt(Id);
-		writer.WriteInt(Payload.Length);
-		writer.WriteBytes(Payload, 0, Payload.Length);
+		writer.WriteByte(ServerSpecificSettingsSync.GetCodeFromType(this.SettingType));
+		writer.WriteInt(this.Id);
+		writer.WriteInt(this.Payload.Length);
+		writer.WriteBytes(this.Payload, 0, this.Payload.Length);
 	}
 }

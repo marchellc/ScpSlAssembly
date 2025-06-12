@@ -18,11 +18,11 @@ public abstract class AutosyncItem : ItemBase, IAcquisitionConfirmationTrigger, 
 	{
 		get
 		{
-			if (_dummyEmulator == null)
+			if (this._dummyEmulator == null)
 			{
-				_dummyEmulator = new DummyKeyEmulator(base.OwnerInventory);
+				this._dummyEmulator = new DummyKeyEmulator(base.OwnerInventory);
 			}
-			return _dummyEmulator;
+			return this._dummyEmulator;
 		}
 	}
 
@@ -32,7 +32,7 @@ public abstract class AutosyncItem : ItemBase, IAcquisitionConfirmationTrigger, 
 		{
 			if (NetworkServer.active)
 			{
-				return IsDummy;
+				return this.IsDummy;
 			}
 			return false;
 		}
@@ -40,15 +40,15 @@ public abstract class AutosyncItem : ItemBase, IAcquisitionConfirmationTrigger, 
 
 	public bool AcquisitionAlreadyReceived { get; set; }
 
-	public virtual bool HasViewmodel => ViewModel != null;
+	public virtual bool HasViewmodel => base.ViewModel != null;
 
 	public bool IsSpectator
 	{
 		get
 		{
-			if (HasViewmodel)
+			if (this.HasViewmodel)
 			{
-				return ViewModel.IsSpectator;
+				return base.ViewModel.IsSpectator;
 			}
 			return false;
 		}
@@ -58,9 +58,9 @@ public abstract class AutosyncItem : ItemBase, IAcquisitionConfirmationTrigger, 
 	{
 		get
 		{
-			if (!IsLocalPlayer)
+			if (!this.IsLocalPlayer)
 			{
-				return IsEmulatedDummy;
+				return this.IsEmulatedDummy;
 			}
 			return true;
 		}
@@ -129,25 +129,25 @@ public abstract class AutosyncItem : ItemBase, IAcquisitionConfirmationTrigger, 
 
 	public bool GetActionDown(ActionName action)
 	{
-		if (!IsEmulatedDummy)
+		if (!this.IsEmulatedDummy)
 		{
-			return GetRegularUserInput(Input.GetKeyDown, action);
+			return this.GetRegularUserInput(Input.GetKeyDown, action);
 		}
-		return DummyEmulator.GetAction(action, firstFrameOnly: true);
+		return this.DummyEmulator.GetAction(action, firstFrameOnly: true);
 	}
 
 	public bool GetAction(ActionName action)
 	{
-		if (!IsEmulatedDummy)
+		if (!this.IsEmulatedDummy)
 		{
-			return GetRegularUserInput(Input.GetKey, action);
+			return this.GetRegularUserInput(Input.GetKey, action);
 		}
-		return DummyEmulator.GetAction(action, firstFrameOnly: false);
+		return this.DummyEmulator.GetAction(action, firstFrameOnly: false);
 	}
 
 	private bool GetRegularUserInput(Func<KeyCode, bool> func, ActionName action)
 	{
-		if (IsLocalPlayer && InventoryGuiController.ItemsSafeForInteraction)
+		if (this.IsLocalPlayer && InventoryGuiController.ItemsSafeForInteraction)
 		{
 			return func(NewInput.GetKey(action));
 		}
@@ -156,31 +156,31 @@ public abstract class AutosyncItem : ItemBase, IAcquisitionConfirmationTrigger, 
 
 	protected virtual void Awake()
 	{
-		Instances.Add(this);
+		AutosyncItem.Instances.Add(this);
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		Instances.Remove(this);
+		AutosyncItem.Instances.Remove(this);
 	}
 
 	protected virtual void LateUpdate()
 	{
-		if (IsEmulatedDummy)
+		if (this.IsEmulatedDummy)
 		{
-			DummyEmulator.LateUpdate();
+			this.DummyEmulator.LateUpdate();
 		}
 	}
 
 	public override void OnRemoved(ItemPickupBase pickup)
 	{
 		base.OnRemoved(pickup);
-		Instances.Remove(this);
+		AutosyncItem.Instances.Remove(this);
 	}
 
 	public virtual void PopulateDummyActions(Action<DummyAction> actionAdder)
 	{
-		DummyEmulator.PopulateDummyActions(actionAdder);
+		this.DummyEmulator.PopulateDummyActions(actionAdder);
 	}
 }

@@ -23,24 +23,24 @@ public class DisruptorScopeTrackerExtension : MonoBehaviour, IViewmodelExtension
 
 		public double CreationTime;
 
-		public readonly float ActiveElapsed => (float)(NetworkTime.time - CreationTime);
+		public readonly float ActiveElapsed => (float)(NetworkTime.time - this.CreationTime);
 
 		public TargetIndicator(RectTransform newInstance, uint netId)
 		{
-			Transform = newInstance;
-			GameObject = Transform.gameObject;
-			Image = Transform.GetComponent<Image>();
-			NetId = netId;
-			CreationTime = NetworkTime.time;
+			this.Transform = newInstance;
+			this.GameObject = this.Transform.gameObject;
+			this.Image = this.Transform.GetComponent<Image>();
+			this.NetId = netId;
+			this.CreationTime = NetworkTime.time;
 		}
 
 		public TargetIndicator(TargetIndicator other, uint newNetId)
 		{
-			GameObject = other.GameObject;
-			Transform = other.Transform;
-			Image = other.Image;
-			NetId = newNetId;
-			CreationTime = NetworkTime.time;
+			this.GameObject = other.GameObject;
+			this.Transform = other.Transform;
+			this.Image = other.Image;
+			this.NetId = newNetId;
+			this.CreationTime = NetworkTime.time;
 		}
 	}
 
@@ -85,63 +85,63 @@ public class DisruptorScopeTrackerExtension : MonoBehaviour, IViewmodelExtension
 
 	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_owner = viewmodel.ParentFirearm.Owner;
-		viewmodel.ParentFirearm.TryGetModule<IAdsModule>(out _adsModule);
+		this._owner = viewmodel.ParentFirearm.Owner;
+		viewmodel.ParentFirearm.TryGetModule<IAdsModule>(out this._adsModule);
 	}
 
 	private void LateUpdate()
 	{
-		if (!_mainCamera.gameObject.activeInHierarchy)
+		if (!this._mainCamera.gameObject.activeInHierarchy)
 		{
-			foreach (TargetIndicator activeIndicator in _activeIndicators)
+			foreach (TargetIndicator activeIndicator in this._activeIndicators)
 			{
 				activeIndicator.GameObject.SetActive(value: false);
-				_indicatorPool.Enqueue(activeIndicator);
+				this._indicatorPool.Enqueue(activeIndicator);
 			}
-			_activeIndicators.Clear();
+			this._activeIndicators.Clear();
 			return;
 		}
-		_mainCamera.transform.GetPositionAndRotation(out var position, out var rotation);
+		this._mainCamera.transform.GetPositionAndRotation(out var position, out var rotation);
 		Vector3 lhs = rotation * Vector3.forward;
-		float num = FogController.FogFarPlaneDistance + _extraFogRange;
+		float num = FogController.FogFarPlaneDistance + this._extraFogRange;
 		float num2 = num * num;
-		_detectedNetIds.Clear();
+		this._detectedNetIds.Clear();
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			if (!(allHub.roleManager.CurrentRole is IFpcRole fpcRole) || allHub == _owner)
+			if (!(allHub.roleManager.CurrentRole is IFpcRole fpcRole) || allHub == this._owner)
 			{
 				continue;
 			}
 			Vector3 rhs = fpcRole.FpcModule.Position - position;
-			if (!(rhs.sqrMagnitude > num2) && !(Vector3.Dot(lhs, rhs) < 0f) && TryGetBestPos(position, allHub.netId, fpcRole.FpcModule, out var pos))
+			if (!(rhs.sqrMagnitude > num2) && !(Vector3.Dot(lhs, rhs) < 0f) && this.TryGetBestPos(position, allHub.netId, fpcRole.FpcModule, out var pos))
 			{
-				Vector3 viewportPos = _mainCamera.WorldToViewportPoint(pos);
+				Vector3 viewportPos = this._mainCamera.WorldToViewportPoint(pos);
 				if (!(viewportPos.x < 0f) && !(viewportPos.x > 1f) && !(viewportPos.y < 0f) && !(viewportPos.y > 1f))
 				{
-					_detectedNetIds.Add(allHub.netId);
-					UpdateIndicator(viewportPos, allHub);
+					this._detectedNetIds.Add(allHub.netId);
+					this.UpdateIndicator(viewportPos, allHub);
 				}
 			}
 		}
-		RePoolUnusedIndicators();
+		this.RePoolUnusedIndicators();
 	}
 
 	private void UpdateIndicator(Vector3 viewportPos, ReferenceHub target)
 	{
-		float num = (HitboxIdentity.IsEnemy(_owner, target) ? _enemyOpacity : _friendlyOpacity);
-		num *= _opacityOverFog.Evaluate(viewportPos.z / Mathf.Max(_extraFogRange, FogController.FogFarPlaneDistance + _extraFogRange));
-		num *= _opacityOverDistance.Evaluate(viewportPos.z);
-		num *= _adsModule.AdsAmount;
+		float num = (HitboxIdentity.IsEnemy(this._owner, target) ? this._enemyOpacity : this._friendlyOpacity);
+		num *= this._opacityOverFog.Evaluate(viewportPos.z / Mathf.Max(this._extraFogRange, FogController.FogFarPlaneDistance + this._extraFogRange));
+		num *= this._opacityOverDistance.Evaluate(viewportPos.z);
+		num *= this._adsModule.AdsAmount;
 		Color roleColor = target.roleManager.CurrentRole.RoleColor;
-		TargetIndicator indicatorForPlayer = GetIndicatorForPlayer(target.netId);
+		TargetIndicator indicatorForPlayer = this.GetIndicatorForPlayer(target.netId);
 		indicatorForPlayer.Image.color = new Color(roleColor.r, roleColor.g, roleColor.b, num);
-		indicatorForPlayer.Transform.anchoredPosition = Vector2.Scale(viewportPos, _canvasScale);
-		indicatorForPlayer.Transform.localScale = Vector3.one * _sizeOverDistance.Evaluate(viewportPos.z);
+		indicatorForPlayer.Transform.anchoredPosition = Vector2.Scale(viewportPos, this._canvasScale);
+		indicatorForPlayer.Transform.localScale = Vector3.one * this._sizeOverDistance.Evaluate(viewportPos.z);
 	}
 
 	private TargetIndicator GetIndicatorForPlayer(uint netId)
 	{
-		foreach (TargetIndicator activeIndicator in _activeIndicators)
+		foreach (TargetIndicator activeIndicator in this._activeIndicators)
 		{
 			if (activeIndicator.NetId == netId)
 			{
@@ -149,30 +149,30 @@ public class DisruptorScopeTrackerExtension : MonoBehaviour, IViewmodelExtension
 			}
 		}
 		TargetIndicator targetIndicator;
-		if (_indicatorPool.TryDequeue(out var result))
+		if (this._indicatorPool.TryDequeue(out var result))
 		{
 			targetIndicator = new TargetIndicator(result, netId);
 		}
 		else
 		{
-			RectTransform newInstance = Object.Instantiate(_targetIndicatorTemplate, _targetIndicatorTemplate.parent);
+			RectTransform newInstance = Object.Instantiate(this._targetIndicatorTemplate, this._targetIndicatorTemplate.parent);
 			targetIndicator = new TargetIndicator(newInstance, netId);
 		}
-		_activeIndicators.Add(targetIndicator);
+		this._activeIndicators.Add(targetIndicator);
 		targetIndicator.GameObject.SetActive(value: true);
 		return targetIndicator;
 	}
 
 	private void RePoolUnusedIndicators()
 	{
-		for (int num = _activeIndicators.Count - 1; num >= 0; num--)
+		for (int num = this._activeIndicators.Count - 1; num >= 0; num--)
 		{
-			TargetIndicator item = _activeIndicators[num];
-			if (!_detectedNetIds.Contains(item.NetId))
+			TargetIndicator item = this._activeIndicators[num];
+			if (!this._detectedNetIds.Contains(item.NetId))
 			{
 				item.GameObject.SetActive(value: false);
-				_indicatorPool.Enqueue(item);
-				_activeIndicators.RemoveAt(num);
+				this._indicatorPool.Enqueue(item);
+				this._activeIndicators.RemoveAt(num);
 			}
 		}
 	}
@@ -191,7 +191,7 @@ public class DisruptorScopeTrackerExtension : MonoBehaviour, IViewmodelExtension
 		{
 			Vector3 centerOfMass = hitboxes[i].CenterOfMass;
 			float sqrMagnitude = (centerOfMass - pos).sqrMagnitude;
-			if (!(sqrMagnitude > num) && CheckLineOfSight(mainCamPos, centerOfMass, netId))
+			if (!(sqrMagnitude > num) && this.CheckLineOfSight(mainCamPos, centerOfMass, netId))
 			{
 				vector = centerOfMass;
 				num = sqrMagnitude;
@@ -199,7 +199,7 @@ public class DisruptorScopeTrackerExtension : MonoBehaviour, IViewmodelExtension
 		}
 		if (!vector.HasValue)
 		{
-			return CheckLineOfSight(mainCamPos, pos, netId);
+			return this.CheckLineOfSight(mainCamPos, pos, netId);
 		}
 		pos = vector.Value;
 		return true;
@@ -211,7 +211,7 @@ public class DisruptorScopeTrackerExtension : MonoBehaviour, IViewmodelExtension
 		{
 			return false;
 		}
-		if (!Physics.Linecast(origin, pos, out var hitInfo, HitboxMask))
+		if (!Physics.Linecast(origin, pos, out var hitInfo, DisruptorScopeTrackerExtension.HitboxMask))
 		{
 			return false;
 		}

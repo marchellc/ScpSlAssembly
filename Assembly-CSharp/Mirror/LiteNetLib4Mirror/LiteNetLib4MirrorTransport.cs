@@ -68,12 +68,12 @@ public class LiteNetLib4MirrorTransport : Transport
 
 	protected virtual void GetConnectData(NetDataWriter writer)
 	{
-		writer.Put(GetConnectKey());
+		writer.Put(LiteNetLib4MirrorTransport.GetConnectKey());
 	}
 
 	protected internal virtual void ProcessConnectionRequest(ConnectionRequest request)
 	{
-		if (LiteNetLib4MirrorCore.Host.ConnectedPeersCount >= maxConnections)
+		if (LiteNetLib4MirrorCore.Host.ConnectedPeersCount >= this.maxConnections)
 		{
 			request.Reject();
 		}
@@ -89,26 +89,26 @@ public class LiteNetLib4MirrorTransport : Transport
 
 	internal void InitializeTransport()
 	{
-		if (Singleton == null)
+		if (LiteNetLib4MirrorTransport.Singleton == null)
 		{
-			Singleton = this;
+			LiteNetLib4MirrorTransport.Singleton = this;
 			LiteNetLib4MirrorCore.State = LiteNetLib4MirrorCore.States.Idle;
 		}
 	}
 
 	private static string GetConnectKey()
 	{
-		return LiteNetLib4MirrorUtils.ToBase64(Application.productName + Application.companyName + Application.unityVersion + "1.2.8" + Singleton.authCode);
+		return LiteNetLib4MirrorUtils.ToBase64(Application.productName + Application.companyName + Application.unityVersion + "1.2.8" + LiteNetLib4MirrorTransport.Singleton.authCode);
 	}
 
 	private void Awake()
 	{
-		InitializeTransport();
+		this.InitializeTransport();
 	}
 
 	private new void LateUpdate()
 	{
-		if (Polling)
+		if (LiteNetLib4MirrorTransport.Polling)
 		{
 			LiteNetLib4MirrorCore.Host.PollEvents();
 		}
@@ -136,16 +136,16 @@ public class LiteNetLib4MirrorTransport : Transport
 
 	public override void ClientConnect(string address)
 	{
-		clientAddress = address;
-		ConnectWriter.Reset();
-		GetConnectData(ConnectWriter);
-		LiteNetLib4MirrorClient.ConnectClient(ConnectWriter);
+		this.clientAddress = address;
+		LiteNetLib4MirrorTransport.ConnectWriter.Reset();
+		this.GetConnectData(LiteNetLib4MirrorTransport.ConnectWriter);
+		LiteNetLib4MirrorClient.ConnectClient(LiteNetLib4MirrorTransport.ConnectWriter);
 	}
 
 	public override void ClientSend(ArraySegment<byte> data, int channelId = 0)
 	{
-		byte b = (byte)((channelId < channels.Length) ? ((uint)channelId) : 0u);
-		LiteNetLib4MirrorClient.Send(channels[b], data.Array, data.Offset, data.Count, b);
+		byte b = (byte)((channelId < this.channels.Length) ? ((uint)channelId) : 0u);
+		LiteNetLib4MirrorClient.Send(this.channels[b], data.Array, data.Offset, data.Count, b);
 	}
 
 	public override void ClientDisconnect()
@@ -158,7 +158,7 @@ public class LiteNetLib4MirrorTransport : Transport
 
 	public override Uri ServerUri()
 	{
-		return new Uri($"{serverIPv4BindAddress}:{port}");
+		return new Uri($"{this.serverIPv4BindAddress}:{this.port}");
 	}
 
 	public override bool ServerActive()
@@ -168,24 +168,24 @@ public class LiteNetLib4MirrorTransport : Transport
 
 	public override void ServerStart()
 	{
-		LiteNetLib4MirrorServer.StartServer(GetConnectKey());
+		LiteNetLib4MirrorServer.StartServer(LiteNetLib4MirrorTransport.GetConnectKey());
 	}
 
 	public bool ServerSend(List<int> connectionIds, int channelId, ArraySegment<byte> data)
 	{
-		byte channelNumber = (byte)((channelId < channels.Length) ? ((uint)channelId) : 0u);
+		byte channelNumber = (byte)((channelId < this.channels.Length) ? ((uint)channelId) : 0u);
 		bool flag = true;
 		foreach (int connectionId in connectionIds)
 		{
-			flag &= LiteNetLib4MirrorServer.Send(connectionId, channels[0], data.Array, data.Offset, data.Count, channelNumber);
+			flag &= LiteNetLib4MirrorServer.Send(connectionId, this.channels[0], data.Array, data.Offset, data.Count, channelNumber);
 		}
 		return flag;
 	}
 
 	public override void ServerSend(int connectionId, ArraySegment<byte> data, int channelId = 0)
 	{
-		byte b = (byte)((channelId < channels.Length) ? ((uint)channelId) : 0u);
-		LiteNetLib4MirrorServer.Send(connectionId, channels[b], data.Array, data.Offset, data.Count, b);
+		byte b = (byte)((channelId < this.channels.Length) ? ((uint)channelId) : 0u);
+		LiteNetLib4MirrorServer.Send(connectionId, this.channels[b], data.Array, data.Offset, data.Count, b);
 	}
 
 	public override void ServerDisconnect(int connectionId)
@@ -213,7 +213,7 @@ public class LiteNetLib4MirrorTransport : Transport
 
 	public override int GetMaxPacketSize(int channelId = 0)
 	{
-		return LiteNetLib4MirrorCore.GetMaxPacketSize(channels[channelId]);
+		return LiteNetLib4MirrorCore.GetMaxPacketSize(this.channels[channelId]);
 	}
 
 	public override string ToString()

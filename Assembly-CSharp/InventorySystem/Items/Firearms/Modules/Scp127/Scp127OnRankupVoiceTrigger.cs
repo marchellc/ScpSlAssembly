@@ -26,7 +26,7 @@ public class Scp127OnRankupVoiceTrigger : Scp127VoiceTriggerBase
 	{
 		if (!(fa != base.Firearm))
 		{
-			ServerPlayVoiceLineFromCollection(_rankupLines, null, VoiceLinePriority.High);
+			base.ServerPlayVoiceLineFromCollection(this._rankupLines, null, VoiceLinePriority.High);
 		}
 	}
 }

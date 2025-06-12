@@ -19,7 +19,7 @@ public class NetDataReader
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get
 		{
-			return _data;
+			return this._data;
 		}
 	}
 
@@ -28,7 +28,7 @@ public class NetDataReader
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get
 		{
-			return _dataSize;
+			return this._dataSize;
 		}
 	}
 
@@ -37,7 +37,7 @@ public class NetDataReader
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get
 		{
-			return _offset;
+			return this._offset;
 		}
 	}
 
@@ -46,7 +46,7 @@ public class NetDataReader
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get
 		{
-			return _dataSize - _offset;
+			return this._dataSize - this._offset;
 		}
 	}
 
@@ -55,7 +55,7 @@ public class NetDataReader
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get
 		{
-			return _data == null;
+			return this._data == null;
 		}
 	}
 
@@ -64,7 +64,7 @@ public class NetDataReader
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get
 		{
-			return _position;
+			return this._position;
 		}
 	}
 
@@ -73,7 +73,7 @@ public class NetDataReader
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get
 		{
-			return _position == _dataSize;
+			return this._position == this._dataSize;
 		}
 	}
 
@@ -82,42 +82,42 @@ public class NetDataReader
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get
 		{
-			return _dataSize - _position;
+			return this._dataSize - this._position;
 		}
 	}
 
 	public void SkipBytes(int count)
 	{
-		_position += count;
+		this._position += count;
 	}
 
 	public void SetPosition(int position)
 	{
-		_position = position;
+		this._position = position;
 	}
 
 	public void SetSource(NetDataWriter dataWriter)
 	{
-		_data = dataWriter.Data;
-		_position = 0;
-		_offset = 0;
-		_dataSize = dataWriter.Length;
+		this._data = dataWriter.Data;
+		this._position = 0;
+		this._offset = 0;
+		this._dataSize = dataWriter.Length;
 	}
 
 	public void SetSource(byte[] source)
 	{
-		_data = source;
-		_position = 0;
-		_offset = 0;
-		_dataSize = source.Length;
+		this._data = source;
+		this._position = 0;
+		this._offset = 0;
+		this._dataSize = source.Length;
 	}
 
 	public void SetSource(byte[] source, int offset, int maxSize)
 	{
-		_data = source;
-		_position = offset;
-		_offset = offset;
-		_dataSize = maxSize;
+		this._data = source;
+		this._position = offset;
+		this._offset = offset;
+		this._dataSize = maxSize;
 	}
 
 	public NetDataReader()
@@ -126,185 +126,185 @@ public class NetDataReader
 
 	public NetDataReader(NetDataWriter writer)
 	{
-		SetSource(writer);
+		this.SetSource(writer);
 	}
 
 	public NetDataReader(byte[] source)
 	{
-		SetSource(source);
+		this.SetSource(source);
 	}
 
 	public NetDataReader(byte[] source, int offset, int maxSize)
 	{
-		SetSource(source, offset, maxSize);
+		this.SetSource(source, offset, maxSize);
 	}
 
 	public IPEndPoint GetNetEndPoint()
 	{
-		string @string = GetString(1000);
-		int @int = GetInt();
-		return NetUtils.MakeEndPoint(@string, @int);
+		string hostStr = this.GetString(1000);
+		int port = this.GetInt();
+		return NetUtils.MakeEndPoint(hostStr, port);
 	}
 
 	public byte GetByte()
 	{
-		byte result = _data[_position];
-		_position++;
+		byte result = this._data[this._position];
+		this._position++;
 		return result;
 	}
 
 	public sbyte GetSByte()
 	{
-		return (sbyte)GetByte();
+		return (sbyte)this.GetByte();
 	}
 
 	public T[] GetArray<T>(ushort size)
 	{
-		ushort num = BitConverter.ToUInt16(_data, _position);
-		_position += 2;
+		ushort num = BitConverter.ToUInt16(this._data, this._position);
+		this._position += 2;
 		T[] array = new T[num];
 		num *= size;
-		Buffer.BlockCopy(_data, _position, array, 0, num);
-		_position += num;
+		Buffer.BlockCopy(this._data, this._position, array, 0, num);
+		this._position += num;
 		return array;
 	}
 
 	public bool[] GetBoolArray()
 	{
-		return GetArray<bool>(1);
+		return this.GetArray<bool>(1);
 	}
 
 	public ushort[] GetUShortArray()
 	{
-		return GetArray<ushort>(2);
+		return this.GetArray<ushort>(2);
 	}
 
 	public short[] GetShortArray()
 	{
-		return GetArray<short>(2);
+		return this.GetArray<short>(2);
 	}
 
 	public int[] GetIntArray()
 	{
-		return GetArray<int>(4);
+		return this.GetArray<int>(4);
 	}
 
 	public uint[] GetUIntArray()
 	{
-		return GetArray<uint>(4);
+		return this.GetArray<uint>(4);
 	}
 
 	public float[] GetFloatArray()
 	{
-		return GetArray<float>(4);
+		return this.GetArray<float>(4);
 	}
 
 	public double[] GetDoubleArray()
 	{
-		return GetArray<double>(8);
+		return this.GetArray<double>(8);
 	}
 
 	public long[] GetLongArray()
 	{
-		return GetArray<long>(8);
+		return this.GetArray<long>(8);
 	}
 
 	public ulong[] GetULongArray()
 	{
-		return GetArray<ulong>(8);
+		return this.GetArray<ulong>(8);
 	}
 
 	public string[] GetStringArray()
 	{
-		ushort uShort = GetUShort();
+		ushort uShort = this.GetUShort();
 		string[] array = new string[uShort];
 		for (int i = 0; i < uShort; i++)
 		{
-			array[i] = GetString();
+			array[i] = this.GetString();
 		}
 		return array;
 	}
 
 	public string[] GetStringArray(int maxStringLength)
 	{
-		ushort uShort = GetUShort();
+		ushort uShort = this.GetUShort();
 		string[] array = new string[uShort];
 		for (int i = 0; i < uShort; i++)
 		{
-			array[i] = GetString(maxStringLength);
+			array[i] = this.GetString(maxStringLength);
 		}
 		return array;
 	}
 
 	public bool GetBool()
 	{
-		return GetByte() == 1;
+		return this.GetByte() == 1;
 	}
 
 	public char GetChar()
 	{
-		return (char)GetUShort();
+		return (char)this.GetUShort();
 	}
 
 	public ushort GetUShort()
 	{
-		ushort result = BitConverter.ToUInt16(_data, _position);
-		_position += 2;
+		ushort result = BitConverter.ToUInt16(this._data, this._position);
+		this._position += 2;
 		return result;
 	}
 
 	public short GetShort()
 	{
-		short result = BitConverter.ToInt16(_data, _position);
-		_position += 2;
+		short result = BitConverter.ToInt16(this._data, this._position);
+		this._position += 2;
 		return result;
 	}
 
 	public long GetLong()
 	{
-		long result = BitConverter.ToInt64(_data, _position);
-		_position += 8;
+		long result = BitConverter.ToInt64(this._data, this._position);
+		this._position += 8;
 		return result;
 	}
 
 	public ulong GetULong()
 	{
-		ulong result = BitConverter.ToUInt64(_data, _position);
-		_position += 8;
+		ulong result = BitConverter.ToUInt64(this._data, this._position);
+		this._position += 8;
 		return result;
 	}
 
 	public int GetInt()
 	{
-		int result = BitConverter.ToInt32(_data, _position);
-		_position += 4;
+		int result = BitConverter.ToInt32(this._data, this._position);
+		this._position += 4;
 		return result;
 	}
 
 	public uint GetUInt()
 	{
-		uint result = BitConverter.ToUInt32(_data, _position);
-		_position += 4;
+		uint result = BitConverter.ToUInt32(this._data, this._position);
+		this._position += 4;
 		return result;
 	}
 
 	public float GetFloat()
 	{
-		float result = BitConverter.ToSingle(_data, _position);
-		_position += 4;
+		float result = BitConverter.ToSingle(this._data, this._position);
+		this._position += 4;
 		return result;
 	}
 
 	public double GetDouble()
 	{
-		double result = BitConverter.ToDouble(_data, _position);
-		_position += 8;
+		double result = BitConverter.ToDouble(this._data, this._position);
+		this._position += 8;
 		return result;
 	}
 
 	public string GetString(int maxLength)
 	{
-		ushort uShort = GetUShort();
+		ushort uShort = this.GetUShort();
 		if (uShort == 0)
 		{
 			return string.Empty;
@@ -314,7 +314,7 @@ public class NetDataReader
 		{
 			return null;
 		}
-		ArraySegment<byte> bytesSegment = GetBytesSegment(num);
+		ArraySegment<byte> bytesSegment = this.GetBytesSegment(num);
 		if (maxLength <= 0 || NetDataWriter.uTF8Encoding.Value.GetCharCount(bytesSegment.Array, bytesSegment.Offset, bytesSegment.Count) <= maxLength)
 		{
 			return NetDataWriter.uTF8Encoding.Value.GetString(bytesSegment.Array, bytesSegment.Offset, bytesSegment.Count);
@@ -324,7 +324,7 @@ public class NetDataReader
 
 	public string GetString()
 	{
-		ushort uShort = GetUShort();
+		ushort uShort = this.GetUShort();
 		if (uShort == 0)
 		{
 			return string.Empty;
@@ -334,21 +334,21 @@ public class NetDataReader
 		{
 			return null;
 		}
-		ArraySegment<byte> bytesSegment = GetBytesSegment(num);
+		ArraySegment<byte> bytesSegment = this.GetBytesSegment(num);
 		return NetDataWriter.uTF8Encoding.Value.GetString(bytesSegment.Array, bytesSegment.Offset, bytesSegment.Count);
 	}
 
 	public ArraySegment<byte> GetBytesSegment(int count)
 	{
-		ArraySegment<byte> result = new ArraySegment<byte>(_data, _position, count);
-		_position += count;
+		ArraySegment<byte> result = new ArraySegment<byte>(this._data, this._position, count);
+		this._position += count;
 		return result;
 	}
 
 	public ArraySegment<byte> GetRemainingBytesSegment()
 	{
-		ArraySegment<byte> result = new ArraySegment<byte>(_data, _position, AvailableBytes);
-		_position = _data.Length;
+		ArraySegment<byte> result = new ArraySegment<byte>(this._data, this._position, this.AvailableBytes);
+		this._position = this._data.Length;
 		return result;
 	}
 
@@ -368,97 +368,97 @@ public class NetDataReader
 
 	public byte[] GetRemainingBytes()
 	{
-		byte[] array = new byte[AvailableBytes];
-		Buffer.BlockCopy(_data, _position, array, 0, AvailableBytes);
-		_position = _data.Length;
+		byte[] array = new byte[this.AvailableBytes];
+		Buffer.BlockCopy(this._data, this._position, array, 0, this.AvailableBytes);
+		this._position = this._data.Length;
 		return array;
 	}
 
 	public void GetBytes(byte[] destination, int start, int count)
 	{
-		Buffer.BlockCopy(_data, _position, destination, start, count);
-		_position += count;
+		Buffer.BlockCopy(this._data, this._position, destination, start, count);
+		this._position += count;
 	}
 
 	public void GetBytes(byte[] destination, int count)
 	{
-		Buffer.BlockCopy(_data, _position, destination, 0, count);
-		_position += count;
+		Buffer.BlockCopy(this._data, this._position, destination, 0, count);
+		this._position += count;
 	}
 
 	public sbyte[] GetSBytesWithLength()
 	{
-		return GetArray<sbyte>(1);
+		return this.GetArray<sbyte>(1);
 	}
 
 	public byte[] GetBytesWithLength()
 	{
-		return GetArray<byte>(1);
+		return this.GetArray<byte>(1);
 	}
 
 	public byte PeekByte()
 	{
-		return _data[_position];
+		return this._data[this._position];
 	}
 
 	public sbyte PeekSByte()
 	{
-		return (sbyte)_data[_position];
+		return (sbyte)this._data[this._position];
 	}
 
 	public bool PeekBool()
 	{
-		return _data[_position] == 1;
+		return this._data[this._position] == 1;
 	}
 
 	public char PeekChar()
 	{
-		return (char)PeekUShort();
+		return (char)this.PeekUShort();
 	}
 
 	public ushort PeekUShort()
 	{
-		return BitConverter.ToUInt16(_data, _position);
+		return BitConverter.ToUInt16(this._data, this._position);
 	}
 
 	public short PeekShort()
 	{
-		return BitConverter.ToInt16(_data, _position);
+		return BitConverter.ToInt16(this._data, this._position);
 	}
 
 	public long PeekLong()
 	{
-		return BitConverter.ToInt64(_data, _position);
+		return BitConverter.ToInt64(this._data, this._position);
 	}
 
 	public ulong PeekULong()
 	{
-		return BitConverter.ToUInt64(_data, _position);
+		return BitConverter.ToUInt64(this._data, this._position);
 	}
 
 	public int PeekInt()
 	{
-		return BitConverter.ToInt32(_data, _position);
+		return BitConverter.ToInt32(this._data, this._position);
 	}
 
 	public uint PeekUInt()
 	{
-		return BitConverter.ToUInt32(_data, _position);
+		return BitConverter.ToUInt32(this._data, this._position);
 	}
 
 	public float PeekFloat()
 	{
-		return BitConverter.ToSingle(_data, _position);
+		return BitConverter.ToSingle(this._data, this._position);
 	}
 
 	public double PeekDouble()
 	{
-		return BitConverter.ToDouble(_data, _position);
+		return BitConverter.ToDouble(this._data, this._position);
 	}
 
 	public string PeekString(int maxLength)
 	{
-		ushort num = PeekUShort();
+		ushort num = this.PeekUShort();
 		if (num == 0)
 		{
 			return string.Empty;
@@ -468,16 +468,16 @@ public class NetDataReader
 		{
 			return null;
 		}
-		if (maxLength <= 0 || NetDataWriter.uTF8Encoding.Value.GetCharCount(_data, _position + 2, num2) <= maxLength)
+		if (maxLength <= 0 || NetDataWriter.uTF8Encoding.Value.GetCharCount(this._data, this._position + 2, num2) <= maxLength)
 		{
-			return NetDataWriter.uTF8Encoding.Value.GetString(_data, _position + 2, num2);
+			return NetDataWriter.uTF8Encoding.Value.GetString(this._data, this._position + 2, num2);
 		}
 		return string.Empty;
 	}
 
 	public string PeekString()
 	{
-		ushort num = PeekUShort();
+		ushort num = this.PeekUShort();
 		if (num == 0)
 		{
 			return string.Empty;
@@ -487,14 +487,14 @@ public class NetDataReader
 		{
 			return null;
 		}
-		return NetDataWriter.uTF8Encoding.Value.GetString(_data, _position + 2, num2);
+		return NetDataWriter.uTF8Encoding.Value.GetString(this._data, this._position + 2, num2);
 	}
 
 	public bool TryGetByte(out byte result)
 	{
-		if (AvailableBytes >= 1)
+		if (this.AvailableBytes >= 1)
 		{
-			result = GetByte();
+			result = this.GetByte();
 			return true;
 		}
 		result = 0;
@@ -503,9 +503,9 @@ public class NetDataReader
 
 	public bool TryGetSByte(out sbyte result)
 	{
-		if (AvailableBytes >= 1)
+		if (this.AvailableBytes >= 1)
 		{
-			result = GetSByte();
+			result = this.GetSByte();
 			return true;
 		}
 		result = 0;
@@ -514,9 +514,9 @@ public class NetDataReader
 
 	public bool TryGetBool(out bool result)
 	{
-		if (AvailableBytes >= 1)
+		if (this.AvailableBytes >= 1)
 		{
-			result = GetBool();
+			result = this.GetBool();
 			return true;
 		}
 		result = false;
@@ -525,7 +525,7 @@ public class NetDataReader
 
 	public bool TryGetChar(out char result)
 	{
-		if (!TryGetUShort(out var result2))
+		if (!this.TryGetUShort(out var result2))
 		{
 			result = '\0';
 			return false;
@@ -536,9 +536,9 @@ public class NetDataReader
 
 	public bool TryGetShort(out short result)
 	{
-		if (AvailableBytes >= 2)
+		if (this.AvailableBytes >= 2)
 		{
-			result = GetShort();
+			result = this.GetShort();
 			return true;
 		}
 		result = 0;
@@ -547,9 +547,9 @@ public class NetDataReader
 
 	public bool TryGetUShort(out ushort result)
 	{
-		if (AvailableBytes >= 2)
+		if (this.AvailableBytes >= 2)
 		{
-			result = GetUShort();
+			result = this.GetUShort();
 			return true;
 		}
 		result = 0;
@@ -558,9 +558,9 @@ public class NetDataReader
 
 	public bool TryGetInt(out int result)
 	{
-		if (AvailableBytes >= 4)
+		if (this.AvailableBytes >= 4)
 		{
-			result = GetInt();
+			result = this.GetInt();
 			return true;
 		}
 		result = 0;
@@ -569,9 +569,9 @@ public class NetDataReader
 
 	public bool TryGetUInt(out uint result)
 	{
-		if (AvailableBytes >= 4)
+		if (this.AvailableBytes >= 4)
 		{
-			result = GetUInt();
+			result = this.GetUInt();
 			return true;
 		}
 		result = 0u;
@@ -580,9 +580,9 @@ public class NetDataReader
 
 	public bool TryGetLong(out long result)
 	{
-		if (AvailableBytes >= 8)
+		if (this.AvailableBytes >= 8)
 		{
-			result = GetLong();
+			result = this.GetLong();
 			return true;
 		}
 		result = 0L;
@@ -591,9 +591,9 @@ public class NetDataReader
 
 	public bool TryGetULong(out ulong result)
 	{
-		if (AvailableBytes >= 8)
+		if (this.AvailableBytes >= 8)
 		{
-			result = GetULong();
+			result = this.GetULong();
 			return true;
 		}
 		result = 0uL;
@@ -602,9 +602,9 @@ public class NetDataReader
 
 	public bool TryGetFloat(out float result)
 	{
-		if (AvailableBytes >= 4)
+		if (this.AvailableBytes >= 4)
 		{
-			result = GetFloat();
+			result = this.GetFloat();
 			return true;
 		}
 		result = 0f;
@@ -613,9 +613,9 @@ public class NetDataReader
 
 	public bool TryGetDouble(out double result)
 	{
-		if (AvailableBytes >= 8)
+		if (this.AvailableBytes >= 8)
 		{
-			result = GetDouble();
+			result = this.GetDouble();
 			return true;
 		}
 		result = 0.0;
@@ -624,12 +624,12 @@ public class NetDataReader
 
 	public bool TryGetString(out string result)
 	{
-		if (AvailableBytes >= 2)
+		if (this.AvailableBytes >= 2)
 		{
-			ushort num = PeekUShort();
-			if (AvailableBytes >= num + 1)
+			ushort num = this.PeekUShort();
+			if (this.AvailableBytes >= num + 1)
 			{
-				result = GetString();
+				result = this.GetString();
 				return true;
 			}
 		}
@@ -639,7 +639,7 @@ public class NetDataReader
 
 	public bool TryGetStringArray(out string[] result)
 	{
-		if (!TryGetUShort(out var result2))
+		if (!this.TryGetUShort(out var result2))
 		{
 			result = null;
 			return false;
@@ -647,7 +647,7 @@ public class NetDataReader
 		result = new string[result2];
 		for (int i = 0; i < result2; i++)
 		{
-			if (!TryGetString(out result[i]))
+			if (!this.TryGetString(out result[i]))
 			{
 				result = null;
 				return false;
@@ -658,12 +658,12 @@ public class NetDataReader
 
 	public bool TryGetBytesWithLength(out byte[] result)
 	{
-		if (AvailableBytes >= 2)
+		if (this.AvailableBytes >= 2)
 		{
-			ushort num = PeekUShort();
-			if (num >= 0 && AvailableBytes >= 2 + num)
+			ushort num = this.PeekUShort();
+			if (num >= 0 && this.AvailableBytes >= 2 + num)
 			{
-				result = GetBytesWithLength();
+				result = this.GetBytesWithLength();
 				return true;
 			}
 		}
@@ -673,8 +673,8 @@ public class NetDataReader
 
 	public void Clear()
 	{
-		_position = 0;
-		_dataSize = 0;
-		_data = null;
+		this._position = 0;
+		this._dataSize = 0;
+		this._data = null;
 	}
 }

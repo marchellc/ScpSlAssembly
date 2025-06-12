@@ -23,10 +23,10 @@ public class ExperimentalWeaponLocker : Locker
 	public override void FillChamber(LockerChamber ch)
 	{
 		List<ItemType> list = ListPool<ItemType>.Shared.Rent();
-		LockerLoot[] loot = Loot;
+		LockerLoot[] loot = base.Loot;
 		foreach (LockerLoot lockerLoot in loot)
 		{
-			if (ValidateUnderGlobalLimit(lockerLoot.TargetItem))
+			if (this.ValidateUnderGlobalLimit(lockerLoot.TargetItem))
 			{
 				list.Add(lockerLoot.TargetItem);
 			}
@@ -34,7 +34,7 @@ public class ExperimentalWeaponLocker : Locker
 		if (list.Count > 0)
 		{
 			ItemType itemType = list.RandomItem();
-			IncrementGloballySpawned(itemType);
+			this.IncrementGloballySpawned(itemType);
 			ch.SpawnItem(itemType, 1);
 		}
 		ListPool<ItemType>.Shared.Return(list);
@@ -42,13 +42,13 @@ public class ExperimentalWeaponLocker : Locker
 
 	private bool ValidateUnderGlobalLimit(ItemType it)
 	{
-		GlobalLimit[] globalLimits = _globalLimits;
+		GlobalLimit[] globalLimits = this._globalLimits;
 		for (int i = 0; i < globalLimits.Length; i++)
 		{
 			GlobalLimit globalLimit = globalLimits[i];
 			if (globalLimit.ItemType == it)
 			{
-				return GloballySpawned.GetValueOrDefault(it) < globalLimit.Limit;
+				return ExperimentalWeaponLocker.GloballySpawned.GetValueOrDefault(it) < globalLimit.Limit;
 			}
 		}
 		return true;
@@ -56,13 +56,13 @@ public class ExperimentalWeaponLocker : Locker
 
 	private void IncrementGloballySpawned(ItemType it)
 	{
-		GloballySpawned[it] = GloballySpawned.GetValueOrDefault(it) + 1;
+		ExperimentalWeaponLocker.GloballySpawned[it] = ExperimentalWeaponLocker.GloballySpawned.GetValueOrDefault(it) + 1;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		CustomNetworkManager.OnClientReady += GloballySpawned.Clear;
+		CustomNetworkManager.OnClientReady += ExperimentalWeaponLocker.GloballySpawned.Clear;
 	}
 
 	public override bool Weaved()

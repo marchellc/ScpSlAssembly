@@ -42,57 +42,57 @@ public class Scp096HitHandler
 
 	public Scp096HitHandler(Scp096Role scpRole, Scp096DamageHandler.AttackType damageType, float windowDamage, float doorDamage, float humanTargetDamage, float humanNontargetDamage)
 	{
-		_scpRole = scpRole;
-		_damageType = damageType;
-		_windowDamage = windowDamage;
-		_doorDamage = doorDamage;
-		_humanTargetDamage = humanTargetDamage;
-		_humanNontargetDamage = humanNontargetDamage;
-		HitResult = Scp096HitResult.None;
-		_hitNetIDs = new HashSet<uint>();
-		_scpRole.SubroutineModule.TryGetSubroutine<Scp096TargetsTracker>(out _targetCounter);
+		this._scpRole = scpRole;
+		this._damageType = damageType;
+		this._windowDamage = windowDamage;
+		this._doorDamage = doorDamage;
+		this._humanTargetDamage = humanTargetDamage;
+		this._humanNontargetDamage = humanNontargetDamage;
+		this.HitResult = Scp096HitResult.None;
+		this._hitNetIDs = new HashSet<uint>();
+		this._scpRole.SubroutineModule.TryGetSubroutine<Scp096TargetsTracker>(out this._targetCounter);
 	}
 
 	public void Clear()
 	{
-		_hitNetIDs.Clear();
-		HitResult = Scp096HitResult.None;
+		this._hitNetIDs.Clear();
+		this.HitResult = Scp096HitResult.None;
 	}
 
 	public Scp096HitResult DamageSphere(Vector3 position, float radius)
 	{
-		return ProcessHits(Physics.OverlapSphereNonAlloc(position, radius, Hits, AttackHitMask));
+		return this.ProcessHits(Physics.OverlapSphereNonAlloc(position, radius, Scp096HitHandler.Hits, Scp096HitHandler.AttackHitMask));
 	}
 
 	public Scp096HitResult DamageBox(Vector3 position, Vector3 halfExtents, Quaternion orientation)
 	{
-		return ProcessHits(Physics.OverlapBoxNonAlloc(position, halfExtents, Hits, orientation, AttackHitMask));
+		return this.ProcessHits(Physics.OverlapBoxNonAlloc(position, halfExtents, Scp096HitHandler.Hits, orientation, Scp096HitHandler.AttackHitMask));
 	}
 
 	private Scp096HitResult ProcessHits(int count)
 	{
 		Scp096HitResult scp096HitResult = Scp096HitResult.None;
 		Footprint attacker = default(Footprint);
-		if (_scpRole.TryGetOwner(out var hub))
+		if (this._scpRole.TryGetOwner(out var hub))
 		{
 			attacker = new Footprint(hub);
 		}
 		for (int i = 0; i < count; i++)
 		{
-			Collider collider = Hits[i];
-			CheckDoorHit(collider, attacker);
+			Collider collider = Scp096HitHandler.Hits[i];
+			this.CheckDoorHit(collider, attacker);
 			if (!collider.TryGetComponent<IDestructible>(out var component))
 			{
 				continue;
 			}
-			int layerMask = (int)SolidObjectMask & ~(1 << collider.gameObject.layer);
-			if (Physics.Linecast(_scpRole.CameraPosition, component.CenterOfMass, layerMask) || !_hitNetIDs.Add(component.NetworkId))
+			int layerMask = (int)Scp096HitHandler.SolidObjectMask & ~(1 << collider.gameObject.layer);
+			if (Physics.Linecast(this._scpRole.CameraPosition, component.CenterOfMass, layerMask) || !this._hitNetIDs.Add(component.NetworkId))
 			{
 				continue;
 			}
 			if (component is BreakableWindow breakableWindow)
 			{
-				if (DealDamage(breakableWindow, _windowDamage))
+				if (this.DealDamage(breakableWindow, this._windowDamage))
 				{
 					scp096HitResult |= Scp096HitResult.Window;
 					this.OnWindowHit?.Invoke(breakableWindow);
@@ -105,8 +105,8 @@ public class Scp096HitHandler
 					continue;
 				}
 				ReferenceHub targetHub = hitboxIdentity.TargetHub;
-				bool flag = _targetCounter.HasTarget(targetHub);
-				if (DealDamage(hitboxIdentity, flag ? _humanTargetDamage : _humanNontargetDamage))
+				bool flag = this._targetCounter.HasTarget(targetHub);
+				if (this.DealDamage(hitboxIdentity, flag ? this._humanTargetDamage : this._humanNontargetDamage))
 				{
 					scp096HitResult |= Scp096HitResult.Human;
 					this.OnPlayerHit?.Invoke(targetHub);
@@ -117,7 +117,7 @@ public class Scp096HitHandler
 				}
 			}
 		}
-		HitResult |= scp096HitResult;
+		this.HitResult |= scp096HitResult;
 		return scp096HitResult;
 	}
 
@@ -127,16 +127,16 @@ public class Scp096HitHandler
 		{
 			return false;
 		}
-		Scp096DamageHandler handler = new Scp096DamageHandler(_scpRole, dmg, _damageType);
-		return target.Damage(dmg, handler, _scpRole.FpcModule.Position);
+		Scp096DamageHandler handler = new Scp096DamageHandler(this._scpRole, dmg, this._damageType);
+		return target.Damage(dmg, handler, this._scpRole.FpcModule.Position);
 	}
 
 	private void CheckDoorHit(Collider col, Footprint attacker)
 	{
 		IDamageableDoor componentInParent = col.GetComponentInParent<IDamageableDoor>();
-		if (componentInParent != null && componentInParent is NetworkBehaviour networkBehaviour && _hitNetIDs.Add(networkBehaviour.netId) && componentInParent.ServerDamage(_doorDamage, DoorDamageType.Scp096, attacker))
+		if (componentInParent != null && componentInParent is NetworkBehaviour networkBehaviour && this._hitNetIDs.Add(networkBehaviour.netId) && componentInParent.ServerDamage(this._doorDamage, DoorDamageType.Scp096, attacker))
 		{
-			HitResult |= Scp096HitResult.Door;
+			this.HitResult |= Scp096HitResult.Door;
 			this.OnDoorHit?.Invoke(componentInParent);
 		}
 	}

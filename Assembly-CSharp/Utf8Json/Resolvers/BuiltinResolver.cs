@@ -14,7 +14,7 @@ public sealed class BuiltinResolver : IJsonFormatterResolver
 
 		static FormatterCache()
 		{
-			formatter = (IJsonFormatter<T>)BuiltinResolverGetFormatterHelper.GetFormatter(typeof(T));
+			FormatterCache<T>.formatter = (IJsonFormatter<T>)BuiltinResolverGetFormatterHelper.GetFormatter(typeof(T));
 		}
 	}
 
@@ -302,7 +302,7 @@ public sealed class BuiltinResolver : IJsonFormatterResolver
 
 		internal static object GetFormatter(Type t)
 		{
-			if (formatterMap.TryGetValue(t, out var value))
+			if (BuiltinResolverGetFormatterHelper.formatterMap.TryGetValue(t, out var value))
 			{
 				return value;
 			}

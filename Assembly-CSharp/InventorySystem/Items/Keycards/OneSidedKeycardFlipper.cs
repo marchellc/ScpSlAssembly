@@ -14,17 +14,17 @@ public class OneSidedKeycardFlipper : MonoBehaviour
 
 	private void Awake()
 	{
-		_tr = base.transform;
+		this._tr = base.transform;
 	}
 
 	private void LateUpdate()
 	{
-		_tr.GetPositionAndRotation(out var position, out var rotation);
-		Vector3 lhs = rotation * _facingDirection;
+		this._tr.GetPositionAndRotation(out var position, out var rotation);
+		Vector3 lhs = rotation * this._facingDirection;
 		Vector3 rhs = MainCameraController.LastPosition - position;
 		if (!(Vector3.Dot(lhs, rhs) >= 0f))
 		{
-			_tr.localEulerAngles += _flipRotation;
+			this._tr.localEulerAngles += this._flipRotation;
 		}
 	}
 }

@@ -73,7 +73,7 @@ public class Scp079LockdownRoomAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 
 	public override ActionName ActivationKey => ActionName.Scp079Lockdown;
 
-	public override bool IsReady => ErrorCode == Scp079HudTranslation.Zoom;
+	public override bool IsReady => this.ErrorCode == Scp079HudTranslation.Zoom;
 
 	public override bool IsVisible
 	{
@@ -81,13 +81,13 @@ public class Scp079LockdownRoomAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 		{
 			if (!Scp079CursorManager.LockCameras)
 			{
-				return ErrorCode != Scp079HudTranslation.HigherTierRequired;
+				return this.ErrorCode != Scp079HudTranslation.HigherTierRequired;
 			}
 			return false;
 		}
 	}
 
-	public override string AbilityName => string.Format(_nameFormat, _cost);
+	public override string AbilityName => string.Format(this._nameFormat, this._cost);
 
 	public override bool DummyEmulationSupport => true;
 
@@ -95,16 +95,16 @@ public class Scp079LockdownRoomAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 	{
 		get
 		{
-			if (!_hasFailMessage)
+			if (!this._hasFailMessage)
 			{
 				return null;
 			}
-			return ErrorCode switch
+			return this.ErrorCode switch
 			{
 				Scp079HudTranslation.Zoom => null, 
-				Scp079HudTranslation.NotEnoughAux => GetNoAuxMessage(_cost), 
-				Scp079HudTranslation.LockdownCooldown => _failMessage + "\n" + base.AuxManager.GenerateCustomETA(Mathf.CeilToInt(RemainingCooldown)), 
-				_ => _failMessage, 
+				Scp079HudTranslation.NotEnoughAux => base.GetNoAuxMessage(this._cost), 
+				Scp079HudTranslation.LockdownCooldown => this._failMessage + "\n" + base.AuxManager.GenerateCustomETA(Mathf.CeilToInt(this.RemainingCooldown)), 
+				_ => this._failMessage, 
 			};
 		}
 	}
@@ -113,13 +113,13 @@ public class Scp079LockdownRoomAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 	{
 		get
 		{
-			if (RemainingLockdownDuration == 0f)
+			if (this.RemainingLockdownDuration == 0f)
 			{
 				return 1f;
 			}
 			int accessTierIndex = base.TierManager.AccessTierIndex;
-			int a = _regenerationPerTier.Length - 1;
-			return _regenerationPerTier[Mathf.Min(a, accessTierIndex)];
+			int a = this._regenerationPerTier.Length - 1;
+			return this._regenerationPerTier[Mathf.Min(a, accessTierIndex)];
 		}
 	}
 
@@ -129,19 +129,19 @@ public class Scp079LockdownRoomAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 	{
 		get
 		{
-			if (base.TierManager.AccessTierIndex < _minimalTierIndex)
+			if (base.TierManager.AccessTierIndex < this._minimalTierIndex)
 			{
 				return Scp079HudTranslation.HigherTierRequired;
 			}
-			if (!_roomDoors.Any((DoorVariant x) => ValidateDoor(x)))
+			if (!this._roomDoors.Any((DoorVariant x) => this.ValidateDoor(x)))
 			{
 				return Scp079HudTranslation.LockdownNoDoorsError;
 			}
-			if (RemainingCooldown > 0f)
+			if (this.RemainingCooldown > 0f)
 			{
 				return Scp079HudTranslation.LockdownCooldown;
 			}
-			if (base.AuxManager.CurrentAuxFloored < _cost)
+			if (base.AuxManager.CurrentAuxFloored < this._cost)
 			{
 				return Scp079HudTranslation.NotEnoughAux;
 			}
@@ -153,15 +153,15 @@ public class Scp079LockdownRoomAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 	{
 		get
 		{
-			return Mathf.Max(0f, (float)(_nextUseTime - NetworkTime.time));
+			return Mathf.Max(0f, (float)(this._nextUseTime - NetworkTime.time));
 		}
 		set
 		{
-			_nextUseTime = NetworkTime.time + (double)value;
+			this._nextUseTime = NetworkTime.time + (double)value;
 		}
 	}
 
-	private float RemainingLockdownDuration => Mathf.Max(0f, (float)(_nextUseTime - (double)_cooldown - NetworkTime.time));
+	private float RemainingLockdownDuration => Mathf.Max(0f, (float)(this._nextUseTime - (double)this._cooldown - NetworkTime.time));
 
 	public static event Action<Scp079Role, RoomIdentifier> OnServerLockdown;
 
@@ -169,30 +169,30 @@ public class Scp079LockdownRoomAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 
 	private void ServerInitLockdown()
 	{
-		_lockdownInEffect = true;
-		_lastLockedRoom = base.CurrentCamSync.CurrentCamera.Room;
-		_doorsToLockDown.UnionWith(_roomDoors);
-		Scp079LockdownRoomAbility.OnServerLockdown?.Invoke(base.CastRole, _lastLockedRoom);
+		this._lockdownInEffect = true;
+		this._lastLockedRoom = base.CurrentCamSync.CurrentCamera.Room;
+		this._doorsToLockDown.UnionWith(this._roomDoors);
+		Scp079LockdownRoomAbility.OnServerLockdown?.Invoke(base.CastRole, this._lastLockedRoom);
 	}
 
 	private void ServerCancelLockdown()
 	{
-		Scp079CancellingRoomLockdownEventArgs scp079CancellingRoomLockdownEventArgs = new Scp079CancellingRoomLockdownEventArgs(base.Owner, _lastLockedRoom);
-		Scp079Events.OnCancellingRoomLockdown(scp079CancellingRoomLockdownEventArgs);
-		if (!scp079CancellingRoomLockdownEventArgs.IsAllowed)
+		Scp079CancellingRoomLockdownEventArgs e = new Scp079CancellingRoomLockdownEventArgs(base.Owner, this._lastLockedRoom);
+		Scp079Events.OnCancellingRoomLockdown(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
-		_lockdownInEffect = false;
-		RemainingCooldown = _cooldown;
-		foreach (DoorVariant item in _alreadyLockedDown)
+		this._lockdownInEffect = false;
+		this.RemainingCooldown = this._cooldown;
+		foreach (DoorVariant item in this._alreadyLockedDown)
 		{
 			item.ServerChangeLock(DoorLockReason.Lockdown079, newState: false);
 		}
-		_doorsToLockDown.Clear();
-		_alreadyLockedDown.Clear();
-		ServerSendRpc(toAll: true);
-		Scp079Events.OnCancelledRoomLockdown(new Scp079CancelledRoomLockdownEventArgs(base.Owner, _lastLockedRoom));
+		this._doorsToLockDown.Clear();
+		this._alreadyLockedDown.Clear();
+		base.ServerSendRpc(toAll: true);
+		Scp079Events.OnCancelledRoomLockdown(new Scp079CancelledRoomLockdownEventArgs(base.Owner, this._lastLockedRoom));
 	}
 
 	private bool ValidateDoor(DoorVariant dv)
@@ -208,103 +208,103 @@ public class Scp079LockdownRoomAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 	protected override void Start()
 	{
 		base.Start();
-		_nameFormat = Translations.Get(Scp079HudTranslation.Lockdown);
-		_unlockText = Translations.Get(Scp079HudTranslation.LockdownAvailable);
-		AuxReductionMessage = Translations.Get(Scp079HudTranslation.LockdownAuxPause);
+		this._nameFormat = Translations.Get(Scp079HudTranslation.Lockdown);
+		this._unlockText = Translations.Get(Scp079HudTranslation.LockdownAvailable);
+		this.AuxReductionMessage = Translations.Get(Scp079HudTranslation.LockdownAuxPause);
 		base.CurrentCamSync.OnCameraChanged += delegate
 		{
-			_hasFailMessage = false;
-			_failMessage = null;
-			_roomDoors.Clear();
+			this._hasFailMessage = false;
+			this._failMessage = null;
+			this._roomDoors.Clear();
 			if (DoorVariant.DoorsByRoom.TryGetValue(base.CurrentCamSync.CurrentCamera.Room, out var value))
 			{
-				_roomDoors.UnionWith(value);
+				this._roomDoors.UnionWith(value);
 			}
 		};
-		GetSubroutine<Scp079DoorLockChanger>(out _doorLockChanger);
+		base.GetSubroutine<Scp079DoorLockChanger>(out this._doorLockChanger);
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		if (!_lockdownInEffect || !NetworkServer.active)
+		if (!this._lockdownInEffect || !NetworkServer.active)
 		{
 			return;
 		}
-		if (RemainingLockdownDuration <= 0f)
+		if (this.RemainingLockdownDuration <= 0f)
 		{
-			ServerCancelLockdown();
+			this.ServerCancelLockdown();
 			return;
 		}
-		foreach (DoorVariant item in _doorsToLockDown)
+		foreach (DoorVariant item in this._doorsToLockDown)
 		{
-			if (ValidateDoor(item) && !_alreadyLockedDown.Contains(item) && (!item.TargetState || !(item.GetExactState() < _minStateToClose)))
+			if (this.ValidateDoor(item) && !this._alreadyLockedDown.Contains(item) && (!item.TargetState || !(item.GetExactState() < this._minStateToClose)))
 			{
 				item.NetworkTargetState = false;
 				item.ServerChangeLock(DoorLockReason.Lockdown079, newState: true);
-				if (item == _doorLockChanger.LockedDoor)
+				if (item == this._doorLockChanger.LockedDoor)
 				{
-					_doorLockChanger.ServerUnlock();
+					this._doorLockChanger.ServerUnlock();
 				}
 				base.RewardManager.MarkRooms(item.Rooms);
 				Scp079LockdownRoomAbility.OnServerDoorLocked?.Invoke(base.CastRole, item);
-				_alreadyLockedDown.Add(item);
+				this._alreadyLockedDown.Add(item);
 			}
 		}
 	}
 
 	protected override void Trigger()
 	{
-		ClientSendCmd();
+		base.ClientSendCmd();
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (ErrorCode == Scp079HudTranslation.Zoom && !base.LostSignalHandler.Lost)
+		if (this.ErrorCode == Scp079HudTranslation.Zoom && !base.LostSignalHandler.Lost)
 		{
-			Scp079LockingDownRoomEventArgs scp079LockingDownRoomEventArgs = new Scp079LockingDownRoomEventArgs(base.Owner, base.CurrentCamSync.CurrentCamera.Room);
-			Scp079Events.OnLockingDownRoom(scp079LockingDownRoomEventArgs);
-			if (!scp079LockingDownRoomEventArgs.IsAllowed)
+			Scp079LockingDownRoomEventArgs e = new Scp079LockingDownRoomEventArgs(base.Owner, base.CurrentCamSync.CurrentCamera.Room);
+			Scp079Events.OnLockingDownRoom(e);
+			if (!e.IsAllowed)
 			{
 				return;
 			}
-			base.AuxManager.CurrentAux -= _cost;
-			RemainingCooldown = _lockdownDuration + _cooldown;
-			ServerInitLockdown();
+			base.AuxManager.CurrentAux -= this._cost;
+			this.RemainingCooldown = this._lockdownDuration + this._cooldown;
+			this.ServerInitLockdown();
 			Scp079Events.OnLockedDownRoom(new Scp079LockedDownRoomEventArgs(base.Owner, base.CurrentCamSync.CurrentCamera.Room));
 		}
-		ServerSendRpc(toAll: true);
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteDouble(_nextUseTime);
-		writer.WriteBool(_lockdownInEffect);
+		writer.WriteDouble(this._nextUseTime);
+		writer.WriteBool(this._lockdownInEffect);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_nextUseTime = reader.ReadDouble();
-		_doorLockChanger.PlayConfirmationSound(reader.ReadBool() ? _lockdownStartSound : _lockdownEndSound);
+		this._nextUseTime = reader.ReadDouble();
+		this._doorLockChanger.PlayConfirmationSound(reader.ReadBool() ? this._lockdownStartSound : this._lockdownEndSound);
 	}
 
 	public override void OnFailMessageAssigned()
 	{
 		base.OnFailMessageAssigned();
-		_hasFailMessage = true;
-		_failMessage = Translations.Get(ErrorCode);
+		this._hasFailMessage = true;
+		this._failMessage = Translations.Get(this.ErrorCode);
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_nextUseTime = 0.0;
+		this._nextUseTime = 0.0;
 		if (NetworkServer.active)
 		{
-			ServerCancelLockdown();
+			this.ServerCancelLockdown();
 		}
 	}
 
@@ -315,11 +315,11 @@ public class Scp079LockdownRoomAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 
 	public bool WriteLevelUpNotification(StringBuilder sb, int newLevel)
 	{
-		if (newLevel != _minimalTierIndex)
+		if (newLevel != this._minimalTierIndex)
 		{
 			return false;
 		}
-		sb.AppendFormat(_unlockText, $"[{new ReadableKeyCode(ActivationKey)}]");
+		sb.AppendFormat(this._unlockText, $"[{new ReadableKeyCode(this.ActivationKey)}]");
 		return true;
 	}
 }

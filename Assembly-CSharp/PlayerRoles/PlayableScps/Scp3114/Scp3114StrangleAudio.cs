@@ -71,64 +71,64 @@ public class Scp3114StrangleAudio : StandardSubroutine<Scp3114Role>
 
 	private void ServerSendRpc(RpcType rpcType)
 	{
-		_rpcType = rpcType;
-		ServerSendRpc(toAll: true);
+		this._rpcType = rpcType;
+		base.ServerSendRpc(toAll: true);
 	}
 
 	private void Update()
 	{
 		if (NetworkServer.active)
 		{
-			UpdateServer();
+			this.UpdateServer();
 		}
-		_chokeSource.mute = !base.Role.IsLocalPlayer && !LocallyStrangled;
-		_chokeSource.volume = Mathf.MoveTowards(_chokeSource.volume, _isChoking ? 1 : 0, Time.deltaTime * _volumeAdjustSpeed);
+		this._chokeSource.mute = !base.Role.IsLocalPlayer && !this.LocallyStrangled;
+		this._chokeSource.volume = Mathf.MoveTowards(this._chokeSource.volume, this._isChoking ? 1 : 0, Time.deltaTime * this._volumeAdjustSpeed);
 	}
 
 	private void UpdateServer()
 	{
-		if (!_strangle.SyncTarget.HasValue)
+		if (!this._strangle.SyncTarget.HasValue)
 		{
-			if (_isChoking)
+			if (this._isChoking)
 			{
-				_isChoking = false;
-				ServerSendRpc(RpcType.ChokeSync);
+				this._isChoking = false;
+				this.ServerSendRpc(RpcType.ChokeSync);
 			}
 		}
-		else if (_syncCooldown.IsReady)
+		else if (this._syncCooldown.IsReady)
 		{
-			Strangled effect = _strangle.SyncTarget.Value.Target.playerEffectsController.GetEffect<Strangled>();
-			_isChoking = true;
-			_syncKillTime = NetworkTime.time + (double)effect.EstimatedTimeToKill;
-			ServerSendRpc(RpcType.ChokeSync);
-			_syncCooldown.Trigger(0.20000000298023224);
+			Strangled effect = this._strangle.SyncTarget.Value.Target.playerEffectsController.GetEffect<Strangled>();
+			this._isChoking = true;
+			this._syncKillTime = NetworkTime.time + (double)effect.EstimatedTimeToKill;
+			this.ServerSendRpc(RpcType.ChokeSync);
+			this._syncCooldown.Trigger(0.20000000298023224);
 		}
 	}
 
 	private void ResyncAudio()
 	{
-		double num = _syncKillTime - NetworkTime.time;
+		double num = this._syncKillTime - NetworkTime.time;
 		if (num <= 0.0)
 		{
 			return;
 		}
-		if (!_chokeSource.isPlaying)
+		if (!this._chokeSource.isPlaying)
 		{
-			_chokeSource.Play();
+			this._chokeSource.Play();
 		}
-		float num2 = (float)(((double)_killEventTimeSeconds - (double)_chokeSource.timeSamples * _samplesToSeconds) / num);
+		float num2 = (float)(((double)this._killEventTimeSeconds - (double)this._chokeSource.timeSamples * this._samplesToSeconds) / num);
 		float num3 = Mathf.Abs(1f - num2);
-		if (!(num3 < _minPitchAdjust))
+		if (!(num3 < this._minPitchAdjust))
 		{
-			if (num3 > _maxPitchAdjust)
+			if (num3 > this._maxPitchAdjust)
 			{
-				double num4 = (double)_killEventTimeSeconds - num;
-				_chokeSource.timeSamples = (int)(num4 * _secondsToSamples);
-				_chokeSource.pitch = 1f;
+				double num4 = (double)this._killEventTimeSeconds - num;
+				this._chokeSource.timeSamples = (int)(num4 * this._secondsToSamples);
+				this._chokeSource.pitch = 1f;
 			}
 			else
 			{
-				_chokeSource.pitch = num2;
+				this._chokeSource.pitch = num2;
 			}
 		}
 	}
@@ -136,26 +136,26 @@ public class Scp3114StrangleAudio : StandardSubroutine<Scp3114Role>
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp3114Strangle>(out _strangle);
-		_secondsToSamples = (float)_chokeSource.clip.samples / _chokeSource.clip.length;
-		_samplesToSeconds = 1.0 / _secondsToSamples;
-		_strangle.ServerOnKill += delegate
+		base.GetSubroutine<Scp3114Strangle>(out this._strangle);
+		this._secondsToSamples = (float)this._chokeSource.clip.samples / this._chokeSource.clip.length;
+		this._samplesToSeconds = 1.0 / this._secondsToSamples;
+		this._strangle.ServerOnKill += delegate
 		{
-			ServerSendRpc(RpcType.Kill);
+			this.ServerSendRpc(RpcType.Kill);
 		};
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte((byte)_rpcType);
-		switch (_rpcType)
+		writer.WriteByte((byte)this._rpcType);
+		switch (this._rpcType)
 		{
 		case RpcType.Kill:
 			writer.WriteRelativePosition(new RelativePosition(base.CastRole.FpcModule.Position));
 			break;
 		case RpcType.ChokeSync:
-			writer.WriteDouble(_isChoking ? _syncKillTime : 0.0);
+			writer.WriteDouble(this._isChoking ? this._syncKillTime : 0.0);
 			break;
 		}
 	}
@@ -166,12 +166,12 @@ public class Scp3114StrangleAudio : StandardSubroutine<Scp3114Role>
 		switch ((RpcType)reader.ReadByte())
 		{
 		case RpcType.Kill:
-			AudioSourcePoolManager.PlayAtPosition(_killSoundClip, reader.ReadRelativePosition(), _killSoundRange, 1f, FalloffType.Exponential, MixerChannel.NoDucking);
+			AudioSourcePoolManager.PlayAtPosition(this._killSoundClip, reader.ReadRelativePosition(), this._killSoundRange, 1f, FalloffType.Exponential, MixerChannel.NoDucking);
 			break;
 		case RpcType.ChokeSync:
-			_syncKillTime = reader.ReadDouble();
-			_isChoking = _syncKillTime != 0.0;
-			ResyncAudio();
+			this._syncKillTime = reader.ReadDouble();
+			this._isChoking = this._syncKillTime != 0.0;
+			this.ResyncAudio();
 			break;
 		}
 	}
@@ -179,10 +179,10 @@ public class Scp3114StrangleAudio : StandardSubroutine<Scp3114Role>
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_syncCooldown.Clear();
-		_chokeSource.Stop();
-		_isChoking = false;
-		_chokeSource.volume = 0f;
-		_chokeSource.mute = true;
+		this._syncCooldown.Clear();
+		this._chokeSource.Stop();
+		this._isChoking = false;
+		this._chokeSource.volume = 0f;
+		this._chokeSource.mute = true;
 	}
 }

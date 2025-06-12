@@ -15,7 +15,7 @@ public struct SpectatableListElementDefinition
 
 	public bool TryGetFromPools(Transform parent, out SpectatableListElementBase full, out SpectatableListElementBase compact)
 	{
-		if (TrySpawn(parent, FullSize, out full) && TrySpawn(parent, Compact, out compact))
+		if (this.TrySpawn(parent, this.FullSize, out full) && this.TrySpawn(parent, this.Compact, out compact))
 		{
 			return true;
 		}

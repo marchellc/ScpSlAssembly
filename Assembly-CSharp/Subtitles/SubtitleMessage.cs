@@ -8,6 +8,6 @@ public struct SubtitleMessage : NetworkMessage
 
 	public SubtitleMessage(params SubtitlePart[] subtitleParts)
 	{
-		SubtitleParts = subtitleParts;
+		this.SubtitleParts = subtitleParts;
 	}
 }

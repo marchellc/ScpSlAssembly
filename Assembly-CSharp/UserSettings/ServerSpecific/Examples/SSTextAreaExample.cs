@@ -39,8 +39,8 @@ public class SSTextAreaExample : SSExampleImplementationBase
 			new SSTextArea(null, "This multi-line text area is similar to the one above, but it will re-expand itself after collapsing each time you visit this tab.", SSTextArea.FoldoutMode.ExtendOnEntry),
 			new SSTextArea(null, "This multi-line text area cannot be collapsed.\nIt remains fully expanded at all times, but supports URL links.\nExample link: <link=\"https://www.youtube.com/watch?v=dQw4w9WgXcQ\"><mark=#5865f215>[Click]</mark></link>"),
 			new SSGroupHeader("Human Scanner", reducedPadding: false, "Generates a list of alive humans with their distances to you. The size is automatically adjusted based on the number of results."),
-			_responseScan = new SSTextArea(null, "Not scanned yet"),
-			_requestScanButton = new SSButton(null, "Scan for players", "Scan", null)
+			this._responseScan = new SSTextArea(null, "Not scanned yet"),
+			this._requestScanButton = new SSButton(null, "Scan for players", "Scan")
 		};
 		ServerSpecificSettingsSync.ServerOnSettingValueReceived += ServerOnSettingValueReceived;
 		ServerSpecificSettingsSync.SendToAll();
@@ -53,9 +53,9 @@ public class SSTextAreaExample : SSExampleImplementationBase
 
 	private void ServerOnSettingValueReceived(ReferenceHub sender, ServerSpecificSettingBase modifiedSetting)
 	{
-		if (modifiedSetting.SettingId == _requestScanButton.SettingId)
+		if (modifiedSetting.SettingId == this._requestScanButton.SettingId)
 		{
-			OnScannerButtonPressed(sender);
+			this.OnScannerButtonPressed(sender);
 		}
 	}
 
@@ -63,7 +63,7 @@ public class SSTextAreaExample : SSExampleImplementationBase
 	{
 		if (!(sender.roleManager.CurrentRole is IFpcRole fpcRole))
 		{
-			_responseScan.SendTextUpdate("Your current role is not supported.", applyOverride: false, (ReferenceHub x) => x == sender);
+			this._responseScan.SendTextUpdate("Your current role is not supported.", applyOverride: false, (ReferenceHub x) => x == sender);
 			return;
 		}
 		string text = null;
@@ -80,6 +80,6 @@ public class SSTextAreaExample : SSExampleImplementationBase
 				text += text2;
 			}
 		}
-		_responseScan.SendTextUpdate(text ?? "No humans detected.", applyOverride: false, (ReferenceHub x) => x == sender);
+		this._responseScan.SendTextUpdate(text ?? "No humans detected.", applyOverride: false, (ReferenceHub x) => x == sender);
 	}
 }

@@ -11,7 +11,7 @@ public class Scp2536Projectile : FlybyDetectorProjectile
 	{
 		base.ServerProcessHit(hid);
 		ReferenceHub targetHub = hid.TargetHub;
-		if (!(targetHub.roleManager.CurrentRole is HumanRole humanRole) || !HitboxIdentity.IsDamageable(PreviousOwner.Role, humanRole.RoleTypeId))
+		if (!(targetHub.roleManager.CurrentRole is HumanRole humanRole) || !HitboxIdentity.IsDamageable(base.PreviousOwner.Role, humanRole.RoleTypeId))
 		{
 			return;
 		}

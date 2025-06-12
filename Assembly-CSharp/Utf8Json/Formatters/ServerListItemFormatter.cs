@@ -11,7 +11,7 @@ public sealed class ServerListItemFormatter : IJsonFormatter<ServerListItem>, IJ
 
 	public ServerListItemFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("serverId"),
@@ -62,7 +62,7 @@ public sealed class ServerListItemFormatter : IJsonFormatter<ServerListItem>, IJ
 				11
 			}
 		};
-		____stringByteKeys = new byte[12][]
+		this.____stringByteKeys = new byte[12][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("serverId"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("ip"),
@@ -81,29 +81,29 @@ public sealed class ServerListItemFormatter : IJsonFormatter<ServerListItem>, IJ
 
 	public void Serialize(ref JsonWriter writer, ServerListItem value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteUInt32(value.serverId);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.ip);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteUInt16(value.port);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		writer.WriteString(value.players);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		writer.WriteString(value.info);
-		writer.WriteRaw(____stringByteKeys[5]);
+		writer.WriteRaw(this.____stringByteKeys[5]);
 		writer.WriteString(value.pastebin);
-		writer.WriteRaw(____stringByteKeys[6]);
+		writer.WriteRaw(this.____stringByteKeys[6]);
 		writer.WriteString(value.version);
-		writer.WriteRaw(____stringByteKeys[7]);
+		writer.WriteRaw(this.____stringByteKeys[7]);
 		writer.WriteBoolean(value.friendlyFire);
-		writer.WriteRaw(____stringByteKeys[8]);
+		writer.WriteRaw(this.____stringByteKeys[8]);
 		writer.WriteBoolean(value.modded);
-		writer.WriteRaw(____stringByteKeys[9]);
+		writer.WriteRaw(this.____stringByteKeys[9]);
 		writer.WriteBoolean(value.whitelist);
-		writer.WriteRaw(____stringByteKeys[10]);
+		writer.WriteRaw(this.____stringByteKeys[10]);
 		writer.WriteByte(value.officialCode);
-		writer.WriteRaw(____stringByteKeys[11]);
+		writer.WriteRaw(this.____stringByteKeys[11]);
 		writer.WriteInt32(value.NameFilterPoints);
 		writer.WriteEndObject();
 	}
@@ -132,7 +132,7 @@ public sealed class ServerListItemFormatter : IJsonFormatter<ServerListItem>, IJ
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

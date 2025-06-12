@@ -13,7 +13,7 @@ public class Painkillers : Consumable
 
 	protected override void OnEffectsActivated()
 	{
-		ServerAddRegeneration(_healProgress, 1f / 15f, 50f);
+		base.ServerAddRegeneration(this._healProgress, 1f / 15f, 50f);
 		base.Owner.playerEffectsController.UseMedicalItem(this);
 	}
 }

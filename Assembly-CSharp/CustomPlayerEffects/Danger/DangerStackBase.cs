@@ -16,21 +16,21 @@ public abstract class DangerStackBase
 	{
 		get
 		{
-			bool flag = TimeTracker.IsRunning && TimeTracker.Elapsed.TotalSeconds <= (double)Duration;
-			if (!_isActive && !flag)
+			bool flag = this.TimeTracker.IsRunning && this.TimeTracker.Elapsed.TotalSeconds <= (double)this.Duration;
+			if (!this._isActive && !flag)
 			{
-				TimeTracker.Stop();
+				this.TimeTracker.Stop();
 			}
-			return _isActive || flag;
+			return this._isActive || flag;
 		}
 		protected set
 		{
-			if (value != _isActive)
+			if (value != this._isActive)
 			{
-				_isActive = value;
-				if (!_isActive)
+				this._isActive = value;
+				if (!this._isActive)
 				{
-					TimeTracker.Restart();
+					this.TimeTracker.Restart();
 				}
 			}
 		}
@@ -40,7 +40,7 @@ public abstract class DangerStackBase
 
 	public virtual void Initialize(ReferenceHub target)
 	{
-		Owner = target;
+		this.Owner = target;
 	}
 
 	public virtual void Dispose()

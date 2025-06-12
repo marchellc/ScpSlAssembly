@@ -15,7 +15,7 @@ public class VoiceChatInGameSettings : MonoBehaviour
 
 	private void Awake()
 	{
-		UpdateSettings();
+		this.UpdateSettings();
 		VoiceChatPrivacySettings.OnUserFlagsChanged += OnUserFlagsChanged;
 	}
 
@@ -26,9 +26,9 @@ public class VoiceChatInGameSettings : MonoBehaviour
 
 	private void Update()
 	{
-		if (_updateEveryFrame)
+		if (this._updateEveryFrame)
 		{
-			UpdateSettings();
+			this.UpdateSettings();
 		}
 	}
 
@@ -36,15 +36,15 @@ public class VoiceChatInGameSettings : MonoBehaviour
 	{
 		if (hub.isLocalPlayer)
 		{
-			UpdateSettings();
+			this.UpdateSettings();
 		}
 	}
 
 	private void UpdateSettings()
 	{
 		bool flag = (VoiceChatPrivacySettings.PrivacyFlags & VcPrivacyFlags.AllowMicCapture) == VcPrivacyFlags.AllowMicCapture;
-		_acceptedRoot.SetActive(flag);
-		_deniedRoot.SetActive(!flag);
+		this._acceptedRoot.SetActive(flag);
+		this._deniedRoot.SetActive(!flag);
 	}
 
 	public void ShowPrivacySettings()

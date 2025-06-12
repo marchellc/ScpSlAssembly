@@ -11,17 +11,17 @@ internal class IPAddressesProvider : IIPAddressesProvider
 {
 	public IEnumerable<IPAddress> UnicastAddresses()
 	{
-		return IPAddresses((IPInterfaceProperties p) => p.UnicastAddresses.Select((UnicastIPAddressInformation x) => x.Address));
+		return IPAddressesProvider.IPAddresses((IPInterfaceProperties p) => p.UnicastAddresses.Select((UnicastIPAddressInformation x) => x.Address));
 	}
 
 	public IEnumerable<IPAddress> DnsAddresses()
 	{
-		return IPAddresses((IPInterfaceProperties p) => p.DnsAddresses);
+		return IPAddressesProvider.IPAddresses((IPInterfaceProperties p) => p.DnsAddresses);
 	}
 
 	public IEnumerable<IPAddress> GatewayAddresses()
 	{
-		return IPAddresses((IPInterfaceProperties p) => p.GatewayAddresses.Select((GatewayIPAddressInformation x) => x.Address));
+		return IPAddressesProvider.IPAddresses((IPInterfaceProperties p) => p.GatewayAddresses.Select((GatewayIPAddressInformation x) => x.Address));
 	}
 
 	private static IEnumerable<IPAddress> IPAddresses(Func<IPInterfaceProperties, IEnumerable<IPAddress>> ipExtractor)

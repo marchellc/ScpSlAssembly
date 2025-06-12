@@ -11,12 +11,12 @@ public class JsonFormatterAttribute : Attribute
 
 	public JsonFormatterAttribute(Type formatterType)
 	{
-		FormatterType = formatterType;
+		this.FormatterType = formatterType;
 	}
 
 	public JsonFormatterAttribute(Type formatterType, params object[] arguments)
 	{
-		FormatterType = formatterType;
-		Arguments = arguments;
+		this.FormatterType = formatterType;
+		this.Arguments = arguments;
 	}
 }

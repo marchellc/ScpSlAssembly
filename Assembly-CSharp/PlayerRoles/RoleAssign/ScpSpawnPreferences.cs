@@ -19,42 +19,42 @@ public static class ScpSpawnPreferences
 
 		public SpawnPreferences(bool autoSetup)
 		{
-			_count = 0;
-			Preferences = new Dictionary<RoleTypeId, int>();
-			OptOutOfScp = false;
+			this._count = 0;
+			this.Preferences = new Dictionary<RoleTypeId, int>();
+			this.OptOutOfScp = false;
 			if (!autoSetup)
 			{
 				return;
 			}
-			OptOutOfScp = UserSetting<bool>.Get(ScpSetting.ScpOptOut, defaultValue: false);
+			this.OptOutOfScp = UserSetting<bool>.Get(ScpSetting.ScpOptOut, defaultValue: false);
 			foreach (KeyValuePair<RoleTypeId, PlayerRoleBase> allRole in PlayerRoleLoader.AllRoles)
 			{
 				if (allRole.Value is ISpawnableScp)
 				{
-					Preferences[allRole.Key] = GetPreference(allRole.Key);
-					_count++;
+					this.Preferences[allRole.Key] = ScpSpawnPreferences.GetPreference(allRole.Key);
+					this._count++;
 				}
 			}
 		}
 
 		public SpawnPreferences(NetworkReader reader)
 		{
-			OptOutOfScp = reader.ReadBool();
-			_count = reader.ReadByte();
-			Preferences = new Dictionary<RoleTypeId, int>(_count);
-			for (int i = 0; i < _count; i++)
+			this.OptOutOfScp = reader.ReadBool();
+			this._count = reader.ReadByte();
+			this.Preferences = new Dictionary<RoleTypeId, int>(this._count);
+			for (int i = 0; i < this._count; i++)
 			{
 				RoleTypeId key = reader.ReadRoleType();
 				int val = reader.ReadSByte();
-				Preferences[key] = ClampPreference(val);
+				this.Preferences[key] = ScpSpawnPreferences.ClampPreference(val);
 			}
 		}
 
 		public void Serialize(NetworkWriter writer)
 		{
-			writer.WriteBool(OptOutOfScp);
-			writer.WriteByte(_count);
-			foreach (KeyValuePair<RoleTypeId, int> preference in Preferences)
+			writer.WriteBool(this.OptOutOfScp);
+			writer.WriteByte(this._count);
+			foreach (KeyValuePair<RoleTypeId, int> preference in this.Preferences)
 			{
 				writer.WriteRoleType(preference.Key);
 				writer.WriteSByte((sbyte)preference.Value);
@@ -73,7 +73,7 @@ public static class ScpSpawnPreferences
 	{
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			Preferences.Clear();
+			ScpSpawnPreferences.Preferences.Clear();
 			NetworkServer.ReplaceHandler<SpawnPreferences>(OnMessageReceived);
 			NetworkClient.Send(new SpawnPreferences(autoSetup: true));
 			UserSetting<bool>.AddListener(ScpSetting.ScpOptOut, delegate
@@ -90,13 +90,13 @@ public static class ScpSpawnPreferences
 
 	private static void OnMessageReceived(NetworkConnection conn, SpawnPreferences msg)
 	{
-		Preferences[conn.connectionId] = msg;
+		ScpSpawnPreferences.Preferences[conn.connectionId] = msg;
 	}
 
 	public static int GetPreference(RoleTypeId role)
 	{
 		int num = (int)role;
-		return ClampPreference(PlayerPrefsSl.Get("SpawnPreference_Role_" + num, 0));
+		return ScpSpawnPreferences.ClampPreference(PlayerPrefsSl.Get("SpawnPreference_Role_" + num, 0));
 	}
 
 	public static void SavePreference(RoleTypeId role, int value)

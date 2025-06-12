@@ -35,7 +35,7 @@ public class ScpItemPickupObjective : HumanObjectiveBase<PickupObjectiveFootprin
 	protected override void OnInstanceReset()
 	{
 		base.OnInstanceReset();
-		BlacklistedItems.Clear();
+		ScpItemPickupObjective.BlacklistedItems.Clear();
 	}
 
 	private void OnPickupUpgraded(Scp914Result result, Scp914KnobSetting _)
@@ -47,7 +47,7 @@ public class ScpItemPickupObjective : HumanObjectiveBase<PickupObjectiveFootprin
 			{
 				if (!(itemPickupBase == null))
 				{
-					BlacklistedItems.Add(itemPickupBase.Info.Serial);
+					ScpItemPickupObjective.BlacklistedItems.Add(itemPickupBase.Info.Serial);
 				}
 			}
 		}
@@ -60,14 +60,14 @@ public class ScpItemPickupObjective : HumanObjectiveBase<PickupObjectiveFootprin
 		{
 			if (!(itemBase == null))
 			{
-				BlacklistedItems.Add(itemBase.ItemSerial);
+				ScpItemPickupObjective.BlacklistedItems.Add(itemBase.ItemSerial);
 			}
 		}
 	}
 
 	private void OnItemAdded(ReferenceHub hub, ItemBase item, ItemPickupBase pickup)
 	{
-		if (!(pickup == null) && item.Category == ItemCategory.SCPItem && item.ItemTypeId != ItemType.SCP330 && BlacklistedItems.Add(pickup.Info.Serial))
+		if (!(pickup == null) && item.Category == ItemCategory.SCPItem && item.ItemTypeId != ItemType.SCP330 && ScpItemPickupObjective.BlacklistedItems.Add(pickup.Info.Serial))
 		{
 			Faction faction = hub.GetFaction();
 			float num;
@@ -82,8 +82,8 @@ public class ScpItemPickupObjective : HumanObjectiveBase<PickupObjectiveFootprin
 				num = 2f;
 				num2 = -5f;
 			}
-			GrantInfluence(faction, num);
-			ReduceTimer(faction, num2);
+			base.GrantInfluence(faction, num);
+			base.ReduceTimer(faction, num2);
 			base.ObjectiveFootprint = new PickupObjectiveFootprint
 			{
 				InfluenceReward = num,
@@ -91,7 +91,7 @@ public class ScpItemPickupObjective : HumanObjectiveBase<PickupObjectiveFootprin
 				AchievingPlayer = new ObjectiveHubFootprint(hub),
 				PickupType = item.ItemTypeId
 			};
-			ServerSendUpdate();
+			base.ServerSendUpdate();
 		}
 	}
 }

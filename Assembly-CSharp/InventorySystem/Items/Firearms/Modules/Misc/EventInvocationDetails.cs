@@ -14,23 +14,23 @@ public readonly struct EventInvocationDetails
 
 	public readonly Animator RawAnimator;
 
-	public float TotalSpeedMultiplier => StateSpeed * ParamSpeed;
+	public float TotalSpeedMultiplier => this.StateSpeed * this.ParamSpeed;
 
 	public EventInvocationDetails(AnimatorStateInfo stateInfo, Animator sourceAnimator, int callerLayer)
 	{
-		EverInvoked = true;
-		StateSpeed = stateInfo.speed;
-		ParamSpeed = stateInfo.speedMultiplier;
-		Layer = callerLayer;
-		RawAnimator = sourceAnimator;
+		this.EverInvoked = true;
+		this.StateSpeed = stateInfo.speed;
+		this.ParamSpeed = stateInfo.speedMultiplier;
+		this.Layer = callerLayer;
+		this.RawAnimator = sourceAnimator;
 	}
 
 	public EventInvocationDetails(bool everInvoked, float stateSpeed, float paramSpeed, int layer, Animator rawAnimator)
 	{
-		EverInvoked = everInvoked;
-		StateSpeed = stateSpeed;
-		ParamSpeed = paramSpeed;
-		Layer = layer;
-		RawAnimator = rawAnimator;
+		this.EverInvoked = everInvoked;
+		this.StateSpeed = stateSpeed;
+		this.ParamSpeed = paramSpeed;
+		this.Layer = layer;
+		this.RawAnimator = rawAnimator;
 	}
 }

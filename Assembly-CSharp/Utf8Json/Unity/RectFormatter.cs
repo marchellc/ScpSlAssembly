@@ -12,7 +12,7 @@ public sealed class RectFormatter : IJsonFormatter<Rect>, IJsonFormatter
 
 	public RectFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("x"),
@@ -31,7 +31,7 @@ public sealed class RectFormatter : IJsonFormatter<Rect>, IJsonFormatter
 				3
 			}
 		};
-		____stringByteKeys = new byte[4][]
+		this.____stringByteKeys = new byte[4][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("x"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("y"),
@@ -42,13 +42,13 @@ public sealed class RectFormatter : IJsonFormatter<Rect>, IJsonFormatter
 
 	public void Serialize(ref JsonWriter writer, Rect value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteSingle(value.x);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteSingle(value.y);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteSingle(value.width);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		writer.WriteSingle(value.height);
 		writer.WriteEndObject();
 	}
@@ -68,7 +68,7 @@ public sealed class RectFormatter : IJsonFormatter<Rect>, IJsonFormatter
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

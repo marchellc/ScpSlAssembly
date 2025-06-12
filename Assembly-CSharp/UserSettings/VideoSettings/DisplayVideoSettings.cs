@@ -61,15 +61,15 @@ public static class DisplayVideoSettings
 
 	private static void SetupDisplayChangeDetector()
 	{
-		CurrentDisplayIndex = -1;
+		DisplayVideoSettings.CurrentDisplayIndex = -1;
 		StaticUnityMethods.OnUpdate += delegate
 		{
-			int @int = PlayerPrefs.GetInt("UnitySelectMonitor");
-			if (@int != CurrentDisplayIndex && !_isChangingDisplay)
+			int num = PlayerPrefs.GetInt("UnitySelectMonitor");
+			if (num != DisplayVideoSettings.CurrentDisplayIndex && !DisplayVideoSettings._isChangingDisplay)
 			{
-				CurrentDisplayIndex = @int;
+				DisplayVideoSettings.CurrentDisplayIndex = num;
 				DisplayVideoSettings.OnDisplayChanged?.Invoke();
-				UpdateSettings();
+				DisplayVideoSettings.UpdateSettings();
 			}
 		};
 	}
@@ -82,7 +82,7 @@ public static class DisplayVideoSettings
 
 	private static void OnAspectRatioChanged(int newRatio)
 	{
-		Resolution[] selectedAspectResolutions = GetSelectedAspectResolutions(newRatio);
+		Resolution[] selectedAspectResolutions = DisplayVideoSettings.GetSelectedAspectResolutions(newRatio);
 		int value = selectedAspectResolutions.Length - 1;
 		int num = int.MaxValue;
 		int num2 = int.MaxValue;
@@ -118,11 +118,11 @@ public static class DisplayVideoSettings
 				list.Add(item);
 			}
 		}
-		_supportedResolutions = list.ToArray();
+		DisplayVideoSettings._supportedResolutions = list.ToArray();
 		ListPool<Resolution>.Shared.Return(list);
 		RefreshFramerate();
 		FullScreenMode fullScreenMode = (FullScreenMode)UserSetting<int>.Get(DisplayVideoSetting.FullscreenMode);
-		Resolution[] selectedAspectResolutions = GetSelectedAspectResolutions(UserSetting<int>.Get(DisplayVideoSetting.AspectRatio));
+		Resolution[] selectedAspectResolutions = DisplayVideoSettings.GetSelectedAspectResolutions(UserSetting<int>.Get(DisplayVideoSetting.AspectRatio));
 		int num = ((selectedAspectResolutions != null) ? selectedAspectResolutions.Length : 0);
 		if (num == 0)
 		{
@@ -132,16 +132,16 @@ public static class DisplayVideoSettings
 		int value = UserSetting<int>.Get(DisplayVideoSetting.Resolution, num - 1, setAsDefault: true);
 		Resolution resolution = selectedAspectResolutions[Mathf.Clamp(value, 0, num - 1)];
 		Screen.SetResolution(resolution.width, resolution.height, fullScreenMode);
-		if (onLoad && fullScreenMode == FullScreenMode.ExclusiveFullScreen && !_alreadyRunning)
+		if (onLoad && fullScreenMode == FullScreenMode.ExclusiveFullScreen && !DisplayVideoSettings._alreadyRunning)
 		{
-			_alreadyRunning = true;
-			_desiredWidth = resolution.width;
-			_desiredHeight = resolution.height;
+			DisplayVideoSettings._alreadyRunning = true;
+			DisplayVideoSettings._desiredWidth = resolution.width;
+			DisplayVideoSettings._desiredHeight = resolution.height;
 			StaticUnityMethods.OnUpdate += UpdateExclusiveFullScreen;
 		}
 		static void RefreshFramerate()
 		{
-			if (!_isPlaying)
+			if (!DisplayVideoSettings._isPlaying)
 			{
 				QualitySettings.vSyncCount = 0;
 				Application.targetFrameRate = 60;
@@ -157,10 +157,10 @@ public static class DisplayVideoSettings
 	private static Resolution[] GetUnsupportedResolutions()
 	{
 		List<Resolution> list = ListPool<Resolution>.Shared.Rent();
-		Resolution[] supportedResolutions = _supportedResolutions;
+		Resolution[] supportedResolutions = DisplayVideoSettings._supportedResolutions;
 		foreach (Resolution resolution in supportedResolutions)
 		{
-			if (!IsSupportedRatio(resolution))
+			if (!DisplayVideoSettings.IsSupportedRatio(resolution))
 			{
 				list.Add(resolution);
 			}
@@ -174,15 +174,15 @@ public static class DisplayVideoSettings
 	{
 		if (filterId <= 0)
 		{
-			return _supportedResolutions;
+			return DisplayVideoSettings._supportedResolutions;
 		}
-		if (filterId > SupportedRatios.Length)
+		if (filterId > DisplayVideoSettings.SupportedRatios.Length)
 		{
-			return GetUnsupportedResolutions();
+			return DisplayVideoSettings.GetUnsupportedResolutions();
 		}
-		AspectRatio aspectRatio = SupportedRatios[filterId - 1];
+		AspectRatio aspectRatio = DisplayVideoSettings.SupportedRatios[filterId - 1];
 		List<Resolution> list = ListPool<Resolution>.Shared.Rent();
-		Resolution[] supportedResolutions = _supportedResolutions;
+		Resolution[] supportedResolutions = DisplayVideoSettings._supportedResolutions;
 		foreach (Resolution resolution in supportedResolutions)
 		{
 			if (aspectRatio.CheckRes(resolution))
@@ -197,7 +197,7 @@ public static class DisplayVideoSettings
 
 	public static bool IsSupportedRatio(Resolution res)
 	{
-		AspectRatio[] supportedRatios = SupportedRatios;
+		AspectRatio[] supportedRatios = DisplayVideoSettings.SupportedRatios;
 		foreach (AspectRatio aspectRatio in supportedRatios)
 		{
 			if (aspectRatio.CheckRes(res))
@@ -210,9 +210,9 @@ public static class DisplayVideoSettings
 
 	public static async void ChangeDisplay(int displayIndex)
 	{
-		if (!_isChangingDisplay)
+		if (!DisplayVideoSettings._isChangingDisplay)
 		{
-			_isChangingDisplay = true;
+			DisplayVideoSettings._isChangingDisplay = true;
 			List<DisplayInfo> list = ListPool<DisplayInfo>.Shared.Rent();
 			Screen.GetDisplayLayout(list);
 			DisplayInfo display = list[displayIndex];
@@ -223,8 +223,8 @@ public static class DisplayVideoSettings
 				await Task.Delay(Mathf.CeilToInt(Time.deltaTime * 1000f));
 			}
 			UserSetting<int>.Set(DisplayVideoSetting.AspectRatio, 0);
-			OnAspectRatioChanged(0);
-			_isChangingDisplay = false;
+			DisplayVideoSettings.OnAspectRatioChanged(0);
+			DisplayVideoSettings._isChangingDisplay = false;
 		}
 	}
 
@@ -232,9 +232,9 @@ public static class DisplayVideoSettings
 	{
 		if (Input.anyKeyDown && Screen.fullScreenMode == FullScreenMode.FullScreenWindow)
 		{
-			Screen.SetResolution(_desiredWidth, _desiredHeight, FullScreenMode.ExclusiveFullScreen);
+			Screen.SetResolution(DisplayVideoSettings._desiredWidth, DisplayVideoSettings._desiredHeight, FullScreenMode.ExclusiveFullScreen);
 			StaticUnityMethods.OnUpdate -= UpdateExclusiveFullScreen;
-			_alreadyRunning = false;
+			DisplayVideoSettings._alreadyRunning = false;
 		}
 	}
 }

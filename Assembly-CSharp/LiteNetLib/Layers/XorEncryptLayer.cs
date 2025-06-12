@@ -16,38 +16,38 @@ public class XorEncryptLayer : PacketLayerBase
 	public XorEncryptLayer(byte[] key)
 		: this()
 	{
-		SetKey(key);
+		this.SetKey(key);
 	}
 
 	public XorEncryptLayer(string key)
 		: this()
 	{
-		SetKey(key);
+		this.SetKey(key);
 	}
 
 	public void SetKey(string key)
 	{
-		_byteKey = Encoding.UTF8.GetBytes(key);
+		this._byteKey = Encoding.UTF8.GetBytes(key);
 	}
 
 	public void SetKey(byte[] key)
 	{
-		if (_byteKey == null || _byteKey.Length != key.Length)
+		if (this._byteKey == null || this._byteKey.Length != key.Length)
 		{
-			_byteKey = new byte[key.Length];
+			this._byteKey = new byte[key.Length];
 		}
-		Buffer.BlockCopy(key, 0, _byteKey, 0, key.Length);
+		Buffer.BlockCopy(key, 0, this._byteKey, 0, key.Length);
 	}
 
 	public override void ProcessInboundPacket(ref IPEndPoint endPoint, ref byte[] data, ref int offset, ref int length)
 	{
-		if (_byteKey != null)
+		if (this._byteKey != null)
 		{
 			int num = offset;
 			int num2 = 0;
 			while (num2 < length)
 			{
-				data[num] ^= _byteKey[num2 % _byteKey.Length];
+				data[num] ^= this._byteKey[num2 % this._byteKey.Length];
 				num2++;
 				num++;
 			}
@@ -56,13 +56,13 @@ public class XorEncryptLayer : PacketLayerBase
 
 	public override void ProcessOutBoundPacket(ref IPEndPoint endPoint, ref byte[] data, ref int offset, ref int length)
 	{
-		if (_byteKey != null)
+		if (this._byteKey != null)
 		{
 			int num = offset;
 			int num2 = 0;
 			while (num2 < length)
 			{
-				data[num] ^= _byteKey[num2 % _byteKey.Length];
+				data[num] ^= this._byteKey[num2 % this._byteKey.Length];
 				num2++;
 				num++;
 			}

@@ -13,19 +13,19 @@ internal class WindowFriendlyFireDetector : FriendlyFireDetector
 
 	public override bool RegisterDamage(float damage)
 	{
-		if (!FriendlyFireConfig.WindowEnabled || _triggered)
+		if (!FriendlyFireConfig.WindowEnabled || base._triggered)
 		{
 			return false;
 		}
-		if (Time.unscaledTime > _lastReset + (float)FriendlyFireConfig.Window)
+		if (Time.unscaledTime > this._lastReset + (float)FriendlyFireConfig.Window)
 		{
-			Reset();
-			_lastReset = Time.unscaledTime;
+			this.Reset();
+			this._lastReset = Time.unscaledTime;
 		}
 		base.RegisterDamage(damage);
 		if (FriendlyFireConfig.WindowDamageThreshold != 0 && base.Damage >= (float)FriendlyFireConfig.WindowDamageThreshold)
 		{
-			TakeAction(ref FriendlyFireConfig.WindowAction, "Window", ref FriendlyFireConfig.WindowBanTime, ref FriendlyFireConfig.WindowBanReason, ref FriendlyFireConfig.WindowKillReason, ref FriendlyFireConfig.WindowAdminMessage, ref FriendlyFireConfig.WindowBroadcastMessage, ref FriendlyFireConfig.WindowWebhook);
+			base.TakeAction(ref FriendlyFireConfig.WindowAction, "Window", ref FriendlyFireConfig.WindowBanTime, ref FriendlyFireConfig.WindowBanReason, ref FriendlyFireConfig.WindowKillReason, ref FriendlyFireConfig.WindowAdminMessage, ref FriendlyFireConfig.WindowBroadcastMessage, ref FriendlyFireConfig.WindowWebhook);
 			return true;
 		}
 		return false;
@@ -33,19 +33,19 @@ internal class WindowFriendlyFireDetector : FriendlyFireDetector
 
 	public override bool RegisterKill()
 	{
-		if (!FriendlyFireConfig.WindowEnabled || _triggered)
+		if (!FriendlyFireConfig.WindowEnabled || base._triggered)
 		{
 			return false;
 		}
-		if (Time.unscaledTime > _lastReset + (float)FriendlyFireConfig.Window)
+		if (Time.unscaledTime > this._lastReset + (float)FriendlyFireConfig.Window)
 		{
-			Reset();
-			_lastReset = Time.unscaledTime;
+			this.Reset();
+			this._lastReset = Time.unscaledTime;
 		}
 		base.RegisterKill();
 		if (FriendlyFireConfig.WindowKillThreshold != 0 && base.Kills >= FriendlyFireConfig.WindowKillThreshold)
 		{
-			TakeAction(ref FriendlyFireConfig.WindowAction, "Window", ref FriendlyFireConfig.WindowBanTime, ref FriendlyFireConfig.WindowBanReason, ref FriendlyFireConfig.WindowKillReason, ref FriendlyFireConfig.WindowAdminMessage, ref FriendlyFireConfig.WindowBroadcastMessage, ref FriendlyFireConfig.WindowWebhook);
+			base.TakeAction(ref FriendlyFireConfig.WindowAction, "Window", ref FriendlyFireConfig.WindowBanTime, ref FriendlyFireConfig.WindowBanReason, ref FriendlyFireConfig.WindowKillReason, ref FriendlyFireConfig.WindowAdminMessage, ref FriendlyFireConfig.WindowBroadcastMessage, ref FriendlyFireConfig.WindowWebhook);
 			return true;
 		}
 		return false;

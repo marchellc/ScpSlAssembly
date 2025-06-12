@@ -36,29 +36,29 @@ public class Scp127HumeModule : ModuleBase, IHumeShieldProvider
 		{
 			get
 			{
-				return (float)(_lastUnequip - NetworkTime.time);
+				return (float)(this._lastUnequip - NetworkTime.time);
 			}
 			set
 			{
-				_lastUnequip = NetworkTime.time + (double)value;
+				this._lastUnequip = NetworkTime.time + (double)value;
 			}
 		}
 
-		public float LastDamageElapsed => (float)(NetworkTime.time - _lastDamage);
+		public float LastDamageElapsed => (float)(NetworkTime.time - this._lastDamage);
 
 		public Scp127HumeModule EquippedModule
 		{
 			get
 			{
-				if (_lastModule != null)
+				if (this._lastModule != null)
 				{
-					if (!_lastModule.Item.IsEquipped)
+					if (!this._lastModule.Item.IsEquipped)
 					{
 						return null;
 					}
-					return _lastModule;
+					return this._lastModule;
 				}
-				if (!(Hub.inventory.CurInstance is Firearm firearm))
+				if (!(this.Hub.inventory.CurInstance is Firearm firearm))
 				{
 					return null;
 				}
@@ -66,21 +66,21 @@ public class Scp127HumeModule : ModuleBase, IHumeShieldProvider
 				{
 					return null;
 				}
-				_lastModule = module;
-				return _lastModule;
+				this._lastModule = module;
+				return this._lastModule;
 			}
 		}
 
 		public void RegisterDamage()
 		{
-			_lastDamage = NetworkTime.time;
+			this._lastDamage = NetworkTime.time;
 		}
 
 		public HumeShieldSession(Scp127HumeModule hs)
 		{
-			Hub = hs.Item.Owner;
-			Stat = Hub.playerStats.GetModule<HumeShieldStat>();
-			_lastModule = hs;
+			this.Hub = hs.Item.Owner;
+			this.Stat = this.Hub.playerStats.GetModule<HumeShieldStat>();
+			this._lastModule = hs;
 		}
 	}
 
@@ -95,7 +95,7 @@ public class Scp127HumeModule : ModuleBase, IHumeShieldProvider
 		{
 			Scp127Tier tierForItem = Scp127TierManagerModule.GetTierForItem(base.Item);
 			AhpStat module = base.Item.Owner.playerStats.GetModule<AhpStat>();
-			MaxHumeTierPair[] maxPerTier = _maxPerTier;
+			MaxHumeTierPair[] maxPerTier = this._maxPerTier;
 			for (int i = 0; i < maxPerTier.Length; i++)
 			{
 				MaxHumeTierPair maxHumeTierPair = maxPerTier[i];
@@ -131,7 +131,7 @@ public class Scp127HumeModule : ModuleBase, IHumeShieldProvider
 		base.TemplateUpdate();
 		if (NetworkServer.active)
 		{
-			ServerUpdateSessions();
+			this.ServerUpdateSessions();
 		}
 	}
 
@@ -141,9 +141,9 @@ public class Scp127HumeModule : ModuleBase, IHumeShieldProvider
 		if (NetworkServer.active)
 		{
 			ReferenceHub owner = base.Item.Owner;
-			if (owner.IsHuman() && !ServerActiveSessions.Any((HumeShieldSession x) => x.Hub == owner))
+			if (owner.IsHuman() && !Scp127HumeModule.ServerActiveSessions.Any((HumeShieldSession x) => x.Hub == owner))
 			{
-				ServerActiveSessions.Add(new HumeShieldSession(this));
+				Scp127HumeModule.ServerActiveSessions.Add(new HumeShieldSession(this));
 			}
 		}
 	}
@@ -151,12 +151,12 @@ public class Scp127HumeModule : ModuleBase, IHumeShieldProvider
 	internal override void OnHolstered()
 	{
 		base.OnHolstered();
-		HsRegeneration = 0f;
-		foreach (HumeShieldSession serverActiveSession in ServerActiveSessions)
+		this.HsRegeneration = 0f;
+		foreach (HumeShieldSession serverActiveSession in Scp127HumeModule.ServerActiveSessions)
 		{
 			if (!(serverActiveSession.Hub != base.Item.Owner))
 			{
-				serverActiveSession.LastUnequipElapsed = UnequipDecayDelay;
+				serverActiveSession.LastUnequipElapsed = this.UnequipDecayDelay;
 			}
 		}
 	}
@@ -164,7 +164,7 @@ public class Scp127HumeModule : ModuleBase, IHumeShieldProvider
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		ServerActiveSessions.Clear();
+		Scp127HumeModule.ServerActiveSessions.Clear();
 	}
 
 	internal override void OnTemplateReloaded(ModularAutosyncItem template, bool wasEverLoaded)
@@ -175,7 +175,7 @@ public class Scp127HumeModule : ModuleBase, IHumeShieldProvider
 			ReferenceHub.OnPlayerRemoved += RemoveSession;
 			PlayerRoleManager.OnServerRoleSet += delegate(ReferenceHub hub, RoleTypeId _, RoleChangeReason _)
 			{
-				RemoveSession(hub);
+				this.RemoveSession(hub);
 			};
 			PlayerStats.OnAnyPlayerDamaged += OnAnyPlayerDamaged;
 		}
@@ -187,7 +187,7 @@ public class Scp127HumeModule : ModuleBase, IHumeShieldProvider
 		{
 			return;
 		}
-		foreach (HumeShieldSession serverActiveSession in ServerActiveSessions)
+		foreach (HumeShieldSession serverActiveSession in Scp127HumeModule.ServerActiveSessions)
 		{
 			if (!(serverActiveSession.Hub != hub))
 			{
@@ -198,17 +198,17 @@ public class Scp127HumeModule : ModuleBase, IHumeShieldProvider
 
 	private void ServerUpdateSessions()
 	{
-		for (int num = ServerActiveSessions.Count - 1; num >= 0; num--)
+		for (int num = Scp127HumeModule.ServerActiveSessions.Count - 1; num >= 0; num--)
 		{
-			HumeShieldSession humeShieldSession = ServerActiveSessions[num];
+			HumeShieldSession humeShieldSession = Scp127HumeModule.ServerActiveSessions[num];
 			Scp127HumeModule equippedModule = humeShieldSession.EquippedModule;
 			HumeShieldStat stat = humeShieldSession.Stat;
 			if (equippedModule != null)
 			{
 				if (stat.CurValue <= equippedModule.HsMax)
 				{
-					bool flag = humeShieldSession.LastDamageElapsed > ShieldOnDamagePause;
-					equippedModule.HsRegeneration = (flag ? ShieldRegenRate : 0f);
+					bool flag = humeShieldSession.LastDamageElapsed > this.ShieldOnDamagePause;
+					equippedModule.HsRegeneration = (flag ? this.ShieldRegenRate : 0f);
 				}
 				else
 				{
@@ -218,10 +218,10 @@ public class Scp127HumeModule : ModuleBase, IHumeShieldProvider
 			}
 			else if (!(humeShieldSession.LastUnequipElapsed > 0f))
 			{
-				stat.CurValue -= Time.deltaTime * ShieldDecayRate;
+				stat.CurValue -= Time.deltaTime * this.ShieldDecayRate;
 				if (!(stat.CurValue > 0f))
 				{
-					ServerActiveSessions.RemoveAt(num);
+					Scp127HumeModule.ServerActiveSessions.RemoveAt(num);
 				}
 			}
 		}
@@ -229,11 +229,11 @@ public class Scp127HumeModule : ModuleBase, IHumeShieldProvider
 
 	private void RemoveSession(ReferenceHub hub)
 	{
-		for (int num = ServerActiveSessions.Count - 1; num >= 0; num--)
+		for (int num = Scp127HumeModule.ServerActiveSessions.Count - 1; num >= 0; num--)
 		{
-			if (!(ServerActiveSessions[num].Hub != hub))
+			if (!(Scp127HumeModule.ServerActiveSessions[num].Hub != hub))
 			{
-				ServerActiveSessions.RemoveAt(num);
+				Scp127HumeModule.ServerActiveSessions.RemoveAt(num);
 			}
 		}
 	}

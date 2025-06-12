@@ -21,18 +21,18 @@ public class PasswordInputField : MonoBehaviour
 
 	private void Awake()
 	{
-		_inputField = GetComponent<TMP_InputField>();
-		_prevValue = !_toggleVisibility.isOn;
+		this._inputField = base.GetComponent<TMP_InputField>();
+		this._prevValue = !this._toggleVisibility.isOn;
 	}
 
 	private void Update()
 	{
-		bool isOn = _toggleVisibility.isOn;
-		if (_prevValue != isOn)
+		bool isOn = this._toggleVisibility.isOn;
+		if (this._prevValue != isOn)
 		{
-			_inputField.contentType = (isOn ? _trueType : _falseType);
-			_inputField.ForceLabelUpdate();
-			_prevValue = isOn;
+			this._inputField.contentType = (isOn ? this._trueType : this._falseType);
+			this._inputField.ForceLabelUpdate();
+			this._prevValue = isOn;
 		}
 	}
 }

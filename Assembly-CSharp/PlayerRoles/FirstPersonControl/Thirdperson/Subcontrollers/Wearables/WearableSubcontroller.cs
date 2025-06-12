@@ -15,14 +15,14 @@ public class WearableSubcontroller : SubcontrollerBehaviour, IPoolResettable
 	{
 		get
 		{
-			return _syncWearable.GetValueOrDefault();
+			return this._syncWearable.GetValueOrDefault();
 		}
 		private set
 		{
-			if (_syncWearable != value)
+			if (this._syncWearable != value)
 			{
-				_syncWearable = value;
-				DisplayableWearableBase[] definedWearables = DefinedWearables;
+				this._syncWearable = value;
+				DisplayableWearableBase[] definedWearables = this.DefinedWearables;
 				for (int i = 0; i < definedWearables.Length; i++)
 				{
 					definedWearables[i].OnFlagsUpdated();
@@ -33,25 +33,25 @@ public class WearableSubcontroller : SubcontrollerBehaviour, IPoolResettable
 
 	public void ResetObject()
 	{
-		SyncWearable = WearableElements.None;
-		SetWearables(WearableElements.None);
+		this.SyncWearable = WearableElements.None;
+		this.SetWearables(WearableElements.None);
 	}
 
 	public override void OnReassigned()
 	{
 		base.OnReassigned();
-		_syncWearable = null;
+		this._syncWearable = null;
 		if (WearableSync.TryGetData(base.OwnerHub, out var data))
 		{
-			ClientReceiveWearables(data.Flags, data.GetPayloadReader());
+			this.ClientReceiveWearables(data.Flags, data.GetPayloadReader());
 		}
 		else
 		{
-			SyncWearable = WearableElements.None;
+			this.SyncWearable = WearableElements.None;
 		}
 		if (base.HasCuller && !base.Culler.IsCulled)
 		{
-			SetWearables(SyncWearable);
+			this.SetWearables(this.SyncWearable);
 		}
 	}
 
@@ -64,7 +64,7 @@ public class WearableSubcontroller : SubcontrollerBehaviour, IPoolResettable
 		{
 			base.Culler.OnCullChanged += OnCulllChanged;
 		}
-		DisplayableWearableBase[] definedWearables = DefinedWearables;
+		DisplayableWearableBase[] definedWearables = this.DefinedWearables;
 		foreach (DisplayableWearableBase displayableWearableBase in definedWearables)
 		{
 			displayableWearableBase.Initialize(this);
@@ -78,10 +78,10 @@ public class WearableSubcontroller : SubcontrollerBehaviour, IPoolResettable
 
 	public void WriteWearableSyncvars(NetworkWriter writer, WearableElements mask)
 	{
-		DisplayableWearableBase[] definedWearables = DefinedWearables;
+		DisplayableWearableBase[] definedWearables = this.DefinedWearables;
 		foreach (DisplayableWearableBase displayableWearableBase in definedWearables)
 		{
-			if ((displayableWearableBase.Id & mask) != 0)
+			if ((displayableWearableBase.Id & mask) != WearableElements.None)
 			{
 				displayableWearableBase.WriteSyncvars(writer);
 			}
@@ -92,7 +92,7 @@ public class WearableSubcontroller : SubcontrollerBehaviour, IPoolResettable
 	{
 		base.ProcessRpc(reader);
 		byte wearable = reader.ReadByte();
-		if (TryGetWearable<DisplayableWearableBase>((WearableElements)wearable, out var ret))
+		if (this.TryGetWearable<DisplayableWearableBase>((WearableElements)wearable, out var ret))
 		{
 			ret.ProcessRpc(reader);
 		}
@@ -100,13 +100,13 @@ public class WearableSubcontroller : SubcontrollerBehaviour, IPoolResettable
 
 	private void OnVisibilityChanged()
 	{
-		SetWearables(SyncWearable);
+		this.SetWearables(this.SyncWearable);
 	}
 
 	private void OnFadeChanged()
 	{
 		float fade = base.Model.Fade;
-		DisplayableWearableBase[] definedWearables = DefinedWearables;
+		DisplayableWearableBase[] definedWearables = this.DefinedWearables;
 		for (int i = 0; i < definedWearables.Length; i++)
 		{
 			definedWearables[i].SetFade(fade);
@@ -117,28 +117,28 @@ public class WearableSubcontroller : SubcontrollerBehaviour, IPoolResettable
 	{
 		if (base.Culler.IsCulled)
 		{
-			SetWearables(WearableElements.None);
+			this.SetWearables(WearableElements.None);
 		}
 		else
 		{
-			SetWearables(SyncWearable);
+			this.SetWearables(this.SyncWearable);
 		}
 	}
 
 	private void SetWearables(WearableElements elements)
 	{
-		DisplayableWearableBase[] definedWearables = DefinedWearables;
+		DisplayableWearableBase[] definedWearables = this.DefinedWearables;
 		foreach (DisplayableWearableBase obj in definedWearables)
 		{
-			obj.SetVisible((obj.Id & elements) != 0 && base.Model.IsVisible);
+			obj.SetVisible((obj.Id & elements) != WearableElements.None && base.Model.IsVisible);
 		}
 	}
 
 	public void ClientReceiveWearables(WearableElements sync, NetworkReader payload)
 	{
-		SyncWearable = sync;
-		SetWearables(sync);
-		DisplayableWearableBase[] definedWearables = DefinedWearables;
+		this.SyncWearable = sync;
+		this.SetWearables(sync);
+		DisplayableWearableBase[] definedWearables = this.DefinedWearables;
 		foreach (DisplayableWearableBase displayableWearableBase in definedWearables)
 		{
 			if (displayableWearableBase.IsWorn)
@@ -150,7 +150,7 @@ public class WearableSubcontroller : SubcontrollerBehaviour, IPoolResettable
 
 	public bool TryGetWearable<T>(WearableElements wearable, out T ret)
 	{
-		DisplayableWearableBase[] definedWearables = DefinedWearables;
+		DisplayableWearableBase[] definedWearables = this.DefinedWearables;
 		foreach (DisplayableWearableBase displayableWearableBase in definedWearables)
 		{
 			if (displayableWearableBase.Id == wearable && displayableWearableBase is T val)

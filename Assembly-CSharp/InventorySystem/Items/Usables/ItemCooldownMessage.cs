@@ -10,13 +10,13 @@ public struct ItemCooldownMessage : NetworkMessage
 
 	public ItemCooldownMessage(ushort serial, float remainingTime)
 	{
-		ItemSerial = serial;
-		RemainingTime = remainingTime;
+		this.ItemSerial = serial;
+		this.RemainingTime = remainingTime;
 	}
 
 	public void Serialize(NetworkWriter writer)
 	{
-		writer.WriteUShort(ItemSerial);
-		writer.WriteFloat(RemainingTime);
+		writer.WriteUShort(this.ItemSerial);
+		writer.WriteFloat(this.RemainingTime);
 	}
 }

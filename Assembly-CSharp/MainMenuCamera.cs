@@ -8,7 +8,7 @@ public class MainMenuCamera : MonoBehaviour
 
 	private void Update()
 	{
-		float num = (float)Screen.width * (borderWidthPercent / 100f);
+		float num = (float)Screen.width * (this.borderWidthPercent / 100f);
 		Vector3 zero = Vector3.zero;
 		Vector3 mousePosition = Input.mousePosition;
 		if (mousePosition.x < num && base.transform.localRotation.eulerAngles.y > 41f)
@@ -21,26 +21,26 @@ public class MainMenuCamera : MonoBehaviour
 		}
 		if (zero == Vector3.zero)
 		{
-			rotSpeed = 0f;
+			this.rotSpeed = 0f;
 		}
 		else
 		{
-			rotSpeed += Time.deltaTime * 200f;
-			rotSpeed = Mathf.Clamp(rotSpeed, 0f, 120f);
+			this.rotSpeed += Time.deltaTime * 200f;
+			this.rotSpeed = Mathf.Clamp(this.rotSpeed, 0f, 120f);
 		}
 		zero.Normalize();
-		base.transform.localRotation = Quaternion.Euler(base.transform.localRotation.eulerAngles + Time.deltaTime * rotSpeed * zero);
+		base.transform.localRotation = Quaternion.Euler(base.transform.localRotation.eulerAngles + Time.deltaTime * this.rotSpeed * zero);
 		if (Input.GetKeyDown(KeyCode.Mouse0))
 		{
-			Raycast();
+			this.Raycast();
 		}
 	}
 
 	private void Raycast()
 	{
-		if (Physics.Raycast(GetComponent<Camera>().ScreenPointToRay(Input.mousePosition), out var hitInfo))
+		if (Physics.Raycast(base.GetComponent<Camera>().ScreenPointToRay(Input.mousePosition), out var hitInfo))
 		{
-			ElementChoosen(hitInfo.transform.name);
+			this.ElementChoosen(hitInfo.transform.name);
 		}
 	}
 

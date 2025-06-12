@@ -19,9 +19,9 @@ public class RateLimiter
 	{
 		get
 		{
-			if (_instantCooldown != 0f && _instInput.IsRunning)
+			if (this._instantCooldown != 0f && this._instInput.IsRunning)
 			{
-				return _instInput.Elapsed.TotalSeconds >= (double)_instantCooldown;
+				return this._instInput.Elapsed.TotalSeconds >= (double)this._instantCooldown;
 			}
 			return true;
 		}
@@ -31,21 +31,21 @@ public class RateLimiter
 	{
 		get
 		{
-			if (!_useWindowLimiter)
+			if (!this._useWindowLimiter)
 			{
 				return true;
 			}
-			int num = _inputs.Count;
-			if (num < _windowLength)
+			int num = this._inputs.Count;
+			if (num < this._windowLength)
 			{
 				return true;
 			}
-			while (num > 0 && _inputs.Peek().Elapsed.TotalSeconds >= (double)_windowCooldown)
+			while (num > 0 && this._inputs.Peek().Elapsed.TotalSeconds >= (double)this._windowCooldown)
 			{
 				num--;
-				_inputs.Dequeue();
+				this._inputs.Dequeue();
 			}
-			return num < _windowLength;
+			return num < this._windowLength;
 		}
 	}
 
@@ -53,9 +53,9 @@ public class RateLimiter
 	{
 		get
 		{
-			if (InstantReady)
+			if (this.InstantReady)
 			{
-				return RateReady;
+				return this.RateReady;
 			}
 			return false;
 		}
@@ -63,27 +63,27 @@ public class RateLimiter
 
 	public RateLimiter(float instantCooldown, int maxInputs, float timeWindow)
 	{
-		_instantCooldown = instantCooldown;
-		_windowCooldown = timeWindow;
-		_windowLength = maxInputs;
-		_inputs = new Queue<Stopwatch>();
-		_instInput = new Stopwatch();
-		_useWindowLimiter = true;
+		this._instantCooldown = instantCooldown;
+		this._windowCooldown = timeWindow;
+		this._windowLength = maxInputs;
+		this._inputs = new Queue<Stopwatch>();
+		this._instInput = new Stopwatch();
+		this._useWindowLimiter = true;
 	}
 
 	public RateLimiter(float instantCooldown)
 	{
-		_instantCooldown = instantCooldown;
-		_instInput = new Stopwatch();
-		_useWindowLimiter = false;
+		this._instantCooldown = instantCooldown;
+		this._instInput = new Stopwatch();
+		this._useWindowLimiter = false;
 	}
 
 	public void RegisterInput()
 	{
-		_instInput.Restart();
-		if (_useWindowLimiter)
+		this._instInput.Restart();
+		if (this._useWindowLimiter)
 		{
-			_inputs.Enqueue(Stopwatch.StartNew());
+			this._inputs.Enqueue(Stopwatch.StartNew());
 		}
 	}
 }

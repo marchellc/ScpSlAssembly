@@ -8,7 +8,7 @@ internal class DiscoveryResponseMessage
 {
 	private readonly IDictionary<string, string> _headers;
 
-	public string this[string key] => _headers[key.ToUpperInvariant()];
+	public string this[string key] => this._headers[key.ToUpperInvariant()];
 
 	public DiscoveryResponseMessage(string message)
 	{
@@ -21,6 +21,6 @@ internal class DiscoveryResponseMessage
 				Key = key,
 				Value = value.Trim()
 			};
-		_headers = source.ToDictionary(x => x.Key.ToUpperInvariant(), x => x.Value);
+		this._headers = source.ToDictionary(x => x.Key.ToUpperInvariant(), x => x.Value);
 	}
 }

@@ -35,7 +35,7 @@ public class Scp1507AttackAbility : SingleTargetAttackAbility<Scp1507Role>, ISha
 
 	private float _attackRandom;
 
-	public override float DamageAmount => _damage;
+	public override float DamageAmount => this._damage;
 
 	protected override float AttackDelay => 0f;
 
@@ -50,7 +50,7 @@ public class Scp1507AttackAbility : SingleTargetAttackAbility<Scp1507Role>, ISha
 	private bool TryAttackDoor()
 	{
 		Transform playerCameraReference = base.Owner.PlayerCameraReference;
-		if (!Physics.Raycast(playerCameraReference.position, playerCameraReference.forward, out var hitInfo, 1.728f, AttackMask))
+		if (!Physics.Raycast(playerCameraReference.position, playerCameraReference.forward, out var hitInfo, 1.728f, Scp1507AttackAbility.AttackMask))
 		{
 			return false;
 		}
@@ -94,7 +94,7 @@ public class Scp1507AttackAbility : SingleTargetAttackAbility<Scp1507Role>, ISha
 		base.DamagePlayers();
 		if (base.LastAttackResult == AttackResult.None)
 		{
-			if (TryAttackDoor())
+			if (this.TryAttackDoor())
 			{
 				this.ServerOnDoorAttacked?.Invoke();
 			}
@@ -114,7 +114,7 @@ public class Scp1507AttackAbility : SingleTargetAttackAbility<Scp1507Role>, ISha
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_attackRandom = UnityEngine.Random.Range(-1f, 1f);
+		this._attackRandom = UnityEngine.Random.Range(-1f, 1f);
 	}
 
 	public bool GetEffect(ReferenceHub ply, out ShakeEffectValues shakeValues)
@@ -128,9 +128,9 @@ public class Scp1507AttackAbility : SingleTargetAttackAbility<Scp1507Role>, ISha
 		{
 			return true;
 		}
-		float time = base.Cooldown.Readiness * _peckShakeTimeScale;
-		float num = _peckShakeFov.Evaluate(time);
-		float z = _attackRandom * _peckShakeAngle.Evaluate(time);
+		float time = base.Cooldown.Readiness * this._peckShakeTimeScale;
+		float num = this._peckShakeFov.Evaluate(time);
+		float z = this._attackRandom * this._peckShakeAngle.Evaluate(time);
 		Quaternion value = Quaternion.Euler(0f, 0f, z);
 		Quaternion? rootCameraRotation = value;
 		float fovPercent = num;

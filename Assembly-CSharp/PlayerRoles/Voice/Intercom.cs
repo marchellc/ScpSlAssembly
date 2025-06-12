@@ -69,19 +69,19 @@ public class Intercom : NetworkBehaviour
 	{
 		get
 		{
-			if (_singletonSet)
+			if (Intercom._singletonSet)
 			{
-				return (IntercomState)_singleton._state;
+				return (IntercomState)Intercom._singleton._state;
 			}
 			return IntercomState.NotFound;
 		}
 		set
 		{
-			if (!_singletonSet || !NetworkServer.active)
+			if (!Intercom._singletonSet || !NetworkServer.active)
 			{
 				return;
 			}
-			Intercom singleton = _singleton;
+			Intercom singleton = Intercom._singleton;
 			switch (value)
 			{
 			case IntercomState.InUse:
@@ -108,15 +108,15 @@ public class Intercom : NetworkBehaviour
 		}
 	}
 
-	public float RemainingTime => Mathf.Max((float)(_nextTime - NetworkTime.time), 0f);
+	public float RemainingTime => Mathf.Max((float)(this._nextTime - NetworkTime.time), 0f);
 
 	public bool BypassMode
 	{
 		get
 		{
-			if (State == IntercomState.InUse)
+			if (Intercom.State == IntercomState.InUse)
 			{
-				return _nextTime == 0.0;
+				return this._nextTime == 0.0;
 			}
 			return false;
 		}
@@ -126,12 +126,12 @@ public class Intercom : NetworkBehaviour
 	{
 		get
 		{
-			return _state;
+			return this._state;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _state, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._state, 1uL, null);
 		}
 	}
 
@@ -139,12 +139,12 @@ public class Intercom : NetworkBehaviour
 	{
 		get
 		{
-			return _nextTime;
+			return this._nextTime;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _nextTime, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._nextTime, 2uL, null);
 		}
 	}
 
@@ -152,19 +152,19 @@ public class Intercom : NetworkBehaviour
 
 	private void Start()
 	{
-		if (_singletonSet)
+		if (Intercom._singletonSet)
 		{
 			throw new InvalidOperationException("Multiple instances of Intercom detected. Last name: '" + base.name + "'");
 		}
-		_singleton = this;
-		_singletonSet = true;
-		_checkPlayer = CheckPlayer;
+		Intercom._singleton = this;
+		Intercom._singletonSet = true;
+		this._checkPlayer = CheckPlayer;
 		ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(ReloadConfigs));
 		SeedSynchronizer.OnGenerationFinished += SetupPos;
-		ReloadConfigs();
+		this.ReloadConfigs();
 		if (SeedSynchronizer.MapGenerated)
 		{
-			SetupPos();
+			this.SetupPos();
 		}
 	}
 
@@ -174,47 +174,47 @@ public class Intercom : NetworkBehaviour
 		{
 			return;
 		}
-		switch (State)
+		switch (Intercom.State)
 		{
 		case IntercomState.Ready:
 		{
-			if (ReferenceHub.AllHubs.TryGetFirst(_checkPlayer, out var first))
+			if (ReferenceHub.AllHubs.TryGetFirst(this._checkPlayer, out var first))
 			{
-				_curSpeaker = first;
-				State = IntercomState.Starting;
+				this._curSpeaker = first;
+				Intercom.State = IntercomState.Starting;
 			}
 			break;
 		}
 		case IntercomState.Starting:
-			if (!(_nextTime > NetworkTime.time))
+			if (!(this._nextTime > NetworkTime.time))
 			{
-				_sustain.Restart();
-				State = IntercomState.InUse;
+				this._sustain.Restart();
+				Intercom.State = IntercomState.InUse;
 			}
 			break;
 		case IntercomState.InUse:
 		{
 			bool flag;
-			if (_curSpeaker != null && CheckPlayer(_curSpeaker))
+			if (this._curSpeaker != null && this.CheckPlayer(this._curSpeaker))
 			{
 				flag = true;
-				_sustain.Restart();
+				this._sustain.Restart();
 			}
 			else
 			{
-				flag = _sustain.Elapsed.TotalSeconds < (double)_sustainTime;
+				flag = this._sustain.Elapsed.TotalSeconds < (double)this._sustainTime;
 			}
-			if (!flag || (!(_nextTime > NetworkTime.time) && _nextTime != 0.0))
+			if (!flag || (!(this._nextTime > NetworkTime.time) && this._nextTime != 0.0))
 			{
-				State = IntercomState.Cooldown;
-				PlayerEvents.OnUsedIntercom(new PlayerUsedIntercomEventArgs(_curSpeaker, State));
+				Intercom.State = IntercomState.Cooldown;
+				PlayerEvents.OnUsedIntercom(new PlayerUsedIntercomEventArgs(this._curSpeaker, Intercom.State));
 			}
 			break;
 		}
 		case IntercomState.Cooldown:
-			if (!(_nextTime > NetworkTime.time))
+			if (!(this._nextTime > NetworkTime.time))
 			{
-				State = IntercomState.Ready;
+				Intercom.State = IntercomState.Ready;
 			}
 			break;
 		}
@@ -224,32 +224,32 @@ public class Intercom : NetworkBehaviour
 	{
 		ConfigFile.OnConfigReloaded = (Action)Delegate.Remove(ConfigFile.OnConfigReloaded, new Action(ReloadConfigs));
 		SeedSynchronizer.OnGenerationFinished -= SetupPos;
-		_singletonSet = false;
+		Intercom._singletonSet = false;
 	}
 
 	private void OnDrawGizmosSelected()
 	{
 		Gizmos.color = Color.green;
-		Gizmos.DrawWireSphere(base.transform.position, _range);
+		Gizmos.DrawWireSphere(base.transform.position, this._range);
 	}
 
 	private void SetupPos()
 	{
-		_worldPos = base.transform.position;
-		_rangeSqr = _range * _range;
+		this._worldPos = base.transform.position;
+		this._rangeSqr = this._range * this._range;
 	}
 
 	private void ReloadConfigs()
 	{
-		_cooldownTime = ConfigFile.ServerConfig.GetFloat("intercom_cooldown", 120f);
-		_speechTime = ConfigFile.ServerConfig.GetFloat("intercom_max_speech_time", 20f);
+		this._cooldownTime = ConfigFile.ServerConfig.GetFloat("intercom_cooldown", 120f);
+		this._speechTime = ConfigFile.ServerConfig.GetFloat("intercom_max_speech_time", 20f);
 	}
 
 	private bool CheckRange(ReferenceHub hub)
 	{
 		if (hub.roleManager.CurrentRole is HumanRole humanRole)
 		{
-			return (humanRole.FpcModule.Position - _worldPos).sqrMagnitude < _rangeSqr;
+			return (humanRole.FpcModule.Position - this._worldPos).sqrMagnitude < this._rangeSqr;
 		}
 		return false;
 	}
@@ -257,13 +257,13 @@ public class Intercom : NetworkBehaviour
 	private bool CheckPlayer(ReferenceHub hub)
 	{
 		PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
-		if (!CheckRange(hub) || !(currentRole as HumanRole).VoiceModule.ServerIsSending || VoiceChatMutes.IsMuted(hub, checkIntercom: true))
+		if (!this.CheckRange(hub) || !(currentRole as HumanRole).VoiceModule.ServerIsSending || VoiceChatMutes.IsMuted(hub, checkIntercom: true))
 		{
 			return false;
 		}
-		PlayerUsingIntercomEventArgs playerUsingIntercomEventArgs = new PlayerUsingIntercomEventArgs(hub, State);
-		PlayerEvents.OnUsingIntercom(playerUsingIntercomEventArgs);
-		if (!playerUsingIntercomEventArgs.IsAllowed)
+		PlayerUsingIntercomEventArgs e = new PlayerUsingIntercomEventArgs(hub, Intercom.State);
+		PlayerEvents.OnUsingIntercom(e);
+		if (!e.IsAllowed)
 		{
 			return false;
 		}
@@ -275,13 +275,13 @@ public class Intercom : NetworkBehaviour
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteBool(state);
-		SendRPCInternal("System.Void PlayerRoles.Voice.Intercom::RpcPlayClip(System.Boolean)", -1505159510, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void PlayerRoles.Voice.Intercom::RpcPlayClip(System.Boolean)", -1505159510, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	public static bool CheckPerms(ReferenceHub hub)
 	{
-		if (!_singletonSet)
+		if (!Intercom._singletonSet)
 		{
 			return false;
 		}
@@ -289,12 +289,12 @@ public class Intercom : NetworkBehaviour
 		{
 			return false;
 		}
-		bool flag = State == IntercomState.InUse;
-		if (!HasOverride(hub))
+		bool flag = Intercom.State == IntercomState.InUse;
+		if (!Intercom.HasOverride(hub))
 		{
-			if (flag && _singleton.CheckRange(hub))
+			if (flag && Intercom._singleton.CheckRange(hub))
 			{
-				return _singleton._curSpeaker == hub;
+				return Intercom._singleton._curSpeaker == hub;
 			}
 			return false;
 		}
@@ -303,16 +303,16 @@ public class Intercom : NetworkBehaviour
 
 	public static bool HasOverride(ReferenceHub hub)
 	{
-		return _singleton._adminOverrides.Contains(hub);
+		return Intercom._singleton._adminOverrides.Contains(hub);
 	}
 
 	public static bool TrySetOverride(ReferenceHub ply, bool newState)
 	{
-		if (!_singletonSet || ply == null)
+		if (!Intercom._singletonSet || ply == null)
 		{
 			return false;
 		}
-		HashSet<ReferenceHub> adminOverrides = _singleton._adminOverrides;
+		HashSet<ReferenceHub> adminOverrides = Intercom._singleton._adminOverrides;
 		if (!newState)
 		{
 			return adminOverrides.Remove(ply);
@@ -328,10 +328,10 @@ public class Intercom : NetworkBehaviour
 
 	protected void UserCode_RpcPlayClip__Boolean(bool state)
 	{
-		if (!(_clipSw.Elapsed.TotalSeconds < (double)_clipCooldown))
+		if (!(this._clipSw.Elapsed.TotalSeconds < (double)this._clipCooldown))
 		{
-			_clipSource.PlayOneShot(state ? _startClip : _endClip);
-			_clipSw.Restart();
+			this._clipSource.PlayOneShot(state ? this._startClip : this._endClip);
+			this._clipSw.Restart();
 		}
 	}
 
@@ -357,18 +357,18 @@ public class Intercom : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _state);
-			writer.WriteDouble(_nextTime);
+			NetworkWriterExtensions.WriteByte(writer, this._state);
+			writer.WriteDouble(this._nextTime);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _state);
+			NetworkWriterExtensions.WriteByte(writer, this._state);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteDouble(_nextTime);
+			writer.WriteDouble(this._nextTime);
 		}
 	}
 
@@ -377,18 +377,18 @@ public class Intercom : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _state, null, NetworkReaderExtensions.ReadByte(reader));
-			GeneratedSyncVarDeserialize(ref _nextTime, null, reader.ReadDouble());
+			base.GeneratedSyncVarDeserialize(ref this._state, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._nextTime, null, reader.ReadDouble());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _state, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._state, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _nextTime, null, reader.ReadDouble());
+			base.GeneratedSyncVarDeserialize(ref this._nextTime, null, reader.ReadDouble());
 		}
 	}
 }

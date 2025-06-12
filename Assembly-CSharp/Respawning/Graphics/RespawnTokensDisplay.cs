@@ -13,10 +13,10 @@ public class RespawnTokensDisplay : SerializedWaveInterface
 
 	private void Update()
 	{
-		if (base.Wave is ILimitedWave { RespawnTokens: var respawnTokens } && respawnTokens != _lastTokens)
+		if (base.Wave is ILimitedWave { RespawnTokens: var respawnTokens } && respawnTokens != this._lastTokens)
 		{
-			_lastTokens = respawnTokens;
-			_respawnTokens.text = respawnTokens.ToString();
+			this._lastTokens = respawnTokens;
+			this._respawnTokens.text = respawnTokens.ToString();
 		}
 	}
 }

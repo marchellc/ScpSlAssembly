@@ -39,25 +39,25 @@ public class ElevatorShake : IShakeEffect
 	{
 		if (elevatorBounds.Contains(MainCameraController.CurrentCamera.position))
 		{
-			LastMovement.Restart();
+			ElevatorShake.LastMovement.Restart();
 		}
 	}
 
 	public bool GetEffect(ReferenceHub ply, out ShakeEffectValues shakeValues)
 	{
-		float num = (LastMovement.IsRunning ? FadeCurve.Evaluate((float)LastMovement.Elapsed.TotalSeconds) : 0f);
+		float num = (ElevatorShake.LastMovement.IsRunning ? ElevatorShake.FadeCurve.Evaluate((float)ElevatorShake.LastMovement.Elapsed.TotalSeconds) : 0f);
 		if (Mathf.Approximately(num, 0f))
 		{
-			RealTime.Restart();
+			ElevatorShake.RealTime.Restart();
 			shakeValues = ShakeEffectValues.None;
 		}
 		else
 		{
-			float num2 = (float)RealTime.Elapsed.TotalSeconds;
+			float num2 = (float)ElevatorShake.RealTime.Elapsed.TotalSeconds;
 			float num3 = Mathf.Sin(num2 * 9f);
 			float num4 = Mathf.Sin(num2 * 3f);
 			float num5 = Mathf.Sin(num2 * 75f) * 0.12f;
-			shakeValues = new ShakeEffectValues(Quaternion.Euler(num3 * num4 * num * num5 * Vector3.up), null, null);
+			shakeValues = new ShakeEffectValues(Quaternion.Euler(num3 * num4 * num * num5 * Vector3.up));
 		}
 		return true;
 	}

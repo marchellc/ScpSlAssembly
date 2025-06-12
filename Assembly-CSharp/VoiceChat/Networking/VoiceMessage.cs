@@ -16,10 +16,10 @@ public struct VoiceMessage : NetworkMessage
 
 	public VoiceMessage(ReferenceHub ply, VoiceChatChannel channel, byte[] data, int dataLen, bool isNull)
 	{
-		Speaker = ply;
-		Channel = channel;
-		Data = data;
-		DataLength = dataLen;
-		SpeakerNull = isNull;
+		this.Speaker = ply;
+		this.Channel = channel;
+		this.Data = data;
+		this.DataLength = dataLen;
+		this.SpeakerNull = isNull;
 	}
 }

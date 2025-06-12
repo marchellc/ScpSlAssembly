@@ -11,8 +11,8 @@ public class ApplyRoleAccentColor : MonoBehaviour
 
 	private void Awake()
 	{
-		_graphic = GetComponent<Graphic>();
-		_graphic.color = _color.Color;
+		this._graphic = base.GetComponent<Graphic>();
+		this._graphic.color = this._color.Color;
 		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
 	}
 
@@ -25,7 +25,7 @@ public class ApplyRoleAccentColor : MonoBehaviour
 	{
 		if (userHub.isLocalPlayer)
 		{
-			_graphic.color = _color.Color;
+			this._graphic.color = this._color.Color;
 		}
 	}
 }

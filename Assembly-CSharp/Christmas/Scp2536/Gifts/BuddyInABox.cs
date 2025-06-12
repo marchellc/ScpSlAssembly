@@ -36,7 +36,7 @@ public class BuddyInABox : Scp2536ItemGift
 			return false;
 		}
 		RoleTypeId roleId = hub.GetRoleId();
-		if (!TeamToRole.ContainsKey(hub.GetTeam()))
+		if (!BuddyInABox.TeamToRole.ContainsKey(hub.GetTeam()))
 		{
 			return false;
 		}
@@ -64,7 +64,7 @@ public class BuddyInABox : Scp2536ItemGift
 		Vector3 forward = hub.PlayerCameraReference.forward;
 		Vector3 position = fpcRole.FpcModule.Position;
 		Team team = hub.GetTeam();
-		RoleTypeId newRole = TeamToRole[team];
+		RoleTypeId newRole = BuddyInABox.TeamToRole[team];
 		int num = 0;
 		foreach (ReferenceHub availablePlayer in WaveSpawner.GetAvailablePlayers(team))
 		{
@@ -89,11 +89,11 @@ public class BuddyInABox : Scp2536ItemGift
 	{
 		WaveManager.OnWaveSpawned += delegate
 		{
-			_waveSpawnedAlready = true;
+			BuddyInABox._waveSpawnedAlready = true;
 		};
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			_waveSpawnedAlready = false;
+			BuddyInABox._waveSpawnedAlready = false;
 		};
 	}
 }

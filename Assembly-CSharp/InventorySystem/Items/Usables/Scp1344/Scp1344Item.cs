@@ -59,7 +59,7 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 	{
 		get
 		{
-			Scp1344Status status = Status;
+			Scp1344Status status = this.Status;
 			return status == Scp1344Status.Active || status == Scp1344Status.Deactivating;
 		}
 	}
@@ -72,11 +72,11 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 		{
 			if (!base.Owner.HasBlock(BlockedInteraction.ItemPrimaryAction))
 			{
-				if (Status != Scp1344Status.Deactivating)
+				if (this.Status != Scp1344Status.Deactivating)
 				{
-					if (Status == Scp1344Status.Idle && !Scp1344Effect.IsEnabled)
+					if (this.Status == Scp1344Status.Idle && !this.Scp1344Effect.IsEnabled)
 					{
-						return BlindnessEffect.Intensity <= 100;
+						return this.BlindnessEffect.Intensity <= 100;
 					}
 					return false;
 				}
@@ -86,13 +86,13 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 		}
 	}
 
-	public override bool AllowEquip => Status != Scp1344Status.Active;
+	public override bool AllowEquip => this.Status != Scp1344Status.Active;
 
 	public override bool AllowHolster
 	{
 		get
 		{
-			if (Status == Scp1344Status.Deactivating)
+			if (this.Status == Scp1344Status.Deactivating)
 			{
 				return !base.IsEquipped;
 			}
@@ -104,15 +104,15 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 	{
 		get
 		{
-			if (Status == Scp1344Status.Idle)
+			if (this.Status == Scp1344Status.Idle)
 			{
-				return _nextInspectTime < NetworkTime.time;
+				return this._nextInspectTime < NetworkTime.time;
 			}
 			return false;
 		}
 	}
 
-	public bool ProgressbarEnabled => Status == Scp1344Status.Deactivating;
+	public bool ProgressbarEnabled => this.Status == Scp1344Status.Deactivating;
 
 	public float ProgressbarMin => 0f;
 
@@ -124,9 +124,9 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 		{
 			if (!NetworkServer.active)
 			{
-				return Time.time - _useTime;
+				return Time.time - this._useTime;
 			}
-			return _useTime;
+			return this._useTime;
 		}
 	}
 
@@ -136,24 +136,24 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 	{
 		get
 		{
-			if (CurLifeId != _lastLifeId)
+			if (this.CurLifeId != this._lastLifeId)
 			{
-				_status = Scp1344Status.Idle;
-				_lastLifeId = CurLifeId;
+				this._status = Scp1344Status.Idle;
+				this._lastLifeId = this.CurLifeId;
 			}
-			return _status;
+			return this._status;
 		}
 		set
 		{
-			_status = value;
-			_lastLifeId = CurLifeId;
+			this._status = value;
+			this._lastLifeId = this.CurLifeId;
 			if (NetworkServer.active)
 			{
-				ServerChangeStatus(value);
+				this.ServerChangeStatus(value);
 			}
 			else
 			{
-				ClientChangeStatus(value);
+				this.ClientChangeStatus(value);
 			}
 		}
 	}
@@ -162,9 +162,9 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 
 	public override void ServerOnUsingCompleted()
 	{
-		if (Status == Scp1344Status.Idle)
+		if (this.Status == Scp1344Status.Idle)
 		{
-			ServerSetStatus(Scp1344Status.Equipping);
+			this.ServerSetStatus(Scp1344Status.Equipping);
 		}
 	}
 
@@ -173,43 +173,43 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 		base.OnHolstered();
 		if (NetworkServer.active)
 		{
-			Scp1344Status status = Status;
+			Scp1344Status status = this.Status;
 			if (status != Scp1344Status.Stabbing && status != Scp1344Status.Active && status != Scp1344Status.Dropping && status != Scp1344Status.CancelingDeactivation)
 			{
-				ServerSetStatus(Scp1344Status.Idle);
+				this.ServerSetStatus(Scp1344Status.Idle);
 			}
 		}
 	}
 
 	public override ItemPickupBase ServerDropItem(bool spawn)
 	{
-		Scp1344Status status = Status;
+		Scp1344Status status = this.Status;
 		if (status == Scp1344Status.Deactivating || status == Scp1344Status.CancelingDeactivation)
 		{
 			return null;
 		}
-		if (Status != Scp1344Status.Active)
+		if (this.Status != Scp1344Status.Active)
 		{
 			return base.ServerDropItem(spawn);
 		}
-		ServerSetStatus(Scp1344Status.Dropping);
+		this.ServerSetStatus(Scp1344Status.Dropping);
 		return null;
 	}
 
 	public override void OnEquipped()
 	{
 		base.OnEquipped();
-		if (NetworkServer.active && Status == Scp1344Status.Dropping)
+		if (NetworkServer.active && this.Status == Scp1344Status.Dropping)
 		{
-			ServerSetStatus(Scp1344Status.Deactivating);
+			this.ServerSetStatus(Scp1344Status.Deactivating);
 		}
 	}
 
 	public override void OnUsingStarted()
 	{
-		if (NetworkServer.active && Status == Scp1344Status.Deactivating)
+		if (NetworkServer.active && this.Status == Scp1344Status.Deactivating)
 		{
-			ServerSetStatus(Scp1344Status.CancelingDeactivation);
+			this.ServerSetStatus(Scp1344Status.CancelingDeactivation);
 		}
 		else
 		{
@@ -220,7 +220,7 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 	public override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (Input.GetKeyDown(NewInput.GetKey(ActionName.InspectItem)) && AllowInspect)
+		if (Input.GetKeyDown(NewInput.GetKey(ActionName.InspectItem)) && this.AllowInspect)
 		{
 			NetworkClient.Send(new Scp1344StatusMessage(base.ItemSerial, Scp1344Status.Inspecting));
 		}
@@ -231,10 +231,10 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 		if (!(targetHub != base.Owner))
 		{
 			base.ServerDropItem(spawn: true);
-			Scp1344Status status = Status;
-			if (status != 0 && status != Scp1344Status.Inspecting && status != Scp1344Status.Equipping)
+			Scp1344Status status = this.Status;
+			if (status != Scp1344Status.Idle && status != Scp1344Status.Inspecting && status != Scp1344Status.Equipping)
 			{
-				ActivateFinalEffects();
+				this.ActivateFinalEffects();
 			}
 		}
 	}
@@ -243,7 +243,7 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 	{
 		if (!(hub != base.Owner))
 		{
-			Status = Scp1344Status.Idle;
+			this.Status = Scp1344Status.Idle;
 		}
 	}
 
@@ -251,25 +251,25 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 	{
 		if (NetworkServer.active)
 		{
-			switch (Status)
+			switch (this.Status)
 			{
 			case Scp1344Status.Equipping:
-				ServerUpdateTimedStatus(1.3f, Scp1344Status.Activating);
+				this.ServerUpdateTimedStatus(1.3f, Scp1344Status.Activating);
 				break;
 			case Scp1344Status.Activating:
-				ServerUpdateTimedStatus(5f, Scp1344Status.Stabbing);
+				this.ServerUpdateTimedStatus(5f, Scp1344Status.Stabbing);
 				break;
 			case Scp1344Status.Stabbing:
-				ServerUpdateTimedStatus(0.065f, Scp1344Status.Active);
+				this.ServerUpdateTimedStatus(0.065f, Scp1344Status.Active);
 				break;
 			case Scp1344Status.Active:
-				ServerUpdateActive();
+				this.ServerUpdateActive();
 				break;
 			case Scp1344Status.Deactivating:
-				ServerUpdateDeactivating();
+				this.ServerUpdateDeactivating();
 				break;
 			case Scp1344Status.CancelingDeactivation:
-				ServerUpdateTimedStatus(0.5f, Scp1344Status.Active);
+				this.ServerUpdateTimedStatus(0.5f, Scp1344Status.Active);
 				break;
 			case Scp1344Status.Dropping:
 				break;
@@ -279,30 +279,30 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 
 	private void ServerUpdateTimedStatus(float time, Scp1344Status status)
 	{
-		_useTime += Time.deltaTime;
-		if (!(_useTime < time))
+		this._useTime += Time.deltaTime;
+		if (!(this._useTime < time))
 		{
-			switch (Status)
+			switch (this.Status)
 			{
 			case Scp1344Status.Stabbing:
-				_savedIntensity = 100;
+				this._savedIntensity = 100;
 				break;
 			case Scp1344Status.CancelingDeactivation:
 				base.OwnerInventory.ServerSelectItem(0);
 				break;
 			}
-			ServerSetStatus(status);
+			this.ServerSetStatus(status);
 		}
 	}
 
 	private void ServerUpdateActive()
 	{
-		if (BlindnessEffect.Intensity <= 15)
+		if (this.BlindnessEffect.Intensity <= 15)
 		{
 			return;
 		}
-		_useTime += Time.deltaTime;
-		float useTime = _useTime;
+		this._useTime += Time.deltaTime;
+		float useTime = this._useTime;
 		if (useTime < 0.75f)
 		{
 			return;
@@ -316,32 +316,32 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 		}
 		else
 		{
-			float num = 100f - 20f * Mathf.Pow(_useTime, 0.385f);
-			BlindnessEffect.Intensity = (byte)num;
+			float num = 100f - 20f * Mathf.Pow(this._useTime, 0.385f);
+			this.BlindnessEffect.Intensity = (byte)num;
 		}
 	}
 
 	private void ServerUpdateDeactivating()
 	{
-		_useTime += Time.deltaTime;
-		float useTime = _useTime;
+		this._useTime += Time.deltaTime;
+		float useTime = this._useTime;
 		if (!(useTime < 0.5f))
 		{
 			if (useTime < 5.1f)
 			{
-				BlindnessEffect.Intensity = _savedIntensity;
+				this.BlindnessEffect.Intensity = this._savedIntensity;
 				return;
 			}
-			ActivateFinalEffects();
+			this.ActivateFinalEffects();
 			base.ServerDropItem(spawn: true);
 		}
 	}
 
 	private void ActivateFinalEffects()
 	{
-		BlindnessEffect.Intensity = 101;
-		Scp1344Effect.IsEnabled = false;
-		SeveredEyesEffect.IsEnabled = true;
+		this.BlindnessEffect.Intensity = 101;
+		this.Scp1344Effect.IsEnabled = false;
+		this.SeveredEyesEffect.IsEnabled = true;
 	}
 
 	private void Awake()
@@ -363,10 +363,10 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 	{
 		if (base.ItemSerial == serial)
 		{
-			Status = status;
+			this.Status = status;
 			if (status == Scp1344Status.Dropping)
 			{
-				Scp1344Effect.PlayBuildupSound();
+				this.Scp1344Effect.PlayBuildupSound();
 			}
 		}
 	}
@@ -390,11 +390,11 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 		switch (status)
 		{
 		case Scp1344Status.Deactivating:
-			IsUsing = false;
-			_useTime = Time.time;
+			base.IsUsing = false;
+			this._useTime = Time.time;
 			break;
 		case Scp1344Status.Inspecting:
-			_nextInspectTime = NetworkTime.time + 4.0;
+			this._nextInspectTime = NetworkTime.time + 4.0;
 			break;
 		}
 	}
@@ -408,22 +408,22 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 		case Scp1344Status.Activating:
 		case Scp1344Status.Stabbing:
 		case Scp1344Status.Deactivating:
-			IsUsing = false;
-			_useTime = 0f;
+			base.IsUsing = false;
+			this._useTime = 0f;
 			break;
 		case Scp1344Status.Active:
-			_useTime = _cancelationTime;
-			_cancelationTime = 0f;
-			Scp1344Effect.IsEnabled = true;
-			BlindnessEffect.Intensity = _savedIntensity;
+			this._useTime = this._cancelationTime;
+			this._cancelationTime = 0f;
+			this.Scp1344Effect.IsEnabled = true;
+			this.BlindnessEffect.Intensity = this._savedIntensity;
 			break;
 		case Scp1344Status.Dropping:
-			_cancelationTime = _useTime;
-			_savedIntensity = BlindnessEffect.Intensity;
-			BlindnessEffect.Intensity = 101;
+			this._cancelationTime = this._useTime;
+			this._savedIntensity = this.BlindnessEffect.Intensity;
+			this.BlindnessEffect.Intensity = 101;
 			if (base.OwnerInventory.CurItem.SerialNumber == base.ItemSerial)
 			{
-				ServerSetStatus(Scp1344Status.Deactivating);
+				this.ServerSetStatus(Scp1344Status.Deactivating);
 			}
 			else
 			{
@@ -431,12 +431,12 @@ public class Scp1344Item : UsableItem, IWearableItem, IItemProgressbarDrawer, II
 			}
 			break;
 		case Scp1344Status.Inspecting:
-			_nextInspectTime = NetworkTime.time + 4.0;
+			this._nextInspectTime = NetworkTime.time + 4.0;
 			break;
 		case Scp1344Status.CancelingDeactivation:
-			_useTime = 0f;
-			_savedIntensity = BlindnessEffect.Intensity;
-			BlindnessEffect.Intensity = 100;
+			this._useTime = 0f;
+			this._savedIntensity = this.BlindnessEffect.Intensity;
+			this.BlindnessEffect.Intensity = 100;
 			break;
 		}
 	}

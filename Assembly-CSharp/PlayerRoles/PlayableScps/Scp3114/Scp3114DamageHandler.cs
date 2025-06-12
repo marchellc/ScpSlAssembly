@@ -17,13 +17,13 @@ public class Scp3114DamageHandler : AttackerDamageHandler, IRagdollInspectOverri
 
 	private DamageHandlerBase _replacedHandler;
 
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
 	public override CassieAnnouncement CassieDeathAnnouncement => new CassieAnnouncement();
 
 	public override Footprint Attacker { get; protected set; }
 
-	public override string ServerLogsText => Subtype.ToString();
+	public override string ServerLogsText => this.Subtype.ToString();
 
 	public override bool AllowSelfDamage => false;
 
@@ -31,7 +31,7 @@ public class Scp3114DamageHandler : AttackerDamageHandler, IRagdollInspectOverri
 
 	public bool StartingRagdoll { get; private set; }
 
-	public override string RagdollInspectText => DeathTranslation.RagdollTranslation;
+	public override string RagdollInspectText => this.DeathTranslation.RagdollTranslation;
 
 	public override string DeathScreenText => string.Empty;
 
@@ -39,9 +39,9 @@ public class Scp3114DamageHandler : AttackerDamageHandler, IRagdollInspectOverri
 	{
 		get
 		{
-			if (Subtype == HandlerType.SkinSteal)
+			if (this.Subtype == HandlerType.SkinSteal)
 			{
-				if (StartingRagdoll)
+				if (this.StartingRagdoll)
 				{
 					return string.Empty;
 				}
@@ -51,7 +51,7 @@ public class Scp3114DamageHandler : AttackerDamageHandler, IRagdollInspectOverri
 				}
 				return tr;
 			}
-			if (!StartingRagdoll)
+			if (!this.StartingRagdoll)
 			{
 				return null;
 			}
@@ -59,7 +59,7 @@ public class Scp3114DamageHandler : AttackerDamageHandler, IRagdollInspectOverri
 			{
 				return string.Empty;
 			}
-			return StartingDisguiseHint;
+			return this.StartingDisguiseHint;
 		}
 	}
 
@@ -75,7 +75,7 @@ public class Scp3114DamageHandler : AttackerDamageHandler, IRagdollInspectOverri
 		}
 	}
 
-	private DeathTranslation DeathTranslation => Subtype switch
+	private DeathTranslation DeathTranslation => this.Subtype switch
 	{
 		HandlerType.Slap => DeathTranslations.Scp3114Slap, 
 		HandlerType.Strangulation => DeathTranslations.Asphyxiated, 
@@ -84,53 +84,53 @@ public class Scp3114DamageHandler : AttackerDamageHandler, IRagdollInspectOverri
 
 	public Scp3114DamageHandler(ReferenceHub attacker, float damage, HandlerType attackType)
 	{
-		Damage = damage;
-		Subtype = attackType;
-		Attacker = new Footprint(attacker);
+		this.Damage = damage;
+		this.Subtype = attackType;
+		this.Attacker = new Footprint(attacker);
 	}
 
 	public Scp3114DamageHandler()
 	{
-		Damage = 0f;
-		Subtype = HandlerType.Slap;
-		Attacker = default(Footprint);
+		this.Damage = 0f;
+		this.Subtype = HandlerType.Slap;
+		this.Attacker = default(Footprint);
 	}
 
 	public Scp3114DamageHandler(BasicRagdoll ragdoll, bool isStarting)
 	{
-		Damage = 0f;
-		_replacedHandler = ragdoll.Info.Handler;
+		this.Damage = 0f;
+		this._replacedHandler = ragdoll.Info.Handler;
 		if (isStarting)
 		{
-			Subtype = HandlerType.Slap;
-			StartingRagdoll = true;
+			this.Subtype = HandlerType.Slap;
+			this.StartingRagdoll = true;
 		}
 		else
 		{
-			Subtype = HandlerType.SkinSteal;
-			StartingRagdoll = ragdoll.Info.Handler is Scp3114DamageHandler scp3114DamageHandler && scp3114DamageHandler.StartingRagdoll;
+			this.Subtype = HandlerType.SkinSteal;
+			this.StartingRagdoll = ragdoll.Info.Handler is Scp3114DamageHandler scp3114DamageHandler && scp3114DamageHandler.StartingRagdoll;
 		}
 	}
 
 	public override void WriteAdditionalData(NetworkWriter writer)
 	{
 		base.WriteAdditionalData(writer);
-		writer.WriteByte((byte)Subtype);
-		writer.WriteBool(StartingRagdoll);
-		if (Subtype == HandlerType.SkinSteal)
+		writer.WriteByte((byte)this.Subtype);
+		writer.WriteBool(this.StartingRagdoll);
+		if (this.Subtype == HandlerType.SkinSteal)
 		{
-			writer.WriteDamageHandler(_replacedHandler);
+			writer.WriteDamageHandler(this._replacedHandler);
 		}
 	}
 
 	public override void ReadAdditionalData(NetworkReader reader)
 	{
 		base.ReadAdditionalData(reader);
-		Subtype = (HandlerType)reader.ReadByte();
-		StartingRagdoll = reader.ReadBool();
-		if (Subtype == HandlerType.SkinSteal)
+		this.Subtype = (HandlerType)reader.ReadByte();
+		this.StartingRagdoll = reader.ReadBool();
+		if (this.Subtype == HandlerType.SkinSteal)
 		{
-			_replacedHandler = reader.ReadDamageHandler();
+			this._replacedHandler = reader.ReadDamageHandler();
 		}
 	}
 
@@ -140,12 +140,12 @@ public class Scp3114DamageHandler : AttackerDamageHandler, IRagdollInspectOverri
 		{
 			base.ProcessRagdoll(ragdoll);
 		}
-		else if (Subtype == HandlerType.SkinSteal)
+		else if (this.Subtype == HandlerType.SkinSteal)
 		{
-			_replacedHandler?.ProcessRagdoll(ragdoll);
+			this._replacedHandler?.ProcessRagdoll(ragdoll);
 			Scp3114RagdollToBonesConverter.ConvertExisting(dynamicRagdoll);
 		}
-		else if (StartingRagdoll)
+		else if (this.StartingRagdoll)
 		{
 			dynamicRagdoll.LinkedRigidbodies.ForEach(delegate(Rigidbody rb)
 			{

@@ -14,14 +14,14 @@ public class HeadlessConsole
 
 	public void Initialize()
 	{
-		if (!AttachConsole(uint.MaxValue))
+		if (!HeadlessConsole.AttachConsole(uint.MaxValue))
 		{
-			AllocConsole();
+			HeadlessConsole.AllocConsole();
 		}
-		oldOutput = Console.Out;
+		this.oldOutput = Console.Out;
 		try
 		{
-			FileStream stream = new FileStream(GetStdHandle(-11), FileAccess.Write);
+			FileStream stream = new FileStream(HeadlessConsole.GetStdHandle(-11), FileAccess.Write);
 			Encoding aSCII = Encoding.ASCII;
 			Console.SetOut(new StreamWriter(stream, aSCII)
 			{
@@ -36,13 +36,13 @@ public class HeadlessConsole
 
 	public void Shutdown()
 	{
-		Console.SetOut(oldOutput);
-		FreeConsole();
+		Console.SetOut(this.oldOutput);
+		HeadlessConsole.FreeConsole();
 	}
 
 	public void SetTitle(string strName)
 	{
-		SetConsoleTitle(strName);
+		HeadlessConsole.SetConsoleTitle(strName);
 	}
 
 	[DllImport("kernel32.dll", SetLastError = true)]

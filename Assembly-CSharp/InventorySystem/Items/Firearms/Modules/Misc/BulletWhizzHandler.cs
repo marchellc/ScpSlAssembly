@@ -35,15 +35,15 @@ public class BulletWhizzHandler : MonoBehaviour
 	{
 		get
 		{
-			if (!_wasPlaying)
+			if (!this._wasPlaying)
 			{
 				return false;
 			}
-			if (Source.isPlaying)
+			if (this.Source.isPlaying)
 			{
 				return true;
 			}
-			_wasPlaying = false;
+			this._wasPlaying = false;
 			return false;
 		}
 	}
@@ -52,35 +52,35 @@ public class BulletWhizzHandler : MonoBehaviour
 	{
 		get
 		{
-			if (_src != null)
+			if (this._src != null)
 			{
-				return _src;
+				return this._src;
 			}
-			_src = AudioSourcePoolManager.CreateNewSource().Source;
-			AudioSourcePoolManager.ApplyStandardSettings(_src, null, FalloffType.Exponential, MixerChannel.NoDucking, 1f, SourceRange);
-			_srcTr = _src.transform;
-			return _src;
+			this._src = AudioSourcePoolManager.CreateNewSource().Source;
+			AudioSourcePoolManager.ApplyStandardSettings(this._src, null, FalloffType.Exponential, MixerChannel.NoDucking, 1f, this.SourceRange);
+			this._srcTr = this._src.transform;
+			return this._src;
 		}
 	}
 
 	public void Play(Vector3 dir, Vector3 midpoint)
 	{
-		_midpoint = new RelativePosition(midpoint);
-		_dir = dir;
-		_sw.Restart();
-		Source.PlayOneShot(Clips.RandomItem());
-		_wasPlaying = true;
-		Update();
+		this._midpoint = new RelativePosition(midpoint);
+		this._dir = dir;
+		this._sw.Restart();
+		this.Source.PlayOneShot(this.Clips.RandomItem());
+		this._wasPlaying = true;
+		this.Update();
 	}
 
 	private void Update()
 	{
-		if (IsPlaying)
+		if (this.IsPlaying)
 		{
-			Vector3 position = _midpoint.Position;
-			Vector3 a = position - 0.5f * TravelDistance * _dir;
-			Vector3 b = position + 0.5f * TravelDistance * _dir;
-			_srcTr.position = Vector3.LerpUnclamped(a, b, (float)_sw.Elapsed.TotalSeconds / MidpointTime);
+			Vector3 position = this._midpoint.Position;
+			Vector3 a = position - 0.5f * this.TravelDistance * this._dir;
+			Vector3 b = position + 0.5f * this.TravelDistance * this._dir;
+			this._srcTr.position = Vector3.LerpUnclamped(a, b, (float)this._sw.Elapsed.TotalSeconds / this.MidpointTime);
 		}
 	}
 }

@@ -28,50 +28,50 @@ public class PauseDisplayColorChanger : SerializedWaveInterface
 		{
 			throw new NullReferenceException("Unable to convert " + base.Wave.GetType().Name + " to TimeBasedWave.");
 		}
-		_timeBasedWave = timeBasedWave;
-		_isTimeBased = true;
+		this._timeBasedWave = timeBasedWave;
+		this._isTimeBased = true;
 		WaveManager.OnWaveUpdateMsgReceived += OnWaveUpdateMsgReceived;
 	}
 
 	private void OnWaveUpdateMsgReceived(WaveUpdateMessage msg)
 	{
-		if (_timeBasedWave == msg.Wave)
+		if (this._timeBasedWave == msg.Wave)
 		{
 			if (msg.IsTrigger)
 			{
-				_blinkTimer = true;
+				this._blinkTimer = true;
 			}
 			else if (msg.IsSpawn)
 			{
-				_blinkTimer = false;
+				this._blinkTimer = false;
 			}
 		}
 	}
 
 	private void Update()
 	{
-		if (_isTimeBased)
+		if (this._isTimeBased)
 		{
-			if (_blinkTimer)
+			if (this._blinkTimer)
 			{
-				float t = BlinkingAnimation.Evaluate(Time.time);
-				Color color = Color.Lerp(PausedColor, DefaultColor, t);
-				ModifyGraphicColors(color);
+				float t = this.BlinkingAnimation.Evaluate(Time.time);
+				Color color = Color.Lerp(this.PausedColor, this.DefaultColor, t);
+				this.ModifyGraphicColors(color);
 			}
-			else if (_timeBasedWave.Timer.IsPaused)
+			else if (this._timeBasedWave.Timer.IsPaused)
 			{
-				ModifyGraphicColors(PausedColor);
+				this.ModifyGraphicColors(this.PausedColor);
 			}
 			else
 			{
-				ModifyGraphicColors(DefaultColor);
+				this.ModifyGraphicColors(this.DefaultColor);
 			}
 		}
 	}
 
 	private void ModifyGraphicColors(Color color)
 	{
-		Graphic[] targetGraphics = TargetGraphics;
+		Graphic[] targetGraphics = this.TargetGraphics;
 		for (int i = 0; i < targetGraphics.Length; i++)
 		{
 			targetGraphics[i].color = color;

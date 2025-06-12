@@ -24,23 +24,23 @@ public abstract class Scp079AbilityBase : StandardSubroutine<Scp079Role>
 		{
 			if (subroutineBase is Scp079TierManager tierManager)
 			{
-				TierManager = tierManager;
+				this.TierManager = tierManager;
 			}
 			else if (subroutineBase is Scp079AuxManager auxManager)
 			{
-				AuxManager = auxManager;
+				this.AuxManager = auxManager;
 			}
 			else if (subroutineBase is Scp079CurrentCameraSync currentCamSync)
 			{
-				CurrentCamSync = currentCamSync;
+				this.CurrentCamSync = currentCamSync;
 			}
 			else if (subroutineBase is Scp079LostSignalHandler lostSignalHandler)
 			{
-				LostSignalHandler = lostSignalHandler;
+				this.LostSignalHandler = lostSignalHandler;
 			}
 			else if (subroutineBase is Scp079RewardManager rewardManager)
 			{
-				RewardManager = rewardManager;
+				this.RewardManager = rewardManager;
 			}
 		}
 	}

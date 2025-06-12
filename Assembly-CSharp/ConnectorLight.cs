@@ -15,25 +15,25 @@ public class ConnectorLight : MonoBehaviour
 
 	private void Awake()
 	{
-		_roomConnector = GetComponent<IRoomConnector>();
-		if (_roomConnector.RoomsAlreadyRegistered)
+		this._roomConnector = base.GetComponent<IRoomConnector>();
+		if (this._roomConnector.RoomsAlreadyRegistered)
 		{
-			FindControllers();
+			this.FindControllers();
 		}
 		else
 		{
-			_roomConnector.OnRoomsRegistered += FindControllers;
+			this._roomConnector.OnRoomsRegistered += FindControllers;
 		}
 	}
 
 	private void FindControllers()
 	{
-		RoomIdentifier[] rooms = _roomConnector.Rooms;
+		RoomIdentifier[] rooms = this._roomConnector.Rooms;
 		foreach (RoomLightController instance in RoomLightController.Instances)
 		{
 			if (rooms.Contains(instance.Room))
 			{
-				_lightControllers.Add(instance);
+				this._lightControllers.Add(instance);
 				instance.OnLightsSet += OnAnyUpdated;
 			}
 		}
@@ -41,8 +41,8 @@ public class ConnectorLight : MonoBehaviour
 
 	private void OnAnyUpdated(bool _)
 	{
-		bool active = _lightControllers.Any((RoomLightController x) => x.LightsEnabled);
-		GameObject[] objectsToDisable = _objectsToDisable;
+		bool active = this._lightControllers.Any((RoomLightController x) => x.LightsEnabled);
+		GameObject[] objectsToDisable = this._objectsToDisable;
 		foreach (GameObject gameObject in objectsToDisable)
 		{
 			if (!(gameObject == null))

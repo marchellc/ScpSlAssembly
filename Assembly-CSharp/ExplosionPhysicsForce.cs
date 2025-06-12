@@ -12,9 +12,9 @@ public class ExplosionPhysicsForce : MonoBehaviour
 	{
 		yield return null;
 		float num = 0f;
-		if (GetComponent<ParticleSystemMultiplier>() != null)
+		if (base.GetComponent<ParticleSystemMultiplier>() != null)
 		{
-			num = GetComponent<ParticleSystemMultiplier>().multiplier;
+			num = base.GetComponent<ParticleSystemMultiplier>().multiplier;
 		}
 		float num2 = 10f * num;
 		Collider[] array = Physics.OverlapSphere(base.transform.position, num2);
@@ -29,7 +29,7 @@ public class ExplosionPhysicsForce : MonoBehaviour
 		}
 		foreach (Rigidbody item in list)
 		{
-			item.AddExplosionForce(explosionForce * num, base.transform.position, num2, 1f * num, ForceMode.Impulse);
+			item.AddExplosionForce(this.explosionForce * num, base.transform.position, num2, 1f * num, ForceMode.Impulse);
 		}
 		ListPool<Rigidbody>.Shared.Return(list);
 	}

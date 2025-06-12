@@ -14,7 +14,7 @@ public class Scp079AccentedNotification : Scp079SimpleNotification
 	private const string FormatEndColor = "</color>";
 
 	public Scp079AccentedNotification(string message, string color = "#00a2ff", char triggerChar = '$')
-		: base(ProcessText(message, color, triggerChar))
+		: base(Scp079AccentedNotification.ProcessText(message, color, triggerChar))
 	{
 	}
 

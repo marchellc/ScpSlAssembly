@@ -61,30 +61,30 @@ public class Scp330Viewmodel : UsableItemViewmodel, ICursorOverride
 	public override void InitLocal(ItemBase parent)
 	{
 		base.InitLocal(parent);
-		_bag = parent as Scp330Bag;
+		this._bag = parent as Scp330Bag;
 	}
 
 	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
 	{
 		Scp330NetworkHandler.OnClientSelectMessageReceived += HandleSelectMessage;
 		base.InitSpectator(ply, id, wasEquipped);
-		OnEquipped();
+		this.OnEquipped();
 	}
 
 	internal override void OnEquipped()
 	{
-		_openDelay = true;
-		_cancelled = false;
-		_descriptionGroup.alpha = 0f;
-		_displayedCandy = CandyKindID.None;
+		this._openDelay = true;
+		this._cancelled = false;
+		this._descriptionGroup.alpha = 0f;
+		this._displayedCandy = CandyKindID.None;
 		if (base.IsLocal)
 		{
 			CursorManager.Register(this);
-			CursorOverride = CursorOverrideMode.NoOverride;
+			this.CursorOverride = CursorOverrideMode.NoOverride;
 		}
 		else
 		{
-			_selectorGroup.gameObject.SetActive(value: false);
+			this._selectorGroup.gameObject.SetActive(value: false);
 		}
 		base.OnEquipped();
 	}
@@ -97,7 +97,7 @@ public class Scp330Viewmodel : UsableItemViewmodel, ICursorOverride
 			bool flag = !InventoryGuiController.ToggleInventory.Value;
 			if (Input.GetKeyDown(KeyCode.Escape) || (!flag && Input.GetKeyDown(key)) || (flag && !Input.GetKey(key)))
 			{
-				CancelSelector();
+				this.CancelSelector();
 			}
 		}
 	}
@@ -109,42 +109,42 @@ public class Scp330Viewmodel : UsableItemViewmodel, ICursorOverride
 		{
 			return;
 		}
-		CandyKindID candyKindID = (_bag.IsCandySelected ? _bag.Candies[_bag.SelectedCandyId] : CandyKindID.None);
-		SetCandyModel(candyKindID);
-		DisplaySelector(candyKindID);
-		if (candyKindID != 0)
+		CandyKindID candyKindID = (this._bag.IsCandySelected ? this._bag.Candies[this._bag.SelectedCandyId] : CandyKindID.None);
+		this.SetCandyModel(candyKindID);
+		this.DisplaySelector(candyKindID);
+		if (candyKindID != CandyKindID.None)
 		{
 			return;
 		}
-		for (ushort num = 0; num < _selector.OrganizedContent.Length; num++)
+		for (ushort num = 0; num < this._selector.OrganizedContent.Length; num++)
 		{
-			_selector.OrganizedContent[num] = (ushort)((num < _bag.Candies.Count) ? ((uint)(num + 1)) : 0u);
+			this._selector.OrganizedContent[num] = (ushort)((num < this._bag.Candies.Count) ? ((uint)(num + 1)) : 0u);
 		}
-		if (_openDelay)
+		if (this._openDelay)
 		{
-			_openDelay = false;
+			this._openDelay = false;
 			return;
 		}
 		ushort itemSerial;
-		switch (_selector.DisplayAndSelectItems(null, out itemSerial))
+		switch (this._selector.DisplayAndSelectItems(null, out itemSerial))
 		{
 		case InventoryGuiAction.Select:
 		{
 			if (base.Hub.playerEffectsController.TryGetEffect<AmnesiaItems>(out var playerEffect) && playerEffect.IsEnabled)
 			{
 				playerEffect.ExecutePulse();
-				CancelSelector();
+				this.CancelSelector();
 				break;
 			}
 			if (itemSerial == 0 || base.ParentItem.Owner.HasBlock(BlockedInteraction.ItemPrimaryAction))
 			{
-				CancelSelector();
+				this.CancelSelector();
 			}
-			if (TryGetCandyObject(_bag.Candies[Mathf.Clamp(itemSerial - 1, 0, _bag.Candies.Count)], out var val))
+			if (this.TryGetCandyObject(this._bag.Candies[Mathf.Clamp(itemSerial - 1, 0, this._bag.Candies.Count)], out var val))
 			{
-				_bag.UsingSfxClip = val.EatingSound;
+				this._bag.UsingSfxClip = val.EatingSound;
 			}
-			_bag.SelectCandy(itemSerial - 1);
+			this._bag.SelectCandy(itemSerial - 1);
 			break;
 		}
 		case InventoryGuiAction.Drop:
@@ -152,19 +152,19 @@ public class Scp330Viewmodel : UsableItemViewmodel, ICursorOverride
 			{
 				return;
 			}
-			_bag.DropCandy(itemSerial - 1);
+			this._bag.DropCandy(itemSerial - 1);
 			break;
 		}
-		bool flag = itemSerial == 0 || _bag.Candies.Count == 0 || itemSerial > _bag.Candies.Count;
-		DisplayDescriptions((!flag) ? _bag.Candies[itemSerial - 1] : CandyKindID.None);
+		bool flag = itemSerial == 0 || this._bag.Candies.Count == 0 || itemSerial > this._bag.Candies.Count;
+		this.DisplayDescriptions((!flag) ? this._bag.Candies[itemSerial - 1] : CandyKindID.None);
 	}
 
 	private void HandleSelectMessage(SelectScp330Message msg)
 	{
 		if (msg.Serial == base.ItemId.SerialNumber)
 		{
-			SetCandyModel((CandyKindID)msg.CandyID);
-			OnUsingStarted();
+			this.SetCandyModel((CandyKindID)msg.CandyID);
+			this.OnUsingStarted();
 		}
 	}
 
@@ -182,7 +182,7 @@ public class Scp330Viewmodel : UsableItemViewmodel, ICursorOverride
 
 	private void SetCandyModel(CandyKindID id)
 	{
-		CandyObject[] candies = _candies;
+		CandyObject[] candies = this._candies;
 		for (int i = 0; i < candies.Length; i++)
 		{
 			CandyObject candyObject = candies[i];
@@ -192,20 +192,20 @@ public class Scp330Viewmodel : UsableItemViewmodel, ICursorOverride
 
 	private void DisplaySelector(CandyKindID id)
 	{
-		bool flag = id == CandyKindID.None && !_cancelled;
-		_selectorGroup.alpha = Mathf.Clamp01(_selectorGroup.alpha + (float)(flag ? 10 : (-10)) * Time.deltaTime);
-		_selectorGroup.gameObject.SetActive(_selectorGroup.alpha > 0f);
-		CursorOverride = ((!flag) ? CursorOverrideMode.Centered : CursorOverrideMode.Free);
-		for (int i = 0; i < _selectorSlots.Length; i++)
+		bool flag = id == CandyKindID.None && !this._cancelled;
+		this._selectorGroup.alpha = Mathf.Clamp01(this._selectorGroup.alpha + (float)(flag ? 10 : (-10)) * Time.deltaTime);
+		this._selectorGroup.gameObject.SetActive(this._selectorGroup.alpha > 0f);
+		this.CursorOverride = ((!flag) ? CursorOverrideMode.Centered : CursorOverrideMode.Free);
+		for (int i = 0; i < this._selectorSlots.Length; i++)
 		{
-			if (i < _bag.Candies.Count && TryGetCandyObject(_bag.Candies[i], out var val))
+			if (i < this._bag.Candies.Count && this.TryGetCandyObject(this._bag.Candies[i], out var val))
 			{
-				_selectorSlots[i].texture = val.Icon;
-				_selectorSlots[i].enabled = true;
+				this._selectorSlots[i].texture = val.Icon;
+				this._selectorSlots[i].enabled = true;
 			}
 			else
 			{
-				_selectorSlots[i].enabled = false;
+				this._selectorSlots[i].enabled = false;
 			}
 		}
 	}
@@ -213,26 +213,26 @@ public class Scp330Viewmodel : UsableItemViewmodel, ICursorOverride
 	private void DisplayDescriptions(CandyKindID candy)
 	{
 		bool flag = candy == CandyKindID.None;
-		if (_displayedCandy == candy && !flag)
+		if (this._displayedCandy == candy && !flag)
 		{
-			_descriptionGroup.alpha = Mathf.Clamp01(_descriptionGroup.alpha + 10f * Time.deltaTime);
+			this._descriptionGroup.alpha = Mathf.Clamp01(this._descriptionGroup.alpha + 10f * Time.deltaTime);
 			return;
 		}
-		if (_descriptionGroup.alpha > 0f || flag)
+		if (this._descriptionGroup.alpha > 0f || flag)
 		{
-			_descriptionGroup.alpha = Mathf.Clamp01(_descriptionGroup.alpha - 10f * Time.deltaTime);
+			this._descriptionGroup.alpha = Mathf.Clamp01(this._descriptionGroup.alpha - 10f * Time.deltaTime);
 			return;
 		}
 		Scp330Translations.GetCandyTranslation(candy, out var text, out var desc, out var fx);
-		_title.text = text;
-		_description.text = desc;
-		_effects.text = fx;
-		_displayedCandy = candy;
+		this._title.text = text;
+		this._description.text = desc;
+		this._effects.text = fx;
+		this._displayedCandy = candy;
 	}
 
 	private bool TryGetCandyObject(CandyKindID id, out CandyObject val)
 	{
-		CandyObject[] candies = _candies;
+		CandyObject[] candies = this._candies;
 		for (int i = 0; i < candies.Length; i++)
 		{
 			CandyObject candyObject = candies[i];
@@ -248,8 +248,8 @@ public class Scp330Viewmodel : UsableItemViewmodel, ICursorOverride
 
 	private void CancelSelector(bool bringBackInventory = false)
 	{
-		_cancelled = true;
-		_bag.OwnerInventory.ClientSelectItem(0);
+		this._cancelled = true;
+		this._bag.OwnerInventory.ClientSelectItem(0);
 		InventoryGuiController.InventoryVisible |= bringBackInventory;
 	}
 

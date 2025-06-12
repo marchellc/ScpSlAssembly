@@ -22,45 +22,45 @@ public class WorldmodelMagazineExtension : MonoBehaviour, IWorldmodelExtension
 		{
 			if (magInserted)
 			{
-				if (!_filter.HasValue)
+				if (!this._filter.HasValue)
 				{
-					SetFilter(extRef._lastId);
+					this.SetFilter(extRef._lastId);
 				}
-				uint num = extRef._lastAttCode & _filter.Value;
-				SetVisibility(extRef._removalMode, num != 0);
+				uint num = extRef._lastAttCode & this._filter.Value;
+				this.SetVisibility(extRef._removalMode, num != 0);
 			}
 			else
 			{
-				SetVisibility(extRef._removalMode, isActive: false);
+				this.SetVisibility(extRef._removalMode, isActive: false);
 			}
 		}
 
 		private void SetVisibility(RemovalMode removalMode, bool isActive)
 		{
-			if (!_lastIsActive.HasValue || _lastIsActive != isActive)
+			if (!this._lastIsActive.HasValue || this._lastIsActive != isActive)
 			{
 				switch (removalMode)
 				{
 				case RemovalMode.SetScaleZero:
-					Target.transform.localScale = (isActive ? Vector3.one : Vector3.zero);
+					this.Target.transform.localScale = (isActive ? Vector3.one : Vector3.zero);
 					break;
 				case RemovalMode.DeactivateObject:
-					Target.SetActive(isActive);
+					this.Target.SetActive(isActive);
 					break;
 				}
-				_lastIsActive = isActive;
+				this._lastIsActive = isActive;
 			}
 		}
 
 		private void SetFilter(ItemIdentifier id)
 		{
-			if (Attachments == null || Attachments.Length == 0)
+			if (this.Attachments == null || this.Attachments.Length == 0)
 			{
-				_filter = uint.MaxValue;
+				this._filter = uint.MaxValue;
 				return;
 			}
 			uint num = 0u;
-			AttachmentLink[] attachments = Attachments;
+			AttachmentLink[] attachments = this.Attachments;
 			for (int i = 0; i < attachments.Length; i++)
 			{
 				if (attachments[i].TryGetFilter(id.TypeId, out var filter))
@@ -68,7 +68,7 @@ public class WorldmodelMagazineExtension : MonoBehaviour, IWorldmodelExtension
 					num |= filter;
 				}
 			}
-			_filter = num;
+			this._filter = num;
 		}
 	}
 
@@ -92,16 +92,16 @@ public class WorldmodelMagazineExtension : MonoBehaviour, IWorldmodelExtension
 
 	public void SetupWorldmodel(FirearmWorldmodel worldmodel)
 	{
-		_lastId = worldmodel.Identifier;
-		_lastAttCode = worldmodel.AttachmentCode;
-		_forceInserted = worldmodel.WorldmodelType == FirearmWorldmodelType.Presentation;
-		UpdateAllMags();
+		this._lastId = worldmodel.Identifier;
+		this._lastAttCode = worldmodel.AttachmentCode;
+		this._forceInserted = worldmodel.WorldmodelType == FirearmWorldmodelType.Presentation;
+		this.UpdateAllMags();
 	}
 
 	private void UpdateAllMags()
 	{
-		bool magInserted = _forceInserted || MagazineModule.GetMagazineInserted(_lastId.SerialNumber);
-		Magazine[] magazines = _magazines;
+		bool magInserted = this._forceInserted || MagazineModule.GetMagazineInserted(this._lastId.SerialNumber);
+		Magazine[] magazines = this._magazines;
 		for (int i = 0; i < magazines.Length; i++)
 		{
 			magazines[i].UpdateState(this, magInserted);

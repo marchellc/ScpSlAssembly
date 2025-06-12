@@ -19,11 +19,11 @@ public static class JsonSerializer
 
 		public static byte[] GetBuffer()
 		{
-			if (buffer == null)
+			if (MemoryPool.buffer == null)
 			{
-				buffer = new byte[65536];
+				MemoryPool.buffer = new byte[65536];
 			}
-			return buffer;
+			return MemoryPool.buffer;
 		}
 	}
 
@@ -64,13 +64,13 @@ public static class JsonSerializer
 				iLGenerator.EmitLdarg(0);
 				iLGenerator.EmitUnboxOrCast(type);
 				iLGenerator.EmitLdarg(1);
-				iLGenerator.EmitCall(GetMethod(type, "Serialize", new Type[2]
+				iLGenerator.EmitCall(CompiledMethods.GetMethod(type, "Serialize", new Type[2]
 				{
 					null,
 					typeof(IJsonFormatterResolver)
 				}));
 				iLGenerator.Emit(OpCodes.Ret);
-				serialize1 = CreateDelegate<Func<object, IJsonFormatterResolver, byte[]>>(dynamicMethod);
+				this.serialize1 = CompiledMethods.CreateDelegate<Func<object, IJsonFormatterResolver, byte[]>>(dynamicMethod);
 				DynamicMethod dynamicMethod2 = new DynamicMethod("serialize2", null, new Type[3]
 				{
 					typeof(Stream),
@@ -82,14 +82,14 @@ public static class JsonSerializer
 				iLGenerator2.EmitLdarg(1);
 				iLGenerator2.EmitUnboxOrCast(type);
 				iLGenerator2.EmitLdarg(2);
-				iLGenerator2.EmitCall(GetMethod(type, "Serialize", new Type[3]
+				iLGenerator2.EmitCall(CompiledMethods.GetMethod(type, "Serialize", new Type[3]
 				{
 					typeof(Stream),
 					null,
 					typeof(IJsonFormatterResolver)
 				}));
 				iLGenerator2.Emit(OpCodes.Ret);
-				serialize2 = CreateDelegate<Action<Stream, object, IJsonFormatterResolver>>(dynamicMethod2);
+				this.serialize2 = CompiledMethods.CreateDelegate<Action<Stream, object, IJsonFormatterResolver>>(dynamicMethod2);
 				DynamicMethod dynamicMethod3 = new DynamicMethod("serialize3", null, new Type[3]
 				{
 					typeof(JsonWriter).MakeByRefType(),
@@ -101,14 +101,14 @@ public static class JsonSerializer
 				iLGenerator3.EmitLdarg(1);
 				iLGenerator3.EmitUnboxOrCast(type);
 				iLGenerator3.EmitLdarg(2);
-				iLGenerator3.EmitCall(GetMethod(type, "Serialize", new Type[3]
+				iLGenerator3.EmitCall(CompiledMethods.GetMethod(type, "Serialize", new Type[3]
 				{
 					typeof(JsonWriter).MakeByRefType(),
 					null,
 					typeof(IJsonFormatterResolver)
 				}));
 				iLGenerator3.Emit(OpCodes.Ret);
-				serialize3 = CreateDelegate<SerializeJsonWriter>(dynamicMethod3);
+				this.serialize3 = CompiledMethods.CreateDelegate<SerializeJsonWriter>(dynamicMethod3);
 				DynamicMethod dynamicMethod4 = new DynamicMethod("serializeUnsafe", typeof(ArraySegment<byte>), new Type[2]
 				{
 					typeof(object),
@@ -118,13 +118,13 @@ public static class JsonSerializer
 				iLGenerator4.EmitLdarg(0);
 				iLGenerator4.EmitUnboxOrCast(type);
 				iLGenerator4.EmitLdarg(1);
-				iLGenerator4.EmitCall(GetMethod(type, "SerializeUnsafe", new Type[2]
+				iLGenerator4.EmitCall(CompiledMethods.GetMethod(type, "SerializeUnsafe", new Type[2]
 				{
 					null,
 					typeof(IJsonFormatterResolver)
 				}));
 				iLGenerator4.Emit(OpCodes.Ret);
-				serializeUnsafe = CreateDelegate<Func<object, IJsonFormatterResolver, ArraySegment<byte>>>(dynamicMethod4);
+				this.serializeUnsafe = CompiledMethods.CreateDelegate<Func<object, IJsonFormatterResolver, ArraySegment<byte>>>(dynamicMethod4);
 				DynamicMethod dynamicMethod5 = new DynamicMethod("toJsonString", typeof(string), new Type[2]
 				{
 					typeof(object),
@@ -134,13 +134,13 @@ public static class JsonSerializer
 				iLGenerator5.EmitLdarg(0);
 				iLGenerator5.EmitUnboxOrCast(type);
 				iLGenerator5.EmitLdarg(1);
-				iLGenerator5.EmitCall(GetMethod(type, "ToJsonString", new Type[2]
+				iLGenerator5.EmitCall(CompiledMethods.GetMethod(type, "ToJsonString", new Type[2]
 				{
 					null,
 					typeof(IJsonFormatterResolver)
 				}));
 				iLGenerator5.Emit(OpCodes.Ret);
-				toJsonString = CreateDelegate<Func<object, IJsonFormatterResolver, string>>(dynamicMethod5);
+				this.toJsonString = CompiledMethods.CreateDelegate<Func<object, IJsonFormatterResolver, string>>(dynamicMethod5);
 				DynamicMethod dynamicMethod6 = new DynamicMethod("Deserialize", typeof(object), new Type[2]
 				{
 					typeof(string),
@@ -149,14 +149,14 @@ public static class JsonSerializer
 				ILGenerator iLGenerator6 = dynamicMethod6.GetILGenerator();
 				iLGenerator6.EmitLdarg(0);
 				iLGenerator6.EmitLdarg(1);
-				iLGenerator6.EmitCall(GetMethod(type, "Deserialize", new Type[2]
+				iLGenerator6.EmitCall(CompiledMethods.GetMethod(type, "Deserialize", new Type[2]
 				{
 					typeof(string),
 					typeof(IJsonFormatterResolver)
 				}));
 				iLGenerator6.EmitBoxOrDoNothing(type);
 				iLGenerator6.Emit(OpCodes.Ret);
-				deserialize1 = CreateDelegate<Func<string, IJsonFormatterResolver, object>>(dynamicMethod6);
+				this.deserialize1 = CompiledMethods.CreateDelegate<Func<string, IJsonFormatterResolver, object>>(dynamicMethod6);
 				DynamicMethod dynamicMethod7 = new DynamicMethod("Deserialize", typeof(object), new Type[3]
 				{
 					typeof(byte[]),
@@ -167,7 +167,7 @@ public static class JsonSerializer
 				iLGenerator7.EmitLdarg(0);
 				iLGenerator7.EmitLdarg(1);
 				iLGenerator7.EmitLdarg(2);
-				iLGenerator7.EmitCall(GetMethod(type, "Deserialize", new Type[3]
+				iLGenerator7.EmitCall(CompiledMethods.GetMethod(type, "Deserialize", new Type[3]
 				{
 					typeof(byte[]),
 					typeof(int),
@@ -175,7 +175,7 @@ public static class JsonSerializer
 				}));
 				iLGenerator7.EmitBoxOrDoNothing(type);
 				iLGenerator7.Emit(OpCodes.Ret);
-				deserialize2 = CreateDelegate<Func<byte[], int, IJsonFormatterResolver, object>>(dynamicMethod7);
+				this.deserialize2 = CompiledMethods.CreateDelegate<Func<byte[], int, IJsonFormatterResolver, object>>(dynamicMethod7);
 				DynamicMethod dynamicMethod8 = new DynamicMethod("Deserialize", typeof(object), new Type[2]
 				{
 					typeof(Stream),
@@ -184,14 +184,14 @@ public static class JsonSerializer
 				ILGenerator iLGenerator8 = dynamicMethod8.GetILGenerator();
 				iLGenerator8.EmitLdarg(0);
 				iLGenerator8.EmitLdarg(1);
-				iLGenerator8.EmitCall(GetMethod(type, "Deserialize", new Type[2]
+				iLGenerator8.EmitCall(CompiledMethods.GetMethod(type, "Deserialize", new Type[2]
 				{
 					typeof(Stream),
 					typeof(IJsonFormatterResolver)
 				}));
 				iLGenerator8.EmitBoxOrDoNothing(type);
 				iLGenerator8.Emit(OpCodes.Ret);
-				deserialize3 = CreateDelegate<Func<Stream, IJsonFormatterResolver, object>>(dynamicMethod8);
+				this.deserialize3 = CompiledMethods.CreateDelegate<Func<Stream, IJsonFormatterResolver, object>>(dynamicMethod8);
 				DynamicMethod dynamicMethod9 = new DynamicMethod("Deserialize", typeof(object), new Type[2]
 				{
 					typeof(JsonReader).MakeByRefType(),
@@ -200,14 +200,14 @@ public static class JsonSerializer
 				ILGenerator iLGenerator9 = dynamicMethod9.GetILGenerator();
 				iLGenerator9.EmitLdarg(0);
 				iLGenerator9.EmitLdarg(1);
-				iLGenerator9.EmitCall(GetMethod(type, "Deserialize", new Type[2]
+				iLGenerator9.EmitCall(CompiledMethods.GetMethod(type, "Deserialize", new Type[2]
 				{
 					typeof(JsonReader).MakeByRefType(),
 					typeof(IJsonFormatterResolver)
 				}));
 				iLGenerator9.EmitBoxOrDoNothing(type);
 				iLGenerator9.Emit(OpCodes.Ret);
-				deserialize4 = CreateDelegate<DeserializeJsonReader>(dynamicMethod9);
+				this.deserialize4 = CompiledMethods.CreateDelegate<DeserializeJsonReader>(dynamicMethod9);
 			}
 
 			private static T CreateDelegate<T>(DynamicMethod dm)
@@ -244,13 +244,13 @@ public static class JsonSerializer
 
 		static NonGeneric()
 		{
-			serializes = new ThreadsafeTypeKeyHashTable<CompiledMethods>(64);
-			CreateCompiledMethods = (Type t) => new CompiledMethods(t);
+			NonGeneric.serializes = new ThreadsafeTypeKeyHashTable<CompiledMethods>(64);
+			NonGeneric.CreateCompiledMethods = (Type t) => new CompiledMethods(t);
 		}
 
 		private static CompiledMethods GetOrAdd(Type type)
 		{
-			return serializes.GetOrAdd(type, CreateCompiledMethods);
+			return NonGeneric.serializes.GetOrAdd(type, NonGeneric.CreateCompiledMethods);
 		}
 
 		public static byte[] Serialize(object value)
@@ -259,12 +259,12 @@ public static class JsonSerializer
 			{
 				return JsonSerializer.Serialize(value);
 			}
-			return Serialize(value.GetType(), value, defaultResolver);
+			return NonGeneric.Serialize(value.GetType(), value, JsonSerializer.defaultResolver);
 		}
 
 		public static byte[] Serialize(Type type, object value)
 		{
-			return Serialize(type, value, defaultResolver);
+			return NonGeneric.Serialize(type, value, JsonSerializer.defaultResolver);
 		}
 
 		public static byte[] Serialize(object value, IJsonFormatterResolver resolver)
@@ -273,12 +273,12 @@ public static class JsonSerializer
 			{
 				return JsonSerializer.Serialize(value, resolver);
 			}
-			return Serialize(value.GetType(), value, resolver);
+			return NonGeneric.Serialize(value.GetType(), value, resolver);
 		}
 
 		public static byte[] Serialize(Type type, object value, IJsonFormatterResolver resolver)
 		{
-			return GetOrAdd(type).serialize1(value, resolver);
+			return NonGeneric.GetOrAdd(type).serialize1(value, resolver);
 		}
 
 		public static void Serialize(Stream stream, object value)
@@ -289,13 +289,13 @@ public static class JsonSerializer
 			}
 			else
 			{
-				Serialize(value.GetType(), stream, value, defaultResolver);
+				NonGeneric.Serialize(value.GetType(), stream, value, JsonSerializer.defaultResolver);
 			}
 		}
 
 		public static void Serialize(Type type, Stream stream, object value)
 		{
-			Serialize(type, stream, value, defaultResolver);
+			NonGeneric.Serialize(type, stream, value, JsonSerializer.defaultResolver);
 		}
 
 		public static void Serialize(Stream stream, object value, IJsonFormatterResolver resolver)
@@ -306,13 +306,13 @@ public static class JsonSerializer
 			}
 			else
 			{
-				Serialize(value.GetType(), stream, value, resolver);
+				NonGeneric.Serialize(value.GetType(), stream, value, resolver);
 			}
 		}
 
 		public static void Serialize(Type type, Stream stream, object value, IJsonFormatterResolver resolver)
 		{
-			GetOrAdd(type).serialize2(stream, value, resolver);
+			NonGeneric.GetOrAdd(type).serialize2(stream, value, resolver);
 		}
 
 		public static void Serialize(ref JsonWriter writer, object value, IJsonFormatterResolver resolver)
@@ -323,18 +323,18 @@ public static class JsonSerializer
 			}
 			else
 			{
-				Serialize(value.GetType(), ref writer, value, resolver);
+				NonGeneric.Serialize(value.GetType(), ref writer, value, resolver);
 			}
 		}
 
 		public static void Serialize(Type type, ref JsonWriter writer, object value)
 		{
-			Serialize(type, ref writer, value, defaultResolver);
+			NonGeneric.Serialize(type, ref writer, value, JsonSerializer.defaultResolver);
 		}
 
 		public static void Serialize(Type type, ref JsonWriter writer, object value, IJsonFormatterResolver resolver)
 		{
-			GetOrAdd(type).serialize3(ref writer, value, resolver);
+			NonGeneric.GetOrAdd(type).serialize3(ref writer, value, resolver);
 		}
 
 		public static ArraySegment<byte> SerializeUnsafe(object value)
@@ -343,12 +343,12 @@ public static class JsonSerializer
 			{
 				return JsonSerializer.SerializeUnsafe(value);
 			}
-			return SerializeUnsafe(value.GetType(), value);
+			return NonGeneric.SerializeUnsafe(value.GetType(), value);
 		}
 
 		public static ArraySegment<byte> SerializeUnsafe(Type type, object value)
 		{
-			return SerializeUnsafe(type, value, defaultResolver);
+			return NonGeneric.SerializeUnsafe(type, value, JsonSerializer.defaultResolver);
 		}
 
 		public static ArraySegment<byte> SerializeUnsafe(object value, IJsonFormatterResolver resolver)
@@ -357,12 +357,12 @@ public static class JsonSerializer
 			{
 				return JsonSerializer.SerializeUnsafe(value);
 			}
-			return SerializeUnsafe(value.GetType(), value, resolver);
+			return NonGeneric.SerializeUnsafe(value.GetType(), value, resolver);
 		}
 
 		public static ArraySegment<byte> SerializeUnsafe(Type type, object value, IJsonFormatterResolver resolver)
 		{
-			return GetOrAdd(type).serializeUnsafe(value, resolver);
+			return NonGeneric.GetOrAdd(type).serializeUnsafe(value, resolver);
 		}
 
 		public static string ToJsonString(object value)
@@ -371,12 +371,12 @@ public static class JsonSerializer
 			{
 				return "null";
 			}
-			return ToJsonString(value.GetType(), value);
+			return NonGeneric.ToJsonString(value.GetType(), value);
 		}
 
 		public static string ToJsonString(Type type, object value)
 		{
-			return ToJsonString(type, value, defaultResolver);
+			return NonGeneric.ToJsonString(type, value, JsonSerializer.defaultResolver);
 		}
 
 		public static string ToJsonString(object value, IJsonFormatterResolver resolver)
@@ -385,62 +385,62 @@ public static class JsonSerializer
 			{
 				return "null";
 			}
-			return ToJsonString(value.GetType(), value, resolver);
+			return NonGeneric.ToJsonString(value.GetType(), value, resolver);
 		}
 
 		public static string ToJsonString(Type type, object value, IJsonFormatterResolver resolver)
 		{
-			return GetOrAdd(type).toJsonString(value, resolver);
+			return NonGeneric.GetOrAdd(type).toJsonString(value, resolver);
 		}
 
 		public static object Deserialize(Type type, string json)
 		{
-			return Deserialize(type, json, defaultResolver);
+			return NonGeneric.Deserialize(type, json, JsonSerializer.defaultResolver);
 		}
 
 		public static object Deserialize(Type type, string json, IJsonFormatterResolver resolver)
 		{
-			return GetOrAdd(type).deserialize1(json, resolver);
+			return NonGeneric.GetOrAdd(type).deserialize1(json, resolver);
 		}
 
 		public static object Deserialize(Type type, byte[] bytes)
 		{
-			return Deserialize(type, bytes, defaultResolver);
+			return NonGeneric.Deserialize(type, bytes, JsonSerializer.defaultResolver);
 		}
 
 		public static object Deserialize(Type type, byte[] bytes, IJsonFormatterResolver resolver)
 		{
-			return Deserialize(type, bytes, 0, defaultResolver);
+			return NonGeneric.Deserialize(type, bytes, 0, JsonSerializer.defaultResolver);
 		}
 
 		public static object Deserialize(Type type, byte[] bytes, int offset)
 		{
-			return Deserialize(type, bytes, offset, defaultResolver);
+			return NonGeneric.Deserialize(type, bytes, offset, JsonSerializer.defaultResolver);
 		}
 
 		public static object Deserialize(Type type, byte[] bytes, int offset, IJsonFormatterResolver resolver)
 		{
-			return GetOrAdd(type).deserialize2(bytes, offset, resolver);
+			return NonGeneric.GetOrAdd(type).deserialize2(bytes, offset, resolver);
 		}
 
 		public static object Deserialize(Type type, Stream stream)
 		{
-			return Deserialize(type, stream, defaultResolver);
+			return NonGeneric.Deserialize(type, stream, JsonSerializer.defaultResolver);
 		}
 
 		public static object Deserialize(Type type, Stream stream, IJsonFormatterResolver resolver)
 		{
-			return GetOrAdd(type).deserialize3(stream, resolver);
+			return NonGeneric.GetOrAdd(type).deserialize3(stream, resolver);
 		}
 
 		public static object Deserialize(Type type, ref JsonReader reader)
 		{
-			return Deserialize(type, ref reader, defaultResolver);
+			return NonGeneric.Deserialize(type, ref reader, JsonSerializer.defaultResolver);
 		}
 
 		public static object Deserialize(Type type, ref JsonReader reader, IJsonFormatterResolver resolver)
 		{
-			return GetOrAdd(type).deserialize4(ref reader, resolver);
+			return NonGeneric.GetOrAdd(type).deserialize4(ref reader, resolver);
 		}
 	}
 
@@ -455,31 +455,31 @@ public static class JsonSerializer
 	{
 		get
 		{
-			if (defaultResolver == null)
+			if (JsonSerializer.defaultResolver == null)
 			{
-				defaultResolver = StandardResolver.Default;
+				JsonSerializer.defaultResolver = StandardResolver.Default;
 			}
-			return defaultResolver;
+			return JsonSerializer.defaultResolver;
 		}
 	}
 
-	public static bool IsInitialized => defaultResolver != null;
+	public static bool IsInitialized => JsonSerializer.defaultResolver != null;
 
 	public static void SetDefaultResolver(IJsonFormatterResolver resolver)
 	{
-		defaultResolver = resolver;
+		JsonSerializer.defaultResolver = resolver;
 	}
 
 	public static byte[] Serialize<T>(T obj)
 	{
-		return Serialize(obj, defaultResolver);
+		return JsonSerializer.Serialize(obj, JsonSerializer.defaultResolver);
 	}
 
 	public static byte[] Serialize<T>(T value, IJsonFormatterResolver resolver)
 	{
 		if (resolver == null)
 		{
-			resolver = DefaultResolver;
+			resolver = JsonSerializer.DefaultResolver;
 		}
 		JsonWriter writer = new JsonWriter(MemoryPool.GetBuffer());
 		resolver.GetFormatterWithVerify<T>().Serialize(ref writer, value, resolver);
@@ -488,43 +488,43 @@ public static class JsonSerializer
 
 	public static void Serialize<T>(ref JsonWriter writer, T value)
 	{
-		Serialize(ref writer, value, defaultResolver);
+		JsonSerializer.Serialize(ref writer, value, JsonSerializer.defaultResolver);
 	}
 
 	public static void Serialize<T>(ref JsonWriter writer, T value, IJsonFormatterResolver resolver)
 	{
 		if (resolver == null)
 		{
-			resolver = DefaultResolver;
+			resolver = JsonSerializer.DefaultResolver;
 		}
 		resolver.GetFormatterWithVerify<T>().Serialize(ref writer, value, resolver);
 	}
 
 	public static void Serialize<T>(Stream stream, T value)
 	{
-		Serialize(stream, value, defaultResolver);
+		JsonSerializer.Serialize(stream, value, JsonSerializer.defaultResolver);
 	}
 
 	public static void Serialize<T>(Stream stream, T value, IJsonFormatterResolver resolver)
 	{
 		if (resolver == null)
 		{
-			resolver = DefaultResolver;
+			resolver = JsonSerializer.DefaultResolver;
 		}
-		ArraySegment<byte> arraySegment = SerializeUnsafe(value, resolver);
+		ArraySegment<byte> arraySegment = JsonSerializer.SerializeUnsafe(value, resolver);
 		stream.Write(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
 	}
 
 	public static ArraySegment<byte> SerializeUnsafe<T>(T obj)
 	{
-		return SerializeUnsafe(obj, defaultResolver);
+		return JsonSerializer.SerializeUnsafe(obj, JsonSerializer.defaultResolver);
 	}
 
 	public static ArraySegment<byte> SerializeUnsafe<T>(T value, IJsonFormatterResolver resolver)
 	{
 		if (resolver == null)
 		{
-			resolver = DefaultResolver;
+			resolver = JsonSerializer.DefaultResolver;
 		}
 		JsonWriter writer = new JsonWriter(MemoryPool.GetBuffer());
 		resolver.GetFormatterWithVerify<T>().Serialize(ref writer, value, resolver);
@@ -533,14 +533,14 @@ public static class JsonSerializer
 
 	public static string ToJsonString<T>(T value)
 	{
-		return ToJsonString(value, defaultResolver);
+		return JsonSerializer.ToJsonString(value, JsonSerializer.defaultResolver);
 	}
 
 	public static string ToJsonString<T>(T value, IJsonFormatterResolver resolver)
 	{
 		if (resolver == null)
 		{
-			resolver = DefaultResolver;
+			resolver = JsonSerializer.DefaultResolver;
 		}
 		JsonWriter writer = new JsonWriter(MemoryPool.GetBuffer());
 		resolver.GetFormatterWithVerify<T>().Serialize(ref writer, value, resolver);
@@ -549,34 +549,34 @@ public static class JsonSerializer
 
 	public static T Deserialize<T>(string json)
 	{
-		return Deserialize<T>(json, defaultResolver);
+		return JsonSerializer.Deserialize<T>(json, JsonSerializer.defaultResolver);
 	}
 
 	public static T Deserialize<T>(string json, IJsonFormatterResolver resolver)
 	{
-		return Deserialize<T>(StringEncoding.UTF8.GetBytes(json), resolver);
+		return JsonSerializer.Deserialize<T>(StringEncoding.UTF8.GetBytes(json), resolver);
 	}
 
 	public static T Deserialize<T>(byte[] bytes)
 	{
-		return Deserialize<T>(bytes, defaultResolver);
+		return JsonSerializer.Deserialize<T>(bytes, JsonSerializer.defaultResolver);
 	}
 
 	public static T Deserialize<T>(byte[] bytes, IJsonFormatterResolver resolver)
 	{
-		return Deserialize<T>(bytes, 0, resolver);
+		return JsonSerializer.Deserialize<T>(bytes, 0, resolver);
 	}
 
 	public static T Deserialize<T>(byte[] bytes, int offset)
 	{
-		return Deserialize<T>(bytes, offset, defaultResolver);
+		return JsonSerializer.Deserialize<T>(bytes, offset, JsonSerializer.defaultResolver);
 	}
 
 	public static T Deserialize<T>(byte[] bytes, int offset, IJsonFormatterResolver resolver)
 	{
 		if (resolver == null)
 		{
-			resolver = DefaultResolver;
+			resolver = JsonSerializer.DefaultResolver;
 		}
 		JsonReader reader = new JsonReader(bytes, offset);
 		return resolver.GetFormatterWithVerify<T>().Deserialize(ref reader, resolver);
@@ -584,48 +584,48 @@ public static class JsonSerializer
 
 	public static T Deserialize<T>(ref JsonReader reader)
 	{
-		return Deserialize<T>(ref reader, defaultResolver);
+		return JsonSerializer.Deserialize<T>(ref reader, JsonSerializer.defaultResolver);
 	}
 
 	public static T Deserialize<T>(ref JsonReader reader, IJsonFormatterResolver resolver)
 	{
 		if (resolver == null)
 		{
-			resolver = DefaultResolver;
+			resolver = JsonSerializer.DefaultResolver;
 		}
 		return resolver.GetFormatterWithVerify<T>().Deserialize(ref reader, resolver);
 	}
 
 	public static T Deserialize<T>(Stream stream)
 	{
-		return Deserialize<T>(stream, defaultResolver);
+		return JsonSerializer.Deserialize<T>(stream, JsonSerializer.defaultResolver);
 	}
 
 	public static T Deserialize<T>(Stream stream, IJsonFormatterResolver resolver)
 	{
 		if (resolver == null)
 		{
-			resolver = DefaultResolver;
+			resolver = JsonSerializer.DefaultResolver;
 		}
 		byte[] buffer = MemoryPool.GetBuffer();
-		int newSize = FillFromStream(stream, ref buffer);
+		int newSize = JsonSerializer.FillFromStream(stream, ref buffer);
 		if (new JsonReader(buffer).GetCurrentJsonToken() == JsonToken.Number)
 		{
 			buffer = BinaryUtil.FastCloneWithResize(buffer, newSize);
 		}
-		return Deserialize<T>(buffer, resolver);
+		return JsonSerializer.Deserialize<T>(buffer, resolver);
 	}
 
 	public static string PrettyPrint(byte[] json)
 	{
-		return PrettyPrint(json, 0);
+		return JsonSerializer.PrettyPrint(json, 0);
 	}
 
 	public static string PrettyPrint(byte[] json, int offset)
 	{
 		JsonReader reader = new JsonReader(json, offset);
 		JsonWriter writer = new JsonWriter(MemoryPool.GetBuffer());
-		WritePrittyPrint(ref reader, ref writer, 0);
+		JsonSerializer.WritePrittyPrint(ref reader, ref writer, 0);
 		return writer.ToString();
 	}
 
@@ -633,20 +633,20 @@ public static class JsonSerializer
 	{
 		JsonReader reader = new JsonReader(Encoding.UTF8.GetBytes(json));
 		JsonWriter writer = new JsonWriter(MemoryPool.GetBuffer());
-		WritePrittyPrint(ref reader, ref writer, 0);
+		JsonSerializer.WritePrittyPrint(ref reader, ref writer, 0);
 		return writer.ToString();
 	}
 
 	public static byte[] PrettyPrintByteArray(byte[] json)
 	{
-		return PrettyPrintByteArray(json, 0);
+		return JsonSerializer.PrettyPrintByteArray(json, 0);
 	}
 
 	public static byte[] PrettyPrintByteArray(byte[] json, int offset)
 	{
 		JsonReader reader = new JsonReader(json, offset);
 		JsonWriter writer = new JsonWriter(MemoryPool.GetBuffer());
-		WritePrittyPrint(ref reader, ref writer, 0);
+		JsonSerializer.WritePrittyPrint(ref reader, ref writer, 0);
 		return writer.ToUtf8ByteArray();
 	}
 
@@ -654,7 +654,7 @@ public static class JsonSerializer
 	{
 		JsonReader reader = new JsonReader(Encoding.UTF8.GetBytes(json));
 		JsonWriter writer = new JsonWriter(MemoryPool.GetBuffer());
-		WritePrittyPrint(ref reader, ref writer, 0);
+		JsonSerializer.WritePrittyPrint(ref reader, ref writer, 0);
 		return writer.ToUtf8ByteArray();
 	}
 
@@ -665,42 +665,42 @@ public static class JsonSerializer
 		case JsonToken.BeginObject:
 		{
 			writer.WriteBeginObject();
-			writer.WriteRaw(newLine);
+			writer.WriteRaw(JsonSerializer.newLine);
 			int count2 = 0;
 			while (reader.ReadIsInObject(ref count2))
 			{
 				if (count2 != 1)
 				{
 					writer.WriteRaw(44);
-					writer.WriteRaw(newLine);
+					writer.WriteRaw(JsonSerializer.newLine);
 				}
-				writer.WriteRaw(indent[depth + 1]);
+				writer.WriteRaw(JsonSerializer.indent[depth + 1]);
 				writer.WritePropertyName(reader.ReadPropertyName());
 				writer.WriteRaw(32);
-				WritePrittyPrint(ref reader, ref writer, depth + 1);
+				JsonSerializer.WritePrittyPrint(ref reader, ref writer, depth + 1);
 			}
-			writer.WriteRaw(newLine);
-			writer.WriteRaw(indent[depth]);
+			writer.WriteRaw(JsonSerializer.newLine);
+			writer.WriteRaw(JsonSerializer.indent[depth]);
 			writer.WriteEndObject();
 			break;
 		}
 		case JsonToken.BeginArray:
 		{
 			writer.WriteBeginArray();
-			writer.WriteRaw(newLine);
+			writer.WriteRaw(JsonSerializer.newLine);
 			int count = 0;
 			while (reader.ReadIsInArray(ref count))
 			{
 				if (count != 1)
 				{
 					writer.WriteRaw(44);
-					writer.WriteRaw(newLine);
+					writer.WriteRaw(JsonSerializer.newLine);
 				}
-				writer.WriteRaw(indent[depth + 1]);
-				WritePrittyPrint(ref reader, ref writer, depth + 1);
+				writer.WriteRaw(JsonSerializer.indent[depth + 1]);
+				JsonSerializer.WritePrittyPrint(ref reader, ref writer, depth + 1);
 			}
-			writer.WriteRaw(newLine);
-			writer.WriteRaw(indent[depth]);
+			writer.WriteRaw(JsonSerializer.newLine);
+			writer.WriteRaw(JsonSerializer.indent[depth]);
 			writer.WriteEndArray();
 			break;
 		}

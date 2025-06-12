@@ -20,12 +20,12 @@ public struct RoomConnectorSpawnData
 
 	public readonly int GetRequired(int totalSpawnpoints)
 	{
-		return Mathf.Max(MinInstances, Mathf.RoundToInt((float)totalSpawnpoints * MinPercent));
+		return Mathf.Max(this.MinInstances, Mathf.RoundToInt((float)totalSpawnpoints * this.MinPercent));
 	}
 
 	public readonly int GetOptional(int totalSpawnpoints)
 	{
-		int num = Mathf.Min(MaxInstances, Mathf.RoundToInt((float)totalSpawnpoints * MaxPercent));
-		return Mathf.Max(0, num - GetRequired(totalSpawnpoints));
+		int num = Mathf.Min(this.MaxInstances, Mathf.RoundToInt((float)totalSpawnpoints * this.MaxPercent));
+		return Mathf.Max(0, num - this.GetRequired(totalSpawnpoints));
 	}
 }

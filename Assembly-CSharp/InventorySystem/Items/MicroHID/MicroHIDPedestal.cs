@@ -19,17 +19,17 @@ public class MicroHIDPedestal : Locker
 
 	protected override void ServerFillChambers()
 	{
-		if (Chambers.Length != 1)
+		if (base.Chambers.Length != 1)
 		{
 			throw new InvalidOperationException("MicroHID pedestal can only have 1 chamber.");
 		}
-		LockerChamber lockerChamber = Chambers[0];
+		LockerChamber lockerChamber = base.Chambers[0];
 		lockerChamber.SpawnItem(ItemType.MicroHID, 1);
-		if (TryGetSpawnedMicro(lockerChamber, out var pickup))
+		if (this.TryGetSpawnedMicro(lockerChamber, out var pickup))
 		{
 			pickup.OnSelfDestroyed += ReleaseConnectionWithPickup;
-			_isTrackingPickup = true;
-			_trackedPickup = pickup.transform;
+			this._isTrackingPickup = true;
+			this._trackedPickup = pickup.transform;
 			PickupSyncInfo info = pickup.Info;
 			info.Locked = false;
 			pickup.NetworkInfo = info;
@@ -49,12 +49,12 @@ public class MicroHIDPedestal : Locker
 	protected override void Update()
 	{
 		base.Update();
-		if (_isTrackingPickup)
+		if (this._isTrackingPickup)
 		{
-			_trackedPickup.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
+			this._trackedPickup.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
 			if (!(localPosition.sqrMagnitude < 0.0001f) || !(localRotation.w > 0.99f))
 			{
-				ReleaseConnectionWithPickup();
+				this.ReleaseConnectionWithPickup();
 			}
 		}
 	}
@@ -62,7 +62,7 @@ public class MicroHIDPedestal : Locker
 	private void ReleaseConnectionWithPickup()
 	{
 		base.NetworkOpenedChambers = 1;
-		_isTrackingPickup = false;
+		this._isTrackingPickup = false;
 	}
 
 	private bool TryGetSpawnedMicro(LockerChamber chamber, out MicroHIDPickup pickup)

@@ -54,41 +54,41 @@ public class Scp079BlackoutZoneAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 
 	public override ActionName ActivationKey => ActionName.Shoot;
 
-	public override bool IsReady => ErrorCode == Scp079HudTranslation.Zoom;
+	public override bool IsReady => this.ErrorCode == Scp079HudTranslation.Zoom;
 
-	public override string AbilityName => string.Format(_nameFormat, _cost);
+	public override string AbilityName => string.Format(this._nameFormat, this._cost);
 
 	public override bool IsVisible
 	{
 		get
 		{
-			if (Scp079Role.LocalInstanceActive && Unlocked && !Cursor.visible && Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen)
+			if (Scp079Role.LocalInstanceActive && this.Unlocked && !Cursor.visible && Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen)
 			{
-				return _syncZone != FacilityZone.None;
+				return this._syncZone != FacilityZone.None;
 			}
 			return false;
 		}
 	}
 
-	public bool Unlocked => base.TierManager.AccessTierIndex >= _minTierIndex;
+	public bool Unlocked => base.TierManager.AccessTierIndex >= this._minTierIndex;
 
 	private Scp079HudTranslation ErrorCode
 	{
 		get
 		{
-			if (!Unlocked)
+			if (!this.Unlocked)
 			{
 				return Scp079HudTranslation.ZoneBlackoutUnavailable;
 			}
-			if (!_availableZones.Contains(_syncZone))
+			if (!this._availableZones.Contains(this._syncZone))
 			{
 				return Scp079HudTranslation.ZoneBlackoutUnavailable;
 			}
-			if (!_cooldownTimer.IsReady)
+			if (!this._cooldownTimer.IsReady)
 			{
 				return Scp079HudTranslation.ZoneBlackoutCooldown;
 			}
-			if (base.AuxManager.CurrentAuxFloored < _cost)
+			if (base.AuxManager.CurrentAuxFloored < this._cost)
 			{
 				return Scp079HudTranslation.NotEnoughAux;
 			}
@@ -100,28 +100,28 @@ public class Scp079BlackoutZoneAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 	{
 		get
 		{
-			if (!_hasFailMessage)
+			if (!this._hasFailMessage)
 			{
 				return null;
 			}
-			switch (_failReason)
+			switch (this._failReason)
 			{
 			case Scp079HudTranslation.Zoom:
 				return null;
 			case Scp079HudTranslation.NotEnoughAux:
-				if (base.AuxManager.CurrentAuxFloored >= _cost)
+				if (base.AuxManager.CurrentAuxFloored >= this._cost)
 				{
 					return null;
 				}
-				return GetNoAuxMessage(_cost);
+				return base.GetNoAuxMessage(this._cost);
 			case Scp079HudTranslation.ZoneBlackoutCooldown:
-				if (_cooldownTimer.IsReady)
+				if (this._cooldownTimer.IsReady)
 				{
 					return null;
 				}
-				return _failMessage + "\n" + base.AuxManager.GenerateCustomETA(Mathf.CeilToInt(_cooldownTimer.Remaining));
+				return this._failMessage + "\n" + base.AuxManager.GenerateCustomETA(Mathf.CeilToInt(this._cooldownTimer.Remaining));
 			default:
-				return _failMessage;
+				return this._failMessage;
 			}
 		}
 	}
@@ -129,8 +129,8 @@ public class Scp079BlackoutZoneAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 	protected override void Start()
 	{
 		base.Start();
-		_nameFormat = Translations.Get(Scp079HudTranslation.ActivateZoneBlackout);
-		_textUnlock = Translations.Get(Scp079HudTranslation.ZoneBlackoutAvailable);
+		this._nameFormat = Translations.Get(Scp079HudTranslation.ActivateZoneBlackout);
+		this._textUnlock = Translations.Get(Scp079HudTranslation.ZoneBlackoutAvailable);
 	}
 
 	protected override void Update()
@@ -138,77 +138,77 @@ public class Scp079BlackoutZoneAbility : Scp079KeyAbilityBase, IScp079LevelUpNot
 		base.Update();
 		if (base.Owner.isLocalPlayer)
 		{
-			_syncZone = ZoneBlackoutIcon.HighlightedZone;
+			this._syncZone = ZoneBlackoutIcon.HighlightedZone;
 		}
 	}
 
 	public override void OnFailMessageAssigned()
 	{
 		base.OnFailMessageAssigned();
-		_hasFailMessage = true;
-		_failReason = ErrorCode;
-		_failMessage = Translations.Get(_failReason);
+		this._hasFailMessage = true;
+		this._failReason = this.ErrorCode;
+		this._failMessage = Translations.Get(this._failReason);
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_cooldownTimer.Clear();
+		this._cooldownTimer.Clear();
 	}
 
 	public bool WriteLevelUpNotification(StringBuilder sb, int newLevel)
 	{
-		if (newLevel != _minTierIndex)
+		if (newLevel != this._minTierIndex)
 		{
 			return false;
 		}
-		sb.Append(_textUnlock);
+		sb.Append(this._textUnlock);
 		return true;
 	}
 
 	protected override void Trigger()
 	{
-		ClientSendCmd();
+		base.ClientSendCmd();
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteByte((byte)_syncZone);
+		writer.WriteByte((byte)this._syncZone);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		_syncZone = (FacilityZone)reader.ReadByte();
-		if (ErrorCode != 0)
+		this._syncZone = (FacilityZone)reader.ReadByte();
+		if (this.ErrorCode != Scp079HudTranslation.Zoom)
 		{
 			return;
 		}
-		Scp079BlackingOutZoneEventArgs scp079BlackingOutZoneEventArgs = new Scp079BlackingOutZoneEventArgs(base.Owner, _syncZone);
-		Scp079Events.OnBlackingOutZone(scp079BlackingOutZoneEventArgs);
-		if (!scp079BlackingOutZoneEventArgs.IsAllowed)
+		Scp079BlackingOutZoneEventArgs e = new Scp079BlackingOutZoneEventArgs(base.Owner, this._syncZone);
+		Scp079Events.OnBlackingOutZone(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
 		foreach (RoomLightController instance in RoomLightController.Instances)
 		{
-			if (instance.Room.Zone == _syncZone)
+			if (instance.Room.Zone == this._syncZone)
 			{
-				instance.ServerFlickerLights(_duration);
+				instance.ServerFlickerLights(this._duration);
 			}
 		}
-		_cooldownTimer.Trigger(_cooldown);
-		base.AuxManager.CurrentAux -= _cost;
-		ServerSendRpc(toAll: true);
-		Scp079Events.OnBlackedOutZone(new Scp079BlackedOutZoneEventArgs(base.Owner, _syncZone));
+		this._cooldownTimer.Trigger(this._cooldown);
+		base.AuxManager.CurrentAux -= this._cost;
+		base.ServerSendRpc(toAll: true);
+		Scp079Events.OnBlackedOutZone(new Scp079BlackedOutZoneEventArgs(base.Owner, this._syncZone));
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte((byte)_syncZone);
-		_cooldownTimer.WriteCooldown(writer);
+		writer.WriteByte((byte)this._syncZone);
+		this._cooldownTimer.WriteCooldown(writer);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)

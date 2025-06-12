@@ -15,7 +15,7 @@ public abstract class ToggleableMenuBase : MonoBehaviour, IRegisterableMenu, ICu
 	{
 		get
 		{
-			if (!IsEnabled)
+			if (!this.IsEnabled)
 			{
 				return CursorOverrideMode.NoOverride;
 			}
@@ -29,14 +29,14 @@ public abstract class ToggleableMenuBase : MonoBehaviour, IRegisterableMenu, ICu
 	{
 		get
 		{
-			return _isEnabled;
+			return this._isEnabled;
 		}
 		set
 		{
-			if (value != _isEnabled)
+			if (value != this._isEnabled)
 			{
-				_isEnabled = value;
-				OnToggled();
+				this._isEnabled = value;
+				this.OnToggled();
 			}
 		}
 	}

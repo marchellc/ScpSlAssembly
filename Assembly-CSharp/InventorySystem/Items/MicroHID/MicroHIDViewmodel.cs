@@ -62,10 +62,10 @@ public class MicroHIDViewmodel : StandardAnimatedViemodel
 	{
 		get
 		{
-			AnimatorStateInfo animatorStateInfo = AnimatorStateInfo(0);
-			if (animatorStateInfo.tagHash != IdleTagNameHash)
+			AnimatorStateInfo animatorStateInfo = this.AnimatorStateInfo(0);
+			if (animatorStateInfo.tagHash != MicroHIDViewmodel.IdleTagNameHash)
 			{
-				return animatorStateInfo.tagHash == InspectTagNameHash;
+				return animatorStateInfo.tagHash == MicroHIDViewmodel.InspectTagNameHash;
 			}
 			return true;
 		}
@@ -75,9 +75,9 @@ public class MicroHIDViewmodel : StandardAnimatedViemodel
 	{
 		get
 		{
-			AnimatorStateInfo animatorStateInfo = AnimatorStateInfo(0);
-			bool flag = AnimatorInTransition(0);
-			if (animatorStateInfo.tagHash == IdleTagNameHash)
+			AnimatorStateInfo animatorStateInfo = this.AnimatorStateInfo(0);
+			bool flag = this.AnimatorInTransition(0);
+			if (animatorStateInfo.tagHash == MicroHIDViewmodel.IdleTagNameHash)
 			{
 				return !flag;
 			}
@@ -90,7 +90,7 @@ public class MicroHIDViewmodel : StandardAnimatedViemodel
 		get
 		{
 			float progress = WindupSyncModule.GetProgress(base.ItemId.SerialNumber);
-			return _shakingOverWindupProgress.Evaluate(progress);
+			return this._shakingOverWindupProgress.Evaluate(progress);
 		}
 	}
 
@@ -98,26 +98,26 @@ public class MicroHIDViewmodel : StandardAnimatedViemodel
 	{
 		get
 		{
-			if (_cycle.Phase != MicroHidPhase.WoundUpSustain)
+			if (this._cycle.Phase != MicroHidPhase.WoundUpSustain)
 			{
 				return 0f;
 			}
-			return _shakingOverSustain.Evaluate(_cycle.CurrentPhaseElapsed);
+			return this._shakingOverSustain.Evaluate(this._cycle.CurrentPhaseElapsed);
 		}
 	}
 
 	protected override IItemSwayController GetNewSwayController()
 	{
-		return new WalkSway(new GoopSway.GoopSwaySettings(HandsPivot, 1.6f, 0.0015f, 0.04f, 4f, 6.5f, 0.025f, 2.6f, invertSway: false), this);
+		return new WalkSway(new GoopSway.GoopSwaySettings(base.HandsPivot, 1.6f, 0.0015f, 0.04f, 4f, 6.5f, 0.025f, 2.6f, invertSway: false), this);
 	}
 
 	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
 	{
 		base.InitSpectator(ply, id, wasEquipped);
-		UpdateAllAnims();
+		this.UpdateAllAnims();
 		if (wasEquipped)
 		{
-			AnimatorForceUpdate(base.SkipEquipTime, fastMode: false);
+			this.AnimatorForceUpdate(base.SkipEquipTime, fastMode: false);
 		}
 	}
 
@@ -128,11 +128,11 @@ public class MicroHIDViewmodel : StandardAnimatedViemodel
 		DrawAndInspectorModule.OnInspectRequested += OnInspectRequested;
 		if (BrokenSyncModule.GetBroken(base.ItemId.SerialNumber))
 		{
-			_brokenElapsed = _brokenWeightOverTime[_brokenWeightOverTime.length - 1].time;
+			this._brokenElapsed = this._brokenWeightOverTime[this._brokenWeightOverTime.length - 1].time;
 		}
-		_cycle = CycleSyncModule.GetCycleController(base.ItemId.SerialNumber);
-		_particles.Init(base.ItemId.SerialNumber, base.Hub.PlayerCameraReference);
-		ParticleSystem[] componentsInChildren = _particles.GetComponentsInChildren<ParticleSystem>(includeInactive: true);
+		this._cycle = CycleSyncModule.GetCycleController(base.ItemId.SerialNumber);
+		this._particles.Init(base.ItemId.SerialNumber, base.Hub.PlayerCameraReference);
+		ParticleSystem[] componentsInChildren = this._particles.GetComponentsInChildren<ParticleSystem>(includeInactive: true);
 		foreach (ParticleSystem particleSystem in componentsInChildren)
 		{
 			if (particleSystem.gameObject.layer == base.gameObject.layer)
@@ -146,18 +146,18 @@ public class MicroHIDViewmodel : StandardAnimatedViemodel
 	{
 		if (serial == base.ItemId.SerialNumber)
 		{
-			AnimatorSetLayerWeight(3, 1f);
-			AnimatorSetTrigger(BrokenHash);
+			this.AnimatorSetLayerWeight(3, 1f);
+			this.AnimatorSetTrigger(MicroHIDViewmodel.BrokenHash);
 		}
 	}
 
 	private void OnInspectRequested(ushort serial)
 	{
-		if (serial == base.ItemId.SerialNumber && ValidateStartInspect)
+		if (serial == base.ItemId.SerialNumber && this.ValidateStartInspect)
 		{
-			AnimatorSetTrigger(InspectStartTriggerHash);
-			AnimatorSetBool(InspectValidBoolHash, val: true);
-			_inspectSoundSession = new AudioPoolSession(AudioSourcePoolManager.Play2DWithParent(_inspectSound, base.transform));
+			this.AnimatorSetTrigger(MicroHIDViewmodel.InspectStartTriggerHash);
+			this.AnimatorSetBool(MicroHIDViewmodel.InspectValidBoolHash, val: true);
+			this._inspectSoundSession = new AudioPoolSession(AudioSourcePoolManager.Play2DWithParent(this._inspectSound, base.transform));
 		}
 	}
 
@@ -169,59 +169,59 @@ public class MicroHIDViewmodel : StandardAnimatedViemodel
 
 	private void Update()
 	{
-		UpdateAllAnims();
+		this.UpdateAllAnims();
 	}
 
 	private void UpdateAllAnims()
 	{
-		UpdateBroken();
-		UpdatePickup();
-		UpdateInspect();
-		UpdateCycle();
-		UpdateShaking();
+		this.UpdateBroken();
+		this.UpdatePickup();
+		this.UpdateInspect();
+		this.UpdateCycle();
+		this.UpdateShaking();
 	}
 
 	private void UpdateBroken()
 	{
 		if (BrokenSyncModule.GetBroken(base.ItemId.SerialNumber))
 		{
-			_brokenElapsed += Time.deltaTime;
+			this._brokenElapsed += Time.deltaTime;
 		}
-		AnimatorSetLayerWeight(3, _brokenWeightOverTime.Evaluate(_brokenElapsed));
+		this.AnimatorSetLayerWeight(3, this._brokenWeightOverTime.Evaluate(this._brokenElapsed));
 	}
 
 	private void UpdatePickup()
 	{
 		bool flag = DrawAndInspectorModule.CheckPickupPreference(base.ItemId.SerialNumber);
-		AnimatorSetFloat(FirstTimePickupFloatHash, flag ? 1 : 0);
+		this.AnimatorSetFloat(MicroHIDViewmodel.FirstTimePickupFloatHash, flag ? 1 : 0);
 	}
 
 	private void UpdateInspect()
 	{
-		if (!IsInspecting && _inspectSoundSession.SameSession)
+		if (!this.IsInspecting && this._inspectSoundSession.SameSession)
 		{
-			_inspectSoundSession.Source.volume -= Time.deltaTime * 3f;
+			this._inspectSoundSession.Source.volume -= Time.deltaTime * 3f;
 		}
-		AnimatorSetBool(InspectValidBoolHash, IsInspecting);
+		this.AnimatorSetBool(MicroHIDViewmodel.InspectValidBoolHash, this.IsInspecting);
 	}
 
 	private void UpdateCycle()
 	{
-		AnimatorSetInt(CurPhaseHash, (int)_cycle.Phase);
-		AnimatorSetInt(FiringModeHash, (int)_cycle.LastFiringMode);
-		if (_prevPhase != _cycle.Phase)
+		this.AnimatorSetInt(MicroHIDViewmodel.CurPhaseHash, (int)this._cycle.Phase);
+		this.AnimatorSetInt(MicroHIDViewmodel.FiringModeHash, (int)this._cycle.LastFiringMode);
+		if (this._prevPhase != this._cycle.Phase)
 		{
-			_prevPhase = _cycle.Phase;
-			AnimatorSetTrigger(PhaseChangedHash);
+			this._prevPhase = this._cycle.Phase;
+			this.AnimatorSetTrigger(MicroHIDViewmodel.PhaseChangedHash);
 		}
 	}
 
 	private void UpdateShaking()
 	{
-		float current = AnimatorGetLayerWeight(4);
-		float target = WindupShakeAmount + SustainShakeAmount;
+		float current = this.AnimatorGetLayerWeight(4);
+		float target = this.WindupShakeAmount + this.SustainShakeAmount;
 		float maxDelta = Time.deltaTime * 2f;
 		float val = Mathf.MoveTowards(current, target, maxDelta);
-		AnimatorSetLayerWeight(4, val);
+		this.AnimatorSetLayerWeight(4, val);
 	}
 }

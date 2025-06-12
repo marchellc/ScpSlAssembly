@@ -30,12 +30,12 @@ public abstract class Attachment : FirearmSubcomponentBase
 
 	private void SetupArrays()
 	{
-		if (!_arraysInitialized)
+		if (!this._arraysInitialized)
 		{
 			int totalNumberOfParams = AttachmentsUtils.TotalNumberOfParams;
-			_parameterValues = new float[totalNumberOfParams];
-			_parameterStates = new AttachmentParamState[totalNumberOfParams];
-			_arraysInitialized = true;
+			this._parameterValues = new float[totalNumberOfParams];
+			this._parameterStates = new AttachmentParamState[totalNumberOfParams];
+			this._arraysInitialized = true;
 		}
 	}
 
@@ -44,7 +44,7 @@ public abstract class Attachment : FirearmSubcomponentBase
 		base.OnInit();
 		if (base.Firearm.AllSubcomponents.TryGet(base.SyncId - 1, out var element) && element is Attachment attachment)
 		{
-			Index = (byte)(attachment.Index + 1);
+			this.Index = (byte)(attachment.Index + 1);
 		}
 	}
 
@@ -54,54 +54,54 @@ public abstract class Attachment : FirearmSubcomponentBase
 
 	protected void SetParameter(AttachmentParameterValuePair pair)
 	{
-		SetParameter((int)pair.Parameter, pair.Value, pair.UIOnly ? AttachmentParamState.UserInterface : AttachmentParamState.ActiveAndDisplayed);
+		this.SetParameter((int)pair.Parameter, pair.Value, pair.UIOnly ? AttachmentParamState.UserInterface : AttachmentParamState.ActiveAndDisplayed);
 	}
 
 	protected void SetParameter(int param, float val, AttachmentParamState state)
 	{
-		SetupArrays();
-		_parameterValues[param] = val;
-		_parameterStates[param] = state;
+		this.SetupArrays();
+		this._parameterValues[param] = val;
+		this._parameterStates[param] = state;
 	}
 
 	protected void ClearParameter(AttachmentParam param)
 	{
-		if (_arraysInitialized)
+		if (this._arraysInitialized)
 		{
-			_parameterStates[(int)param] = AttachmentParamState.Disabled;
+			this._parameterStates[(int)param] = AttachmentParamState.Disabled;
 		}
 	}
 
 	protected void ClearAllParameters()
 	{
-		if (_arraysInitialized)
+		if (this._arraysInitialized)
 		{
-			Array.Clear(_parameterStates, 0, AttachmentsUtils.TotalNumberOfParams);
+			Array.Clear(this._parameterStates, 0, AttachmentsUtils.TotalNumberOfParams);
 		}
 	}
 
 	public void GetParameterData(int param, out float val, out AttachmentParamState state)
 	{
-		SetupArrays();
-		val = _parameterValues[param];
-		state = _parameterStates[param];
+		this.SetupArrays();
+		val = this._parameterValues[param];
+		state = this._parameterStates[param];
 	}
 
 	public bool TryGetActiveValue(AttachmentParam param, out float val)
 	{
-		GetParameterData((int)param, out val, out var state);
+		this.GetParameterData((int)param, out val, out var state);
 		return (state & AttachmentParamState.SilentlyActive) != 0;
 	}
 
 	public bool TryGetDisplayValue(AttachmentParam param, out float val)
 	{
-		GetParameterData((int)param, out val, out var state);
+		this.GetParameterData((int)param, out val, out var state);
 		return (state & AttachmentParamState.UserInterface) != 0;
 	}
 
 	public void GetNameAndDescription(out string n, out string d)
 	{
-		if (TranslationReader.TryGet("AttachmentNames", (int)Name, out var val))
+		if (TranslationReader.TryGet("AttachmentNames", (int)this.Name, out var val))
 		{
 			string[] array = val.Split('~');
 			n = array[0];
@@ -109,7 +109,7 @@ public abstract class Attachment : FirearmSubcomponentBase
 		}
 		else
 		{
-			n = Name.ToString();
+			n = this.Name.ToString();
 			d = string.Empty;
 		}
 	}
@@ -117,9 +117,9 @@ public abstract class Attachment : FirearmSubcomponentBase
 	internal sealed override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (IsEnabled)
+		if (this.IsEnabled)
 		{
-			EnabledEquipUpdate();
+			this.EnabledEquipUpdate();
 		}
 	}
 }

@@ -25,37 +25,37 @@ public class WorkstationActionTrigger : InteractableCollider, IClientInteractabl
 
 	protected override void Awake()
 	{
-		Target = this;
-		_rt = GetComponent<RectTransform>();
-		_col = base.gameObject.AddComponent<BoxCollider>();
-		_depth = 0.61f;
-		Transform parent = _rt.parent;
+		base.Target = this;
+		this._rt = base.GetComponent<RectTransform>();
+		this._col = base.gameObject.AddComponent<BoxCollider>();
+		this._depth = 0.61f;
+		Transform parent = this._rt.parent;
 		while (parent != null)
 		{
 			if (parent.TryGetComponent<WorkstationActionTrigger>(out var _))
 			{
-				_depth += 0.25f;
+				this._depth += 0.25f;
 			}
 			parent = parent.parent;
 		}
-		UpdateSize();
+		this.UpdateSize();
 	}
 
 	private void Update()
 	{
-		UpdateSize();
+		this.UpdateSize();
 	}
 
 	private void UpdateSize()
 	{
-		_col.size = new Vector3(_rt.rect.size.x, _rt.rect.size.y, _depth);
-		_halfSize = new Vector2(_col.size.x, _col.size.y) * 0.5f;
+		this._col.size = new Vector3(this._rt.rect.size.x, this._rt.rect.size.y, this._depth);
+		this._halfSize = new Vector2(this._col.size.x, this._col.size.y) * 0.5f;
 	}
 
 	public void ClientInteract(InteractableCollider _)
 	{
-		Vector3 point = InteractionCoordinator.LastRaycastHit.point;
-		Vector3 vector = _rt.InverseTransformPoint(point);
-		TargetAction?.Invoke(vector / _halfSize);
+		Vector3 point = CenterScreenRaycast.LastRaycastHit.point;
+		Vector3 vector = this._rt.InverseTransformPoint(point);
+		this.TargetAction?.Invoke(vector / this._halfSize);
 	}
 }

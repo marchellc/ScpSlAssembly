@@ -19,7 +19,7 @@ public static class TerminationRewards
 
 	private static void OnPlayerTeleported(ReferenceHub scp106, ReferenceHub hub)
 	{
-		OnHumanTerminated(hub, new ScpDamageHandler(scp106, DeathTranslations.PocketDecay));
+		TerminationRewards.OnHumanTerminated(hub, new ScpDamageHandler(scp106, DeathTranslations.PocketDecay));
 	}
 
 	private static void OnHumanTerminated(ReferenceHub ply, DamageHandlerBase damageHandler)
@@ -28,7 +28,7 @@ public static class TerminationRewards
 		{
 			Scp079Role.ActiveInstances.ForEach(delegate(Scp079Role x)
 			{
-				GainReward(x, ply, damageHandler);
+				TerminationRewards.GainReward(x, ply, damageHandler);
 			});
 		}
 	}
@@ -36,11 +36,11 @@ public static class TerminationRewards
 	private static void GainReward(Scp079Role scp079, ReferenceHub deadPly, DamageHandlerBase damageHandler)
 	{
 		PlayerRoleBase currentRole = deadPly.roleManager.CurrentRole;
-		if (!(currentRole is IFpcRole) || !TryGetBaseReward(currentRole.RoleTypeId, out var amount))
+		if (!(currentRole is IFpcRole) || !TerminationRewards.TryGetBaseReward(currentRole.RoleTypeId, out var amount))
 		{
 			return;
 		}
-		Scp079HudTranslation scp079HudTranslation = EvaluateGainReason(deadPly, damageHandler);
+		Scp079HudTranslation scp079HudTranslation = TerminationRewards.EvaluateGainReason(deadPly, damageHandler);
 		RoomIdentifier room;
 		bool num = deadPly.TryGetCurrentRoom(out room);
 		bool flag = num && Scp079RewardManager.CheckForRoomInteractions(scp079, room);
@@ -78,7 +78,7 @@ public static class TerminationRewards
 
 	private static Scp079HudTranslation EvaluateGainReason(ReferenceHub deadPlayer, DamageHandlerBase damageHandler)
 	{
-		if (CheckDirectTermination(damageHandler))
+		if (TerminationRewards.CheckDirectTermination(damageHandler))
 		{
 			return Scp079HudTranslation.ExpGainTerminationDirect;
 		}

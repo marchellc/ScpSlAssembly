@@ -22,7 +22,7 @@ public static class CustomParser
 		bool flag = false;
 		foreach (char c in source)
 		{
-			if (KnownCharacters.Contains(c))
+			if (CustomParser.KnownCharacters.Contains(c))
 			{
 				stringBuilder.Append(c);
 			}
@@ -47,7 +47,7 @@ public static class CustomParser
 	{
 		ParseResult result = ParseResult.FullSuccess;
 		val = 0f;
-		if (RemoveUnknownCharacters(source, out source))
+		if (CustomParser.RemoveUnknownCharacters(source, out source))
 		{
 			result = ParseResult.PartialSuccess;
 		}
@@ -97,7 +97,7 @@ public static class CustomParser
 	public static ParseResult TryParseInt(string source, out int val)
 	{
 		float val2;
-		ParseResult parseResult = TryParseFloat(source, out val2);
+		ParseResult parseResult = CustomParser.TryParseFloat(source, out val2);
 		if (parseResult == ParseResult.Failed)
 		{
 			val = 0;

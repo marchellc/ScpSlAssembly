@@ -38,9 +38,9 @@ public static class InventoryItemProvider
 
 	private static void Update()
 	{
-		if (NetworkServer.active && InventoriesToReplenish.TryDequeue(out var result) && !(result == null))
+		if (NetworkServer.active && InventoryItemProvider.InventoriesToReplenish.TryDequeue(out var result) && !(result == null))
 		{
-			SpawnPreviousInventoryPickups(result);
+			InventoryItemProvider.SpawnPreviousInventoryPickups(result);
 		}
 	}
 
@@ -57,10 +57,10 @@ public static class InventoryItemProvider
 		Inventory inventory = target.inventory;
 		List<ItemType> items = NorthwoodLib.Pools.ListPool<ItemType>.Shared.Rent();
 		Dictionary<ItemType, ushort> ammo = CollectionPool<Dictionary<ItemType, ushort>, KeyValuePair<ItemType, ushort>>.Get();
-		TryAssignLoadout(role, ref items, ref ammo);
-		PlayerReceivingLoadoutEventArgs playerReceivingLoadoutEventArgs = new PlayerReceivingLoadoutEventArgs(target, items, ammo, resetInventory);
-		PlayerEvents.OnReceivingLoadout(playerReceivingLoadoutEventArgs);
-		if (!playerReceivingLoadoutEventArgs.IsAllowed)
+		InventoryItemProvider.TryAssignLoadout(role, ref items, ref ammo);
+		PlayerReceivingLoadoutEventArgs e = new PlayerReceivingLoadoutEventArgs(target, items, ammo, resetInventory);
+		PlayerEvents.OnReceivingLoadout(e);
+		if (!e.IsAllowed)
 		{
 			NorthwoodLib.Pools.ListPool<ItemType>.Shared.Return(items);
 			CollectionPool<Dictionary<ItemType, ushort>, KeyValuePair<ItemType, ushort>>.Release(ammo);
@@ -82,7 +82,7 @@ public static class InventoryItemProvider
 		for (int i = 0; i < items.Count; i++)
 		{
 			ItemBase arg = inventory.ServerAddItem(items[i], ItemAddReason.StartingItem, 0);
-			OnItemProvided?.Invoke(target, arg);
+			InventoryItemProvider.OnItemProvided?.Invoke(target, arg);
 		}
 		PlayerEvents.OnReceivedLoadout(new PlayerReceivedLoadoutEventArgs(target, items, ammo, resetInventory));
 		NorthwoodLib.Pools.ListPool<ItemType>.Shared.Return(items);
@@ -91,7 +91,7 @@ public static class InventoryItemProvider
 
 	private static bool TryAssignLoadout(PlayerRoleBase role, ref List<ItemType> items, ref Dictionary<ItemType, ushort> ammo)
 	{
-		if (!TryGetLoadout(role.RoleTypeId, out var ammo2, out var items2))
+		if (!InventoryItemProvider.TryGetLoadout(role.RoleTypeId, out var ammo2, out var items2))
 		{
 			return false;
 		}
@@ -122,7 +122,7 @@ public static class InventoryItemProvider
 
 	private static void SpawnPreviousInventoryPickups(ReferenceHub hub)
 	{
-		if (!PreviousInventoryPickups.TryGetValue(hub, out var value))
+		if (!InventoryItemProvider.PreviousInventoryPickups.TryGetValue(hub, out var value))
 		{
 			return;
 		}
@@ -144,7 +144,7 @@ public static class InventoryItemProvider
 				}
 			}
 		}
-		PreviousInventoryPickups.Remove(hub);
+		InventoryItemProvider.PreviousInventoryPickups.Remove(hub);
 		if (flag)
 		{
 			HintDisplay.SuppressedReceivers.Remove(connectionToClient);
@@ -158,7 +158,7 @@ public static class InventoryItemProvider
 			return;
 		}
 		Inventory inventory = ply.inventory;
-		bool flag = KeepItemsAfterEscaping && newRole.ServerSpawnReason == RoleChangeReason.Escaped;
+		bool flag = InventoryItemProvider.KeepItemsAfterEscaping && newRole.ServerSpawnReason == RoleChangeReason.Escaped;
 		if (flag)
 		{
 			List<ItemPickupBase> list = new List<ItemPickupBase>();
@@ -179,9 +179,9 @@ public static class InventoryItemProvider
 				list.Add(inventory.ServerDropItem(item2));
 			}
 			NorthwoodLib.Pools.HashSetPool<ushort>.Shared.Return(hashSet);
-			PreviousInventoryPickups[ply] = list;
+			InventoryItemProvider.PreviousInventoryPickups[ply] = list;
 		}
-		ServerGrantLoadout(ply, newRole, !flag);
-		InventoriesToReplenish.Enqueue(ply);
+		InventoryItemProvider.ServerGrantLoadout(ply, newRole, !flag);
+		InventoryItemProvider.InventoriesToReplenish.Enqueue(ply);
 	}
 }

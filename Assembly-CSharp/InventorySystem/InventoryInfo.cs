@@ -11,7 +11,7 @@ public class InventoryInfo
 
 	public InventoryInfo()
 	{
-		Items = new Dictionary<ushort, ItemBase>();
-		ReserveAmmo = new Dictionary<ItemType, ushort>();
+		this.Items = new Dictionary<ushort, ItemBase>();
+		this.ReserveAmmo = new Dictionary<ItemType, ushort>();
 	}
 }

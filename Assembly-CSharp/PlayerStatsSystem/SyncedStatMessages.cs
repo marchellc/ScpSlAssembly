@@ -39,7 +39,7 @@ public static class SyncedStatMessages
 		{
 			if (allHub.IsAlive() && !(allHub == userHub))
 			{
-				SendAllStats(userHub.networkIdentity.connectionToClient, allHub.playerStats);
+				SyncedStatMessages.SendAllStats(userHub.networkIdentity.connectionToClient, allHub.playerStats);
 			}
 		}
 	}
@@ -81,11 +81,12 @@ public static class SyncedStatMessages
 		byte syncId = reader.ReadByte();
 		StatMessageType type = (StatMessageType)reader.ReadByte();
 		SyncedStatBase statOfUser = SyncedStatBase.GetStatOfUser(netId, syncId);
-		StatMessage result = default(StatMessage);
-		result.Stat = statOfUser;
-		result.Type = type;
-		result.SyncedValue = statOfUser.ReadValue(type, reader);
-		return result;
+		return new StatMessage
+		{
+			Stat = statOfUser,
+			Type = type,
+			SyncedValue = statOfUser.ReadValue(type, reader)
+		};
 	}
 
 	private static void RegisterHandler()

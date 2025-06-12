@@ -37,25 +37,25 @@ public class Scp096CharacterModel : AnimatedCharacterModel
 	protected override void Update()
 	{
 		base.Update();
-		if (!(_rageAbility == null))
+		if (!(this._rageAbility == null))
 		{
-			bool value = _role.IsAbilityState(Scp096AbilityState.TryingNotToCry);
-			_thirdPersonAnimator.SetBool(AnimatorEnragedHash, _rageAbility.IsEnraged);
-			_thirdPersonAnimator.SetBool(AnimatorEnragingHash, _rageAbility.IsDistressed);
-			_thirdPersonAnimator.SetBool(AnimatorChargingHash, _role.IsAbilityState(Scp096AbilityState.Charging));
-			_thirdPersonAnimator.SetBool(AnimatorTryNotToCryHash, value);
-			_thirdPersonAnimator.SetBool(AnimatorAttackHash, _role.IsAbilityState(Scp096AbilityState.Attacking));
-			_thirdPersonAnimator.SetBool(AnimatorLeftAttackHash, _attackAbility.LeftAttack);
-			_thirdPersonAnimator.SetBool(AnimatorPryGateHash, _role.IsAbilityState(Scp096AbilityState.PryingGate));
-			_thirdPersonAnimator.SetBool(AnimatorCalmingHash, _role.IsRageState(Scp096RageState.Calming));
+			bool value = this._role.IsAbilityState(Scp096AbilityState.TryingNotToCry);
+			this._thirdPersonAnimator.SetBool(Scp096CharacterModel.AnimatorEnragedHash, this._rageAbility.IsEnraged);
+			this._thirdPersonAnimator.SetBool(Scp096CharacterModel.AnimatorEnragingHash, this._rageAbility.IsDistressed);
+			this._thirdPersonAnimator.SetBool(Scp096CharacterModel.AnimatorChargingHash, this._role.IsAbilityState(Scp096AbilityState.Charging));
+			this._thirdPersonAnimator.SetBool(Scp096CharacterModel.AnimatorTryNotToCryHash, value);
+			this._thirdPersonAnimator.SetBool(Scp096CharacterModel.AnimatorAttackHash, this._role.IsAbilityState(Scp096AbilityState.Attacking));
+			this._thirdPersonAnimator.SetBool(Scp096CharacterModel.AnimatorLeftAttackHash, this._attackAbility.LeftAttack);
+			this._thirdPersonAnimator.SetBool(Scp096CharacterModel.AnimatorPryGateHash, this._role.IsAbilityState(Scp096AbilityState.PryingGate));
+			this._thirdPersonAnimator.SetBool(Scp096CharacterModel.AnimatorCalmingHash, this._role.IsRageState(Scp096RageState.Calming));
 		}
 	}
 
 	public override void Setup(ReferenceHub owner, IFpcRole role, Vector3 localPos, Quaternion localRot)
 	{
 		base.Setup(owner, role, localPos, localRot);
-		_role = base.OwnerHub.roleManager.CurrentRole as Scp096Role;
-		_role.SubroutineModule.TryGetSubroutine<Scp096AttackAbility>(out _attackAbility);
-		_role.SubroutineModule.TryGetSubroutine<Scp096RageManager>(out _rageAbility);
+		this._role = base.OwnerHub.roleManager.CurrentRole as Scp096Role;
+		this._role.SubroutineModule.TryGetSubroutine<Scp096AttackAbility>(out this._attackAbility);
+		this._role.SubroutineModule.TryGetSubroutine<Scp096RageManager>(out this._rageAbility);
 	}
 }

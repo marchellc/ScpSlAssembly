@@ -32,25 +32,25 @@ public class EnvMimicrySequence : ScriptableObject
 	{
 		UnityEngine.Random.State state = UnityEngine.Random.state;
 		UnityEngine.Random.InitState(randomSeed);
-		_sounds.ForEach(EnqueueSound);
+		this._sounds.ForEach(EnqueueSound);
 		UnityEngine.Random.state = state;
 	}
 
 	public bool UpdateSequence(Transform mimicPoint)
 	{
-		if (_currentlyPlayed == null)
+		if (this._currentlyPlayed == null)
 		{
-			if (!_queuedSounds.TryDequeue(out var result))
+			if (!this._queuedSounds.TryDequeue(out var result))
 			{
 				return false;
 			}
 			AudioSourcePoolManager.PlayOnTransform(result.Clips.RandomItem(), mimicPoint, result.Range, 1f, FalloffType.Exponential, result.Channel);
-			_currentlyPlayed = result;
+			this._currentlyPlayed = result;
 		}
-		_currentlyPlayed.Duration -= Time.deltaTime;
-		if (_currentlyPlayed.Duration <= 0f)
+		this._currentlyPlayed.Duration -= Time.deltaTime;
+		if (this._currentlyPlayed.Duration <= 0f)
 		{
-			_currentlyPlayed = null;
+			this._currentlyPlayed = null;
 		}
 		return true;
 	}
@@ -67,7 +67,7 @@ public class EnvMimicrySequence : ScriptableObject
 				Duration = s.Duration,
 				Range = s.Range
 			};
-			_queuedSounds.Enqueue(item);
+			this._queuedSounds.Enqueue(item);
 		}
 	}
 }

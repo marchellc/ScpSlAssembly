@@ -18,14 +18,14 @@ public class JustResourcesHandler : AchievementHandlerBase
 
 	internal override void OnRoundStarted()
 	{
-		_interactedPlayers.Clear();
+		this._interactedPlayers.Clear();
 	}
 
 	private void HandleDisarmed(ReferenceHub disarmerHub, ReferenceHub targetHub)
 	{
-		if (NetworkServer.active && !(disarmerHub == null) && !(targetHub == null) && disarmerHub.GetTeam() == Team.Scientists && targetHub.GetTeam() == Team.ClassD && !_interactedPlayers.Contains(targetHub))
+		if (NetworkServer.active && !(disarmerHub == null) && !(targetHub == null) && disarmerHub.GetTeam() == Team.Scientists && targetHub.GetTeam() == Team.ClassD && !this._interactedPlayers.Contains(targetHub))
 		{
-			_interactedPlayers.Add(targetHub);
+			this._interactedPlayers.Add(targetHub);
 			AchievementHandlerBase.ServerAchieve(disarmerHub.networkIdentity.connectionToClient, AchievementName.JustResources);
 		}
 	}
@@ -35,9 +35,9 @@ public class JustResourcesHandler : AchievementHandlerBase
 		if (NetworkServer.active && handler is AttackerDamageHandler attackerDamageHandler && !(attackerDamageHandler.Attacker.Hub == null))
 		{
 			ReferenceHub hub = attackerDamageHandler.Attacker.Hub;
-			if (hub.GetTeam() == Team.Scientists && deadPlayer.GetTeam() == Team.ClassD && !_interactedPlayers.Contains(deadPlayer))
+			if (hub.GetTeam() == Team.Scientists && deadPlayer.GetTeam() == Team.ClassD && !this._interactedPlayers.Contains(deadPlayer))
 			{
-				_interactedPlayers.Add(hub);
+				this._interactedPlayers.Add(hub);
 				AchievementHandlerBase.ServerAchieve(hub.networkIdentity.connectionToClient, AchievementName.JustResources);
 			}
 		}

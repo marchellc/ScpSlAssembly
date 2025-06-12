@@ -12,7 +12,7 @@ public sealed class ColorFormatter : IJsonFormatter<Color>, IJsonFormatter
 
 	public ColorFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("r"),
@@ -31,7 +31,7 @@ public sealed class ColorFormatter : IJsonFormatter<Color>, IJsonFormatter
 				3
 			}
 		};
-		____stringByteKeys = new byte[4][]
+		this.____stringByteKeys = new byte[4][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("r"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("g"),
@@ -42,13 +42,13 @@ public sealed class ColorFormatter : IJsonFormatter<Color>, IJsonFormatter
 
 	public void Serialize(ref JsonWriter writer, Color value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteSingle(value.r);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteSingle(value.g);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteSingle(value.b);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		writer.WriteSingle(value.a);
 		writer.WriteEndObject();
 	}
@@ -68,7 +68,7 @@ public sealed class ColorFormatter : IJsonFormatter<Color>, IJsonFormatter
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

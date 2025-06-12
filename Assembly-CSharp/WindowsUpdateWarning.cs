@@ -14,8 +14,8 @@ public class WindowsUpdateWarning : MonoBehaviour
 
 	private void Start()
 	{
-		warning.SetActive(UpdateRequired());
-		menu.SetActive(SceneManager.GetActiveScene().buildIndex == 3 || !warning.activeSelf);
+		this.warning.SetActive(WindowsUpdateWarning.UpdateRequired());
+		this.menu.SetActive(SceneManager.GetActiveScene().buildIndex == 3 || !this.warning.activeSelf);
 	}
 
 	public static bool UpdateRequired()
@@ -29,7 +29,7 @@ public class WindowsUpdateWarning : MonoBehaviour
 				char directorySeparatorChar = Path.DirectorySeparatorChar;
 				if (!File.Exists(folderPath + directorySeparatorChar + "API-MS-WIN-CRT-MATH-L1-1-0.dll"))
 				{
-					result = ((!CheckDll("API-MS-WIN-CRT-MATH-L1-1-0.dll")) ? 1 : 0);
+					result = ((!WindowsUpdateWarning.CheckDll("API-MS-WIN-CRT-MATH-L1-1-0.dll")) ? 1 : 0);
 					goto IL_004b;
 				}
 			}
@@ -47,12 +47,12 @@ public class WindowsUpdateWarning : MonoBehaviour
 
 	private static bool CheckDll(string name)
 	{
-		IntPtr intPtr = LoadLibrary(name);
+		IntPtr intPtr = WindowsUpdateWarning.LoadLibrary(name);
 		if (intPtr == IntPtr.Zero)
 		{
 			throw new Win32Exception();
 		}
-		if (!FreeLibrary(intPtr))
+		if (!WindowsUpdateWarning.FreeLibrary(intPtr))
 		{
 			throw new Win32Exception();
 		}

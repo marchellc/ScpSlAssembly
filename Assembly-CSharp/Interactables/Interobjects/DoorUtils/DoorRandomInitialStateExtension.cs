@@ -12,7 +12,7 @@ public class DoorRandomInitialStateExtension : DoorVariantExtension
 	{
 		if (NetworkServer.active)
 		{
-			TargetDoor.NetworkTargetState = Random.value < OpenChance;
+			base.TargetDoor.NetworkTargetState = Random.value < this.OpenChance;
 		}
 	}
 }

@@ -27,8 +27,8 @@ public abstract class UnitNamingRule
 		sb.AppendLine("\n");
 		if ((infoFlags & PlayerInfoArea.PowerStatus) == PlayerInfoArea.PowerStatus)
 		{
-			int rolePower = GetRolePower(humanRole.RoleTypeId);
-			int rolePower2 = GetRolePower(theirRole);
+			int rolePower = this.GetRolePower(humanRole.RoleTypeId);
+			int rolePower2 = this.GetRolePower(theirRole);
 			sb.Append("<b>");
 			if (rolePower > rolePower2)
 			{

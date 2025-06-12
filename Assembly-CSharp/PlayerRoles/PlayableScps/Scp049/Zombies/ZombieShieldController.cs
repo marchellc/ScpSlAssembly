@@ -23,7 +23,7 @@ public class ZombieShieldController : DynamicHumeShieldController
 	{
 		get
 		{
-			if (!CallSubroutines.Any((Scp049CallAbility x) => x.IsMarkerShown && CheckDistanceTo(x.CastRole)))
+			if (!ZombieShieldController.CallSubroutines.Any((Scp049CallAbility x) => x.IsMarkerShown && this.CheckDistanceTo(x.CastRole)))
 			{
 				return 0f;
 			}
@@ -34,7 +34,7 @@ public class ZombieShieldController : DynamicHumeShieldController
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_fpc = (base.Owner.roleManager.CurrentRole as IFpcRole).FpcModule;
+		this._fpc = (base.Owner.roleManager.CurrentRole as IFpcRole).FpcModule;
 		if (NetworkServer.active)
 		{
 			base.HsCurrent = 0f;
@@ -43,7 +43,7 @@ public class ZombieShieldController : DynamicHumeShieldController
 
 	public override void OnHsValueChanged(float prevValue, float newValue)
 	{
-		if (NetworkServer.active && (prevValue != HsMax || newValue != 0f))
+		if (NetworkServer.active && (prevValue != this.HsMax || newValue != 0f))
 		{
 			base.OnHsValueChanged(prevValue, newValue);
 		}
@@ -51,24 +51,24 @@ public class ZombieShieldController : DynamicHumeShieldController
 
 	private bool CheckDistanceTo(Scp049Role role)
 	{
-		return (role.FpcModule.Position - _fpc.Position).sqrMagnitude <= 100f;
+		return (role.FpcModule.Position - this._fpc.Position).sqrMagnitude <= 100f;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		CustomNetworkManager.OnClientReady += CallSubroutines.Clear;
+		CustomNetworkManager.OnClientReady += ZombieShieldController.CallSubroutines.Clear;
 		PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub hub, PlayerRoleBase oldRole, PlayerRoleBase newRole)
 		{
 			if (NetworkServer.active)
 			{
-				if (TryGetCallSubroutine(oldRole, out var sr))
+				if (ZombieShieldController.TryGetCallSubroutine(oldRole, out var sr))
 				{
-					CallSubroutines.Remove(sr);
+					ZombieShieldController.CallSubroutines.Remove(sr);
 				}
-				if (TryGetCallSubroutine(newRole, out var sr2))
+				if (ZombieShieldController.TryGetCallSubroutine(newRole, out var sr2))
 				{
-					CallSubroutines.Add(sr2);
+					ZombieShieldController.CallSubroutines.Add(sr2);
 				}
 			}
 		};

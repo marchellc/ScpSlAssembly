@@ -12,29 +12,30 @@ public class Scp244Item : UsableItem
 
 	public override void ServerOnUsingCompleted()
 	{
-		_primed = true;
+		this._primed = true;
 		base.OwnerInventory.ServerDropItem(base.ItemSerial);
 	}
 
 	public override void OnUsingCancelled()
 	{
 		base.OnUsingCancelled();
-		_primed = false;
+		this._primed = false;
 	}
 
 	public override ItemPickupBase ServerDropItem(bool spawn)
 	{
-		PickupSyncInfo pickupSyncInfo = default(PickupSyncInfo);
-		pickupSyncInfo.ItemId = ItemTypeId;
-		pickupSyncInfo.Serial = base.ItemSerial;
-		pickupSyncInfo.WeightKg = Weight;
-		PickupSyncInfo value = pickupSyncInfo;
+		PickupSyncInfo value = new PickupSyncInfo
+		{
+			ItemId = base.ItemTypeId,
+			Serial = base.ItemSerial,
+			WeightKg = this.Weight
+		};
 		ItemPickupBase itemPickupBase = base.OwnerInventory.ServerCreatePickup(this, value, spawn, delegate(ItemPickupBase ipb)
 		{
 			ipb.PreviousOwner = new Footprint(base.Owner);
 			if (ipb is Scp244DeployablePickup scp244DeployablePickup)
 			{
-				scp244DeployablePickup.State = (_primed ? Scp244State.Active : Scp244State.Idle);
+				scp244DeployablePickup.State = (this._primed ? Scp244State.Active : Scp244State.Idle);
 			}
 			Transform transform = base.Owner.transform;
 			ipb.transform.SetPositionAndRotation(transform.position - Vector3.up * 0.72f, transform.rotation);

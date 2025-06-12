@@ -17,8 +17,8 @@ public class MicroHIDParticles : MonoBehaviour
 
 		public readonly void Update(float windupProgress)
 		{
-			float constant = _emissionRateOverProgress.Evaluate(windupProgress);
-			ParticleSystem.EmissionModule emission = _particleSys.emission;
+			float constant = this._emissionRateOverProgress.Evaluate(windupProgress);
+			ParticleSystem.EmissionModule emission = this._particleSys.emission;
 			emission.rateOverTime = new ParticleSystem.MinMaxCurve(constant);
 		}
 	}
@@ -36,24 +36,24 @@ public class MicroHIDParticles : MonoBehaviour
 
 		public readonly void SetActive(bool b)
 		{
-			_particleSys.gameObject.SetActive(b);
+			this._particleSys.gameObject.SetActive(b);
 		}
 
 		public readonly void Update(MicroHIDParticles parts, FiringModeControllerModule firingMode, float scale)
 		{
-			ParticleSystem.TrailModule trails = _particleSys.trails;
+			ParticleSystem.TrailModule trails = this._particleSys.trails;
 			trails.widthOverTrail = parts._targetTrailWidth * scale;
 			float targetLength;
-			if (_viewmodelMode)
+			if (this._viewmodelMode)
 			{
 				targetLength = firingMode.FiringRange;
 			}
 			else
 			{
-				GetTransformationData(parts._camera, firingMode.FiringRange, out targetLength, out var targetFwd);
-				_particleSys.transform.forward = targetFwd;
+				this.GetTransformationData(parts._camera, firingMode.FiringRange, out targetLength, out var targetFwd);
+				this._particleSys.transform.forward = targetFwd;
 			}
-			ParticleSystem.MainModule main = _particleSys.main;
+			ParticleSystem.MainModule main = this._particleSys.main;
 			main.startLifetime = targetLength * parts._rangeToLifetimeRatio * scale;
 		}
 
@@ -61,11 +61,11 @@ public class MicroHIDParticles : MonoBehaviour
 		{
 			Vector3 position = camera.position;
 			Vector3 forward = camera.forward;
-			Transform transform = _particleSys.transform;
+			Transform transform = this._particleSys.transform;
 			targetFwd = forward;
 			targetLength = 0f;
 			RaycastHit hitInfo;
-			Vector3 vector = (Physics.Raycast(position, forward, out hitInfo, firingRange, VisualizedCollisionMask) ? hitInfo.point : (position + forward * firingRange)) - transform.position;
+			Vector3 vector = (Physics.Raycast(position, forward, out hitInfo, firingRange, MicroHIDParticles.VisualizedCollisionMask) ? hitInfo.point : (position + forward * firingRange)) - transform.position;
 			float magnitude = vector.magnitude;
 			if (magnitude != 0f)
 			{
@@ -131,11 +131,11 @@ public class MicroHIDParticles : MonoBehaviour
 	{
 		get
 		{
-			if (!_cycle.TryGetElapsed(MicroHidPhase.WindingUp, out var elapsed))
+			if (!this._cycle.TryGetElapsed(MicroHidPhase.WindingUp, out var elapsed))
 			{
 				return false;
 			}
-			if (!_cycle.TryGetElapsed(MicroHidPhase.Firing, out var elapsed2))
+			if (!this._cycle.TryGetElapsed(MicroHidPhase.Firing, out var elapsed2))
 			{
 				return false;
 			}
@@ -145,36 +145,36 @@ public class MicroHIDParticles : MonoBehaviour
 
 	public void Init(ushort serial, Transform camera)
 	{
-		_initalized = true;
-		_serial = serial;
-		_camera = camera;
-		_cycle = CycleSyncModule.GetCycleController(serial);
+		this._initalized = true;
+		this._serial = serial;
+		this._camera = camera;
+		this._cycle = CycleSyncModule.GetCycleController(serial);
 	}
 
 	private void Update()
 	{
-		if (_initalized)
+		if (this._initalized)
 		{
-			UpdateAll();
-			_prevPhase = _cycle.Phase;
+			this.UpdateAll();
+			this._prevPhase = this._cycle.Phase;
 		}
 	}
 
 	private void UpdateAll()
 	{
-		bool flag = _cycle.Phase != MicroHidPhase.Standby;
-		_allParticles.SetActive(flag);
+		bool flag = this._cycle.Phase != MicroHidPhase.Standby;
+		this._allParticles.SetActive(flag);
 		if (!flag)
 		{
-			_wasBroken = false;
+			this._wasBroken = false;
 			return;
 		}
-		UpdateBroken();
-		UpdateFiring();
-		float num = (_wasBroken ? 0f : WindupSyncModule.GetProgress(_serial));
-		ParticleSystem.MainModule main = _windupBlinkerSystem.main;
-		main.startColor = _windupBlinkerGradient.Evaluate(num);
-		WindupArc[] windupArcs = _windupArcs;
+		this.UpdateBroken();
+		this.UpdateFiring();
+		float num = (this._wasBroken ? 0f : WindupSyncModule.GetProgress(this._serial));
+		ParticleSystem.MainModule main = this._windupBlinkerSystem.main;
+		main.startColor = this._windupBlinkerGradient.Evaluate(num);
+		WindupArc[] windupArcs = this._windupArcs;
 		foreach (WindupArc windupArc in windupArcs)
 		{
 			windupArc.Update(num);
@@ -183,20 +183,20 @@ public class MicroHIDParticles : MonoBehaviour
 
 	private void UpdateFiring()
 	{
-		bool num = _cycle.Phase == MicroHidPhase.Firing;
-		MicroHidPhase prevPhase = _prevPhase;
+		bool num = this._cycle.Phase == MicroHidPhase.Firing;
+		MicroHidPhase prevPhase = this._prevPhase;
 		bool flag = prevPhase == MicroHidPhase.WindingUp || prevPhase == MicroHidPhase.WoundUpSustain;
 		bool num2 = num && flag;
-		float currentPhaseElapsed = _cycle.CurrentPhaseElapsed;
+		float currentPhaseElapsed = this._cycle.CurrentPhaseElapsed;
 		if (num2)
 		{
-			ParticleSystem[] startFiringParticles = _startFiringParticles;
+			ParticleSystem[] startFiringParticles = this._startFiringParticles;
 			for (int i = 0; i < startFiringParticles.Length; i++)
 			{
 				startFiringParticles[i].Play(withChildren: false);
 			}
 		}
-		prevPhase = _cycle.Phase;
+		prevPhase = this._cycle.Phase;
 		float num3;
 		if (prevPhase != MicroHidPhase.WindingDown)
 		{
@@ -204,15 +204,15 @@ public class MicroHIDParticles : MonoBehaviour
 			{
 				goto IL_00a7;
 			}
-			num3 = Mathf.Clamp01(currentPhaseElapsed / _arcGrowTime);
+			num3 = Mathf.Clamp01(currentPhaseElapsed / this._arcGrowTime);
 		}
 		else
 		{
-			if (!WasFiring)
+			if (!this.WasFiring)
 			{
 				goto IL_00a7;
 			}
-			num3 = Mathf.Clamp01(1f - currentPhaseElapsed / _arcGrowTime);
+			num3 = Mathf.Clamp01(1f - currentPhaseElapsed / this._arcGrowTime);
 		}
 		goto IL_00ad;
 		IL_00a7:
@@ -220,19 +220,19 @@ public class MicroHIDParticles : MonoBehaviour
 		goto IL_00ad;
 		IL_00ad:
 		AimedLaser[] lasers;
-		if (num3 == 0f || !_cycle.TryGetLastFiringController(out var ret))
+		if (num3 == 0f || !this._cycle.TryGetLastFiringController(out var ret))
 		{
-			_chargeFireExtras.SetActive(value: false);
-			lasers = _lasers;
+			this._chargeFireExtras.SetActive(value: false);
+			lasers = this._lasers;
 			foreach (AimedLaser aimedLaser in lasers)
 			{
 				aimedLaser.SetActive(b: false);
 			}
 			return;
 		}
-		_chargeFireExtras.SetActive(ret is ChargeFireModeModule);
-		_chargeFireExtras.transform.localScale = Vector3.up * num3;
-		lasers = _lasers;
+		this._chargeFireExtras.SetActive(ret is ChargeFireModeModule);
+		this._chargeFireExtras.transform.localScale = Vector3.up * num3;
+		lasers = this._lasers;
 		for (int i = 0; i < lasers.Length; i++)
 		{
 			AimedLaser aimedLaser2 = lasers[i];
@@ -243,18 +243,18 @@ public class MicroHIDParticles : MonoBehaviour
 
 	private void UpdateBroken()
 	{
-		if (_wasBroken || !BrokenSyncModule.TryGetBrokenElapsed(_serial, out var elapsed))
+		if (this._wasBroken || !BrokenSyncModule.TryGetBrokenElapsed(this._serial, out var elapsed))
 		{
 			return;
 		}
 		if (elapsed < 5f)
 		{
-			_breakParticles.Simulate(elapsed, withChildren: true, restart: true);
-			if (_breakParticles.isPaused)
+			this._breakParticles.Simulate(elapsed, withChildren: true, restart: true);
+			if (this._breakParticles.isPaused)
 			{
-				_breakParticles.Play();
+				this._breakParticles.Play();
 			}
 		}
-		_wasBroken = true;
+		this._wasBroken = true;
 	}
 }

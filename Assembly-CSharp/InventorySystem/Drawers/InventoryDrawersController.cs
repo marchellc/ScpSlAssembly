@@ -50,11 +50,11 @@ public class InventoryDrawersController : MonoBehaviour
 	{
 		if (hub.isLocalPlayer)
 		{
-			_roleColor = newRole.RoleColor;
-			Graphic[] detailsToRecolor = _detailsToRecolor;
+			this._roleColor = newRole.RoleColor;
+			Graphic[] detailsToRecolor = this._detailsToRecolor;
 			foreach (Graphic graphic in detailsToRecolor)
 			{
-				Color roleColor = _roleColor;
+				Color roleColor = this._roleColor;
 				roleColor.a = graphic.color.a;
 				graphic.color = roleColor;
 			}
@@ -63,29 +63,29 @@ public class InventoryDrawersController : MonoBehaviour
 
 	private void Update()
 	{
-		if (!_active)
+		if (!this._active)
 		{
 			return;
 		}
-		float num = 1f - _inventoryGroup.alpha;
-		if (num != _thisGroup.alpha)
+		float num = 1f - this._inventoryGroup.alpha;
+		if (num != this._thisGroup.alpha)
 		{
-			_thisGroup.alpha = num;
+			this._thisGroup.alpha = num;
 		}
-		_alertText.text = _alertToTrack?.Alert.ParseText(_roleColor) ?? string.Empty;
-		if (_progressbarToTrack != null)
+		this._alertText.text = this._alertToTrack?.Alert.ParseText(this._roleColor) ?? string.Empty;
+		if (this._progressbarToTrack != null)
 		{
-			if (_progressbarToTrack.ProgressbarEnabled)
+			if (this._progressbarToTrack.ProgressbarEnabled)
 			{
-				_progressbarSlider.gameObject.SetActive(value: true);
-				_progressbarSlider.minValue = _progressbarToTrack.ProgressbarMin;
-				_progressbarSlider.maxValue = _progressbarToTrack.ProgressbarMax;
-				_progressbarSlider.value = _progressbarToTrack.ProgressbarValue;
-				_progressbarSliderRect.sizeDelta = new Vector2(_progressbarToTrack.ProgressbarWidth, 10f);
+				this._progressbarSlider.gameObject.SetActive(value: true);
+				this._progressbarSlider.minValue = this._progressbarToTrack.ProgressbarMin;
+				this._progressbarSlider.maxValue = this._progressbarToTrack.ProgressbarMax;
+				this._progressbarSlider.value = this._progressbarToTrack.ProgressbarValue;
+				this._progressbarSliderRect.sizeDelta = new Vector2(this._progressbarToTrack.ProgressbarWidth, 10f);
 			}
 			else
 			{
-				_progressbarSlider.gameObject.SetActive(value: false);
+				this._progressbarSlider.gameObject.SetActive(value: false);
 			}
 		}
 	}
@@ -94,11 +94,11 @@ public class InventoryDrawersController : MonoBehaviour
 	{
 		if (hub.isLocalPlayer)
 		{
-			_active = hub.inventory.UserInventory.Items.TryGetValue(newItem.SerialNumber, out var value) && value is IItemDrawer;
-			_alertToTrack = value as IItemAlertDrawer;
-			_alertText.text = string.Empty;
-			_progressbarToTrack = value as IItemProgressbarDrawer;
-			_progressbarSlider.gameObject.SetActive(value: false);
+			this._active = hub.inventory.UserInventory.Items.TryGetValue(newItem.SerialNumber, out var value) && value is IItemDrawer;
+			this._alertToTrack = value as IItemAlertDrawer;
+			this._alertText.text = string.Empty;
+			this._progressbarToTrack = value as IItemProgressbarDrawer;
+			this._progressbarSlider.gameObject.SetActive(value: false);
 		}
 	}
 }

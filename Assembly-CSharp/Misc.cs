@@ -98,28 +98,28 @@ public static class Misc
 
 	static Misc()
 	{
-		TagRegex = new Regex("<(\\/?(align|allcaps|alpha|b|color|cspace|font|font-weight|gradient|i|indent|line-height|line-indent|link|lowercase|margin|mark|mspace|nobr|noparse|page|pos|rotate|s|size|smallcaps|space|sprite|style|sub|sup|u|uppercase|voffset|width))[^<>]*>");
-		_raOrange = new Color32(byte.MaxValue, 180, 0, byte.MaxValue);
-		_darkGreen = new Color32(80, 150, 80, byte.MaxValue);
-		Utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-		ConsoleColors = new Dictionary<ConsoleColor, Color>();
-		_pbRgx = new Regex("^[a-zA-Z0-9]{8}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-		_ipV4Rgx = new Regex("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-		_ipV6Rgx = new Regex("^((([0-9a-f]{1,4}:){7}([0-9a-f]{1,4}|:))|(([0-9a-f]{1,4}:){6}(:[0-9a-f]{1,4}|((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|:))|(([0-9a-f]{1,4}:){5}(((:[0-9a-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|:))|(([0-9a-f]{1,4}:){4}(((:[0-9a-f]{1,4}){1,3})|((:[0-9a-f]{1,4})?:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9a-f]{1,4}:){3}(((:[0-9a-f]{1,4}){1,4})|((:[0-9a-f]{1,4}){0,2}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9a-f]{1,4}:){2}(((:[0-9a-f]{1,4}){1,5})|((:[0-9a-f]{1,4}){0,3}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9a-f]{1,4}:){1}(((:[0-9a-f]{1,4}){1,6})|((:[0-9a-f]{1,4}){0,4}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(:(((:[0-9a-f]{1,4}){1,7})|((:[0-9a-f]{1,4}){0,5}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:)))$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-		_hostNameRgx = new Regex("^(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-		_stpRgx = new Regex("<size=[^>]{0,}>", RegexOptions.Compiled);
-		CommandRegex = new Regex("^[a-zA-Z0-9\\-_.]{1,40}$", RegexOptions.Compiled);
-		CommandDescriptionRegex = new Regex("^[\\p{L}\\p{P}\\p{Sm}\\p{Sc}\\p{N} ^]{1,80}(\\.\\.\\.|)$", RegexOptions.Compiled);
-		RichTextRegex = new Regex("(?!<*?>)<.*?>", RegexOptions.Compiled);
-		PlayerCustomInfoRegex = new Regex("^((?![\\[\\]])[\\p{L}\\p{P}\\p{Sc}\\p{N} ^=+|~`<>\\n]){0,400}$", RegexOptions.Compiled);
-		FormatBracketRegex = new Regex("{\\d*}", RegexOptions.Compiled);
-		AcceptedColours = new string[24]
+		Misc.TagRegex = new Regex("<(\\/?(align|allcaps|alpha|b|color|cspace|font|font-weight|gradient|i|indent|line-height|line-indent|link|lowercase|margin|mark|mspace|nobr|noparse|page|pos|rotate|s|size|smallcaps|space|sprite|style|sub|sup|u|uppercase|voffset|width))[^<>]*>");
+		Misc._raOrange = new Color32(byte.MaxValue, 180, 0, byte.MaxValue);
+		Misc._darkGreen = new Color32(80, 150, 80, byte.MaxValue);
+		Misc.Utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+		Misc.ConsoleColors = new Dictionary<ConsoleColor, Color>();
+		Misc._pbRgx = new Regex("^[a-zA-Z0-9]{8}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		Misc._ipV4Rgx = new Regex("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		Misc._ipV6Rgx = new Regex("^((([0-9a-f]{1,4}:){7}([0-9a-f]{1,4}|:))|(([0-9a-f]{1,4}:){6}(:[0-9a-f]{1,4}|((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|:))|(([0-9a-f]{1,4}:){5}(((:[0-9a-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3})|:))|(([0-9a-f]{1,4}:){4}(((:[0-9a-f]{1,4}){1,3})|((:[0-9a-f]{1,4})?:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9a-f]{1,4}:){3}(((:[0-9a-f]{1,4}){1,4})|((:[0-9a-f]{1,4}){0,2}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9a-f]{1,4}:){2}(((:[0-9a-f]{1,4}){1,5})|((:[0-9a-f]{1,4}){0,3}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(([0-9a-f]{1,4}:){1}(((:[0-9a-f]{1,4}){1,6})|((:[0-9a-f]{1,4}){0,4}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:))|(:(((:[0-9a-f]{1,4}){1,7})|((:[0-9a-f]{1,4}){0,5}:((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)){3}))|:)))$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		Misc._hostNameRgx = new Regex("^(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+		Misc._stpRgx = new Regex("<size=[^>]{0,}>", RegexOptions.Compiled);
+		Misc.CommandRegex = new Regex("^[a-zA-Z0-9\\-_.]{1,40}$", RegexOptions.Compiled);
+		Misc.CommandDescriptionRegex = new Regex("^[\\p{L}\\p{P}\\p{Sm}\\p{Sc}\\p{N} ^]{1,80}(\\.\\.\\.|)$", RegexOptions.Compiled);
+		Misc.RichTextRegex = new Regex("(?!<*?>)<.*?>", RegexOptions.Compiled);
+		Misc.PlayerCustomInfoRegex = new Regex("^((?![\\[\\]])[\\p{L}\\p{P}\\p{Sc}\\p{N} ^=+|~`<>\\n]){0,400}$", RegexOptions.Compiled);
+		Misc.FormatBracketRegex = new Regex("{\\d*}", RegexOptions.Compiled);
+		Misc.AcceptedColours = new string[24]
 		{
 			"FF96DE", "C50000", "944710", "A0A0A0", "32CD32", "DC143C", "00B7EB", "00FFFF", "FF1493", "FF6448",
 			"FAFF86", "FF0090", "4DFFB8", "FF9966", "BFFF00", "228B22", "50C878", "960018", "727472", "98FB98",
 			"4B5320", "EE7600", "FFFFFF", "000000"
 		};
-		AllowedColors = new Dictionary<PlayerInfoColorTypes, string>
+		Misc.AllowedColors = new Dictionary<PlayerInfoColorTypes, string>
 		{
 			{
 				PlayerInfoColorTypes.Pink,
@@ -218,11 +218,11 @@ public static class Misc
 				"#FFFFFF"
 			}
 		};
-		_defaultColor = Color.white;
+		Misc._defaultColor = Color.white;
 		ConsoleColor[] values = EnumUtils<ConsoleColor>.Values;
 		foreach (ConsoleColor consoleColor in values)
 		{
-			ConsoleColors.Add(consoleColor, ServerConsole.ConsoleColorToColor(consoleColor));
+			Misc.ConsoleColors.Add(consoleColor, ServerConsole.ConsoleColorToColor(consoleColor));
 		}
 	}
 
@@ -316,7 +316,7 @@ public static class Misc
 			return string.Empty;
 		}
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent(content);
-		MatchCollection matchCollection = TagRegex.Matches(content);
+		MatchCollection matchCollection = Misc.TagRegex.Matches(content);
 		Dictionary<string, int> dictionary = new Dictionary<string, int>();
 		foreach (Match item in matchCollection)
 		{
@@ -329,7 +329,7 @@ public static class Misc
 		foreach (KeyValuePair<string, int> item2 in dictionary.Where((KeyValuePair<string, int> pair) => !pair.Key.StartsWith('/')))
 		{
 			int value = (dictionary.TryGetValue("/" + item2.Key, out value) ? (item2.Value - value) : item2.Value);
-			for (int i = 0; i < value; i++)
+			for (int num = 0; num < value; num++)
 			{
 				stringBuilder.Append("</").Append(item2.Key).Append('>');
 			}
@@ -427,7 +427,7 @@ public static class Misc
 
 	public static bool ValidatePastebin(string text)
 	{
-		return _pbRgx.IsMatch(text);
+		return Misc._pbRgx.IsMatch(text);
 	}
 
 	public static bool ValidateIpOrHostname(string ipOrHost, out IPAddressType type, bool allowHostname = true, bool allowLocalhost = true)
@@ -437,17 +437,17 @@ public static class Misc
 			type = IPAddressType.Localhost;
 			return allowLocalhost;
 		}
-		if (_ipV4Rgx.IsMatch(ipOrHost))
+		if (Misc._ipV4Rgx.IsMatch(ipOrHost))
 		{
 			type = IPAddressType.IPV4;
 			return true;
 		}
-		if (_ipV6Rgx.IsMatch(ipOrHost))
+		if (Misc._ipV6Rgx.IsMatch(ipOrHost))
 		{
 			type = IPAddressType.IPV6;
 			return true;
 		}
-		if (_hostNameRgx.IsMatch(ipOrHost))
+		if (Misc._hostNameRgx.IsMatch(ipOrHost))
 		{
 			type = IPAddressType.Hostname;
 			return allowHostname;
@@ -572,7 +572,7 @@ public static class Misc
 	{
 		if (string.IsNullOrEmpty(input))
 		{
-			color = _defaultColor;
+			color = Misc._defaultColor;
 			return false;
 		}
 		switch (input)
@@ -653,17 +653,17 @@ public static class Misc
 			{
 				if (!byte.TryParse(input.Substring(0, 2), NumberStyles.HexNumber, null, out var result))
 				{
-					color = _defaultColor;
+					color = Misc._defaultColor;
 					return false;
 				}
 				if (!byte.TryParse(input.Substring(2, 2), NumberStyles.HexNumber, null, out var result2))
 				{
-					color = _defaultColor;
+					color = Misc._defaultColor;
 					return false;
 				}
 				if (!byte.TryParse(input.Substring(4, 2), NumberStyles.HexNumber, null, out var result3))
 				{
-					color = _defaultColor;
+					color = Misc._defaultColor;
 					return false;
 				}
 				byte a = byte.MaxValue;
@@ -671,7 +671,7 @@ public static class Misc
 				{
 					if (!byte.TryParse(input.Substring(6, 2), NumberStyles.HexNumber, null, out var result4))
 					{
-						color = _defaultColor;
+						color = Misc._defaultColor;
 						return false;
 					}
 					a = result4;
@@ -679,7 +679,7 @@ public static class Misc
 				color = new Color32(result, result2, result3, a);
 				return true;
 			}
-			color = _defaultColor;
+			color = Misc._defaultColor;
 			return false;
 		}
 	}
@@ -706,11 +706,11 @@ public static class Misc
 		{
 			return ConsoleColor.Yellow;
 		}
-		if (color == _raOrange)
+		if (color == Misc._raOrange)
 		{
 			return ConsoleColor.DarkYellow;
 		}
-		if (color == _darkGreen)
+		if (color == Misc._darkGreen)
 		{
 			return ConsoleColor.DarkGreen;
 		}
@@ -719,7 +719,7 @@ public static class Misc
 		double num2 = color.g;
 		double num3 = color.b;
 		double num4 = double.MaxValue;
-		foreach (KeyValuePair<ConsoleColor, Color> consoleColor2 in ConsoleColors)
+		foreach (KeyValuePair<ConsoleColor, Color> consoleColor2 in Misc.ConsoleColors)
 		{
 			Color value = consoleColor2.Value;
 			double num5 = Math.Pow((double)value.r - num, 2.0) + Math.Pow((double)value.g - num2, 2.0) + Math.Pow((double)value.b - num3, 2.0);
@@ -918,7 +918,7 @@ public static class Misc
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent(text.Length);
 		for (int i = 0; i < text.Length; i++)
 		{
-			stringBuilder.Append(IsSafeCharacter(text[i]) ? text[i] : replaceCharacter);
+			stringBuilder.Append(Misc.IsSafeCharacter(text[i]) ? text[i] : replaceCharacter);
 		}
 		text = stringBuilder.ToString();
 		StringBuilderPool.Shared.Return(stringBuilder);
@@ -1218,7 +1218,7 @@ public static class Misc
 			foreach (DirectoryInfo directoryInfo2 in array)
 			{
 				string destDirName2 = Path.Combine(destDirName, directoryInfo2.Name);
-				DirectoryCopy(directoryInfo2.FullName, destDirName2);
+				Misc.DirectoryCopy(directoryInfo2.FullName, destDirName2);
 			}
 		}
 	}
@@ -1234,7 +1234,7 @@ public static class Misc
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
 		stringBuilder.Append(format);
 		int num = 0;
-		foreach (Match item in FormatBracketRegex.Matches(format))
+		foreach (Match item in Misc.FormatBracketRegex.Matches(format))
 		{
 			if (num <= args.Length - 1)
 			{

@@ -9,7 +9,7 @@ public class DualHandedLayerProcessor : LayerProcessorBase
 
 	protected override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
 	{
-		return new ThirdpersonLayerWeight(CalculateWeight(base.TargetModel, layer), allowOther: false);
+		return new ThirdpersonLayerWeight(DualHandedLayerProcessor.CalculateWeight(base.TargetModel, layer), allowOther: false);
 	}
 
 	public static float CalculateWeight(AnimatedCharacterModel model, AnimItemLayer3p layer)

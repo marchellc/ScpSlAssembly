@@ -49,13 +49,13 @@ public class ConditionalEvaluator
 
 	public bool Evaluate()
 	{
-		bool? flag = EvaluateArray(AttachmentConditions, EvaluateAttachmentCondition);
-		bool? flag2 = EvaluateArray(OtherConditions, EvaluateModuleCondition);
+		bool? flag = this.EvaluateArray(this.AttachmentConditions, EvaluateAttachmentCondition);
+		bool? flag2 = this.EvaluateArray(this.OtherConditions, EvaluateModuleCondition);
 		if (!flag.HasValue && !flag2.HasValue)
 		{
 			return true;
 		}
-		if (Any)
+		if (this.Any)
 		{
 			if (flag != true)
 			{
@@ -72,9 +72,9 @@ public class ConditionalEvaluator
 
 	public void InitInstance(Firearm instance)
 	{
-		_firearm = instance;
-		_hasSetter = instance.TryGetModule<AnimatorStateSetterModule>(out _setterModule);
-		AttachmentStatusPair[] attachmentConditions = AttachmentConditions;
+		this._firearm = instance;
+		this._hasSetter = instance.TryGetModule<AnimatorStateSetterModule>(out this._setterModule);
+		AttachmentStatusPair[] attachmentConditions = this.AttachmentConditions;
 		for (int i = 0; i < attachmentConditions.Length; i++)
 		{
 			attachmentConditions[i].Link.InitCache(instance);
@@ -83,15 +83,15 @@ public class ConditionalEvaluator
 
 	public void InitWorldmodel(FirearmWorldmodel worldmodel)
 	{
-		_worldmodel = worldmodel;
-		if ((!_worldmodelMode || !(_worldmodel == worldmodel)) && InventoryItemLoader.TryGetItem<Firearm>(worldmodel.Identifier.TypeId, out var result))
+		this._worldmodel = worldmodel;
+		if ((!this._worldmodelMode || !(this._worldmodel == worldmodel)) && InventoryItemLoader.TryGetItem<Firearm>(worldmodel.Identifier.TypeId, out var result))
 		{
-			AttachmentStatusPair[] attachmentConditions = AttachmentConditions;
+			AttachmentStatusPair[] attachmentConditions = this.AttachmentConditions;
 			for (int i = 0; i < attachmentConditions.Length; i++)
 			{
 				attachmentConditions[i].Link.InitCache(result);
 			}
-			_worldmodelMode = true;
+			this._worldmodelMode = true;
 		}
 	}
 
@@ -108,17 +108,17 @@ public class ConditionalEvaluator
 		};
 		bool GetEnabled()
 		{
-			if (!_worldmodelMode)
+			if (!this._worldmodelMode)
 			{
 				return link.Instance.IsEnabled;
 			}
-			return (_worldmodel.AttachmentCode & link.Filter) != 0;
+			return (this._worldmodel.AttachmentCode & link.Filter) != 0;
 		}
 		bool GetReadyFlag()
 		{
-			if (_hasSetter)
+			if (this._hasSetter)
 			{
-				return _setterModule.GetReadyFlag(link.Instance);
+				return this._setterModule.GetReadyFlag(link.Instance);
 			}
 			return false;
 		}
@@ -129,10 +129,10 @@ public class ConditionalEvaluator
 		IEquipperModule module;
 		return cond switch
 		{
-			OtherCondition.Equipped => _firearm.TryGetModule<IEquipperModule>(out module) && module.IsEquipped, 
-			OtherCondition.Pickup => _worldmodelMode && _worldmodel.WorldmodelType == FirearmWorldmodelType.Pickup, 
-			OtherCondition.Thirdperson => _worldmodelMode && _worldmodel.WorldmodelType == FirearmWorldmodelType.Thirdperson, 
-			OtherCondition.Firstperson => !_worldmodelMode && _firearm.HasViewmodel, 
+			OtherCondition.Equipped => this._firearm.TryGetModule<IEquipperModule>(out module) && module.IsEquipped, 
+			OtherCondition.Pickup => this._worldmodelMode && this._worldmodel.WorldmodelType == FirearmWorldmodelType.Pickup, 
+			OtherCondition.Thirdperson => this._worldmodelMode && this._worldmodel.WorldmodelType == FirearmWorldmodelType.Thirdperson, 
+			OtherCondition.Firstperson => !this._worldmodelMode && this._firearm.HasViewmodel, 
 			_ => false, 
 		};
 	}
@@ -147,16 +147,16 @@ public class ConditionalEvaluator
 		{
 			if (evaluator(obj))
 			{
-				if (Any)
+				if (this.Any)
 				{
 					return true;
 				}
 			}
-			else if (!Any)
+			else if (!this.Any)
 			{
 				return false;
 			}
 		}
-		return !Any;
+		return !this.Any;
 	}
 }

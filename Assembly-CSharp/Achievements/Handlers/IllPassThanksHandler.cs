@@ -16,7 +16,7 @@ public class IllPassThanksHandler : AchievementHandlerBase
 
 	private void PlayerTeleported(ReferenceHub scp106, ReferenceHub hub)
 	{
-		if (CheckConditionsForVictim(hub))
+		if (this.CheckConditionsForVictim(hub))
 		{
 			AchievementHandlerBase.ServerAchieve(scp106.connectionToClient, AchievementName.IllPassThanks);
 		}
@@ -27,7 +27,7 @@ public class IllPassThanksHandler : AchievementHandlerBase
 		if (handler is AttackerDamageHandler attackerDamageHandler)
 		{
 			ReferenceHub hub = attackerDamageHandler.Attacker.Hub;
-			if (!(hub == null) && hub.IsSCP() && CheckConditionsForVictim(deadPlayer))
+			if (!(hub == null) && hub.IsSCP() && this.CheckConditionsForVictim(deadPlayer))
 			{
 				AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.IllPassThanks);
 			}

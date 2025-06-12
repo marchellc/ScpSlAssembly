@@ -16,18 +16,18 @@ public readonly struct TranslationManifest : IEquatable<TranslationManifest>, IJ
 	[SerializationConstructor]
 	public TranslationManifest(string name, string[] authors, string[] interfaceLocales, string[] systemLocales, string[] forcedFontOrder)
 	{
-		Name = name;
-		Authors = authors;
-		InterfaceLocales = interfaceLocales;
-		SystemLocales = systemLocales;
-		ForcedFontOrder = forcedFontOrder;
+		this.Name = name;
+		this.Authors = authors;
+		this.InterfaceLocales = interfaceLocales;
+		this.SystemLocales = systemLocales;
+		this.ForcedFontOrder = forcedFontOrder;
 	}
 
 	public bool Equals(TranslationManifest other)
 	{
-		if (string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase) && Authors == other.Authors && InterfaceLocales == other.InterfaceLocales && SystemLocales == other.SystemLocales)
+		if (string.Equals(this.Name, other.Name, StringComparison.OrdinalIgnoreCase) && this.Authors == other.Authors && this.InterfaceLocales == other.InterfaceLocales && this.SystemLocales == other.SystemLocales)
 		{
-			return ForcedFontOrder == other.ForcedFontOrder;
+			return this.ForcedFontOrder == other.ForcedFontOrder;
 		}
 		return false;
 	}
@@ -36,14 +36,14 @@ public readonly struct TranslationManifest : IEquatable<TranslationManifest>, IJ
 	{
 		if (obj is TranslationManifest other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((((((((Name != null) ? StringComparer.OrdinalIgnoreCase.GetHashCode(Name) : 0) * 397) ^ ((Authors != null) ? Authors.GetHashCode() : 0)) * 397) ^ ((InterfaceLocales != null) ? InterfaceLocales.GetHashCode() : 0)) * 397) ^ ((SystemLocales != null) ? SystemLocales.GetHashCode() : 0)) * 397) ^ ((ForcedFontOrder != null) ? ForcedFontOrder.GetHashCode() : 0);
+		return (((((((((this.Name != null) ? StringComparer.OrdinalIgnoreCase.GetHashCode(this.Name) : 0) * 397) ^ ((this.Authors != null) ? this.Authors.GetHashCode() : 0)) * 397) ^ ((this.InterfaceLocales != null) ? this.InterfaceLocales.GetHashCode() : 0)) * 397) ^ ((this.SystemLocales != null) ? this.SystemLocales.GetHashCode() : 0)) * 397) ^ ((this.ForcedFontOrder != null) ? this.ForcedFontOrder.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(TranslationManifest left, TranslationManifest right)

@@ -16,46 +16,46 @@ public class UserSettingsDescriptionText : MonoBehaviour
 
 	private void Awake()
 	{
-		_text = GetComponent<TMP_Text>();
+		this._text = base.GetComponent<TMP_Text>();
 	}
 
 	private void OnEnable()
 	{
-		_text.alpha = 0f;
+		this._text.alpha = 0f;
 	}
 
 	private void Update()
 	{
-		if (_prev == Current)
+		if (this._prev == this.Current)
 		{
-			UpdateCurrent();
+			this.UpdateCurrent();
 		}
 		else
 		{
-			DisablePrevious();
+			this.DisablePrevious();
 		}
 	}
 
 	private void DisablePrevious()
 	{
-		if (_text.alpha > 0f)
+		if (this._text.alpha > 0f)
 		{
-			_text.alpha -= _transitionSpeed * Time.deltaTime;
+			this._text.alpha -= this._transitionSpeed * Time.deltaTime;
 		}
 		else
 		{
-			_prev = UserSettingsEntryDescription.CurrentDescription;
+			this._prev = UserSettingsEntryDescription.CurrentDescription;
 		}
 	}
 
 	private void UpdateCurrent()
 	{
-		if (Current == null)
+		if (this.Current == null)
 		{
-			_text.alpha = 0f;
+			this._text.alpha = 0f;
 			return;
 		}
-		_text.text = Current.Text;
-		_text.alpha = Mathf.MoveTowards(_text.alpha, 1f, Time.deltaTime * _transitionSpeed);
+		this._text.text = this.Current.Text;
+		this._text.alpha = Mathf.MoveTowards(this._text.alpha, 1f, Time.deltaTime * this._transitionSpeed);
 	}
 }

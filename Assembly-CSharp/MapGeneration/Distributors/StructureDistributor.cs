@@ -13,14 +13,14 @@ public class StructureDistributor : SpawnablesDistributorBase
 
 	protected override void PlaceSpawnables()
 	{
-		PrepareQueueForStructures();
+		this.PrepareQueueForStructures();
 		int structureId;
 		StructureSpawnpoint spawnpoint;
-		while (TryGetNextStructure(out structureId, out spawnpoint))
+		while (this.TryGetNextStructure(out structureId, out spawnpoint))
 		{
 			if (!(spawnpoint == null))
 			{
-				SpawnStructure(Settings.SpawnableStructures[structureId], spawnpoint.transform, spawnpoint.TriggerDoorName);
+				this.SpawnStructure(base.Settings.SpawnableStructures[structureId], spawnpoint.transform, spawnpoint.TriggerDoorName);
 			}
 		}
 	}
@@ -28,15 +28,15 @@ public class StructureDistributor : SpawnablesDistributorBase
 	private void PrepareQueueForStructures()
 	{
 		List<int> list = ListPool<int>.Shared.Rent();
-		for (int i = 0; i < Settings.SpawnableStructures.Length; i++)
+		for (int i = 0; i < base.Settings.SpawnableStructures.Length; i++)
 		{
 			float time = Random.Range(0f, 1f);
-			int num = Mathf.FloorToInt(Settings.SpawnableStructures[i].MinMaxProbability.Evaluate(time));
+			int num = Mathf.FloorToInt(base.Settings.SpawnableStructures[i].MinMaxProbability.Evaluate(time));
 			for (int j = 0; j < num; j++)
 			{
-				if (j < Settings.SpawnableStructures[i].MinAmount)
+				if (j < base.Settings.SpawnableStructures[i].MinAmount)
 				{
-					_queuedStructures.Enqueue(i);
+					this._queuedStructures.Enqueue(i);
 				}
 				else
 				{
@@ -47,7 +47,7 @@ public class StructureDistributor : SpawnablesDistributorBase
 		while (list.Count > 0)
 		{
 			int index = Random.Range(0, list.Count);
-			_queuedStructures.Enqueue(list[index]);
+			this._queuedStructures.Enqueue(list[index]);
 			list.RemoveAt(index);
 		}
 		ListPool<int>.Shared.Return(list);
@@ -56,18 +56,18 @@ public class StructureDistributor : SpawnablesDistributorBase
 	private bool TryGetNextStructure(out int structureId, out StructureSpawnpoint spawnpoint)
 	{
 		spawnpoint = null;
-		if (!_queuedStructures.TryDequeue(out structureId))
+		if (!this._queuedStructures.TryDequeue(out structureId))
 		{
 			return false;
 		}
-		if (_missingSpawnpoints.Contains(structureId))
+		if (this._missingSpawnpoints.Contains(structureId))
 		{
 			return true;
 		}
 		List<StructureSpawnpoint> list = ListPool<StructureSpawnpoint>.Shared.Rent();
 		foreach (StructureSpawnpoint availableInstance in StructureSpawnpoint.AvailableInstances)
 		{
-			if (!(availableInstance == null) && availableInstance.CompatibleStructures.Contains(Settings.SpawnableStructures[structureId].StructureType))
+			if (!(availableInstance == null) && availableInstance.CompatibleStructures.Contains(base.Settings.SpawnableStructures[structureId].StructureType))
 			{
 				list.Add(availableInstance);
 			}
@@ -80,7 +80,7 @@ public class StructureDistributor : SpawnablesDistributorBase
 		}
 		else
 		{
-			_missingSpawnpoints.Add(structureId);
+			this._missingSpawnpoints.Add(structureId);
 		}
 		return true;
 	}
@@ -91,11 +91,11 @@ public class StructureDistributor : SpawnablesDistributorBase
 		spawnableStructure.transform.SetParent(tr);
 		if (string.IsNullOrEmpty(doorName) || !DoorNametagExtension.NamedDoors.TryGetValue(doorName, out var value))
 		{
-			SpawnObject(spawnableStructure.gameObject);
+			this.SpawnObject(spawnableStructure.gameObject);
 		}
 		else
 		{
-			RegisterUnspawnedObject(value.TargetDoor, spawnableStructure.gameObject);
+			base.RegisterUnspawnedObject(value.TargetDoor, spawnableStructure.gameObject);
 		}
 	}
 }

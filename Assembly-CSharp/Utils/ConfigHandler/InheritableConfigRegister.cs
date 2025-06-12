@@ -9,7 +9,7 @@ public abstract class InheritableConfigRegister : ConfigRegister
 
 	protected InheritableConfigRegister(ConfigRegister parentConfigRegister = null)
 	{
-		ParentConfigRegister = parentConfigRegister;
+		this.ParentConfigRegister = parentConfigRegister;
 	}
 
 	public abstract bool ShouldInheritConfigEntry(ConfigEntry configEntry);
@@ -18,13 +18,13 @@ public abstract class InheritableConfigRegister : ConfigRegister
 
 	public override void UpdateConfigValue(ConfigEntry configEntry)
 	{
-		if (configEntry != null && configEntry.Inherit && ParentConfigRegister != null && ShouldInheritConfigEntry(configEntry))
+		if (configEntry != null && configEntry.Inherit && this.ParentConfigRegister != null && this.ShouldInheritConfigEntry(configEntry))
 		{
-			ParentConfigRegister.UpdateConfigValue(configEntry);
+			this.ParentConfigRegister.UpdateConfigValue(configEntry);
 		}
 		else
 		{
-			UpdateConfigValueInheritable(configEntry);
+			this.UpdateConfigValueInheritable(configEntry);
 		}
 	}
 

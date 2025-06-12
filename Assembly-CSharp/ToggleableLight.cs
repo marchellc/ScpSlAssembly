@@ -8,10 +8,10 @@ public class ToggleableLight : MonoBehaviour
 
 	public void SetLights(bool b)
 	{
-		GameObject[] array = allLights;
+		GameObject[] array = this.allLights;
 		for (int i = 0; i < array.Length; i++)
 		{
-			array[i].SetActive(isAlarm ? b : (!b));
+			array[i].SetActive(this.isAlarm ? b : (!b));
 		}
 	}
 }

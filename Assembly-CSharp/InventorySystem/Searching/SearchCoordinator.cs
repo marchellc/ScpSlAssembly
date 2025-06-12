@@ -40,7 +40,7 @@ public class SearchCoordinator : NetworkBehaviour, ICursorOverride
 	{
 		get
 		{
-			return rayDistance;
+			return this.rayDistance;
 		}
 		set
 		{
@@ -48,8 +48,8 @@ public class SearchCoordinator : NetworkBehaviour, ICursorOverride
 			{
 				throw new InvalidOperationException("The ray distance can only be set by the server.");
 			}
-			NetworkrayDistance = value;
-			UpdateMaxDistanceSqr();
+			this.NetworkrayDistance = value;
+			this.UpdateMaxDistanceSqr();
 		}
 	}
 
@@ -61,12 +61,12 @@ public class SearchCoordinator : NetworkBehaviour, ICursorOverride
 	{
 		get
 		{
-			return rayDistance;
+			return this.rayDistance;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref rayDistance, 1uL, SetRayDistance);
+			base.GeneratedSyncVarSetter(value, ref this.rayDistance, 1uL, SetRayDistance);
 		}
 	}
 
@@ -74,21 +74,21 @@ public class SearchCoordinator : NetworkBehaviour, ICursorOverride
 
 	private void SetRayDistance(float oldValue, float newValue)
 	{
-		UpdateMaxDistanceSqr();
+		this.UpdateMaxDistanceSqr();
 	}
 
 	private void UpdateMaxDistanceSqr()
 	{
-		ServerMaxRayDistanceSqr = rayDistance * rayDistance * serverRayDistanceThreshold;
+		this.ServerMaxRayDistanceSqr = this.rayDistance * this.rayDistance * this.serverRayDistanceThreshold;
 	}
 
 	private void Start()
 	{
-		UpdateMaxDistanceSqr();
-		Hub = ReferenceHub.GetHub(base.gameObject);
-		SessionPipe = new SearchSessionPipe(this, NetworkServer.active ? Hub.playerRateLimitHandler.RateLimits[0] : null);
-		SessionPipe.RequestUpdated += HandleRequest;
-		SessionPipe.RegisterHandlers();
+		this.UpdateMaxDistanceSqr();
+		this.Hub = ReferenceHub.GetHub(base.gameObject);
+		this.SessionPipe = new SearchSessionPipe(this, NetworkServer.active ? this.Hub.playerRateLimitHandler.RateLimits[0] : null);
+		this.SessionPipe.RequestUpdated += HandleRequest;
+		this.SessionPipe.RegisterHandlers();
 		if (base.isLocalPlayer)
 		{
 			CursorManager.Register(this);
@@ -102,11 +102,11 @@ public class SearchCoordinator : NetworkBehaviour, ICursorOverride
 
 	private void Update()
 	{
-		if (NetworkServer.active && SessionPipe.Status == SearchSessionPipe.Activity.Promised)
+		if (NetworkServer.active && this.SessionPipe.Status == SearchSessionPipe.Activity.Promised)
 		{
-			ContinuePickupServer();
+			this.ContinuePickupServer();
 		}
-		SessionPipe.Update();
+		this.SessionPipe.Update();
 	}
 
 	private void HandleRequest()
@@ -116,11 +116,11 @@ public class SearchCoordinator : NetworkBehaviour, ICursorOverride
 		ISearchCompletor completor;
 		try
 		{
-			flag = ReceiveRequestUnsafe(out session, out completor);
+			flag = this.ReceiveRequestUnsafe(out session, out completor);
 		}
 		catch (Exception exception)
 		{
-			SessionPipe.Invalidate();
+			this.SessionPipe.Invalidate();
 			DebugLog.LogException(exception);
 			return;
 		}
@@ -128,20 +128,20 @@ public class SearchCoordinator : NetworkBehaviour, ICursorOverride
 		{
 			if (session.HasValue)
 			{
-				SessionPipe.Session = session.Value;
+				this.SessionPipe.Session = session.Value;
 			}
 			else
 			{
-				SessionPipe.Invalidate();
+				this.SessionPipe.Invalidate();
 			}
 		}
-		Completor = completor;
+		this.Completor = completor;
 	}
 
 	private bool ReceiveRequestUnsafe(out SearchSession? session, out ISearchCompletor completor)
 	{
-		SearchRequest request = SessionPipe.Request;
-		completor = request.Target.GetSearchCompletor(this, ServerMaxRayDistanceSqr);
+		SearchRequest request = this.SessionPipe.Request;
+		completor = request.Target.GetSearchCompletor(this, this.ServerMaxRayDistanceSqr);
 		if (completor == null || !completor.ValidateStart())
 		{
 			session = null;
@@ -152,8 +152,8 @@ public class SearchCoordinator : NetworkBehaviour, ICursorOverride
 		if (!base.isLocalPlayer)
 		{
 			double num = NetworkTime.time - request.InitialTime;
-			double num2 = (double)LiteNetLib4MirrorServer.Peers[base.connectionToClient.connectionId].Ping * 0.001 * serverDelayThreshold;
-			float num3 = request.Target.SearchTimeForPlayer(Hub);
+			double num2 = (double)LiteNetLib4MirrorServer.Peers[base.connectionToClient.connectionId].Ping * 0.001 * this.serverDelayThreshold;
+			float num3 = request.Target.SearchTimeForPlayer(this.Hub);
 			if (num < 0.0 || num2 < num)
 			{
 				body.InitialTime = NetworkTime.time - num2;
@@ -170,17 +170,17 @@ public class SearchCoordinator : NetworkBehaviour, ICursorOverride
 
 	private void ContinuePickupServer()
 	{
-		if (Completor.ValidateUpdate())
+		if (this.Completor.ValidateUpdate())
 		{
-			if (!(NetworkTime.time < SessionPipe.Session.FinishTime))
+			if (!(NetworkTime.time < this.SessionPipe.Session.FinishTime))
 			{
-				Completor.Complete();
-				this.OnCompleted?.Invoke(Completor);
+				this.Completor.Complete();
+				this.OnCompleted?.Invoke(this.Completor);
 			}
 		}
 		else
 		{
-			SessionPipe.Invalidate();
+			this.SessionPipe.Invalidate();
 		}
 	}
 
@@ -194,13 +194,13 @@ public class SearchCoordinator : NetworkBehaviour, ICursorOverride
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteFloat(rayDistance);
+			writer.WriteFloat(this.rayDistance);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteFloat(rayDistance);
+			writer.WriteFloat(this.rayDistance);
 		}
 	}
 
@@ -209,13 +209,13 @@ public class SearchCoordinator : NetworkBehaviour, ICursorOverride
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref rayDistance, SetRayDistance, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this.rayDistance, SetRayDistance, reader.ReadFloat());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref rayDistance, SetRayDistance, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this.rayDistance, SetRayDistance, reader.ReadFloat());
 		}
 	}
 }

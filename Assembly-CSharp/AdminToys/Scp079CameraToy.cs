@@ -38,26 +38,25 @@ public class Scp079CameraToy : AdminToyBase
 
 	public FacilityZone ZoneIcon;
 
+	public Scp079Camera Camera;
+
 	[SerializeField]
 	private string _commandName;
 
-	[SerializeField]
-	private Scp079Camera _camera;
-
 	private ushort _clientSyncId;
 
-	public override string CommandName => "Camera" + _commandName;
+	public override string CommandName => "Camera" + this._commandName;
 
 	public string NetworkLabel
 	{
 		get
 		{
-			return Label;
+			return this.Label;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Label, 32uL, SetLabel);
+			base.GeneratedSyncVarSetter(value, ref this.Label, 32uL, SetLabel);
 		}
 	}
 
@@ -65,12 +64,12 @@ public class Scp079CameraToy : AdminToyBase
 	{
 		get
 		{
-			return Room;
+			return this.Room;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref Room, 64uL, SetRoom);
+			base.GeneratedSyncVarSetter(value, ref this.Room, 64uL, SetRoom);
 		}
 	}
 
@@ -78,12 +77,12 @@ public class Scp079CameraToy : AdminToyBase
 	{
 		get
 		{
-			return VerticalConstraint;
+			return this.VerticalConstraint;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref VerticalConstraint, 128uL, SetVerticalConstraint);
+			base.GeneratedSyncVarSetter(value, ref this.VerticalConstraint, 128uL, SetVerticalConstraint);
 		}
 	}
 
@@ -91,12 +90,12 @@ public class Scp079CameraToy : AdminToyBase
 	{
 		get
 		{
-			return HorizontalConstraint;
+			return this.HorizontalConstraint;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref HorizontalConstraint, 256uL, SetHorizontalConstraint);
+			base.GeneratedSyncVarSetter(value, ref this.HorizontalConstraint, 256uL, SetHorizontalConstraint);
 		}
 	}
 
@@ -104,12 +103,12 @@ public class Scp079CameraToy : AdminToyBase
 	{
 		get
 		{
-			return ZoomConstraint;
+			return this.ZoomConstraint;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref ZoomConstraint, 512uL, SetZoomConstraint);
+			base.GeneratedSyncVarSetter(value, ref this.ZoomConstraint, 512uL, SetZoomConstraint);
 		}
 	}
 
@@ -128,15 +127,15 @@ public class Scp079CameraToy : AdminToyBase
 	{
 		base.OnStartServer();
 		Scp079InteractableBase.InstancesCount++;
-		_camera.SyncId = (ushort)Scp079InteractableBase.InstancesCount;
-		Scp079InteractableBase.OrderedInstances.Add(_camera);
-		_camera.Position = base.transform.position;
-		NetworkLabel = _camera.Label;
-		NetworkVerticalConstraint = _camera.VerticalAxis.Constraints;
-		NetworkHorizontalConstraint = _camera.HorizontalAxis.Constraints;
-		NetworkZoomConstraint = _camera.ZoomAxis.Constraints;
-		SetRoom(null, null);
-		NetworkRoom = _camera.Room;
+		this.Camera.SyncId = (ushort)Scp079InteractableBase.InstancesCount;
+		Scp079InteractableBase.OrderedInstances.Add(this.Camera);
+		this.Camera.Position = base.transform.position;
+		this.NetworkLabel = this.Camera.Label;
+		this.NetworkVerticalConstraint = this.Camera.VerticalAxis.Constraints;
+		this.NetworkHorizontalConstraint = this.Camera.HorizontalAxis.Constraints;
+		this.NetworkZoomConstraint = this.Camera.ZoomAxis.Constraints;
+		this.SetRoom(null, this.Room);
+		this.NetworkRoom = this.Camera.Room;
 	}
 
 	public override void OnStartClient()
@@ -144,17 +143,17 @@ public class Scp079CameraToy : AdminToyBase
 		base.OnStartClient();
 		if (!NetworkServer.active)
 		{
-			_camera.SyncId = _clientSyncId;
-			int num = Mathf.Max(0, _clientSyncId - Scp079InteractableBase.OrderedInstances.Count);
+			this.Camera.SyncId = this._clientSyncId;
+			int num = Mathf.Max(0, this._clientSyncId - Scp079InteractableBase.OrderedInstances.Count);
 			for (int i = 0; i < num; i++)
 			{
 				Scp079InteractableBase.OrderedInstances.Add(null);
 			}
-			Scp079InteractableBase.OrderedInstances[_clientSyncId - 1] = _camera;
+			Scp079InteractableBase.OrderedInstances[this._clientSyncId - 1] = this.Camera;
 			Scp079InteractableBase.InstancesCount = Scp079InteractableBase.OrderedInstances.Count;
-			if (CurrentOvercon == null && OverconManager.Singleton != null && OverconManager.Singleton.TryGetComponent<CameraOverconRenderer>(out var component))
+			if (this.CurrentOvercon == null && OverconManager.Singleton != null && OverconManager.Singleton.TryGetComponent<CameraOverconRenderer>(out var component))
 			{
-				component.SpawnOvercon(Scp079Hud.Instance.CurrentCamera, _camera);
+				component.SpawnOvercon(Scp079Hud.Instance.CurrentCamera, this.Camera);
 			}
 		}
 	}
@@ -164,7 +163,7 @@ public class Scp079CameraToy : AdminToyBase
 		base.OnSerialize(writer, initialState);
 		if (initialState)
 		{
-			writer.WriteUShort(_camera.SyncId);
+			writer.WriteUShort(this.Camera.SyncId);
 		}
 	}
 
@@ -173,71 +172,76 @@ public class Scp079CameraToy : AdminToyBase
 		base.OnDeserialize(reader, initialState);
 		if (initialState)
 		{
-			_clientSyncId = reader.ReadUShort();
+			this._clientSyncId = reader.ReadUShort();
 		}
 	}
 
 	protected override void UpdatePositionClient(bool teleport = false)
 	{
 		base.UpdatePositionClient(teleport);
-		_camera.Position = base.transform.position;
-		if (!(CurrentOvercon == null))
+		this.Camera.Position = base.transform.position;
+		if (this.CurrentOvercon == null)
 		{
-			if (CurrentOvercon.Target == _camera && CurrentOvercon.gameObject.activeSelf)
+			return;
+		}
+		if (this.CurrentOvercon.Target == this.Camera && this.CurrentOvercon.gameObject.activeSelf)
+		{
+			this.CurrentOvercon.Position = this.Camera.Position;
+			if (Scp079Hud.Instance != null && Scp079Hud.Instance.CurrentCamera != null)
 			{
-				CurrentOvercon.Position = _camera.Position;
+				this.CurrentOvercon.Rescale(Scp079Hud.Instance.CurrentCamera);
 			}
-			else
-			{
-				CurrentOvercon = null;
-			}
+		}
+		else
+		{
+			this.CurrentOvercon = null;
 		}
 	}
 
 	private void SetLabel(string _, string newLabel)
 	{
-		_camera.Label = newLabel;
+		this.Camera.Label = newLabel;
 	}
 
 	private void SetRoom(RoomIdentifier _, RoomIdentifier newRoom)
 	{
 		if (newRoom != null)
 		{
-			_camera.Room = newRoom;
+			this.Camera.Room = newRoom;
 			return;
 		}
-		if (!base.transform.position.TryGetRoom(out var room))
+		if (base.transform.position.TryGetRoom(out var room))
 		{
-			_camera.Room = room;
+			this.Camera.Room = room;
 			return;
 		}
 		RoomIdentifier roomIdentifier = null;
 		float num = 0f;
 		foreach (RoomIdentifier allRoomIdentifier in RoomIdentifier.AllRoomIdentifiers)
 		{
-			float sqrMagnitude = (_camera.Position - allRoomIdentifier.gameObject.transform.position).sqrMagnitude;
+			float sqrMagnitude = (this.Camera.Position - allRoomIdentifier.gameObject.transform.position).sqrMagnitude;
 			if (roomIdentifier == null || sqrMagnitude < num)
 			{
 				roomIdentifier = allRoomIdentifier;
 				num = sqrMagnitude;
 			}
 		}
-		_camera.Room = roomIdentifier;
+		this.Camera.Room = roomIdentifier;
 	}
 
 	private void SetVerticalConstraint(Vector2 _, Vector2 newConstraint)
 	{
-		_camera.VerticalAxis.Constraints = newConstraint;
+		this.Camera.VerticalAxis.Constraints = newConstraint;
 	}
 
 	private void SetHorizontalConstraint(Vector2 _, Vector2 newConstraint)
 	{
-		_camera.HorizontalAxis.Constraints = newConstraint;
+		this.Camera.HorizontalAxis.Constraints = newConstraint;
 	}
 
 	private void SetZoomConstraint(Vector2 _, Vector2 newConstraint)
 	{
-		_camera.ZoomAxis.Constraints = newConstraint;
+		this.Camera.ZoomAxis.Constraints = newConstraint;
 	}
 
 	public override bool Weaved()
@@ -250,33 +254,33 @@ public class Scp079CameraToy : AdminToyBase
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteString(Label);
-			writer.WriteRoomIdentifier(Room);
-			writer.WriteVector2(VerticalConstraint);
-			writer.WriteVector2(HorizontalConstraint);
-			writer.WriteVector2(ZoomConstraint);
+			writer.WriteString(this.Label);
+			writer.WriteRoomIdentifier(this.Room);
+			writer.WriteVector2(this.VerticalConstraint);
+			writer.WriteVector2(this.HorizontalConstraint);
+			writer.WriteVector2(this.ZoomConstraint);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 0x20L) != 0L)
 		{
-			writer.WriteString(Label);
+			writer.WriteString(this.Label);
 		}
 		if ((base.syncVarDirtyBits & 0x40L) != 0L)
 		{
-			writer.WriteRoomIdentifier(Room);
+			writer.WriteRoomIdentifier(this.Room);
 		}
 		if ((base.syncVarDirtyBits & 0x80L) != 0L)
 		{
-			writer.WriteVector2(VerticalConstraint);
+			writer.WriteVector2(this.VerticalConstraint);
 		}
 		if ((base.syncVarDirtyBits & 0x100L) != 0L)
 		{
-			writer.WriteVector2(HorizontalConstraint);
+			writer.WriteVector2(this.HorizontalConstraint);
 		}
 		if ((base.syncVarDirtyBits & 0x200L) != 0L)
 		{
-			writer.WriteVector2(ZoomConstraint);
+			writer.WriteVector2(this.ZoomConstraint);
 		}
 	}
 
@@ -285,33 +289,33 @@ public class Scp079CameraToy : AdminToyBase
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref Label, SetLabel, reader.ReadString());
-			GeneratedSyncVarDeserialize(ref Room, SetRoom, reader.ReadRoomIdentifier());
-			GeneratedSyncVarDeserialize(ref VerticalConstraint, SetVerticalConstraint, reader.ReadVector2());
-			GeneratedSyncVarDeserialize(ref HorizontalConstraint, SetHorizontalConstraint, reader.ReadVector2());
-			GeneratedSyncVarDeserialize(ref ZoomConstraint, SetZoomConstraint, reader.ReadVector2());
+			base.GeneratedSyncVarDeserialize(ref this.Label, SetLabel, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.Room, SetRoom, reader.ReadRoomIdentifier());
+			base.GeneratedSyncVarDeserialize(ref this.VerticalConstraint, SetVerticalConstraint, reader.ReadVector2());
+			base.GeneratedSyncVarDeserialize(ref this.HorizontalConstraint, SetHorizontalConstraint, reader.ReadVector2());
+			base.GeneratedSyncVarDeserialize(ref this.ZoomConstraint, SetZoomConstraint, reader.ReadVector2());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 0x20L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Label, SetLabel, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this.Label, SetLabel, reader.ReadString());
 		}
 		if ((num & 0x40L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref Room, SetRoom, reader.ReadRoomIdentifier());
+			base.GeneratedSyncVarDeserialize(ref this.Room, SetRoom, reader.ReadRoomIdentifier());
 		}
 		if ((num & 0x80L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref VerticalConstraint, SetVerticalConstraint, reader.ReadVector2());
+			base.GeneratedSyncVarDeserialize(ref this.VerticalConstraint, SetVerticalConstraint, reader.ReadVector2());
 		}
 		if ((num & 0x100L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref HorizontalConstraint, SetHorizontalConstraint, reader.ReadVector2());
+			base.GeneratedSyncVarDeserialize(ref this.HorizontalConstraint, SetHorizontalConstraint, reader.ReadVector2());
 		}
 		if ((num & 0x200L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref ZoomConstraint, SetZoomConstraint, reader.ReadVector2());
+			base.GeneratedSyncVarDeserialize(ref this.ZoomConstraint, SetZoomConstraint, reader.ReadVector2());
 		}
 	}
 }

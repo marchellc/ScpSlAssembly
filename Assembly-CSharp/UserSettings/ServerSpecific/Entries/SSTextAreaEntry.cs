@@ -36,70 +36,70 @@ public class SSTextAreaEntry : MonoBehaviour, ISSEntry
 
 	public void Init(ServerSpecificSettingBase setting)
 	{
-		_textArea = setting as SSTextArea;
-		_mainText.text = _textArea.Label;
-		_mainText.alignment = _textArea.AlignmentOptions;
-		_foldoutMode = _textArea.Foldout;
-		UpdateText();
-		switch (_foldoutMode)
+		this._textArea = setting as SSTextArea;
+		this._mainText.text = this._textArea.Label;
+		this._mainText.alignment = this._textArea.AlignmentOptions;
+		this._foldoutMode = this._textArea.Foldout;
+		this.UpdateText();
+		switch (this._foldoutMode)
 		{
 		case SSTextArea.FoldoutMode.CollapseOnEntry:
 		case SSTextArea.FoldoutMode.CollapsedByDefault:
-			_foldoutGroup.FoldInstantly();
+			this._foldoutGroup.FoldInstantly();
 			break;
 		case SSTextArea.FoldoutMode.ExtendOnEntry:
 		case SSTextArea.FoldoutMode.ExtendedByDefault:
-			_foldoutGroup.ExtendInstantly();
+			this._foldoutGroup.ExtendInstantly();
 			break;
 		case SSTextArea.FoldoutMode.NotCollapsable:
-			_toggle.isOn = true;
-			_mainText.raycastTarget = true;
-			_foldoutGroup.ExtendInstantly();
-			_disableWhenNotCollapsable.ForEach(delegate(GameObject x)
+			this._toggle.isOn = true;
+			this._mainText.raycastTarget = true;
+			this._foldoutGroup.ExtendInstantly();
+			this._disableWhenNotCollapsable.ForEach(delegate(GameObject x)
 			{
 				x.SetActive(value: false);
 			});
 			break;
 		}
-		_textArea.OnTextUpdated += UpdateText;
+		this._textArea.OnTextUpdated += UpdateText;
 	}
 
 	private void UpdateText()
 	{
-		_mainText.SetText(_textArea.Label);
-		_foldoutGroup.RefreshSize();
-		if (_foldoutMode != 0)
+		this._mainText.SetText(this._textArea.Label);
+		this._foldoutGroup.RefreshSize();
+		if (this._foldoutMode != SSTextArea.FoldoutMode.NotCollapsable)
 		{
-			_shortText.text = (string.IsNullOrEmpty(_textArea.HintDescription) ? _textArea.Label : _textArea.HintDescription);
+			this._shortText.text = (string.IsNullOrEmpty(this._textArea.HintDescription) ? this._textArea.Label : this._textArea.HintDescription);
 		}
 	}
 
 	private void OnDestroy()
 	{
-		if (_textArea != null)
+		if (this._textArea != null)
 		{
-			_textArea.OnTextUpdated -= UpdateText;
+			this._textArea.OnTextUpdated -= UpdateText;
 		}
 	}
 
 	private void OnDisable()
 	{
-		switch (_foldoutMode)
+		switch (this._foldoutMode)
 		{
 		case SSTextArea.FoldoutMode.CollapseOnEntry:
-			_foldoutGroup.FoldInstantly();
+			this._foldoutGroup.FoldInstantly();
 			break;
 		case SSTextArea.FoldoutMode.ExtendOnEntry:
-			_foldoutGroup.ExtendInstantly();
+			this._foldoutGroup.ExtendInstantly();
 			break;
 		}
 	}
 
 	private void Update()
 	{
-		if (_foldoutMode != 0)
+		if (this._foldoutMode != SSTextArea.FoldoutMode.NotCollapsable)
 		{
-			_shortText.alpha = 1f - _group.alpha;
+			this._shortText.alpha = 1f - this._group.alpha;
 		}
 	}
 }

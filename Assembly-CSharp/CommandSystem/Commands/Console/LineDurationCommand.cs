@@ -23,7 +23,7 @@ public class LineDurationCommand : ICommand
 		{
 			if (DrawableLines.DurationOverride.HasValue)
 			{
-				ResetOverride(out response);
+				LineDurationCommand.ResetOverride(out response);
 				return true;
 			}
 			response = "You must specify a valid duration!";
@@ -31,7 +31,7 @@ public class LineDurationCommand : ICommand
 		}
 		if (result <= 0f)
 		{
-			ResetOverride(out response);
+			LineDurationCommand.ResetOverride(out response);
 			return true;
 		}
 		DrawableLines.DurationOverride = result;

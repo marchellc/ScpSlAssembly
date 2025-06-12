@@ -19,37 +19,37 @@ public abstract class WaveAnimationBase<T> : MonoBehaviour where T : SpawnableWa
 		{
 			throw new NullReferenceException("Could not find a reference to the T spawn wave.");
 		}
-		Wave = spawnWave;
+		this.Wave = spawnWave;
 		WaveManager.OnWaveTrigger += OnWaveTrigger;
 	}
 
 	protected virtual void OnWaveTriggered()
 	{
-		Wave.IsAnimationPlaying = true;
-		AnimatorTrigger.SetTrigger(PlayKey);
+		this.Wave.IsAnimationPlaying = true;
+		this.AnimatorTrigger.SetTrigger(WaveAnimationBase<T>.PlayKey);
 	}
 
 	protected virtual void OnAnimationEnd()
 	{
-		Wave.IsAnimationPlaying = false;
+		this.Wave.IsAnimationPlaying = false;
 	}
 
 	protected virtual void Update()
 	{
-		bool isAnimationPlaying = Wave.IsAnimationPlaying;
-		bool flag = Time.time >= _animationTime;
+		bool isAnimationPlaying = this.Wave.IsAnimationPlaying;
+		bool flag = Time.time >= this._animationTime;
 		if (isAnimationPlaying && flag)
 		{
-			OnAnimationEnd();
+			this.OnAnimationEnd();
 		}
 	}
 
 	private void OnWaveTrigger(SpawnableWaveBase triggeredWave)
 	{
-		if (triggeredWave == Wave)
+		if (triggeredWave == this.Wave)
 		{
-			_animationTime = Time.time + Wave.AnimationDuration;
-			OnWaveTriggered();
+			this._animationTime = Time.time + this.Wave.AnimationDuration;
+			this.OnWaveTriggered();
 		}
 	}
 

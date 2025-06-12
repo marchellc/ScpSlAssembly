@@ -11,7 +11,7 @@ public class GeneratedResolver : IJsonFormatterResolver
 			object obj = GeneratedResolverGetFormatterHelper.GetFormatter(typeof(T));
 			if (obj != null)
 			{
-				formatter = (IJsonFormatter<T>)obj;
+				FormatterCache<T>.formatter = (IJsonFormatter<T>)obj;
 			}
 		}
 	}

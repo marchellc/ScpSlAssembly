@@ -11,9 +11,9 @@ public class AmmoItem : ItemBase, IItemNametag
 
 	public int UnitPrice;
 
-	public override float Weight => 0.25f + ((PickupDropModel is AmmoPickup ammoPickup) ? ((float)(int)ammoPickup.SavedAmmo * 0.01f) : 0f);
+	public override float Weight => 0.25f + ((base.PickupDropModel is AmmoPickup ammoPickup) ? ((float)(int)ammoPickup.SavedAmmo * 0.01f) : 0f);
 
-	public string Name => _caliber;
+	public string Name => this._caliber;
 
 	public override ItemDescriptionType DescriptionType => ItemDescriptionType.None;
 
@@ -21,9 +21,9 @@ public class AmmoItem : ItemBase, IItemNametag
 	{
 		if (NetworkServer.active)
 		{
-			if (PickupDropModel is AmmoPickup ammoPickup)
+			if (base.PickupDropModel is AmmoPickup ammoPickup)
 			{
-				base.OwnerInventory.ServerAddAmmo(ItemTypeId, ammoPickup.SavedAmmo);
+				base.OwnerInventory.ServerAddAmmo(base.ItemTypeId, ammoPickup.SavedAmmo);
 			}
 			base.OwnerInventory.ServerRemoveItem(base.ItemSerial, null);
 		}

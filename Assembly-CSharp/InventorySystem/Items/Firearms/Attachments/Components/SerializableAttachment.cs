@@ -41,27 +41,27 @@ public class SerializableAttachment : Attachment, IDisplayableAttachment
 	[SerializeField]
 	private AttachmentParameterValuePair[] _params;
 
-	public override AttachmentName Name => _name;
+	public override AttachmentName Name => this._name;
 
-	public override AttachmentSlot Slot => _slot;
+	public override AttachmentSlot Slot => this._slot;
 
-	public override float Weight => _weight;
+	public override float Weight => this._weight;
 
-	public override float Length => _length;
+	public override float Length => this._length;
 
-	public override AttachmentDescriptiveAdvantages DescriptivePros => _extraPros;
+	public override AttachmentDescriptiveAdvantages DescriptivePros => this._extraPros;
 
-	public override AttachmentDescriptiveDownsides DescriptiveCons => _extraCons;
+	public override AttachmentDescriptiveDownsides DescriptiveCons => this._extraCons;
 
 	public Texture2D Icon
 	{
 		get
 		{
-			return _icon;
+			return this._icon;
 		}
 		set
 		{
-			_icon = value;
+			this._icon = value;
 		}
 	}
 
@@ -69,43 +69,43 @@ public class SerializableAttachment : Attachment, IDisplayableAttachment
 	{
 		get
 		{
-			return _iconOffset;
+			return this._iconOffset;
 		}
 		set
 		{
-			_iconOffset = value;
+			this._iconOffset = value;
 		}
 	}
 
-	public int ParentId => _parentId;
+	public int ParentId => this._parentId;
 
-	public Vector2 ParentOffset => _parentOffset;
+	public Vector2 ParentOffset => this._parentOffset;
 
 	protected virtual void Awake()
 	{
-		SetDefaultParameters();
+		this.SetDefaultParameters();
 	}
 
 	protected void SetDefaultParameters()
 	{
-		_params.ForEach(base.SetParameter);
+		this._params.ForEach(base.SetParameter);
 	}
 
 	protected virtual void Reset()
 	{
-		if (TryGetComponent<SerializableAttachment>(out var component) && !(component == this))
+		if (base.TryGetComponent<SerializableAttachment>(out var component) && !(component == this))
 		{
-			_name = component._name;
-			_slot = component._slot;
-			_weight = component._weight;
-			_length = component._length;
-			_extraPros = component._extraPros;
-			_extraCons = component._extraCons;
-			_icon = component._icon;
-			_iconOffset = component._iconOffset;
-			_parentId = component._parentId;
-			_parentOffset = component._parentOffset;
-			_params = component._params;
+			this._name = component._name;
+			this._slot = component._slot;
+			this._weight = component._weight;
+			this._length = component._length;
+			this._extraPros = component._extraPros;
+			this._extraCons = component._extraCons;
+			this._icon = component._icon;
+			this._iconOffset = component._iconOffset;
+			this._parentId = component._parentId;
+			this._parentOffset = component._parentOffset;
+			this._params = component._params;
 		}
 	}
 }

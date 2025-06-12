@@ -51,14 +51,14 @@ public class UserSettingDependency : MonoBehaviour
 		{
 			get
 			{
-				if (!_setup)
+				if (!this._setup)
 				{
-					Setup();
-					_setup = true;
+					this.Setup();
+					this._setup = true;
 				}
-				bool flag = Evaluate();
+				bool flag = this.Evaluate();
 				bool result = !flag;
-				if (!_invertCondition)
+				if (!this._invertCondition)
 				{
 					return flag;
 				}
@@ -68,42 +68,42 @@ public class UserSettingDependency : MonoBehaviour
 
 		private void Setup()
 		{
-			if (_targetComponent is UserSettingsUIBase<Slider, float> uiSlider)
+			if (this._targetComponent is UserSettingsUIBase<Slider, float> uiSlider)
 			{
-				_uiSlider = uiSlider;
-				_type = SettingType.Slider;
+				this._uiSlider = uiSlider;
+				this._type = SettingType.Slider;
 				return;
 			}
-			if (_targetComponent is UserSettingsUIBase<Toggle, bool> uiToggle)
+			if (this._targetComponent is UserSettingsUIBase<Toggle, bool> uiToggle)
 			{
-				_uiToggle = uiToggle;
-				_type = SettingType.Toggle;
+				this._uiToggle = uiToggle;
+				this._type = SettingType.Toggle;
 				return;
 			}
-			if (_targetComponent is UserSettingsUIBase<TMP_Dropdown, int> uiDropdown)
+			if (this._targetComponent is UserSettingsUIBase<TMP_Dropdown, int> uiDropdown)
 			{
-				_uiDropdown = uiDropdown;
-				_type = SettingType.Dropdown;
+				this._uiDropdown = uiDropdown;
+				this._type = SettingType.Dropdown;
 				return;
 			}
-			throw new NotImplementedException("Unhandled type for settings dependency: " + _targetComponent.GetType().AssemblyQualifiedName);
+			throw new NotImplementedException("Unhandled type for settings dependency: " + this._targetComponent.GetType().AssemblyQualifiedName);
 		}
 
 		private bool Evaluate()
 		{
-			float num = _type switch
+			float num = this._type switch
 			{
-				SettingType.Slider => _uiSlider.TargetUI.value, 
-				SettingType.Toggle => _uiToggle.TargetUI.isOn ? 1 : 0, 
-				SettingType.Dropdown => _uiDropdown.TargetUI.value, 
-				_ => throw new NotImplementedException($"Unable to parse type '{_type}' as float!"), 
+				SettingType.Slider => this._uiSlider.TargetUI.value, 
+				SettingType.Toggle => this._uiToggle.TargetUI.isOn ? 1 : 0, 
+				SettingType.Dropdown => this._uiDropdown.TargetUI.value, 
+				_ => throw new NotImplementedException($"Unable to parse type '{this._type}' as float!"), 
 			};
-			return _condition switch
+			return this._condition switch
 			{
-				Condition.EqualsTo => num == _valueToCompare, 
-				Condition.GreaterThan => num > _valueToCompare, 
-				Condition.LessThan => num < _valueToCompare, 
-				_ => throw new NotImplementedException($"Unhandled condition '{_condition}'!"), 
+				Condition.EqualsTo => num == this._valueToCompare, 
+				Condition.GreaterThan => num > this._valueToCompare, 
+				Condition.LessThan => num < this._valueToCompare, 
+				_ => throw new NotImplementedException($"Unhandled condition '{this._condition}'!"), 
 			};
 		}
 	}
@@ -123,7 +123,7 @@ public class UserSettingDependency : MonoBehaviour
 	{
 		get
 		{
-			Dependency[] dependencies = _dependencies;
+			Dependency[] dependencies = this._dependencies;
 			for (int i = 0; i < dependencies.Length; i++)
 			{
 				if (!dependencies[i].ConditionMet)
@@ -137,20 +137,20 @@ public class UserSettingDependency : MonoBehaviour
 
 	private void Awake()
 	{
-		_fader = GetComponent<CanvasGroup>();
+		this._fader = base.GetComponent<CanvasGroup>();
 	}
 
 	private void OnEnable()
 	{
-		_fader.alpha = (ShouldBeVisible ? 1f : _minFade);
+		this._fader.alpha = (this.ShouldBeVisible ? 1f : this._minFade);
 	}
 
 	private void Update()
 	{
-		bool shouldBeVisible = ShouldBeVisible;
-		float num = Time.deltaTime * _fadeSpeed;
+		bool shouldBeVisible = this.ShouldBeVisible;
+		float num = Time.deltaTime * this._fadeSpeed;
 		float num2 = (shouldBeVisible ? num : (0f - num));
-		_fader.blocksRaycasts = shouldBeVisible;
-		_fader.alpha = Mathf.Clamp(_fader.alpha + num2, _minFade, 1f);
+		this._fader.blocksRaycasts = shouldBeVisible;
+		this._fader.alpha = Mathf.Clamp(this._fader.alpha + num2, this._minFade, 1f);
 	}
 }

@@ -15,7 +15,7 @@ public abstract class DictionaryFormatterBase<TKey, TValue, TIntermediate, TEnum
 		IObjectPropertyNameFormatter<TKey> objectPropertyNameFormatter = formatterResolver.GetFormatterWithVerify<TKey>() as IObjectPropertyNameFormatter<TKey>;
 		IJsonFormatter<TValue> formatterWithVerify = formatterResolver.GetFormatterWithVerify<TValue>();
 		writer.WriteBeginObject();
-		TEnumerator sourceEnumerator = GetSourceEnumerator(value);
+		TEnumerator sourceEnumerator = this.GetSourceEnumerator(value);
 		try
 		{
 			if (objectPropertyNameFormatter != null)
@@ -71,16 +71,16 @@ public abstract class DictionaryFormatterBase<TKey, TValue, TIntermediate, TEnum
 		}
 		IJsonFormatter<TValue> formatterWithVerify = formatterResolver.GetFormatterWithVerify<TValue>();
 		reader.ReadIsBeginObjectWithVerify();
-		TIntermediate collection = Create();
+		TIntermediate collection = this.Create();
 		int count = 0;
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			TKey key = objectPropertyNameFormatter.DeserializeFromPropertyName(ref reader, formatterResolver);
 			reader.ReadIsNameSeparatorWithVerify();
 			TValue value = formatterWithVerify.Deserialize(ref reader, formatterResolver);
-			Add(ref collection, count - 1, key, value);
+			this.Add(ref collection, count - 1, key, value);
 		}
-		return Complete(ref collection);
+		return this.Complete(ref collection);
 	}
 
 	protected abstract TEnumerator GetSourceEnumerator(TDictionary source);

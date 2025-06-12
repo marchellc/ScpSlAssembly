@@ -18,7 +18,7 @@ public class PrecisionLockerChamber : LockerChamber
 
 	protected override void GetSpawnpoint(ItemType itemType, int index, out Vector3 worldPosition, out Quaternion worldRotation, out Transform parent)
 	{
-		SpawnpointOverride[] spawnpointOverrides = _spawnpointOverrides;
+		SpawnpointOverride[] spawnpointOverrides = this._spawnpointOverrides;
 		for (int i = 0; i < spawnpointOverrides.Length; i++)
 		{
 			SpawnpointOverride spawnpointOverride = spawnpointOverrides[i];

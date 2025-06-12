@@ -39,7 +39,7 @@ public class CommunicationProcessor
 
 	public static T RequestServerChannel<T>() where T : IServerCommunication
 	{
-		foreach (IServerCommunication value in ServerCommunication.Values)
+		foreach (IServerCommunication value in CommunicationProcessor.ServerCommunication.Values)
 		{
 			if (value is T)
 			{

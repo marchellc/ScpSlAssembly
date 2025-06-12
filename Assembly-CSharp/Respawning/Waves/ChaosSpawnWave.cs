@@ -23,7 +23,7 @@ public class ChaosSpawnWave : TimeBasedWave, IAnimatedWave, ILimitedWave, IAnnou
 	{
 		get
 		{
-			if (!(Configuration is PrimaryWaveConfig<ChaosSpawnWave> primaryWaveConfig))
+			if (!(this.Configuration is PrimaryWaveConfig<ChaosSpawnWave> primaryWaveConfig))
 			{
 				return 0;
 			}
@@ -43,8 +43,8 @@ public class ChaosSpawnWave : TimeBasedWave, IAnimatedWave, ILimitedWave, IAnnou
 
 	public override void PopulateQueue(Queue<RoleTypeId> queueToFill, int playersToSpawn)
 	{
-		int num = Mathf.FloorToInt((float)playersToSpawn * LogicerPercent);
-		int num2 = Mathf.FloorToInt((float)playersToSpawn * ShotgunPercent);
+		int num = Mathf.FloorToInt((float)playersToSpawn * this.LogicerPercent);
+		int num2 = Mathf.FloorToInt((float)playersToSpawn * this.ShotgunPercent);
 		for (int i = 0; i < num; i++)
 		{
 			queueToFill.Enqueue(RoleTypeId.ChaosRepressor);

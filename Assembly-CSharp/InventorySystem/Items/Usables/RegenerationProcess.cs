@@ -18,20 +18,20 @@ public class RegenerationProcess
 
 	public RegenerationProcess(AnimationCurve regenCurve, float speedMultiplier, float healthPointsMultiplier)
 	{
-		_regenCurve = regenCurve;
-		_maxTime = regenCurve.GetDuration();
-		_speedMultip = speedMultiplier;
-		_hpMultip = healthPointsMultiplier * _speedMultip;
-		_healValue = 0f;
-		_elapsed = 0f;
+		this._regenCurve = regenCurve;
+		this._maxTime = regenCurve.GetDuration();
+		this._speedMultip = speedMultiplier;
+		this._hpMultip = healthPointsMultiplier * this._speedMultip;
+		this._healValue = 0f;
+		this._elapsed = 0f;
 	}
 
 	public void GetValue(out bool isDone, out int value)
 	{
-		_elapsed += Time.deltaTime * _speedMultip;
-		_healValue += _regenCurve.Evaluate(_elapsed) * Time.deltaTime * _hpMultip;
-		value = (int)_healValue;
-		_healValue -= value;
-		isDone = _elapsed >= _maxTime;
+		this._elapsed += Time.deltaTime * this._speedMultip;
+		this._healValue += this._regenCurve.Evaluate(this._elapsed) * Time.deltaTime * this._hpMultip;
+		value = (int)this._healValue;
+		this._healValue -= value;
+		isDone = this._elapsed >= this._maxTime;
 	}
 }

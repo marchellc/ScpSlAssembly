@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using AudioPooling;
-using Hints;
 using Christmas.Scp2536.Gifts;
+using Hints;
 using Interactables;
 using Interactables.Verification;
 using Mirror;
@@ -43,7 +43,7 @@ public class Scp2536GiftController : NetworkBehaviour, IServerInteractable, IInt
 
 	public T ServerGetGift<T>() where T : Scp2536GiftBase
 	{
-		foreach (Scp2536GiftBase gift in Gifts)
+		foreach (Scp2536GiftBase gift in Scp2536GiftController.Gifts)
 		{
 			if (gift is T result)
 			{
@@ -59,34 +59,34 @@ public class Scp2536GiftController : NetworkBehaviour, IServerInteractable, IInt
 		{
 			return;
 		}
-		for (int i = 0; i < Gifts.Count; i++)
+		for (int i = 0; i < Scp2536GiftController.Gifts.Count; i++)
 		{
-			Scp2536GiftBase scp2536GiftBase = Gifts[i];
+			Scp2536GiftBase scp2536GiftBase = Scp2536GiftController.Gifts[i];
 			if (!scp2536GiftBase.IgnoredByRandomness && scp2536GiftBase.CanBeGranted(hub))
 			{
 				if (NonStandardWeapons.CanOverrideGift(scp2536GiftBase))
 				{
-					scp2536GiftBase = ServerGetGift<NonStandardWeapons>();
+					scp2536GiftBase = this.ServerGetGift<NonStandardWeapons>();
 				}
 				scp2536GiftBase.ObtainedBy.Add(hub);
 				scp2536GiftBase.ServerGrant(hub);
 				return;
 			}
 		}
-		ServerGetGift<Naughty>().ServerGrant(hub);
+		this.ServerGetGift<Naughty>().ServerGrant(hub);
 	}
 
 	public void ServerPrepareGifts(bool resetRewards = true)
 	{
-		for (int i = 0; i < GiftBoxes.Length; i++)
+		for (int i = 0; i < this.GiftBoxes.Length; i++)
 		{
-			RpcSetGiftState(i, isWrapped: true);
+			this.RpcSetGiftState(i, isWrapped: true);
 		}
 		if (!resetRewards)
 		{
 			return;
 		}
-		foreach (Scp2536GiftBase gift in Gifts)
+		foreach (Scp2536GiftBase gift in Scp2536GiftController.Gifts)
 		{
 			gift.Reset();
 		}
@@ -98,7 +98,7 @@ public class Scp2536GiftController : NetworkBehaviour, IServerInteractable, IInt
 		{
 			return;
 		}
-		GiftBox giftBox = GiftBoxes[colliderId % GiftBoxes.Length];
+		GiftBox giftBox = this.GiftBoxes[colliderId % this.GiftBoxes.Length];
 		if (!giftBox.CanBeOpen)
 		{
 			return;
@@ -111,7 +111,7 @@ public class Scp2536GiftController : NetworkBehaviour, IServerInteractable, IInt
 			}, new HintEffect[1] { HintEffectPresets.TrailingPulseAlpha(0.5f, 1f, 0.5f, 2f, 0f, 3) }, 2f));
 			return;
 		}
-		if (_cooldowns.TryGetValue(ply.netId, out var value))
+		if (this._cooldowns.TryGetValue(ply.netId, out var value))
 		{
 			if (value.Elapsed.TotalSeconds < 0.699999988079071)
 			{
@@ -121,9 +121,9 @@ public class Scp2536GiftController : NetworkBehaviour, IServerInteractable, IInt
 		}
 		else
 		{
-			_cooldowns.Add(ply.netId, Stopwatch.StartNew());
+			this._cooldowns.Add(ply.netId, Stopwatch.StartNew());
 		}
-		RpcSetGiftState(colliderId, isWrapped: false);
+		this.RpcSetGiftState(colliderId, isWrapped: false);
 		Scp2536Controller.Singleton.GiftController.ServerGrantRandomGift(ply);
 		giftBox.CanBeOpen = false;
 		Scp2536GiftController.OnServerOpenGift?.Invoke();
@@ -135,13 +135,13 @@ public class Scp2536GiftController : NetworkBehaviour, IServerInteractable, IInt
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		writer.WriteInt(giftIndex);
 		writer.WriteBool(isWrapped);
-		SendRPCInternal("System.Void Christmas.Scp2536.Scp2536GiftController::RpcSetGiftState(System.Int32,System.Boolean)", -1695853183, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Christmas.Scp2536.Scp2536GiftController::RpcSetGiftState(System.Int32,System.Boolean)", -1695853183, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	static Scp2536GiftController()
 	{
-		Gifts = new List<Scp2536GiftBase>
+		Scp2536GiftController.Gifts = new List<Scp2536GiftBase>
 		{
 			new Naughty(),
 			new Emergency(),
@@ -170,13 +170,13 @@ public class Scp2536GiftController : NetworkBehaviour, IServerInteractable, IInt
 
 	protected void UserCode_RpcSetGiftState__Int32__Boolean(int giftIndex, bool isWrapped)
 	{
-		GiftBox giftBox = GiftBoxes[giftIndex];
+		GiftBox giftBox = this.GiftBoxes[giftIndex];
 		giftBox.Lid.SetActive(isWrapped);
 		giftBox.CanBeOpen = isWrapped;
 		if (!isWrapped)
 		{
 			giftBox.Particles.Play();
-			AudioSourcePoolManager.PlayOnTransform(_openGiftClip, base.transform);
+			AudioSourcePoolManager.PlayOnTransform(this._openGiftClip, base.transform);
 		}
 		else
 		{

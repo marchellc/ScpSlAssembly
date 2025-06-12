@@ -86,7 +86,7 @@ public class Scp2536Controller : NetworkBehaviour
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			Team team = allHub.GetTeam();
-			if (WhitelistedTeams.Contains(team) && !list.Contains(team))
+			if (Scp2536Controller.WhitelistedTeams.Contains(team) && !list.Contains(team))
 			{
 				list.Add(team);
 			}
@@ -100,7 +100,7 @@ public class Scp2536Controller : NetworkBehaviour
 		List<ReferenceHub> list2 = ListPool<ReferenceHub>.Shared.Rent();
 		foreach (ReferenceHub allHub2 in ReferenceHub.AllHubs)
 		{
-			if (allHub2.GetTeam() == team2 && !_ignoredPlayers.Contains(allHub2.netId) && allHub2.roleManager.CurrentRole is IFpcRole)
+			if (allHub2.GetTeam() == team2 && !this._ignoredPlayers.Contains(allHub2.netId) && allHub2.roleManager.CurrentRole is IFpcRole)
 			{
 				list2.Add(allHub2);
 			}
@@ -108,13 +108,13 @@ public class Scp2536Controller : NetworkBehaviour
 		ListPool<Team>.Shared.Return(list);
 		if (list2.Count == 0)
 		{
-			_ignoredPlayers.Clear();
+			this._ignoredPlayers.Clear();
 			ListPool<ReferenceHub>.Shared.Return(list2);
 			return false;
 		}
 		target = list2.RandomItem();
 		ListPool<ReferenceHub>.Shared.Return(list2);
-		return CanFindPosition(target, out spawnpoint);
+		return this.CanFindPosition(target, out spawnpoint);
 	}
 
 	private bool CanFindPosition(ReferenceHub target, out Scp2536Spawnpoint foundSpot)
@@ -124,21 +124,21 @@ public class Scp2536Controller : NetworkBehaviour
 		{
 			return false;
 		}
-		float num = _maxDistanceSqr;
-		Bounds bounds = _collider.bounds;
+		float num = this._maxDistanceSqr;
+		Bounds bounds = this._collider.bounds;
 		foreach (Scp2536Spawnpoint spawnpoint in Scp2536Spawnpoint.Spawnpoints)
 		{
 			if (!SpawnableClutterConnector.Instances.Any((SpawnableClutterConnector c) => c.Intersects(bounds)))
 			{
 				float sqrMagnitude = (fpcRole.FpcModule.Position - spawnpoint.Position).sqrMagnitude;
-				if (!(sqrMagnitude > _maxDistanceSqr) && !(sqrMagnitude < _minDistanceSqr) && sqrMagnitude < num)
+				if (!(sqrMagnitude > this._maxDistanceSqr) && !(sqrMagnitude < this._minDistanceSqr) && sqrMagnitude < num)
 				{
 					num = sqrMagnitude;
 					foundSpot = spawnpoint;
 				}
 			}
 		}
-		return num < _maxDistanceSqr;
+		return num < this._maxDistanceSqr;
 	}
 
 	[ClientRpc]
@@ -148,7 +148,7 @@ public class Scp2536Controller : NetworkBehaviour
 		writer.WriteVector3(newPos);
 		writer.WriteQuaternion(newRot);
 		NetworkWriterExtensions.WriteByte(writer, randomSeed);
-		SendRPCInternal("System.Void Christmas.Scp2536.Scp2536Controller::RpcMoveTree(UnityEngine.Vector3,UnityEngine.Quaternion,System.Byte)", 1984975944, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Christmas.Scp2536.Scp2536Controller::RpcMoveTree(UnityEngine.Vector3,UnityEngine.Quaternion,System.Byte)", 1984975944, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -156,22 +156,22 @@ public class Scp2536Controller : NetworkBehaviour
 	private void RpcHideTree()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void Christmas.Scp2536.Scp2536Controller::RpcHideTree()", 1400729660, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Christmas.Scp2536.Scp2536Controller::RpcHideTree()", 1400729660, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	private void Awake()
 	{
-		Singleton = this;
-		Timing.RunCoroutine(TeleportingLogicCoroutine().CancelWith(this));
-		if (!_init)
+		Scp2536Controller.Singleton = this;
+		Timing.RunCoroutine(this.TeleportingLogicCoroutine().CancelWith(this));
+		if (!Scp2536Controller._init)
 		{
-			_init = true;
-			SoundPerTeam[] sounds = _sounds;
+			Scp2536Controller._init = true;
+			SoundPerTeam[] sounds = this._sounds;
 			for (int i = 0; i < sounds.Length; i++)
 			{
 				SoundPerTeam soundPerTeam = sounds[i];
-				TeamClips.Add(soundPerTeam.Team, soundPerTeam.Clip);
+				Scp2536Controller.TeamClips.Add(soundPerTeam.Team, soundPerTeam.Clip);
 			}
 		}
 	}
@@ -184,7 +184,7 @@ public class Scp2536Controller : NetworkBehaviour
 	private void RpcPlayDisappear()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void Christmas.Scp2536.Scp2536Controller::RpcPlayDisappear()", 295100853, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Christmas.Scp2536.Scp2536Controller::RpcPlayDisappear()", 295100853, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -194,7 +194,7 @@ public class Scp2536Controller : NetworkBehaviour
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		GeneratedNetworkCode._Write_PlayerRoles_002ETeam(writer, team);
 		writer.WriteVector3(position);
-		SendRPCInternal("System.Void Christmas.Scp2536.Scp2536Controller::RpcPlayTeamSpawn(PlayerRoles.Team,UnityEngine.Vector3)", -1071699852, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void Christmas.Scp2536.Scp2536Controller::RpcPlayTeamSpawn(PlayerRoles.Team,UnityEngine.Vector3)", -1071699852, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -208,19 +208,19 @@ public class Scp2536Controller : NetworkBehaviour
 		while (true)
 		{
 			yield return Timing.WaitForSeconds(10f);
-			if (ServerFindTarget(out var target, out var spawnpoint))
+			if (this.ServerFindTarget(out var target, out var spawnpoint))
 			{
 				Vector3 spawnPos = spawnpoint.Position;
 				Quaternion spawnRot = spawnpoint.Rotation;
-				_ignoredPlayers.Add(target.netId);
-				RpcPlayTeamSpawn(target.GetTeam(), spawnpoint.Position);
+				this._ignoredPlayers.Add(target.netId);
+				this.RpcPlayTeamSpawn(target.GetTeam(), spawnpoint.Position);
 				yield return Timing.WaitForSeconds(3f);
-				GiftController.ServerPrepareGifts();
-				RpcMoveTree(spawnPos, spawnRot, (byte)UnityEngine.Random.Range(0, 256));
+				this.GiftController.ServerPrepareGifts();
+				this.RpcMoveTree(spawnPos, spawnRot, (byte)UnityEngine.Random.Range(0, 256));
 				yield return Timing.WaitForSeconds(20f);
-				RpcPlayDisappear();
+				this.RpcPlayDisappear();
 				yield return Timing.WaitForSeconds(1.3f);
-				RpcHideTree();
+				this.RpcHideTree();
 				yield return Timing.WaitForSeconds(60f);
 			}
 		}
@@ -228,14 +228,14 @@ public class Scp2536Controller : NetworkBehaviour
 
 	static Scp2536Controller()
 	{
-		WhitelistedTeams = new Team[4]
+		Scp2536Controller.WhitelistedTeams = new Team[4]
 		{
 			Team.ClassD,
 			Team.Scientists,
 			Team.FoundationForces,
 			Team.ChaosInsurgency
 		};
-		TeamClips = new Dictionary<Team, AudioClip>();
+		Scp2536Controller.TeamClips = new Dictionary<Team, AudioClip>();
 		RemoteProcedureCalls.RegisterRpc(typeof(Scp2536Controller), "System.Void Christmas.Scp2536.Scp2536Controller::RpcMoveTree(UnityEngine.Vector3,UnityEngine.Quaternion,System.Byte)", InvokeUserCode_RpcMoveTree__Vector3__Quaternion__Byte);
 		RemoteProcedureCalls.RegisterRpc(typeof(Scp2536Controller), "System.Void Christmas.Scp2536.Scp2536Controller::RpcHideTree()", InvokeUserCode_RpcHideTree);
 		RemoteProcedureCalls.RegisterRpc(typeof(Scp2536Controller), "System.Void Christmas.Scp2536.Scp2536Controller::RpcPlayDisappear()", InvokeUserCode_RpcPlayDisappear);

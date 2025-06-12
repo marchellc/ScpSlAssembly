@@ -10,17 +10,17 @@ public class CachedLayerMask
 	{
 		get
 		{
-			if (_cachedMask == 0)
+			if (this._cachedMask == 0)
 			{
-				_cachedMask = LayerMask.GetMask(_layers);
+				this._cachedMask = LayerMask.GetMask(this._layers);
 			}
-			return _cachedMask;
+			return this._cachedMask;
 		}
 	}
 
 	public CachedLayerMask(params string[] layers)
 	{
-		_layers = layers;
+		this._layers = layers;
 	}
 
 	public static implicit operator int(CachedLayerMask mask)

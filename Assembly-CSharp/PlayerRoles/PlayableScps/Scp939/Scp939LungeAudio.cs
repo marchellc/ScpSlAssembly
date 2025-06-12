@@ -24,7 +24,7 @@ public class Scp939LungeAudio
 	public void Init(Scp939LungeAbility lunge)
 	{
 		lunge.OnStateChanged += OnStateChanged;
-		_t = lunge.transform;
+		this._t = lunge.transform;
 	}
 
 	private void OnStateChanged(Scp939LungeState state)
@@ -32,22 +32,22 @@ public class Scp939LungeAudio
 		switch (state)
 		{
 		case Scp939LungeState.LandHit:
-			Play(_hits.RandomItem(), 25f);
+			this.Play(this._hits.RandomItem(), 25f);
 			break;
 		case Scp939LungeState.LandHarsh:
-			Play(_harsh, 12.5f);
+			this.Play(this._harsh, 12.5f);
 			break;
 		case Scp939LungeState.Triggered:
-			Play(_launch, 25f);
+			this.Play(this._launch, 25f);
 			return;
 		case Scp939LungeState.None:
 			return;
 		}
-		Play(_land, 25f);
+		this.Play(this._land, 25f);
 	}
 
 	private void Play(AudioClip clip, float dis)
 	{
-		AudioSourcePoolManager.PlayOnTransform(clip, _t, dis);
+		AudioSourcePoolManager.PlayOnTransform(clip, this._t, dis);
 	}
 }

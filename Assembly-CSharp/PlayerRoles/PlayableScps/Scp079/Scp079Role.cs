@@ -53,7 +53,7 @@ public class Scp079Role : PlayerRoleBase, ISubroutinedRole, ISpectatableRole, IS
 
 	public float RollRotation { get; private set; }
 
-	public Scp079Camera CurrentCamera => _curCamSync.CurrentCamera;
+	public Scp079Camera CurrentCamera => this._curCamSync.CurrentCamera;
 
 	public bool IsSpectated
 	{
@@ -79,20 +79,20 @@ public class Scp079Role : PlayerRoleBase, ISubroutinedRole, ISpectatableRole, IS
 	{
 		get
 		{
-			if (!_curCamSync.TryGetCurrentCamera(out var cam))
+			if (!this._curCamSync.TryGetCurrentCamera(out var cam))
 			{
 				return false;
 			}
-			if (_lastAFKCamPos == Vector3.zero)
+			if (this._lastAFKCamPos == Vector3.zero)
 			{
-				_lastAFKCamPos = cam.CameraPosition;
+				this._lastAFKCamPos = cam.CameraPosition;
 			}
 			Vector3 cameraPosition = cam.CameraPosition;
-			if (cameraPosition == _lastAFKCamPos)
+			if (cameraPosition == this._lastAFKCamPos)
 			{
 				return true;
 			}
-			_lastAFKCamPos = cameraPosition;
+			this._lastAFKCamPos = cameraPosition;
 			return false;
 		}
 	}
@@ -116,7 +116,7 @@ public class Scp079Role : PlayerRoleBase, ISubroutinedRole, ISpectatableRole, IS
 
 	public bool IsInIdleRange(TeslaGate teslaGate)
 	{
-		if (!SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out var subroutine))
+		if (!this.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out var subroutine))
 		{
 			return false;
 		}
@@ -129,42 +129,42 @@ public class Scp079Role : PlayerRoleBase, ISubroutinedRole, ISpectatableRole, IS
 
 	public void ResetObject()
 	{
-		ActiveInstances.Remove(this);
-		_lastAFKCamPos = Vector3.zero;
+		Scp079Role.ActiveInstances.Remove(this);
+		this._lastAFKCamPos = Vector3.zero;
 	}
 
 	public void SpawnObject()
 	{
-		ActiveInstances.Add(this);
-		if (!TryGetOwner(out var hub))
+		Scp079Role.ActiveInstances.Add(this);
+		if (!base.TryGetOwner(out var hub))
 		{
 			throw new InvalidOperationException("SCP-079 role failed to spawn - owner is null");
 		}
 		float num = 6000f;
 		hub.transform.position = Vector3.up * num;
-		_lastAFKCamPos = Vector3.zero;
+		this._lastAFKCamPos = Vector3.zero;
 	}
 
 	private void Awake()
 	{
-		SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out _curCamSync);
+		this.SubroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out this._curCamSync);
 		MainCameraController.OnBeforeUpdated += SetCameraPoseData;
 	}
 
 	private void OnDestroy()
 	{
-		ActiveInstances.Remove(this);
+		Scp079Role.ActiveInstances.Remove(this);
 		MainCameraController.OnBeforeUpdated -= SetCameraPoseData;
 	}
 
 	private void SetCameraPoseData()
 	{
-		if (!base.Pooled && _curCamSync.TryGetCurrentCamera(out var cam))
+		if (!base.Pooled && this._curCamSync.TryGetCurrentCamera(out var cam))
 		{
-			CameraPosition = cam.CameraPosition;
-			VerticalRotation = cam.VerticalRotation;
-			HorizontalRotation = cam.HorizontalRotation;
-			RollRotation = cam.RollRotation;
+			this.CameraPosition = cam.CameraPosition;
+			this.VerticalRotation = cam.VerticalRotation;
+			this.HorizontalRotation = cam.HorizontalRotation;
+			this.RollRotation = cam.RollRotation;
 		}
 	}
 
@@ -177,12 +177,12 @@ public class Scp079Role : PlayerRoleBase, ISubroutinedRole, ISpectatableRole, IS
 			{
 				if (z is Scp079Role localInstance)
 				{
-					LocalInstance = localInstance;
-					LocalInstanceActive = true;
+					Scp079Role.LocalInstance = localInstance;
+					Scp079Role.LocalInstanceActive = true;
 				}
 				else
 				{
-					LocalInstanceActive = false;
+					Scp079Role.LocalInstanceActive = false;
 				}
 			}
 		};

@@ -24,53 +24,53 @@ public class CableTrayConnector : MonoBehaviour
 
 	private void Awake()
 	{
-		_roomConnector = GetComponent<IRoomConnector>();
-		if (_roomConnector.RoomsAlreadyRegistered)
+		this._roomConnector = base.GetComponent<IRoomConnector>();
+		if (this._roomConnector.RoomsAlreadyRegistered)
 		{
-			FindConnections();
+			this.FindConnections();
 		}
 		else
 		{
-			_roomConnector.OnRoomsRegistered += FindConnections;
+			this._roomConnector.OnRoomsRegistered += FindConnections;
 		}
 	}
 
 	private void FindConnections()
 	{
 		CableEndIndicator result2;
-		if (TryFindCableEnd(CableEndIndicator.UnconnectedInstances, out var result))
+		if (this.TryFindCableEnd(CableEndIndicator.UnconnectedInstances, out var result))
 		{
-			if (result.OpenEnded && _destroyOpenEnded)
+			if (result.OpenEnded && this._destroyOpenEnded)
 			{
 				result.gameObject.SetActive(value: false);
-				SetStatus(passthrough: false, seal: false);
+				this.SetStatus(passthrough: false, seal: false);
 			}
 			else
 			{
-				SetStatus(passthrough: false, seal: true);
+				this.SetStatus(passthrough: false, seal: true);
 				Vector3 v = result.GetComponentInParent<RoomIdentifier>().transform.position - base.transform.position;
-				_seal.transform.SetPositionAndRotation(result.transform.position, Quaternion.LookRotation(v.NormalizeIgnoreY()));
+				this._seal.transform.SetPositionAndRotation(result.transform.position, Quaternion.LookRotation(v.NormalizeIgnoreY()));
 			}
 		}
-		else if (TryFindCableEnd(CableEndIndicator.AllInstances, out result2))
+		else if (this.TryFindCableEnd(CableEndIndicator.AllInstances, out result2))
 		{
-			SetStatus(passthrough: true, seal: false);
+			this.SetStatus(passthrough: true, seal: false);
 		}
 		else
 		{
-			SetStatus(passthrough: false, seal: false);
+			this.SetStatus(passthrough: false, seal: false);
 		}
 	}
 
 	private void SetStatus(bool passthrough, bool seal)
 	{
-		if (_seal != null)
+		if (this._seal != null)
 		{
-			_seal.SetActive(seal);
+			this._seal.SetActive(seal);
 		}
-		if (_passthrough != null)
+		if (this._passthrough != null)
 		{
-			_passthrough.SetActive(passthrough);
+			this._passthrough.SetActive(passthrough);
 		}
 	}
 

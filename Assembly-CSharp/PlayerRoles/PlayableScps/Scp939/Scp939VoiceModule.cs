@@ -24,12 +24,12 @@ public class Scp939VoiceModule : StandardScpVoiceModule
 			{
 				return base.Decoder;
 			}
-			if (!_mimicryDecoderSet)
+			if (!this._mimicryDecoderSet)
 			{
-				_mimicryDecoder = new OpusDecoder();
-				_mimicryDecoderSet = true;
+				this._mimicryDecoder = new OpusDecoder();
+				this._mimicryDecoderSet = true;
 			}
-			return _mimicryDecoder;
+			return this._mimicryDecoder;
 		}
 	}
 
@@ -37,7 +37,7 @@ public class Scp939VoiceModule : StandardScpVoiceModule
 	{
 		if (base.CurrentChannel == VoiceChatChannel.Mimicry)
 		{
-			SingleBufferPlayback[] mimicrySources = _mimicrySources;
+			SingleBufferPlayback[] mimicrySources = this._mimicrySources;
 			for (int i = 0; i < mimicrySources.Length; i++)
 			{
 				mimicrySources[i].Buffer.Write(data, len);
@@ -69,7 +69,7 @@ public class Scp939VoiceModule : StandardScpVoiceModule
 
 	public void ClearMimicryPlayback()
 	{
-		SingleBufferPlayback[] mimicrySources = _mimicrySources;
+		SingleBufferPlayback[] mimicrySources = this._mimicrySources;
 		for (int i = 0; i < mimicrySources.Length; i++)
 		{
 			mimicrySources[i].Buffer.Clear();
@@ -79,10 +79,10 @@ public class Scp939VoiceModule : StandardScpVoiceModule
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		if (_mimicryDecoderSet)
+		if (this._mimicryDecoderSet)
 		{
-			_mimicryDecoder?.Dispose();
-			_mimicryDecoderSet = false;
+			this._mimicryDecoder?.Dispose();
+			this._mimicryDecoderSet = false;
 		}
 	}
 }

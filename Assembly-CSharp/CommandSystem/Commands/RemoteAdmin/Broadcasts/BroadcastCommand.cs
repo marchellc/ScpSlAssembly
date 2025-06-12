@@ -17,13 +17,13 @@ public class BroadcastCommand : BroadcastCommandBase
 	public override bool OnExecute(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
 		string text = arguments.At(0);
-		if (!IsValidDuration(text, out var time))
+		if (!base.IsValidDuration(text, out var time))
 		{
 			response = "Invalid argument for duration: " + text + " Usage: " + arguments.Array[0] + " " + this.DisplayCommandUsage();
 			return false;
 		}
 		Broadcast.BroadcastFlags broadcastFlag;
-		bool flag = HasInputFlag(arguments.At(1), out broadcastFlag, arguments.Count);
+		bool flag = base.HasInputFlag(arguments.At(1), out broadcastFlag, arguments.Count);
 		string text2 = RAUtils.FormatArguments(arguments, (!flag) ? 1 : 2);
 		Broadcast.Singleton.RpcAddElement(text2, time, broadcastFlag);
 		ServerLogs.AddLog(ServerLogs.Modules.Administrative, $"{sender.LogName} broadcast text \"{text2}\". Duration: {text} seconds. Broadcast Flag: {broadcastFlag}.", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);

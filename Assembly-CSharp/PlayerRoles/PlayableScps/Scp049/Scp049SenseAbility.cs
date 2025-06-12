@@ -78,28 +78,28 @@ public class Scp049SenseAbility : KeySubroutine<Scp049Role>
 
 	public void ServerLoseTarget()
 	{
-		HasTarget = false;
-		Cooldown.Trigger(25.0);
-		ServerSendRpc(toAll: true);
+		this.HasTarget = false;
+		this.Cooldown.Trigger(25.0);
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public void ServerProcessKilledPlayer(ReferenceHub hub)
 	{
-		if (HasTarget && !(Target != hub))
+		if (this.HasTarget && !(this.Target != hub))
 		{
-			DeadTargets.Add(hub);
-			SpecialZombies.Add(hub);
-			Cooldown.Trigger(25.0);
-			HasTarget = false;
-			ServerSendRpc(toAll: true);
+			this.DeadTargets.Add(hub);
+			this.SpecialZombies.Add(hub);
+			this.Cooldown.Trigger(25.0);
+			this.HasTarget = false;
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
 	public bool IsTarget(ReferenceHub hub)
 	{
-		if (HasTarget)
+		if (this.HasTarget)
 		{
-			return hub == Target;
+			return hub == this.Target;
 		}
 		return false;
 	}
@@ -107,23 +107,23 @@ public class Scp049SenseAbility : KeySubroutine<Scp049Role>
 	protected override void Update()
 	{
 		base.Update();
-		if (HasTarget)
+		if (this.HasTarget)
 		{
 			bool flag = false;
-			if (Target.roleManager.CurrentRole is IFpcRole fpcRole)
+			if (this.Target.roleManager.CurrentRole is IFpcRole fpcRole)
 			{
 				flag = true;
 				Vector3 position = fpcRole.FpcModule.Position;
 				Vector3 position2 = base.CastRole.FpcModule.Position;
-				DistanceFromTarget = (position - position2).sqrMagnitude;
+				this.DistanceFromTarget = (position - position2).sqrMagnitude;
 			}
-			if (!HitboxIdentity.IsEnemy(base.Owner, Target))
+			if (!HitboxIdentity.IsEnemy(base.Owner, this.Target))
 			{
 				flag = false;
 			}
-			if (NetworkServer.active && !(base.CastRole.VisibilityController.ValidateVisibility(Target) && !Duration.IsReady && flag))
+			if (NetworkServer.active && !(base.CastRole.VisibilityController.ValidateVisibility(this.Target) && !this.Duration.IsReady && flag))
 			{
-				ServerLoseTarget();
+				this.ServerLoseTarget();
 			}
 		}
 	}
@@ -131,19 +131,19 @@ public class Scp049SenseAbility : KeySubroutine<Scp049Role>
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		if (Duration.IsReady && Cooldown.IsReady)
+		if (this.Duration.IsReady && this.Cooldown.IsReady)
 		{
-			if (!CanFindTarget(out var bestTarget))
+			if (!this.CanFindTarget(out var bestTarget))
 			{
-				Target = null;
+				this.Target = null;
 				this.OnFailed?.Invoke();
-				ClientSendCmd();
+				base.ClientSendCmd();
 			}
 			else
 			{
 				this.OnSuccess?.Invoke();
-				Target = bestTarget;
-				ClientSendCmd();
+				this.Target = bestTarget;
+				base.ClientSendCmd();
 			}
 		}
 	}
@@ -151,41 +151,41 @@ public class Scp049SenseAbility : KeySubroutine<Scp049Role>
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		GetSubroutine<Scp049AttackAbility>(out _attackAbility);
+		base.GetSubroutine<Scp049AttackAbility>(out this._attackAbility);
 		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
 		SpectatorTargetTracker.OnTargetChanged += OnSpectatorTargetChanged;
-		_attackAbility.OnServerHit += OnServerHit;
+		this._attackAbility.OnServerHit += OnServerHit;
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		Cooldown.Clear();
-		Duration.Clear();
-		DeadTargets.Clear();
-		HasTarget = false;
+		this.Cooldown.Clear();
+		this.Duration.Clear();
+		this.DeadTargets.Clear();
+		this.HasTarget = false;
 		PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
 		SpectatorTargetTracker.OnTargetChanged -= OnSpectatorTargetChanged;
-		_attackAbility.OnServerHit -= OnServerHit;
+		this._attackAbility.OnServerHit -= OnServerHit;
 	}
 
 	private void OnServerHit(ReferenceHub hub)
 	{
-		if (HasTarget && !(hub == Target))
+		if (this.HasTarget && !(hub == this.Target))
 		{
-			ServerLoseTarget();
+			this.ServerLoseTarget();
 		}
 	}
 
 	private void OnSpectatorTargetChanged()
 	{
-		if (_hasPulseUnsafe)
+		if (this._hasPulseUnsafe)
 		{
-			if (_pulseEffect != null)
+			if (this._pulseEffect != null)
 			{
-				UnityEngine.Object.Destroy(_pulseEffect.gameObject);
+				UnityEngine.Object.Destroy(this._pulseEffect.gameObject);
 			}
-			_hasPulseUnsafe = false;
+			this._hasPulseUnsafe = false;
 		}
 	}
 
@@ -195,47 +195,47 @@ public class Scp049SenseAbility : KeySubroutine<Scp049Role>
 		{
 			if (newRole is HumanRole || newRole is ZombieRole)
 			{
-				DeadTargets.Remove(userHub);
+				this.DeadTargets.Remove(userHub);
 			}
 			if (prevRole is SpectatorRole && !(newRole is ZombieRole))
 			{
-				SpecialZombies.Remove(userHub);
+				this.SpecialZombies.Remove(userHub);
 			}
 		}
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
-		if (!Cooldown.IsReady || !Duration.IsReady)
+		if (!this.Cooldown.IsReady || !this.Duration.IsReady)
 		{
 			return;
 		}
-		HasTarget = false;
-		Target = reader.ReadReferenceHub();
-		if (Target == null)
+		this.HasTarget = false;
+		this.Target = reader.ReadReferenceHub();
+		if (this.Target == null)
 		{
-			Cooldown.Trigger(2.5);
-			ServerSendRpc(toAll: true);
+			this.Cooldown.Trigger(2.5);
+			base.ServerSendRpc(toAll: true);
 		}
 		else
 		{
-			if (!HitboxIdentity.IsEnemy(base.Owner, Target) || !(Target.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase))
+			if (!HitboxIdentity.IsEnemy(base.Owner, this.Target) || !(this.Target.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase))
 			{
 				return;
 			}
 			float radius = fpcStandardRoleBase.FpcModule.CharController.radius;
 			Vector3 cameraPosition = fpcStandardRoleBase.CameraPosition;
-			if (VisionInformation.GetVisionInformation(base.Owner, base.Owner.PlayerCameraReference, cameraPosition, radius, _distanceThreshold, checkFog: true, checkLineOfSight: true, 0, checkInDarkness: false).IsLooking)
+			if (VisionInformation.GetVisionInformation(base.Owner, base.Owner.PlayerCameraReference, cameraPosition, radius, this._distanceThreshold, checkFog: true, checkLineOfSight: true, 0, checkInDarkness: false).IsLooking)
 			{
-				Scp049UsingSenseEventArgs scp049UsingSenseEventArgs = new Scp049UsingSenseEventArgs(base.Owner, Target);
-				Scp049Events.OnUsingSense(scp049UsingSenseEventArgs);
-				if (scp049UsingSenseEventArgs.IsAllowed)
+				Scp049UsingSenseEventArgs e = new Scp049UsingSenseEventArgs(base.Owner, this.Target);
+				Scp049Events.OnUsingSense(e);
+				if (e.IsAllowed)
 				{
-					Target = scp049UsingSenseEventArgs.Target.ReferenceHub;
-					Duration.Trigger(20.0);
-					HasTarget = true;
-					ServerSendRpc(toAll: true);
-					Scp049Events.OnUsedSense(new Scp049UsedSenseEventArgs(base.Owner, Target));
+					this.Target = e.Target.ReferenceHub;
+					this.Duration.Trigger(20.0);
+					this.HasTarget = true;
+					base.ServerSendRpc(toAll: true);
+					Scp049Events.OnUsedSense(new Scp049UsedSenseEventArgs(base.Owner, this.Target));
 				}
 			}
 		}
@@ -243,40 +243,40 @@ public class Scp049SenseAbility : KeySubroutine<Scp049Role>
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
-		writer.WriteReferenceHub(HasTarget ? Target : null);
-		Cooldown.WriteCooldown(writer);
-		Duration.WriteCooldown(writer);
+		writer.WriteReferenceHub(this.HasTarget ? this.Target : null);
+		this.Cooldown.WriteCooldown(writer);
+		this.Duration.WriteCooldown(writer);
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
-		writer.WriteReferenceHub(Target);
+		writer.WriteReferenceHub(this.Target);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
-		Target = reader.ReadReferenceHub();
-		HasTarget = Target != null;
-		if (_hasPulseUnsafe && _pulseEffect != null)
+		this.Target = reader.ReadReferenceHub();
+		this.HasTarget = this.Target != null;
+		if (this._hasPulseUnsafe && this._pulseEffect != null)
 		{
-			UnityEngine.Object.Destroy(_pulseEffect.gameObject);
-			_hasPulseUnsafe = false;
+			UnityEngine.Object.Destroy(this._pulseEffect.gameObject);
+			this._hasPulseUnsafe = false;
 		}
-		if (HasTarget && CanSeeIndicator)
+		if (this.HasTarget && this.CanSeeIndicator)
 		{
-			_pulseEffect = UnityEngine.Object.Instantiate(_effectPrefab, Target.transform).transform;
-			_hasPulseUnsafe = true;
-			UnityEngine.Object.Destroy(_pulseEffect.gameObject, 3.5f);
+			this._pulseEffect = UnityEngine.Object.Instantiate(this._effectPrefab, this.Target.transform).transform;
+			this._hasPulseUnsafe = true;
+			UnityEngine.Object.Destroy(this._pulseEffect.gameObject, 3.5f);
 		}
-		Cooldown.ReadCooldown(reader);
-		Duration.ReadCooldown(reader);
+		this.Cooldown.ReadCooldown(reader);
+		this.Duration.ReadCooldown(reader);
 	}
 
 	private bool CanFindTarget(out ReferenceHub bestTarget)
 	{
 		Transform playerCameraReference = base.Owner.PlayerCameraReference;
-		float num = _distanceThreshold * _distanceThreshold;
-		float num2 = _dotThreshold;
+		float num = this._distanceThreshold * this._distanceThreshold;
+		float num2 = this._dotThreshold;
 		bool result = false;
 		bestTarget = null;
 		Vector3 position = base.CastRole.FpcModule.Position;
@@ -304,7 +304,7 @@ public class Scp049SenseAbility : KeySubroutine<Scp049Role>
 			if (!(sqrMagnitude > num))
 			{
 				float radius = fpcStandardRoleBase.FpcModule.CharacterControllerSettings.Radius;
-				if (VisionInformation.GetVisionInformation(base.Owner, playerCameraReference, fpcStandardRoleBase.CameraPosition, radius, _distanceThreshold, checkFog: true, checkLineOfSight: true, 0, checkInDarkness: false).IsLooking)
+				if (VisionInformation.GetVisionInformation(base.Owner, playerCameraReference, fpcStandardRoleBase.CameraPosition, radius, this._distanceThreshold, checkFog: true, checkLineOfSight: true, 0, checkInDarkness: false).IsLooking)
 				{
 					num = sqrMagnitude;
 					bestTarget = allHub;

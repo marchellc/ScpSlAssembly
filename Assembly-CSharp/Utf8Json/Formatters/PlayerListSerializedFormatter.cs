@@ -12,17 +12,17 @@ public sealed class PlayerListSerializedFormatter : IJsonFormatter<PlayerListSer
 
 	public PlayerListSerializedFormatter()
 	{
-		____keyMapping = new AutomataDictionary { 
+		this.____keyMapping = new AutomataDictionary { 
 		{
 			JsonWriter.GetEncodedPropertyNameWithoutQuotation("objects"),
 			0
 		} };
-		____stringByteKeys = new byte[1][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("objects") };
+		this.____stringByteKeys = new byte[1][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("objects") };
 	}
 
 	public void Serialize(ref JsonWriter writer, PlayerListSerialized value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		formatterResolver.GetFormatterWithVerify<List<string>>().Serialize(ref writer, value.objects, formatterResolver);
 		writer.WriteEndObject();
 	}
@@ -39,7 +39,7 @@ public sealed class PlayerListSerializedFormatter : IJsonFormatter<PlayerListSer
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 			}

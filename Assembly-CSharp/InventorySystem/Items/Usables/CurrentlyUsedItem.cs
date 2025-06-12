@@ -12,8 +12,8 @@ public readonly struct CurrentlyUsedItem
 
 	public CurrentlyUsedItem(UsableItem item, ushort serial, float startTime)
 	{
-		Item = item;
-		ItemSerial = serial;
-		StartTime = startTime;
+		this.Item = item;
+		this.ItemSerial = serial;
+		this.StartTime = startTime;
 	}
 }

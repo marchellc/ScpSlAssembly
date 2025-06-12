@@ -72,7 +72,7 @@ public class AntiScp207 : CokeBase<AntiScp207Stack>, ISpectatorDataPlayerEffect,
 			{
 				return base.CurrentStack.SpeedMultiplier;
 			}
-			return VitalitySpeedMultipler;
+			return AntiScp207.VitalitySpeedMultipler;
 		}
 	}
 
@@ -80,11 +80,11 @@ public class AntiScp207 : CokeBase<AntiScp207Stack>, ISpectatorDataPlayerEffect,
 	{
 		get
 		{
-			if (_isDamageModifierEnabled)
+			if (this._isDamageModifierEnabled)
 			{
 				if (!base.IsEnabled)
 				{
-					return IsTeslaImmunityActive;
+					return this.IsTeslaImmunityActive;
 				}
 				return true;
 			}
@@ -92,15 +92,15 @@ public class AntiScp207 : CokeBase<AntiScp207Stack>, ISpectatorDataPlayerEffect,
 		}
 	}
 
-	private bool IsTeslaImmunityActive => _lastSaveTime + TeslaImmunityTime >= Time.timeSinceLevelLoad;
+	private bool IsTeslaImmunityActive => this._lastSaveTime + AntiScp207.TeslaImmunityTime >= Time.timeSinceLevelLoad;
 
-	private bool IsImmunityActive => _lastSaveTime + DamageImmunityTime >= Time.timeSinceLevelLoad;
+	private bool IsImmunityActive => this._lastSaveTime + AntiScp207.DamageImmunityTime >= Time.timeSinceLevelLoad;
 
-	private float CurrentHealing => base.CurrentStack.HealAmount * GetMovementStateMultiplier();
+	private float CurrentHealing => base.CurrentStack.HealAmount * base.GetMovementStateMultiplier();
 
 	public override bool CheckConflicts(StatusEffectBase other)
 	{
-		return _isDamageModifierEnabled = !base.CheckConflicts(other);
+		return this._isDamageModifierEnabled = !base.CheckConflicts(other);
 	}
 
 	public bool GetSpectatorText(out string s)
@@ -112,11 +112,11 @@ public class AntiScp207 : CokeBase<AntiScp207Stack>, ISpectatorDataPlayerEffect,
 	public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
 	{
 		UniversalDamageHandler universalDamageHandler = handler as UniversalDamageHandler;
-		if (IsImmunityActive)
+		if (this.IsImmunityActive)
 		{
 			return 0f;
 		}
-		if (IsTeslaImmunityActive && universalDamageHandler != null && universalDamageHandler.TranslationId == DeathTranslations.Tesla.Id)
+		if (this.IsTeslaImmunityActive && universalDamageHandler != null && universalDamageHandler.TranslationId == DeathTranslations.Tesla.Id)
 		{
 			return 0f;
 		}
@@ -135,12 +135,13 @@ public class AntiScp207 : CokeBase<AntiScp207Stack>, ISpectatorDataPlayerEffect,
 		{
 			return 1f;
 		}
-		DisableEffect();
-		BreakMessage message = default(BreakMessage);
-		message.SoundPos = base.Hub.transform.position;
-		NetworkServer.SendToReady(message);
-		_lastSaveTime = Time.timeSinceLevelLoad;
-		return (num - DeathSaveHealth) / baseDamage;
+		this.DisableEffect();
+		NetworkServer.SendToReady(new BreakMessage
+		{
+			SoundPos = base.Hub.transform.position
+		});
+		this._lastSaveTime = Time.timeSinceLevelLoad;
+		return (num - AntiScp207.DeathSaveHealth) / baseDamage;
 	}
 
 	protected override void IntensityChanged(byte prevState, byte newState)
@@ -148,11 +149,11 @@ public class AntiScp207 : CokeBase<AntiScp207Stack>, ISpectatorDataPlayerEffect,
 		base.IntensityChanged(prevState, newState);
 		if (base.IsLocalPlayer)
 		{
-			_ambienceSource.Stop();
+			this._ambienceSource.Stop();
 			if (newState > 0)
 			{
-				_ambienceSource.clip = _ambienceSounds[Mathf.Min(newState, _ambienceSounds.Length) - 1];
-				_ambienceSource.Play();
+				this._ambienceSource.clip = this._ambienceSounds[Mathf.Min(newState, this._ambienceSounds.Length) - 1];
+				this._ambienceSource.Play();
 			}
 		}
 	}
@@ -163,35 +164,35 @@ public class AntiScp207 : CokeBase<AntiScp207Stack>, ISpectatorDataPlayerEffect,
 		{
 			return;
 		}
-		float currentHealing = CurrentHealing;
-		if (!_healthStat.FullyHealed)
+		float currentHealing = this.CurrentHealing;
+		if (!this._healthStat.FullyHealed)
 		{
-			if (_ahpProcess != null)
+			if (this._ahpProcess != null)
 			{
-				_ahpProcess.DecayRate = 0f;
+				this._ahpProcess.DecayRate = 0f;
 			}
-			_healthStat.ServerHeal(currentHealing);
+			this._healthStat.ServerHeal(currentHealing);
 		}
 		else
 		{
-			if (_ahpProcess == null)
+			if (this._ahpProcess == null)
 			{
-				_ahpProcess = _ahpStat.ServerAddProcess(0f, _ahpStat.MaxValue, 0f - currentHealing, 0.7f, 0f, persistant: true);
+				this._ahpProcess = this._ahpStat.ServerAddProcess(0f, this._ahpStat.MaxValue, 0f - currentHealing, 0.7f, 0f, persistant: true);
 			}
-			_ahpProcess.DecayRate = 0f - currentHealing;
+			this._ahpProcess.DecayRate = 0f - currentHealing;
 		}
 	}
 
 	protected override void Enabled()
 	{
 		base.Enabled();
-		_isDamageModifierEnabled = true;
-		_ahpProcess = null;
-		if (!base.Hub.playerStats.TryGetModule<HealthStat>(out _healthStat))
+		this._isDamageModifierEnabled = true;
+		this._ahpProcess = null;
+		if (!base.Hub.playerStats.TryGetModule<HealthStat>(out this._healthStat))
 		{
 			throw new NullReferenceException();
 		}
-		if (!base.Hub.playerStats.TryGetModule<AhpStat>(out _ahpStat))
+		if (!base.Hub.playerStats.TryGetModule<AhpStat>(out this._ahpStat))
 		{
 			throw new NullReferenceException();
 		}
@@ -200,9 +201,9 @@ public class AntiScp207 : CokeBase<AntiScp207Stack>, ISpectatorDataPlayerEffect,
 	protected override void Disabled()
 	{
 		base.Disabled();
-		if (_ahpProcess != null)
+		if (this._ahpProcess != null)
 		{
-			_ahpProcess.DecayRate = 1f;
+			this._ahpProcess.DecayRate = 1f;
 		}
 	}
 

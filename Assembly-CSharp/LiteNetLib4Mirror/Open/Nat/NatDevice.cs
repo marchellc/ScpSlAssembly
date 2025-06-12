@@ -14,7 +14,7 @@ public abstract class NatDevice
 
 	internal void Touch()
 	{
-		LastSeen = DateTime.Now;
+		this.LastSeen = DateTime.Now;
 	}
 
 	public abstract Task CreatePortMapAsync(Mapping mapping);
@@ -29,13 +29,13 @@ public abstract class NatDevice
 
 	protected void RegisterMapping(Mapping mapping)
 	{
-		_openedMapping.Remove(mapping);
-		_openedMapping.Add(mapping);
+		this._openedMapping.Remove(mapping);
+		this._openedMapping.Add(mapping);
 	}
 
 	protected void UnregisterMapping(Mapping mapping)
 	{
-		_openedMapping.RemoveWhere((Mapping x) => x.Equals(mapping));
+		this._openedMapping.RemoveWhere((Mapping x) => x.Equals(mapping));
 	}
 
 	internal void ReleaseMapping(IEnumerable<Mapping> mappings)
@@ -44,10 +44,10 @@ public abstract class NatDevice
 		NatDiscoverer.TraceSource.LogInfo("{0} ports to close", num);
 		for (int i = 0; i < num; i++)
 		{
-			Mapping mapping = _openedMapping.ElementAt(i);
+			Mapping mapping = this._openedMapping.ElementAt(i);
 			try
 			{
-				DeletePortMapAsync(mapping);
+				this.DeletePortMapAsync(mapping);
 				NatDiscoverer.TraceSource.LogInfo(mapping?.ToString() + " port successfully closed");
 			}
 			catch (Exception)
@@ -59,22 +59,22 @@ public abstract class NatDevice
 
 	internal void ReleaseAll()
 	{
-		ReleaseMapping(_openedMapping);
+		this.ReleaseMapping(this._openedMapping);
 	}
 
 	internal void ReleaseSessionMappings()
 	{
-		IEnumerable<Mapping> mappings = _openedMapping.Where((Mapping m) => m.LifetimeType == MappingLifetime.Session);
-		ReleaseMapping(mappings);
+		IEnumerable<Mapping> mappings = this._openedMapping.Where((Mapping m) => m.LifetimeType == MappingLifetime.Session);
+		this.ReleaseMapping(mappings);
 	}
 
 	internal async Task RenewMappings()
 	{
-		IEnumerable<Mapping> source = _openedMapping.Where((Mapping x) => x.ShoundRenew());
+		IEnumerable<Mapping> source = this._openedMapping.Where((Mapping x) => x.ShoundRenew());
 		Mapping[] array = source.ToArray();
 		foreach (Mapping mapping in array)
 		{
-			await RenewMapping(mapping);
+			await this.RenewMapping(mapping);
 		}
 	}
 
@@ -85,7 +85,7 @@ public abstract class NatDevice
 		{
 			renewMapping.Expiration = DateTime.UtcNow.AddSeconds(mapping.Lifetime);
 			NatDiscoverer.TraceSource.LogInfo("Renewing mapping {0}", renewMapping);
-			await CreatePortMapAsync(renewMapping);
+			await this.CreatePortMapAsync(renewMapping);
 			NatDiscoverer.TraceSource.LogInfo("Next renew scheduled at: {0}", renewMapping.Expiration.ToLocalTime().TimeOfDay);
 		}
 		catch (Exception)

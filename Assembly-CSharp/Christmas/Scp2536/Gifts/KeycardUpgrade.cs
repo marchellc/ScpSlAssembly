@@ -45,7 +45,7 @@ public class KeycardUpgrade : Scp2536GiftBase
 			Debug.LogError("Attempted to grant KeycardUpgrade to a player with no keycards.");
 			return;
 		}
-		ItemType type = UpgradeKeycard(keycardItem.ItemTypeId);
+		ItemType type = this.UpgradeKeycard(keycardItem.ItemTypeId);
 		hub.inventory.ServerRemoveItem(keycardItem.ItemSerial, null);
 		hub.inventory.ServerAddItem(type, ItemAddReason.Scp2536, 0).GrantAmmoReward();
 	}
@@ -60,13 +60,13 @@ public class KeycardUpgrade : Scp2536GiftBase
 		switch (keyId)
 		{
 		case ItemType.KeycardJanitor:
-			return GenerateOutcome(ItemType.KeycardZoneManager, ItemType.KeycardScientist);
+			return this.GenerateOutcome(ItemType.KeycardZoneManager, ItemType.KeycardScientist);
 		case ItemType.KeycardScientist:
 			return ItemType.KeycardResearchCoordinator;
 		case ItemType.KeycardResearchCoordinator:
 			return ItemType.KeycardFacilityManager;
 		case ItemType.KeycardZoneManager:
-			return GenerateOutcome(ItemType.KeycardFacilityManager, ItemType.KeycardMTFOperative);
+			return this.GenerateOutcome(ItemType.KeycardFacilityManager, ItemType.KeycardMTFOperative);
 		case ItemType.KeycardGuard:
 		case ItemType.KeycardMTFPrivate:
 			return ItemType.KeycardMTFOperative;

@@ -43,9 +43,9 @@ public class MimicryConfirmationBox : MonoBehaviour, ICursorOverride
 
 	public void ButtonOk()
 	{
-		if (_rememberToggle.isOn)
+		if (this._rememberToggle.isOn)
 		{
-			Remember = true;
+			MimicryConfirmationBox.Remember = true;
 		}
 		Object.Destroy(base.gameObject);
 	}
@@ -53,26 +53,27 @@ public class MimicryConfirmationBox : MonoBehaviour, ICursorOverride
 	public void ButtonDelete()
 	{
 		VcPrivacyFlags vcPrivacyFlags = VoiceChatPrivacySettings.PrivacyFlags & ~VcPrivacyFlags.AllowRecording;
-		if (_rememberToggle.isOn)
+		if (this._rememberToggle.isOn)
 		{
 			VoiceChatPrivacySettings.PrivacyFlags = vcPrivacyFlags;
 			VoiceChatPrivacySettings.Singleton.UpdateToggles();
 		}
-		VoiceChatPrivacySettings.VcPrivacyMessage message = default(VoiceChatPrivacySettings.VcPrivacyMessage);
-		message.Flags = (byte)vcPrivacyFlags;
-		NetworkClient.Send(message);
+		NetworkClient.Send(new VoiceChatPrivacySettings.VcPrivacyMessage
+		{
+			Flags = (byte)vcPrivacyFlags
+		});
 		Object.Destroy(base.gameObject);
 	}
 
 	private void Update()
 	{
-		if (_moreInfoRoot.activeSelf)
+		if (this._moreInfoRoot.activeSelf)
 		{
-			_progress.fillAmount = 1f;
+			this._progress.fillAmount = 1f;
 			return;
 		}
-		_progress.fillAmount -= Time.deltaTime / _duration;
-		if (!(_progress.fillAmount > 0f))
+		this._progress.fillAmount -= Time.deltaTime / this._duration;
+		if (!(this._progress.fillAmount > 0f))
 		{
 			Object.Destroy(base.gameObject);
 		}

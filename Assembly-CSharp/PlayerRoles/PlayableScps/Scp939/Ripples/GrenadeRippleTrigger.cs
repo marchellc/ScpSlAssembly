@@ -17,23 +17,23 @@ public class GrenadeRippleTrigger : RippleTriggerBase
 
 		public ThrownGrenadeHandler(GrenadeRippleTrigger trigger)
 		{
-			_tr = trigger;
-			_startTime = Time.timeSinceLevelLoad;
+			this._tr = trigger;
+			this._startTime = Time.timeSinceLevelLoad;
 		}
 
 		public bool UpdateSound()
 		{
-			if (_nextTime >= _tr._rippleTimes.Length)
+			if (this._nextTime >= this._tr._rippleTimes.Length)
 			{
 				return false;
 			}
-			float num = Time.timeSinceLevelLoad - _startTime;
-			if (_tr._rippleTimes[_nextTime] > num)
+			float num = Time.timeSinceLevelLoad - this._startTime;
+			if (this._tr._rippleTimes[this._nextTime] > num)
 			{
 				return false;
 			}
-			_nextTime++;
-			while (UpdateSound())
+			this._nextTime++;
+			while (this.UpdateSound())
 			{
 			}
 			return true;
@@ -66,7 +66,7 @@ public class GrenadeRippleTrigger : RippleTriggerBase
 	{
 		if (tp.Info.ItemId == ItemType.GrenadeHE)
 		{
-			_trackedGrenades.Add(tp, new ThrownGrenadeHandler(this));
+			this._trackedGrenades.Add(tp, new ThrownGrenadeHandler(this));
 		}
 	}
 
@@ -74,7 +74,7 @@ public class GrenadeRippleTrigger : RippleTriggerBase
 	{
 		if (ipb is ThrownProjectile key)
 		{
-			_trackedGrenades.Remove(key);
+			this._trackedGrenades.Remove(key);
 		}
 	}
 
@@ -84,11 +84,11 @@ public class GrenadeRippleTrigger : RippleTriggerBase
 		{
 			return;
 		}
-		foreach (KeyValuePair<ThrownProjectile, ThrownGrenadeHandler> trackedGrenade in _trackedGrenades)
+		foreach (KeyValuePair<ThrownProjectile, ThrownGrenadeHandler> trackedGrenade in this._trackedGrenades)
 		{
 			if (trackedGrenade.Value.UpdateSound())
 			{
-				PlayInRangeSqr(trackedGrenade.Key.Position, _audibleRangeSqr, Color.red);
+				base.PlayInRangeSqr(trackedGrenade.Key.Position, this._audibleRangeSqr, Color.red);
 			}
 		}
 	}

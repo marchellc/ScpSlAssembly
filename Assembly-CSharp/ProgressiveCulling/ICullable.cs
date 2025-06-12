@@ -8,6 +8,6 @@ public interface ICullable
 
 	void UpdateState()
 	{
-		SetVisibility(ShouldBeVisible);
+		this.SetVisibility(this.ShouldBeVisible);
 	}
 }

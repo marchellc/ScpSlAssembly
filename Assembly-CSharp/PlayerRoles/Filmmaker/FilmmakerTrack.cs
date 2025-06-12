@@ -11,15 +11,15 @@ public class FilmmakerTrack<T> : IFilmmakerTrack where T : struct
 
 	private FilmmakerKeyframe<T>[] _ordered;
 
-	public FilmmakerKeyframe<T>[] Keyframes => _ordered ?? (_ordered = _unordered.OrderBy((FilmmakerKeyframe<T> x) => x.TimeFrames).ToArray());
+	public FilmmakerKeyframe<T>[] Keyframes => this._ordered ?? (this._ordered = this._unordered.OrderBy((FilmmakerKeyframe<T> x) => x.TimeFrames).ToArray());
 
 	public int FirstFrame
 	{
 		get
 		{
-			if (Keyframes.Length != 0)
+			if (this.Keyframes.Length != 0)
 			{
-				return Keyframes[0].TimeFrames;
+				return this.Keyframes[0].TimeFrames;
 			}
 			return 0;
 		}
@@ -29,9 +29,9 @@ public class FilmmakerTrack<T> : IFilmmakerTrack where T : struct
 	{
 		get
 		{
-			if (Keyframes.Length != 0)
+			if (this.Keyframes.Length != 0)
 			{
-				return Keyframes[^1].TimeFrames;
+				return this.Keyframes[^1].TimeFrames;
 			}
 			return 0;
 		}
@@ -39,48 +39,48 @@ public class FilmmakerTrack<T> : IFilmmakerTrack where T : struct
 
 	public FilmmakerTrack(T defVal)
 	{
-		DefaultValue = defVal;
-		_unordered = new List<FilmmakerKeyframe<T>>();
+		this.DefaultValue = defVal;
+		this._unordered = new List<FilmmakerKeyframe<T>>();
 	}
 
 	public void AddOrReplace(T val, FilmmakerBlendPreset blend)
 	{
-		AddOrReplace(val, blend, FilmmakerTimelineManager.TimeFrames);
+		this.AddOrReplace(val, blend, FilmmakerTimelineManager.TimeFrames);
 	}
 
 	public void AddOrReplace(T val, FilmmakerBlendPreset blend, int timeFrames)
 	{
-		ClearFrame(timeFrames);
+		this.ClearFrame(timeFrames);
 		FilmmakerKeyframe<T> item = new FilmmakerKeyframe<T>
 		{
 			TimeFrames = timeFrames,
 			Value = val,
 			BlendCurve = blend
 		};
-		_unordered.Add(item);
-		_ordered = null;
+		this._unordered.Add(item);
+		this._ordered = null;
 	}
 
 	public void ClearAll()
 	{
-		_unordered.Clear();
-		_ordered = null;
+		this._unordered.Clear();
+		this._ordered = null;
 	}
 
 	public void ClearFrame()
 	{
-		ClearFrame(FilmmakerTimelineManager.TimeFrames);
+		this.ClearFrame(FilmmakerTimelineManager.TimeFrames);
 	}
 
 	public void ClearFrame(int frameTimes)
 	{
-		int count = _unordered.Count;
+		int count = this._unordered.Count;
 		for (int i = 0; i < count; i++)
 		{
-			if (_unordered[i].TimeFrames == frameTimes)
+			if (this._unordered[i].TimeFrames == frameTimes)
 			{
-				_ordered = null;
-				_unordered.RemoveAt(i);
+				this._ordered = null;
+				this._unordered.RemoveAt(i);
 				break;
 			}
 		}
@@ -88,10 +88,10 @@ public class FilmmakerTrack<T> : IFilmmakerTrack where T : struct
 
 	public bool TryGetNextFrame(int startTime, out int next)
 	{
-		int num = Keyframes.Length;
+		int num = this.Keyframes.Length;
 		for (int i = 0; i < num; i++)
 		{
-			next = Keyframes[i].TimeFrames;
+			next = this.Keyframes[i].TimeFrames;
 			if (next > startTime)
 			{
 				return true;
@@ -103,9 +103,9 @@ public class FilmmakerTrack<T> : IFilmmakerTrack where T : struct
 
 	public bool TryGetPrevFrame(int startTime, out int prev)
 	{
-		for (int num = Keyframes.Length - 1; num >= 0; num--)
+		for (int num = this.Keyframes.Length - 1; num >= 0; num--)
 		{
-			prev = Keyframes[num].TimeFrames;
+			prev = this.Keyframes[num].TimeFrames;
 			if (prev < startTime)
 			{
 				return true;

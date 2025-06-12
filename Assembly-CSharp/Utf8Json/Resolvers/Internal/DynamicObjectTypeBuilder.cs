@@ -47,15 +47,15 @@ internal static class DynamicObjectTypeBuilder
 
 			static JsonWriter()
 			{
-				GetEncodedPropertyNameWithBeginObject = ExpressionUtility.GetMethodInfo(() => Utf8Json.JsonWriter.GetEncodedPropertyNameWithBeginObject(null));
-				GetEncodedPropertyNameWithPrefixValueSeparator = ExpressionUtility.GetMethodInfo(() => Utf8Json.JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator(null));
-				GetEncodedPropertyNameWithoutQuotation = ExpressionUtility.GetMethodInfo(() => Utf8Json.JsonWriter.GetEncodedPropertyNameWithoutQuotation(null));
-				GetEncodedPropertyName = ExpressionUtility.GetMethodInfo(() => Utf8Json.JsonWriter.GetEncodedPropertyName(null));
-				WriteNull = ExpressionUtility.GetMethodInfo((Utf8Json.JsonWriter writer) => writer.WriteNull());
-				WriteRaw = ExpressionUtility.GetMethodInfo((Utf8Json.JsonWriter writer) => writer.WriteRaw(null));
-				WriteBeginObject = ExpressionUtility.GetMethodInfo((Utf8Json.JsonWriter writer) => writer.WriteBeginObject());
-				WriteEndObject = ExpressionUtility.GetMethodInfo((Utf8Json.JsonWriter writer) => writer.WriteEndObject());
-				WriteValueSeparator = ExpressionUtility.GetMethodInfo((Utf8Json.JsonWriter writer) => writer.WriteValueSeparator());
+				JsonWriter.GetEncodedPropertyNameWithBeginObject = ExpressionUtility.GetMethodInfo(() => Utf8Json.JsonWriter.GetEncodedPropertyNameWithBeginObject(null));
+				JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator = ExpressionUtility.GetMethodInfo(() => Utf8Json.JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator(null));
+				JsonWriter.GetEncodedPropertyNameWithoutQuotation = ExpressionUtility.GetMethodInfo(() => Utf8Json.JsonWriter.GetEncodedPropertyNameWithoutQuotation(null));
+				JsonWriter.GetEncodedPropertyName = ExpressionUtility.GetMethodInfo(() => Utf8Json.JsonWriter.GetEncodedPropertyName(null));
+				JsonWriter.WriteNull = ExpressionUtility.GetMethodInfo((Utf8Json.JsonWriter writer) => writer.WriteNull());
+				JsonWriter.WriteRaw = ExpressionUtility.GetMethodInfo((Utf8Json.JsonWriter writer) => writer.WriteRaw(null));
+				JsonWriter.WriteBeginObject = ExpressionUtility.GetMethodInfo((Utf8Json.JsonWriter writer) => writer.WriteBeginObject());
+				JsonWriter.WriteEndObject = ExpressionUtility.GetMethodInfo((Utf8Json.JsonWriter writer) => writer.WriteEndObject());
+				JsonWriter.WriteValueSeparator = ExpressionUtility.GetMethodInfo((Utf8Json.JsonWriter writer) => writer.WriteValueSeparator());
 			}
 		}
 
@@ -77,13 +77,13 @@ internal static class DynamicObjectTypeBuilder
 
 			static JsonReader()
 			{
-				ReadIsNull = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader) => reader.ReadIsNull());
-				ReadIsBeginObjectWithVerify = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader) => reader.ReadIsBeginObjectWithVerify());
-				ReadIsEndObjectWithSkipValueSeparator = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader, int count) => reader.ReadIsEndObjectWithSkipValueSeparator(ref count));
-				ReadPropertyNameSegmentUnsafe = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader) => reader.ReadPropertyNameSegmentRaw());
-				ReadNextBlock = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader) => reader.ReadNextBlock());
-				GetBufferUnsafe = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader) => reader.GetBufferUnsafe());
-				GetCurrentOffsetUnsafe = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader) => reader.GetCurrentOffsetUnsafe());
+				JsonReader.ReadIsNull = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader) => reader.ReadIsNull());
+				JsonReader.ReadIsBeginObjectWithVerify = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader) => reader.ReadIsBeginObjectWithVerify());
+				JsonReader.ReadIsEndObjectWithSkipValueSeparator = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader, int count) => reader.ReadIsEndObjectWithSkipValueSeparator(ref count));
+				JsonReader.ReadPropertyNameSegmentUnsafe = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader) => reader.ReadPropertyNameSegmentRaw());
+				JsonReader.ReadNextBlock = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader) => reader.ReadNextBlock());
+				JsonReader.GetBufferUnsafe = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader) => reader.GetBufferUnsafe());
+				JsonReader.GetCurrentOffsetUnsafe = ExpressionUtility.GetMethodInfo((Utf8Json.JsonReader reader) => reader.GetCurrentOffsetUnsafe());
 			}
 		}
 
@@ -213,13 +213,13 @@ internal static class DynamicObjectTypeBuilder
 		}
 		if (typeof(Exception).GetTypeInfo().IsAssignableFrom(typeInfo))
 		{
-			return BuildAnonymousFormatter(typeof(T), nameMutator, excludeNull, allowPrivate: false, isException: true);
+			return DynamicObjectTypeBuilder.BuildAnonymousFormatter(typeof(T), nameMutator, excludeNull, allowPrivate: false, isException: true);
 		}
-		if (typeInfo.IsAnonymous() || TryGetInterfaceEnumerableElementType(typeof(T), out var _))
+		if (typeInfo.IsAnonymous() || DynamicObjectTypeBuilder.TryGetInterfaceEnumerableElementType(typeof(T), out var _))
 		{
-			return BuildAnonymousFormatter(typeof(T), nameMutator, excludeNull, allowPrivate: false, isException: false);
+			return DynamicObjectTypeBuilder.BuildAnonymousFormatter(typeof(T), nameMutator, excludeNull, allowPrivate: false, isException: false);
 		}
-		TypeInfo typeInfo2 = BuildType(assembly, typeof(T), nameMutator, excludeNull);
+		TypeInfo typeInfo2 = DynamicObjectTypeBuilder.BuildType(assembly, typeof(T), nameMutator, excludeNull);
 		if (typeInfo2 == null)
 		{
 			return null;
@@ -242,25 +242,25 @@ internal static class DynamicObjectTypeBuilder
 		}
 		if (typeof(Exception).GetTypeInfo().IsAssignableFrom(typeInfo))
 		{
-			return BuildAnonymousFormatter(typeof(T), nameMutator, excludeNull, allowPrivate: false, isException: true);
+			return DynamicObjectTypeBuilder.BuildAnonymousFormatter(typeof(T), nameMutator, excludeNull, allowPrivate: false, isException: true);
 		}
-		return BuildAnonymousFormatter(typeof(T), nameMutator, excludeNull, allowPrivate, isException: false);
+		return DynamicObjectTypeBuilder.BuildAnonymousFormatter(typeof(T), nameMutator, excludeNull, allowPrivate, isException: false);
 	}
 
 	private static TypeInfo BuildType(DynamicAssembly assembly, Type type, Func<string, string> nameMutator, bool excludeNull)
 	{
-		if (ignoreTypes.Contains(type))
+		if (DynamicObjectTypeBuilder.ignoreTypes.Contains(type))
 		{
 			return null;
 		}
 		MetaType metaType = new MetaType(type, nameMutator, allowPrivate: false);
 		bool hasShouldSerialize = metaType.Members.Any((MetaMember x) => x.ShouldSerializeMethodInfo != null);
 		Type type2 = typeof(IJsonFormatter<>).MakeGenericType(type);
-		TypeBuilder typeBuilder = assembly.DefineType("Utf8Json.Formatters." + SubtractFullNameRegex.Replace(type.FullName, "").Replace(".", "_") + "Formatter" + Interlocked.Increment(ref nameSequence), TypeAttributes.Public | TypeAttributes.Sealed, null, new Type[1] { type2 });
+		TypeBuilder typeBuilder = assembly.DefineType("Utf8Json.Formatters." + DynamicObjectTypeBuilder.SubtractFullNameRegex.Replace(type.FullName, "").Replace(".", "_") + "Formatter" + Interlocked.Increment(ref DynamicObjectTypeBuilder.nameSequence), TypeAttributes.Public | TypeAttributes.Sealed, null, new Type[1] { type2 });
 		ConstructorBuilder constructorBuilder = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
 		FieldBuilder stringByteKeysField = typeBuilder.DefineField("stringByteKeys", typeof(byte[][]), FieldAttributes.Private | FieldAttributes.InitOnly);
 		ILGenerator iLGenerator = constructorBuilder.GetILGenerator();
-		Dictionary<MetaMember, FieldInfo> customFormatterLookup = BuildConstructor(typeBuilder, metaType, constructorBuilder, stringByteKeysField, iLGenerator, excludeNull, hasShouldSerialize);
+		Dictionary<MetaMember, FieldInfo> customFormatterLookup = DynamicObjectTypeBuilder.BuildConstructor(typeBuilder, metaType, constructorBuilder, stringByteKeysField, iLGenerator, excludeNull, hasShouldSerialize);
 		MethodBuilder methodBuilder = typeBuilder.DefineMethod("Serialize", MethodAttributes.Public | MethodAttributes.Final | MethodAttributes.Virtual, null, new Type[3]
 		{
 			typeof(JsonWriter).MakeByRefType(),
@@ -268,7 +268,7 @@ internal static class DynamicObjectTypeBuilder
 			typeof(IJsonFormatterResolver)
 		});
 		ILGenerator il = methodBuilder.GetILGenerator();
-		BuildSerialize(type, metaType, il, delegate
+		DynamicObjectTypeBuilder.BuildSerialize(type, metaType, il, delegate
 		{
 			il.EmitLoadThis();
 			il.EmitLdfld(stringByteKeysField);
@@ -288,14 +288,14 @@ internal static class DynamicObjectTypeBuilder
 			typeof(IJsonFormatterResolver)
 		});
 		ILGenerator il2 = methodBuilder2.GetILGenerator();
-		BuildDeserialize(type, metaType, il2, delegate(int index, MetaMember member)
+		DynamicObjectTypeBuilder.BuildDeserialize(type, metaType, il2, delegate(int index, MetaMember member)
 		{
-			if (!customFormatterLookup.TryGetValue(member, out var value2))
+			if (!customFormatterLookup.TryGetValue(member, out var value))
 			{
 				return false;
 			}
 			il2.EmitLoadThis();
-			il2.EmitLdfld(value2);
+			il2.EmitLdfld(value);
 			return true;
 		}, useGetUninitializedObject: false, 1);
 		return typeBuilder.CreateTypeInfo();
@@ -303,7 +303,7 @@ internal static class DynamicObjectTypeBuilder
 
 	public static object BuildAnonymousFormatter(Type type, Func<string, string> nameMutator, bool excludeNull, bool allowPrivate, bool isException)
 	{
-		if (ignoreTypes.Contains(type))
+		if (DynamicObjectTypeBuilder.ignoreTypes.Contains(type))
 		{
 			return false;
 		}
@@ -361,9 +361,9 @@ internal static class DynamicObjectTypeBuilder
 			}
 		}
 		MetaMember[] members = metaType.Members;
-		for (int i = 0; i < members.Length; i++)
+		for (int num2 = 0; num2 < members.Length; num2++)
 		{
-			JsonFormatterAttribute customAttribute2 = members[i].GetCustomAttribute<JsonFormatterAttribute>(inherit: true);
+			JsonFormatterAttribute customAttribute2 = members[num2].GetCustomAttribute<JsonFormatterAttribute>(inherit: true);
 			if (customAttribute2 != null)
 			{
 				object item2 = Activator.CreateInstance(customAttribute2.FormatterType, customAttribute2.Arguments);
@@ -383,7 +383,7 @@ internal static class DynamicObjectTypeBuilder
 			typeof(IJsonFormatterResolver)
 		}, type.Module, skipVisibility: true);
 		ILGenerator il = dynamicMethod.GetILGenerator();
-		BuildSerialize(type, metaType, il, delegate
+		DynamicObjectTypeBuilder.BuildSerialize(type, metaType, il, delegate
 		{
 			il.EmitLdarg(0);
 		}, delegate(int index, MetaMember member)
@@ -409,7 +409,7 @@ internal static class DynamicObjectTypeBuilder
 			typeof(IJsonFormatterResolver)
 		}, type.Module, skipVisibility: true);
 		ILGenerator il2 = dynamicMethod2.GetILGenerator();
-		BuildDeserialize(type, metaType, il2, delegate(int index, MetaMember member)
+		DynamicObjectTypeBuilder.BuildDeserialize(type, metaType, il2, delegate(int index, MetaMember member)
 		{
 			if (deserializeCustomFormatters.Count == 0)
 			{
@@ -460,7 +460,7 @@ internal static class DynamicObjectTypeBuilder
 			num++;
 		}
 		il.Emit(OpCodes.Stfld, stringByteKeysField);
-		Dictionary<MetaMember, FieldInfo> result = BuildCustomFormatterField(builder, info, il);
+		Dictionary<MetaMember, FieldInfo> result = DynamicObjectTypeBuilder.BuildCustomFormatterField(builder, info, il);
 		il.Emit(OpCodes.Ret);
 		return result;
 	}
@@ -518,7 +518,7 @@ internal static class DynamicObjectTypeBuilder
 			innerExceptionMetaMember.argValue = argValue;
 			innerExceptionMetaMember.argResolver = argResolver;
 		}
-		if (info.IsClass && info.BestmatchConstructor == null && TryGetInterfaceEnumerableElementType(type, out var elementType))
+		if (info.IsClass && info.BestmatchConstructor == null && DynamicObjectTypeBuilder.TryGetInterfaceEnumerableElementType(type, out var elementType))
 		{
 			Type type2 = typeof(IEnumerable<>).MakeGenericType(elementType);
 			argResolver.EmitLoad();
@@ -568,9 +568,8 @@ internal static class DynamicObjectTypeBuilder
 			local2 = il.DeclareLocal(typeof(bool));
 			argumentField.EmitLoad();
 			il.EmitCall(EmitInfo.JsonWriter.WriteBeginObject);
-			array = (from x in info.Members
-				where x.IsReadable
-				select x into _
+			array = (from _ in info.Members
+				where _.IsReadable
 				select il.DefineLabel()).ToArray();
 		}
 		int num = 0;
@@ -621,7 +620,7 @@ internal static class DynamicObjectTypeBuilder
 			il.EmitLdc_I4(num);
 			il.Emit(OpCodes.Ldelem_Ref);
 			il.EmitCall(EmitInfo.JsonWriter.WriteRaw);
-			EmitSerializeValue(typeInfo, item, il, num, tryEmitLoadCustomFormatter, argumentField, argValue, argResolver);
+			DynamicObjectTypeBuilder.EmitSerializeValue(typeInfo, item, il, num, tryEmitLoadCustomFormatter, argumentField, argValue, argResolver);
 			num++;
 		}
 		il.MarkLabel(label3);
@@ -650,7 +649,7 @@ internal static class DynamicObjectTypeBuilder
 			argResolver.EmitLoad();
 			il.EmitCall(EmitInfo.Serialize(type2));
 		}
-		else if (jsonPrimitiveTypes.Contains(type2))
+		else if (DynamicObjectTypeBuilder.jsonPrimitiveTypes.Contains(type2))
 		{
 			writer.EmitLoad();
 			argValue.EmitLoad();
@@ -703,25 +702,23 @@ internal static class DynamicObjectTypeBuilder
 		bool isSideEffectFreeType = true;
 		if (info.BestmatchConstructor != null)
 		{
-			isSideEffectFreeType = IsSideEffectFreeConstructorType(info.BestmatchConstructor);
+			isSideEffectFreeType = DynamicObjectTypeBuilder.IsSideEffectFreeConstructorType(info.BestmatchConstructor);
 			if (info.Members.Any((MetaMember x) => !x.IsReadable && x.IsWritable))
 			{
 				isSideEffectFreeType = false;
 			}
 		}
-		DeserializeInfo[] infoList = info.Members.Select(delegate(MetaMember item)
+		DeserializeInfo[] infoList = info.Members.Select((MetaMember item) => new DeserializeInfo
 		{
-			DeserializeInfo result = default(DeserializeInfo);
-			result.MemberInfo = item;
-			result.LocalField = il.DeclareLocal(item.Type);
-			result.IsDeserializedField = (isSideEffectFreeType ? null : il.DeclareLocal(typeof(bool)));
-			return result;
+			MemberInfo = item,
+			LocalField = il.DeclareLocal(item.Type),
+			IsDeserializedField = (isSideEffectFreeType ? null : il.DeclareLocal(typeof(bool)))
 		}).ToArray();
 		LocalBuilder local = il.DeclareLocal(typeof(int));
 		AutomataDictionary automataDictionary = new AutomataDictionary();
-		for (int i = 0; i < info.Members.Length; i++)
+		for (int num = 0; num < info.Members.Length; num++)
 		{
-			automataDictionary.Add(JsonWriter.GetEncodedPropertyNameWithoutQuotation(info.Members[i].Name), i);
+			automataDictionary.Add(JsonWriter.GetEncodedPropertyNameWithoutQuotation(info.Members[num].Name), num);
 		}
 		LocalBuilder local2 = il.DeclareLocal(typeof(byte[]));
 		LocalBuilder local3 = il.DeclareLocal(typeof(byte).MakeByRefType(), pinned: true);
@@ -763,7 +760,7 @@ internal static class DynamicObjectTypeBuilder
 			int value = x.Value;
 			if (infoList[value].MemberInfo != null)
 			{
-				EmitDeserializeValue(il, infoList[value], value, tryEmitLoadCustomFormatter, argReader, argResolver);
+				DynamicObjectTypeBuilder.EmitDeserializeValue(il, infoList[value], value, tryEmitLoadCustomFormatter, argReader, argResolver);
 				if (!isSideEffectFreeType)
 				{
 					il.EmitTrue();
@@ -787,7 +784,7 @@ internal static class DynamicObjectTypeBuilder
 		il.Emit(OpCodes.Ldc_I4_0);
 		il.Emit(OpCodes.Conv_U);
 		il.EmitStloc(local3);
-		LocalBuilder localBuilder3 = EmitNewObject(il, type, info, infoList, isSideEffectFreeType);
+		LocalBuilder localBuilder3 = DynamicObjectTypeBuilder.EmitNewObject(il, type, info, infoList, isSideEffectFreeType);
 		if (localBuilder3 != null)
 		{
 			il.Emit(OpCodes.Ldloc, localBuilder3);
@@ -805,7 +802,7 @@ internal static class DynamicObjectTypeBuilder
 			argResolver.EmitLoad();
 			il.EmitCall(EmitInfo.Deserialize(type));
 		}
-		else if (jsonPrimitiveTypes.Contains(type))
+		else if (DynamicObjectTypeBuilder.jsonPrimitiveTypes.Contains(type))
 		{
 			reader.EmitLoad();
 			il.EmitCall((from x in typeof(JsonReader).GetTypeInfo().GetDeclaredMethods("Read" + type.Name)
@@ -947,7 +944,7 @@ internal static class DynamicObjectTypeBuilder
 			{
 				return false;
 			}
-			return IsSideEffectFreeConstructorType(constructor);
+			return DynamicObjectTypeBuilder.IsSideEffectFreeConstructorType(constructor);
 		}
 		return false;
 	}

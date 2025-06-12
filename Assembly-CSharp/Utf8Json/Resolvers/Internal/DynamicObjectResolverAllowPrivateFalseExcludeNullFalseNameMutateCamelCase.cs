@@ -12,7 +12,7 @@ internal sealed class DynamicObjectResolverAllowPrivateFalseExcludeNullFalseName
 
 		static FormatterCache()
 		{
-			formatter = (IJsonFormatter<T>)DynamicObjectTypeBuilder.BuildFormatterToAssembly<T>(assembly, Instance, nameMutator, excludeNull);
+			FormatterCache<T>.formatter = (IJsonFormatter<T>)DynamicObjectTypeBuilder.BuildFormatterToAssembly<T>(DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase.assembly, DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase.Instance, DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase.nameMutator, DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase.excludeNull);
 		}
 	}
 
@@ -28,10 +28,10 @@ internal sealed class DynamicObjectResolverAllowPrivateFalseExcludeNullFalseName
 
 	static DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase()
 	{
-		Instance = new DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase();
-		nameMutator = StringMutator.ToCamelCase;
-		excludeNull = false;
-		assembly = new DynamicAssembly("Utf8Json.Resolvers.DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase");
+		DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase.Instance = new DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase();
+		DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase.nameMutator = StringMutator.ToCamelCase;
+		DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase.excludeNull = false;
+		DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase.assembly = new DynamicAssembly("Utf8Json.Resolvers.DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase");
 	}
 
 	private DynamicObjectResolverAllowPrivateFalseExcludeNullFalseNameMutateCamelCase()

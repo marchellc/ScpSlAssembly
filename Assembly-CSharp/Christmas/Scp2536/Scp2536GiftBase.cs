@@ -17,13 +17,13 @@ public abstract class Scp2536GiftBase
 
 	public virtual bool CanBeGranted(ReferenceHub hub)
 	{
-		if (ObtainedBy.Contains(hub))
+		if (this.ObtainedBy.Contains(hub))
 		{
 			return false;
 		}
 		double totalSeconds = RoundStart.RoundLength.TotalSeconds;
-		bool flag = SecondsUntilUnavailable > 0f && totalSeconds < (double)SecondsUntilUnavailable;
-		if (totalSeconds >= (double)SecondsUntilAvailable)
+		bool flag = this.SecondsUntilUnavailable > 0f && totalSeconds < (double)this.SecondsUntilUnavailable;
+		if (totalSeconds >= (double)this.SecondsUntilAvailable)
 		{
 			return !flag;
 		}
@@ -34,6 +34,6 @@ public abstract class Scp2536GiftBase
 
 	public virtual void Reset()
 	{
-		ObtainedBy.Clear();
+		this.ObtainedBy.Clear();
 	}
 }

@@ -11,7 +11,7 @@ public sealed class AuthenticateResponseFormatter : IJsonFormatter<AuthenticateR
 
 	public AuthenticateResponseFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("success"),
@@ -62,7 +62,7 @@ public sealed class AuthenticateResponseFormatter : IJsonFormatter<AuthenticateR
 				11
 			}
 		};
-		____stringByteKeys = new byte[12][]
+		this.____stringByteKeys = new byte[12][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("success"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("error"),
@@ -81,29 +81,29 @@ public sealed class AuthenticateResponseFormatter : IJsonFormatter<AuthenticateR
 
 	public void Serialize(ref JsonWriter writer, AuthenticateResponse value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteBoolean(value.success);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.error);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteString(value.token);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		writer.WriteString(value.id);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		writer.WriteString(value.nonce);
-		writer.WriteRaw(____stringByteKeys[5]);
+		writer.WriteRaw(this.____stringByteKeys[5]);
 		writer.WriteString(value.country);
-		writer.WriteRaw(____stringByteKeys[6]);
+		writer.WriteRaw(this.____stringByteKeys[6]);
 		writer.WriteByte(value.flags);
-		writer.WriteRaw(____stringByteKeys[7]);
+		writer.WriteRaw(this.____stringByteKeys[7]);
 		writer.WriteInt64(value.expiration);
-		writer.WriteRaw(____stringByteKeys[8]);
+		writer.WriteRaw(this.____stringByteKeys[8]);
 		writer.WriteString(value.preauth);
-		writer.WriteRaw(____stringByteKeys[9]);
+		writer.WriteRaw(this.____stringByteKeys[9]);
 		writer.WriteString(value.globalBan);
-		writer.WriteRaw(____stringByteKeys[10]);
+		writer.WriteRaw(this.____stringByteKeys[10]);
 		writer.WriteUInt16(value.lifetime);
-		writer.WriteRaw(____stringByteKeys[11]);
+		writer.WriteRaw(this.____stringByteKeys[11]);
 		writer.WriteBoolean(value.NoWatermarking);
 		writer.WriteEndObject();
 	}
@@ -131,7 +131,7 @@ public sealed class AuthenticateResponseFormatter : IJsonFormatter<AuthenticateR
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

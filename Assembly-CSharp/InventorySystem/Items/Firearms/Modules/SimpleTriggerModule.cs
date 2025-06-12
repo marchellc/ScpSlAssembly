@@ -8,7 +8,7 @@ public class SimpleTriggerModule : ModuleBase, ITriggerControllerModule
 {
 	internal class ReceivedData
 	{
-		public bool IsHeld => PressTime > ReleaseTime;
+		public bool IsHeld => this.PressTime > this.ReleaseTime;
 
 		public double PressTime { get; private set; }
 
@@ -18,11 +18,11 @@ public class SimpleTriggerModule : ModuleBase, ITriggerControllerModule
 		{
 			if (isHeld)
 			{
-				PressTime = NetworkTime.time;
+				this.PressTime = NetworkTime.time;
 			}
 			else
 			{
-				ReleaseTime = NetworkTime.time;
+				this.ReleaseTime = NetworkTime.time;
 			}
 		}
 	}
@@ -34,15 +34,15 @@ public class SimpleTriggerModule : ModuleBase, ITriggerControllerModule
 	[field: SerializeField]
 	public ModuleBase[] IgnoredBusyModules { get; private set; }
 
-	public double LastTriggerPress => SelfData.PressTime;
+	public double LastTriggerPress => this.SelfData.PressTime;
 
-	public double LastTriggerRelease => SelfData.ReleaseTime;
+	public double LastTriggerRelease => this.SelfData.ReleaseTime;
 
 	public bool TriggerHeld
 	{
 		get
 		{
-			if (base.IsControllable ? KeyHeld : GetData(base.ItemSerial).IsHeld)
+			if (base.IsControllable ? this.KeyHeld : SimpleTriggerModule.GetData(base.ItemSerial).IsHeld)
 			{
 				return !base.PrimaryActionBlocked;
 			}
@@ -56,9 +56,9 @@ public class SimpleTriggerModule : ModuleBase, ITriggerControllerModule
 		{
 			if (!base.IsLocalPlayer)
 			{
-				return GetData(base.ItemSerial);
+				return SimpleTriggerModule.GetData(base.ItemSerial);
 			}
-			return _clientData;
+			return this._clientData;
 		}
 	}
 
@@ -66,9 +66,9 @@ public class SimpleTriggerModule : ModuleBase, ITriggerControllerModule
 	{
 		get
 		{
-			if (GetAction(ActionName.Shoot))
+			if (base.GetAction(ActionName.Shoot))
 			{
-				return !PreventHoldingTrigger;
+				return !this.PreventHoldingTrigger;
 			}
 			return false;
 		}
@@ -85,7 +85,7 @@ public class SimpleTriggerModule : ModuleBase, ITriggerControllerModule
 				{
 					return true;
 				}
-				if (moduleBase is IBusyIndicatorModule { IsBusy: not false } && !IgnoredBusyModules.Contains(moduleBase))
+				if (moduleBase is IBusyIndicatorModule { IsBusy: not false } && !this.IgnoredBusyModules.Contains(moduleBase))
 				{
 					return true;
 				}
@@ -96,7 +96,7 @@ public class SimpleTriggerModule : ModuleBase, ITriggerControllerModule
 
 	private void ServerSetTrigger(bool isHeld)
 	{
-		SendRpc(delegate(NetworkWriter x)
+		this.SendRpc(delegate(NetworkWriter x)
 		{
 			x.WriteBool(isHeld);
 		});
@@ -109,11 +109,11 @@ public class SimpleTriggerModule : ModuleBase, ITriggerControllerModule
 		{
 			return;
 		}
-		bool triggerStatus = TriggerHeld;
-		if (_clientData.IsHeld != triggerStatus)
+		bool triggerStatus = this.TriggerHeld;
+		if (this._clientData.IsHeld != triggerStatus)
 		{
-			_clientData.Set(triggerStatus);
-			SendCmd(delegate(NetworkWriter x)
+			this._clientData.Set(triggerStatus);
+			this.SendCmd(delegate(NetworkWriter x)
 			{
 				x.WriteBool(triggerStatus);
 			});
@@ -123,19 +123,19 @@ public class SimpleTriggerModule : ModuleBase, ITriggerControllerModule
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		SyncData.Clear();
+		SimpleTriggerModule.SyncData.Clear();
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		ServerSetTrigger(reader.ReadBool());
+		this.ServerSetTrigger(reader.ReadBool());
 	}
 
 	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
 	{
 		base.ClientProcessRpcTemplate(reader, serial);
-		ReceivedData data = GetData(serial);
+		ReceivedData data = SimpleTriggerModule.GetData(serial);
 		bool flag = reader.ReadBool();
 		if (flag != data.IsHeld)
 		{
@@ -145,6 +145,6 @@ public class SimpleTriggerModule : ModuleBase, ITriggerControllerModule
 
 	internal static ReceivedData GetData(ushort serial)
 	{
-		return SyncData.GetOrAdd(serial, () => new ReceivedData());
+		return SimpleTriggerModule.SyncData.GetOrAdd(serial, () => new ReceivedData());
 	}
 }

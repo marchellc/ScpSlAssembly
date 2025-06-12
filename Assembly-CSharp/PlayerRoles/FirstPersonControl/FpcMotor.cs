@@ -35,6 +35,8 @@ public class FpcMotor : IDummyActionProvider
 
 	public readonly FpcGravityController GravityController;
 
+	public readonly FpcScaleController ScaleController;
+
 	private const float JumpToStepOffsetRatio = 0.35f;
 
 	private const float StepDiffMultiplier = 1.6f;
@@ -99,11 +101,11 @@ public class FpcMotor : IDummyActionProvider
 	{
 		get
 		{
-			if (!_requestedJump)
+			if (!this._requestedJump)
 			{
-				if (Hub.isLocalPlayer && Input.GetKeyDown(_keyJump))
+				if (this.Hub.isLocalPlayer && Input.GetKeyDown(FpcMotor._keyJump))
 				{
-					return !InputLocked;
+					return !this.InputLocked;
 				}
 				return false;
 			}
@@ -111,55 +113,55 @@ public class FpcMotor : IDummyActionProvider
 		}
 		set
 		{
-			_requestedJump = value;
+			this._requestedJump = value;
 		}
 	}
 
-	protected virtual float Speed => MainModule.MaxMovementSpeed;
+	protected virtual float Speed => this.MainModule.MaxMovementSpeed;
 
 	protected virtual Vector3 DesiredMove
 	{
 		get
 		{
-			if (ViewMode == FpcViewMode.LocalPlayer)
+			if (this.ViewMode == FpcViewMode.LocalPlayer)
 			{
-				if (TryGetOverride(out var overrideDir))
+				if (this.TryGetOverride(out var overrideDir))
 				{
 					return overrideDir;
 				}
-				if (InputLocked)
+				if (this.InputLocked)
 				{
 					return Vector3.zero;
 				}
 				float num = 0f;
 				float num2 = 0f;
-				if (Input.GetKey(_keyFwd))
+				if (Input.GetKey(FpcMotor._keyFwd))
 				{
 					num2 += 1f;
 				}
-				if (Input.GetKey(_keyBwd))
+				if (Input.GetKey(FpcMotor._keyBwd))
 				{
 					num2 -= 1f;
 				}
-				if (Input.GetKey(_keyRgt))
+				if (Input.GetKey(FpcMotor._keyRgt))
 				{
 					num += 1f;
 				}
-				if (Input.GetKey(_keyLft))
+				if (Input.GetKey(FpcMotor._keyLft))
 				{
 					num -= 1f;
 				}
-				return CachedTransform.forward * num2 + CachedTransform.right * num;
+				return this.CachedTransform.forward * num2 + this.CachedTransform.right * num;
 			}
-			Vector3 position = ReceivedPosition.Position;
-			Vector3 vector = position - Position;
+			Vector3 position = this.ReceivedPosition.Position;
+			Vector3 vector = position - this.Position;
 			if (NetworkServer.active)
 			{
-				float num3 = Mathf.Clamp(vector.y * 1.6f, 0f, 0.35f * MainModule.JumpSpeed);
-				MainModule.CharController.stepOffset = Mathf.Min(_defaultStepOffset + num3, _defaultHeight);
-				if (MainModule.Noclip.RecentlyActive)
+				float num3 = Mathf.Clamp(vector.y * 1.6f, 0f, 0.35f * this.MainModule.JumpSpeed);
+				this.MainModule.CharController.stepOffset = Mathf.Min(this._defaultStepOffset + num3, this._defaultHeight);
+				if (this.MainModule.Noclip.RecentlyActive)
 				{
-					Position = position;
+					this.Position = position;
 					return Vector3.zero;
 				}
 			}
@@ -169,7 +171,7 @@ public class FpcMotor : IDummyActionProvider
 				return Vector3.zero;
 			}
 			num4 -= 0.5f;
-			if (num4 < _lastMaxSpeed && Mathf.Abs(vector.y) < Mathf.Max(MainModule.JumpSpeed, Mathf.Abs(MoveDirection.y)))
+			if (num4 < this._lastMaxSpeed && Mathf.Abs(vector.y) < Mathf.Max(this.MainModule.JumpSpeed, Mathf.Abs(this.MoveDirection.y)))
 			{
 				if (!NetworkServer.active)
 				{
@@ -179,14 +181,14 @@ public class FpcMotor : IDummyActionProvider
 			}
 			if (NetworkServer.active)
 			{
-				if (_lastOverrideTime.Elapsed.TotalSeconds > 0.4000000059604645)
+				if (this._lastOverrideTime.Elapsed.TotalSeconds > 0.4000000059604645)
 				{
-					MainModule.ServerOverridePosition(Position);
+					this.MainModule.ServerOverridePosition(this.Position);
 				}
 			}
 			else
 			{
-				Position = position;
+				this.Position = position;
 			}
 			return Vector3.zero;
 		}
@@ -196,11 +198,11 @@ public class FpcMotor : IDummyActionProvider
 	{
 		get
 		{
-			return MainModule.Position;
+			return this.MainModule.Position;
 		}
 		set
 		{
-			MainModule.Position = value;
+			this.MainModule.Position = value;
 		}
 	}
 
@@ -210,151 +212,152 @@ public class FpcMotor : IDummyActionProvider
 
 	public FpcMotor(ReferenceHub hub, FirstPersonMovementModule module, FallDamageSettings fallDamageSettings)
 	{
-		Hub = hub;
-		MainModule = module;
-		GravityController = new FpcGravityController(this);
-		_fallDamageSettings = fallDamageSettings;
-		CachedTransform = hub.transform;
+		this.Hub = hub;
+		this.MainModule = module;
+		this.GravityController = new FpcGravityController(this);
+		this.ScaleController = new FpcScaleController(this);
+		this._fallDamageSettings = fallDamageSettings;
+		this.CachedTransform = hub.transform;
 		if (NetworkServer.active)
 		{
-			_lastOverrideTime = Stopwatch.StartNew();
-			_fallDamageImmunity = Stopwatch.StartNew();
+			this._lastOverrideTime = Stopwatch.StartNew();
+			this._fallDamageImmunity = Stopwatch.StartNew();
 			module.OnServerPositionOverwritten = (Action)Delegate.Combine(module.OnServerPositionOverwritten, (Action)delegate
 			{
-				_lastOverrideTime.Restart();
+				this._lastOverrideTime.Restart();
 			});
-			_defaultStepOffset = module.CharController.stepOffset;
-			_defaultHeight = module.CharController.height;
+			this._defaultStepOffset = module.CharController.stepOffset;
+			this._defaultHeight = module.CharController.height;
 		}
-		if (Hub.isLocalPlayer)
+		if (this.Hub.isLocalPlayer)
 		{
-			ViewMode = FpcViewMode.LocalPlayer;
-			ReloadInputConfigs();
-			if (!_reloadKeysEventSet)
+			this.ViewMode = FpcViewMode.LocalPlayer;
+			FpcMotor.ReloadInputConfigs();
+			if (!FpcMotor._reloadKeysEventSet)
 			{
 				NewInput.OnAnyModified += ReloadInputConfigs;
-				_reloadKeysEventSet = true;
+				FpcMotor._reloadKeysEventSet = true;
 			}
 		}
 		else
 		{
-			ViewMode = (NetworkServer.active ? FpcViewMode.Server : FpcViewMode.Thirdperson);
+			this.ViewMode = (NetworkServer.active ? FpcViewMode.Server : FpcViewMode.Thirdperson);
 		}
 	}
 
 	public void UpdatePosition(out bool sendJump)
 	{
 		sendJump = false;
-		bool flag = Speed < 0f;
-		_lastMaxSpeed = Mathf.Abs(Speed);
-		if (MainModule.Noclip.IsActive)
+		bool flag = this.Speed < 0f;
+		this._lastMaxSpeed = Mathf.Abs(this.Speed);
+		if (this.MainModule.Noclip.IsActive)
 		{
-			MoveDirection = Vector3.zero;
+			this.MoveDirection = Vector3.zero;
 			return;
 		}
-		if (ViewMode == FpcViewMode.Thirdperson)
+		if (this.ViewMode == FpcViewMode.Thirdperson)
 		{
-			UpdateThirdperson();
+			this.UpdateThirdperson();
 			return;
 		}
-		CharacterController charController = MainModule.CharController;
-		Physics.SphereCast(Position, charController.radius, Vector3.down, out var hitInfo, charController.height / 2f, FpcStateProcessor.Mask, QueryTriggerInteraction.Ignore);
-		Vector3 vector = Vector3.ProjectOnPlane(DesiredMove, hitInfo.normal).normalized;
-		if (ViewMode == FpcViewMode.LocalPlayer && flag)
+		CharacterController charController = this.MainModule.CharController;
+		Physics.SphereCast(this.Position, charController.radius, Vector3.down, out var hitInfo, charController.height / 2f, FpcStateProcessor.Mask, QueryTriggerInteraction.Ignore);
+		Vector3 vector = Vector3.ProjectOnPlane(this.DesiredMove, hitInfo.normal).normalized;
+		if (this.ViewMode == FpcViewMode.LocalPlayer && flag)
 		{
 			vector = -vector;
 		}
-		MoveDirection = new Vector3(vector.x * _lastMaxSpeed, MoveDirection.y, vector.z * _lastMaxSpeed);
+		this.MoveDirection = new Vector3(vector.x * this._lastMaxSpeed, this.MoveDirection.y, vector.z * this._lastMaxSpeed);
 		if (charController.isGrounded)
 		{
-			UpdateGrounded(ref sendJump, MainModule.JumpSpeed);
+			this.UpdateGrounded(ref sendJump, this.MainModule.JumpSpeed);
 		}
 		else
 		{
-			UpdateFloating();
+			this.UpdateFloating();
 		}
 	}
 
 	public void ResetFallDamageCooldown()
 	{
-		_fallDamageImmunity.Restart();
+		this._fallDamageImmunity.Restart();
 	}
 
 	protected virtual Vector3 GetFrameMove()
 	{
-		if (MainModule.Noclip.IsActive)
+		if (this.MainModule.Noclip.IsActive)
 		{
 			return Vector3.zero;
 		}
-		Vector3 result = MoveDirection * Time.deltaTime;
-		if (ViewMode != 0)
+		Vector3 result = this.MoveDirection * Time.deltaTime;
+		if (this.ViewMode != FpcViewMode.LocalPlayer)
 		{
-			Vector3 position = ReceivedPosition.Position;
-			Vector3 position2 = Position;
-			result.x = ClampMoveDirection(position2.x, position.x, result.x);
-			result.z = ClampMoveDirection(position2.z, position.z, result.z);
+			Vector3 position = this.ReceivedPosition.Position;
+			Vector3 position2 = this.Position;
+			result.x = FpcMotor.ClampMoveDirection(position2.x, position.x, result.x);
+			result.z = FpcMotor.ClampMoveDirection(position2.z, position.z, result.z);
 		}
 		return result;
 	}
 
 	protected virtual void Move()
 	{
-		CharacterController charController = MainModule.CharController;
-		Vector3 position = Position;
-		Vector3 frameMove = GetFrameMove();
+		CharacterController charController = this.MainModule.CharController;
+		Vector3 position = this.Position;
+		Vector3 frameMove = this.GetFrameMove();
 		this.OnBeforeMove?.Invoke(frameMove);
 		charController.Move(frameMove);
-		Position = CachedTransform.position;
-		MovementDetected = Position != position;
-		Velocity = (Position - position) / Time.deltaTime;
-		MainModule.IsGrounded = charController.isGrounded;
+		this.Position = this.CachedTransform.position;
+		this.MovementDetected = this.Position != position;
+		this.Velocity = (this.Position - position) / Time.deltaTime;
+		this.MainModule.IsGrounded = charController.isGrounded;
 	}
 
 	protected virtual void UpdateGrounded(ref bool sendJump, float jumpSpeed)
 	{
-		Vector3 moveDirection = MoveDirection;
+		Vector3 moveDirection = this.MoveDirection;
 		bool flag = false;
-		if (WantsToJump)
+		if (this.WantsToJump)
 		{
 			if (jumpSpeed > 0f)
 			{
 				moveDirection.y = jumpSpeed;
 				flag = true;
 			}
-			_requestedJump = false;
-			IsJumping = true;
+			this._requestedJump = false;
+			this.IsJumping = true;
 			sendJump = true;
 		}
 		else
 		{
 			moveDirection.y = -10f;
-			IsJumping = false;
+			this.IsJumping = false;
 		}
-		MoveDirection = moveDirection;
-		if (_fallDamageSettings.Enabled && _maxFallSpeed > _fallDamageSettings.MinVelocity)
+		this.MoveDirection = moveDirection;
+		if (this._fallDamageSettings.Enabled && this._maxFallSpeed > this._fallDamageSettings.MinVelocity)
 		{
-			ServerProcessFall(_maxFallSpeed - _fallDamageSettings.MinVelocity);
+			this.ServerProcessFall(this._maxFallSpeed - this._fallDamageSettings.MinVelocity);
 		}
-		_maxFallSpeed = _fallDamageSettings.MinVelocity;
+		this._maxFallSpeed = this._fallDamageSettings.MinVelocity;
 		if (flag)
 		{
-			UpdateFloating();
+			this.UpdateFloating();
 			return;
 		}
-		Move();
-		if (!MainModule.CharController.isGrounded)
+		this.Move();
+		if (!this.MainModule.CharController.isGrounded)
 		{
-			MoveDirection = Vector3.Scale(MoveDirection, new Vector3(1f, 0f, 1f));
+			this.MoveDirection = Vector3.Scale(this.MoveDirection, new Vector3(1f, 0f, 1f));
 		}
 	}
 
 	protected virtual void UpdateFloating()
 	{
-		Vector3 vector = 0.5f * Time.deltaTime * GravityController.Gravity;
-		MoveDirection += vector;
-		Move();
-		MoveDirection += vector;
-		_maxFallSpeed = Mathf.Max(_maxFallSpeed, 0f - MoveDirection.y);
+		Vector3 vector = 0.5f * Time.deltaTime * this.GravityController.Gravity;
+		this.MoveDirection += vector;
+		this.Move();
+		this.MoveDirection += vector;
+		this._maxFallSpeed = Mathf.Max(this._maxFallSpeed, 0f - this.MoveDirection.y);
 	}
 
 	private static float ClampMoveDirection(float curPos, float targetPos, float moveDir)
@@ -365,61 +368,61 @@ public class FpcMotor : IDummyActionProvider
 
 	private void UpdateThirdperson()
 	{
-		if (IsInvisible)
+		if (this.IsInvisible)
 		{
-			Position = InvisiblePosition;
+			this.Position = FpcMotor.InvisiblePosition;
 			return;
 		}
-		Vector3 desiredMove = DesiredMove;
-		Vector3 position = ReceivedPosition.Position;
-		Vector3 position2 = Position;
+		Vector3 desiredMove = this.DesiredMove;
+		Vector3 position = this.ReceivedPosition.Position;
+		Vector3 position2 = this.Position;
 		Vector3 b = new Vector3(position.x, position2.y, position.z);
-		float num = Time.deltaTime * Mathf.Max(3f, _lastMaxSpeed);
+		float num = Time.deltaTime * Mathf.Max(3f, this._lastMaxSpeed);
 		Vector3 vector = Vector3.Lerp(position2, b, num * 2f);
 		vector.y = Mathf.Lerp(vector.y, position.y, 9f * Time.deltaTime);
-		Position = vector;
-		Velocity = (vector - position2) / Time.deltaTime;
-		MoveDirection = new Vector3(desiredMove.x, 0f, desiredMove.z).normalized * _lastMaxSpeed + Vector3.up * desiredMove.y;
+		this.Position = vector;
+		this.Velocity = (vector - position2) / Time.deltaTime;
+		this.MoveDirection = new Vector3(desiredMove.x, 0f, desiredMove.z).normalized * this._lastMaxSpeed + Vector3.up * desiredMove.y;
 	}
 
 	private void ServerProcessFall(float speed)
 	{
-		if (NetworkServer.active && !(_fallDamageImmunity.Elapsed.TotalSeconds < (double)_fallDamageSettings.ImmunityTime))
+		if (NetworkServer.active && !(this._fallDamageImmunity.Elapsed.TotalSeconds < (double)this._fallDamageSettings.ImmunityTime))
 		{
-			PlayerRoleBase currentRole = Hub.roleManager.CurrentRole;
+			PlayerRoleBase currentRole = this.Hub.roleManager.CurrentRole;
 			if (!(currentRole is Scp106Role { IsStalking: not false }))
 			{
 				RoleTypeId roleTypeId = currentRole.RoleTypeId;
-				Vector3 position = Position;
-				float damage = _fallDamageSettings.CalculateDamage(speed);
-				Hub.playerStats.DealDamage(new UniversalDamageHandler(damage, DeathTranslations.Falldown));
-				new FpcFallDamageMessage(Hub, position, roleTypeId).SendToAuthenticated();
+				Vector3 position = this.Position;
+				float damage = this._fallDamageSettings.CalculateDamage(speed);
+				this.Hub.playerStats.DealDamage(new UniversalDamageHandler(damage, DeathTranslations.Falldown));
+				new FpcFallDamageMessage(this.Hub, position, roleTypeId).SendToAuthenticated();
 			}
 		}
 	}
 
 	public void OnElevatorMoved(Bounds elevatorBounds, ElevatorChamber chamb, Vector3 deltaPos, Quaternion deltaRot)
 	{
-		if (!elevatorBounds.Contains(Position))
+		if (!elevatorBounds.Contains(this.Position))
 		{
 			return;
 		}
 		if (NetworkServer.active)
 		{
-			Vector3 position = ReceivedPosition.Position;
-			Vector3 point = new Vector3(position.x, Position.y, position.z);
+			Vector3 position = this.ReceivedPosition.Position;
+			Vector3 point = new Vector3(position.x, this.Position.y, position.z);
 			if (elevatorBounds.Contains(point))
 			{
-				_lastOverrideTime.Restart();
+				this._lastOverrideTime.Restart();
 			}
 		}
 		Transform transform = chamb.transform;
-		Vector3 vector = Position + deltaPos;
+		Vector3 vector = this.Position + deltaPos;
 		vector = deltaRot * (vector - transform.position) + transform.position;
-		Position = vector;
-		if (Hub.isLocalPlayer)
+		this.Position = vector;
+		if (this.Hub.isLocalPlayer)
 		{
-			MainModule.MouseLook.CurrentHorizontal += deltaRot.eulerAngles.y;
+			this.MainModule.MouseLook.CurrentHorizontal += deltaRot.eulerAngles.y;
 		}
 	}
 
@@ -427,14 +430,14 @@ public class FpcMotor : IDummyActionProvider
 	{
 		bool result = false;
 		overrideDir = Vector3.zero;
-		if (Hub.inventory.CurInstance.GetMobilityController() is IMovementInputOverride { MovementOverrideActive: not false } movementInputOverride)
+		if (this.Hub.inventory.CurInstance.GetMobilityController() is IMovementInputOverride { MovementOverrideActive: not false } movementInputOverride)
 		{
 			result = true;
 			overrideDir = movementInputOverride.MovementOverrideDirection;
 		}
-		for (int i = 0; i < Hub.playerEffectsController.EffectsLength; i++)
+		for (int i = 0; i < this.Hub.playerEffectsController.EffectsLength; i++)
 		{
-			if (Hub.playerEffectsController.AllEffects[i] is IMovementInputOverride { MovementOverrideActive: not false } movementInputOverride2)
+			if (this.Hub.playerEffectsController.AllEffects[i] is IMovementInputOverride { MovementOverrideActive: not false } movementInputOverride2)
 			{
 				result = true;
 				overrideDir += movementInputOverride2.MovementOverrideDirection;
@@ -471,8 +474,8 @@ public class FpcMotor : IDummyActionProvider
 		}
 		void SetPosition(Vector3 dir, float distance)
 		{
-			Vector3 vector = Hub.PlayerCameraReference.TransformDirection(dir).NormalizeIgnoreY();
-			ReceivedPosition = new RelativePosition(Position + vector * distance);
+			Vector3 vector = this.Hub.PlayerCameraReference.TransformDirection(dir).NormalizeIgnoreY();
+			this.ReceivedPosition = new RelativePosition(this.Position + vector * distance);
 		}
 	}
 }

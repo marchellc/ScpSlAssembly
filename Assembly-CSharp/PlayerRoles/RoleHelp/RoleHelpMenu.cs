@@ -24,14 +24,14 @@ public class RoleHelpMenu : ToggleableMenuBase
 	[SerializeField]
 	private float _fadeSpeed;
 
-	public override bool CanToggle => _instanceSet;
+	public override bool CanToggle => this._instanceSet;
 
 	public override CursorOverrideMode CursorOverride => CursorOverrideMode.NoOverride;
 
 	protected override void OnToggled()
 	{
-		_fading = true;
-		_root.SetActive(value: true);
+		this._fading = true;
+		this._root.SetActive(value: true);
 	}
 
 	protected override void Awake()
@@ -48,20 +48,20 @@ public class RoleHelpMenu : ToggleableMenuBase
 
 	private void Update()
 	{
-		if (_fading && UpdateAlpha(IsEnabled ? _fadeSpeed : (0f - _fadeSpeed)))
+		if (this._fading && this.UpdateAlpha(this.IsEnabled ? this._fadeSpeed : (0f - this._fadeSpeed)))
 		{
-			_fading = false;
-			_root.SetActive(IsEnabled);
+			this._fading = false;
+			this._root.SetActive(this.IsEnabled);
 		}
 	}
 
 	private bool UpdateAlpha(float speed)
 	{
-		float alpha = _fader.alpha;
+		float alpha = this._fader.alpha;
 		alpha = Mathf.Clamp01(alpha + Time.deltaTime * speed);
 		bool result = alpha == 1f;
 		bool result2 = alpha == 0f;
-		_fader.alpha = alpha;
+		this._fader.alpha = alpha;
 		if (!(speed > 0f))
 		{
 			return result2;
@@ -73,17 +73,17 @@ public class RoleHelpMenu : ToggleableMenuBase
 	{
 		if (hub.isLocalPlayer)
 		{
-			IsEnabled = false;
-			if (_instanceSet)
+			this.IsEnabled = false;
+			if (this._instanceSet)
 			{
-				Object.Destroy(_instance);
-				_instanceSet = false;
+				Object.Destroy(this._instance);
+				this._instanceSet = false;
 			}
 			GameObject roleHelpInfo = newRole.RoleHelpInfo;
 			if (!(roleHelpInfo == null))
 			{
-				_instance = Object.Instantiate(roleHelpInfo, _parent);
-				_instanceSet = true;
+				this._instance = Object.Instantiate(roleHelpInfo, this._parent);
+				this._instanceSet = true;
 			}
 		}
 	}

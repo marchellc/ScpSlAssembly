@@ -31,7 +31,7 @@ public class LockReasonIcon : MonoBehaviour
 		DoorLockReason activeLocks = (DoorLockReason)dv.ActiveLocks;
 		bool flag = activeLocks == DoorLockReason.None;
 		bool flag2 = false;
-		IconPair[] icons = _icons;
+		IconPair[] icons = this._icons;
 		for (int i = 0; i < icons.Length; i++)
 		{
 			IconPair iconPair = icons[i];
@@ -39,9 +39,9 @@ public class LockReasonIcon : MonoBehaviour
 			iconPair.TargetObject.SetActive(flag3 && !flag2);
 			flag2 = flag2 || flag3;
 		}
-		SetActiveSafe(_anyLocked, !flag);
-		SetActiveSafe(_unlocked, flag);
-		SetActiveSafe(_fallback, !flag && !flag2);
+		this.SetActiveSafe(this._anyLocked, !flag);
+		this.SetActiveSafe(this._unlocked, flag);
+		this.SetActiveSafe(this._fallback, !flag && !flag2);
 	}
 
 	private void SetActiveSafe(GameObject target, bool val)

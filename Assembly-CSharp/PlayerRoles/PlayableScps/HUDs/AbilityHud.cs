@@ -18,8 +18,8 @@ public class AbilityHud
 
 		private GraphicColor(Graphic graphic)
 		{
-			Graphic = graphic;
-			StartingColor = graphic.color;
+			this.Graphic = graphic;
+			this.StartingColor = graphic.color;
 		}
 	}
 
@@ -78,39 +78,39 @@ public class AbilityHud
 
 	public void Setup(IAbilityCooldown cd, IAbilityCooldown duration)
 	{
-		_cooldown = cd;
-		_duration = duration;
-		_rt = _cooldownCircle.rectTransform;
-		_hasDuration = _duration != null;
-		_hasFader = _fader != null;
-		bool flag = UpdateVisibility();
-		if (_hasFader)
+		this._cooldown = cd;
+		this._duration = duration;
+		this._rt = this._cooldownCircle.rectTransform;
+		this._hasDuration = this._duration != null;
+		this._hasFader = this._fader != null;
+		bool flag = this.UpdateVisibility();
+		if (this._hasFader)
 		{
-			_fader.alpha = (flag ? 1 : 0);
+			this._fader.alpha = (flag ? 1 : 0);
 		}
 		else
 		{
-			_parent.SetActive(flag);
+			this._parent.SetActive(flag);
 		}
 	}
 
 	public void Update(bool forceHidden = false)
 	{
-		bool flag = !forceHidden && UpdateVisibility();
-		if (_hasFader)
+		bool flag = !forceHidden && this.UpdateVisibility();
+		if (this._hasFader)
 		{
-			_fader.alpha = Mathf.Clamp01(_fader.alpha + Time.deltaTime * (flag ? 8.5f : (-8.5f)));
+			this._fader.alpha = Mathf.Clamp01(this._fader.alpha + Time.deltaTime * (flag ? 8.5f : (-8.5f)));
 		}
 		else
 		{
-			_parent.SetActive(flag);
+			this._parent.SetActive(flag);
 		}
 	}
 
 	private bool UpdateVisibility()
 	{
-		bool result = UpdateCooldown();
-		if (_hasDuration && UpdateDuration())
+		bool result = this.UpdateCooldown();
+		if (this._hasDuration && this.UpdateDuration())
 		{
 			result = true;
 		}
@@ -119,25 +119,25 @@ public class AbilityHud
 
 	private bool UpdateCooldown()
 	{
-		float t = FillCircle(_cooldown, _cooldownCircle, _inverseCooldown);
-		_rt.localScale = Vector3.Lerp(_startScale, Vector3.one, t);
-		return !_cooldown.IsReady;
+		float t = this.FillCircle(this._cooldown, this._cooldownCircle, this._inverseCooldown);
+		this._rt.localScale = Vector3.Lerp(this._startScale, Vector3.one, t);
+		return !this._cooldown.IsReady;
 	}
 
 	private bool UpdateDuration()
 	{
-		if (_duration.IsReady)
+		if (this._duration.IsReady)
 		{
-			_durationCircle.enabled = false;
-			if (_fullStopwatch.IsRunning)
+			this._durationCircle.enabled = false;
+			if (this._fullStopwatch.IsRunning)
 			{
-				return _fullStopwatch.Elapsed.TotalSeconds < 0.30000001192092896;
+				return this._fullStopwatch.Elapsed.TotalSeconds < 0.30000001192092896;
 			}
 			return false;
 		}
-		_durationCircle.enabled = _showDurationAtCooldown || _cooldown.IsReady;
-		FillCircle(_duration, _durationCircle, !_inverseDuration);
-		_fullStopwatch.Restart();
+		this._durationCircle.enabled = this._showDurationAtCooldown || this._cooldown.IsReady;
+		this.FillCircle(this._duration, this._durationCircle, !this._inverseDuration);
+		this._fullStopwatch.Restart();
 		return true;
 	}
 
@@ -154,28 +154,28 @@ public class AbilityHud
 
 	public void LateUpdate()
 	{
-		_graphics.ForEach(delegate(GraphicColor x)
+		this._graphics.ForEach(delegate(GraphicColor x)
 		{
-			UpdateFlash(x.Graphic, _flashStopwatch, x.StartingColor, ref _flashIdleTime);
+			this.UpdateFlash(x.Graphic, this._flashStopwatch, x.StartingColor, ref this._flashIdleTime);
 		});
 	}
 
 	public void FlashAbility()
 	{
-		_flashStopwatch.Restart();
+		this._flashStopwatch.Restart();
 	}
 
 	private void UpdateFlash(Graphic targetGraphic, Stopwatch sw, Color normalColor, ref float idleTime)
 	{
 		Color color;
-		if (sw.IsRunning && sw.Elapsed.TotalSeconds < (double)_flashDuration)
+		if (sw.IsRunning && sw.Elapsed.TotalSeconds < (double)this._flashDuration)
 		{
-			float f = Mathf.Sin((Time.timeSinceLevelLoad - idleTime) * _flashSpeed * MathF.PI);
+			float f = Mathf.Sin((Time.timeSinceLevelLoad - idleTime) * this._flashSpeed * MathF.PI);
 			color = Color.Lerp(normalColor, Color.red, Mathf.Abs(f));
 		}
 		else
 		{
-			color = Color.Lerp(targetGraphic.color, normalColor, Time.deltaTime * _flashSpeed);
+			color = Color.Lerp(targetGraphic.color, normalColor, Time.deltaTime * this._flashSpeed);
 			idleTime = Time.timeSinceLevelLoad;
 		}
 		targetGraphic.color = new Color(color.r, color.g, color.b, targetGraphic.color.a);

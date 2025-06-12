@@ -54,7 +54,7 @@ public class Scp3114FpsAnimator : ScpViewmodelBase
 			ItemBase curInstance = base.Owner.inventory.CurInstance;
 			if (!(curInstance != null) || !(curInstance.ViewModel != null))
 			{
-				return _defaultFov;
+				return this._defaultFov;
 			}
 			return curInstance.ViewModel.ViewmodelCameraFOV;
 		}
@@ -63,35 +63,35 @@ public class Scp3114FpsAnimator : ScpViewmodelBase
 	protected override void Start()
 	{
 		base.Start();
-		_scpRole = base.Role as Scp3114Role;
-		_scpRole.SubroutineModule.TryGetSubroutine<Scp3114Slap>(out _slap);
-		_scpRole.SubroutineModule.TryGetSubroutine<Scp3114Dance>(out _dance);
-		_scpRole.SubroutineModule.TryGetSubroutine<Scp3114Strangle>(out _strangle);
-		_slap.OnTriggered += PlayAttackAnim;
+		this._scpRole = base.Role as Scp3114Role;
+		this._scpRole.SubroutineModule.TryGetSubroutine<Scp3114Slap>(out this._slap);
+		this._scpRole.SubroutineModule.TryGetSubroutine<Scp3114Dance>(out this._dance);
+		this._scpRole.SubroutineModule.TryGetSubroutine<Scp3114Strangle>(out this._strangle);
+		this._slap.OnTriggered += PlayAttackAnim;
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		if (_slap != null)
+		if (this._slap != null)
 		{
-			_slap.OnTriggered -= PlayAttackAnim;
+			this._slap.OnTriggered -= PlayAttackAnim;
 		}
 	}
 
 	protected override void UpdateAnimations()
 	{
-		FirstPersonMovementModule fpcModule = _scpRole.FpcModule;
+		FirstPersonMovementModule fpcModule = this._scpRole.FpcModule;
 		bool isGrounded = fpcModule.IsGrounded;
 		float num = fpcModule.Motor.Velocity.MagnitudeIgnoreY();
 		float walkCycle = (fpcModule.CharacterModelInstance as AnimatedCharacterModel).WalkCycle;
-		base.Anim.SetInteger(StatusHash, (int)_scpRole.CurIdentity.Status);
-		base.Anim.SetBool(GroundedHash, isGrounded);
-		base.Anim.SetFloat(WalkBlendHash, isGrounded ? num : 0f, _animDampTime, Time.deltaTime);
-		base.Anim.SetFloat(WalkCycleHash, walkCycle);
-		base.Anim.SetBool(StrangleHash, _strangle.SyncTarget.HasValue);
-		bool flag = _scpRole.Disguised || _dance.ThirdpersonMode;
-		_handsGraphics.SetActive(!flag);
+		base.Anim.SetInteger(Scp3114FpsAnimator.StatusHash, (int)this._scpRole.CurIdentity.Status);
+		base.Anim.SetBool(Scp3114FpsAnimator.GroundedHash, isGrounded);
+		base.Anim.SetFloat(Scp3114FpsAnimator.WalkBlendHash, isGrounded ? num : 0f, this._animDampTime, Time.deltaTime);
+		base.Anim.SetFloat(Scp3114FpsAnimator.WalkCycleHash, walkCycle);
+		base.Anim.SetBool(Scp3114FpsAnimator.StrangleHash, this._strangle.SyncTarget.HasValue);
+		bool flag = this._scpRole.Disguised || this._dance.ThirdpersonMode;
+		this._handsGraphics.SetActive(!flag);
 	}
 
 	private void PlayAttackAnim()
@@ -99,11 +99,11 @@ public class Scp3114FpsAnimator : ScpViewmodelBase
 		int num;
 		do
 		{
-			num = Mathf.FloorToInt(Random.Range(_attackVariantMinMax.x, _attackVariantMinMax.y));
+			num = Mathf.FloorToInt(Random.Range(this._attackVariantMinMax.x, this._attackVariantMinMax.y));
 		}
-		while (num == _prevRand);
-		base.Anim.SetFloat(VariantHash, Mathf.Floor(num));
-		base.Anim.SetTrigger(AttackHash);
-		_prevRand = num;
+		while (num == this._prevRand);
+		base.Anim.SetFloat(Scp3114FpsAnimator.VariantHash, Mathf.Floor(num));
+		base.Anim.SetTrigger(Scp3114FpsAnimator.AttackHash);
+		this._prevRand = num;
 	}
 }

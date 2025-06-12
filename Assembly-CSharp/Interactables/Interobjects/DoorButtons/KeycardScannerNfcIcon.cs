@@ -28,20 +28,20 @@ public class KeycardScannerNfcIcon : MonoBehaviour
 
 	private void Update()
 	{
-		_remainingUntilRegular -= Time.deltaTime;
-		if (!(_remainingUntilRegular > 0f))
+		this._remainingUntilRegular -= Time.deltaTime;
+		if (!(this._remainingUntilRegular > 0f))
 		{
-			SetRegular();
+			this.SetRegular();
 		}
 	}
 
 	public void SetMaterial(Material mat, float? time)
 	{
-		_renderer.sharedMaterial = mat;
+		this._renderer.sharedMaterial = mat;
 		if (time.HasValue)
 		{
 			base.enabled = true;
-			_remainingUntilRegular = time.Value;
+			this._remainingUntilRegular = time.Value;
 		}
 		else
 		{
@@ -51,31 +51,31 @@ public class KeycardScannerNfcIcon : MonoBehaviour
 
 	public void SetRegular()
 	{
-		SetMaterial(_regularMat, null);
+		this.SetMaterial(this._regularMat, null);
 	}
 
 	public void SetGranted()
 	{
-		SetMaterial(_grantedMat, null);
+		this.SetMaterial(this._grantedMat, null);
 	}
 
 	public void SetTemporaryGranted(float timeSeconds)
 	{
-		SetMaterial(_grantedMat, timeSeconds);
+		this.SetMaterial(this._grantedMat, timeSeconds);
 	}
 
 	public void SetDenied()
 	{
-		SetMaterial(_deniedMat, null);
+		this.SetMaterial(this._deniedMat, null);
 	}
 
 	public void SetTemporaryDenied(float timeSeconds)
 	{
-		SetMaterial(_deniedMat, timeSeconds);
+		this.SetMaterial(this._deniedMat, timeSeconds);
 	}
 
 	public void SetError()
 	{
-		SetMaterial(_errorMat, null);
+		this.SetMaterial(this._errorMat, null);
 	}
 }

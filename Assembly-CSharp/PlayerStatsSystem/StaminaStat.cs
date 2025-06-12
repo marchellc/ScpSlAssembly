@@ -14,7 +14,7 @@ public class StaminaStat : SyncedStatBase
 
 	private float _maxValue;
 
-	public override SyncMode Mode => _syncMode;
+	public override SyncMode Mode => this._syncMode;
 
 	public override float MinValue => 0f;
 
@@ -22,24 +22,24 @@ public class StaminaStat : SyncedStatBase
 	{
 		get
 		{
-			return _maxValue;
+			return this._maxValue;
 		}
 		set
 		{
-			_maxValue = value;
-			MaxValueDirty = true;
+			this._maxValue = value;
+			base.MaxValueDirty = true;
 		}
 	}
 
 	public void ModifyAmount(float f)
 	{
-		CurValue = Mathf.Clamp01(CurValue + f);
+		this.CurValue = Mathf.Clamp01(this.CurValue + f);
 	}
 
 	public void ChangeSyncMode(SyncMode newMode)
 	{
-		_syncMode = newMode;
-		_overrideRole = base.Hub.GetRoleId();
+		this._syncMode = newMode;
+		this._overrideRole = base.Hub.GetRoleId();
 	}
 
 	private byte ToByte(float val)
@@ -54,23 +54,23 @@ public class StaminaStat : SyncedStatBase
 
 	public override void WriteValue(SyncedStatMessages.StatMessageType type, NetworkWriter writer)
 	{
-		byte value = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? ToByte(CurValue) : ToByte(MaxValue));
+		byte value = ((type == SyncedStatMessages.StatMessageType.CurrentValue) ? this.ToByte(this.CurValue) : this.ToByte(this.MaxValue));
 		writer.WriteByte(value);
 	}
 
 	public override bool CheckDirty(float prevValue, float newValue)
 	{
-		return ToByte(prevValue) != ToByte(newValue);
+		return this.ToByte(prevValue) != this.ToByte(newValue);
 	}
 
 	internal override void ClassChanged()
 	{
-		_maxValue = 1f;
-		CurValue = MaxValue;
-		if (_overrideRole != RoleTypeId.None && base.Hub.GetRoleId() != _overrideRole)
+		this._maxValue = 1f;
+		this.CurValue = this.MaxValue;
+		if (this._overrideRole != RoleTypeId.None && base.Hub.GetRoleId() != this._overrideRole)
 		{
-			_syncMode = SyncMode.PrivateAndSpectators;
-			_overrideRole = RoleTypeId.None;
+			this._syncMode = SyncMode.PrivateAndSpectators;
+			this._overrideRole = RoleTypeId.None;
 		}
 		base.ClassChanged();
 	}

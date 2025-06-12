@@ -39,7 +39,7 @@ public class SeedSynchronizer : MonoBehaviour
 
 	private static SeedSynchronizer _singleton;
 
-	public static float TimeSinceMapGeneration => (float)MapgenSw.Elapsed.TotalSeconds;
+	public static float TimeSinceMapGeneration => (float)SeedSynchronizer.MapgenSw.Elapsed.TotalSeconds;
 
 	public static int Seed { get; private set; }
 
@@ -51,47 +51,48 @@ public class SeedSynchronizer : MonoBehaviour
 
 	private void Awake()
 	{
-		_singleton = this;
+		SeedSynchronizer._singleton = this;
 		NetworkServer.OnConnectedEvent = (Action<NetworkConnectionToClient>)Delegate.Combine(NetworkServer.OnConnectedEvent, new Action<NetworkConnectionToClient>(OnNewPlayerConnected));
 		if (!NetworkServer.active)
 		{
-			if (_seedTokenValid && !MapGenerated)
+			if (SeedSynchronizer._seedTokenValid && !SeedSynchronizer.MapGenerated)
 			{
-				GenerateLevel(_seedTokenValid);
+				this.GenerateLevel(SeedSynchronizer._seedTokenValid);
 			}
 			return;
 		}
-		int @int = ConfigFile.ServerConfig.GetInt("map_seed", -1);
-		if (@int < 1)
+		int num = ConfigFile.ServerConfig.GetInt("map_seed", -1);
+		if (num < 1)
 		{
-			Seed = UnityEngine.Random.Range(1, int.MaxValue);
-			DebugInfo("Server has successfully generated a random seed: " + Seed, MessageImportance.Normal);
+			SeedSynchronizer.Seed = UnityEngine.Random.Range(1, int.MaxValue);
+			SeedSynchronizer.DebugInfo("Server has successfully generated a random seed: " + SeedSynchronizer.Seed, MessageImportance.Normal);
 		}
 		else
 		{
-			Seed = Mathf.Clamp(@int, 1, int.MaxValue);
-			DebugInfo("Server has successfully loaded a seed from config: " + Seed, MessageImportance.Normal);
+			SeedSynchronizer.Seed = Mathf.Clamp(num, 1, int.MaxValue);
+			SeedSynchronizer.DebugInfo("Server has successfully loaded a seed from config: " + SeedSynchronizer.Seed, MessageImportance.Normal);
 		}
-		MapGeneratingEventArgs mapGeneratingEventArgs = new MapGeneratingEventArgs(Seed);
-		ServerEvents.OnMapGenerating(mapGeneratingEventArgs);
-		if (!mapGeneratingEventArgs.IsAllowed || mapGeneratingEventArgs.Seed == -1)
+		MapGeneratingEventArgs e = new MapGeneratingEventArgs(SeedSynchronizer.Seed);
+		ServerEvents.OnMapGenerating(e);
+		if (!e.IsAllowed || e.Seed == -1)
 		{
-			DebugInfo("Map generation cancelled by a plugin.", MessageImportance.Normal);
-			Seed = -1;
+			SeedSynchronizer.DebugInfo("Map generation cancelled by a plugin.", MessageImportance.Normal);
+			SeedSynchronizer.Seed = -1;
 		}
 		else
 		{
-			Seed = mapGeneratingEventArgs.Seed;
+			SeedSynchronizer.Seed = e.Seed;
 		}
-		SeedMessage message = default(SeedMessage);
-		message.Value = Seed;
-		NetworkServer.SendToAll(message);
-		GenerateLevel(Seed != -1);
+		NetworkServer.SendToAll(new SeedMessage
+		{
+			Value = SeedSynchronizer.Seed
+		});
+		this.GenerateLevel(SeedSynchronizer.Seed != -1);
 	}
 
 	private void OnDestroy()
 	{
-		MapGenerated = false;
+		SeedSynchronizer.MapGenerated = false;
 		NetworkServer.OnConnectedEvent = (Action<NetworkConnectionToClient>)Delegate.Remove(NetworkServer.OnConnectedEvent, new Action<NetworkConnectionToClient>(OnNewPlayerConnected));
 	}
 
@@ -99,10 +100,10 @@ public class SeedSynchronizer : MonoBehaviour
 	{
 		if (generateFacility)
 		{
-			GenerateFacility();
+			this.GenerateFacility();
 		}
 		RoomConnectorSpawnpointBase.SetupAllRoomConnectors();
-		ServerEvents.OnMapGenerated(new MapGeneratedEventArgs(Seed));
+		ServerEvents.OnMapGenerated(new MapGeneratedEventArgs(SeedSynchronizer.Seed));
 		if (NetworkServer.active)
 		{
 			PoolManager.Singleton.RestartRound();
@@ -112,29 +113,29 @@ public class SeedSynchronizer : MonoBehaviour
 		{
 			SeedSynchronizer.OnGenerationStage?.Invoke(obj);
 		}
-		MapGenerated = true;
-		MapgenSw.Restart();
+		SeedSynchronizer.MapGenerated = true;
+		SeedSynchronizer.MapgenSw.Restart();
 		SeedSynchronizer.OnGenerationFinished?.Invoke();
 	}
 
 	private void GenerateFacility()
 	{
 		SeedSynchronizer.OnBeforeGenerated?.Invoke();
-		System.Random rng = new System.Random(Seed);
-		_seedTokenValid = false;
-		for (int i = 0; i < _zoneGenerators.Length; i++)
+		System.Random rng = new System.Random(SeedSynchronizer.Seed);
+		SeedSynchronizer._seedTokenValid = false;
+		for (int i = 0; i < this._zoneGenerators.Length; i++)
 		{
 			try
 			{
-				_zoneGenerators[i].Generate(rng);
+				this._zoneGenerators[i].Generate(rng);
 			}
 			catch (Exception exception)
 			{
-				UnityEngine.Debug.LogError("Map generation failed at " + _zoneGenerators[i].TargetZone);
+				UnityEngine.Debug.LogError("Map generation failed at " + this._zoneGenerators[i].TargetZone);
 				UnityEngine.Debug.LogException(exception);
 			}
 		}
-		DebugInfo("Sequence of procedural level generation completed.", MessageImportance.Normal);
+		SeedSynchronizer.DebugInfo("Sequence of procedural level generation completed.", MessageImportance.Normal);
 	}
 
 	private void OnNewPlayerConnected(NetworkConnectionToClient connectionToClient)
@@ -143,7 +144,7 @@ public class SeedSynchronizer : MonoBehaviour
 		{
 			connectionToClient.Send(new SeedMessage
 			{
-				Value = Seed
+				Value = SeedSynchronizer.Seed
 			});
 		}
 	}
@@ -161,11 +162,11 @@ public class SeedSynchronizer : MonoBehaviour
 	{
 		if (!NetworkServer.active)
 		{
-			Seed = msg.Value;
-			_seedTokenValid = Seed != -1;
-			if (!MapGenerated && _singleton != null)
+			SeedSynchronizer.Seed = msg.Value;
+			SeedSynchronizer._seedTokenValid = SeedSynchronizer.Seed != -1;
+			if (!SeedSynchronizer.MapGenerated && SeedSynchronizer._singleton != null)
 			{
-				_singleton.GenerateLevel(_seedTokenValid);
+				SeedSynchronizer._singleton.GenerateLevel(SeedSynchronizer._seedTokenValid);
 			}
 		}
 	}
@@ -177,7 +178,7 @@ public class SeedSynchronizer : MonoBehaviour
 
 	internal static void DebugError(bool isFatal, string txt)
 	{
-		DebugInfo(string.Format(isFatal ? "<color=red>Fatal Error:</color> {0}" : "<color=orange>Warning:</color> {0}", txt), MessageImportance.MostImportant);
-		UnityEngine.Debug.LogError("Map generation error for seed " + Seed + ": " + txt);
+		SeedSynchronizer.DebugInfo(string.Format(isFatal ? "<color=red>Fatal Error:</color> {0}" : "<color=orange>Warning:</color> {0}", txt), MessageImportance.MostImportant);
+		UnityEngine.Debug.LogError("Map generation error for seed " + SeedSynchronizer.Seed + ": " + txt);
 	}
 }

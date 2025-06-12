@@ -63,10 +63,10 @@ public static class Scp106PocketExitFinder
 		{
 			return position;
 		}
-		Pose[] posesForZone = GetPosesForZone(room.Zone);
+		Pose[] posesForZone = Scp106PocketExitFinder.GetPosesForZone(room.Zone);
 		if (posesForZone.Length != 0)
 		{
-			Pose randomPose = GetRandomPose(posesForZone);
+			Pose randomPose = Scp106PocketExitFinder.GetRandomPose(posesForZone);
 			float range = ((room.Zone == FacilityZone.Surface) ? 45f : 11f);
 			return SafeLocationFinder.GetSafePositionForPose(randomPose, range, role.FpcModule.CharController);
 		}
@@ -80,8 +80,8 @@ public static class Scp106PocketExitFinder
 		{
 			if (allHub.roleManager.CurrentRole is FpcStandardScp fpcStandardScp)
 			{
-				PositionsCache[num] = fpcStandardScp.FpcModule.Position;
-				PositionModifiers[num] = fpcStandardScp.RoleTypeId == RoleTypeId.Scp0492;
+				Scp106PocketExitFinder.PositionsCache[num] = fpcStandardScp.FpcModule.Position;
+				Scp106PocketExitFinder.PositionModifiers[num] = fpcStandardScp.RoleTypeId == RoleTypeId.Scp0492;
 				if (++num >= 64)
 				{
 					break;
@@ -102,8 +102,8 @@ public static class Scp106PocketExitFinder
 			bool flag = true;
 			for (int j = 0; j < num; j++)
 			{
-				float num5 = (pose2.position - PositionsCache[j]).sqrMagnitude;
-				if (PositionModifiers[j])
+				float num5 = (pose2.position - Scp106PocketExitFinder.PositionsCache[j]).sqrMagnitude;
+				if (Scp106PocketExitFinder.PositionModifiers[j])
 				{
 					num5 *= 0.3f;
 				}
@@ -115,7 +115,7 @@ public static class Scp106PocketExitFinder
 			}
 			if (flag)
 			{
-				PosesNonAlloc[num3++] = pose2;
+				Scp106PocketExitFinder.PosesNonAlloc[num3++] = pose2;
 			}
 			if (num4 < num2)
 			{
@@ -125,19 +125,19 @@ public static class Scp106PocketExitFinder
 		}
 		if (num3 != 0)
 		{
-			return PosesNonAlloc[UnityEngine.Random.Range(0, num3)];
+			return Scp106PocketExitFinder.PosesNonAlloc[UnityEngine.Random.Range(0, num3)];
 		}
 		return pose ?? poses.RandomItem();
 	}
 
 	public static Pose[] GetPosesForZone(FacilityZone zone)
 	{
-		if (PosesForZoneCache.TryGetValue(zone, out var value))
+		if (Scp106PocketExitFinder.PosesForZoneCache.TryGetValue(zone, out var value))
 		{
 			return value;
 		}
-		Pose[] array = SafeLocationFinder.GetLocations((RoomCullingConnection x) => ValidateConnection(x, zone), (DoorVariant y) => ValidateDoor(y, zone)).ToArray();
-		PosesForZoneCache[zone] = array;
+		Pose[] array = SafeLocationFinder.GetLocations((RoomCullingConnection x) => Scp106PocketExitFinder.ValidateConnection(x, zone), (DoorVariant y) => Scp106PocketExitFinder.ValidateDoor(y, zone)).ToArray();
+		Scp106PocketExitFinder.PosesForZoneCache[zone] = array;
 		return array;
 	}
 
@@ -147,11 +147,11 @@ public static class Scp106PocketExitFinder
 		{
 			return false;
 		}
-		if (BlacklistedDoors.Contains<string>(dv.DoorName))
+		if (Scp106PocketExitFinder.BlacklistedDoors.Contains<string>(dv.DoorName))
 		{
 			return false;
 		}
-		if (dv.RequiredPermissions.RequiredPermissions != 0)
+		if (dv.RequiredPermissions.RequiredPermissions != DoorPermissionFlags.None)
 		{
 			return false;
 		}
@@ -166,7 +166,7 @@ public static class Scp106PocketExitFinder
 		RoomIdentifier[] rooms = basicDoor.Rooms;
 		for (int i = 0; i < rooms.Length; i++)
 		{
-			if (!ValidateRoom(rooms[i], requiredZone))
+			if (!Scp106PocketExitFinder.ValidateRoom(rooms[i], requiredZone))
 			{
 				return false;
 			}
@@ -177,9 +177,9 @@ public static class Scp106PocketExitFinder
 	private static bool ValidateConnection(RoomCullingConnection conn, FacilityZone requiredZone)
 	{
 		RoomCullingConnection.RoomLink link = conn.Link;
-		if (link.Valid && ValidateRoom(link.RoomA, requiredZone))
+		if (link.Valid && Scp106PocketExitFinder.ValidateRoom(link.RoomA, requiredZone))
 		{
-			return ValidateRoom(link.RoomB, requiredZone);
+			return Scp106PocketExitFinder.ValidateRoom(link.RoomB, requiredZone);
 		}
 		return false;
 	}
@@ -188,7 +188,7 @@ public static class Scp106PocketExitFinder
 	{
 		if (room.Zone == requiredZone)
 		{
-			return !BlacklistedRooms.Contains(room.Name);
+			return !Scp106PocketExitFinder.BlacklistedRooms.Contains(room.Name);
 		}
 		return false;
 	}
@@ -196,6 +196,6 @@ public static class Scp106PocketExitFinder
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		SeedSynchronizer.OnGenerationFinished += PosesForZoneCache.Clear;
+		SeedSynchronizer.OnGenerationFinished += Scp106PocketExitFinder.PosesForZoneCache.Clear;
 	}
 }

@@ -9,7 +9,7 @@ public abstract class FirearmSubcomponentBase : SubcomponentBase
 	protected override void OnInit()
 	{
 		base.OnInit();
-		Firearm = base.Item as Firearm;
+		this.Firearm = base.Item as Firearm;
 	}
 
 	public virtual void OnFirearmValidate(Firearm fa)

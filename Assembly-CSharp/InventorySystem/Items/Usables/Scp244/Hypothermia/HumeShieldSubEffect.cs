@@ -42,11 +42,11 @@ public class HumeShieldSubEffect : HypothermiaSubEffectBase, IHumeShieldBlocker
 	{
 		get
 		{
-			if (!HumeShieldBlocked)
+			if (!this.HumeShieldBlocked)
 			{
-				if (_sustainSw.IsRunning)
+				if (this._sustainSw.IsRunning)
 				{
-					return _sustainSw.Elapsed.TotalSeconds < (double)_hsSustainTime;
+					return this._sustainSw.Elapsed.TotalSeconds < (double)this._hsSustainTime;
 				}
 				return false;
 			}
@@ -67,9 +67,9 @@ public class HumeShieldSubEffect : HypothermiaSubEffectBase, IHumeShieldBlocker
 
 	private static void OnMessageReceived(HumeBlockMsg msg)
 	{
-		if (!(_localEffect == null))
+		if (!(HumeShieldSubEffect._localEffect == null))
 		{
-			_localEffect.ReceiveHumeBlockMessage();
+			HumeShieldSubEffect._localEffect.ReceiveHumeBlockMessage();
 		}
 	}
 
@@ -78,7 +78,7 @@ public class HumeShieldSubEffect : HypothermiaSubEffectBase, IHumeShieldBlocker
 		base.Init(mainEffect);
 		if (mainEffect.IsLocalPlayer)
 		{
-			_localEffect = this;
+			HumeShieldSubEffect._localEffect = this;
 		}
 	}
 
@@ -86,15 +86,15 @@ public class HumeShieldSubEffect : HypothermiaSubEffectBase, IHumeShieldBlocker
 	{
 		if (!NetworkServer.active)
 		{
-			if (HumeShieldBlocked && curExposure <= 0f)
+			if (this.HumeShieldBlocked && curExposure <= 0f)
 			{
-				HumeShieldBlocked = false;
+				this.HumeShieldBlocked = false;
 			}
 			return;
 		}
-		bool humeShieldBlocked = HumeShieldBlocked;
-		HumeShieldBlocked = UpdateHumeShield(curExposure);
-		if (HumeShieldBlocked)
+		bool humeShieldBlocked = this.HumeShieldBlocked;
+		this.HumeShieldBlocked = this.UpdateHumeShield(curExposure);
+		if (this.HumeShieldBlocked)
 		{
 			if (!humeShieldBlocked)
 			{
@@ -103,37 +103,37 @@ public class HumeShieldSubEffect : HypothermiaSubEffectBase, IHumeShieldBlocker
 		}
 		else
 		{
-			_decreaseTimer = 0f;
+			this._decreaseTimer = 0f;
 		}
 	}
 
 	private bool UpdateHumeShield(float expo)
 	{
-		if (expo == 0f || !TryGetController(out var ctrl) || base.Hub.characterClassManager.GodMode)
+		if (expo == 0f || !this.TryGetController(out var ctrl) || base.Hub.characterClassManager.GodMode)
 		{
 			return false;
 		}
 		ctrl.AddBlocker(this);
-		_sustainSw.Restart();
-		_decreaseTimer += expo * Time.deltaTime;
-		if (_decreaseTimer < _hsDecreaseStartTime)
+		this._sustainSw.Restart();
+		this._decreaseTimer += expo * Time.deltaTime;
+		if (this._decreaseTimer < this._hsDecreaseStartTime)
 		{
 			return true;
 		}
-		ctrl.HsCurrent -= (expo * _hsDecreasePerExposure + _hsDecreaseAbsolute) * Time.deltaTime;
+		ctrl.HsCurrent -= (expo * this._hsDecreasePerExposure + this._hsDecreaseAbsolute) * Time.deltaTime;
 		return true;
 	}
 
 	private void ReceiveHumeBlockMessage()
 	{
-		if (TryGetController(out var ctrl))
+		if (this.TryGetController(out var ctrl))
 		{
-			HumeShieldBlocked = true;
+			this.HumeShieldBlocked = true;
 			ctrl.AddBlocker(this);
-			if (!(_cooldownSw.Elapsed.TotalSeconds < (double)_hsSustainTime))
+			if (!(this._cooldownSw.Elapsed.TotalSeconds < (double)this._hsSustainTime))
 			{
-				AudioSourcePoolManager.Play2D(_freezeSounds.RandomItem());
-				_cooldownSw.Restart();
+				AudioSourcePoolManager.Play2D(this._freezeSounds.RandomItem());
+				this._cooldownSw.Restart();
 			}
 		}
 	}

@@ -34,22 +34,22 @@ public static class CharacterModelUtils
 	public static void ConvertRagdoll(BasicRagdoll ragdoll, Func<Renderer, List<Material>, bool> filter, Material template, List<Material> appliedMaterials)
 	{
 		appliedMaterials.Clear();
-		RenderersNonAlloc.Clear();
-		ragdoll.GetComponentsInChildren(includeInactive: true, RenderersNonAlloc);
-		foreach (Renderer item in RenderersNonAlloc)
+		CharacterModelUtils.RenderersNonAlloc.Clear();
+		ragdoll.GetComponentsInChildren(includeInactive: true, CharacterModelUtils.RenderersNonAlloc);
+		foreach (Renderer item in CharacterModelUtils.RenderersNonAlloc)
 		{
 			if (item is ParticleSystemRenderer)
 			{
 				continue;
 			}
-			item.GetSharedMaterials(MaterialsNonAlloc);
-			if (filter == null || filter(item, MaterialsNonAlloc))
+			item.GetSharedMaterials(CharacterModelUtils.MaterialsNonAlloc);
+			if (filter == null || filter(item, CharacterModelUtils.MaterialsNonAlloc))
 			{
-				int count = MaterialsNonAlloc.Count;
+				int count = CharacterModelUtils.MaterialsNonAlloc.Count;
 				Material[] array = new Material[count];
 				for (int i = 0; i < count; i++)
 				{
-					array[i] = ConvertShader(item.sharedMaterials[i], template);
+					array[i] = CharacterModelUtils.ConvertShader(item.sharedMaterials[i], template);
 				}
 				item.materials = array;
 				appliedMaterials.AddRange(array);
@@ -59,13 +59,13 @@ public static class CharacterModelUtils
 
 	public static Material ConvertShader(Material original, Material shaderTemplate)
 	{
-		int[] orAdd = TextureHashes.GetOrAdd(shaderTemplate, () => shaderTemplate.GetTexturePropertyNameIDs());
+		int[] orAdd = CharacterModelUtils.TextureHashes.GetOrAdd(shaderTemplate, () => shaderTemplate.GetTexturePropertyNameIDs());
 		Material result = new Material(shaderTemplate);
-		CopyProperties(orAdd, original, result, (Material og, int hash) => og.HasTexture(hash), delegate(Material og, int hash, Material res)
+		CharacterModelUtils.CopyProperties(orAdd, original, result, (Material og, int hash) => og.HasTexture(hash), delegate(Material og, int hash, Material res)
 		{
 			res.SetTexture(hash, og.GetTexture(hash));
 		});
-		CopyProperties(FloatsToCopy, original, result, (Material og, int hash) => og.HasFloat(hash), delegate(Material og, int hash, Material res)
+		CharacterModelUtils.CopyProperties(CharacterModelUtils.FloatsToCopy, original, result, (Material og, int hash) => og.HasFloat(hash), delegate(Material og, int hash, Material res)
 		{
 			res.SetFloat(hash, og.GetFloat(hash));
 		});

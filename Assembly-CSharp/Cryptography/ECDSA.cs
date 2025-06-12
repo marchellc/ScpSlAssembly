@@ -23,7 +23,7 @@ public static class ECDSA
 
 	public static string Sign(string data, AsymmetricKeyParameter privKey)
 	{
-		return Convert.ToBase64String(SignBytes(data, privKey));
+		return Convert.ToBase64String(ECDSA.SignBytes(data, privKey));
 	}
 
 	public static byte[] SignBytes(string data, AsymmetricKeyParameter privKey)
@@ -32,7 +32,7 @@ public static class ECDSA
 		{
 			byte[] array = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(data.Length));
 			int bytes = Utf8.GetBytes(data, array);
-			byte[] result = SignBytes(array, 0, bytes, privKey);
+			byte[] result = ECDSA.SignBytes(array, 0, bytes, privKey);
 			ArrayPool<byte>.Shared.Return(array);
 			return result;
 		}
@@ -44,7 +44,7 @@ public static class ECDSA
 
 	public static byte[] SignBytes(byte[] data, AsymmetricKeyParameter privKey)
 	{
-		return SignBytes(data, 0, data.Length, privKey);
+		return ECDSA.SignBytes(data, 0, data.Length, privKey);
 	}
 
 	public static byte[] SignBytes(byte[] data, int offset, int count, AsymmetricKeyParameter privKey)
@@ -64,7 +64,7 @@ public static class ECDSA
 
 	public static bool Verify(string data, string signature, AsymmetricKeyParameter pubKey)
 	{
-		return VerifyBytes(data, Convert.FromBase64String(signature), pubKey);
+		return ECDSA.VerifyBytes(data, Convert.FromBase64String(signature), pubKey);
 	}
 
 	public static bool VerifyBytes(string data, byte[] signature, AsymmetricKeyParameter pubKey)

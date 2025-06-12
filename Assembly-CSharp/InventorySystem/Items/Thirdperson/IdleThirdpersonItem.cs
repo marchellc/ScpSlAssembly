@@ -23,28 +23,28 @@ public class IdleThirdpersonItem : ThirdpersonItemBase, IHandPoseModifier
 
 	public override ThirdpersonLayerWeight GetWeightForLayer(AnimItemLayer3p layer)
 	{
-		if (_hasProcessor)
+		if (this._hasProcessor)
 		{
-			return _layerProcessor.GetWeightForLayer(this, layer);
+			return this._layerProcessor.GetWeightForLayer(this, layer);
 		}
-		return new ThirdpersonLayerWeight(_fallbackLayers.Contains(layer) ? 1 : 0);
+		return new ThirdpersonLayerWeight(this._fallbackLayers.Contains(layer) ? 1 : 0);
 	}
 
 	public virtual HandPoseData ProcessHandPose(HandPoseData data)
 	{
-		return _handPoseData;
+		return this._handPoseData;
 	}
 
 	internal override void Initialize(InventorySubcontroller sctrl, ItemIdentifier id)
 	{
 		base.Initialize(sctrl, id);
-		_hasProcessor = _layerProcessor != null;
-		SetAnim(AnimState3p.Override0, _idleOverride);
+		this._hasProcessor = this._layerProcessor != null;
+		base.SetAnim(AnimState3p.Override0, this._idleOverride);
 	}
 
 	protected bool TryGetLayerProcessor<T>(out T processor) where T : LayerProcessorBase
 	{
-		if (_layerProcessor is T val)
+		if (this._layerProcessor is T val)
 		{
 			processor = val;
 			return true;

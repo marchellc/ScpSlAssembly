@@ -20,7 +20,7 @@ public static class HintEffectPresets
 
 	public static AnimationCurve CreateBumpCurve(float floorValue, float bumpValue, int count, float duration = 1f)
 	{
-		return new AnimationCurve(CreateBumpKeyframes(floorValue, bumpValue, count, duration))
+		return new AnimationCurve(HintEffectPresets.CreateBumpKeyframes(floorValue, bumpValue, count, duration))
 		{
 			postWrapMode = WrapMode.Loop
 		};
@@ -28,7 +28,7 @@ public static class HintEffectPresets
 
 	public static AnimationCurve CreateTrailingBumpCurve(float floorValue, float bumpValue, int count, float startTrailPercent, float duration = 1f)
 	{
-		Keyframe[] array = CreateBumpKeyframes(floorValue, bumpValue, count, duration * startTrailPercent);
+		Keyframe[] array = HintEffectPresets.CreateBumpKeyframes(floorValue, bumpValue, count, duration * startTrailPercent);
 		Array.Resize(ref array, array.Length + 1);
 		array[^1] = new Keyframe(duration, floorValue);
 		return new AnimationCurve(array)
@@ -56,18 +56,18 @@ public static class HintEffectPresets
 		float num = (durationScalar - window) / 2f;
 		return new HintEffect[2]
 		{
-			FadeIn(num, startScalar),
-			FadeOut(num, startScalar + durationScalar - num)
+			HintEffectPresets.FadeIn(num, startScalar),
+			HintEffectPresets.FadeOut(num, startScalar + durationScalar - num)
 		};
 	}
 
 	public static AlphaCurveHintEffect PulseAlpha(float floorValue, float peakValue, float iterationScalar = 1f, float startOffset = 0f)
 	{
-		return new AlphaCurveHintEffect(CreateBumpCurve(floorValue, peakValue, 1, iterationScalar), startOffset);
+		return new AlphaCurveHintEffect(HintEffectPresets.CreateBumpCurve(floorValue, peakValue, 1, iterationScalar), startOffset);
 	}
 
 	public static AlphaCurveHintEffect TrailingPulseAlpha(float floorValue, float peakValue, float startTrailScalar, float iterationScalar = 1f, float startScalar = 0f, int count = 1)
 	{
-		return new AlphaCurveHintEffect(CreateTrailingBumpCurve(floorValue, peakValue, count, startTrailScalar, iterationScalar), startScalar);
+		return new AlphaCurveHintEffect(HintEffectPresets.CreateTrailingBumpCurve(floorValue, peakValue, count, startTrailScalar, iterationScalar), startScalar);
 	}
 }

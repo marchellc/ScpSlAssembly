@@ -16,14 +16,14 @@ public static class PlayerRolesNetUtils
 	{
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			QueuedRoles.Clear();
-			InfoPackAlreadyReceived = NetworkServer.active;
+			PlayerRolesNetUtils.QueuedRoles.Clear();
+			PlayerRolesNetUtils.InfoPackAlreadyReceived = NetworkServer.active;
 			NetworkClient.ReplaceHandler((Action<RoleSyncInfo>)delegate
 			{
 			}, requireAuthentication: true);
 			NetworkClient.ReplaceHandler((Action<RoleSyncInfoPack>)delegate
 			{
-				InfoPackAlreadyReceived = true;
+				PlayerRolesNetUtils.InfoPackAlreadyReceived = true;
 			}, requireAuthentication: true);
 		};
 		ReferenceHub.OnPlayerAdded += HandleSpawnedPlayer;
@@ -39,7 +39,7 @@ public static class PlayerRolesNetUtils
 				hub.connectionToClient.Send(new RoleSyncInfoPack(hub));
 			}
 		}
-		else if (QueuedRoles.TryGetValue(hub.netId, out value))
+		else if (PlayerRolesNetUtils.QueuedRoles.TryGetValue(hub.netId, out value))
 		{
 			hub.roleManager.InitializeNewRole(value.ReadRoleType(), RoleChangeReason.None, RoleSpawnFlags.All, value);
 		}

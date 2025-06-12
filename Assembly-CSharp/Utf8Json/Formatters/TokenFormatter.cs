@@ -11,7 +11,7 @@ public sealed class TokenFormatter : IJsonFormatter<Token>, IJsonFormatter
 
 	public TokenFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("UserId"),
@@ -50,7 +50,7 @@ public sealed class TokenFormatter : IJsonFormatter<Token>, IJsonFormatter
 				8
 			}
 		};
-		____stringByteKeys = new byte[9][]
+		this.____stringByteKeys = new byte[9][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("UserId"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("Nickname"),
@@ -71,23 +71,23 @@ public sealed class TokenFormatter : IJsonFormatter<Token>, IJsonFormatter
 			writer.WriteNull();
 			return;
 		}
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.UserId);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.Nickname);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		formatterResolver.GetFormatterWithVerify<DateTimeOffset>().Serialize(ref writer, value.IssuanceTime, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		formatterResolver.GetFormatterWithVerify<DateTimeOffset>().Serialize(ref writer, value.ExpirationTime, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		writer.WriteString(value.Usage);
-		writer.WriteRaw(____stringByteKeys[5]);
+		writer.WriteRaw(this.____stringByteKeys[5]);
 		writer.WriteString(value.IssuedBy);
-		writer.WriteRaw(____stringByteKeys[6]);
+		writer.WriteRaw(this.____stringByteKeys[6]);
 		writer.WriteString(value.Serial);
-		writer.WriteRaw(____stringByteKeys[7]);
+		writer.WriteRaw(this.____stringByteKeys[7]);
 		writer.WriteBoolean(value.TestSignature);
-		writer.WriteRaw(____stringByteKeys[8]);
+		writer.WriteRaw(this.____stringByteKeys[8]);
 		writer.WriteInt32(value.TokenVersion);
 		writer.WriteEndObject();
 	}

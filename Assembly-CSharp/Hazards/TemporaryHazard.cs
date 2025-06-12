@@ -17,15 +17,15 @@ public abstract class TemporaryHazard : EnvironmentalHazard
 	{
 		get
 		{
-			if (!_destroyed)
+			if (!this._destroyed)
 			{
-				return _active;
+				return this._active;
 			}
 			return false;
 		}
 		set
 		{
-			_active = value;
+			this._active = value;
 		}
 	}
 
@@ -41,32 +41,32 @@ public abstract class TemporaryHazard : EnvironmentalHazard
 			Debug.LogWarning("[Server] function 'System.Void Hazards.TemporaryHazard::ServerDestroy()' called when server was not active");
 			return;
 		}
-		_destroyed = true;
-		IsActive = false;
+		this._destroyed = true;
+		this.IsActive = false;
 		for (int num = base.AffectedPlayers.Count - 1; num >= 0; num--)
 		{
-			OnExit(base.AffectedPlayers[num]);
+			this.OnExit(base.AffectedPlayers[num]);
 		}
 	}
 
 	protected override void Start()
 	{
 		base.Start();
-		IsActive = true;
+		this.IsActive = true;
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		if (NetworkServer.active && IsActive)
+		if (NetworkServer.active && this.IsActive)
 		{
-			if (Elapsed > HazardDuration)
+			if (this.Elapsed > this.HazardDuration)
 			{
-				ServerDestroy();
+				this.ServerDestroy();
 			}
 			else
 			{
-				Elapsed += DecaySpeed * Time.deltaTime;
+				this.Elapsed += this.DecaySpeed * Time.deltaTime;
 			}
 		}
 	}

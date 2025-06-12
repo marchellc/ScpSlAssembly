@@ -24,34 +24,34 @@ public static class ScpHudController
 		{
 			return hub2 == hub;
 		}
-		if (CurInstance == null)
+		if (ScpHudController.CurInstance == null)
 		{
 			return false;
 		}
-		return CurInstance.Hub == hub;
+		return ScpHudController.CurInstance.Hub == hub;
 	}
 
 	private static void RoleChanged(ReferenceHub hub, PlayerRoleBase prev, PlayerRoleBase cur)
 	{
-		if (!ValidatePlayer(hub))
+		if (!ScpHudController.ValidatePlayer(hub))
 		{
 			return;
 		}
 		if (cur is IHudScp hudScp)
 		{
-			DestroyOld();
-			SpawnNew(hudScp, hub);
+			ScpHudController.DestroyOld();
+			ScpHudController.SpawnNew(hudScp, hub);
 		}
 		else if (cur is SpectatorRole)
 		{
-			if (CurInstance != null)
+			if (ScpHudController.CurInstance != null)
 			{
-				CurInstance.OnDied();
+				ScpHudController.CurInstance.OnDied();
 			}
 		}
 		else
 		{
-			DestroyOld();
+			ScpHudController.DestroyOld();
 		}
 	}
 
@@ -59,25 +59,25 @@ public static class ScpHudController
 	{
 		if (SpectatorTargetTracker.TryGetTrackedPlayer(out var hub))
 		{
-			DestroyOld();
+			ScpHudController.DestroyOld();
 			if (hub.roleManager.CurrentRole is IHudScp hudScp)
 			{
-				SpawnNew(hudScp, hub);
+				ScpHudController.SpawnNew(hudScp, hub);
 			}
 		}
 	}
 
 	private static void DestroyOld()
 	{
-		if (!(CurInstance == null))
+		if (!(ScpHudController.CurInstance == null))
 		{
-			Object.Destroy(CurInstance.gameObject);
+			Object.Destroy(ScpHudController.CurInstance.gameObject);
 		}
 	}
 
 	private static void SpawnNew(IHudScp hudScp, ReferenceHub owner)
 	{
-		CurInstance = Object.Instantiate(hudScp.HudPrefab);
-		CurInstance.Init(owner);
+		ScpHudController.CurInstance = Object.Instantiate(hudScp.HudPrefab);
+		ScpHudController.CurInstance.Init(owner);
 	}
 }

@@ -10,7 +10,7 @@ public readonly struct DummyAction
 
 	public DummyAction(string name, Action action)
 	{
-		Name = name;
-		Action = action;
+		this.Name = name;
+		this.Action = action;
 	}
 }

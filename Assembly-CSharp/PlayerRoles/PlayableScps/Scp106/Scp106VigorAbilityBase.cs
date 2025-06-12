@@ -23,7 +23,7 @@ public abstract class Scp106VigorAbilityBase : KeySubroutine<Scp106Role>
 	{
 		get
 		{
-			return Vigor.CurValue;
+			return this.Vigor.CurValue;
 		}
 		set
 		{
@@ -31,13 +31,13 @@ public abstract class Scp106VigorAbilityBase : KeySubroutine<Scp106Role>
 			{
 				throw new InvalidOperationException("Attempting to set Vigor amount as client.");
 			}
-			Scp106ChangingVigorEventArgs scp106ChangingVigorEventArgs = new Scp106ChangingVigorEventArgs(base.Owner, Vigor.CurValue, value);
-			Scp106Events.OnChangingVigor(scp106ChangingVigorEventArgs);
-			if (scp106ChangingVigorEventArgs.IsAllowed)
+			Scp106ChangingVigorEventArgs e = new Scp106ChangingVigorEventArgs(base.Owner, this.Vigor.CurValue, value);
+			Scp106Events.OnChangingVigor(e);
+			if (e.IsAllowed)
 			{
-				value = scp106ChangingVigorEventArgs.Value;
-				Vigor.CurValue = Mathf.Clamp01(value);
-				Scp106Events.OnChangedVigor(new Scp106ChangedVigorEventArgs(base.Owner, scp106ChangingVigorEventArgs.OldValue, value));
+				value = e.Value;
+				this.Vigor.CurValue = Mathf.Clamp01(value);
+				Scp106Events.OnChangedVigor(new Scp106ChangedVigorEventArgs(base.Owner, e.OldValue, value));
 			}
 		}
 	}
@@ -46,9 +46,9 @@ public abstract class Scp106VigorAbilityBase : KeySubroutine<Scp106Role>
 	{
 		get
 		{
-			if (_vigorSet)
+			if (this._vigorSet)
 			{
-				return _vigor;
+				return this._vigor;
 			}
 			if (!base.Role.TryGetOwner(out var hub))
 			{
@@ -58,14 +58,14 @@ public abstract class Scp106VigorAbilityBase : KeySubroutine<Scp106Role>
 			{
 				throw new InvalidOperationException("Vigor stat is not defined.");
 			}
-			_vigor = module;
-			_vigorSet = true;
+			this._vigor = module;
+			this._vigorSet = true;
 			return module;
 		}
 	}
 
 	public override void ResetObject()
 	{
-		_vigorSet = false;
+		this._vigorSet = false;
 	}
 }

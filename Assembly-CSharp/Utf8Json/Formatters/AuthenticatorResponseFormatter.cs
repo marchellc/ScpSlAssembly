@@ -11,7 +11,7 @@ public sealed class AuthenticatorResponseFormatter : IJsonFormatter<Authenticato
 
 	public AuthenticatorResponseFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("success"),
@@ -54,7 +54,7 @@ public sealed class AuthenticatorResponseFormatter : IJsonFormatter<Authenticato
 				9
 			}
 		};
-		____stringByteKeys = new byte[10][]
+		this.____stringByteKeys = new byte[10][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("success"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("verified"),
@@ -71,25 +71,25 @@ public sealed class AuthenticatorResponseFormatter : IJsonFormatter<Authenticato
 
 	public void Serialize(ref JsonWriter writer, AuthenticatorResponse value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteBoolean(value.success);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteBoolean(value.verified);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteString(value.error);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		writer.WriteString(value.token);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		formatterResolver.GetFormatterWithVerify<string[]>().Serialize(ref writer, value.messages, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[5]);
+		writer.WriteRaw(this.____stringByteKeys[5]);
 		formatterResolver.GetFormatterWithVerify<string[]>().Serialize(ref writer, value.actions, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[6]);
+		writer.WriteRaw(this.____stringByteKeys[6]);
 		formatterResolver.GetFormatterWithVerify<string[]>().Serialize(ref writer, value.authAccepted, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[7]);
+		writer.WriteRaw(this.____stringByteKeys[7]);
 		formatterResolver.GetFormatterWithVerify<AuthenticatiorAuthReject[]>().Serialize(ref writer, value.authRejected, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[8]);
+		writer.WriteRaw(this.____stringByteKeys[8]);
 		writer.WriteString(value.verificationChallenge);
-		writer.WriteRaw(____stringByteKeys[9]);
+		writer.WriteRaw(this.____stringByteKeys[9]);
 		writer.WriteString(value.verificationResponse);
 		writer.WriteEndObject();
 	}
@@ -115,7 +115,7 @@ public sealed class AuthenticatorResponseFormatter : IJsonFormatter<Authenticato
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

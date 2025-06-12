@@ -26,30 +26,30 @@ public class IdleMode : MonoBehaviour
 	{
 		get
 		{
-			return _pauseIdleMode;
+			return IdleMode._pauseIdleMode;
 		}
 		set
 		{
-			if (_pauseIdleMode == value)
+			if (IdleMode._pauseIdleMode == value)
 			{
 				return;
 			}
-			_pauseIdleMode = value;
+			IdleMode._pauseIdleMode = value;
 			if (value)
 			{
-				SetIdleMode(state: false);
-				_st.Reset();
-				PreauthStopwatch.Reset();
-				if (_idleModeEnabled)
+				IdleMode.SetIdleMode(state: false);
+				IdleMode._st.Reset();
+				IdleMode.PreauthStopwatch.Reset();
+				if (IdleMode._idleModeEnabled)
 				{
 					ServerConsole.AddLog("Idle mode is now temporarily blocked.");
 				}
 			}
-			else if (_idleModeEnabled)
+			else if (IdleMode._idleModeEnabled)
 			{
 				ServerConsole.AddLog("Idle mode is now available.");
-				_st.Restart();
-				PreauthStopwatch.Restart();
+				IdleMode._st.Restart();
+				IdleMode.PreauthStopwatch.Restart();
 			}
 		}
 	}
@@ -58,14 +58,14 @@ public class IdleMode : MonoBehaviour
 	{
 		get
 		{
-			return _idleModeEnabled;
+			return IdleMode._idleModeEnabled;
 		}
 		set
 		{
-			_idleModeEnabled = value;
-			if (!_idleModeEnabled && IdleModeActive)
+			IdleMode._idleModeEnabled = value;
+			if (!IdleMode._idleModeEnabled && IdleMode.IdleModeActive)
 			{
-				SetIdleMode(state: false);
+				IdleMode.SetIdleMode(state: false);
 			}
 		}
 	}
@@ -74,14 +74,14 @@ public class IdleMode : MonoBehaviour
 	{
 		get
 		{
-			return _idleModeTickrate;
+			return IdleMode._idleModeTickrate;
 		}
 		set
 		{
-			_idleModeTickrate = (short)((value < -1 || value == 0) ? 1 : value);
-			if (IdleModeActive)
+			IdleMode._idleModeTickrate = (short)((value < -1 || value == 0) ? 1 : value);
+			if (IdleMode.IdleModeActive)
 			{
-				SetIdleMode(state: true, force: true);
+				IdleMode.SetIdleMode(state: true, force: true);
 			}
 		}
 	}
@@ -91,51 +91,51 @@ public class IdleMode : MonoBehaviour
 		SceneManager.sceneLoaded += OnSceneLoaded;
 		ReferenceHub.OnPlayerAdded += delegate
 		{
-			SetIdleMode(state: false);
+			IdleMode.SetIdleMode(state: false);
 		};
 		ReferenceHub.OnPlayerRemoved += delegate
 		{
 			if (ReferenceHub.AllHubs.Count <= 1)
 			{
-				SetIdleMode(state: true);
+				IdleMode.SetIdleMode(state: true);
 			}
 		};
 	}
 
 	private void FixedUpdate()
 	{
-		if (_st.ElapsedMilliseconds >= IdleModeTime && !_pauseIdleMode && (!PreauthStopwatch.IsRunning || PreauthStopwatch.ElapsedMilliseconds >= IdleModePreauthTime))
+		if (IdleMode._st.ElapsedMilliseconds >= IdleMode.IdleModeTime && !IdleMode._pauseIdleMode && (!IdleMode.PreauthStopwatch.IsRunning || IdleMode.PreauthStopwatch.ElapsedMilliseconds >= IdleMode.IdleModePreauthTime))
 		{
-			_st.Reset();
-			PreauthStopwatch.Reset();
+			IdleMode._st.Reset();
+			IdleMode.PreauthStopwatch.Reset();
 			if (ReferenceHub.AllHubs.Count <= 1)
 			{
-				SetIdleMode(state: true);
+				IdleMode.SetIdleMode(state: true);
 			}
 		}
 	}
 
 	private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
 	{
-		_st.Reset();
-		if (ServerStatic.IsDedicated && !_pauseIdleMode && IdleModeEnabled && scene.name == "Facility")
+		IdleMode._st.Reset();
+		if (ServerStatic.IsDedicated && !IdleMode._pauseIdleMode && IdleMode.IdleModeEnabled && scene.name == "Facility")
 		{
-			_st.Start();
+			IdleMode._st.Start();
 		}
 	}
 
 	public static void SetIdleMode(bool state)
 	{
-		SetIdleMode(state, force: false);
+		IdleMode.SetIdleMode(state, force: false);
 	}
 
 	private static void SetIdleMode(bool state, bool force)
 	{
-		if (NetworkServer.active && (!state || !_pauseIdleMode || force) && (state != IdleModeActive || force) && (!state || IdleModeEnabled) && ServerStatic.IsDedicated)
+		if (NetworkServer.active && (!state || !IdleMode._pauseIdleMode || force) && (state != IdleMode.IdleModeActive || force) && (!state || IdleMode.IdleModeEnabled) && ServerStatic.IsDedicated)
 		{
 			if (state)
 			{
-				Application.targetFrameRate = IdleModeTickrate;
+				Application.targetFrameRate = IdleMode.IdleModeTickrate;
 				Time.timeScale = 0.01f;
 				ServerConsole.AddLog("Server has entered the idle mode.");
 				ServerConsole.AddOutputEntry(default(IdleEnterEntry));
@@ -147,7 +147,7 @@ public class IdleMode : MonoBehaviour
 				ServerConsole.AddLog("Server has exited the idle mode.");
 				ServerConsole.AddOutputEntry(default(IdleExitEntry));
 			}
-			IdleModeActive = state;
+			IdleMode.IdleModeActive = state;
 		}
 	}
 }

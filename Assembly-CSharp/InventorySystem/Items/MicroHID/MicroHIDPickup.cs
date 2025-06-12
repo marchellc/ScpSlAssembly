@@ -25,19 +25,19 @@ public class MicroHIDPickup : CollisionDetectionPickup
 	{
 		if (NetworkServer.active)
 		{
-			_cycleController.ServerUpdatePickup(this);
+			this._cycleController.ServerUpdatePickup(this);
 		}
 	}
 
 	protected override void Start()
 	{
 		base.Start();
-		ushort serial = Info.Serial;
-		PickupsBySerial[serial] = this;
-		_particles.Init(serial, _simulatedOwnerCam);
+		ushort serial = base.Info.Serial;
+		MicroHIDPickup.PickupsBySerial[serial] = this;
+		this._particles.Init(serial, this._simulatedOwnerCam);
 		if (NetworkServer.active)
 		{
-			_cycleController = CycleSyncModule.GetCycleController(serial);
+			this._cycleController = CycleSyncModule.GetCycleController(serial);
 		}
 	}
 
@@ -45,7 +45,7 @@ public class MicroHIDPickup : CollisionDetectionPickup
 	{
 		base.OnDestroy();
 		this.OnSelfDestroyed?.Invoke();
-		PickupsBySerial.Remove(Info.Serial);
+		MicroHIDPickup.PickupsBySerial.Remove(base.Info.Serial);
 	}
 
 	public override bool Weaved()

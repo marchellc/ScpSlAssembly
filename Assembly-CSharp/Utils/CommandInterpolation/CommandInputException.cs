@@ -11,7 +11,7 @@ public class CommandInputException : Exception
 	public CommandInputException(string argName, object argValue, string message)
 		: base(message)
 	{
-		ArgumentName = argName;
-		ArgumentValue = argValue;
+		this.ArgumentName = argName;
+		this.ArgumentValue = argValue;
 	}
 }

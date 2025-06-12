@@ -18,37 +18,37 @@ public abstract class UniversalTextModifier : MonoBehaviour
 	{
 		get
 		{
-			if (_usesTmp)
+			if (this._usesTmp)
 			{
-				return _tmpText.text;
+				return this._tmpText.text;
 			}
-			if (_usesUnity)
+			if (this._usesUnity)
 			{
-				return _unityText.text;
+				return this._unityText.text;
 			}
-			if (_text != null)
+			if (this._text != null)
 			{
-				return _text;
+				return this._text;
 			}
 			return string.Empty;
 		}
 		set
 		{
-			if (_usesTmp)
+			if (this._usesTmp)
 			{
-				_tmpText.text = value;
+				this._tmpText.text = value;
 			}
-			if (_usesUnity)
+			if (this._usesUnity)
 			{
-				_unityText.text = value;
+				this._unityText.text = value;
 			}
-			_text = value;
+			this._text = value;
 		}
 	}
 
 	protected virtual void Awake()
 	{
-		_usesTmp = TryGetComponent<TMP_Text>(out _tmpText);
-		_usesUnity = TryGetComponent<Text>(out _unityText);
+		this._usesTmp = base.TryGetComponent<TMP_Text>(out this._tmpText);
+		this._usesUnity = base.TryGetComponent<Text>(out this._unityText);
 	}
 }

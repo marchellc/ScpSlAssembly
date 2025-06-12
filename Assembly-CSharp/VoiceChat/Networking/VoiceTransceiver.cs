@@ -33,9 +33,9 @@ public static class VoiceTransceiver
 			NetworkServer.ReplaceHandler<VoiceMessage>(ServerReceiveMessage);
 			NetworkClient.ReplaceHandler<VoiceMessage>(ClientReceiveMessage);
 		};
-		_packageSize = 480;
-		_sendBuffer = new float[_packageSize];
-		_encodedBuffer = new byte[512];
+		VoiceTransceiver._packageSize = 480;
+		VoiceTransceiver._sendBuffer = new float[VoiceTransceiver._packageSize];
+		VoiceTransceiver._encodedBuffer = new byte[512];
 	}
 
 	private static void ServerReceiveMessage(NetworkConnection conn, VoiceMessage msg)
@@ -50,13 +50,13 @@ public static class VoiceTransceiver
 			return;
 		}
 		voiceRole.VoiceModule.CurrentChannel = voiceChatChannel;
-		PlayerSendingVoiceMessageEventArgs playerSendingVoiceMessageEventArgs = new PlayerSendingVoiceMessageEventArgs(ref msg);
-		PlayerEvents.OnSendingVoiceMessage(playerSendingVoiceMessageEventArgs);
-		if (!playerSendingVoiceMessageEventArgs.IsAllowed)
+		PlayerSendingVoiceMessageEventArgs e = new PlayerSendingVoiceMessageEventArgs(ref msg);
+		PlayerEvents.OnSendingVoiceMessage(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
-		msg = playerSendingVoiceMessageEventArgs.Message;
+		msg = e.Message;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			if (!(allHub.roleManager.CurrentRole is IVoiceRole voiceRole2))
@@ -65,12 +65,12 @@ public static class VoiceTransceiver
 			}
 			VoiceChatChannel channel = voiceRole2.VoiceModule.ValidateReceive(msg.Speaker, voiceChatChannel);
 			msg.Channel = channel;
-			PlayerReceivingVoiceMessageEventArgs playerReceivingVoiceMessageEventArgs = new PlayerReceivingVoiceMessageEventArgs(allHub, ref msg);
-			PlayerEvents.OnReceivingVoiceMessage(playerReceivingVoiceMessageEventArgs);
-			if (playerReceivingVoiceMessageEventArgs.IsAllowed)
+			PlayerReceivingVoiceMessageEventArgs e2 = new PlayerReceivingVoiceMessageEventArgs(allHub, ref msg);
+			PlayerEvents.OnReceivingVoiceMessage(e2);
+			if (e2.IsAllowed)
 			{
-				msg = playerReceivingVoiceMessageEventArgs.Message;
-				if (msg.Channel != 0)
+				msg = e2.Message;
+				if (msg.Channel != VoiceChatChannel.None)
 				{
 					VoiceTransceiver.OnVoiceMessageReceiving?.Invoke(msg, allHub);
 					allHub.connectionToClient.Send(msg);
@@ -91,17 +91,17 @@ public static class VoiceTransceiver
 	{
 		if (ReferenceHub.TryGetLocalHub(out var hub))
 		{
-			while (_encodersCount <= encoderId)
+			while (VoiceTransceiver._encodersCount <= encoderId)
 			{
-				Encoders.Add(new OpusEncoder(OpusApplicationType.Voip));
-				_encodersCount++;
+				VoiceTransceiver.Encoders.Add(new OpusEncoder(OpusApplicationType.Voip));
+				VoiceTransceiver._encodersCount++;
 			}
-			OpusEncoder opusEncoder = Encoders[encoderId];
-			while (micBuffer.Length >= _packageSize)
+			OpusEncoder opusEncoder = VoiceTransceiver.Encoders[encoderId];
+			while (micBuffer.Length >= VoiceTransceiver._packageSize)
 			{
-				micBuffer.ReadTo(_sendBuffer, _packageSize, 0L);
-				int dataLen = opusEncoder.Encode(_sendBuffer, _encodedBuffer);
-				NetworkClient.Send(new VoiceMessage(hub, targetChannel, _encodedBuffer, dataLen, isNull: false));
+				micBuffer.ReadTo(VoiceTransceiver._sendBuffer, VoiceTransceiver._packageSize, 0L);
+				int dataLen = opusEncoder.Encode(VoiceTransceiver._sendBuffer, VoiceTransceiver._encodedBuffer);
+				NetworkClient.Send(new VoiceMessage(hub, targetChannel, VoiceTransceiver._encodedBuffer, dataLen, isNull: false));
 			}
 		}
 	}

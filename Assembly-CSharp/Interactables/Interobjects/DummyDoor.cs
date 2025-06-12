@@ -50,7 +50,7 @@ public class DummyDoor : DoorVariant, IDamageableDoor, INonInteractableDoor
 
 	public override float GetExactState()
 	{
-		return TargetState ? 1 : 0;
+		return base.TargetState ? 1 : 0;
 	}
 
 	public float GetHealthPercent()
@@ -60,7 +60,7 @@ public class DummyDoor : DoorVariant, IDamageableDoor, INonInteractableDoor
 
 	public override bool IsConsideredOpen()
 	{
-		return TargetState;
+		return base.TargetState;
 	}
 
 	public bool ServerDamage(float hp, DoorDamageType type, Footprint attacker = default(Footprint))

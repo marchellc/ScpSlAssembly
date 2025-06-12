@@ -9,7 +9,7 @@ public class SinkholeEnvironmentalHazard : EnvironmentalHazard
 {
 	public override bool OnEnter(ReferenceHub player)
 	{
-		if (!IsActive || player.IsSCP())
+		if (!this.IsActive || player.IsSCP())
 		{
 			return false;
 		}
@@ -41,7 +41,7 @@ public class SinkholeEnvironmentalHazard : EnvironmentalHazard
 	protected override void Start()
 	{
 		base.Start();
-		ClientApplyDecalSize();
+		this.ClientApplyDecalSize();
 	}
 
 	protected override void ClientApplyDecalSize()

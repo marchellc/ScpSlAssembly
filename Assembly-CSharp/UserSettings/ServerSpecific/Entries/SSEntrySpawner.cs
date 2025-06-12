@@ -46,28 +46,28 @@ public class SSEntrySpawner : MonoBehaviour
 	{
 		get
 		{
-			int valueOrDefault = _clientVersionCache.GetValueOrDefault();
-			if (!_clientVersionCache.HasValue)
+			int valueOrDefault = SSEntrySpawner._clientVersionCache.GetValueOrDefault();
+			if (!SSEntrySpawner._clientVersionCache.HasValue)
 			{
-				valueOrDefault = PlayerPrefs.GetInt(PrefsKey, 0);
-				_clientVersionCache = valueOrDefault;
+				valueOrDefault = PlayerPrefs.GetInt(SSEntrySpawner.PrefsKey, 0);
+				SSEntrySpawner._clientVersionCache = valueOrDefault;
 			}
-			return _clientVersionCache.Value;
+			return SSEntrySpawner._clientVersionCache.Value;
 		}
 		set
 		{
-			if (_clientVersionCache != value)
+			if (SSEntrySpawner._clientVersionCache != value)
 			{
-				_clientVersionCache = value;
-				PlayerPrefs.SetInt(PrefsKey, value);
+				SSEntrySpawner._clientVersionCache = value;
+				PlayerPrefs.SetInt(SSEntrySpawner.PrefsKey, value);
 			}
 		}
 	}
 
 	private void Awake()
 	{
-		_singleton = this;
-		_clientVersionCache = null;
+		SSEntrySpawner._singleton = this;
+		SSEntrySpawner._clientVersionCache = null;
 		SSTabDetector.OnStatusChanged += OnTabChanged;
 	}
 
@@ -77,7 +77,7 @@ public class SSEntrySpawner : MonoBehaviour
 		{
 			return;
 		}
-		foreach (VerticalLayoutGroup layoutGroup in _layoutGroups)
+		foreach (VerticalLayoutGroup layoutGroup in this._layoutGroups)
 		{
 			layoutGroup.enabled = false;
 			layoutGroup.enabled = true;
@@ -93,15 +93,15 @@ public class SSEntrySpawner : MonoBehaviour
 	{
 		if (SSTabDetector.IsOpen)
 		{
-			ToggleWarning(state: false);
-			ClientVersion = ServerSpecificSettingsSync.Version;
+			this.ToggleWarning(state: false);
+			SSEntrySpawner.ClientVersion = ServerSpecificSettingsSync.Version;
 		}
-		ClientSendReport();
+		SSEntrySpawner.ClientSendReport();
 	}
 
 	private void ToggleWarning(bool state)
 	{
-		GameObject[] newSettingsWarning = _newSettingsWarning;
+		GameObject[] newSettingsWarning = this._newSettingsWarning;
 		for (int i = 0; i < newSettingsWarning.Length; i++)
 		{
 			newSettingsWarning[i].SetActive(state);
@@ -110,53 +110,53 @@ public class SSEntrySpawner : MonoBehaviour
 
 	private void DeleteSpawnedEntries()
 	{
-		ToggleWarning(state: false);
-		foreach (GameObject spawnedEntry in _spawnedEntries)
+		this.ToggleWarning(state: false);
+		foreach (GameObject spawnedEntry in this._spawnedEntries)
 		{
 			if (!(spawnedEntry == null))
 			{
 				UnityEngine.Object.Destroy(spawnedEntry);
 			}
 		}
-		_spawnedEntries.Clear();
+		this._spawnedEntries.Clear();
 	}
 
 	private void SpawnAllEntries(ServerSpecificSettingBase[] settings, bool showWarning)
 	{
-		_spacer.SetActive(!(settings[0] is SSGroupHeader));
+		this._spacer.SetActive(!(settings[0] is SSGroupHeader));
 		settings.ForEach(SpawnEntry);
-		_categoryButton.SetActive(value: true);
-		_layoutGroups.Clear();
-		_categoryRoot.GetComponentsInChildren(_layoutGroups);
-		ToggleWarning(showWarning);
+		this._categoryButton.SetActive(value: true);
+		this._layoutGroups.Clear();
+		this._categoryRoot.GetComponentsInChildren(this._layoutGroups);
+		this.ToggleWarning(showWarning);
 	}
 
 	private void SpawnEntry(ServerSpecificSettingBase setting)
 	{
-		GameObject gameObject = UnityEngine.Object.Instantiate(GetTemplateForSetting(setting), _entriesParentTr);
+		GameObject gameObject = UnityEngine.Object.Instantiate(this.GetTemplateForSetting(setting), this._entriesParentTr);
 		gameObject.SetActive(value: true);
 		gameObject.GetComponentInChildren<ISSEntry>().Init(setting);
-		_spawnedEntries.Add(gameObject);
+		this._spawnedEntries.Add(gameObject);
 	}
 
 	private GameObject GetTemplateForSetting(ServerSpecificSettingBase setting)
 	{
-		int num = _entryTemplates.Length;
-		if (_cachedComponents == null)
+		int num = this._entryTemplates.Length;
+		if (this._cachedComponents == null)
 		{
-			_cachedComponents = new ISSEntry[num];
+			this._cachedComponents = new ISSEntry[num];
 		}
 		for (int i = 0; i < num; i++)
 		{
-			ISSEntry iSSEntry = _cachedComponents[i];
+			ISSEntry iSSEntry = this._cachedComponents[i];
 			if (iSSEntry == null)
 			{
-				iSSEntry = FindEntryInTemplate(_entryTemplates[i]);
-				_cachedComponents[i] = iSSEntry;
+				iSSEntry = this.FindEntryInTemplate(this._entryTemplates[i]);
+				this._cachedComponents[i] = iSSEntry;
 			}
 			if (iSSEntry.CheckCompatibility(setting))
 			{
-				return _entryTemplates[i];
+				return this._entryTemplates[i];
 			}
 		}
 		throw new InvalidOperationException("This setting does not have a compatible entry: " + setting);
@@ -174,25 +174,25 @@ public class SSEntrySpawner : MonoBehaviour
 
 	private static void ClientSendReport()
 	{
-		NetworkClient.Send(new SSSUserStatusReport(ClientVersion, SSTabDetector.IsOpen));
+		NetworkClient.Send(new SSSUserStatusReport(SSEntrySpawner.ClientVersion, SSTabDetector.IsOpen));
 	}
 
 	public static void Refresh()
 	{
-		if (!(_singleton == null))
+		if (!(SSEntrySpawner._singleton == null))
 		{
-			_singleton.DeleteSpawnedEntries();
+			SSEntrySpawner._singleton.DeleteSpawnedEntries();
 			ServerSpecificSettingBase[] definedSettings = ServerSpecificSettingsSync.DefinedSettings;
 			if (definedSettings == null || definedSettings.Length == 0)
 			{
-				_singleton._categoriesController.ResetSelection();
-				_singleton._categoryButton.SetActive(value: false);
+				SSEntrySpawner._singleton._categoriesController.ResetSelection();
+				SSEntrySpawner._singleton._categoryButton.SetActive(value: false);
 				return;
 			}
-			int clientVersion = ClientVersion;
+			int clientVersion = SSEntrySpawner.ClientVersion;
 			int version = ServerSpecificSettingsSync.Version;
-			_singleton.SpawnAllEntries(definedSettings, version != 0 && clientVersion != version);
-			ClientSendReport();
+			SSEntrySpawner._singleton.SpawnAllEntries(definedSettings, version != 0 && clientVersion != version);
+			SSEntrySpawner.ClientSendReport();
 		}
 	}
 }

@@ -18,21 +18,21 @@ public class Scp049MovementModule : FirstPersonMovementModule
 	{
 		set
 		{
-			WalkSpeed = value;
-			SprintSpeed = value;
+			base.WalkSpeed = value;
+			base.SprintSpeed = value;
 		}
 	}
 
 	private void Awake()
 	{
-		_normalSpeed = WalkSpeed;
-		_enragedSpeed = SprintSpeed;
-		_role.SubroutineModule.TryGetSubroutine<Scp049SenseAbility>(out _senseAbility);
+		this._normalSpeed = base.WalkSpeed;
+		this._enragedSpeed = base.SprintSpeed;
+		this._role.SubroutineModule.TryGetSubroutine<Scp049SenseAbility>(out this._senseAbility);
 	}
 
 	protected override void UpdateMovement()
 	{
-		MovementSpeed = (_senseAbility.HasTarget ? _enragedSpeed : _normalSpeed);
+		this.MovementSpeed = (this._senseAbility.HasTarget ? this._enragedSpeed : this._normalSpeed);
 		base.UpdateMovement();
 	}
 }

@@ -29,9 +29,9 @@ public class ConfigCommand : ParentCommand, IUsageProvider
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new OpenCommand());
-		RegisterCommand(new PathCommand());
-		RegisterCommand(new ReloadCommand());
-		RegisterCommand(new ValueCommand());
+		this.RegisterCommand(new OpenCommand());
+		this.RegisterCommand(new PathCommand());
+		this.RegisterCommand(new ReloadCommand());
+		this.RegisterCommand(new ValueCommand());
 	}
 }

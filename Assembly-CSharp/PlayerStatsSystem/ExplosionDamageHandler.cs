@@ -16,26 +16,26 @@ public class ExplosionDamageHandler : AttackerDamageHandler
 
 	private const float ForceMultiplier = 1.3f;
 
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
 	public override Footprint Attacker { get; protected set; }
 
 	public override bool AllowSelfDamage => true;
 
-	public override string ServerLogsText => _serverLogsText;
+	public override string ServerLogsText => this._serverLogsText;
 
-	public override string RagdollInspectText => _ragdollInspectText;
+	public override string RagdollInspectText => this._ragdollInspectText;
 
-	public override string DeathScreenText => _deathScreenText;
+	public override string DeathScreenText => this._deathScreenText;
 
 	public ExplosionType ExplosionType { get; private set; }
 
-	public override string ServerMetricsText => base.ServerMetricsText + "," + ExplosionType;
+	public override string ServerMetricsText => base.ServerMetricsText + "," + this.ExplosionType;
 
 	public override HandlerOutput ApplyDamage(ReferenceHub ply)
 	{
 		HandlerOutput result = base.ApplyDamage(ply);
-		StartVelocity += _force * 1.3f;
+		base.StartVelocity += this._force * 1.3f;
 		return result;
 	}
 
@@ -43,11 +43,11 @@ public class ExplosionDamageHandler : AttackerDamageHandler
 	{
 		if (armorPenetration != 0)
 		{
-			Attacker = attacker;
-			ExplosionType = explosionType;
-			_force = force;
-			_serverLogsText = DeathTranslations.Explosion.LogLabel + " caused by " + attacker.Nickname;
-			Damage = BodyArmorUtils.ProcessDamage((attacker.Hub != null && attacker.Hub.inventory.TryGetBodyArmor(out var bodyArmor)) ? bodyArmor.VestEfficacy : 0, damage, armorPenetration);
+			this.Attacker = attacker;
+			this.ExplosionType = explosionType;
+			this._force = force;
+			this._serverLogsText = DeathTranslations.Explosion.LogLabel + " caused by " + attacker.Nickname;
+			this.Damage = BodyArmorUtils.ProcessDamage((attacker.Hub != null && attacker.Hub.inventory.TryGetBodyArmor(out var bodyArmor)) ? bodyArmor.VestEfficacy : 0, damage, armorPenetration);
 		}
 	}
 }

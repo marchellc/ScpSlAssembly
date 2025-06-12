@@ -11,7 +11,7 @@ public sealed class NewsListFormatter : IJsonFormatter<NewsList>, IJsonFormatter
 
 	public NewsListFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("appid"),
@@ -26,7 +26,7 @@ public sealed class NewsListFormatter : IJsonFormatter<NewsList>, IJsonFormatter
 				2
 			}
 		};
-		____stringByteKeys = new byte[3][]
+		this.____stringByteKeys = new byte[3][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("appid"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("newsitems"),
@@ -36,11 +36,11 @@ public sealed class NewsListFormatter : IJsonFormatter<NewsList>, IJsonFormatter
 
 	public void Serialize(ref JsonWriter writer, NewsList value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteInt32(value.appid);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		formatterResolver.GetFormatterWithVerify<NewsListItem[]>().Serialize(ref writer, value.newsitems, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteInt32(value.count);
 		writer.WriteEndObject();
 	}
@@ -59,7 +59,7 @@ public sealed class NewsListFormatter : IJsonFormatter<NewsList>, IJsonFormatter
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count2))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

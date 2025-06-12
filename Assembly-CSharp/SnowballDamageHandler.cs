@@ -10,13 +10,13 @@ public class SnowballDamageHandler : AttackerDamageHandler
 
 	private readonly Vector3 _moveDirection;
 
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
 	public override Footprint Attacker { get; protected set; }
 
 	public override bool AllowSelfDamage => true;
 
-	public override string ServerLogsText => "Snowballed by " + Attacker.Nickname;
+	public override string ServerLogsText => "Snowballed by " + this.Attacker.Nickname;
 
 	public override string RagdollInspectText => DeathTranslations.Crushed.RagdollTranslation;
 
@@ -24,28 +24,28 @@ public class SnowballDamageHandler : AttackerDamageHandler
 
 	public SnowballDamageHandler()
 	{
-		Attacker = default(Footprint);
-		Damage = 0f;
-		_moveDirection = Vector3.zero;
+		this.Attacker = default(Footprint);
+		this.Damage = 0f;
+		this._moveDirection = Vector3.zero;
 	}
 
 	public SnowballDamageHandler(Footprint attacker, float damage, Vector3 moveDirection)
 	{
-		Attacker = attacker;
-		Damage = damage;
-		_moveDirection = moveDirection;
+		this.Attacker = attacker;
+		this.Damage = damage;
+		this._moveDirection = moveDirection;
 	}
 
 	public override HandlerOutput ApplyDamage(ReferenceHub ply)
 	{
 		HealthStat module = ply.playerStats.GetModule<HealthStat>();
-		ProcessDamage(ply);
-		if (Damage <= 0f)
+		this.ProcessDamage(ply);
+		if (this.Damage <= 0f)
 		{
 			return HandlerOutput.Nothing;
 		}
-		module.CurValue -= Damage;
-		StartVelocity += _moveDirection.NormalizeIgnoreY() * 15f + Vector3.up * 2f;
+		module.CurValue -= this.Damage;
+		base.StartVelocity += this._moveDirection.NormalizeIgnoreY() * 15f + Vector3.up * 2f;
 		if (!(module.CurValue <= 0f))
 		{
 			return HandlerOutput.Damaged;

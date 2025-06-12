@@ -10,8 +10,8 @@ public readonly struct ThirdpersonLayerWeight
 
 	public ThirdpersonLayerWeight(float weight, bool allowOther = true)
 	{
-		Weight = weight;
-		AllowOther = allowOther;
+		this.Weight = weight;
+		this.AllowOther = allowOther;
 	}
 
 	public static ThirdpersonLayerWeight Lerp(ThirdpersonLayerWeight lhs, ThirdpersonLayerWeight rhs, float time)

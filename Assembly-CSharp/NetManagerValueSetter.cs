@@ -8,12 +8,12 @@ public class NetManagerValueSetter : MonoBehaviour
 
 	private void Start()
 	{
-		_singleton = NetworkManager.singleton.GetComponent<CustomNetworkManager>();
+		this._singleton = NetworkManager.singleton.GetComponent<CustomNetworkManager>();
 	}
 
 	public void ChangeIP(string ip)
 	{
-		_singleton.networkAddress = ip;
+		this._singleton.networkAddress = ip;
 		CustomNetworkManager.ConnectionIp = ip;
 	}
 
@@ -24,16 +24,16 @@ public class NetManagerValueSetter : MonoBehaviour
 
 	public void JoinGame()
 	{
-		_singleton.StartClient();
+		this._singleton.StartClient();
 	}
 
 	public void HostGame()
 	{
-		_singleton.StartHost();
+		this._singleton.StartHost();
 	}
 
 	public void Disconnect()
 	{
-		_singleton.StopHost();
+		this._singleton.StopHost();
 	}
 }

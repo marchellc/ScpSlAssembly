@@ -24,7 +24,7 @@ public class UserSettingsFloatField : UserSettingsUIBase<TMP_InputField, float>
 
 	private readonly UnityEvent<float> _onParsed = new UnityEvent<float>();
 
-	protected override UnityEvent<float> OnValueChangedEvent => _onParsed;
+	protected override UnityEvent<float> OnValueChangedEvent => this._onParsed;
 
 	protected override void Awake()
 	{
@@ -33,11 +33,11 @@ public class UserSettingsFloatField : UserSettingsUIBase<TMP_InputField, float>
 		{
 			if (!float.TryParse(str, out var result))
 			{
-				SetValueAndTriggerEvent(base.StoredValue * _valueMultiplier);
+				this.SetValueAndTriggerEvent(base.StoredValue * this._valueMultiplier);
 			}
 			else
 			{
-				_onParsed.Invoke(Mathf.Clamp(result / _valueMultiplier, _minInput, _maxInput));
+				this._onParsed.Invoke(Mathf.Clamp(result / this._valueMultiplier, this._minInput, this._maxInput));
 				EventSystem current = EventSystem.current;
 				if (!current.alreadySelecting)
 				{
@@ -47,7 +47,7 @@ public class UserSettingsFloatField : UserSettingsUIBase<TMP_InputField, float>
 		});
 		base.TargetUI.onSelect.AddListener(delegate
 		{
-			string text = (base.StoredValue * _valueMultiplier).ToString();
+			string text = (base.StoredValue * this._valueMultiplier).ToString();
 			if (text.Length > base.TargetUI.characterLimit)
 			{
 				text = text.Remove(base.TargetUI.characterLimit);
@@ -58,16 +58,16 @@ public class UserSettingsFloatField : UserSettingsUIBase<TMP_InputField, float>
 
 	protected override void SetValueAndTriggerEvent(float val)
 	{
-		base.TargetUI.text = FormatValue(val);
+		base.TargetUI.text = this.FormatValue(val);
 	}
 
 	protected override void SetValueWithoutNotify(float val)
 	{
-		base.TargetUI.SetTextWithoutNotify(FormatValue(val));
+		base.TargetUI.SetTextWithoutNotify(this.FormatValue(val));
 	}
 
 	private string FormatValue(float val)
 	{
-		return string.Format(_finalFormat, (val * _valueMultiplier).ToString(_toStringFormat));
+		return string.Format(this._finalFormat, (val * this._valueMultiplier).ToString(this._toStringFormat));
 	}
 }

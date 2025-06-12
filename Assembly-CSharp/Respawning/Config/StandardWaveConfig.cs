@@ -14,7 +14,7 @@ public class StandardWaveConfig<T> : IWaveConfig where T : SpawnableWaveBase
 
 	public StandardWaveConfig()
 	{
-		_configKey = typeof(T).Name.ToLower();
+		this._configKey = typeof(T).Name.ToLower();
 		ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(OnConfigRefresh));
 		CustomNetworkManager.OnClientReady += OnConfigRefresh;
 	}
@@ -28,7 +28,7 @@ public class StandardWaveConfig<T> : IWaveConfig where T : SpawnableWaveBase
 	protected string GetConfigPath(string key)
 	{
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-		stringBuilder.Append(_configKey);
+		stringBuilder.Append(this._configKey);
 		stringBuilder.Append("_");
 		stringBuilder.Append(key);
 		return StringBuilderPool.Shared.ToStringReturn(stringBuilder);
@@ -36,6 +36,6 @@ public class StandardWaveConfig<T> : IWaveConfig where T : SpawnableWaveBase
 
 	protected virtual void OnConfigRefresh()
 	{
-		IsEnabled = ConfigFile.ServerConfig.GetBool(GetConfigPath("enabled"), def: true);
+		this.IsEnabled = ConfigFile.ServerConfig.GetBool(this.GetConfigPath("enabled"), def: true);
 	}
 }

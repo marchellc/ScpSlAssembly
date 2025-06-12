@@ -68,7 +68,7 @@ public class Strangled : StatusEffectBase, ISoundtrackMutingEffect, IMovementInp
 	{
 		get
 		{
-			double elapsedSeconds = ElapsedSeconds;
+			double elapsedSeconds = this.ElapsedSeconds;
 			if (elapsedSeconds < 0.0)
 			{
 				return 0f;
@@ -85,13 +85,13 @@ public class Strangled : StatusEffectBase, ISoundtrackMutingEffect, IMovementInp
 			HealthStat module = base.Hub.playerStats.GetModule<HealthStat>();
 			AhpStat module2 = base.Hub.playerStats.GetModule<AhpStat>();
 			float num = module.CurValue + module2.CurValue;
-			float damageRate = DamageRate;
+			float damageRate = this.DamageRate;
 			float num2 = damageRate * damageRate;
 			return (0f - damageRate + Mathf.Sqrt(num2 + 10f * num)) / 5f;
 		}
 	}
 
-	public double ElapsedSeconds => NetworkTime.time - _startTime;
+	public double ElapsedSeconds => NetworkTime.time - this._startTime;
 
 	public BlockedInteraction BlockedInteractions => BlockedInteraction.ItemUsage | BlockedInteraction.OpenInventory;
 
@@ -100,14 +100,14 @@ public class Strangled : StatusEffectBase, ISoundtrackMutingEffect, IMovementInp
 	protected override void Enabled()
 	{
 		base.Enabled();
-		_startTime = NetworkTime.time;
-		_remainingLineOfSightTolerance = 0.5f;
-		MovementSpeedLimit = 0f;
-		MovementOverrideDirection = Vector3.zero;
+		this._startTime = NetworkTime.time;
+		this._remainingLineOfSightTolerance = 0.5f;
+		this.MovementSpeedLimit = 0f;
+		this.MovementOverrideDirection = Vector3.zero;
 		base.Hub.interCoordinator.AddBlocker(this);
 		if (base.Hub.isLocalPlayer)
 		{
-			_overrideRegistered = true;
+			this._overrideRegistered = true;
 			CursorManager.Register(this);
 		}
 	}
@@ -117,7 +117,7 @@ public class Strangled : StatusEffectBase, ISoundtrackMutingEffect, IMovementInp
 		base.Disabled();
 		if (base.Hub.isLocalPlayer)
 		{
-			_overrideRegistered = false;
+			this._overrideRegistered = false;
 			CursorManager.Unregister(this);
 		}
 	}
@@ -127,17 +127,17 @@ public class Strangled : StatusEffectBase, ISoundtrackMutingEffect, IMovementInp
 		base.OnEffectUpdate();
 		if (base.IsLocalPlayer)
 		{
-			UpdateInputOverride();
+			this.UpdateInputOverride();
 		}
-		if (NetworkServer.active && !ServerUpdate())
+		if (NetworkServer.active && !this.ServerUpdate())
 		{
-			DisableEffect();
+			this.DisableEffect();
 		}
 	}
 
 	private bool ServerUpdate()
 	{
-		if (!TryUpdateAttacker(out var attacker))
+		if (!this.TryUpdateAttacker(out var attacker))
 		{
 			return false;
 		}
@@ -145,42 +145,42 @@ public class Strangled : StatusEffectBase, ISoundtrackMutingEffect, IMovementInp
 		Vector3 position2 = attacker.PlayerCameraReference.position;
 		if (!Physics.Linecast(position, position2, FpcStateProcessor.Mask))
 		{
-			_remainingLineOfSightTolerance = 0.5f;
+			this._remainingLineOfSightTolerance = 0.5f;
 		}
 		else
 		{
-			_remainingLineOfSightTolerance -= Time.deltaTime;
-			if (_remainingLineOfSightTolerance < 0f)
+			this._remainingLineOfSightTolerance -= Time.deltaTime;
+			if (this._remainingLineOfSightTolerance < 0f)
 			{
 				return false;
 			}
 		}
 		base.Hub.inventory.ServerSelectItem(0);
-		base.Hub.playerStats.DealDamage(new Scp3114DamageHandler(attacker, DamageRate * Time.deltaTime, Scp3114DamageHandler.HandlerType.Strangulation));
+		base.Hub.playerStats.DealDamage(new Scp3114DamageHandler(attacker, this.DamageRate * Time.deltaTime, Scp3114DamageHandler.HandlerType.Strangulation));
 		return true;
 	}
 
 	private void UpdateInputOverride()
 	{
-		if (TryUpdateAttacker(out var _) && base.Hub.roleManager.CurrentRole is IFpcRole { FpcModule: var fpcModule } fpcRole)
+		if (this.TryUpdateAttacker(out var _) && base.Hub.roleManager.CurrentRole is IFpcRole { FpcModule: var fpcModule } fpcRole)
 		{
-			fpcRole.LookAtPoint(_strangleTarget.AttackerPosition.Position, Time.deltaTime * 20f);
-			Vector3 vector = _strangleTarget.TargetPosition.Position - fpcModule.Position;
+			fpcRole.LookAtPoint(this._strangleTarget.AttackerPosition.Position, Time.deltaTime * 20f);
+			Vector3 vector = this._strangleTarget.TargetPosition.Position - fpcModule.Position;
 			float num = vector.MagnitudeIgnoreY();
 			Vector3 movementOverrideDirection = vector / num;
 			if (!Mathf.Approximately(num, 0f))
 			{
-				MovementOverrideDirection = movementOverrideDirection;
-				MovementSpeedLimit = Mathf.Min(5f, num / Time.deltaTime);
+				this.MovementOverrideDirection = movementOverrideDirection;
+				this.MovementSpeedLimit = Mathf.Min(5f, num / Time.deltaTime);
 			}
 		}
 	}
 
 	public bool TryUpdateAttacker(out ReferenceHub attacker)
 	{
-		if (_hasCache && _cachedHub != null && CheckPlayer(_cachedHub))
+		if (this._hasCache && this._cachedHub != null && CheckPlayer(this._cachedHub))
 		{
-			attacker = _cachedHub;
+			attacker = this._cachedHub;
 			return true;
 		}
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
@@ -188,11 +188,11 @@ public class Strangled : StatusEffectBase, ISoundtrackMutingEffect, IMovementInp
 			if (CheckPlayer(allHub))
 			{
 				attacker = allHub;
-				_hasCache = true;
+				this._hasCache = true;
 				return true;
 			}
 		}
-		_hasCache = false;
+		this._hasCache = false;
 		attacker = null;
 		return false;
 		bool CheckPlayer(ReferenceHub hub)
@@ -213,15 +213,15 @@ public class Strangled : StatusEffectBase, ISoundtrackMutingEffect, IMovementInp
 			{
 				return false;
 			}
-			_cachedHub = hub;
-			_strangleTarget = subroutine.SyncTarget.Value;
+			this._cachedHub = hub;
+			this._strangleTarget = subroutine.SyncTarget.Value;
 			return true;
 		}
 	}
 
 	private void OnDestroy()
 	{
-		if (_overrideRegistered)
+		if (this._overrideRegistered)
 		{
 			CursorManager.Unregister(this);
 		}

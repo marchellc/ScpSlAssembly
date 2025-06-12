@@ -9,11 +9,11 @@ public class Scp049ResurrectIndicators : RagdollIndicatorsBase<Scp049Role>
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp049ResurrectAbility>(out _resurrectAbility);
+		base.GetSubroutine<Scp049ResurrectAbility>(out this._resurrectAbility);
 	}
 
 	protected override bool ValidateRagdoll(BasicRagdoll ragdoll)
 	{
-		return _resurrectAbility.CheckRagdoll(ragdoll);
+		return this._resurrectAbility.CheckRagdoll(ragdoll);
 	}
 }

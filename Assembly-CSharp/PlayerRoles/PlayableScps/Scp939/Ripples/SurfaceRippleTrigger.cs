@@ -17,29 +17,19 @@ public class SurfaceRippleTrigger : RippleTriggerBase
 
 		private double _time;
 
-		public static LastRippleInformation Default
+		public static LastRippleInformation Default => new LastRippleInformation
 		{
-			get
-			{
-				LastRippleInformation result = default(LastRippleInformation);
-				result.IsNatural = true;
-				result._time = NetworkTime.time;
-				return result;
-			}
-		}
+			IsNatural = true,
+			_time = NetworkTime.time
+		};
 
-		public static LastRippleInformation SurfaceDefault
+		public static LastRippleInformation SurfaceDefault => new LastRippleInformation
 		{
-			get
-			{
-				LastRippleInformation result = default(LastRippleInformation);
-				result.IsNatural = false;
-				result._time = NetworkTime.time;
-				return result;
-			}
-		}
+			IsNatural = false,
+			_time = NetworkTime.time
+		};
 
-		public float Elapsed => (float)(NetworkTime.time - _time);
+		public float Elapsed => (float)(NetworkTime.time - this._time);
 	}
 
 	private const float TimeBetweenSurfaceRipples = 10f;
@@ -55,7 +45,7 @@ public class SurfaceRippleTrigger : RippleTriggerBase
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_lastRipples.Clear();
+		this._lastRipples.Clear();
 		if (base.Role.IsLocalPlayer)
 		{
 			RippleTriggerBase.OnPlayedRippleLocally += OnPlayerPlayedRipple;
@@ -65,7 +55,7 @@ public class SurfaceRippleTrigger : RippleTriggerBase
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_lastRipples.Clear();
+		this._lastRipples.Clear();
 		if (!base.Role.IsLocalPlayer)
 		{
 			RippleTriggerBase.OnPlayedRippleLocally -= OnPlayerPlayedRipple;
@@ -75,44 +65,44 @@ public class SurfaceRippleTrigger : RippleTriggerBase
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteReferenceHub(_syncPlayer);
-		writer.WriteRelativePosition(_syncPos);
+		writer.WriteReferenceHub(this._syncPlayer);
+		writer.WriteRelativePosition(this._syncPos);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		if (reader.TryReadReferenceHub(out _syncPlayer) && HitboxIdentity.IsEnemy(base.Owner, _syncPlayer) && _syncPlayer.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase && !(fpcStandardRoleBase.FpcModule.CharacterModelInstance.Fade > 0f))
+		if (reader.TryReadReferenceHub(out this._syncPlayer) && HitboxIdentity.IsEnemy(base.Owner, this._syncPlayer) && this._syncPlayer.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase && !(fpcStandardRoleBase.FpcModule.CharacterModelInstance.Fade > 0f))
 		{
-			_syncPos = reader.ReadRelativePosition();
-			base.Player.Play(_syncPos.Position, fpcStandardRoleBase.RoleColor);
+			this._syncPos = reader.ReadRelativePosition();
+			base.Player.Play(this._syncPos.Position, fpcStandardRoleBase.RoleColor);
 		}
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteReferenceHub(_syncPlayer);
+		writer.WriteReferenceHub(this._syncPlayer);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (reader.TryReadReferenceHub(out _syncPlayer))
+		if (reader.TryReadReferenceHub(out this._syncPlayer))
 		{
-			ProcessRipple(_syncPlayer);
+			this.ProcessRipple(this._syncPlayer);
 		}
 	}
 
 	public void ProcessRipple(ReferenceHub hub)
 	{
-		if (_lastRipples.ContainsKey(hub.netId))
+		if (this._lastRipples.ContainsKey(hub.netId))
 		{
-			_lastRipples[hub.netId] = LastRippleInformation.Default;
+			this._lastRipples[hub.netId] = LastRippleInformation.Default;
 		}
 		else
 		{
-			_lastRipples.Add(hub.netId, LastRippleInformation.Default);
+			this._lastRipples.Add(hub.netId, LastRippleInformation.Default);
 		}
 	}
 
@@ -134,9 +124,9 @@ public class SurfaceRippleTrigger : RippleTriggerBase
 			{
 				continue;
 			}
-			if (!_lastRipples.TryGetValue(allHub.netId, out var value))
+			if (!this._lastRipples.TryGetValue(allHub.netId, out var value))
 			{
-				_lastRipples.Add(allHub.netId, LastRippleInformation.SurfaceDefault);
+				this._lastRipples.Add(allHub.netId, LastRippleInformation.SurfaceDefault);
 				continue;
 			}
 			if (value.IsNatural)
@@ -155,10 +145,10 @@ public class SurfaceRippleTrigger : RippleTriggerBase
 			IL_00de:
 			if (!flag)
 			{
-				_lastRipples[allHub.netId] = LastRippleInformation.SurfaceDefault;
-				_syncPos = new RelativePosition(position);
-				_syncPlayer = allHub;
-				ServerSendRpcToObservers();
+				this._lastRipples[allHub.netId] = LastRippleInformation.SurfaceDefault;
+				this._syncPos = new RelativePosition(position);
+				this._syncPlayer = allHub;
+				base.ServerSendRpcToObservers();
 			}
 			continue;
 			IL_00d6:
@@ -169,7 +159,7 @@ public class SurfaceRippleTrigger : RippleTriggerBase
 
 	private void OnPlayerPlayedRipple(ReferenceHub player)
 	{
-		_syncPlayer = player;
-		ClientSendCmd();
+		this._syncPlayer = player;
+		base.ClientSendCmd();
 	}
 }

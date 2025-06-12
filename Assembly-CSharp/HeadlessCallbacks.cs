@@ -10,13 +10,13 @@ public class HeadlessCallbacks : Attribute
 
 	public static void FindCallbacks()
 	{
-		if (callbackRegistry != null)
+		if (HeadlessCallbacks.callbackRegistry != null)
 		{
 			return;
 		}
 		try
 		{
-			callbackRegistry = from t in Assembly.GetExecutingAssembly().GetTypes()
+			HeadlessCallbacks.callbackRegistry = from t in Assembly.GetExecutingAssembly().GetTypes()
 				let attributes = t.GetCustomAttributes(typeof(HeadlessCallbacks), inherit: true)
 				where attributes != null && attributes.Length != 0
 				select t;
@@ -25,25 +25,25 @@ public class HeadlessCallbacks : Attribute
 		{
 			try
 			{
-				callbackRegistry = ex.Types.Where((Type t) => t != null);
+				HeadlessCallbacks.callbackRegistry = ex.Types.Where((Type t) => t != null);
 			}
 			catch (Exception ex2)
 			{
 				Debug.Log("Headless Builder could not find callbacks (" + ex2.GetType().Name + "), but will still continue as planned");
-				callbackRegistry = Enumerable.Empty<Type>();
+				HeadlessCallbacks.callbackRegistry = Enumerable.Empty<Type>();
 			}
 		}
 		catch (Exception ex3)
 		{
 			Debug.Log("Headless Builder could not find callbacks (" + ex3.GetType().Name + "), but will still continue as planned");
-			callbackRegistry = Enumerable.Empty<Type>();
+			HeadlessCallbacks.callbackRegistry = Enumerable.Empty<Type>();
 		}
 	}
 
 	public static void InvokeCallbacks(string callbackName)
 	{
-		FindCallbacks();
-		foreach (Type item in callbackRegistry)
+		HeadlessCallbacks.FindCallbacks();
+		foreach (Type item in HeadlessCallbacks.callbackRegistry)
 		{
 			MethodInfo method = item.GetMethod(callbackName);
 			if (method != null)

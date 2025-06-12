@@ -22,18 +22,18 @@ public class BrokenDoor : MonoBehaviour
 
 		public void Init()
 		{
-			_rigidbody.linearVelocity = _rigidbody.transform.TransformDirection(_direction.normalized) * _force;
-			_rigidbody.angularVelocity = new Vector3((UnityEngine.Random.value - 0.5f) * 2f, (UnityEngine.Random.value - 0.5f) * 2f, (UnityEngine.Random.value - 0.5f) * 2f) * _randomTorque;
+			this._rigidbody.linearVelocity = this._rigidbody.transform.TransformDirection(this._direction.normalized) * this._force;
+			this._rigidbody.angularVelocity = new Vector3((UnityEngine.Random.value - 0.5f) * 2f, (UnityEngine.Random.value - 0.5f) * 2f, (UnityEngine.Random.value - 0.5f) * 2f) * this._randomTorque;
 		}
 
 		public void Freeze()
 		{
-			Collider[] components = _rigidbody.GetComponents<Collider>();
+			Collider[] components = this._rigidbody.GetComponents<Collider>();
 			for (int i = 0; i < components.Length; i++)
 			{
 				components[i].enabled = false;
 			}
-			UnityEngine.Object.Destroy(_rigidbody);
+			UnityEngine.Object.Destroy(this._rigidbody);
 		}
 	}
 
@@ -45,7 +45,7 @@ public class BrokenDoor : MonoBehaviour
 
 	private void Start()
 	{
-		BrokenDoorPart[] parts = _parts;
+		BrokenDoorPart[] parts = this._parts;
 		foreach (BrokenDoorPart brokenDoorPart in parts)
 		{
 			brokenDoorPart.Init();
@@ -54,10 +54,10 @@ public class BrokenDoor : MonoBehaviour
 
 	private void Update()
 	{
-		_timeUntilFreeze -= Time.deltaTime;
-		if (_timeUntilFreeze < 0f)
+		this._timeUntilFreeze -= Time.deltaTime;
+		if (this._timeUntilFreeze < 0f)
 		{
-			BrokenDoorPart[] parts = _parts;
+			BrokenDoorPart[] parts = this._parts;
 			foreach (BrokenDoorPart brokenDoorPart in parts)
 			{
 				brokenDoorPart.Freeze();

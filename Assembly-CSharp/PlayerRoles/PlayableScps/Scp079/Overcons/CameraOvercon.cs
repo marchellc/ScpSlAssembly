@@ -50,61 +50,61 @@ public class CameraOvercon : StandardOvercon
 	{
 		get
 		{
-			return _position;
+			return this._position;
 		}
 		set
 		{
-			_position = value;
+			this._position = value;
 			base.transform.position = value;
 		}
 	}
 
 	internal void Setup(Scp079Camera newCam, Scp079Camera target, bool isElevator)
 	{
-		Target = target;
-		IsElevator = isElevator;
+		this.Target = target;
+		this.IsElevator = isElevator;
 		Scp079CameraToy component = null;
-		FacilityZone facilityZone = ((!target.IsToy || !target.TryGetComponent<Scp079CameraToy>(out component)) ? Target.Room.Zone : component.ZoneIcon);
-		if (facilityZone != _prevZone)
+		FacilityZone facilityZone = ((!target.IsToy || !target.TryGetComponent<Scp079CameraToy>(out component)) ? this.Target.Room.Zone : component.ZoneIcon);
+		if (facilityZone != this._prevZone)
 		{
-			GetZoneOverrides(facilityZone, out var icon, out _prevOffset);
-			TargetSprite.sprite = icon;
-			_prevZone = facilityZone;
+			this.GetZoneOverrides(facilityZone, out var icon, out this._prevOffset);
+			base.TargetSprite.sprite = icon;
+			this._prevZone = facilityZone;
 		}
-		Vector3 position = target.transform.TransformPoint(_prevOffset);
-		if (newCam.Room == Target.Room)
+		Vector3 position = target.transform.TransformPoint(this._prevOffset);
+		if (newCam.Room == this.Target.Room)
 		{
-			_externalIcon.SetActive(isElevator);
+			this._externalIcon.SetActive(isElevator);
 			if (component != null)
 			{
 				component.CurrentOvercon = this;
-				Position = target.transform.position;
+				this.Position = target.transform.position;
 			}
 			else
 			{
-				Position = position;
+				this.Position = position;
 			}
-			Rescale(newCam);
+			base.Rescale(newCam);
 		}
 		else
 		{
-			if (DoorVariant.DoorsByRoom.TryGetValue(Target.Room, out var value) && value.TryGetFirst((DoorVariant x) => x.Rooms.Contains(newCam.Room), out var first))
+			if (DoorVariant.DoorsByRoom.TryGetValue(this.Target.Room, out var value) && value.TryGetFirst((DoorVariant x) => x.Rooms.Contains(newCam.Room), out var first))
 			{
-				Position = first.transform.position + Vector3.up * 3.2f;
-				Rescale(newCam, 255f);
+				this.Position = first.transform.position + Vector3.up * 3.2f;
+				base.Rescale(newCam, 255f);
 			}
 			else
 			{
-				Position = position;
-				Rescale(newCam);
+				this.Position = position;
+				base.Rescale(newCam);
 			}
-			_externalIcon.SetActive(value: true);
+			this._externalIcon.SetActive(value: true);
 		}
 	}
 
 	private void GetZoneOverrides(FacilityZone zone, out Sprite icon, out Vector3 offset)
 	{
-		ZoneOverrride[] zoneOverrides = _zoneOverrides;
+		ZoneOverrride[] zoneOverrides = this._zoneOverrides;
 		for (int i = 0; i < zoneOverrides.Length; i++)
 		{
 			ZoneOverrride zoneOverrride = zoneOverrides[i];
@@ -115,12 +115,12 @@ public class CameraOvercon : StandardOvercon
 				return;
 			}
 		}
-		icon = _defaultIcon;
-		offset = _defaultOffset;
+		icon = this._defaultIcon;
+		offset = this._defaultOffset;
 	}
 
 	private void LateUpdate()
 	{
-		TargetSprite.color = Color.Lerp(StandardOvercon.NormalColor, StandardOvercon.HighlightedColor, IsHighlighted ? 1f : ((Scp079ForwardCameraSelector.HighlightedCamera == Target) ? 0.3f : 0f));
+		base.TargetSprite.color = Color.Lerp(StandardOvercon.NormalColor, StandardOvercon.HighlightedColor, this.IsHighlighted ? 1f : ((Scp079ForwardCameraSelector.HighlightedCamera == this.Target) ? 0.3f : 0f));
 	}
 }

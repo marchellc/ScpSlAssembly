@@ -38,51 +38,51 @@ public class MimicryRecordingsMenu : MimicryMenuBase
 	protected override void Setup(Scp939Role role)
 	{
 		base.Setup(role);
-		role.SubroutineModule.TryGetSubroutine<MimicryRecorder>(out _recorder);
-		int maxRecordings = _recorder.MaxRecordings;
-		_instancesUserOrder = new MimicryRecordingIcon[maxRecordings];
+		role.SubroutineModule.TryGetSubroutine<MimicryRecorder>(out this._recorder);
+		int maxRecordings = this._recorder.MaxRecordings;
+		this._instancesUserOrder = new MimicryRecordingIcon[maxRecordings];
 		for (int i = 0; i < maxRecordings; i++)
 		{
-			MimicryRecordingIcon mimicryRecordingIcon = UnityEngine.Object.Instantiate(_iconTemplate, _iconsParent);
+			MimicryRecordingIcon mimicryRecordingIcon = UnityEngine.Object.Instantiate(this._iconTemplate, this._iconsParent);
 			mimicryRecordingIcon.IsEmpty = true;
 			mimicryRecordingIcon.gameObject.SetActive(value: true);
-			_instancesUserOrder[i] = mimicryRecordingIcon;
+			this._instancesUserOrder[i] = mimicryRecordingIcon;
 		}
-		UpdateInstancePositions(1f);
-		_recorder.OnSavedVoicesModified += OnVoicesModified;
+		this.UpdateInstancePositions(1f);
+		this._recorder.OnSavedVoicesModified += OnVoicesModified;
 	}
 
 	private void OnDestroy()
 	{
-		if (!(_recorder == null))
+		if (!(this._recorder == null))
 		{
-			_recorder.OnSavedVoicesModified -= OnVoicesModified;
+			this._recorder.OnSavedVoicesModified -= OnVoicesModified;
 		}
 	}
 
 	private void OnVoicesModified()
 	{
-		_updateNextFrame = true;
-		if (_recorder.SavedVoices.Count <= _recorder.MaxRecordings)
+		this._updateNextFrame = true;
+		if (this._recorder.SavedVoices.Count <= this._recorder.MaxRecordings)
 		{
 			return;
 		}
 		List<int> list = ListPool<int>.Shared.Rent();
-		for (int i = 0; i < _recorder.MaxRecordings; i++)
+		for (int i = 0; i < this._recorder.MaxRecordings; i++)
 		{
-			if (!_instancesUserOrder[i].IsFavorite)
+			if (!this._instancesUserOrder[i].IsFavorite)
 			{
 				list.Add(i);
 			}
 		}
-		int num = ((list.Count > 0) ? list.RandomItem() : UnityEngine.Random.Range(0, _recorder.MaxRecordings));
+		int num = ((list.Count > 0) ? list.RandomItem() : UnityEngine.Random.Range(0, this._recorder.MaxRecordings));
 		ListPool<int>.Shared.Return(list);
-		_recorder.RemoveVoice(_instancesUserOrder[num].VoiceRecord);
+		this._recorder.RemoveVoice(this._instancesUserOrder[num].VoiceRecord);
 	}
 
 	private bool GetDragData(out int occupiedIndex, out int targetIndex, out float targetHeight)
 	{
-		occupiedIndex = _instancesUserOrder.IndexOf(_draggedInstance);
+		occupiedIndex = this._instancesUserOrder.IndexOf(this._draggedInstance);
 		if (occupiedIndex < 0)
 		{
 			targetIndex = -1;
@@ -90,9 +90,9 @@ public class MimicryRecordingsMenu : MimicryMenuBase
 			return false;
 		}
 		Vector2 localPoint;
-		float num = (RectTransformUtility.ScreenPointToLocalPointInRectangle(_iconsParent, Input.mousePosition, null, out localPoint) ? (0f - localPoint.y) : 0f);
-		targetHeight = num + _dragIconOffset;
-		targetIndex = Mathf.CeilToInt((num + _dragPositionOffset) / _spacing) - 1;
+		float num = (RectTransformUtility.ScreenPointToLocalPointInRectangle(this._iconsParent, Input.mousePosition, null, out localPoint) ? (0f - localPoint.y) : 0f);
+		targetHeight = num + this._dragIconOffset;
+		targetIndex = Mathf.CeilToInt((num + this._dragPositionOffset) / this._spacing) - 1;
 		return true;
 	}
 
@@ -101,26 +101,26 @@ public class MimicryRecordingsMenu : MimicryMenuBase
 		int occupiedIndex;
 		int targetIndex;
 		float targetHeight;
-		bool dragData = GetDragData(out occupiedIndex, out targetIndex, out targetHeight);
-		for (int i = 0; i < _instancesUserOrder.Length; i++)
+		bool dragData = this.GetDragData(out occupiedIndex, out targetIndex, out targetHeight);
+		for (int i = 0; i < this._instancesUserOrder.Length; i++)
 		{
 			float num2;
 			if (dragData)
 			{
-				int num = i + GetPositionOffset(i, occupiedIndex, targetIndex);
-				num2 = ((i == occupiedIndex) ? targetHeight : (_spacing * (float)num));
+				int num = i + this.GetPositionOffset(i, occupiedIndex, targetIndex);
+				num2 = ((i == occupiedIndex) ? targetHeight : (this._spacing * (float)num));
 			}
 			else
 			{
-				num2 = _spacing * (float)i;
+				num2 = this._spacing * (float)i;
 			}
-			MimicryRecordingIcon obj = _instancesUserOrder[i];
+			MimicryRecordingIcon obj = this._instancesUserOrder[i];
 			obj.Height = Mathf.Lerp(obj.Height, 0f - num2, interpolant);
 		}
 		if (dragData && !Input.GetKey(KeyCode.Mouse0))
 		{
-			_draggedInstance = null;
-			Array.Sort(_instancesUserOrder, (MimicryRecordingIcon x, MimicryRecordingIcon y) => y.Height.CompareTo(x.Height));
+			this._draggedInstance = null;
+			Array.Sort(this._instancesUserOrder, (MimicryRecordingIcon x, MimicryRecordingIcon y) => y.Height.CompareTo(x.Height));
 		}
 	}
 
@@ -143,16 +143,16 @@ public class MimicryRecordingsMenu : MimicryMenuBase
 
 	private void AddInstance(int recordingId)
 	{
-		MimicryRecordingIcon mimicryRecordingIcon = UnityEngine.Object.Instantiate(_iconTemplate, _iconsParent);
-		mimicryRecordingIcon.Setup(_recorder, recordingId);
+		MimicryRecordingIcon mimicryRecordingIcon = UnityEngine.Object.Instantiate(this._iconTemplate, this._iconsParent);
+		mimicryRecordingIcon.Setup(this._recorder, recordingId);
 		mimicryRecordingIcon.gameObject.SetActive(value: true);
-		_instancesChronological.Add(mimicryRecordingIcon);
-		for (int i = 0; i < _recorder.MaxRecordings; i++)
+		this._instancesChronological.Add(mimicryRecordingIcon);
+		for (int i = 0; i < this._recorder.MaxRecordings; i++)
 		{
-			MimicryRecordingIcon mimicryRecordingIcon2 = _instancesUserOrder[i];
+			MimicryRecordingIcon mimicryRecordingIcon2 = this._instancesUserOrder[i];
 			if (mimicryRecordingIcon2.IsEmpty)
 			{
-				_instancesUserOrder[i] = mimicryRecordingIcon;
+				this._instancesUserOrder[i] = mimicryRecordingIcon;
 				mimicryRecordingIcon.Height = mimicryRecordingIcon2.Height;
 				UnityEngine.Object.Destroy(mimicryRecordingIcon2.gameObject);
 				break;
@@ -163,37 +163,37 @@ public class MimicryRecordingsMenu : MimicryMenuBase
 	private void RemoveInstance(MimicryRecordingIcon instance)
 	{
 		instance.IsEmpty = true;
-		_instancesChronological.Remove(instance);
+		this._instancesChronological.Remove(instance);
 	}
 
 	private void Update()
 	{
-		UpdateInstancePositions(Time.deltaTime * _lerpSpeed);
-		if (!_updateNextFrame)
+		this.UpdateInstancePositions(Time.deltaTime * this._lerpSpeed);
+		if (!this._updateNextFrame)
 		{
 			return;
 		}
-		int num = _instancesChronological.Count;
-		int count = _recorder.SavedVoices.Count;
+		int num = this._instancesChronological.Count;
+		int count = this._recorder.SavedVoices.Count;
 		for (int i = 0; i < num; i++)
 		{
-			MimicryRecordingIcon mimicryRecordingIcon = _instancesChronological[i];
-			if (i >= count || mimicryRecordingIcon.VoiceRecord != _recorder.SavedVoices[i].Buffer)
+			MimicryRecordingIcon mimicryRecordingIcon = this._instancesChronological[i];
+			if (i >= count || mimicryRecordingIcon.VoiceRecord != this._recorder.SavedVoices[i].Buffer)
 			{
-				RemoveInstance(mimicryRecordingIcon);
+				this.RemoveInstance(mimicryRecordingIcon);
 				num--;
 				i--;
 			}
 		}
 		for (int j = num; j < count; j++)
 		{
-			AddInstance(j);
+			this.AddInstance(j);
 		}
-		_updateNextFrame = false;
+		this._updateNextFrame = false;
 	}
 
 	internal void BeginDrag(MimicryRecordingIcon icon)
 	{
-		_draggedInstance = icon;
+		this._draggedInstance = icon;
 	}
 }

@@ -8,7 +8,7 @@ public abstract class EncounterDangerBase : ParentDangerBase
 
 	public void RegisterEncounter(ReferenceHub target)
 	{
-		float dangerValue = (base.ChildDangers.IsEmpty() ? DangerPerEncounter : DangerPerAdditionalEncounter);
+		float dangerValue = (base.ChildDangers.IsEmpty() ? this.DangerPerEncounter : this.DangerPerAdditionalEncounter);
 		base.ChildDangers.Add(new CachedEncounterDanger(dangerValue, base.Owner, target));
 	}
 

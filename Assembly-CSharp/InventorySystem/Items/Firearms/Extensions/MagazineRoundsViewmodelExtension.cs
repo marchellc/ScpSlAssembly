@@ -32,10 +32,10 @@ public class MagazineRoundsViewmodelExtension : MonoBehaviour, IViewmodelExtensi
 	{
 		get
 		{
-			int num = IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(_fa).Magazines;
-			if (_onShotSw.IsRunning && _onShotSw.Elapsed.TotalSeconds < (double)_onShotSustain)
+			int num = IDisplayableAmmoProviderModule.GetCombinedDisplayAmmo(this._fa).Magazines;
+			if (this._onShotSw.IsRunning && this._onShotSw.Elapsed.TotalSeconds < (double)this._onShotSustain)
 			{
-				num += _onShotOffset;
+				num += this._onShotOffset;
 			}
 			return num;
 		}
@@ -43,21 +43,21 @@ public class MagazineRoundsViewmodelExtension : MonoBehaviour, IViewmodelExtensi
 
 	public void RemoveOffsets()
 	{
-		_onShotSw.Reset();
-		SetAmmo(DisplayedAmount);
+		this._onShotSw.Reset();
+		this.SetAmmo(this.DisplayedAmount);
 	}
 
 	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_fa = viewmodel.ParentFirearm;
-		_itemId = viewmodel.ItemId;
+		this._fa = viewmodel.ParentFirearm;
+		this._itemId = viewmodel.ItemId;
 	}
 
 	private void OnShot(ShotEvent shotEvent)
 	{
-		if (!(shotEvent.ItemId != _itemId))
+		if (!(shotEvent.ItemId != this._itemId))
 		{
-			_onShotSw.Restart();
+			this._onShotSw.Restart();
 		}
 	}
 
@@ -73,28 +73,28 @@ public class MagazineRoundsViewmodelExtension : MonoBehaviour, IViewmodelExtensi
 
 	private void Update()
 	{
-		if (_fa.TryGetModule<IReloaderModule>(out var module))
+		if (this._fa.TryGetModule<IReloaderModule>(out var module))
 		{
 			Vector3 viewport;
 			IPrimaryAmmoContainerModule module2;
 			int reserveAmmo;
 			if (!module.IsReloadingOrUnloading)
 			{
-				SetAmmo(DisplayedAmount);
-				_magRefilled = false;
+				this.SetAmmo(this.DisplayedAmount);
+				this._magRefilled = false;
 			}
-			else if (ViewmodelCamera.TryGetViewportPoint(_visibilityBeacon.position, out viewport) && (_magRefilled || !(viewport.y > 0f)) && _fa.TryGetModule<IPrimaryAmmoContainerModule>(out module2) && ReserveAmmoSync.TryGet(_fa.Owner, module2.AmmoType, out reserveAmmo))
+			else if (ViewmodelCamera.TryGetViewportPoint(this._visibilityBeacon.position, out viewport) && (this._magRefilled || !(viewport.y > 0f)) && this._fa.TryGetModule<IPrimaryAmmoContainerModule>(out module2) && ReserveAmmoSync.TryGet(this._fa.Owner, module2.AmmoType, out reserveAmmo))
 			{
-				SetAmmo(reserveAmmo);
+				this.SetAmmo(reserveAmmo);
 			}
 		}
 	}
 
 	private void SetAmmo(int ammo)
 	{
-		for (int i = 0; i < _rounds.Length; i++)
+		for (int i = 0; i < this._rounds.Length; i++)
 		{
-			_rounds[i].SetActive(i < ammo);
+			this._rounds[i].SetActive(i < ammo);
 		}
 	}
 }

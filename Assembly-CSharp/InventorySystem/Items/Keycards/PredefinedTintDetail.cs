@@ -9,6 +9,6 @@ public class PredefinedTintDetail : DetailBase
 
 	public override void ApplyDetail(KeycardGfx gfxTarget, KeycardItem template)
 	{
-		gfxTarget.SetTint(_color);
+		gfxTarget.SetTint(this._color);
 	}
 }

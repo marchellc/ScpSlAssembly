@@ -45,8 +45,8 @@ public class CheaterReport : NetworkBehaviour
 
 	private void Start()
 	{
-		_hub = ReferenceHub.GetHub(this);
-		_commandRateLimit = _hub.playerRateLimitHandler.RateLimits[1];
+		this._hub = ReferenceHub.GetHub(this);
+		this._commandRateLimit = this._hub.playerRateLimitHandler.RateLimits[1];
 	}
 
 	[Command(channel = 4)]
@@ -57,7 +57,7 @@ public class CheaterReport : NetworkBehaviour
 		writer.WriteString(reason);
 		writer.WriteBytesAndSize(signature);
 		writer.WriteBool(notifyGm);
-		SendCommandInternal("System.Void CheaterReport::CmdReport(System.UInt32,System.String,System.Byte[],System.Boolean)", -1325630461, writer, 4);
+		base.SendCommandInternal("System.Void CheaterReport::CmdReport(System.UInt32,System.String,System.Byte[],System.Boolean)", -1325630461, writer, 4);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -71,7 +71,7 @@ public class CheaterReport : NetworkBehaviour
 		}
 		try
 		{
-			string data = $"reporterAuth={StringUtils.Base64Encode(reporterAuth)}&reporterIp={reporterIp}&reportedAuth={StringUtils.Base64Encode(reportedAuth)}&reportedIp={reportedIp}&reason={StringUtils.Base64Encode(ConvertToLatin(reason))}&signature={Convert.ToBase64String(signature)}&reporterKey={StringUtils.Base64Encode(reporterPublicKey)}&token={ServerConsole.Password}&port={ServerConsole.PortToReport}&serverIp={ServerConsole.Ip}";
+			string data = $"reporterAuth={StringUtils.Base64Encode(reporterAuth)}&reporterIp={reporterIp}&reportedAuth={StringUtils.Base64Encode(reportedAuth)}&reportedIp={reportedIp}&reason={StringUtils.Base64Encode(CheaterReport.ConvertToLatin(reason))}&signature={Convert.ToBase64String(signature)}&reporterKey={StringUtils.Base64Encode(reporterPublicKey)}&token={ServerConsole.Password}&port={ServerConsole.PortToReport}&serverIp={ServerConsole.Ip}";
 			string text = HttpQuery.Post(CentralServer.StandardUrl + "ingamereport.php", data);
 			if (reporter == null)
 			{
@@ -80,7 +80,7 @@ public class CheaterReport : NetworkBehaviour
 			switch (text)
 			{
 			case "OK":
-				_reportedPlayers.Add(reportedNetId);
+				this._reportedPlayers.Add(reportedNetId);
 				reporter.SendToClient("[REPORTING] Player report successfully sent.", "green");
 				break;
 			case "ReportedUserIDAlreadyReported":
@@ -103,9 +103,9 @@ public class CheaterReport : NetworkBehaviour
 			}
 			reporter.SendToClient("[REPORTING] Error during **SENDING** player report.", "yellow");
 		}
-		if (SendReportsByWebhooks)
+		if (CheaterReport.SendReportsByWebhooks)
 		{
-			LogReport(reporter, reporterUserId, reportedUserId, ref reason, reportedNetId, notifyGm: true, reporterNickname, reportedNickname);
+			this.LogReport(reporter, reporterUserId, reportedUserId, ref reason, reportedNetId, notifyGm: true, reporterNickname, reportedNickname);
 		}
 	}
 
@@ -116,11 +116,11 @@ public class CheaterReport : NetworkBehaviour
 		{
 			Debug.LogWarning("[Server] function 'System.Void CheaterReport::LogReport(GameConsoleTransmission,System.String,System.String,System.String&,System.UInt32,System.Boolean,System.String,System.String)' called when server was not active");
 		}
-		else if (SubmitReport(reporterUserId, reportedUserId, reason, reportedNetId, reporterNickname, reportedNickname, friendlyFire: false))
+		else if (CheaterReport.SubmitReport(reporterUserId, reportedUserId, reason, reportedNetId, reporterNickname, reportedNickname, friendlyFire: false))
 		{
 			if (!notifyGm)
 			{
-				_reportedPlayers.Add(reportedNetId);
+				this._reportedPlayers.Add(reportedNetId);
 				reporter.SendToClient("[REPORTING] Player report successfully sent to local administrators by webhooks.", "green");
 			}
 		}
@@ -142,7 +142,7 @@ public class CheaterReport : NetworkBehaviour
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			ClientInstanceMode mode = allHub.Mode;
-			if (mode != 0 && mode != ClientInstanceMode.DedicatedServer && allHub.serverRoles.AdminChatPerms)
+			if (mode != ClientInstanceMode.Unverified && mode != ClientInstanceMode.DedicatedServer && allHub.serverRoles.AdminChatPerms)
 			{
 				allHub.encryptedChannelManager.TrySendMessageToClient(content, EncryptedChannelManager.EncryptedChannel.AdminChat);
 			}
@@ -153,18 +153,18 @@ public class CheaterReport : NetworkBehaviour
 	{
 		try
 		{
-			HttpQuery.Post(friendlyFire ? FriendlyFireConfig.WebhookUrl : WebhookUrl, "payload_json=" + JsonSerializer.ToJsonString(new DiscordWebhook(string.Empty, WebhookUsername, WebhookAvatar, tts: false, new DiscordEmbed[1]
+			HttpQuery.Post(friendlyFire ? FriendlyFireConfig.WebhookUrl : CheaterReport.WebhookUrl, "payload_json=" + JsonSerializer.ToJsonString(new DiscordWebhook(string.Empty, CheaterReport.WebhookUsername, CheaterReport.WebhookAvatar, tts: false, new DiscordEmbed[1]
 			{
-				new DiscordEmbed(ReportHeader, "rich", ReportContent, WebhookColor, new DiscordEmbedField[10]
+				new DiscordEmbed(CheaterReport.ReportHeader, "rich", CheaterReport.ReportContent, CheaterReport.WebhookColor, new DiscordEmbedField[10]
 				{
-					new DiscordEmbedField("Server Name", ServerName, inline: false),
+					new DiscordEmbedField("Server Name", CheaterReport.ServerName, inline: false),
 					new DiscordEmbedField("Server Endpoint", $"{ServerConsole.Ip}:{ServerConsole.PortToReport}", inline: false),
-					new DiscordEmbedField("Reporter UserID", AsDiscordCode(reporterUserId), inline: false),
-					new DiscordEmbedField("Reporter Nickname", DiscordSanitize(reporterNickname), inline: false),
-					new DiscordEmbedField("Reported UserID", AsDiscordCode(reportedUserId), inline: false),
-					new DiscordEmbedField("Reported Nickname", DiscordSanitize(reportedNickname), inline: false),
+					new DiscordEmbedField("Reporter UserID", CheaterReport.AsDiscordCode(reporterUserId), inline: false),
+					new DiscordEmbedField("Reporter Nickname", CheaterReport.DiscordSanitize(reporterNickname), inline: false),
+					new DiscordEmbedField("Reported UserID", CheaterReport.AsDiscordCode(reportedUserId), inline: false),
+					new DiscordEmbedField("Reported Nickname", CheaterReport.DiscordSanitize(reportedNickname), inline: false),
 					new DiscordEmbedField("Reported NetID", reportedId.ToString(), inline: false),
-					new DiscordEmbedField("Reason", DiscordSanitize(reason), inline: false),
+					new DiscordEmbedField("Reason", CheaterReport.DiscordSanitize(reason), inline: false),
 					new DiscordEmbedField("Timestamp", TimeBehaviour.Rfc3339Time(), inline: false),
 					new DiscordEmbedField("UTC Timestamp", TimeBehaviour.Rfc3339Time(DateTimeOffset.UtcNow), inline: false)
 				})
@@ -181,7 +181,7 @@ public class CheaterReport : NetworkBehaviour
 
 	private static string ConvertToLatin(string str)
 	{
-		foreach (KeyValuePair<char, string> characterReplacement in CharacterReplacements)
+		foreach (KeyValuePair<char, string> characterReplacement in CheaterReport.CharacterReplacements)
 		{
 			str = str.Replace(characterReplacement.Key.ToString(), characterReplacement.Value);
 		}
@@ -206,7 +206,7 @@ public class CheaterReport : NetworkBehaviour
 
 	static CheaterReport()
 	{
-		CharacterReplacements = new Dictionary<char, string>
+		CheaterReport.CharacterReplacements = new Dictionary<char, string>
 		{
 			{ 'а', "a" },
 			{ 'б', "b" },
@@ -275,7 +275,7 @@ public class CheaterReport : NetworkBehaviour
 			{ 'Ю', "Yu" },
 			{ 'Я', "Ya" }
 		};
-		SendReportsByWebhooks = false;
+		CheaterReport.SendReportsByWebhooks = false;
 		RemoteProcedureCalls.RegisterCommand(typeof(CheaterReport), "System.Void CheaterReport::CmdReport(System.UInt32,System.String,System.Byte[],System.Boolean)", InvokeUserCode_CmdReport__UInt32__String__Byte_005B_005D__Boolean, requiresAuthority: true);
 	}
 
@@ -286,85 +286,85 @@ public class CheaterReport : NetworkBehaviour
 
 	protected void UserCode_CmdReport__UInt32__String__Byte_005B_005D__Boolean(uint playerNetId, string reason, byte[] signature, bool notifyGm)
 	{
-		if (!_commandRateLimit.CanExecute() || reason == null)
+		if (!this._commandRateLimit.CanExecute() || reason == null)
 		{
 			return;
 		}
-		float num = Time.time - _lastReport;
+		float num = Time.time - this._lastReport;
 		if (num < 2f)
 		{
-			_hub.gameConsoleTransmission.SendToClient("[REPORTING] Reporting rate limit exceeded (1).", "red");
+			this._hub.gameConsoleTransmission.SendToClient("[REPORTING] Reporting rate limit exceeded (1).", "red");
 			return;
 		}
 		if (num > 60f)
 		{
-			_reportedPlayersAmount = 0;
+			this._reportedPlayersAmount = 0;
 		}
-		if (_reportedPlayersAmount > 5)
+		if (this._reportedPlayersAmount > 5)
 		{
-			_hub.gameConsoleTransmission.SendToClient("[REPORTING] Reporting rate limit exceeded (2).", "red");
+			this._hub.gameConsoleTransmission.SendToClient("[REPORTING] Reporting rate limit exceeded (2).", "red");
 			return;
 		}
 		if (notifyGm && (!CustomNetworkManager.IsVerified || string.IsNullOrEmpty(ServerConsole.Password)))
 		{
-			_hub.gameConsoleTransmission.SendToClient("[REPORTING] Server is not verified - you can't use report feature on this server.", "red");
+			this._hub.gameConsoleTransmission.SendToClient("[REPORTING] Server is not verified - you can't use report feature on this server.", "red");
 			return;
 		}
 		if (!ReferenceHub.TryGetHubNetID(playerNetId, out var hub))
 		{
-			_hub.gameConsoleTransmission.SendToClient("[REPORTING] Can't find player with that PlayerID.", "red");
+			this._hub.gameConsoleTransmission.SendToClient("[REPORTING] Can't find player with that PlayerID.", "red");
 			return;
 		}
 		PlayerAuthenticationManager reportedPam = hub.authManager;
-		if (_reportedPlayers == null)
+		if (this._reportedPlayers == null)
 		{
-			_reportedPlayers = new HashSet<uint>();
+			this._reportedPlayers = new HashSet<uint>();
 		}
-		if (_reportedPlayers.Contains(playerNetId))
+		if (this._reportedPlayers.Contains(playerNetId))
 		{
-			_hub.gameConsoleTransmission.SendToClient("[REPORTING] You have already reported that player.", "red");
+			this._hub.gameConsoleTransmission.SendToClient("[REPORTING] You have already reported that player.", "red");
 			return;
 		}
 		if (string.IsNullOrEmpty(reportedPam.UserId))
 		{
-			_hub.gameConsoleTransmission.SendToClient("[REPORTING] Failed: User ID of reported player is null.", "red");
+			this._hub.gameConsoleTransmission.SendToClient("[REPORTING] Failed: User ID of reported player is null.", "red");
 			return;
 		}
-		if (string.IsNullOrEmpty(_hub.authManager.UserId))
+		if (string.IsNullOrEmpty(this._hub.authManager.UserId))
 		{
-			_hub.gameConsoleTransmission.SendToClient("[REPORTING] Failed: your User ID of is null.", "red");
+			this._hub.gameConsoleTransmission.SendToClient("[REPORTING] Failed: your User ID of is null.", "red");
 			return;
 		}
-		if (_hub.authManager.UserId == reportedPam.UserId)
+		if (this._hub.authManager.UserId == reportedPam.UserId)
 		{
-			_hub.gameConsoleTransmission.SendToClient("[REPORTING] You can't report yourself!" + Environment.NewLine, "yellow");
+			this._hub.gameConsoleTransmission.SendToClient("[REPORTING] You can't report yourself!" + Environment.NewLine, "yellow");
 			return;
 		}
 		string reportedNickname = hub.nicknameSync.MyNick;
 		if (!notifyGm)
 		{
-			PlayerReportingPlayerEventArgs playerReportingPlayerEventArgs = new PlayerReportingPlayerEventArgs(_hub, hub, reason);
-			PlayerEvents.OnReportingPlayer(playerReportingPlayerEventArgs);
-			if (!playerReportingPlayerEventArgs.IsAllowed)
+			PlayerReportingPlayerEventArgs e = new PlayerReportingPlayerEventArgs(this._hub, hub, reason);
+			PlayerEvents.OnReportingPlayer(e);
+			if (!e.IsAllowed)
 			{
 				return;
 			}
-			reason = playerReportingPlayerEventArgs.Reason;
-			GameCore.Console.AddLog("Player " + _hub.LoggedNameFromRefHub() + " reported player " + hub.LoggedNameFromRefHub() + " with reason " + reason + ".", Color.gray);
-			_hub.gameConsoleTransmission.SendToClient("[REPORTING] Player report successfully sent to local administrators.", "green");
-			SendStaffChatNotification(_hub.authManager.UserId, reportedPam.UserId, reason, _hub.nicknameSync.MyNick, reportedNickname);
-			if (SendReportsByWebhooks)
+			reason = e.Reason;
+			GameCore.Console.AddLog("Player " + this._hub.LoggedNameFromRefHub() + " reported player " + hub.LoggedNameFromRefHub() + " with reason " + reason + ".", Color.gray);
+			this._hub.gameConsoleTransmission.SendToClient("[REPORTING] Player report successfully sent to local administrators.", "green");
+			this.SendStaffChatNotification(this._hub.authManager.UserId, reportedPam.UserId, reason, this._hub.nicknameSync.MyNick, reportedNickname);
+			if (CheaterReport.SendReportsByWebhooks)
 			{
 				Thread thread = new Thread((ThreadStart)delegate
 				{
-					LogReport(_hub.gameConsoleTransmission, _hub.authManager.UserId, reportedPam.UserId, ref reason, playerNetId, notifyGm: false, _hub.nicknameSync.MyNick, reportedNickname);
+					this.LogReport(this._hub.gameConsoleTransmission, this._hub.authManager.UserId, reportedPam.UserId, ref reason, playerNetId, notifyGm: false, this._hub.nicknameSync.MyNick, reportedNickname);
 				});
 				thread.Priority = System.Threading.ThreadPriority.Lowest;
 				thread.IsBackground = true;
-				thread.Name = "Reporting player (locally) - " + reportedPam.UserId + " by " + _hub.authManager.UserId;
+				thread.Name = "Reporting player (locally) - " + reportedPam.UserId + " by " + this._hub.authManager.UserId;
 				thread.Start();
 			}
-			PlayerEvents.OnReportedPlayer(new PlayerReportedPlayerEventArgs(_hub, hub, reason));
+			PlayerEvents.OnReportedPlayer(new PlayerReportedPlayerEventArgs(this._hub, hub, reason));
 		}
 		else
 		{
@@ -372,29 +372,29 @@ public class CheaterReport : NetworkBehaviour
 			{
 				return;
 			}
-			if (!ECDSA.VerifyBytes(reportedPam.SyncedUserId + ";" + ConvertToLatin(reason), signature, _hub.authManager.AuthenticationResponse.PublicKey))
+			if (!ECDSA.VerifyBytes(reportedPam.SyncedUserId + ";" + CheaterReport.ConvertToLatin(reason), signature, this._hub.authManager.AuthenticationResponse.PublicKey))
 			{
-				_hub.gameConsoleTransmission.SendToClient("[REPORTING] Invalid report signature.", "red");
+				this._hub.gameConsoleTransmission.SendToClient("[REPORTING] Invalid report signature.", "red");
 				return;
 			}
-			PlayerReportingCheaterEventArgs playerReportingCheaterEventArgs = new PlayerReportingCheaterEventArgs(_hub, hub, reason);
-			PlayerEvents.OnReportingCheater(playerReportingCheaterEventArgs);
-			if (playerReportingCheaterEventArgs.IsAllowed)
+			PlayerReportingCheaterEventArgs e2 = new PlayerReportingCheaterEventArgs(this._hub, hub, reason);
+			PlayerEvents.OnReportingCheater(e2);
+			if (e2.IsAllowed)
 			{
-				reason = playerReportingCheaterEventArgs.Reason;
-				_lastReport = Time.time;
-				_reportedPlayersAmount++;
-				GameCore.Console.AddLog("Player " + _hub.LoggedNameFromRefHub() + " reported player " + hub.LoggedNameFromRefHub() + " with reason " + reason + ". Sending report to Global Moderation.", Color.gray);
-				SendStaffChatNotification(_hub.authManager.UserId, reportedPam.UserId, reason, _hub.nicknameSync.MyNick, reportedNickname);
+				reason = e2.Reason;
+				this._lastReport = Time.time;
+				this._reportedPlayersAmount++;
+				GameCore.Console.AddLog("Player " + this._hub.LoggedNameFromRefHub() + " reported player " + hub.LoggedNameFromRefHub() + " with reason " + reason + ". Sending report to Global Moderation.", Color.gray);
+				this.SendStaffChatNotification(this._hub.authManager.UserId, reportedPam.UserId, reason, this._hub.nicknameSync.MyNick, reportedNickname);
 				Thread thread2 = new Thread((ThreadStart)delegate
 				{
-					IssueReport(_hub.gameConsoleTransmission, _hub.authManager.UserId, reportedPam.UserId, reportedPam.GetAuthToken(), reportedPam.connectionToClient.address, _hub.authManager.GetAuthToken(), _hub.connectionToClient.address, ref reason, ref signature, ECDSA.KeyToString(_hub.authManager.AuthenticationResponse.PublicKey), playerNetId, _hub.nicknameSync.MyNick, reportedNickname);
+					this.IssueReport(this._hub.gameConsoleTransmission, this._hub.authManager.UserId, reportedPam.UserId, reportedPam.GetAuthToken(), reportedPam.connectionToClient.address, this._hub.authManager.GetAuthToken(), this._hub.connectionToClient.address, ref reason, ref signature, ECDSA.KeyToString(this._hub.authManager.AuthenticationResponse.PublicKey), playerNetId, this._hub.nicknameSync.MyNick, reportedNickname);
 				});
 				thread2.Priority = System.Threading.ThreadPriority.Lowest;
 				thread2.IsBackground = true;
-				thread2.Name = "Reporting player - " + reportedPam.UserId + " by " + _hub.authManager.UserId;
+				thread2.Name = "Reporting player - " + reportedPam.UserId + " by " + this._hub.authManager.UserId;
 				thread2.Start();
-				PlayerEvents.OnReportedCheater(new PlayerReportedCheaterEventArgs(_hub, hub, reason));
+				PlayerEvents.OnReportedCheater(new PlayerReportedCheaterEventArgs(this._hub, hub, reason));
 			}
 		}
 	}

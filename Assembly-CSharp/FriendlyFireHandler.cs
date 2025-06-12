@@ -16,21 +16,21 @@ internal class FriendlyFireHandler
 
 	internal FriendlyFireHandler(ReferenceHub hub)
 	{
-		Round = new RoundFriendlyFireDetector(hub);
-		Life = new LifeFriendlyFireDetector(hub);
-		Window = new WindowFriendlyFireDetector(hub);
-		Respawn = new RespawnFriendlyFireDetector(hub);
-		if (!_eventsAssigned)
+		this.Round = new RoundFriendlyFireDetector(hub);
+		this.Life = new LifeFriendlyFireDetector(hub);
+		this.Window = new WindowFriendlyFireDetector(hub);
+		this.Respawn = new RespawnFriendlyFireDetector(hub);
+		if (!FriendlyFireHandler._eventsAssigned)
 		{
 			PlayerStats.OnAnyPlayerDamaged += OnAnyDamaged;
 			PlayerStats.OnAnyPlayerDied += OnAnyDied;
-			_eventsAssigned = true;
+			FriendlyFireHandler._eventsAssigned = true;
 		}
 	}
 
 	private static void OnAnyDied(ReferenceHub deadPlayer, DamageHandlerBase handler)
 	{
-		if (!IsFriendlyFire(deadPlayer, handler, out var attackerHandler))
+		if (!FriendlyFireHandler.IsFriendlyFire(deadPlayer, handler, out var attackerHandler))
 		{
 			return;
 		}
@@ -50,7 +50,7 @@ internal class FriendlyFireHandler
 
 	private static void OnAnyDamaged(ReferenceHub damagedPlayer, DamageHandlerBase handler)
 	{
-		if (!IsFriendlyFire(damagedPlayer, handler, out var attackerHandler))
+		if (!FriendlyFireHandler.IsFriendlyFire(damagedPlayer, handler, out var attackerHandler))
 		{
 			return;
 		}

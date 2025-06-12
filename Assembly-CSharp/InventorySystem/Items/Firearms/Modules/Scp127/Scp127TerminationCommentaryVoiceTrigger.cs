@@ -42,14 +42,14 @@ public class Scp127TerminationCommentaryVoiceTrigger : Scp127CassieBasedVoiceTri
 
 	protected override bool TryIdentifyLine(NineTailedFoxAnnouncer.VoiceLine line)
 	{
-		return line.clip == _cassieContainedSuccessfullyClip;
+		return line.clip == this._cassieContainedSuccessfullyClip;
 	}
 
 	private void ServerPlayScheduled()
 	{
-		if (_scheduledCollection != null && _scheduledCollection.Length != 0)
+		if (this._scheduledCollection != null && this._scheduledCollection.Length != 0)
 		{
-			ServerPlayVoiceLine(_scheduledCollection.RandomItem());
+			base.ServerPlayVoiceLine(this._scheduledCollection.RandomItem());
 		}
 	}
 
@@ -60,18 +60,18 @@ public class Scp127TerminationCommentaryVoiceTrigger : Scp127CassieBasedVoiceTri
 			return;
 		}
 		RoleTypeId roleId = hub.GetRoleId();
-		TerminationCommentary[] commentary = _commentary;
+		TerminationCommentary[] commentary = this._commentary;
 		for (int i = 0; i < commentary.Length; i++)
 		{
 			TerminationCommentary terminationCommentary = commentary[i];
 			if (terminationCommentary.Role == roleId)
 			{
-				_scheduledCollection = terminationCommentary.Lines;
-				ServerScheduleEvent(ServerPlayScheduled);
+				this._scheduledCollection = terminationCommentary.Lines;
+				base.ServerScheduleEvent(ServerPlayScheduled);
 				return;
 			}
 		}
-		_scheduledCollection = _genericLines;
-		ServerScheduleEvent(ServerPlayScheduled);
+		this._scheduledCollection = this._genericLines;
+		base.ServerScheduleEvent(ServerPlayScheduled);
 	}
 }

@@ -11,7 +11,7 @@ public sealed class AuthenticatiorAuthRejectFormatter : IJsonFormatter<Authentic
 
 	public AuthenticatiorAuthRejectFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("Id"),
@@ -22,7 +22,7 @@ public sealed class AuthenticatiorAuthRejectFormatter : IJsonFormatter<Authentic
 				1
 			}
 		};
-		____stringByteKeys = new byte[2][]
+		this.____stringByteKeys = new byte[2][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("Id"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("Reason")
@@ -31,9 +31,9 @@ public sealed class AuthenticatiorAuthRejectFormatter : IJsonFormatter<Authentic
 
 	public void Serialize(ref JsonWriter writer, AuthenticatiorAuthReject value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.Id);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.Reason);
 		writer.WriteEndObject();
 	}
@@ -51,7 +51,7 @@ public sealed class AuthenticatiorAuthRejectFormatter : IJsonFormatter<Authentic
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

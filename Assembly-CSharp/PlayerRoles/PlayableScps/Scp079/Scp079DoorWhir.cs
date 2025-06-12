@@ -39,9 +39,9 @@ public class Scp079DoorWhir
 	{
 		get
 		{
-			if (_door != null && _lockChanger.LockedDoor == _door)
+			if (this._door != null && this._lockChanger.LockedDoor == this._door)
 			{
-				return !_lockChanger.Role.Pooled;
+				return !this._lockChanger.Role.Pooled;
 			}
 			return false;
 		}
@@ -49,25 +49,25 @@ public class Scp079DoorWhir
 
 	public Scp079DoorWhir(Scp079Role scp079, AudioClip whirSound)
 	{
-		scp079.SubroutineModule.TryGetSubroutine<Scp079DoorLockChanger>(out _lockChanger);
-		scp079.SubroutineModule.TryGetSubroutine<Scp079AuxManager>(out _auxManager);
-		_door = _lockChanger.LockedDoor;
+		scp079.SubroutineModule.TryGetSubroutine<Scp079DoorLockChanger>(out this._lockChanger);
+		scp079.SubroutineModule.TryGetSubroutine<Scp079AuxManager>(out this._auxManager);
+		this._door = this._lockChanger.LockedDoor;
 		StaticUnityMethods.OnUpdate += OnUpdate;
-		_whirSrc = AudioSourcePoolManager.CreateNewSource().Source;
-		AudioSourcePoolManager.ApplyStandardSettings(_whirSrc, whirSound, FalloffType.Exponential, MixerChannel.NoDucking, 1f, 15f);
-		_whirSrc.transform.position = _door.transform.position;
-		_whirSrc.loop = true;
-		_whirSrc.volume = 0f;
-		_whirSrc.Play();
-		_active = true;
-		_startAux = 5f;
+		this._whirSrc = AudioSourcePoolManager.CreateNewSource().Source;
+		AudioSourcePoolManager.ApplyStandardSettings(this._whirSrc, whirSound, FalloffType.Exponential, MixerChannel.NoDucking, 1f, 15f);
+		this._whirSrc.transform.position = this._door.transform.position;
+		this._whirSrc.loop = true;
+		this._whirSrc.volume = 0f;
+		this._whirSrc.Play();
+		this._active = true;
+		this._startAux = 5f;
 	}
 
 	private void OnUpdate()
 	{
 		try
 		{
-			UpdateAudioSource();
+			this.UpdateAudioSource();
 		}
 		catch (Exception exception)
 		{
@@ -77,56 +77,56 @@ public class Scp079DoorWhir
 
 	private void UpdateAudioSource()
 	{
-		if (_deactivating || !Valid)
+		if (this._deactivating || !this.Valid)
 		{
-			_deactivating = true;
-			MuteSource();
+			this._deactivating = true;
+			this.MuteSource();
 			return;
 		}
-		if (_door.TargetState)
+		if (this._door.TargetState)
 		{
-			MuteSource();
+			this.MuteSource();
 			return;
 		}
-		if (_whirSrc.volume == 0f)
+		if (this._whirSrc.volume == 0f)
 		{
-			_startAux = Mathf.Max(_auxManager.CurrentAuxFloored, 5f);
+			this._startAux = Mathf.Max(this._auxManager.CurrentAuxFloored, 5f);
 		}
-		float b = Mathf.Lerp(1.8f, 0.9f, (float)_auxManager.CurrentAuxFloored / _startAux);
-		_whirSrc.pitch = Mathf.Lerp(_whirSrc.pitch, b, Time.deltaTime * 2f);
-		_whirSrc.volume += 0.7f * Time.deltaTime;
+		float b = Mathf.Lerp(1.8f, 0.9f, (float)this._auxManager.CurrentAuxFloored / this._startAux);
+		this._whirSrc.pitch = Mathf.Lerp(this._whirSrc.pitch, b, Time.deltaTime * 2f);
+		this._whirSrc.volume += 0.7f * Time.deltaTime;
 	}
 
 	private void MuteSource()
 	{
-		if (_whirSrc == null)
+		if (this._whirSrc == null)
 		{
-			Destruct();
+			this.Destruct();
 			return;
 		}
-		_whirSrc.volume -= 0.7f * Time.deltaTime;
-		_whirSrc.pitch = Mathf.Lerp(_whirSrc.pitch, 0.5f, Time.deltaTime * 2f);
-		if (_deactivating && _whirSrc.volume <= 0f)
+		this._whirSrc.volume -= 0.7f * Time.deltaTime;
+		this._whirSrc.pitch = Mathf.Lerp(this._whirSrc.pitch, 0.5f, Time.deltaTime * 2f);
+		if (this._deactivating && this._whirSrc.volume <= 0f)
 		{
-			Destruct();
+			this.Destruct();
 		}
 	}
 
 	private void Destruct()
 	{
-		if (_active)
+		if (this._active)
 		{
-			_active = false;
+			this._active = false;
 			StaticUnityMethods.OnUpdate -= OnUpdate;
-			if (!(_whirSrc == null) && !(_whirSrc.gameObject == null))
+			if (!(this._whirSrc == null) && !(this._whirSrc.gameObject == null))
 			{
-				UnityEngine.Object.Destroy(_whirSrc.gameObject);
+				UnityEngine.Object.Destroy(this._whirSrc.gameObject);
 			}
 		}
 	}
 
 	~Scp079DoorWhir()
 	{
-		Destruct();
+		this.Destruct();
 	}
 }

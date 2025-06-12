@@ -16,13 +16,13 @@ public class CrashDetector : MonoBehaviour
 
 	private void Awake()
 	{
-		if (image == null)
+		if (this.image == null)
 		{
 			Object.Destroy(this);
 			return;
 		}
-		singleton = this;
-		base.gameObject.SetActive(Show());
+		CrashDetector.singleton = this;
+		base.gameObject.SetActive(this.Show());
 	}
 
 	public bool Show()

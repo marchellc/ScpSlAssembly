@@ -32,15 +32,15 @@ public class Scp079ForwardCameraSelector : Scp079DirectionalCameraSelector, IPoo
 
 	private void OnCameraChanged()
 	{
-		if (!_switchRequested)
+		if (!this._switchRequested)
 		{
 			return;
 		}
-		_switchRequested = false;
-		if (!(base.CurrentCamSync.CurrentCamera != _requestedCamera) && !(_requestTimer.Elapsed.TotalSeconds > 4.0))
+		this._switchRequested = false;
+		if (!(base.CurrentCamSync.CurrentCamera != this._requestedCamera) && !(this._requestTimer.Elapsed.TotalSeconds > 4.0))
 		{
-			CameraRotationAxis horizontalAxis = _requestedCamera.HorizontalAxis;
-			float num = (horizontalAxis.TargetValue + _requestedRotation - horizontalAxis.Pivot.eulerAngles.y) % 360f;
+			CameraRotationAxis horizontalAxis = this._requestedCamera.HorizontalAxis;
+			float num = (horizontalAxis.TargetValue + this._requestedRotation - horizontalAxis.Pivot.eulerAngles.y) % 360f;
 			float minValue = horizontalAxis.MinValue;
 			float maxValue = horizontalAxis.MaxValue;
 			if (num > maxValue || num < minValue)
@@ -56,12 +56,12 @@ public class Scp079ForwardCameraSelector : Scp079DirectionalCameraSelector, IPoo
 	protected override bool TryGetCamera(out Scp079Camera targetCamera)
 	{
 		bool flag = false;
-		float num = _minDot;
+		float num = this._minDot;
 		targetCamera = null;
 		Scp079Camera currentCamera = base.CurrentCamSync.CurrentCamera;
 		Vector3 position = MainCameraController.CurrentCamera.position;
 		Vector3 forward = MainCameraController.CurrentCamera.forward;
-		float num2 = _maxDistance * _maxDistance;
+		float num2 = this._maxDistance * this._maxDistance;
 		foreach (CameraOvercon visibleOvercon in CameraOverconRenderer.VisibleOvercons)
 		{
 			if (visibleOvercon == currentCamera)
@@ -73,7 +73,7 @@ public class Scp079ForwardCameraSelector : Scp079DirectionalCameraSelector, IPoo
 			if (!(sqrMagnitude < 0.2f) && !(sqrMagnitude > num2))
 			{
 				float num3 = Vector3.Dot(forward, vector / Mathf.Sqrt(sqrMagnitude));
-				if (!(num3 < num) && (!visibleOvercon.IsElevator || !(num3 < _elevatorSwitchDot.Evaluate(sqrMagnitude))))
+				if (!(num3 < num) && (!visibleOvercon.IsElevator || !(num3 < this._elevatorSwitchDot.Evaluate(sqrMagnitude))))
 				{
 					flag = true;
 					num = num3;
@@ -83,23 +83,23 @@ public class Scp079ForwardCameraSelector : Scp079DirectionalCameraSelector, IPoo
 		}
 		if (flag || base.TryGetCamera(out targetCamera))
 		{
-			HighlightedCamera = targetCamera;
+			Scp079ForwardCameraSelector.HighlightedCamera = targetCamera;
 			return true;
 		}
-		HighlightedCamera = null;
+		Scp079ForwardCameraSelector.HighlightedCamera = null;
 		return false;
 	}
 
 	protected override void Trigger()
 	{
-		if (TryGetCamera(out _requestedCamera) && _requestedCamera.Room != base.CurrentCamSync.CurrentCamera.Room)
+		if (this.TryGetCamera(out this._requestedCamera) && this._requestedCamera.Room != base.CurrentCamSync.CurrentCamera.Room)
 		{
-			Transform obj = _requestedCamera.Room.transform;
+			Transform obj = this._requestedCamera.Room.transform;
 			Transform transform = base.CurrentCamSync.CurrentCamera.Room.transform;
 			Vector3 to = obj.position - transform.position;
-			_requestedRotation = Vector3.SignedAngle(Vector3.forward, to, Vector3.up);
-			_switchRequested = true;
-			_requestTimer.Restart();
+			this._requestedRotation = Vector3.SignedAngle(Vector3.forward, to, Vector3.up);
+			this._switchRequested = true;
+			this._requestTimer.Restart();
 		}
 		base.Trigger();
 	}
@@ -113,6 +113,6 @@ public class Scp079ForwardCameraSelector : Scp079DirectionalCameraSelector, IPoo
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_switchRequested = false;
+		this._switchRequested = false;
 	}
 }

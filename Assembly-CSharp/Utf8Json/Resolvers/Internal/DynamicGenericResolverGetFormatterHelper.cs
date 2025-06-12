@@ -105,11 +105,11 @@ internal static class DynamicGenericResolverGetFormatterHelper
 			Type type = (flag ? typeInfo.GenericTypeArguments[0] : null);
 			if (genericTypeDefinition == typeof(KeyValuePair<, >))
 			{
-				return CreateInstance(typeof(KeyValuePairFormatter<, >), typeInfo.GenericTypeArguments);
+				return DynamicGenericResolverGetFormatterHelper.CreateInstance(typeof(KeyValuePairFormatter<, >), typeInfo.GenericTypeArguments);
 			}
 			if (flag && type.GetTypeInfo().IsConstructedGenericType() && type.GetGenericTypeDefinition() == typeof(KeyValuePair<, >))
 			{
-				return CreateInstance(typeof(NullableFormatter<>), new Type[1] { type });
+				return DynamicGenericResolverGetFormatterHelper.CreateInstance(typeof(NullableFormatter<>), new Type[1] { type });
 			}
 			if (genericTypeDefinition == typeof(ArraySegment<>))
 			{
@@ -117,7 +117,7 @@ internal static class DynamicGenericResolverGetFormatterHelper
 				{
 					return ByteArraySegmentFormatter.Default;
 				}
-				return CreateInstance(typeof(ArraySegmentFormatter<>), typeInfo.GenericTypeArguments);
+				return DynamicGenericResolverGetFormatterHelper.CreateInstance(typeof(ArraySegmentFormatter<>), typeInfo.GenericTypeArguments);
 			}
 			if (flag && type.GetTypeInfo().IsConstructedGenericType() && type.GetGenericTypeDefinition() == typeof(ArraySegment<>))
 			{
@@ -125,22 +125,22 @@ internal static class DynamicGenericResolverGetFormatterHelper
 				{
 					return new StaticNullableFormatter<ArraySegment<byte>>(ByteArraySegmentFormatter.Default);
 				}
-				return CreateInstance(typeof(NullableFormatter<>), new Type[1] { type });
+				return DynamicGenericResolverGetFormatterHelper.CreateInstance(typeof(NullableFormatter<>), new Type[1] { type });
 			}
-			if (formatterMap.TryGetValue(genericTypeDefinition, out var value))
+			if (DynamicGenericResolverGetFormatterHelper.formatterMap.TryGetValue(genericTypeDefinition, out var value))
 			{
-				return CreateInstance(value, typeInfo.GenericTypeArguments);
+				return DynamicGenericResolverGetFormatterHelper.CreateInstance(value, typeInfo.GenericTypeArguments);
 			}
 			if (typeInfo.GenericTypeArguments.Length == 1 && typeInfo.ImplementedInterfaces.Any((Type x) => x.GetTypeInfo().IsConstructedGenericType() && x.GetGenericTypeDefinition() == typeof(ICollection<>)) && typeInfo.DeclaredConstructors.Any((ConstructorInfo x) => x.GetParameters().Length == 0))
 			{
 				Type type2 = typeInfo.GenericTypeArguments[0];
-				return CreateInstance(typeof(GenericCollectionFormatter<, >), new Type[2] { type2, t });
+				return DynamicGenericResolverGetFormatterHelper.CreateInstance(typeof(GenericCollectionFormatter<, >), new Type[2] { type2, t });
 			}
 			if (typeInfo.GenericTypeArguments.Length == 2 && typeInfo.ImplementedInterfaces.Any((Type x) => x.GetTypeInfo().IsConstructedGenericType() && x.GetGenericTypeDefinition() == typeof(IDictionary<, >)) && typeInfo.DeclaredConstructors.Any((ConstructorInfo x) => x.GetParameters().Length == 0))
 			{
 				Type type3 = typeInfo.GenericTypeArguments[0];
 				Type type4 = typeInfo.GenericTypeArguments[1];
-				return CreateInstance(typeof(GenericDictionaryFormatter<, , >), new Type[3] { type3, type4, t });
+				return DynamicGenericResolverGetFormatterHelper.CreateInstance(typeof(GenericDictionaryFormatter<, , >), new Type[3] { type3, type4, t });
 			}
 		}
 		else

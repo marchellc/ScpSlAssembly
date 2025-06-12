@@ -15,40 +15,40 @@ internal class ArrayPool<T>
 	public ArrayPool(int bufferLength)
 	{
 		this.bufferLength = bufferLength;
-		buffers = new T[4][];
-		gate = new object();
+		this.buffers = new T[4][];
+		this.gate = new object();
 	}
 
 	public T[] Rent()
 	{
-		lock (gate)
+		lock (this.gate)
 		{
-			if (index >= buffers.Length)
+			if (this.index >= this.buffers.Length)
 			{
-				Array.Resize(ref buffers, buffers.Length * 2);
+				Array.Resize(ref this.buffers, this.buffers.Length * 2);
 			}
-			if (buffers[index] == null)
+			if (this.buffers[this.index] == null)
 			{
-				buffers[index] = new T[bufferLength];
+				this.buffers[this.index] = new T[this.bufferLength];
 			}
-			T[] result = buffers[index];
-			buffers[index] = null;
-			index++;
+			T[] result = this.buffers[this.index];
+			this.buffers[this.index] = null;
+			this.index++;
 			return result;
 		}
 	}
 
 	public void Return(T[] array)
 	{
-		if (array.Length != bufferLength)
+		if (array.Length != this.bufferLength)
 		{
 			throw new InvalidOperationException("return buffer is not from pool");
 		}
-		lock (gate)
+		lock (this.gate)
 		{
-			if (index != 0)
+			if (this.index != 0)
 			{
-				buffers[--index] = array;
+				this.buffers[--this.index] = array;
 			}
 		}
 	}

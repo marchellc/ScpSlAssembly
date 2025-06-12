@@ -31,15 +31,15 @@ public class Scp096RageCycleAbility : KeySubroutine<Scp096Role>, IPoolResettable
 
 	private float _timeToChangeState;
 
-	public float HudEnterRageSustain => Mathf.InverseLerp(0.4f, 9.8f, _activationTime.Remaining);
+	public float HudEnterRageSustain => Mathf.InverseLerp(0.4f, 9.8f, this._activationTime.Remaining);
 
-	public float HudEnterRageKeyProgress => Mathf.Clamp01(_holdingRageCycleKey / 0.4f);
+	public float HudEnterRageKeyProgress => Mathf.Clamp01(this._holdingRageCycleKey / 0.4f);
 
 	public bool CanStartCycle
 	{
 		get
 		{
-			if (!_activationTime.IsReady)
+			if (!this._activationTime.IsReady)
 			{
 				return base.CastRole.IsRageState(Scp096RageState.Docile);
 			}
@@ -53,68 +53,68 @@ public class Scp096RageCycleAbility : KeySubroutine<Scp096Role>, IPoolResettable
 
 	public bool ServerTryEnableInput(float duration = 10f)
 	{
-		_activationTime.Trigger(duration);
-		ServerSendRpc(toAll: true);
+		this._activationTime.Trigger(duration);
+		base.ServerSendRpc(toAll: true);
 		return true;
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		if (CanStartCycle)
+		if (this.CanStartCycle)
 		{
-			_rageManager.ServerEnrage();
+			this._rageManager.ServerEnrage();
 		}
-		else if (CanEndCycle)
+		else if (this.CanEndCycle)
 		{
-			_rageManager.ServerEndEnrage();
+			this._rageManager.ServerEndEnrage();
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		_activationTime.WriteCooldown(writer);
+		this._activationTime.WriteCooldown(writer);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_activationTime.ReadCooldown(reader);
+		this._activationTime.ReadCooldown(reader);
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_activationTime.Clear();
-		_holdingRageCycleKey = 0f;
+		this._activationTime.Clear();
+		this._holdingRageCycleKey = 0f;
 	}
 
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		_wantsToToggle = true;
+		this._wantsToToggle = true;
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		base.CastRole.SubroutineModule.TryGetSubroutine<Scp096TargetsTracker>(out _targetsTracker);
-		base.CastRole.SubroutineModule.TryGetSubroutine<Scp096RageManager>(out _rageManager);
+		base.CastRole.SubroutineModule.TryGetSubroutine<Scp096TargetsTracker>(out this._targetsTracker);
+		base.CastRole.SubroutineModule.TryGetSubroutine<Scp096RageManager>(out this._rageManager);
 		Scp096TargetsTracker.OnTargetAdded += AddTarget;
-		_targetsTracker.OnTargetAttacked += delegate(ReferenceHub targetedHub)
+		this._targetsTracker.OnTargetAttacked += delegate(ReferenceHub targetedHub)
 		{
-			AddTarget(base.Owner, targetedHub);
+			this.AddTarget(base.Owner, targetedHub);
 		};
 		base.CastRole.StateController.OnRageUpdate += delegate(Scp096RageState newState)
 		{
 			switch (newState)
 			{
 			case Scp096RageState.Calming:
-				_timeToChangeState = 5f;
+				this._timeToChangeState = 5f;
 				break;
 			case Scp096RageState.Distressed:
-				_timeToChangeState = 6.1f;
+				this._timeToChangeState = 6.1f;
 				break;
 			}
 		};
@@ -123,29 +123,29 @@ public class Scp096RageCycleAbility : KeySubroutine<Scp096Role>, IPoolResettable
 	protected override void Update()
 	{
 		base.Update();
-		if (_wantsToToggle)
+		if (this._wantsToToggle)
 		{
-			UpdateKeyHeld();
+			this.UpdateKeyHeld();
 		}
 		if (NetworkServer.active)
 		{
-			UpdateServerside();
+			this.UpdateServerside();
 		}
 	}
 
 	private void UpdateKeyHeld()
 	{
-		if ((!CanEndCycle && !CanStartCycle) || !IsKeyHeld)
+		if ((!this.CanEndCycle && !this.CanStartCycle) || !this.IsKeyHeld)
 		{
-			_holdingRageCycleKey = 0f;
-			_wantsToToggle = false;
+			this._holdingRageCycleKey = 0f;
+			this._wantsToToggle = false;
 			return;
 		}
-		_holdingRageCycleKey += Time.deltaTime;
-		if (_holdingRageCycleKey >= 0.4f)
+		this._holdingRageCycleKey += Time.deltaTime;
+		if (this._holdingRageCycleKey >= 0.4f)
 		{
-			ClientSendCmd();
-			_holdingRageCycleKey = 0f;
+			base.ClientSendCmd();
+			this._holdingRageCycleKey = 0f;
 		}
 	}
 
@@ -156,31 +156,31 @@ public class Scp096RageCycleAbility : KeySubroutine<Scp096Role>, IPoolResettable
 		case Scp096RageState.Enraged:
 			return;
 		case Scp096RageState.Distressed:
-			_timeToChangeState -= Time.deltaTime;
-			if (_timeToChangeState < 0f)
+			this._timeToChangeState -= Time.deltaTime;
+			if (this._timeToChangeState < 0f)
 			{
 				base.CastRole.StateController.SetRageState(Scp096RageState.Enraged);
 			}
 			return;
 		case Scp096RageState.Calming:
-			_timeToChangeState -= Time.deltaTime;
-			if (_timeToChangeState < 0f)
+			this._timeToChangeState -= Time.deltaTime;
+			if (this._timeToChangeState < 0f)
 			{
 				base.CastRole.StateController.SetRageState(Scp096RageState.Docile);
 			}
 			return;
 		}
-		foreach (ReferenceHub target in _targetsTracker.Targets)
+		foreach (ReferenceHub target in this._targetsTracker.Targets)
 		{
-			if (_targetsTracker.IsObservedBy(target))
+			if (this._targetsTracker.IsObservedBy(target))
 			{
-				ServerTryEnableInput();
+				this.ServerTryEnableInput();
 			}
 		}
-		if (_activationTime.IsReady && _targetsTracker.Targets.Count > 0)
+		if (this._activationTime.IsReady && this._targetsTracker.Targets.Count > 0)
 		{
-			_targetsTracker.ClearAllTargets();
-			ServerSendRpc(toAll: true);
+			this._targetsTracker.ClearAllTargets();
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
@@ -188,7 +188,7 @@ public class Scp096RageCycleAbility : KeySubroutine<Scp096Role>, IPoolResettable
 	{
 		if (NetworkServer.active && !(ownerHub != base.Owner))
 		{
-			ServerTryEnableInput();
+			this.ServerTryEnableInput();
 		}
 	}
 }

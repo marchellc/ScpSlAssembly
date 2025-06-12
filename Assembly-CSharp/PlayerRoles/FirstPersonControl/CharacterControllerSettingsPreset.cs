@@ -21,12 +21,12 @@ public class CharacterControllerSettingsPreset : ScriptableObject
 
 	public void Apply(CharacterController charCtrl)
 	{
-		charCtrl.slopeLimit = SlopeLimit;
-		charCtrl.stepOffset = StepOffset;
-		charCtrl.skinWidth = SkinWidth;
-		charCtrl.minMoveDistance = MinMoveDistance;
-		charCtrl.center = Center;
-		charCtrl.radius = Radius;
-		charCtrl.height = Height;
+		charCtrl.slopeLimit = this.SlopeLimit;
+		charCtrl.stepOffset = this.StepOffset;
+		charCtrl.skinWidth = this.SkinWidth;
+		charCtrl.minMoveDistance = this.MinMoveDistance;
+		charCtrl.center = this.Center;
+		charCtrl.radius = this.Radius;
+		charCtrl.height = this.Height;
 	}
 }

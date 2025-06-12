@@ -11,17 +11,17 @@ internal sealed class CommentsPropertyDescriptor : IPropertyDescriptor
 
 	public string Name { get; set; }
 
-	public Type Type => _baseDescriptor.Type;
+	public Type Type => this._baseDescriptor.Type;
 
 	public Type TypeOverride
 	{
 		get
 		{
-			return _baseDescriptor.TypeOverride;
+			return this._baseDescriptor.TypeOverride;
 		}
 		set
 		{
-			_baseDescriptor.TypeOverride = value;
+			this._baseDescriptor.TypeOverride = value;
 		}
 	}
 
@@ -31,39 +31,39 @@ internal sealed class CommentsPropertyDescriptor : IPropertyDescriptor
 	{
 		get
 		{
-			return _baseDescriptor.ScalarStyle;
+			return this._baseDescriptor.ScalarStyle;
 		}
 		set
 		{
-			_baseDescriptor.ScalarStyle = value;
+			this._baseDescriptor.ScalarStyle = value;
 		}
 	}
 
-	public bool CanWrite => _baseDescriptor.CanWrite;
+	public bool CanWrite => this._baseDescriptor.CanWrite;
 
 	public CommentsPropertyDescriptor(IPropertyDescriptor baseDescriptor)
 	{
-		_baseDescriptor = baseDescriptor;
-		Name = baseDescriptor.Name;
+		this._baseDescriptor = baseDescriptor;
+		this.Name = baseDescriptor.Name;
 	}
 
 	public void Write(object target, object value)
 	{
-		_baseDescriptor.Write(target, value);
+		this._baseDescriptor.Write(target, value);
 	}
 
 	public T GetCustomAttribute<T>() where T : Attribute
 	{
-		return _baseDescriptor.GetCustomAttribute<T>();
+		return this._baseDescriptor.GetCustomAttribute<T>();
 	}
 
 	public IObjectDescriptor Read(object target)
 	{
-		DescriptionAttribute customAttribute = _baseDescriptor.GetCustomAttribute<DescriptionAttribute>();
+		DescriptionAttribute customAttribute = this._baseDescriptor.GetCustomAttribute<DescriptionAttribute>();
 		if (customAttribute == null)
 		{
-			return _baseDescriptor.Read(target);
+			return this._baseDescriptor.Read(target);
 		}
-		return new CommentsObjectDescriptor(_baseDescriptor.Read(target), customAttribute.Description);
+		return new CommentsObjectDescriptor(this._baseDescriptor.Read(target), customAttribute.Description);
 	}
 }

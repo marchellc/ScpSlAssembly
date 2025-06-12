@@ -16,38 +16,38 @@ public class CachedValue<T>
 	{
 		get
 		{
-			if (IsDirty || (_usesChecker && _updateChecker()))
+			if (this.IsDirty || (this._usesChecker && this._updateChecker()))
 			{
-				RefreshValue();
+				this.RefreshValue();
 			}
-			return _cachedValue;
+			return this._cachedValue;
 		}
 	}
 
-	public bool IsDirty => !_cacheSet;
+	public bool IsDirty => !this._cacheSet;
 
 	public CachedValue(Func<T> factory)
 	{
-		_factory = factory;
-		_usesChecker = false;
-		_updateChecker = null;
+		this._factory = factory;
+		this._usesChecker = false;
+		this._updateChecker = null;
 	}
 
 	public CachedValue(Func<T> factory, Func<bool> checker)
 	{
-		_factory = factory;
-		_usesChecker = true;
-		_updateChecker = checker;
+		this._factory = factory;
+		this._usesChecker = true;
+		this._updateChecker = checker;
 	}
 
 	public void RefreshValue()
 	{
-		_cacheSet = true;
-		_cachedValue = _factory();
+		this._cacheSet = true;
+		this._cachedValue = this._factory();
 	}
 
 	public void SetDirty()
 	{
-		_cacheSet = false;
+		this._cacheSet = false;
 	}
 }

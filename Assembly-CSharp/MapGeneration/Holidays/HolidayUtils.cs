@@ -8,11 +8,11 @@ public static class HolidayUtils
 
 	public static HolidayType GetActiveHoliday(bool mustBeForced = false, bool ignoreServerConfig = false)
 	{
-		if (!ignoreServerConfig && !HolidaysEnabled)
+		if (!ignoreServerConfig && !HolidayUtils.HolidaysEnabled)
 		{
 			return HolidayType.None;
 		}
-		if (mustBeForced || Version.ActiveHoliday != 0)
+		if (mustBeForced || Version.ActiveHoliday != HolidayType.None)
 		{
 			return Version.ActiveHoliday;
 		}
@@ -21,7 +21,7 @@ public static class HolidayUtils
 
 	public static bool IsHolidayActive(HolidayType holiday, bool mustBeForced = false, bool ignoreServerConfig = false)
 	{
-		return GetActiveHoliday(mustBeForced, ignoreServerConfig) == holiday;
+		return HolidayUtils.GetActiveHoliday(mustBeForced, ignoreServerConfig) == holiday;
 	}
 
 	public static bool IsAnyHolidayActive(this HolidayType[] holidays, bool mustBeForced = false, bool ignoreServerConfig = false)
@@ -32,7 +32,7 @@ public static class HolidayUtils
 		}
 		for (int i = 0; i < holidays.Length; i++)
 		{
-			if (IsHolidayActive(holidays[i], mustBeForced, ignoreServerConfig))
+			if (HolidayUtils.IsHolidayActive(holidays[i], mustBeForced, ignoreServerConfig))
 			{
 				return true;
 			}
@@ -42,7 +42,7 @@ public static class HolidayUtils
 
 	public static bool IsAnyHolidayActive(bool mustBeForced = false, bool ignoreServerConfig = false)
 	{
-		return GetActiveHoliday(mustBeForced, ignoreServerConfig) != HolidayType.None;
+		return HolidayUtils.GetActiveHoliday(mustBeForced, ignoreServerConfig) != HolidayType.None;
 	}
 
 	public static bool TryGetResult<TArray, TValue>(this TArray[] holidayData, out TValue result) where TArray : IHolidayFetchableData<TValue>
@@ -54,7 +54,7 @@ public static class HolidayUtils
 		}
 		foreach (IHolidayFetchableData<TValue> holidayFetchableData in holidayData)
 		{
-			if (IsHolidayActive(holidayFetchableData.Holiday))
+			if (HolidayUtils.IsHolidayActive(holidayFetchableData.Holiday))
 			{
 				result = holidayFetchableData.Result;
 				return true;

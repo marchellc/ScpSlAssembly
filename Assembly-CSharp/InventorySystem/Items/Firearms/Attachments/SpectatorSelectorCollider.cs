@@ -21,7 +21,7 @@ public class SpectatorSelectorCollider : MonoBehaviour, IAttachmentSelectorButto
 
 	private AttachmentSlot _mySlot;
 
-	public RectTransform RectTransform => _image.rectTransform;
+	public RectTransform RectTransform => this._image.rectTransform;
 
 	public byte ButtonId { get; set; }
 
@@ -30,35 +30,35 @@ public class SpectatorSelectorCollider : MonoBehaviour, IAttachmentSelectorButto
 		if (icon != null)
 		{
 			Vector2 sizeDelta = new Vector2(icon.width, icon.height);
-			_firearm = fa;
-			_mySlot = slot;
-			_image.texture = icon;
-			_image.rectTransform.sizeDelta = sizeDelta;
+			this._firearm = fa;
+			this._mySlot = slot;
+			this._image.texture = icon;
+			this._image.rectTransform.sizeDelta = sizeDelta;
 			if (pos.HasValue)
 			{
-				_image.rectTransform.localPosition = pos.Value;
+				this._image.rectTransform.localPosition = pos.Value;
 			}
 		}
 		else
 		{
-			_image.rectTransform.sizeDelta = Vector2.zero;
+			this._image.rectTransform.sizeDelta = Vector2.zero;
 		}
 	}
 
 	public void Click()
 	{
-		_selector.ProcessCollider(ButtonId);
+		this._selector.ProcessCollider(this.ButtonId);
 	}
 
 	public void Hover(bool isHovering)
 	{
 		if (isHovering)
 		{
-			_selector.ShowStats(ButtonId);
+			this._selector.ShowStats(this.ButtonId);
 		}
 		else
 		{
-			_selector.ShowStats(-1);
+			this._selector.ShowStats(-1);
 		}
 	}
 
@@ -66,8 +66,8 @@ public class SpectatorSelectorCollider : MonoBehaviour, IAttachmentSelectorButto
 	{
 		if (base.gameObject.activeSelf)
 		{
-			bool flag = slot == _mySlot || (_firearm != null && ButtonId < _firearm.Attachments.Length && _firearm.Attachments[ButtonId].IsEnabled);
-			_image.color = Color.Lerp(_image.color, Color.Lerp(Color.black, Color.white, flag ? 1f : 0.7f), 12f * Time.deltaTime);
+			bool flag = slot == this._mySlot || (this._firearm != null && this.ButtonId < this._firearm.Attachments.Length && this._firearm.Attachments[this.ButtonId].IsEnabled);
+			this._image.color = Color.Lerp(this._image.color, Color.Lerp(Color.black, Color.white, flag ? 1f : 0.7f), 12f * Time.deltaTime);
 		}
 	}
 }

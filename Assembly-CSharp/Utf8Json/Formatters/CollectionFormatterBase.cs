@@ -15,7 +15,7 @@ public abstract class CollectionFormatterBase<TElement, TIntermediate, TEnumerat
 		}
 		writer.WriteBeginArray();
 		IJsonFormatter<TElement> formatterWithVerify = formatterResolver.GetFormatterWithVerify<TElement>();
-		TEnumerator sourceEnumerator = GetSourceEnumerator(value);
+		TEnumerator sourceEnumerator = this.GetSourceEnumerator(value);
 		try
 		{
 			bool flag = true;
@@ -46,31 +46,31 @@ public abstract class CollectionFormatterBase<TElement, TIntermediate, TEnumerat
 			return null;
 		}
 		IJsonFormatter<TElement> formatterWithVerify = formatterResolver.GetFormatterWithVerify<TElement>();
-		TIntermediate collection = Create();
+		TIntermediate collection = this.Create();
 		int count = 0;
 		reader.ReadIsBeginArrayWithVerify();
 		while (!reader.ReadIsEndArrayWithSkipValueSeparator(ref count))
 		{
-			Add(ref collection, count - 1, formatterWithVerify.Deserialize(ref reader, formatterResolver));
+			this.Add(ref collection, count - 1, formatterWithVerify.Deserialize(ref reader, formatterResolver));
 		}
-		return Complete(ref collection);
+		return this.Complete(ref collection);
 	}
 
 	public void DeserializeTo(ref TCollection value, ref JsonReader reader, IJsonFormatterResolver formatterResolver)
 	{
-		if (!SupportedOverwriteBehaviour.HasValue)
+		if (!this.SupportedOverwriteBehaviour.HasValue)
 		{
-			value = Deserialize(ref reader, formatterResolver);
+			value = this.Deserialize(ref reader, formatterResolver);
 		}
 		else if (!reader.ReadIsNull())
 		{
 			IJsonFormatter<TElement> formatterWithVerify = formatterResolver.GetFormatterWithVerify<TElement>();
-			ClearOnOverwriteDeserialize(ref value);
+			this.ClearOnOverwriteDeserialize(ref value);
 			int count = 0;
 			reader.ReadIsBeginArrayWithVerify();
 			while (!reader.ReadIsEndArrayWithSkipValueSeparator(ref count))
 			{
-				AddOnOverwriteDeserialize(ref value, count - 1, formatterWithVerify.Deserialize(ref reader, formatterResolver));
+				this.AddOnOverwriteDeserialize(ref value, count - 1, formatterWithVerify.Deserialize(ref reader, formatterResolver));
 			}
 		}
 	}

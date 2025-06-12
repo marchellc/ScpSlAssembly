@@ -32,12 +32,12 @@ public class DebugScreenController : MonoBehaviour
 	{
 		UnityEngine.Object.DontDestroyOnLoad(base.gameObject);
 		Application.logMessageReceivedThreaded += LogMessage;
-		Log();
+		DebugScreenController.Log();
 	}
 
 	private static void Log()
 	{
-		if (!_logged)
+		if (!DebugScreenController._logged)
 		{
 			Debug.Log("Time: " + TimeBehaviour.Rfc3339Time() + "\nGPU: " + SystemInfo.graphicsDeviceName + "\nGPU Driver version: " + GpuDriver.DriverVersion + "\nVRAM: " + SystemInfo.graphicsMemorySize + "MB\nShaderLevel: " + SystemInfo.graphicsShaderLevel.ToString().Insert(1, ".") + "\nVendor: " + SystemInfo.graphicsDeviceVendor + "\nAPI: " + SystemInfo.graphicsDeviceType.ToString() + "\nInfo: " + SystemInfo.graphicsDeviceVersion + "\nResolution: " + Screen.width + "x" + Screen.height + "\nFPS Limit: " + Application.targetFrameRate + "\nFullscreen: " + Screen.fullScreenMode.ToString() + "\nCPU: " + SystemInfo.processorType + "\nThreads: " + SystemInfo.processorCount + "\nFrequency: " + SystemInfo.processorFrequency + "MHz\nRAM: " + SystemInfo.systemMemorySize + "MB\nAudio Supported: " + SystemInfo.supportsAudio + "\nOS: " + NorthwoodLib.OperatingSystem.VersionString + "\nUnity: " + Application.unityVersion + "\nFramework: " + Misc.GetRuntimeVersion() + "\nIL2CPP: " + PlatformInfo.singleton.IsIl2Cpp + "\nVersion: " + GameCore.Version.VersionString + "\nBuild: " + Application.buildGUID + "\nSystem Language: " + CultureInfo.CurrentCulture.EnglishName + " (" + CultureInfo.CurrentCulture.Name + ")\nGame Language: " + UserSetting<string>.Get(UISetting.Language, "en") + "\nLaunch arguments: " + Environment.CommandLine);
 			Debug.Log(BuildInfoCommand.BuildInfoString);
@@ -53,13 +53,13 @@ public class DebugScreenController : MonoBehaviour
 		switch (type)
 		{
 		case LogType.Assert:
-			Interlocked.Increment(ref Asserts);
+			Interlocked.Increment(ref DebugScreenController.Asserts);
 			break;
 		case LogType.Error:
-			Interlocked.Increment(ref Errors);
+			Interlocked.Increment(ref DebugScreenController.Errors);
 			break;
 		case LogType.Exception:
-			Interlocked.Increment(ref Exceptions);
+			Interlocked.Increment(ref DebugScreenController.Exceptions);
 			break;
 		case LogType.Warning:
 		case LogType.Log:

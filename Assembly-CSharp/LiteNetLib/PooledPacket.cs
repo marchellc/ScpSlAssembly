@@ -10,14 +10,14 @@ public readonly ref struct PooledPacket
 
 	public readonly int UserDataOffset;
 
-	public byte[] Data => _packet.RawData;
+	public byte[] Data => this._packet.RawData;
 
 	internal PooledPacket(NetPacket packet, int maxDataSize, byte channelNumber)
 	{
-		_packet = packet;
-		UserDataOffset = _packet.GetHeaderSize();
-		_packet.Size = UserDataOffset;
-		MaxUserDataSize = maxDataSize - UserDataOffset;
-		_channelNumber = channelNumber;
+		this._packet = packet;
+		this.UserDataOffset = this._packet.GetHeaderSize();
+		this._packet.Size = this.UserDataOffset;
+		this.MaxUserDataSize = maxDataSize - this.UserDataOffset;
+		this._channelNumber = channelNumber;
 	}
 }

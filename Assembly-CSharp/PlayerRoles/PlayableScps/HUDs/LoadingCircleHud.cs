@@ -28,12 +28,12 @@ public class LoadingCircleHud
 	public void Apply(float percent, bool forceHide = false)
 	{
 		percent = Mathf.Clamp01(percent);
-		bool flag = forceHide || (percent == 1f && _hideWhenFull) || (percent == 0f && _hideWhenEmpty);
-		_parent.SetActive(!flag);
+		bool flag = forceHide || (percent == 1f && this._hideWhenFull) || (percent == 0f && this._hideWhenEmpty);
+		this._parent.SetActive(!flag);
 		if (!flag)
 		{
-			_loadingBar.fillAmount = (_inverseFill ? (1f - percent) : percent);
-			_loadingBar.color = _colorGradient.Evaluate(percent);
+			this._loadingBar.fillAmount = (this._inverseFill ? (1f - percent) : percent);
+			this._loadingBar.color = this._colorGradient.Evaluate(percent);
 		}
 	}
 }

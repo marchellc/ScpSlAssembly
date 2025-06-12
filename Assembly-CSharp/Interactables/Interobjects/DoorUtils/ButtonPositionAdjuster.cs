@@ -20,18 +20,18 @@ public class ButtonPositionAdjuster : MonoBehaviour
 
 		public readonly void DetectAndSetPosition()
 		{
-			RaycastSettings[] raycastsByPriority = RaycastsByPriority;
+			RaycastSettings[] raycastsByPriority = this.RaycastsByPriority;
 			for (int i = 0; i < raycastsByPriority.Length; i++)
 			{
 				RaycastSettings raycastSettings = raycastsByPriority[i];
 				Transform raycastOriginDir = raycastSettings.RaycastOriginDir;
 				Vector3 position = raycastOriginDir.position;
 				Vector3 forward = raycastOriginDir.forward;
-				if (Physics.Raycast(position, forward, out var hitInfo, raycastSettings.MaxDistance, WallMask) && !(Vector3.Dot(forward, -hitInfo.normal) < 0.6f))
+				if (Physics.Raycast(position, forward, out var hitInfo, raycastSettings.MaxDistance, SettingsButtonPair.WallMask) && !(Vector3.Dot(forward, -hitInfo.normal) < 0.6f))
 				{
-					Vector3 position2 = hitInfo.point + hitInfo.normal * ForwardOffset;
-					Quaternion rotation = Quaternion.LookRotation(hitInfo.normal) * Quaternion.Euler(ButtonRotation);
-					Button.SetPositionAndRotation(position2, rotation);
+					Vector3 position2 = hitInfo.point + hitInfo.normal * this.ForwardOffset;
+					Quaternion rotation = Quaternion.LookRotation(hitInfo.normal) * Quaternion.Euler(this.ButtonRotation);
+					this.Button.SetPositionAndRotation(position2, rotation);
 					break;
 				}
 			}
@@ -53,10 +53,10 @@ public class ButtonPositionAdjuster : MonoBehaviour
 
 	private void Awake()
 	{
-		IRoomConnector component = GetComponent<IRoomConnector>();
+		IRoomConnector component = base.GetComponent<IRoomConnector>();
 		if (component.RoomsAlreadyRegistered)
 		{
-			SetButtonsPositions();
+			this.SetButtonsPositions();
 		}
 		else
 		{
@@ -66,7 +66,7 @@ public class ButtonPositionAdjuster : MonoBehaviour
 
 	private void SetButtonsPositions()
 	{
-		SettingsButtonPair[] buttons = _buttons;
+		SettingsButtonPair[] buttons = this._buttons;
 		foreach (SettingsButtonPair settingsButtonPair in buttons)
 		{
 			settingsButtonPair.DetectAndSetPosition();

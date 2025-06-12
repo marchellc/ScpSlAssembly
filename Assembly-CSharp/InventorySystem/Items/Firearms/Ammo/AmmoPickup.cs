@@ -37,18 +37,18 @@ public class AmmoPickup : ItemPickupBase
 
 	private ushort _prevAmmo;
 
-	public int MaxAmmo => _maxDisplayedValue;
+	public int MaxAmmo => this._maxDisplayedValue;
 
 	public ushort NetworkSavedAmmo
 	{
 		get
 		{
-			return SavedAmmo;
+			return this.SavedAmmo;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref SavedAmmo, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this.SavedAmmo, 2uL, null);
 		}
 	}
 
@@ -59,14 +59,14 @@ public class AmmoPickup : ItemPickupBase
 
 	private Material GetDigitMaterial(int digit)
 	{
-		if (!DigitMaterials.TryGetValue(Info.ItemId, out var value))
+		if (!AmmoPickup.DigitMaterials.TryGetValue(base.Info.ItemId, out var value))
 		{
 			value = new Dictionary<int, Material>();
-			DigitMaterials.Add(Info.ItemId, value);
+			AmmoPickup.DigitMaterials.Add(base.Info.ItemId, value);
 		}
 		if (!value.TryGetValue(digit, out var value2))
 		{
-			value2 = new Material(_targetDigitMaterial)
+			value2 = new Material(this._targetDigitMaterial)
 			{
 				mainTextureOffset = Vector2.up * digit / 10f
 			};
@@ -77,31 +77,31 @@ public class AmmoPickup : ItemPickupBase
 
 	private void Update()
 	{
-		if (_roundingValue == 0 || SavedAmmo == _prevAmmo)
+		if (this._roundingValue == 0 || this.SavedAmmo == this._prevAmmo)
 		{
 			return;
 		}
 		int i;
-		for (i = Mathf.Clamp(SavedAmmo, _minDisplayedValue, _maxDisplayedValue); i % _roundingValue != 0; i++)
+		for (i = Mathf.Clamp(this.SavedAmmo, this._minDisplayedValue, this._maxDisplayedValue); i % this._roundingValue != 0; i++)
 		{
 		}
-		Material digitMaterial = GetDigitMaterial(Mathf.FloorToInt((float)i / 10f));
-		Material digitMaterial2 = GetDigitMaterial(i % 10);
-		Renderer[] firstDigits = _firstDigits;
+		Material digitMaterial = this.GetDigitMaterial(Mathf.FloorToInt((float)i / 10f));
+		Material digitMaterial2 = this.GetDigitMaterial(i % 10);
+		Renderer[] firstDigits = this._firstDigits;
 		foreach (Renderer renderer in firstDigits)
 		{
 			renderer.sharedMaterial = digitMaterial;
-			if (_hideFirstDigitBelow10)
+			if (this._hideFirstDigitBelow10)
 			{
 				renderer.gameObject.SetActive(i >= 10);
 			}
 		}
-		firstDigits = _secondDigits;
+		firstDigits = this._secondDigits;
 		for (int j = 0; j < firstDigits.Length; j++)
 		{
 			firstDigits[j].sharedMaterial = digitMaterial2;
 		}
-		_prevAmmo = SavedAmmo;
+		this._prevAmmo = this.SavedAmmo;
 	}
 
 	public override bool Weaved()
@@ -114,13 +114,13 @@ public class AmmoPickup : ItemPickupBase
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteUShort(SavedAmmo);
+			writer.WriteUShort(this.SavedAmmo);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteUShort(SavedAmmo);
+			writer.WriteUShort(this.SavedAmmo);
 		}
 	}
 
@@ -129,13 +129,13 @@ public class AmmoPickup : ItemPickupBase
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref SavedAmmo, null, reader.ReadUShort());
+			base.GeneratedSyncVarDeserialize(ref this.SavedAmmo, null, reader.ReadUShort());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref SavedAmmo, null, reader.ReadUShort());
+			base.GeneratedSyncVarDeserialize(ref this.SavedAmmo, null, reader.ReadUShort());
 		}
 	}
 }

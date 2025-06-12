@@ -10,8 +10,8 @@ internal class GetSpecificPortMappingEntryRequestMessage : RequestMessageBase
 
 	public GetSpecificPortMappingEntryRequestMessage(NetworkProtocolType networkProtocolType, int externalPort)
 	{
-		_networkProtocolType = networkProtocolType;
-		_externalPort = externalPort;
+		this._networkProtocolType = networkProtocolType;
+		this._externalPort = externalPort;
 	}
 
 	public override IDictionary<string, object> ToXml()
@@ -22,10 +22,10 @@ internal class GetSpecificPortMappingEntryRequestMessage : RequestMessageBase
 				"NewRemoteHost",
 				string.Empty
 			},
-			{ "NewExternalPort", _externalPort },
+			{ "NewExternalPort", this._externalPort },
 			{
 				"NewProtocol",
-				(_networkProtocolType == NetworkProtocolType.Tcp) ? "TCP" : "UDP"
+				(this._networkProtocolType == NetworkProtocolType.Tcp) ? "TCP" : "UDP"
 			}
 		};
 	}

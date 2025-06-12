@@ -22,37 +22,37 @@ public abstract class SSExampleImplementationBase
 
 	public static bool TryActivateExample(int index, out string message)
 	{
-		if (!AllExamples.TryGet(index, out var element))
+		if (!SSExampleImplementationBase.AllExamples.TryGet(index, out var element))
 		{
 			message = $"Index {index} out of range.";
 			return false;
 		}
-		if (_activeExample == element)
+		if (SSExampleImplementationBase._activeExample == element)
 		{
 			message = "This example is already active. Use the 'stop' argument to deactivate.";
 			return false;
 		}
-		if (_activeExample != null)
+		if (SSExampleImplementationBase._activeExample != null)
 		{
 			message = "Another example is already active. Use the 'stop' argument to deactivate.";
 			return false;
 		}
-		_activeExample = element;
-		_activeExample.Activate();
+		SSExampleImplementationBase._activeExample = element;
+		SSExampleImplementationBase._activeExample.Activate();
 		message = element.Name + " activated.";
 		return true;
 	}
 
 	public static bool TryDeactivateExample(out string disabledName)
 	{
-		if (_activeExample == null)
+		if (SSExampleImplementationBase._activeExample == null)
 		{
 			disabledName = null;
 			return false;
 		}
-		disabledName = _activeExample.Name;
-		_activeExample.Deactivate();
-		_activeExample = null;
+		disabledName = SSExampleImplementationBase._activeExample.Name;
+		SSExampleImplementationBase._activeExample.Deactivate();
+		SSExampleImplementationBase._activeExample = null;
 		ServerSpecificSettingsSync.DefinedSettings = null;
 		ServerSpecificSettingsSync.SendToAll();
 		return true;

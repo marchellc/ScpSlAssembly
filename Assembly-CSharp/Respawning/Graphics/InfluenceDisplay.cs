@@ -13,7 +13,7 @@ public class InfluenceDisplay : SerializedWaveInterface
 	{
 		base.Awake();
 		Faction targetFaction = base.Wave.TargetFaction;
-		UpdateDisplay(targetFaction, FactionInfluenceManager.Get(targetFaction));
+		this.UpdateDisplay(targetFaction, FactionInfluenceManager.Get(targetFaction));
 		FactionInfluenceManager.InfluenceModified += UpdateDisplay;
 	}
 
@@ -28,11 +28,11 @@ public class InfluenceDisplay : SerializedWaveInterface
 		{
 			if (!RespawnTokensManager.TryGetNextThreshold(faction, newValue, out var threshold))
 			{
-				_influence.text = "MAX";
+				this._influence.text = "MAX";
 			}
 			else
 			{
-				_influence.text = $"{newValue}/{threshold}";
+				this._influence.text = $"{newValue}/{threshold}";
 			}
 		}
 	}

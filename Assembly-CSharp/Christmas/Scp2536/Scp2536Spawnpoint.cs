@@ -19,18 +19,18 @@ public class Scp2536Spawnpoint : MonoBehaviour
 	{
 		if (NetworkServer.active)
 		{
-			_eventAssigned = true;
-			Spawnpoints.Add(this);
+			this._eventAssigned = true;
+			Scp2536Spawnpoint.Spawnpoints.Add(this);
 			SeedSynchronizer.OnGenerationFinished += OnGen;
 		}
 	}
 
 	private void OnDestroy()
 	{
-		if (_eventAssigned)
+		if (this._eventAssigned)
 		{
-			Spawnpoints.Remove(this);
-			_eventAssigned = false;
+			Scp2536Spawnpoint.Spawnpoints.Remove(this);
+			this._eventAssigned = false;
 			SeedSynchronizer.OnGenerationFinished -= OnGen;
 		}
 	}
@@ -38,7 +38,7 @@ public class Scp2536Spawnpoint : MonoBehaviour
 	private void OnGen()
 	{
 		Transform transform = base.transform;
-		Position = transform.position;
-		Rotation = transform.rotation;
+		this.Position = transform.position;
+		this.Rotation = transform.rotation;
 	}
 }

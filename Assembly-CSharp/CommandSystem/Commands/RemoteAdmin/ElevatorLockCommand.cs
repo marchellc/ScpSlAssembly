@@ -29,16 +29,16 @@ public class ElevatorLockCommand : ICommand
 		switch (arguments.Count)
 		{
 		case 1:
-			return TrySetLock(arguments.At(0), locked: true, out response, sender, -1);
+			return ElevatorLockCommand.TrySetLock(arguments.At(0), locked: true, out response, sender, -1);
 		case 2:
 		{
 			if (arguments.At(1).Equals("d", StringComparison.OrdinalIgnoreCase) || arguments.At(1).Equals("dynamic", StringComparison.OrdinalIgnoreCase))
 			{
-				return TrySetLock(arguments.At(0), locked: true, out response, sender, -2);
+				return ElevatorLockCommand.TrySetLock(arguments.At(0), locked: true, out response, sender, -2);
 			}
 			if (int.TryParse(arguments.At(1), out var result) && result >= 0)
 			{
-				return TrySetLock(arguments.At(0), locked: true, out response, sender, result);
+				return ElevatorLockCommand.TrySetLock(arguments.At(0), locked: true, out response, sender, result);
 			}
 			break;
 		}
@@ -56,7 +56,7 @@ public class ElevatorLockCommand : ICommand
 				response = "Elevator \"" + elevatorId + "\" not found.";
 				return false;
 			}
-			if (!SetLock(locked, sender, group, level))
+			if (!ElevatorLockCommand.SetLock(locked, sender, group, level))
 			{
 				response = $"Could not update lock status for elevator \"{group}\".";
 				return false;
@@ -71,7 +71,7 @@ public class ElevatorLockCommand : ICommand
 			ElevatorGroup[] values = EnumUtils<ElevatorGroup>.Values;
 			foreach (ElevatorGroup elevatorGroup in values)
 			{
-				if (SetLock(locked, sender, elevatorGroup, level))
+				if (ElevatorLockCommand.SetLock(locked, sender, elevatorGroup, level))
 				{
 					stringBuilder.AppendFormat("Elevator \"{0}\" has been {1}.\n", elevatorGroup, locked ? "locked" : "unlocked");
 					continue;
@@ -102,7 +102,7 @@ public class ElevatorLockCommand : ICommand
 		switch (level)
 		{
 		case -1:
-			return SetLockAll(doorsForGroup, forceLock, sender, elevatorGroup, chamber);
+			return ElevatorLockCommand.SetLockAll(doorsForGroup, forceLock, sender, elevatorGroup, chamber);
 		case -2:
 			if (chamber.DynamicAdminLock)
 			{

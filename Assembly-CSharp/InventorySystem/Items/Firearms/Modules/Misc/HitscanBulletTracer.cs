@@ -50,11 +50,11 @@ public class HitscanBulletTracer : TracerBase
 	{
 		get
 		{
-			if (!(_stopwatch.Elapsed.TotalSeconds < (double)_minimalDuration))
+			if (!(this._stopwatch.Elapsed.TotalSeconds < (double)this._minimalDuration))
 			{
-				if (_supportsWhizz)
+				if (this._supportsWhizz)
 				{
-					return _whizzHandler.IsPlaying;
+					return this._whizzHandler.IsPlaying;
 				}
 				return false;
 			}
@@ -71,15 +71,15 @@ public class HitscanBulletTracer : TracerBase
 	protected override void OnCreated()
 	{
 		base.OnCreated();
-		_tr = base.transform;
-		_supportsWhizz = TryGetComponent<BulletWhizzHandler>(out _whizzHandler);
-		_stopwatch = Stopwatch.StartNew();
+		this._tr = base.transform;
+		this._supportsWhizz = base.TryGetComponent<BulletWhizzHandler>(out this._whizzHandler);
+		this._stopwatch = Stopwatch.StartNew();
 	}
 
 	protected override void OnDequeued()
 	{
 		base.OnDequeued();
-		_stopwatch.Restart();
+		this._stopwatch.Restart();
 	}
 
 	protected override void OnFired(NetworkReader reader)
@@ -91,16 +91,16 @@ public class HitscanBulletTracer : TracerBase
 		Vector3 worldspacePosition = wp.GetWorldspacePosition(base.RelativeHitPosition.Relative);
 		bool flag = !HitboxIdentity.IsEnemy(hub.GetTeam(), (Team)reader.ReadByte());
 		Vector3 position = MainCameraController.CurrentCamera.position;
-		if (global::Misc.TryGetClosestLineSegment(base.OriginPosition, worldspacePosition, position, 1f, 15f, out var newStart, out var newEnd, out var closestPointOnLine, out var normalizedDir) && ValidateRandom(Mathf.Abs(normalizedDir.y), flag, base.Template.FirearmCategory))
+		if (global::Misc.TryGetClosestLineSegment(base.OriginPosition, worldspacePosition, position, 1f, 15f, out var newStart, out var newEnd, out var closestPointOnLine, out var normalizedDir) && HitscanBulletTracer.ValidateRandom(Mathf.Abs(normalizedDir.y), flag, base.Template.FirearmCategory))
 		{
-			_vfx.SetVector3(TracerOriginHash, newStart - newEnd);
-			_vfx.SetBool(TracerFriendlyHash, flag);
-			_vfx.Play();
-			_tr.SetPositionAndRotation(newEnd, Quaternion.identity);
-			_tr.SetParent(wp.transform);
-			if (!flag && _supportsWhizz && !((closestPointOnLine - position).sqrMagnitude > 25f))
+			this._vfx.SetVector3(HitscanBulletTracer.TracerOriginHash, newStart - newEnd);
+			this._vfx.SetBool(HitscanBulletTracer.TracerFriendlyHash, flag);
+			this._vfx.Play();
+			this._tr.SetPositionAndRotation(newEnd, Quaternion.identity);
+			this._tr.SetParent(wp.transform);
+			if (!flag && this._supportsWhizz && !((closestPointOnLine - position).sqrMagnitude > 25f))
 			{
-				_whizzHandler.Play(normalizedDir, closestPointOnLine);
+				this._whizzHandler.Play(normalizedDir, closestPointOnLine);
 			}
 		}
 	}
@@ -110,7 +110,7 @@ public class HitscanBulletTracer : TracerBase
 		float num = 1f - Mathf.InverseLerp(0.08f, 0.35f, verticalDot);
 		float num2 = (isFriendly ? 0.5f : 1f);
 		float value;
-		float num3 = (CategoryMultipliers.TryGetValue(cat, out value) ? value : 1f);
+		float num3 = (HitscanBulletTracer.CategoryMultipliers.TryGetValue(cat, out value) ? value : 1f);
 		return Random.value < num * num2 * num3;
 	}
 }

@@ -41,23 +41,23 @@ public class CardiacArrest : ParentEffectBase<SubEffectBase>, IHealableEffect, I
 		base.Enabled();
 		if (base.Hub.isLocalPlayer || base.Hub.IsLocallySpectated())
 		{
-			_dyingSoundSession = new AudioPoolSession(AudioSourcePoolManager.Play2D(_dyingSoundEffect));
+			this._dyingSoundSession = new AudioPoolSession(AudioSourcePoolManager.Play2D(this._dyingSoundEffect));
 		}
 		if (NetworkServer.active)
 		{
-			_timeTillTick = 0f;
+			this._timeTillTick = 0f;
 		}
 	}
 
 	protected override void Disabled()
 	{
 		base.Disabled();
-		_attacker = default(Footprint);
+		this._attacker = default(Footprint);
 	}
 
 	public void SetAttacker(ReferenceHub ply)
 	{
-		_attacker = new Footprint(ply);
+		this._attacker = new Footprint(ply);
 	}
 
 	public bool IsHealable(ItemType it)
@@ -73,27 +73,27 @@ public class CardiacArrest : ParentEffectBase<SubEffectBase>, IHealableEffect, I
 	{
 		if (NetworkServer.active)
 		{
-			ServerUpdate();
+			this.ServerUpdate();
 		}
-		UpdateSubEffects();
+		this.UpdateSubEffects();
 	}
 
 	public override void OnStopSpectating()
 	{
 		base.OnStopSpectating();
-		if (_dyingSoundSession.SameSession)
+		if (this._dyingSoundSession.SameSession)
 		{
-			_dyingSoundSession.Source.Stop();
+			this._dyingSoundSession.Source.Stop();
 		}
 	}
 
 	private void ServerUpdate()
 	{
-		_timeTillTick -= Time.deltaTime;
-		if (!(_timeTillTick > 0f))
+		this._timeTillTick -= Time.deltaTime;
+		if (!(this._timeTillTick > 0f))
 		{
-			_timeTillTick += TimeBetweenTicks;
-			base.Hub.playerStats.DealDamage(new Scp049DamageHandler(_attacker, 8f, Scp049DamageHandler.AttackType.CardiacArrest));
+			this._timeTillTick += this.TimeBetweenTicks;
+			base.Hub.playerStats.DealDamage(new Scp049DamageHandler(this._attacker, 8f, Scp049DamageHandler.AttackType.CardiacArrest));
 		}
 	}
 }

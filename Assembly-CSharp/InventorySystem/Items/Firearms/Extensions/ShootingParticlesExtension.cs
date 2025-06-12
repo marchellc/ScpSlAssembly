@@ -11,7 +11,7 @@ public class ShootingParticlesExtension : ShootingEffectsExtensionBase
 	protected override void Awake()
 	{
 		base.Awake();
-		ParticleCollection[] systemsPerBarrel = _systemsPerBarrel;
+		ParticleCollection[] systemsPerBarrel = this._systemsPerBarrel;
 		foreach (ParticleCollection particleCollection in systemsPerBarrel)
 		{
 			particleCollection.ConvertLights();
@@ -20,7 +20,7 @@ public class ShootingParticlesExtension : ShootingEffectsExtensionBase
 
 	protected override void PlayEffects(ShotEvent ev)
 	{
-		if (ev is IMultiBarreledShot multiBarreledShot && _systemsPerBarrel.TryGet(multiBarreledShot.BarrelId, out var element))
+		if (ev is IMultiBarreledShot multiBarreledShot && this._systemsPerBarrel.TryGet(multiBarreledShot.BarrelId, out var element))
 		{
 			element.Play();
 		}

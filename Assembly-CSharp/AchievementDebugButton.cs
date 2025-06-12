@@ -17,9 +17,9 @@ public class AchievementDebugButton : MonoBehaviour
 	{
 		get
 		{
-			if (!AchievementManager.Achievements.TryGetValue(TargetAchievement, out var value))
+			if (!AchievementManager.Achievements.TryGetValue(this.TargetAchievement, out var value))
 			{
-				throw new NullReferenceException($"Could not find achievement by name {TargetAchievement}.");
+				throw new NullReferenceException($"Could not find achievement by name {this.TargetAchievement}.");
 			}
 			return value;
 		}
@@ -29,7 +29,7 @@ public class AchievementDebugButton : MonoBehaviour
 	{
 		get
 		{
-			Achievement achievement = Achievement;
+			Achievement achievement = this.Achievement;
 			if (AchievementDebugMenu.QueuedAchievements.Contains(achievement))
 			{
 				return false;
@@ -40,33 +40,33 @@ public class AchievementDebugButton : MonoBehaviour
 
 	public void AddToQueue()
 	{
-		if (IsUnlocked)
+		if (this.IsUnlocked)
 		{
-			AchievementDebugMenu.QueuedAchievements.Enqueue(Achievement);
-			UpdateState();
+			AchievementDebugMenu.QueuedAchievements.Enqueue(this.Achievement);
+			this.UpdateState();
 		}
 	}
 
 	private void Start()
 	{
-		_nameText.text = TargetAchievement.ToString();
-		UpdateState();
+		this._nameText.text = this.TargetAchievement.ToString();
+		this.UpdateState();
 	}
 
 	private void OnEnable()
 	{
-		UpdateState();
+		this.UpdateState();
 	}
 
 	private void OnDisable()
 	{
-		UpdateState();
+		this.UpdateState();
 	}
 
 	private void UpdateState()
 	{
-		bool isUnlocked = IsUnlocked;
-		_stateText.text = (isUnlocked ? "✔" : "X");
-		_stateText.color = (isUnlocked ? Color.green : Color.red);
+		bool isUnlocked = this.IsUnlocked;
+		this._stateText.text = (isUnlocked ? "✔" : "X");
+		this._stateText.color = (isUnlocked ? Color.green : Color.red);
 	}
 }

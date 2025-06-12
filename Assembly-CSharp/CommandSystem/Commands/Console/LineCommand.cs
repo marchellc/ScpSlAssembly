@@ -23,15 +23,15 @@ public class LineCommand : ParentCommand, IUsageProvider
 
 	protected override bool ExecuteParent(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
-		response = "Unknown subcommand.\nUsage: " + Command + " " + this.DisplayCommandUsage() + ".";
+		response = "Unknown subcommand.\nUsage: " + this.Command + " " + this.DisplayCommandUsage() + ".";
 		return false;
 	}
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new LineDurationCommand());
-		RegisterCommand(new LineHelpCommand());
-		RegisterCommand(new LineTestCommand());
-		RegisterCommand(new LineToggleCommand());
+		this.RegisterCommand(new LineDurationCommand());
+		this.RegisterCommand(new LineHelpCommand());
+		this.RegisterCommand(new LineTestCommand());
+		this.RegisterCommand(new LineToggleCommand());
 	}
 }

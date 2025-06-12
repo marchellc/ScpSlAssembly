@@ -25,19 +25,19 @@ internal class DynamicMethodAnonymousFormatter<T> : IJsonFormatter<T>, IJsonForm
 
 	public void Serialize(ref JsonWriter writer, T value, IJsonFormatterResolver formatterResolver)
 	{
-		if (serialize == null)
+		if (this.serialize == null)
 		{
-			throw new InvalidOperationException(GetType().Name + " does not support Serialize.");
+			throw new InvalidOperationException(base.GetType().Name + " does not support Serialize.");
 		}
-		serialize(stringByteKeysField, serializeCustomFormatters, ref writer, value, formatterResolver);
+		this.serialize(this.stringByteKeysField, this.serializeCustomFormatters, ref writer, value, formatterResolver);
 	}
 
 	public T Deserialize(ref JsonReader reader, IJsonFormatterResolver formatterResolver)
 	{
-		if (deserialize == null)
+		if (this.deserialize == null)
 		{
-			throw new InvalidOperationException(GetType().Name + " does not support Deserialize.");
+			throw new InvalidOperationException(base.GetType().Name + " does not support Deserialize.");
 		}
-		return deserialize(deserializeCustomFormatters, ref reader, formatterResolver);
+		return this.deserialize(this.deserializeCustomFormatters, ref reader, formatterResolver);
 	}
 }

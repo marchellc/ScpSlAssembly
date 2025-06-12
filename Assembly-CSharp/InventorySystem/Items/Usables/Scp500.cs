@@ -25,7 +25,7 @@ public class Scp500 : Consumable
 			AchievementHandlerBase.ServerAchieve(base.Owner.networkIdentity.connectionToClient, AchievementName.CrisisAverted);
 		}
 		module.ServerHeal(100f);
-		ServerAddRegeneration(_healProgress, 0.1f, 100f);
+		base.ServerAddRegeneration(this._healProgress, 0.1f, 100f);
 		base.Owner.playerEffectsController.UseMedicalItem(this);
 	}
 }

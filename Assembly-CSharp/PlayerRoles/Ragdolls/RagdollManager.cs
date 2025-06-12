@@ -25,19 +25,19 @@ public static class RagdollManager
 	{
 		get
 		{
-			if (_prefabsCacheSet)
+			if (RagdollManager._prefabsCacheSet)
 			{
-				return CachedRagdollPrefabs;
+				return RagdollManager.CachedRagdollPrefabs;
 			}
 			foreach (KeyValuePair<RoleTypeId, PlayerRoleBase> allRole in PlayerRoleLoader.AllRoles)
 			{
 				if (allRole.Value is IRagdollRole ragdollRole)
 				{
-					CachedRagdollPrefabs.Add(ragdollRole.Ragdoll.netIdentity);
+					RagdollManager.CachedRagdollPrefabs.Add(ragdollRole.Ragdoll.netIdentity);
 				}
 			}
-			_prefabsCacheSet = true;
-			return CachedRagdollPrefabs;
+			RagdollManager._prefabsCacheSet = true;
+			return RagdollManager.CachedRagdollPrefabs;
 		}
 	}
 
@@ -49,13 +49,13 @@ public static class RagdollManager
 
 	internal static void OnSpawnedRagdoll(BasicRagdoll ragdoll)
 	{
-		AllRagdolls.Add(ragdoll);
+		RagdollManager.AllRagdolls.Add(ragdoll);
 		RagdollManager.OnRagdollSpawned?.Invoke(ragdoll);
 	}
 
 	internal static void OnRemovedRagdoll(BasicRagdoll ragdoll)
 	{
-		AllRagdolls.Remove(ragdoll);
+		RagdollManager.AllRagdolls.Remove(ragdoll);
 		RagdollManager.OnRagdollRemoved?.Invoke(ragdoll);
 	}
 
@@ -69,9 +69,9 @@ public static class RagdollManager
 		{
 			return null;
 		}
-		PlayerSpawningRagdollEventArgs playerSpawningRagdollEventArgs = new PlayerSpawningRagdollEventArgs(owner, ragdollRole.Ragdoll, handler);
-		PlayerEvents.OnSpawningRagdoll(playerSpawningRagdollEventArgs);
-		if (!playerSpawningRagdollEventArgs.IsAllowed)
+		PlayerSpawningRagdollEventArgs e = new PlayerSpawningRagdollEventArgs(owner, ragdollRole.Ragdoll, handler);
+		PlayerEvents.OnSpawningRagdoll(e);
+		if (!e.IsAllowed)
 		{
 			return null;
 		}
@@ -94,7 +94,7 @@ public static class RagdollManager
 		{
 			return null;
 		}
-		Vector3 defaultScale = GetDefaultScale(role);
+		Vector3 defaultScale = RagdollManager.GetDefaultScale(role);
 		scale = (scale.HasValue ? new Vector3?(Vector3.Scale(scale.Value, defaultScale)) : new Vector3?(defaultScale));
 		BasicRagdoll basicRagdoll = ragdollRole.Ragdoll.ServerInstantiateSelf(null, role);
 		basicRagdoll.NetworkInfo = new RagdollData(null, handler, role, position, rotation, scale.Value, nickname, NetworkTime.time, serial);
@@ -121,17 +121,17 @@ public static class RagdollManager
 	{
 		CustomNetworkManager.OnClientStarted += delegate
 		{
-			AllRagdollPrefabs.ForEach(RegisterPrefab);
+			RagdollManager.AllRagdollPrefabs.ForEach(RegisterPrefab);
 		};
 		UserSetting<bool>.AddListener(PerformanceVideoSetting.RagdollFreeze, delegate
 		{
-			UpdateCleanupPrefs();
+			RagdollManager.UpdateCleanupPrefs();
 		});
 		UserSetting<float>.AddListener(PerformanceVideoSetting.RagdollFreeze, delegate
 		{
-			UpdateCleanupPrefs();
+			RagdollManager.UpdateCleanupPrefs();
 		});
-		UpdateCleanupPrefs();
+		RagdollManager.UpdateCleanupPrefs();
 	}
 
 	private static void RegisterPrefab(NetworkIdentity nid)
@@ -148,6 +148,6 @@ public static class RagdollManager
 	{
 		bool num = UserSetting<bool>.Get(PerformanceVideoSetting.RagdollFreeze);
 		int num2 = Mathf.RoundToInt(UserSetting<float>.Get(PerformanceVideoSetting.RagdollFreeze));
-		FreezeTime = (num ? num2 : int.MaxValue);
+		RagdollManager.FreezeTime = (num ? num2 : int.MaxValue);
 	}
 }

@@ -8,10 +8,10 @@ public abstract class HintParameter : NetworkObject<SharedHintData>
 
 	public bool Update(float progress)
 	{
-		string text = UpdateState(progress);
+		string text = this.UpdateState(progress);
 		if (text != null)
 		{
-			Formatted = text;
+			this.Formatted = text;
 			return true;
 		}
 		return false;

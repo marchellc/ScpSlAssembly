@@ -19,13 +19,13 @@ public class SpawnablesDistributorSettings : ScriptableObject
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		_allSettings = Resources.LoadAll<SpawnablesDistributorSettings>(string.Empty);
+		SpawnablesDistributorSettings._allSettings = Resources.LoadAll<SpawnablesDistributorSettings>(string.Empty);
 		CustomNetworkManager.OnClientStarted += RegisterSpawnables;
 	}
 
 	private static void RegisterSpawnables()
 	{
-		SpawnablesDistributorSettings[] allSettings = _allSettings;
+		SpawnablesDistributorSettings[] allSettings = SpawnablesDistributorSettings._allSettings;
 		for (int i = 0; i < allSettings.Length; i++)
 		{
 			SpawnableStructure[] spawnableStructures = allSettings[i].SpawnableStructures;

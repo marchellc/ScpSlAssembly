@@ -39,20 +39,20 @@ public class ScpTicketsLoader : IDisposable
 
 	public ScpTicketsLoader()
 	{
-		if (_isBusy)
+		if (ScpTicketsLoader._isBusy)
 		{
 			throw new InvalidOperationException("Unable to load SCP ticket entries. Another ScpTicketsLoader is active or undisposed.");
 		}
-		_isBusy = true;
+		ScpTicketsLoader._isBusy = true;
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
 			string userId = allHub.authManager.UserId;
 			if (!string.IsNullOrEmpty(userId))
 			{
-				PlayersByIdHash.GetOrAdd(userId.GetHashCode(), () => new List<ReferenceHub>()).Add(allHub);
+				ScpTicketsLoader.PlayersByIdHash.GetOrAdd(userId.GetHashCode(), () => new List<ReferenceHub>()).Add(allHub);
 			}
 		}
-		LoadEntries();
+		ScpTicketsLoader.LoadEntries();
 	}
 
 	public int GetTickets(ReferenceHub hub, int defaultNumber, bool ignoreOptOut = false)
@@ -61,7 +61,7 @@ public class ScpTicketsLoader : IDisposable
 		{
 			return 0;
 		}
-		if (!EntriesByUser.TryGetValue(hub, out var value))
+		if (!ScpTicketsLoader.EntriesByUser.TryGetValue(hub, out var value))
 		{
 			return defaultNumber;
 		}
@@ -70,44 +70,44 @@ public class ScpTicketsLoader : IDisposable
 
 	public void ModifyTickets(ReferenceHub hub, int newNumber)
 	{
-		if (EntriesByUser.TryGetValue(hub, out var value))
+		if (ScpTicketsLoader.EntriesByUser.TryGetValue(hub, out var value))
 		{
-			value.LastUpdate = UnixTimeNow;
+			value.LastUpdate = ScpTicketsLoader.UnixTimeNow;
 			value.Tickets = newNumber;
 			return;
 		}
 		TicketEntry ticketEntry = new TicketEntry
 		{
 			UserId = hub.authManager.UserId,
-			LastUpdate = UnixTimeNow,
+			LastUpdate = ScpTicketsLoader.UnixTimeNow,
 			Tickets = newNumber
 		};
-		AllEntries.Add(ticketEntry);
-		EntriesByUser.Add(hub, ticketEntry);
+		ScpTicketsLoader.AllEntries.Add(ticketEntry);
+		ScpTicketsLoader.EntriesByUser.Add(hub, ticketEntry);
 	}
 
 	public void Dispose()
 	{
-		SaveEntries();
-		AllEntries.Clear();
-		EntriesByUser.Clear();
-		PlayersByIdHash.Clear();
-		_isBusy = false;
+		ScpTicketsLoader.SaveEntries();
+		ScpTicketsLoader.AllEntries.Clear();
+		ScpTicketsLoader.EntriesByUser.Clear();
+		ScpTicketsLoader.PlayersByIdHash.Clear();
+		ScpTicketsLoader._isBusy = false;
 	}
 
 	private static void SaveEntries()
 	{
-		FileManager.WriteToFile(AllEntries.Select(SerializeEntry), FilePath);
+		FileManager.WriteToFile(ScpTicketsLoader.AllEntries.Select(SerializeEntry), ScpTicketsLoader.FilePath);
 	}
 
 	private static void LoadEntries()
 	{
-		if (!File.Exists(FilePath))
+		if (!File.Exists(ScpTicketsLoader.FilePath))
 		{
 			return;
 		}
-		long unixTimeNow = UnixTimeNow;
-		using FileStream stream = new FileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+		long unixTimeNow = ScpTicketsLoader.UnixTimeNow;
+		using FileStream stream = new FileStream(ScpTicketsLoader.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
 		using StreamReader streamReader = new StreamReader(stream);
 		while (true)
 		{
@@ -116,18 +116,18 @@ public class ScpTicketsLoader : IDisposable
 			{
 				break;
 			}
-			if (TryDeserialize(text, out var entry) && entry.LastUpdate + 1296000 >= unixTimeNow)
+			if (ScpTicketsLoader.TryDeserialize(text, out var entry) && entry.LastUpdate + 1296000 >= unixTimeNow)
 			{
-				AddEntry(entry);
+				ScpTicketsLoader.AddEntry(entry);
 			}
 		}
 	}
 
 	private static void AddEntry(TicketEntry entry)
 	{
-		AllEntries.Add(entry);
+		ScpTicketsLoader.AllEntries.Add(entry);
 		int hashCode = entry.UserId.GetHashCode();
-		if (!PlayersByIdHash.TryGetValue(hashCode, out var value))
+		if (!ScpTicketsLoader.PlayersByIdHash.TryGetValue(hashCode, out var value))
 		{
 			return;
 		}
@@ -135,7 +135,7 @@ public class ScpTicketsLoader : IDisposable
 		{
 			if (!(item.authManager.UserId != entry.UserId))
 			{
-				EntriesByUser[item] = entry;
+				ScpTicketsLoader.EntriesByUser[item] = entry;
 			}
 		}
 	}

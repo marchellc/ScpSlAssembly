@@ -37,9 +37,9 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 
 		public void UpdateValue(float f)
 		{
-			Quaternion localRotation = _gauge.transform.localRotation;
-			Quaternion b = Quaternion.Euler(_mask * _values.Evaluate(f));
-			_gauge.transform.localRotation = Quaternion.Lerp(localRotation, b, Time.deltaTime * _smoothing);
+			Quaternion localRotation = this._gauge.transform.localRotation;
+			Quaternion b = Quaternion.Euler(this._mask * this._values.Evaluate(f));
+			this._gauge.transform.localRotation = Quaternion.Lerp(localRotation, b, Time.deltaTime * this._smoothing);
 		}
 	}
 
@@ -60,10 +60,10 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 		public void UpdateValue(bool b)
 		{
 			byte b2 = (byte)(b ? 1u : 2u);
-			if (b2 != _prevValue)
+			if (b2 != this._prevValue)
 			{
-				_rend.sharedMaterial = (b ? _onMat : _offMat);
-				_prevValue = b2;
+				this._rend.sharedMaterial = (b ? this._onMat : this._offMat);
+				this._prevValue = b2;
 			}
 		}
 	}
@@ -198,11 +198,11 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		get
 		{
-			return _totalActivationTime;
+			return this._totalActivationTime;
 		}
 		set
 		{
-			Network_totalActivationTime = Mathf.Max(0f, value);
+			this.Network_totalActivationTime = Mathf.Max(0f, value);
 		}
 	}
 
@@ -210,23 +210,23 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		get
 		{
-			return _totalDeactivationTime;
+			return this._totalDeactivationTime;
 		}
 		set
 		{
-			Network_totalDeactivationTime = Mathf.Max(0f, value);
+			this.Network_totalDeactivationTime = Mathf.Max(0f, value);
 		}
 	}
 
-	public float DropdownSpeed => _totalActivationTime / _totalDeactivationTime;
+	public float DropdownSpeed => this._totalActivationTime / this._totalDeactivationTime;
 
 	public bool ActivationReady
 	{
 		get
 		{
-			if (Activating)
+			if (this.Activating)
 			{
-				return _leverStopwatch.Elapsed.TotalSeconds > (double)_leverDelay;
+				return this._leverStopwatch.Elapsed.TotalSeconds > (double)this._leverDelay;
 			}
 			return false;
 		}
@@ -236,11 +236,11 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		get
 		{
-			return HasFlag(_flags, GeneratorFlags.Open);
+			return this.HasFlag(this._flags, GeneratorFlags.Open);
 		}
 		set
 		{
-			ServerSetFlag(GeneratorFlags.Open, value);
+			this.ServerSetFlag(GeneratorFlags.Open, value);
 		}
 	}
 
@@ -248,27 +248,27 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		get
 		{
-			return HasFlag(_flags, GeneratorFlags.Unlocked);
+			return this.HasFlag(this._flags, GeneratorFlags.Unlocked);
 		}
 		set
 		{
-			ServerSetFlag(GeneratorFlags.Unlocked, value);
+			this.ServerSetFlag(GeneratorFlags.Unlocked, value);
 		}
 	}
 
-	public float TimeLeft => (float)_leverStopwatch.Elapsed.TotalSeconds - _leverDelay;
+	public float TimeLeft => (float)this._leverStopwatch.Elapsed.TotalSeconds - this._leverDelay;
 
-	public float ActivationTime => _leverDelay;
+	public float ActivationTime => this._leverDelay;
 
 	public bool Engaged
 	{
 		get
 		{
-			return HasFlag(_flags, GeneratorFlags.Engaged);
+			return this.HasFlag(this._flags, GeneratorFlags.Engaged);
 		}
 		set
 		{
-			ServerSetFlag(GeneratorFlags.Engaged, value);
+			this.ServerSetFlag(GeneratorFlags.Engaged, value);
 		}
 	}
 
@@ -276,11 +276,11 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		get
 		{
-			return HasFlag(_flags, GeneratorFlags.Activating);
+			return this.HasFlag(this._flags, GeneratorFlags.Activating);
 		}
 		set
 		{
-			ServerSetFlag(GeneratorFlags.Activating, value);
+			this.ServerSetFlag(GeneratorFlags.Activating, value);
 		}
 	}
 
@@ -288,11 +288,11 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		get
 		{
-			return _syncTime;
+			return this._syncTime;
 		}
 		set
 		{
-			_currentTime = _totalActivationTime - (float)value;
+			this._currentTime = this._totalActivationTime - (float)value;
 		}
 	}
 
@@ -300,17 +300,17 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		get
 		{
-			return _requiredPermission;
+			return this._requiredPermission;
 		}
 		set
 		{
-			_requiredPermission = value;
+			this._requiredPermission = value;
 		}
 	}
 
 	public IVerificationRule VerificationRule => StandardDistanceVerification.Default;
 
-	public DoorPermissionsPolicy PermissionsPolicy => new DoorPermissionsPolicy(RequiredPermissions);
+	public DoorPermissionsPolicy PermissionsPolicy => new DoorPermissionsPolicy(this.RequiredPermissions);
 
 	[field: SerializeField]
 	public string RequesterLogSignature { get; private set; }
@@ -319,12 +319,12 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		get
 		{
-			return _totalActivationTime;
+			return this._totalActivationTime;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _totalActivationTime, 1uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._totalActivationTime, 1uL, null);
 		}
 	}
 
@@ -332,12 +332,12 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		get
 		{
-			return _totalDeactivationTime;
+			return this._totalDeactivationTime;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _totalDeactivationTime, 2uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._totalDeactivationTime, 2uL, null);
 		}
 	}
 
@@ -345,12 +345,12 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		get
 		{
-			return _flags;
+			return this._flags;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _flags, 4uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._flags, 4uL, null);
 		}
 	}
 
@@ -358,12 +358,12 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		get
 		{
-			return _syncTime;
+			return this._syncTime;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _syncTime, 8uL, null);
+			base.GeneratedSyncVarSetter(value, ref this._syncTime, 8uL, null);
 		}
 	}
 
@@ -373,54 +373,54 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 
 	public void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
-		if ((_cooldownStopwatch.IsRunning && _cooldownStopwatch.Elapsed.TotalSeconds < (double)_targetCooldown) || (colliderId != 0 && !HasFlag(_flags, GeneratorFlags.Open)))
+		if ((this._cooldownStopwatch.IsRunning && this._cooldownStopwatch.Elapsed.TotalSeconds < (double)this._targetCooldown) || (colliderId != 0 && !this.HasFlag(this._flags, GeneratorFlags.Open)))
 		{
 			return;
 		}
-		_cooldownStopwatch.Stop();
+		this._cooldownStopwatch.Stop();
 		GeneratorColliderId generatorColliderId = (GeneratorColliderId)colliderId;
-		PlayerInteractingGeneratorEventArgs playerInteractingGeneratorEventArgs = new PlayerInteractingGeneratorEventArgs(ply, this, generatorColliderId);
-		PlayerEvents.OnInteractingGenerator(playerInteractingGeneratorEventArgs);
-		if (!playerInteractingGeneratorEventArgs.IsAllowed)
+		PlayerInteractingGeneratorEventArgs e = new PlayerInteractingGeneratorEventArgs(ply, this, generatorColliderId);
+		PlayerEvents.OnInteractingGenerator(e);
+		if (!e.IsAllowed)
 		{
-			_cooldownStopwatch.Restart();
+			this._cooldownStopwatch.Restart();
 			return;
 		}
 		switch (generatorColliderId)
 		{
 		case GeneratorColliderId.Door:
 		{
-			if (HasFlag(_flags, GeneratorFlags.Unlocked))
+			if (this.HasFlag(this._flags, GeneratorFlags.Unlocked))
 			{
-				if (HasFlag(_flags, GeneratorFlags.Open))
+				if (this.HasFlag(this._flags, GeneratorFlags.Open))
 				{
-					PlayerClosingGeneratorEventArgs playerClosingGeneratorEventArgs = new PlayerClosingGeneratorEventArgs(ply, this);
-					PlayerEvents.OnClosingGenerator(playerClosingGeneratorEventArgs);
-					if (playerClosingGeneratorEventArgs.PlayDeniedAnimation)
+					PlayerClosingGeneratorEventArgs e3 = new PlayerClosingGeneratorEventArgs(ply, this);
+					PlayerEvents.OnClosingGenerator(e3);
+					if (e3.PlayDeniedAnimation)
 					{
-						RpcDenied(ply.GetCombinedPermissions(this));
+						this.RpcDenied(ply.GetCombinedPermissions(this));
 					}
-					if (!playerClosingGeneratorEventArgs.IsAllowed)
+					if (!e3.IsAllowed)
 					{
 						break;
 					}
 				}
 				else
 				{
-					PlayerOpeningGeneratorEventArgs playerOpeningGeneratorEventArgs = new PlayerOpeningGeneratorEventArgs(ply, this);
-					PlayerEvents.OnOpeningGenerator(playerOpeningGeneratorEventArgs);
-					if (playerOpeningGeneratorEventArgs.PlayDeniedAnimation)
+					PlayerOpeningGeneratorEventArgs e4 = new PlayerOpeningGeneratorEventArgs(ply, this);
+					PlayerEvents.OnOpeningGenerator(e4);
+					if (e4.PlayDeniedAnimation)
 					{
-						RpcDenied(ply.GetCombinedPermissions(this));
+						this.RpcDenied(ply.GetCombinedPermissions(this));
 					}
-					if (!playerOpeningGeneratorEventArgs.IsAllowed)
+					if (!e4.IsAllowed)
 					{
 						break;
 					}
 				}
-				ServerSetFlag(GeneratorFlags.Open, !HasFlag(_flags, GeneratorFlags.Open));
-				_targetCooldown = _doorToggleCooldownTime;
-				if (!HasFlag(_flags, GeneratorFlags.Open))
+				this.ServerSetFlag(GeneratorFlags.Open, !this.HasFlag(this._flags, GeneratorFlags.Open));
+				this._targetCooldown = this._doorToggleCooldownTime;
+				if (!this.HasFlag(this._flags, GeneratorFlags.Open))
 				{
 					PlayerEvents.OnClosedGenerator(new PlayerClosedGeneratorEventArgs(ply, this));
 				}
@@ -431,69 +431,66 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 				break;
 			}
 			PermissionUsed callback;
-			bool flag = PermissionsPolicy.CheckPermissions(ply, this, out callback);
-			PlayerUnlockingGeneratorEventArgs obj = new PlayerUnlockingGeneratorEventArgs(ply, this)
+			bool canOpen = this.PermissionsPolicy.CheckPermissions(ply, this, out callback);
+			PlayerUnlockingGeneratorEventArgs e5 = new PlayerUnlockingGeneratorEventArgs(ply, this, canOpen);
+			PlayerEvents.OnUnlockingGenerator(e5);
+			if (!e5.IsAllowed)
 			{
-				IsAllowed = flag
-			};
-			PlayerEvents.OnUnlockingGenerator(obj);
-			if (!obj.IsAllowed)
-			{
-				flag = false;
+				break;
 			}
-			if (!flag)
+			if (!e5.CanOpen)
 			{
-				if (!(_deniedStopwatch.Elapsed.TotalSeconds < (double)_deniedCooldownTime))
+				if (!(this._deniedStopwatch.Elapsed.TotalSeconds < (double)this._deniedCooldownTime))
 				{
-					_deniedStopwatch.Restart();
-					RpcDenied(ply.GetCombinedPermissions(this));
+					this._deniedStopwatch.Restart();
+					this.RpcDenied(ply.GetCombinedPermissions(this));
 					callback?.Invoke(this, success: false);
 				}
 			}
 			else
 			{
-				_targetCooldown = _unlockCooldownTime;
+				this._targetCooldown = this._unlockCooldownTime;
 				callback?.Invoke(this, success: true);
-				IsUnlocked = true;
+				this.IsUnlocked = true;
 				PlayerEvents.OnUnlockedGenerator(new PlayerUnlockedGeneratorEventArgs(ply, this));
 			}
 			break;
 		}
 		case GeneratorColliderId.Switch:
-			if ((ply.IsSCP() && !Activating) || Engaged)
+			if ((ply.IsSCP() && !this.Activating) || this.Engaged)
 			{
 				break;
 			}
-			if (!Activating)
+			if (!this.Activating)
 			{
-				PlayerActivatingGeneratorEventArgs playerActivatingGeneratorEventArgs = new PlayerActivatingGeneratorEventArgs(ply, this);
-				PlayerEvents.OnActivatingGenerator(playerActivatingGeneratorEventArgs);
-				if (!playerActivatingGeneratorEventArgs.IsAllowed)
+				PlayerActivatingGeneratorEventArgs e6 = new PlayerActivatingGeneratorEventArgs(ply, this);
+				PlayerEvents.OnActivatingGenerator(e6);
+				if (!e6.IsAllowed)
 				{
 					break;
 				}
 			}
 			else
 			{
-				PlayerDeactivatingGeneratorEventArgs playerDeactivatingGeneratorEventArgs2 = new PlayerDeactivatingGeneratorEventArgs(ply, this);
-				PlayerEvents.OnDeactivatingGenerator(playerDeactivatingGeneratorEventArgs2);
-				if (!playerDeactivatingGeneratorEventArgs2.IsAllowed)
+				PlayerDeactivatingGeneratorEventArgs e7 = new PlayerDeactivatingGeneratorEventArgs(ply, this);
+				PlayerEvents.OnDeactivatingGenerator(e7);
+				if (!e7.IsAllowed)
 				{
 					break;
 				}
 			}
-			Activating = !Activating;
-			if (Activating)
+			this.Activating = !this.Activating;
+			if (this.Activating)
 			{
-				_leverStopwatch.Restart();
-				_lastActivator = new Footprint(ply);
+				this._leverStopwatch.Restart();
+				this._lastActivator = new Footprint(ply);
 			}
 			else
 			{
-				_lastActivator = default(Footprint);
+				this._lastActivator = default(Footprint);
 			}
-			_targetCooldown = _doorToggleCooldownTime;
-			if (Activating)
+			this._targetCooldown = this._doorToggleCooldownTime;
+			if (this.Activating)
 			{
 				PlayerEvents.OnActivatedGenerator(new PlayerActivatedGeneratorEventArgs(ply, this));
 			}
@@ -503,31 +500,31 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 			}
 			break;
 		case GeneratorColliderId.CancelButton:
-			if (Activating && !Engaged)
+			if (this.Activating && !this.Engaged)
 			{
-				PlayerDeactivatingGeneratorEventArgs playerDeactivatingGeneratorEventArgs = new PlayerDeactivatingGeneratorEventArgs(ply, this);
-				PlayerEvents.OnDeactivatingGenerator(playerDeactivatingGeneratorEventArgs);
-				if (playerDeactivatingGeneratorEventArgs.IsAllowed)
+				PlayerDeactivatingGeneratorEventArgs e2 = new PlayerDeactivatingGeneratorEventArgs(ply, this);
+				PlayerEvents.OnDeactivatingGenerator(e2);
+				if (e2.IsAllowed)
 				{
-					ServerSetFlag(GeneratorFlags.Activating, state: false);
-					_targetCooldown = _unlockCooldownTime;
-					_lastActivator = default(Footprint);
+					this.ServerSetFlag(GeneratorFlags.Activating, state: false);
+					this._targetCooldown = this._unlockCooldownTime;
+					this._lastActivator = default(Footprint);
 					PlayerEvents.OnDeactivatedGenerator(new PlayerDeactivatedGeneratorEventArgs(ply, this));
 				}
 			}
 			break;
 		default:
-			_targetCooldown = 1f;
+			this._targetCooldown = 1f;
 			break;
 		}
-		_cooldownStopwatch.Restart();
+		this._cooldownStopwatch.Restart();
 		PlayerEvents.OnInteractedGenerator(new PlayerInteractedGeneratorEventArgs(ply, this, (GeneratorColliderId)colliderId));
 	}
 
 	protected override void Start()
 	{
 		base.Start();
-		_permsIndicator.Register(this);
+		this._permsIndicator.Register(this);
 		Scp079Recontainer.AllGenerators.Add(this);
 	}
 
@@ -541,7 +538,7 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		if (NetworkServer.active)
 		{
-			ServerUpdate();
+			this.ServerUpdate();
 		}
 	}
 
@@ -553,41 +550,41 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 			UnityEngine.Debug.LogWarning("[Server] function 'System.Void MapGeneration.Distributors.Scp079Generator::ServerUpdate()' called when server was not active");
 			return;
 		}
-		bool flag = _currentTime >= _totalActivationTime;
+		bool flag = this._currentTime >= this._totalActivationTime;
 		if (!flag)
 		{
-			int num = Mathf.FloorToInt(_totalActivationTime - _currentTime);
-			if (num != _syncTime)
+			int num = Mathf.FloorToInt(this._totalActivationTime - this._currentTime);
+			if (num != this._syncTime)
 			{
-				Network_syncTime = (short)num;
+				this.Network_syncTime = (short)num;
 			}
 		}
-		if (ActivationReady)
+		if (this.ActivationReady)
 		{
-			if (flag && !Engaged)
+			if (flag && !this.Engaged)
 			{
-				GeneratorActivatingEventArgs generatorActivatingEventArgs = new GeneratorActivatingEventArgs(this);
-				ServerEvents.OnGeneratorActivating(generatorActivatingEventArgs);
-				if (generatorActivatingEventArgs.IsAllowed)
+				GeneratorActivatingEventArgs e = new GeneratorActivatingEventArgs(this);
+				ServerEvents.OnGeneratorActivating(e);
+				if (e.IsAllowed)
 				{
-					Engaged = true;
-					Activating = false;
-					Scp079Generator.OnGeneratorEngaged?.Invoke(this, _lastActivator);
+					this.Engaged = true;
+					this.Activating = false;
+					Scp079Generator.OnGeneratorEngaged?.Invoke(this, this._lastActivator);
 					ServerEvents.OnGeneratorActivated(new GeneratorActivatedEventArgs(this));
 				}
 				return;
 			}
-			_currentTime += Time.deltaTime;
+			this._currentTime += Time.deltaTime;
 		}
 		else
 		{
-			if (_currentTime == 0f || flag)
+			if (this._currentTime == 0f || flag)
 			{
 				return;
 			}
-			_currentTime -= DropdownSpeed * Time.deltaTime;
+			this._currentTime -= this.DropdownSpeed * Time.deltaTime;
 		}
-		_currentTime = Mathf.Clamp(_currentTime, 0f, _totalActivationTime);
+		this._currentTime = Mathf.Clamp(this._currentTime, 0f, this._totalActivationTime);
 	}
 
 	[ClientRpc]
@@ -595,7 +592,7 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
 		GeneratedNetworkCode._Write_Interactables_002EInterobjects_002EDoorUtils_002EDoorPermissionFlags(writer, flags);
-		SendRPCInternal("System.Void MapGeneration.Distributors.Scp079Generator::RpcDenied(Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", 1988689264, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void MapGeneration.Distributors.Scp079Generator::RpcDenied(Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", 1988689264, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
@@ -612,12 +609,12 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 			UnityEngine.Debug.LogWarning("[Server] function 'System.Void MapGeneration.Distributors.Scp079Generator::ServerSetFlag(MapGeneration.Distributors.Scp079Generator/GeneratorFlags,System.Boolean)' called when server was not active");
 			return;
 		}
-		GeneratorFlags flags = (GeneratorFlags)_flags;
+		GeneratorFlags flags = (GeneratorFlags)this._flags;
 		flags = ((!state) ? ((GeneratorFlags)((uint)flags & (uint)(byte)(~(int)flag))) : (flags | flag));
 		byte b = (byte)flags;
-		if (b != _flags)
+		if (b != this._flags)
 		{
-			Network_flags = b;
+			this.Network_flags = b;
 		}
 	}
 
@@ -626,8 +623,8 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 		Scp079Generator.OnCount = delegate
 		{
 		};
-		DoorAnimHash = Animator.StringToHash("isOpen");
-		LeverAnimHash = Animator.StringToHash("isOn");
+		Scp079Generator.DoorAnimHash = Animator.StringToHash("isOpen");
+		Scp079Generator.LeverAnimHash = Animator.StringToHash("isOn");
 		RemoteProcedureCalls.RegisterRpc(typeof(Scp079Generator), "System.Void MapGeneration.Distributors.Scp079Generator::RpcDenied(Interactables.Interobjects.DoorUtils.DoorPermissionFlags)", InvokeUserCode_RpcDenied__DoorPermissionFlags);
 	}
 
@@ -657,28 +654,28 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteFloat(_totalActivationTime);
-			writer.WriteFloat(_totalDeactivationTime);
-			NetworkWriterExtensions.WriteByte(writer, _flags);
-			writer.WriteShort(_syncTime);
+			writer.WriteFloat(this._totalActivationTime);
+			writer.WriteFloat(this._totalDeactivationTime);
+			NetworkWriterExtensions.WriteByte(writer, this._flags);
+			writer.WriteShort(this._syncTime);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteFloat(_totalActivationTime);
+			writer.WriteFloat(this._totalActivationTime);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteFloat(_totalDeactivationTime);
+			writer.WriteFloat(this._totalDeactivationTime);
 		}
 		if ((base.syncVarDirtyBits & 4L) != 0L)
 		{
-			NetworkWriterExtensions.WriteByte(writer, _flags);
+			NetworkWriterExtensions.WriteByte(writer, this._flags);
 		}
 		if ((base.syncVarDirtyBits & 8L) != 0L)
 		{
-			writer.WriteShort(_syncTime);
+			writer.WriteShort(this._syncTime);
 		}
 	}
 
@@ -687,28 +684,28 @@ public class Scp079Generator : SpawnableStructure, IServerInteractable, IInterac
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _totalActivationTime, null, reader.ReadFloat());
-			GeneratedSyncVarDeserialize(ref _totalDeactivationTime, null, reader.ReadFloat());
-			GeneratedSyncVarDeserialize(ref _flags, null, NetworkReaderExtensions.ReadByte(reader));
-			GeneratedSyncVarDeserialize(ref _syncTime, null, reader.ReadShort());
+			base.GeneratedSyncVarDeserialize(ref this._totalActivationTime, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._totalDeactivationTime, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._flags, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._syncTime, null, reader.ReadShort());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _totalActivationTime, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._totalActivationTime, null, reader.ReadFloat());
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _totalDeactivationTime, null, reader.ReadFloat());
+			base.GeneratedSyncVarDeserialize(ref this._totalDeactivationTime, null, reader.ReadFloat());
 		}
 		if ((num & 4L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _flags, null, NetworkReaderExtensions.ReadByte(reader));
+			base.GeneratedSyncVarDeserialize(ref this._flags, null, NetworkReaderExtensions.ReadByte(reader));
 		}
 		if ((num & 8L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _syncTime, null, reader.ReadShort());
+			base.GeneratedSyncVarDeserialize(ref this._syncTime, null, reader.ReadShort());
 		}
 	}
 }

@@ -33,7 +33,7 @@ public class FogController : MonoBehaviour
 		get
 		{
 			HolidayType activeHoliday = HolidayUtils.GetActiveHoliday();
-			if (!HolidayDefaultFog.TryGetValue(activeHoliday, out var value))
+			if (!FogController.HolidayDefaultFog.TryGetValue(activeHoliday, out var value))
 			{
 				return FogType.Inside;
 			}
@@ -47,33 +47,33 @@ public class FogController : MonoBehaviour
 	{
 		get
 		{
-			return _fogType;
+			return this._fogType;
 		}
 		set
 		{
 			bool flag = !value.HasValue || value.Value != FogType.None;
-			FogEffect.enabled = flag;
-			_fogType = value;
+			this.FogEffect.enabled = flag;
+			this._fogType = value;
 		}
 	}
 
 	public static void EnableFogType(FogType fogType, float seconds = 0f)
 	{
-		FogSetting fogSetting = Singleton.GetFogSetting(fogType);
+		FogSetting fogSetting = FogController.Singleton.GetFogSetting(fogType);
 		fogSetting.IsEnabled = true;
 		fogSetting.BlendTime = seconds;
 	}
 
 	public static void DisableFogType(FogType fogType, float seconds = 0f)
 	{
-		FogSetting fogSetting = Singleton.GetFogSetting(fogType);
+		FogSetting fogSetting = FogController.Singleton.GetFogSetting(fogType);
 		fogSetting.IsEnabled = false;
 		fogSetting.BlendTime = seconds;
 	}
 
 	public FogSetting GetFogSetting(FogType fogType)
 	{
-		FogSetting[] fogSettings = _fogSettings;
+		FogSetting[] fogSettings = this._fogSettings;
 		foreach (FogSetting fogSetting in fogSettings)
 		{
 			if (fogSetting.FogType == fogType)
@@ -86,16 +86,16 @@ public class FogController : MonoBehaviour
 
 	private void Awake()
 	{
-		if (Singleton == null)
+		if (FogController.Singleton == null)
 		{
-			Singleton = this;
-			_fogSettings = (from x in GetComponents<FogSetting>()
+			FogController.Singleton = this;
+			this._fogSettings = (from x in base.GetComponents<FogSetting>()
 				orderby x.Priority
 				select x).ToArray();
-			FogSetting[] fogSettings = _fogSettings;
+			FogSetting[] fogSettings = this._fogSettings;
 			foreach (FogSetting obj in fogSettings)
 			{
-				obj.enabled = obj.FogType == DefaultFog;
+				obj.enabled = obj.FogType == FogController.DefaultFog;
 			}
 		}
 		else
@@ -106,25 +106,25 @@ public class FogController : MonoBehaviour
 
 	private void Start()
 	{
-		FogEffect = (CustomFog)GetComponent<CustomPassVolume>().customPasses[0];
+		this.FogEffect = (CustomFog)base.GetComponent<CustomPassVolume>().customPasses[0];
 	}
 
 	private void OnDisable()
 	{
-		Shader.SetGlobalVector(HashGlobalFogDistance, Vector2.one * float.MaxValue);
+		Shader.SetGlobalVector(FogController.HashGlobalFogDistance, Vector2.one * float.MaxValue);
 	}
 
 	private void Update()
 	{
-		Color color = _fogSettings[0].Color;
-		float num = _fogSettings[0].StartDistance;
-		float num2 = _fogSettings[0].EndDistance;
-		for (int i = 1; i < _fogSettings.Length; i++)
+		Color color = this._fogSettings[0].Color;
+		float num = this._fogSettings[0].StartDistance;
+		float num2 = this._fogSettings[0].EndDistance;
+		for (int i = 1; i < this._fogSettings.Length; i++)
 		{
-			FogSetting fogSetting = _fogSettings[i];
-			if (ForcedFog.HasValue)
+			FogSetting fogSetting = this._fogSettings[i];
+			if (this.ForcedFog.HasValue)
 			{
-				if (ForcedFog.Value != fogSetting.FogType)
+				if (this.ForcedFog.Value != fogSetting.FogType)
 				{
 					continue;
 				}
@@ -138,11 +138,11 @@ public class FogController : MonoBehaviour
 			num = Mathf.Lerp(num, fogSetting.StartDistance, fogSetting.Weight);
 			num2 = Mathf.Lerp(num2, fogSetting.EndDistance, fogSetting.Weight);
 		}
-		FogEffect.FogColor = color;
-		FogEffect.EndDistance = num2;
-		FogEffect.StartDistance = num;
-		Shader.SetGlobalVector(HashGlobalFogColor, color);
-		Shader.SetGlobalVector(HashGlobalFogDistance, new Vector2(num, num2));
-		FogFarPlaneDistance = num2;
+		this.FogEffect.FogColor = color;
+		this.FogEffect.EndDistance = num2;
+		this.FogEffect.StartDistance = num;
+		Shader.SetGlobalVector(FogController.HashGlobalFogColor, color);
+		Shader.SetGlobalVector(FogController.HashGlobalFogDistance, new Vector2(num, num2));
+		FogController.FogFarPlaneDistance = num2;
 	}
 }

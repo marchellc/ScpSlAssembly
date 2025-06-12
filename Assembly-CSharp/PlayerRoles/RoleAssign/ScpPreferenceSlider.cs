@@ -17,24 +17,24 @@ public class ScpPreferenceSlider : Slider
 	{
 		get
 		{
-			return ScpSpawnPreferences.GetPreference(_role);
+			return ScpSpawnPreferences.GetPreference(this._role);
 		}
 		set
 		{
-			ScpSpawnPreferences.SavePreference(_role, value);
+			ScpSpawnPreferences.SavePreference(this._role, value);
 		}
 	}
 
 	private void OnValueChanged(float x)
 	{
-		SavedPreference = Mathf.RoundToInt(x);
+		this.SavedPreference = Mathf.RoundToInt(x);
 	}
 
 	private void Deselect()
 	{
-		if (!(_highlighted != this))
+		if (!(ScpPreferenceSlider._highlighted != this))
 		{
-			AnyHighlighted = false;
+			ScpPreferenceSlider.AnyHighlighted = false;
 		}
 	}
 
@@ -47,31 +47,31 @@ public class ScpPreferenceSlider : Slider
 	protected override void OnEnable()
 	{
 		base.OnEnable();
-		SetValueWithoutNotify(SavedPreference);
+		this.SetValueWithoutNotify(this.SavedPreference);
 	}
 
 	protected override void OnDisable()
 	{
 		base.OnDisable();
-		Deselect();
+		this.Deselect();
 	}
 
 	public override void OnPointerDown(PointerEventData eventData)
 	{
 		base.OnPointerDown(eventData);
-		AnyHighlighted = true;
-		_highlighted = this;
+		ScpPreferenceSlider.AnyHighlighted = true;
+		ScpPreferenceSlider._highlighted = this;
 	}
 
 	public override void OnPointerUp(PointerEventData eventData)
 	{
 		base.OnPointerUp(eventData);
-		Deselect();
+		this.Deselect();
 	}
 
 	public void SetRole(RoleTypeId rt)
 	{
-		_role = rt;
-		SetValueWithoutNotify(SavedPreference);
+		this._role = rt;
+		this.SetValueWithoutNotify(this.SavedPreference);
 	}
 }

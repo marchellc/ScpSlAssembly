@@ -23,51 +23,51 @@ public class SpeakerToyPlaybackBase : VoiceChatPlaybackBase
 
 	public bool Culled { get; private set; }
 
-	public override int MaxSamples => Buffer.Length;
+	public override int MaxSamples => this.Buffer.Length;
 
 	public void DecodeSamples(AudioMessage msg)
 	{
-		if (!_receiveBufferSet)
+		if (!SpeakerToyPlaybackBase._receiveBufferSet)
 		{
-			_receiveBufferSet = true;
-			_receiveBuffer = new float[24000];
+			SpeakerToyPlaybackBase._receiveBufferSet = true;
+			SpeakerToyPlaybackBase._receiveBuffer = new float[24000];
 		}
-		int length = _decoder.Decode(msg.Data, msg.DataLength, _receiveBuffer);
-		Buffer.Write(_receiveBuffer, length);
+		int length = this._decoder.Decode(msg.Data, msg.DataLength, SpeakerToyPlaybackBase._receiveBuffer);
+		this.Buffer.Write(SpeakerToyPlaybackBase._receiveBuffer, length);
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		Buffer = new PlaybackBuffer();
+		this.Buffer = new PlaybackBuffer();
 	}
 
 	protected override void OnEnable()
 	{
 		base.OnEnable();
-		AllInstances.Add(this);
+		SpeakerToyPlaybackBase.AllInstances.Add(this);
 	}
 
 	protected override void OnDisable()
 	{
 		base.OnDisable();
-		AllInstances.Remove(this);
+		SpeakerToyPlaybackBase.AllInstances.Remove(this);
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		LastPosition = base.transform.position;
+		this.LastPosition = base.transform.position;
 	}
 
 	private void OnDestroy()
 	{
-		_decoder.Dispose();
+		this._decoder.Dispose();
 	}
 
 	protected override float ReadSample()
 	{
-		return Buffer.Read();
+		return this.Buffer.Read();
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -83,10 +83,10 @@ public class SpeakerToyPlaybackBase : VoiceChatPlaybackBase
 			return;
 		}
 		Vector3 position = MainCameraController.CurrentCamera.position;
-		foreach (SpeakerToyPlaybackBase allInstance in AllInstances)
+		foreach (SpeakerToyPlaybackBase allInstance in SpeakerToyPlaybackBase.AllInstances)
 		{
 			allInstance.Culled = true;
-			ValidatePlayback(position, allInstance);
+			SpeakerToyPlaybackBase.ValidatePlayback(position, allInstance);
 		}
 	}
 

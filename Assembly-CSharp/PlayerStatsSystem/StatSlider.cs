@@ -59,21 +59,21 @@ public class StatSlider : MonoBehaviour
 	{
 		get
 		{
-			return _suffix;
+			return this._suffix;
 		}
 		set
 		{
-			_suffix = (string.IsNullOrEmpty(value) ? _originalSuffix : value);
+			this._suffix = (string.IsNullOrEmpty(value) ? this._originalSuffix : value);
 		}
 	}
 
 	public void ForceUpdate()
 	{
-		if (TryGetModule(out var sb))
+		if (this.TryGetModule(out var sb))
 		{
-			_currentValue = sb.CurValue;
+			this._currentValue = sb.CurValue;
 		}
-		_targetSlider.value = _currentValue;
+		this._targetSlider.value = this._currentValue;
 	}
 
 	public bool TryGetModule(out StatBase sb)
@@ -91,7 +91,7 @@ public class StatSlider : MonoBehaviour
 		{
 			return false;
 		}
-		if (!TryGetTypeId(out var val))
+		if (!this.TryGetTypeId(out var val))
 		{
 			return false;
 		}
@@ -101,23 +101,23 @@ public class StatSlider : MonoBehaviour
 
 	public bool TryGetTypeId(out int val)
 	{
-		if (_cachedTypeId.HasValue)
+		if (this._cachedTypeId.HasValue)
 		{
-			val = _cachedTypeId.Value;
+			val = this._cachedTypeId.Value;
 			return true;
 		}
 		val = -1;
 		Type[] definedModules = PlayerStats.DefinedModules;
 		for (int i = 0; i < definedModules.Length; i++)
 		{
-			if (!(definedModules[i].Name != _statTypeName))
+			if (!(definedModules[i].Name != this._statTypeName))
 			{
 				val = i;
-				_cachedTypeId = i;
+				this._cachedTypeId = i;
 				return true;
 			}
 		}
-		WarnOnMissingModule(_statTypeName, definedModules);
+		WarnOnMissingModule(this._statTypeName, definedModules);
 		return false;
 		static void WarnOnMissingModule(string typeName, Type[] types)
 		{
@@ -133,10 +133,10 @@ public class StatSlider : MonoBehaviour
 
 	private void Awake()
 	{
-		_originalSuffix = _suffix;
-		if (_displayExactMode == DisplayExactMode.PreferenceBased)
+		this._originalSuffix = this._suffix;
+		if (this._displayExactMode == DisplayExactMode.PreferenceBased)
 		{
-			UpdateDisplayMode(UserSetting<bool>.Get(UISetting.HealthbarMode));
+			this.UpdateDisplayMode(UserSetting<bool>.Get(UISetting.HealthbarMode));
 			UserSetting<bool>.AddListener(UISetting.HealthbarMode, UpdateDisplayMode);
 		}
 	}
@@ -148,15 +148,15 @@ public class StatSlider : MonoBehaviour
 
 	private void UpdateDisplayMode(bool isPercent)
 	{
-		_displayExactMode = ((!isPercent) ? DisplayExactMode.AlwaysExact : DisplayExactMode.AlwaysPercent);
+		this._displayExactMode = ((!isPercent) ? DisplayExactMode.AlwaysExact : DisplayExactMode.AlwaysPercent);
 	}
 
 	private void Update()
 	{
-		if (TryGetModule(out var sb))
+		if (this.TryGetModule(out var sb))
 		{
-			UpdateSlider(sb);
-			UpdateText(sb);
+			this.UpdateSlider(sb);
+			this.UpdateText(sb);
 		}
 	}
 
@@ -167,32 +167,32 @@ public class StatSlider : MonoBehaviour
 		float maxValue = stat.MaxValue;
 		if (maxValue > minValue)
 		{
-			_targetSlider.minValue = stat.MinValue;
-			_targetSlider.maxValue = stat.MaxValue;
+			this._targetSlider.minValue = stat.MinValue;
+			this._targetSlider.maxValue = stat.MaxValue;
 		}
-		float num = Mathf.Abs(curValue - _currentValue);
-		if (num > _snapValueSkip)
+		float num = Mathf.Abs(curValue - this._currentValue);
+		if (num > this._snapValueSkip)
 		{
-			_currentValue = curValue;
+			this._currentValue = curValue;
 		}
 		else
 		{
-			float num2 = Mathf.Max(_lerpSpeed * num, (maxValue - minValue) * 0.04f);
-			_currentValue = Mathf.MoveTowards(_currentValue, curValue, num2 * Time.deltaTime);
+			float num2 = Mathf.Max(this._lerpSpeed * num, (maxValue - minValue) * 0.04f);
+			this._currentValue = Mathf.MoveTowards(this._currentValue, curValue, num2 * Time.deltaTime);
 		}
-		_targetSlider.value = _currentValue;
+		this._targetSlider.value = this._currentValue;
 	}
 
 	private void UpdateText(StatBase stat)
 	{
-		if (_displayExactMode != DisplayExactMode.ValueHidden)
+		if (this._displayExactMode != DisplayExactMode.ValueHidden)
 		{
-			bool flag = _displayExactMode == DisplayExactMode.AlwaysExact;
-			int num = Mathf.CeilToInt((flag ? stat.CurValue : ((float)Mathf.CeilToInt(stat.NormalizedValue * 100f))) * (float)_roundingAccuracy) / _roundingAccuracy;
-			if (num != _lastDisplayedValue)
+			bool flag = this._displayExactMode == DisplayExactMode.AlwaysExact;
+			int num = Mathf.CeilToInt((flag ? stat.CurValue : ((float)Mathf.CeilToInt(stat.NormalizedValue * 100f))) * (float)this._roundingAccuracy) / this._roundingAccuracy;
+			if (num != this._lastDisplayedValue)
 			{
-				_targetText.text = num + (flag ? _suffix : "%");
-				_lastDisplayedValue = num;
+				this._targetText.text = num + (flag ? this._suffix : "%");
+				this._lastDisplayedValue = num;
 			}
 		}
 	}

@@ -26,22 +26,22 @@ public class ConditionalSpawnpointHandler : StandardSpawnpointHandler
 			return;
 		}
 		RoleTypeId roleTypeId = base.Role.RoleTypeId;
-		if (!RoleSpawnpoints.ContainsKey(roleTypeId))
+		if (!ConditionalSpawnpointHandler.RoleSpawnpoints.ContainsKey(roleTypeId))
 		{
 			Dictionary<RoleChangeReason, RoomRoleSpawnpoint[]> dictionary = new Dictionary<RoleChangeReason, RoomRoleSpawnpoint[]>();
-			SerializedSpawnpoint[] conditionalSpawnpoints = _conditionalSpawnpoints;
+			SerializedSpawnpoint[] conditionalSpawnpoints = this._conditionalSpawnpoints;
 			for (int i = 0; i < conditionalSpawnpoints.Length; i++)
 			{
 				SerializedSpawnpoint serializedSpawnpoint = conditionalSpawnpoints[i];
 				dictionary.Add(serializedSpawnpoint.Condition, serializedSpawnpoint.Spawnpoints);
 			}
-			RoleSpawnpoints[roleTypeId] = dictionary;
+			ConditionalSpawnpointHandler.RoleSpawnpoints[roleTypeId] = dictionary;
 		}
 	}
 
 	public override bool TryGetSpawnpoint(out Vector3 position, out float horizontalRot)
 	{
-		if (TryGetConditionalSpawnpoint(out position, out horizontalRot))
+		if (this.TryGetConditionalSpawnpoint(out position, out horizontalRot))
 		{
 			return true;
 		}
@@ -52,11 +52,11 @@ public class ConditionalSpawnpointHandler : StandardSpawnpointHandler
 	{
 		position = default(Vector3);
 		horizontalRot = 0f;
-		if (_conditionalSpawnpoints.Length == 0)
+		if (this._conditionalSpawnpoints.Length == 0)
 		{
 			return false;
 		}
-		if (!RoleSpawnpoints.TryGetValue(base.Role.RoleTypeId, out var value))
+		if (!ConditionalSpawnpointHandler.RoleSpawnpoints.TryGetValue(base.Role.RoleTypeId, out var value))
 		{
 			return false;
 		}
@@ -65,7 +65,7 @@ public class ConditionalSpawnpointHandler : StandardSpawnpointHandler
 		{
 			return false;
 		}
-		value2 = GetValidSpawnpoints(value2);
+		value2 = base.GetValidSpawnpoints(value2);
 		return value2.RandomItem().TryGetSpawnpoint(out position, out horizontalRot);
 	}
 }

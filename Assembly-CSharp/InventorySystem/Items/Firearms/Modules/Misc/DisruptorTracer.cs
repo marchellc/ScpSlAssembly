@@ -21,7 +21,7 @@ public class DisruptorTracer : TracerBase
 
 		public void Play(float distance)
 		{
-			ParticleSystem[] particles = Particles;
+			ParticleSystem[] particles = this.Particles;
 			foreach (ParticleSystem obj in particles)
 			{
 				ParticleSystem.MainModule main = obj.main;
@@ -47,19 +47,19 @@ public class DisruptorTracer : TracerBase
 
 	private Stopwatch _stopwatch;
 
-	protected override bool IsBusy => _stopwatch.Elapsed.TotalSeconds < 5.0;
+	protected override bool IsBusy => this._stopwatch.Elapsed.TotalSeconds < 5.0;
 
 	protected override void OnCreated()
 	{
 		base.OnCreated();
-		_tr = base.transform;
-		_stopwatch = Stopwatch.StartNew();
+		this._tr = base.transform;
+		this._stopwatch = Stopwatch.StartNew();
 	}
 
 	protected override void OnDequeued()
 	{
 		base.OnDequeued();
-		_stopwatch.Restart();
+		this._stopwatch.Restart();
 	}
 
 	protected override void OnFired(NetworkReader reader)
@@ -72,10 +72,10 @@ public class DisruptorTracer : TracerBase
 		switch ((DisruptorActionModule.FiringState)reader.ReadByte())
 		{
 		case DisruptorActionModule.FiringState.FiringSingle:
-			effectsPair = _singleShotEffects;
+			effectsPair = this._singleShotEffects;
 			break;
 		case DisruptorActionModule.FiringState.FiringRapid:
-			effectsPair = _rapidFireEffects;
+			effectsPair = this._rapidFireEffects;
 			break;
 		default:
 			return;
@@ -85,9 +85,9 @@ public class DisruptorTracer : TracerBase
 		if (global::Misc.TryGetClosestLineSegment(base.OriginPosition, worldspacePosition, position, 0.5f, 35f, out var newStart, out var newEnd, out var closestPointOnLine, out var normalizedDir))
 		{
 			effectsPair.Play(Vector3.Distance(newStart, newEnd));
-			_tr.position = newStart;
-			_tr.forward = normalizedDir;
-			_tr.SetParent(wp.transform);
+			this._tr.position = newStart;
+			this._tr.forward = normalizedDir;
+			this._tr.SetParent(wp.transform);
 			if (!((closestPointOnLine - position).sqrMagnitude > effectsPair.WhizzTriggerRangeSqr))
 			{
 				effectsPair.WhizzHandler.Play(normalizedDir, closestPointOnLine);

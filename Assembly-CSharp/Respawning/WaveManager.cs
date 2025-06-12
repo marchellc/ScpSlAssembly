@@ -41,7 +41,7 @@ public static class WaveManager
 
 	public static bool TryGet<T>(out T spawnWave)
 	{
-		foreach (SpawnableWaveBase wave in Waves)
+		foreach (SpawnableWaveBase wave in WaveManager.Waves)
 		{
 			if (wave is T val)
 			{
@@ -55,7 +55,7 @@ public static class WaveManager
 
 	public static bool TryGet(Faction faction, out SpawnableWaveBase spawnWave)
 	{
-		foreach (SpawnableWaveBase wave in Waves)
+		foreach (SpawnableWaveBase wave in WaveManager.Waves)
 		{
 			if (wave.TargetFaction == faction && !(wave is IMiniWave))
 			{
@@ -69,7 +69,7 @@ public static class WaveManager
 
 	public static void AdvanceTimer(Faction faction, float time)
 	{
-		foreach (TimeBasedWave wave in Waves)
+		foreach (TimeBasedWave wave in WaveManager.Waves)
 		{
 			if (wave.TargetFaction == faction && wave.ReceiveObjectiveRewards)
 			{
@@ -80,46 +80,46 @@ public static class WaveManager
 
 	public static void InitiateRespawn(SpawnableWaveBase wave)
 	{
-		if (NetworkServer.active && !IsRestarting)
+		if (NetworkServer.active && !WaveManager.IsRestarting)
 		{
-			WaveTeamSelectingEventArgs waveTeamSelectingEventArgs = new WaveTeamSelectingEventArgs(wave);
-			ServerEvents.OnWaveTeamSelecting(waveTeamSelectingEventArgs);
-			if (waveTeamSelectingEventArgs.IsAllowed)
+			WaveTeamSelectingEventArgs e = new WaveTeamSelectingEventArgs(wave);
+			ServerEvents.OnWaveTeamSelecting(e);
+			if (e.IsAllowed)
 			{
-				_nextWave = waveTeamSelectingEventArgs.Wave;
-				State = WaveQueueState.WaveSelected;
-				ServerEvents.OnWaveTeamSelected(new WaveTeamSelectedEventArgs(_nextWave));
+				WaveManager._nextWave = e.Wave;
+				WaveManager.State = WaveQueueState.WaveSelected;
+				ServerEvents.OnWaveTeamSelected(new WaveTeamSelectedEventArgs(WaveManager._nextWave));
 			}
 		}
 	}
 
 	public static void Spawn(SpawnableWaveBase wave)
 	{
-		State = WaveQueueState.WaveSpawned;
-		_nextWave = null;
+		WaveManager.State = WaveQueueState.WaveSpawned;
+		WaveManager._nextWave = null;
 		wave.OnWaveSpawned();
 		List<ReferenceHub> list = WaveSpawner.SpawnWave(wave);
 		WaveManager.OnWaveSpawned?.Invoke(wave, list);
 		ListPool<ReferenceHub>.Shared.Return(list);
-		State = WaveQueueState.Idle;
+		WaveManager.State = WaveQueueState.Idle;
 	}
 
 	private static void Update()
 	{
-		if (!NetworkServer.active || IsRestarting)
+		if (!NetworkServer.active || WaveManager.IsRestarting)
 		{
 			return;
 		}
-		if (State != 0)
+		if (WaveManager.State != WaveQueueState.Idle)
 		{
-			RefreshNextWave();
+			WaveManager.RefreshNextWave();
 			return;
 		}
-		foreach (TimeBasedWave wave in Waves)
+		foreach (TimeBasedWave wave in WaveManager.Waves)
 		{
 			if (wave.Configuration.IsEnabled && wave.IsReadyToSpawn && !wave.Timer.IsPaused && !(wave is ILimitedWave { RespawnTokens: <=0 }))
 			{
-				InitiateRespawn(wave);
+				WaveManager.InitiateRespawn(wave);
 				break;
 			}
 		}
@@ -129,14 +129,14 @@ public static class WaveManager
 	{
 		if (WaveSpawner.AnyPlayersAvailable)
 		{
-			if (State != WaveQueueState.WaveSpawning)
+			if (WaveManager.State != WaveQueueState.WaveSpawning)
 			{
-				State = WaveQueueState.WaveSpawning;
-				WaveManager.OnWaveTrigger?.Invoke(_nextWave);
+				WaveManager.State = WaveQueueState.WaveSpawning;
+				WaveManager.OnWaveTrigger?.Invoke(WaveManager._nextWave);
 			}
-			if (!(_nextWave is IAnimatedWave { IsAnimationPlaying: not false }))
+			if (!(WaveManager._nextWave is IAnimatedWave { IsAnimationPlaying: not false }))
 			{
-				Spawn(_nextWave);
+				WaveManager.Spawn(WaveManager._nextWave);
 			}
 		}
 	}
@@ -150,32 +150,32 @@ public static class WaveManager
 		CustomNetworkManager.OnClientReady += delegate
 		{
 			NetworkClient.ReplaceHandler<WaveUpdateMessage>(ClientMessageReceived);
-			State = WaveQueueState.Idle;
+			WaveManager.State = WaveQueueState.Idle;
 		};
 		PlayerRoleManager.OnServerRoleSet += delegate(ReferenceHub hub, RoleTypeId role, RoleChangeReason reason)
 		{
 			if (PlayerRoleLoader.TryGetRoleTemplate<PlayerRoleBase>(role, out var result) && result is SpectatorRole)
 			{
-				SyncValues(hub);
+				WaveManager.SyncValues(hub);
 			}
 		};
-		OnWaveTrigger += delegate(SpawnableWaveBase w)
+		WaveManager.OnWaveTrigger += delegate(SpawnableWaveBase w)
 		{
 			float duration = ((w is IAnimatedWave animatedWave) ? animatedWave.AnimationDuration : 1f);
-			foreach (TimeBasedWave wave in Waves)
+			foreach (TimeBasedWave wave in WaveManager.Waves)
 			{
 				wave.Timer.Pause(duration);
 			}
 			if (NetworkServer.active)
 			{
-				WaveUpdateMessage.ServerSendUpdate(_nextWave, UpdateMessageFlags.Trigger);
+				WaveUpdateMessage.ServerSendUpdate(WaveManager._nextWave, UpdateMessageFlags.Trigger);
 			}
 		};
 	}
 
 	private static void OnWarheadDetonate()
 	{
-		foreach (TimeBasedWave wave in Waves)
+		foreach (TimeBasedWave wave in WaveManager.Waves)
 		{
 			wave.Timer.SpawnIntervalSeconds = 165f;
 			wave.Timer.Reset(resetSpawnInterval: false);
@@ -188,7 +188,7 @@ public static class WaveManager
 		{
 			return;
 		}
-		foreach (TimeBasedWave wave in Waves)
+		foreach (TimeBasedWave wave in WaveManager.Waves)
 		{
 			UpdateMessageFlags updateMessageFlags = UpdateMessageFlags.All;
 			if (!wave.Timer.IsPaused)

@@ -18,8 +18,8 @@ public class DisruptorAudioModule : AudioModule
 
 		public TrackedSource(PooledAudioSource src, ushort serial)
 		{
-			Session = new AudioPoolSession(src);
-			Serial = serial;
+			this.Session = new AudioPoolSession(src);
+			this.Serial = serial;
 		}
 	}
 
@@ -40,16 +40,16 @@ public class DisruptorAudioModule : AudioModule
 
 		public readonly void Cache(int startIndex)
 		{
-			_allClipsGlobalCache[startIndex] = ClipActionNormal;
-			_allClipsGlobalCache[startIndex + 1] = ClipActionLast;
-			_allClipsGlobalCache[startIndex + 2] = ClipFiringNormal;
-			_allClipsGlobalCache[startIndex + 3] = ClipFiringLast;
+			DisruptorAudioModule._allClipsGlobalCache[startIndex] = this.ClipActionNormal;
+			DisruptorAudioModule._allClipsGlobalCache[startIndex + 1] = this.ClipActionLast;
+			DisruptorAudioModule._allClipsGlobalCache[startIndex + 2] = this.ClipFiringNormal;
+			DisruptorAudioModule._allClipsGlobalCache[startIndex + 3] = this.ClipFiringLast;
 		}
 
 		public readonly void Play(AudioModule audioModule, bool last)
 		{
-			audioModule.PlayGunshot(last ? ClipFiringLast : ClipFiringNormal);
-			audioModule.PlayCustom(last ? ClipActionLast : ClipActionNormal, MixerChannel.NoDucking, 15f, applyPitch: false);
+			audioModule.PlayGunshot(last ? this.ClipFiringLast : this.ClipFiringNormal);
+			audioModule.PlayCustom(last ? this.ClipActionLast : this.ClipActionNormal, MixerChannel.NoDucking, 15f, applyPitch: false);
 		}
 	}
 
@@ -69,32 +69,32 @@ public class DisruptorAudioModule : AudioModule
 	{
 		get
 		{
-			if (_allClipsGlobalCache == null)
+			if (DisruptorAudioModule._allClipsGlobalCache == null)
 			{
-				_allClipsGlobalCache = new AudioClip[8];
-				_singleShotAudio.Cache(0);
-				_rapidFireAudio.Cache(4);
+				DisruptorAudioModule._allClipsGlobalCache = new AudioClip[8];
+				this._singleShotAudio.Cache(0);
+				this._rapidFireAudio.Cache(4);
 			}
-			return _allClipsGlobalCache;
+			return DisruptorAudioModule._allClipsGlobalCache;
 		}
 	}
 
 	private void ProcessSound(ItemIdentifier id, PlayerRoleBase role, PooledAudioSource newSource)
 	{
-		if (id.TypeId != _disruptorType)
+		if (id.TypeId != this._disruptorType)
 		{
 			return;
 		}
 		AudioClip clip = newSource.Source.clip;
-		AudioClip[] allClips = AllClips;
+		AudioClip[] allClips = this.AllClips;
 		for (int i = 0; i < allClips.Length; i++)
 		{
 			if (!(allClips[i] != clip))
 			{
 				newSource.FastTransform.SetParent(null, worldPositionStays: false);
 				TrackedSource trackedSource = new TrackedSource(newSource, id.SerialNumber);
-				TrackedSources.Enqueue(trackedSource);
-				TrackOwner(trackedSource);
+				DisruptorAudioModule.TrackedSources.Enqueue(trackedSource);
+				this.TrackOwner(trackedSource);
 				break;
 			}
 		}
@@ -129,8 +129,8 @@ public class DisruptorAudioModule : AudioModule
 	protected override void OnInit()
 	{
 		base.OnInit();
-		AllClips.ForEach(base.RegisterClip);
-		_disruptorType = base.Firearm.ItemTypeId;
+		this.AllClips.ForEach(base.RegisterClip);
+		this._disruptorType = base.Firearm.ItemTypeId;
 	}
 
 	internal override void OnTemplateReloaded(ModularAutosyncItem template, bool wasEverLoaded)
@@ -145,17 +145,17 @@ public class DisruptorAudioModule : AudioModule
 	internal override void TemplateUpdate()
 	{
 		base.TemplateUpdate();
-		int count = TrackedSources.Count;
+		int count = DisruptorAudioModule.TrackedSources.Count;
 		for (int i = 0; i < count; i++)
 		{
-			if (!TrackedSources.TryDequeue(out var result))
+			if (!DisruptorAudioModule.TrackedSources.TryDequeue(out var result))
 			{
 				break;
 			}
 			if (result.Session.SameSession)
 			{
-				TrackOwner(result);
-				TrackedSources.Enqueue(result);
+				this.TrackOwner(result);
+				DisruptorAudioModule.TrackedSources.Enqueue(result);
 			}
 		}
 	}
@@ -164,17 +164,17 @@ public class DisruptorAudioModule : AudioModule
 	{
 		if (single)
 		{
-			_singleShotAudio.Play(this, last);
+			this._singleShotAudio.Play(this, last);
 		}
 		else
 		{
-			_rapidFireAudio.Play(this, last);
+			this._rapidFireAudio.Play(this, last);
 		}
 	}
 
 	public void StopDisruptorShot()
 	{
-		foreach (TrackedSource trackedSource in TrackedSources)
+		foreach (TrackedSource trackedSource in DisruptorAudioModule.TrackedSources)
 		{
 			if (trackedSource.Serial == base.Firearm.ItemSerial && trackedSource.Session.SameSession)
 			{

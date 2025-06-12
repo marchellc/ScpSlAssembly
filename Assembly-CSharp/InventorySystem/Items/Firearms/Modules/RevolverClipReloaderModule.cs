@@ -23,9 +23,9 @@ public class RevolverClipReloaderModule : AnimatorReloaderModuleBase
 		{
 			if (!base.IsServer)
 			{
-				return _clientWithheld;
+				return this._clientWithheld;
 			}
-			return _serverWithheld;
+			return this._serverWithheld;
 		}
 	}
 
@@ -45,7 +45,7 @@ public class RevolverClipReloaderModule : AnimatorReloaderModuleBase
 	{
 		get
 		{
-			return _serverWithheld;
+			return this._serverWithheld;
 		}
 		set
 		{
@@ -53,10 +53,10 @@ public class RevolverClipReloaderModule : AnimatorReloaderModuleBase
 			{
 				value = 0;
 			}
-			if (_serverWithheld != value)
+			if (this._serverWithheld != value)
 			{
-				_serverWithheld = value;
-				_withheldDirty = true;
+				this._serverWithheld = value;
+				this._withheldDirty = true;
 				this.OnWithheld?.Invoke();
 			}
 		}
@@ -71,40 +71,40 @@ public class RevolverClipReloaderModule : AnimatorReloaderModuleBase
 	{
 		if (base.IsServer)
 		{
-			ServerResetWithheldAmmo();
+			this.ServerResetWithheldAmmo();
 			Inventory ownerInventory = base.Firearm.OwnerInventory;
-			ItemType ammoType = AmmoContainer.AmmoType;
-			ServerWithheld = Mathf.Min(ownerInventory.GetCurAmmo(ammoType), AmmoContainer.AmmoMax);
-			ownerInventory.ServerAddAmmo(ammoType, -ServerWithheld);
+			ItemType ammoType = this.AmmoContainer.AmmoType;
+			this.ServerWithheld = Mathf.Min(ownerInventory.GetCurAmmo(ammoType), this.AmmoContainer.AmmoMax);
+			ownerInventory.ServerAddAmmo(ammoType, -this.ServerWithheld);
 		}
 	}
 
 	[ExposedFirearmEvent]
 	public void InsertAmmoFromClip()
 	{
-		int num = Mathf.Min(WithheldAmmo, AmmoContainer.AmmoMax);
+		int num = Mathf.Min(this.WithheldAmmo, this.AmmoContainer.AmmoMax);
 		if (base.IsServer)
 		{
-			AmmoContainer.ServerModifyAmmo(num);
+			this.AmmoContainer.ServerModifyAmmo(num);
 		}
 		this.OnAmmoInserted?.Invoke(num);
 		if (base.IsServer)
 		{
-			ServerWithheld -= num;
-			ServerResetWithheldAmmo();
+			this.ServerWithheld -= num;
+			this.ServerResetWithheldAmmo();
 		}
 	}
 
 	internal override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (base.IsServer && _withheldDirty)
+		if (base.IsServer && this._withheldDirty)
 		{
-			_withheldDirty = false;
-			SendRpc(delegate(NetworkWriter x)
+			this._withheldDirty = false;
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteSubheader(ReloaderMessageHeader.Custom);
-				x.WriteByte((byte)ServerWithheld);
+				x.WriteByte((byte)this.ServerWithheld);
 			});
 		}
 	}
@@ -112,38 +112,38 @@ public class RevolverClipReloaderModule : AnimatorReloaderModuleBase
 	internal override void OnHolstered()
 	{
 		base.OnHolstered();
-		ServerResetWithheldAmmo();
+		this.ServerResetWithheldAmmo();
 	}
 
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		SyncWithheld.Clear();
+		RevolverClipReloaderModule.SyncWithheld.Clear();
 	}
 
 	protected override void OnInit()
 	{
 		base.OnInit();
-		ClientFetchWithheld();
+		this.ClientFetchWithheld();
 	}
 
 	internal override void OnEquipped()
 	{
 		base.OnEquipped();
-		ClientFetchWithheld();
+		this.ClientFetchWithheld();
 	}
 
 	protected override MessageInterceptionResult InterceptMessage(NetworkReader reader, ushort serial, ReloaderMessageHeader header, AutosyncMessageType scenario)
 	{
-		if (header != ReloaderMessageHeader.Custom || (scenario != AutosyncMessageType.RpcTemplate && scenario != 0))
+		if (header != ReloaderMessageHeader.Custom || (scenario != AutosyncMessageType.RpcTemplate && scenario != AutosyncMessageType.RpcInstance))
 		{
 			return base.InterceptMessage(reader, serial, header, scenario);
 		}
 		int num = reader.ReadByte();
-		SyncWithheld[serial] = num;
-		if (scenario == AutosyncMessageType.RpcInstance && _clientWithheld != num)
+		RevolverClipReloaderModule.SyncWithheld[serial] = num;
+		if (scenario == AutosyncMessageType.RpcInstance && this._clientWithheld != num)
 		{
-			_clientWithheld = num;
+			this._clientWithheld = num;
 			this.OnWithheld?.Invoke();
 		}
 		return MessageInterceptionResult.Stop;
@@ -151,25 +151,25 @@ public class RevolverClipReloaderModule : AnimatorReloaderModuleBase
 
 	protected override void StartReloading()
 	{
-		DecockAndPlayAnim(FirearmAnimatorHashes.Reload);
+		this.DecockAndPlayAnim(FirearmAnimatorHashes.Reload);
 	}
 
 	protected override void StartUnloading()
 	{
-		DecockAndPlayAnim(FirearmAnimatorHashes.Unload);
+		this.DecockAndPlayAnim(FirearmAnimatorHashes.Unload);
 	}
 
 	private void ClientFetchWithheld()
 	{
-		_clientWithheld = SyncWithheld.GetValueOrDefault(base.ItemSerial);
+		this._clientWithheld = RevolverClipReloaderModule.SyncWithheld.GetValueOrDefault(base.ItemSerial);
 	}
 
 	private void ServerResetWithheldAmmo()
 	{
-		if (base.IsServer && ServerWithheld > 0)
+		if (base.IsServer && this.ServerWithheld > 0)
 		{
-			base.Firearm.OwnerInventory.ServerAddAmmo(AmmoContainer.AmmoType, ServerWithheld);
-			ServerWithheld = 0;
+			base.Firearm.OwnerInventory.ServerAddAmmo(this.AmmoContainer.AmmoType, this.ServerWithheld);
+			this.ServerWithheld = 0;
 		}
 	}
 

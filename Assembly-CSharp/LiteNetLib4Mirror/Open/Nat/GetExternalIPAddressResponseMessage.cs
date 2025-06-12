@@ -10,9 +10,9 @@ internal class GetExternalIPAddressResponseMessage : ResponseMessageBase
 	public GetExternalIPAddressResponseMessage(XmlDocument response, string serviceType)
 		: base(response, serviceType, "GetExternalIPAddressResponseMessage")
 	{
-		if (IPAddress.TryParse(GetNode().GetXmlElementText("NewExternalIPAddress"), out var address))
+		if (IPAddress.TryParse(base.GetNode().GetXmlElementText("NewExternalIPAddress"), out var address))
 		{
-			ExternalIPAddress = address;
+			this.ExternalIPAddress = address;
 		}
 	}
 }

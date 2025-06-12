@@ -35,19 +35,19 @@ public class AuthenticationToken : Token, IJsonSerializable
 	public AuthenticationToken(string requestIp, int asn, string globalBan, string vacSession, bool doNotTrack, bool skipIpCheck, bool bypassBans, bool bypassGeoRestrictions, bool bypassWhitelists, bool globalBadge, bool privateBetaOwnership, bool syncHashed, string publicKey, string challenge, string userId, string nickname, DateTimeOffset issuanceTime, DateTimeOffset expirationTime, string usage, string issuedBy, string serial, bool testSignature, int tokenVersion)
 		: base(userId, nickname, issuanceTime, expirationTime, usage, issuedBy, serial, testSignature, tokenVersion)
 	{
-		RequestIp = requestIp;
-		Asn = asn;
-		GlobalBan = globalBan;
-		VacSession = vacSession;
-		DoNotTrack = doNotTrack;
-		SkipIpCheck = skipIpCheck;
-		BypassBans = bypassBans;
-		BypassGeoRestrictions = bypassGeoRestrictions;
-		BypassWhitelists = bypassWhitelists;
-		GlobalBadge = globalBadge;
-		PrivateBetaOwnership = privateBetaOwnership;
-		SyncHashed = syncHashed;
-		PublicKey = publicKey;
-		Challenge = challenge;
+		this.RequestIp = requestIp;
+		this.Asn = asn;
+		this.GlobalBan = globalBan;
+		this.VacSession = vacSession;
+		this.DoNotTrack = doNotTrack;
+		this.SkipIpCheck = skipIpCheck;
+		this.BypassBans = bypassBans;
+		this.BypassGeoRestrictions = bypassGeoRestrictions;
+		this.BypassWhitelists = bypassWhitelists;
+		this.GlobalBadge = globalBadge;
+		this.PrivateBetaOwnership = privateBetaOwnership;
+		this.SyncHashed = syncHashed;
+		this.PublicKey = publicKey;
+		this.Challenge = challenge;
 	}
 }

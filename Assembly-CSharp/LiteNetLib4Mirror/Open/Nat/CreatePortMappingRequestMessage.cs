@@ -9,25 +9,40 @@ internal class CreatePortMappingRequestMessage : RequestMessageBase
 
 	public CreatePortMappingRequestMessage(Mapping mapping)
 	{
-		_mapping = mapping;
+		this._mapping = mapping;
 	}
 
 	public override IDictionary<string, object> ToXml()
 	{
-		string value = (_mapping.PublicIP.Equals(IPAddress.None) ? string.Empty : _mapping.PublicIP.ToString());
+		string value = (this._mapping.PublicIP.Equals(IPAddress.None) ? string.Empty : this._mapping.PublicIP.ToString());
 		return new Dictionary<string, object>
 		{
 			{ "NewRemoteHost", value },
-			{ "NewExternalPort", _mapping.PublicPort },
+			{
+				"NewExternalPort",
+				this._mapping.PublicPort
+			},
 			{
 				"NewProtocol",
-				(_mapping.NetworkProtocolType == NetworkProtocolType.Tcp) ? "TCP" : "UDP"
+				(this._mapping.NetworkProtocolType == NetworkProtocolType.Tcp) ? "TCP" : "UDP"
 			},
-			{ "NewInternalPort", _mapping.PrivatePort },
-			{ "NewInternalClient", _mapping.PrivateIP },
+			{
+				"NewInternalPort",
+				this._mapping.PrivatePort
+			},
+			{
+				"NewInternalClient",
+				this._mapping.PrivateIP
+			},
 			{ "NewEnabled", 1 },
-			{ "NewPortMappingDescription", _mapping.Description },
-			{ "NewLeaseDuration", _mapping.Lifetime }
+			{
+				"NewPortMappingDescription",
+				this._mapping.Description
+			},
+			{
+				"NewLeaseDuration",
+				this._mapping.Lifetime
+			}
 		};
 	}
 }

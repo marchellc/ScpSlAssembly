@@ -46,30 +46,30 @@ public class ZombieAudioPlayer : SubroutineBase
 
 	public void ServerGrowl()
 	{
-		GrowlTimer.Trigger(UnityEngine.Random.Range(11.25f, 7.5f));
-		ServerSendSound(_visionTracker.LookingAtTarget ? Scp0492SoundId.AngryGrowl : Scp0492SoundId.Growl);
+		this.GrowlTimer.Trigger(UnityEngine.Random.Range(11.25f, 7.5f));
+		this.ServerSendSound(this._visionTracker.LookingAtTarget ? Scp0492SoundId.AngryGrowl : Scp0492SoundId.Growl);
 	}
 
 	private void Update()
 	{
-		if (NetworkServer.active && GrowlTimer.IsReady)
+		if (NetworkServer.active && this.GrowlTimer.IsReady)
 		{
-			ServerGrowl();
+			this.ServerGrowl();
 		}
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		(base.Role as ZombieRole).SubroutineModule.TryGetSubroutine<ZombieBloodlustAbility>(out _visionTracker);
-		if (!_soundsSerialized)
+		(base.Role as ZombieRole).SubroutineModule.TryGetSubroutine<ZombieBloodlustAbility>(out this._visionTracker);
+		if (!ZombieAudioPlayer._soundsSerialized)
 		{
-			Scp0492Sound[] sounds = _sounds;
+			Scp0492Sound[] sounds = this._sounds;
 			foreach (Scp0492Sound scp0492Sound in sounds)
 			{
-				Sounds.Add((byte)scp0492Sound.Id, scp0492Sound);
+				ZombieAudioPlayer.Sounds.Add((byte)scp0492Sound.Id, scp0492Sound);
 			}
-			_soundsSerialized = true;
+			ZombieAudioPlayer._soundsSerialized = true;
 		}
 	}
 
@@ -81,18 +81,18 @@ public class ZombieAudioPlayer : SubroutineBase
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte(_soundToSend);
-		writer.WriteRelativePosition(new RelativePosition(_lastPos));
+		writer.WriteByte(this._soundToSend);
+		writer.WriteRelativePosition(new RelativePosition(this._lastPos));
 	}
 
 	public void ServerSendSound(Scp0492SoundId soundId)
 	{
-		_soundToSend = (byte)soundId;
-		_lastPos = (base.Role as ZombieRole).FpcModule.Position;
-		if (Sounds.TryGetValue(_soundToSend, out var value))
+		this._soundToSend = (byte)soundId;
+		this._lastPos = (base.Role as ZombieRole).FpcModule.Position;
+		if (ZombieAudioPlayer.Sounds.TryGetValue(this._soundToSend, out var value))
 		{
 			float disSqr = value.MaxDistance * value.MaxDistance;
-			ServerSendRpc((ReferenceHub x) => !(x.roleManager.CurrentRole is IFpcRole fpcRole) || (fpcRole.FpcModule.Position - _lastPos).sqrMagnitude <= disSqr);
+			base.ServerSendRpc((ReferenceHub x) => !(x.roleManager.CurrentRole is IFpcRole fpcRole) || (fpcRole.FpcModule.Position - this._lastPos).sqrMagnitude <= disSqr);
 		}
 	}
 }

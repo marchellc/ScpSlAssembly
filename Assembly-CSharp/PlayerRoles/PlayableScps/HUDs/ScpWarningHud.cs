@@ -27,46 +27,46 @@ public class ScpWarningHud : MonoBehaviour
 	{
 		get
 		{
-			return _alpha;
+			return this._alpha;
 		}
 		private set
 		{
 			value = Mathf.Clamp01(value);
-			if (_alpha != value)
+			if (this._alpha != value)
 			{
-				_alpha = value;
-				_text.alpha = value;
+				this._alpha = value;
+				this._text.alpha = value;
 			}
 		}
 	}
 
 	private void Awake()
 	{
-		_text.alpha = Alpha;
+		this._text.alpha = this.Alpha;
 	}
 
 	private void Update()
 	{
-		if (_elapsed.Elapsed.TotalSeconds > (double)_duration || _dirty)
+		if (this._elapsed.Elapsed.TotalSeconds > (double)this._duration || this._dirty)
 		{
-			Alpha -= Time.deltaTime * 8f;
-			if (!(Alpha > 0f) && _dirty)
+			this.Alpha -= Time.deltaTime * 8f;
+			if (!(this.Alpha > 0f) && this._dirty)
 			{
-				_text.text = _targetText;
-				_dirty = false;
+				this._text.text = this._targetText;
+				this._dirty = false;
 			}
 		}
 		else
 		{
-			Alpha += Time.deltaTime * 8f;
+			this.Alpha += Time.deltaTime * 8f;
 		}
 	}
 
 	public void SetText(string text, float duration = 3.8f)
 	{
-		_dirty |= _targetText != text;
-		_targetText = text;
-		_duration = duration;
-		_elapsed.Restart();
+		this._dirty |= this._targetText != text;
+		this._targetText = text;
+		this._duration = duration;
+		this._elapsed.Restart();
 	}
 }

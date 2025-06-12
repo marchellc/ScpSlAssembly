@@ -8,16 +8,16 @@ public struct ClientRadioCommandMessage : NetworkMessage
 
 	public ClientRadioCommandMessage(RadioMessages.RadioCommand cmd)
 	{
-		Command = cmd;
+		this.Command = cmd;
 	}
 
 	public void Serialize(NetworkWriter writer)
 	{
-		writer.WriteByte((byte)Command);
+		writer.WriteByte((byte)this.Command);
 	}
 
 	public ClientRadioCommandMessage(NetworkReader reader)
 	{
-		Command = (RadioMessages.RadioCommand)reader.ReadByte();
+		this.Command = (RadioMessages.RadioCommand)reader.ReadByte();
 	}
 }

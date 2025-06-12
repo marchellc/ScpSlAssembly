@@ -38,31 +38,31 @@ public class Scp173TantrumAbility : KeySubroutine<Scp173Role>
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		ClientSendCmd();
+		base.ClientSendCmd();
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp173BlinkTimer>(out _blinkTimer);
-		GetSubroutine<Scp173ObserversTracker>(out _observersTracker);
+		base.GetSubroutine<Scp173BlinkTimer>(out this._blinkTimer);
+		base.GetSubroutine<Scp173ObserversTracker>(out this._observersTracker);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
-		if (!Cooldown.IsReady || _blinkTimer.RemainingSustainPercent > 0f || _observersTracker.IsObserved || !Physics.Raycast(base.CastRole.FpcModule.Position, Vector3.down, out var hitInfo, 3f, _tantrumMask))
+		if (!this.Cooldown.IsReady || this._blinkTimer.RemainingSustainPercent > 0f || this._observersTracker.IsObserved || !Physics.Raycast(base.CastRole.FpcModule.Position, Vector3.down, out var hitInfo, 3f, this._tantrumMask))
 		{
 			return;
 		}
-		Scp173CreatingTantrumEventArgs scp173CreatingTantrumEventArgs = new Scp173CreatingTantrumEventArgs(base.Owner);
-		Scp173Events.OnCreatingTantrum(scp173CreatingTantrumEventArgs);
-		if (!scp173CreatingTantrumEventArgs.IsAllowed)
+		Scp173CreatingTantrumEventArgs e = new Scp173CreatingTantrumEventArgs(base.Owner);
+		Scp173Events.OnCreatingTantrum(e);
+		if (!e.IsAllowed)
 		{
 			return;
 		}
-		Cooldown.Trigger(30.0);
-		ServerSendRpc(toAll: true);
-		TantrumEnvironmentalHazard tantrumEnvironmentalHazard = Object.Instantiate(_tantrumPrefab);
+		this.Cooldown.Trigger(30.0);
+		base.ServerSendRpc(toAll: true);
+		TantrumEnvironmentalHazard tantrumEnvironmentalHazard = Object.Instantiate(this._tantrumPrefab);
 		Vector3 targetPos = hitInfo.point + Vector3.up * 1.25f;
 		tantrumEnvironmentalHazard.SynchronizedPosition = new RelativePosition(targetPos);
 		foreach (TeslaGate allGate in TeslaGate.AllGates)
@@ -77,12 +77,12 @@ public class Scp173TantrumAbility : KeySubroutine<Scp173Role>
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
-		Cooldown.WriteCooldown(writer);
+		this.Cooldown.WriteCooldown(writer);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
-		Cooldown.ReadCooldown(reader);
+		this.Cooldown.ReadCooldown(reader);
 	}
 
 	public override void SpawnObject()
@@ -94,7 +94,7 @@ public class Scp173TantrumAbility : KeySubroutine<Scp173Role>
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		Cooldown.Clear();
+		this.Cooldown.Clear();
 		PlayerStats.OnAnyPlayerDied -= CheckDeath;
 	}
 

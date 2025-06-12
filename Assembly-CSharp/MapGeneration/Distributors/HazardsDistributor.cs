@@ -13,7 +13,7 @@ public class HazardsDistributor : SpawnablesDistributorBase
 			if (!(instance.MaximumSpawnChance <= (float)Random.Range(0, 100)))
 			{
 				instance.transform.GetPositionAndRotation(out var position, out var rotation);
-				SpawnHazard(instance.HazardPrefab, position, rotation, instance.SpawnScale);
+				HazardsDistributor.SpawnHazard(instance.HazardPrefab, position, rotation, instance.SpawnScale);
 			}
 		}
 	}

@@ -12,7 +12,7 @@ public class SSGroupHeader : ServerSpecificSettingBase
 	{
 		base.Label = label;
 		base.HintDescription = hint;
-		ReducedPadding = reducedPadding;
+		this.ReducedPadding = reducedPadding;
 	}
 
 	public override void ApplyDefaultValues()

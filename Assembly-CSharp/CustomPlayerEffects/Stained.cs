@@ -30,7 +30,7 @@ public class Stained : StatusEffectBase, IStaminaModifier, IMovementSpeedModifie
 
 	public float ProcessFootstepOverrides(float dis)
 	{
-		AudioSourcePoolManager.PlayOnTransform(_stainedFootsteps.RandomItem(), base.transform, dis);
-		return _originalLoudness;
+		AudioSourcePoolManager.PlayOnTransform(this._stainedFootsteps.RandomItem(), base.transform, dis);
+		return this._originalLoudness;
 	}
 }

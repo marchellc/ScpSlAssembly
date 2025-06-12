@@ -9,13 +9,13 @@ public class TransformElevatorFollower : ElevatorFollowerBase
 	protected override void Awake()
 	{
 		base.Awake();
-		_cachedTransform = base.gameObject.transform;
-		LastPosition = _cachedTransform.position;
+		this._cachedTransform = base.gameObject.transform;
+		base.LastPosition = this._cachedTransform.position;
 	}
 
 	protected override void LateUpdate()
 	{
 		base.LateUpdate();
-		LastPosition = _cachedTransform.position;
+		base.LastPosition = this._cachedTransform.position;
 	}
 }

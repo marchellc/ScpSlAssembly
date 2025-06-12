@@ -27,34 +27,34 @@ public class Scp3114DamageProcessor : SubroutineBase, IDamageHandlerProcessingRo
 
 	private void ApplyExplosionDamageReduction(ExplosionDamageHandler explosionHandler)
 	{
-		explosionHandler.Damage *= _explosionDamageMultiplier;
+		explosionHandler.Damage *= this._explosionDamageMultiplier;
 	}
 
 	private void ApplyDisguiseDamageReduction(FirearmDamageHandler firearmHandler)
 	{
-		float num = ((_scpRole.HumeShieldModule.HsCurrent > 0f) ? _disguisedHumeShieldDamageMultiplier : _disguisedBaseHealthDamageMultiplier);
+		float num = ((this._scpRole.HumeShieldModule.HsCurrent > 0f) ? this._disguisedHumeShieldDamageMultiplier : this._disguisedBaseHealthDamageMultiplier);
 		firearmHandler.Damage *= num;
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		_scpRole = base.Role as Scp3114Role;
+		this._scpRole = base.Role as Scp3114Role;
 	}
 
 	public DamageHandlerBase ProcessDamageHandler(DamageHandlerBase handler)
 	{
-		DisableHitboxMultipliers(handler);
+		this.DisableHitboxMultipliers(handler);
 		if (!(handler is ExplosionDamageHandler explosionHandler))
 		{
-			if (handler is FirearmDamageHandler firearmHandler && _scpRole.Disguised)
+			if (handler is FirearmDamageHandler firearmHandler && this._scpRole.Disguised)
 			{
-				ApplyDisguiseDamageReduction(firearmHandler);
+				this.ApplyDisguiseDamageReduction(firearmHandler);
 			}
 		}
 		else
 		{
-			ApplyExplosionDamageReduction(explosionHandler);
+			this.ApplyExplosionDamageReduction(explosionHandler);
 		}
 		return handler;
 	}

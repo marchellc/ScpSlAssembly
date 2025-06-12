@@ -18,13 +18,13 @@ public class DisruptorDamageHandler : AttackerDamageHandler, DisintegrateDeathAn
 
 	private const float HumePenetration = 0.5f;
 
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
 	public override Footprint Attacker { get; protected set; }
 
 	public override bool AllowSelfDamage => true;
 
-	public override string ServerLogsText => "Molecularly disrupted by " + Attacker.Nickname;
+	public override string ServerLogsText => "Molecularly disrupted by " + this.Attacker.Nickname;
 
 	public override string RagdollInspectText => "Molecularly disrupted.";
 
@@ -32,58 +32,58 @@ public class DisruptorDamageHandler : AttackerDamageHandler, DisintegrateDeathAn
 
 	public DisruptorActionModule.FiringState FiringState { get; private set; }
 
-	public bool Disintegrate => FiringState == DisruptorActionModule.FiringState.FiringSingle;
+	public bool Disintegrate => this.FiringState == DisruptorActionModule.FiringState.FiringSingle;
 
 	public DisruptorDamageHandler(DisruptorShotEvent shotEvent, Vector3 flyDirection, float damage)
 	{
-		Damage = damage;
+		this.Damage = damage;
 		if (shotEvent == null)
 		{
-			Attacker = default(Footprint);
-			FiringState = DisruptorActionModule.FiringState.None;
+			this.Attacker = default(Footprint);
+			this.FiringState = DisruptorActionModule.FiringState.None;
 		}
 		else
 		{
-			Attacker = shotEvent.HitregFootprint;
-			FiringState = shotEvent.State;
+			this.Attacker = shotEvent.HitregFootprint;
+			this.FiringState = shotEvent.State;
 		}
-		StartVelocity = flyDirection.NormalizeIgnoreY() * 15f;
-		StartVelocity.y = 2f;
+		base.StartVelocity = flyDirection.NormalizeIgnoreY() * 15f;
+		base.StartVelocity.y = 2f;
 	}
 
 	public override HandlerOutput ApplyDamage(ReferenceHub ply)
 	{
 		if (ply.GetRoleId() == RoleTypeId.Scp0492)
 		{
-			Damage *= 2f;
+			this.Damage *= 2f;
 		}
-		switch (FiringState)
+		switch (this.FiringState)
 		{
 		case DisruptorActionModule.FiringState.FiringRapid:
 		{
-			Vector3 startVelocity = StartVelocity;
+			Vector3 startVelocity = base.StartVelocity;
 			HandlerOutput result = base.ApplyDamage(ply);
-			StartVelocity = startVelocity;
+			base.StartVelocity = startVelocity;
 			return result;
 		}
 		case DisruptorActionModule.FiringState.FiringSingle:
 		{
-			float damage = Damage;
-			Damage *= 0.5f;
+			float damage = this.Damage;
+			this.Damage *= 0.5f;
 			HandlerOutput handlerOutput = base.ApplyDamage(ply);
 			if (handlerOutput == HandlerOutput.Death)
 			{
 				return handlerOutput;
 			}
-			Damage = damage * 0.5f;
+			this.Damage = damage * 0.5f;
 			HealthStat module = ply.playerStats.GetModule<HealthStat>();
-			ProcessDamage(ply);
-			if (Damage <= 0f)
+			this.ProcessDamage(ply);
+			if (this.Damage <= 0f)
 			{
 				return handlerOutput;
 			}
-			base.DealtHealthDamage += Mathf.Min(module.CurValue, Damage);
-			module.CurValue -= Damage;
+			base.DealtHealthDamage += Mathf.Min(module.CurValue, this.Damage);
+			module.CurValue -= this.Damage;
 			if (!(module.CurValue <= 0f))
 			{
 				return HandlerOutput.Damaged;
@@ -98,18 +98,18 @@ public class DisruptorDamageHandler : AttackerDamageHandler, DisintegrateDeathAn
 	public override void WriteAdditionalData(NetworkWriter writer)
 	{
 		base.WriteAdditionalData(writer);
-		writer.WriteByte((byte)FiringState);
+		writer.WriteByte((byte)this.FiringState);
 	}
 
 	public override void ReadAdditionalData(NetworkReader reader)
 	{
 		base.ReadAdditionalData(reader);
-		FiringState = (DisruptorActionModule.FiringState)reader.ReadByte();
+		this.FiringState = (DisruptorActionModule.FiringState)reader.ReadByte();
 	}
 
 	public override void ProcessRagdoll(BasicRagdoll ragdoll)
 	{
-		if (FiringState == DisruptorActionModule.FiringState.FiringRapid)
+		if (this.FiringState == DisruptorActionModule.FiringState.FiringRapid)
 		{
 			base.ProcessRagdoll(ragdoll);
 		}

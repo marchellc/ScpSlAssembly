@@ -33,36 +33,36 @@ public class ViewmodelReflexSightExtension : MonoBehaviour, IViewmodelExtension
 
 	private void LateUpdate()
 	{
-		if (_firearm.TryGetModule<IAdsModule>(out var module))
+		if (this._firearm.TryGetModule<IAdsModule>(out var module))
 		{
 			float adsAmount = module.AdsAmount;
-			if (!_prevAds.HasValue || _prevAds.Value != adsAmount)
+			if (!this._prevAds.HasValue || this._prevAds.Value != adsAmount)
 			{
-				_materialInstance.SetColor(HashColor, _targetColor * adsAmount);
-				_prevAds = adsAmount;
+				ViewmodelReflexSightExtension._materialInstance.SetColor(ViewmodelReflexSightExtension.HashColor, this._targetColor * adsAmount);
+				this._prevAds = adsAmount;
 			}
 		}
 	}
 
 	private void OnEnable()
 	{
-		if (_initialized)
+		if (this._initialized)
 		{
-			UpdateValues();
+			this.UpdateValues();
 		}
 	}
 
 	private void UpdateValues()
 	{
-		SetMaterial(_sightAtt.TextureOptions[_sightAtt.CurTextureIndex], ReflexSightAttachment.Sizes[_sightAtt.CurSizeIndex], ReflexSightAttachment.Colors[_sightAtt.CurColorIndex], ReflexSightAttachment.BrightnessLevels[_sightAtt.CurBrightnessIndex]);
+		this.SetMaterial(this._sightAtt.TextureOptions[this._sightAtt.CurTextureIndex], ReflexSightAttachment.Sizes[this._sightAtt.CurSizeIndex], ReflexSightAttachment.Colors[this._sightAtt.CurColorIndex], ReflexSightAttachment.BrightnessLevels[this._sightAtt.CurBrightnessIndex]);
 	}
 
 	private void SetMaterial(Texture texture, float size, Color color, float brigthness)
 	{
-		_materialInstance.SetTexture(HashTexture, texture);
-		_materialInstance.SetFloat(HashSize, size);
-		_targetColor = Color.Lerp(color, Color.white, brigthness);
-		_prevAds = null;
+		ViewmodelReflexSightExtension._materialInstance.SetTexture(ViewmodelReflexSightExtension.HashTexture, texture);
+		ViewmodelReflexSightExtension._materialInstance.SetFloat(ViewmodelReflexSightExtension.HashSize, size);
+		this._targetColor = Color.Lerp(color, Color.white, brigthness);
+		this._prevAds = null;
 	}
 
 	private void FindSightAttachment(AnimatedFirearmViewmodel viewmodel)
@@ -71,18 +71,18 @@ public class ViewmodelReflexSightExtension : MonoBehaviour, IViewmodelExtension
 		GameObject gameObject = base.gameObject;
 		do
 		{
-			RelativesNonAlloc[relativesCount++] = gameObject;
+			ViewmodelReflexSightExtension.RelativesNonAlloc[relativesCount++] = gameObject;
 			gameObject = gameObject.transform.parent.gameObject;
 		}
-		while (!(gameObject == null) && relativesCount != RelativesNonAlloc.Length);
+		while (!(gameObject == null) && relativesCount != ViewmodelReflexSightExtension.RelativesNonAlloc.Length);
 		for (int i = 0; i < viewmodel.Attachments.Length; i++)
 		{
-			GameObject[] group = viewmodel.Attachments[i].Group;
-			for (int j = 0; j < group.Length; j++)
+			GameObject[] array = viewmodel.Attachments[i].Group;
+			for (int j = 0; j < array.Length; j++)
 			{
-				if (IsRelated(group[j]))
+				if (IsRelated(array[j]))
 				{
-					_sightAtt = _firearm.Attachments[i] as ReflexSightAttachment;
+					this._sightAtt = this._firearm.Attachments[i] as ReflexSightAttachment;
 					return;
 				}
 			}
@@ -92,7 +92,7 @@ public class ViewmodelReflexSightExtension : MonoBehaviour, IViewmodelExtension
 		{
 			for (int k = 0; k < relativesCount; k++)
 			{
-				if (other == RelativesNonAlloc[k])
+				if (other == ViewmodelReflexSightExtension.RelativesNonAlloc[k])
 				{
 					return true;
 				}
@@ -103,16 +103,16 @@ public class ViewmodelReflexSightExtension : MonoBehaviour, IViewmodelExtension
 
 	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_firearm = viewmodel.ParentFirearm;
-		if (_materialInstance == null)
+		this._firearm = viewmodel.ParentFirearm;
+		if (ViewmodelReflexSightExtension._materialInstance == null)
 		{
-			_materialInstance = new Material(_targetRenderer.material);
+			ViewmodelReflexSightExtension._materialInstance = new Material(this._targetRenderer.material);
 		}
-		_targetRenderer.sharedMaterial = _materialInstance;
-		FindSightAttachment(viewmodel);
-		UpdateValues();
-		ReflexSightAttachment sightAtt = _sightAtt;
+		this._targetRenderer.sharedMaterial = ViewmodelReflexSightExtension._materialInstance;
+		this.FindSightAttachment(viewmodel);
+		this.UpdateValues();
+		ReflexSightAttachment sightAtt = this._sightAtt;
 		sightAtt.OnValuesChanged = (Action)Delegate.Combine(sightAtt.OnValuesChanged, new Action(UpdateValues));
-		_initialized = true;
+		this._initialized = true;
 	}
 }

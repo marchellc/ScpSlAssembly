@@ -32,11 +32,11 @@ public class RaGlobalBan : IServerCommunication, IClientCommunication
 		}
 		if (referenceHub == null || referenceHub.authManager.AuthenticationResponse.SignedAuthToken == null)
 		{
-			sender.RaReply($"${DataId} 0", success: true, logToConsole: false, string.Empty);
+			sender.RaReply($"${this.DataId} 0", success: true, logToConsole: false, string.Empty);
 		}
 		else
 		{
-			sender.RaReply($"${DataId} 1 {referenceHub.authManager.GetAuthToken()}", success: true, logToConsole: false, string.Empty);
+			sender.RaReply($"${this.DataId} 1 {referenceHub.authManager.GetAuthToken()}", success: true, logToConsole: false, string.Empty);
 		}
 	}
 

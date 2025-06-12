@@ -23,21 +23,21 @@ public class OutlineEffect : HintEffect
 	public OutlineEffect(Color32 outlineColor, float outlineWidth, float startScalar = 0f, float durationScalar = 1f)
 		: base(startScalar, durationScalar)
 	{
-		OutlineColor = outlineColor;
-		OutlineWidth = outlineWidth;
+		this.OutlineColor = outlineColor;
+		this.OutlineWidth = outlineWidth;
 	}
 
 	public override void Deserialize(NetworkReader reader)
 	{
 		base.Deserialize(reader);
-		OutlineColor = reader.ReadColor32();
-		OutlineWidth = reader.ReadFloat();
+		this.OutlineColor = reader.ReadColor32();
+		this.OutlineWidth = reader.ReadFloat();
 	}
 
 	public override void Serialize(NetworkWriter writer)
 	{
 		base.Serialize(writer);
-		writer.WriteColor32(OutlineColor);
-		writer.WriteFloat(OutlineWidth);
+		writer.WriteColor32(this.OutlineColor);
+		writer.WriteFloat(this.OutlineWidth);
 	}
 }

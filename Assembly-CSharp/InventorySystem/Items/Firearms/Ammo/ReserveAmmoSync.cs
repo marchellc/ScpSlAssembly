@@ -28,30 +28,30 @@ public static class ReserveAmmoSync
 
 		public ReserveAmmoMessage(NetworkReader reader)
 		{
-			_ammoType = reader.ReadSByte();
-			_amount = reader.ReadByte();
-			_player = reader.ReadRecyclablePlayerId();
+			this._ammoType = reader.ReadSByte();
+			this._amount = reader.ReadByte();
+			this._player = reader.ReadRecyclablePlayerId();
 		}
 
 		public ReserveAmmoMessage(ReferenceHub owner, ItemType ammoType)
 		{
-			_ammoType = (sbyte)ammoType;
-			_amount = (byte)Mathf.Clamp(owner.inventory.GetCurAmmo(ammoType), 0, 255);
-			_player = new RecyclablePlayerId(owner);
+			this._ammoType = (sbyte)ammoType;
+			this._amount = (byte)Mathf.Clamp(owner.inventory.GetCurAmmo(ammoType), 0, 255);
+			this._player = new RecyclablePlayerId(owner);
 		}
 
 		public void Serialize(NetworkWriter writer)
 		{
-			writer.WriteSByte(_ammoType);
-			writer.WriteByte(_amount);
-			writer.WriteRecyclablePlayerId(_player);
+			writer.WriteSByte(this._ammoType);
+			writer.WriteByte(this._amount);
+			writer.WriteRecyclablePlayerId(this._player);
 		}
 
 		public void Apply()
 		{
-			if (ReferenceHub.TryGetHub(_player.Value, out var hub))
+			if (ReferenceHub.TryGetHub(this._player.Value, out var hub))
 			{
-				Set(hub, (ItemType)_ammoType, _amount);
+				ReserveAmmoSync.Set(hub, (ItemType)this._ammoType, this._amount);
 			}
 		}
 	}
@@ -65,18 +65,18 @@ public static class ReserveAmmoSync
 	{
 		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub hub)
 		{
-			SyncData.Remove(hub);
+			ReserveAmmoSync.SyncData.Remove(hub);
 		};
 		PlayerRoleManager.OnServerRoleSet += delegate(ReferenceHub hub, RoleTypeId newRole, RoleChangeReason reason)
 		{
 			if (!newRole.IsAlive())
 			{
-				SendAllToNewSpectator(hub);
+				ReserveAmmoSync.SendAllToNewSpectator(hub);
 			}
 		};
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			SyncData.Clear();
+			ReserveAmmoSync.SyncData.Clear();
 			NetworkClient.ReplaceHandler(delegate(ReserveAmmoMessage msg)
 			{
 				msg.Apply();
@@ -86,7 +86,7 @@ public static class ReserveAmmoSync
 		{
 			if (NetworkServer.active)
 			{
-				UpdateDelta();
+				ReserveAmmoSync.UpdateDelta();
 			}
 		};
 	}
@@ -95,7 +95,7 @@ public static class ReserveAmmoSync
 	{
 		foreach (AutosyncItem instance in AutosyncItem.Instances)
 		{
-			if (TryUnpack(instance, out var owner, out var ammoType))
+			if (ReserveAmmoSync.TryUnpack(instance, out var owner, out var ammoType))
 			{
 				spectator.connectionToClient.Send(new ReserveAmmoMessage(owner, ammoType));
 			}
@@ -106,12 +106,12 @@ public static class ReserveAmmoSync
 	{
 		foreach (AutosyncItem instance in AutosyncItem.Instances)
 		{
-			if (!TryUnpack(instance, out var owner, out var ammoType))
+			if (!ReserveAmmoSync.TryUnpack(instance, out var owner, out var ammoType))
 			{
 				continue;
 			}
 			int curAmmo = owner.inventory.GetCurAmmo(ammoType);
-			LastSent orAdd = ServerLastSent.GetOrAdd(owner, () => new LastSent());
+			LastSent orAdd = ReserveAmmoSync.ServerLastSent.GetOrAdd(owner, () => new LastSent());
 			if (orAdd.AmmoCount != curAmmo || orAdd.AmmoType != ammoType)
 			{
 				orAdd.AmmoType = ammoType;
@@ -140,7 +140,7 @@ public static class ReserveAmmoSync
 
 	private static void Set(ReferenceHub hub, ItemType ammoType, int reserveAmmo)
 	{
-		SyncData.GetOrAdd(hub, () => new Dictionary<ItemType, int>())[ammoType] = reserveAmmo;
+		ReserveAmmoSync.SyncData.GetOrAdd(hub, () => new Dictionary<ItemType, int>())[ammoType] = reserveAmmo;
 	}
 
 	public static bool TryGet(ReferenceHub hub, ItemType ammoType, out int reserveAmmo)
@@ -150,7 +150,7 @@ public static class ReserveAmmoSync
 			reserveAmmo = hub.inventory.GetCurAmmo(ammoType);
 			return true;
 		}
-		if (!SyncData.TryGetValue(hub, out var value))
+		if (!ReserveAmmoSync.SyncData.TryGetValue(hub, out var value))
 		{
 			reserveAmmo = 0;
 			return false;

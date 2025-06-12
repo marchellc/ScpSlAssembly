@@ -25,14 +25,14 @@ public class BadgeToken : Token, IJsonSerializable
 	public BadgeToken(string badgeText, string badgeColor, int badgeType, bool staff, bool remoteAdmin, bool management, bool overwatchMode, bool globalBanning, ulong raPermissions, string userId, string nickname, DateTimeOffset issuanceTime, DateTimeOffset expirationTime, string usage, string issuedBy, string serial, bool testSignature, int tokenVersion)
 		: base(userId, nickname, issuanceTime, expirationTime, usage, issuedBy, serial, testSignature, tokenVersion)
 	{
-		BadgeText = badgeText;
-		BadgeColor = badgeColor;
-		BadgeType = badgeType;
-		Staff = staff;
-		RemoteAdmin = remoteAdmin;
-		Management = management;
-		OverwatchMode = overwatchMode;
-		GlobalBanning = globalBanning;
-		RaPermissions = raPermissions;
+		this.BadgeText = badgeText;
+		this.BadgeColor = badgeColor;
+		this.BadgeType = badgeType;
+		this.Staff = staff;
+		this.RemoteAdmin = remoteAdmin;
+		this.Management = management;
+		this.OverwatchMode = overwatchMode;
+		this.GlobalBanning = globalBanning;
+		this.RaPermissions = raPermissions;
 	}
 }

@@ -30,7 +30,7 @@ public class RandomItemGroupSpawnpoint : ItemSpawnpointBase, IDistributorGenerat
 		get
 		{
 			float num = 0f;
-			ItemGroup[] presets = Presets;
+			ItemGroup[] presets = this.Presets;
 			for (int i = 0; i < presets.Length; i++)
 			{
 				ItemGroup itemGroup = presets[i];
@@ -42,7 +42,7 @@ public class RandomItemGroupSpawnpoint : ItemSpawnpointBase, IDistributorGenerat
 
 	public void Generate(ItemDistributor distributor)
 	{
-		ItemGroup? randomItemPreset = GetRandomItemPreset();
+		ItemGroup? randomItemPreset = this.GetRandomItemPreset();
 		if (!randomItemPreset.HasValue)
 		{
 			return;
@@ -54,7 +54,7 @@ public class RandomItemGroupSpawnpoint : ItemSpawnpointBase, IDistributorGenerat
 			ItemPickupBase itemPickupBase = ItemDistributor.ServerCreatePickup(itemPreset.TargetItem, itemPreset.Position);
 			if (itemPickupBase != null)
 			{
-				distributor.ServerRegisterPickup(itemPickupBase, TriggerDoorName);
+				distributor.ServerRegisterPickup(itemPickupBase, base.TriggerDoorName);
 			}
 		}
 	}
@@ -67,13 +67,13 @@ public class RandomItemGroupSpawnpoint : ItemSpawnpointBase, IDistributorGenerat
 
 	public ItemGroup? GetRandomItemPreset()
 	{
-		if (Presets == null || Presets.Length == 0)
+		if (this.Presets == null || this.Presets.Length == 0)
 		{
 			return null;
 		}
-		float num = UnityEngine.Random.Range(0f, TotalWeight);
+		float num = UnityEngine.Random.Range(0f, this.TotalWeight);
 		float num2 = 0f;
-		ItemGroup[] presets = Presets;
+		ItemGroup[] presets = this.Presets;
 		for (int i = 0; i < presets.Length; i++)
 		{
 			ItemGroup value = presets[i];

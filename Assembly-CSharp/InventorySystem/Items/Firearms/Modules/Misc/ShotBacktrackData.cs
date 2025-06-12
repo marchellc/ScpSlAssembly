@@ -23,31 +23,31 @@ public readonly struct ShotBacktrackData
 
 	public readonly double CreationTimestamp;
 
-	public double Age => NetworkTime.time - CreationTimestamp;
+	public double Age => NetworkTime.time - this.CreationTimestamp;
 
 	public void WriteSelf(NetworkWriter writer)
 	{
-		writer.WriteRelativePosition(RelativeOwnerPosition);
-		writer.WriteQuaternion(RelativeOwnerRotation);
-		writer.WriteReferenceHub(PrimaryTargetHub);
-		writer.WriteRelativePosition(PrimaryTargetRelativePosition);
+		writer.WriteRelativePosition(this.RelativeOwnerPosition);
+		writer.WriteQuaternion(this.RelativeOwnerRotation);
+		writer.WriteReferenceHub(this.PrimaryTargetHub);
+		writer.WriteRelativePosition(this.PrimaryTargetRelativePosition);
 	}
 
 	public void ProcessShot(Firearm firearm, Action<ReferenceHub> processingMethod)
 	{
-		if (!WaypointBase.TryGetWaypoint(RelativeOwnerPosition.WaypointId, out var wp))
+		if (!WaypointBase.TryGetWaypoint(this.RelativeOwnerPosition.WaypointId, out var wp))
 		{
 			return;
 		}
-		Vector3 worldspacePosition = wp.GetWorldspacePosition(RelativeOwnerPosition.Relative);
-		Quaternion worldspaceRotation = wp.GetWorldspaceRotation(RelativeOwnerRotation);
+		Vector3 worldspacePosition = wp.GetWorldspacePosition(this.RelativeOwnerPosition.Relative);
+		Quaternion worldspaceRotation = wp.GetWorldspaceRotation(this.RelativeOwnerRotation);
 		using (new FpcBacktracker(firearm.Owner, worldspacePosition, worldspaceRotation))
 		{
-			if (HasPrimaryTarget)
+			if (this.HasPrimaryTarget)
 			{
-				using (new FpcBacktracker(PrimaryTargetHub, PrimaryTargetRelativePosition.Position))
+				using (new FpcBacktracker(this.PrimaryTargetHub, this.PrimaryTargetRelativePosition.Position))
 				{
-					processingMethod(PrimaryTargetHub);
+					processingMethod(this.PrimaryTargetHub);
 					return;
 				}
 			}
@@ -57,38 +57,38 @@ public readonly struct ShotBacktrackData
 
 	public ShotBacktrackData(NetworkReader reader)
 	{
-		CreationTimestamp = NetworkTime.time;
-		RelativeOwnerPosition = reader.ReadRelativePosition();
-		RelativeOwnerRotation = reader.ReadQuaternion();
-		HasPrimaryTarget = reader.TryReadReferenceHub(out PrimaryTargetHub);
-		PrimaryTargetRelativePosition = reader.ReadRelativePosition();
+		this.CreationTimestamp = NetworkTime.time;
+		this.RelativeOwnerPosition = reader.ReadRelativePosition();
+		this.RelativeOwnerRotation = reader.ReadQuaternion();
+		this.HasPrimaryTarget = reader.TryReadReferenceHub(out this.PrimaryTargetHub);
+		this.PrimaryTargetRelativePosition = reader.ReadRelativePosition();
 	}
 
 	public ShotBacktrackData(Firearm firearm)
 	{
-		CreationTimestamp = NetworkTime.time;
+		this.CreationTimestamp = NetworkTime.time;
 		if (!(firearm.Owner.roleManager.CurrentRole is IFpcRole fpcRole))
 		{
-			RelativeOwnerPosition = DefaultPos;
-			RelativeOwnerRotation = Quaternion.identity;
-			HasPrimaryTarget = false;
-			PrimaryTargetHub = null;
-			PrimaryTargetRelativePosition = DefaultPos;
+			this.RelativeOwnerPosition = ShotBacktrackData.DefaultPos;
+			this.RelativeOwnerRotation = Quaternion.identity;
+			this.HasPrimaryTarget = false;
+			this.PrimaryTargetHub = null;
+			this.PrimaryTargetRelativePosition = ShotBacktrackData.DefaultPos;
 			return;
 		}
-		RelativeOwnerPosition = new RelativePosition(fpcRole.FpcModule.Position);
-		RelativeOwnerRotation = WaypointBase.GetRelativeRotation(RelativeOwnerPosition.WaypointId, firearm.Owner.PlayerCameraReference.rotation);
-		if (TryGetPrimaryTarget(firearm, out var bestHitbox) && bestHitbox.TargetHub.roleManager.CurrentRole is IFpcRole fpcRole2)
+		this.RelativeOwnerPosition = new RelativePosition(fpcRole.FpcModule.Position);
+		this.RelativeOwnerRotation = WaypointBase.GetRelativeRotation(this.RelativeOwnerPosition.WaypointId, firearm.Owner.PlayerCameraReference.rotation);
+		if (ShotBacktrackData.TryGetPrimaryTarget(firearm, out var bestHitbox) && bestHitbox.TargetHub.roleManager.CurrentRole is IFpcRole fpcRole2)
 		{
-			HasPrimaryTarget = true;
-			PrimaryTargetHub = bestHitbox.TargetHub;
-			PrimaryTargetRelativePosition = new RelativePosition(fpcRole2.FpcModule.Position);
+			this.HasPrimaryTarget = true;
+			this.PrimaryTargetHub = bestHitbox.TargetHub;
+			this.PrimaryTargetRelativePosition = new RelativePosition(fpcRole2.FpcModule.Position);
 		}
 		else
 		{
-			HasPrimaryTarget = false;
-			PrimaryTargetHub = null;
-			PrimaryTargetRelativePosition = DefaultPos;
+			this.HasPrimaryTarget = false;
+			this.PrimaryTargetHub = null;
+			this.PrimaryTargetRelativePosition = ShotBacktrackData.DefaultPos;
 		}
 	}
 

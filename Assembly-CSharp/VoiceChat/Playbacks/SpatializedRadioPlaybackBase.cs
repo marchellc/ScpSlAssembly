@@ -38,7 +38,7 @@ public class SpatializedRadioPlaybackBase : VoiceChatPlaybackBase
 			int num = 0;
 			for (int i = 0; i < 8; i++)
 			{
-				num = Mathf.Max(num, Buffers[i].Length);
+				num = Mathf.Max(num, this.Buffers[i].Length);
 			}
 			return num;
 		}
@@ -47,24 +47,24 @@ public class SpatializedRadioPlaybackBase : VoiceChatPlaybackBase
 	protected override void Awake()
 	{
 		base.Awake();
-		_t = base.transform;
-		Buffers = new PlaybackBuffer[8];
+		this._t = base.transform;
+		this.Buffers = new PlaybackBuffer[8];
 		for (int i = 0; i < 8; i++)
 		{
-			Buffers[i] = new PlaybackBuffer();
+			this.Buffers[i] = new PlaybackBuffer();
 		}
 	}
 
 	protected override void OnEnable()
 	{
 		base.OnEnable();
-		AllInstances.Add(this);
+		SpatializedRadioPlaybackBase.AllInstances.Add(this);
 	}
 
 	protected override void OnDisable()
 	{
 		base.OnDisable();
-		AllInstances.Remove(this);
+		SpatializedRadioPlaybackBase.AllInstances.Remove(this);
 	}
 
 	protected override void Update()
@@ -73,13 +73,13 @@ public class SpatializedRadioPlaybackBase : VoiceChatPlaybackBase
 		bool flag = false;
 		for (int i = 0; i < 8; i++)
 		{
-			if (Buffers[i].Length != 0)
+			if (this.Buffers[i].Length != 0)
 			{
 				flag = true;
 			}
 		}
-		NoiseSource.mute = !flag;
-		LastPosition = _t.position;
+		this.NoiseSource.mute = !flag;
+		this.LastPosition = this._t.position;
 	}
 
 	protected override float ReadSample()
@@ -87,7 +87,7 @@ public class SpatializedRadioPlaybackBase : VoiceChatPlaybackBase
 		float num = 0f;
 		for (int i = 0; i < 8; i++)
 		{
-			num += Buffers[i].Read();
+			num += this.Buffers[i].Read();
 		}
 		return Mathf.Clamp(num, -1f, 1f);
 	}
@@ -101,7 +101,7 @@ public class SpatializedRadioPlaybackBase : VoiceChatPlaybackBase
 			{
 				int num = 0;
 				Vector3 position = MainCameraController.CurrentCamera.position;
-				foreach (SpatializedRadioPlaybackBase allInstance in AllInstances)
+				foreach (SpatializedRadioPlaybackBase allInstance in SpatializedRadioPlaybackBase.AllInstances)
 				{
 					allInstance.Culled = true;
 					float sqrMagnitude = (allInstance.LastPosition - position).sqrMagnitude;
@@ -110,8 +110,8 @@ public class SpatializedRadioPlaybackBase : VoiceChatPlaybackBase
 					{
 						if (num < 4)
 						{
-							AudibleRadiosDis[num] = sqrMagnitude;
-							AudibleRadioInst[num] = allInstance;
+							SpatializedRadioPlaybackBase.AudibleRadiosDis[num] = sqrMagnitude;
+							SpatializedRadioPlaybackBase.AudibleRadioInst[num] = allInstance;
 							num++;
 						}
 						else
@@ -119,7 +119,7 @@ public class SpatializedRadioPlaybackBase : VoiceChatPlaybackBase
 							int num2 = -1;
 							for (int i = 0; i < 4; i++)
 							{
-								float num3 = AudibleRadiosDis[i];
+								float num3 = SpatializedRadioPlaybackBase.AudibleRadiosDis[i];
 								if (!(num3 < sqrMagnitude))
 								{
 									num2 = i;
@@ -127,15 +127,15 @@ public class SpatializedRadioPlaybackBase : VoiceChatPlaybackBase
 							}
 							if (num2 != -1)
 							{
-								AudibleRadiosDis[num2] = sqrMagnitude;
-								AudibleRadioInst[num2] = allInstance;
+								SpatializedRadioPlaybackBase.AudibleRadiosDis[num2] = sqrMagnitude;
+								SpatializedRadioPlaybackBase.AudibleRadioInst[num2] = allInstance;
 							}
 						}
 					}
 				}
 				for (int j = 0; j < num; j++)
 				{
-					AudibleRadioInst[j].Culled = false;
+					SpatializedRadioPlaybackBase.AudibleRadioInst[j].Culled = false;
 				}
 			}
 		};

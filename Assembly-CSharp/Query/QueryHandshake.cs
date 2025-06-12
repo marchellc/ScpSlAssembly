@@ -43,8 +43,8 @@ public readonly struct QueryHandshake
 	{
 		get
 		{
-			int num = (Flags.HasFlagFast(ClientFlags.RestrictPermissions) ? 9 : 0);
-			int num2 = (Flags.HasFlagFast(ClientFlags.SpecifyLogUsername) ? Utf8.GetLength(Username) : 0);
+			int num = (this.Flags.HasFlagFast(ClientFlags.RestrictPermissions) ? 9 : 0);
+			int num2 = (this.Flags.HasFlagFast(ClientFlags.SpecifyLogUsername) ? Utf8.GetLength(this.Username) : 0);
 			return 35 + num + num2;
 		}
 	}
@@ -59,14 +59,14 @@ public readonly struct QueryHandshake
 		{
 			throw new ArgumentException("Username must be specified (and not be empty or whitespace) when ClientFlags.SpecifyLogUsername is set.", "username");
 		}
-		MaxPacketSize = maxPacketSize;
-		Timestamp = timestamp;
-		AuthChallenge = authChallenge;
-		ServerTimeoutThreshold = serverTimeoutThreshold;
-		Flags = flags;
-		Permissions = permissions;
-		KickPower = kickPower;
-		Username = username;
+		this.MaxPacketSize = maxPacketSize;
+		this.Timestamp = timestamp;
+		this.AuthChallenge = authChallenge;
+		this.ServerTimeoutThreshold = serverTimeoutThreshold;
+		this.Flags = flags;
+		this.Permissions = permissions;
+		this.KickPower = kickPower;
+		this.Username = username;
 	}
 
 	public QueryHandshake(ushort maxPacketSize, byte[] authChallenge, ClientFlags flags = ClientFlags.None, ulong permissions = ulong.MaxValue, byte kickPower = byte.MaxValue, string username = null, ushort serverTimeoutThreshold = 0)
@@ -76,15 +76,15 @@ public readonly struct QueryHandshake
 
 	public bool Validate(int timeTolerance = 120)
 	{
-		return Math.Abs(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - Timestamp) <= timeTolerance;
+		return Math.Abs(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - this.Timestamp) <= timeTolerance;
 	}
 
 	public int Serialize(Span<byte> buffer, bool toServer)
 	{
-		BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(0, 2), MaxPacketSize);
-		BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(2, 8), Timestamp);
-		AuthChallenge.CopyTo(buffer.Slice(10, 24));
-		BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(34, 2), ServerTimeoutThreshold);
+		BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(0, 2), this.MaxPacketSize);
+		BinaryPrimitives.WriteInt64BigEndian(buffer.Slice(2, 8), this.Timestamp);
+		this.AuthChallenge.CopyTo(buffer.Slice(10, 24));
+		BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(34, 2), this.ServerTimeoutThreshold);
 		return 36;
 	}
 

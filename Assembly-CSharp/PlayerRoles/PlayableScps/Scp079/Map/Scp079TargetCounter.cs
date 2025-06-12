@@ -21,7 +21,7 @@ public class Scp079TargetCounter : Scp079GuiElementBase
 			get
 			{
 				StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
-				TargetCounter[] allCounters = _allCounters;
+				TargetCounter[] allCounters = this._allCounters;
 				for (int i = 0; i < allCounters.Length; i++)
 				{
 					TargetCounter targetCounter = allCounters[i];
@@ -50,11 +50,11 @@ public class Scp079TargetCounter : Scp079GuiElementBase
 		[SerializeField]
 		private Team[] _teams;
 
-		public string Header => TranslationReader.Get(_translationKey, _translationIndex, _defaultValue);
+		public string Header => TranslationReader.Get(this._translationKey, this._translationIndex, this._defaultValue);
 
 		public bool Check(ReferenceHub hub)
 		{
-			return _teams.Contains(hub.GetTeam());
+			return this._teams.Contains(hub.GetTeam());
 		}
 	}
 
@@ -71,9 +71,9 @@ public class Scp079TargetCounter : Scp079GuiElementBase
 	internal override void Init(Scp079Role role, ReferenceHub owner)
 	{
 		base.Init(role, owner);
-		_isDirty = true;
+		this._isDirty = true;
 		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
-		role.SubroutineModule.TryGetSubroutine<Scp079TierManager>(out _tier);
+		role.SubroutineModule.TryGetSubroutine<Scp079TierManager>(out this._tier);
 	}
 
 	private void OnDestroy()
@@ -83,15 +83,15 @@ public class Scp079TargetCounter : Scp079GuiElementBase
 
 	private void Update()
 	{
-		if (Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen && _isDirty)
+		if (Scp079ToggleMenuAbilityBase<Scp079MapToggler>.IsOpen && this._isDirty)
 		{
-			int num = Mathf.Clamp(_tier.AccessTierIndex, 0, _countersForTier.Length - 1);
-			_counterTxt.text = _countersForTier[num].Text;
+			int num = Mathf.Clamp(this._tier.AccessTierIndex, 0, this._countersForTier.Length - 1);
+			this._counterTxt.text = this._countersForTier[num].Text;
 		}
 	}
 
 	private void OnRoleChanged(ReferenceHub hub, PlayerRoleBase oldRole, PlayerRoleBase newRole)
 	{
-		_isDirty = true;
+		this._isDirty = true;
 	}
 }

@@ -14,26 +14,26 @@ public abstract class IdHintParameter : HintParameter
 
 	protected IdHintParameter(byte id)
 	{
-		Id = id;
+		this.Id = id;
 	}
 
 	public override void Deserialize(NetworkReader reader)
 	{
-		Id = reader.ReadInt();
+		this.Id = reader.ReadInt();
 	}
 
 	public override void Serialize(NetworkWriter writer)
 	{
-		writer.WriteInt(Id);
+		writer.WriteInt(this.Id);
 	}
 
 	protected override string UpdateState(float progress)
 	{
-		if (_stopFormatting)
+		if (this._stopFormatting)
 		{
 			return null;
 		}
-		return FormatId(progress, out _stopFormatting);
+		return this.FormatId(progress, out this._stopFormatting);
 	}
 
 	protected abstract string FormatId(float progress, out bool stopFormatting);

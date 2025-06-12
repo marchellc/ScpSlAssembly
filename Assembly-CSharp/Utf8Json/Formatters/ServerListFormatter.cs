@@ -11,17 +11,17 @@ public sealed class ServerListFormatter : IJsonFormatter<ServerList>, IJsonForma
 
 	public ServerListFormatter()
 	{
-		____keyMapping = new AutomataDictionary { 
+		this.____keyMapping = new AutomataDictionary { 
 		{
 			JsonWriter.GetEncodedPropertyNameWithoutQuotation("servers"),
 			0
 		} };
-		____stringByteKeys = new byte[1][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("servers") };
+		this.____stringByteKeys = new byte[1][] { JsonWriter.GetEncodedPropertyNameWithBeginObject("servers") };
 	}
 
 	public void Serialize(ref JsonWriter writer, ServerList value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		formatterResolver.GetFormatterWithVerify<ServerListItem[]>().Serialize(ref writer, value.servers, formatterResolver);
 		writer.WriteEndObject();
 	}
@@ -38,7 +38,7 @@ public sealed class ServerListFormatter : IJsonFormatter<ServerList>, IJsonForma
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 			}

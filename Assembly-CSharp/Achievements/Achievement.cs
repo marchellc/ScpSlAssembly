@@ -14,20 +14,20 @@ public readonly struct Achievement
 
 	public Achievement(string steamName, long discordId, bool byServer = false)
 	{
-		SteamName = steamName;
-		_discordId = discordId;
-		_steamProgress = string.Empty;
-		_maxValue = 0;
-		ActivatedByServer = byServer;
+		this.SteamName = steamName;
+		this._discordId = discordId;
+		this._steamProgress = string.Empty;
+		this._maxValue = 0;
+		this.ActivatedByServer = byServer;
 	}
 
 	public Achievement(string steamName, string steamParameter, long discordId, int maxValue, bool byServer = false)
 	{
-		SteamName = steamName;
-		_discordId = discordId;
-		_steamProgress = steamParameter;
-		_maxValue = maxValue;
-		ActivatedByServer = byServer;
+		this.SteamName = steamName;
+		this._discordId = discordId;
+		this._steamProgress = steamParameter;
+		this._maxValue = maxValue;
+		this.ActivatedByServer = byServer;
 	}
 
 	public void Achieve()

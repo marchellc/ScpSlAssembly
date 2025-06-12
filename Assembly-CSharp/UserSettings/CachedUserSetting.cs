@@ -16,15 +16,15 @@ public class CachedUserSetting<TCachedValue>
 	{
 		get
 		{
-			if (!_wasEverSet)
+			if (!this._wasEverSet)
 			{
-				UpdateValue(UserSetting<TCachedValue>.Get(_enumType, _enumKey));
+				this.UpdateValue(UserSetting<TCachedValue>.Get(this._enumType, this._enumKey));
 			}
-			return _cachedValue;
+			return this._cachedValue;
 		}
 		set
 		{
-			UserSetting<TCachedValue>.Set(_enumType, _enumKey, value);
+			UserSetting<TCachedValue>.Set(this._enumType, this._enumKey, value);
 		}
 	}
 
@@ -32,18 +32,18 @@ public class CachedUserSetting<TCachedValue>
 	{
 		ushort stableTypeHash = SettingsKeyGenerator.GetStableTypeHash(trackedEnum.GetType());
 		ushort trackedEnumKey = ((IConvertible)trackedEnum).ToUInt16((IFormatProvider)null);
-		Setup(stableTypeHash, trackedEnumKey);
+		this.Setup(stableTypeHash, trackedEnumKey);
 	}
 
 	public CachedUserSetting(ushort trackedEnumType, ushort trackedEnumKey)
 	{
-		Setup(trackedEnumType, trackedEnumKey);
+		this.Setup(trackedEnumType, trackedEnumKey);
 	}
 
 	private void Setup(ushort trackedEnumType, ushort trackedEnumKey)
 	{
-		_enumType = trackedEnumType;
-		_enumKey = trackedEnumKey;
+		this._enumType = trackedEnumType;
+		this._enumKey = trackedEnumKey;
 		UserSetting<TCachedValue>.AddListener(trackedEnumType, trackedEnumKey, UpdateValue);
 	}
 
@@ -54,7 +54,7 @@ public class CachedUserSetting<TCachedValue>
 
 	private void UpdateValue(TCachedValue val)
 	{
-		_cachedValue = val;
-		_wasEverSet = true;
+		this._cachedValue = val;
+		this._wasEverSet = true;
 	}
 }

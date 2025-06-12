@@ -48,11 +48,11 @@ public class ImpactEffectsModule : ModuleBase
 		{
 			get
 			{
-				bool valueOrDefault = _disableTracers == true;
-				if (!_disableTracers.HasValue)
+				bool valueOrDefault = this._disableTracers == true;
+				if (!this._disableTracers.HasValue)
 				{
-					valueOrDefault = TracerPrefab == null;
-					_disableTracers = valueOrDefault;
+					valueOrDefault = this.TracerPrefab == null;
+					this._disableTracers = valueOrDefault;
 					return valueOrDefault;
 				}
 				return valueOrDefault;
@@ -75,12 +75,12 @@ public class ImpactEffectsModule : ModuleBase
 
 		public bool GetEnabled(Firearm firearm)
 		{
-			if (!_attSet)
+			if (!this._attSet)
 			{
-				_attInstance = Attachment.GetAttachment(firearm);
-				_attSet = true;
+				this._attInstance = this.Attachment.GetAttachment(firearm);
+				this._attSet = true;
 			}
-			return _attInstance.IsEnabled;
+			return this._attInstance.IsEnabled;
 		}
 	}
 
@@ -104,16 +104,16 @@ public class ImpactEffectsModule : ModuleBase
 		switch ((RpcType)reader.ReadByte())
 		{
 		case RpcType.ImpactDecal:
-			ClientReadImpactDecal(reader);
+			this.ClientReadImpactDecal(reader);
 			break;
 		case RpcType.TracerDefault:
-			ClientReadTracer(reader, serial, null);
+			this.ClientReadTracer(reader, serial, null);
 			break;
 		case RpcType.TracerOverride:
-			ClientReadTracer(reader, serial, reader.ReadByte());
+			this.ClientReadTracer(reader, serial, reader.ReadByte());
 			break;
 		case RpcType.PlayerHit:
-			ClientReadPlayerHit(reader);
+			this.ClientReadPlayerHit(reader);
 			break;
 		}
 	}
@@ -121,18 +121,18 @@ public class ImpactEffectsModule : ModuleBase
 	public void ServerProcessHit(RaycastHit hit, Vector3 origin, bool anyDamageDealt)
 	{
 		int? overrideId = null;
-		for (int i = 0; i < AttachmentOverrides.Length; i++)
+		for (int i = 0; i < this.AttachmentOverrides.Length; i++)
 		{
-			if (AttachmentOverrides[i].GetEnabled(base.Firearm))
+			if (this.AttachmentOverrides[i].GetEnabled(base.Firearm))
 			{
 				overrideId = i;
 				break;
 			}
 		}
-		ImpactEffectsSettings settings = GetSettings(overrideId);
+		ImpactEffectsSettings settings = this.GetSettings(overrideId);
 		if (!settings.DisableTracers)
 		{
-			ServerSendTracer(hit, origin, overrideId, settings.TracerPrefab);
+			this.ServerSendTracer(hit, origin, overrideId, settings.TracerPrefab);
 		}
 		DrawableLines.GenerateLine(5f, Color.yellow, origin, hit.point);
 		Collider collider = hit.collider;
@@ -140,16 +140,16 @@ public class ImpactEffectsModule : ModuleBase
 		if (collider.gameObject.layer == 14)
 		{
 			Vector3 origin2 = hit.point * 2f - origin;
-			ServerSendImpactDecal(hit, origin, settings.GlassCrackDecal);
-			ServerSendImpactDecal(hit, origin2, settings.GlassCrackDecal);
+			this.ServerSendImpactDecal(hit, origin, settings.GlassCrackDecal);
+			this.ServerSendImpactDecal(hit, origin2, settings.GlassCrackDecal);
 		}
 		else if (!collider.TryGetComponent<IDestructible>(out component))
 		{
-			ServerSendImpactDecal(hit, origin, settings.BulletholeDecal);
+			this.ServerSendImpactDecal(hit, origin, settings.BulletholeDecal);
 		}
 		else if (anyDamageDealt && !settings.DisableBleeding && component is HitboxIdentity hitbox)
 		{
-			ServerSendPlayerHit(hit, origin, hitbox);
+			this.ServerSendPlayerHit(hit, origin, hitbox);
 		}
 	}
 
@@ -157,7 +157,7 @@ public class ImpactEffectsModule : ModuleBase
 	{
 		RelativePosition relDestination = new RelativePosition(hit.point);
 		RelativePosition relOrigin = new RelativePosition(origin + Vector3.up * 0.6f);
-		SendRpc(delegate(NetworkWriter writer)
+		this.SendRpc(delegate(NetworkWriter writer)
 		{
 			if (overrideId.HasValue)
 			{
@@ -183,7 +183,7 @@ public class ImpactEffectsModule : ModuleBase
 			{
 				wp.GetWorldspacePosition(hitPosition.Relative);
 				Vector3 position = reader.ReadRelativePosition().Position;
-				GetSettings(overrideId).TracerPrefab.GetFromPool().Fire(hitPosition, serial, position, reader, base.Firearm);
+				this.GetSettings(overrideId).TracerPrefab.GetFromPool().Fire(hitPosition, serial, position, reader, base.Firearm);
 			}
 		}
 	}
@@ -193,15 +193,15 @@ public class ImpactEffectsModule : ModuleBase
 		Vector3 point = hit.point;
 		Vector3 startRaycast = hit.point + (origin - hit.point).normalized;
 		ReferenceHub owner = base.Firearm.Owner;
-		PlayerPlacingBulletHoleEventArgs playerPlacingBulletHoleEventArgs = new PlayerPlacingBulletHoleEventArgs(owner, decalType, point, startRaycast);
-		PlayerEvents.OnPlacingBulletHole(playerPlacingBulletHoleEventArgs);
-		if (playerPlacingBulletHoleEventArgs.IsAllowed)
+		PlayerPlacingBulletHoleEventArgs e = new PlayerPlacingBulletHoleEventArgs(owner, decalType, point, startRaycast);
+		PlayerEvents.OnPlacingBulletHole(e);
+		if (e.IsAllowed)
 		{
-			point = playerPlacingBulletHoleEventArgs.HitPosition;
-			startRaycast = playerPlacingBulletHoleEventArgs.RaycastStart;
+			point = e.HitPosition;
+			startRaycast = e.RaycastStart;
 			RelativePosition hitPoint = new RelativePosition(point);
 			RelativePosition startRaycastPoint = new RelativePosition(startRaycast);
-			SendRpc(delegate(NetworkWriter writer)
+			this.SendRpc(delegate(NetworkWriter writer)
 			{
 				writer.WriteSubheader(RpcType.ImpactDecal);
 				writer.WriteByte((byte)decalType);
@@ -219,7 +219,7 @@ public class ImpactEffectsModule : ModuleBase
 			DecalPoolType decalType = (DecalPoolType)reader.ReadByte();
 			Vector3 position = reader.ReadRelativePosition().Position;
 			Vector3 position2 = reader.ReadRelativePosition().Position;
-			ClientSpawnDecal(position2, position - position2, decalType);
+			this.ClientSpawnDecal(position2, position - position2, decalType);
 		}
 	}
 
@@ -227,14 +227,15 @@ public class ImpactEffectsModule : ModuleBase
 	{
 		Vector3 hitPointVector = hit.point;
 		Vector3 startRaycastVector = hit.point + (origin - hit.point).normalized;
+		ReferenceHub targetHub = hitbox.TargetHub;
 		ReferenceHub owner = base.Firearm.Owner;
-		PlayerPlacingBloodEventArgs playerPlacingBloodEventArgs = new PlayerPlacingBloodEventArgs(owner, hitPointVector, startRaycastVector);
-		PlayerEvents.OnPlacingBlood(playerPlacingBloodEventArgs);
-		if (playerPlacingBloodEventArgs.IsAllowed)
+		PlayerPlacingBloodEventArgs e = new PlayerPlacingBloodEventArgs(targetHub, owner, hitPointVector, startRaycastVector);
+		PlayerEvents.OnPlacingBlood(e);
+		if (e.IsAllowed)
 		{
-			hitPointVector = playerPlacingBloodEventArgs.HitPosition;
-			startRaycastVector = playerPlacingBloodEventArgs.RaycastStart;
-			SendRpc(delegate(NetworkWriter writer)
+			hitPointVector = e.HitPosition;
+			startRaycastVector = e.RaycastStart;
+			this.SendRpc(delegate(NetworkWriter writer)
 			{
 				writer.WriteSubheader(RpcType.PlayerHit);
 				writer.WriteReferenceHub(hitbox.TargetHub);
@@ -245,7 +246,7 @@ public class ImpactEffectsModule : ModuleBase
 				writer.WriteByte((byte)hitbox.Index);
 				writer.WriteRoleType(hitbox.TargetHub.GetRoleId());
 			});
-			PlayerEvents.OnPlacedBlood(new PlayerPlacedBloodEventArgs(owner, hitPointVector, startRaycastVector));
+			PlayerEvents.OnPlacedBlood(new PlayerPlacedBloodEventArgs(targetHub, owner, hitPointVector, startRaycastVector));
 		}
 	}
 
@@ -272,14 +273,14 @@ public class ImpactEffectsModule : ModuleBase
 			BloodSettings bloodSettings = result.BloodSettings;
 			if (bloodSettings.RandomDecalValidate)
 			{
-				ClientSpawnDecal(position2, normalized, bloodSettings.Decal);
+				this.ClientSpawnDecal(position2, normalized, bloodSettings.Decal);
 			}
 		}
 	}
 
 	private void ClientSpawnDecal(Vector3 raycastOrigin, Vector3 raycastDirection, DecalPoolType decalType)
 	{
-		if (Physics.Raycast(raycastOrigin, raycastDirection, out var hitInfo, 8f, ReceivingLayers) && DecalPoolManager.TryGet(decalType, out var decal))
+		if (Physics.Raycast(raycastOrigin, raycastDirection, out var hitInfo, 8f, ImpactEffectsModule.ReceivingLayers) && DecalPoolManager.TryGet(decalType, out var decal))
 		{
 			decal.SetRandomRotation();
 			decal.AttachToSurface(hitInfo);
@@ -290,9 +291,9 @@ public class ImpactEffectsModule : ModuleBase
 	{
 		if (!overrideId.HasValue)
 		{
-			return BaseSettings;
+			return this.BaseSettings;
 		}
 		int value = overrideId.Value;
-		return AttachmentOverrides[value].Settings;
+		return this.AttachmentOverrides[value].Settings;
 	}
 }

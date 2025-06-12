@@ -32,33 +32,33 @@ public class FlashlightExtension : MixedExtension, IDestroyExtensionReceiver
 	public override void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
 		base.InitViewmodel(viewmodel);
-		_updateEveryFrame = true;
+		this._updateEveryFrame = true;
 	}
 
 	public override void SetupWorldmodel(FirearmWorldmodel worldmodel)
 	{
 		base.SetupWorldmodel(worldmodel);
-		UpdateState();
+		this.UpdateState();
 		switch (worldmodel.WorldmodelType)
 		{
 		case FirearmWorldmodelType.Thirdperson:
-			_lightSource.range = 22f;
+			this._lightSource.range = 22f;
 			break;
 		case FirearmWorldmodelType.Pickup:
 		case FirearmWorldmodelType.Presentation:
-			_lightSource.range = 3.5f;
+			this._lightSource.range = 3.5f;
 			break;
 		}
-		if (!_eventAssigned)
+		if (!this._eventAssigned)
 		{
 			FlashlightAttachment.OnAnyStatusChanged += UpdateState;
-			_eventAssigned = true;
+			this._eventAssigned = true;
 		}
 	}
 
 	public void OnDestroyExtension()
 	{
-		if (_eventAssigned)
+		if (this._eventAssigned)
 		{
 			FlashlightAttachment.OnAnyStatusChanged -= UpdateState;
 		}
@@ -67,23 +67,23 @@ public class FlashlightExtension : MixedExtension, IDestroyExtensionReceiver
 	private void UpdateState()
 	{
 		bool flag = FlashlightAttachment.GetEnabled(base.Identifier.SerialNumber);
-		if (!_prevState.HasValue || _prevState.Value != flag)
+		if (!this._prevState.HasValue || this._prevState.Value != flag)
 		{
-			_prevState = flag;
-			_lightSource.enabled = flag;
-			Renderer[] renderers = _renderers;
+			this._prevState = flag;
+			this._lightSource.enabled = flag;
+			Renderer[] renderers = this._renderers;
 			for (int i = 0; i < renderers.Length; i++)
 			{
-				renderers[i].sharedMaterial = (flag ? _enabledMaterial : _disabledMaterial);
+				renderers[i].sharedMaterial = (flag ? this._enabledMaterial : this._disabledMaterial);
 			}
 		}
 	}
 
 	private void Update()
 	{
-		if (_updateEveryFrame)
+		if (this._updateEveryFrame)
 		{
-			UpdateState();
+			this.UpdateState();
 		}
 	}
 }

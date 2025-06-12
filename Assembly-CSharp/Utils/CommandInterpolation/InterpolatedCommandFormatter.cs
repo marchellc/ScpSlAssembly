@@ -15,14 +15,14 @@ public class InterpolatedCommandFormatter
 
 		public InterpolatedCommandFormatterContext()
 		{
-			Arguments = new List<string>();
-			Builder = new StringBuilder();
+			this.Arguments = new List<string>();
+			this.Builder = new StringBuilder();
 		}
 
 		public void Clear()
 		{
-			Arguments.Clear();
-			Builder.Clear();
+			this.Arguments.Clear();
+			this.Builder.Clear();
 		}
 	}
 
@@ -42,22 +42,22 @@ public class InterpolatedCommandFormatter
 	{
 		get
 		{
-			return commands;
+			return this.commands;
 		}
 		set
 		{
-			commands = value ?? throw new ArgumentNullException("value");
+			this.commands = value ?? throw new ArgumentNullException("value");
 		}
 	}
 
 	public InterpolatedCommandFormatter(int initialContexts = 4)
 	{
-		availableContexts = new Stack<InterpolatedCommandFormatterContext>();
+		this.availableContexts = new Stack<InterpolatedCommandFormatterContext>();
 		for (int i = 0; i < initialContexts; i++)
 		{
-			availableContexts.Push(new InterpolatedCommandFormatterContext());
+			this.availableContexts.Push(new InterpolatedCommandFormatterContext());
 		}
-		Commands = new Dictionary<string, Func<List<string>, string>>();
+		this.Commands = new Dictionary<string, Func<List<string>, string>>();
 	}
 
 	private void ProcessInterpolation(string raw, InterpolatedCommandFormatterContext context)
@@ -68,7 +68,7 @@ public class InterpolatedCommandFormatter
 		for (int i = 0; i < raw.Length; i++)
 		{
 			char c = raw[i];
-			if (c == Escape && !flag)
+			if (c == this.Escape && !flag)
 			{
 				flag = true;
 			}
@@ -84,19 +84,19 @@ public class InterpolatedCommandFormatter
 					context.Builder.Append('\\');
 					continue;
 				}
-				if (c != StartClosure && c != EndClosure && c != ArgumentSplitter && c != Escape)
+				if (c != this.StartClosure && c != this.EndClosure && c != this.ArgumentSplitter && c != this.Escape)
 				{
 					throw new InvalidOperationException($"Unrecognized escape character at column {i}.");
 				}
 			}
-			else if (c == StartClosure)
+			else if (c == this.StartClosure)
 			{
 				if (num++ == 0)
 				{
 					num2 = i + 1;
 				}
 			}
-			else if (c == EndClosure)
+			else if (c == this.EndClosure)
 			{
 				if (num-- == 0)
 				{
@@ -107,7 +107,7 @@ public class InterpolatedCommandFormatter
 					continue;
 				}
 				string processed = raw.Substring(num2, i - num2);
-				if (!ProcessInterpolatedCommand(processed, context.Arguments, out processed))
+				if (!this.ProcessInterpolatedCommand(processed, context.Arguments, out processed))
 				{
 					throw new InvalidOperationException(string.Format("Invalid command at column {0}: {1}", num2, string.Join(", ", context.Arguments.Select((string x) => "\"" + x + "\""))));
 				}
@@ -131,9 +131,9 @@ public class InterpolatedCommandFormatter
 
 	private bool ProcessInterpolatedCommand(string raw, List<string> argumentBuffer, out string processed)
 	{
-		ProcessArguments(raw, argumentBuffer);
+		this.ProcessArguments(raw, argumentBuffer);
 		string key = argumentBuffer[0];
-		if (Commands.TryGetValue(key, out var value))
+		if (this.Commands.TryGetValue(key, out var value))
 		{
 			processed = value(argumentBuffer);
 			return true;
@@ -154,19 +154,19 @@ public class InterpolatedCommandFormatter
 			{
 				flag = false;
 			}
-			else if (c == Escape)
+			else if (c == this.Escape)
 			{
 				flag = true;
 			}
-			else if (c == StartClosure)
+			else if (c == this.StartClosure)
 			{
 				num2++;
 			}
-			else if (c == EndClosure)
+			else if (c == this.EndClosure)
 			{
 				num2--;
 			}
-			else if (c == ArgumentSplitter && num2 == 0)
+			else if (c == this.ArgumentSplitter && num2 == 0)
 			{
 				arguments.Add(raw.Substring(num, i - num));
 				num = i + 1;
@@ -177,9 +177,9 @@ public class InterpolatedCommandFormatter
 
 	private InterpolatedCommandFormatterContext SafePopContext()
 	{
-		if (availableContexts.Count != 0)
+		if (this.availableContexts.Count != 0)
 		{
-			return availableContexts.Pop();
+			return this.availableContexts.Pop();
 		}
 		return new InterpolatedCommandFormatterContext();
 	}
@@ -189,7 +189,7 @@ public class InterpolatedCommandFormatter
 		bool result2 = false;
 		try
 		{
-			result = ProcessExpression(raw);
+			result = this.ProcessExpression(raw);
 			result2 = true;
 		}
 		catch (InvalidOperationException ex)
@@ -206,11 +206,11 @@ public class InterpolatedCommandFormatter
 
 	public string ProcessExpression(string raw)
 	{
-		InterpolatedCommandFormatterContext interpolatedCommandFormatterContext = SafePopContext();
-		ProcessInterpolation(raw, interpolatedCommandFormatterContext);
+		InterpolatedCommandFormatterContext interpolatedCommandFormatterContext = this.SafePopContext();
+		this.ProcessInterpolation(raw, interpolatedCommandFormatterContext);
 		string result = interpolatedCommandFormatterContext.Builder.ToString();
 		interpolatedCommandFormatterContext.Clear();
-		availableContexts.Push(interpolatedCommandFormatterContext);
+		this.availableContexts.Push(interpolatedCommandFormatterContext);
 		return result;
 	}
 }

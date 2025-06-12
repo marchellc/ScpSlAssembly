@@ -20,19 +20,19 @@ public abstract class StandardVoiceModule : VoiceModuleBase, IGlobalPlayback
 	[SerializeField]
 	protected SingleBufferPlayback GlobalPlayback;
 
-	public virtual bool GlobalChatActive => GlobalPlayback.MaxSamples > 0;
+	public virtual bool GlobalChatActive => this.GlobalPlayback.MaxSamples > 0;
 
 	public virtual Color GlobalChatColor => base.Owner.serverRoles.GetVoiceColor();
 
 	public virtual string GlobalChatName => base.Owner.nicknameSync.DisplayName;
 
-	public virtual float GlobalChatLoudness => GlobalPlayback.Loudness;
+	public virtual float GlobalChatLoudness => this.GlobalPlayback.Loudness;
 
 	public virtual GlobalChatIconType GlobalChatIcon
 	{
 		get
 		{
-			if (!IsRoundSummary)
+			if (!this.IsRoundSummary)
 			{
 				return GlobalChatIconType.Avatar;
 			}
@@ -46,7 +46,7 @@ public abstract class StandardVoiceModule : VoiceModuleBase, IGlobalPlayback
 	{
 		KeyCode key = NewInput.GetKey(ActionName.VoiceChat);
 		KeyCode key2 = NewInput.GetKey(ActionName.AltVoiceChat);
-		return ProcessInputs(ProcessKey(key, ref _primHeld, _primSw), ProcessKey(key2, ref _altHeld, _altSw));
+		return this.ProcessInputs(this.ProcessKey(key, ref this._primHeld, this._primSw), this.ProcessKey(key2, ref this._altHeld, this._altSw));
 	}
 
 	public override void SpawnObject()
@@ -58,10 +58,10 @@ public abstract class StandardVoiceModule : VoiceModuleBase, IGlobalPlayback
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_primHeld = false;
-		_altHeld = false;
-		_primSw.Stop();
-		_altSw.Stop();
+		this._primHeld = false;
+		this._altHeld = false;
+		this._primSw.Stop();
+		this._altSw.Stop();
 		GlobalChatIndicatorManager.Unsubscribe(this);
 	}
 
@@ -75,7 +75,7 @@ public abstract class StandardVoiceModule : VoiceModuleBase, IGlobalPlayback
 		{
 			return channel;
 		}
-		if (IsRoundSummary && (base.ReceiveFlags & GroupMuteFlags.Summary) == 0)
+		if (this.IsRoundSummary && (base.ReceiveFlags & GroupMuteFlags.Summary) == 0)
 		{
 			return VoiceChatChannel.RoundSummary;
 		}
@@ -91,7 +91,7 @@ public abstract class StandardVoiceModule : VoiceModuleBase, IGlobalPlayback
 		switch (base.CurrentChannel)
 		{
 		case VoiceChatChannel.RoundSummary:
-			GlobalPlayback.Buffer.Write(data, len);
+			this.GlobalPlayback.Buffer.Write(data, len);
 			break;
 		case VoiceChatChannel.Intercom:
 			IntercomPlayback.ProcessSamples(base.Owner, data, len);

@@ -7,6 +7,6 @@ public class OrWaitManager : UntilWaitManager
 {
 	protected override bool KeepRunning()
 	{
-		return waitHandles.Any((CoroutineHandle x) => x.IsRunning);
+		return base.waitHandles.Any((CoroutineHandle x) => x.IsRunning);
 	}
 }

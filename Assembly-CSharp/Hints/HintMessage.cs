@@ -8,6 +8,6 @@ public readonly struct HintMessage : NetworkMessage
 
 	public HintMessage(Hint content)
 	{
-		Content = content;
+		this.Content = content;
 	}
 }

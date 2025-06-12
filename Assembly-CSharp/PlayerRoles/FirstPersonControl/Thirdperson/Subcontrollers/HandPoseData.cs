@@ -24,11 +24,12 @@ public struct HandPoseData
 		{
 			return target;
 		}
-		HandPoseData result = default(HandPoseData);
-		result.LeftHandPose = Mathf.Lerp(LeftHandPose, target.LeftHandPose, weight);
-		result.LeftHandWeight = Mathf.Lerp(LeftHandWeight, target.LeftHandWeight, weight);
-		result.RightHandPose = Mathf.Lerp(RightHandPose, target.RightHandPose, weight);
-		result.RightHandWeight = Mathf.Lerp(RightHandWeight, target.RightHandWeight, weight);
-		return result;
+		return new HandPoseData
+		{
+			LeftHandPose = Mathf.Lerp(this.LeftHandPose, target.LeftHandPose, weight),
+			LeftHandWeight = Mathf.Lerp(this.LeftHandWeight, target.LeftHandWeight, weight),
+			RightHandPose = Mathf.Lerp(this.RightHandPose, target.RightHandPose, weight),
+			RightHandWeight = Mathf.Lerp(this.RightHandWeight, target.RightHandWeight, weight)
+		};
 	}
 }

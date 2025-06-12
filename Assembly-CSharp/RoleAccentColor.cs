@@ -32,64 +32,64 @@ public class RoleAccentColor
 	{
 		get
 		{
-			if (RoleColorInfluence == 0f)
+			if (this.RoleColorInfluence == 0f)
 			{
-				return ClampBrigtness(_savedColor);
+				return this.ClampBrigtness(this._savedColor);
 			}
 			bool flag;
 			Color color;
 			if (ReferenceHub.TryGetLocalHub(out var hub))
 			{
 				PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
-				flag = _prevType == currentRole.RoleTypeId;
+				flag = this._prevType == currentRole.RoleTypeId;
 				color = currentRole.RoleColor;
 			}
 			else
 			{
 				flag = false;
-				color = _fallbackColor;
+				color = this._fallbackColor;
 			}
-			if (RoleColorInfluence == 2f)
+			if (this.RoleColorInfluence == 2f)
 			{
 				return color;
 			}
 			if (!flag)
 			{
-				Color color2 = new Color(_savedColor.r * color.r, _savedColor.g * color.g, _savedColor.b * color.b, _savedColor.a * color.a);
-				if (RoleColorInfluence == 1f)
+				Color color2 = new Color(this._savedColor.r * color.r, this._savedColor.g * color.g, this._savedColor.b * color.b, this._savedColor.a * color.a);
+				if (this.RoleColorInfluence == 1f)
 				{
-					_prevMixed = color2;
+					this._prevMixed = color2;
 				}
-				else if (RoleColorInfluence < 1f)
+				else if (this.RoleColorInfluence < 1f)
 				{
-					_prevMixed = Color.Lerp(_savedColor, color2, RoleColorInfluence);
+					this._prevMixed = Color.Lerp(this._savedColor, color2, this.RoleColorInfluence);
 				}
 				else
 				{
-					_prevMixed = Color.Lerp(color2, color, RoleColorInfluence - 1f);
+					this._prevMixed = Color.Lerp(color2, color, this.RoleColorInfluence - 1f);
 				}
-				_prevMixed = ClampBrigtness(_prevMixed);
+				this._prevMixed = this.ClampBrigtness(this._prevMixed);
 			}
-			return _prevMixed;
+			return this._prevMixed;
 		}
 		set
 		{
-			_savedColor = value;
-			_prevType = (RoleTypeId)(-128);
+			this._savedColor = value;
+			this._prevType = (RoleTypeId)(-128);
 		}
 	}
 
 	private Color ClampBrigtness(Color color)
 	{
 		float grayscale = color.grayscale;
-		if (grayscale < _minBrightness)
+		if (grayscale < this._minBrightness)
 		{
-			float num = _minBrightness - grayscale;
+			float num = this._minBrightness - grayscale;
 			return new Color(Mathf.Clamp01(color.r + num), Mathf.Clamp01(color.g + num), Mathf.Clamp01(color.b + num), color.a);
 		}
-		if (grayscale > _maxBrightness)
+		if (grayscale > this._maxBrightness)
 		{
-			float num2 = _maxBrightness / grayscale;
+			float num2 = this._maxBrightness / grayscale;
 			return new Color(Mathf.Clamp01(color.r * num2), Mathf.Clamp01(color.g * num2), Mathf.Clamp01(color.b * num2), color.a);
 		}
 		return color;

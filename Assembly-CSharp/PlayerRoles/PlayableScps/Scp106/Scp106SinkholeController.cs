@@ -47,25 +47,25 @@ public class Scp106SinkholeController : SubroutineBase, ICursorOverride, IPoolRe
 		{
 			if (base.Role.IsLocalPlayer)
 			{
-				return IsDuringAnimation;
+				return this.IsDuringAnimation;
 			}
 			return false;
 		}
 	}
 
-	public float ElapsedToggle => CurTime - _toggleTime;
+	public float ElapsedToggle => this.CurTime - this._toggleTime;
 
-	public bool IsDuringAnimation => ElapsedToggle < TargetTransitionDuration;
+	public bool IsDuringAnimation => this.ElapsedToggle < this.TargetTransitionDuration;
 
-	public IAbilityCooldown ReadonlyCooldown => _submergeCooldown;
+	public IAbilityCooldown ReadonlyCooldown => this._submergeCooldown;
 
 	public bool IsHidden
 	{
 		get
 		{
-			if (TargetSubmerged)
+			if (this.TargetSubmerged)
 			{
-				return !IsDuringAnimation;
+				return !this.IsDuringAnimation;
 			}
 			return false;
 		}
@@ -79,8 +79,8 @@ public class Scp106SinkholeController : SubroutineBase, ICursorOverride, IPoolRe
 	{
 		get
 		{
-			float num = ElapsedToggle / TargetTransitionDuration;
-			if (!TargetSubmerged)
+			float num = this.ElapsedToggle / this.TargetTransitionDuration;
+			if (!this.TargetSubmerged)
 			{
 				num = 1f - num;
 			}
@@ -92,8 +92,8 @@ public class Scp106SinkholeController : SubroutineBase, ICursorOverride, IPoolRe
 
 	public void ModifyCooldown(double modifyAmount)
 	{
-		_submergeCooldown.NextUse += modifyAmount;
-		ServerSendRpc(toAll: true);
+		this._submergeCooldown.NextUse += modifyAmount;
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public void SpawnObject()
@@ -104,31 +104,31 @@ public class Scp106SinkholeController : SubroutineBase, ICursorOverride, IPoolRe
 	public void ResetObject()
 	{
 		CursorManager.Unregister(this);
-		_submergeCooldown.Clear();
-		TargetSubmerged = false;
-		_toggleTime = 0f;
+		this._submergeCooldown.Clear();
+		this.TargetSubmerged = false;
+		this._toggleTime = 0f;
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteBool(TargetSubmerged);
-		writer.WriteFloat(TargetTransitionDuration);
-		_submergeCooldown.WriteCooldown(writer);
+		writer.WriteBool(this.TargetSubmerged);
+		writer.WriteFloat(this.TargetTransitionDuration);
+		this._submergeCooldown.WriteCooldown(writer);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		bool targetSubmerged = TargetSubmerged;
-		TargetSubmerged = reader.ReadBool();
-		TargetTransitionDuration = reader.ReadFloat();
-		_submergeCooldown.ReadCooldown(reader);
-		if (targetSubmerged != TargetSubmerged)
+		bool targetSubmerged = this.TargetSubmerged;
+		this.TargetSubmerged = reader.ReadBool();
+		this.TargetTransitionDuration = reader.ReadFloat();
+		this._submergeCooldown.ReadCooldown(reader);
+		if (targetSubmerged != this.TargetSubmerged)
 		{
-			_toggleTime = CurTime;
-			_toggleAudioSource.PlayOneShot(TargetSubmerged ? _submergeSound : _emergeSound);
-			Scp106SinkholeController.OnSubmergeStateChange?.Invoke(base.Role as Scp106Role, TargetSubmerged);
+			this._toggleTime = this.CurTime;
+			this._toggleAudioSource.PlayOneShot(this.TargetSubmerged ? this._submergeSound : this._emergeSound);
+			Scp106SinkholeController.OnSubmergeStateChange?.Invoke(base.Role as Scp106Role, this.TargetSubmerged);
 		}
 	}
 
@@ -136,20 +136,20 @@ public class Scp106SinkholeController : SubroutineBase, ICursorOverride, IPoolRe
 	{
 		base.Awake();
 		SubroutineBase[] allSubroutines = (base.Role as Scp106Role).SubroutineModule.AllSubroutines;
-		_vigorAbilities = new Scp106VigorAbilityBase[allSubroutines.Length];
-		_vigorAbilitiesCount = 0;
+		this._vigorAbilities = new Scp106VigorAbilityBase[allSubroutines.Length];
+		this._vigorAbilitiesCount = 0;
 		for (int i = 0; i < allSubroutines.Length; i++)
 		{
 			if (allSubroutines[i] is Scp106VigorAbilityBase scp106VigorAbilityBase)
 			{
-				_vigorAbilities[_vigorAbilitiesCount++] = scp106VigorAbilityBase;
+				this._vigorAbilities[this._vigorAbilitiesCount++] = scp106VigorAbilityBase;
 			}
 		}
 	}
 
 	private void ServerSetSubmerged(bool targetSubmerged, float animTime)
 	{
-		if (!NetworkServer.active || TargetSubmerged == targetSubmerged)
+		if (!NetworkServer.active || this.TargetSubmerged == targetSubmerged)
 		{
 			return;
 		}
@@ -157,22 +157,22 @@ public class Scp106SinkholeController : SubroutineBase, ICursorOverride, IPoolRe
 		bool flag = base.Role.TryGetOwner(out hub);
 		if (flag)
 		{
-			Scp106ChangingSubmersionStatusEventArgs scp106ChangingSubmersionStatusEventArgs = new Scp106ChangingSubmersionStatusEventArgs(hub, targetSubmerged);
-			Scp106Events.OnChangingSubmersionStatus(scp106ChangingSubmersionStatusEventArgs);
-			if (!scp106ChangingSubmersionStatusEventArgs.IsAllowed)
+			Scp106ChangingSubmersionStatusEventArgs e = new Scp106ChangingSubmersionStatusEventArgs(hub, targetSubmerged);
+			Scp106Events.OnChangingSubmersionStatus(e);
+			if (!e.IsAllowed)
 			{
 				return;
 			}
 		}
 		if (!targetSubmerged)
 		{
-			_submergeCooldown.Trigger(5.0);
+			this._submergeCooldown.Trigger(5.0);
 		}
-		TargetSubmerged = targetSubmerged;
-		TargetTransitionDuration = animTime;
-		_toggleTime = CurTime;
+		this.TargetSubmerged = targetSubmerged;
+		this.TargetTransitionDuration = animTime;
+		this._toggleTime = this.CurTime;
 		Scp106SinkholeController.OnSubmergeStateChange?.Invoke(base.Role as Scp106Role, targetSubmerged);
-		ServerSendRpc(toAll: true);
+		base.ServerSendRpc(toAll: true);
 		if (flag)
 		{
 			Scp106Events.OnChangedSubmersionStatus(new Scp106ChangedSubmersionStatusEventArgs(hub, targetSubmerged));
@@ -181,21 +181,21 @@ public class Scp106SinkholeController : SubroutineBase, ICursorOverride, IPoolRe
 
 	private void Update()
 	{
-		_toggleAudioSource.volume = 8f * (1f - SubmergeProgress) - 0.07f;
+		this._toggleAudioSource.volume = 8f * (1f - this.SubmergeProgress) - 0.07f;
 		if (!NetworkServer.active)
 		{
 			return;
 		}
-		for (int i = 0; i < _vigorAbilitiesCount; i++)
+		for (int i = 0; i < this._vigorAbilitiesCount; i++)
 		{
-			Scp106VigorAbilityBase scp106VigorAbilityBase = _vigorAbilities[i];
+			Scp106VigorAbilityBase scp106VigorAbilityBase = this._vigorAbilities[i];
 			if (scp106VigorAbilityBase.ServerWantsSubmerged)
 			{
-				_lastActiveVigorAbility = i;
-				ServerSetSubmerged(targetSubmerged: true, scp106VigorAbilityBase.SubmergeTime);
+				this._lastActiveVigorAbility = i;
+				this.ServerSetSubmerged(targetSubmerged: true, scp106VigorAbilityBase.SubmergeTime);
 				return;
 			}
 		}
-		ServerSetSubmerged(targetSubmerged: false, _vigorAbilities[_lastActiveVigorAbility].EmergeTime);
+		this.ServerSetSubmerged(targetSubmerged: false, this._vigorAbilities[this._lastActiveVigorAbility].EmergeTime);
 	}
 }

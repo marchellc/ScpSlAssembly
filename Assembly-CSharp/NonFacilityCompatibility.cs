@@ -40,7 +40,7 @@ public class NonFacilityCompatibility : MonoBehaviour
 
 	private void Awake()
 	{
-		singleton = this;
+		NonFacilityCompatibility.singleton = this;
 		SceneManager.sceneLoaded += RefreshDescription;
 	}
 
@@ -51,12 +51,12 @@ public class NonFacilityCompatibility : MonoBehaviour
 
 	public static void RefreshDescription(Scene scene, LoadSceneMode mode)
 	{
-		SceneDescription[] array = singleton.allScenes;
+		SceneDescription[] array = NonFacilityCompatibility.singleton.allScenes;
 		foreach (SceneDescription sceneDescription in array)
 		{
 			if (sceneDescription.sceneName == scene.name)
 			{
-				currentSceneSettings = sceneDescription;
+				NonFacilityCompatibility.currentSceneSettings = sceneDescription;
 			}
 		}
 	}

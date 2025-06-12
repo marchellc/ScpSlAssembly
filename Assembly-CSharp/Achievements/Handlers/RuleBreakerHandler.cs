@@ -18,20 +18,20 @@ public class RuleBreakerHandler : AchievementHandlerBase
 
 	internal override void OnRoundStarted()
 	{
-		CandiesEaten.Clear();
+		RuleBreakerHandler.CandiesEaten.Clear();
 	}
 
 	private static void OnServerRoleSet(ReferenceHub hub, RoleTypeId roleTypeId, RoleChangeReason changeReason)
 	{
-		CandiesEaten.Remove(hub);
+		RuleBreakerHandler.CandiesEaten.Remove(hub);
 	}
 
 	private static void OnUsedScp330(ReferenceHub hub, UsableItem item)
 	{
 		if (item.ItemTypeId == ItemType.SCP330)
 		{
-			int valueOrDefault = CandiesEaten.GetValueOrDefault(hub, 0);
-			valueOrDefault = (CandiesEaten[hub] = valueOrDefault + 1);
+			int valueOrDefault = RuleBreakerHandler.CandiesEaten.GetValueOrDefault(hub, 0);
+			valueOrDefault = (RuleBreakerHandler.CandiesEaten[hub] = valueOrDefault + 1);
 			if (valueOrDefault >= 3)
 			{
 				AchievementHandlerBase.ServerAchieve(hub.connectionToClient, AchievementName.RuleBreaker);

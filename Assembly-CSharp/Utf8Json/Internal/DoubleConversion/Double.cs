@@ -32,23 +32,23 @@ internal struct Double
 		{
 			d = d
 		};
-		d64_ = unionDoubleULong.u64;
+		this.d64_ = unionDoubleULong.u64;
 	}
 
 	public Double(DiyFp d)
 	{
-		d64_ = DiyFpToUint64(d);
+		this.d64_ = Double.DiyFpToUint64(d);
 	}
 
 	public DiyFp AsDiyFp()
 	{
-		return new DiyFp(Significand(), Exponent());
+		return new DiyFp(this.Significand(), this.Exponent());
 	}
 
 	public DiyFp AsNormalizedDiyFp()
 	{
-		ulong num = Significand();
-		int num2 = Exponent();
+		ulong num = this.Significand();
+		int num2 = this.Exponent();
 		while ((num & 0x10000000000000L) == 0L)
 		{
 			num <<= 1;
@@ -61,56 +61,56 @@ internal struct Double
 
 	public ulong AsUint64()
 	{
-		return d64_;
+		return this.d64_;
 	}
 
 	public double NextDouble()
 	{
-		if (d64_ == 9218868437227405312L)
+		if (this.d64_ == 9218868437227405312L)
 		{
 			return new Double(9.218868437227405E+18).value();
 		}
-		if (Sign() < 0 && Significand() == 0L)
+		if (this.Sign() < 0 && this.Significand() == 0L)
 		{
 			return 0.0;
 		}
-		if (Sign() < 0)
+		if (this.Sign() < 0)
 		{
-			return new Double(d64_ - 1).value();
+			return new Double(this.d64_ - 1).value();
 		}
-		return new Double(d64_ + 1).value();
+		return new Double(this.d64_ + 1).value();
 	}
 
 	public double PreviousDouble()
 	{
-		if (d64_ == 18442240474082181120uL)
+		if (this.d64_ == 18442240474082181120uL)
 		{
-			return 0.0 - Infinity();
+			return 0.0 - Double.Infinity();
 		}
-		if (Sign() < 0)
+		if (this.Sign() < 0)
 		{
-			return new Double(d64_ + 1).value();
+			return new Double(this.d64_ + 1).value();
 		}
-		if (Significand() == 0L)
+		if (this.Significand() == 0L)
 		{
 			return -0.0;
 		}
-		return new Double(d64_ - 1).value();
+		return new Double(this.d64_ - 1).value();
 	}
 
 	public int Exponent()
 	{
-		if (IsDenormal())
+		if (this.IsDenormal())
 		{
 			return -1074;
 		}
-		return (int)((AsUint64() & 0x7FF0000000000000L) >> 52) - 1075;
+		return (int)((this.AsUint64() & 0x7FF0000000000000L) >> 52) - 1075;
 	}
 
 	public ulong Significand()
 	{
-		ulong num = AsUint64() & 0xFFFFFFFFFFFFFL;
-		if (!IsDenormal())
+		ulong num = this.AsUint64() & 0xFFFFFFFFFFFFFL;
+		if (!this.IsDenormal())
 		{
 			return num + 4503599627370496L;
 		}
@@ -119,17 +119,17 @@ internal struct Double
 
 	public bool IsDenormal()
 	{
-		return (AsUint64() & 0x7FF0000000000000L) == 0;
+		return (this.AsUint64() & 0x7FF0000000000000L) == 0;
 	}
 
 	public bool IsSpecial()
 	{
-		return (AsUint64() & 0x7FF0000000000000L) == 9218868437227405312L;
+		return (this.AsUint64() & 0x7FF0000000000000L) == 9218868437227405312L;
 	}
 
 	public bool IsNan()
 	{
-		ulong num = AsUint64();
+		ulong num = this.AsUint64();
 		if ((num & 0x7FF0000000000000L) == 9218868437227405312L)
 		{
 			return (num & 0xFFFFFFFFFFFFFL) != 0;
@@ -139,7 +139,7 @@ internal struct Double
 
 	public bool IsInfinite()
 	{
-		ulong num = AsUint64();
+		ulong num = this.AsUint64();
 		if ((num & 0x7FF0000000000000L) == 9218868437227405312L)
 		{
 			return (num & 0xFFFFFFFFFFFFFL) == 0;
@@ -149,7 +149,7 @@ internal struct Double
 
 	public int Sign()
 	{
-		if ((AsUint64() & 0x8000000000000000uL) != 0L)
+		if ((this.AsUint64() & 0x8000000000000000uL) != 0L)
 		{
 			return -1;
 		}
@@ -158,15 +158,15 @@ internal struct Double
 
 	public DiyFp UpperBoundary()
 	{
-		return new DiyFp(Significand() * 2 + 1, Exponent() - 1);
+		return new DiyFp(this.Significand() * 2 + 1, this.Exponent() - 1);
 	}
 
 	public void NormalizedBoundaries(out DiyFp out_m_minus, out DiyFp out_m_plus)
 	{
-		DiyFp diyFp = AsDiyFp();
+		DiyFp diyFp = this.AsDiyFp();
 		DiyFp a = new DiyFp((diyFp.f << 1) + 1, diyFp.e - 1);
 		DiyFp diyFp2 = DiyFp.Normalize(ref a);
-		DiyFp diyFp3 = ((!LowerBoundaryIsCloser()) ? new DiyFp((diyFp.f << 1) - 1, diyFp.e - 1) : new DiyFp((diyFp.f << 2) - 1, diyFp.e - 2));
+		DiyFp diyFp3 = ((!this.LowerBoundaryIsCloser()) ? new DiyFp((diyFp.f << 1) - 1, diyFp.e - 1) : new DiyFp((diyFp.f << 2) - 1, diyFp.e - 2));
 		diyFp3.f <<= diyFp3.e - diyFp2.e;
 		diyFp3.e = diyFp2.e;
 		out_m_plus = diyFp2;
@@ -175,17 +175,19 @@ internal struct Double
 
 	public bool LowerBoundaryIsCloser()
 	{
-		if ((AsUint64() & 0xFFFFFFFFFFFFFL) == 0)
+		if ((this.AsUint64() & 0xFFFFFFFFFFFFFL) == 0)
 		{
-			return Exponent() != -1074;
+			return this.Exponent() != -1074;
 		}
 		return false;
 	}
 
 	public double value()
 	{
-		UnionDoubleULong unionDoubleULong = default(UnionDoubleULong);
-		unionDoubleULong.u64 = d64_;
+		UnionDoubleULong unionDoubleULong = new UnionDoubleULong
+		{
+			u64 = this.d64_
+		};
 		return unionDoubleULong.d;
 	}
 

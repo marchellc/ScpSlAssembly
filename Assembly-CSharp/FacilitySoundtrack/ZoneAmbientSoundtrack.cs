@@ -36,21 +36,21 @@ public class ZoneAmbientSoundtrack : SoundtrackLayerBase
 
 	public override bool Additive => true;
 
-	public override float Weight => _weight;
+	public override float Weight => this._weight;
 
 	public override void UpdateVolume(float masterScale)
 	{
 		if (MainCameraController.LastPosition.TryGetRoom(out var room))
 		{
-			_lastZone = room.Zone;
+			this._lastZone = room.Zone;
 		}
-		float num = (base.IsPovMuted ? (0f - _fadeOutSpeed) : _fadeInSpeed);
-		_weight = Mathf.Clamp01(_weight + num * Time.deltaTime);
-		ZoneSoundtrack[] zoneSoundtracks = _zoneSoundtracks;
+		float num = (base.IsPovMuted ? (0f - this._fadeOutSpeed) : this._fadeInSpeed);
+		this._weight = Mathf.Clamp01(this._weight + num * Time.deltaTime);
+		ZoneSoundtrack[] zoneSoundtracks = this._zoneSoundtracks;
 		foreach (ZoneSoundtrack zoneSoundtrack in zoneSoundtracks)
 		{
-			float target = ((zoneSoundtrack.TargetZone == _lastZone) ? 1 : 0);
-			zoneSoundtrack.CrossfadeVolume = Mathf.MoveTowards(zoneSoundtrack.CrossfadeVolume, target, _crossfadeSpeed * Time.deltaTime);
+			float target = ((zoneSoundtrack.TargetZone == this._lastZone) ? 1 : 0);
+			zoneSoundtrack.CrossfadeVolume = Mathf.MoveTowards(zoneSoundtrack.CrossfadeVolume, target, this._crossfadeSpeed * Time.deltaTime);
 			zoneSoundtrack.Source.volume = zoneSoundtrack.CrossfadeVolume * zoneSoundtrack.VolumeScale * masterScale;
 		}
 	}

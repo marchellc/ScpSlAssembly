@@ -18,8 +18,8 @@ public class WaveTimerDisplay : SerializedWaveInterface
 	{
 		get
 		{
-			float num = Mathf.Max(_timeBasedWave.Timer.SpawnIntervalSeconds, 1f);
-			float num2 = (Mathf.Clamp(_timeBasedWave.Timer.TimePassed, 0f, num) - 0f) / (num - 0f);
+			float num = Mathf.Max(this._timeBasedWave.Timer.SpawnIntervalSeconds, 1f);
+			float num2 = (Mathf.Clamp(this._timeBasedWave.Timer.TimePassed, 0f, num) - 0f) / (num - 0f);
 			return 1f - num2;
 		}
 	}
@@ -31,15 +31,15 @@ public class WaveTimerDisplay : SerializedWaveInterface
 		{
 			throw new NullReferenceException("Unable to convert " + base.Wave.GetType().Name + " to TimeBasedWave.");
 		}
-		_timeBasedWave = timeBasedWave;
-		_isTimeBased = true;
+		this._timeBasedWave = timeBasedWave;
+		this._isTimeBased = true;
 	}
 
 	private void Update()
 	{
-		if (_isTimeBased)
+		if (this._isTimeBased)
 		{
-			_slider.value = NormalizedTimerValue;
+			this._slider.value = this.NormalizedTimerValue;
 		}
 	}
 }

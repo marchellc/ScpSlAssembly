@@ -13,12 +13,12 @@ public class CustomWearDetail : SyncedDetail, ICustomizableDetail
 
 	public void ParseArguments(ArraySegment<string> args)
 	{
-		_customWearLevel = byte.Parse(args.At(0));
+		CustomWearDetail._customWearLevel = byte.Parse(args.At(0));
 	}
 
 	public void SetArguments(ArraySegment<object> args)
 	{
-		_customWearLevel = (byte)args.At(0);
+		CustomWearDetail._customWearLevel = (byte)args.At(0);
 	}
 
 	public override void WriteDefault(NetworkWriter writer)
@@ -28,12 +28,12 @@ public class CustomWearDetail : SyncedDetail, ICustomizableDetail
 
 	public override void WriteNewItem(KeycardItem item, NetworkWriter writer)
 	{
-		writer.WriteByte(_customWearLevel);
+		writer.WriteByte(CustomWearDetail._customWearLevel);
 	}
 
 	public override void WriteNewPickup(KeycardPickup pickup, NetworkWriter writer)
 	{
-		writer.WriteByte(_customWearLevel);
+		writer.WriteByte(CustomWearDetail._customWearLevel);
 	}
 
 	protected override void ApplyDetail(KeycardGfx target, NetworkReader reader, KeycardItem template)

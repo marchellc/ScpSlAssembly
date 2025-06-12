@@ -27,18 +27,18 @@ public class GlowInTheDarkSubcontroller : SubcontrollerBehaviour
 
 		public void Set(bool darkened)
 		{
-			if (!_everSetUp)
+			if (!this._everSetUp)
 			{
-				_hash = Shader.PropertyToID(PropertyName);
-				_propertyBlock = new MaterialPropertyBlock();
-				Targets[0].GetPropertyBlock(_propertyBlock);
-				_everSetUp = true;
+				this._hash = Shader.PropertyToID(this.PropertyName);
+				this._propertyBlock = new MaterialPropertyBlock();
+				this.Targets[0].GetPropertyBlock(this._propertyBlock);
+				this._everSetUp = true;
 			}
-			_propertyBlock.SetColor(_hash, darkened ? DarkenedColor : NormalColor);
-			Renderer[] targets = Targets;
+			this._propertyBlock.SetColor(this._hash, darkened ? this.DarkenedColor : this.NormalColor);
+			Renderer[] targets = this.Targets;
 			for (int i = 0; i < targets.Length; i++)
 			{
-				targets[i].SetPropertyBlock(_propertyBlock);
+				targets[i].SetPropertyBlock(this._propertyBlock);
 			}
 		}
 	}
@@ -99,48 +99,48 @@ public class GlowInTheDarkSubcontroller : SubcontrollerBehaviour
 			return;
 		}
 		bool flag;
-		switch (_forceCondition)
+		switch (this._forceCondition)
 		{
 		case ForceCondition.ForceWhenFriendly:
 		{
-			bool conditionMet = !IsEnemyToPov;
-			flag = GetDarkenedConditionally(conditionMet);
+			bool conditionMet = !this.IsEnemyToPov;
+			flag = this.GetDarkenedConditionally(conditionMet);
 			break;
 		}
 		case ForceCondition.ForceWhenEnemy:
-			flag = GetDarkenedConditionally(IsEnemyToPov);
+			flag = this.GetDarkenedConditionally(this.IsEnemyToPov);
 			break;
 		default:
-			flag = IsAtBlackedOutRoom;
+			flag = this.IsAtBlackedOutRoom;
 			break;
 		}
-		if (flag != _prevDarkened)
+		if (flag != this._prevDarkened)
 		{
-			TargetRenderer[] targetRenderers = _targetRenderers;
+			TargetRenderer[] targetRenderers = this._targetRenderers;
 			for (int i = 0; i < targetRenderers.Length; i++)
 			{
 				targetRenderers[i].Set(flag);
 			}
-			_prevDarkened = flag;
+			this._prevDarkened = flag;
 		}
 	}
 
 	private void OnValidate()
 	{
-		_prevDarkened = null;
+		this._prevDarkened = null;
 	}
 
 	private bool GetDarkenedConditionally(bool conditionMet)
 	{
 		if (!conditionMet)
 		{
-			return IsAtBlackedOutRoom;
+			return this.IsAtBlackedOutRoom;
 		}
-		return _resultWhenConditionMet switch
+		return this._resultWhenConditionMet switch
 		{
 			ForceResult.ForceNormal => false, 
 			ForceResult.ForceDarkened => true, 
-			_ => IsAtBlackedOutRoom, 
+			_ => this.IsAtBlackedOutRoom, 
 		};
 	}
 }

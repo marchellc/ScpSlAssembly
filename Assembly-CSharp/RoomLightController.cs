@@ -28,15 +28,15 @@ public class RoomLightController : NetworkBehaviour
 	{
 		get
 		{
-			if (!_roomCacheSet)
+			if (!this._roomCacheSet)
 			{
-				if (!base.transform.TryGetComponentInParent<RoomIdentifier>(out _cachedRoom))
+				if (!base.transform.TryGetComponentInParent<RoomIdentifier>(out this._cachedRoom))
 				{
 					throw new NullReferenceException("Null room for Light Controller: " + base.transform.GetHierarchyPath());
 				}
-				_roomCacheSet = true;
+				this._roomCacheSet = true;
 			}
-			return _cachedRoom;
+			return this._cachedRoom;
 		}
 	}
 
@@ -44,12 +44,12 @@ public class RoomLightController : NetworkBehaviour
 	{
 		get
 		{
-			return LightsEnabled;
+			return this.LightsEnabled;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref LightsEnabled, 1uL, LightsEnabledHook);
+			base.GeneratedSyncVarSetter(value, ref this.LightsEnabled, 1uL, LightsEnabledHook);
 		}
 	}
 
@@ -57,12 +57,12 @@ public class RoomLightController : NetworkBehaviour
 	{
 		get
 		{
-			return OverrideColor;
+			return this.OverrideColor;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref OverrideColor, 2uL, OverrideColorHook);
+			base.GeneratedSyncVarSetter(value, ref this.OverrideColor, 2uL, OverrideColorHook);
 		}
 	}
 
@@ -76,31 +76,31 @@ public class RoomLightController : NetworkBehaviour
 	{
 		if (NetworkServer.active)
 		{
-			NetworkLightsEnabled = true;
+			this.NetworkLightsEnabled = true;
 		}
 		else
 		{
-			SetLights(LightsEnabled);
+			this.SetLights(this.LightsEnabled);
 		}
-		Instances.Add(this);
+		RoomLightController.Instances.Add(this);
 		RoomLightController.OnAdded?.Invoke(this);
-		Room.LightControllers.AddIfNotContains(this);
+		this.Room.LightControllers.AddIfNotContains(this);
 	}
 
 	private void OnDestroy()
 	{
-		Instances.Remove(this);
+		RoomLightController.Instances.Remove(this);
 		RoomLightController.OnRemoved?.Invoke(this);
 	}
 
 	private void Update()
 	{
-		if (NetworkServer.active && !(_flickerDuration <= 0f))
+		if (NetworkServer.active && !(this._flickerDuration <= 0f))
 		{
-			_flickerDuration -= Time.deltaTime;
-			if (!(_flickerDuration > 0f))
+			this._flickerDuration -= Time.deltaTime;
+			if (!(this._flickerDuration > 0f))
 			{
-				SetLights(state: true);
+				this.SetLights(state: true);
 			}
 		}
 	}
@@ -109,7 +109,7 @@ public class RoomLightController : NetworkBehaviour
 	{
 		if (NetworkServer.active)
 		{
-			NetworkLightsEnabled = state;
+			this.NetworkLightsEnabled = state;
 		}
 		this.OnLightsSet?.Invoke(state);
 	}
@@ -131,13 +131,13 @@ public class RoomLightController : NetworkBehaviour
 		}
 		else if (dur <= 0f)
 		{
-			_flickerDuration = 0f;
-			SetLights(state: true);
+			this._flickerDuration = 0f;
+			this.SetLights(state: true);
 		}
 		else
 		{
-			_flickerDuration = dur;
-			SetLights(state: false);
+			this._flickerDuration = dur;
+			this.SetLights(state: false);
 		}
 	}
 
@@ -145,7 +145,7 @@ public class RoomLightController : NetworkBehaviour
 	{
 		if (positionToCheck.TryGetRoom(out var room))
 		{
-			return IsInDarkenedRoom(room, positionToCheck);
+			return RoomLightController.IsInDarkenedRoom(room, positionToCheck);
 		}
 		return false;
 	}
@@ -173,18 +173,18 @@ public class RoomLightController : NetworkBehaviour
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(LightsEnabled);
-			writer.WriteColor(OverrideColor);
+			writer.WriteBool(this.LightsEnabled);
+			writer.WriteColor(this.OverrideColor);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteBool(LightsEnabled);
+			writer.WriteBool(this.LightsEnabled);
 		}
 		if ((base.syncVarDirtyBits & 2L) != 0L)
 		{
-			writer.WriteColor(OverrideColor);
+			writer.WriteColor(this.OverrideColor);
 		}
 	}
 
@@ -193,18 +193,18 @@ public class RoomLightController : NetworkBehaviour
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref LightsEnabled, LightsEnabledHook, reader.ReadBool());
-			GeneratedSyncVarDeserialize(ref OverrideColor, OverrideColorHook, reader.ReadColor());
+			base.GeneratedSyncVarDeserialize(ref this.LightsEnabled, LightsEnabledHook, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.OverrideColor, OverrideColorHook, reader.ReadColor());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref LightsEnabled, LightsEnabledHook, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.LightsEnabled, LightsEnabledHook, reader.ReadBool());
 		}
 		if ((num & 2L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref OverrideColor, OverrideColorHook, reader.ReadColor());
+			base.GeneratedSyncVarDeserialize(ref this.OverrideColor, OverrideColorHook, reader.ReadColor());
 		}
 	}
 }

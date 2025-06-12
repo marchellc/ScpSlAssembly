@@ -46,6 +46,6 @@ public class MoreCast : MonoBehaviour
 	public static bool BeamCast(Vector3 start, Vector3 end, Vector3 beamRadius, float beamStep, int layerMask, bool any)
 	{
 		List<RaycastHit> hitInfo;
-		return BeamCast(start, end, beamRadius, beamStep, out hitInfo, layerMask, any);
+		return MoreCast.BeamCast(start, end, beamRadius, beamStep, out hitInfo, layerMask, any);
 	}
 }

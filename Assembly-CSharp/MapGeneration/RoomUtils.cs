@@ -42,8 +42,8 @@ public static class RoomUtils
 	{
 		if (list == null)
 		{
-			RoomsNonAlloc.Clear();
-			list = RoomsNonAlloc;
+			RoomUtils.RoomsNonAlloc.Clear();
+			list = RoomUtils.RoomsNonAlloc;
 		}
 		foreach (RoomIdentifier allRoomIdentifier in RoomIdentifier.AllRoomIdentifiers)
 		{
@@ -57,16 +57,16 @@ public static class RoomUtils
 
 	public static bool TryGetRoom(this Vector3 worldPos, out RoomIdentifier room)
 	{
-		Vector3Int key = PositionToCoords(worldPos);
+		Vector3Int key = RoomUtils.PositionToCoords(worldPos);
 		if (RoomIdentifier.RoomsByCoords.TryGetValue(key, out room))
 		{
 			return true;
 		}
-		if (TryRaycastRoom(worldPos, Vector3.up, out room))
+		if (RoomUtils.TryRaycastRoom(worldPos, Vector3.up, out room))
 		{
 			return true;
 		}
-		if (TryRaycastRoom(worldPos, Vector3.down, out room))
+		if (RoomUtils.TryRaycastRoom(worldPos, Vector3.down, out room))
 		{
 			return true;
 		}
@@ -113,12 +113,12 @@ public static class RoomUtils
 
 	public static bool CompareCoords(this Vector3 lhs, Vector3 rhs)
 	{
-		return PositionToCoords(lhs) == PositionToCoords(rhs);
+		return RoomUtils.PositionToCoords(lhs) == RoomUtils.PositionToCoords(rhs);
 	}
 
 	private static bool TryRaycastRoom(Vector3 pos, Vector3 dir, out RoomIdentifier room)
 	{
-		if (Physics.Raycast(new Ray(pos, dir), out var hitInfo, 15f, RoomDetectionMask))
+		if (Physics.Raycast(new Ray(pos, dir), out var hitInfo, 15f, RoomUtils.RoomDetectionMask))
 		{
 			Collider collider = hitInfo.collider;
 			if (collider != null && collider.transform.TryGetComponentInParent<RoomIdentifier>(out room))

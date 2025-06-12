@@ -16,6 +16,6 @@ public class BanDetails
 
 	public override string ToString()
 	{
-		return OriginalName.Replace(";", ":") + ";" + Id.Replace(";", ":") + ";" + Convert.ToString(Expires) + ";" + Reason.Replace(";", ":") + ";" + Issuer.Replace(";", ":") + ";" + Convert.ToString(IssuanceTime);
+		return this.OriginalName.Replace(";", ":") + ";" + this.Id.Replace(";", ":") + ";" + Convert.ToString(this.Expires) + ";" + this.Reason.Replace(";", ":") + ";" + this.Issuer.Replace(";", ":") + ";" + Convert.ToString(this.IssuanceTime);
 	}
 }

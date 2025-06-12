@@ -17,36 +17,36 @@ public class CustomRankDetail : SyncedDetail, ICustomizableDetail
 
 	public void ParseArguments(ArraySegment<string> args)
 	{
-		_index = int.Parse(args.At(0));
+		CustomRankDetail._index = int.Parse(args.At(0));
 	}
 
 	public void SetArguments(ArraySegment<object> args)
 	{
-		_index = (int)args.At(0);
+		CustomRankDetail._index = (int)args.At(0);
 	}
 
 	private void WriteCustom(NetworkWriter writer)
 	{
-		writer.WriteByte((byte)(Mathf.Abs(_index) % _options.Length));
+		writer.WriteByte((byte)(Mathf.Abs(CustomRankDetail._index) % this._options.Length));
 	}
 
 	public override void WriteDefault(NetworkWriter writer)
 	{
-		WriteCustom(writer);
+		this.WriteCustom(writer);
 	}
 
 	public override void WriteNewItem(KeycardItem item, NetworkWriter writer)
 	{
-		WriteCustom(writer);
+		this.WriteCustom(writer);
 	}
 
 	public override void WriteNewPickup(KeycardPickup pickup, NetworkWriter writer)
 	{
-		WriteCustom(writer);
+		this.WriteCustom(writer);
 	}
 
 	protected override void ApplyDetail(KeycardGfx target, NetworkReader reader, KeycardItem template)
 	{
-		target.RankFilter.sharedMesh = _options[reader.ReadByte()];
+		target.RankFilter.sharedMesh = this._options[reader.ReadByte()];
 	}
 }

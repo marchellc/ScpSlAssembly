@@ -27,10 +27,10 @@ public class Scp127TierIndicator : MonoBehaviour, IViewmodelExtension
 
 		public TierLevel(Scp127Tier tier)
 		{
-			_tier = tier;
-			_baseColorHash = Shader.PropertyToID("_BaseColor" + tier);
-			_emissionColorHash = Shader.PropertyToID("_EmissionColor" + tier);
-			_sliderHash = Shader.PropertyToID("_Fill" + tier);
+			this._tier = tier;
+			this._baseColorHash = Shader.PropertyToID("_BaseColor" + tier);
+			this._emissionColorHash = Shader.PropertyToID("_EmissionColor" + tier);
+			this._sliderHash = Shader.PropertyToID("_Fill" + tier);
 		}
 
 		public void Update(Scp127Tier tier, float nextProgress, float delta, Color glow)
@@ -38,28 +38,28 @@ public class Scp127TierIndicator : MonoBehaviour, IViewmodelExtension
 			Color value;
 			bool flag;
 			float b;
-			if (_tier <= tier)
+			if (this._tier <= tier)
 			{
-				value = UnlockedColor;
+				value = Scp127TierIndicator.UnlockedColor;
 				flag = true;
 				b = 1f;
 			}
-			else if (_tier == tier + 1)
+			else if (this._tier == tier + 1)
 			{
-				value = ProgressColor;
+				value = Scp127TierIndicator.ProgressColor;
 				flag = false;
 				b = nextProgress;
 			}
 			else
 			{
-				value = InactiveColor;
+				value = Scp127TierIndicator.InactiveColor;
 				flag = false;
 				b = 0f;
 			}
-			_lastSlider = Mathf.Lerp(_lastSlider, b, delta);
-			_propertyBlock.SetFloat(_sliderHash, _lastSlider);
-			_propertyBlock.SetColor(_baseColorHash, value);
-			_propertyBlock.SetColor(_emissionColorHash, flag ? glow : Color.black);
+			this._lastSlider = Mathf.Lerp(this._lastSlider, b, delta);
+			Scp127TierIndicator._propertyBlock.SetFloat(this._sliderHash, this._lastSlider);
+			Scp127TierIndicator._propertyBlock.SetColor(this._baseColorHash, value);
+			Scp127TierIndicator._propertyBlock.SetColor(this._emissionColorHash, flag ? glow : Color.black);
 		}
 	}
 
@@ -100,45 +100,45 @@ public class Scp127TierIndicator : MonoBehaviour, IViewmodelExtension
 
 	public void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		_firearm = viewmodel.ParentFirearm;
-		_lastTier = Scp127TierManagerModule.GetTierForItem(_firearm);
-		if (_propertyBlock == null)
+		this._firearm = viewmodel.ParentFirearm;
+		this._lastTier = Scp127TierManagerModule.GetTierForItem(this._firearm);
+		if (Scp127TierIndicator._propertyBlock == null)
 		{
-			_propertyBlock = new MaterialPropertyBlock();
-			_renderer.GetPropertyBlock(_propertyBlock);
+			Scp127TierIndicator._propertyBlock = new MaterialPropertyBlock();
+			this._renderer.GetPropertyBlock(Scp127TierIndicator._propertyBlock);
 		}
 		Scp127Tier[] values = EnumUtils<Scp127Tier>.Values;
-		_tierLevels = new TierLevel[values.Length];
+		this._tierLevels = new TierLevel[values.Length];
 		for (int i = 0; i < values.Length; i++)
 		{
-			_tierLevels[i] = new TierLevel(values[i]);
+			this._tierLevels[i] = new TierLevel(values[i]);
 		}
-		UpdateMaterial(instant: true);
+		this.UpdateMaterial(instant: true);
 	}
 
 	private void Update()
 	{
-		UpdateMaterial(instant: false);
+		this.UpdateMaterial(instant: false);
 	}
 
 	private void UpdateMaterial(bool instant)
 	{
-		Scp127TierManagerModule.GetTierAndProgressForItem(_firearm, out var tier, out var progress);
-		double num = _levelUpSw.Elapsed.TotalSeconds / (double)_levelUpLength;
-		Color glow = _levelUpGradient.Evaluate((float)num);
-		float nextProgress = _progressCorrectionCurve.Evaluate(progress);
-		float delta = (instant ? 1f : (Time.deltaTime * _lerpSpeed));
-		TierLevel[] tierLevels = _tierLevels;
+		Scp127TierManagerModule.GetTierAndProgressForItem(this._firearm, out var tier, out var progress);
+		double num = this._levelUpSw.Elapsed.TotalSeconds / (double)this._levelUpLength;
+		Color glow = this._levelUpGradient.Evaluate((float)num);
+		float nextProgress = this._progressCorrectionCurve.Evaluate(progress);
+		float delta = (instant ? 1f : (Time.deltaTime * this._lerpSpeed));
+		TierLevel[] tierLevels = this._tierLevels;
 		for (int i = 0; i < tierLevels.Length; i++)
 		{
 			tierLevels[i].Update(tier, nextProgress, delta, glow);
 		}
-		if (_lastTier != tier)
+		if (this._lastTier != tier)
 		{
-			_levelUpSw.Restart();
-			AudioSourcePoolManager.Play2DWithParent(_levelUpSound, _firearm.transform, 1f, MixerChannel.NoDucking);
-			_lastTier = tier;
+			this._levelUpSw.Restart();
+			AudioSourcePoolManager.Play2DWithParent(this._levelUpSound, this._firearm.transform, 1f, MixerChannel.NoDucking);
+			this._lastTier = tier;
 		}
-		_renderer.SetPropertyBlock(_propertyBlock);
+		this._renderer.SetPropertyBlock(Scp127TierIndicator._propertyBlock);
 	}
 }

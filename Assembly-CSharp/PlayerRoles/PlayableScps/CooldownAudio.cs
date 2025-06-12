@@ -18,10 +18,10 @@ public class CooldownAudio : MonoBehaviour
 
 	public void PlayAudio()
 	{
-		if (!(NetworkTime.time < _lastTime))
+		if (!(NetworkTime.time < this._lastTime))
 		{
-			_lastTime = NetworkTime.time + Cooldown;
-			AudioSourcePoolManager.Play2DWithParent(_cooldownAudio, _player.transform);
+			this._lastTime = NetworkTime.time + this.Cooldown;
+			AudioSourcePoolManager.Play2DWithParent(this._cooldownAudio, this._player.transform);
 		}
 	}
 }

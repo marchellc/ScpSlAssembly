@@ -50,15 +50,15 @@ public class DisruptorWorldmodelActionExtension : MonoBehaviour, IWorldmodelExte
 	[SerializeField]
 	private MeshRenderer[] _renderers;
 
-	private bool Breaking => ParticleDisruptor.BrokenSerials.Contains(_worldmodel.Identifier.SerialNumber);
+	private bool Breaking => ParticleDisruptor.BrokenSerials.Contains(this._worldmodel.Identifier.SerialNumber);
 
 	public bool LockPrefab
 	{
 		get
 		{
-			if (_scheduledRemainingShotTimes == null)
+			if (this._scheduledRemainingShotTimes == null)
 			{
-				return Breaking;
+				return this.Breaking;
 			}
 			return true;
 		}
@@ -68,34 +68,34 @@ public class DisruptorWorldmodelActionExtension : MonoBehaviour, IWorldmodelExte
 	{
 		if (NetworkServer.active)
 		{
-			ServerUpdateShots();
+			this.ServerUpdateShots();
 		}
-		if (_worldmodel.WorldmodelType == FirearmWorldmodelType.Pickup && Breaking)
+		if (this._worldmodel.WorldmodelType == FirearmWorldmodelType.Pickup && this.Breaking)
 		{
-			UpdateBreaking();
+			this.UpdateBreaking();
 		}
 	}
 
 	private void Start()
 	{
-		_rigidbody = GetComponentInParent<Rigidbody>();
+		this._rigidbody = base.GetComponentInParent<Rigidbody>();
 	}
 
 	private void OnDestroy()
 	{
-		if (_materialInstances == null)
+		if (this._materialInstances == null)
 		{
 			return;
 		}
-		foreach (KeyValuePair<Material, Material> materialInstance in _materialInstances)
+		foreach (KeyValuePair<Material, Material> materialInstance in this._materialInstances)
 		{
-			DissolveMatPool.GetOrAdd(materialInstance.Key, () => new Queue<Material>()).Enqueue(materialInstance.Value);
+			DisruptorWorldmodelActionExtension.DissolveMatPool.GetOrAdd(materialInstance.Key, () => new Queue<Material>()).Enqueue(materialInstance.Value);
 		}
 	}
 
 	private Material DuplicateMaterial(Material shared)
 	{
-		if (DissolveMatPool.TryGetValue(shared, out var value))
+		if (DisruptorWorldmodelActionExtension.DissolveMatPool.TryGetValue(shared, out var value))
 		{
 			return value.Dequeue();
 		}
@@ -104,33 +104,33 @@ public class DisruptorWorldmodelActionExtension : MonoBehaviour, IWorldmodelExte
 
 	private void ReplaceMaterials(MeshRenderer rend)
 	{
-		MatsNonAlloc.Clear();
-		rend.GetSharedMaterials(MatsNonAlloc);
-		int count = MatsNonAlloc.Count;
+		DisruptorWorldmodelActionExtension.MatsNonAlloc.Clear();
+		rend.GetSharedMaterials(DisruptorWorldmodelActionExtension.MatsNonAlloc);
+		int count = DisruptorWorldmodelActionExtension.MatsNonAlloc.Count;
 		Material[] array = new Material[count];
 		for (int i = 0; i < count; i++)
 		{
-			Material shared = MatsNonAlloc[i];
-			array[i] = _materialInstances.GetOrAdd(shared, () => DuplicateMaterial(shared));
+			Material shared = DisruptorWorldmodelActionExtension.MatsNonAlloc[i];
+			array[i] = this._materialInstances.GetOrAdd(shared, () => this.DuplicateMaterial(shared));
 		}
 		rend.sharedMaterials = array;
 	}
 
 	private void UpdateBreaking()
 	{
-		if (_materialInstances == null)
+		if (this._materialInstances == null)
 		{
-			_materialInstances = new Dictionary<Material, Material>();
-			_renderers.ForEach(ReplaceMaterials);
+			this._materialInstances = new Dictionary<Material, Material>();
+			this._renderers.ForEach(ReplaceMaterials);
 		}
-		_breakingProgress += Time.deltaTime * _breakingSpeed;
-		foreach (KeyValuePair<Material, Material> materialInstance in _materialInstances)
+		this._breakingProgress += Time.deltaTime * this._breakingSpeed;
+		foreach (KeyValuePair<Material, Material> materialInstance in this._materialInstances)
 		{
-			materialInstance.Value.SetFloat(DissolveHash, _breakingProgress);
+			materialInstance.Value.SetFloat(DisruptorWorldmodelActionExtension.DissolveHash, this._breakingProgress);
 		}
-		if (_breakingProgress > _breakingDestroyThreshold && NetworkServer.active)
+		if (this._breakingProgress > this._breakingDestroyThreshold && NetworkServer.active)
 		{
-			ItemPickupBase componentInParent = GetComponentInParent<ItemPickupBase>();
+			ItemPickupBase componentInParent = base.GetComponentInParent<ItemPickupBase>();
 			if (componentInParent != null)
 			{
 				componentInParent.DestroySelf();
@@ -144,14 +144,14 @@ public class DisruptorWorldmodelActionExtension : MonoBehaviour, IWorldmodelExte
 
 	private void ServerUpdateShots()
 	{
-		if (_scheduledRemainingShotTimes == null)
+		if (this._scheduledRemainingShotTimes == null)
 		{
 			return;
 		}
 		bool flag = false;
-		for (int i = 0; i < _scheduledRemainingShotTimes.Length; i++)
+		for (int i = 0; i < this._scheduledRemainingShotTimes.Length; i++)
 		{
-			float num = _scheduledRemainingShotTimes[i];
+			float num = this._scheduledRemainingShotTimes[i];
 			if (!(num < 0f))
 			{
 				num -= Time.deltaTime;
@@ -161,15 +161,15 @@ public class DisruptorWorldmodelActionExtension : MonoBehaviour, IWorldmodelExte
 				}
 				else
 				{
-					ServerFire();
+					this.ServerFire();
 				}
-				_scheduledRemainingShotTimes[i] = num;
+				this._scheduledRemainingShotTimes[i] = num;
 			}
 		}
 		if (!flag)
 		{
-			_scheduledRemainingShotTimes = null;
-			ItemIdentifier identifier = _worldmodel.Identifier;
+			this._scheduledRemainingShotTimes = null;
+			ItemIdentifier identifier = this._worldmodel.Identifier;
 			ParticleDisruptor template = identifier.TypeId.GetTemplate<ParticleDisruptor>();
 			if (template.TryGetModule<MagazineModule>(out var module) && module.GetAmmoStoredForSerial(identifier.SerialNumber) <= 0)
 			{
@@ -180,27 +180,27 @@ public class DisruptorWorldmodelActionExtension : MonoBehaviour, IWorldmodelExte
 
 	private void ServerFire()
 	{
-		if (_worldmodel.TryGetExtension<BarrelTipExtension>(out var extension))
+		if (this._worldmodel.TryGetExtension<BarrelTipExtension>(out var extension))
 		{
-			DisruptorHitregModule.TemplateSimulateShot(new DisruptorShotEvent(_worldmodel.Identifier, _scheduledAttackerFootprint, _scheduledFiringState), extension);
-			if (_rigidbody != null)
+			DisruptorHitregModule.TemplateSimulateShot(new DisruptorShotEvent(this._worldmodel.Identifier, this._scheduledAttackerFootprint, this._scheduledFiringState), extension);
+			if (this._rigidbody != null)
 			{
-				float num = ((_scheduledFiringState == DisruptorActionModule.FiringState.FiringSingle) ? _singleShotForce : _rapidFireForce);
-				_rigidbody.AddForceAtPosition(-extension.WorldspaceDirection * num, extension.WorldspacePosition, ForceMode.Impulse);
-				_rigidbody.AddRelativeTorque(_torqueMultiplier * num * Vector3.right, ForceMode.Impulse);
+				float num = ((this._scheduledFiringState == DisruptorActionModule.FiringState.FiringSingle) ? this._singleShotForce : this._rapidFireForce);
+				this._rigidbody.AddForceAtPosition(-extension.WorldspaceDirection * num, extension.WorldspacePosition, ForceMode.Impulse);
+				this._rigidbody.AddRelativeTorque(this._torqueMultiplier * num * Vector3.right, ForceMode.Impulse);
 			}
 		}
 	}
 
 	public void SetupWorldmodel(FirearmWorldmodel worldmodel)
 	{
-		_worldmodel = worldmodel;
+		this._worldmodel = worldmodel;
 	}
 
 	public void ServerScheduleShot(Footprint attackerFootprint, DisruptorActionModule.FiringState firingState, float[] remainingShots)
 	{
-		_scheduledAttackerFootprint = attackerFootprint;
-		_scheduledFiringState = firingState;
-		_scheduledRemainingShotTimes = remainingShots;
+		this._scheduledAttackerFootprint = attackerFootprint;
+		this._scheduledFiringState = firingState;
+		this._scheduledRemainingShotTimes = remainingShots;
 	}
 }

@@ -43,15 +43,15 @@ public class MimicryWaveform : UiWaveformVisualizer, IDragHandler, IEventSystemH
 
 	private double _playbackMaxDuration;
 
-	private float StopwatchElapsed => (float)(_playbackSw.Elapsed.TotalSeconds + _startPlaybackTimeOffset);
+	private float StopwatchElapsed => (float)(this._playbackSw.Elapsed.TotalSeconds + this._startPlaybackTimeOffset);
 
 	public bool IsPlaying
 	{
 		get
 		{
-			if (_playbackSw.IsRunning)
+			if (this._playbackSw.IsRunning)
 			{
-				return (double)StopwatchElapsed < _playbackMaxDuration;
+				return (double)this.StopwatchElapsed < this._playbackMaxDuration;
 			}
 			return false;
 		}
@@ -59,64 +59,64 @@ public class MimicryWaveform : UiWaveformVisualizer, IDragHandler, IEventSystemH
 
 	public void StartPlayback(int totalLengthSamples, out int startSample, out int lengthSamples)
 	{
-		if (_lastWaveform != null)
+		if (MimicryWaveform._lastWaveform != null)
 		{
-			_lastWaveform.StopPlayback();
+			MimicryWaveform._lastWaveform.StopPlayback();
 		}
-		_lastWaveform = this;
-		_playbackTotalDuration = SamplesToSeconds(totalLengthSamples);
-		if (_isSet)
+		MimicryWaveform._lastWaveform = this;
+		this._playbackTotalDuration = this.SamplesToSeconds(totalLengthSamples);
+		if (this._isSet)
 		{
-			GetStartStop(out var startTime, out var stopTime);
+			this.GetStartStop(out var startTime, out var stopTime);
 			startSample = (int)(startTime * (float)totalLengthSamples);
 			lengthSamples = (int)(stopTime * (float)totalLengthSamples);
-			_startPlaybackTimeOffset = SamplesToSeconds(startSample);
-			_playbackMaxDuration = SamplesToSeconds(lengthSamples);
+			this._startPlaybackTimeOffset = this.SamplesToSeconds(startSample);
+			this._playbackMaxDuration = this.SamplesToSeconds(lengthSamples);
 			lengthSamples -= startSample;
 		}
 		else
 		{
 			startSample = 0;
 			lengthSamples = totalLengthSamples;
-			_startPlaybackTimeOffset = 0.0;
-			_playbackMaxDuration = _playbackTotalDuration;
+			this._startPlaybackTimeOffset = 0.0;
+			this._playbackMaxDuration = this._playbackTotalDuration;
 		}
-		_playbackSw.Start();
+		this._playbackSw.Start();
 	}
 
 	public void StopPlayback()
 	{
-		_playbackSw.Reset();
+		this._playbackSw.Reset();
 	}
 
 	public void OnDrag(PointerEventData eventData)
 	{
-		if (_isDragging && !TryGetTime(eventData.position, out _endDragTime))
+		if (this._isDragging && !this.TryGetTime(eventData.position, out this._endDragTime))
 		{
-			Apply();
+			this.Apply();
 		}
 	}
 
 	public void OnPointerUp(PointerEventData eventData)
 	{
-		if (_isDragging)
+		if (this._isDragging)
 		{
-			Apply();
+			this.Apply();
 		}
 	}
 
 	public void OnPointerDown(PointerEventData eventData)
 	{
-		_isDragging = TryGetTime(eventData.position, out _beginDragTime);
-		_isSet = false;
-		_endDragTime = _beginDragTime;
+		this._isDragging = this.TryGetTime(eventData.position, out this._beginDragTime);
+		this._isSet = false;
+		this._endDragTime = this._beginDragTime;
 	}
 
 	private void Apply()
 	{
-		float num = Mathf.Abs(_beginDragTime - _endDragTime);
-		_isSet = num > _minCoverage && num < _maxCoverage;
-		_isDragging = false;
+		float num = Mathf.Abs(this._beginDragTime - this._endDragTime);
+		this._isSet = num > this._minCoverage && num < this._maxCoverage;
+		this._isDragging = false;
 	}
 
 	private bool TryGetTime(Vector2 mousePos, out float percent)
@@ -140,35 +140,35 @@ public class MimicryWaveform : UiWaveformVisualizer, IDragHandler, IEventSystemH
 
 	private void GetStartStop(out float startTime, out float stopTime)
 	{
-		bool flag = _beginDragTime < _endDragTime;
-		startTime = (flag ? _beginDragTime : _endDragTime);
-		stopTime = (flag ? _endDragTime : _beginDragTime);
+		bool flag = this._beginDragTime < this._endDragTime;
+		startTime = (flag ? this._beginDragTime : this._endDragTime);
+		stopTime = (flag ? this._endDragTime : this._beginDragTime);
 	}
 
 	private void Update()
 	{
-		UpdateProgressBar();
-		UpdateTrimIndicator();
+		this.UpdateProgressBar();
+		this.UpdateTrimIndicator();
 	}
 
 	private void UpdateTrimIndicator()
 	{
-		bool flag = _isDragging || _isSet;
-		_trimIndicator.gameObject.SetActive(flag);
-		_progressBarLimiter.gameObject.SetActive(flag);
+		bool flag = this._isDragging || this._isSet;
+		this._trimIndicator.gameObject.SetActive(flag);
+		this._progressBarLimiter.gameObject.SetActive(flag);
 		if (flag)
 		{
-			GetStartStop(out var startTime, out var stopTime);
+			this.GetStartStop(out var startTime, out var stopTime);
 			float width = base.rectTransform.rect.width;
-			_trimIndicator.offsetMin = startTime * width * Vector2.right - _trimmerOffset;
-			_trimIndicator.offsetMax = (1f - stopTime) * width * Vector2.left + _trimmerOffset;
-			_progressBarLimiter.localScale = new Vector3(1f - stopTime, 1f, 1f);
+			this._trimIndicator.offsetMin = startTime * width * Vector2.right - this._trimmerOffset;
+			this._trimIndicator.offsetMax = (1f - stopTime) * width * Vector2.left + this._trimmerOffset;
+			this._progressBarLimiter.localScale = new Vector3(1f - stopTime, 1f, 1f);
 		}
 	}
 
 	private void UpdateProgressBar()
 	{
-		double num = (IsPlaying ? ((double)StopwatchElapsed / _playbackTotalDuration) : 1.0);
-		_waveformProgressBar.localScale = new Vector3((float)num, 1f, 1f);
+		double num = (this.IsPlaying ? ((double)this.StopwatchElapsed / this._playbackTotalDuration) : 1.0);
+		this._waveformProgressBar.localScale = new Vector3((float)num, 1f, 1f);
 	}
 }

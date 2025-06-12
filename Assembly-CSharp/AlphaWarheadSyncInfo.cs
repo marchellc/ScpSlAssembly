@@ -9,11 +9,11 @@ public struct AlphaWarheadSyncInfo : IEquatable<AlphaWarheadSyncInfo>
 
 	public double StartTime;
 
-	public bool InProgress => StartTime != 0.0;
+	public bool InProgress => this.StartTime != 0.0;
 
 	public override int GetHashCode()
 	{
-		return (int)(StartTime * 10.0) % 32767 * 255 + ScenarioId + (int)ScenarioType;
+		return (int)(this.StartTime * 10.0) % 32767 * 255 + this.ScenarioId + (int)this.ScenarioType;
 	}
 
 	public static bool operator ==(AlphaWarheadSyncInfo left, AlphaWarheadSyncInfo right)
@@ -28,9 +28,9 @@ public struct AlphaWarheadSyncInfo : IEquatable<AlphaWarheadSyncInfo>
 
 	public bool Equals(AlphaWarheadSyncInfo other)
 	{
-		if (other.ScenarioId == ScenarioId && other.StartTime == StartTime)
+		if (other.ScenarioId == this.ScenarioId && other.StartTime == this.StartTime)
 		{
-			return other.ScenarioType == ScenarioType;
+			return other.ScenarioType == this.ScenarioType;
 		}
 		return false;
 	}
@@ -39,7 +39,7 @@ public struct AlphaWarheadSyncInfo : IEquatable<AlphaWarheadSyncInfo>
 	{
 		if (obj is AlphaWarheadSyncInfo other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}

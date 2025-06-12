@@ -35,15 +35,15 @@ public class SetGradientValue : MonoBehaviour
 
 	private void Start()
 	{
-		Image component = GetComponent<Image>();
+		Image component = base.GetComponent<Image>();
 		component.material = new Material(component.material);
-		component.material.SetColor(_leftColor, LeftColor);
-		component.material.SetColor(_rightColor, RightColor);
-		component.material.SetFloat(_rotation, Rotation);
-		component.material.SetFloat(_leftColorModifier, LeftColorModifier);
-		component.material.SetFloat(_rightColorModifier, RightColorModifier);
-		component.material.SetFloat(_rightColorModifier, RightColorModifier);
-		component.material.SetFloat(_leftAlphaModifier, LeftAlphaModifier);
-		component.material.SetFloat(_rightAlphaModifier, RightAlphaModifier);
+		component.material.SetColor(this._leftColor, this.LeftColor);
+		component.material.SetColor(this._rightColor, this.RightColor);
+		component.material.SetFloat(this._rotation, this.Rotation);
+		component.material.SetFloat(this._leftColorModifier, this.LeftColorModifier);
+		component.material.SetFloat(this._rightColorModifier, this.RightColorModifier);
+		component.material.SetFloat(this._rightColorModifier, this.RightColorModifier);
+		component.material.SetFloat(this._leftAlphaModifier, this.LeftAlphaModifier);
+		component.material.SetFloat(this._rightAlphaModifier, this.RightAlphaModifier);
 	}
 }

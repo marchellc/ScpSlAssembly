@@ -22,24 +22,24 @@ public class Scp079LostSignalHandler : SubroutineBase, IPoolSpawnable
 
 	private bool _prevLost;
 
-	public bool Lost => _recoveryTime > NetworkTime.time;
+	public bool Lost => this._recoveryTime > NetworkTime.time;
 
-	public float RemainingTime => Mathf.Max(0f, (float)(_recoveryTime - NetworkTime.time));
+	public float RemainingTime => Mathf.Max(0f, (float)(this._recoveryTime - NetworkTime.time));
 
 	public event Action OnStatusChanged;
 
 	private void Update()
 	{
-		bool lost = Lost;
+		bool lost = this.Lost;
 		if (NetworkServer.active && lost)
 		{
-			_auxManager.CurrentAux = 0f;
+			this._auxManager.CurrentAux = 0f;
 		}
-		if (_prevLost != lost)
+		if (this._prevLost != lost)
 		{
-			_prevLost = lost;
+			this._prevLost = lost;
 			this.OnStatusChanged?.Invoke();
-			if (_curCamSync.TryGetCurrentCamera(out var cam))
+			if (this._curCamSync.TryGetCurrentCamera(out var cam))
 			{
 				cam.IsActive = !lost;
 			}
@@ -50,13 +50,13 @@ public class Scp079LostSignalHandler : SubroutineBase, IPoolSpawnable
 	{
 		base.Awake();
 		SubroutineManagerModule subroutineModule = (base.Role as ISubroutinedRole).SubroutineModule;
-		subroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out _curCamSync);
-		subroutineModule.TryGetSubroutine<Scp079AuxManager>(out _auxManager);
+		subroutineModule.TryGetSubroutine<Scp079CurrentCameraSync>(out this._curCamSync);
+		subroutineModule.TryGetSubroutine<Scp079AuxManager>(out this._auxManager);
 		Scp2176Projectile.OnServerShattered += delegate(Scp2176Projectile projectile, RoomIdentifier rid)
 		{
-			if (NetworkServer.active && !base.Role.Pooled && !(rid != _curCamSync.CurrentCamera.Room) && base.Role.TryGetOwner(out var hub) && !hub.characterClassManager.GodMode)
+			if (NetworkServer.active && !base.Role.Pooled && !(rid != this._curCamSync.CurrentCamera.Room) && base.Role.TryGetOwner(out var hub) && !hub.characterClassManager.GodMode)
 			{
-				ServerLoseSignal(Lost ? 0f : _ghostlightLockoutDuration);
+				this.ServerLoseSignal(this.Lost ? 0f : this._ghostlightLockoutDuration);
 			}
 		};
 	}
@@ -64,24 +64,24 @@ public class Scp079LostSignalHandler : SubroutineBase, IPoolSpawnable
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteDouble(_recoveryTime);
+		writer.WriteDouble(this._recoveryTime);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		_recoveryTime = reader.ReadDouble();
+		this._recoveryTime = reader.ReadDouble();
 	}
 
 	public void ServerLoseSignal(float duration)
 	{
-		_recoveryTime = NetworkTime.time + (double)duration;
-		ServerSendRpc(toAll: true);
+		this._recoveryTime = NetworkTime.time + (double)duration;
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public void SpawnObject()
 	{
-		_recoveryTime = 0.0;
-		_prevLost = false;
+		this._recoveryTime = 0.0;
+		this._prevLost = false;
 	}
 }

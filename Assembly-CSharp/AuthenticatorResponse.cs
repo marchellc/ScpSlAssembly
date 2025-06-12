@@ -40,9 +40,9 @@ public readonly struct AuthenticatorResponse : IEquatable<AuthenticatorResponse>
 
 	public bool Equals(AuthenticatorResponse other)
 	{
-		if (success == other.success && verified == other.verified && string.Equals(error, other.error) && string.Equals(token, other.token) && messages == other.messages && actions == other.actions && authAccepted == other.authAccepted && authRejected == other.authRejected && verificationChallenge == other.verificationChallenge)
+		if (this.success == other.success && this.verified == other.verified && string.Equals(this.error, other.error) && string.Equals(this.token, other.token) && this.messages == other.messages && this.actions == other.actions && this.authAccepted == other.authAccepted && this.authRejected == other.authRejected && this.verificationChallenge == other.verificationChallenge)
 		{
-			return verificationResponse == other.verificationResponse;
+			return this.verificationResponse == other.verificationResponse;
 		}
 		return false;
 	}
@@ -51,17 +51,17 @@ public readonly struct AuthenticatorResponse : IEquatable<AuthenticatorResponse>
 	{
 		if (obj is AuthenticatorResponse other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		bool flag = success;
+		bool flag = this.success;
 		int num = flag.GetHashCode() * 397;
-		flag = verified;
-		return ((((((((((((((((num ^ flag.GetHashCode()) * 397) ^ ((error != null) ? error.GetHashCode() : 0)) * 397) ^ ((token != null) ? token.GetHashCode() : 0)) * 397) ^ ((messages != null) ? messages.GetHashCode() : 0)) * 397) ^ ((actions != null) ? actions.GetHashCode() : 0)) * 397) ^ ((authAccepted != null) ? authAccepted.GetHashCode() : 0)) * 397) ^ ((authRejected != null) ? authRejected.GetHashCode() : 0)) * 397) ^ ((verificationChallenge != null) ? verificationChallenge.GetHashCode() : 0)) * 397) ^ ((verificationResponse != null) ? verificationResponse.GetHashCode() : 0);
+		flag = this.verified;
+		return ((((((((((((((((num ^ flag.GetHashCode()) * 397) ^ ((this.error != null) ? this.error.GetHashCode() : 0)) * 397) ^ ((this.token != null) ? this.token.GetHashCode() : 0)) * 397) ^ ((this.messages != null) ? this.messages.GetHashCode() : 0)) * 397) ^ ((this.actions != null) ? this.actions.GetHashCode() : 0)) * 397) ^ ((this.authAccepted != null) ? this.authAccepted.GetHashCode() : 0)) * 397) ^ ((this.authRejected != null) ? this.authRejected.GetHashCode() : 0)) * 397) ^ ((this.verificationChallenge != null) ? this.verificationChallenge.GetHashCode() : 0)) * 397) ^ ((this.verificationResponse != null) ? this.verificationResponse.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(AuthenticatorResponse left, AuthenticatorResponse right)

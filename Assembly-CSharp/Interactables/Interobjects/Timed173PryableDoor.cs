@@ -24,31 +24,31 @@ public class Timed173PryableDoor : PryableDoor
 		base.Awake();
 		if (NetworkServer.active)
 		{
-			CharacterClassManager.OnRoundStarted += Stopwatch.Start;
-			ServerChangeLock(DoorLockReason.SpecialDoorFeature, newState: true);
-			_eventAssigned = true;
+			CharacterClassManager.OnRoundStarted += this.Stopwatch.Start;
+			base.ServerChangeLock(DoorLockReason.SpecialDoorFeature, newState: true);
+			this._eventAssigned = true;
 		}
 	}
 
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		if (_eventAssigned)
+		if (this._eventAssigned)
 		{
-			CharacterClassManager.OnRoundStarted -= Stopwatch.Start;
+			CharacterClassManager.OnRoundStarted -= this.Stopwatch.Start;
 		}
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		if (!Stopwatch.IsRunning || Stopwatch.Elapsed.TotalSeconds < (double)TimeMark)
+		if (!this.Stopwatch.IsRunning || this.Stopwatch.Elapsed.TotalSeconds < (double)this.TimeMark)
 		{
 			return;
 		}
-		Stopwatch.Stop();
-		ServerChangeLock(DoorLockReason.SpecialDoorFeature, newState: false);
-		if (!SmartOpen)
+		this.Stopwatch.Stop();
+		base.ServerChangeLock(DoorLockReason.SpecialDoorFeature, newState: false);
+		if (!this.SmartOpen)
 		{
 			return;
 		}

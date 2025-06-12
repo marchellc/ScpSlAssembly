@@ -25,14 +25,14 @@ public class FogSetting : MonoBehaviour
 	{
 		get
 		{
-			return _state;
+			return this._state;
 		}
 		internal set
 		{
-			if (_state != value)
+			if (this._state != value)
 			{
-				_state = value;
-				_isDirty = true;
+				this._state = value;
+				this._isDirty = true;
 			}
 		}
 	}
@@ -45,9 +45,9 @@ public class FogSetting : MonoBehaviour
 		{
 			if (!FogController.Singleton.ForcedFog.HasValue)
 			{
-				return _weight;
+				return this._weight;
 			}
-			if (FogController.Singleton.ForcedFog.Value != FogType)
+			if (FogController.Singleton.ForcedFog.Value != this.FogType)
 			{
 				return 0f;
 			}
@@ -55,28 +55,28 @@ public class FogSetting : MonoBehaviour
 		}
 		private set
 		{
-			_weight = value;
+			this._weight = value;
 		}
 	}
 
 	public void UpdateWeight()
 	{
-		if (!_isDirty)
+		if (!this._isDirty)
 		{
 			return;
 		}
-		if (BlendTime <= 0f)
+		if (this.BlendTime <= 0f)
 		{
-			Weight = (IsEnabled ? 1 : 0);
-			_isDirty = false;
+			this.Weight = (this.IsEnabled ? 1 : 0);
+			this._isDirty = false;
 			return;
 		}
-		float num = 1f / BlendTime;
-		Weight += Time.deltaTime * (IsEnabled ? num : (0f - num));
-		if (Weight < 0f || Weight > 1f)
+		float num = 1f / this.BlendTime;
+		this.Weight += Time.deltaTime * (this.IsEnabled ? num : (0f - num));
+		if (this.Weight < 0f || this.Weight > 1f)
 		{
-			Weight = Mathf.Clamp01(Weight);
-			_isDirty = false;
+			this.Weight = Mathf.Clamp01(this.Weight);
+			this._isDirty = false;
 		}
 	}
 }

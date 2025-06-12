@@ -26,10 +26,10 @@ public class GeneratorActivatedObjective : HumanObjectiveBase<GeneratorObjective
 	{
 		bool num = ReferenceHub.AllHubs.Any((ReferenceHub hub) => hub.GetRoleId() == RoleTypeId.Scp079);
 		Faction faction = footprint.Role.GetFaction();
-		GrantInfluence(faction, 3f);
+		base.GrantInfluence(faction, 3f);
 		if (num)
 		{
-			ReduceTimer(faction, -10f);
+			base.ReduceTimer(faction, -10f);
 		}
 		base.ObjectiveFootprint = new GeneratorObjectiveFootprint
 		{
@@ -37,6 +37,6 @@ public class GeneratorActivatedObjective : HumanObjectiveBase<GeneratorObjective
 			TimeReward = -10f,
 			AchievingPlayer = new ObjectiveHubFootprint(footprint)
 		};
-		ServerSendUpdate();
+		base.ServerSendUpdate();
 	}
 }

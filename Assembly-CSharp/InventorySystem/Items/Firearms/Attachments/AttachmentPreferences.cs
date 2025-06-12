@@ -9,7 +9,7 @@ public static class AttachmentPreferences
 	private static string PreferencesPath(ItemType weaponId)
 	{
 		int num = (int)weaponId;
-		return num + "_AttachmentsSetupPreference_" + GetPreset(weaponId);
+		return num + "_AttachmentsSetupPreference_" + AttachmentPreferences.GetPreset(weaponId);
 	}
 
 	public static uint GetPreferenceCodeOfPreset(ItemType weapon, int preset)
@@ -37,16 +37,16 @@ public static class AttachmentPreferences
 
 	public static uint GetSavedPreferenceCode(this Firearm weapon)
 	{
-		return PlayerPrefsSl.Get(PreferencesPath(weapon.ItemTypeId), weapon.ValidateAttachmentsCode(0u));
+		return PlayerPrefsSl.Get(AttachmentPreferences.PreferencesPath(weapon.ItemTypeId), weapon.ValidateAttachmentsCode(0u));
 	}
 
 	public static void SavePreferenceCode(ItemType weapon, uint code)
 	{
-		PlayerPrefsSl.Set(PreferencesPath(weapon), code);
+		PlayerPrefsSl.Set(AttachmentPreferences.PreferencesPath(weapon), code);
 	}
 
 	public static void SavePreferenceCode(this Firearm weapon)
 	{
-		SavePreferenceCode(weapon.ItemTypeId, weapon.GetCurrentAttachmentsCode());
+		AttachmentPreferences.SavePreferenceCode(weapon.ItemTypeId, weapon.GetCurrentAttachmentsCode());
 	}
 }

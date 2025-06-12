@@ -27,15 +27,15 @@ public class HandPoseSubcontroller : SubcontrollerBehaviour
 		{
 			base.Culler.OnBeforeAnimatorUpdated += Evaluate;
 		}
-		_leftHandLayerIndex = model.LayerManager.GetLayerIndex(_leftHandLayer);
-		_rightHandLayerIndex = model.LayerManager.GetLayerIndex(_rightHandLayer);
+		this._leftHandLayerIndex = model.LayerManager.GetLayerIndex(this._leftHandLayer);
+		this._rightHandLayerIndex = model.LayerManager.GetLayerIndex(this._rightHandLayer);
 	}
 
 	private void LateUpdate()
 	{
 		if (!base.HasCuller)
 		{
-			Evaluate();
+			this.Evaluate();
 		}
 	}
 
@@ -50,9 +50,9 @@ public class HandPoseSubcontroller : SubcontrollerBehaviour
 				data = handPoseModifier.ProcessHandPose(data);
 			}
 		}
-		base.Animator.SetLayerWeight(_leftHandLayerIndex, data.LeftHandWeight);
-		base.Animator.SetLayerWeight(_rightHandLayerIndex, data.RightHandWeight);
-		base.Animator.SetFloat(LeftHandPoseHash, data.LeftHandPose);
-		base.Animator.SetFloat(RightHandPoseHash, data.RightHandPose);
+		base.Animator.SetLayerWeight(this._leftHandLayerIndex, data.LeftHandWeight);
+		base.Animator.SetLayerWeight(this._rightHandLayerIndex, data.RightHandWeight);
+		base.Animator.SetFloat(HandPoseSubcontroller.LeftHandPoseHash, data.LeftHandPose);
+		base.Animator.SetFloat(HandPoseSubcontroller.RightHandPoseHash, data.RightHandPose);
 	}
 }

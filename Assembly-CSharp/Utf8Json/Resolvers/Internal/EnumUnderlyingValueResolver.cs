@@ -19,16 +19,16 @@ internal sealed class EnumUnderlyingValueResolver : IJsonFormatterResolver
 				typeInfo = typeInfo.GenericTypeArguments[0].GetTypeInfo();
 				if (typeInfo.IsEnum)
 				{
-					object formatterDynamic = Instance.GetFormatterDynamic(typeInfo.AsType());
+					object formatterDynamic = EnumUnderlyingValueResolver.Instance.GetFormatterDynamic(typeInfo.AsType());
 					if (formatterDynamic != null)
 					{
-						formatter = (IJsonFormatter<T>)Activator.CreateInstance(typeof(StaticNullableFormatter<>).MakeGenericType(typeInfo.AsType()), formatterDynamic);
+						FormatterCache<T>.formatter = (IJsonFormatter<T>)Activator.CreateInstance(typeof(StaticNullableFormatter<>).MakeGenericType(typeInfo.AsType()), formatterDynamic);
 					}
 				}
 			}
 			else if (typeof(T).IsEnum)
 			{
-				formatter = new EnumFormatter<T>(serializeByName: false);
+				FormatterCache<T>.formatter = new EnumFormatter<T>(serializeByName: false);
 			}
 		}
 	}

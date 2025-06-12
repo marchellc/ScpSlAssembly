@@ -11,6 +11,6 @@ public interface IEquipperModule
 
 	float GetDisplayEffectiveEquipTime(Firearm fa)
 	{
-		return (DisplayBaseEquipTime + fa.AttachmentsValue(AttachmentParam.DrawTimeModifier)) / fa.AttachmentsValue(AttachmentParam.DrawSpeedMultiplier);
+		return (this.DisplayBaseEquipTime + fa.AttachmentsValue(AttachmentParam.DrawTimeModifier)) / fa.AttachmentsValue(AttachmentParam.DrawSpeedMultiplier);
 	}
 }

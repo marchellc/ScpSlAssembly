@@ -15,20 +15,20 @@ internal sealed class PmpNatDevice : NatDevice
 
 	internal PmpNatDevice(IPAddress localAddress, IPAddress publicAddress)
 	{
-		LocalAddress = localAddress;
-		_publicAddress = publicAddress;
+		this.LocalAddress = localAddress;
+		this._publicAddress = publicAddress;
 	}
 
 	public override async Task CreatePortMapAsync(Mapping mapping)
 	{
-		await InternalCreatePortMapAsync(mapping, create: true).TimeoutAfter(TimeSpan.FromSeconds(4.0));
-		RegisterMapping(mapping);
+		await this.InternalCreatePortMapAsync(mapping, create: true).TimeoutAfter(TimeSpan.FromSeconds(4.0));
+		base.RegisterMapping(mapping);
 	}
 
 	public override async Task DeletePortMapAsync(Mapping mapping)
 	{
-		await InternalCreatePortMapAsync(mapping, create: false).TimeoutAfter(TimeSpan.FromSeconds(4.0));
-		UnregisterMapping(mapping);
+		await this.InternalCreatePortMapAsync(mapping, create: false).TimeoutAfter(TimeSpan.FromSeconds(4.0));
+		base.UnregisterMapping(mapping);
 	}
 
 	public override Task<IEnumerable<Mapping>> GetAllMappingsAsync()
@@ -38,7 +38,7 @@ internal sealed class PmpNatDevice : NatDevice
 
 	public override Task<IPAddress> GetExternalIPAsync()
 	{
-		return Task.Run(() => _publicAddress).TimeoutAfter(TimeSpan.FromSeconds(4.0));
+		return Task.Run(() => this._publicAddress).TimeoutAfter(TimeSpan.FromSeconds(4.0));
 	}
 
 	public override Task<Mapping> GetSpecificMappingAsync(NetworkProtocolType networkProtocolType, int port)
@@ -50,7 +50,7 @@ internal sealed class PmpNatDevice : NatDevice
 	{
 		List<byte> list = new List<byte>();
 		list.Add(0);
-		list.Add((byte)((mapping.NetworkProtocolType != 0) ? 1 : 2));
+		list.Add((byte)((mapping.NetworkProtocolType != NetworkProtocolType.Tcp) ? 1 : 2));
 		list.Add(0);
 		list.Add(0);
 		list.AddRange(BitConverter.GetBytes(IPAddress.HostToNetworkOrder((short)mapping.PrivatePort)));
@@ -62,10 +62,10 @@ internal sealed class PmpNatDevice : NatDevice
 			int attempt = 0;
 			int delay = 250;
 			using UdpClient udpClient = new UdpClient();
-			CreatePortMapListen(udpClient, mapping);
+			this.CreatePortMapListen(udpClient, mapping);
 			while (attempt < 9)
 			{
-				await udpClient.SendAsync(buffer, buffer.Length, new IPEndPoint(LocalAddress, 5351));
+				await udpClient.SendAsync(buffer, buffer.Length, new IPEndPoint(this.LocalAddress, 5351));
 				attempt++;
 				delay *= 2;
 				Thread.Sleep(delay);
@@ -84,7 +84,7 @@ internal sealed class PmpNatDevice : NatDevice
 
 	private void CreatePortMapListen(UdpClient udpClient, Mapping mapping)
 	{
-		IPEndPoint remoteEP = new IPEndPoint(LocalAddress, 5351);
+		IPEndPoint remoteEP = new IPEndPoint(this.LocalAddress, 5351);
 		byte[] array;
 		do
 		{
@@ -117,6 +117,6 @@ internal sealed class PmpNatDevice : NatDevice
 
 	public override string ToString()
 	{
-		return $"Local Address: {LocalAddress}\nPublic IP: {_publicAddress}\nLast Seen: {base.LastSeen}";
+		return $"Local Address: {this.LocalAddress}\nPublic IP: {this._publicAddress}\nLast Seen: {base.LastSeen}";
 	}
 }

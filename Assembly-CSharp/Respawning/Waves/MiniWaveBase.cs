@@ -35,7 +35,7 @@ public abstract class MiniWaveBase<TMainWave, TCounterWave> : TimeBasedWave, IMi
 
 	public float WaveSizeMultiplier { get; set; } = 0.2f;
 
-	public override int MaxWaveSize => Mathf.CeilToInt((float)ReferenceHub.AllHubs.Count * WaveSizeMultiplier);
+	public override int MaxWaveSize => Mathf.CeilToInt((float)ReferenceHub.AllHubs.Count * this.WaveSizeMultiplier);
 
 	public override bool ReceiveObjectiveRewards => false;
 
@@ -51,48 +51,48 @@ public abstract class MiniWaveBase<TMainWave, TCounterWave> : TimeBasedWave, IMi
 
 	public void Unlock(bool ignoreConfig = false)
 	{
-		if (ignoreConfig || !NetworkServer.active || Configuration.IsEnabled)
+		if (ignoreConfig || !NetworkServer.active || this.Configuration.IsEnabled)
 		{
-			RespawnTokens = 1;
+			this.RespawnTokens = 1;
 			WaveUpdateMessage.ServerSendUpdate(this, UpdateMessageFlags.Tokens);
 		}
 	}
 
 	public void ResetTokens()
 	{
-		RespawnTokens = InitialRespawnTokens;
+		this.RespawnTokens = this.InitialRespawnTokens;
 		WaveUpdateMessage.ServerSendUpdate(this, UpdateMessageFlags.Tokens);
 	}
 
 	public override void PopulateQueue(Queue<RoleTypeId> queueToFill, int playersToSpawn)
 	{
-		queueToFill.Enqueue(SpecialRole);
+		queueToFill.Enqueue(this.SpecialRole);
 		for (int i = 0; i < playersToSpawn - 1; i++)
 		{
-			queueToFill.Enqueue(DefaultRole);
+			queueToFill.Enqueue(this.DefaultRole);
 		}
 	}
 
 	protected override void OnAnyWaveSpawned(SpawnableWaveBase wave, List<ReferenceHub> _)
 	{
-		_mainWaveSpawned = wave is TMainWave;
+		this._mainWaveSpawned = wave is TMainWave;
 		if (wave == this && WaveManager.TryGet<TMainWave>(out var spawnWave) && spawnWave is TimeBasedWave timeBasedWave)
 		{
-			Unlock();
+			this.Unlock();
 			timeBasedWave.Timer.AddTime(-60f);
 			return;
 		}
 		base.Timer.Reset();
-		if (!_mainWaveSpawned)
+		if (!this._mainWaveSpawned)
 		{
-			ResetTokens();
+			this.ResetTokens();
 			return;
 		}
 		int num = ReferenceHub.AllHubs.Count((ReferenceHub h) => h.roleManager.CurrentRole is SpectatorRole spectatorRole && spectatorRole.ReadyToRespawn);
 		float num2 = 2f * (float)num;
-		_waveFailedObjective = false;
-		_availabilityTimer = Time.time + 120f;
-		_cachedInfluenceCount = FactionInfluenceManager.Get(TargetFaction) - num2;
+		this._waveFailedObjective = false;
+		this._availabilityTimer = Time.time + 120f;
+		this._cachedInfluenceCount = FactionInfluenceManager.Get(this.TargetFaction) - num2;
 	}
 
 	public override void OnWaveSpawned()
@@ -110,10 +110,10 @@ public abstract class MiniWaveBase<TMainWave, TCounterWave> : TimeBasedWave, IMi
 	protected override void OnInstanceReset()
 	{
 		base.OnInstanceReset();
-		_availabilityTimer = 0f;
-		_cachedInfluenceCount = 0f;
-		_mainWaveSpawned = false;
-		_waveFailedObjective = false;
+		this._availabilityTimer = 0f;
+		this._cachedInfluenceCount = 0f;
+		this._mainWaveSpawned = false;
+		this._waveFailedObjective = false;
 	}
 
 	protected override void OnInstanceDestroyed()
@@ -126,7 +126,7 @@ public abstract class MiniWaveBase<TMainWave, TCounterWave> : TimeBasedWave, IMi
 
 	private void OnPlayerDeath(ReferenceHub victim, DamageHandlerBase dh)
 	{
-		if (_mainWaveSpawned && !(base.Timer.TimeLeft <= 120f) && victim.GetFaction() == TargetFaction)
+		if (this._mainWaveSpawned && !(base.Timer.TimeLeft <= 120f) && victim.GetFaction() == this.TargetFaction)
 		{
 			base.Timer.AddTime(5f);
 		}
@@ -134,17 +134,17 @@ public abstract class MiniWaveBase<TMainWave, TCounterWave> : TimeBasedWave, IMi
 
 	private void OnInfluenceModified(Faction faction, float newValue)
 	{
-		if (_mainWaveSpawned && TargetFaction == faction && !(_availabilityTimer <= Time.time) && !(newValue - _cachedInfluenceCount < 10f))
+		if (this._mainWaveSpawned && this.TargetFaction == faction && !(this._availabilityTimer <= Time.time) && !(newValue - this._cachedInfluenceCount < 10f))
 		{
-			Unlock();
+			this.Unlock();
 		}
 	}
 
 	private void OnUpdate()
 	{
-		if (_mainWaveSpawned && RespawnTokens <= 0 && !_waveFailedObjective && !(_availabilityTimer > Time.time))
+		if (this._mainWaveSpawned && this.RespawnTokens <= 0 && !this._waveFailedObjective && !(this._availabilityTimer > Time.time))
 		{
-			_waveFailedObjective = true;
+			this._waveFailedObjective = true;
 			if (WaveManager.TryGet<TCounterWave>(out var spawnWave) && spawnWave is IMiniWave miniWave)
 			{
 				miniWave.Unlock();

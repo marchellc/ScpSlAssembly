@@ -16,14 +16,14 @@ public static class CreditsData
 
 	static CreditsData()
 	{
-		CachePath = FileManager.GetAppFolder() + "CreditsCache.json";
+		CreditsData.CachePath = FileManager.GetAppFolder() + "CreditsCache.json";
 		try
 		{
-			SetCredits(File.ReadAllText(CachePath));
+			CreditsData.SetCredits(File.ReadAllText(CreditsData.CachePath));
 		}
 		catch
 		{
-			LoadData(File.ReadAllText("CreditsCache.json"));
+			CreditsData.LoadData(File.ReadAllText("CreditsCache.json"));
 		}
 	}
 
@@ -31,8 +31,8 @@ public static class CreditsData
 	{
 		try
 		{
-			SetCredits(text);
-			File.WriteAllText(CachePath, text);
+			CreditsData.SetCredits(text);
+			File.WriteAllText(CreditsData.CachePath, text);
 		}
 		catch (Exception exception)
 		{
@@ -50,13 +50,13 @@ public static class CreditsData
 		List<CreditsCategory> list = new List<CreditsCategory>();
 		TranslationManifest[] array = (from s in Directory.EnumerateFiles("Translations/", "manifest.json", SearchOption.AllDirectories)
 			select JsonSerialize.FromFile<TranslationManifest>(s)).ToArray();
-		for (int i = 0; i < creditsList.credits.Length; i++)
+		for (int num = 0; num < creditsList.credits.Length; num++)
 		{
-			CreditsListCategory creditsListCategory = creditsList.credits[i];
+			CreditsListCategory creditsListCategory = creditsList.credits[num];
 			List<CreditsEntry> list2 = new List<CreditsEntry>();
-			for (int j = 0; j < creditsListCategory.members.Length; j++)
+			for (int num2 = 0; num2 < creditsListCategory.members.Length; num2++)
 			{
-				list2.Add(ProcessEntry(creditsListCategory.members[j]));
+				list2.Add(CreditsData.ProcessEntry(creditsListCategory.members[num2]));
 			}
 			if (creditsListCategory.category.Equals("SPECIAL THANKS", StringComparison.OrdinalIgnoreCase))
 			{
@@ -68,16 +68,16 @@ public static class CreditsData
 				});
 				list2.Clear();
 				TranslationManifest[] array2 = array;
-				for (int k = 0; k < array2.Length; k++)
+				for (int num3 = 0; num3 < array2.Length; num3++)
 				{
-					TranslationManifest translationManifest = array2[k];
+					TranslationManifest translationManifest = array2[num3];
 					string text2 = translationManifest.Name;
 					if (!text2.Equals("en", StringComparison.OrdinalIgnoreCase))
 					{
-						int num = translationManifest.Name.IndexOf('-');
-						if (num > -1)
+						int num4 = translationManifest.Name.IndexOf('-');
+						if (num4 > -1)
 						{
-							text2 = translationManifest.Name.Substring(num + 2);
+							text2 = translationManifest.Name.Substring(num4 + 2);
 						}
 						string[] authors = translationManifest.Authors;
 						foreach (string name in authors)
@@ -102,8 +102,8 @@ public static class CreditsData
 				});
 			}
 		}
-		Data = list.ToArray();
-		RemoteLoaded = true;
+		CreditsData.Data = list.ToArray();
+		CreditsData.RemoteLoaded = true;
 	}
 
 	private static CreditsEntry ProcessEntry(CreditsListMember member)
@@ -114,7 +114,7 @@ public static class CreditsData
 		}
 		if (!string.IsNullOrEmpty(member.title))
 		{
-			return new CreditsEntry(member.title, member.name, HexToColor(member));
+			return new CreditsEntry(member.title, member.name, CreditsData.HexToColor(member));
 		}
 		return new CreditsEntry(member.name);
 	}

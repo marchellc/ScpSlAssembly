@@ -22,12 +22,12 @@ public class PooledAudioSource : MonoBehaviour
 	{
 		get
 		{
-			if (!_sourceCached)
+			if (!this._sourceCached)
 			{
-				_audioSource = GetComponent<AudioSource>();
-				_sourceCached = true;
+				this._audioSource = base.GetComponent<AudioSource>();
+				this._sourceCached = true;
 			}
-			return _audioSource;
+			return this._audioSource;
 		}
 	}
 
@@ -35,12 +35,12 @@ public class PooledAudioSource : MonoBehaviour
 	{
 		get
 		{
-			if (!_transformCached)
+			if (!this._transformCached)
 			{
-				_transform = base.transform;
-				_transformCached = true;
+				this._transform = base.transform;
+				this._transformCached = true;
 			}
-			return _transform;
+			return this._transform;
 		}
 	}
 
@@ -48,9 +48,9 @@ public class PooledAudioSource : MonoBehaviour
 	{
 		get
 		{
-			if (!Locked)
+			if (!this.Locked)
 			{
-				return !Source.isPlaying;
+				return !this.Source.isPlaying;
 			}
 			return false;
 		}
@@ -58,12 +58,12 @@ public class PooledAudioSource : MonoBehaviour
 
 	internal void OnRecycled()
 	{
-		Pooled = false;
-		TotalRecycles++;
+		this.Pooled = false;
+		this.TotalRecycles++;
 	}
 
 	internal void OnPooled()
 	{
-		Pooled = true;
+		this.Pooled = true;
 	}
 }

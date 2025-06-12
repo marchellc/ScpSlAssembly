@@ -27,26 +27,26 @@ public class Mapping
 	{
 		get
 		{
-			return _lifetime;
+			return this._lifetime;
 		}
 		internal set
 		{
 			switch (value)
 			{
 			case int.MaxValue:
-				LifetimeType = MappingLifetime.Session;
-				_lifetime = 600;
-				_expiration = DateTime.UtcNow.AddSeconds(_lifetime);
+				this.LifetimeType = MappingLifetime.Session;
+				this._lifetime = 600;
+				this._expiration = DateTime.UtcNow.AddSeconds(this._lifetime);
 				break;
 			case 0:
-				LifetimeType = MappingLifetime.Permanent;
-				_lifetime = 0;
-				_expiration = DateTime.UtcNow;
+				this.LifetimeType = MappingLifetime.Permanent;
+				this._lifetime = 0;
+				this._expiration = DateTime.UtcNow;
 				break;
 			default:
-				LifetimeType = MappingLifetime.Manual;
-				_lifetime = value;
-				_expiration = DateTime.UtcNow.AddSeconds(_lifetime);
+				this.LifetimeType = MappingLifetime.Manual;
+				this._lifetime = value;
+				this._expiration = DateTime.UtcNow.AddSeconds(this._lifetime);
 				break;
 			}
 		}
@@ -56,12 +56,12 @@ public class Mapping
 	{
 		get
 		{
-			return _expiration;
+			return this._expiration;
 		}
 		internal set
 		{
-			_expiration = value;
-			_lifetime = (int)(_expiration - DateTime.UtcNow).TotalSeconds;
+			this._expiration = value;
+			this._lifetime = (int)(this._expiration - DateTime.UtcNow).TotalSeconds;
 		}
 	}
 
@@ -77,13 +77,13 @@ public class Mapping
 		Guard.IsInRange(lifetime, 0, int.MaxValue, "lifetime");
 		Guard.IsTrue(networkProtocolType == NetworkProtocolType.Tcp || networkProtocolType == NetworkProtocolType.Udp, "protocol");
 		Guard.IsNotNull(privateIP, "privateIP");
-		NetworkProtocolType = networkProtocolType;
-		PrivateIP = privateIP;
-		PrivatePort = privatePort;
-		PublicIP = IPAddress.None;
-		PublicPort = publicPort;
-		Lifetime = lifetime;
-		Description = description;
+		this.NetworkProtocolType = networkProtocolType;
+		this.PrivateIP = privateIP;
+		this.PrivatePort = privatePort;
+		this.PublicIP = IPAddress.None;
+		this.PublicPort = publicPort;
+		this.Lifetime = lifetime;
+		this.Description = description;
 	}
 
 	public Mapping(NetworkProtocolType networkProtocolType, int privatePort, int publicPort)
@@ -103,31 +103,31 @@ public class Mapping
 
 	internal Mapping(Mapping mapping)
 	{
-		PrivateIP = mapping.PrivateIP;
-		PrivatePort = mapping.PrivatePort;
-		NetworkProtocolType = mapping.NetworkProtocolType;
-		PublicIP = mapping.PublicIP;
-		PublicPort = mapping.PublicPort;
-		LifetimeType = mapping.LifetimeType;
-		Description = mapping.Description;
-		_lifetime = mapping._lifetime;
-		_expiration = mapping._expiration;
+		this.PrivateIP = mapping.PrivateIP;
+		this.PrivatePort = mapping.PrivatePort;
+		this.NetworkProtocolType = mapping.NetworkProtocolType;
+		this.PublicIP = mapping.PublicIP;
+		this.PublicPort = mapping.PublicPort;
+		this.LifetimeType = mapping.LifetimeType;
+		this.Description = mapping.Description;
+		this._lifetime = mapping._lifetime;
+		this._expiration = mapping._expiration;
 	}
 
 	public bool IsExpired()
 	{
-		if (LifetimeType != 0 && LifetimeType != MappingLifetime.ForcedSession)
+		if (this.LifetimeType != MappingLifetime.Permanent && this.LifetimeType != MappingLifetime.ForcedSession)
 		{
-			return Expiration < DateTime.UtcNow;
+			return this.Expiration < DateTime.UtcNow;
 		}
 		return false;
 	}
 
 	internal bool ShoundRenew()
 	{
-		if (LifetimeType == MappingLifetime.Session)
+		if (this.LifetimeType == MappingLifetime.Session)
 		{
-			return IsExpired();
+			return this.IsExpired();
 		}
 		return false;
 	}
@@ -146,20 +146,20 @@ public class Mapping
 		{
 			return false;
 		}
-		if (PublicPort == mapping.PublicPort)
+		if (this.PublicPort == mapping.PublicPort)
 		{
-			return PrivatePort == mapping.PrivatePort;
+			return this.PrivatePort == mapping.PrivatePort;
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((PublicPort * 397) ^ ((PrivateIP != null) ? PrivateIP.GetHashCode() : 0)) * 397) ^ PrivatePort;
+		return (((this.PublicPort * 397) ^ ((this.PrivateIP != null) ? this.PrivateIP.GetHashCode() : 0)) * 397) ^ this.PrivatePort;
 	}
 
 	public override string ToString()
 	{
-		return string.Format("{0} {1} --> {2}:{3} ({4})", (NetworkProtocolType == NetworkProtocolType.Tcp) ? "Tcp" : "Udp", PublicPort, PrivateIP, PrivatePort, Description);
+		return string.Format("{0} {1} --> {2}:{3} ({4})", (this.NetworkProtocolType == NetworkProtocolType.Tcp) ? "Tcp" : "Udp", this.PublicPort, this.PrivateIP, this.PrivatePort, this.Description);
 	}
 }

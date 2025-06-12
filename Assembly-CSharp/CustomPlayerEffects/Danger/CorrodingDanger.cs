@@ -13,15 +13,15 @@ public class CorrodingDanger : DangerStackBase
 	public override void Initialize(ReferenceHub target)
 	{
 		base.Initialize(target);
-		if (!base.Owner.playerEffectsController.TryGetEffect<Corroding>(out _corroding))
+		if (!base.Owner.playerEffectsController.TryGetEffect<Corroding>(out this._corroding))
 		{
 			throw new NullReferenceException("Corroding wasn't found. This DangerOverride will not function as intended.");
 		}
-		if (!base.Owner.playerEffectsController.TryGetEffect<PocketCorroding>(out _pocketCorroding))
+		if (!base.Owner.playerEffectsController.TryGetEffect<PocketCorroding>(out this._pocketCorroding))
 		{
 			throw new NullReferenceException("PocketCorroding wasn't found. This DangerOverride will not function as intended.");
 		}
-		IsActive = _corroding.IsEnabled || _pocketCorroding.IsEnabled;
+		this.IsActive = this._corroding.IsEnabled || this._pocketCorroding.IsEnabled;
 		StatusEffectBase.OnEnabled += UpdateState;
 		StatusEffectBase.OnDisabled += UpdateState;
 	}
@@ -35,9 +35,9 @@ public class CorrodingDanger : DangerStackBase
 
 	private void UpdateState(StatusEffectBase effect)
 	{
-		if (!(effect != _corroding) || !(effect != _pocketCorroding))
+		if (!(effect != this._corroding) || !(effect != this._pocketCorroding))
 		{
-			IsActive = _corroding.IsEnabled || _pocketCorroding.IsEnabled;
+			this.IsActive = this._corroding.IsEnabled || this._pocketCorroding.IsEnabled;
 		}
 	}
 }

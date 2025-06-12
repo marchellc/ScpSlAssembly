@@ -8,11 +8,11 @@ public class SpectatorHidden : MonoBehaviour, IPoolResettable
 
 	private void Awake()
 	{
-		AttachedRenderer = GetComponent<Renderer>();
+		this.AttachedRenderer = base.GetComponent<Renderer>();
 	}
 
 	public void ResetObject()
 	{
-		AttachedRenderer.shadowCastingMode = ShadowCastingMode.On;
+		this.AttachedRenderer.shadowCastingMode = ShadowCastingMode.On;
 	}
 }

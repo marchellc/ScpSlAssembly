@@ -14,45 +14,45 @@ internal sealed class ReliableChannel : BaseChannel
 
 		public override string ToString()
 		{
-			if (_packet != null)
+			if (this._packet != null)
 			{
-				return _packet.Sequence.ToString();
+				return this._packet.Sequence.ToString();
 			}
 			return "Empty";
 		}
 
 		public void Init(NetPacket packet)
 		{
-			_packet = packet;
-			_isSent = false;
+			this._packet = packet;
+			this._isSent = false;
 		}
 
 		public bool TrySend(long currentTime, NetPeer peer)
 		{
-			if (_packet == null)
+			if (this._packet == null)
 			{
 				return false;
 			}
-			if (_isSent)
+			if (this._isSent)
 			{
 				double num = peer.ResendDelay * 10000.0;
-				if ((double)(currentTime - _timeStamp) < num)
+				if ((double)(currentTime - this._timeStamp) < num)
 				{
 					return true;
 				}
 			}
-			_timeStamp = currentTime;
-			_isSent = true;
-			peer.SendUserData(_packet);
+			this._timeStamp = currentTime;
+			this._isSent = true;
+			peer.SendUserData(this._packet);
 			return true;
 		}
 
 		public bool Clear(NetPeer peer)
 		{
-			if (_packet != null)
+			if (this._packet != null)
 			{
-				peer.RecycleAndDeliver(_packet);
-				_packet = null;
+				peer.RecycleAndDeliver(this._packet);
+				this._packet = null;
 				return true;
 			}
 			return false;
@@ -90,29 +90,29 @@ internal sealed class ReliableChannel : BaseChannel
 	public ReliableChannel(NetPeer peer, bool ordered, byte id)
 		: base(peer)
 	{
-		_id = id;
-		_windowSize = 64;
-		_ordered = ordered;
-		_pendingPackets = new PendingPacket[_windowSize];
-		for (int i = 0; i < _pendingPackets.Length; i++)
+		this._id = id;
+		this._windowSize = 64;
+		this._ordered = ordered;
+		this._pendingPackets = new PendingPacket[this._windowSize];
+		for (int i = 0; i < this._pendingPackets.Length; i++)
 		{
-			_pendingPackets[i] = default(PendingPacket);
+			this._pendingPackets[i] = default(PendingPacket);
 		}
-		if (_ordered)
+		if (this._ordered)
 		{
-			_deliveryMethod = DeliveryMethod.ReliableOrdered;
-			_receivedPackets = new NetPacket[_windowSize];
+			this._deliveryMethod = DeliveryMethod.ReliableOrdered;
+			this._receivedPackets = new NetPacket[this._windowSize];
 		}
 		else
 		{
-			_deliveryMethod = DeliveryMethod.ReliableUnordered;
-			_earlyReceived = new bool[_windowSize];
+			this._deliveryMethod = DeliveryMethod.ReliableUnordered;
+			this._earlyReceived = new bool[this._windowSize];
 		}
-		_localWindowStart = 0;
-		_localSeqence = 0;
-		_remoteSequence = 0;
-		_remoteWindowStart = 0;
-		_outgoingAcks = new NetPacket(PacketProperty.Ack, (_windowSize - 1) / 8 + 2)
+		this._localWindowStart = 0;
+		this._localSeqence = 0;
+		this._remoteSequence = 0;
+		this._remoteWindowStart = 0;
+		this._outgoingAcks = new NetPacket(PacketProperty.Ack, (this._windowSize - 1) / 8 + 2)
 		{
 			ChannelId = id
 		};
@@ -120,40 +120,40 @@ internal sealed class ReliableChannel : BaseChannel
 
 	private void ProcessAck(NetPacket packet)
 	{
-		if (packet.Size != _outgoingAcks.Size)
+		if (packet.Size != this._outgoingAcks.Size)
 		{
 			return;
 		}
 		ushort sequence = packet.Sequence;
-		int num = NetUtils.RelativeSequenceNumber(_localWindowStart, sequence);
-		if (sequence >= 32768 || num < 0 || num >= _windowSize)
+		int num = NetUtils.RelativeSequenceNumber(this._localWindowStart, sequence);
+		if (sequence >= 32768 || num < 0 || num >= this._windowSize)
 		{
 			return;
 		}
 		byte[] rawData = packet.RawData;
-		lock (_pendingPackets)
+		lock (this._pendingPackets)
 		{
-			int num2 = _localWindowStart;
-			while (num2 != _localSeqence && NetUtils.RelativeSequenceNumber(num2, sequence) < _windowSize)
+			int num2 = this._localWindowStart;
+			while (num2 != this._localSeqence && NetUtils.RelativeSequenceNumber(num2, sequence) < this._windowSize)
 			{
-				int num3 = num2 % _windowSize;
+				int num3 = num2 % this._windowSize;
 				int num4 = 4 + num3 / 8;
 				int num5 = num3 % 8;
 				if ((rawData[num4] & (1 << num5)) == 0)
 				{
-					if (Peer.NetManager.EnableStatistics)
+					if (base.Peer.NetManager.EnableStatistics)
 					{
-						Peer.Statistics.IncrementPacketLoss();
-						Peer.NetManager.Statistics.IncrementPacketLoss();
+						base.Peer.Statistics.IncrementPacketLoss();
+						base.Peer.NetManager.Statistics.IncrementPacketLoss();
 					}
 				}
 				else
 				{
-					if (num2 == _localWindowStart)
+					if (num2 == this._localWindowStart)
 					{
-						_localWindowStart = (_localWindowStart + 1) % 32768;
+						this._localWindowStart = (this._localWindowStart + 1) % 32768;
 					}
-					_pendingPackets[num3].Clear(Peer);
+					this._pendingPackets[num3].Clear(base.Peer);
 				}
 				num2 = (num2 + 1) % 32768;
 			}
@@ -162,40 +162,40 @@ internal sealed class ReliableChannel : BaseChannel
 
 	protected override bool SendNextPackets()
 	{
-		if (_mustSendAcks)
+		if (this._mustSendAcks)
 		{
-			_mustSendAcks = false;
-			lock (_outgoingAcks)
+			this._mustSendAcks = false;
+			lock (this._outgoingAcks)
 			{
-				Peer.SendUserData(_outgoingAcks);
+				base.Peer.SendUserData(this._outgoingAcks);
 			}
 		}
 		long ticks = DateTime.UtcNow.Ticks;
 		bool flag = false;
-		lock (_pendingPackets)
+		lock (this._pendingPackets)
 		{
-			lock (OutgoingQueue)
+			lock (base.OutgoingQueue)
 			{
-				while (OutgoingQueue.Count > 0 && NetUtils.RelativeSequenceNumber(_localSeqence, _localWindowStart) < _windowSize)
+				while (base.OutgoingQueue.Count > 0 && NetUtils.RelativeSequenceNumber(this._localSeqence, this._localWindowStart) < this._windowSize)
 				{
-					NetPacket netPacket = OutgoingQueue.Dequeue();
-					netPacket.Sequence = (ushort)_localSeqence;
-					netPacket.ChannelId = _id;
-					_pendingPackets[_localSeqence % _windowSize].Init(netPacket);
-					_localSeqence = (_localSeqence + 1) % 32768;
+					NetPacket netPacket = base.OutgoingQueue.Dequeue();
+					netPacket.Sequence = (ushort)this._localSeqence;
+					netPacket.ChannelId = this._id;
+					this._pendingPackets[this._localSeqence % this._windowSize].Init(netPacket);
+					this._localSeqence = (this._localSeqence + 1) % 32768;
 				}
 			}
-			for (int num = _localWindowStart; num != _localSeqence; num = (num + 1) % 32768)
+			for (int num = this._localWindowStart; num != this._localSeqence; num = (num + 1) % 32768)
 			{
-				if (_pendingPackets[num % _windowSize].TrySend(ticks, Peer))
+				if (this._pendingPackets[num % this._windowSize].TrySend(ticks, base.Peer))
 				{
 					flag = true;
 				}
 			}
 		}
-		if (!flag && !_mustSendAcks)
+		if (!flag && !this._mustSendAcks)
 		{
-			return OutgoingQueue.Count > 0;
+			return base.OutgoingQueue.Count > 0;
 		}
 		return true;
 	}
@@ -204,7 +204,7 @@ internal sealed class ReliableChannel : BaseChannel
 	{
 		if (packet.Property == PacketProperty.Ack)
 		{
-			ProcessAck(packet);
+			this.ProcessAck(packet);
 			return false;
 		}
 		int sequence = packet.Sequence;
@@ -212,8 +212,8 @@ internal sealed class ReliableChannel : BaseChannel
 		{
 			return false;
 		}
-		int num = NetUtils.RelativeSequenceNumber(sequence, _remoteWindowStart);
-		if (NetUtils.RelativeSequenceNumber(sequence, _remoteSequence) > _windowSize)
+		int num = NetUtils.RelativeSequenceNumber(sequence, this._remoteWindowStart);
+		if (NetUtils.RelativeSequenceNumber(sequence, this._remoteSequence) > this._windowSize)
 		{
 			return false;
 		}
@@ -221,72 +221,72 @@ internal sealed class ReliableChannel : BaseChannel
 		{
 			return false;
 		}
-		if (num >= _windowSize * 2)
+		if (num >= this._windowSize * 2)
 		{
 			return false;
 		}
 		int num3;
-		lock (_outgoingAcks)
+		lock (this._outgoingAcks)
 		{
 			int num4;
 			int num5;
-			if (num >= _windowSize)
+			if (num >= this._windowSize)
 			{
-				int num2 = (_remoteWindowStart + num - _windowSize + 1) % 32768;
-				_outgoingAcks.Sequence = (ushort)num2;
-				while (_remoteWindowStart != num2)
+				int num2 = (this._remoteWindowStart + num - this._windowSize + 1) % 32768;
+				this._outgoingAcks.Sequence = (ushort)num2;
+				while (this._remoteWindowStart != num2)
 				{
-					num3 = _remoteWindowStart % _windowSize;
+					num3 = this._remoteWindowStart % this._windowSize;
 					num4 = 4 + num3 / 8;
 					num5 = num3 % 8;
-					_outgoingAcks.RawData[num4] &= (byte)(~(1 << num5));
-					_remoteWindowStart = (_remoteWindowStart + 1) % 32768;
+					this._outgoingAcks.RawData[num4] &= (byte)(~(1 << num5));
+					this._remoteWindowStart = (this._remoteWindowStart + 1) % 32768;
 				}
 			}
-			_mustSendAcks = true;
-			num3 = sequence % _windowSize;
+			this._mustSendAcks = true;
+			num3 = sequence % this._windowSize;
 			num4 = 4 + num3 / 8;
 			num5 = num3 % 8;
-			if ((_outgoingAcks.RawData[num4] & (1 << num5)) != 0)
+			if ((this._outgoingAcks.RawData[num4] & (1 << num5)) != 0)
 			{
-				AddToPeerChannelSendQueue();
+				base.AddToPeerChannelSendQueue();
 				return false;
 			}
-			_outgoingAcks.RawData[num4] |= (byte)(1 << num5);
+			this._outgoingAcks.RawData[num4] |= (byte)(1 << num5);
 		}
-		AddToPeerChannelSendQueue();
-		if (sequence == _remoteSequence)
+		base.AddToPeerChannelSendQueue();
+		if (sequence == this._remoteSequence)
 		{
-			Peer.AddReliablePacket(_deliveryMethod, packet);
-			_remoteSequence = (_remoteSequence + 1) % 32768;
-			if (_ordered)
+			base.Peer.AddReliablePacket(this._deliveryMethod, packet);
+			this._remoteSequence = (this._remoteSequence + 1) % 32768;
+			if (this._ordered)
 			{
 				NetPacket p;
-				while ((p = _receivedPackets[_remoteSequence % _windowSize]) != null)
+				while ((p = this._receivedPackets[this._remoteSequence % this._windowSize]) != null)
 				{
-					_receivedPackets[_remoteSequence % _windowSize] = null;
-					Peer.AddReliablePacket(_deliveryMethod, p);
-					_remoteSequence = (_remoteSequence + 1) % 32768;
+					this._receivedPackets[this._remoteSequence % this._windowSize] = null;
+					base.Peer.AddReliablePacket(this._deliveryMethod, p);
+					this._remoteSequence = (this._remoteSequence + 1) % 32768;
 				}
 			}
 			else
 			{
-				while (_earlyReceived[_remoteSequence % _windowSize])
+				while (this._earlyReceived[this._remoteSequence % this._windowSize])
 				{
-					_earlyReceived[_remoteSequence % _windowSize] = false;
-					_remoteSequence = (_remoteSequence + 1) % 32768;
+					this._earlyReceived[this._remoteSequence % this._windowSize] = false;
+					this._remoteSequence = (this._remoteSequence + 1) % 32768;
 				}
 			}
 			return true;
 		}
-		if (_ordered)
+		if (this._ordered)
 		{
-			_receivedPackets[num3] = packet;
+			this._receivedPackets[num3] = packet;
 		}
 		else
 		{
-			_earlyReceived[num3] = true;
-			Peer.AddReliablePacket(_deliveryMethod, packet);
+			this._earlyReceived[num3] = true;
+			base.Peer.AddReliablePacket(this._deliveryMethod, packet);
 		}
 		return true;
 	}

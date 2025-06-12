@@ -38,18 +38,18 @@ internal static class HttpWorkaround
 	{
 		if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
-			Enabled = false;
+			HttpWorkaround.Enabled = false;
 			return;
 		}
 		try
 		{
-			Enabled = Initialize(GameCore.Version.VersionString, out var message);
+			HttpWorkaround.Enabled = HttpWorkaround.Initialize(GameCore.Version.VersionString, out var message);
 			Debug.Log(Marshal.PtrToStringUni(message));
-			Free(message);
+			HttpWorkaround.Free(message);
 		}
 		catch (Exception exception)
 		{
-			Enabled = false;
+			HttpWorkaround.Enabled = false;
 			Debug.LogException(exception);
 		}
 	}
@@ -58,16 +58,16 @@ internal static class HttpWorkaround
 	{
 		int code2;
 		IntPtr exception;
-		IntPtr ptr = Get(url, out success, out code2, out exception);
+		IntPtr ptr = HttpWorkaround.Get(url, out success, out code2, out exception);
 		if (exception != IntPtr.Zero)
 		{
 			string message = Marshal.PtrToStringUni(exception);
-			Free(exception);
+			HttpWorkaround.Free(exception);
 			throw new HttpProxyException(message);
 		}
 		code = (HttpStatusCode)code2;
 		string result = Marshal.PtrToStringUni(ptr);
-		Free(ptr);
+		HttpWorkaround.Free(ptr);
 		return result;
 	}
 
@@ -75,16 +75,16 @@ internal static class HttpWorkaround
 	{
 		int code2;
 		IntPtr exception;
-		IntPtr ptr = Post(url, data, out success, out code2, out exception);
+		IntPtr ptr = HttpWorkaround.Post(url, data, out success, out code2, out exception);
 		if (exception != IntPtr.Zero)
 		{
 			string message = Marshal.PtrToStringUni(exception);
-			Free(exception);
+			HttpWorkaround.Free(exception);
 			throw new HttpProxyException(message);
 		}
 		code = (HttpStatusCode)code2;
 		string result = Marshal.PtrToStringUni(ptr);
-		Free(ptr);
+		HttpWorkaround.Free(ptr);
 		return result;
 	}
 }

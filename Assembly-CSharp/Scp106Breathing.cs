@@ -17,12 +17,12 @@ public class Scp106Breathing : StandardSubroutine<Scp106Role>
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp106SinkholeController>(out _sinkholeController);
+		base.GetSubroutine<Scp106SinkholeController>(out this._sinkholeController);
 	}
 
 	private void Update()
 	{
-		_breathingSource.volume = (1f - _sinkholeController.SubmergeProgress) * ((base.Owner.isLocalPlayer || base.Owner.IsLocallySpectated()) ? 0.5f : 1f);
-		_breathingSource.spatialBlend = ((base.Owner.isLocalPlayer || base.Owner.IsLocallySpectated()) ? 0f : 1f);
+		this._breathingSource.volume = (1f - this._sinkholeController.SubmergeProgress) * ((base.Owner.isLocalPlayer || base.Owner.IsLocallySpectated()) ? 0.5f : 1f);
+		this._breathingSource.spatialBlend = ((base.Owner.isLocalPlayer || base.Owner.IsLocallySpectated()) ? 0f : 1f);
 	}
 }

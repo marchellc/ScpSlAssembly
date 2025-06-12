@@ -22,26 +22,26 @@ public static class AnimationCurveReaderWriter
 
 		public NetworkKeyframe(Keyframe keyframe)
 		{
-			Keyframe = keyframe;
-			Tangental = Mathf.Abs(keyframe.inTangent) > float.Epsilon || Mathf.Abs(keyframe.inTangent) > float.Epsilon;
-			Weighted = Mathf.Abs(keyframe.inWeight) > float.Epsilon || Mathf.Abs(keyframe.outWeight) > float.Epsilon;
+			this.Keyframe = keyframe;
+			this.Tangental = Mathf.Abs(keyframe.inTangent) > float.Epsilon || Mathf.Abs(keyframe.inTangent) > float.Epsilon;
+			this.Weighted = Mathf.Abs(keyframe.inWeight) > float.Epsilon || Mathf.Abs(keyframe.outWeight) > float.Epsilon;
 		}
 
 		public void ReadMetaTable(in byte flag, ref byte bitOffset)
 		{
-			GetFlagsFromOffset(ref bitOffset, out var tangentalFlag, out var weightedFlag);
-			Tangental = (flag & tangentalFlag) == tangentalFlag;
-			Weighted = (flag & weightedFlag) == weightedFlag;
+			NetworkKeyframe.GetFlagsFromOffset(ref bitOffset, out var tangentalFlag, out var weightedFlag);
+			this.Tangental = (flag & tangentalFlag) == tangentalFlag;
+			this.Weighted = (flag & weightedFlag) == weightedFlag;
 		}
 
 		public void WriteMetaTable(ref byte flag, ref byte bitOffset)
 		{
-			GetFlagsFromOffset(ref bitOffset, out var tangentalFlag, out var weightedFlag);
-			if (Tangental)
+			NetworkKeyframe.GetFlagsFromOffset(ref bitOffset, out var tangentalFlag, out var weightedFlag);
+			if (this.Tangental)
 			{
 				flag |= tangentalFlag;
 			}
-			if (Weighted)
+			if (this.Weighted)
 			{
 				flag |= weightedFlag;
 			}
@@ -53,7 +53,7 @@ public static class AnimationCurveReaderWriter
 			float value = reader.ReadFloat();
 			float inTangent;
 			float outTangent;
-			if (Tangental)
+			if (this.Tangental)
 			{
 				inTangent = reader.ReadFloat();
 				outTangent = reader.ReadFloat();
@@ -65,7 +65,7 @@ public static class AnimationCurveReaderWriter
 			}
 			float inWeight;
 			float outWeight;
-			if (Weighted)
+			if (this.Weighted)
 			{
 				inWeight = reader.ReadFloat();
 				outWeight = reader.ReadFloat();
@@ -75,22 +75,22 @@ public static class AnimationCurveReaderWriter
 				inWeight = 0f;
 				outWeight = 0f;
 			}
-			Keyframe = new Keyframe(time, value, inTangent, outTangent, inWeight, outWeight);
+			this.Keyframe = new Keyframe(time, value, inTangent, outTangent, inWeight, outWeight);
 		}
 
 		public void WriteData(NetworkWriter writer)
 		{
-			writer.WriteFloat(Keyframe.time);
-			writer.WriteFloat(Keyframe.value);
-			if (Tangental)
+			writer.WriteFloat(this.Keyframe.time);
+			writer.WriteFloat(this.Keyframe.value);
+			if (this.Tangental)
 			{
-				writer.WriteFloat(Keyframe.inTangent);
-				writer.WriteFloat(Keyframe.outTangent);
+				writer.WriteFloat(this.Keyframe.inTangent);
+				writer.WriteFloat(this.Keyframe.outTangent);
 			}
-			if (Weighted)
+			if (this.Weighted)
 			{
-				writer.WriteFloat(Keyframe.inWeight);
-				writer.WriteFloat(Keyframe.outWeight);
+				writer.WriteFloat(this.Keyframe.inWeight);
+				writer.WriteFloat(this.Keyframe.outWeight);
 			}
 		}
 	}
@@ -143,9 +143,9 @@ public static class AnimationCurveReaderWriter
 			while (bitOffset < 8 && num < array.Length);
 			writer.WriteByte(flag);
 		}
-		for (int i = 0; i < array.Length; i++)
+		for (int num2 = 0; num2 < array.Length; num2++)
 		{
-			array[i].WriteData(writer);
+			array[num2].WriteData(writer);
 		}
 	}
 }

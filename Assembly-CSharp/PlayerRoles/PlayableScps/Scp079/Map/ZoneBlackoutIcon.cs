@@ -36,7 +36,7 @@ public class ZoneBlackoutIcon : Scp079GuiElementBase
 	{
 		get
 		{
-			foreach (ZoneBlackoutIcon instance in Instances)
+			foreach (ZoneBlackoutIcon instance in ZoneBlackoutIcon.Instances)
 			{
 				if (instance.Highlighted)
 				{
@@ -51,8 +51,8 @@ public class ZoneBlackoutIcon : Scp079GuiElementBase
 	{
 		get
 		{
-			bool flag = Vector3.Distance(_rt.position, _root.position) < _triggerDis * _root.localScale.x;
-			_recolorable.color = (flag ? Color.white : _defaultColor);
+			bool flag = Vector3.Distance(this._rt.position, this._root.position) < this._triggerDis * this._root.localScale.x;
+			this._recolorable.color = (flag ? Color.white : this._defaultColor);
 			return flag;
 		}
 	}
@@ -60,24 +60,24 @@ public class ZoneBlackoutIcon : Scp079GuiElementBase
 	internal override void Init(Scp079Role role, ReferenceHub owner)
 	{
 		base.Init(role, owner);
-		base.Role.SubroutineModule.TryGetSubroutine<Scp079TierManager>(out _tier);
-		base.Role.SubroutineModule.TryGetSubroutine<Scp079BlackoutZoneAbility>(out _ability);
-		Scp079TierManager tier = _tier;
+		base.Role.SubroutineModule.TryGetSubroutine<Scp079TierManager>(out this._tier);
+		base.Role.SubroutineModule.TryGetSubroutine<Scp079BlackoutZoneAbility>(out this._ability);
+		Scp079TierManager tier = this._tier;
 		tier.OnLevelledUp = (Action)Delegate.Combine(tier.OnLevelledUp, new Action(RefreshVisibiltiy));
-		Instances.Add(this);
-		_rt = GetComponent<RectTransform>();
-		RefreshVisibiltiy();
+		ZoneBlackoutIcon.Instances.Add(this);
+		this._rt = base.GetComponent<RectTransform>();
+		this.RefreshVisibiltiy();
 	}
 
 	private void OnDestroy()
 	{
-		Instances.Remove(this);
-		Scp079TierManager tier = _tier;
+		ZoneBlackoutIcon.Instances.Remove(this);
+		Scp079TierManager tier = this._tier;
 		tier.OnLevelledUp = (Action)Delegate.Remove(tier.OnLevelledUp, new Action(RefreshVisibiltiy));
 	}
 
 	private void RefreshVisibiltiy()
 	{
-		base.gameObject.SetActive(_ability.Unlocked);
+		base.gameObject.SetActive(this._ability.Unlocked);
 	}
 }

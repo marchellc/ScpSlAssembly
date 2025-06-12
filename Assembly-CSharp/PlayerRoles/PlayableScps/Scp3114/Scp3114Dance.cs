@@ -56,9 +56,9 @@ public class Scp3114Dance : StandardSubroutine<Scp3114Role>, IShakeEffect
 	{
 		get
 		{
-			if (!(_curCameraDis > 0f))
+			if (!(this._curCameraDis > 0f))
 			{
-				return IsDancing;
+				return this.IsDancing;
 			}
 			return true;
 		}
@@ -68,32 +68,32 @@ public class Scp3114Dance : StandardSubroutine<Scp3114Role>, IShakeEffect
 	{
 		if (NetworkServer.active)
 		{
-			UpdateServer();
+			this.UpdateServer();
 		}
-		UpdateCamera();
+		this.UpdateCamera();
 		if (!base.Role.IsLocalPlayer)
 		{
 			return;
 		}
-		if (IsDancing)
+		if (this.IsDancing)
 		{
-			if (TryEndDancing())
+			if (this.TryEndDancing())
 			{
-				ClientSendCmd();
+				base.ClientSendCmd();
 			}
 		}
-		else if (TryStartDancing())
+		else if (this.TryStartDancing())
 		{
-			ClientSendCmd();
+			base.ClientSendCmd();
 		}
 	}
 
 	private void UpdateServer()
 	{
-		if (IsDancing && !((_serverStartPos.Position - base.CastRole.FpcModule.Position).sqrMagnitude < 2.5f))
+		if (this.IsDancing && !((this._serverStartPos.Position - base.CastRole.FpcModule.Position).sqrMagnitude < 2.5f))
 		{
-			IsDancing = false;
-			ServerSendRpc(toAll: true);
+			this.IsDancing = false;
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
@@ -104,28 +104,28 @@ public class Scp3114Dance : StandardSubroutine<Scp3114Role>, IShakeEffect
 
 	private void UpdateCamera()
 	{
-		_lastFwd = _tr.forward;
-		if (!IsDancing)
+		this._lastFwd = this._tr.forward;
+		if (!this.IsDancing)
 		{
-			if (!(_curCameraDis <= 0f))
+			if (!(this._curCameraDis <= 0f))
 			{
-				_curCameraDis -= Time.deltaTime * _cameraAdjustSpeed;
-				if (!(_curCameraDis > 0f))
+				this._curCameraDis -= Time.deltaTime * this._cameraAdjustSpeed;
+				if (!(this._curCameraDis > 0f))
 				{
-					SetModelVisibility(!base.Owner.isLocalPlayer && !base.Owner.IsLocallySpectated());
-					_curCameraDis = 0f;
+					this.SetModelVisibility(!base.Owner.isLocalPlayer && !base.Owner.IsLocallySpectated());
+					this._curCameraDis = 0f;
 				}
 			}
 		}
 		else
 		{
-			_curCameraDis += Time.deltaTime * _cameraAdjustSpeed;
-			float num = _cameraMaxDistance;
-			if (Physics.Raycast(base.CastRole.CameraPosition, -_lastFwd, out var hitInfo, num + 0.16f, FpcStateProcessor.Mask))
+			this._curCameraDis += Time.deltaTime * this._cameraAdjustSpeed;
+			float num = this._cameraMaxDistance;
+			if (Physics.Raycast(base.CastRole.CameraPosition, -this._lastFwd, out var hitInfo, num + 0.16f, FpcStateProcessor.Mask))
 			{
 				num = hitInfo.distance - 0.16f;
 			}
-			_curCameraDis = Math.Min(num, _curCameraDis);
+			this._curCameraDis = Math.Min(num, this._curCameraDis);
 		}
 	}
 
@@ -134,13 +134,13 @@ public class Scp3114Dance : StandardSubroutine<Scp3114Role>, IShakeEffect
 		string inputString = Input.inputString;
 		for (int i = 0; i < inputString.Length; i++)
 		{
-			if (char.ToLowerInvariant(inputString[i]) != _secretCode[_nextMatchIndex])
+			if (char.ToLowerInvariant(inputString[i]) != this._secretCode[this._nextMatchIndex])
 			{
-				_nextMatchIndex = 0;
+				this._nextMatchIndex = 0;
 			}
-			else if (++_nextMatchIndex == _codeLength)
+			else if (++this._nextMatchIndex == this._codeLength)
 			{
-				_nextMatchIndex = 0;
+				this._nextMatchIndex = 0;
 				return true;
 			}
 		}
@@ -149,11 +149,11 @@ public class Scp3114Dance : StandardSubroutine<Scp3114Role>, IShakeEffect
 
 	private bool TryEndDancing()
 	{
-		if (NetworkTime.time < _lastRpcTime + 0.5)
+		if (NetworkTime.time < this._lastRpcTime + 0.5)
 		{
 			return false;
 		}
-		ActionName[] cancelKeys = _cancelKeys;
+		ActionName[] cancelKeys = this._cancelKeys;
 		for (int i = 0; i < cancelKeys.Length; i++)
 		{
 			if (Input.GetKey(NewInput.GetKey(cancelKeys[i])))
@@ -167,33 +167,33 @@ public class Scp3114Dance : StandardSubroutine<Scp3114Role>, IShakeEffect
 	protected override void Awake()
 	{
 		base.Awake();
-		_tr = base.transform;
-		_codeLength = _secretCode.Length;
+		this._tr = base.transform;
+		this._codeLength = this._secretCode.Length;
 	}
 
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		if (!_shakeActive)
+		if (!this._shakeActive)
 		{
 			CameraShakeController.AddEffect(this);
-			_shakeActive = true;
+			this._shakeActive = true;
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		IsDancing = false;
-		_nextMatchIndex = 0;
-		_lastRpcTime = 0.0;
-		_curCameraDis = 0f;
+		this.IsDancing = false;
+		this._nextMatchIndex = 0;
+		this._lastRpcTime = 0.0;
+		this._curCameraDis = 0f;
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteBool(!IsDancing);
+		writer.WriteBool(!this.IsDancing);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
@@ -205,32 +205,32 @@ public class Scp3114Dance : StandardSubroutine<Scp3114Role>, IShakeEffect
 			{
 				return;
 			}
-			IsDancing = true;
-			_serverStartPos = new RelativePosition(base.CastRole.FpcModule.Position);
+			this.IsDancing = true;
+			this._serverStartPos = new RelativePosition(base.CastRole.FpcModule.Position);
 		}
 		else
 		{
-			IsDancing = false;
+			this.IsDancing = false;
 		}
-		ServerSendRpc(toAll: true);
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
 		base.ClientProcessRpc(reader);
-		IsDancing = reader.ReadBool();
-		DanceVariant = reader.ReadByte() % _danceVariants;
-		_lastRpcTime = NetworkTime.time;
-		if (IsDancing)
+		this.IsDancing = reader.ReadBool();
+		this.DanceVariant = reader.ReadByte() % this._danceVariants;
+		this._lastRpcTime = NetworkTime.time;
+		if (this.IsDancing)
 		{
-			SetModelVisibility(b: true);
+			this.SetModelVisibility(b: true);
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteBool(IsDancing);
+		writer.WriteBool(this.IsDancing);
 		writer.WriteByte((byte)UnityEngine.Random.Range(0, 255));
 	}
 
@@ -239,12 +239,12 @@ public class Scp3114Dance : StandardSubroutine<Scp3114Role>, IShakeEffect
 		shakeValues = ShakeEffectValues.None;
 		if (base.Role.Pooled)
 		{
-			_shakeActive = false;
+			this._shakeActive = false;
 			return false;
 		}
 		if (base.Owner.isLocalPlayer || base.Owner.IsLocallySpectated())
 		{
-			Vector3? rootCameraPositionOffset = _lastFwd * (0f - _curCameraDis);
+			Vector3? rootCameraPositionOffset = this._lastFwd * (0f - this._curCameraDis);
 			shakeValues = new ShakeEffectValues(null, null, rootCameraPositionOffset);
 		}
 		return true;

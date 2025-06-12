@@ -32,30 +32,30 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 
 		public void WriteSelf(NetworkWriter writer)
 		{
-			writer.WriteReferenceHub(Target);
-			writer.WriteRelativePosition(TargetPosition);
-			writer.WriteRelativePosition(AttackerPosition);
+			writer.WriteReferenceHub(this.Target);
+			writer.WriteRelativePosition(this.TargetPosition);
+			writer.WriteRelativePosition(this.AttackerPosition);
 		}
 
 		public StrangleTarget(ReferenceHub target, Vector3 targetPosition, Vector3 attackerPosition)
 		{
-			Target = target;
-			TargetPosition = new RelativePosition(targetPosition);
-			AttackerPosition = new RelativePosition(attackerPosition);
+			this.Target = target;
+			this.TargetPosition = new RelativePosition(targetPosition);
+			this.AttackerPosition = new RelativePosition(attackerPosition);
 		}
 
 		public StrangleTarget(ReferenceHub target, RelativePosition targetPosition, RelativePosition attackerPosition)
 		{
-			Target = target;
-			TargetPosition = targetPosition;
-			AttackerPosition = attackerPosition;
+			this.Target = target;
+			this.TargetPosition = targetPosition;
+			this.AttackerPosition = attackerPosition;
 		}
 
 		public StrangleTarget(ReferenceHub target, NetworkReader reader)
 		{
-			Target = target;
-			TargetPosition = reader.ReadRelativePosition();
-			AttackerPosition = reader.ReadRelativePosition();
+			this.Target = target;
+			this.TargetPosition = reader.ReadRelativePosition();
+			this.AttackerPosition = reader.ReadRelativePosition();
 		}
 	}
 
@@ -117,7 +117,7 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 	{
 		get
 		{
-			if (_clientTargetting)
+			if (this._clientTargetting)
 			{
 				return base.Role.IsLocalPlayer;
 			}
@@ -136,10 +136,10 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		if (_clientTargetting)
+		if (this._clientTargetting)
 		{
-			Vector3 position = _clientDesiredTargetRole.FpcModule.Position;
-			writer.WriteReferenceHub(_clientDesiredTargetHub);
+			Vector3 position = this._clientDesiredTargetRole.FpcModule.Position;
+			writer.WriteReferenceHub(this._clientDesiredTargetHub);
 			writer.WriteRelativePosition(new RelativePosition(position));
 			Vector3 position2 = base.CastRole.FpcModule.Position;
 			writer.WriteRelativePosition(new RelativePosition(position2));
@@ -149,22 +149,22 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		StrangleTarget? syncTarget = ProcessAttackRequest(reader);
+		StrangleTarget? syncTarget = this.ProcessAttackRequest(reader);
 		bool hasValue = syncTarget.HasValue;
-		if (hasValue != SyncTarget.HasValue && hasValue)
+		if (hasValue != this.SyncTarget.HasValue && hasValue)
 		{
 			this.ServerOnBegin?.Invoke();
 		}
-		SyncTarget = syncTarget;
-		_rpcType = RpcType.TargetResync;
-		ServerSendRpc(toAll: true);
+		this.SyncTarget = syncTarget;
+		this._rpcType = RpcType.TargetResync;
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteByte((byte)_rpcType);
-		SyncTarget?.WriteSelf(writer);
+		writer.WriteByte((byte)this._rpcType);
+		this.SyncTarget?.WriteSelf(writer);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
@@ -173,28 +173,28 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 		ReferenceHub hub = null;
 		RpcType rpcType = (RpcType)reader.ReadByte();
 		bool flag = reader.Remaining > 0 && reader.TryReadReferenceHub(out hub) && HitboxIdentity.IsEnemy(base.Owner, hub);
-		SyncTarget = (flag ? new StrangleTarget?(new StrangleTarget(hub, reader)) : ((StrangleTarget?)null));
+		this.SyncTarget = (flag ? new StrangleTarget?(new StrangleTarget(hub, reader)) : ((StrangleTarget?)null));
 		if (flag)
 		{
 			if (base.Role.IsLocalPlayer)
 			{
-				base.CastRole.FpcModule.Position = SyncTarget.Value.AttackerPosition.Position;
+				base.CastRole.FpcModule.Position = this.SyncTarget.Value.AttackerPosition.Position;
 			}
 			return;
 		}
 		switch (rpcType)
 		{
 		case RpcType.AttackInterrupted:
-			ClientCooldown.Trigger(_onInterruptedCooldown);
+			this.ClientCooldown.Trigger(this._onInterruptedCooldown);
 			break;
 		case RpcType.TargetKilled:
-			ClientCooldown.Trigger(_onKillCooldown);
+			this.ClientCooldown.Trigger(this._onKillCooldown);
 			break;
 		default:
-			ClientCooldown.Trigger(_onReleaseCooldown);
+			this.ClientCooldown.Trigger(this._onReleaseCooldown);
 			break;
 		}
-		_clientTargetting = false;
+		this._clientTargetting = false;
 	}
 
 	public override void SpawnObject()
@@ -211,9 +211,9 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 	{
 		base.ResetObject();
 		CursorManager.Unregister(this);
-		SyncTarget = null;
-		ClientCooldown.Clear();
-		_clientTargetting = false;
+		this.SyncTarget = null;
+		this.ClientCooldown.Clear();
+		this._clientTargetting = false;
 		ReferenceHub.OnPlayerRemoved -= OnPlayerRemoved;
 		PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
 		PlayerStats.OnAnyPlayerDied -= OnAnyPlayerDied;
@@ -223,65 +223,65 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 	protected override void OnKeyUp()
 	{
 		base.OnKeyUp();
-		_keyHoldingTime = 0f;
-		_warningHintAlreadyDisplayed = false;
-		if (_clientTargetting)
+		this._keyHoldingTime = 0f;
+		this._warningHintAlreadyDisplayed = false;
+		if (this._clientTargetting)
 		{
-			_clientTargetting = false;
-			ClientCooldown.Trigger(_onReleaseCooldown);
-			ClientSendCmd();
+			this._clientTargetting = false;
+			this.ClientCooldown.Trigger(this._onReleaseCooldown);
+			base.ClientSendCmd();
 		}
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp3114Slap>(out _attackAbility);
+		base.GetSubroutine<Scp3114Slap>(out this._attackAbility);
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		if (NetworkServer.active && SyncTarget.HasValue)
+		if (NetworkServer.active && this.SyncTarget.HasValue)
 		{
-			ServerUpdateTarget();
+			this.ServerUpdateTarget();
 		}
-		if (_clientTargetting)
+		if (this._clientTargetting)
 		{
-			ClientUpdateTarget();
+			this.ClientUpdateTarget();
 		}
-		else if (IsKeyHeld && ClientCooldown.IsReady && _attackAbility.Cooldown.IsReady && _keyHoldingTime < _maxKeyHoldTime)
+		else if (this.IsKeyHeld && this.ClientCooldown.IsReady && this._attackAbility.Cooldown.IsReady && this._keyHoldingTime < this._maxKeyHoldTime)
 		{
-			ClientAttack();
-			_keyHoldingTime += Time.deltaTime;
+			this.ClientAttack();
+			this._keyHoldingTime += Time.deltaTime;
 		}
 	}
 
 	private void OnThisPlayerDamaged(DamageHandlerBase dhb)
 	{
-		if (SyncTarget.HasValue)
+		if (this.SyncTarget.HasValue)
 		{
-			Strangled effect = SyncTarget.Value.Target.playerEffectsController.GetEffect<Strangled>();
-			if (!effect.IsEnabled || !(effect.ElapsedSeconds < (double)_attackerDamageImmunityTime))
+			Strangled effect = this.SyncTarget.Value.Target.playerEffectsController.GetEffect<Strangled>();
+			if (!effect.IsEnabled || !(effect.ElapsedSeconds < (double)this._attackerDamageImmunityTime))
 			{
-				SyncTarget = null;
-				_rpcType = RpcType.AttackInterrupted;
-				ServerSendRpc(toAll: true);
+				this.SyncTarget = null;
+				this._rpcType = RpcType.AttackInterrupted;
+				base.ServerSendRpc(toAll: true);
 			}
 		}
 	}
 
 	private void ServerUpdateTarget()
 	{
-		PlayerRoleBase currentRole = SyncTarget.Value.Target.roleManager.CurrentRole;
+		PlayerRoleBase currentRole = this.SyncTarget.Value.Target.roleManager.CurrentRole;
 		Vector3 v = base.CastRole.FpcModule.Position - (currentRole as IFpcRole).FpcModule.Position;
 		float num = v.MagnitudeOnlyY();
 		float num2 = v.SqrMagnitudeIgnoreY();
-		if (num > _strangleAbsCutoffVertical || num2 > _strangleSqrCutoffHorizontal)
+		if (num > this._strangleAbsCutoffVertical || num2 > this._strangleSqrCutoffHorizontal)
 		{
-			SyncTarget = null;
-			_rpcType = RpcType.OutOfRange;
-			ServerSendRpc(toAll: true);
+			this.SyncTarget = null;
+			this._rpcType = RpcType.OutOfRange;
+			base.ServerSendRpc(toAll: true);
 		}
 	}
 
@@ -295,35 +295,35 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 
 	private void ClientUpdateTarget()
 	{
-		if (_clientDesiredTargetRole == null || _clientDesiredTargetRole.Pooled)
+		if (this._clientDesiredTargetRole == null || this._clientDesiredTargetRole.Pooled)
 		{
-			_clientTargetting = false;
+			this._clientTargetting = false;
 		}
-		else if (!_clientDesiredTargetRole.FpcModule.Motor.IsInvisible)
+		else if (!this._clientDesiredTargetRole.FpcModule.Motor.IsInvisible)
 		{
-			base.CastRole.LookAtPoint(_clientDesiredTargetRole.CameraPosition);
+			base.CastRole.LookAtPoint(this._clientDesiredTargetRole.CameraPosition);
 		}
 	}
 
 	private void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
 	{
-		OnPlayerRemoved(userHub);
+		this.OnPlayerRemoved(userHub);
 	}
 
 	private void OnPlayerRemoved(ReferenceHub hub)
 	{
-		if (SyncTarget.HasValue && !(SyncTarget.Value.Target != hub))
+		if (this.SyncTarget.HasValue && !(this.SyncTarget.Value.Target != hub))
 		{
-			SyncTarget = null;
-			if (_clientTargetting)
+			this.SyncTarget = null;
+			if (this._clientTargetting)
 			{
-				_clientTargetting = false;
-				ClientCooldown.Trigger(_onKillCooldown);
+				this._clientTargetting = false;
+				this.ClientCooldown.Trigger(this._onKillCooldown);
 			}
 			if (NetworkServer.active)
 			{
-				_rpcType = RpcType.TargetKilled;
-				ServerSendRpc(toAll: true);
+				this._rpcType = RpcType.TargetKilled;
+				base.ServerSendRpc(toAll: true);
 			}
 		}
 	}
@@ -332,26 +332,26 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 	{
 		Transform playerCameraReference = base.Owner.PlayerCameraReference;
 		ReferenceHub primaryTarget = ReferenceHub.AllHubs.Where(ValidateTarget).GetPrimaryTarget(playerCameraReference);
-		if (primaryTarget == null || !(primaryTarget.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase) || !HitboxIdentity.IsEnemy(base.Owner, primaryTarget) || fpcStandardRoleBase.GetDot(base.Owner.PlayerCameraReference) < _targetAcquisitionMinDot)
+		if (primaryTarget == null || !(primaryTarget.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase) || !HitboxIdentity.IsEnemy(base.Owner, primaryTarget) || fpcStandardRoleBase.GetDot(base.Owner.PlayerCameraReference) < this._targetAcquisitionMinDot)
 		{
 			return;
 		}
 		switch (base.CastRole.CurIdentity.Status)
 		{
 		case Scp3114Identity.DisguiseStatus.Active:
-			if (!_warningHintAlreadyDisplayed)
+			if (!this._warningHintAlreadyDisplayed)
 			{
 				this.OnAttemptedWhileDisguised?.Invoke();
 			}
-			_warningHintAlreadyDisplayed = true;
+			this._warningHintAlreadyDisplayed = true;
 			break;
 		case Scp3114Identity.DisguiseStatus.Equipping:
 			break;
 		default:
-			_clientTargetting = true;
-			_clientDesiredTargetHub = primaryTarget;
-			_clientDesiredTargetRole = fpcStandardRoleBase;
-			ClientSendCmd();
+			this._clientTargetting = true;
+			this._clientDesiredTargetHub = primaryTarget;
+			this._clientDesiredTargetRole = fpcStandardRoleBase;
+			base.ClientSendCmd();
 			break;
 		}
 	}
@@ -362,7 +362,7 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 		{
 			return null;
 		}
-		if (SyncTarget.HasValue)
+		if (this.SyncTarget.HasValue)
 		{
 			return null;
 		}
@@ -377,15 +377,15 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 		{
 			using (new FpcBacktracker(base.Owner, position2, Quaternion.identity))
 			{
-				if (!ValidateTarget(hub))
+				if (!this.ValidateTarget(hub))
 				{
 					return null;
 				}
 				hub.playerEffectsController.EnableEffect<Strangled>();
-				value = new StrangleTarget(hub, GetStranglePosition(hub.roleManager.CurrentRole as IFpcRole), base.CastRole.FpcModule.Position);
+				value = new StrangleTarget(hub, this.GetStranglePosition(hub.roleManager.CurrentRole as IFpcRole), base.CastRole.FpcModule.Position);
 			}
 		}
-		base.CastRole.FpcModule.Position = _validatedPosition;
+		base.CastRole.FpcModule.Position = this._validatedPosition;
 		return value;
 	}
 
@@ -393,8 +393,8 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 	{
 		FirstPersonMovementModule fpcModule = base.CastRole.FpcModule;
 		Vector3 normalized = (targetFpc.FpcModule.Position - fpcModule.Position).normalized;
-		_validatedPosition = fpcModule.Position;
-		fpcModule.CharController.Move(normalized * _stranglePositionOffset);
+		this._validatedPosition = fpcModule.Position;
+		fpcModule.CharController.Move(normalized * this._stranglePositionOffset);
 		return base.transform.position;
 	}
 
@@ -410,13 +410,13 @@ public class Scp3114Strangle : KeySubroutine<Scp3114Role>, ICursorOverride
 		}
 		Vector3 position = fpcRole.FpcModule.Position;
 		Vector3 position2 = base.CastRole.FpcModule.Position;
-		float targetAcquisitionMaxDistance = _targetAcquisitionMaxDistance;
+		float targetAcquisitionMaxDistance = this._targetAcquisitionMaxDistance;
 		float num = targetAcquisitionMaxDistance * targetAcquisitionMaxDistance;
 		if ((position - position2).sqrMagnitude > num)
 		{
 			return false;
 		}
 		Vector3 position3 = player.PlayerCameraReference.position;
-		return !Physics.Linecast(base.Owner.PlayerCameraReference.position, position3, BlockerMask);
+		return !Physics.Linecast(base.Owner.PlayerCameraReference.position, position3, Scp3114Strangle.BlockerMask);
 	}
 }

@@ -28,9 +28,9 @@ public class CameraRotationAxis : CameraAxisBase
 
 	private const int EdgeThreshold = 2;
 
-	public Transform Pivot => _pivot;
+	public Transform Pivot => this._pivot;
 
-	private float MouseInput => Input.GetAxisRaw(_isVertical ? "Mouse Y" : "Mouse X") * 2f * SensitivitySettings.SensMultiplier;
+	private float MouseInput => Input.GetAxisRaw(this._isVertical ? "Mouse Y" : "Mouse X") * 2f * SensitivitySettings.SensMultiplier;
 
 	protected override float SpectatorLerpMultiplier => 7.5f;
 
@@ -43,8 +43,8 @@ public class CameraRotationAxis : CameraAxisBase
 		}
 		if (!Cursor.visible)
 		{
-			float num = MouseInput;
-			if (_isVertical && !SensitivitySettings.Invert)
+			float num = this.MouseInput;
+			if (this._isVertical && !SensitivitySettings.Invert)
 			{
 				num *= -1f;
 			}
@@ -54,7 +54,7 @@ public class CameraRotationAxis : CameraAxisBase
 		}
 		float num2;
 		float num3;
-		if (_isVertical)
+		if (this._isVertical)
 		{
 			num2 = Screen.height;
 			num3 = num2 - Input.mousePosition.y;
@@ -72,8 +72,8 @@ public class CameraRotationAxis : CameraAxisBase
 		num7 *= Mathf.InverseLerp(0.93f, 0.98f, value);
 		if (num6 <= 2f)
 		{
-			float num8 = MouseInput * num5;
-			if (_isVertical)
+			float num8 = this.MouseInput * num5;
+			if (this._isVertical)
 			{
 				num8 *= -1f;
 			}
@@ -85,15 +85,15 @@ public class CameraRotationAxis : CameraAxisBase
 	protected override void OnValueChanged(float newValue, Scp079Camera cam)
 	{
 		float num = (Scp079Role.LocalInstanceActive ? base.TargetValue : newValue);
-		_pivot.localRotation = (_isVertical ? Quaternion.Euler(num, 0f, 0f) : Quaternion.Euler(0f, num, 0f));
+		this._pivot.localRotation = (this._isVertical ? Quaternion.Euler(num, 0f, 0f) : Quaternion.Euler(0f, num, 0f));
 	}
 
 	internal override void Awake(Scp079Camera cam)
 	{
 		base.Awake(cam);
-		Vector3 eulerAngles = _pivot.localRotation.eulerAngles;
+		Vector3 eulerAngles = this._pivot.localRotation.eulerAngles;
 		float num;
-		for (num = (_isVertical ? eulerAngles.x : eulerAngles.y); num < base.MinValue; num += 360f)
+		for (num = (this._isVertical ? eulerAngles.x : eulerAngles.y); num < base.MinValue; num += 360f)
 		{
 		}
 		while (num > base.MaxValue)

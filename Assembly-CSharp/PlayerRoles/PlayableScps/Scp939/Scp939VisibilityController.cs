@@ -23,9 +23,9 @@ public class Scp939VisibilityController : FpcVisibilityController, IPoolResettab
 
 		public Vector3 Velocity;
 
-		public Vector3 WorldPos => RelPos.Position + Velocity * Elapsed;
+		public Vector3 WorldPos => this.RelPos.Position + this.Velocity * this.Elapsed;
 
-		public float Elapsed => (float)(NetworkTime.time - Time);
+		public float Elapsed => (float)(NetworkTime.time - this.Time);
 	}
 
 	private const float DetectionRangeForShootingCrouchingOrJumping = 4f;
@@ -72,17 +72,17 @@ public class Scp939VisibilityController : FpcVisibilityController, IPoolResettab
 	{
 		get
 		{
-			float defaultRange = _defaultRange;
-			return (defaultRange + defaultRange * _focusMultiplier * _focus.State) * Mathf.Lerp(_exhaustionMultiplier, 1f, _stamina.NormalizedValue);
+			float defaultRange = this._defaultRange;
+			return (defaultRange + defaultRange * this._focusMultiplier * this._focus.State) * Mathf.Lerp(this._exhaustionMultiplier, 1f, this._stamina.NormalizedValue);
 		}
 	}
 
 	private float DetectionRangeForPlayer(ReferenceHub hub)
 	{
-		float num = CurrentDetectionRange;
-		if (_lastFootstepSounds.TryGetValue(hub.netId, out var value) && NetworkTime.time - value < (double)_recentFootstepTime)
+		float num = this.CurrentDetectionRange;
+		if (this._lastFootstepSounds.TryGetValue(hub.netId, out var value) && NetworkTime.time - value < (double)this._recentFootstepTime)
 		{
-			num *= _recentFootstepRangeMultiplier;
+			num *= this._recentFootstepRangeMultiplier;
 		}
 		if (!HitboxIdentity.IsEnemy(base.Owner, hub) || !(hub.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase))
 		{
@@ -91,7 +91,7 @@ public class Scp939VisibilityController : FpcVisibilityController, IPoolResettab
 		bool isJumping = fpcStandardRoleBase.FpcModule.Motor.IsJumping;
 		bool flag = fpcStandardRoleBase.FpcModule.CurrentMovementState == PlayerMovementState.Sprinting;
 		double value2;
-		bool flag2 = _lastShotSound.TryGetValue(hub.netId, out value2) && NetworkTime.time - value2 < (double)_recentFootstepTime;
+		bool flag2 = this._lastShotSound.TryGetValue(hub.netId, out value2) && NetworkTime.time - value2 < (double)this._recentFootstepTime;
 		if (isJumping || flag || flag2)
 		{
 			return 4f;
@@ -101,9 +101,9 @@ public class Scp939VisibilityController : FpcVisibilityController, IPoolResettab
 
 	private void OnDestroy()
 	{
-		if (_wasFaded)
+		if (this._wasFaded)
 		{
-			ResetFade();
+			this.ResetFade();
 		}
 	}
 
@@ -113,7 +113,7 @@ public class Scp939VisibilityController : FpcVisibilityController, IPoolResettab
 		{
 			if (AlphaWarheadController.Detonated)
 			{
-				ResetFade();
+				this.ResetFade();
 			}
 			else
 			{
@@ -132,12 +132,12 @@ public class Scp939VisibilityController : FpcVisibilityController, IPoolResettab
 		FpcMotor motor = fpcModule.Motor;
 		CharacterModel characterModelInstance = fpcModule.CharacterModelInstance;
 		LastSeenInfo value;
-		bool flag = LastSeen.TryGetValue(ply.netId, out value);
+		bool flag = Scp939VisibilityController.LastSeen.TryGetValue(ply.netId, out value);
 		bool flag2 = !motor.IsInvisible;
-		bool flag3 = flag2 && (Vector3.Distance(fpcModule.Position, _scpRole.FpcModule.Position) <= DetectionRangeForPlayer(ply) || (flag && value.Elapsed < _sustain));
+		bool flag3 = flag2 && (Vector3.Distance(fpcModule.Position, this._scpRole.FpcModule.Position) <= this.DetectionRangeForPlayer(ply) || (flag && value.Elapsed < this._sustain));
 		float fade = characterModelInstance.Fade;
-		characterModelInstance.Fade += Time.deltaTime * (flag3 ? _fadeSpeed : (0f - _fadeSpeed));
-		_wasFaded = true;
+		characterModelInstance.Fade += Time.deltaTime * (flag3 ? this._fadeSpeed : (0f - this._fadeSpeed));
+		this._wasFaded = true;
 		if (NetworkServer.active || !base.Owner.isLocalPlayer)
 		{
 			return;
@@ -164,9 +164,9 @@ public class Scp939VisibilityController : FpcVisibilityController, IPoolResettab
 				animatedCharacterModel.ForceUpdate();
 			}
 			HitboxIdentity[] hitboxes = characterModelInstance.Hitboxes;
-			for (int i = 0; i < hitboxes.Length; i++)
+			for (int num = 0; num < hitboxes.Length; num++)
 			{
-				hitboxes[i].SetColliders(newState: true);
+				hitboxes[num].SetColliders(newState: true);
 			}
 		}
 	}
@@ -190,40 +190,40 @@ public class Scp939VisibilityController : FpcVisibilityController, IPoolResettab
 	private void OnFootstepPlayed(AnimatedCharacterModel model, float range)
 	{
 		ReferenceHub ownerHub = model.OwnerHub;
-		if (HitboxIdentity.IsEnemy(base.Owner, ownerHub) && ownerHub.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase && !((fpcStandardRoleBase.FpcModule.Position - _scpRole.FpcModule.Position).sqrMagnitude > range * range))
+		if (HitboxIdentity.IsEnemy(base.Owner, ownerHub) && ownerHub.roleManager.CurrentRole is FpcStandardRoleBase fpcStandardRoleBase && !((fpcStandardRoleBase.FpcModule.Position - this._scpRole.FpcModule.Position).sqrMagnitude > range * range))
 		{
-			_lastFootstepSounds[ownerHub.netId] = NetworkTime.time;
+			this._lastFootstepSounds[ownerHub.netId] = NetworkTime.time;
 		}
 	}
 
 	private void OnSpectatorTargetChanged()
 	{
-		if (_wasFaded)
+		if (this._wasFaded)
 		{
-			ResetFade();
+			this.ResetFade();
 		}
 	}
 
 	private void OnRoleChanged(ReferenceHub hub, PlayerRoleBase oldRole, PlayerRoleBase newRole)
 	{
-		if (_wasFaded && hub.isLocalPlayer && !(newRole is SpectatorRole))
+		if (this._wasFaded && hub.isLocalPlayer && !(newRole is SpectatorRole))
 		{
-			ResetFade();
+			this.ResetFade();
 		}
 	}
 
 	public override void SpawnObject()
 	{
 		base.SpawnObject();
-		_scpRole = base.Role as Scp939Role;
-		base.Owner.playerStats.TryGetModule<StaminaStat>(out _stamina);
-		_scpRole.SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out _focus);
+		this._scpRole = base.Role as Scp939Role;
+		base.Owner.playerStats.TryGetModule<StaminaStat>(out this._stamina);
+		this._scpRole.SubroutineModule.TryGetSubroutine<Scp939FocusAbility>(out this._focus);
 		SpectatorTargetTracker.OnTargetChanged += OnSpectatorTargetChanged;
 		PlayerRoleManager.OnRoleChanged += OnRoleChanged;
 		AnimatedCharacterModel.OnFootstepPlayed = (Action<AnimatedCharacterModel, float>)Delegate.Combine(AnimatedCharacterModel.OnFootstepPlayed, new Action<AnimatedCharacterModel, float>(OnFootstepPlayed));
 		if (base.Owner.isLocalPlayer)
 		{
-			LastSeen.Clear();
+			Scp939VisibilityController.LastSeen.Clear();
 		}
 	}
 
@@ -245,18 +245,18 @@ public class Scp939VisibilityController : FpcVisibilityController, IPoolResettab
 		{
 			return true;
 		}
-		FirstPersonMovementModule fpcModule = _scpRole.FpcModule;
-		float a = BaseRangeForPlayer(hub, fpcStandardRoleBase);
-		a = Mathf.Max(a, DetectionRangeForPlayer(hub));
-		a += fpcModule.MaxMovementSpeed * _pingTolerance;
+		FirstPersonMovementModule fpcModule = this._scpRole.FpcModule;
+		float a = this.BaseRangeForPlayer(hub, fpcStandardRoleBase);
+		a = Mathf.Max(a, this.DetectionRangeForPlayer(hub));
+		a += fpcModule.MaxMovementSpeed * this._pingTolerance;
 		bool num = (fpcStandardRoleBase.FpcModule.Position - fpcModule.Position).sqrMagnitude <= a * a;
 		LastSeenInfo value;
-		bool result = num || (LastSeen.TryGetValue(hub.netId, out value) && value.Elapsed < _sustain);
-		if (!num || _scpRole.IsLocalPlayer)
+		bool result = num || (Scp939VisibilityController.LastSeen.TryGetValue(hub.netId, out value) && value.Elapsed < this._sustain);
+		if (!num || this._scpRole.IsLocalPlayer)
 		{
 			return result;
 		}
-		LastSeen[hub.netId] = new LastSeenInfo
+		Scp939VisibilityController.LastSeen[hub.netId] = new LastSeenInfo
 		{
 			RelPos = new RelativePosition(fpcModule.Position),
 			Time = NetworkTime.time,
@@ -285,9 +285,9 @@ public class Scp939VisibilityController : FpcVisibilityController, IPoolResettab
 		SpectatorTargetTracker.OnTargetChanged -= OnSpectatorTargetChanged;
 		PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
 		AnimatedCharacterModel.OnFootstepPlayed = (Action<AnimatedCharacterModel, float>)Delegate.Remove(AnimatedCharacterModel.OnFootstepPlayed, new Action<AnimatedCharacterModel, float>(OnFootstepPlayed));
-		if (_wasFaded)
+		if (this._wasFaded)
 		{
-			ResetFade();
+			this.ResetFade();
 		}
 	}
 }

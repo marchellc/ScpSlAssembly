@@ -41,11 +41,11 @@ public class Scp049AttackAbility : KeySubroutine<Scp049Role>
 	{
 		get
 		{
-			if (_attackLayerMask == 0)
+			if (Scp049AttackAbility._attackLayerMask == 0)
 			{
-				_attackLayerMask = LayerMask.GetMask("Hitbox") | (int)FpcStateProcessor.Mask;
+				Scp049AttackAbility._attackLayerMask = LayerMask.GetMask("Hitbox") | (int)FpcStateProcessor.Mask;
 			}
-			return _attackLayerMask;
+			return Scp049AttackAbility._attackLayerMask;
 		}
 	}
 
@@ -55,69 +55,69 @@ public class Scp049AttackAbility : KeySubroutine<Scp049Role>
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
-		if (!Cooldown.IsReady || _resurrect.IsInProgress)
+		if (!this.Cooldown.IsReady || this._resurrect.IsInProgress)
 		{
 			return;
 		}
-		_target = reader.ReadReferenceHub();
-		if (!(_target == null) && IsTargetValid(_target))
+		this._target = reader.ReadReferenceHub();
+		if (!(this._target == null) && this.IsTargetValid(this._target))
 		{
-			Cooldown.Trigger(1.5);
-			CardiacArrest effect = _target.playerEffectsController.GetEffect<CardiacArrest>();
-			_isInstaKillAttack = effect.IsEnabled;
-			_isTarget = _sense.IsTarget(_target);
+			this.Cooldown.Trigger(1.5);
+			CardiacArrest effect = this._target.playerEffectsController.GetEffect<CardiacArrest>();
+			this._isInstaKillAttack = effect.IsEnabled;
+			this._isTarget = this._sense.IsTarget(this._target);
 			if (effect.IsEnabled)
 			{
-				_target.playerStats.DealDamage(new Scp049DamageHandler(base.Owner, -1f, Scp049DamageHandler.AttackType.Instakill));
+				this._target.playerStats.DealDamage(new Scp049DamageHandler(base.Owner, -1f, Scp049DamageHandler.AttackType.Instakill));
 			}
 			else
 			{
 				effect.SetAttacker(base.Owner);
 				effect.Intensity = 1;
-				effect.ServerChangeDuration(_statusEffectDuration);
+				effect.ServerChangeDuration(this._statusEffectDuration);
 			}
-			this.OnServerHit?.Invoke(_target);
-			ServerSendRpc(toAll: true);
+			this.OnServerHit?.Invoke(this._target);
+			base.ServerSendRpc(toAll: true);
 			Hitmarker.SendHitmarkerDirectly(base.Owner, 1f, playAudio: false);
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
-		Cooldown.WriteCooldown(writer);
-		writer.WriteBool(_isInstaKillAttack);
-		writer.WriteBool(_isTarget);
+		this.Cooldown.WriteCooldown(writer);
+		writer.WriteBool(this._isInstaKillAttack);
+		writer.WriteBool(this._isTarget);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
 	{
-		Cooldown.ReadCooldown(reader);
+		this.Cooldown.ReadCooldown(reader);
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
-		writer.WriteReferenceHub(_target);
+		writer.WriteReferenceHub(this._target);
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		Cooldown.Clear();
+		this.Cooldown.Clear();
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		GetSubroutine<Scp049ResurrectAbility>(out _resurrect);
-		GetSubroutine<Scp049SenseAbility>(out _sense);
+		base.GetSubroutine<Scp049ResurrectAbility>(out this._resurrect);
+		base.GetSubroutine<Scp049SenseAbility>(out this._sense);
 	}
 
 	protected override void OnKeyDown()
 	{
 		base.OnKeyDown();
-		if (Cooldown.IsReady && CanFindTarget(base.Owner.PlayerCameraReference, out _target))
+		if (this.Cooldown.IsReady && this.CanFindTarget(base.Owner.PlayerCameraReference, out this._target))
 		{
-			ClientSendCmd();
+			base.ClientSendCmd();
 		}
 	}
 
@@ -148,7 +148,7 @@ public class Scp049AttackAbility : KeySubroutine<Scp049Role>
 	private bool CanFindTarget(Transform camera, out ReferenceHub target)
 	{
 		target = null;
-		if (!Physics.Raycast(camera.position, camera.forward, out var hitInfo, 1.728f, AttackMask))
+		if (!Physics.Raycast(camera.position, camera.forward, out var hitInfo, 1.728f, Scp049AttackAbility.AttackMask))
 		{
 			return false;
 		}

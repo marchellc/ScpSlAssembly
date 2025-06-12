@@ -24,7 +24,7 @@ public static class LiteNetLib4MirrorUtils
 
 	static LiteNetLib4MirrorUtils()
 	{
-		ApplicationName = Application.productName;
+		LiteNetLib4MirrorUtils.ApplicationName = Application.productName;
 	}
 
 	public static string ToBase64(string text)
@@ -43,19 +43,19 @@ public static class LiteNetLib4MirrorUtils
 		{
 			lastText = text;
 			writer.Reset();
-			writer.Put(ToBase64(text));
+			writer.Put(LiteNetLib4MirrorUtils.ToBase64(text));
 		}
 		return writer;
 	}
 
 	public static NetDataWriter ReusePutDiscovery(NetDataWriter writer, string text, ref string lastText)
 	{
-		if (ApplicationName + text != lastText)
+		if (LiteNetLib4MirrorUtils.ApplicationName + text != lastText)
 		{
-			lastText = ApplicationName + text;
+			lastText = LiteNetLib4MirrorUtils.ApplicationName + text;
 			writer.Reset();
-			writer.Put(ApplicationName);
-			writer.Put(ToBase64(text));
+			writer.Put(LiteNetLib4MirrorUtils.ApplicationName);
+			writer.Put(LiteNetLib4MirrorUtils.ToBase64(text));
 		}
 		return writer;
 	}
@@ -84,21 +84,21 @@ public static class LiteNetLib4MirrorUtils
 			IPAddress[] hostAddresses = Dns.GetHostAddresses(address);
 			if (LiteNetLib4MirrorTransport.Singleton.ipv6Enabled)
 			{
-				object obj = FirstAddressOfType(hostAddresses, AddressFamily.InterNetworkV6) ?? FirstAddressOfType(hostAddresses, AddressFamily.InterNetwork);
+				object obj = LiteNetLib4MirrorUtils.FirstAddressOfType(hostAddresses, AddressFamily.InterNetworkV6) ?? LiteNetLib4MirrorUtils.FirstAddressOfType(hostAddresses, AddressFamily.InterNetwork);
 				if (obj == null)
 				{
 					obj = hostAddresses[0];
 				}
 				return (IPAddress)obj;
 			}
-			return FirstAddressOfType(hostAddresses, AddressFamily.InterNetwork) ?? hostAddresses[0];
+			return LiteNetLib4MirrorUtils.FirstAddressOfType(hostAddresses, AddressFamily.InterNetwork) ?? hostAddresses[0];
 		}
 		}
 	}
 
 	public static IPEndPoint Parse(string address, ushort port)
 	{
-		return new IPEndPoint(Parse(address), port);
+		return new IPEndPoint(LiteNetLib4MirrorUtils.Parse(address), port);
 	}
 
 	private static IPAddress FirstAddressOfType(IPAddress[] addresses, AddressFamily type)
@@ -129,12 +129,12 @@ public static class LiteNetLib4MirrorUtils
 
 	public static void ForwardPort(NetworkProtocolType networkProtocolType = NetworkProtocolType.Udp, int milisecondsDelay = 10000)
 	{
-		ForwardPortInternalAsync(LiteNetLib4MirrorTransport.Singleton.port, milisecondsDelay, networkProtocolType);
+		LiteNetLib4MirrorUtils.ForwardPortInternalAsync(LiteNetLib4MirrorTransport.Singleton.port, milisecondsDelay, networkProtocolType);
 	}
 
 	public static void ForwardPort(ushort port, NetworkProtocolType networkProtocolType = NetworkProtocolType.Udp, int milisecondsDelay = 10000)
 	{
-		ForwardPortInternalAsync(port, milisecondsDelay, networkProtocolType);
+		LiteNetLib4MirrorUtils.ForwardPortInternalAsync(port, milisecondsDelay, networkProtocolType);
 	}
 
 	private static async Task ForwardPortInternalAsync(ushort port, int milisecondsDelay, NetworkProtocolType networkProtocolType = NetworkProtocolType.Udp)
@@ -142,9 +142,9 @@ public static class LiteNetLib4MirrorUtils
 		_ = 2;
 		try
 		{
-			if (LastForwardedPort != port && !UpnpFailed)
+			if (LiteNetLib4MirrorUtils.LastForwardedPort != port && !LiteNetLib4MirrorUtils.UpnpFailed)
 			{
-				if (LastForwardedPort != 0)
+				if (LiteNetLib4MirrorUtils.LastForwardedPort != 0)
 				{
 					NatDiscoverer.ReleaseAll();
 				}
@@ -154,16 +154,16 @@ public static class LiteNetLib4MirrorUtils
 				{
 					device = await natDiscoverer.DiscoverDeviceAsync(PortMapper.Pmp | PortMapper.Upnp, cts).ConfigureAwait(continueOnCapturedContext: false);
 				}
-				ExternalIp = await device.GetExternalIPAsync();
-				await device.CreatePortMapAsync(new Mapping(networkProtocolType, IPAddress.None, port, port, 0, ApplicationName)).ConfigureAwait(continueOnCapturedContext: false);
-				LastForwardedPort = port;
+				LiteNetLib4MirrorUtils.ExternalIp = await device.GetExternalIPAsync();
+				await device.CreatePortMapAsync(new Mapping(networkProtocolType, IPAddress.None, port, port, 0, LiteNetLib4MirrorUtils.ApplicationName)).ConfigureAwait(continueOnCapturedContext: false);
+				LiteNetLib4MirrorUtils.LastForwardedPort = port;
 				Debug.Log("Port " + port + " forwarded successfully!");
 			}
 		}
 		catch (Exception ex)
 		{
 			Debug.LogWarning("UPnP failed: " + ex.Message);
-			UpnpFailed = true;
+			LiteNetLib4MirrorUtils.UpnpFailed = true;
 		}
 	}
 }

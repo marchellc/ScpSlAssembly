@@ -24,13 +24,13 @@ public class InfoCommand : ICommand, IUsageProvider
 			response = "To execute this command provide at least 1 argument!\nUsage: " + arguments.Array[0] + " " + this.DisplayCommandUsage();
 			return false;
 		}
-		UserGroup group = ServerStatic.PermissionsHandler.GetGroup(arguments.At(0));
-		if (group == null)
+		UserGroup userGroup = ServerStatic.PermissionsHandler.GetGroup(arguments.At(0));
+		if (userGroup == null)
 		{
 			response = "Group can't be found.";
 			return false;
 		}
-		response = string.Format("Details of group {0}\nTag text: {1}\nTag color: {2}\nPermissions: {3}\nCover: {4}\nHidden by default: {5}\nKick power: {6}\nRequired kick power: {7}", arguments.At(0), group.BadgeText, group.BadgeColor, group.Permissions, group.Cover ? "YES" : "NO", group.HiddenByDefault ? "YES" : "NO", group.KickPower, group.RequiredKickPower);
+		response = string.Format("Details of group {0}\nTag text: {1}\nTag color: {2}\nPermissions: {3}\nCover: {4}\nHidden by default: {5}\nKick power: {6}\nRequired kick power: {7}", arguments.At(0), userGroup.BadgeText, userGroup.BadgeColor, userGroup.Permissions, userGroup.Cover ? "YES" : "NO", userGroup.HiddenByDefault ? "YES" : "NO", userGroup.KickPower, userGroup.RequiredKickPower);
 		return true;
 	}
 }

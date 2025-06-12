@@ -17,7 +17,7 @@ public interface IReloadUnloadValidatorModule
 
 	static bool ValidateReload(Firearm firearm)
 	{
-		if (ValidateAny(firearm, (IReloadUnloadValidatorModule x) => x.ReloadAuthorization))
+		if (IReloadUnloadValidatorModule.ValidateAny(firearm, (IReloadUnloadValidatorModule x) => x.ReloadAuthorization))
 		{
 			return !firearm.PrimaryActionBlocked;
 		}
@@ -26,7 +26,7 @@ public interface IReloadUnloadValidatorModule
 
 	static bool ValidateUnload(Firearm firearm)
 	{
-		if (ValidateAny(firearm, (IReloadUnloadValidatorModule x) => x.UnloadAuthorization))
+		if (IReloadUnloadValidatorModule.ValidateAny(firearm, (IReloadUnloadValidatorModule x) => x.UnloadAuthorization))
 		{
 			return !firearm.PrimaryActionBlocked;
 		}

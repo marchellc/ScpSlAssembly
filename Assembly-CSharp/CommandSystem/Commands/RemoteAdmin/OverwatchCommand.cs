@@ -68,7 +68,7 @@ public class OverwatchCommand : ICommand, IUsageProvider
 					{
 						continue;
 					}
-					SetOverwatchStatus(serverRoles, 1);
+					OverwatchCommand.SetOverwatchStatus(serverRoles, 1);
 					if (num != 0)
 					{
 						stringBuilder.Append(", ");
@@ -80,7 +80,7 @@ public class OverwatchCommand : ICommand, IUsageProvider
 					{
 						continue;
 					}
-					SetOverwatchStatus(serverRoles, 0);
+					OverwatchCommand.SetOverwatchStatus(serverRoles, 0);
 					if (num != 0)
 					{
 						stringBuilder.Append(", ");
@@ -88,7 +88,7 @@ public class OverwatchCommand : ICommand, IUsageProvider
 					stringBuilder.Append(item.LoggedNameFromRefHub());
 					break;
 				case Misc.CommandOperationMode.Toggle:
-					SetOverwatchStatus(serverRoles, 2);
+					OverwatchCommand.SetOverwatchStatus(serverRoles, 2);
 					if (serverRoles.IsInOverwatch)
 					{
 						ServerLogs.AddLog(ServerLogs.Modules.Administrative, sender.LogName + " enabled overwatch mode for player " + item.LoggedNameFromRefHub() + " using overwatch mode toggle command.", ServerLogs.ServerLogType.RemoteAdminActivity_GameChanging);

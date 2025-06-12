@@ -16,18 +16,18 @@ public class TextureAnimator : MonoBehaviour
 
 	private void Start()
 	{
-		Timing.RunCoroutine(_Animate(), Segment.FixedUpdate);
+		Timing.RunCoroutine(this._Animate(), Segment.FixedUpdate);
 	}
 
 	private IEnumerator<float> _Animate()
 	{
 		while (this != null)
 		{
-			for (int i = 0; i < textures.Length; i++)
+			for (int i = 0; i < this.textures.Length; i++)
 			{
-				optionalLight.enabled = i < lightRange;
-				targetRenderer.material = textures[i];
-				for (int x = 0; (float)x < 50f * cooldown; x++)
+				this.optionalLight.enabled = i < this.lightRange;
+				this.targetRenderer.material = this.textures[i];
+				for (int x = 0; (float)x < 50f * this.cooldown; x++)
 				{
 					yield return 0f;
 				}

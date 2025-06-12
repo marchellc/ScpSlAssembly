@@ -21,22 +21,22 @@ public class SimpleButton : BasicDoorButton
 
 	protected override void SetMoving()
 	{
-		_renderer.sharedMaterial = _movingMat;
+		this._renderer.sharedMaterial = this._movingMat;
 	}
 
 	protected override void SetAsDestroyed()
 	{
 		base.SetAsDestroyed();
-		_renderer.sharedMaterial = _lockedMat;
+		this._renderer.sharedMaterial = this._lockedMat;
 	}
 
 	protected override void SetIdle()
 	{
-		_renderer.sharedMaterial = (base.ParentDoor.TargetState ? _openMat : _closedMat);
+		this._renderer.sharedMaterial = (base.ParentDoor.TargetState ? this._openMat : this._closedMat);
 	}
 
 	protected override void SetLocked()
 	{
-		_renderer.sharedMaterial = _lockedMat;
+		this._renderer.sharedMaterial = this._lockedMat;
 	}
 }

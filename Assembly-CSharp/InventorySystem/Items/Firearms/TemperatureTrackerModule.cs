@@ -44,13 +44,13 @@ public class TemperatureTrackerModule : ModuleBase
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		Inventory.OnLocalClientStarted += TemperatureOfFirearms.Clear;
+		Inventory.OnLocalClientStarted += TemperatureTrackerModule.TemperatureOfFirearms.Clear;
 		ShotEventManager.OnShot += RegisterShot;
 	}
 
 	private static void RegisterShot(ShotEvent ev)
 	{
-		TemperatureRecord record = GetRecord(ev.ItemId);
+		TemperatureRecord record = TemperatureTrackerModule.GetRecord(ev.ItemId);
 		float num = (float)record.Temperature;
 		AnimationCurve additionPerShotOverTemperature = record.Settings.AdditionPerShotOverTemperature;
 		float num2 = Mathf.Clamp01(num + additionPerShotOverTemperature.Evaluate(num));
@@ -62,21 +62,21 @@ public class TemperatureTrackerModule : ModuleBase
 	{
 		if (!InventoryItemLoader.TryGetItem<Firearm>(firearmType, out var result))
 		{
-			return DefaultSettings;
+			return TemperatureTrackerModule.DefaultSettings;
 		}
 		if (!result.TryGetModule<TemperatureTrackerModule>(out var module))
 		{
-			return DefaultSettings;
+			return TemperatureTrackerModule.DefaultSettings;
 		}
 		return module._temperatureSettings;
 	}
 
 	private static TemperatureRecord CreateNewRecord(ItemIdentifier id)
 	{
-		if (!SettingsOfFirearms.TryGetValue(id.TypeId, out var value))
+		if (!TemperatureTrackerModule.SettingsOfFirearms.TryGetValue(id.TypeId, out var value))
 		{
-			value = GetSettingsForFirearm(id.TypeId);
-			SettingsOfFirearms.Add(id.TypeId, value);
+			value = TemperatureTrackerModule.GetSettingsForFirearm(id.TypeId);
+			TemperatureTrackerModule.SettingsOfFirearms.Add(id.TypeId, value);
 		}
 		return new TemperatureRecord
 		{
@@ -88,7 +88,7 @@ public class TemperatureTrackerModule : ModuleBase
 
 	private static TemperatureRecord GetRecord(ItemIdentifier firearm)
 	{
-		TemperatureRecord orAdd = TemperatureOfFirearms.GetOrAdd(firearm.SerialNumber, () => CreateNewRecord(firearm));
+		TemperatureRecord orAdd = TemperatureTrackerModule.TemperatureOfFirearms.GetOrAdd(firearm.SerialNumber, () => TemperatureTrackerModule.CreateNewRecord(firearm));
 		double totalSeconds = orAdd.LastRead.Elapsed.TotalSeconds;
 		if (totalSeconds > (double)Time.deltaTime)
 		{
@@ -102,6 +102,6 @@ public class TemperatureTrackerModule : ModuleBase
 
 	public static float GetTemperature(ItemIdentifier firearm)
 	{
-		return (float)GetRecord(firearm).Temperature;
+		return (float)TemperatureTrackerModule.GetRecord(firearm).Temperature;
 	}
 }

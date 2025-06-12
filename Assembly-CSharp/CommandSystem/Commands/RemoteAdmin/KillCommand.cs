@@ -26,7 +26,7 @@ public class KillCommand : ICommand, IUsageProvider
 		}
 		if (arguments.Count < 1)
 		{
-			response = $"To execute this command provide at least 1 argument!\nUsage: {arguments.Array[0]} {Usage}";
+			response = $"To execute this command provide at least 1 argument!\nUsage: {arguments.Array[0]} {this.Usage}";
 			return false;
 		}
 		string[] newargs;

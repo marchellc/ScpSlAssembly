@@ -20,7 +20,7 @@ public class EntranceZoneGenerator : AtlasZoneGenerator
 
 	public override void Generate(System.Random rng)
 	{
-		if (_hcz == null || _hcz.Interpreted == null)
+		if (this._hcz == null || this._hcz.Interpreted == null)
 		{
 			throw new InvalidOperationException("Entrance Zone requires HCZ to generate first. Adjust the order of execution.");
 		}
@@ -29,22 +29,22 @@ public class EntranceZoneGenerator : AtlasZoneGenerator
 
 	protected override void RandomizeInterpreted(System.Random rng)
 	{
-		OnBeforeRandomize();
+		this.OnBeforeRandomize();
 		base.RandomizeInterpreted(rng);
 	}
 
 	public override void GetPositionAndRotation(AtlasInterpretation toSpawn, out Vector3 worldPosition, out float yRotation)
 	{
 		base.GetPositionAndRotation(toSpawn, out worldPosition, out yRotation);
-		worldPosition += _positionOffset;
-		yRotation += _hardRotationOffset;
+		worldPosition += this._positionOffset;
+		yRotation += this._hardRotationOffset;
 	}
 
 	private void OnBeforeRandomize()
 	{
-		FindCheckpointPositions(_hcz, out var centroid);
-		FindCheckpointPositions(this, out var centroid2);
-		_positionOffset = centroid - centroid2 + _hardPositionOffset;
+		this.FindCheckpointPositions(this._hcz, out var centroid);
+		this.FindCheckpointPositions(this, out var centroid2);
+		this._positionOffset = centroid - centroid2 + this._hardPositionOffset;
 	}
 
 	private void FindCheckpointPositions(AtlasZoneGenerator generator, out Vector3 centroid)

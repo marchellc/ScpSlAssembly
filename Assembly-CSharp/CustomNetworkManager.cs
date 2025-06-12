@@ -127,16 +127,16 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 	{
 		get
 		{
-			return maxConnections;
+			return base.maxConnections;
 		}
 		set
 		{
-			maxConnections = value;
+			base.maxConnections = value;
 			LiteNetLib4MirrorTransport.Singleton.maxConnections = (ushort)value;
 		}
 	}
 
-	public int ReservedMaxPlayers => slots;
+	public int ReservedMaxPlayers => CustomNetworkManager.slots;
 
 	public static bool IsVerified { get; internal set; }
 
@@ -154,31 +154,31 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 		{
 			return;
 		}
-		_dictCleanupTime += Time.fixedUnscaledDeltaTime;
-		_ipRateLimitTime += Time.fixedUnscaledDeltaTime;
-		_userIdRateLimitTime += Time.fixedUnscaledDeltaTime;
-		_preauthChallengeTime += Time.fixedUnscaledDeltaTime;
-		_delayVolumeResetTime += Time.fixedUnscaledDeltaTime;
-		_rejectSuppressionTime += Time.fixedUnscaledDeltaTime;
-		_issuedSuppressionTime += Time.fixedUnscaledDeltaTime;
-		if (_ipRateLimitTime >= (float)(int)_ipRateLimitWindow)
+		this._dictCleanupTime += Time.fixedUnscaledDeltaTime;
+		this._ipRateLimitTime += Time.fixedUnscaledDeltaTime;
+		this._userIdRateLimitTime += Time.fixedUnscaledDeltaTime;
+		this._preauthChallengeTime += Time.fixedUnscaledDeltaTime;
+		this._delayVolumeResetTime += Time.fixedUnscaledDeltaTime;
+		this._rejectSuppressionTime += Time.fixedUnscaledDeltaTime;
+		this._issuedSuppressionTime += Time.fixedUnscaledDeltaTime;
+		if (this._ipRateLimitTime >= (float)(int)CustomNetworkManager._ipRateLimitWindow)
 		{
-			_ipRateLimitTime = 0f;
+			this._ipRateLimitTime = 0f;
 			CustomLiteNetLib4MirrorTransport.IpRateLimit.Clear();
 		}
-		if (_userIdRateLimitTime >= (float)(int)_userIdLimitWindow)
+		if (this._userIdRateLimitTime >= (float)(int)CustomNetworkManager._userIdLimitWindow)
 		{
-			_userIdRateLimitTime = 0f;
+			this._userIdRateLimitTime = 0f;
 			CustomLiteNetLib4MirrorTransport.UserRateLimit.Clear();
 		}
-		if (_delayVolumeResetTime > 5.5f)
+		if (this._delayVolumeResetTime > 5.5f)
 		{
-			_delayVolumeResetTime = 0f;
+			this._delayVolumeResetTime = 0f;
 			CustomLiteNetLib4MirrorTransport.DelayVolume = 0;
 		}
-		if (_rejectSuppressionTime > 10f)
+		if (this._rejectSuppressionTime > 10f)
 		{
-			_rejectSuppressionTime = 0f;
+			this._rejectSuppressionTime = 0f;
 			if (CustomLiteNetLib4MirrorTransport.SuppressRejections)
 			{
 				if (CustomLiteNetLib4MirrorTransport.Rejected <= CustomLiteNetLib4MirrorTransport.RejectionThreshold)
@@ -189,9 +189,9 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 			}
 			CustomLiteNetLib4MirrorTransport.Rejected = 0u;
 		}
-		if (_issuedSuppressionTime > 10f)
+		if (this._issuedSuppressionTime > 10f)
 		{
-			_issuedSuppressionTime = 0f;
+			this._issuedSuppressionTime = 0f;
 			if (CustomLiteNetLib4MirrorTransport.SuppressIssued)
 			{
 				if (CustomLiteNetLib4MirrorTransport.ChallengeIssued <= CustomLiteNetLib4MirrorTransport.IssuedThreshold)
@@ -202,47 +202,47 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 			}
 			CustomLiteNetLib4MirrorTransport.ChallengeIssued = 0u;
 		}
-		if (_preauthChallengeTime >= (float)(int)_preauthChallengeClean)
+		if (this._preauthChallengeTime >= (float)(int)CustomNetworkManager._preauthChallengeClean)
 		{
-			_preauthChallengeTime = 0f;
-			long ticks = DateTime.Now.AddSeconds(_preauthChallengeWindow * -1).Ticks;
+			this._preauthChallengeTime = 0f;
+			long ticks = DateTime.Now.AddSeconds(CustomNetworkManager._preauthChallengeWindow * -1).Ticks;
 			foreach (KeyValuePair<string, PreauthChallengeItem> challenge in CustomLiteNetLib4MirrorTransport.Challenges)
 			{
 				if (challenge.Value.Added <= ticks)
 				{
-					_dict2ToRemove.Add(challenge.Key);
+					this._dict2ToRemove.Add(challenge.Key);
 				}
 			}
-			foreach (string item in _dict2ToRemove)
+			foreach (string item in this._dict2ToRemove)
 			{
 				if (CustomLiteNetLib4MirrorTransport.Challenges.ContainsKey(item))
 				{
 					CustomLiteNetLib4MirrorTransport.Challenges.Remove(item);
 				}
 			}
-			_dict2ToRemove.Clear();
+			this._dict2ToRemove.Clear();
 		}
-		if (_dictCleanupTime <= 20f)
+		if (this._dictCleanupTime <= 20f)
 		{
 			return;
 		}
-		_dictCleanupTime = 0f;
+		this._dictCleanupTime = 0f;
 		long ticks2 = DateTime.Now.AddSeconds(-200.0).Ticks;
 		foreach (KeyValuePair<IPEndPoint, PreauthItem> userId in CustomLiteNetLib4MirrorTransport.UserIds)
 		{
 			if (userId.Value.Added <= ticks2)
 			{
-				_dictToRemove.Add(userId.Key);
+				this._dictToRemove.Add(userId.Key);
 			}
 		}
-		foreach (IPEndPoint item2 in _dictToRemove)
+		foreach (IPEndPoint item2 in this._dictToRemove)
 		{
 			if (CustomLiteNetLib4MirrorTransport.UserIds.ContainsKey(item2))
 			{
 				CustomLiteNetLib4MirrorTransport.UserIds.Remove(item2);
 			}
 		}
-		_dictToRemove.Clear();
+		this._dictToRemove.Clear();
 	}
 
 	internal static void InvokeOnClientReady()
@@ -270,25 +270,27 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 		}
 		NetworkServer.SetAllClientsNotReady();
 		NetworkManager.networkSceneName = newSceneName;
-		OnServerChangeScene(newSceneName);
+		this.OnServerChangeScene(newSceneName);
 		NetworkServer.isLoadingScene = true;
 		NetworkManager.loadingSceneAsync = SceneManager.LoadSceneAsync(newSceneName);
 		if (NetworkServer.active)
 		{
-			if (EnableFastRestart)
+			if (CustomNetworkManager.EnableFastRestart)
 			{
-				Timing.CallDelayed(FastRestartDelay, delegate
+				Timing.CallDelayed(CustomNetworkManager.FastRestartDelay, delegate
 				{
-					SceneMessage message = default(SceneMessage);
-					message.sceneName = newSceneName;
-					NetworkServer.SendToAll(message);
+					NetworkServer.SendToAll(new SceneMessage
+					{
+						sceneName = newSceneName
+					});
 				});
 			}
 			else
 			{
-				SceneMessage message2 = default(SceneMessage);
-				message2.sceneName = newSceneName;
-				NetworkServer.SendToAll(message2);
+				NetworkServer.SendToAll(new SceneMessage
+				{
+					sceneName = newSceneName
+				});
 			}
 		}
 		NetworkManager.startPositionIndex = 0;
@@ -311,19 +313,19 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 	{
 		base.OnStartClient();
 		CustomNetworkManager.OnClientStarted?.Invoke();
-		StartCoroutine(_ConnectToServer());
+		base.StartCoroutine(this._ConnectToServer());
 	}
 
 	public override void StartClient()
 	{
 		bool allow = true;
-		TryStartClientChecks.ForEach(delegate(Func<CustomNetworkManager, bool> x)
+		CustomNetworkManager.TryStartClientChecks.ForEach(delegate(Func<CustomNetworkManager, bool> x)
 		{
 			allow = x(this) && allow;
 		});
 		if (allow)
 		{
-			ShowLoadingScreen(0);
+			this.ShowLoadingScreen(0);
 			base.StartClient();
 		}
 	}
@@ -334,7 +336,7 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 		{
 			if (NetworkClient.isConnected)
 			{
-				ShowLoadingScreen(2);
+				this.ShowLoadingScreen(2);
 				break;
 			}
 			yield return 0f;
@@ -343,16 +345,16 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 
 	public bool IsFacilityLoading()
 	{
-		if (_curLogId != 17)
+		if (this._curLogId != 17)
 		{
-			return _curLogId == 18;
+			return this._curLogId == 18;
 		}
 		return true;
 	}
 
 	public override void OnServerDisconnect(NetworkConnectionToClient conn)
 	{
-		if (_disconnectDrop)
+		if (this._disconnectDrop)
 		{
 			NetworkIdentity identity = conn.identity;
 			if (identity != null && ReferenceHub.TryGetHubNetID(identity.netId, out var hub) && hub.IsAlive())
@@ -376,15 +378,15 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 	{
 		if (scene.name.Contains("menu", StringComparison.OrdinalIgnoreCase))
 		{
-			_curLogId = 0;
-			if (!_activated)
+			this._curLogId = 0;
+			if (!this._activated)
 			{
-				_activated = true;
+				this._activated = true;
 			}
 		}
-		if (!(reconnectTime <= 0f))
+		if (!(CustomNetworkManager.reconnectTime <= 0f))
 		{
-			Invoke("Reconnect", 3f);
+			base.Invoke("Reconnect", 3f);
 		}
 	}
 
@@ -392,47 +394,47 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 	{
 		CustomNetworkManager.OnClientReady?.Invoke();
 		base.OnClientSceneChanged();
-		if (reconnectTime <= 0f && logs[_curLogId].autoHideOnSceneLoad)
+		if (CustomNetworkManager.reconnectTime <= 0f && this.logs[this._curLogId].autoHideOnSceneLoad)
 		{
-			popup.SetActive(value: false);
-			loadingpop.SetActive(value: false);
+			this.popup.SetActive(value: false);
+			this.loadingpop.SetActive(value: false);
 		}
 	}
 
 	public bool ShouldPlayIntensive()
 	{
-		if (_curLogId != 13)
+		if (this._curLogId != 13)
 		{
-			return IsFacilityLoading();
+			return this.IsFacilityLoading();
 		}
 		return true;
 	}
 
 	private void Reconnect()
 	{
-		if (!(reconnectTime <= 0f))
+		if (!(CustomNetworkManager.reconnectTime <= 0f))
 		{
-			reconnecting = true;
+			CustomNetworkManager.reconnecting = true;
 			CustomLiteNetLib4MirrorTransport.DelayConnections = true;
 			IdleMode.PauseIdleMode = true;
-			Invoke("TryConnecting", reconnectTime);
-			reconnectTime = 0f;
+			base.Invoke("TryConnecting", CustomNetworkManager.reconnectTime);
+			CustomNetworkManager.reconnectTime = 0f;
 		}
 	}
 
 	public void TryConnecting()
 	{
-		if (reconnecting)
+		if (CustomNetworkManager.reconnecting)
 		{
-			StartClient();
+			this.StartClient();
 		}
 	}
 
 	public void StopReconnecting()
 	{
-		reconnecting = false;
-		triggerReconnectTime = 0f;
-		reconnectTime = 0f;
+		CustomNetworkManager.reconnecting = false;
+		CustomNetworkManager.triggerReconnectTime = 0f;
+		CustomNetworkManager.reconnectTime = 0f;
 	}
 
 	public void ShowLog(int id, string obj1 = "", string obj2 = "", string obj3 = "", string textOverride = null)
@@ -445,9 +447,9 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 
 	private void LoadConfigs(bool firstTime = false)
 	{
-		if (!_configLoaded)
+		if (!this._configLoaded)
 		{
-			_configLoaded = true;
+			this._configLoaded = true;
 			if (File.Exists("hoster_policy.txt"))
 			{
 				ConfigFile.HosterPolicy = new YamlConfig("hoster_policy.txt");
@@ -473,7 +475,7 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 	public override void Start()
 	{
 		base.Start();
-		LoadConfigs(firstTime: true);
+		this.LoadConfigs(firstTime: true);
 		if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.Linux && !File.Exists("/etc/ssl/certs/ca-certificates.crt"))
 		{
 			if (File.Exists("/etc/pki/tls/certs/ca-bundle.crt"))
@@ -510,7 +512,7 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 		{
 			ServerConsole.AddLog("PRIVATE BETA VERSION - DO NOT SHARE");
 		}
-		if (GameFilesVersion != _expectedGameFilesVersion)
+		if (this.GameFilesVersion != CustomNetworkManager._expectedGameFilesVersion)
 		{
 			ServerConsole.AddLog("This source code file is made for different version of the game!");
 			ServerConsole.AddLog("Please validate game files integrity using steam!");
@@ -519,28 +521,28 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 		}
 		CustomLiteNetLib4MirrorTransport.DelayConnections = true;
 		IdleMode.PauseIdleMode = true;
-		LoadConfigs();
-		ShowLoadingScreen(0);
-		createpop.SetActive(value: false);
+		this.LoadConfigs();
+		this.ShowLoadingScreen(0);
+		this.createpop.SetActive(value: false);
 		ServerConsole.AddLog("Loading configs...");
 		ConfigFile.ReloadGameConfigs();
-		LiteNetLib4MirrorTransport.Singleton.port = (ServerStatic.IsDedicated ? ServerStatic.ServerPort : GetFreePort());
+		LiteNetLib4MirrorTransport.Singleton.port = (ServerStatic.IsDedicated ? ServerStatic.ServerPort : this.GetFreePort());
 		SteamServerInfo.ServerPort = LiteNetLib4MirrorTransport.Singleton.port;
 		LiteNetLib4MirrorTransport.Singleton.useUpnP = ConfigFile.ServerConfig.GetBool("forward_ports", def: true);
-		slots = ConfigFile.ServerConfig.GetInt("max_players", 20);
-		SteamServerInfo.MaxPlayers = slots;
-		CustomLiteNetLib4MirrorTransport.DelayVolumeThreshold = (byte)(Mathf.Clamp(slots, 5, 125) * 2);
-		reservedSlots = Mathf.Max(ConfigFile.ServerConfig.GetInt("reserved_slots", ReservedSlot.Users.Count), 0);
-		_disconnectDrop = ConfigFile.ServerConfig.GetBool("disconnect_drop", def: true);
-		MaxPlayers = (slots + reservedSlots) * 2 + 50;
-		int @int = ConfigFile.HosterPolicy.GetInt("players_limit", -1);
-		if (@int > 0 && slots + reservedSlots > @int)
+		CustomNetworkManager.slots = ConfigFile.ServerConfig.GetInt("max_players", 20);
+		SteamServerInfo.MaxPlayers = CustomNetworkManager.slots;
+		CustomLiteNetLib4MirrorTransport.DelayVolumeThreshold = (byte)(Mathf.Clamp(CustomNetworkManager.slots, 5, 125) * 2);
+		CustomNetworkManager.reservedSlots = Mathf.Max(ConfigFile.ServerConfig.GetInt("reserved_slots", ReservedSlot.Users.Count), 0);
+		this._disconnectDrop = ConfigFile.ServerConfig.GetBool("disconnect_drop", def: true);
+		this.MaxPlayers = (CustomNetworkManager.slots + CustomNetworkManager.reservedSlots) * 2 + 50;
+		int num = ConfigFile.HosterPolicy.GetInt("players_limit", -1);
+		if (num > 0 && CustomNetworkManager.slots + CustomNetworkManager.reservedSlots > num)
 		{
-			MaxPlayers = @int * 2 + 50;
-			ServerConsole.AddLog("You have exceeded players limit set by your hosting provider. Max players value set to " + @int);
+			this.MaxPlayers = num * 2 + 50;
+			ServerConsole.AddLog("You have exceeded players limit set by your hosting provider. Max players value set to " + num);
 		}
 		ServerConsole.AddLog("Config files loaded from " + FileManager.GetAppFolder(addSeparator: true, serverConfig: true));
-		_queryEnabled = ConfigFile.ServerConfig.GetBool("enable_query");
+		this._queryEnabled = ConfigFile.ServerConfig.GetBool("enable_query");
 		string text = FileManager.GetAppFolder(addSeparator: true, serverConfig: true) + "config_remoteadmin.txt";
 		if (!File.Exists(text))
 		{
@@ -557,39 +559,39 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 		CustomLiteNetLib4MirrorTransport.ReloadChallengeOptions();
 		ServerConsole.AddLog(PlayerAuthenticationManager.OnlineMode ? "Online mode is ENABLED." : "Online mode is DISABLED - SERVER CANNOT VALIDATE USER ID OF CONNECTING PLAYERS!!! Features like User ID admin authentication won't work.");
 		ServerConsole.AddLog("Starting server...");
-		Timing.RunCoroutine(_CreateLobby());
+		Timing.RunCoroutine(this._CreateLobby());
 	}
 
 	internal static void ReloadTimeWindows()
 	{
-		_ipRateLimitWindow = ConfigFile.ServerConfig.GetUShort("ip_ratelimit_window", 3);
-		_userIdLimitWindow = ConfigFile.ServerConfig.GetUShort("userid_ratelimit_window", 5);
-		_preauthChallengeWindow = ConfigFile.ServerConfig.GetUShort("preauth_challenge_time_window", 8);
-		_preauthChallengeClean = ConfigFile.ServerConfig.GetUShort("preauth_challenge_clean_period", 4);
-		if (_ipRateLimitWindow == 0)
+		CustomNetworkManager._ipRateLimitWindow = ConfigFile.ServerConfig.GetUShort("ip_ratelimit_window", 3);
+		CustomNetworkManager._userIdLimitWindow = ConfigFile.ServerConfig.GetUShort("userid_ratelimit_window", 5);
+		CustomNetworkManager._preauthChallengeWindow = ConfigFile.ServerConfig.GetUShort("preauth_challenge_time_window", 8);
+		CustomNetworkManager._preauthChallengeClean = ConfigFile.ServerConfig.GetUShort("preauth_challenge_clean_period", 4);
+		if (CustomNetworkManager._ipRateLimitWindow == 0)
 		{
-			_ipRateLimitWindow = 1;
+			CustomNetworkManager._ipRateLimitWindow = 1;
 		}
-		if (_userIdLimitWindow == 0)
+		if (CustomNetworkManager._userIdLimitWindow == 0)
 		{
-			_userIdLimitWindow = 1;
+			CustomNetworkManager._userIdLimitWindow = 1;
 		}
-		if (_preauthChallengeWindow == 0)
+		if (CustomNetworkManager._preauthChallengeWindow == 0)
 		{
-			_preauthChallengeWindow = 1;
+			CustomNetworkManager._preauthChallengeWindow = 1;
 		}
-		if (_preauthChallengeClean == 0)
+		if (CustomNetworkManager._preauthChallengeClean == 0)
 		{
-			_preauthChallengeClean = 1;
+			CustomNetworkManager._preauthChallengeClean = 1;
 		}
 	}
 
 	private IEnumerator<float> _CreateLobby()
 	{
-		if (_queryEnabled)
+		if (this._queryEnabled)
 		{
-			QueryServer = new QueryServer(LiteNetLib4MirrorTransport.Singleton.port + ConfigFile.ServerConfig.GetInt("query_port_shift"), ConfigFile.ServerConfig.GetString("query_bind_ip1", "0.0.0.0"), ConfigFile.ServerConfig.GetString("query_bind_ip2", "::"), ConfigFile.ServerConfig.GetString("query_administrator_password"));
-			QueryServer.StartServer();
+			CustomNetworkManager.QueryServer = new QueryServer(LiteNetLib4MirrorTransport.Singleton.port + ConfigFile.ServerConfig.GetInt("query_port_shift"), ConfigFile.ServerConfig.GetString("query_bind_ip1", "0.0.0.0"), ConfigFile.ServerConfig.GetString("query_bind_ip2", "::"), ConfigFile.ServerConfig.GetString("query_administrator_password"));
+			CustomNetworkManager.QueryServer.StartServer();
 		}
 		else
 		{
@@ -691,7 +693,7 @@ public class CustomNetworkManager : LiteNetLib4MirrorNetworkManager
 		}
 		LiteNetLib4MirrorTransport.Singleton.useNativeSockets = ConfigFile.ServerConfig.GetBool("use_native_sockets", def: true);
 		ServerConsole.AddLog("Network sockets mode: " + (LiteNetLib4MirrorTransport.Singleton.useNativeSockets ? "Native" : "Unity"));
-		StartHost();
+		base.StartHost();
 		while (SceneManager.GetActiveScene().name != "Facility")
 		{
 			yield return float.NegativeInfinity;

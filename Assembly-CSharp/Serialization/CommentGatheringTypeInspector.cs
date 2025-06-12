@@ -12,12 +12,12 @@ public class CommentGatheringTypeInspector : TypeInspectorSkeleton
 
 	public CommentGatheringTypeInspector(ITypeInspector innerTypeDescriptor)
 	{
-		_innerTypeDescriptor = innerTypeDescriptor ?? throw new ArgumentNullException("innerTypeDescriptor");
+		this._innerTypeDescriptor = innerTypeDescriptor ?? throw new ArgumentNullException("innerTypeDescriptor");
 	}
 
 	public override IEnumerable<IPropertyDescriptor> GetProperties(Type type, object container)
 	{
-		return from descriptor in _innerTypeDescriptor.GetProperties(type, container)
+		return from descriptor in this._innerTypeDescriptor.GetProperties(type, container)
 			select new CommentsPropertyDescriptor(descriptor);
 	}
 }

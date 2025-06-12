@@ -10,8 +10,8 @@ internal class NativeEndPoint : IPEndPoint
 	public NativeEndPoint(byte[] address)
 		: base(IPAddress.Any, 0)
 	{
-		NativeAddress = new byte[address.Length];
-		Buffer.BlockCopy(address, 0, NativeAddress, 0, address.Length);
+		this.NativeAddress = new byte[address.Length];
+		Buffer.BlockCopy(address, 0, this.NativeAddress, 0, address.Length);
 		short num = (short)((address[1] << 8) | address[0]);
 		base.Port = (ushort)((address[2] << 8) | address[3]);
 		if ((NativeSocket.UnixMode && num == 10) || (!NativeSocket.UnixMode && num == 23))

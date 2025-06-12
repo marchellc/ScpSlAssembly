@@ -14,21 +14,21 @@ public class SimpleWearable : DisplayableWearableBase, ISingleObjectWearable
 	public override void UpdateVisibility()
 	{
 		base.UpdateVisibility();
-		TargetObject.Source.SetActive(base.IsVisible);
+		this.TargetObject.Source.SetActive(base.IsVisible);
 	}
 
 	public override void Initialize(WearableSubcontroller model)
 	{
 		base.Initialize(model);
-		TargetObject = new WearableGameObject(base.gameObject);
-		Transform boneTransform = model.Animator.GetBoneTransform(ParentBone);
-		Transform sourceTr = TargetObject.SourceTr;
+		this.TargetObject = new WearableGameObject(base.gameObject);
+		Transform boneTransform = model.Animator.GetBoneTransform(this.ParentBone);
+		Transform sourceTr = this.TargetObject.SourceTr;
 		sourceTr.SetParent(boneTransform);
-		_parentOriginalScale = sourceTr.localScale;
+		this._parentOriginalScale = sourceTr.localScale;
 	}
 
 	public override void SetFade(float fade)
 	{
-		TargetObject.SourceTr.localScale = _parentOriginalScale * fade;
+		this.TargetObject.SourceTr.localScale = this._parentOriginalScale * fade;
 	}
 }

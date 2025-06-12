@@ -10,6 +10,6 @@ public class AudioSourceWait : Wait
 
 	public override IEnumerator<float> _Run()
 	{
-		yield return Timing.WaitUntilFalse(() => audioSource.isPlaying);
+		yield return Timing.WaitUntilFalse(() => this.audioSource.isPlaying);
 	}
 }

@@ -19,11 +19,11 @@ public class SearchCompleteAnimation : OverlayAnimationsBase
 	{
 		get
 		{
-			if (_interacted)
+			if (this._interacted)
 			{
-				if (_startTime.HasValue)
+				if (this._startTime.HasValue)
 				{
-					return NetworkTime.time - _startTime.Value < 1.1109999418258667;
+					return NetworkTime.time - this._startTime.Value < 1.1109999418258667;
 				}
 				return true;
 			}
@@ -45,31 +45,31 @@ public class SearchCompleteAnimation : OverlayAnimationsBase
 		base.OnReassigned();
 		if (NetworkServer.active)
 		{
-			_lastSearchCoordinator = base.Model.OwnerHub.searchCoordinator;
-			_lastSearchCoordinator.OnCompleted += OnSearchCompleted;
+			this._lastSearchCoordinator = base.Model.OwnerHub.searchCoordinator;
+			this._lastSearchCoordinator.OnCompleted += OnSearchCompleted;
 		}
 	}
 
 	public override void OnStarted()
 	{
 		base.OnStarted();
-		Replay(instant: true);
-		_startTime = NetworkTime.time;
+		base.Replay(instant: true);
+		this._startTime = NetworkTime.time;
 	}
 
 	public override void OnStopped()
 	{
 		base.OnStopped();
-		_interacted = false;
-		_startTime = null;
+		this._interacted = false;
+		this._startTime = null;
 	}
 
 	public override void OnReset()
 	{
 		base.OnReset();
-		if (_lastSearchCoordinator != null)
+		if (this._lastSearchCoordinator != null)
 		{
-			_lastSearchCoordinator.OnCompleted -= OnSearchCompleted;
+			this._lastSearchCoordinator.OnCompleted -= OnSearchCompleted;
 		}
 	}
 
@@ -78,16 +78,16 @@ public class SearchCompleteAnimation : OverlayAnimationsBase
 		base.ProcessRpc(reader);
 		if (base.IsPlaying)
 		{
-			Replay(instant: false);
+			base.Replay(instant: false);
 		}
-		_interacted = true;
+		this._interacted = true;
 	}
 
 	private void OnSearchCompleted(ISearchCompletor completor)
 	{
 		if (NetworkServer.active && completor is PickupSearchCompletor)
 		{
-			SendRpc();
+			base.SendRpc();
 		}
 	}
 }

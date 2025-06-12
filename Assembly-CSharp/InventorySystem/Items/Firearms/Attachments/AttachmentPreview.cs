@@ -8,11 +8,11 @@ public static class AttachmentPreview
 {
 	private static readonly Firearm[] Instances = new Firearm[EnumUtils<ItemType>.Values.Length];
 
-	private static readonly bool[] HasInstances = new bool[Instances.Length];
+	private static readonly bool[] HasInstances = new bool[AttachmentPreview.Instances.Length];
 
 	public static Firearm Get(ItemType id, uint attachmentsCode, bool reValidate = false)
 	{
-		if (!TryGet(id, attachmentsCode, reValidate, out var result))
+		if (!AttachmentPreview.TryGet(id, attachmentsCode, reValidate, out var result))
 		{
 			throw new InvalidOperationException($"Unable to create a preview for {id} - it's not a valid firearm id!");
 		}
@@ -21,7 +21,7 @@ public static class AttachmentPreview
 
 	public static Firearm Get(ItemIdentifier id, bool reValidate = false)
 	{
-		if (!TryGet(id, reValidate, out var result))
+		if (!AttachmentPreview.TryGet(id, reValidate, out var result))
 		{
 			throw new InvalidOperationException($"Unable to create a preview for {id} - it's not a valid firearm id!");
 		}
@@ -30,7 +30,7 @@ public static class AttachmentPreview
 
 	public static bool TryGet(ItemType id, uint attachmentsCode, bool reValidate, out Firearm result)
 	{
-		if (!TryGetOrAddInstance(id, out result))
+		if (!AttachmentPreview.TryGetOrAddInstance(id, out result))
 		{
 			return false;
 		}
@@ -45,14 +45,14 @@ public static class AttachmentPreview
 			code = 0u;
 			reValidate = true;
 		}
-		return TryGet(id.TypeId, code, reValidate, out result);
+		return AttachmentPreview.TryGet(id.TypeId, code, reValidate, out result);
 	}
 
 	private static bool TryGetOrAddInstance(ItemType id, out Firearm instance)
 	{
-		if (HasInstances[(int)id])
+		if (AttachmentPreview.HasInstances[(int)id])
 		{
-			instance = Instances[(int)id];
+			instance = AttachmentPreview.Instances[(int)id];
 			return true;
 		}
 		if (!InventoryItemLoader.TryGetItem<Firearm>(id, out var result))
@@ -64,8 +64,8 @@ public static class AttachmentPreview
 		instance.InstantiationStatus = AutosyncInstantiationStatus.SimulatedInstance;
 		instance.InitializeSubcomponents();
 		UnityEngine.Object.DontDestroyOnLoad(instance);
-		Instances[(int)id] = instance;
-		HasInstances[(int)id] = true;
+		AttachmentPreview.Instances[(int)id] = instance;
+		AttachmentPreview.HasInstances[(int)id] = true;
 		return true;
 	}
 }

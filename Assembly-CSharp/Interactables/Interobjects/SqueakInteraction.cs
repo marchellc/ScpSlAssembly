@@ -8,7 +8,7 @@ public class SqueakInteraction : PopupInterobject, IDestructible, IBlockStaticBa
 {
 	private SqueakSpawner _spawner;
 
-	public uint NetworkId => _spawner.netId;
+	public uint NetworkId => this._spawner.netId;
 
 	public Vector3 CenterOfMass => Vector3.zero;
 
@@ -18,7 +18,7 @@ public class SqueakInteraction : PopupInterobject, IDestructible, IBlockStaticBa
 		{
 			return false;
 		}
-		_spawner.TargetHitMouse(attackerDamageHandler.Attacker.Hub.networkIdentity.connectionToClient);
+		this._spawner.TargetHitMouse(attackerDamageHandler.Attacker.Hub.networkIdentity.connectionToClient);
 		return true;
 	}
 
@@ -32,6 +32,6 @@ public class SqueakInteraction : PopupInterobject, IDestructible, IBlockStaticBa
 
 	private void Awake()
 	{
-		_spawner = GetComponentInParent<SqueakSpawner>();
+		this._spawner = base.GetComponentInParent<SqueakSpawner>();
 	}
 }

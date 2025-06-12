@@ -17,20 +17,20 @@ public class Scp079ScannerTeamFilterSelector : Scp079AbilityBase
 	{
 		get
 		{
-			if (_tempTeams == null)
+			if (this._tempTeams == null)
 			{
-				_tempTeams = new Team[_availableFilters.Length];
+				this._tempTeams = new Team[this._availableFilters.Length];
 			}
 			int num = 0;
-			for (int i = 0; i < _availableFilters.Length; i++)
+			for (int i = 0; i < this._availableFilters.Length; i++)
 			{
-				if (_selectedTeams[i])
+				if (this._selectedTeams[i])
 				{
-					_tempTeams[num++] = _availableFilters[i];
+					this._tempTeams[num++] = this._availableFilters[i];
 				}
 			}
 			Team[] array = new Team[num];
-			Array.Copy(_tempTeams, array, num);
+			Array.Copy(this._tempTeams, array, num);
 			return array;
 		}
 	}
@@ -39,7 +39,7 @@ public class Scp079ScannerTeamFilterSelector : Scp079AbilityBase
 	{
 		get
 		{
-			bool[] selectedTeams = _selectedTeams;
+			bool[] selectedTeams = this._selectedTeams;
 			for (int i = 0; i < selectedTeams.Length; i++)
 			{
 				if (selectedTeams[i])
@@ -53,9 +53,9 @@ public class Scp079ScannerTeamFilterSelector : Scp079AbilityBase
 
 	private int GetTeamIndex(Team team)
 	{
-		for (int i = 0; i < _availableFilters.Length; i++)
+		for (int i = 0; i < this._availableFilters.Length; i++)
 		{
-			if (_availableFilters[i] == team)
+			if (this._availableFilters[i] == team)
 			{
 				return i;
 			}
@@ -65,51 +65,51 @@ public class Scp079ScannerTeamFilterSelector : Scp079AbilityBase
 
 	private void ResetArray()
 	{
-		int num = _availableFilters.Length;
-		if (_selectedTeams == null)
+		int num = this._availableFilters.Length;
+		if (this._selectedTeams == null)
 		{
-			_selectedTeams = new bool[num];
+			this._selectedTeams = new bool[num];
 		}
 		for (int i = 0; i < num; i++)
 		{
-			_selectedTeams[i] = true;
+			this._selectedTeams[i] = true;
 		}
 	}
 
 	protected override void Awake()
 	{
 		base.Awake();
-		ResetArray();
+		this.ResetArray();
 	}
 
 	public bool GetTeamStatus(Team team)
 	{
-		return _selectedTeams[GetTeamIndex(team)];
+		return this._selectedTeams[this.GetTeamIndex(team)];
 	}
 
 	public void SetTeamStatus(Team team, bool status)
 	{
-		_selectedTeams[GetTeamIndex(team)] = status;
-		ClientSendCmd();
+		this._selectedTeams[this.GetTeamIndex(team)] = status;
+		base.ClientSendCmd();
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteBoolArray(_selectedTeams);
+		writer.WriteBoolArray(this._selectedTeams);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		reader.ReadBoolArray(_selectedTeams);
-		ServerSendRpc(toAll: true);
+		reader.ReadBoolArray(this._selectedTeams);
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteBoolArray(_selectedTeams);
+		writer.WriteBoolArray(this._selectedTeams);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
@@ -117,13 +117,13 @@ public class Scp079ScannerTeamFilterSelector : Scp079AbilityBase
 		base.ClientProcessRpc(reader);
 		if (!base.Role.IsLocalPlayer)
 		{
-			reader.ReadBoolArray(_selectedTeams);
+			reader.ReadBoolArray(this._selectedTeams);
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		ResetArray();
+		this.ResetArray();
 	}
 }

@@ -44,17 +44,17 @@ public class Firearm : ModularAutosyncItem, IItemNametag, ICustomCrosshairItem, 
 
 	public Animator ServerSideAnimator { get; private set; }
 
-	public string Name => ItemTypeId.GetName();
+	public string Name => base.ItemTypeId.GetName();
 
 	public AnimatedFirearmViewmodel ClientViewmodelInstance
 	{
 		get
 		{
-			if (!HasViewmodel)
+			if (!this.HasViewmodel)
 			{
 				return null;
 			}
-			return ViewModel as AnimatedFirearmViewmodel;
+			return base.ViewModel as AnimatedFirearmViewmodel;
 		}
 	}
 
@@ -62,7 +62,7 @@ public class Firearm : ModularAutosyncItem, IItemNametag, ICustomCrosshairItem, 
 	{
 		get
 		{
-			if (ViewModel is AnimatedFirearmViewmodel animatedFirearmViewmodel && animatedFirearmViewmodel != null)
+			if (base.ViewModel is AnimatedFirearmViewmodel animatedFirearmViewmodel && animatedFirearmViewmodel != null)
 			{
 				return animatedFirearmViewmodel.Initialized;
 			}
@@ -74,12 +74,12 @@ public class Firearm : ModularAutosyncItem, IItemNametag, ICustomCrosshairItem, 
 	{
 		get
 		{
-			if (!_footprintCacheSet)
+			if (!this._footprintCacheSet)
 			{
-				_footprintCacheSet = true;
-				_cachedFootprint = new Footprint(base.Owner);
+				this._footprintCacheSet = true;
+				this._cachedFootprint = new Footprint(base.Owner);
 			}
-			return _cachedFootprint;
+			return this._cachedFootprint;
 		}
 	}
 
@@ -87,11 +87,11 @@ public class Firearm : ModularAutosyncItem, IItemNametag, ICustomCrosshairItem, 
 	{
 		get
 		{
-			if (_modules == null)
+			if (this._modules == null)
 			{
-				_modules = base.AllSubcomponents.OfType<SubcomponentBase, ModuleBase>();
+				this._modules = base.AllSubcomponents.OfType<SubcomponentBase, ModuleBase>();
 			}
-			return _modules;
+			return this._modules;
 		}
 	}
 
@@ -99,11 +99,11 @@ public class Firearm : ModularAutosyncItem, IItemNametag, ICustomCrosshairItem, 
 	{
 		get
 		{
-			if (_attachments == null)
+			if (this._attachments == null)
 			{
-				_attachments = base.AllSubcomponents.OfType<SubcomponentBase, Attachment>();
+				this._attachments = base.AllSubcomponents.OfType<SubcomponentBase, Attachment>();
 			}
-			return _attachments;
+			return this._attachments;
 		}
 	}
 
@@ -148,13 +148,13 @@ public class Firearm : ModularAutosyncItem, IItemNametag, ICustomCrosshairItem, 
 
 	public override void InitializeSubcomponents()
 	{
-		ServerSideAnimator = GetComponent<Animator>();
-		ServerSideAnimator.enabled = false;
+		this.ServerSideAnimator = base.GetComponent<Animator>();
+		this.ServerSideAnimator.enabled = false;
 		base.InitializeSubcomponents();
 		AttachmentCodeSync.TryGet(base.ItemSerial, out var code);
 		if (base.IsServer)
 		{
-			if (ServerIsPersonal)
+			if (this.ServerIsPersonal)
 			{
 				code = AttachmentsServerHandler.ServerGetReceivedPlayerPreference(this);
 			}
@@ -176,7 +176,7 @@ public class Firearm : ModularAutosyncItem, IItemNametag, ICustomCrosshairItem, 
 	public override void OnEquipped()
 	{
 		base.OnEquipped();
-		ServerSideAnimator.enabled = base.IsServer;
+		this.ServerSideAnimator.enabled = base.IsServer;
 		if (base.IsServer)
 		{
 			this.ServerResendAttachmentCode();
@@ -188,8 +188,8 @@ public class Firearm : ModularAutosyncItem, IItemNametag, ICustomCrosshairItem, 
 		base.OnHolstered();
 		if (base.IsServer)
 		{
-			ServerSideAnimator.Rebind();
-			ServerSideAnimator.enabled = false;
+			this.ServerSideAnimator.Rebind();
+			this.ServerSideAnimator.enabled = false;
 		}
 	}
 
@@ -219,7 +219,7 @@ public class Firearm : ModularAutosyncItem, IItemNametag, ICustomCrosshairItem, 
 	{
 		if (NetworkServer.active && !(base.Owner != hub) && hub.IsAlive())
 		{
-			_cachedFootprint = new Footprint(base.Owner);
+			this._cachedFootprint = new Footprint(base.Owner);
 		}
 	}
 }

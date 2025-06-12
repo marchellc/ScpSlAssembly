@@ -19,62 +19,62 @@ public class ToggleOrHoldInput
 
 	private bool _toggled;
 
-	private bool ToggleMode => _mode switch
+	private bool ToggleMode => this._mode switch
 	{
-		InputActivationMode.Toggle => _trackedSetting.Value, 
-		InputActivationMode.Hold => !_trackedSetting.Value, 
-		_ => throw new InvalidOperationException(string.Format("Undefined {0} with value of {1} detected for this Toggle/Hold setting.", "InputActivationMode", _mode)), 
+		InputActivationMode.Toggle => this._trackedSetting.Value, 
+		InputActivationMode.Hold => !this._trackedSetting.Value, 
+		_ => throw new InvalidOperationException(string.Format("Undefined {0} with value of {1} detected for this Toggle/Hold setting.", "InputActivationMode", this._mode)), 
 	};
 
-	private KeyCode TargetKey => NewInput.GetKey(_targetAction);
+	private KeyCode TargetKey => NewInput.GetKey(this._targetAction);
 
-	public bool KeyHeld => Input.GetKey(TargetKey);
+	public bool KeyHeld => Input.GetKey(this.TargetKey);
 
-	public bool KeyDown => Input.GetKeyDown(TargetKey);
+	public bool KeyDown => Input.GetKeyDown(this.TargetKey);
 
 	public bool IsActive
 	{
 		get
 		{
-			if (ToggleMode)
+			if (this.ToggleMode)
 			{
-				if (KeyDown)
+				if (this.KeyDown)
 				{
-					_toggled = !_toggled;
+					this._toggled = !this._toggled;
 				}
 			}
 			else
 			{
-				if (KeyDown)
+				if (this.KeyDown)
 				{
-					_toggled = true;
+					this._toggled = true;
 				}
-				if (!KeyHeld)
+				if (!this.KeyHeld)
 				{
-					_toggled = false;
+					this._toggled = false;
 				}
 			}
-			return _toggled;
+			return this._toggled;
 		}
 	}
 
 	public void ResetAll()
 	{
-		_toggled = false;
+		this._toggled = false;
 	}
 
 	public void ResetToggle()
 	{
-		if (ToggleMode)
+		if (this.ToggleMode)
 		{
-			ResetAll();
+			this.ResetAll();
 		}
 	}
 
 	public ToggleOrHoldInput(ActionName targetAction, CachedUserSetting<bool> settings, InputActivationMode modeWhenTrue = InputActivationMode.Toggle)
 	{
-		_targetAction = targetAction;
-		_trackedSetting = settings;
-		_mode = modeWhenTrue;
+		this._targetAction = targetAction;
+		this._trackedSetting = settings;
+		this._mode = modeWhenTrue;
 	}
 }

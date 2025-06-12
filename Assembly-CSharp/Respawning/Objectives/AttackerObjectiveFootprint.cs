@@ -11,20 +11,20 @@ public abstract class AttackerObjectiveFootprint : ObjectiveFootprintBase
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		VictimFootprint.Write(writer);
+		this.VictimFootprint.Write(writer);
 	}
 
 	public override void ClientReadRpc(NetworkReader reader)
 	{
 		base.ClientReadRpc(reader);
-		VictimFootprint = new ObjectiveHubFootprint(reader);
+		this.VictimFootprint = new ObjectiveHubFootprint(reader);
 	}
 
 	public override StringBuilder ClientCompletionText(StringBuilder builder)
 	{
 		base.ClientCompletionText(builder);
-		RoleTypeId roleType = VictimFootprint.RoleType;
-		string newValue = ((roleType.GetTeam() == Team.SCPs) ? roleType.GetAbbreviatedRoleName() : VictimFootprint.Nickname);
+		RoleTypeId roleType = this.VictimFootprint.RoleType;
+		string newValue = ((roleType.GetTeam() == Team.SCPs) ? roleType.GetAbbreviatedRoleName() : this.VictimFootprint.Nickname);
 		builder.Replace("%victimColor%", roleType.GetRoleColor().ToHex());
 		builder.Replace("%victimName%", newValue);
 		return builder;

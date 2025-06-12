@@ -11,7 +11,7 @@ public sealed class PublicKeyResponseFormatter : IJsonFormatter<PublicKeyRespons
 
 	public PublicKeyResponseFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("key"),
@@ -26,7 +26,7 @@ public sealed class PublicKeyResponseFormatter : IJsonFormatter<PublicKeyRespons
 				2
 			}
 		};
-		____stringByteKeys = new byte[3][]
+		this.____stringByteKeys = new byte[3][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("key"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("signature"),
@@ -36,11 +36,11 @@ public sealed class PublicKeyResponseFormatter : IJsonFormatter<PublicKeyRespons
 
 	public void Serialize(ref JsonWriter writer, PublicKeyResponse value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.key);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.signature);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteString(value.credits);
 		writer.WriteEndObject();
 	}
@@ -59,7 +59,7 @@ public sealed class PublicKeyResponseFormatter : IJsonFormatter<PublicKeyRespons
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key2 = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key2, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key2, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

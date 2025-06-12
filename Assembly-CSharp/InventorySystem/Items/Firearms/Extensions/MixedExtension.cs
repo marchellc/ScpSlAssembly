@@ -20,18 +20,18 @@ public abstract class MixedExtension : MonoBehaviour, IWorldmodelExtension, IVie
 
 	public virtual void InitViewmodel(AnimatedFirearmViewmodel viewmodel)
 	{
-		Identifier = viewmodel.ItemId;
-		Viewmodel = viewmodel;
-		ViewmodelMode = true;
-		SetupAny();
+		this.Identifier = viewmodel.ItemId;
+		this.Viewmodel = viewmodel;
+		this.ViewmodelMode = true;
+		this.SetupAny();
 	}
 
 	public virtual void SetupWorldmodel(FirearmWorldmodel worldmodel)
 	{
-		Identifier = worldmodel.Identifier;
-		Worldmodel = worldmodel;
-		WorldmodelMode = true;
-		SetupAny();
+		this.Identifier = worldmodel.Identifier;
+		this.Worldmodel = worldmodel;
+		this.WorldmodelMode = true;
+		this.SetupAny();
 	}
 
 	public virtual void SetupAny()
@@ -40,7 +40,7 @@ public abstract class MixedExtension : MonoBehaviour, IWorldmodelExtension, IVie
 
 	protected void SetLayer(int layer)
 	{
-		SetLayer(layer, base.transform);
+		this.SetLayer(layer, base.transform);
 	}
 
 	private void SetLayer(int layer, Transform t)
@@ -49,7 +49,7 @@ public abstract class MixedExtension : MonoBehaviour, IWorldmodelExtension, IVie
 		int childCount = t.childCount;
 		for (int i = 0; i < childCount; i++)
 		{
-			SetLayer(layer, t.GetChild(i));
+			this.SetLayer(layer, t.GetChild(i));
 		}
 	}
 }

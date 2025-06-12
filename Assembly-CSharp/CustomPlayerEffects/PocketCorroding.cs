@@ -50,12 +50,12 @@ public class PocketCorroding : TickingEffectBase, IFootstepEffect, IMovementSpee
 		{
 			if (base.Hub.TryGetLastKnownRoom(out var room) && room.Name == RoomName.Pocket)
 			{
-				base.Hub.playerStats.DealDamage(new UniversalDamageHandler(_damagePerTick, DeathTranslations.PocketDecay));
-				_damagePerTick += 0.1f;
+				base.Hub.playerStats.DealDamage(new UniversalDamageHandler(this._damagePerTick, DeathTranslations.PocketDecay));
+				this._damagePerTick += 0.1f;
 			}
 			else
 			{
-				ServerDisable();
+				base.ServerDisable();
 			}
 		}
 	}
@@ -64,20 +64,20 @@ public class PocketCorroding : TickingEffectBase, IFootstepEffect, IMovementSpee
 	{
 		if (base.IsPOV)
 		{
-			SetFogEnabled(isEnabled: true);
+			this.SetFogEnabled(isEnabled: true);
 		}
 		if (!NetworkServer.active)
 		{
 			return;
 		}
-		_damagePerTick = _startingDamage;
+		this._damagePerTick = this._startingDamage;
 		if (base.Hub.roleManager.CurrentRole is IFpcRole fpcRole && RoomUtils.TryFindRoom(RoomName.Pocket, null, null, out var foundRoom))
 		{
-			PlayerEnteringPocketDimensionEventArgs playerEnteringPocketDimensionEventArgs = new PlayerEnteringPocketDimensionEventArgs(base.Hub);
-			PlayerEvents.OnEnteringPocketDimension(playerEnteringPocketDimensionEventArgs);
-			if (playerEnteringPocketDimensionEventArgs.IsAllowed)
+			PlayerEnteringPocketDimensionEventArgs e = new PlayerEnteringPocketDimensionEventArgs(base.Hub);
+			PlayerEvents.OnEnteringPocketDimension(e);
+			if (e.IsAllowed)
 			{
-				CapturePosition = new RelativePosition(fpcRole.FpcModule.Position);
+				this.CapturePosition = new RelativePosition(fpcRole.FpcModule.Position);
 				Vector3 position = foundRoom.transform.position;
 				Vector3 vector = Vector3.up * 1.5f;
 				fpcRole.FpcModule.ServerOverridePosition(position + vector);
@@ -91,26 +91,26 @@ public class PocketCorroding : TickingEffectBase, IFootstepEffect, IMovementSpee
 		base.Disabled();
 		if (base.IsPOV)
 		{
-			SetFogEnabled(isEnabled: false);
+			this.SetFogEnabled(isEnabled: false);
 		}
 	}
 
 	public override void OnBeginSpectating()
 	{
 		base.OnBeginSpectating();
-		SetFogEnabled(base.IsEnabled);
+		this.SetFogEnabled(base.IsEnabled);
 	}
 
 	public override void OnStopSpectating()
 	{
 		base.OnStopSpectating();
-		SetFogEnabled(isEnabled: false);
+		this.SetFogEnabled(isEnabled: false);
 	}
 
 	public float ProcessFootstepOverrides(float dis)
 	{
-		AudioSourcePoolManager.PlayOnTransform(_footstepSounds.RandomItem(), base.transform, dis);
-		return _originalLoudness;
+		AudioSourcePoolManager.PlayOnTransform(this._footstepSounds.RandomItem(), base.transform, dis);
+		return this._originalLoudness;
 	}
 
 	private void SetFogEnabled(bool isEnabled)

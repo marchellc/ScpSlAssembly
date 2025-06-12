@@ -32,12 +32,12 @@ public class SSAbilitiesExample : SSExampleImplementationBase
 
 	public override void Activate()
 	{
-		_activeSpeedBoosts = new HashSet<ReferenceHub>();
+		SSAbilitiesExample._activeSpeedBoosts = new HashSet<ReferenceHub>();
 		ServerSpecificSettingsSync.DefinedSettings = new ServerSpecificSettingBase[4]
 		{
 			new SSGroupHeader("Abilities"),
-			new SSKeybindSetting(2, "Heal Ally", KeyCode.H, preventInteractionOnGui: true, $"Press this key while holding a medkit to instantly heal a stationary ally for {50f} HP."),
-			new SSKeybindSetting(0, "Speed Boost (Human-only)", KeyCode.Y, preventInteractionOnGui: true, "Increase your speed by draining your health."),
+			new SSKeybindSetting(2, "Heal Ally", KeyCode.H, preventInteractionOnGui: true, allowSpectatorTrigger: true, $"Press this key while holding a medkit to instantly heal a stationary ally for {50f} HP."),
+			new SSKeybindSetting(0, "Speed Boost (Human-only)", KeyCode.Y, preventInteractionOnGui: true, allowSpectatorTrigger: true, "Increase your speed by draining your health."),
 			new SSTwoButtonsSetting(1, "Speed Boost - Activation Mode", "Hold", "Toggle")
 		};
 		ServerSpecificSettingsSync.SendToAll();
@@ -62,7 +62,7 @@ public class SSAbilitiesExample : SSExampleImplementationBase
 		case ExampleId.HealAlly:
 			if (setting is SSKeybindSetting { SyncIsPressed: not false })
 			{
-				TryHealAlly(sender);
+				this.TryHealAlly(sender);
 			}
 			break;
 		case ExampleId.SpeedBoostKey:
@@ -74,16 +74,16 @@ public class SSAbilitiesExample : SSExampleImplementationBase
 			{
 				if (sSKeybindSetting.SyncIsPressed)
 				{
-					SetSpeedBoost(sender, !_activeSpeedBoosts.Contains(sender));
+					this.SetSpeedBoost(sender, !SSAbilitiesExample._activeSpeedBoosts.Contains(sender));
 				}
 			}
 			else
 			{
-				SetSpeedBoost(sender, sSKeybindSetting.SyncIsPressed);
+				this.SetSpeedBoost(sender, sSKeybindSetting.SyncIsPressed);
 			}
 			break;
 		case ExampleId.SpeedBoostToggle:
-			SetSpeedBoost(sender, state: false);
+			this.SetSpeedBoost(sender, state: false);
 			break;
 		}
 	}
@@ -121,23 +121,23 @@ public class SSAbilitiesExample : SSExampleImplementationBase
 		if (state && hub.IsHuman())
 		{
 			effect.ServerSetState(60);
-			_activeSpeedBoosts.Add(hub);
+			SSAbilitiesExample._activeSpeedBoosts.Add(hub);
 		}
 		else
 		{
 			effect.ServerDisable();
-			_activeSpeedBoosts.Remove(hub);
+			SSAbilitiesExample._activeSpeedBoosts.Remove(hub);
 		}
 	}
 
 	private void OnPlayerDisconnected(ReferenceHub hub)
 	{
-		_activeSpeedBoosts.Remove(hub);
+		SSAbilitiesExample._activeSpeedBoosts.Remove(hub);
 	}
 
 	private void OnRoleChanged(ReferenceHub userHub, PlayerRoleBase prevRole, PlayerRoleBase newRole)
 	{
-		SetSpeedBoost(userHub, state: false);
+		this.SetSpeedBoost(userHub, state: false);
 	}
 
 	private void OnUpdate()
@@ -146,7 +146,7 @@ public class SSAbilitiesExample : SSExampleImplementationBase
 		{
 			return;
 		}
-		foreach (ReferenceHub activeSpeedBoost in _activeSpeedBoosts)
+		foreach (ReferenceHub activeSpeedBoost in SSAbilitiesExample._activeSpeedBoosts)
 		{
 			if (!Mathf.Approximately(activeSpeedBoost.GetVelocity().SqrMagnitudeIgnoreY(), 0f))
 			{

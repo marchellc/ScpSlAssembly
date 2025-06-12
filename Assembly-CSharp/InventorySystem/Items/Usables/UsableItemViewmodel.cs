@@ -17,57 +17,57 @@ public class UsableItemViewmodel : StandardAnimatedViemodel
 	public override void InitAny()
 	{
 		base.InitAny();
-		if (_equipSoundSource != null)
+		if (this._equipSoundSource != null)
 		{
-			_originalPitch = _equipSoundSource.pitch;
+			this._originalPitch = this._equipSoundSource.pitch;
 		}
 	}
 
 	public override void InitSpectator(ReferenceHub ply, ItemIdentifier id, bool wasEquipped)
 	{
 		base.InitSpectator(ply, id, wasEquipped);
-		OnEquipped();
+		this.OnEquipped();
 		UsableItemsController.OnClientStatusReceived += HandleMessage;
 		if (wasEquipped)
 		{
-			if (_equipSoundSource != null)
+			if (this._equipSoundSource != null)
 			{
-				_equipSoundSource.Stop();
+				this._equipSoundSource.Stop();
 			}
 			if (UsableItemsController.StartTimes.TryGetValue(id.SerialNumber, out var value))
 			{
-				AnimatorSetBool(UseAnimHash, val: true);
-				AnimatorForceUpdate(Time.timeSinceLevelLoad - value, fastMode: false);
+				this.AnimatorSetBool(UsableItemViewmodel.UseAnimHash, val: true);
+				this.AnimatorForceUpdate(Time.timeSinceLevelLoad - value, fastMode: false);
 			}
 			else
 			{
-				AnimatorForceUpdate(base.SkipEquipTime);
+				this.AnimatorForceUpdate(base.SkipEquipTime);
 			}
 		}
 	}
 
 	public virtual void OnUsingCancelled()
 	{
-		AnimatorSetBool(UseAnimHash, val: false);
+		this.AnimatorSetBool(UsableItemViewmodel.UseAnimHash, val: false);
 	}
 
 	public virtual void OnUsingStarted()
 	{
-		if (_equipSoundSource != null)
+		if (this._equipSoundSource != null)
 		{
-			_equipSoundSource.Stop();
+			this._equipSoundSource.Stop();
 		}
-		AnimatorSetBool(UseAnimHash, val: true);
+		this.AnimatorSetBool(UsableItemViewmodel.UseAnimHash, val: true);
 	}
 
 	internal override void OnEquipped()
 	{
 		base.OnEquipped();
 		float speedMultiplier = base.ItemId.TypeId.GetSpeedMultiplier(base.Hub);
-		AnimatorSetFloat(SpeedModifierHash, speedMultiplier);
-		if (_equipSoundSource != null)
+		this.AnimatorSetFloat(UsableItemViewmodel.SpeedModifierHash, speedMultiplier);
+		if (this._equipSoundSource != null)
 		{
-			_equipSoundSource.pitch = _originalPitch * speedMultiplier;
+			this._equipSoundSource.pitch = this._originalPitch * speedMultiplier;
 		}
 	}
 
@@ -75,7 +75,7 @@ public class UsableItemViewmodel : StandardAnimatedViemodel
 	{
 		if (msg.ItemSerial == base.ItemId.SerialNumber)
 		{
-			AnimatorSetBool(UseAnimHash, msg.Status == StatusMessage.StatusType.Start);
+			this.AnimatorSetBool(UsableItemViewmodel.UseAnimHash, msg.Status == StatusMessage.StatusType.Start);
 		}
 	}
 

@@ -10,15 +10,15 @@ public readonly struct AuthenticatiorAuthReject : IEquatable<AuthenticatiorAuthR
 	[SerializationConstructor]
 	public AuthenticatiorAuthReject(string id, string reason)
 	{
-		Id = id;
-		Reason = reason;
+		this.Id = id;
+		this.Reason = reason;
 	}
 
 	public bool Equals(AuthenticatiorAuthReject other)
 	{
-		if (string.Equals(Id, other.Id))
+		if (string.Equals(this.Id, other.Id))
 		{
-			return string.Equals(Reason, other.Reason);
+			return string.Equals(this.Reason, other.Reason);
 		}
 		return false;
 	}
@@ -27,14 +27,14 @@ public readonly struct AuthenticatiorAuthReject : IEquatable<AuthenticatiorAuthR
 	{
 		if (obj is AuthenticatiorAuthReject other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		return (((Id != null) ? Id.GetHashCode() : 0) * 397) ^ ((Reason != null) ? Reason.GetHashCode() : 0);
+		return (((this.Id != null) ? this.Id.GetHashCode() : 0) * 397) ^ ((this.Reason != null) ? this.Reason.GetHashCode() : 0);
 	}
 
 	public static bool operator ==(AuthenticatiorAuthReject left, AuthenticatiorAuthReject right)

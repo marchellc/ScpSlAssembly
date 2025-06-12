@@ -27,30 +27,30 @@ public class TestHsController : HumeShieldModuleBase
 	[SerializeField]
 	private bool _hideWhenEmpty;
 
-	public override float HsMax => _maxAmount;
+	public override float HsMax => this._maxAmount;
 
-	public override float HsRegeneration => _regeneration;
+	public override float HsRegeneration => this._regeneration;
 
 	public override Color? HsWarningColor
 	{
 		get
 		{
-			if (!_colorActive)
+			if (!this._colorActive)
 			{
 				return null;
 			}
-			return _color;
+			return this._color;
 		}
 	}
 
-	public override bool HideWhenEmpty => _hideWhenEmpty;
+	public override bool HideWhenEmpty => this._hideWhenEmpty;
 
 	private void Update()
 	{
-		if (_apply)
+		if (this._apply)
 		{
-			base.HsCurrent += _amountToModify;
-			_apply = false;
+			base.HsCurrent += this._amountToModify;
+			this._apply = false;
 		}
 	}
 }

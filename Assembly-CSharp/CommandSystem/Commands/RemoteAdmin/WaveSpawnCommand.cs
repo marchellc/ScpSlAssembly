@@ -24,7 +24,7 @@ public class WaveSpawnCommand : TargetWaveCommandBase
 		bool flag = false;
 		if (arguments.Count <= 0)
 		{
-			response = InvalidFlagMessage("Not enough arguments");
+			response = this.InvalidFlagMessage("Not enough arguments");
 			return false;
 		}
 		if (arguments.Count > 1)
@@ -53,7 +53,7 @@ public class WaveSpawnCommand : TargetWaveCommandBase
 		}
 		if (!flag2)
 		{
-			response = InvalidFlagMessage("No wave was found");
+			response = this.InvalidFlagMessage("No wave was found");
 			return false;
 		}
 		string text2 = (flag ? "force spawned" : "spawned");
@@ -67,7 +67,7 @@ public class WaveSpawnCommand : TargetWaveCommandBase
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
 		stringBuilder.Append(context);
 		stringBuilder.Append(". The correct syntax is \"wave ");
-		stringBuilder.Append(Command);
+		stringBuilder.Append(this.Command);
 		stringBuilder.Append(" <wave> [forceSpawn? (true/false)]");
 		return StringBuilderPool.Shared.ToStringReturn(stringBuilder);
 	}

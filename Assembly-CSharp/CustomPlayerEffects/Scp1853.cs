@@ -25,10 +25,10 @@ public class Scp1853 : TickingEffectBase, ISpectatorDataPlayerEffect, IHealableE
 
 		public SerializedStat(AttachmentParam param, float boostPercentage, float maxBoost = 0f, bool isAdditive = true)
 		{
-			Parameter = param;
-			BoostPercentage = boostPercentage;
-			MaxBoost = maxBoost;
-			IsAdditive = isAdditive;
+			this.Parameter = param;
+			this.BoostPercentage = boostPercentage;
+			this.MaxBoost = maxBoost;
+			this.IsAdditive = isAdditive;
 		}
 	}
 
@@ -116,31 +116,31 @@ public class Scp1853 : TickingEffectBase, ISpectatorDataPlayerEffect, IHealableE
 
 	public float CurrentDanger => (float)(int)base.Intensity * 0.25f;
 
-	public float StatMultiplier => 1f + (float)OffsetedDanger * 0.5f;
+	public float StatMultiplier => 1f + (float)this.OffsetedDanger * 0.5f;
 
-	private int OffsetedDanger => Mathf.Max(0, Mathf.FloorToInt(CurrentDanger - 1f));
+	private int OffsetedDanger => Mathf.Max(0, Mathf.FloorToInt(this.CurrentDanger - 1f));
 
 	protected override void IntensityChanged(byte prevState, byte newState)
 	{
-		float statMultiplier = StatMultiplier;
+		float statMultiplier = this.StatMultiplier;
 		float num = Mathf.Floor((float)(int)prevState * 0.25f);
 		float num2 = Mathf.Floor((float)(int)newState * 0.25f);
-		SerializedStat[] baseWeaponModifiers = BaseWeaponModifiers;
+		SerializedStat[] baseWeaponModifiers = Scp1853.BaseWeaponModifiers;
 		for (int i = 0; i < baseWeaponModifiers.Length; i++)
 		{
 			SerializedStat serializedStat = baseWeaponModifiers[i];
 			float boostAmount = serializedStat.BoostPercentage * statMultiplier;
-			_processedParams[serializedStat.Parameter] = CalculateStat(boostAmount, serializedStat.MaxBoost, serializedStat.IsAdditive);
+			this._processedParams[serializedStat.Parameter] = this.CalculateStat(boostAmount, serializedStat.MaxBoost, serializedStat.IsAdditive);
 		}
-		_searchSpeedMultiplier = 1.5f;
-		ItemUsageSpeedMultiplier = CalculateStat(0.2f * statMultiplier, 0.4f);
+		this._searchSpeedMultiplier = 1.5f;
+		this.ItemUsageSpeedMultiplier = this.CalculateStat(0.2f * statMultiplier, 0.4f);
 		if (base.IsLocalPlayer || base.Hub.IsLocallySpectated())
 		{
-			UpdateHeartbeat();
+			this.UpdateHeartbeat();
 			if (num != num2 && num != 0f && num2 != 0f)
 			{
 				bool flag = num2 > num;
-				_dangerChangedSource.PlayOneShot(flag ? _dangerIncreasedClip : _dangerDecreasedClip, 1f);
+				this._dangerChangedSource.PlayOneShot(flag ? this._dangerIncreasedClip : this._dangerDecreasedClip, 1f);
 			}
 		}
 	}
@@ -148,7 +148,7 @@ public class Scp1853 : TickingEffectBase, ISpectatorDataPlayerEffect, IHealableE
 	public override void OnStopSpectating()
 	{
 		base.OnStopSpectating();
-		UpdateHeartbeat();
+		this.UpdateHeartbeat();
 	}
 
 	protected override void OnTick()
@@ -158,10 +158,10 @@ public class Scp1853 : TickingEffectBase, ISpectatorDataPlayerEffect, IHealableE
 	protected override void Enabled()
 	{
 		base.Enabled();
-		UpdateHeartbeat();
+		this.UpdateHeartbeat();
 		if (NetworkServer.active)
 		{
-			DangerStackBase[] dangers = Dangers;
+			DangerStackBase[] dangers = this.Dangers;
 			for (int i = 0; i < dangers.Length; i++)
 			{
 				dangers[i].Initialize(base.Hub);
@@ -172,10 +172,10 @@ public class Scp1853 : TickingEffectBase, ISpectatorDataPlayerEffect, IHealableE
 	protected override void Disabled()
 	{
 		base.Disabled();
-		UpdateHeartbeat();
+		this.UpdateHeartbeat();
 		if (NetworkServer.active)
 		{
-			DangerStackBase[] dangers = Dangers;
+			DangerStackBase[] dangers = this.Dangers;
 			for (int i = 0; i < dangers.Length; i++)
 			{
 				dangers[i].Dispose();
@@ -191,7 +191,7 @@ public class Scp1853 : TickingEffectBase, ISpectatorDataPlayerEffect, IHealableE
 			return;
 		}
 		float num = 1f;
-		DangerStackBase[] dangers = Dangers;
+		DangerStackBase[] dangers = this.Dangers;
 		foreach (DangerStackBase dangerStackBase in dangers)
 		{
 			if (dangerStackBase.IsActive)
@@ -231,28 +231,28 @@ public class Scp1853 : TickingEffectBase, ISpectatorDataPlayerEffect, IHealableE
 
 	public bool GetSpectatorText(out string s)
 	{
-		s = $"SCP-1853 ({CurrentDanger} danger)";
+		s = $"SCP-1853 ({this.CurrentDanger} danger)";
 		return true;
 	}
 
 	public bool TryGetSpeed(ItemType item, out float speed)
 	{
-		speed = ItemUsageSpeedMultiplier;
+		speed = this.ItemUsageSpeedMultiplier;
 		if (base.IsEnabled)
 		{
-			return AffectedItems.Contains(item);
+			return Scp1853.AffectedItems.Contains(item);
 		}
 		return false;
 	}
 
 	public float ProcessSearchTime(float val)
 	{
-		return val / Mathf.Max(_searchSpeedMultiplier, 1f);
+		return val / Mathf.Max(this._searchSpeedMultiplier, 1f);
 	}
 
 	public bool TryGetWeaponParam(AttachmentParam param, out float val)
 	{
-		return _processedParams.TryGetValue(param, out val);
+		return this._processedParams.TryGetValue(param, out val);
 	}
 
 	public bool CheckConflicts(StatusEffectBase other)

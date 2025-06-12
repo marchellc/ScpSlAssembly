@@ -12,13 +12,13 @@ internal struct DiyFp
 
 	public DiyFp(ulong significand, int exponent)
 	{
-		f = significand;
-		e = exponent;
+		this.f = significand;
+		this.e = exponent;
 	}
 
 	public void Subtract(ref DiyFp other)
 	{
-		f -= other.f;
+		this.f -= other.f;
 	}
 
 	public static DiyFp Minus(ref DiyFp a, ref DiyFp b)
@@ -30,13 +30,13 @@ internal struct DiyFp
 
 	public static DiyFp operator -(DiyFp lhs, DiyFp rhs)
 	{
-		return Minus(ref lhs, ref rhs);
+		return DiyFp.Minus(ref lhs, ref rhs);
 	}
 
 	public void Multiply(ref DiyFp other)
 	{
-		ulong num = f >> 32;
-		ulong num2 = f & 0xFFFFFFFFu;
+		ulong num = this.f >> 32;
+		ulong num2 = this.f & 0xFFFFFFFFu;
 		ulong num3 = other.f >> 32;
 		ulong num4 = other.f & 0xFFFFFFFFu;
 		ulong num5 = num * num3;
@@ -45,8 +45,8 @@ internal struct DiyFp
 		ulong num8 = (num2 * num4 >> 32) + (num7 & 0xFFFFFFFFu) + (num6 & 0xFFFFFFFFu);
 		num8 += 2147483648u;
 		ulong num9 = num5 + (num7 >> 32) + (num6 >> 32) + (num8 >> 32);
-		e += other.e + 64;
-		f = num9;
+		this.e += other.e + 64;
+		this.f = num9;
 	}
 
 	public static DiyFp Times(ref DiyFp a, ref DiyFp b)
@@ -58,13 +58,13 @@ internal struct DiyFp
 
 	public static DiyFp operator *(DiyFp lhs, DiyFp rhs)
 	{
-		return Times(ref lhs, ref rhs);
+		return DiyFp.Times(ref lhs, ref rhs);
 	}
 
 	public void Normalize()
 	{
-		ulong num = f;
-		int num2 = e;
+		ulong num = this.f;
+		int num2 = this.e;
 		while ((num & 0xFFC0000000000000uL) == 0L)
 		{
 			num <<= 10;
@@ -75,8 +75,8 @@ internal struct DiyFp
 			num <<= 1;
 			num2--;
 		}
-		f = num;
-		e = num2;
+		this.f = num;
+		this.e = num2;
 	}
 
 	public static DiyFp Normalize(ref DiyFp a)

@@ -38,46 +38,46 @@ public class RoomIdentifier : MonoBehaviour
 		SeedSynchronizer.OnGenerationStage += OnMapgenPhase;
 		if (SeedSynchronizer.MapGenerated)
 		{
-			RegisterCoords();
+			this.RegisterCoords();
 		}
-		AllRoomIdentifiers.Add(this);
+		RoomIdentifier.AllRoomIdentifiers.Add(this);
 		RoomIdentifier.OnAdded?.Invoke(this);
 	}
 
 	private void OnDestroy()
 	{
 		SeedSynchronizer.OnGenerationStage -= OnMapgenPhase;
-		AllRoomIdentifiers.Remove(this);
-		RoomsByCoords.Remove(MainCoords);
+		RoomIdentifier.AllRoomIdentifiers.Remove(this);
+		RoomIdentifier.RoomsByCoords.Remove(this.MainCoords);
 		RoomIdentifier.OnRemoved?.Invoke(this);
-		LightControllers.Clear();
+		this.LightControllers.Clear();
 	}
 
 	private void OnMapgenPhase(MapGenerationPhase phase)
 	{
 		if (phase == MapGenerationPhase.RoomCoordsRegistrations)
 		{
-			RegisterCoords();
+			this.RegisterCoords();
 		}
 	}
 
 	private void RegisterCoords()
 	{
-		MainCoords = RoomUtils.PositionToCoords(base.transform.position);
-		RoomsByCoords[MainCoords] = this;
-		RecalculateWorldspaceBounds();
+		this.MainCoords = RoomUtils.PositionToCoords(base.transform.position);
+		RoomIdentifier.RoomsByCoords[this.MainCoords] = this;
+		this.RecalculateWorldspaceBounds();
 	}
 
 	private void RecalculateWorldspaceBounds()
 	{
 		Bounds worldspaceBounds = new Bounds(base.transform.position, Vector3.zero);
-		MeshRenderer[] componentsInChildren = GetComponentsInChildren<MeshRenderer>();
+		MeshRenderer[] componentsInChildren = base.GetComponentsInChildren<MeshRenderer>();
 		foreach (MeshRenderer meshRenderer in componentsInChildren)
 		{
 			meshRenderer.ResetBounds();
 			worldspaceBounds.Encapsulate(meshRenderer.bounds);
 		}
-		WorldspaceBounds = worldspaceBounds;
+		this.WorldspaceBounds = worldspaceBounds;
 	}
 
 	public RoomLightController GetClosestLightController(ReferenceHub hub)
@@ -86,18 +86,18 @@ public class RoomIdentifier : MonoBehaviour
 		{
 			return null;
 		}
-		if (LightControllers.Count == 0)
+		if (this.LightControllers.Count == 0)
 		{
 			return null;
 		}
-		if (LightControllers.Count == 1)
+		if (this.LightControllers.Count == 1)
 		{
-			return LightControllers[0];
+			return this.LightControllers[0];
 		}
 		Vector3 position = fpcRole.FpcModule.Position;
 		float num = float.MaxValue;
 		RoomLightController result = null;
-		foreach (RoomLightController lightController in LightControllers)
+		foreach (RoomLightController lightController in this.LightControllers)
 		{
 			float sqrMagnitude = (lightController.transform.position - position).sqrMagnitude;
 			if (sqrMagnitude < num)
@@ -112,6 +112,6 @@ public class RoomIdentifier : MonoBehaviour
 	private void OnDrawGizmosSelected()
 	{
 		Gizmos.color = Color.white;
-		Gizmos.DrawWireCube(WorldspaceBounds.center, WorldspaceBounds.size);
+		Gizmos.DrawWireCube(this.WorldspaceBounds.center, this.WorldspaceBounds.size);
 	}
 }

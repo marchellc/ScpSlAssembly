@@ -39,37 +39,37 @@ public class Scp096HandsViewmodel : ScpViewmodelBase
 
 	private static readonly int HashTryNotToCry = Animator.StringToHash("TryNotToCry");
 
-	public override float CamFOV => _fieldOfView;
+	public override float CamFOV => this._fieldOfView;
 
 	protected override void Start()
 	{
 		base.Start();
 		Scp096Role scp096Role = base.Role as Scp096Role;
-		_fpc = scp096Role.FpcModule;
-		_stateController = scp096Role.StateController;
-		scp096Role.SubroutineModule.TryGetSubroutine<Scp096AttackAbility>(out _attackAbility);
-		_stateController.OnRageUpdate += OnRageUpdate;
-		_stateController.OnAbilityUpdate += OnAbilityUpdate;
-		_attackAbility.OnHitReceived += OnHitReceived;
-		_attackAbility.OnAttackTriggered += OnAttackTriggered;
-		OnRageUpdate(_stateController.RageState);
-		UpdateLayerWeight(1f);
-		UpdateAnimations();
+		this._fpc = scp096Role.FpcModule;
+		this._stateController = scp096Role.StateController;
+		scp096Role.SubroutineModule.TryGetSubroutine<Scp096AttackAbility>(out this._attackAbility);
+		this._stateController.OnRageUpdate += OnRageUpdate;
+		this._stateController.OnAbilityUpdate += OnAbilityUpdate;
+		this._attackAbility.OnHitReceived += OnHitReceived;
+		this._attackAbility.OnAttackTriggered += OnAttackTriggered;
+		this.OnRageUpdate(this._stateController.RageState);
+		this.UpdateLayerWeight(1f);
+		this.UpdateAnimations();
 		if (!base.Owner.isLocalPlayer)
 		{
-			if (_stateController.RageState == Scp096RageState.Enraged)
+			if (this._stateController.RageState == Scp096RageState.Enraged)
 			{
-				SkipAnimations(15f, 5);
+				this.SkipAnimations(15f, 5);
 			}
 			else
 			{
-				SkipAnimations(_stateController.LastRageUpdate);
+				this.SkipAnimations(this._stateController.LastRageUpdate);
 			}
-			UpdateWalk(instant: true);
-			if (_stateController.AbilityState != 0)
+			this.UpdateWalk(instant: true);
+			if (this._stateController.AbilityState != Scp096AbilityState.None)
 			{
-				OnAbilityUpdate(_stateController.AbilityState);
-				SkipAnimations(_stateController.LastAbilityUpdate);
+				this.OnAbilityUpdate(this._stateController.AbilityState);
+				this.SkipAnimations(this._stateController.LastAbilityUpdate);
 			}
 		}
 	}
@@ -77,17 +77,17 @@ public class Scp096HandsViewmodel : ScpViewmodelBase
 	protected override void OnDestroy()
 	{
 		base.OnDestroy();
-		_stateController.OnRageUpdate -= OnRageUpdate;
-		_stateController.OnAbilityUpdate -= OnAbilityUpdate;
-		_attackAbility.OnHitReceived -= OnHitReceived;
-		_attackAbility.OnAttackTriggered -= OnAttackTriggered;
+		this._stateController.OnRageUpdate -= OnRageUpdate;
+		this._stateController.OnAbilityUpdate -= OnAbilityUpdate;
+		this._attackAbility.OnHitReceived -= OnHitReceived;
+		this._attackAbility.OnAttackTriggered -= OnAttackTriggered;
 	}
 
 	private void OnAbilityUpdate(Scp096AbilityState newState)
 	{
 		if (newState == Scp096AbilityState.PryingGate)
 		{
-			base.Anim.SetTrigger(HashPryGate);
+			base.Anim.SetTrigger(Scp096HandsViewmodel.HashPryGate);
 		}
 	}
 
@@ -96,18 +96,18 @@ public class Scp096HandsViewmodel : ScpViewmodelBase
 		switch (newState)
 		{
 		case Scp096RageState.Calming:
-			base.Anim.SetTrigger(HashExitRage);
-			_useEnragedLayer = false;
+			base.Anim.SetTrigger(Scp096HandsViewmodel.HashExitRage);
+			this._useEnragedLayer = false;
 			break;
 		case Scp096RageState.Distressed:
-			base.Anim.SetTrigger(HashEnterRage);
-			_useEnragedLayer = true;
+			base.Anim.SetTrigger(Scp096HandsViewmodel.HashEnterRage);
+			this._useEnragedLayer = true;
 			break;
 		case Scp096RageState.Docile:
-			_useEnragedLayer = false;
+			this._useEnragedLayer = false;
 			break;
 		case Scp096RageState.Enraged:
-			_useEnragedLayer = true;
+			this._useEnragedLayer = true;
 			break;
 		}
 	}
@@ -116,8 +116,8 @@ public class Scp096HandsViewmodel : ScpViewmodelBase
 	{
 		if (base.Owner.isLocalPlayer)
 		{
-			base.Anim.SetBool(HashLeftAttack, !_attackAbility.LeftAttack);
-			base.Anim.SetTrigger(HashAttackTrigger);
+			base.Anim.SetBool(Scp096HandsViewmodel.HashLeftAttack, !this._attackAbility.LeftAttack);
+			base.Anim.SetTrigger(Scp096HandsViewmodel.HashAttackTrigger);
 		}
 	}
 
@@ -125,34 +125,34 @@ public class Scp096HandsViewmodel : ScpViewmodelBase
 	{
 		if (!base.Owner.isLocalPlayer)
 		{
-			base.Anim.SetBool(HashLeftAttack, _attackAbility.LeftAttack);
-			base.Anim.SetTrigger(HashAttackTrigger);
+			base.Anim.SetBool(Scp096HandsViewmodel.HashLeftAttack, this._attackAbility.LeftAttack);
+			base.Anim.SetTrigger(Scp096HandsViewmodel.HashAttackTrigger);
 		}
 	}
 
 	private void UpdateLayerWeight(float maxDelta)
 	{
 		float layerWeight = base.Anim.GetLayerWeight(1);
-		base.Anim.SetLayerWeight(1, Mathf.MoveTowards(layerWeight, _useEnragedLayer ? 1 : 0, maxDelta));
+		base.Anim.SetLayerWeight(1, Mathf.MoveTowards(layerWeight, this._useEnragedLayer ? 1 : 0, maxDelta));
 	}
 
 	private void UpdateWalk(bool instant)
 	{
-		float value = ((_stateController.RageState != Scp096RageState.Enraged) ? (base.Owner.GetVelocity().magnitude / _fpc.WalkSpeed) : ((float)((_stateController.AbilityState == Scp096AbilityState.Charging) ? 1 : 0)));
+		float value = ((this._stateController.RageState != Scp096RageState.Enraged) ? (base.Owner.GetVelocity().magnitude / this._fpc.WalkSpeed) : ((float)((this._stateController.AbilityState == Scp096AbilityState.Charging) ? 1 : 0)));
 		if (instant)
 		{
-			base.Anim.SetFloat(HashWalk, value);
+			base.Anim.SetFloat(Scp096HandsViewmodel.HashWalk, value);
 		}
 		else
 		{
-			base.Anim.SetFloat(HashWalk, value, _dampTime, Time.deltaTime);
+			base.Anim.SetFloat(Scp096HandsViewmodel.HashWalk, value, this._dampTime, Time.deltaTime);
 		}
 	}
 
 	protected override void UpdateAnimations()
 	{
-		UpdateLayerWeight(Time.deltaTime * _weightAdjustSpeed);
-		base.Anim.SetBool(HashTryNotToCry, _stateController.AbilityState == Scp096AbilityState.TryingNotToCry);
-		UpdateWalk(instant: false);
+		this.UpdateLayerWeight(Time.deltaTime * this._weightAdjustSpeed);
+		base.Anim.SetBool(Scp096HandsViewmodel.HashTryNotToCry, this._stateController.AbilityState == Scp096AbilityState.TryingNotToCry);
+		this.UpdateWalk(instant: false);
 	}
 }

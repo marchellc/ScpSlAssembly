@@ -10,7 +10,7 @@ public static class SubcontrollerRpcHandler
 	{
 		private static readonly byte[] Buffer = new byte[65535];
 
-		private static readonly NetworkReader Reader = new NetworkReader(Buffer);
+		private static readonly NetworkReader Reader = new NetworkReader(SubcontrollerRpcMessage.Buffer);
 
 		private readonly int _bytesWritten;
 
@@ -22,60 +22,60 @@ public static class SubcontrollerRpcHandler
 
 		public SubcontrollerRpcMessage(NetworkWriter writer, AnimatedCharacterModel model, int syncIndex)
 		{
-			_player = new RecyclablePlayerId(model.OwnerHub);
-			_roleFailsafe = model.OwnerHub.GetRoleId();
-			_syncIndex = syncIndex;
+			this._player = new RecyclablePlayerId(model.OwnerHub);
+			this._roleFailsafe = model.OwnerHub.GetRoleId();
+			this._syncIndex = syncIndex;
 			int position = writer.Position;
 			writer.WriteByte((byte)Math.Min(position, 255));
 			if (position >= 255)
 			{
 				writer.WriteUShort((ushort)(position - 255));
 			}
-			_bytesWritten = position;
-			Array.Copy(writer.buffer, Buffer, _bytesWritten);
+			this._bytesWritten = position;
+			Array.Copy(writer.buffer, SubcontrollerRpcMessage.Buffer, this._bytesWritten);
 		}
 
 		public override string ToString()
 		{
-			return string.Format("{0} (PlayerID={1} Role={2} Length={3} Payload={4})", "SubcontrollerRpcMessage", _player.Value, _roleFailsafe, _bytesWritten, Reader);
+			return string.Format("{0} (PlayerID={1} Role={2} Length={3} Payload={4})", "SubcontrollerRpcMessage", this._player.Value, this._roleFailsafe, this._bytesWritten, SubcontrollerRpcMessage.Reader);
 		}
 
 		internal SubcontrollerRpcMessage(NetworkReader reader)
 		{
-			_player = reader.ReadRecyclablePlayerId();
-			_roleFailsafe = reader.ReadRoleType();
-			_syncIndex = reader.ReadByte();
-			_bytesWritten = reader.ReadByte();
-			reader.ReadBytes(Buffer, _bytesWritten);
+			this._player = reader.ReadRecyclablePlayerId();
+			this._roleFailsafe = reader.ReadRoleType();
+			this._syncIndex = reader.ReadByte();
+			this._bytesWritten = reader.ReadByte();
+			reader.ReadBytes(SubcontrollerRpcMessage.Buffer, this._bytesWritten);
 		}
 
 		internal void Serialize(NetworkWriter writer)
 		{
-			writer.WriteRecyclablePlayerId(_player);
-			writer.WriteRoleType(_roleFailsafe);
-			writer.WriteByte((byte)_syncIndex);
-			if (_bytesWritten <= 255)
+			writer.WriteRecyclablePlayerId(this._player);
+			writer.WriteRoleType(this._roleFailsafe);
+			writer.WriteByte((byte)this._syncIndex);
+			if (this._bytesWritten <= 255)
 			{
-				writer.WriteByte((byte)_bytesWritten);
+				writer.WriteByte((byte)this._bytesWritten);
 			}
 			else
 			{
 				writer.WriteByte(byte.MaxValue);
 				Debug.LogError("Attempting to send a payload bigger than 255 bytes. Clients will not receive the full message.");
 			}
-			writer.WriteBytes(Buffer, 0, Math.Min(255, _bytesWritten));
+			writer.WriteBytes(SubcontrollerRpcMessage.Buffer, 0, Math.Min(255, this._bytesWritten));
 		}
 
 		internal void ProcessRpc()
 		{
-			if (ReferenceHub.TryGetHub(_player.Value, out var hub))
+			if (ReferenceHub.TryGetHub(this._player.Value, out var hub))
 			{
 				PlayerRoleBase currentRole = hub.roleManager.CurrentRole;
-				if (currentRole is IFpcRole role && currentRole.RoleTypeId == _roleFailsafe && role.TryGetRpcTarget(out var target) && target.AllSubcontrollers[_syncIndex] is INetworkedAnimatedModelSubcontroller networkedAnimatedModelSubcontroller)
+				if (currentRole is IFpcRole role && currentRole.RoleTypeId == this._roleFailsafe && role.TryGetRpcTarget(out var target) && target.AllSubcontrollers[this._syncIndex] is INetworkedAnimatedModelSubcontroller networkedAnimatedModelSubcontroller)
 				{
-					Reader.buffer = new ArraySegment<byte>(Buffer, 0, _bytesWritten);
-					Reader.Position = 0;
-					networkedAnimatedModelSubcontroller.ProcessRpc(Reader);
+					SubcontrollerRpcMessage.Reader.buffer = new ArraySegment<byte>(SubcontrollerRpcMessage.Buffer, 0, this._bytesWritten);
+					SubcontrollerRpcMessage.Reader.Position = 0;
+					networkedAnimatedModelSubcontroller.ProcessRpc(SubcontrollerRpcMessage.Reader);
 				}
 			}
 		}
@@ -83,7 +83,7 @@ public static class SubcontrollerRpcHandler
 
 	public static void ServerSendRpc(SubcontrollerBehaviour behaviour, Action<NetworkWriter> rpcWriter)
 	{
-		ServerSendRpc(behaviour.Model, behaviour.SubcontrollerIndex, rpcWriter);
+		SubcontrollerRpcHandler.ServerSendRpc(behaviour.Model, behaviour.SubcontrollerIndex, rpcWriter);
 	}
 
 	public static void ServerSendRpc(AnimatedCharacterModel model, int syncIndex, Action<NetworkWriter> rpcWriter)

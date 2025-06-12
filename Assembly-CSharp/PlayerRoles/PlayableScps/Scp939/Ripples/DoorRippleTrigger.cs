@@ -19,7 +19,7 @@ public class DoorRippleTrigger : RippleTriggerBase
 		DoorEvents.OnDoorAction += OnDoorAction;
 		if (NetworkServer.active)
 		{
-			_rippleAssigned = base.CastRole.SubroutineModule.TryGetSubroutine<SurfaceRippleTrigger>(out _surfaceRippleTrigger);
+			this._rippleAssigned = base.CastRole.SubroutineModule.TryGetSubroutine<SurfaceRippleTrigger>(out this._surfaceRippleTrigger);
 		}
 	}
 
@@ -29,28 +29,28 @@ public class DoorRippleTrigger : RippleTriggerBase
 		DoorEvents.OnDoorAction -= OnDoorAction;
 		if (NetworkServer.active)
 		{
-			_rippleAssigned = false;
-			_surfaceRippleTrigger = null;
+			this._rippleAssigned = false;
+			this._surfaceRippleTrigger = null;
 		}
 	}
 
 	private void OnDoorAction(DoorVariant dv, DoorAction da, ReferenceHub hub)
 	{
-		if ((da != DoorAction.Closed && da != 0) || (!base.IsLocalOrSpectated && !NetworkServer.active) || !(dv is BasicDoor basicDoor))
+		if ((da != DoorAction.Closed && da != DoorAction.Opened) || (!base.IsLocalOrSpectated && !NetworkServer.active) || !(dv is BasicDoor basicDoor))
 		{
 			return;
 		}
-		float sqrMagnitude = (dv.transform.position + PosOffset - base.CastRole.FpcModule.Position).sqrMagnitude;
+		float sqrMagnitude = (dv.transform.position + DoorRippleTrigger.PosOffset - base.CastRole.FpcModule.Position).sqrMagnitude;
 		float num = basicDoor.MainSource.maxDistance * basicDoor.MainSource.maxDistance;
 		if (!(sqrMagnitude > num))
 		{
-			if (NetworkServer.active && _rippleAssigned && hub != null && HitboxIdentity.IsEnemy(base.Owner, hub))
+			if (NetworkServer.active && this._rippleAssigned && hub != null && HitboxIdentity.IsEnemy(base.Owner, hub))
 			{
-				_surfaceRippleTrigger.ProcessRipple(hub);
+				this._surfaceRippleTrigger.ProcessRipple(hub);
 			}
 			else
 			{
-				base.Player.Play(dv.transform.position + PosOffset, Color.red);
+				base.Player.Play(dv.transform.position + DoorRippleTrigger.PosOffset, Color.red);
 			}
 		}
 	}

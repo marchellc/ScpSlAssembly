@@ -59,16 +59,16 @@ internal class QueryServer
 			ServerConsole.AddLog("Query password can't be shorter than 8 characters.", ConsoleColor.Red);
 			return;
 		}
-		BufferLength = ConfigFile.ServerConfig.GetUShort("query_rx_buffer_size", 4096);
-		if (BufferLength < 3072)
+		this.BufferLength = ConfigFile.ServerConfig.GetUShort("query_rx_buffer_size", 4096);
+		if (this.BufferLength < 3072)
 		{
 			ServerConsole.AddLog("Query RX buffer can't be smaller than 3072.", ConsoleColor.Red);
 			return;
 		}
-		PasswordHash = Sha.Sha256(password);
-		RxBuffer = new byte[BufferLength];
-		RxDecryptionBuffer = new byte[BufferLength];
-		_port = port;
+		this.PasswordHash = Sha.Sha256(password);
+		this.RxBuffer = new byte[this.BufferLength];
+		this.RxDecryptionBuffer = new byte[this.BufferLength];
+		this._port = port;
 		if (!string.IsNullOrWhiteSpace(ip1))
 		{
 			if (IPAddress.TryParse(ip1, out var address))
@@ -77,14 +77,14 @@ internal class QueryServer
 				ServerConsole.AddLog($"Query bind endpoint 1 set to {iPEndPoint}");
 				TcpListener tcpListener = new TcpListener(iPEndPoint);
 				tcpListener.Server.NoDelay = true;
-				_listener1 = tcpListener;
+				this._listener1 = tcpListener;
 				if (iPEndPoint.AddressFamily == AddressFamily.InterNetworkV6)
 				{
-					_listener1.Server.DualMode = ConfigFile.ServerConfig.GetBool("query_socket_ip1_dualmode");
+					this._listener1.Server.DualMode = ConfigFile.ServerConfig.GetBool("query_socket_ip1_dualmode");
 				}
 				if (ConfigFile.ServerConfig.GetBool("query_socket_ip1_linger"))
 				{
-					_listener1.Server.LingerState = new LingerOption(enable: true, 0);
+					this._listener1.Server.LingerState = new LingerOption(enable: true, 0);
 				}
 			}
 			else
@@ -102,14 +102,14 @@ internal class QueryServer
 			ServerConsole.AddLog($"Query bind endpoint 2 set to {iPEndPoint2}");
 			TcpListener tcpListener2 = new TcpListener(iPEndPoint2);
 			tcpListener2.Server.NoDelay = true;
-			_listener2 = tcpListener2;
+			this._listener2 = tcpListener2;
 			if (iPEndPoint2.AddressFamily == AddressFamily.InterNetworkV6)
 			{
-				_listener2.Server.DualMode = ConfigFile.ServerConfig.GetBool("query_socket_ip2_dualmode");
+				this._listener2.Server.DualMode = ConfigFile.ServerConfig.GetBool("query_socket_ip2_dualmode");
 			}
 			if (ConfigFile.ServerConfig.GetBool("query_socket_ip2_linger"))
 			{
-				_listener2.Server.LingerState = new LingerOption(enable: true, 0);
+				this._listener2.Server.LingerState = new LingerOption(enable: true, 0);
 			}
 		}
 		else
@@ -120,82 +120,82 @@ internal class QueryServer
 
 	internal static void ReloadConfig()
 	{
-		QueryPermissions = ConfigFile.ServerConfig.GetULong("query_permissions", ulong.MaxValue);
-		QueryKickPower = ConfigFile.ServerConfig.GetByte("query_kick_power", byte.MaxValue);
-		TimeoutThreshold = ConfigFile.ServerConfig.GetUShort("query_timeout_time", 10000);
-		MaximumTimeDifference = ConfigFile.ServerConfig.GetInt("query_maximum_time_difference", 120);
-		_clientsLimit = ConfigFile.ServerConfig.GetInt("query_clients_limit", 10);
-		if (TimeoutThreshold < 500)
+		QueryServer.QueryPermissions = ConfigFile.ServerConfig.GetULong("query_permissions", ulong.MaxValue);
+		QueryServer.QueryKickPower = ConfigFile.ServerConfig.GetByte("query_kick_power", byte.MaxValue);
+		QueryServer.TimeoutThreshold = ConfigFile.ServerConfig.GetUShort("query_timeout_time", 10000);
+		QueryServer.MaximumTimeDifference = ConfigFile.ServerConfig.GetInt("query_maximum_time_difference", 120);
+		QueryServer._clientsLimit = ConfigFile.ServerConfig.GetInt("query_clients_limit", 10);
+		if (QueryServer.TimeoutThreshold < 500)
 		{
-			TimeoutThreshold = 500;
+			QueryServer.TimeoutThreshold = 500;
 		}
-		if (MaximumTimeDifference < 0)
+		if (QueryServer.MaximumTimeDifference < 0)
 		{
-			MaximumTimeDifference = 0;
+			QueryServer.MaximumTimeDifference = 0;
 		}
-		if (_clientsLimit < 1)
+		if (QueryServer._clientsLimit < 1)
 		{
-			_clientsLimit = 1;
+			QueryServer._clientsLimit = 1;
 		}
 	}
 
 	internal void StartServer()
 	{
-		if (!_queryStarted)
+		if (!this._queryStarted)
 		{
-			if (_listener1 == null && _listener2 == null)
+			if (this._listener1 == null && this._listener2 == null)
 			{
 				ServerConsole.AddLog("Can't start query server - both listeners are null. Check if query bind addresses are correct.", ConsoleColor.Red);
 				return;
 			}
-			_queryStarted = true;
-			_thr = new Thread(HandleUsers)
+			this._queryStarted = true;
+			this._thr = new Thread(HandleUsers)
 			{
 				IsBackground = true,
 				Priority = ThreadPriority.BelowNormal
 			};
-			_thr.Start();
+			this._thr.Start();
 		}
 	}
 
 	internal void StopServer()
 	{
-		if (_queryStarted)
+		if (this._queryStarted)
 		{
 			ServerConsole.AddLog("Stopping query server...");
-			_serverStop = true;
+			this._serverStop = true;
 		}
 	}
 
 	private void HandleUsers()
 	{
-		ServerConsole.AddLog($"Starting query server on port {_port} TCP...");
+		ServerConsole.AddLog($"Starting query server on port {this._port} TCP...");
 		try
 		{
-			_listener1?.Start();
-			_listener2?.Start();
-			while (!_serverStop)
+			this._listener1?.Start();
+			this._listener2?.Start();
+			while (!this._serverStop)
 			{
 				try
 				{
-					for (int num = Users.Count - 1; num >= 0; num--)
+					for (int num = this.Users.Count - 1; num >= 0; num--)
 					{
-						if (Users[num] == null)
+						if (this.Users[num] == null)
 						{
-							Users.RemoveAt(num);
+							this.Users.RemoveAt(num);
 						}
 						else
 						{
-							Users[num].Receive();
+							this.Users[num].Receive();
 						}
 					}
-					if (_listener1 != null && _listener1.Pending())
+					if (this._listener1 != null && this._listener1.Pending())
 					{
-						AcceptSocket(_listener1);
+						this.AcceptSocket(this._listener1);
 					}
-					if (_listener2 != null && _listener2.Pending())
+					if (this._listener2 != null && this._listener2.Pending())
 					{
-						AcceptSocket(_listener2);
+						this.AcceptSocket(this._listener2);
 					}
 				}
 				catch (Exception ex)
@@ -206,7 +206,7 @@ internal class QueryServer
 			}
 			try
 			{
-				_listener1?.Stop();
+				this._listener1?.Stop();
 			}
 			catch (Exception ex2)
 			{
@@ -214,17 +214,17 @@ internal class QueryServer
 			}
 			try
 			{
-				_listener2?.Stop();
+				this._listener2?.Stop();
 			}
 			catch (Exception ex3)
 			{
 				ServerConsole.AddLog("Error stopping query listener 1: " + ex3.Message + "\n" + ex3.StackTrace);
 			}
-			for (int num2 = Users.Count - 1; num2 >= 0; num2--)
+			for (int num2 = this.Users.Count - 1; num2 >= 0; num2--)
 			{
-				Users[num2].DisconnectInternal(serverShutdown: true, force: true);
+				this.Users[num2].DisconnectInternal(serverShutdown: true, force: true);
 			}
-			Users.Clear();
+			this.Users.Clear();
 			ServerConsole.AddLog("Query server stopped.");
 		}
 		catch (Exception ex4)
@@ -235,9 +235,9 @@ internal class QueryServer
 
 	internal void DisconnectAllClients()
 	{
-		for (int num = Users.Count - 1; num >= 0; num--)
+		for (int num = this.Users.Count - 1; num >= 0; num--)
 		{
-			Users[num].Disconnect();
+			this.Users[num].Disconnect();
 		}
 	}
 
@@ -248,7 +248,7 @@ internal class QueryServer
 		{
 			TcpClient tcpClient = lst.AcceptTcpClient();
 			queryUser = new QueryUser(this, tcpClient);
-			if (Users.Count >= _clientsLimit)
+			if (this.Users.Count >= QueryServer._clientsLimit)
 			{
 				ServerConsole.AddLog($"New query connection from {tcpClient.Client.RemoteEndPoint} on {tcpClient.Client.LocalEndPoint}, but the query server is full.", ConsoleColor.Yellow);
 				queryUser.Send("Query server is full.", QueryMessage.ClientReceivedContentType.QueryMessage);
@@ -260,7 +260,7 @@ internal class QueryServer
 			}
 			else
 			{
-				Users.Add(queryUser);
+				this.Users.Add(queryUser);
 				ServerConsole.AddLog($"New query connection from {tcpClient.Client.RemoteEndPoint} on {tcpClient.Client.LocalEndPoint}.");
 			}
 		}

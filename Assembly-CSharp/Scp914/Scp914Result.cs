@@ -15,49 +15,49 @@ public readonly struct Scp914Result
 
 	public Scp914Result(ItemBase source)
 	{
-		SourceItem = source;
-		SourcePickup = null;
-		ResultingItems = null;
-		ResultingPickups = null;
+		this.SourceItem = source;
+		this.SourcePickup = null;
+		this.ResultingItems = null;
+		this.ResultingPickups = null;
 	}
 
 	public Scp914Result(ItemBase sourceItem, ItemBase[] resultingItems, ItemPickupBase[] resultingPickups)
 	{
-		SourceItem = sourceItem;
-		SourcePickup = null;
-		ResultingItems = resultingItems;
-		ResultingPickups = resultingPickups;
+		this.SourceItem = sourceItem;
+		this.SourcePickup = null;
+		this.ResultingItems = resultingItems;
+		this.ResultingPickups = resultingPickups;
 	}
 
 	public Scp914Result(ItemBase source, ItemBase resultingItem, ItemPickupBase resultingPickup)
 	{
-		SourceItem = source;
-		SourcePickup = null;
-		ResultingItems = new ItemBase[1] { resultingItem };
-		ResultingPickups = new ItemPickupBase[1] { resultingPickup };
+		this.SourceItem = source;
+		this.SourcePickup = null;
+		this.ResultingItems = new ItemBase[1] { resultingItem };
+		this.ResultingPickups = new ItemPickupBase[1] { resultingPickup };
 	}
 
 	public Scp914Result(ItemPickupBase source)
 	{
-		SourceItem = null;
-		SourcePickup = source;
-		ResultingItems = null;
-		ResultingPickups = null;
+		this.SourceItem = null;
+		this.SourcePickup = source;
+		this.ResultingItems = null;
+		this.ResultingPickups = null;
 	}
 
 	public Scp914Result(ItemPickupBase sourcePickup, ItemBase[] resultingItems, ItemPickupBase[] resultingPickups)
 	{
-		SourceItem = null;
-		SourcePickup = sourcePickup;
-		ResultingItems = resultingItems;
-		ResultingPickups = resultingPickups;
+		this.SourceItem = null;
+		this.SourcePickup = sourcePickup;
+		this.ResultingItems = resultingItems;
+		this.ResultingPickups = resultingPickups;
 	}
 
 	public Scp914Result(ItemPickupBase source, ItemBase resultingItem, ItemPickupBase resultingPickup)
 	{
-		SourceItem = null;
-		SourcePickup = source;
-		ResultingItems = new ItemBase[1] { resultingItem };
-		ResultingPickups = new ItemPickupBase[1] { resultingPickup };
+		this.SourceItem = null;
+		this.SourcePickup = source;
+		this.ResultingItems = new ItemBase[1] { resultingItem };
+		this.ResultingPickups = new ItemPickupBase[1] { resultingPickup };
 	}
 }

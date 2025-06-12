@@ -22,35 +22,35 @@ public class KeycardThirdpersonItem : IdleThirdpersonItem
 	internal override void Initialize(InventorySubcontroller subcontroller, ItemIdentifier id)
 	{
 		base.Initialize(subcontroller, id);
-		if (!_eventSet)
+		if (!this._eventSet)
 		{
 			KeycardItem.OnKeycardUsed += OnKeycardUsed;
-			_eventSet = true;
+			this._eventSet = true;
 		}
-		SetAnim(AnimState3p.Override1, _useClip);
+		base.SetAnim(AnimState3p.Override1, this._useClip);
 		if (base.ItemId.TryGetTemplate<KeycardItem>(out var item))
 		{
-			SpawnKeycard(item.KeycardGfx);
+			this.SpawnKeycard(item.KeycardGfx);
 		}
 	}
 
 	private void SpawnKeycard(KeycardGfx template)
 	{
-		if (_lastInstance != null)
+		if (this._lastInstance != null)
 		{
-			_lastInstance.gameObject.SetActive(value: false);
+			this._lastInstance.gameObject.SetActive(value: false);
 		}
-		if (_prevInstances.TryGetValue(template, out var value))
+		if (this._prevInstances.TryGetValue(template, out var value))
 		{
 			value.gameObject.SetActive(value: true);
 			KeycardDetailSynchronizer.TryReapplyDetails(value);
-			_lastInstance = value;
+			this._lastInstance = value;
 		}
 		else
 		{
-			KeycardGfx keycardGfx = Object.Instantiate(template, _gfxSpawnPoint);
+			KeycardGfx keycardGfx = Object.Instantiate(template, this._gfxSpawnPoint);
 			keycardGfx.transform.ResetTransform();
-			_lastInstance = keycardGfx;
+			this._lastInstance = keycardGfx;
 		}
 	}
 
@@ -59,13 +59,13 @@ public class KeycardThirdpersonItem : IdleThirdpersonItem
 		if (base.ItemId.SerialNumber == serial)
 		{
 			base.OverrideBlend = 1f;
-			ReplayOverrideBlend(soft: true);
+			base.ReplayOverrideBlend(soft: true);
 		}
 	}
 
 	private void OnDestroy()
 	{
-		if (_eventSet)
+		if (this._eventSet)
 		{
 			KeycardItem.OnKeycardUsed -= OnKeycardUsed;
 		}

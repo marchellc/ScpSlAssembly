@@ -20,20 +20,20 @@ public class NatDiscoverer
 	public async Task<NatDevice> DiscoverDeviceAsync()
 	{
 		CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(3000);
-		return await DiscoverDeviceAsync(PortMapper.Pmp | PortMapper.Upnp, cancellationTokenSource);
+		return await this.DiscoverDeviceAsync(PortMapper.Pmp | PortMapper.Upnp, cancellationTokenSource);
 	}
 
 	public async Task<NatDevice> DiscoverDeviceAsync(PortMapper portMapper, CancellationTokenSource cancellationTokenSource)
 	{
 		Guard.IsTrue(portMapper.HasFlag(PortMapper.Upnp) || portMapper.HasFlag(PortMapper.Pmp), "portMapper");
 		Guard.IsNotNull(cancellationTokenSource, "cancellationTokenSource");
-		NatDevice natDevice = (await DiscoverAsync(portMapper, onlyOne: true, cancellationTokenSource)).FirstOrDefault();
+		NatDevice natDevice = (await this.DiscoverAsync(portMapper, onlyOne: true, cancellationTokenSource)).FirstOrDefault();
 		if (natDevice == null)
 		{
-			TraceSource.LogInfo("Device not found. Common reasons:");
-			TraceSource.LogInfo("\t* No device is present or,");
-			TraceSource.LogInfo("\t* Upnp is disabled in the router or");
-			TraceSource.LogInfo("\t* Antivirus software is filtering SSDP (discovery protocol).");
+			NatDiscoverer.TraceSource.LogInfo("Device not found. Common reasons:");
+			NatDiscoverer.TraceSource.LogInfo("\t* No device is present or,");
+			NatDiscoverer.TraceSource.LogInfo("\t* Upnp is disabled in the router or");
+			NatDiscoverer.TraceSource.LogInfo("\t* Antivirus software is filtering SSDP (discovery protocol).");
 			throw new NatDeviceNotFoundException();
 		}
 		return natDevice;
@@ -43,12 +43,12 @@ public class NatDiscoverer
 	{
 		Guard.IsTrue(portMapper.HasFlag(PortMapper.Upnp) || portMapper.HasFlag(PortMapper.Pmp), "portMapper");
 		Guard.IsNotNull(cancellationTokenSource, "cancellationTokenSource");
-		return (await DiscoverAsync(portMapper, onlyOne: false, cancellationTokenSource)).ToArray();
+		return (await this.DiscoverAsync(portMapper, onlyOne: false, cancellationTokenSource)).ToArray();
 	}
 
 	private async Task<IEnumerable<NatDevice>> DiscoverAsync(PortMapper portMapper, bool onlyOne, CancellationTokenSource cts)
 	{
-		TraceSource.LogInfo("Start Discovery");
+		NatDiscoverer.TraceSource.LogInfo("Start Discovery");
 		List<Task<IEnumerable<NatDevice>>> searcherTasks = new List<Task<IEnumerable<NatDevice>>>();
 		if (portMapper.HasFlag(PortMapper.Upnp))
 		{
@@ -75,18 +75,18 @@ public class NatDiscoverer
 			searcherTasks.Add(pmpSearcher.Search(cts.Token));
 		}
 		await Task.WhenAll(searcherTasks);
-		TraceSource.LogInfo("Stop Discovery");
+		NatDiscoverer.TraceSource.LogInfo("Stop Discovery");
 		IEnumerable<NatDevice> enumerable = searcherTasks.SelectMany((Task<IEnumerable<NatDevice>> x) => x.Result);
 		foreach (NatDevice item in enumerable)
 		{
 			string key = item.ToString();
-			if (Devices.TryGetValue(key, out var value))
+			if (NatDiscoverer.Devices.TryGetValue(key, out var value))
 			{
 				value.Touch();
 			}
 			else
 			{
-				Devices.Add(key, item);
+				NatDiscoverer.Devices.Add(key, item);
 			}
 		}
 		return enumerable;
@@ -94,7 +94,7 @@ public class NatDiscoverer
 
 	public static void ReleaseAll()
 	{
-		foreach (NatDevice value in Devices.Values)
+		foreach (NatDevice value in NatDiscoverer.Devices.Values)
 		{
 			value.ReleaseAll();
 		}
@@ -102,7 +102,7 @@ public class NatDiscoverer
 
 	internal static void ReleaseSessionMappings()
 	{
-		foreach (NatDevice value in Devices.Values)
+		foreach (NatDevice value in NatDiscoverer.Devices.Values)
 		{
 			value.ReleaseSessionMappings();
 		}
@@ -112,7 +112,7 @@ public class NatDiscoverer
 	{
 		Task.Factory.StartNew((Func<Task>)async delegate
 		{
-			foreach (NatDevice value in Devices.Values)
+			foreach (NatDevice value in NatDiscoverer.Devices.Values)
 			{
 				await value.RenewMappings();
 			}

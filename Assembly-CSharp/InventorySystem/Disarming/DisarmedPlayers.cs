@@ -19,8 +19,8 @@ public static class DisarmedPlayers
 
 		public DisarmedEntry(uint disarmedPlayer, uint disarmer)
 		{
-			DisarmedPlayer = disarmedPlayer;
-			Disarmer = disarmer;
+			this.DisarmedPlayer = disarmedPlayer;
+			this.Disarmer = disarmer;
 		}
 	}
 
@@ -36,12 +36,12 @@ public static class DisarmedPlayers
 		{
 			if (NetworkServer.active && prevRole is IInventoryRole)
 			{
-				for (int i = 0; i < Entries.Count; i++)
+				for (int i = 0; i < DisarmedPlayers.Entries.Count; i++)
 				{
-					if (Entries[i].DisarmedPlayer == hub.netId)
+					if (DisarmedPlayers.Entries[i].DisarmedPlayer == hub.netId)
 					{
-						Entries.RemoveAt(i);
-						new DisarmedPlayersListMessage(Entries).SendToAuthenticated();
+						DisarmedPlayers.Entries.RemoveAt(i);
+						new DisarmedPlayersListMessage(DisarmedPlayers.Entries).SendToAuthenticated();
 						break;
 					}
 				}
@@ -55,12 +55,12 @@ public static class DisarmedPlayers
 				return category == ItemCategory.Firearm || category == ItemCategory.SpecialWeapon;
 			}))
 			{
-				for (int j = 0; j < Entries.Count; j++)
+				for (int num = 0; num < DisarmedPlayers.Entries.Count; num++)
 				{
-					if (Entries[j].Disarmer == hub.netId)
+					if (DisarmedPlayers.Entries[num].Disarmer == hub.netId)
 					{
-						Entries.RemoveAt(j);
-						new DisarmedPlayersListMessage(Entries).SendToAuthenticated();
+						DisarmedPlayers.Entries.RemoveAt(num);
+						new DisarmedPlayersListMessage(DisarmedPlayers.Entries).SendToAuthenticated();
 						break;
 					}
 				}
@@ -74,12 +74,12 @@ public static class DisarmedPlayers
 		{
 			return;
 		}
-		for (int i = 0; i < Entries.Count; i++)
+		for (int i = 0; i < DisarmedPlayers.Entries.Count; i++)
 		{
-			if (!ValidateEntry(Entries[i]))
+			if (!DisarmedPlayers.ValidateEntry(DisarmedPlayers.Entries[i]))
 			{
-				Entries.RemoveAt(i);
-				new DisarmedPlayersListMessage(Entries).SendToAuthenticated();
+				DisarmedPlayers.Entries.RemoveAt(i);
+				new DisarmedPlayersListMessage(DisarmedPlayers.Entries).SendToAuthenticated();
 				break;
 			}
 		}
@@ -123,7 +123,7 @@ public static class DisarmedPlayers
 
 	public static bool IsDisarmed(this Inventory inv)
 	{
-		foreach (DisarmedEntry entry in Entries)
+		foreach (DisarmedEntry entry in DisarmedPlayers.Entries)
 		{
 			if (entry.DisarmedPlayer == inv.netId)
 			{
@@ -139,11 +139,11 @@ public static class DisarmedPlayers
 		do
 		{
 			flag = true;
-			for (int i = 0; i < Entries.Count; i++)
+			for (int i = 0; i < DisarmedPlayers.Entries.Count; i++)
 			{
-				if (Entries[i].DisarmedPlayer == inv.netId)
+				if (DisarmedPlayers.Entries[i].DisarmedPlayer == inv.netId)
 				{
-					Entries.RemoveAt(i);
+					DisarmedPlayers.Entries.RemoveAt(i);
 					flag = false;
 					break;
 				}
@@ -152,7 +152,7 @@ public static class DisarmedPlayers
 		while (!flag);
 		if (disarmer != null)
 		{
-			Entries.Add(new DisarmedEntry(inv.netId, disarmer.netId));
+			DisarmedPlayers.Entries.Add(new DisarmedEntry(inv.netId, disarmer.netId));
 		}
 	}
 

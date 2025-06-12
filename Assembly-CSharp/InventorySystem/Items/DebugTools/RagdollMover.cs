@@ -28,7 +28,7 @@ public class RagdollMover : ItemBase, IItemAlertDrawer, IItemDrawer, ICustomRADi
 
 	public override float Weight => 1f;
 
-	public AlertContent Alert => new AlertContent($"Press and hold ${new ReadableKeyCode(TriggerKey)}$ to move a ragdoll bone.\nClient-side only - changes are not synchronized with other players.");
+	public AlertContent Alert => new AlertContent($"Press and hold ${new ReadableKeyCode(this.TriggerKey)}$ to move a ragdoll bone.\nClient-side only - changes are not synchronized with other players.");
 
 	public string DisplayName => "Ragdoll Mover";
 
@@ -36,7 +36,7 @@ public class RagdollMover : ItemBase, IItemAlertDrawer, IItemDrawer, ICustomRADi
 
 	public string Description => "Debug Tool\n(no official support)";
 
-	public string Name => DisplayName;
+	public string Name => this.DisplayName;
 
 	private KeyCode TriggerKey => NewInput.GetKey(ActionName.Shoot);
 
@@ -47,56 +47,56 @@ public class RagdollMover : ItemBase, IItemAlertDrawer, IItemDrawer, ICustomRADi
 	public override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (IsLocalPlayer)
+		if (this.IsLocalPlayer)
 		{
-			if (Input.GetKeyDown(TriggerKey))
+			if (Input.GetKeyDown(this.TriggerKey))
 			{
-				_hasHit = TryFind();
+				this._hasHit = this.TryFind();
 			}
-			if (_hasHit && Input.GetKey(TriggerKey))
+			if (this._hasHit && Input.GetKey(this.TriggerKey))
 			{
-				UpdateMoving();
+				this.UpdateMoving();
 			}
 		}
 	}
 
 	private bool TryFind()
 	{
-		if (!Physics.Raycast(Cam.position, Cam.forward, out var hitInfo, 10f, DetectionMask))
+		if (!Physics.Raycast(this.Cam.position, this.Cam.forward, out var hitInfo, 10f, RagdollMover.DetectionMask))
 		{
 			return false;
 		}
-		_hitRb = hitInfo.rigidbody;
-		if (_hitRb == null)
+		this._hitRb = hitInfo.rigidbody;
+		if (this._hitRb == null)
 		{
 			return false;
 		}
-		_hitRb.isKinematic = false;
-		_hitDist = hitInfo.distance;
-		_hitLocalPos = _hitRb.transform.InverseTransformPoint(hitInfo.point);
+		this._hitRb.isKinematic = false;
+		this._hitDist = hitInfo.distance;
+		this._hitLocalPos = this._hitRb.transform.InverseTransformPoint(hitInfo.point);
 		BasicRagdoll comp;
-		return _hitRb.transform.TryGetComponentInParent<BasicRagdoll>(out comp);
+		return this._hitRb.transform.TryGetComponentInParent<BasicRagdoll>(out comp);
 	}
 
 	private void UpdateMoving()
 	{
-		if (_hitRb == null)
+		if (this._hitRb == null)
 		{
-			_hasHit = false;
+			this._hasHit = false;
 			return;
 		}
-		if (Input.GetKeyDown(FreezeKey))
+		if (Input.GetKeyDown(this.FreezeKey))
 		{
-			_hitRb.isKinematic = !_hitRb.isKinematic;
+			this._hitRb.isKinematic = !this._hitRb.isKinematic;
 		}
-		Transform transform = _hitRb.transform;
-		Vector3 vector = Cam.position + Cam.forward * _hitDist;
-		Vector3 vector2 = transform.TransformPoint(_hitLocalPos);
+		Transform transform = this._hitRb.transform;
+		Vector3 vector = this.Cam.position + this.Cam.forward * this._hitDist;
+		Vector3 vector2 = transform.TransformPoint(this._hitLocalPos);
 		Vector3 vector3 = vector - vector2;
-		float num = vector3.magnitude * _proportionalForce;
-		if (num < _maxForce)
+		float num = vector3.magnitude * this._proportionalForce;
+		if (num < this._maxForce)
 		{
-			_hitRb.AddForceAtPosition(vector3 * num, vector, ForceMode.Force);
+			this._hitRb.AddForceAtPosition(vector3 * num, vector, ForceMode.Force);
 		}
 		else
 		{

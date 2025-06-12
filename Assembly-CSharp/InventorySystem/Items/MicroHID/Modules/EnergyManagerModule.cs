@@ -10,11 +10,11 @@ public class EnergyManagerModule : MicroHidModuleBase
 
 	private byte _serverLastSentEnergy;
 
-	public float Energy => GetEnergy(base.ItemSerial);
+	public float Energy => EnergyManagerModule.GetEnergy(base.ItemSerial);
 
 	public static float GetEnergy(ushort serial)
 	{
-		return SyncEnergy.GetValueOrDefault(serial, 1f);
+		return EnergyManagerModule.SyncEnergy.GetValueOrDefault(serial, 1f);
 	}
 
 	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
@@ -26,7 +26,7 @@ public class EnergyManagerModule : MicroHidModuleBase
 			{
 				ushort key = reader.ReadUShort();
 				byte compressed = reader.ReadByte();
-				SyncEnergy[key] = DecodeEnergy(compressed);
+				EnergyManagerModule.SyncEnergy[key] = this.DecodeEnergy(compressed);
 			}
 		}
 	}
@@ -34,7 +34,7 @@ public class EnergyManagerModule : MicroHidModuleBase
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		SyncEnergy.Clear();
+		EnergyManagerModule.SyncEnergy.Clear();
 	}
 
 	internal override void OnAdded()
@@ -42,10 +42,10 @@ public class EnergyManagerModule : MicroHidModuleBase
 		base.OnAdded();
 		if (base.IsServer)
 		{
-			SendRpc(delegate(NetworkWriter x)
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteUShort(base.ItemSerial);
-				x.WriteByte(EncodeEnergy(Energy));
+				x.WriteByte(this.EncodeEnergy(this.Energy));
 			});
 		}
 	}
@@ -57,9 +57,9 @@ public class EnergyManagerModule : MicroHidModuleBase
 		{
 			return;
 		}
-		float num = Energy;
+		float num = this.Energy;
 		MicroHidPhase phase = base.MicroHid.CycleController.Phase;
-		if (phase != 0 && base.MicroHid.CycleController.TryGetLastFiringController(out var ret))
+		if (phase != MicroHidPhase.Standby && base.MicroHid.CycleController.TryGetLastFiringController(out var ret))
 		{
 			switch (phase)
 			{
@@ -73,7 +73,7 @@ public class EnergyManagerModule : MicroHidModuleBase
 				num -= ret.DrainRateFiring * Time.deltaTime;
 				break;
 			}
-			ServerSetEnergy(base.ItemSerial, num);
+			this.ServerSetEnergy(base.ItemSerial, num);
 		}
 	}
 
@@ -90,12 +90,12 @@ public class EnergyManagerModule : MicroHidModuleBase
 	public void ServerSetEnergy(ushort serial, float amount)
 	{
 		amount = Mathf.Clamp01(amount);
-		SyncEnergy[serial] = amount;
-		byte energyCompressed = EncodeEnergy(amount);
-		if (energyCompressed != _serverLastSentEnergy)
+		EnergyManagerModule.SyncEnergy[serial] = amount;
+		byte energyCompressed = this.EncodeEnergy(amount);
+		if (energyCompressed != this._serverLastSentEnergy)
 		{
-			_serverLastSentEnergy = energyCompressed;
-			SendRpc(delegate(NetworkWriter x)
+			this._serverLastSentEnergy = energyCompressed;
+			this.SendRpc(delegate(NetworkWriter x)
 			{
 				x.WriteUShort(serial);
 				x.WriteByte(energyCompressed);
@@ -110,12 +110,12 @@ public class EnergyManagerModule : MicroHidModuleBase
 		{
 			return;
 		}
-		SendRpc(hub, delegate(NetworkWriter x)
+		this.SendRpc(hub, delegate(NetworkWriter x)
 		{
-			foreach (KeyValuePair<ushort, float> item in SyncEnergy)
+			foreach (KeyValuePair<ushort, float> item in EnergyManagerModule.SyncEnergy)
 			{
 				x.WriteUShort(item.Key);
-				x.WriteByte(EncodeEnergy(item.Value));
+				x.WriteByte(this.EncodeEnergy(item.Value));
 			}
 		});
 	}

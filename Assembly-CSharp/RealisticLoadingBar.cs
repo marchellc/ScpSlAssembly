@@ -12,13 +12,13 @@ public class RealisticLoadingBar
 	{
 		get
 		{
-			while (_queue.Count > 0 && _queue.Peek().x <= Time.realtimeSinceStartup)
+			while (this._queue.Count > 0 && this._queue.Peek().x <= Time.realtimeSinceStartup)
 			{
-				_lastProgress += _queue.Dequeue().y;
+				this._lastProgress += this._queue.Dequeue().y;
 			}
-			if (_queue.Count != 0)
+			if (this._queue.Count != 0)
 			{
-				return _lastProgress;
+				return this._lastProgress;
 			}
 			return 1f;
 		}
@@ -26,8 +26,8 @@ public class RealisticLoadingBar
 
 	public RealisticLoadingBar(float targetTime, int numberOfSteps, float maxStepSizeVar, float maxTickVar)
 	{
-		_lastProgress = 0f;
-		_queue = new Queue<Vector2>();
+		this._lastProgress = 0f;
+		this._queue = new Queue<Vector2>();
 		List<Vector2> list = ListPool<Vector2>.Shared.Rent();
 		float num = 0f;
 		float num2 = 0f;
@@ -42,7 +42,7 @@ public class RealisticLoadingBar
 		float num5 = num / targetTime;
 		foreach (Vector2 item in list)
 		{
-			_queue.Enqueue(new Vector2(Time.realtimeSinceStartup + item.x / num5, item.y / num2));
+			this._queue.Enqueue(new Vector2(Time.realtimeSinceStartup + item.x / num5, item.y / num2));
 		}
 	}
 }

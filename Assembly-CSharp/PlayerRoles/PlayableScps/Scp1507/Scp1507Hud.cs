@@ -45,28 +45,28 @@ public class Scp1507Hud : ScpHudBase
 		SubroutineManagerModule subroutineModule = (base.Hub.roleManager.CurrentRole as Scp1507Role).SubroutineModule;
 		subroutineModule.TryGetSubroutine<Scp1507AttackAbility>(out var subroutine);
 		subroutineModule.TryGetSubroutine<Scp1507VocalizeAbility>(out var subroutine2);
-		subroutineModule.TryGetSubroutine<Scp1507SwarmAbility>(out _swarmAbility);
-		_trackerRoot = _allyCounter.transform.parent.gameObject;
-		_attackElement.Setup(subroutine.Cooldown, null);
-		_vocalizeElement.Setup(subroutine2.Cooldown, null);
+		subroutineModule.TryGetSubroutine<Scp1507SwarmAbility>(out this._swarmAbility);
+		this._trackerRoot = this._allyCounter.transform.parent.gameObject;
+		this._attackElement.Setup(subroutine.Cooldown, null);
+		this._vocalizeElement.Setup(subroutine2.Cooldown, null);
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		_attackElement.Update();
-		_vocalizeElement.Update();
-		if (_swarmAbility.Multiplier <= 0f)
+		this._attackElement.Update();
+		this._vocalizeElement.Update();
+		if (this._swarmAbility.Multiplier <= 0f)
 		{
-			_swarmElement.SetActive(value: false);
+			this._swarmElement.SetActive(value: false);
 			return;
 		}
-		_swarmElement.SetActive(value: true);
-		int flockSize = _swarmAbility.FlockSize;
-		Color b = ((flockSize > 0) ? _swarmActiveColor : _swarmInactiveColor);
-		_swarmCircle.fillAmount = _swarmAbility.Multiplier;
-		_swarmCircle.color = Color.Lerp(_swarmCircle.color, b, Time.deltaTime * _colorLerpSpeed);
-		_swarmSizeCounter.text = ((flockSize > 1) ? ("x" + flockSize) : string.Empty);
+		this._swarmElement.SetActive(value: true);
+		int flockSize = this._swarmAbility.FlockSize;
+		Color b = ((flockSize > 0) ? this._swarmActiveColor : this._swarmInactiveColor);
+		this._swarmCircle.fillAmount = this._swarmAbility.Multiplier;
+		this._swarmCircle.color = Color.Lerp(this._swarmCircle.color, b, Time.deltaTime * this._colorLerpSpeed);
+		this._swarmSizeCounter.text = ((flockSize > 1) ? ("x" + flockSize) : string.Empty);
 	}
 
 	protected override void UpdateCounter()

@@ -9,6 +9,6 @@ public class TimeWait : Wait
 
 	public override IEnumerator<float> _Run()
 	{
-		yield return Timing.WaitForSeconds(duration);
+		yield return Timing.WaitForSeconds(this.duration);
 	}
 }

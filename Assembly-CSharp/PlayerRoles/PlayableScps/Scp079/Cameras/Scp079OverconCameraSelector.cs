@@ -11,7 +11,7 @@ public class Scp079OverconCameraSelector : Scp079DirectionalCameraSelector
 	{
 		get
 		{
-			if (!Scp079CursorManager.LockCameras && CurOvercon is CameraOvercon cameraOvercon)
+			if (!Scp079CursorManager.LockCameras && this.CurOvercon is CameraOvercon cameraOvercon)
 			{
 				return cameraOvercon != null;
 			}
@@ -23,12 +23,12 @@ public class Scp079OverconCameraSelector : Scp079DirectionalCameraSelector
 
 	protected override bool TryGetCamera(out Scp079Camera targetCamera)
 	{
-		if (!IsVisible)
+		if (!this.IsVisible)
 		{
 			targetCamera = null;
 			return false;
 		}
-		targetCamera = (CurOvercon as CameraOvercon).Target;
+		targetCamera = (this.CurOvercon as CameraOvercon).Target;
 		return true;
 	}
 }

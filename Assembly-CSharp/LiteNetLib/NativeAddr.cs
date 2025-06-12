@@ -16,31 +16,31 @@ internal readonly struct NativeAddr : IEquatable<NativeAddr>
 
 	public NativeAddr(byte[] address, int len)
 	{
-		_part1 = BitConverter.ToInt64(address, 0);
-		_part2 = BitConverter.ToInt64(address, 8);
+		this._part1 = BitConverter.ToInt64(address, 0);
+		this._part2 = BitConverter.ToInt64(address, 8);
 		if (len > 16)
 		{
-			_part3 = BitConverter.ToInt64(address, 16);
-			_part4 = BitConverter.ToInt32(address, 24);
+			this._part3 = BitConverter.ToInt64(address, 16);
+			this._part4 = BitConverter.ToInt32(address, 24);
 		}
 		else
 		{
-			_part3 = 0L;
-			_part4 = 0;
+			this._part3 = 0L;
+			this._part4 = 0;
 		}
-		_hash = (int)(_part1 >> 32) ^ (int)_part1 ^ (int)(_part2 >> 32) ^ (int)_part2 ^ (int)(_part3 >> 32) ^ (int)_part3 ^ _part4;
+		this._hash = (int)(this._part1 >> 32) ^ (int)this._part1 ^ (int)(this._part2 >> 32) ^ (int)this._part2 ^ (int)(this._part3 >> 32) ^ (int)this._part3 ^ this._part4;
 	}
 
 	public override int GetHashCode()
 	{
-		return _hash;
+		return this._hash;
 	}
 
 	public bool Equals(NativeAddr other)
 	{
-		if (_part1 == other._part1 && _part2 == other._part2 && _part3 == other._part3)
+		if (this._part1 == other._part1 && this._part2 == other._part2 && this._part3 == other._part3)
 		{
-			return _part4 == other._part4;
+			return this._part4 == other._part4;
 		}
 		return false;
 	}
@@ -49,7 +49,7 @@ internal readonly struct NativeAddr : IEquatable<NativeAddr>
 	{
 		if (obj is NativeAddr other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}

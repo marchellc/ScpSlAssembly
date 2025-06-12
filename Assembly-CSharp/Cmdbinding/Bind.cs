@@ -10,7 +10,7 @@ public readonly struct Bind
 
 	public Bind(KeyCode key, string command)
 	{
-		Key = key;
-		Command = command;
+		this.Key = key;
+		this.Command = command;
 	}
 }

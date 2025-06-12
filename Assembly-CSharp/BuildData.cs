@@ -1,8 +1,8 @@
 public static class BuildData
 {
-	internal const string BuildTimestamp = "2025-05-17 20:15:13Z";
+	internal const string BuildTimestamp = "2025-06-09 00:37:28Z";
 
-	internal const string BuildDescription = "release-beta-8b5899d8";
+	internal const string BuildDescription = "deploy-d69d84dc";
 
 	internal const bool NightlyBuild = false;
 }

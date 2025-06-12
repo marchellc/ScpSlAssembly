@@ -16,9 +16,9 @@ public readonly struct CreditsListCategory : IEquatable<CreditsListCategory>, IJ
 
 	public bool Equals(CreditsListCategory other)
 	{
-		if (category == other.category)
+		if (this.category == other.category)
 		{
-			return members == other.members;
+			return this.members == other.members;
 		}
 		return false;
 	}
@@ -27,18 +27,18 @@ public readonly struct CreditsListCategory : IEquatable<CreditsListCategory>, IJ
 	{
 		if (obj is CreditsListCategory other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		if (category == null)
+		if (this.category == null)
 		{
 			return 0;
 		}
-		return category.GetHashCode();
+		return this.category.GetHashCode();
 	}
 
 	public static bool operator ==(CreditsListCategory left, CreditsListCategory right)

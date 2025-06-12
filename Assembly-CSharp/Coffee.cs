@@ -55,35 +55,35 @@ public class Coffee : NetworkBehaviour, IClientInteractable, IInteractable, ISer
 	{
 		get
 		{
-			return IsConsumed;
+			return this.IsConsumed;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref IsConsumed, 1uL, SyncCoffeeState);
+			base.GeneratedSyncVarSetter(value, ref this.IsConsumed, 1uL, SyncCoffeeState);
 		}
 	}
 
 	private void Awake()
 	{
-		if (IsConsumed)
+		if (this.IsConsumed)
 		{
-			_animator.enabled = true;
-			_particles.Stop();
+			this._animator.enabled = true;
+			this._particles.Stop();
 		}
 	}
 
 	private void Start()
 	{
-		_meshRenderer.material.color = _drinkColor;
+		this._meshRenderer.material.color = this._drinkColor;
 	}
 
 	public void ServerInteract(ReferenceHub ply, byte colliderId)
 	{
-		if (BlacklistedPlayers.Add(ply))
+		if (Coffee.BlacklistedPlayers.Add(ply))
 		{
-			UsableItemsController.GetHandler(ply).ActiveRegenerations.Add(new RegenerationProcess(_healProgress, 1f / 15f, 50f));
-			NetworkIsConsumed = true;
+			UsableItemsController.GetHandler(ply).ActiveRegenerations.Add(new RegenerationProcess(this._healProgress, 1f / 15f, 50f));
+			this.NetworkIsConsumed = true;
 		}
 	}
 
@@ -93,15 +93,15 @@ public class Coffee : NetworkBehaviour, IClientInteractable, IInteractable, ISer
 
 	private void SyncCoffeeState(bool wasConsumed, bool isConsumed)
 	{
-		_animator.enabled = isConsumed;
+		this._animator.enabled = isConsumed;
 		if (isConsumed)
 		{
-			_particles.Stop();
-			_audioSource.Play();
+			this._particles.Stop();
+			this._audioSource.Play();
 		}
 		else
 		{
-			_particles.Play();
+			this._particles.Play();
 		}
 	}
 
@@ -110,15 +110,15 @@ public class Coffee : NetworkBehaviour, IClientInteractable, IInteractable, ISer
 	{
 		PlayerRoleManager.OnRoleChanged += delegate(ReferenceHub hub, PlayerRoleBase _, PlayerRoleBase _)
 		{
-			BlacklistedPlayers.Remove(hub);
+			Coffee.BlacklistedPlayers.Remove(hub);
 		};
 		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub hub)
 		{
-			BlacklistedPlayers.Remove(hub);
+			Coffee.BlacklistedPlayers.Remove(hub);
 		};
 		SeedSynchronizer.OnGenerationFinished += delegate
 		{
-			BlacklistedPlayers.Clear();
+			Coffee.BlacklistedPlayers.Clear();
 		};
 	}
 
@@ -132,13 +132,13 @@ public class Coffee : NetworkBehaviour, IClientInteractable, IInteractable, ISer
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteBool(IsConsumed);
+			writer.WriteBool(this.IsConsumed);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 1L) != 0L)
 		{
-			writer.WriteBool(IsConsumed);
+			writer.WriteBool(this.IsConsumed);
 		}
 	}
 
@@ -147,13 +147,13 @@ public class Coffee : NetworkBehaviour, IClientInteractable, IInteractable, ISer
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref IsConsumed, SyncCoffeeState, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.IsConsumed, SyncCoffeeState, reader.ReadBool());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 1L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref IsConsumed, SyncCoffeeState, reader.ReadBool());
+			base.GeneratedSyncVarDeserialize(ref this.IsConsumed, SyncCoffeeState, reader.ReadBool());
 		}
 	}
 }

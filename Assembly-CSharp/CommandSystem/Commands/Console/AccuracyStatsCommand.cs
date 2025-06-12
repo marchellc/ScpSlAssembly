@@ -26,8 +26,8 @@ public class AccuracyStatsCommand : ICommand
 
 	public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
 	{
-		Enabled = !Enabled;
-		response = "Accuracy stats crosshair status: " + (Enabled ? "Enabled" : "Disabled") + "\nIf changes aren't applied automatically, re-equip your firearm.";
+		this.Enabled = !this.Enabled;
+		response = "Accuracy stats crosshair status: " + (this.Enabled ? "Enabled" : "Disabled") + "\nIf changes aren't applied automatically, re-equip your firearm.";
 		if (ReferenceHub.TryGetLocalHub(out var hub))
 		{
 			CrosshairController.Refresh(hub, hub.inventory.CurItem.SerialNumber);

@@ -21,23 +21,23 @@ public class Scp079TierManager : StandardSubroutine<Scp079Role>
 
 		public void Write(NetworkWriter writer)
 		{
-			writer.WriteUShort((ushort)ExpAmount);
-			writer.WriteByte((byte)Reason);
-			writer.WriteRoleType(Subject);
+			writer.WriteUShort((ushort)this.ExpAmount);
+			writer.WriteByte((byte)this.Reason);
+			writer.WriteRoleType(this.Subject);
 		}
 
 		public ExpQueuedNotification(NetworkReader reader)
 		{
-			ExpAmount = reader.ReadUShort();
-			Reason = (Scp079HudTranslation)reader.ReadByte();
-			Subject = reader.ReadRoleType();
+			this.ExpAmount = reader.ReadUShort();
+			this.Reason = (Scp079HudTranslation)reader.ReadByte();
+			this.Subject = reader.ReadRoleType();
 		}
 
 		public ExpQueuedNotification(int amount, Scp079HudTranslation reason, RoleTypeId subject)
 		{
-			ExpAmount = Mathf.Clamp(amount, 0, 65535);
-			Reason = reason;
-			Subject = subject;
+			this.ExpAmount = Mathf.Clamp(amount, 0, 65535);
+			this.Reason = reason;
+			this.Subject = subject;
 		}
 	}
 
@@ -66,21 +66,21 @@ public class Scp079TierManager : StandardSubroutine<Scp079Role>
 	{
 		get
 		{
-			return _totalExp;
+			return this._totalExp;
 		}
 		set
 		{
-			_totalExp = value;
-			OnExpChanged?.Invoke();
+			this._totalExp = value;
+			this.OnExpChanged?.Invoke();
 			int num = 0;
-			for (int i = 0; i < _thresholdsCount && _totalExp >= AbsoluteThresholds[i]; i++)
+			for (int i = 0; i < this._thresholdsCount && this._totalExp >= this.AbsoluteThresholds[i]; i++)
 			{
 				num++;
 			}
-			AccessTierIndex = num;
+			this.AccessTierIndex = num;
 			if (NetworkServer.active)
 			{
-				_valueDirty = true;
+				this._valueDirty = true;
 			}
 		}
 	}
@@ -89,13 +89,13 @@ public class Scp079TierManager : StandardSubroutine<Scp079Role>
 	{
 		get
 		{
-			int num = AccessTierIndex - 1;
+			int num = this.AccessTierIndex - 1;
 			if (num < 0)
 			{
-				return Mathf.FloorToInt(TotalExp);
+				return Mathf.FloorToInt(this.TotalExp);
 			}
-			float f = TotalExp - AbsoluteThresholds[num];
-			return Mathf.Min(NextLevelThreshold, Mathf.FloorToInt(f));
+			float f = this.TotalExp - this.AbsoluteThresholds[num];
+			return Mathf.Min(this.NextLevelThreshold, Mathf.FloorToInt(f));
 		}
 	}
 
@@ -103,11 +103,11 @@ public class Scp079TierManager : StandardSubroutine<Scp079Role>
 	{
 		get
 		{
-			if (AccessTierIndex >= _thresholdsCount)
+			if (this.AccessTierIndex >= this._thresholdsCount)
 			{
 				return -1;
 			}
-			return _levelupThresholds[AccessTierIndex];
+			return this._levelupThresholds[this.AccessTierIndex];
 		}
 	}
 
@@ -115,38 +115,38 @@ public class Scp079TierManager : StandardSubroutine<Scp079Role>
 	{
 		get
 		{
-			return Mathf.Clamp(_accessTier, 0, _thresholdsCount);
+			return Mathf.Clamp(this._accessTier, 0, this._thresholdsCount);
 		}
 		private set
 		{
-			if (_accessTier != value)
+			if (this._accessTier != value)
 			{
-				int num = value - _accessTier;
+				int num = value - this._accessTier;
 				for (int i = 0; i < num; i++)
 				{
-					_accessTier++;
-					OnLevelledUp?.Invoke();
+					this._accessTier++;
+					this.OnLevelledUp?.Invoke();
 				}
-				Scp079LevelingUpEventArgs scp079LevelingUpEventArgs = new Scp079LevelingUpEventArgs(base.Owner, value + 1);
-				Scp079Events.OnLevelingUp(scp079LevelingUpEventArgs);
-				if (scp079LevelingUpEventArgs.IsAllowed)
+				Scp079LevelingUpEventArgs e = new Scp079LevelingUpEventArgs(base.Owner, value + 1);
+				Scp079Events.OnLevelingUp(e);
+				if (e.IsAllowed)
 				{
-					_accessTier = value;
-					OnTierChanged?.Invoke();
+					this._accessTier = value;
+					this.OnTierChanged?.Invoke();
 					Scp079Events.OnLeveledUp(new Scp079LeveledUpEventArgs(base.Owner, value + 1));
 				}
 			}
 		}
 	}
 
-	public int AccessTierLevel => AccessTierIndex + 1;
+	public int AccessTierLevel => this.AccessTierIndex + 1;
 
 	private void Update()
 	{
-		if (NetworkServer.active && _valueDirty)
+		if (NetworkServer.active && this._valueDirty)
 		{
-			ServerSendRpc(toAll: true);
-			_valueDirty = false;
+			base.ServerSendRpc(toAll: true);
+			this._valueDirty = false;
 		}
 	}
 
@@ -154,12 +154,12 @@ public class Scp079TierManager : StandardSubroutine<Scp079Role>
 	{
 		base.Awake();
 		int num = 0;
-		_thresholdsCount = _levelupThresholds.Length;
-		AbsoluteThresholds = new int[_thresholdsCount];
-		for (int i = 0; i < _thresholdsCount; i++)
+		this._thresholdsCount = this._levelupThresholds.Length;
+		this.AbsoluteThresholds = new int[this._thresholdsCount];
+		for (int i = 0; i < this._thresholdsCount; i++)
 		{
-			num += _levelupThresholds[i];
-			AbsoluteThresholds[i] = num;
+			num += this._levelupThresholds[i];
+			this.AbsoluteThresholds[i] = num;
 		}
 	}
 
@@ -167,7 +167,7 @@ public class Scp079TierManager : StandardSubroutine<Scp079Role>
 	{
 		base.SpawnObject();
 		ReferenceHub.OnPlayerAdded += base.ServerSendRpc;
-		TotalExp = 0;
+		this.TotalExp = 0;
 	}
 
 	public override void ResetObject()
@@ -184,17 +184,17 @@ public class Scp079TierManager : StandardSubroutine<Scp079Role>
 		}
 		if (amount > 0)
 		{
-			_expGainQueue.Enqueue(new ExpQueuedNotification(amount, reason, subject));
-			TotalExp += amount;
+			this._expGainQueue.Enqueue(new ExpQueuedNotification(amount, reason, subject));
+			this.TotalExp += amount;
 		}
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteUShort((ushort)TotalExp);
+		writer.WriteUShort((ushort)this.TotalExp);
 		ExpQueuedNotification result;
-		while (_expGainQueue.TryDequeue(out result))
+		while (this._expGainQueue.TryDequeue(out result))
 		{
 			result.Write(writer);
 		}
@@ -206,7 +206,7 @@ public class Scp079TierManager : StandardSubroutine<Scp079Role>
 		ushort totalExp = reader.ReadUShort();
 		if (!Scp079Role.LocalInstanceActive && !base.CastRole.IsSpectated && !NetworkServer.active)
 		{
-			TotalExp = totalExp;
+			this.TotalExp = totalExp;
 			return;
 		}
 		while (reader.Remaining > 0)
@@ -219,7 +219,7 @@ public class Scp079TierManager : StandardSubroutine<Scp079Role>
 		}
 		if (!NetworkServer.active)
 		{
-			TotalExp = totalExp;
+			this.TotalExp = totalExp;
 		}
 	}
 }

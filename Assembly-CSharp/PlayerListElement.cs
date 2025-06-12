@@ -22,7 +22,7 @@ public class PlayerListElement : MonoBehaviour
 	private void Start()
 	{
 		VoiceChatMutes.OnFlagsSet += RefreshMute;
-		RefreshMute(instance, VoiceChatMutes.GetFlags(instance));
+		this.RefreshMute(this.instance, VoiceChatMutes.GetFlags(this.instance));
 	}
 
 	private void OnDestroy()
@@ -32,9 +32,9 @@ public class PlayerListElement : MonoBehaviour
 
 	private void RefreshMute(ReferenceHub hub, VcMuteFlags flags)
 	{
-		if (!(hub != instance) && ReferenceHub.AllHubs.Contains(hub))
+		if (!(hub != this.instance) && ReferenceHub.AllHubs.Contains(hub))
 		{
-			ToggleMute.isOn = flags != VcMuteFlags.None;
+			this.ToggleMute.isOn = flags != VcMuteFlags.None;
 		}
 	}
 

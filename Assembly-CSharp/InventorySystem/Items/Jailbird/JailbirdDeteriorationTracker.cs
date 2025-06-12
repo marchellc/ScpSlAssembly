@@ -33,7 +33,7 @@ public class JailbirdDeteriorationTracker
 	{
 		get
 		{
-			if (!ReceivedStates.TryGetValue(_jailbird.ItemSerial, out var value))
+			if (!JailbirdDeteriorationTracker.ReceivedStates.TryGetValue(this._jailbird.ItemSerial, out var value))
 			{
 				return JailbirdWearState.Healthy;
 			}
@@ -41,35 +41,35 @@ public class JailbirdDeteriorationTracker
 		}
 	}
 
-	public bool IsBroken => WearState == JailbirdWearState.Broken;
+	public bool IsBroken => this.WearState == JailbirdWearState.Broken;
 
 	public void Setup(JailbirdItem item, JailbirdHitreg hitreg)
 	{
-		_jailbird = item;
-		_hitreg = hitreg;
-		if (_914ValuesSet)
+		this._jailbird = item;
+		this._hitreg = hitreg;
+		if (JailbirdDeteriorationTracker._914ValuesSet)
 		{
 			return;
 		}
-		for (int i = 0; i < _damageToWearState.length; i++)
+		for (int i = 0; i < this._damageToWearState.length; i++)
 		{
-			Keyframe keyframe = _damageToWearState.keys[i];
-			if (FloatToState(keyframe.value) == JailbirdWearState.AlmostBroken)
+			Keyframe keyframe = this._damageToWearState.keys[i];
+			if (this.FloatToState(keyframe.value) == JailbirdWearState.AlmostBroken)
 			{
-				Scp914CoarseDamage = keyframe.time;
+				JailbirdDeteriorationTracker.Scp914CoarseDamage = keyframe.time;
 				break;
 			}
 		}
-		for (int j = 0; j < _chargesToWearState.length; j++)
+		for (int j = 0; j < this._chargesToWearState.length; j++)
 		{
-			Keyframe keyframe2 = _chargesToWearState.keys[j];
-			if (FloatToState(keyframe2.value) == JailbirdWearState.AlmostBroken)
+			Keyframe keyframe2 = this._chargesToWearState.keys[j];
+			if (this.FloatToState(keyframe2.value) == JailbirdWearState.AlmostBroken)
 			{
-				Scp914CoarseCharges = Mathf.RoundToInt(keyframe2.time);
+				JailbirdDeteriorationTracker.Scp914CoarseCharges = Mathf.RoundToInt(keyframe2.time);
 				break;
 			}
 		}
-		_914ValuesSet = true;
+		JailbirdDeteriorationTracker._914ValuesSet = true;
 	}
 
 	private JailbirdWearState FloatToState(float stateFloat)
@@ -79,22 +79,22 @@ public class JailbirdDeteriorationTracker
 
 	private JailbirdWearState StateForTotalDamage(float totalDamage)
 	{
-		return FloatToState(_damageToWearState.Evaluate(totalDamage));
+		return this.FloatToState(this._damageToWearState.Evaluate(totalDamage));
 	}
 
 	private JailbirdWearState StateForCharges(int numOfCharges)
 	{
-		return FloatToState(_chargesToWearState.Evaluate(numOfCharges));
+		return this.FloatToState(this._chargesToWearState.Evaluate(numOfCharges));
 	}
 
 	public void RecheckUsage()
 	{
-		JailbirdWearState jailbirdWearState = StateForTotalDamage(_hitreg.TotalMeleeDamageDealt);
-		JailbirdWearState jailbirdWearState2 = StateForCharges(_jailbird.TotalChargesPerformed);
+		JailbirdWearState jailbirdWearState = this.StateForTotalDamage(this._hitreg.TotalMeleeDamageDealt);
+		JailbirdWearState jailbirdWearState2 = this.StateForCharges(this._jailbird.TotalChargesPerformed);
 		JailbirdWearState jailbirdWearState3 = ((jailbirdWearState > jailbirdWearState2) ? jailbirdWearState : jailbirdWearState2);
-		ReceivedStates[_jailbird.ItemSerial] = jailbirdWearState3;
+		JailbirdDeteriorationTracker.ReceivedStates[this._jailbird.ItemSerial] = jailbirdWearState3;
 		NetworkWriter writer;
-		using (new AutosyncRpc(_jailbird.ItemId, out writer))
+		using (new AutosyncRpc(this._jailbird.ItemId, out writer))
 		{
 			writer.WriteByte(0);
 			writer.WriteByte((byte)jailbirdWearState3);
@@ -104,7 +104,7 @@ public class JailbirdDeteriorationTracker
 			return;
 		}
 		NetworkWriter writer2;
-		using (new AutosyncRpc(_jailbird.ItemId, out writer2))
+		using (new AutosyncRpc(this._jailbird.ItemId, out writer2))
 		{
 			writer2.WriteByte(1);
 		}
@@ -112,8 +112,8 @@ public class JailbirdDeteriorationTracker
 
 	public static void ReadUsage(ushort serial, NetworkReader reader)
 	{
-		ReceivedStates[serial] = (JailbirdWearState)reader.ReadByte();
-		_anyReceived = true;
+		JailbirdDeteriorationTracker.ReceivedStates[serial] = (JailbirdWearState)reader.ReadByte();
+		JailbirdDeteriorationTracker._anyReceived = true;
 	}
 
 	[RuntimeInitializeOnLoadMethod]
@@ -121,10 +121,10 @@ public class JailbirdDeteriorationTracker
 	{
 		CustomNetworkManager.OnClientReady += delegate
 		{
-			if (_anyReceived)
+			if (JailbirdDeteriorationTracker._anyReceived)
 			{
-				_anyReceived = false;
-				ReceivedStates.Clear();
+				JailbirdDeteriorationTracker._anyReceived = false;
+				JailbirdDeteriorationTracker.ReceivedStates.Clear();
 			}
 		};
 	}

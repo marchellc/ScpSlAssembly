@@ -8,20 +8,20 @@ public class Scp079ScannerZoneSelector : Scp079AbilityBase, IScp079AuxRegenModif
 {
 	private static readonly FacilityZone[] AllZones = EnumUtils<FacilityZone>.Values;
 
-	private readonly bool[] _selectedZones = new bool[AllZones.Length];
+	private readonly bool[] _selectedZones = new bool[Scp079ScannerZoneSelector.AllZones.Length];
 
 	private string _regenPauseFormat;
 
-	public string AuxReductionMessage => string.Format(_regenPauseFormat, SelectedZonesCnt);
+	public string AuxReductionMessage => string.Format(this._regenPauseFormat, this.SelectedZonesCnt);
 
-	public float AuxRegenMultiplier => 1f / (float)(1 << SelectedZonesCnt);
+	public float AuxRegenMultiplier => 1f / (float)(1 << this.SelectedZonesCnt);
 
 	public int SelectedZonesCnt
 	{
 		get
 		{
 			int num = 0;
-			bool[] selectedZones = _selectedZones;
+			bool[] selectedZones = this._selectedZones;
 			for (int i = 0; i < selectedZones.Length; i++)
 			{
 				if (selectedZones[i])
@@ -37,14 +37,14 @@ public class Scp079ScannerZoneSelector : Scp079AbilityBase, IScp079AuxRegenModif
 	{
 		get
 		{
-			int selectedZonesCnt = SelectedZonesCnt;
+			int selectedZonesCnt = this.SelectedZonesCnt;
 			FacilityZone[] array = new FacilityZone[selectedZonesCnt];
 			int num = 0;
-			for (int i = 0; i < AllZones.Length; i++)
+			for (int i = 0; i < Scp079ScannerZoneSelector.AllZones.Length; i++)
 			{
-				if (_selectedZones[i])
+				if (this._selectedZones[i])
 				{
-					array[num] = AllZones[i];
+					array[num] = Scp079ScannerZoneSelector.AllZones[i];
 					if (++num == selectedZonesCnt)
 					{
 						break;
@@ -57,9 +57,9 @@ public class Scp079ScannerZoneSelector : Scp079AbilityBase, IScp079AuxRegenModif
 
 	private int GetZoneIndex(FacilityZone zone)
 	{
-		for (int i = 0; i < AllZones.Length; i++)
+		for (int i = 0; i < Scp079ScannerZoneSelector.AllZones.Length; i++)
 		{
-			if (AllZones[i] == zone)
+			if (Scp079ScannerZoneSelector.AllZones[i] == zone)
 			{
 				return i;
 			}
@@ -70,38 +70,38 @@ public class Scp079ScannerZoneSelector : Scp079AbilityBase, IScp079AuxRegenModif
 	protected override void Awake()
 	{
 		base.Awake();
-		_regenPauseFormat = Translations.Get(Scp079HudTranslation.ScannerAuxPause);
+		this._regenPauseFormat = Translations.Get(Scp079HudTranslation.ScannerAuxPause);
 	}
 
 	public bool GetZoneStatus(FacilityZone zone)
 	{
-		return _selectedZones[GetZoneIndex(zone)];
+		return this._selectedZones[this.GetZoneIndex(zone)];
 	}
 
 	public void ToggleZoneStatus(FacilityZone zone)
 	{
-		ref bool reference = ref _selectedZones[GetZoneIndex(zone)];
+		ref bool reference = ref this._selectedZones[this.GetZoneIndex(zone)];
 		reference = !reference;
-		ClientSendCmd();
+		base.ClientSendCmd();
 	}
 
 	public override void ClientWriteCmd(NetworkWriter writer)
 	{
 		base.ClientWriteCmd(writer);
-		writer.WriteBoolArray(_selectedZones);
+		writer.WriteBoolArray(this._selectedZones);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		reader.ReadBoolArray(_selectedZones);
-		ServerSendRpc(toAll: true);
+		reader.ReadBoolArray(this._selectedZones);
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public override void ServerWriteRpc(NetworkWriter writer)
 	{
 		base.ServerWriteRpc(writer);
-		writer.WriteBoolArray(_selectedZones);
+		writer.WriteBoolArray(this._selectedZones);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
@@ -109,13 +109,13 @@ public class Scp079ScannerZoneSelector : Scp079AbilityBase, IScp079AuxRegenModif
 		base.ClientProcessRpc(reader);
 		if (!base.Role.IsLocalPlayer)
 		{
-			reader.ReadBoolArray(_selectedZones);
+			reader.ReadBoolArray(this._selectedZones);
 		}
 	}
 
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		Array.Clear(_selectedZones, 0, _selectedZones.Length);
+		Array.Clear(this._selectedZones, 0, this._selectedZones.Length);
 	}
 }

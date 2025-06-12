@@ -60,37 +60,37 @@ public class JailbirdHitreg
 	{
 		get
 		{
-			DetectDestructibles();
-			return _detectionsLen > 0;
+			this.DetectDestructibles();
+			return JailbirdHitreg._detectionsLen > 0;
 		}
 	}
 
 	public void Setup(JailbirdItem target)
 	{
-		_item = target;
+		this._item = target;
 	}
 
 	public bool ClientTryAttack()
 	{
-		if (!(_item.Owner.roleManager.CurrentRole is IFpcRole fpcRole))
+		if (!(this._item.Owner.roleManager.CurrentRole is IFpcRole fpcRole))
 		{
 			return false;
 		}
 		NetworkWriter writer;
-		using (new AutosyncCmd(_item.ItemId, out writer))
+		using (new AutosyncCmd(this._item.ItemId, out writer))
 		{
 			writer.WriteByte(4);
 			writer.WriteRelativePosition(new RelativePosition(fpcRole.FpcModule.Position));
-			writer.WriteQuaternion(_item.Owner.PlayerCameraReference.rotation);
-			DetectDestructibles();
-			if (_detectionsLen > 255)
+			writer.WriteQuaternion(this._item.Owner.PlayerCameraReference.rotation);
+			this.DetectDestructibles();
+			if (JailbirdHitreg._detectionsLen > 255)
 			{
-				_detectionsLen = 255;
+				JailbirdHitreg._detectionsLen = 255;
 			}
-			List<ReferenceHub> list = ListPool<ReferenceHub>.Shared.Rent(_detectionsLen);
-			for (int i = 0; i < _detectionsLen; i++)
+			List<ReferenceHub> list = ListPool<ReferenceHub>.Shared.Rent(JailbirdHitreg._detectionsLen);
+			for (int i = 0; i < JailbirdHitreg._detectionsLen; i++)
 			{
-				if (DetectedDestructibles[i] is HitboxIdentity hitboxIdentity)
+				if (JailbirdHitreg.DetectedDestructibles[i] is HitboxIdentity hitboxIdentity)
 				{
 					list.Add(hitboxIdentity.TargetHub);
 				}
@@ -108,13 +108,13 @@ public class JailbirdHitreg
 
 	public bool ServerAttack(bool isCharging, NetworkReader reader)
 	{
-		ReferenceHub owner = _item.Owner;
+		ReferenceHub owner = this._item.Owner;
 		bool result = false;
 		if (reader != null)
 		{
 			RelativePosition relativePosition = reader.ReadRelativePosition();
 			Quaternion claimedRot = reader.ReadQuaternion();
-			BacktrackedPlayers.Add(new FpcBacktracker(owner, relativePosition.Position, claimedRot));
+			JailbirdHitreg.BacktrackedPlayers.Add(new FpcBacktracker(owner, relativePosition.Position, claimedRot));
 			byte b = reader.ReadByte();
 			for (int i = 0; i < b; i++)
 			{
@@ -123,54 +123,54 @@ public class JailbirdHitreg
 				RelativePosition relativePosition2 = reader.ReadRelativePosition();
 				if (num)
 				{
-					BacktrackedPlayers.Add(new FpcBacktracker(hub, relativePosition2.Position));
+					JailbirdHitreg.BacktrackedPlayers.Add(new FpcBacktracker(hub, relativePosition2.Position));
 				}
 			}
 		}
-		DetectDestructibles();
-		Vector3 forward = _item.Owner.PlayerCameraReference.forward;
-		float num2 = (isCharging ? _damageCharge : _damageMelee);
-		for (int j = 0; j < _detectionsLen; j++)
+		this.DetectDestructibles();
+		Vector3 forward = this._item.Owner.PlayerCameraReference.forward;
+		float num2 = (isCharging ? this._damageCharge : this._damageMelee);
+		for (int j = 0; j < JailbirdHitreg._detectionsLen; j++)
 		{
-			IDestructible destructible = DetectedDestructibles[j];
+			IDestructible destructible = JailbirdHitreg.DetectedDestructibles[j];
 			if (destructible.Damage(num2, new JailbirdDamageHandler(owner, num2, forward), destructible.CenterOfMass))
 			{
 				result = true;
 				if (!isCharging)
 				{
-					TotalMeleeDamageDealt += num2;
+					this.TotalMeleeDamageDealt += num2;
 				}
 				else if (destructible is HitboxIdentity hitboxIdentity)
 				{
-					hitboxIdentity.TargetHub.playerEffectsController.EnableEffect<Flashed>(_flashedDuration, addDuration: true);
-					hitboxIdentity.TargetHub.playerEffectsController.EnableEffect<Concussed>(_concussionDuration, addDuration: true);
+					hitboxIdentity.TargetHub.playerEffectsController.EnableEffect<Flashed>(this._flashedDuration, addDuration: true);
+					hitboxIdentity.TargetHub.playerEffectsController.EnableEffect<Concussed>(this._concussionDuration, addDuration: true);
 				}
 			}
 		}
-		BacktrackedPlayers.ForEach(delegate(FpcBacktracker x)
+		JailbirdHitreg.BacktrackedPlayers.ForEach(delegate(FpcBacktracker x)
 		{
 			x.RestorePosition();
 		});
-		BacktrackedPlayers.Clear();
+		JailbirdHitreg.BacktrackedPlayers.Clear();
 		return result;
 	}
 
 	private void DetectDestructibles()
 	{
-		Transform playerCameraReference = _item.Owner.PlayerCameraReference;
-		Vector3 position = playerCameraReference.position + playerCameraReference.forward * _hitregOffset;
-		_detectionsLen = 0;
-		int num = Physics.OverlapSphereNonAlloc(position, _hitregRadius, DetectedColliders, DetectionMask);
+		Transform playerCameraReference = this._item.Owner.PlayerCameraReference;
+		Vector3 position = playerCameraReference.position + playerCameraReference.forward * this._hitregOffset;
+		JailbirdHitreg._detectionsLen = 0;
+		int num = Physics.OverlapSphereNonAlloc(position, this._hitregRadius, JailbirdHitreg.DetectedColliders, JailbirdHitreg.DetectionMask);
 		if (num == 0)
 		{
 			return;
 		}
-		DetectedNetIds.Clear();
+		JailbirdHitreg.DetectedNetIds.Clear();
 		for (int i = 0; i < num; i++)
 		{
-			if (DetectedColliders[i].TryGetComponent<IDestructible>(out var component) && (!Physics.Linecast(playerCameraReference.position, component.CenterOfMass, out var hitInfo, LinecastMask) || !(hitInfo.collider != DetectedColliders[i])) && DetectedNetIds.Add(component.NetworkId))
+			if (JailbirdHitreg.DetectedColliders[i].TryGetComponent<IDestructible>(out var component) && (!Physics.Linecast(playerCameraReference.position, component.CenterOfMass, out var hitInfo, JailbirdHitreg.LinecastMask) || !(hitInfo.collider != JailbirdHitreg.DetectedColliders[i])) && JailbirdHitreg.DetectedNetIds.Add(component.NetworkId))
 			{
-				DetectedDestructibles[_detectionsLen++] = component;
+				JailbirdHitreg.DetectedDestructibles[JailbirdHitreg._detectionsLen++] = component;
 			}
 		}
 	}

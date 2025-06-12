@@ -13,12 +13,12 @@ public class DamageReduction : StatusEffectBase, ISpectatorDataPlayerEffect, IDa
 
 	public bool GetSpectatorText(out string s)
 	{
-		s = $"Damage Reduction (All, -{Mathf.Round((1f - CurrentMultiplier) * 1000f) / 10f}%)";
+		s = $"Damage Reduction (All, -{Mathf.Round((1f - this.CurrentMultiplier) * 1000f) / 10f}%)";
 		return base.IsEnabled;
 	}
 
 	public float GetDamageModifier(float baseDamage, DamageHandlerBase handler, HitboxType hitboxType)
 	{
-		return CurrentMultiplier;
+		return this.CurrentMultiplier;
 	}
 }

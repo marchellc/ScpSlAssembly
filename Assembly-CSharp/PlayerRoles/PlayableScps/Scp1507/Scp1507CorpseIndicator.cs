@@ -16,7 +16,7 @@ public class Scp1507CorpseIndicator : MonoBehaviour
 
 	private void Update()
 	{
-		_fillAmount = Mathf.MoveTowards(_fillAmount, Ragdoll.RevivalProgress, Time.deltaTime * 0.5f);
-		_imageFill.fillAmount = _fillAmount;
+		this._fillAmount = Mathf.MoveTowards(this._fillAmount, this.Ragdoll.RevivalProgress, Time.deltaTime * 0.5f);
+		this._imageFill.fillAmount = this._fillAmount;
 	}
 }

@@ -11,7 +11,7 @@ public sealed class RequestSignatureResponseFormatter : IJsonFormatter<RequestSi
 
 	public RequestSignatureResponseFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("success"),
@@ -34,7 +34,7 @@ public sealed class RequestSignatureResponseFormatter : IJsonFormatter<RequestSi
 				4
 			}
 		};
-		____stringByteKeys = new byte[5][]
+		this.____stringByteKeys = new byte[5][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("success"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("error"),
@@ -46,15 +46,15 @@ public sealed class RequestSignatureResponseFormatter : IJsonFormatter<RequestSi
 
 	public void Serialize(ref JsonWriter writer, RequestSignatureResponse value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteBoolean(value.success);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.error);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		formatterResolver.GetFormatterWithVerify<SignedToken>().Serialize(ref writer, value.authToken, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[3]);
+		writer.WriteRaw(this.____stringByteKeys[3]);
 		formatterResolver.GetFormatterWithVerify<SignedToken>().Serialize(ref writer, value.badgeToken, formatterResolver);
-		writer.WriteRaw(____stringByteKeys[4]);
+		writer.WriteRaw(this.____stringByteKeys[4]);
 		writer.WriteString(value.nonce);
 		writer.WriteEndObject();
 	}
@@ -75,7 +75,7 @@ public sealed class RequestSignatureResponseFormatter : IJsonFormatter<RequestSi
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

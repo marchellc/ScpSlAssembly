@@ -34,7 +34,7 @@ public class RemoveItemCommand : ICommand, IUsageProvider
 				response = "You must specify item(s) to give.";
 				return false;
 			}
-			ItemType[] array = ParseItems(newargs[0]).ToArray();
+			ItemType[] array = this.ParseItems(newargs[0]).ToArray();
 			if (array.Length == 0)
 			{
 				response = "You didn't input any items.";
@@ -52,7 +52,7 @@ public class RemoveItemCommand : ICommand, IUsageProvider
 						ItemType[] array2 = array;
 						foreach (ItemType id in array2)
 						{
-							RemoveItem(item, sender, id);
+							this.RemoveItem(item, sender, id);
 						}
 					}
 					catch (Exception ex)

@@ -41,9 +41,9 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 	{
 		get
 		{
-			if (HasViewmodel)
+			if (this.HasViewmodel)
 			{
-				if (ViewModel is KeycardViewmodel keycardViewmodel)
+				if (base.ViewModel is KeycardViewmodel keycardViewmodel)
 				{
 					return keycardViewmodel.IsIdle;
 				}
@@ -65,15 +65,15 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 	[field: SerializeField]
 	public bool Customizable { get; private set; }
 
-	public override float Weight => 0.01f + KeycardGfx.ExtraWeight;
+	public override float Weight => 0.01f + this.KeycardGfx.ExtraWeight;
 
-	public override ItemDescriptionType DescriptionType => _descriptionType;
+	public override ItemDescriptionType DescriptionType => this._descriptionType;
 
 	public string Name
 	{
 		get
 		{
-			DetailBase[] details = Details;
+			DetailBase[] details = this.Details;
 			for (int i = 0; i < details.Length; i++)
 			{
 				if (details[i] is IItemNametag itemNametag)
@@ -81,7 +81,7 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 					return itemNametag.Name;
 				}
 			}
-			return ItemTypeId.GetName();
+			return base.ItemTypeId.GetName();
 		}
 	}
 
@@ -89,7 +89,7 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 	{
 		get
 		{
-			DetailBase[] details = Details;
+			DetailBase[] details = this.Details;
 			for (int i = 0; i < details.Length; i++)
 			{
 				if (details[i] is IItemDescription itemDescription)
@@ -97,13 +97,13 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 					return itemDescription.Description;
 				}
 			}
-			return ItemTypeId.GetDescription();
+			return base.ItemTypeId.GetDescription();
 		}
 	}
 
 	public string DisplayName => null;
 
-	public bool CanBeDisplayed => !Customizable;
+	public bool CanBeDisplayed => !this.Customizable;
 
 	public PermissionUsed PermissionsUsedCallback { get; private set; }
 
@@ -111,7 +111,7 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 
 	public virtual DoorPermissionFlags GetPermissions(IDoorPermissionRequester requester)
 	{
-		DetailBase[] details = Details;
+		DetailBase[] details = this.Details;
 		for (int i = 0; i < details.Length; i++)
 		{
 			if (details[i] is IDoorPermissionProvider doorPermissionProvider)
@@ -127,7 +127,7 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 		base.OnAdded(pickup);
 		if (NetworkServer.active)
 		{
-			PermissionsUsedCallback = OnUsed;
+			this.PermissionsUsedCallback = OnUsed;
 			KeycardDetailSynchronizer.ServerProcessItem(this);
 		}
 	}
@@ -137,9 +137,9 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 		base.OnHolstered();
 		if (NetworkServer.active)
 		{
-			ServerSendPublicRpc(delegate(NetworkWriter x)
+			base.ServerSendPublicRpc(delegate(NetworkWriter x)
 			{
-				WriteInspect(x, state: false);
+				KeycardItem.WriteInspect(x, state: false);
 			});
 		}
 	}
@@ -147,42 +147,42 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 	public override void EquipUpdate()
 	{
 		base.EquipUpdate();
-		if (!base.IsControllable || _inspectRequestTimer.Busy)
+		if (!base.IsControllable || this._inspectRequestTimer.Busy)
 		{
 			return;
 		}
-		if (!StartInspectTimes.ContainsKey(base.ItemSerial))
+		if (!KeycardItem.StartInspectTimes.ContainsKey(base.ItemSerial))
 		{
-			if (GetActionDown(ActionName.InspectItem) && IsIdle)
+			if (base.GetActionDown(ActionName.InspectItem) && this.IsIdle)
 			{
-				ClientSendCmd(delegate(NetworkWriter x)
+				base.ClientSendCmd(delegate(NetworkWriter x)
 				{
-					WriteInspect(x, state: true);
+					KeycardItem.WriteInspect(x, state: true);
 				});
-				_inspectRequestTimer.Trigger();
+				this._inspectRequestTimer.Trigger();
 			}
 			return;
 		}
-		bool flag = IsIdle;
-		ActionName[] cancelInspectButtons = CancelInspectButtons;
+		bool flag = this.IsIdle;
+		ActionName[] cancelInspectButtons = KeycardItem.CancelInspectButtons;
 		foreach (ActionName action in cancelInspectButtons)
 		{
-			flag |= GetActionDown(action);
+			flag |= base.GetActionDown(action);
 		}
 		if (flag)
 		{
-			ClientSendCmd(delegate(NetworkWriter x)
+			base.ClientSendCmd(delegate(NetworkWriter x)
 			{
-				WriteInspect(x, state: false);
+				KeycardItem.WriteInspect(x, state: false);
 			});
-			_inspectRequestTimer.Trigger();
+			this._inspectRequestTimer.Trigger();
 		}
 	}
 
 	internal override void OnTemplateReloaded(bool wasEverLoaded)
 	{
 		base.OnTemplateReloaded(wasEverLoaded);
-		if (TryGetComponent<AutoIconApplier>(out var component))
+		if (base.TryGetComponent<AutoIconApplier>(out var component))
 		{
 			component.UpdateIcon();
 		}
@@ -195,14 +195,14 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 		{
 			if (NetworkServer.active)
 			{
-				ServerOnNewPlayerConnected(hub);
+				this.ServerOnNewPlayerConnected(hub);
 			}
 		};
 	}
 
 	protected virtual void OnUsed(IDoorPermissionRequester requester, bool success)
 	{
-		ServerSendPublicRpc(delegate(NetworkWriter x)
+		base.ServerSendPublicRpc(delegate(NetworkWriter x)
 		{
 			x.WriteSubheader(MsgType.OnKeycardUsed);
 			x.WriteBool(success);
@@ -211,14 +211,14 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 
 	protected virtual void ServerOnNewPlayerConnected(ReferenceHub hub)
 	{
-		if (StartInspectTimes.Count == 0)
+		if (KeycardItem.StartInspectTimes.Count == 0)
 		{
 			return;
 		}
-		ServerSendTargetRpc(hub, delegate(NetworkWriter writer)
+		base.ServerSendTargetRpc(hub, delegate(NetworkWriter writer)
 		{
 			writer.WriteSubheader(MsgType.NewPlayerFullResync);
-			foreach (KeyValuePair<ushort, double> startInspectTime in StartInspectTimes)
+			foreach (KeyValuePair<ushort, double> startInspectTime in KeycardItem.StartInspectTimes)
 			{
 				writer.WriteUShort(startInspectTime.Key);
 				writer.WriteDouble(startInspectTime.Value);
@@ -228,7 +228,7 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 
 	protected virtual void OnStaticDataReset()
 	{
-		StartInspectTimes.Clear();
+		KeycardItem.StartInspectTimes.Clear();
 	}
 
 	public sealed override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
@@ -237,29 +237,29 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 		switch ((MsgType)reader.ReadByte())
 		{
 		case MsgType.Custom:
-			ClientProcessCustomRpcTemplate(reader, serial);
+			this.ClientProcessCustomRpcTemplate(reader, serial);
 			break;
 		case MsgType.OnKeycardUsed:
 			KeycardItem.OnKeycardUsed?.Invoke(serial, reader.ReadBool());
-			StartInspectTimes.Remove(serial);
+			KeycardItem.StartInspectTimes.Remove(serial);
 			break;
 		case MsgType.Inspect:
-			if (reader.ReadBool() && _allowInspect)
+			if (reader.ReadBool() && this._allowInspect)
 			{
-				StartInspectTimes[serial] = NetworkTime.time;
+				KeycardItem.StartInspectTimes[serial] = NetworkTime.time;
 			}
 			else
 			{
-				StartInspectTimes.Remove(serial);
+				KeycardItem.StartInspectTimes.Remove(serial);
 			}
 			break;
 		case MsgType.NewPlayerFullResync:
-			StartInspectTimes.Clear();
+			KeycardItem.StartInspectTimes.Clear();
 			while (reader.Remaining > 0)
 			{
 				ushort key = reader.ReadUShort();
 				double value = reader.ReadDouble();
-				StartInspectTimes[key] = value;
+				KeycardItem.StartInspectTimes[key] = value;
 			}
 			break;
 		}
@@ -270,7 +270,7 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 		base.ClientProcessRpcInstance(reader);
 		if (reader.ReadByte() == 0)
 		{
-			ClientProcessCustomRpcInstance(reader);
+			this.ClientProcessCustomRpcInstance(reader);
 		}
 	}
 
@@ -280,24 +280,24 @@ public class KeycardItem : AutosyncItem, IItemDescription, IItemNametag, IDoorPe
 		switch ((MsgType)reader.ReadByte())
 		{
 		case MsgType.Custom:
-			ServerProcessCustomCmd(reader);
+			this.ServerProcessCustomCmd(reader);
 			break;
 		case MsgType.Inspect:
 		{
 			bool num = reader.ReadBool();
-			bool flag = StartInspectTimes.ContainsKey(base.ItemSerial);
+			bool flag = KeycardItem.StartInspectTimes.ContainsKey(base.ItemSerial);
 			if (!num)
 			{
-				ServerSendPublicRpc(delegate(NetworkWriter x)
+				base.ServerSendPublicRpc(delegate(NetworkWriter x)
 				{
-					WriteInspect(x, state: false);
+					KeycardItem.WriteInspect(x, state: false);
 				});
 			}
 			else if (!flag)
 			{
-				ServerSendPublicRpc(delegate(NetworkWriter x)
+				base.ServerSendPublicRpc(delegate(NetworkWriter x)
 				{
-					WriteInspect(x, state: true);
+					KeycardItem.WriteInspect(x, state: true);
 				});
 			}
 			break;

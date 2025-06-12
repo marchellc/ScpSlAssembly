@@ -6,14 +6,14 @@ public class PlaySoundOnEnable : MonoBehaviour
 
 	private void Awake()
 	{
-		audio = GetComponent<AudioSource>();
+		this.audio = base.GetComponent<AudioSource>();
 	}
 
 	private void OnEnable()
 	{
-		if (audio != null && !audio.isPlaying)
+		if (this.audio != null && !this.audio.isPlaying)
 		{
-			audio.Play();
+			this.audio.Play();
 		}
 	}
 }

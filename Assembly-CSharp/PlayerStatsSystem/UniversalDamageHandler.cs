@@ -14,43 +14,43 @@ public class UniversalDamageHandler : StandardDamageHandler
 
 	public readonly byte TranslationId;
 
-	public override float Damage { get; internal set; }
+	public override float Damage { get; set; }
 
-	public override string RagdollInspectText => _ragdollInspectText;
+	public override string RagdollInspectText => this._ragdollInspectText;
 
-	public override string DeathScreenText => _deathscreenText;
+	public override string DeathScreenText => this._deathscreenText;
 
-	public override CassieAnnouncement CassieDeathAnnouncement => _cassieAnnouncement;
+	public override CassieAnnouncement CassieDeathAnnouncement => this._cassieAnnouncement;
 
-	public override string ServerLogsText => _logsText;
+	public override string ServerLogsText => this._logsText;
 
 	public override string ServerMetricsText
 	{
 		get
 		{
-			byte translationId = TranslationId;
+			byte translationId = this.TranslationId;
 			return translationId.ToString();
 		}
 	}
 
 	public UniversalDamageHandler()
 	{
-		TranslationId = 0;
-		_cassieAnnouncement = CassieAnnouncement.Default;
+		this.TranslationId = 0;
+		this._cassieAnnouncement = CassieAnnouncement.Default;
 	}
 
 	public UniversalDamageHandler(float damage, DeathTranslation deathReason, CassieAnnouncement cassieAnnouncement = null)
 	{
-		Damage = damage;
-		ApplyTranslation(deathReason);
-		TranslationId = deathReason.Id;
-		_cassieAnnouncement = cassieAnnouncement ?? CassieAnnouncement.Default;
+		this.Damage = damage;
+		this.ApplyTranslation(deathReason);
+		this.TranslationId = deathReason.Id;
+		this._cassieAnnouncement = cassieAnnouncement ?? CassieAnnouncement.Default;
 	}
 
 	public override void WriteAdditionalData(NetworkWriter writer)
 	{
 		base.WriteAdditionalData(writer);
-		writer.WriteByte(TranslationId);
+		writer.WriteByte(this.TranslationId);
 	}
 
 	public override void ReadAdditionalData(NetworkReader reader)
@@ -58,14 +58,14 @@ public class UniversalDamageHandler : StandardDamageHandler
 		base.ReadAdditionalData(reader);
 		if (DeathTranslations.TranslationsById.TryGetValue(reader.ReadByte(), out var value))
 		{
-			ApplyTranslation(value);
+			this.ApplyTranslation(value);
 		}
 	}
 
 	private void ApplyTranslation(DeathTranslation translation)
 	{
-		_ragdollInspectText = translation.RagdollTranslation;
-		_deathscreenText = translation.DeathscreenTranslation;
-		_logsText = translation.LogLabel;
+		this._ragdollInspectText = translation.RagdollTranslation;
+		this._deathscreenText = translation.DeathscreenTranslation;
+		this._logsText = translation.LogLabel;
 	}
 }

@@ -11,6 +11,6 @@ public interface IClutterBlocker
 
 	static IClutterBlocker()
 	{
-		Instances = new List<IClutterBlocker>();
+		IClutterBlocker.Instances = new List<IClutterBlocker>();
 	}
 }

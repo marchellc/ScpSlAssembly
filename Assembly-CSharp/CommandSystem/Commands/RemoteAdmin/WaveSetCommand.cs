@@ -13,10 +13,10 @@ public class WaveSetCommand : TargetWaveCommandBase
 {
 	public static Dictionary<UpdateMessageFlags, Func<SpawnableWaveBase, string, bool>> MethodPerFlag = new Dictionary<UpdateMessageFlags, Func<SpawnableWaveBase, string, bool>>
 	{
-		[UpdateMessageFlags.Pause] = (SpawnableWaveBase w, string input) => SetPause(w, input),
-		[UpdateMessageFlags.Timer] = (SpawnableWaveBase w, string input) => SetTimer(w, input),
-		[UpdateMessageFlags.Tokens] = (SpawnableWaveBase w, string input) => SetTokens(w, input),
-		[UpdateMessageFlags.Trigger] = (SpawnableWaveBase w, string input) => PlayAnimation(w, input)
+		[UpdateMessageFlags.Pause] = (SpawnableWaveBase w, string input) => WaveSetCommand.SetPause(w, input),
+		[UpdateMessageFlags.Timer] = (SpawnableWaveBase w, string input) => WaveSetCommand.SetTimer(w, input),
+		[UpdateMessageFlags.Tokens] = (SpawnableWaveBase w, string input) => WaveSetCommand.SetTokens(w, input),
+		[UpdateMessageFlags.Trigger] = (SpawnableWaveBase w, string input) => WaveSetCommand.PlayAnimation(w, input)
 	};
 
 	public override string Command { get; } = "set";
@@ -33,18 +33,18 @@ public class WaveSetCommand : TargetWaveCommandBase
 		}
 		if (arguments.Count <= 2)
 		{
-			response = InvalidFlagMessage("Not enough arguments");
+			response = this.InvalidFlagMessage("Not enough arguments");
 			return false;
 		}
 		string text = TargetWaveCommandBase.TranslateWaveName(arguments.At(0));
 		if (!Enum.TryParse<UpdateMessageFlags>(arguments.At(1), ignoreCase: true, out var result))
 		{
-			response = InvalidFlagMessage("Specified flag does not exist");
+			response = this.InvalidFlagMessage("Specified flag does not exist");
 			return false;
 		}
-		if (!MethodPerFlag.TryGetValue(result, out var value))
+		if (!WaveSetCommand.MethodPerFlag.TryGetValue(result, out var value))
 		{
-			response = InvalidFlagMessage("Specified flag has no specified action");
+			response = this.InvalidFlagMessage("Specified flag has no specified action");
 			return false;
 		}
 		string text2 = arguments.At(2);
@@ -61,7 +61,7 @@ public class WaveSetCommand : TargetWaveCommandBase
 		}
 		if (!flag)
 		{
-			response = InvalidFlagMessage("No wave was found");
+			response = this.InvalidFlagMessage("No wave was found");
 			return false;
 		}
 		response = $"Set {text}'s {result} to {text2}.";
@@ -74,9 +74,9 @@ public class WaveSetCommand : TargetWaveCommandBase
 		StringBuilder stringBuilder = StringBuilderPool.Shared.Rent();
 		stringBuilder.Append(context);
 		stringBuilder.Append(". The correct syntax is \"wave ");
-		stringBuilder.Append(Command);
+		stringBuilder.Append(this.Command);
 		stringBuilder.Append(" <wave> <flag> <value>\". Available flags:");
-		foreach (UpdateMessageFlags key in MethodPerFlag.Keys)
+		foreach (UpdateMessageFlags key in WaveSetCommand.MethodPerFlag.Keys)
 		{
 			stringBuilder.Append("\n- ");
 			stringBuilder.Append(key);

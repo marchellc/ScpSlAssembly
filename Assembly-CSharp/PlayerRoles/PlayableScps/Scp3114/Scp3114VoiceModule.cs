@@ -22,13 +22,13 @@ public class Scp3114VoiceModule : StandardScpVoiceModule
 		{
 			if (!base.IsSpeaking)
 			{
-				return _proximityPlaybacks[0].MaxSamples > 0;
+				return this._proximityPlaybacks[0].MaxSamples > 0;
 			}
 			return true;
 		}
 	}
 
-	private bool IsDisguised => ScpRole.CurIdentity.Status == Scp3114Identity.DisguiseStatus.Active;
+	private bool IsDisguised => this.ScpRole.CurIdentity.Status == Scp3114Identity.DisguiseStatus.Active;
 
 	private Scp3114Role ScpRole => base.Role as Scp3114Role;
 
@@ -36,7 +36,7 @@ public class Scp3114VoiceModule : StandardScpVoiceModule
 	{
 		get
 		{
-			Vector3 cameraPosition = ScpRole.CameraPosition;
+			Vector3 cameraPosition = this.ScpRole.CameraPosition;
 			foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 			{
 				if (allHub.roleManager.CurrentRole is HumanRole humanRole && !((humanRole.CameraPosition - cameraPosition).sqrMagnitude > 320f) && Physics.Linecast(cameraPosition, humanRole.CameraPosition, VisionInformation.VisionLayerMask))
@@ -52,15 +52,15 @@ public class Scp3114VoiceModule : StandardScpVoiceModule
 
 	private void UpdateHint(bool primary, bool alt)
 	{
-		if (IsDisguised)
+		if (this.IsDisguised)
 		{
-			if (alt && AnyHumansNearby)
+			if (alt && this.AnyHumansNearby)
 			{
-				_hintAlreadyDisplayed = true;
+				this._hintAlreadyDisplayed = true;
 			}
-			else if (primary && AnyHumansNearby)
+			else if (primary && this.AnyHumansNearby)
 			{
-				_hintAlreadyDisplayed = true;
+				this._hintAlreadyDisplayed = true;
 				this.OnHintTriggered?.Invoke();
 			}
 		}
@@ -68,15 +68,15 @@ public class Scp3114VoiceModule : StandardScpVoiceModule
 
 	protected override VoiceChatChannel ProcessInputs(bool primary, bool alt)
 	{
-		if (!_hintAlreadyDisplayed)
+		if (!this._hintAlreadyDisplayed)
 		{
-			UpdateHint(primary, alt);
+			this.UpdateHint(primary, alt);
 		}
 		if (primary)
 		{
-			return PrimaryChannel;
+			return this.PrimaryChannel;
 		}
-		if (alt && IsDisguised)
+		if (alt && this.IsDisguised)
 		{
 			return VoiceChatChannel.Proximity;
 		}
@@ -87,7 +87,7 @@ public class Scp3114VoiceModule : StandardScpVoiceModule
 	{
 		if (base.CurrentChannel == VoiceChatChannel.Proximity)
 		{
-			SingleBufferPlayback[] proximityPlaybacks = _proximityPlaybacks;
+			SingleBufferPlayback[] proximityPlaybacks = this._proximityPlaybacks;
 			for (int i = 0; i < proximityPlaybacks.Length; i++)
 			{
 				proximityPlaybacks[i].Buffer.Write(data, len);
@@ -101,7 +101,7 @@ public class Scp3114VoiceModule : StandardScpVoiceModule
 
 	public override VoiceChatChannel ValidateSend(VoiceChatChannel channel)
 	{
-		if ((channel != VoiceChatChannel.Proximity || !IsDisguised) && channel != PrimaryChannel)
+		if ((channel != VoiceChatChannel.Proximity || !this.IsDisguised) && channel != this.PrimaryChannel)
 		{
 			return VoiceChatChannel.None;
 		}
@@ -111,6 +111,6 @@ public class Scp3114VoiceModule : StandardScpVoiceModule
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_hintAlreadyDisplayed = false;
+		this._hintAlreadyDisplayed = false;
 	}
 }

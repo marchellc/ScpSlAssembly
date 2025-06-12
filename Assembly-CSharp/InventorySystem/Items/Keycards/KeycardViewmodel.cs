@@ -34,9 +34,9 @@ public class KeycardViewmodel : StandardAnimatedViemodel
 	{
 		get
 		{
-			if (AnimatorStateInfo(0).tagHash == IdleHash)
+			if (this.AnimatorStateInfo(0).tagHash == KeycardViewmodel.IdleHash)
 			{
-				return !AnimatorInTransition(0);
+				return !this.AnimatorInTransition(0);
 			}
 			return false;
 		}
@@ -50,17 +50,17 @@ public class KeycardViewmodel : StandardAnimatedViemodel
 		{
 			return;
 		}
-		if (_spawnedGfx != null)
+		if (this._spawnedGfx != null)
 		{
-			KeycardDetailSynchronizer.RegisterReceiver(_spawnedGfx);
+			KeycardDetailSynchronizer.RegisterReceiver(this._spawnedGfx);
 			return;
 		}
-		_spawnedGfx = Object.Instantiate(item.KeycardGfx, _keycardGfxSpawn);
-		_spawnedGfx.transform.ResetTransform();
-		GetCompNonAlloc.Clear();
-		_spawnedGfx.GetComponentsInChildren(includeInactive: true, GetCompNonAlloc);
+		this._spawnedGfx = Object.Instantiate(item.KeycardGfx, this._keycardGfxSpawn);
+		this._spawnedGfx.transform.ResetTransform();
+		KeycardViewmodel.GetCompNonAlloc.Clear();
+		this._spawnedGfx.GetComponentsInChildren(includeInactive: true, KeycardViewmodel.GetCompNonAlloc);
 		int layer = base.gameObject.layer;
-		foreach (Renderer item2 in GetCompNonAlloc)
+		foreach (Renderer item2 in KeycardViewmodel.GetCompNonAlloc)
 		{
 			item2.gameObject.layer = layer;
 		}
@@ -71,52 +71,52 @@ public class KeycardViewmodel : StandardAnimatedViemodel
 		base.InitSpectator(ply, id, wasEquipped);
 		if (wasEquipped)
 		{
-			_equipSoundSource.Stop();
+			this._equipSoundSource.Stop();
 		}
-		AnimatorForceUpdate(base.SkipEquipTime);
-		UpdateInspecting(skipAnimator: true);
+		this.AnimatorForceUpdate(base.SkipEquipTime);
+		this.UpdateInspecting(skipAnimator: true);
 	}
 
 	private void Update()
 	{
-		UpdateInspecting(skipAnimator: false);
+		this.UpdateInspecting(skipAnimator: false);
 	}
 
 	private void UpdateInspecting(bool skipAnimator)
 	{
 		double value;
 		bool flag = KeycardItem.StartInspectTimes.TryGetValue(base.ItemId.SerialNumber, out value);
-		if (_wasInspecting == flag)
+		if (this._wasInspecting == flag)
 		{
 			return;
 		}
-		_wasInspecting = flag;
-		AnimatorSetBool(AllowInspectHash, flag);
+		this._wasInspecting = flag;
+		this.AnimatorSetBool(KeycardViewmodel.AllowInspectHash, flag);
 		if (!flag)
 		{
-			_inspectSource.Stop();
+			this._inspectSource.Stop();
 			return;
 		}
-		AnimatorSetTrigger(StartInspectHash);
+		this.AnimatorSetTrigger(KeycardViewmodel.StartInspectHash);
 		float num = (float)(NetworkTime.time - value);
-		bool flag2 = num < _inspectSource.clip.length;
+		bool flag2 = num < this._inspectSource.clip.length;
 		if (flag2)
 		{
-			_inspectSource.Play();
+			this._inspectSource.Play();
 		}
 		if (skipAnimator)
 		{
 			if (flag2)
 			{
-				_inspectSource.time = num;
+				this._inspectSource.time = num;
 			}
-			AnimatorForceUpdate(num, fastMode: false);
+			this.AnimatorForceUpdate(num, fastMode: false);
 		}
 	}
 
 	protected virtual void PlayUseAnimation(bool success)
 	{
-		AnimatorSetTrigger(UseHash);
+		this.AnimatorSetTrigger(KeycardViewmodel.UseHash);
 	}
 
 	protected virtual void OnDestroy()
@@ -128,7 +128,7 @@ public class KeycardViewmodel : StandardAnimatedViemodel
 	{
 		if (serial == base.ItemId.SerialNumber)
 		{
-			PlayUseAnimation(success);
+			this.PlayUseAnimation(success);
 		}
 	}
 }

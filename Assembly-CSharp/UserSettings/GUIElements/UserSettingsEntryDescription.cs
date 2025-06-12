@@ -20,19 +20,19 @@ public class UserSettingsEntryDescription : MonoBehaviour, IPointerEnterHandler,
 	{
 		get
 		{
-			if (UsesReplacer)
+			if (this.UsesReplacer)
 			{
-				return _tlr.DisplayText;
+				return this._tlr.DisplayText;
 			}
-			if (_secondaryTranslationType == null)
+			if (this._secondaryTranslationType == null)
 			{
 				return string.Empty;
 			}
-			Type secondaryTranslationType = _secondaryTranslationType;
-			int index = ((IConvertible)_secondaryTranslationValue).ToInt32((IFormatProvider)null);
+			Type secondaryTranslationType = this._secondaryTranslationType;
+			int index = ((IConvertible)this._secondaryTranslationValue).ToInt32((IFormatProvider)null);
 			if (!Translations.TryGet(secondaryTranslationType, index, out var str))
 			{
-				return _secondaryTranslationValue.ToString();
+				return this._secondaryTranslationValue.ToString();
 			}
 			return str;
 		}
@@ -42,38 +42,38 @@ public class UserSettingsEntryDescription : MonoBehaviour, IPointerEnterHandler,
 
 	public void SetTranslation<T>(T translation) where T : Enum
 	{
-		UsesReplacer = false;
-		_secondaryTranslationType = typeof(T);
-		_secondaryTranslationValue = translation;
+		this.UsesReplacer = false;
+		this._secondaryTranslationType = typeof(T);
+		this._secondaryTranslationValue = translation;
 	}
 
 	public void OnPointerEnter(PointerEventData eventData)
 	{
-		_potentiallyCurrent = true;
-		CurrentDescription = this;
+		this._potentiallyCurrent = true;
+		UserSettingsEntryDescription.CurrentDescription = this;
 	}
 
 	public void OnPointerExit(PointerEventData eventData)
 	{
-		Deselect();
+		this.Deselect();
 	}
 
 	private void Awake()
 	{
-		UsesReplacer = TryGetComponent<TextLanguageReplacer>(out _tlr);
+		this.UsesReplacer = base.TryGetComponent<TextLanguageReplacer>(out this._tlr);
 	}
 
 	private void OnDisable()
 	{
-		Deselect();
+		this.Deselect();
 	}
 
 	private void Deselect()
 	{
-		if (_potentiallyCurrent && !(CurrentDescription != this))
+		if (this._potentiallyCurrent && !(UserSettingsEntryDescription.CurrentDescription != this))
 		{
-			CurrentDescription = null;
-			_potentiallyCurrent = false;
+			UserSettingsEntryDescription.CurrentDescription = null;
+			this._potentiallyCurrent = false;
 		}
 	}
 }

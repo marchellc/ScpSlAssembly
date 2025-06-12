@@ -13,20 +13,20 @@ public static class PocketDimensionGenerator
 			return;
 		}
 		System.Random random = Misc.CreateRandom();
-		PocketDimensionTeleport[] array = PrepTeleports();
-		int @int = ConfigFile.ServerConfig.GetInt("pd_exit_count", 2);
-		for (int i = 0; i < @int; i++)
+		PocketDimensionTeleport[] array = PocketDimensionGenerator.PrepTeleports();
+		int num = ConfigFile.ServerConfig.GetInt("pd_exit_count", 2);
+		for (int i = 0; i < num; i++)
 		{
-			if (!ContainsKiller(array))
+			if (!PocketDimensionGenerator.ContainsKiller(array))
 			{
 				break;
 			}
-			int num = -1;
-			while ((num < 0 || array[num].GetTeleportType() == PocketDimensionTeleport.PDTeleportType.Exit) && ContainsKiller(array))
+			int num2 = -1;
+			while ((num2 < 0 || array[num2].GetTeleportType() == PocketDimensionTeleport.PDTeleportType.Exit) && PocketDimensionGenerator.ContainsKiller(array))
 			{
-				num = random.Next(0, array.Length);
+				num2 = random.Next(0, array.Length);
 			}
-			array[Mathf.Clamp(num, 0, array.Length - 1)].SetType(PocketDimensionTeleport.PDTeleportType.Exit);
+			array[Mathf.Clamp(num2, 0, array.Length - 1)].SetType(PocketDimensionTeleport.PDTeleportType.Exit);
 		}
 	}
 

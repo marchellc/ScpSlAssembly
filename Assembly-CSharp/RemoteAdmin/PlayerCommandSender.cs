@@ -4,21 +4,21 @@ public class PlayerCommandSender : CommandSender
 {
 	public readonly ReferenceHub ReferenceHub;
 
-	public override string SenderId => ReferenceHub.authManager.UserId;
+	public override string SenderId => this.ReferenceHub.authManager.UserId;
 
-	public int PlayerId => ReferenceHub.PlayerId;
+	public int PlayerId => this.ReferenceHub.PlayerId;
 
-	public override string Nickname => ReferenceHub.nicknameSync.MyNick;
+	public override string Nickname => this.ReferenceHub.nicknameSync.MyNick;
 
-	public override ulong Permissions => ReferenceHub.serverRoles.Permissions;
+	public override ulong Permissions => this.ReferenceHub.serverRoles.Permissions;
 
 	public override byte KickPower
 	{
 		get
 		{
-			if (!ReferenceHub.authManager.RemoteAdminGlobalAccess)
+			if (!this.ReferenceHub.authManager.RemoteAdminGlobalAccess)
 			{
-				return ReferenceHub.serverRoles.KickPower;
+				return this.ReferenceHub.serverRoles.KickPower;
 			}
 			return byte.MaxValue;
 		}
@@ -26,21 +26,21 @@ public class PlayerCommandSender : CommandSender
 
 	public override bool FullPermissions => false;
 
-	public override string LogName => Nickname + " (" + ReferenceHub.authManager.UserId + ")";
+	public override string LogName => this.Nickname + " (" + this.ReferenceHub.authManager.UserId + ")";
 
 	public PlayerCommandSender(ReferenceHub hub)
 	{
-		ReferenceHub = hub;
+		this.ReferenceHub = hub;
 	}
 
 	public override void RaReply(string text, bool success, bool logToConsole, string overrideDisplay)
 	{
-		ReferenceHub.queryProcessor.SendToClient(text, success, logToConsole, overrideDisplay);
+		this.ReferenceHub.queryProcessor.SendToClient(text, success, logToConsole, overrideDisplay);
 	}
 
 	public override void Print(string text)
 	{
-		ReferenceHub.queryProcessor.SendToClient(text, isSuccess: true, logInConsole: true, "");
+		this.ReferenceHub.queryProcessor.SendToClient(text, isSuccess: true, logInConsole: true, "");
 	}
 
 	public override bool Available()

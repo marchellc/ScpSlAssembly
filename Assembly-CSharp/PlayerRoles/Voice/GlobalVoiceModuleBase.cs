@@ -10,7 +10,7 @@ public abstract class GlobalVoiceModuleBase : StandardVoiceModule
 
 	public override VoiceChatChannel ValidateSend(VoiceChatChannel channel)
 	{
-		if (channel != PrimaryChannel)
+		if (channel != this.PrimaryChannel)
 		{
 			return VoiceChatChannel.None;
 		}
@@ -19,13 +19,13 @@ public abstract class GlobalVoiceModuleBase : StandardVoiceModule
 
 	protected override void ProcessSamples(float[] data, int len)
 	{
-		GlobalPlayback.Buffer.Write(data, len);
+		base.GlobalPlayback.Buffer.Write(data, len);
 	}
 
 	public override VoiceChatChannel ValidateReceive(ReferenceHub speaker, VoiceChatChannel channel)
 	{
 		channel = base.ValidateReceive(speaker, channel);
-		if (channel == PrimaryChannel)
+		if (channel == this.PrimaryChannel)
 		{
 			return channel;
 		}
@@ -42,6 +42,6 @@ public abstract class GlobalVoiceModuleBase : StandardVoiceModule
 		{
 			return VoiceChatChannel.None;
 		}
-		return PrimaryChannel;
+		return this.PrimaryChannel;
 	}
 }

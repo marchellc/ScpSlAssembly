@@ -28,7 +28,7 @@ public class StripdownCommand : ParentCommand, IUsageProvider
 			return false;
 		}
 		response = "Please specify a valid subcommand:";
-		foreach (ICommand allCommand in AllCommands)
+		foreach (ICommand allCommand in this.AllCommands)
 		{
 			response = response + "\n" + allCommand.Command + " - " + allCommand.Description;
 		}
@@ -37,9 +37,9 @@ public class StripdownCommand : ParentCommand, IUsageProvider
 
 	public override void LoadGeneratedCommands()
 	{
-		RegisterCommand(new StripdownComponentCommand());
-		RegisterCommand(new StripdownObjectCommand());
-		RegisterCommand(new StripdownPrintCommand());
-		RegisterCommand(new StripdownValueCommand());
+		this.RegisterCommand(new StripdownComponentCommand());
+		this.RegisterCommand(new StripdownObjectCommand());
+		this.RegisterCommand(new StripdownPrintCommand());
+		this.RegisterCommand(new StripdownValueCommand());
 	}
 }

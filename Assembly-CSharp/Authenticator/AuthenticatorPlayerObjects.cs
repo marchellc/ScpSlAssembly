@@ -16,25 +16,25 @@ public readonly struct AuthenticatorPlayerObjects : IEquatable<AuthenticatorPlay
 
 	public bool Equals(AuthenticatorPlayerObjects other)
 	{
-		return objects == other.objects;
+		return this.objects == other.objects;
 	}
 
 	public override bool Equals(object obj)
 	{
 		if (obj is AuthenticatorPlayerObjects other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		if (objects == null)
+		if (this.objects == null)
 		{
 			return 0;
 		}
-		return objects.GetHashCode();
+		return this.objects.GetHashCode();
 	}
 
 	public static bool operator ==(AuthenticatorPlayerObjects left, AuthenticatorPlayerObjects right)

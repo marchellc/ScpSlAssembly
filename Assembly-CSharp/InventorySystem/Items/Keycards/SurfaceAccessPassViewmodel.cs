@@ -41,7 +41,7 @@ public class SurfaceAccessPassViewmodel : KeycardViewmodel
 	{
 		if (success)
 		{
-			_replaceMaterialWhenReady = true;
+			this._replaceMaterialWhenReady = true;
 			base.PlayUseAnimation(success);
 		}
 	}
@@ -49,19 +49,19 @@ public class SurfaceAccessPassViewmodel : KeycardViewmodel
 	public override void InitAny()
 	{
 		base.InitAny();
-		SetText(TranslatedLabelDetail.KeycardLabelTranslation.SurfaceAccessPassNormal);
+		this.SetText(TranslatedLabelDetail.KeycardLabelTranslation.SurfaceAccessPassNormal);
 	}
 
 	private void Update()
 	{
-		if (_replaceMaterialWhenReady)
+		if (this._replaceMaterialWhenReady)
 		{
-			_materialReplaceDelay -= Time.deltaTime;
-			if (!(_materialReplaceDelay > 0f))
+			this._materialReplaceDelay -= Time.deltaTime;
+			if (!(this._materialReplaceDelay > 0f))
 			{
-				_renderer.sharedMaterial = _usedMaterial;
-				SetText(TranslatedLabelDetail.KeycardLabelTranslation.SurfaceAccessPassUsed);
-				_replaceMaterialWhenReady = false;
+				this._renderer.sharedMaterial = this._usedMaterial;
+				this.SetText(TranslatedLabelDetail.KeycardLabelTranslation.SurfaceAccessPassUsed);
+				this._replaceMaterialWhenReady = false;
 			}
 		}
 	}
@@ -69,29 +69,29 @@ public class SurfaceAccessPassViewmodel : KeycardViewmodel
 	private void SetText(TranslatedLabelDetail.KeycardLabelTranslation translation)
 	{
 		string text = Translations.Get(translation);
-		_textLength = text.Length;
-		_startCharacter = -_startMargin;
-		_labelText.text = text;
-		_labelText.firstVisibleCharacter = 0;
-		_labelText.maxVisibleCharacters = _maxCharacters;
+		this._textLength = text.Length;
+		this._startCharacter = -this._startMargin;
+		this._labelText.text = text;
+		this._labelText.firstVisibleCharacter = 0;
+		this._labelText.maxVisibleCharacters = this._maxCharacters;
 	}
 
 	private void FixedUpdate()
 	{
-		if (--_remainingDelay <= 0)
+		if (--this._remainingDelay <= 0)
 		{
-			if (_startCharacter > _textLength + _endMargin)
+			if (this._startCharacter > this._textLength + this._endMargin)
 			{
-				_startCharacter = -_startMargin;
+				this._startCharacter = -this._startMargin;
 			}
 			else
 			{
-				_startCharacter++;
+				this._startCharacter++;
 			}
-			int num = Mathf.Clamp(_startCharacter, 0, _textLength);
-			_labelText.firstVisibleCharacter = num;
-			_labelText.maxVisibleCharacters = _maxCharacters + num;
-			_remainingDelay = _fixedUpdatesDelay;
+			int num = Mathf.Clamp(this._startCharacter, 0, this._textLength);
+			this._labelText.firstVisibleCharacter = num;
+			this._labelText.maxVisibleCharacters = this._maxCharacters + num;
+			this._remainingDelay = this._fixedUpdatesDelay;
 		}
 	}
 }

@@ -19,27 +19,27 @@ public class Scp079RewardManager : SubroutineBase, IPoolResettable
 
 	public void MarkRoom(RoomIdentifier room)
 	{
-		_markedRooms[room] = CurTime;
+		this._markedRooms[room] = Scp079RewardManager.CurTime;
 	}
 
 	public void MarkRooms(RoomIdentifier[] rooms)
 	{
 		foreach (RoomIdentifier room in rooms)
 		{
-			MarkRoom(room);
+			this.MarkRoom(room);
 		}
 	}
 
 	public void ResetObject()
 	{
-		_markedRooms.Clear();
+		this._markedRooms.Clear();
 	}
 
 	public static bool CheckForRoomInteractions(ReferenceHub scp079Player, RoomIdentifier room)
 	{
 		if (scp079Player.roleManager.CurrentRole is Scp079Role scp)
 		{
-			return CheckForRoomInteractions(scp, room);
+			return Scp079RewardManager.CheckForRoomInteractions(scp, room);
 		}
 		return false;
 	}
@@ -48,7 +48,7 @@ public class Scp079RewardManager : SubroutineBase, IPoolResettable
 	{
 		foreach (Scp079Role activeInstance in Scp079Role.ActiveInstances)
 		{
-			if (CheckForRoomInteractions(activeInstance, room))
+			if (Scp079RewardManager.CheckForRoomInteractions(activeInstance, room))
 			{
 				return true;
 			}
@@ -60,7 +60,7 @@ public class Scp079RewardManager : SubroutineBase, IPoolResettable
 	{
 		if (roomPosition.TryGetRoom(out var room))
 		{
-			return CheckForRoomInteractions(room);
+			return Scp079RewardManager.CheckForRoomInteractions(room);
 		}
 		return false;
 	}
@@ -75,7 +75,7 @@ public class Scp079RewardManager : SubroutineBase, IPoolResettable
 		{
 			return false;
 		}
-		if (CurTime - value > 12.0)
+		if (Scp079RewardManager.CurTime - value > 12.0)
 		{
 			return false;
 		}
@@ -88,12 +88,12 @@ public class Scp079RewardManager : SubroutineBase, IPoolResettable
 		{
 			return;
 		}
-		Scp079GainingExperienceEventArgs scp079GainingExperienceEventArgs = new Scp079GainingExperienceEventArgs(hub, reward, gainReason);
-		Scp079Events.OnGainingExperience(scp079GainingExperienceEventArgs);
-		if (scp079GainingExperienceEventArgs.IsAllowed)
+		Scp079GainingExperienceEventArgs e = new Scp079GainingExperienceEventArgs(hub, reward, gainReason);
+		Scp079Events.OnGainingExperience(e);
+		if (e.IsAllowed)
 		{
-			reward = (int)scp079GainingExperienceEventArgs.Amount;
-			gainReason = scp079GainingExperienceEventArgs.Reason;
+			reward = (int)e.Amount;
+			gainReason = e.Reason;
 			if (instance.SubroutineModule.TryGetSubroutine<Scp079TierManager>(out var subroutine))
 			{
 				subroutine.ServerGrantExperience(reward, gainReason, subject);

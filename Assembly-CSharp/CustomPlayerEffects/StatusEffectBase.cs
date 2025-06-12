@@ -28,13 +28,13 @@ public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectB
 	{
 		get
 		{
-			return _intensity;
+			return this._intensity;
 		}
 		set
 		{
-			if (value <= _intensity || AllowEnabling)
+			if (value <= this._intensity || this.AllowEnabling)
 			{
-				ForceIntensity(value);
+				this.ForceIntensity(value);
 			}
 		}
 	}
@@ -45,13 +45,13 @@ public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectB
 	{
 		get
 		{
-			return Intensity > 0;
+			return this.Intensity > 0;
 		}
 		set
 		{
-			if (value != IsEnabled)
+			if (value != this.IsEnabled)
 			{
-				Intensity = (byte)(value ? 1 : 0);
+				this.Intensity = (byte)(value ? 1 : 0);
 			}
 		}
 	}
@@ -60,13 +60,13 @@ public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectB
 	{
 		get
 		{
-			if (Classification != EffectClassification.Negative)
+			if (this.Classification != EffectClassification.Negative)
 			{
 				return true;
 			}
-			if (!SpawnProtected.CheckPlayer(Hub))
+			if (!SpawnProtected.CheckPlayer(this.Hub))
 			{
-				return !Vitality.CheckPlayer(Hub);
+				return !Vitality.CheckPlayer(this.Hub);
 			}
 			return false;
 		}
@@ -74,21 +74,21 @@ public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectB
 
 	public virtual EffectClassification Classification => EffectClassification.Negative;
 
-	public bool IsLocalPlayer => Hub.isLocalPlayer;
+	public bool IsLocalPlayer => this.Hub.isLocalPlayer;
 
-	public bool IsSpectated => Hub.IsLocallySpectated();
+	public bool IsSpectated => this.Hub.IsLocallySpectated();
 
-	public bool IsPOV => Hub.IsPOV;
+	public bool IsPOV => this.Hub.IsPOV;
 
 	public float Duration
 	{
 		get
 		{
-			return _duration;
+			return this._duration;
 		}
 		private set
 		{
-			_duration = Mathf.Max(0f, value);
+			this._duration = Mathf.Max(0f, value);
 		}
 	}
 
@@ -96,14 +96,14 @@ public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectB
 	{
 		get
 		{
-			return _timeLeft;
+			return this._timeLeft;
 		}
 		set
 		{
-			_timeLeft = Mathf.Max(0f, value);
-			if (_timeLeft == 0f && Duration != 0f)
+			this._timeLeft = Mathf.Max(0f, value);
+			if (this._timeLeft == 0f && this.Duration != 0f)
 			{
-				DisableEffect();
+				this.DisableEffect();
 			}
 		}
 	}
@@ -124,8 +124,8 @@ public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectB
 			Debug.LogWarning("[Server] function 'System.Void CustomPlayerEffects.StatusEffectBase::ServerSetState(System.Byte,System.Single,System.Boolean)' called when server was not active");
 			return;
 		}
-		Intensity = intensity;
-		ServerChangeDuration(duration, addDuration);
+		this.Intensity = intensity;
+		this.ServerChangeDuration(duration, addDuration);
 	}
 
 	[Server]
@@ -137,7 +137,7 @@ public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectB
 		}
 		else
 		{
-			DisableEffect();
+			this.DisableEffect();
 		}
 	}
 
@@ -150,59 +150,59 @@ public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectB
 		}
 		else if (addDuration && duration > 0f)
 		{
-			Duration += duration;
-			TimeLeft += duration;
+			this.Duration += duration;
+			this.TimeLeft += duration;
 		}
 		else
 		{
-			Duration = duration;
-			TimeLeft = Duration;
+			this.Duration = duration;
+			this.TimeLeft = this.Duration;
 		}
 	}
 
 	public void ForceIntensity(byte value)
 	{
-		if (_intensity == value)
+		if (this._intensity == value)
 		{
 			return;
 		}
-		byte intensity = _intensity;
+		byte intensity = this._intensity;
 		bool active = NetworkServer.active;
 		bool flag = intensity == 0 && value > 0;
 		if (active)
 		{
-			PlayerEffectUpdatingEventArgs playerEffectUpdatingEventArgs = new PlayerEffectUpdatingEventArgs(Hub, this, value, Duration);
-			PlayerEvents.OnUpdatingEffect(playerEffectUpdatingEventArgs);
-			if (!playerEffectUpdatingEventArgs.IsAllowed)
+			PlayerEffectUpdatingEventArgs e = new PlayerEffectUpdatingEventArgs(this.Hub, this, value, this.Duration);
+			PlayerEvents.OnUpdatingEffect(e);
+			if (!e.IsAllowed)
 			{
 				return;
 			}
-			value = playerEffectUpdatingEventArgs.Intensity;
-			Duration = playerEffectUpdatingEventArgs.Duration;
+			value = e.Intensity;
+			this.Duration = e.Duration;
 		}
-		_intensity = (byte)Mathf.Min(value, MaxIntensity);
+		this._intensity = (byte)Mathf.Min(value, this.MaxIntensity);
 		if (active)
 		{
-			Hub.playerEffectsController.ServerSyncEffect(this);
-			PlayerEvents.OnUpdatedEffect(new PlayerEffectUpdatedEventArgs(Hub, this, value, Duration));
+			this.Hub.playerEffectsController.ServerSyncEffect(this);
+			PlayerEvents.OnUpdatedEffect(new PlayerEffectUpdatedEventArgs(this.Hub, this, value, this.Duration));
 		}
 		if (flag)
 		{
-			Enabled();
+			this.Enabled();
 			StatusEffectBase.OnEnabled?.Invoke(this);
 		}
 		else if (intensity > 0 && value == 0)
 		{
-			Disabled();
+			this.Disabled();
 			StatusEffectBase.OnDisabled?.Invoke(this);
 		}
-		IntensityChanged(intensity, value);
+		this.IntensityChanged(intensity, value);
 		StatusEffectBase.OnIntensityChanged?.Invoke(this, intensity, value);
 	}
 
 	protected virtual void Awake()
 	{
-		Hub = ReferenceHub.GetHub(base.transform.root.gameObject);
+		this.Hub = ReferenceHub.GetHub(base.transform.root.gameObject);
 	}
 
 	protected virtual void Start()
@@ -211,18 +211,18 @@ public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectB
 
 	protected virtual void Update()
 	{
-		if (IsEnabled)
+		if (this.IsEnabled)
 		{
-			RefreshTime();
-			OnEffectUpdate();
+			this.RefreshTime();
+			this.OnEffectUpdate();
 		}
 	}
 
 	private void RefreshTime()
 	{
-		if (Duration != 0f)
+		if (this.Duration != 0f)
 		{
-			TimeLeft -= Time.deltaTime;
+			this.TimeLeft -= Time.deltaTime;
 		}
 	}
 
@@ -252,19 +252,19 @@ public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectB
 
 	internal virtual void OnRoleChanged(PlayerRoleBase previousRole, PlayerRoleBase newRole)
 	{
-		DisableEffect();
+		this.DisableEffect();
 	}
 
 	internal virtual void OnDeath(PlayerRoleBase previousRole)
 	{
-		DisableEffect();
+		this.DisableEffect();
 	}
 
 	protected virtual void DisableEffect()
 	{
 		if (NetworkServer.active)
 		{
-			Intensity = 0;
+			this.Intensity = 0;
 		}
 	}
 
@@ -287,11 +287,11 @@ public abstract class StatusEffectBase : MonoBehaviour, IEquatable<StatusEffectB
 		{
 			return true;
 		}
-		if (obj.GetType() != GetType())
+		if (obj.GetType() != base.GetType())
 		{
 			return false;
 		}
-		return Equals((StatusEffectBase)obj);
+		return this.Equals((StatusEffectBase)obj);
 	}
 
 	public override int GetHashCode()

@@ -9,7 +9,7 @@ public class HolidaySpawner : MonoBehaviour
 
 	private void Awake()
 	{
-		HolidaySpawnable[] spawnables = Spawnables;
+		HolidaySpawnable[] spawnables = this.Spawnables;
 		foreach (HolidaySpawnable holidaySpawnable in spawnables)
 		{
 			if (holidaySpawnable.AvailableHolidays.IsAnyHolidayActive(mustBeForced: true))

@@ -36,14 +36,14 @@ public class AloneSoundtrack : SoundtrackLayerBase
 
 	public override bool Additive => false;
 
-	public override float Weight => _weight;
+	public override float Weight => this._weight;
 
 	public override void UpdateVolume(float masterScale)
 	{
 		if (ReferenceHub.TryGetLocalHub(out var hub) && (!hub.IsHuman() || hub.GetRoleId() == RoleTypeId.Tutorial))
 		{
-			_weight = 0f;
-			SetVolume(_weight);
+			this._weight = 0f;
+			this.SetVolume(this._weight);
 			return;
 		}
 		bool flag = false;
@@ -66,24 +66,24 @@ public class AloneSoundtrack : SoundtrackLayerBase
 				flag2 = true;
 			}
 		}
-		if (!flag && _hasFoundSCP != flag2)
+		if (!flag && this._hasFoundSCP != flag2)
 		{
-			_hasFoundSCP = flag2;
-			if (_oldAloneTime != 0f)
+			this._hasFoundSCP = flag2;
+			if (this._oldAloneTime != 0f)
 			{
-				_aloneTime = ((90f < _aloneTime) ? 90f : _oldAloneTime);
+				this._aloneTime = ((90f < this._aloneTime) ? 90f : this._oldAloneTime);
 			}
-			_oldAloneTime = (flag2 ? _aloneTime : 0f);
+			this._oldAloneTime = (flag2 ? this._aloneTime : 0f);
 		}
-		_aloneTime = (flag ? 0f : (_aloneTime + Time.deltaTime));
-		float num = ((!base.IsPovMuted && _oldAloneTime == 0f && _aloneTime > 120f && flag3) ? _fadeInSpeed : (0f - _fadeOutSpeed));
-		_weight = Mathf.Clamp01(_weight + num * Time.deltaTime);
-		SetVolume(_weight * masterScale * _maxVolume);
+		this._aloneTime = (flag ? 0f : (this._aloneTime + Time.deltaTime));
+		float num = ((!base.IsPovMuted && this._oldAloneTime == 0f && this._aloneTime > 120f && flag3) ? this._fadeInSpeed : (0f - this._fadeOutSpeed));
+		this._weight = Mathf.Clamp01(this._weight + num * Time.deltaTime);
+		this.SetVolume(this._weight * masterScale * this._maxVolume);
 	}
 
 	private void SetVolume(float volume)
 	{
-		_aloneSource.volume = volume;
+		this._aloneSource.volume = volume;
 	}
 
 	private void Start()
@@ -100,10 +100,10 @@ public class AloneSoundtrack : SoundtrackLayerBase
 	{
 		if (userHub.isLocalPlayer && newRole.Team != Team.Dead)
 		{
-			_weight = 0f;
-			_aloneTime = 0f;
-			_oldAloneTime = 0f;
-			_hasFoundSCP = false;
+			this._weight = 0f;
+			this._aloneTime = 0f;
+			this._oldAloneTime = 0f;
+			this._hasFoundSCP = false;
 		}
 	}
 }

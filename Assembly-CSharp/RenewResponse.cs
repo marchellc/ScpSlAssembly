@@ -40,9 +40,9 @@ public readonly struct RenewResponse : IEquatable<RenewResponse>, IJsonSerializa
 
 	public bool Equals(RenewResponse other)
 	{
-		if (success == other.success && error == other.error && id == other.id && nonce == other.nonce && country == other.country && flags == other.flags && expiration == other.expiration && preauth == other.preauth && globalBan == other.globalBan)
+		if (this.success == other.success && this.error == other.error && this.id == other.id && this.nonce == other.nonce && this.country == other.country && this.flags == other.flags && this.expiration == other.expiration && this.preauth == other.preauth && this.globalBan == other.globalBan)
 		{
-			return lifetime == other.lifetime;
+			return this.lifetime == other.lifetime;
 		}
 		return false;
 	}
@@ -51,20 +51,20 @@ public readonly struct RenewResponse : IEquatable<RenewResponse>, IJsonSerializa
 	{
 		if (obj is RenewResponse other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}
 
 	public override int GetHashCode()
 	{
-		bool flag = success;
-		int num = ((((((((flag.GetHashCode() * 397) ^ ((error != null) ? error.GetHashCode() : 0)) * 397) ^ ((id != null) ? id.GetHashCode() : 0)) * 397) ^ ((nonce != null) ? nonce.GetHashCode() : 0)) * 397) ^ ((country != null) ? country.GetHashCode() : 0)) * 397;
-		byte b = flags;
+		bool flag = this.success;
+		int num = ((((((((flag.GetHashCode() * 397) ^ ((this.error != null) ? this.error.GetHashCode() : 0)) * 397) ^ ((this.id != null) ? this.id.GetHashCode() : 0)) * 397) ^ ((this.nonce != null) ? this.nonce.GetHashCode() : 0)) * 397) ^ ((this.country != null) ? this.country.GetHashCode() : 0)) * 397;
+		byte b = this.flags;
 		int num2 = (num ^ b.GetHashCode()) * 397;
-		long num3 = expiration;
-		int num4 = (((((num2 ^ num3.GetHashCode()) * 397) ^ ((preauth != null) ? preauth.GetHashCode() : 0)) * 397) ^ ((globalBan != null) ? globalBan.GetHashCode() : 0)) * 397;
-		ushort num5 = lifetime;
+		long num3 = this.expiration;
+		int num4 = (((((num2 ^ num3.GetHashCode()) * 397) ^ ((this.preauth != null) ? this.preauth.GetHashCode() : 0)) * 397) ^ ((this.globalBan != null) ? this.globalBan.GetHashCode() : 0)) * 397;
+		ushort num5 = this.lifetime;
 		return num4 ^ num5.GetHashCode();
 	}
 

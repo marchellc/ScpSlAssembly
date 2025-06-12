@@ -15,8 +15,8 @@ public class ResolutionDropdown : MonoBehaviour
 
 	private void Awake()
 	{
-		_dropdown = GetComponent<TMP_Dropdown>();
-		UpdateValues();
+		this._dropdown = base.GetComponent<TMP_Dropdown>();
+		this.UpdateValues();
 		DisplayVideoSettings.OnDisplayChanged += UpdateValues;
 		UserSetting<int>.AddListener(DisplayVideoSetting.AspectRatio, OnAspectRatioChanged);
 	}
@@ -29,38 +29,39 @@ public class ResolutionDropdown : MonoBehaviour
 
 	private void Update()
 	{
-		Resolution resolution = default(Resolution);
-		resolution.width = Screen.width;
-		resolution.height = Screen.height;
-		Resolution res = resolution;
-		_unsupportedRatioText.enabled = !DisplayVideoSettings.IsSupportedRatio(res);
+		Resolution res = new Resolution
+		{
+			width = Screen.width,
+			height = Screen.height
+		};
+		this._unsupportedRatioText.enabled = !DisplayVideoSettings.IsSupportedRatio(res);
 	}
 
 	private void UpdateValues()
 	{
-		OnAspectRatioChanged(UserSetting<int>.Get(DisplayVideoSetting.AspectRatio));
+		this.OnAspectRatioChanged(UserSetting<int>.Get(DisplayVideoSetting.AspectRatio));
 	}
 
 	private void OnAspectRatioChanged(int selectedOption)
 	{
-		_dropdown.ClearOptions();
+		this._dropdown.ClearOptions();
 		bool flag = false;
 		Resolution[] selectedAspectResolutions = DisplayVideoSettings.GetSelectedAspectResolutions(selectedOption);
 		for (int i = 0; i < selectedAspectResolutions.Length; i++)
 		{
 			Resolution resolution = selectedAspectResolutions[i];
 			flag = true;
-			_dropdown.options.Add(new TMP_Dropdown.OptionData($"{resolution.width} × {resolution.height}"));
+			this._dropdown.options.Add(new TMP_Dropdown.OptionData($"{resolution.width} × {resolution.height}"));
 		}
-		_dropdown.interactable = flag;
+		this._dropdown.interactable = flag;
 		if (!flag)
 		{
-			_dropdown.options.Add(new TMP_Dropdown.OptionData(_noResolutionsErrorMessage.DisplayText));
+			this._dropdown.options.Add(new TMP_Dropdown.OptionData(this._noResolutionsErrorMessage.DisplayText));
 		}
 		else
 		{
-			_dropdown.SetValueWithoutNotify(UserSetting<int>.Get(DisplayVideoSetting.Resolution));
+			this._dropdown.SetValueWithoutNotify(UserSetting<int>.Get(DisplayVideoSetting.Resolution));
 		}
-		_dropdown.RefreshShownValue();
+		this._dropdown.RefreshShownValue();
 	}
 }

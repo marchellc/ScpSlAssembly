@@ -19,8 +19,8 @@ public class SpawnableClutterConnector : SpawnableRoomConnector
 		public Bounds GetWorldspaceBounds(Transform refTransform)
 		{
 			refTransform.GetPositionAndRotation(out var position, out var rotation);
-			Vector3 vector = rotation * _bounds.center;
-			Vector3 size = (rotation * _bounds.size).Abs();
+			Vector3 vector = rotation * this._bounds.center;
+			Vector3 size = (rotation * this._bounds.size).Abs();
 			return new Bounds(position + vector, size);
 		}
 	}
@@ -33,7 +33,7 @@ public class SpawnableClutterConnector : SpawnableRoomConnector
 	public bool Intersects(Bounds targetBounds)
 	{
 		Transform refTransform = base.transform;
-		foreach (SerializedClutter item in _clutter)
+		foreach (SerializedClutter item in this._clutter)
 		{
 			if (item.GetWorldspaceBounds(refTransform).Intersects(targetBounds))
 			{
@@ -43,12 +43,13 @@ public class SpawnableClutterConnector : SpawnableRoomConnector
 		return false;
 	}
 
-	private void Start()
+	protected override void Start()
 	{
-		IRoomConnector component = GetComponent<IRoomConnector>();
+		base.Start();
+		IRoomConnector component = base.GetComponent<IRoomConnector>();
 		if (component.RoomsAlreadyRegistered)
 		{
-			CheckClutterConflicts();
+			this.CheckClutterConflicts();
 		}
 		else
 		{
@@ -56,10 +57,16 @@ public class SpawnableClutterConnector : SpawnableRoomConnector
 		}
 	}
 
+	protected override void OnDestroy()
+	{
+		base.OnDestroy();
+		SpawnableClutterConnector.Instances.Remove(this);
+	}
+
 	private void CheckClutterConflicts()
 	{
 		Transform refTransform = base.transform;
-		foreach (SerializedClutter item in _clutter)
+		foreach (SerializedClutter item in this._clutter)
 		{
 			Bounds worldspaceBounds = item.GetWorldspaceBounds(refTransform);
 			foreach (IClutterBlocker instance in IClutterBlocker.Instances)
@@ -74,17 +81,12 @@ public class SpawnableClutterConnector : SpawnableRoomConnector
 
 	private void Awake()
 	{
-		Instances.Add(this);
-	}
-
-	private void OnDestroy()
-	{
-		Instances.Remove(this);
+		SpawnableClutterConnector.Instances.Add(this);
 	}
 
 	private void OnDrawGizmosSelected()
 	{
-		foreach (SerializedClutter item in _clutter)
+		foreach (SerializedClutter item in this._clutter)
 		{
 			Bounds worldspaceBounds = item.GetWorldspaceBounds(base.transform);
 			Gizmos.color = Color.green;
@@ -95,7 +97,7 @@ public class SpawnableClutterConnector : SpawnableRoomConnector
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		CustomNetworkManager.OnClientReady += Instances.Clear;
+		CustomNetworkManager.OnClientReady += SpawnableClutterConnector.Instances.Clear;
 	}
 
 	public override bool Weaved()

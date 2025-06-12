@@ -29,11 +29,11 @@ public struct PickupSyncInfo : IEquatable<PickupSyncInfo>
 	{
 		get
 		{
-			return (byte)_flags;
+			return (byte)this._flags;
 		}
 		set
 		{
-			_flags = (PickupFlags)value;
+			this._flags = (PickupFlags)value;
 		}
 	}
 
@@ -41,11 +41,11 @@ public struct PickupSyncInfo : IEquatable<PickupSyncInfo>
 	{
 		get
 		{
-			return (_flags & PickupFlags.Locked) == PickupFlags.Locked;
+			return (this._flags & PickupFlags.Locked) == PickupFlags.Locked;
 		}
 		set
 		{
-			_flags = (value ? (_flags | PickupFlags.Locked) : (_flags & ~PickupFlags.Locked));
+			this._flags = (value ? (this._flags | PickupFlags.Locked) : (this._flags & ~PickupFlags.Locked));
 		}
 	}
 
@@ -53,29 +53,29 @@ public struct PickupSyncInfo : IEquatable<PickupSyncInfo>
 	{
 		get
 		{
-			return (_flags & PickupFlags.InUse) == PickupFlags.InUse;
+			return (this._flags & PickupFlags.InUse) == PickupFlags.InUse;
 		}
 		set
 		{
-			_flags = (value ? (_flags | PickupFlags.InUse) : (_flags & ~PickupFlags.InUse));
+			this._flags = (value ? (this._flags | PickupFlags.InUse) : (this._flags & ~PickupFlags.InUse));
 		}
 	}
 
 	public PickupSyncInfo(ItemType id, float weight, ushort serial = 0, bool locked = false)
 	{
-		ItemId = id;
-		WeightKg = weight;
-		_flags = (locked ? PickupFlags.Locked : ((PickupFlags)0));
-		Serial = ((serial == 0) ? ItemSerialGenerator.GenerateNext() : serial);
+		this.ItemId = id;
+		this.WeightKg = weight;
+		this._flags = (locked ? PickupFlags.Locked : ((PickupFlags)0));
+		this.Serial = ((serial == 0) ? ItemSerialGenerator.GenerateNext() : serial);
 	}
 
 	public override int GetHashCode()
 	{
-		if (Serial == 0)
+		if (this.Serial == 0)
 		{
-			return ((int)ItemId * 397) ^ (int)_flags;
+			return ((int)this.ItemId * 397) ^ (int)this._flags;
 		}
-		return Serial;
+		return this.Serial;
 	}
 
 	public static bool operator ==(PickupSyncInfo left, PickupSyncInfo right)
@@ -90,9 +90,9 @@ public struct PickupSyncInfo : IEquatable<PickupSyncInfo>
 
 	public bool Equals(PickupSyncInfo other)
 	{
-		if (ItemId == other.ItemId && WeightKg == other.WeightKg)
+		if (this.ItemId == other.ItemId && this.WeightKg == other.WeightKg)
 		{
-			return _flags == other._flags;
+			return this._flags == other._flags;
 		}
 		return false;
 	}
@@ -101,7 +101,7 @@ public struct PickupSyncInfo : IEquatable<PickupSyncInfo>
 	{
 		if (obj is PickupSyncInfo other)
 		{
-			return Equals(other);
+			return this.Equals(other);
 		}
 		return false;
 	}

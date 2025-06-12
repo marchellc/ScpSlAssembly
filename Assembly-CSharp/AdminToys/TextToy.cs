@@ -13,7 +13,7 @@ public class TextToy : AdminToyBase
 	public readonly SyncList<string> Arguments = new SyncList<string>();
 
 	[SyncVar(hook = "OnDisplaySizeChanged")]
-	private Vector2 _displaySize = DefaultDisplaySize;
+	private Vector2 _displaySize = TextToy.DefaultDisplaySize;
 
 	[SyncVar(hook = "OnTextFormatedChanged")]
 	private string _textFormat;
@@ -30,11 +30,11 @@ public class TextToy : AdminToyBase
 	{
 		get
 		{
-			return _displaySize;
+			return this._displaySize;
 		}
 		set
 		{
-			Network_displaySize = value;
+			this.Network_displaySize = value;
 		}
 	}
 
@@ -42,11 +42,11 @@ public class TextToy : AdminToyBase
 	{
 		get
 		{
-			return _textFormat;
+			return this._textFormat;
 		}
 		set
 		{
-			Network_textFormat = value;
+			this.Network_textFormat = value;
 		}
 	}
 
@@ -54,12 +54,12 @@ public class TextToy : AdminToyBase
 	{
 		get
 		{
-			return _displaySize;
+			return this._displaySize;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _displaySize, 32uL, OnDisplaySizeChanged);
+			base.GeneratedSyncVarSetter(value, ref this._displaySize, 32uL, OnDisplaySizeChanged);
 		}
 	}
 
@@ -67,12 +67,12 @@ public class TextToy : AdminToyBase
 	{
 		get
 		{
-			return _textFormat;
+			return this._textFormat;
 		}
 		[param: In]
 		set
 		{
-			GeneratedSyncVarSetter(value, ref _textFormat, 64uL, OnTextFormatedChanged);
+			base.GeneratedSyncVarSetter(value, ref this._textFormat, 64uL, OnTextFormatedChanged);
 		}
 	}
 
@@ -94,30 +94,30 @@ public class TextToy : AdminToyBase
 		base.transform.SetPositionAndRotation(position, rotation);
 		if (arguments.Array.Length > 2)
 		{
-			TextFormat = string.Join(' ', arguments.Array[2..]);
+			this.TextFormat = string.Join(' ', arguments.Array[2..]);
 		}
 	}
 
 	public override void OnStartClient()
 	{
 		base.OnStartClient();
-		Arguments.OnModified += RefreshText;
+		this.Arguments.OnModified += RefreshText;
 	}
 
 	private void RefreshText()
 	{
-		if (!(_textMesh == null))
+		if (!(this._textMesh == null))
 		{
-			if (Arguments.Count > 0 && !string.IsNullOrEmpty(TextFormat))
+			if (this.Arguments.Count > 0 && !string.IsNullOrEmpty(this.TextFormat))
 			{
-				TMP_Text textMesh = _textMesh;
-				string textFormat = TextFormat;
-				object[] args = Arguments.ToArray();
+				TMP_Text textMesh = this._textMesh;
+				string textFormat = this.TextFormat;
+				object[] args = this.Arguments.ToArray();
 				textMesh.SetText(Misc.FormatAvailable(textFormat, args));
 			}
 			else
 			{
-				_textMesh.SetText(TextFormat);
+				this._textMesh.SetText(this.TextFormat);
 			}
 		}
 	}
@@ -126,27 +126,27 @@ public class TextToy : AdminToyBase
 	{
 		if (!NetworkServer.active)
 		{
-			_textMesh = GetComponentInChildren<TMP_Text>();
-			_rectTransform = _textMesh.gameObject.GetComponent<RectTransform>();
+			this._textMesh = base.GetComponentInChildren<TMP_Text>();
+			this._rectTransform = this._textMesh.gameObject.GetComponent<RectTransform>();
 		}
 	}
 
 	private void OnDisplaySizeChanged(Vector2 oldSize, Vector2 newSize)
 	{
-		if (!(_rectTransform == null))
+		if (!(this._rectTransform == null))
 		{
-			_rectTransform.sizeDelta = newSize;
+			this._rectTransform.sizeDelta = newSize;
 		}
 	}
 
 	private void OnTextFormatedChanged(string oldValue, string newValue)
 	{
-		RefreshText();
+		this.RefreshText();
 	}
 
 	public TextToy()
 	{
-		InitSyncObject(Arguments);
+		base.InitSyncObject(this.Arguments);
 	}
 
 	public override bool Weaved()
@@ -159,18 +159,18 @@ public class TextToy : AdminToyBase
 		base.SerializeSyncVars(writer, forceAll);
 		if (forceAll)
 		{
-			writer.WriteVector2(_displaySize);
-			writer.WriteString(_textFormat);
+			writer.WriteVector2(this._displaySize);
+			writer.WriteString(this._textFormat);
 			return;
 		}
 		writer.WriteULong(base.syncVarDirtyBits);
 		if ((base.syncVarDirtyBits & 0x20L) != 0L)
 		{
-			writer.WriteVector2(_displaySize);
+			writer.WriteVector2(this._displaySize);
 		}
 		if ((base.syncVarDirtyBits & 0x40L) != 0L)
 		{
-			writer.WriteString(_textFormat);
+			writer.WriteString(this._textFormat);
 		}
 	}
 
@@ -179,18 +179,18 @@ public class TextToy : AdminToyBase
 		base.DeserializeSyncVars(reader, initialState);
 		if (initialState)
 		{
-			GeneratedSyncVarDeserialize(ref _displaySize, OnDisplaySizeChanged, reader.ReadVector2());
-			GeneratedSyncVarDeserialize(ref _textFormat, OnTextFormatedChanged, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._displaySize, OnDisplaySizeChanged, reader.ReadVector2());
+			base.GeneratedSyncVarDeserialize(ref this._textFormat, OnTextFormatedChanged, reader.ReadString());
 			return;
 		}
 		long num = (long)reader.ReadULong();
 		if ((num & 0x20L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _displaySize, OnDisplaySizeChanged, reader.ReadVector2());
+			base.GeneratedSyncVarDeserialize(ref this._displaySize, OnDisplaySizeChanged, reader.ReadVector2());
 		}
 		if ((num & 0x40L) != 0L)
 		{
-			GeneratedSyncVarDeserialize(ref _textFormat, OnTextFormatedChanged, reader.ReadString());
+			base.GeneratedSyncVarDeserialize(ref this._textFormat, OnTextFormatedChanged, reader.ReadString());
 		}
 	}
 }

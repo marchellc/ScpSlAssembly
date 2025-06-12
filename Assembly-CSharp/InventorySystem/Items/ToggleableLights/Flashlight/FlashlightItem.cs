@@ -18,36 +18,36 @@ public class FlashlightItem : ToggleableLightItemBase
 	{
 		get
 		{
-			if (_cacheSet)
+			if (FlashlightItem._cacheSet)
 			{
-				return _cachedFlashlight;
+				return FlashlightItem._cachedFlashlight;
 			}
 			if (!InventoryItemLoader.TryGetItem<FlashlightItem>(ItemType.Flashlight, out var result))
 			{
 				throw new InvalidOperationException($"Item {ItemType.Flashlight} is not defined!");
 			}
-			_cachedFlashlight = result;
-			_cacheSet = true;
+			FlashlightItem._cachedFlashlight = result;
+			FlashlightItem._cacheSet = true;
 			return result;
 		}
 	}
 
 	protected override void SetLightSourceStatus(bool value)
 	{
-		_lightSource.enabled = value;
+		this._lightSource.enabled = value;
 	}
 
 	public override void OnAdded(ItemPickupBase pickup)
 	{
-		if (IsLocalPlayer)
+		if (this.IsLocalPlayer)
 		{
-			_lightSource = ViewModel.GetComponentInChildren<Light>(includeInactive: true);
+			this._lightSource = base.ViewModel.GetComponentInChildren<Light>(includeInactive: true);
 		}
 	}
 
 	protected override void OnToggled()
 	{
-		(ViewModel as FlashlightViewmodel)?.PlayAnimation();
-		NextAllowedTime = Time.timeSinceLevelLoad + 0.13f;
+		(base.ViewModel as FlashlightViewmodel)?.PlayAnimation();
+		base.NextAllowedTime = Time.timeSinceLevelLoad + 0.13f;
 	}
 }

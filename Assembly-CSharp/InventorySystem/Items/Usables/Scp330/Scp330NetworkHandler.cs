@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Footprinting;
 using InventorySystem.Items.Pickups;
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
 using Mirror;
 using UnityEngine;
 using Utils.Networking;
@@ -25,7 +27,7 @@ public static class Scp330NetworkHandler
 		NetworkServer.ReplaceHandler<SelectScp330Message>(ServerSelectMessageReceived);
 		NetworkClient.ReplaceHandler<SelectScp330Message>(ClientSelectMessageReceived);
 		NetworkClient.ReplaceHandler<SyncScp330Message>(ClientSyncMessageReceived);
-		ReceivedSelectedCandies.Clear();
+		Scp330NetworkHandler.ReceivedSelectedCandies.Clear();
 	}
 
 	private static void ServerSelectMessageReceived(NetworkConnection conn, SelectScp330Message msg)
@@ -49,7 +51,7 @@ public static class Scp330NetworkHandler
 		{
 			scp330Pickup.PreviousOwner = new Footprint(bag.Owner);
 			CandyKindID candyKindID = bag.TryRemove(index);
-			if (candyKindID != 0)
+			if (candyKindID != CandyKindID.None)
 			{
 				scp330Pickup.NetworkExposedCandy = candyKindID;
 				scp330Pickup.StoredCandies.Add(candyKindID);
@@ -61,15 +63,21 @@ public static class Scp330NetworkHandler
 	{
 		if (bag.Candies.TryGet(index, out var element))
 		{
-			bag.SelectedCandyId = index;
-			PlayerHandler handler = UsableItemsController.GetHandler(bag.Owner);
-			handler.CurrentUsable = new CurrentlyUsedItem(bag, bag.ItemSerial, Time.timeSinceLevelLoad);
-			handler.CurrentUsable.Item.OnUsingStarted();
-			SelectScp330Message message = default(SelectScp330Message);
-			message.CandyID = (int)element;
-			message.Drop = false;
-			message.Serial = bag.ItemSerial;
-			message.SendToAuthenticated();
+			PlayerUsingItemEventArgs e = new PlayerUsingItemEventArgs(bag.Owner, bag);
+			PlayerEvents.OnUsingItem(e);
+			if (e.IsAllowed)
+			{
+				bag.SelectedCandyId = index;
+				PlayerHandler handler = UsableItemsController.GetHandler(bag.Owner);
+				handler.CurrentUsable = new CurrentlyUsedItem(bag, bag.ItemSerial, Time.timeSinceLevelLoad);
+				handler.CurrentUsable.Item.OnUsingStarted();
+				new SelectScp330Message
+				{
+					CandyID = (int)element,
+					Drop = false,
+					Serial = bag.ItemSerial
+				}.SendToAuthenticated();
+			}
 		}
 	}
 
@@ -84,7 +92,7 @@ public static class Scp330NetworkHandler
 	private static void ClientSelectMessageReceived(SelectScp330Message msg)
 	{
 		CandyKindID candyKindID = (CandyKindID)msg.CandyID;
-		ReceivedSelectedCandies[msg.Serial] = candyKindID;
+		Scp330NetworkHandler.ReceivedSelectedCandies[msg.Serial] = candyKindID;
 		Scp330NetworkHandler.OnClientSelectMessageReceived?.Invoke(msg);
 		if (InventoryExtensions.TryGetHubHoldingSerial(msg.Serial, out var hub))
 		{
@@ -119,10 +127,11 @@ public static class Scp330NetworkHandler
 		{
 			list.Add((CandyKindID)reader.ReadByte());
 		}
-		SyncScp330Message result = default(SyncScp330Message);
-		result.Candies = list;
-		result.Serial = serial;
-		return result;
+		return new SyncScp330Message
+		{
+			Candies = list,
+			Serial = serial
+		};
 	}
 
 	public static void SerializeSelectMessage(this NetworkWriter writer, SelectScp330Message value)
@@ -136,10 +145,11 @@ public static class Scp330NetworkHandler
 	{
 		ushort serial = reader.ReadUShort();
 		int num = reader.ReadSByte();
-		SelectScp330Message result = default(SelectScp330Message);
-		result.CandyID = Mathf.Abs(num) - 1;
-		result.Serial = serial;
-		result.Drop = num < 0;
-		return result;
+		return new SelectScp330Message
+		{
+			CandyID = Mathf.Abs(num) - 1,
+			Serial = serial,
+			Drop = (num < 0)
+		};
 	}
 }

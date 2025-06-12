@@ -11,7 +11,7 @@ public class MicroHidModuleBase : SubcomponentBase
 	protected override void OnInit()
 	{
 		base.OnInit();
-		MicroHid = base.Item as MicroHIDItem;
-		Viewmodel = MicroHid.ViewModel as MicroHIDViewmodel;
+		this.MicroHid = base.Item as MicroHIDItem;
+		this.Viewmodel = this.MicroHid.ViewModel as MicroHIDViewmodel;
 	}
 }

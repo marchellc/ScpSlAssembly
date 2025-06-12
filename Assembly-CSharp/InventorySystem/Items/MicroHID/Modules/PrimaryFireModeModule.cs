@@ -58,21 +58,21 @@ public class PrimaryFireModeModule : FiringModeControllerModule
 		base.ServerUpdateSelected(status);
 		if (status == MicroHidPhase.Firing)
 		{
-			ServerRequestBacktrack(ServerFire);
+			base.ServerRequestBacktrack(ServerFire);
 		}
 	}
 
 	private void ServerFire()
 	{
 		ReferenceHub owner = base.Item.Owner;
-		HitregUtils.Raycast(owner.PlayerCameraReference, 0.2f, FiringRange, out var _);
+		HitregUtils.Raycast(owner.PlayerCameraReference, 0.2f, this.FiringRange, out var _);
 		HitboxIdentity hitboxIdentity = null;
 		float num = float.MaxValue;
 		foreach (IDestructible detectedDestructible in HitregUtils.DetectedDestructibles)
 		{
 			if (!(detectedDestructible is HitboxIdentity hitboxIdentity2))
 			{
-				detectedDestructible.ServerDealDamage(this, FrameDamage);
+				detectedDestructible.ServerDealDamage(this, this.FrameDamage);
 			}
 			else if (!(hitboxIdentity2.TargetHub == owner) && hitboxIdentity2.TargetHub.roleManager.CurrentRole is IFpcRole target)
 			{
@@ -86,7 +86,7 @@ public class PrimaryFireModeModule : FiringModeControllerModule
 		}
 		if (hitboxIdentity != null)
 		{
-			hitboxIdentity.ServerDealDamage(this, FrameDamage);
+			hitboxIdentity.ServerDealDamage(this, this.FrameDamage);
 		}
 	}
 }

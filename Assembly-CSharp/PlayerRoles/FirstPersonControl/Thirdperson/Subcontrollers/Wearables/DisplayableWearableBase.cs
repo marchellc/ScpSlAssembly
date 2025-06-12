@@ -15,25 +15,25 @@ public abstract class DisplayableWearableBase : MonoBehaviour
 
 	public bool IsVisible { get; private set; }
 
-	public bool IsWorn => (Subcontroller.SyncWearable & Id) != 0;
+	public bool IsWorn => (this.Subcontroller.SyncWearable & this.Id) != 0;
 
-	public AnimatedCharacterModel Model => Subcontroller.Model;
+	public AnimatedCharacterModel Model => this.Subcontroller.Model;
 
-	public Animator Animator => Model.Animator;
+	public Animator Animator => this.Model.Animator;
 
 	public WearableSubcontroller Subcontroller { get; private set; }
 
 	public virtual void Initialize(WearableSubcontroller subcontroller)
 	{
-		Subcontroller = subcontroller;
+		this.Subcontroller = subcontroller;
 	}
 
 	public virtual void OnFlagsUpdated()
 	{
-		if (_prevWorn != IsWorn)
+		if (this._prevWorn != this.IsWorn)
 		{
-			_prevWorn = !_prevWorn;
-			OnWornStatusChanged();
+			this._prevWorn = !this._prevWorn;
+			this.OnWornStatusChanged();
 		}
 	}
 
@@ -55,10 +55,10 @@ public abstract class DisplayableWearableBase : MonoBehaviour
 
 	public void SetVisible(bool newVisible)
 	{
-		if (newVisible != IsVisible)
+		if (newVisible != this.IsVisible)
 		{
-			IsVisible = newVisible;
-			UpdateVisibility();
+			this.IsVisible = newVisible;
+			this.UpdateVisibility();
 		}
 	}
 
@@ -70,13 +70,13 @@ public abstract class DisplayableWearableBase : MonoBehaviour
 
 	public void SendRpc(Action<NetworkWriter> extraData = null)
 	{
-		_lastWriter = extraData;
-		SubcontrollerRpcHandler.ServerSendRpc(Subcontroller, WriteRpc);
+		this._lastWriter = extraData;
+		SubcontrollerRpcHandler.ServerSendRpc(this.Subcontroller, WriteRpc);
 	}
 
 	private void WriteRpc(NetworkWriter writer)
 	{
-		writer.WriteByte((byte)Id);
-		_lastWriter?.Invoke(writer);
+		writer.WriteByte((byte)this.Id);
+		this._lastWriter?.Invoke(writer);
 	}
 }

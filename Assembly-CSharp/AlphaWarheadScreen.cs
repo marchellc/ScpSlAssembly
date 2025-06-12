@@ -18,33 +18,33 @@ public class AlphaWarheadScreen : MonoBehaviour
 
 	private void Start()
 	{
-		if (!Instances.Contains(this))
+		if (!AlphaWarheadScreen.Instances.Contains(this))
 		{
-			Instances.Add(this);
+			AlphaWarheadScreen.Instances.Add(this);
 		}
-		UpdateScreen();
+		this.UpdateScreen();
 	}
 
 	private void OnDestroy()
 	{
-		Instances.Remove(this);
+		AlphaWarheadScreen.Instances.Remove(this);
 	}
 
 	private void UpdateScreen()
 	{
-		_text.text = _lastText;
-		GameObject[] inevitable = _inevitable;
+		this._text.text = AlphaWarheadScreen._lastText;
+		GameObject[] inevitable = this._inevitable;
 		for (int i = 0; i < inevitable.Length; i++)
 		{
-			inevitable[i].SetActive(_lastInevitable);
+			inevitable[i].SetActive(AlphaWarheadScreen._lastInevitable);
 		}
 	}
 
 	public static void SetScreen(string text, bool showInevitableWarn)
 	{
-		_lastText = text;
-		_lastInevitable = showInevitableWarn;
-		foreach (AlphaWarheadScreen instance in Instances)
+		AlphaWarheadScreen._lastText = text;
+		AlphaWarheadScreen._lastInevitable = showInevitableWarn;
+		foreach (AlphaWarheadScreen instance in AlphaWarheadScreen.Instances)
 		{
 			instance.UpdateScreen();
 		}

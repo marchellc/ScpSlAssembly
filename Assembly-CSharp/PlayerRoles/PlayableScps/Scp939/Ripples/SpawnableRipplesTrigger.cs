@@ -20,7 +20,7 @@ public class SpawnableRipplesTrigger : RippleTriggerBase
 	{
 		if (base.IsLocalOrSpectated)
 		{
-			PlayInRange(sr.transform.position, sr.Range, Color.red);
+			base.PlayInRange(sr.transform.position, sr.Range, Color.red);
 		}
 	}
 }

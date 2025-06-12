@@ -10,7 +10,7 @@ public readonly struct HitRayPair
 
 	public HitRayPair(Ray ray, RaycastHit hit)
 	{
-		Ray = ray;
-		Hit = hit;
+		this.Ray = ray;
+		this.Hit = hit;
 	}
 }

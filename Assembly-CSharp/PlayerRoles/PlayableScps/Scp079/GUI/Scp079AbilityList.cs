@@ -41,19 +41,19 @@ public class Scp079AbilityList : Scp079GuiElementBase
 	{
 		get
 		{
-			if (_cachedAlpha < 0f)
+			if (this._cachedAlpha < 0f)
 			{
-				_cachedAlpha = _failMessageText.alpha;
+				this._cachedAlpha = this._failMessageText.alpha;
 			}
-			return _cachedAlpha;
+			return this._cachedAlpha;
 		}
 		set
 		{
 			value = Mathf.Clamp01(value);
-			if (value != _cachedAlpha)
+			if (value != this._cachedAlpha)
 			{
-				_failMessageText.alpha = value;
-				_cachedAlpha = value;
+				this._failMessageText.alpha = value;
+				this._cachedAlpha = value;
 			}
 		}
 	}
@@ -64,11 +64,11 @@ public class Scp079AbilityList : Scp079GuiElementBase
 	{
 		get
 		{
-			return _trackedMessage;
+			return this._trackedMessage;
 		}
 		set
 		{
-			bool flag = value == null || (value is Object @object && @object == null);
+			bool flag = value == null || (value is Object obj && obj == null);
 			if (!flag)
 			{
 				value.OnFailMessageAssigned();
@@ -77,61 +77,61 @@ public class Scp079AbilityList : Scp079GuiElementBase
 					return;
 				}
 			}
-			_trackedMessage = value;
-			_failTextReady = false;
+			this._trackedMessage = value;
+			this._failTextReady = false;
 			if (!flag)
 			{
-				_fadeoutBeginTime = CurrentTime + 4f;
-				_fadeoutEndTime = _fadeoutBeginTime + 1.8f;
-				PlaySound(_popupSound);
+				this._fadeoutBeginTime = Scp079AbilityList.CurrentTime + 4f;
+				this._fadeoutEndTime = this._fadeoutBeginTime + 1.8f;
+				base.PlaySound(this._popupSound);
 			}
 		}
 	}
 
 	public static bool TryGetSingleton(out Scp079AbilityList singleton)
 	{
-		singleton = _singleton;
+		singleton = Scp079AbilityList._singleton;
 		return singleton != null;
 	}
 
 	private void Awake()
 	{
-		_singleton = this;
+		Scp079AbilityList._singleton = this;
 	}
 
 	private void Update()
 	{
-		UpdateFailMessage();
-		UpdateList();
+		this.UpdateFailMessage();
+		this.UpdateList();
 	}
 
 	private void UpdateFailMessage()
 	{
-		if (!_failTextReady || _trackedMessage == null || string.IsNullOrEmpty(_trackedMessage.FailMessage))
+		if (!this._failTextReady || this._trackedMessage == null || string.IsNullOrEmpty(this._trackedMessage.FailMessage))
 		{
-			FailMessageAlpha -= Time.deltaTime * 5.5f;
-			if (FailMessageAlpha == 0f)
+			this.FailMessageAlpha -= Time.deltaTime * 5.5f;
+			if (this.FailMessageAlpha == 0f)
 			{
-				_failTextReady = true;
+				this._failTextReady = true;
 			}
 		}
 		else
 		{
-			float target = 1f - Mathf.InverseLerp(_fadeoutBeginTime, _fadeoutEndTime, CurrentTime);
-			FailMessageAlpha = Mathf.MoveTowards(FailMessageAlpha, target, Time.deltaTime * 5.5f);
-			_failMessageText.text = _trackedMessage.FailMessage;
+			float target = 1f - Mathf.InverseLerp(this._fadeoutBeginTime, this._fadeoutEndTime, Scp079AbilityList.CurrentTime);
+			this.FailMessageAlpha = Mathf.MoveTowards(this.FailMessageAlpha, target, Time.deltaTime * 5.5f);
+			this._failMessageText.text = this._trackedMessage.FailMessage;
 		}
 	}
 
 	private void UpdateList()
 	{
-		UpdateGroup(isLeft: true);
-		UpdateGroup(isLeft: false);
+		this.UpdateGroup(isLeft: true);
+		this.UpdateGroup(isLeft: false);
 	}
 
 	private void UpdateGroup(bool isLeft)
 	{
-		List<Scp079KeyAbilityGui> list = (isLeft ? _leftGroupInstances : _mainGroupInstances);
+		List<Scp079KeyAbilityGui> list = (isLeft ? this._leftGroupInstances : this._mainGroupInstances);
 		int num = 0;
 		int num2 = -1;
 		SubroutineBase[] allSubroutines = base.Role.SubroutineModule.AllSubroutines;

@@ -15,7 +15,7 @@ public class TimedGrenadePickup : CollisionDetectionPickup, IExplosionTrigger
 
 	private void Update()
 	{
-		if (_replaceNextFrame && InventoryItemLoader.AvailableItems.TryGetValue(Info.ItemId, out var value) && value is ThrowableItem throwableItem)
+		if (this._replaceNextFrame && InventoryItemLoader.AvailableItems.TryGetValue(base.Info.ItemId, out var value) && value is ThrowableItem throwableItem)
 		{
 			ThrownProjectile thrownProjectile = Object.Instantiate(throwableItem.Projectile);
 			if (thrownProjectile.PhysicsModule is PickupStandardPhysics pickupStandardPhysics && base.PhysicsModule is PickupStandardPhysics pickupStandardPhysics2)
@@ -27,13 +27,13 @@ public class TimedGrenadePickup : CollisionDetectionPickup, IExplosionTrigger
 				rb.linearVelocity = rb2.linearVelocity;
 				rb.angularVelocity = rb2.angularVelocity;
 			}
-			Info.Locked = true;
-			thrownProjectile.NetworkInfo = Info;
-			thrownProjectile.PreviousOwner = _attacker;
+			base.Info.Locked = true;
+			thrownProjectile.NetworkInfo = base.Info;
+			thrownProjectile.PreviousOwner = this._attacker;
 			NetworkServer.Spawn(thrownProjectile.gameObject);
 			thrownProjectile.ServerActivate();
-			DestroySelf();
-			_replaceNextFrame = false;
+			base.DestroySelf();
+			this._replaceNextFrame = false;
 		}
 	}
 
@@ -41,8 +41,8 @@ public class TimedGrenadePickup : CollisionDetectionPickup, IExplosionTrigger
 	{
 		if (!(Vector3.Distance(base.transform.position, source) / range > 0.4f) && !Physics.Linecast(base.transform.position, source, ThrownProjectile.HitBlockerMask))
 		{
-			_replaceNextFrame = true;
-			_attacker = attacker;
+			this._replaceNextFrame = true;
+			this._attacker = attacker;
 		}
 	}
 

@@ -18,11 +18,11 @@ public class AnimatorSpectatorSyncModule : ModuleBase, ISpectatorSyncModule
 
 		public SyncAnimData(int layers)
 		{
-			LastReceived = new Stopwatch();
-			Snapshots = new AnimLayerSnapshot[layers];
+			this.LastReceived = new Stopwatch();
+			this.Snapshots = new AnimLayerSnapshot[layers];
 			for (int i = 0; i < layers; i++)
 			{
-				Snapshots[i] = new AnimLayerSnapshot();
+				this.Snapshots[i] = new AnimLayerSnapshot();
 			}
 		}
 	}
@@ -52,14 +52,14 @@ public class AnimatorSpectatorSyncModule : ModuleBase, ISpectatorSyncModule
 
 	public void SetupViewmodel(AnimatedFirearmViewmodel viewmodel, float defaultSkipTime)
 	{
-		if (!ReceivedData.TryGetValue(viewmodel.ItemId.SerialNumber, out var value))
+		if (!AnimatorSpectatorSyncModule.ReceivedData.TryGetValue(viewmodel.ItemId.SerialNumber, out var value))
 		{
 			viewmodel.AnimatorForceUpdate(defaultSkipTime, fastMode: false);
 			return;
 		}
 		for (int i = 0; i < value.Snapshots.Length; i++)
 		{
-			if (_layers.TryGet(i, out var element))
+			if (this._layers.TryGet(i, out var element))
 			{
 				AnimLayerSnapshot animLayerSnapshot = value.Snapshots[i];
 				viewmodel.AnimatorPlay(animLayerSnapshot.TagHash, element, animLayerSnapshot.NormalizedTime);
@@ -73,10 +73,10 @@ public class AnimatorSpectatorSyncModule : ModuleBase, ISpectatorSyncModule
 	public override void ClientProcessRpcTemplate(NetworkReader reader, ushort serial)
 	{
 		base.ClientProcessRpcTemplate(reader, serial);
-		SyncAnimData orAdd = ReceivedData.GetOrAdd(serial, () => new SyncAnimData(_layers.Length));
-		for (int i = 0; i < _layers.Length; i++)
+		SyncAnimData orAdd = AnimatorSpectatorSyncModule.ReceivedData.GetOrAdd(serial, () => new SyncAnimData(this._layers.Length));
+		for (int num = 0; num < this._layers.Length; num++)
 		{
-			AnimLayerSnapshot obj = orAdd.Snapshots[i];
+			AnimLayerSnapshot obj = orAdd.Snapshots[num];
 			obj.TagHash = reader.ReadInt();
 			obj.NormalizedTime = (float)(int)reader.ReadByte() * 0.003921569f;
 		}
@@ -86,11 +86,11 @@ public class AnimatorSpectatorSyncModule : ModuleBase, ISpectatorSyncModule
 	internal override void OnEquipped()
 	{
 		base.OnEquipped();
-		if (!_enqueued && NetworkServer.active)
+		if (!this._enqueued && NetworkServer.active)
 		{
-			ServerUpdateInstance();
-			UpdateQueue.Enqueue(this);
-			_enqueued = true;
+			this.ServerUpdateInstance();
+			AnimatorSpectatorSyncModule.UpdateQueue.Enqueue(this);
+			this._enqueued = true;
 		}
 	}
 
@@ -99,10 +99,10 @@ public class AnimatorSpectatorSyncModule : ModuleBase, ISpectatorSyncModule
 		base.OnInit();
 		if (NetworkServer.active)
 		{
-			_lastSnapshots = new AnimLayerSnapshot[_layers.Length];
-			for (int i = 0; i < _layers.Length; i++)
+			this._lastSnapshots = new AnimLayerSnapshot[this._layers.Length];
+			for (int i = 0; i < this._layers.Length; i++)
 			{
-				_lastSnapshots[i] = new AnimLayerSnapshot();
+				this._lastSnapshots[i] = new AnimLayerSnapshot();
 			}
 		}
 	}
@@ -110,7 +110,7 @@ public class AnimatorSpectatorSyncModule : ModuleBase, ISpectatorSyncModule
 	internal override void OnClientReady()
 	{
 		base.OnClientReady();
-		ReceivedData.Clear();
+		AnimatorSpectatorSyncModule.ReceivedData.Clear();
 	}
 
 	public override void OnFirearmValidate(Firearm fa)
@@ -121,23 +121,23 @@ public class AnimatorSpectatorSyncModule : ModuleBase, ISpectatorSyncModule
 	private void ServerUpdateInstance()
 	{
 		Animator serverSideAnimator = base.Firearm.ServerSideAnimator;
-		for (int i = 0; i < _layers.Length; i++)
+		for (int i = 0; i < this._layers.Length; i++)
 		{
-			int layerIndex = _layers[i];
+			int layerIndex = this._layers[i];
 			AnimatorStateInfo animatorStateInfo = (serverSideAnimator.IsInTransition(layerIndex) ? serverSideAnimator.GetNextAnimatorStateInfo(layerIndex) : serverSideAnimator.GetCurrentAnimatorStateInfo(layerIndex));
-			AnimLayerSnapshot obj = _lastSnapshots[i];
+			AnimLayerSnapshot obj = this._lastSnapshots[i];
 			obj.NormalizedTime = animatorStateInfo.normalizedTime;
 			obj.TagHash = animatorStateInfo.shortNameHash;
 			obj.Loop = animatorStateInfo.loop;
 		}
-		SendRpc((ReferenceHub x) => x.roleManager.CurrentRole is SpectatorRole, ServerWriteAnimator);
+		this.SendRpc((ReferenceHub x) => x.roleManager.CurrentRole is SpectatorRole, ServerWriteAnimator);
 	}
 
 	private void ServerWriteAnimator(NetworkWriter writer)
 	{
-		for (int i = 0; i < _layers.Length; i++)
+		for (int i = 0; i < this._layers.Length; i++)
 		{
-			AnimLayerSnapshot animLayerSnapshot = _lastSnapshots[i];
+			AnimLayerSnapshot animLayerSnapshot = this._lastSnapshots[i];
 			float normalizedTime = animLayerSnapshot.NormalizedTime;
 			normalizedTime = ((!animLayerSnapshot.Loop) ? Mathf.Clamp01(normalizedTime) : (normalizedTime - (float)(int)normalizedTime));
 			writer.WriteInt(animLayerSnapshot.TagHash);
@@ -173,16 +173,16 @@ public class AnimatorSpectatorSyncModule : ModuleBase, ISpectatorSyncModule
 		{
 			return;
 		}
-		int num = Mathf.Min(3, UpdateQueue.Count);
+		int num = Mathf.Min(3, AnimatorSpectatorSyncModule.UpdateQueue.Count);
 		for (int i = 0; i < num; i++)
 		{
-			AnimatorSpectatorSyncModule animatorSpectatorSyncModule = UpdateQueue.Dequeue();
+			AnimatorSpectatorSyncModule animatorSpectatorSyncModule = AnimatorSpectatorSyncModule.UpdateQueue.Dequeue();
 			if (!(animatorSpectatorSyncModule == null))
 			{
 				if (animatorSpectatorSyncModule.Firearm.IsEquipped)
 				{
 					animatorSpectatorSyncModule.ServerUpdateInstance();
-					UpdateQueue.Enqueue(animatorSpectatorSyncModule);
+					AnimatorSpectatorSyncModule.UpdateQueue.Enqueue(animatorSpectatorSyncModule);
 				}
 				else
 				{

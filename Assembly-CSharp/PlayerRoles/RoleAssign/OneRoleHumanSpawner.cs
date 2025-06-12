@@ -6,6 +6,6 @@ public class OneRoleHumanSpawner : IHumanSpawnHandler
 
 	public OneRoleHumanSpawner(RoleTypeId targetRole)
 	{
-		NextRole = targetRole;
+		this.NextRole = targetRole;
 	}
 }

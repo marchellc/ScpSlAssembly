@@ -33,27 +33,27 @@ public static class MetricsAggregator
 	[RuntimeInitializeOnLoadMethod]
 	private static void Init()
 	{
-		Collectors.ForEach(delegate(MetricsCollectorBase x)
+		MetricsAggregator.Collectors.ForEach(delegate(MetricsCollectorBase x)
 		{
 			x.Init();
 		});
 		RoundSummary.OnRoundEnded += OnRoundEnded;
 		CharacterClassManager.ServerOnRoundStartTriggered += OnRoundStarted;
-		ReloadConfig();
+		MetricsAggregator.ReloadConfig();
 		ConfigFile.OnConfigReloaded = (Action)Delegate.Combine(ConfigFile.OnConfigReloaded, new Action(ReloadConfig));
 	}
 
 	private static void ReloadConfig()
 	{
-		_metricsSavingEnabled = ConfigFile.ServerConfig.GetBool("save_metrics", def: true);
+		MetricsAggregator._metricsSavingEnabled = ConfigFile.ServerConfig.GetBool("save_metrics", def: true);
 	}
 
 	private static void OnRoundStarted()
 	{
 		if (NetworkServer.active)
 		{
-			_roundActive = true;
-			Collectors.ForEach(delegate(MetricsCollectorBase x)
+			MetricsAggregator._roundActive = true;
+			MetricsAggregator.Collectors.ForEach(delegate(MetricsCollectorBase x)
 			{
 				x.OnRoundStarted();
 			});
@@ -66,12 +66,12 @@ public static class MetricsAggregator
 		{
 			return;
 		}
-		_roundActive = false;
-		foreach (MetricsCollectorBase collector in Collectors)
+		MetricsAggregator._roundActive = false;
+		foreach (MetricsCollectorBase collector in MetricsAggregator.Collectors)
 		{
 			collector.OnRoundEnded(winner);
 		}
-		if (_metricsSavingEnabled)
+		if (MetricsAggregator._metricsSavingEnabled)
 		{
 			try
 			{
@@ -80,7 +80,7 @@ public static class MetricsAggregator
 				Directory.CreateDirectory(text);
 				string text2 = TimeBehaviour.FormatTime("yyyy-MM-dd HH.mm.ss");
 				using StreamWriter streamWriter = new StreamWriter(text + "/Round " + text2 + ".json");
-				RoundMetricsCollection value = new RoundMetricsCollection(CollectedMetrics);
+				RoundMetricsCollection value = new RoundMetricsCollection(MetricsAggregator.CollectedMetrics);
 				streamWriter.Write(JsonSerializer.ToJsonString(value));
 			}
 			catch (Exception exception)
@@ -88,23 +88,23 @@ public static class MetricsAggregator
 				Debug.LogException(exception);
 			}
 		}
-		CollectedMetrics.Clear();
+		MetricsAggregator.CollectedMetrics.Clear();
 	}
 
 	public static void RecordData<T>(T data, bool checkIfRoundActive) where T : MetricsCollectorBase
 	{
-		if (NetworkServer.active && (!checkIfRoundActive || _roundActive))
+		if (NetworkServer.active && (!checkIfRoundActive || MetricsAggregator._roundActive))
 		{
 			if (data == null)
 			{
 				throw new ArgumentNullException("data", "Attempting to record a null metric.");
 			}
-			if (Collectors.Contains(data))
+			if (MetricsAggregator.Collectors.Contains(data))
 			{
 				throw new ArgumentException("Cannot record the static collector definition. Create a new instance to record data.");
 			}
 			string jsonData = JsonSerializer.ToJsonString(data);
-			CollectedMetrics.Add(new CollectedMetric(typeof(T), jsonData));
+			MetricsAggregator.CollectedMetrics.Add(new CollectedMetric(typeof(T), jsonData));
 		}
 	}
 }

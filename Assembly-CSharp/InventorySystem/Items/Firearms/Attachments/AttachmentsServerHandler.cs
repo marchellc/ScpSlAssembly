@@ -12,7 +12,7 @@ public static class AttachmentsServerHandler
 	public static uint ServerGetReceivedPlayerPreference(Firearm firearmInstance)
 	{
 		ReferenceHub owner = firearmInstance.Owner;
-		if (!PlayerPreferences.TryGetValue(owner, out var value))
+		if (!AttachmentsServerHandler.PlayerPreferences.TryGetValue(owner, out var value))
 		{
 			return 0u;
 		}
@@ -44,18 +44,18 @@ public static class AttachmentsServerHandler
 
 	private static void OnServerStarted()
 	{
-		PlayerPreferences.Clear();
+		AttachmentsServerHandler.PlayerPreferences.Clear();
 		NetworkServer.ReplaceHandler<AttachmentsSetupPreference>(ServerReceivePreference);
 		NetworkServer.ReplaceHandler<AttachmentsChangeRequest>(ServerReceiveChangeRequest);
 	}
 
 	private static void ServerReceiveChangeRequest(NetworkConnection conn, AttachmentsChangeRequest msg)
 	{
-		if (NetworkServer.active && ReferenceHub.TryGetHub(conn, out var hub) && hub.inventory.CurInstance is Firearm firearm && !(firearm == null) && AnyWorkstationsNearby(hub))
+		if (NetworkServer.active && ReferenceHub.TryGetHub(conn, out var hub) && hub.inventory.CurInstance is Firearm firearm && !(firearm == null) && AttachmentsServerHandler.AnyWorkstationsNearby(hub))
 		{
 			firearm.ApplyAttachmentsCode(msg.AttachmentsCode, reValidate: true);
 			firearm.ServerResendAttachmentCode();
-			ServerApplyPreference(hub, firearm.ItemTypeId, msg.AttachmentsCode);
+			AttachmentsServerHandler.ServerApplyPreference(hub, firearm.ItemTypeId, msg.AttachmentsCode);
 		}
 	}
 
@@ -63,12 +63,12 @@ public static class AttachmentsServerHandler
 	{
 		if (NetworkServer.active && ReferenceHub.TryGetHub(conn, out var hub))
 		{
-			ServerApplyPreference(hub, msg.Weapon, msg.AttachmentsCode);
+			AttachmentsServerHandler.ServerApplyPreference(hub, msg.Weapon, msg.AttachmentsCode);
 		}
 	}
 
 	private static void ServerApplyPreference(ReferenceHub hub, ItemType weapon, uint attCode)
 	{
-		PlayerPreferences.GetOrAdd(hub, () => new Dictionary<ItemType, uint>())[weapon] = attCode;
+		AttachmentsServerHandler.PlayerPreferences.GetOrAdd(hub, () => new Dictionary<ItemType, uint>())[weapon] = attCode;
 	}
 }

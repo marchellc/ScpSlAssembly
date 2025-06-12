@@ -29,29 +29,29 @@ public struct AuthenticationResponse : NetworkMessage
 
 	internal AuthenticationResponse(SignedToken signedAuthToken, SignedToken signedBadgeToken, string publicKey, string ecdhPublicKey, byte[] ecdhPublicKeySignature, bool doNotTrack, bool hideBadge)
 	{
-		SignedAuthToken = signedAuthToken;
-		SignedBadgeToken = signedBadgeToken;
-		PublicKey = ECDSA.PublicKeyFromString(publicKey);
-		EcdhPublicKey = ecdhPublicKey;
-		EcdhPublicKeySignature = ecdhPublicKeySignature;
-		AuthToken = null;
-		BadgeToken = null;
-		DoNotTrack = doNotTrack;
-		HideBadge = hideBadge;
-		PublicKeyHash = StringUtils.Base64Encode(Sha.HashToString(Sha.Sha256(publicKey)));
+		this.SignedAuthToken = signedAuthToken;
+		this.SignedBadgeToken = signedBadgeToken;
+		this.PublicKey = ECDSA.PublicKeyFromString(publicKey);
+		this.EcdhPublicKey = ecdhPublicKey;
+		this.EcdhPublicKeySignature = ecdhPublicKeySignature;
+		this.AuthToken = null;
+		this.BadgeToken = null;
+		this.DoNotTrack = doNotTrack;
+		this.HideBadge = hideBadge;
+		this.PublicKeyHash = StringUtils.Base64Encode(Sha.HashToString(Sha.Sha256(publicKey)));
 	}
 
 	internal AuthenticationResponse(SignedToken signedAuthToken, SignedToken signedBadgeToken, AsymmetricKeyParameter publicKey, string ecdhPublicKey, byte[] ecdhPublicKeySignature, bool doNotTrack, bool hideBadge)
 	{
-		SignedAuthToken = signedAuthToken;
-		SignedBadgeToken = signedBadgeToken;
-		PublicKey = publicKey;
-		EcdhPublicKey = ecdhPublicKey;
-		EcdhPublicKeySignature = ecdhPublicKeySignature;
-		AuthToken = null;
-		BadgeToken = null;
-		DoNotTrack = doNotTrack;
-		HideBadge = hideBadge;
-		PublicKeyHash = null;
+		this.SignedAuthToken = signedAuthToken;
+		this.SignedBadgeToken = signedBadgeToken;
+		this.PublicKey = publicKey;
+		this.EcdhPublicKey = ecdhPublicKey;
+		this.EcdhPublicKeySignature = ecdhPublicKeySignature;
+		this.AuthToken = null;
+		this.BadgeToken = null;
+		this.DoNotTrack = doNotTrack;
+		this.HideBadge = hideBadge;
+		this.PublicKeyHash = null;
 	}
 }

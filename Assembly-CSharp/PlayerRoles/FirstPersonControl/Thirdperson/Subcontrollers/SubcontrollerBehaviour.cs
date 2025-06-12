@@ -9,19 +9,19 @@ public abstract class SubcontrollerBehaviour : MonoBehaviour, INetworkedAnimated
 
 	public int SubcontrollerIndex { get; private set; }
 
-	public ReferenceHub OwnerHub => Model.OwnerHub;
+	public ReferenceHub OwnerHub => this.Model.OwnerHub;
 
-	public Transform ModelTr => Model.CachedTransform;
+	public Transform ModelTr => this.Model.CachedTransform;
 
-	public Animator Animator => Model.Animator;
+	public Animator Animator => this.Model.Animator;
 
 	protected bool Culled
 	{
 		get
 		{
-			if (HasCuller)
+			if (this.HasCuller)
 			{
-				return Culler.IsCulled;
+				return this.Culler.IsCulled;
 			}
 			return false;
 		}
@@ -31,20 +31,20 @@ public abstract class SubcontrollerBehaviour : MonoBehaviour, INetworkedAnimated
 
 	protected bool HasCuller { get; private set; }
 
-	protected bool HasOwner => Model.HasOwner;
+	protected bool HasOwner => this.Model.HasOwner;
 
 	public virtual void Init(AnimatedCharacterModel model, int index)
 	{
-		Model = model;
-		SubcontrollerIndex = index;
-		if (HasOwner && model.TryGetSubcontroller<CullingSubcontroller>(out var subcontroller))
+		this.Model = model;
+		this.SubcontrollerIndex = index;
+		if (this.HasOwner && model.TryGetSubcontroller<CullingSubcontroller>(out var subcontroller))
 		{
-			Culler = subcontroller;
-			HasCuller = true;
+			this.Culler = subcontroller;
+			this.HasCuller = true;
 		}
 		else
 		{
-			HasCuller = false;
+			this.HasCuller = false;
 		}
 	}
 

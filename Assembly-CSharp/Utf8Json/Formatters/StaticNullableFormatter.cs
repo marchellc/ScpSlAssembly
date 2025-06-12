@@ -15,7 +15,7 @@ public sealed class StaticNullableFormatter<T> : IJsonFormatter<T?>, IJsonFormat
 	{
 		try
 		{
-			underlyingFormatter = (IJsonFormatter<T>)Activator.CreateInstance(formatterType, formatterArguments);
+			this.underlyingFormatter = (IJsonFormatter<T>)Activator.CreateInstance(formatterType, formatterArguments);
 		}
 		catch (Exception innerException)
 		{
@@ -31,7 +31,7 @@ public sealed class StaticNullableFormatter<T> : IJsonFormatter<T?>, IJsonFormat
 		}
 		else
 		{
-			underlyingFormatter.Serialize(ref writer, value.Value, formatterResolver);
+			this.underlyingFormatter.Serialize(ref writer, value.Value, formatterResolver);
 		}
 	}
 
@@ -41,6 +41,6 @@ public sealed class StaticNullableFormatter<T> : IJsonFormatter<T?>, IJsonFormat
 		{
 			return null;
 		}
-		return underlyingFormatter.Deserialize(ref reader, formatterResolver);
+		return this.underlyingFormatter.Deserialize(ref reader, formatterResolver);
 	}
 }

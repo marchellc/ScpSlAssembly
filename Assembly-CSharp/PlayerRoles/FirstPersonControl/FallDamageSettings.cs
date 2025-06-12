@@ -21,6 +21,6 @@ public class FallDamageSettings : ScriptableObject
 
 	public float CalculateDamage(float speed)
 	{
-		return Mathf.Clamp(Mathf.Pow(speed, Power) * Multiplier + Absolute, 0f, MaxDamage);
+		return Mathf.Clamp(Mathf.Pow(speed, this.Power) * this.Multiplier + this.Absolute, 0f, this.MaxDamage);
 	}
 }

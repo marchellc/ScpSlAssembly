@@ -44,7 +44,7 @@ public class FlybyDetectorProjectile : SingleTrajectoryProjectile
 		{
 			if (!base.AlreadyCollided)
 			{
-				return _stopped;
+				return this._stopped;
 			}
 			return true;
 		}
@@ -53,42 +53,42 @@ public class FlybyDetectorProjectile : SingleTrajectoryProjectile
 	protected override void Awake()
 	{
 		base.Awake();
-		_prevPosition = new RelativePosition(base.Position);
+		this._prevPosition = new RelativePosition(base.Position);
 	}
 
 	protected override void Update()
 	{
 		base.Update();
-		if (!NetworkServer.active || AlreadyCollided)
+		if (!NetworkServer.active || this.AlreadyCollided)
 		{
 			return;
 		}
-		_selfDamageDelay -= Time.deltaTime;
-		int num = Physics.OverlapCapsuleNonAlloc(base.Position, _prevPosition.Position, base.ProjectileRadius, Detections, HitboxMask);
+		this._selfDamageDelay -= Time.deltaTime;
+		int num = Physics.OverlapCapsuleNonAlloc(base.Position, this._prevPosition.Position, base.ProjectileRadius, FlybyDetectorProjectile.Detections, FlybyDetectorProjectile.HitboxMask);
 		for (int i = 0; i < num; i++)
 		{
-			if (!Detections[i].TryGetComponent<HitboxIdentity>(out var component))
+			if (!FlybyDetectorProjectile.Detections[i].TryGetComponent<HitboxIdentity>(out var component))
 			{
 				continue;
 			}
 			ReferenceHub targetHub = component.TargetHub;
-			if ((!(targetHub == PreviousOwner.Hub) || !(_selfDamageDelay > 0f)) && (_allowMultipleTriggering || _alreadyHitPlayers.Add(targetHub)) && _friendlyFireInteraction switch
+			if ((!(targetHub == base.PreviousOwner.Hub) || !(this._selfDamageDelay > 0f)) && (this._allowMultipleTriggering || this._alreadyHitPlayers.Add(targetHub)) && this._friendlyFireInteraction switch
 			{
 				FriendlyFireInteraction.CollideWithEveryone => true, 
-				FriendlyFireInteraction.CollideWithOnlyEnemies => HitboxIdentity.IsEnemy(PreviousOwner.Role, targetHub.GetRoleId()), 
-				FriendlyFireInteraction.UseFriendlyFireConfig => HitboxIdentity.IsDamageable(PreviousOwner.Role, targetHub.GetRoleId()), 
+				FriendlyFireInteraction.CollideWithOnlyEnemies => HitboxIdentity.IsEnemy(base.PreviousOwner.Role, targetHub.GetRoleId()), 
+				FriendlyFireInteraction.UseFriendlyFireConfig => HitboxIdentity.IsDamageable(base.PreviousOwner.Role, targetHub.GetRoleId()), 
 				_ => false, 
 			})
 			{
-				ServerProcessHit(component);
-				if (_stopProjectileOnImpact)
+				this.ServerProcessHit(component);
+				if (this._stopProjectileOnImpact)
 				{
-					RpcStopProjectile();
+					this.RpcStopProjectile();
 					break;
 				}
 			}
 		}
-		_prevPosition = new RelativePosition(base.Position);
+		this._prevPosition = new RelativePosition(base.Position);
 	}
 
 	public virtual void ServerProcessHit(HitboxIdentity hid)
@@ -99,14 +99,14 @@ public class FlybyDetectorProjectile : SingleTrajectoryProjectile
 	public void RpcStopProjectile()
 	{
 		NetworkWriterPooled writer = NetworkWriterPool.Get();
-		SendRPCInternal("System.Void InventorySystem.Items.ThrowableProjectiles.FlybyDetectorProjectile::RpcStopProjectile()", 646104935, writer, 0, includeOwner: true);
+		this.SendRPCInternal("System.Void InventorySystem.Items.ThrowableProjectiles.FlybyDetectorProjectile::RpcStopProjectile()", 646104935, writer, 0, includeOwner: true);
 		NetworkWriterPool.Return(writer);
 	}
 
 	static FlybyDetectorProjectile()
 	{
-		HitboxMask = new CachedLayerMask("Hitbox");
-		Detections = new Collider[16];
+		FlybyDetectorProjectile.HitboxMask = new CachedLayerMask("Hitbox");
+		FlybyDetectorProjectile.Detections = new Collider[16];
 		RemoteProcedureCalls.RegisterRpc(typeof(FlybyDetectorProjectile), "System.Void InventorySystem.Items.ThrowableProjectiles.FlybyDetectorProjectile::RpcStopProjectile()", InvokeUserCode_RpcStopProjectile);
 	}
 
@@ -117,7 +117,7 @@ public class FlybyDetectorProjectile : SingleTrajectoryProjectile
 
 	protected void UserCode_RpcStopProjectile()
 	{
-		_stopped = true;
+		this._stopped = true;
 	}
 
 	protected static void InvokeUserCode_RpcStopProjectile(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)

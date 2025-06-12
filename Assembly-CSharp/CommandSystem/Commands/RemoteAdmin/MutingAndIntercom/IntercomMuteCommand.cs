@@ -43,9 +43,9 @@ public class IntercomMuteCommand : ICommand, IUsageProvider
 		{
 			foreach (ReferenceHub item in list)
 			{
-				PlayerMutingEventArgs playerMutingEventArgs = new PlayerMutingEventArgs(item, issuer, isIntercom: true);
-				PlayerEvents.OnMuting(playerMutingEventArgs);
-				if (playerMutingEventArgs.IsAllowed)
+				PlayerMutingEventArgs e = new PlayerMutingEventArgs(item, issuer, isIntercom: true);
+				PlayerEvents.OnMuting(e);
+				if (e.IsAllowed)
 				{
 					VoiceChatMutes.IssueLocalMute(item.authManager.UserId, intercom: true);
 					PlayerEvents.OnMuted(new PlayerMutedEventArgs(item, issuer, isIntercom: true));

@@ -18,9 +18,9 @@ public class Scp079DoorLockReleaser : Scp079KeyAbilityBase
 
 	public override bool IsReady => true;
 
-	public override bool IsVisible => _lockChanger.LockedDoor != null;
+	public override bool IsVisible => this._lockChanger.LockedDoor != null;
 
-	public override string AbilityName => $"<color=#ffffff{Transparency}>{_releaseMessage}</color>";
+	public override string AbilityName => $"<color=#ffffff{this.Transparency}>{Scp079DoorLockReleaser._releaseMessage}</color>";
 
 	public override string FailMessage => null;
 
@@ -35,19 +35,19 @@ public class Scp079DoorLockReleaser : Scp079KeyAbilityBase
 
 	protected override void Trigger()
 	{
-		ClientSendCmd();
+		base.ClientSendCmd();
 	}
 
 	protected override void Start()
 	{
 		base.Start();
-		GetSubroutine<Scp079DoorLockChanger>(out _lockChanger);
-		_releaseMessage = Translations.Get(Scp079HudTranslation.ReleaseDoorLock);
+		base.GetSubroutine<Scp079DoorLockChanger>(out this._lockChanger);
+		Scp079DoorLockReleaser._releaseMessage = Translations.Get(Scp079HudTranslation.ReleaseDoorLock);
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		_lockChanger.ServerUnlock();
+		this._lockChanger.ServerUnlock();
 	}
 }

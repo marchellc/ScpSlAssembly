@@ -22,18 +22,18 @@ public class GlobalChatIndicatorManager : MonoBehaviour
 
 	private void Awake()
 	{
-		_singleton = this;
-		_singletonSet = true;
+		GlobalChatIndicatorManager._singleton = this;
+		GlobalChatIndicatorManager._singletonSet = true;
 	}
 
 	private void OnDestroy()
 	{
-		_singletonSet = false;
+		GlobalChatIndicatorManager._singletonSet = false;
 	}
 
 	private void LateUpdate()
 	{
-		foreach (KeyValuePair<IGlobalPlayback, GlobalChatIndicator> instance in _instances)
+		foreach (KeyValuePair<IGlobalPlayback, GlobalChatIndicator> instance in this._instances)
 		{
 			instance.Value.Refresh();
 		}
@@ -41,38 +41,38 @@ public class GlobalChatIndicatorManager : MonoBehaviour
 
 	private void SpawnIndicator(IGlobalPlayback igp, ReferenceHub ply)
 	{
-		if (!_pool.TryDequeue(out var result))
+		if (!this._pool.TryDequeue(out var result))
 		{
-			result = Object.Instantiate(_template);
+			result = Object.Instantiate(this._template);
 		}
 		Transform obj = result.transform;
-		obj.SetParent(_root);
+		obj.SetParent(this._root);
 		obj.localScale = Vector3.one;
 		obj.SetAsLastSibling();
 		result.Setup(igp, ply);
-		_instances[igp] = result;
+		this._instances[igp] = result;
 	}
 
 	private void ReturnIndicator(IGlobalPlayback igp)
 	{
-		if (_instances.TryGetValue(igp, out var value))
+		if (this._instances.TryGetValue(igp, out var value))
 		{
 			value.gameObject.SetActive(value: false);
-			_pool.Enqueue(value);
-			_instances.Remove(igp);
+			this._pool.Enqueue(value);
+			this._instances.Remove(igp);
 		}
 	}
 
 	public static void Subscribe(IGlobalPlayback igp, ReferenceHub player)
 	{
-		_singleton.SpawnIndicator(igp, player);
+		GlobalChatIndicatorManager._singleton.SpawnIndicator(igp, player);
 	}
 
 	public static void Unsubscribe(IGlobalPlayback igp)
 	{
-		if (_singletonSet)
+		if (GlobalChatIndicatorManager._singletonSet)
 		{
-			_singleton.ReturnIndicator(igp);
+			GlobalChatIndicatorManager._singleton.ReturnIndicator(igp);
 		}
 	}
 }

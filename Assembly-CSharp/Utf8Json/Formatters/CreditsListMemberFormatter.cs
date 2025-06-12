@@ -11,7 +11,7 @@ public sealed class CreditsListMemberFormatter : IJsonFormatter<CreditsListMembe
 
 	public CreditsListMemberFormatter()
 	{
-		____keyMapping = new AutomataDictionary
+		this.____keyMapping = new AutomataDictionary
 		{
 			{
 				JsonWriter.GetEncodedPropertyNameWithoutQuotation("name"),
@@ -26,7 +26,7 @@ public sealed class CreditsListMemberFormatter : IJsonFormatter<CreditsListMembe
 				2
 			}
 		};
-		____stringByteKeys = new byte[3][]
+		this.____stringByteKeys = new byte[3][]
 		{
 			JsonWriter.GetEncodedPropertyNameWithBeginObject("name"),
 			JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("title"),
@@ -36,11 +36,11 @@ public sealed class CreditsListMemberFormatter : IJsonFormatter<CreditsListMembe
 
 	public void Serialize(ref JsonWriter writer, CreditsListMember value, IJsonFormatterResolver formatterResolver)
 	{
-		writer.WriteRaw(____stringByteKeys[0]);
+		writer.WriteRaw(this.____stringByteKeys[0]);
 		writer.WriteString(value.name);
-		writer.WriteRaw(____stringByteKeys[1]);
+		writer.WriteRaw(this.____stringByteKeys[1]);
 		writer.WriteString(value.title);
-		writer.WriteRaw(____stringByteKeys[2]);
+		writer.WriteRaw(this.____stringByteKeys[2]);
 		writer.WriteString(value.color);
 		writer.WriteEndObject();
 	}
@@ -59,7 +59,7 @@ public sealed class CreditsListMemberFormatter : IJsonFormatter<CreditsListMembe
 		while (!reader.ReadIsEndObjectWithSkipValueSeparator(ref count))
 		{
 			ArraySegment<byte> key = reader.ReadPropertyNameSegmentRaw();
-			if (!____keyMapping.TryGetValueSafe(key, out var value))
+			if (!this.____keyMapping.TryGetValueSafe(key, out var value))
 			{
 				reader.ReadNextBlock();
 				continue;

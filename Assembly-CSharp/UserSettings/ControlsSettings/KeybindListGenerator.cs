@@ -35,19 +35,19 @@ public class KeybindListGenerator : MonoBehaviour
 
 	private void Awake()
 	{
-		ActionCategory[] categorySortingOrder = CategorySortingOrder;
+		ActionCategory[] categorySortingOrder = KeybindListGenerator.CategorySortingOrder;
 		foreach (ActionCategory actionCategory in categorySortingOrder)
 		{
-			SpawnHeader(actionCategory);
+			this.SpawnHeader(actionCategory);
 			NewInput.ActionDefinition[] definedActions = NewInput.DefinedActions;
 			foreach (NewInput.ActionDefinition actionDefinition in definedActions)
 			{
 				if (actionDefinition.Category == actionCategory)
 				{
-					SpawnInstance(actionDefinition);
+					this.SpawnInstance(actionDefinition);
 				}
 			}
-			CategorizedSetting[] categorizedSettings = _categorizedSettings;
+			CategorizedSetting[] categorizedSettings = this._categorizedSettings;
 			for (int j = 0; j < categorizedSettings.Length; j++)
 			{
 				CategorizedSetting categorizedSetting = categorizedSettings[j];
@@ -61,14 +61,14 @@ public class KeybindListGenerator : MonoBehaviour
 
 	private void SpawnHeader(ActionCategory cat)
 	{
-		GameObject obj = UnityEngine.Object.Instantiate(_header, base.transform);
+		GameObject obj = UnityEngine.Object.Instantiate(this._header, base.transform);
 		obj.SetActive(value: true);
 		obj.GetComponentInChildren<TMP_Text>().text = Translations.Get(cat);
 	}
 
 	private void SpawnInstance(NewInput.ActionDefinition definition)
 	{
-		GameObject obj = UnityEngine.Object.Instantiate(_template, base.transform);
+		GameObject obj = UnityEngine.Object.Instantiate(this._template, base.transform);
 		obj.SetActive(value: true);
 		obj.GetComponentInChildren<KeybindEntry>().Init(definition.Name);
 	}

@@ -24,10 +24,10 @@ public class MimicryTransmitter : StandardSubroutine<Scp939Role>
 	{
 		get
 		{
-			PlaybackBuffer copierPlayback = _copierPlayback;
+			PlaybackBuffer copierPlayback = this._copierPlayback;
 			if (copierPlayback == null || copierPlayback.Length <= 0)
 			{
-				PlaybackBuffer senderPlayback = _senderPlayback;
+				PlaybackBuffer senderPlayback = this._senderPlayback;
 				if (senderPlayback == null)
 				{
 					return false;
@@ -41,42 +41,42 @@ public class MimicryTransmitter : StandardSubroutine<Scp939Role>
 	protected override void Awake()
 	{
 		base.Awake();
-		_samplesPerSecond = 48000;
+		this._samplesPerSecond = 48000;
 	}
 
 	public void SendVoice(PlaybackBuffer pb, int startSample, int maxLength)
 	{
 		pb.Reorganize();
 		int num = pb.Buffer.Length;
-		if (_playbackSize < num)
+		if (this._playbackSize < num)
 		{
-			_copierPlayback = new PlaybackBuffer(num);
-			_senderPlayback = new PlaybackBuffer(num);
-			_playbackSize = num;
+			this._copierPlayback = new PlaybackBuffer(num);
+			this._senderPlayback = new PlaybackBuffer(num);
+			this._playbackSize = num;
 		}
 		else
 		{
-			_copierPlayback.Clear();
-			_senderPlayback.Clear();
+			this._copierPlayback.Clear();
+			this._senderPlayback.Clear();
 		}
-		_allowedSamples = 1920;
-		_copierPlayback.Write(pb.Buffer, Mathf.Min(maxLength, pb.Length), startSample);
+		this._allowedSamples = 1920;
+		this._copierPlayback.Write(pb.Buffer, Mathf.Min(maxLength, pb.Length), startSample);
 	}
 
 	public void StopTransmission()
 	{
-		if (IsTransmitting)
+		if (this.IsTransmitting)
 		{
-			_copierPlayback?.Clear();
-			_senderPlayback?.Clear();
-			ClientSendCmd();
+			this._copierPlayback?.Clear();
+			this._senderPlayback?.Clear();
+			base.ClientSendCmd();
 		}
 	}
 
 	public override void ServerProcessCmd(NetworkReader reader)
 	{
 		base.ServerProcessCmd(reader);
-		ServerSendRpc(toAll: true);
+		base.ServerSendRpc(toAll: true);
 	}
 
 	public override void ClientProcessRpc(NetworkReader reader)
@@ -88,23 +88,23 @@ public class MimicryTransmitter : StandardSubroutine<Scp939Role>
 	public override void ResetObject()
 	{
 		base.ResetObject();
-		_copierPlayback?.Clear();
-		_senderPlayback?.Clear();
+		this._copierPlayback?.Clear();
+		this._senderPlayback?.Clear();
 	}
 
 	private void Update()
 	{
-		if (base.Owner.isLocalPlayer && _playbackSize != 0)
+		if (base.Owner.isLocalPlayer && this._playbackSize != 0)
 		{
-			_allowedSamples += Mathf.CeilToInt(Time.deltaTime * (float)_samplesPerSecond);
-			int num = Mathf.Min(_allowedSamples, _copierPlayback.Length);
+			this._allowedSamples += Mathf.CeilToInt(Time.deltaTime * (float)this._samplesPerSecond);
+			int num = Mathf.Min(this._allowedSamples, this._copierPlayback.Length);
 			if (num > 0)
 			{
-				_copierPlayback.ReadTo(_senderPlayback.Buffer, num, _senderPlayback.WriteHead);
-				_senderPlayback.WriteHead += num;
+				this._copierPlayback.ReadTo(this._senderPlayback.Buffer, num, this._senderPlayback.WriteHead);
+				this._senderPlayback.WriteHead += num;
 			}
-			_allowedSamples = 0;
-			VoiceTransceiver.ClientSendData(_senderPlayback, VoiceChatChannel.Mimicry, 1);
+			this._allowedSamples = 0;
+			VoiceTransceiver.ClientSendData(this._senderPlayback, VoiceChatChannel.Mimicry, 1);
 		}
 	}
 }

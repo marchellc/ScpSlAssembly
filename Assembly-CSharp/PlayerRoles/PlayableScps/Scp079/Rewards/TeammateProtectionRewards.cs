@@ -31,41 +31,41 @@ public static class TeammateProtectionRewards
 
 		public TrackedTeammate(ReferenceHub ply)
 		{
-			Hub = ply;
-			Role = ply.roleManager.CurrentRole as FpcStandardRoleBase;
-			_attackers = new Dictionary<uint, double>();
-			Hub.playerStats.OnThisPlayerDamaged += OnDamaged;
+			this.Hub = ply;
+			this.Role = ply.roleManager.CurrentRole as FpcStandardRoleBase;
+			this._attackers = new Dictionary<uint, double>();
+			this.Hub.playerStats.OnThisPlayerDamaged += OnDamaged;
 		}
 
 		public void Unsubscribe()
 		{
-			if (!(Hub == null))
+			if (!(this.Hub == null))
 			{
-				Hub.playerStats.OnThisPlayerDamaged -= OnDamaged;
+				this.Hub.playerStats.OnThisPlayerDamaged -= OnDamaged;
 			}
 		}
 
 		public int GetAttackersNonAlloc(out Vector3[] attackersPositions)
 		{
-			attackersPositions = AttackersNonAlloc;
-			if (NetworkTime.time > _lastDamageTime || _damageReceived < 100f)
+			attackersPositions = TrackedTeammate.AttackersNonAlloc;
+			if (NetworkTime.time > this._lastDamageTime || this._damageReceived < 100f)
 			{
 				return 0;
 			}
 			int num = 0;
-			foreach (KeyValuePair<uint, double> attacker in _attackers)
+			foreach (KeyValuePair<uint, double> attacker in this._attackers)
 			{
-				if (!(attacker.Value > _lastDamageTime) && ReferenceHub.TryGetHubNetID(attacker.Key, out var hub) && hub.roleManager.CurrentRole is IFpcRole fpcRole)
+				if (!(attacker.Value > this._lastDamageTime) && ReferenceHub.TryGetHubNetID(attacker.Key, out var hub) && hub.roleManager.CurrentRole is IFpcRole fpcRole)
 				{
-					AttackersNonAlloc[num] = fpcRole.FpcModule.Position;
+					TrackedTeammate.AttackersNonAlloc[num] = fpcRole.FpcModule.Position;
 					if (++num >= 5)
 					{
 						break;
 					}
 				}
 			}
-			_attackers.Clear();
-			_damageReceived = 0f;
+			this._attackers.Clear();
+			this._damageReceived = 0f;
 			return num;
 		}
 
@@ -74,13 +74,13 @@ public static class TeammateProtectionRewards
 			if (dhb is AttackerDamageHandler attackerDamageHandler && !(dhb is Scp018DamageHandler) && !(dhb is ExplosionDamageHandler))
 			{
 				double time = NetworkTime.time;
-				if (time > _lastDamageTime)
+				if (time > this._lastDamageTime)
 				{
-					_damageReceived = 0f;
+					this._damageReceived = 0f;
 				}
-				_damageReceived += attackerDamageHandler.DealtHealthDamage;
-				_lastDamageTime = time + 6.0;
-				_attackers[attackerDamageHandler.Attacker.NetId] = _lastDamageTime;
+				this._damageReceived += attackerDamageHandler.DealtHealthDamage;
+				this._lastDamageTime = time + 6.0;
+				this._attackers[attackerDamageHandler.Attacker.NetId] = this._lastDamageTime;
 			}
 		}
 	}
@@ -101,21 +101,21 @@ public static class TeammateProtectionRewards
 		{
 			if (NetworkServer.active)
 			{
-				if (ValidateRole(prev))
+				if (TeammateProtectionRewards.ValidateRole(prev))
 				{
-					Teammates.RemoveWhere((TrackedTeammate x) => x.Hub == hub);
+					TeammateProtectionRewards.Teammates.RemoveWhere((TrackedTeammate x) => x.Hub == hub);
 				}
-				if (ValidateRole(cur))
+				if (TeammateProtectionRewards.ValidateRole(cur))
 				{
-					Teammates.Add(new TrackedTeammate(hub));
+					TeammateProtectionRewards.Teammates.Add(new TrackedTeammate(hub));
 				}
 			}
 		};
 		ReferenceHub.OnPlayerRemoved += delegate(ReferenceHub hub)
 		{
-			if (NetworkServer.active && ValidateRole(hub.roleManager.CurrentRole))
+			if (NetworkServer.active && TeammateProtectionRewards.ValidateRole(hub.roleManager.CurrentRole))
 			{
-				Teammates.RemoveWhere((TrackedTeammate x) => x.Hub == hub);
+				TeammateProtectionRewards.Teammates.RemoveWhere((TrackedTeammate x) => x.Hub == hub);
 			}
 		};
 	}
@@ -136,13 +136,13 @@ public static class TeammateProtectionRewards
 			return;
 		}
 		DoorLockReason activeLocks = (DoorLockReason)dv.ActiveLocks;
-		if ((!activeLocks.HasFlagFast(DoorLockReason.Lockdown079) && !activeLocks.HasFlagFast(DoorLockReason.Regular079)) || _grantTargetCooldown > NetworkTime.time)
+		if ((!activeLocks.HasFlagFast(DoorLockReason.Lockdown079) && !activeLocks.HasFlagFast(DoorLockReason.Regular079)) || TeammateProtectionRewards._grantTargetCooldown > NetworkTime.time)
 		{
 			return;
 		}
 		int num = 0;
 		Transform transform = dv.transform;
-		foreach (TrackedTeammate teammate in Teammates)
+		foreach (TrackedTeammate teammate in TeammateProtectionRewards.Teammates)
 		{
 			Vector3[] attackersPositions;
 			int attackersNonAlloc = teammate.GetAttackersNonAlloc(out attackersPositions);
@@ -160,8 +160,8 @@ public static class TeammateProtectionRewards
 				}
 			}
 		}
-		int num2 = Mathf.Min(num, Rewards.Length - 1);
-		Scp079RewardManager.GrantExp(scp079, Rewards[num2], Scp079HudTranslation.ExpGainTeammateProtection);
-		_grantTargetCooldown = NetworkTime.time + 10.0;
+		int num2 = Mathf.Min(num, TeammateProtectionRewards.Rewards.Length - 1);
+		Scp079RewardManager.GrantExp(scp079, TeammateProtectionRewards.Rewards[num2], Scp079HudTranslation.ExpGainTeammateProtection);
+		TeammateProtectionRewards._grantTargetCooldown = NetworkTime.time + 10.0;
 	}
 }

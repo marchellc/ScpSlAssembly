@@ -17,10 +17,10 @@ internal sealed class NetConnectAcceptPacket
 
 	private NetConnectAcceptPacket(long connectionTime, byte connectionNumber, int peerId, bool peerNetworkChanged)
 	{
-		ConnectionTime = connectionTime;
-		ConnectionNumber = connectionNumber;
-		PeerId = peerId;
-		PeerNetworkChanged = peerNetworkChanged;
+		this.ConnectionTime = connectionTime;
+		this.ConnectionNumber = connectionNumber;
+		this.PeerId = peerId;
+		this.PeerNetworkChanged = peerNetworkChanged;
 	}
 
 	public static NetConnectAcceptPacket FromData(NetPacket packet)

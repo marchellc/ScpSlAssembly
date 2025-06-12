@@ -38,8 +38,8 @@ public class SSLightSpawnerExample : SSExampleImplementationBase
 
 		public ColorPreset(string name, Color color)
 		{
-			Name = name;
-			Color = color;
+			this.Name = name;
+			this.Color = color;
 		}
 	}
 
@@ -73,12 +73,12 @@ public class SSLightSpawnerExample : SSExampleImplementationBase
 
 	public override void Activate()
 	{
-		_anySpawned = false;
-		_lightIntensity = 1f;
-		_lightRange = 10f;
-		if (_colorPresets == null)
+		SSLightSpawnerExample._anySpawned = false;
+		SSLightSpawnerExample._lightIntensity = 1f;
+		SSLightSpawnerExample._lightRange = 10f;
+		if (SSLightSpawnerExample._colorPresets == null)
 		{
-			_colorPresets = new ColorPreset[9]
+			SSLightSpawnerExample._colorPresets = new ColorPreset[9]
 			{
 				new ColorPreset("White", Color.white),
 				new ColorPreset("Black", Color.black),
@@ -91,23 +91,23 @@ public class SSLightSpawnerExample : SSExampleImplementationBase
 				new ColorPreset("Magenta", Color.magenta)
 			};
 		}
-		if (_shadowType == null)
+		if (SSLightSpawnerExample._shadowType == null)
 		{
-			_shadowType = EnumUtils<LightShadows>.Values;
+			SSLightSpawnerExample._shadowType = EnumUtils<LightShadows>.Values;
 		}
-		_shadowStrength = 0f;
-		if (_lightType == null)
+		SSLightSpawnerExample._shadowStrength = 0f;
+		if (SSLightSpawnerExample._lightType == null)
 		{
-			_lightType = EnumUtils<LightType>.Values;
+			SSLightSpawnerExample._lightType = EnumUtils<LightType>.Values;
 		}
-		if (_lightShape == null)
+		if (SSLightSpawnerExample._lightShape == null)
 		{
-			_lightShape = EnumUtils<LightShape>.Values;
+			SSLightSpawnerExample._lightShape = EnumUtils<LightShape>.Values;
 		}
-		_spotAngle = 30f;
-		_innerSpotAngle = 0f;
-		GenerateNewSettings();
-		ResendSettings();
+		SSLightSpawnerExample._spotAngle = 30f;
+		SSLightSpawnerExample._innerSpotAngle = 0f;
+		this.GenerateNewSettings();
+		this.ResendSettings();
 		ServerSpecificSettingsSync.SendOnJoinFilter = (ReferenceHub _) => false;
 		ServerSpecificSettingsSync.ServerOnSettingValueReceived += ProcessUserInput;
 	}
@@ -120,21 +120,21 @@ public class SSLightSpawnerExample : SSExampleImplementationBase
 
 	private void GenerateNewSettings()
 	{
-		_allSettings = new List<ServerSpecificSettingBase>
+		SSLightSpawnerExample._allSettings = new List<ServerSpecificSettingBase>
 		{
 			new SSGroupHeader("Light Spawner"),
-			new SSSliderSetting(0, "Intensity", 0f, 100f, _lightIntensity, integer: false, "0.00", "x{0}"),
-			new SSSliderSetting(1, "Range", 0f, 100f, _lightRange, integer: false, "0.00", "x{0}"),
-			new SSDropdownSetting(2, "Color (preset)", _colorPresets.Select((ColorPreset x) => x.Name).ToArray()),
+			new SSSliderSetting(0, "Intensity", 0f, 100f, SSLightSpawnerExample._lightIntensity, integer: false, "0.00", "x{0}"),
+			new SSSliderSetting(1, "Range", 0f, 100f, SSLightSpawnerExample._lightRange, integer: false, "0.00", "x{0}"),
+			new SSDropdownSetting(2, "Color (preset)", SSLightSpawnerExample._colorPresets.Select((ColorPreset x) => x.Name).ToArray()),
 			new SSPlaintextSetting(3, "Custom Color (R G B)", "...", 10, TMP_InputField.ContentType.Standard, "Leave empty to use a preset."),
-			_selectedColorTextArea = new SSTextArea(4, "Selected color: None"),
-			new SSDropdownSetting(5, "Shadow Type", _shadowType.Select((LightShadows x) => x.ToString()).ToArray()),
-			new SSSliderSetting(6, "Shadow Strength", 0f, 100f, _shadowStrength, integer: false, "0.00", "x{0}"),
-			new SSDropdownSetting(7, "Light Type", _lightType.Select((LightType x) => x.ToString()).ToArray()),
-			new SSDropdownSetting(8, "Light Shape", _lightShape.Select((LightShape x) => x.ToString()).ToArray()),
-			new SSSliderSetting(9, "Spot Angle", 0f, 100f, _spotAngle, integer: false, "0.00", "x{0}"),
-			new SSSliderSetting(10, "Inner Spot Angle", 0f, 100f, _innerSpotAngle, integer: false, "0.00", "x{0}"),
-			new SSButton(11, "Confirm Spawning", "Spawn", null)
+			SSLightSpawnerExample._selectedColorTextArea = new SSTextArea(4, "Selected color: None"),
+			new SSDropdownSetting(5, "Shadow Type", SSLightSpawnerExample._shadowType.Select((LightShadows x) => x.ToString()).ToArray()),
+			new SSSliderSetting(6, "Shadow Strength", 0f, 100f, SSLightSpawnerExample._shadowStrength, integer: false, "0.00", "x{0}"),
+			new SSDropdownSetting(7, "Light Type", SSLightSpawnerExample._lightType.Select((LightType x) => x.ToString()).ToArray()),
+			new SSDropdownSetting(8, "Light Shape", SSLightSpawnerExample._lightShape.Select((LightShape x) => x.ToString()).ToArray()),
+			new SSSliderSetting(9, "Spot Angle", 0f, 100f, SSLightSpawnerExample._spotAngle, integer: false, "0.00", "x{0}"),
+			new SSSliderSetting(10, "Inner Spot Angle", 0f, 100f, SSLightSpawnerExample._innerSpotAngle, integer: false, "0.00", "x{0}"),
+			new SSButton(11, "Confirm Spawning", "Spawn")
 		};
 	}
 
@@ -145,18 +145,18 @@ public class SSLightSpawnerExample : SSExampleImplementationBase
 
 	private void ProcessUserInput(ReferenceHub sender, ServerSpecificSettingBase setting)
 	{
-		if (ValidateUser(sender) && (!(setting is SSButton sSButton) || !TryDestroy(sSButton.SettingId)))
+		if (this.ValidateUser(sender) && (!(setting is SSButton sSButton) || !this.TryDestroy(sSButton.SettingId)))
 		{
 			switch ((ExampleId)setting.SettingId)
 			{
 			case ExampleId.ColorPresetDropdown:
-				_selectedColorTextArea.SendTextUpdate(GetColorInfoForUser(sender));
+				SSLightSpawnerExample._selectedColorTextArea.SendTextUpdate(this.GetColorInfoForUser(sender));
 				break;
 			case ExampleId.DestroyAllButton:
-				DestroyAll();
+				this.DestroyAll();
 				break;
 			case ExampleId.ConfirmButton:
-				SpawnLight(sender);
+				this.SpawnLight(sender);
 				break;
 			}
 		}
@@ -176,54 +176,54 @@ public class SSLightSpawnerExample : SSExampleImplementationBase
 		}
 		if (!(lightSourceToy == null))
 		{
-			lightSourceToy.NetworkLightIntensity = GetSettingOfUser<SSSliderSetting>(sender, ExampleId.IntensitySlider).SyncFloatValue;
-			lightSourceToy.NetworkLightRange = GetSettingOfUser<SSSliderSetting>(sender, ExampleId.RangeSlider).SyncFloatValue;
-			Color color = (lightSourceToy.NetworkLightColor = GetColorForUser(sender));
-			int syncSelectionIndexValidated = GetSettingOfUser<SSDropdownSetting>(sender, ExampleId.ShadowType).SyncSelectionIndexValidated;
+			lightSourceToy.NetworkLightIntensity = this.GetSettingOfUser<SSSliderSetting>(sender, ExampleId.IntensitySlider).SyncFloatValue;
+			lightSourceToy.NetworkLightRange = this.GetSettingOfUser<SSSliderSetting>(sender, ExampleId.RangeSlider).SyncFloatValue;
+			Color color = (lightSourceToy.NetworkLightColor = this.GetColorForUser(sender));
+			int syncSelectionIndexValidated = this.GetSettingOfUser<SSDropdownSetting>(sender, ExampleId.ShadowType).SyncSelectionIndexValidated;
 			lightSourceToy.NetworkShadowType = (LightShadows)syncSelectionIndexValidated;
-			lightSourceToy.NetworkShadowStrength = GetSettingOfUser<SSSliderSetting>(sender, ExampleId.ShadowStrength).SyncFloatValue;
-			int syncSelectionIndexValidated2 = GetSettingOfUser<SSDropdownSetting>(sender, ExampleId.LightType).SyncSelectionIndexValidated;
+			lightSourceToy.NetworkShadowStrength = this.GetSettingOfUser<SSSliderSetting>(sender, ExampleId.ShadowStrength).SyncFloatValue;
+			int syncSelectionIndexValidated2 = this.GetSettingOfUser<SSDropdownSetting>(sender, ExampleId.LightType).SyncSelectionIndexValidated;
 			lightSourceToy.NetworkLightType = (LightType)syncSelectionIndexValidated2;
-			int syncSelectionIndexValidated3 = GetSettingOfUser<SSDropdownSetting>(sender, ExampleId.LightShape).SyncSelectionIndexValidated;
+			int syncSelectionIndexValidated3 = this.GetSettingOfUser<SSDropdownSetting>(sender, ExampleId.LightShape).SyncSelectionIndexValidated;
 			lightSourceToy.NetworkLightShape = (LightShape)syncSelectionIndexValidated3;
-			lightSourceToy.NetworkSpotAngle = GetSettingOfUser<SSSliderSetting>(sender, ExampleId.SpotAngle).SyncFloatValue;
-			lightSourceToy.NetworkInnerSpotAngle = GetSettingOfUser<SSSliderSetting>(sender, ExampleId.InnerSpotAngle).SyncFloatValue;
-			if (!_anySpawned)
+			lightSourceToy.NetworkSpotAngle = this.GetSettingOfUser<SSSliderSetting>(sender, ExampleId.SpotAngle).SyncFloatValue;
+			lightSourceToy.NetworkInnerSpotAngle = this.GetSettingOfUser<SSSliderSetting>(sender, ExampleId.InnerSpotAngle).SyncFloatValue;
+			if (!SSLightSpawnerExample._anySpawned)
 			{
-				_allSettings.Add(new SSGroupHeader("Destroy Spawned Lights"));
-				_allSettings.Add(new SSButton(12, "All Lights", "Destroy All (HOLD)", 2f));
-				_anySpawned = true;
+				SSLightSpawnerExample._allSettings.Add(new SSGroupHeader("Destroy Spawned Lights"));
+				SSLightSpawnerExample._allSettings.Add(new SSButton(12, "All Lights", "Destroy All (HOLD)", 2f));
+				SSLightSpawnerExample._anySpawned = true;
 			}
 			string text = $"{lightSourceToy.LightType} Color: {color} SpawnPosition: {lightSourceToy.transform.position}";
 			string text2 = "Spawned by " + sender.LoggedNameFromRefHub() + " at round time " + RoundStart.RoundLength.ToString("hh\\:mm\\:ss\\.fff", CultureInfo.InvariantCulture);
 			string hint = text + "\n" + text2;
-			_allSettings.Add(new SSButton((int)lightSourceToy.netId, $"Light NetID#{lightSourceToy.netId}", "Destroy (HOLD)", 0.4f, hint));
-			ResendSettings();
+			SSLightSpawnerExample._allSettings.Add(new SSButton((int)lightSourceToy.netId, $"Light NetID#{lightSourceToy.netId}", "Destroy (HOLD)", 0.4f, hint));
+			this.ResendSettings();
 		}
 	}
 
 	private void ResendSettings()
 	{
-		ServerSpecificSettingsSync.DefinedSettings = _allSettings.ToArray();
+		ServerSpecificSettingsSync.DefinedSettings = SSLightSpawnerExample._allSettings.ToArray();
 		ServerSpecificSettingsSync.SendToPlayersConditionally(ValidateUser);
 		foreach (ReferenceHub allHub in ReferenceHub.AllHubs)
 		{
-			if (ValidateUser(allHub))
+			if (this.ValidateUser(allHub))
 			{
-				_selectedColorTextArea.SendTextUpdate(GetColorInfoForUser(allHub));
+				SSLightSpawnerExample._selectedColorTextArea.SendTextUpdate(this.GetColorInfoForUser(allHub));
 			}
 		}
 	}
 
 	private void DestroyAll()
 	{
-		if (_anySpawned)
+		if (SSLightSpawnerExample._anySpawned)
 		{
-			int num = _allSettings.Count - 1;
+			int num = SSLightSpawnerExample._allSettings.Count - 1;
 			ServerSpecificSettingBase element;
-			while (num > 0 && _allSettings.TryGet(num, out element) && element is SSButton)
+			while (num > 0 && SSLightSpawnerExample._allSettings.TryGet(num, out element) && element is SSButton)
 			{
-				TryDestroy(element.SettingId);
+				this.TryDestroy(element.SettingId);
 				num--;
 			}
 		}
@@ -239,24 +239,24 @@ public class SSLightSpawnerExample : SSExampleImplementationBase
 		{
 			return false;
 		}
-		for (int i = 0; i < _allSettings.Count; i++)
+		for (int i = 0; i < SSLightSpawnerExample._allSettings.Count; i++)
 		{
-			ServerSpecificSettingBase serverSpecificSettingBase = _allSettings[i];
+			ServerSpecificSettingBase serverSpecificSettingBase = SSLightSpawnerExample._allSettings[i];
 			if (serverSpecificSettingBase is SSButton && serverSpecificSettingBase.SettingId == buttonId)
 			{
-				_allSettings.RemoveAt(i);
+				SSLightSpawnerExample._allSettings.RemoveAt(i);
 				break;
 			}
 		}
-		List<ServerSpecificSettingBase> allSettings = _allSettings;
+		List<ServerSpecificSettingBase> allSettings = SSLightSpawnerExample._allSettings;
 		ServerSpecificSettingBase serverSpecificSettingBase2 = allSettings[allSettings.Count - 1];
 		if (serverSpecificSettingBase2 is SSButton && serverSpecificSettingBase2.SettingId == 12)
 		{
-			_anySpawned = false;
-			GenerateNewSettings();
+			SSLightSpawnerExample._anySpawned = false;
+			this.GenerateNewSettings();
 		}
 		NetworkServer.Destroy(component.gameObject);
-		ResendSettings();
+		this.ResendSettings();
 		return true;
 	}
 
@@ -267,15 +267,15 @@ public class SSLightSpawnerExample : SSExampleImplementationBase
 
 	private string GetColorInfoForUser(ReferenceHub hub)
 	{
-		Color colorForUser = GetColorForUser(hub);
+		Color colorForUser = this.GetColorForUser(hub);
 		return "Selected color: <color=" + colorForUser.ToHex() + ">███████████</color>";
 	}
 
 	private Color GetColorForUser(ReferenceHub user)
 	{
-		string[] array = GetSettingOfUser<SSPlaintextSetting>(user, ExampleId.CustomColor).SyncInputText.Split(' ');
-		int syncSelectionIndexValidated = GetSettingOfUser<SSDropdownSetting>(user, ExampleId.ColorPresetDropdown).SyncSelectionIndexValidated;
-		Color color = _colorPresets[syncSelectionIndexValidated].Color;
+		string[] array = this.GetSettingOfUser<SSPlaintextSetting>(user, ExampleId.CustomColor).SyncInputText.Split(' ');
+		int syncSelectionIndexValidated = this.GetSettingOfUser<SSDropdownSetting>(user, ExampleId.ColorPresetDropdown).SyncSelectionIndexValidated;
+		Color color = SSLightSpawnerExample._colorPresets[syncSelectionIndexValidated].Color;
 		string element;
 		float result;
 		float r = ((array.TryGet(0, out element) && float.TryParse(element, out result)) ? (result / 255f) : color.r);

@@ -11,12 +11,12 @@ public static class VoiceMessageReadersWriters
 		int value = reader.ReadRecyclablePlayerId().Value;
 		VoiceChatChannel channel = (VoiceChatChannel)reader.ReadByte();
 		int num = reader.ReadUShort();
-		reader.ReadBytes(ReceiveArray, num);
+		reader.ReadBytes(VoiceMessageReadersWriters.ReceiveArray, num);
 		if (value == 0 || !ReferenceHub.TryGetHub(value, out var hub))
 		{
-			return new VoiceMessage(null, channel, ReceiveArray, num, isNull: true);
+			return new VoiceMessage(null, channel, VoiceMessageReadersWriters.ReceiveArray, num, isNull: true);
 		}
-		return new VoiceMessage(hub, channel, ReceiveArray, num, isNull: false);
+		return new VoiceMessage(hub, channel, VoiceMessageReadersWriters.ReceiveArray, num, isNull: false);
 	}
 
 	public static void SerializeVoiceMessage(this NetworkWriter writer, VoiceMessage msg)
